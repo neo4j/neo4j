@@ -83,7 +83,7 @@ class PhysicalToLogicalTokenChangesTest {
         assertIAE(ids(1, 3, 4), ids(1, 3, -1, 6));
     }
 
-    private static void convertAndAssert(long[] before, long[] after, long[] expectedRemoved, long[] expectedAdded) {
+    private static void convertAndAssert(int[] before, int[] after, int[] expectedRemoved, int[] expectedAdded) {
         TokenIndexEntryUpdate<?> update = TokenIndexEntryUpdate.change(0, null, before, after);
         PhysicalToLogicalTokenChanges.LogicalTokenUpdates logicalTokenUpdates =
                 PhysicalToLogicalTokenChanges.convertToAdditionsAndRemovals(update);
@@ -91,19 +91,19 @@ class PhysicalToLogicalTokenChangesTest {
         assertThat(truncate(logicalTokenUpdates.additions())).containsExactly(expectedAdded);
     }
 
-    private void assertIAE(long[] before, long[] after) {
+    private void assertIAE(int[] before, int[] after) {
         TokenIndexEntryUpdate<?> update = TokenIndexEntryUpdate.change(0, null, before, after);
         assertThatThrownBy(() -> PhysicalToLogicalTokenChanges.convertToAdditionsAndRemovals(update))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Expected non-negative long value");
+                .hasMessageContaining("Expected non-negative int value");
     }
 
-    private static long[] truncate(long[] tokenIds) {
+    private static int[] truncate(int[] tokenIds) {
         int length = actualLength(tokenIds);
         return length == tokenIds.length ? tokenIds : Arrays.copyOf(tokenIds, length);
     }
 
-    private static int actualLength(long[] labels) {
+    private static int actualLength(int[] labels) {
         for (int i = 0; i < labels.length; i++) {
             if (labels[i] == -1) {
                 return i;
@@ -112,7 +112,7 @@ class PhysicalToLogicalTokenChangesTest {
         return labels.length;
     }
 
-    private static long[] ids(long... ids) {
+    private static int[] ids(int... ids) {
         return ids;
     }
 }

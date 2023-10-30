@@ -309,15 +309,15 @@ class CountsStateTest {
     }
 
     @SafeVarargs
-    private void putLabelsOnNodes(Pair<Long, long[]>... labelDefinitions) {
+    private void putLabelsOnNodes(Pair<Long, int[]>... labelDefinitions) {
         CacheAccess.Client client = cacheAccess.client();
-        for (Pair<Long, long[]> labelDefinition : labelDefinitions) {
+        for (Pair<Long, int[]> labelDefinition : labelDefinitions) {
             long index = countsState.cacheDynamicNodeLabels(labelDefinition.other());
             client.putToCacheSingle(labelDefinition.first(), SLOT_LABELS, index);
         }
     }
 
-    private static Pair<Long, long[]> nodeLabels(long nodeId, long... labelIds) {
+    private static Pair<Long, int[]> nodeLabels(long nodeId, int... labelIds) {
         return Pair.of(nodeId, labelIds);
     }
 

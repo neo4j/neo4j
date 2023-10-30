@@ -67,7 +67,7 @@ public class RelationshipTypeIndexWriterStep extends IndexWriterStep<Relationshi
             throws Throwable {
         for (RelationshipRecord relationship : batch) {
             if (relationship.inUse()) {
-                writer.add(relationship.getId(), new long[] {relationship.getType()});
+                writer.add(relationship.getId(), new int[] {relationship.getType()});
             }
         }
         sender.send(batch);

@@ -23,7 +23,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.collection.PrimitiveArrays.intsToLongs;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
 import static org.neo4j.kernel.impl.api.index.StoreScan.NO_EXTERNAL_UPDATES;
@@ -33,8 +32,8 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import java.util.ArrayList;
 import java.util.List;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
+import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.eclipse.collections.impl.factory.primitive.LongObjectMaps;
-import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.configuration.Config;
@@ -82,16 +81,15 @@ class FullScanStoreViewNodeIdsTest {
         scan.run(NO_EXTERNAL_UPDATES);
 
         // then
-        MutableLongObjectMap<long[]> actual = LongObjectMaps.mutable.empty();
-        consumer.batches.forEach(
-                batch -> batch.forEach(record -> actual.put(record.getEntityId(), record.getTokens())));
+        MutableLongObjectMap<int[]> actual = LongObjectMaps.mutable.empty();
+        consumer.batches.forEach(batch -> batch.forEach(record -> actual.put(record.entityId(), record.tokens())));
         try (var nodeCursor = storageReader.allocateNodeCursor(NULL_CONTEXT, StoreCursors.NULL)) {
             nodeCursor.scan();
             while (nodeCursor.next()) {
-                long[] actualRelationshipTypes = actual.remove(nodeCursor.entityReference());
+                int[] actualRelationshipTypes = actual.remove(nodeCursor.entityReference());
                 int[] expectedRelationshipTypes = nodeCursor.relationshipTypes();
-                assertThat(LongSets.immutable.of(actualRelationshipTypes))
-                        .isEqualTo(LongSets.immutable.of(intsToLongs(expectedRelationshipTypes)));
+                assertThat(IntSets.immutable.of(actualRelationshipTypes))
+                        .isEqualTo(IntSets.immutable.of(expectedRelationshipTypes));
             }
             assertThat(actual.isEmpty()).isTrue();
         }

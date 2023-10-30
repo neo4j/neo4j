@@ -307,7 +307,7 @@ class DynamicIndexStoreViewTest {
                     .properties(targetPropertyKey, propertyValue);
             wantedPropertyUpdates.add(new TestPropertyScanConsumer.Record(
                     id,
-                    new long[] {targetType},
+                    new int[] {targetType},
                     Map.of(cursors.propertyKeyTokenHolder().getIdByName(targetPropertyKey), propertyValue)));
             indexedNodes.add(startNode.getId());
 

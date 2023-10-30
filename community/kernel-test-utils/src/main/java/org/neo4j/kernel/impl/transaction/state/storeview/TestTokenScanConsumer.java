@@ -22,10 +22,8 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 import static java.util.Collections.synchronizedList;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import org.neo4j.kernel.impl.api.index.TokenScanConsumer;
 
@@ -54,7 +52,7 @@ public class TestTokenScanConsumer implements TokenScanConsumer {
             final List<Record> batchTokenUpdates = new ArrayList<>();
 
             @Override
-            public void addRecord(long entityId, long[] tokens) {
+            public void addRecord(long entityId, int[] tokens) {
                 batchTokenUpdates.add(new Record(entityId, tokens));
                 entities.add(entityId);
                 monitor.recordAdded(entityId, tokens);
@@ -67,44 +65,9 @@ public class TestTokenScanConsumer implements TokenScanConsumer {
         };
     }
 
-    public static class Record {
-        private final long entityId;
-        private final long[] tokens;
-
-        public Record(long entityId, long[] tokens) {
-            this.entityId = entityId;
-            this.tokens = tokens;
-        }
-
-        public long getEntityId() {
-            return entityId;
-        }
-
-        public long[] getTokens() {
-            return tokens;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-            Record record = (Record) o;
-            return entityId == record.entityId && Arrays.equals(tokens, record.tokens);
-        }
-
-        @Override
-        public int hashCode() {
-            int result = Objects.hash(entityId);
-            result = 31 * result + Arrays.hashCode(tokens);
-            return result;
-        }
-    }
+    public record Record(long entityId, int[] tokens) {}
 
     public interface Monitor {
-        void recordAdded(long entityId, long[] tokens);
+        void recordAdded(long entityId, int[] tokens);
     }
 }

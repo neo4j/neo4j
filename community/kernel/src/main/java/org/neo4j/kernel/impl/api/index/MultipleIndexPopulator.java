@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.api.index;
 
 import static java.lang.String.format;
 import static java.util.stream.Collectors.joining;
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
 import static org.neo4j.internal.schema.IndexType.LOOKUP;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
@@ -694,7 +694,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
                 final List<EntityUpdates> updates = new ArrayList<>();
 
                 @Override
-                public void addRecord(long entityId, long[] tokens, Map<Integer, Value> properties) {
+                public void addRecord(long entityId, int[] tokens, Map<Integer, Value> properties) {
                     var builder = EntityUpdates.forEntity(entityId, true).withTokens(tokens);
                     properties.forEach(builder::added);
                     updates.add(builder.build());
@@ -754,8 +754,8 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
                 private final List<TokenIndexEntryUpdate<IndexPopulation>> updates = new ArrayList<>();
 
                 @Override
-                public void addRecord(long entityId, long[] tokens) {
-                    updates.add(IndexEntryUpdate.change(entityId, population, EMPTY_LONG_ARRAY, tokens));
+                public void addRecord(long entityId, int[] tokens) {
+                    updates.add(IndexEntryUpdate.change(entityId, population, EMPTY_INT_ARRAY, tokens));
                 }
 
                 @Override

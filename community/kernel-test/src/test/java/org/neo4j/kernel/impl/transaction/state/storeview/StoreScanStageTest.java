@@ -397,7 +397,7 @@ class StoreScanStageTest {
             return new Batch() {
 
                 @Override
-                public void addRecord(long entityId, long[] tokens, Map<Integer, Value> properties) {}
+                public void addRecord(long entityId, int[] tokens, Map<Integer, Value> properties) {}
 
                 @Override
                 public void process() {
@@ -416,7 +416,7 @@ class StoreScanStageTest {
             return new Batch() {
 
                 @Override
-                public void addRecord(long entityId, long[] tokens, Map<Integer, Value> properties) {}
+                public void addRecord(long entityId, int[] tokens, Map<Integer, Value> properties) {}
 
                 @Override
                 public void process() {
@@ -434,7 +434,7 @@ class StoreScanStageTest {
         public Batch newBatch() {
             return new Batch() {
                 @Override
-                public void addRecord(long entityId, long[] tokens) {}
+                public void addRecord(long entityId, int[] tokens) {}
 
                 @Override
                 public void process() {

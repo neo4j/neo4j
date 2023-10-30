@@ -19,26 +19,24 @@
  */
 package org.neo4j.storageengine.api;
 
-import static java.lang.Math.toIntExact;
-
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.eclipse.collections.api.map.MutableMap;
 import org.eclipse.collections.impl.map.mutable.UnifiedMap;
-import org.eclipse.collections.impl.map.mutable.primitive.LongLongHashMap;
+import org.eclipse.collections.impl.map.mutable.primitive.IntLongHashMap;
 
 /**
  * An in-memory single-threaded counts holder useful for modifying and reading counts transaction state.
  */
 public class CountsDelta {
     private static final long DEFAULT_COUNT = 0;
-    protected final LongLongHashMap nodeCounts = new LongLongHashMap();
+    protected final IntLongHashMap nodeCounts = new IntLongHashMap();
     protected final MutableMap<RelationshipKey, MutableLong> relationshipCounts = UnifiedMap.newMap();
 
     public long nodeCount(int labelId) {
         return nodeCounts.getIfAbsent(labelId, DEFAULT_COUNT);
     }
 
-    public void incrementNodeCount(long labelId, long delta) {
+    public void incrementNodeCount(int labelId, long delta) {
         if (delta != 0) {
             nodeCounts.updateValue(labelId, DEFAULT_COUNT, l -> l + delta);
         }
@@ -50,10 +48,9 @@ public class CountsDelta {
         return counts == null ? 0 : counts.longValue();
     }
 
-    public void incrementRelationshipCount(long startLabelId, int typeId, long endLabelId, long delta) {
+    public void incrementRelationshipCount(int startLabelId, int typeId, int endLabelId, long delta) {
         if (delta != 0) {
-            RelationshipKey relationshipKey =
-                    new RelationshipKey(toIntExact(startLabelId), typeId, toIntExact(endLabelId));
+            RelationshipKey relationshipKey = new RelationshipKey(startLabelId, typeId, endLabelId);
             relationshipCounts
                     .getIfAbsentPutWithKey(relationshipKey, k -> new MutableLong(DEFAULT_COUNT))
                     .add(delta);
@@ -61,7 +58,7 @@ public class CountsDelta {
     }
 
     public void accept(Visitor visitor) {
-        nodeCounts.forEachKeyValue((id, count) -> visitor.visitNodeCount(toIntExact(id), count));
+        nodeCounts.forEachKeyValue(visitor::visitNodeCount);
         relationshipCounts.forEachKeyValue((k, count) ->
                 visitor.visitRelationshipCount(k.startLabelId, k.typeId, k.endLabelId, count.longValue()));
     }

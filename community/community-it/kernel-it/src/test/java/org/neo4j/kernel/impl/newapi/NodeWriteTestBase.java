@@ -43,10 +43,8 @@ import java.util.Set;
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.api.set.primitive.IntSet;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.IntObjectMaps;
 import org.eclipse.collections.impl.factory.primitive.IntSets;
-import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.exceptions.KernelException;
@@ -437,7 +435,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
             try (var nodeCursor = cursorFactory(ktx).allocateNodeCursor(CursorContext.NULL_CONTEXT)) {
                 ktx.dataRead().singleNode(node, nodeCursor);
                 assertThat(nodeCursor.next()).isTrue();
-                assertThat(nodeCursor.labels().all()).isEqualTo(new long[] {label});
+                assertThat(nodeCursor.labels().all()).isEqualTo(new int[] {label});
             }
         });
     }
@@ -466,7 +464,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
             try (var nodeCursor = cursorFactory(ktx).allocateNodeCursor(CursorContext.NULL_CONTEXT)) {
                 ktx.dataRead().singleNode(node, nodeCursor);
                 assertThat(nodeCursor.next()).isTrue();
-                assertThat(nodeCursor.labels().all()).isEqualTo(new long[] {label});
+                assertThat(nodeCursor.labels().all()).isEqualTo(new int[] {label});
             }
         });
     }
@@ -525,7 +523,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
             try (var nodeCursor = cursorFactory(ktx).allocateNodeCursor(CursorContext.NULL_CONTEXT)) {
                 ktx.dataRead().singleNode(node, nodeCursor);
                 assertThat(nodeCursor.next()).isTrue();
-                assertThat(nodeCursor.labels().all()).isEqualTo(new long[] {label});
+                assertThat(nodeCursor.labels().all()).isEqualTo(new int[] {label});
             }
         });
     }
@@ -555,7 +553,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
             try (var nodeCursor = cursorFactory(ktx).allocateNodeCursor(CursorContext.NULL_CONTEXT)) {
                 ktx.dataRead().singleNode(node, nodeCursor);
                 assertThat(nodeCursor.next()).isTrue();
-                assertThat(nodeCursor.labels().all()).isEqualTo(new long[] {label1, label2});
+                assertThat(nodeCursor.labels().all()).isEqualTo(new int[] {label1, label2});
             }
         });
     }
@@ -590,7 +588,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
             try (var nodeCursor = cursorFactory(ktx).allocateNodeCursor(CursorContext.NULL_CONTEXT)) {
                 ktx.dataRead().singleNode(node, nodeCursor);
                 assertThat(nodeCursor.next()).isTrue();
-                assertThat(nodeCursor.labels().all()).isEqualTo(new long[] {label3});
+                assertThat(nodeCursor.labels().all()).isEqualTo(new int[] {label3});
             }
         });
     }
@@ -627,7 +625,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         }
 
         // Then
-        MutableLongSet expectedLabels = LongSets.mutable.empty();
+        MutableIntSet expectedLabels = IntSets.mutable.empty();
         stream(initialLabels).forEach(expectedLabels::add);
         stream(addedLabels).forEach(expectedLabels::add);
         stream(removedLabels).forEach(expectedLabels::remove);

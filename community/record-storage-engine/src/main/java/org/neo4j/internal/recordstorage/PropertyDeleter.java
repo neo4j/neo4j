@@ -26,7 +26,7 @@ import static org.neo4j.storageengine.api.LongReference.longReference;
 import static org.neo4j.storageengine.api.PropertySelection.ALL_PROPERTIES;
 
 import java.util.stream.Collectors;
-import java.util.stream.LongStream;
+import java.util.stream.IntStream;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.IntSets;
@@ -146,8 +146,8 @@ public class PropertyDeleter {
                 new RecordPropertyCursor(neoStores.getPropertyStore(), cursorContext, storeCursors, memoryTracker)) {
             if (primitive instanceof NodeRecord node) {
                 message.append(" with labels: ");
-                long[] labelIds = NodeLabelsField.parseLabelsField(node).get(neoStores.getNodeStore(), storeCursors);
-                message.append(LongStream.of(labelIds)
+                int[] labelIds = NodeLabelsField.parseLabelsField(node).get(neoStores.getNodeStore(), storeCursors);
+                message.append(IntStream.of(labelIds)
                         .mapToObj(labelId -> tokenNameLookup.labelGetName(toIntExact(labelId)))
                         .collect(Collectors.toList()));
                 propertyCursor.initNodeProperties(longReference(node.getNextProp()), ALL_PROPERTIES, node.getId());

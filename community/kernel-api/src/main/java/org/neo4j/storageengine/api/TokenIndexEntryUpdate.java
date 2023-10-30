@@ -24,22 +24,22 @@ import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.memory.HeapEstimator;
 
 public class TokenIndexEntryUpdate<INDEX_KEY extends SchemaDescriptorSupplier> extends IndexEntryUpdate<INDEX_KEY> {
-    private final long[] before;
-    private final long[] values;
+    private final int[] before;
+    private final int[] values;
     private final boolean logical;
 
-    TokenIndexEntryUpdate(long entityId, INDEX_KEY index_key, long[] before, long[] values, boolean logical) {
+    TokenIndexEntryUpdate(long entityId, INDEX_KEY index_key, int[] before, int[] values, boolean logical) {
         super(entityId, index_key, UpdateMode.CHANGED);
         this.before = before;
         this.values = values;
         this.logical = logical;
     }
 
-    public long[] values() {
+    public int[] values() {
         return values;
     }
 
-    public long[] beforeValues() {
+    public int[] beforeValues() {
         if (before == null) {
             throw new UnsupportedOperationException("beforeValues is only valid for `UpdateMode.CHANGED");
         }

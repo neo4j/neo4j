@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import static java.lang.Integer.max;
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -97,7 +97,7 @@ class TokenIndexUpdaterTest {
 
             // WHEN
             for (long i = 0; i < NODE_COUNT; i++) {
-                var update = TokenIndexEntryUpdate.change(i, null, EMPTY_LONG_ARRAY, new long[] {labelId});
+                var update = TokenIndexEntryUpdate.change(i, null, EMPTY_INT_ARRAY, new int[] {labelId});
                 updater.process(update);
             }
         }
@@ -162,7 +162,7 @@ class TokenIndexUpdaterTest {
         try (TokenIndexUpdater writer = new TokenIndexUpdater(nodeCount, idLayout)) {
             writer.initialize(tree.writer(W_BATCHED_SINGLE_THREADED, cursorContext));
             for (int i = 0; i < nodeCount; i++) {
-                writer.process(TokenIndexEntryUpdate.change(i, null, EMPTY_LONG_ARRAY, new long[] {1}));
+                writer.process(TokenIndexEntryUpdate.change(i, null, EMPTY_INT_ARRAY, new int[] {1}));
             }
         }
 
@@ -182,7 +182,7 @@ class TokenIndexUpdaterTest {
                         writer.initialize(tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT));
 
                         // WHEN
-                        writer.process(TokenIndexEntryUpdate.change(0, null, EMPTY_LONG_ARRAY, new long[] {2, 1}));
+                        writer.process(TokenIndexEntryUpdate.change(0, null, EMPTY_INT_ARRAY, new int[] {2, 1}));
                     }
                 })
                 .isInstanceOf(IllegalArgumentException.class)
@@ -197,11 +197,11 @@ class TokenIndexUpdaterTest {
                         writer.initialize(tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT));
 
                         // WHEN
-                        writer.process(TokenIndexEntryUpdate.change(0, null, EMPTY_LONG_ARRAY, new long[] {2, -1}));
+                        writer.process(TokenIndexEntryUpdate.change(0, null, EMPTY_INT_ARRAY, new int[] {2, -1}));
                     }
                 })
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Expected non-negative long value");
+                .hasMessageContaining("Expected non-negative int value");
     }
 
     @Test
@@ -210,7 +210,7 @@ class TokenIndexUpdaterTest {
         int numberOfTreeEntries = 3;
         int numberOfNodesInEach = 5;
         int labelId = 1;
-        long[] labels = {labelId};
+        int[] labels = {labelId};
         var idLayout = this.idLayout;
         try (TokenIndexUpdater writer = new TokenIndexUpdater(max(5, NODE_COUNT / 100), idLayout)) {
             writer.initialize(tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT));
@@ -220,7 +220,7 @@ class TokenIndexUpdaterTest {
             for (int i = 0; i < numberOfTreeEntries; i++) {
                 long baseNodeId = idLayout.firstIdOfRange(i);
                 for (int j = 0; j < numberOfNodesInEach; j++) {
-                    writer.process(TokenIndexEntryUpdate.change(baseNodeId + j, null, EMPTY_LONG_ARRAY, labels));
+                    writer.process(TokenIndexEntryUpdate.change(baseNodeId + j, null, EMPTY_INT_ARRAY, labels));
                 }
             }
         }
@@ -232,7 +232,7 @@ class TokenIndexUpdaterTest {
             writer.initialize(tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT));
             long baseNodeId = idLayout.firstIdOfRange(treeEntryToRemoveFrom);
             for (int i = 0; i < numberOfNodesInEach; i++) {
-                writer.process(TokenIndexEntryUpdate.change(baseNodeId + i, null, labels, EMPTY_LONG_ARRAY));
+                writer.process(TokenIndexEntryUpdate.change(baseNodeId + i, null, labels, EMPTY_INT_ARRAY));
             }
         }
 
@@ -245,7 +245,7 @@ class TokenIndexUpdaterTest {
     private TokenIndexEntryUpdate<?> randomUpdate(long[] expected) {
         int nodeId = random.nextInt(expected.length);
         long labels = expected[nodeId];
-        long[] before = getLabels(labels);
+        int[] before = getLabels(labels);
         int changeCount = random.nextInt(4) + 1;
         for (int i = 0; i < changeCount; i++) {
             labels = flipRandom(labels, LABEL_COUNT, random.random());
@@ -300,8 +300,8 @@ class TokenIndexUpdaterTest {
         return existingLabels ^ (1L << random.nextInt(highLabelId));
     }
 
-    public static long[] getLabels(long bits) {
-        long[] result = new long[Long.bitCount(bits)];
+    public static int[] getLabels(long bits) {
+        int[] result = new int[Long.bitCount(bits)];
         for (int labelId = 0, c = 0; labelId < LABEL_COUNT; labelId++) {
             int mask = 1 << labelId;
             if ((bits & mask) != 0) {

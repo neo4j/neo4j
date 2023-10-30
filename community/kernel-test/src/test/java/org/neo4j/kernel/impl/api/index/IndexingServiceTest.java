@@ -1725,7 +1725,7 @@ class IndexingServiceTest {
     }
 
     private Update addNodeUpdate(long nodeId, Object propertyValue, int labelId) {
-        return new Update(nodeId, new long[] {labelId}, prototype.schema().getPropertyId(), Values.of(propertyValue));
+        return new Update(nodeId, new int[] {labelId}, prototype.schema().getPropertyId(), Values.of(propertyValue));
     }
 
     private IndexEntryUpdate<IndexDescriptor> add(long nodeId, Object propertyValue) {
@@ -1868,7 +1868,7 @@ class IndexingServiceTest {
 
                 @Override
                 public void run(ExternalUpdatesCheck externalUpdatesCheck) {
-                    if (stop || updates.size() == 0) {
+                    if (stop || updates.isEmpty()) {
                         return;
                     }
 
@@ -1999,11 +1999,11 @@ class IndexingServiceTest {
 
     private static class Update {
         private final long id;
-        private final long[] labels;
+        private final int[] labels;
         private final int propertyId;
         private final Value propertyValue;
 
-        private Update(long id, long[] labels, int propertyId, Value propertyValue) {
+        private Update(long id, int[] labels, int propertyId, Value propertyValue) {
             this.id = id;
             this.labels = labels;
             this.propertyId = propertyId;

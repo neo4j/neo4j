@@ -240,7 +240,7 @@ public abstract class GraphStoreFixture implements AutoCloseable {
                 StoragePropertyCursor propertyCursor =
                         storeReader.allocatePropertyCursor(NULL_CONTEXT, storeCursors, INSTANCE)) {
             nodeCursor.single(nodeId);
-            long[] labels;
+            int[] labels;
             if (!nodeCursor.next() || !nodeCursor.hasProperties() || (labels = nodeCursor.labels()).length == 0) {
                 return null;
             }
@@ -554,7 +554,7 @@ public abstract class GraphStoreFixture implements AutoCloseable {
             writer.delete(node);
         }
 
-        public NodeRecord newNode(long nodeId, boolean inUse, long... labels) {
+        public NodeRecord newNode(long nodeId, boolean inUse, int... labels) {
             NodeRecord nodeRecord = new NodeRecord(nodeId);
             nodeRecord = nodeRecord.initialize(
                     inUse,
@@ -589,7 +589,6 @@ public abstract class GraphStoreFixture implements AutoCloseable {
         }
 
         public PropertyRecord createProperty(long propId, PrimitiveRecord entityRecord, Value value, int propertyKey) {
-            var propertyStore = neoStores.getPropertyStore();
             var propertyRecord =
                     recordAccess.create(propId, entityRecord, NULL_CONTEXT).forChangingData();
             propertyRecord.setInUse(true);
@@ -639,8 +638,8 @@ public abstract class GraphStoreFixture implements AutoCloseable {
 
         private void updateCounts(NodeRecord node, int delta) {
             writer.incrementNodeCount(ANY_LABEL, delta);
-            for (long label : NodeLabelsField.parseLabelsField(node).get(nodes, StoreCursors.NULL)) {
-                writer.incrementNodeCount((int) label, delta);
+            for (int label : NodeLabelsField.parseLabelsField(node).get(nodes, StoreCursors.NULL)) {
+                writer.incrementNodeCount(label, delta);
             }
         }
 

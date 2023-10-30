@@ -832,7 +832,7 @@ class GBPTreeGenericCountsStoreTest {
             for (int i = 0; i < 250; i++) {
                 final long id = txId.incrementAndGet();
                 try (CountUpdater countUpdater = countsStore.updaterImpl(id, true, NULL_CONTEXT)) {
-                    countUpdater.increment(nodeKey(id), 1);
+                    countUpdater.increment(nodeKey((int) id), 1);
                 }
             }
 

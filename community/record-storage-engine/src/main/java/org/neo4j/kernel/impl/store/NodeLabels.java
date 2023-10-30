@@ -26,10 +26,10 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 public interface NodeLabels {
-    long[] get(NodeStore nodeStore, StoreCursors storeCursors);
+    int[] get(NodeStore nodeStore, StoreCursors storeCursors);
 
     Collection<DynamicRecord> put(
-            long[] labelIds,
+            int[] labelIds,
             NodeStore nodeStore,
             DynamicRecordAllocator allocator,
             CursorContext cursorContext,
@@ -37,7 +37,7 @@ public interface NodeLabels {
             MemoryTracker memoryTracker);
 
     Collection<DynamicRecord> add(
-            long labelId,
+            int labelId,
             NodeStore nodeStore,
             DynamicRecordAllocator allocator,
             CursorContext cursorContext,
@@ -45,7 +45,7 @@ public interface NodeLabels {
             MemoryTracker memoryTracker);
 
     Collection<DynamicRecord> remove(
-            long labelId,
+            int labelId,
             NodeStore nodeStore,
             DynamicRecordAllocator allocator,
             CursorContext cursorContext,

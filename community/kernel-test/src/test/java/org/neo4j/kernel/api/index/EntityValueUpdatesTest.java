@@ -77,9 +77,9 @@ class EntityValueUpdatesTest {
     private static final int PROPERTY_KEY_ID_1 = 0;
     private static final int PROPERTY_KEY_ID_2 = 1;
     private static final int PROPERTY_KEY_ID_3 = 2;
-    private static final long[] TOKEN = new long[] {TOKEN_ID_1};
-    private static final long[] ALL_TOKENS = new long[] {TOKEN_ID_1, TOKEN_ID_2};
-    private static final long[] EMPTY = new long[] {};
+    private static final int[] TOKEN = new int[] {TOKEN_ID_1};
+    private static final int[] ALL_TOKENS = new int[] {TOKEN_ID_1, TOKEN_ID_2};
+    private static final int[] EMPTY = new int[] {};
 
     private static final SchemaDescriptorSupplier NODE_INDEX_1 =
             () -> SchemaDescriptors.forLabel(TOKEN_ID_1, PROPERTY_KEY_ID_1);

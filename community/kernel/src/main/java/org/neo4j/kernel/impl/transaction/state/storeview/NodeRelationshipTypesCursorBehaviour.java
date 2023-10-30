@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
-import static org.neo4j.collection.PrimitiveArrays.intsToLongs;
-
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageReader;
@@ -42,7 +40,7 @@ public class NodeRelationshipTypesCursorBehaviour implements EntityScanCursorBeh
     }
 
     @Override
-    public long[] readTokens(StorageNodeCursor cursor) {
-        return intsToLongs(cursor.relationshipTypes());
+    public int[] readTokens(StorageNodeCursor cursor) {
+        return cursor.relationshipTypes();
     }
 }

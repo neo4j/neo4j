@@ -48,7 +48,7 @@ public class NodeRelationshipsCursorBehaviour
     }
 
     @Override
-    public long[] readTokens(StorageRelationshipByNodeScanCursor cursor) {
-        return new long[] {cursor.type()};
+    public int[] readTokens(StorageRelationshipByNodeScanCursor cursor) {
+        return new int[] {cursor.type()};
     }
 }

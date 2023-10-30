@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.database.enrichment;
 
 import static org.neo4j.util.Preconditions.checkState;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
@@ -466,7 +467,7 @@ public class TxEnrichmentVisitor extends TxStateVisitor.Delegator implements Enr
         if (setNodeChangeType(id, deltaType) && !txState.nodeIsAddedInThisBatch(id)) {
             nodeCursor.single(id);
             if (nodeCursor.next()) {
-                final var labels = toIntArray(nodeCursor.labels());
+                final var labels = toSortedIntArray(nodeCursor.labels());
                 final var constraintProps = captureLabelConstraints(id, labels);
                 setNodeChangeDelta(id, ChangeType.LABELS_STATE, addLabels(labels));
 
@@ -717,6 +718,11 @@ public class TxEnrichmentVisitor extends TxStateVisitor.Delegator implements Enr
 
     private static int[] toIntArray(LongSet ids) {
         return toIntArray(ids.toSortedArray());
+    }
+
+    private static int[] toSortedIntArray(int[] data) {
+        Arrays.sort(data);
+        return data;
     }
 
     private static int[] toIntArray(long[] sorted) {

@@ -729,11 +729,8 @@ abstract class LogCommandSerializationV5Base {
 
     private List<DynamicRecord> randomLabelDynamicRecords(long nodeId, boolean mustIncludeUsed) {
         if (mustIncludeUsed || random.nextBoolean()) {
-            var labels = random.random()
-                    .longs()
-                    .limit(random.nextInt(1, 10))
-                    .sorted()
-                    .toArray();
+            var labels =
+                    random.random().ints().limit(random.nextInt(1, 10)).sorted().toArray();
             var records = DynamicNodeLabels.allocateRecordsForDynamicLabels(
                     nodeId, labels, new RandomizedDynamicRecordAllocator(), NULL_CONTEXT, INSTANCE);
             if (mustIncludeUsed) {

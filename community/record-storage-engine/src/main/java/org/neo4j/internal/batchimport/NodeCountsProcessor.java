@@ -63,11 +63,11 @@ public class NodeCountsProcessor implements RecordProcessor<NodeRecord> {
 
     @Override
     public boolean process(NodeRecord node, StoreCursors storeCursors) {
-        long[] labels = NodeLabelsField.get(node, nodeStore, storeCursors);
+        int[] labels = NodeLabelsField.get(node, nodeStore, storeCursors);
         if (labels.length > 0) {
-            for (long labelId : labels) {
+            for (int labelId : labels) {
                 if (node.getId() >= fromNodeId) {
-                    labelCounts[(int) labelId]++;
+                    labelCounts[labelId]++;
                 }
             }
             cache.put(cacheClient, node.getId(), labels);

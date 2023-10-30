@@ -77,8 +77,8 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator {
     }
 
     private void decrementCountForLabelsAndRelationships(StorageNodeCursor node) {
-        final long[] labelIds = node.labels();
-        for (long labelId : labelIds) {
+        final int[] labelIds = node.labels();
+        for (int labelId : labelIds) {
             counts.incrementNodeCount(labelId, -1);
         }
 
@@ -124,29 +124,29 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator {
             throws ConstraintValidationException {
         // update counts
         if (!(added.isEmpty() && removed.isEmpty())) {
-            added.each(label -> counts.incrementNodeCount(label, 1));
-            removed.each(label -> counts.incrementNodeCount(label, -1));
+            added.each(label -> counts.incrementNodeCount((int) label, 1));
+            removed.each(label -> counts.incrementNodeCount((int) label, -1));
             // get the relationship counts from *before* this transaction,
             // the relationship changes will compensate for what happens during the transaction
 
             nodeCursor.single(id);
             if (nodeCursor.next()) {
                 visitDegrees(nodeCursor, (type, out, in) -> {
-                    added.forEach(label -> updateRelationshipsCountsFromDegrees(type, label, out, in));
-                    removed.forEach(label -> updateRelationshipsCountsFromDegrees(type, label, -out, -in));
+                    added.forEach(label -> updateRelationshipsCountsFromDegrees(type, (int) label, out, in));
+                    removed.forEach(label -> updateRelationshipsCountsFromDegrees(type, (int) label, -out, -in));
                 });
             }
         }
         super.visitNodeLabelChanges(id, added, removed);
     }
 
-    private void updateRelationshipsCountsFromDegrees(long[] labels, int type, long outgoing, long incoming) {
-        for (long label : labels) {
+    private void updateRelationshipsCountsFromDegrees(int[] labels, int type, long outgoing, long incoming) {
+        for (int label : labels) {
             updateRelationshipsCountsFromDegrees(type, label, outgoing, incoming);
         }
     }
 
-    private void updateRelationshipsCountsFromDegrees(int type, long label, long outgoing, long incoming) {
+    private void updateRelationshipsCountsFromDegrees(int type, int label, long outgoing, long incoming) {
         // untyped
         counts.incrementRelationshipCount(label, ANY_RELATIONSHIP_TYPE, ANY_LABEL, outgoing);
         counts.incrementRelationshipCount(ANY_LABEL, ANY_RELATIONSHIP_TYPE, label, incoming);
@@ -157,8 +157,8 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator {
 
     private void updateRelationshipCount(long startNode, int type, long endNode, int delta) {
         updateRelationshipsCountsFromDegrees(type, ANY_LABEL, delta, 0);
-        visitLabels(startNode, labelId -> updateRelationshipsCountsFromDegrees(type, labelId, delta, 0));
-        visitLabels(endNode, labelId -> updateRelationshipsCountsFromDegrees(type, labelId, 0, delta));
+        visitLabels(startNode, labelId -> updateRelationshipsCountsFromDegrees(type, (int) labelId, delta, 0));
+        visitLabels(endNode, labelId -> updateRelationshipsCountsFromDegrees(type, (int) labelId, 0, delta));
     }
 
     private void visitLabels(long nodeId, LongConsumer visitor) {
@@ -173,10 +173,10 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator {
         } else {
             nodeCursor.single(nodeId);
             if (nodeCursor.next()) {
-                long[] labels = nodeCursor.labels();
+                int[] labels = nodeCursor.labels();
                 LongDiffSets labelDiff = txState.getNodeState(nodeId).labelDiffSets();
                 labelDiff.getAdded().forEach(visitor::accept);
-                for (long label : labels) {
+                for (int label : labels) {
                     if (!labelDiff.isRemoved(label)) {
                         visitor.accept(label);
                     }

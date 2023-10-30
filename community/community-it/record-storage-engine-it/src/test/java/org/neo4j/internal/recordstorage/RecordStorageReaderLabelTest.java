@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import static org.eclipse.collections.impl.set.mutable.primitive.LongHashSet.newSetWith;
+import static org.eclipse.collections.impl.set.mutable.primitive.IntHashSet.newSetWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -28,6 +28,7 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.PropertySelection.ALL_PROPERTIES;
 
+import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.junit.jupiter.api.Test;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
@@ -48,7 +49,7 @@ class RecordStorageReaderLabelTest extends RecordStorageReaderTestBase {
         StorageNodeCursor nodeCursor = storageReader.allocateNodeCursor(NULL_CONTEXT, storageCursors);
         nodeCursor.single(nodeId);
         assertTrue(nodeCursor.next());
-        assertEquals(newSetWith(labelId1, labelId2), newSetWith(nodeCursor.labels()));
+        assertEquals(newSetWith(labelId1, labelId2), IntSets.immutable.of(nodeCursor.labels()));
     }
 
     @Test

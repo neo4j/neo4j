@@ -27,9 +27,9 @@ import org.junit.jupiter.api.Test;
 class SortedLabelsTest {
     @Test
     void testEquals() {
-        long[] longsA = new long[] {1L, 2L, 3L};
-        long[] longsB = new long[] {3L, 2L, 1L};
-        long[] longsC = new long[] {1L, 2L, 3L, 4L};
+        int[] longsA = new int[] {1, 2, 3};
+        int[] longsB = new int[] {3, 2, 1};
+        int[] longsC = new int[] {1, 2, 3, 4};
         SortedLabels a = SortedLabels.from(longsA);
         SortedLabels b = SortedLabels.from(longsB);
         SortedLabels c = SortedLabels.from(longsC);
@@ -49,9 +49,9 @@ class SortedLabelsTest {
 
     @Test
     void testHashCodeOfLabelSet() {
-        long[] longsA = new long[] {1L, 2L, 3L};
-        long[] longsB = new long[] {3L, 2L, 1L};
-        long[] longsC = new long[] {1L, 2L, 3L, 4L};
+        int[] longsA = new int[] {1, 2, 3};
+        int[] longsB = new int[] {3, 2, 1};
+        int[] longsC = new int[] {1, 2, 3, 4};
         SortedLabels a = SortedLabels.from(longsA);
         SortedLabels b = SortedLabels.from(longsB);
         SortedLabels c = SortedLabels.from(longsC);

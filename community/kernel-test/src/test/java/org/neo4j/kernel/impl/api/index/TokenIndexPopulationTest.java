@@ -111,9 +111,9 @@ class TokenIndexPopulationTest {
         addIndexPopulator(tokenIndexPopulator, tokenIndex);
 
         mockTokenStore(batch -> {
-            batch.addRecord(1, new long[] {123});
-            batch.addRecord(2, new long[] {123, 111});
-            batch.addRecord(3, new long[] {111});
+            batch.addRecord(1, new int[] {123});
+            batch.addRecord(2, new int[] {123, 111});
+            batch.addRecord(3, new int[] {111});
         });
 
         multipleIndexPopulator.create(CursorContext.NULL_CONTEXT);
@@ -125,9 +125,9 @@ class TokenIndexPopulationTest {
         assertEquals(1, indexUpdateBatches.size());
         Set<? extends IndexEntryUpdate<?>> indexEntryUpdates = new HashSet<>(indexUpdateBatches.get(0));
         Set<? extends IndexEntryUpdate<?>> expectedUpdates = Set.of(
-                IndexEntryUpdate.change(1, tokenIndex, new long[] {}, new long[] {123}),
-                IndexEntryUpdate.change(2, tokenIndex, new long[] {}, new long[] {123, 111}),
-                IndexEntryUpdate.change(3, tokenIndex, new long[] {}, new long[] {111}));
+                IndexEntryUpdate.change(1, tokenIndex, new int[] {}, new int[] {123}),
+                IndexEntryUpdate.change(2, tokenIndex, new int[] {}, new int[] {123, 111}),
+                IndexEntryUpdate.change(3, tokenIndex, new int[] {}, new int[] {111}));
 
         assertEquals(expectedUpdates, indexEntryUpdates);
     }
@@ -147,7 +147,7 @@ class TokenIndexPopulationTest {
         // TokenIndexEntryUpdate for ID  1 and tokens long[]{1}
         // in this situation, but we want to test that the token index population
         // is driven only by TokenIndexEntryUpdates and ignores EntityUpdates
-        mockPropertyStore(batch -> batch.addRecord(1, new long[] {1}, Map.of(1, Values.stringValue("Hello"))));
+        mockPropertyStore(batch -> batch.addRecord(1, new int[] {1}, Map.of(1, Values.stringValue("Hello"))));
 
         multipleIndexPopulator.create(CursorContext.NULL_CONTEXT);
         multipleIndexPopulator.createStoreScan(CONTEXT_FACTORY).run(NO_EXTERNAL_UPDATES);
@@ -160,7 +160,7 @@ class TokenIndexPopulationTest {
     void shouldNotPassConsumerForValueIndexUpdatesToStoreWhenNoValueIndexPopulating() {
         addIndexPopulator(tokenIndexPopulator, tokenIndex);
 
-        mockTokenStore(batch -> batch.addRecord(1, new long[] {123}));
+        mockTokenStore(batch -> batch.addRecord(1, new int[] {123}));
 
         multipleIndexPopulator.create(CursorContext.NULL_CONTEXT);
         multipleIndexPopulator.createStoreScan(CONTEXT_FACTORY).run(NO_EXTERNAL_UPDATES);
@@ -172,7 +172,7 @@ class TokenIndexPopulationTest {
     void shouldNotPassConsumerForTokenIndexUpdatesToStoreWhenNoTokenIndexPopulating() {
         addIndexPopulator(valueIndexPopulator, valueIndex);
 
-        mockPropertyStore(batch -> batch.addRecord(1, new long[] {1}, Map.of(1, Values.stringValue("Hello"))));
+        mockPropertyStore(batch -> batch.addRecord(1, new int[] {1}, Map.of(1, Values.stringValue("Hello"))));
 
         multipleIndexPopulator.create(CursorContext.NULL_CONTEXT);
         multipleIndexPopulator.createStoreScan(CONTEXT_FACTORY).run(NO_EXTERNAL_UPDATES);

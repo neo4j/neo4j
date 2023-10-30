@@ -20,7 +20,7 @@
 package org.neo4j.consistency.checker;
 
 import static org.neo4j.common.EntityType.RELATIONSHIP;
-import static org.neo4j.consistency.checker.NodeChecker.compareTwoSortedLongArrays;
+import static org.neo4j.consistency.checker.NodeChecker.compareTwoSortedIntArrays;
 import static org.neo4j.consistency.checker.RecordLoading.checkValidToken;
 import static org.neo4j.consistency.checker.RecordLoading.lightReplace;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
@@ -125,7 +125,7 @@ class RelationshipChecker implements Checker {
             boolean checkToEndOfIndex)
             throws Exception {
         RelationshipCounter counter = observedCounts.instantiateRelationshipCounter();
-        long[] typeHolder = new long[1];
+        int[] typeHolder = new int[1];
         try (var cursorContext = context.contextFactory.create(RELATIONSHIP_RANGE_CHECKER_TAG);
                 var storeCursors = new CachedStoreCursors(this.context.neoStores, cursorContext);
                 RecordReader<RelationshipRecord> relationshipReader =
@@ -333,7 +333,7 @@ class RelationshipChecker implements Checker {
                                     recordLoader.relationship(relationshipIdMissingFromStore, storeCursors));
                 }
             }
-            long[] relationshipTypesInTypeIndex = relationshipTypeIndexState.currentRange.tokens(relationshipId);
+            int[] relationshipTypesInTypeIndex = relationshipTypeIndexState.currentRange.tokens(relationshipId);
             validateTypeIds(
                     relationshipRecord,
                     type,
@@ -380,12 +380,12 @@ class RelationshipChecker implements Checker {
     private void validateTypeIds(
             RelationshipRecord relationshipRecord,
             int typeInStore,
-            long[] relationshipTypesInTypeIndex,
+            int[] relationshipTypesInTypeIndex,
             EntityTokenRange entityTokenRange,
             StoreCursors storeCursors) {
-        compareTwoSortedLongArrays(
+        compareTwoSortedIntArrays(
                 PropertySchemaType.COMPLETE_ALL_TOKENS,
-                new long[] {typeInStore},
+                new int[] {typeInStore},
                 relationshipTypesInTypeIndex,
                 indexType -> reporter.forRelationshipTypeScan(new TokenScanDocument(entityTokenRange))
                         .relationshipDoesNotHaveExpectedRelationshipType(

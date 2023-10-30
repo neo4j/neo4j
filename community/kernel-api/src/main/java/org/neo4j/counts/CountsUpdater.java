@@ -26,11 +26,11 @@ public interface CountsUpdater extends AutoCloseable {
 
     CountsUpdater NO_OP_UPDATER = new CountsUpdater() {
         @Override
-        public void incrementNodeCount(long labelId, long delta) { // no-op
+        public void incrementNodeCount(int labelId, long delta) { // no-op
         }
 
         @Override
-        public void incrementRelationshipCount(long startLabelId, int typeId, long endLabelId, long delta) { // no-op
+        public void incrementRelationshipCount(int startLabelId, int typeId, int endLabelId, long delta) { // no-op
         }
 
         @Override
@@ -44,7 +44,7 @@ public interface CountsUpdater extends AutoCloseable {
      * @param labelId node label token id.
      * @param delta   delta (positive or negative) to apply for the label.
      */
-    void incrementNodeCount(long labelId, long delta);
+    void incrementNodeCount(int labelId, long delta);
 
     /**
      * Increments (or decrements if delta is negative) the count for the combination of the start/end labels and relationship type.
@@ -54,7 +54,7 @@ public interface CountsUpdater extends AutoCloseable {
      * @param endLabelId   node label token id of end node of relationship.
      * @param delta        delta (positive or negative) to apply for the label.
      */
-    void incrementRelationshipCount(long startLabelId, int typeId, long endLabelId, long delta);
+    void incrementRelationshipCount(int startLabelId, int typeId, int endLabelId, long delta);
 
     /**
      * Closes this updater and ensures that counts are applied as well as no more deltas can be applied after closed.

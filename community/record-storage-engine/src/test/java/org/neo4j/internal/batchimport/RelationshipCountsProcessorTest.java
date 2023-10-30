@@ -84,10 +84,10 @@ class RelationshipCountsProcessorTest {
 
         NodeLabelsCache.Client client = mock(NodeLabelsCache.Client.class);
         when(nodeLabelCache.newClient()).thenReturn(client);
-        when(nodeLabelCache.get(eq(client), eq(1L))).thenReturn(new long[] {0, 2});
-        when(nodeLabelCache.get(eq(client), eq(2L))).thenReturn(new long[] {1});
-        when(nodeLabelCache.get(eq(client), eq(3L))).thenReturn(new long[] {1, 2});
-        when(nodeLabelCache.get(eq(client), eq(4L))).thenReturn(new long[] {});
+        when(nodeLabelCache.get(eq(client), eq(1L))).thenReturn(new int[] {0, 2});
+        when(nodeLabelCache.get(eq(client), eq(2L))).thenReturn(new int[] {1});
+        when(nodeLabelCache.get(eq(client), eq(3L))).thenReturn(new int[] {1, 2});
+        when(nodeLabelCache.get(eq(client), eq(4L))).thenReturn(new int[] {});
 
         RelationshipCountsProcessor countsProcessor = new RelationshipCountsProcessor(
                 nodeLabelCache,

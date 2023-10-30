@@ -66,7 +66,7 @@ public class GBPTreeCountsStore extends GBPTreeGenericCountsStore implements Cou
      * @param labelId id of the label.
      * @return a {@link CountsKey} for the node label id.
      */
-    public static CountsKey nodeKey(long labelId) {
+    public static CountsKey nodeKey(int labelId) {
         return new CountsKey(TYPE_NODE, labelId, 0);
     }
 
@@ -84,9 +84,9 @@ public class GBPTreeCountsStore extends GBPTreeGenericCountsStore implements Cou
      * @param endLabelId id of the label of end node.
      * @return a {@link CountsKey} for the node start/end label and relationship type id.
      */
-    public static CountsKey relationshipKey(long startLabelId, long typeId, long endLabelId) {
+    public static CountsKey relationshipKey(int startLabelId, long typeId, int endLabelId) {
         return new CountsKey(
-                TYPE_RELATIONSHIP, (startLabelId << Integer.SIZE) | (typeId & 0xFFFFFFFFL), (int) endLabelId);
+                TYPE_RELATIONSHIP, ((long) startLabelId << Integer.SIZE) | (typeId & 0xFFFFFFFFL), endLabelId);
     }
 
     public GBPTreeCountsStore(
@@ -209,12 +209,12 @@ public class GBPTreeCountsStore extends GBPTreeGenericCountsStore implements Cou
         }
 
         @Override
-        public void incrementNodeCount(long labelId, long delta) {
+        public void incrementNodeCount(int labelId, long delta) {
             actual.increment(nodeKey(labelId), delta);
         }
 
         @Override
-        public void incrementRelationshipCount(long startLabelId, int typeId, long endLabelId, long delta) {
+        public void incrementRelationshipCount(int startLabelId, int typeId, int endLabelId, long delta) {
             actual.increment(relationshipKey(startLabelId, typeId, endLabelId), delta);
         }
 

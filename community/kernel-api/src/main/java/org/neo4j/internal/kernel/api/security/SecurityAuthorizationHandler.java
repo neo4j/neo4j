@@ -23,7 +23,7 @@ import static java.lang.String.format;
 
 import java.net.URL;
 import java.util.Arrays;
-import java.util.function.Function;
+import java.util.function.IntFunction;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
@@ -41,13 +41,12 @@ public class SecurityAuthorizationHandler {
         this.securityLog = securityLog;
     }
 
-    public void assertAllowsCreateNode(
-            SecurityContext securityContext, Function<Integer, String> resolver, int[] labelIds) {
+    public void assertAllowsCreateNode(SecurityContext securityContext, IntFunction<String> resolver, int[] labelIds) {
         AccessMode accessMode = securityContext.mode();
         if (!accessMode.allowsCreateNode(labelIds)) {
             String labels = null == labelIds
                     ? ""
-                    : Arrays.stream(labelIds).mapToObj(resolver::apply).collect(Collectors.joining(","));
+                    : Arrays.stream(labelIds).mapToObj(resolver).collect(Collectors.joining(","));
             throw logAndGetAuthorizationException(
                     securityContext,
                     MessageUtil.createNodeWithLabelsDenied(
@@ -56,12 +55,11 @@ public class SecurityAuthorizationHandler {
     }
 
     public void assertAllowsDeleteNode(
-            SecurityContext securityContext, Function<Integer, String> resolver, Supplier<TokenSet> labelSupplier) {
+            SecurityContext securityContext, IntFunction<String> resolver, Supplier<TokenSet> labelSupplier) {
         AccessMode accessMode = securityContext.mode();
         if (!accessMode.allowsDeleteNode(labelSupplier)) {
-            String labels = Arrays.stream(labelSupplier.get().all())
-                    .mapToObj(id -> resolver.apply((int) id))
-                    .collect(Collectors.joining(","));
+            String labels =
+                    Arrays.stream(labelSupplier.get().all()).mapToObj(resolver).collect(Collectors.joining(","));
             throw logAndGetAuthorizationException(
                     securityContext,
                     format(
@@ -71,7 +69,7 @@ public class SecurityAuthorizationHandler {
     }
 
     public void assertAllowsCreateRelationship(
-            SecurityContext securityContext, Function<Integer, String> resolver, int relType) {
+            SecurityContext securityContext, IntFunction<String> resolver, int relType) {
         AccessMode accessMode = securityContext.mode();
         if (!accessMode.allowsCreateRelationship(relType)) {
             throw logAndGetAuthorizationException(
@@ -83,7 +81,7 @@ public class SecurityAuthorizationHandler {
     }
 
     public void assertAllowsDeleteRelationship(
-            SecurityContext securityContext, Function<Integer, String> resolver, int relType) {
+            SecurityContext securityContext, IntFunction<String> resolver, int relType) {
         AccessMode accessMode = securityContext.mode();
         if (!accessMode.allowsDeleteRelationship(relType)) {
             throw logAndGetAuthorizationException(
@@ -94,34 +92,32 @@ public class SecurityAuthorizationHandler {
         }
     }
 
-    public void assertAllowsSetLabel(
-            SecurityContext securityContext, Function<Integer, String> resolver, long labelId) {
+    public void assertAllowsSetLabel(SecurityContext securityContext, IntFunction<String> resolver, int labelId) {
         AccessMode accessMode = securityContext.mode();
         if (!accessMode.allowsSetLabel(labelId)) {
             throw logAndGetAuthorizationException(
                     securityContext,
                     format(
                             "Set label for label '%s' on database '%s' is not allowed for %s.",
-                            resolver.apply((int) labelId), securityContext.database(), securityContext.description()));
+                            resolver.apply(labelId), securityContext.database(), securityContext.description()));
         }
     }
 
-    public void assertAllowsRemoveLabel(
-            SecurityContext securityContext, Function<Integer, String> resolver, long labelId) {
+    public void assertAllowsRemoveLabel(SecurityContext securityContext, IntFunction<String> resolver, int labelId) {
         AccessMode accessMode = securityContext.mode();
         if (!accessMode.allowsRemoveLabel(labelId)) {
             throw logAndGetAuthorizationException(
                     securityContext,
                     format(
                             "Remove label for label '%s' on database '%s' is not allowed for %s.",
-                            resolver.apply((int) labelId), securityContext.database(), securityContext.description()));
+                            resolver.apply(labelId), securityContext.database(), securityContext.description()));
         }
     }
 
     public void assertAllowsSetProperty(
-            SecurityContext securityContext, Function<Long, String> resolver, TokenSet labelIds, long propertyKey) {
+            SecurityContext securityContext, IntFunction<String> resolver, TokenSet labelIds, int propertyKey) {
         AccessMode accessMode = securityContext.mode();
-        if (!accessMode.allowsSetProperty(() -> labelIds, (int) propertyKey)) {
+        if (!accessMode.allowsSetProperty(() -> labelIds, propertyKey)) {
             throw logAndGetAuthorizationException(
                     securityContext,
                     format(
@@ -131,9 +127,9 @@ public class SecurityAuthorizationHandler {
     }
 
     public void assertAllowsSetProperty(
-            SecurityContext securityContext, Function<Long, String> resolver, long relType, long propertyKey) {
+            SecurityContext securityContext, IntFunction<String> resolver, long relType, int propertyKey) {
         AccessMode accessMode = securityContext.mode();
-        if (!accessMode.allowsSetProperty(() -> (int) relType, (int) propertyKey)) {
+        if (!accessMode.allowsSetProperty(() -> (int) relType, propertyKey)) {
             throw logAndGetAuthorizationException(
                     securityContext,
                     format(

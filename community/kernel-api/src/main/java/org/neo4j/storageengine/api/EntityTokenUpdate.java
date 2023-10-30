@@ -20,18 +20,14 @@
 package org.neo4j.storageengine.api;
 
 import java.util.Arrays;
-import java.util.Comparator;
 
 public class EntityTokenUpdate {
-    public static final Comparator<? super EntityTokenUpdate> SORT_BY_ENTITY_ID =
-            Comparator.comparingLong(EntityTokenUpdate::getEntityId);
-
     private final long entityId;
-    private final long[] tokensBefore;
-    private final long[] tokensAfter;
+    private final int[] tokensBefore;
+    private final int[] tokensAfter;
     private final long txId;
 
-    private EntityTokenUpdate(long entityId, long[] tokensBefore, long[] tokensAfter, long txId) {
+    private EntityTokenUpdate(long entityId, int[] tokensBefore, int[] tokensAfter, long txId) {
         this.entityId = entityId;
         this.tokensBefore = tokensBefore;
         this.tokensAfter = tokensAfter;
@@ -42,11 +38,11 @@ public class EntityTokenUpdate {
         return entityId;
     }
 
-    public long[] getTokensBefore() {
+    public int[] getTokensBefore() {
         return tokensBefore;
     }
 
-    public long[] getTokensAfter() {
+    public int[] getTokensAfter() {
         return tokensAfter;
     }
 
@@ -60,12 +56,12 @@ public class EntityTokenUpdate {
                 + ", tokensAfter:" + Arrays.toString(tokensAfter) + "]";
     }
 
-    public static EntityTokenUpdate tokenChanges(long entityId, long[] tokensBeforeChange, long[] tokensAfterChange) {
+    public static EntityTokenUpdate tokenChanges(long entityId, int[] tokensBeforeChange, int[] tokensAfterChange) {
         return tokenChanges(entityId, tokensBeforeChange, tokensAfterChange, -1);
     }
 
     public static EntityTokenUpdate tokenChanges(
-            long entityId, long[] tokensBeforeChange, long[] tokensAfterChange, long txId) {
+            long entityId, int[] tokensBeforeChange, int[] tokensAfterChange, long txId) {
         return new EntityTokenUpdate(entityId, tokensBeforeChange, tokensAfterChange, txId);
     }
 

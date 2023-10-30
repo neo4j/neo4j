@@ -79,7 +79,7 @@ class SchemaComplianceChecker implements AutoCloseable {
 
     <ENTITY extends PrimitiveRecord> void checkExistenceAndTypeConstraints(
             ENTITY entity,
-            long[] entityTokens,
+            int[] entityTokens,
             IntObjectMap<Value> values,
             Function<ENTITY, ConsistencyReport.PrimitiveConsistencyReport> reportSupplier) {
         if (entityTokens.length > 0) {
@@ -89,7 +89,7 @@ class SchemaComplianceChecker implements AutoCloseable {
 
     <ENTITY extends PrimitiveRecord> void checkCorrectlyIndexed(
             ENTITY entity,
-            long[] entityTokens,
+            int[] entityTokens,
             IntObjectMap<Value> values,
             Function<ENTITY, ConsistencyReport.PrimitiveConsistencyReport> reportSupplier) {
         for (IndexDescriptor indexRule : indexes) {
@@ -181,7 +181,7 @@ class SchemaComplianceChecker implements AutoCloseable {
     private <ENTITY extends PrimitiveRecord> void checkExistenceAndTypeConstraints(
             ENTITY entity,
             IntObjectMap<Value> seenProperties,
-            long[] entityTokenIds,
+            int[] entityTokenIds,
             Function<ENTITY, ConsistencyReport.PrimitiveConsistencyReport> reporter) {
         if (mandatoryProperties.isEmpty() && allowedTypes.isEmpty()) {
             return;

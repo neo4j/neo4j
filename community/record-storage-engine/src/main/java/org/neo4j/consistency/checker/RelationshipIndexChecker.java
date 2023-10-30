@@ -53,12 +53,12 @@ public class RelationshipIndexChecker extends IndexChecker<RelationshipRecord> {
     }
 
     @Override
-    long[] getEntityTokens(
+    int[] getEntityTokens(
             CheckerContext context,
             StoreCursors storeCursors,
             RelationshipRecord record,
             RecordReader<DynamicRecord> additionalReader) {
-        return new long[] {record.getType()};
+        return new int[] {record.getType()};
     }
 
     @Override

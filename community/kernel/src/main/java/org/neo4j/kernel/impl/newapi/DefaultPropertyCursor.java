@@ -193,7 +193,7 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
         this.type = NO_TOKEN;
     }
 
-    boolean allowed(int[] propertyKeys, long[] labels) {
+    boolean allowed(int[] propertyKeys, int[] labels) {
         ensureAccessMode();
         if (isNode()) {
             return accessMode.allowsReadNodeProperties(

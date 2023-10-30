@@ -98,7 +98,7 @@ public abstract class IndexChecker<Record extends PrimitiveRecord> implements Ch
 
     abstract Record getEntity(StoreCursors storeCursors, long entityId);
 
-    abstract long[] getEntityTokens(
+    abstract int[] getEntityTokens(
             CheckerContext context,
             StoreCursors storeCursors,
             Record record,
@@ -149,7 +149,7 @@ public abstract class IndexChecker<Record extends PrimitiveRecord> implements Ch
 
     @Override
     public boolean shouldBeChecked(ConsistencyFlags flags) {
-        return flags.checkIndexes() && indexes.size() != 0;
+        return flags.checkIndexes() && !indexes.isEmpty();
     }
 
     private void cacheIndex(
@@ -332,8 +332,7 @@ public abstract class IndexChecker<Record extends PrimitiveRecord> implements Ch
                     continue;
                 }
 
-                long[] entityTokens =
-                        getEntityTokens(noReportingContext, storeCursors, entityRecord, entityTokenReader);
+                int[] entityTokens = getEntityTokens(noReportingContext, storeCursors, entityRecord, entityTokenReader);
                 allValues = lightReplace(allValues);
                 boolean propertyChainRead = entityTokens != null
                         && propertyReader.read(

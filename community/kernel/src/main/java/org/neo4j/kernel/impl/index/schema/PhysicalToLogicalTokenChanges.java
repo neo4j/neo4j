@@ -44,11 +44,11 @@ class PhysicalToLogicalTokenChanges {
 
         int rc = 0;
         int ac = 0;
-        long[] removals = update.beforeValues().clone();
-        long[] additions = update.values().clone();
+        int[] removals = update.beforeValues().clone();
+        int[] additions = update.values().clone();
         for (int bi = 0, ai = 0; bi < beforeLength || ai < afterLength; ) {
-            long beforeId = bi < beforeLength ? requireNonNegative(removals[bi]) : -1;
-            long afterId = ai < afterLength ? requireNonNegative(additions[ai]) : -1;
+            int beforeId = bi < beforeLength ? requireNonNegative(removals[bi]) : -1;
+            int afterId = ai < afterLength ? requireNonNegative(additions[ai]) : -1;
             if (beforeId == afterId) { // no change
                 bi++;
                 ai++;
@@ -81,13 +81,13 @@ class PhysicalToLogicalTokenChanges {
         return id != -1 && (otherId == -1 || id < otherId);
     }
 
-    private static void terminateWithMinusOneIfNeeded(long[] tokenIds, int actualLength) {
+    private static void terminateWithMinusOneIfNeeded(int[] tokenIds, int actualLength) {
         if (actualLength < tokenIds.length) {
             tokenIds[actualLength] = -1;
         }
     }
 
-    record LogicalTokenUpdates(long entityId, long[] removals, long[] additions)
+    record LogicalTokenUpdates(long entityId, int[] removals, int[] additions)
             implements Comparable<LogicalTokenUpdates> {
         @Override
         public int compareTo(LogicalTokenUpdates o) {

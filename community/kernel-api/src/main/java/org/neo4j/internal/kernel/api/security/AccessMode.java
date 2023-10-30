@@ -118,33 +118,33 @@ public interface AccessMode {
         }
 
         @Override
-        public boolean allowsTraverseAllNodesWithLabel(long label) {
+        public boolean allowsTraverseAllNodesWithLabel(int label) {
             return read;
         }
 
         @Override
-        public boolean disallowsTraverseLabel(long label) {
+        public boolean disallowsTraverseLabel(int label) {
             return false;
         }
 
         @Override
-        public boolean allowsTraverseNode(long... labels) {
+        public boolean allowsTraverseNode(int... labels) {
             return read;
         }
 
         @Override
-        public IntSet getTraverseSecurityProperties(long[] labels) {
+        public IntSet getTraverseSecurityProperties(int[] labels) {
             return IntSets.immutable.empty();
         }
 
         @Override
-        public boolean hasApplicableTraverseAllowPropertyRules(long label) {
+        public boolean hasApplicableTraverseAllowPropertyRules(int label) {
             return read;
         }
 
         @Override
         public boolean allowsTraverseNodeWithPropertyRules(
-                ReadSecurityPropertyProvider propertyProvider, long... labels) {
+                ReadSecurityPropertyProvider propertyProvider, int... labels) {
             return read;
         }
 
@@ -276,12 +276,12 @@ public interface AccessMode {
         }
 
         @Override
-        public boolean allowsSetLabel(long labelId) {
+        public boolean allowsSetLabel(int labelId) {
             return write;
         }
 
         @Override
-        public boolean allowsRemoveLabel(long labelId) {
+        public boolean allowsRemoveLabel(int labelId) {
             return write;
         }
 
@@ -341,12 +341,12 @@ public interface AccessMode {
     /**
      * true if all nodes with this label always can be traversed
      */
-    boolean allowsTraverseAllNodesWithLabel(long label);
+    boolean allowsTraverseAllNodesWithLabel(int label);
 
     /**
      * true if this label is deny-listed for traversal
      */
-    boolean disallowsTraverseLabel(long label);
+    boolean disallowsTraverseLabel(int label);
 
     /**
      * true if a particular node with exactly these labels can be traversed.
@@ -354,7 +354,7 @@ public interface AccessMode {
      * @param labels the labels on the node to be checked. If labels only contains {@link org.neo4j.token.api.TokenConstants#ANY_LABEL} it will work
      *               the same as {@link #allowsTraverseAllLabels}
      */
-    boolean allowsTraverseNode(long... labels);
+    boolean allowsTraverseNode(int... labels);
 
     /**
      * Gets the keys of the operand properties (aka Security Properties) whose
@@ -362,7 +362,7 @@ public interface AccessMode {
      * @param labels - the node labels which may have security rules on them
      * @return the set of operand properties
      */
-    IntSet getTraverseSecurityProperties(long[] labels);
+    IntSet getTraverseSecurityProperties(int[] labels);
 
     /**
      * checks whether there is potential for nodes with this label to be traversed subject of property-based
@@ -370,7 +370,7 @@ public interface AccessMode {
      * @param label - the label to check permissions for
      * @return true when nodes with this label could be traversable due to property-based GRANTS
      */
-    boolean hasApplicableTraverseAllowPropertyRules(long label);
+    boolean hasApplicableTraverseAllowPropertyRules(int label);
 
     /**
      * Uses the {@code propertyProvider} to get the node property values and the {@code labels} to get the relevant property rules,
@@ -379,7 +379,7 @@ public interface AccessMode {
      * @param labels the labels of the node. Used to determine which property rules need to be checked.
      * @return {@code true} if traversal of this node is allowed
      */
-    boolean allowsTraverseNodeWithPropertyRules(ReadSecurityPropertyProvider propertyProvider, long... labels);
+    boolean allowsTraverseNodeWithPropertyRules(ReadSecurityPropertyProvider propertyProvider, int... labels);
 
     /**
      * Determines whether there are any property rules controlling traversal
@@ -556,9 +556,9 @@ public interface AccessMode {
      */
     PermissionState allowsShowSetting(String setting);
 
-    boolean allowsSetLabel(long labelId);
+    boolean allowsSetLabel(int labelId);
 
-    boolean allowsRemoveLabel(long labelId);
+    boolean allowsRemoveLabel(int labelId);
 
     boolean allowsCreateNode(int[] labelIds);
 

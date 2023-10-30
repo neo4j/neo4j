@@ -25,10 +25,10 @@ import org.neo4j.values.storable.Value;
 
 class NodeData {
     final long id;
-    private final long[] labels;
+    private final int[] labels;
     final Map<Integer, Value> properties;
 
-    NodeData(long id, long[] labels, Map<Integer, Value> properties) {
+    NodeData(long id, int[] labels, Map<Integer, Value> properties) {
         this.id = id;
         this.labels = labels;
         this.properties = properties;
@@ -43,12 +43,12 @@ class NodeData {
 
             @Override
             public int token(int offset) {
-                return (int) labels[offset];
+                return labels[offset];
             }
 
             @Override
             public boolean contains(int token) {
-                for (long label : labels) {
+                for (int label : labels) {
                     if (label == token) {
                         return true;
                     }
@@ -57,7 +57,7 @@ class NodeData {
             }
 
             @Override
-            public long[] all() {
+            public int[] all() {
                 return labels;
             }
         };

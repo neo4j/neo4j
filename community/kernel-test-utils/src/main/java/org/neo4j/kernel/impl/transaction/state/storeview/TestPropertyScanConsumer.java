@@ -38,7 +38,7 @@ public class TestPropertyScanConsumer implements PropertyScanConsumer {
             final List<Record> batchEntityUpdates = new ArrayList<>();
 
             @Override
-            public void addRecord(long entityId, long[] tokens, Map<Integer, Value> properties) {
+            public void addRecord(long entityId, int[] tokens, Map<Integer, Value> properties) {
                 batchEntityUpdates.add(new Record(entityId, tokens, properties));
             }
 
@@ -49,7 +49,7 @@ public class TestPropertyScanConsumer implements PropertyScanConsumer {
         };
     }
 
-    public record Record(long entityId, long[] tokens, Map<Integer, Value> properties) {
+    public record Record(long entityId, int[] tokens, Map<Integer, Value> properties) {
         @Override
         public String toString() {
             return "Record{" + "entityId="

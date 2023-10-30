@@ -19,8 +19,6 @@
  */
 package org.neo4j.consistency.checker;
 
-import static java.lang.Math.toIntExact;
-
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.internal.batchimport.cache.IntArray;
@@ -39,16 +37,16 @@ class DynamicNodeLabelsCache implements AutoCloseable {
         cache = NumberArrayFactories.OFF_HEAP.newDynamicIntArray(100_000, 0, memoryTracker);
     }
 
-    long put(long[] labels) {
+    long put(int[] labels) {
         final long index = nextIndex.getAndAdd(labels.length + 1);
         cache.set(index, labels.length);
         for (int i = 0; i < labels.length; i++) {
-            cache.set(index + 1 + i, toIntExact(labels[i]));
+            cache.set(index + 1 + i, labels[i]);
         }
         return index;
     }
 
-    long[] get(long index, long[] into) {
+    int[] get(long index, int[] into) {
         int count = cache.get(index);
         if (count > into.length) {
             into = Arrays.copyOf(into, count);

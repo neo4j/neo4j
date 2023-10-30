@@ -152,8 +152,8 @@ class FullScanStoreViewTest {
         // then
         assertThat(propertyScanConsumer.batches.get(0))
                 .containsExactlyInAnyOrder(
-                        record(alistair.getId(), propertyKeyId, "Alistair", new long[] {labelId}),
-                        record(stefan.getId(), propertyKeyId, "Stefan", new long[] {labelId}));
+                        record(alistair.getId(), propertyKeyId, "Alistair", new int[] {labelId}),
+                        record(stefan.getId(), propertyKeyId, "Stefan", new int[] {labelId}));
     }
 
     @Test
@@ -176,8 +176,8 @@ class FullScanStoreViewTest {
         // then
         assertThat(propertyScanConsumer.batches.get(0))
                 .containsExactlyInAnyOrder(
-                        record(aKnowsS.getId(), relPropertyKeyId, "long", new long[] {relTypeId}),
-                        record(sKnowsA.getId(), relPropertyKeyId, "lengthy", new long[] {relTypeId}));
+                        record(aKnowsS.getId(), relPropertyKeyId, "long", new int[] {relTypeId}),
+                        record(sKnowsA.getId(), relPropertyKeyId, "lengthy", new int[] {relTypeId}));
     }
 
     @Test
@@ -368,15 +368,15 @@ class FullScanStoreViewTest {
         var updates = tokenScanConsumer.batches.get(0);
         assertThat(updates.size()).isEqualTo(2);
         for (var update : updates) {
-            long[] tokensAfter = update.getTokens();
+            int[] tokensAfter = update.tokens();
             assertThat(tokensAfter.length).isEqualTo(1);
             assertThat(tokensAfter[0]).isEqualTo(0);
-            assertThat(update.getEntityId()).satisfiesAnyOf(id -> assertThat(id).isEqualTo(0), id -> assertThat(id)
+            assertThat(update.entityId()).satisfiesAnyOf(id -> assertThat(id).isEqualTo(0), id -> assertThat(id)
                     .isEqualTo(1));
         }
     }
 
-    private static TestPropertyScanConsumer.Record record(long nodeId, int propertyKeyId, Object value, long[] labels) {
+    private static TestPropertyScanConsumer.Record record(long nodeId, int propertyKeyId, Object value, int[] labels) {
         return new TestPropertyScanConsumer.Record(nodeId, labels, Map.of(propertyKeyId, Values.of(value)));
     }
 

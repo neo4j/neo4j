@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.kernel.api.helpers;
 
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
 import static org.neo4j.storageengine.api.LongReference.longReference;
 
 import java.util.ArrayList;
@@ -72,16 +73,16 @@ public class StubNodeCursor extends DefaultCloseListenable implements NodeCursor
     }
 
     public StubNodeCursor withNode(long id) {
-        nodes.add(new NodeData(id, new long[] {}, Collections.emptyMap()));
+        nodes.add(new NodeData(id, EMPTY_INT_ARRAY, Collections.emptyMap()));
         return this;
     }
 
-    public StubNodeCursor withNode(long id, long... labels) {
+    public StubNodeCursor withNode(long id, int... labels) {
         nodes.add(new NodeData(id, labels, Collections.emptyMap()));
         return this;
     }
 
-    public StubNodeCursor withNode(long id, long[] labels, Map<Integer, Value> properties) {
+    public StubNodeCursor withNode(long id, int[] labels, Map<Integer, Value> properties) {
         nodes.add(new NodeData(id, labels, properties));
         return this;
     }

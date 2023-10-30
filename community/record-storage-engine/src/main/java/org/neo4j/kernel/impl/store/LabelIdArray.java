@@ -26,23 +26,23 @@ import java.util.Arrays;
 public class LabelIdArray {
     private LabelIdArray() {}
 
-    static long[] concatAndSort(long[] existing, long additional) {
+    static int[] concatAndSort(int[] existing, int additional) {
         assertNotContains(existing, additional);
 
-        long[] result = new long[existing.length + 1];
+        int[] result = new int[existing.length + 1];
         arraycopy(existing, 0, result, 0, existing.length);
         result[existing.length] = additional;
         Arrays.sort(result);
         return result;
     }
 
-    private static void assertNotContains(long[] existingLabels, long labelId) {
+    private static void assertNotContains(int[] existingLabels, int labelId) {
         if (Arrays.binarySearch(existingLabels, labelId) >= 0) {
             throw new IllegalStateException("Label " + labelId + " already exists.");
         }
     }
 
-    static long[] filter(long[] ids, long excludeId) {
+    static int[] filter(int[] ids, int excludeId) {
         boolean found = false;
         for (long id : ids) {
             if (id == excludeId) {
@@ -54,9 +54,9 @@ public class LabelIdArray {
             throw new IllegalStateException("Label " + excludeId + " not found.");
         }
 
-        long[] result = new long[ids.length - 1];
+        int[] result = new int[ids.length - 1];
         int writerIndex = 0;
-        for (long id : ids) {
+        for (int id : ids) {
             if (id != excludeId) {
                 result[writerIndex++] = id;
             }
@@ -64,14 +64,21 @@ public class LabelIdArray {
         return result;
     }
 
-    public static long[] prependNodeId(long nodeId, long[] labelIds) {
+    public static long[] prependNodeId(long nodeId, int[] labelIds) {
         long[] result = new long[labelIds.length + 1];
-        arraycopy(labelIds, 0, result, 1, labelIds.length);
         result[0] = nodeId;
+        for (int i = 0; i < labelIds.length; i++) {
+            result[i + 1] = labelIds[i];
+        }
         return result;
     }
 
-    public static long[] stripNodeId(long[] storedLongs) {
-        return Arrays.copyOfRange(storedLongs, 1, storedLongs.length);
+    public static int[] stripNodeId(long[] storedLongs) {
+        long[] recordLabels = Arrays.copyOfRange(storedLongs, 1, storedLongs.length);
+        int[] labelIds = new int[recordLabels.length];
+        for (int i = 0; i < labelIds.length; i++) {
+            labelIds[i] = (int) recordLabels[i];
+        }
+        return labelIds;
     }
 }

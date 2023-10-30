@@ -438,7 +438,7 @@ class NodeStoreTest {
         NodeLabels labels = NodeLabelsField.parseLabelsField(record);
         DynamicArrayStore dynamicLabelStore = nodeStore.getDynamicLabelStore();
         labels.put(
-                new long[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+                new int[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
                 nodeStore,
                 allocatorProvider.allocator(NODE_LABEL),
                 NULL_CONTEXT,

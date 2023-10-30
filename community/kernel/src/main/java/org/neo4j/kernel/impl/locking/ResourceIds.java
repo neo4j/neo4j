@@ -33,7 +33,7 @@ public final class ResourceIds {
     /**
      * Produces a 64-bit hashcode for locking index entries.
      */
-    public static long indexEntryResourceId(long labelId, PropertyIndexQuery.ExactPredicate... predicates) {
+    public static long indexEntryResourceId(int labelId, PropertyIndexQuery.ExactPredicate... predicates) {
         return indexEntryResourceId_4_x(labelId, predicates);
     }
 
@@ -53,7 +53,7 @@ public final class ResourceIds {
      *
      * @see HashFunction#incrementalXXH64()
      */
-    static long indexEntryResourceId_4_x(long labelId, PropertyIndexQuery.ExactPredicate[] predicates) {
+    static long indexEntryResourceId_4_x(int labelId, PropertyIndexQuery.ExactPredicate[] predicates) {
         long hash = HASH_40_INIT;
         hash = HASH_40.update(hash, labelId);
 

@@ -75,32 +75,32 @@ public class OverriddenAccessMode extends WrappedAccessMode {
     }
 
     @Override
-    public boolean allowsTraverseAllNodesWithLabel(long label) {
+    public boolean allowsTraverseAllNodesWithLabel(int label) {
         return wrapping.allowsTraverseAllNodesWithLabel(label);
     }
 
     @Override
-    public boolean disallowsTraverseLabel(long label) {
+    public boolean disallowsTraverseLabel(int label) {
         return wrapping.disallowsTraverseLabel(label);
     }
 
     @Override
-    public boolean allowsTraverseNode(long... labels) {
+    public boolean allowsTraverseNode(int... labels) {
         return wrapping.allowsTraverseNode(labels);
     }
 
     @Override
-    public IntSet getTraverseSecurityProperties(long[] labels) {
+    public IntSet getTraverseSecurityProperties(int[] labels) {
         return wrapping.getTraverseSecurityProperties(labels);
     }
 
     @Override
-    public boolean hasApplicableTraverseAllowPropertyRules(long label) {
+    public boolean hasApplicableTraverseAllowPropertyRules(int label) {
         return wrapping.hasApplicableTraverseAllowPropertyRules(label);
     }
 
     @Override
-    public boolean allowsTraverseNodeWithPropertyRules(ReadSecurityPropertyProvider propertyProvider, long... labels) {
+    public boolean allowsTraverseNodeWithPropertyRules(ReadSecurityPropertyProvider propertyProvider, int... labels) {
         return wrapping.allowsTraverseNodeWithPropertyRules(propertyProvider, labels);
     }
 
@@ -201,12 +201,12 @@ public class OverriddenAccessMode extends WrappedAccessMode {
     }
 
     @Override
-    public boolean allowsSetLabel(long labelId) {
+    public boolean allowsSetLabel(int labelId) {
         return wrapping.allowsSetLabel(labelId);
     }
 
     @Override
-    public boolean allowsRemoveLabel(long labelId) {
+    public boolean allowsRemoveLabel(int labelId) {
         return wrapping.allowsRemoveLabel(labelId);
     }
 

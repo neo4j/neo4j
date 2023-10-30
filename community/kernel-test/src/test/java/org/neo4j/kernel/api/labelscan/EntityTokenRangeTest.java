@@ -33,7 +33,7 @@ class EntityTokenRangeTest {
     @Test
     void shouldTransposeNodeIdsAndLabelIds() {
         // given
-        long[][] labelsPerNode = new long[][] {{1}, {1, 3}, {3, 5, 7}, {}, {1, 5, 7}, {}, {}, {1, 2, 3, 4}};
+        int[][] labelsPerNode = new int[][] {{1}, {1, 3}, {3, 5, 7}, {}, {1, 5, 7}, {}, {}, {1, 2, 3, 4}};
 
         // when
         EntityTokenRange range = new EntityTokenRangeImpl(0, labelsPerNode, NODE, new DefaultTokenIndexIdLayout());
@@ -48,7 +48,7 @@ class EntityTokenRangeTest {
     @Test
     void shouldRebaseOnRangeId() {
         // given
-        long[][] labelsPerNode = new long[][] {{1}, {1, 3}, {3, 5, 7}, {}, {1, 5, 7}, {}, {}, {1, 2, 3, 4}};
+        int[][] labelsPerNode = new int[][] {{1}, {1, 3}, {3, 5, 7}, {}, {1, 5, 7}, {}, {}, {1, 2, 3, 4}};
 
         // when
         var idLayout = new DefaultTokenIndexIdLayout();
@@ -66,14 +66,14 @@ class EntityTokenRangeTest {
     @Test
     void shouldAdaptToStringToEntityTypeNode() {
         EntityTokenRange nodeLabelRange =
-                new EntityTokenRangeImpl(0, new long[0][], NODE, new DefaultTokenIndexIdLayout());
+                new EntityTokenRangeImpl(0, new int[0][], NODE, new DefaultTokenIndexIdLayout());
         assertThat(nodeLabelRange.toString()).contains("NodeLabelRange");
     }
 
     @Test
     void shouldAdaptToStringToEntityTypeRelationship() {
         EntityTokenRange relationshipTypeRange =
-                new EntityTokenRangeImpl(0, new long[0][], RELATIONSHIP, new DefaultTokenIndexIdLayout());
+                new EntityTokenRangeImpl(0, new int[0][], RELATIONSHIP, new DefaultTokenIndexIdLayout());
         assertThat(relationshipTypeRange.toString()).contains("RelationshipTypeRange");
     }
 }

@@ -54,24 +54,24 @@ public interface StorageReader extends AutoCloseable, StorageSchemaReader {
     /**
      * Returns all value indexes (including unique) related to a property, any of the tokens (labels or relationship types) and the entity type.
      */
-    Collection<IndexDescriptor> valueIndexesGetRelated(long[] tokens, int propertyKeyId, EntityType entityType);
+    Collection<IndexDescriptor> valueIndexesGetRelated(int[] tokens, int propertyKeyId, EntityType entityType);
 
-    Collection<IndexDescriptor> valueIndexesGetRelated(long[] tokens, int[] propertyKeyIds, EntityType entityType);
-
-    Collection<IndexBackedConstraintDescriptor> uniquenessConstraintsGetRelated(
-            long[] tokens, int propertyKeyId, EntityType entityType);
+    Collection<IndexDescriptor> valueIndexesGetRelated(int[] tokens, int[] propertyKeyIds, EntityType entityType);
 
     Collection<IndexBackedConstraintDescriptor> uniquenessConstraintsGetRelated(
-            long[] tokens, int[] propertyKeyIds, EntityType entityType);
+            int[] tokens, int propertyKeyId, EntityType entityType);
 
     Collection<IndexBackedConstraintDescriptor> uniquenessConstraintsGetRelated(
-            long[] changedLabels,
-            long[] unchangedLabels,
+            int[] tokens, int[] propertyKeyIds, EntityType entityType);
+
+    Collection<IndexBackedConstraintDescriptor> uniquenessConstraintsGetRelated(
+            int[] changedLabels,
+            int[] unchangedLabels,
             int[] propertyKeyIds,
             boolean propertyKeyListIsComplete,
             EntityType entityType);
 
-    boolean hasRelatedSchema(long[] tokens, int propertyKey, EntityType entityType);
+    boolean hasRelatedSchema(int[] tokens, int propertyKey, EntityType entityType);
 
     boolean hasRelatedSchema(int token, EntityType entityType);
 

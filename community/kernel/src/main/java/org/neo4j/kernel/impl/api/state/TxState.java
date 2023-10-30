@@ -37,7 +37,7 @@ import java.util.NavigableMap;
 import java.util.TreeMap;
 import org.eclipse.collections.api.map.MutableMap;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.impl.UnmodifiableMap;
 import org.neo4j.collection.diffset.DiffSets;
 import org.neo4j.collection.diffset.LongDiffSets;
@@ -494,14 +494,14 @@ public class TxState implements TransactionState {
     }
 
     @Override
-    public void nodeDoAddLabel(long labelId, long nodeId) {
+    public void nodeDoAddLabel(int labelId, long nodeId) {
         getOrCreateLabelStateNodeDiffSets(labelId).add(nodeId);
         getOrCreateNodeStateLabelDiffSets(nodeId).add(labelId);
         dataChanged();
     }
 
     @Override
-    public void nodeDoRemoveLabel(long labelId, long nodeId) {
+    public void nodeDoRemoveLabel(int labelId, long nodeId) {
         getOrCreateLabelStateNodeDiffSets(labelId).remove(nodeId);
         getOrCreateNodeStateLabelDiffSets(nodeId).remove(labelId);
         dataChanged();
@@ -563,17 +563,17 @@ public class TxState implements TransactionState {
     }
 
     @Override
-    public MutableLongSet augmentLabels(MutableLongSet labels, NodeState nodeState) {
+    public MutableIntSet augmentLabels(MutableIntSet labels, NodeState nodeState) {
         final LongDiffSets labelDiffSets = nodeState.labelDiffSets();
         if (!labelDiffSets.isEmpty()) {
-            labelDiffSets.getRemoved().forEach(labels::remove);
-            labelDiffSets.getAdded().forEach(labels::add);
+            labelDiffSets.getRemoved().forEach(value -> labels.remove((int) value));
+            labelDiffSets.getAdded().forEach(element -> labels.add((int) element));
         }
         return labels;
     }
 
     @Override
-    public LongDiffSets nodesWithLabelChanged(long label) {
+    public LongDiffSets nodesWithLabelChanged(int label) {
         return getLabelStateNodeDiffSets(label);
     }
 

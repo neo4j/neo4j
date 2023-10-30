@@ -70,7 +70,7 @@ public class IndexEntryResourceTypeTest {
     }
 
     private interface IndexEntryHasher {
-        long hash(long labelId, ExactPredicate[] predicates);
+        long hash(int labelId, ExactPredicate[] predicates);
     }
 
     @SuppressWarnings({"UnnecessaryBoxing"})

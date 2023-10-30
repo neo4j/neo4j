@@ -38,7 +38,7 @@ public class RelationshipCursorBehaviour implements EntityScanCursorBehaviour<St
     }
 
     @Override
-    public long[] readTokens(StorageRelationshipScanCursor cursor) {
-        return new long[] {cursor.type()};
+    public int[] readTokens(StorageRelationshipScanCursor cursor) {
+        return new int[] {cursor.type()};
     }
 }

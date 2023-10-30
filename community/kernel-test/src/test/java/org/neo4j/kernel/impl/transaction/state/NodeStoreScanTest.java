@@ -23,7 +23,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.collection.PrimitiveArrays.intersect;
-import static org.neo4j.collection.PrimitiveArrays.intsToLongs;
 import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -143,7 +142,7 @@ class NodeStoreScanTest {
         for (long id = 0; id < total; id++) {
             StubStorageCursors.NodeData node = cursors.withNode(id);
             int[] labels = randomLabels();
-            node.labels(intsToLongs(labels));
+            node.labels(labels);
             Map<String, Value> properties = new HashMap<>();
             boolean passesPropertyFilter = false;
             if (random.nextBoolean()) {
@@ -155,7 +154,7 @@ class NodeStoreScanTest {
                 passesPropertyFilter |= propertySelection.test(ageKeyId);
             }
             node.properties(properties);
-            if (passesPropertyFilter && intersect(intsToLongs(labels), intsToLongs(labelFilter)).length > 0) {
+            if (passesPropertyFilter && intersect(labels, labelFilter).length > 0) {
                 expectedPropertyUpdatesNodes.add(id);
             }
             if (labels.length > 0) {
@@ -187,7 +186,7 @@ class NodeStoreScanTest {
         // then
         assertThat(LongSets.mutable.of(tokenConsumer.batches.stream()
                         .flatMap(Collection::stream)
-                        .mapToLong(TestTokenScanConsumer.Record::getEntityId)
+                        .mapToLong(TestTokenScanConsumer.Record::entityId)
                         .toArray()))
                 .isEqualTo(expectedTokenUpdatesNodes);
         assertThat(LongSets.mutable.of(propertyConsumer.batches.stream()

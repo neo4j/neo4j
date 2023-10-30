@@ -187,10 +187,10 @@ public interface ConsistencyReport {
         void labelNotInUse(LabelTokenRecord label);
 
         @Documented("The label token record is referenced twice from the same node.")
-        void labelDuplicate(long labelId);
+        void labelDuplicate(int labelId);
 
         @Documented("The label id array is not ordered")
-        void labelsOutOfOrder(long largest, long smallest);
+        void labelsOutOfOrder(int largest, int smallest);
 
         @Documented("The dynamic label record is not in use.")
         void dynamicLabelRecordNotInUse(DynamicRecord record);
@@ -512,9 +512,9 @@ public interface ConsistencyReport {
     interface NodeInUseWithCorrectLabelsReport extends ConsistencyReport {
         void nodeNotInUse(NodeRecord referredNodeRecord);
 
-        void nodeDoesNotHaveExpectedLabel(NodeRecord referredNodeRecord, long expectedLabelId);
+        void nodeDoesNotHaveExpectedLabel(NodeRecord referredNodeRecord, int expectedLabelId);
 
-        void nodeLabelNotInIndex(NodeRecord referredNodeRecord, long missingLabelId);
+        void nodeLabelNotInIndex(NodeRecord referredNodeRecord, int missingLabelId);
     }
 
     interface RelationshipInUseWithCorrectRelationshipTypeReport extends ConsistencyReport {
@@ -533,11 +533,11 @@ public interface ConsistencyReport {
 
         @Override
         @Documented("This label scan document refers to a node that does not have the expected label.")
-        void nodeDoesNotHaveExpectedLabel(NodeRecord referredNodeRecord, long expectedLabelId);
+        void nodeDoesNotHaveExpectedLabel(NodeRecord referredNodeRecord, int expectedLabelId);
 
         @Override
         @Documented("This node record has a label that is not found in the label scan store entry for this node")
-        void nodeLabelNotInIndex(NodeRecord referredNodeRecord, long missingLabelId);
+        void nodeLabelNotInIndex(NodeRecord referredNodeRecord, int missingLabelId);
 
         @Warning
         @Documented("Label index was not properly shutdown and rebuild is required.")
@@ -581,7 +581,7 @@ public interface ConsistencyReport {
 
         @Override
         @Documented("This index entry refers to a node that does not have the expected label.")
-        void nodeDoesNotHaveExpectedLabel(NodeRecord referredNodeRecord, long expectedLabelId);
+        void nodeDoesNotHaveExpectedLabel(NodeRecord referredNodeRecord, int expectedLabelId);
 
         @Override
         @Documented("This index entry refers to a relationship that does not have the expected relationship type.")
@@ -602,7 +602,7 @@ public interface ConsistencyReport {
 
         @Override
         @Documented("This node record has a label that is not found in the index for this node")
-        void nodeLabelNotInIndex(NodeRecord referredNodeRecord, long missingLabelId);
+        void nodeLabelNotInIndex(NodeRecord referredNodeRecord, int missingLabelId);
 
         @Warning
         @Documented("Index was not properly shutdown and rebuild is required.")

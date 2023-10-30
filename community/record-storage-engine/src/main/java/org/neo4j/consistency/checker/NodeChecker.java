@@ -19,7 +19,6 @@
  */
 package org.neo4j.consistency.checker;
 
-import static java.lang.Math.toIntExact;
 import static java.util.Arrays.sort;
 import static org.apache.commons.lang3.math.NumberUtils.max;
 import static org.apache.commons.lang3.math.NumberUtils.min;
@@ -32,12 +31,12 @@ import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
 
 import java.util.Iterator;
 import java.util.List;
-import java.util.function.LongConsumer;
+import java.util.function.IntConsumer;
 import org.apache.commons.lang3.ArrayUtils;
 import org.eclipse.collections.api.map.primitive.IntObjectMap;
 import org.eclipse.collections.api.set.primitive.IntSet;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
-import org.neo4j.collection.PrimitiveLongCollections;
+import org.neo4j.collection.PrimitiveArrays;
 import org.neo4j.consistency.checking.ConsistencyFlags;
 import org.neo4j.consistency.checking.cache.CacheAccess;
 import org.neo4j.consistency.checking.cache.CacheSlots;
@@ -184,9 +183,9 @@ class NodeChecker implements Checker {
                 usedNodes++;
 
                 // Labels
-                long[] unverifiedLabels = RecordLoading.safeGetNodeLabels(
+                int[] unverifiedLabels = RecordLoading.safeGetNodeLabels(
                         context, storeCursors, nodeRecord.getId(), nodeRecord.getLabelField(), labelReader);
-                long[] labels = checkNodeLabels(nodeRecord, unverifiedLabels, storeCursors);
+                int[] labels = checkNodeLabels(nodeRecord, unverifiedLabels, storeCursors);
                 // Cache the label field, so that if it contains inlined labels then it's free.
                 // Otherwise cache the dynamic labels in another data structure and point into it.
                 long labelField = nodeRecord.getLabelField();
@@ -250,7 +249,7 @@ class NodeChecker implements Checker {
         observedCounts.incrementNodeLabel(ANY_LABEL, usedNodes);
     }
 
-    private long[] checkNodeLabels(NodeRecord nodeRecord, long[] labels, StoreCursors storeCursors) {
+    private int[] checkNodeLabels(NodeRecord nodeRecord, int[] labels, StoreCursors storeCursors) {
         if (labels == null) {
             // Because there was something wrong with loading them
             return null;
@@ -260,29 +259,20 @@ class NodeChecker implements Checker {
         boolean valid = true;
         int prevLabel = -1;
         for (int i = 0; i < labels.length; i++) {
-            long longLabel = labels[i];
-            if (longLabel > Integer.MAX_VALUE) {
-                reporter.forNode(recordLoader.node(nodeRecord.getId(), storeCursors))
-                        .illegalLabel();
-                allGood = false;
-                valid = false;
-                break;
-            } else {
-                int label = toIntExact(longLabel);
-                checkValidToken(
-                        nodeRecord,
-                        label,
-                        tokenHolders.labelTokens(),
-                        neoStores.getLabelTokenStore(),
-                        (node, token) -> reporter.forNode(recordLoader.node(node.getId(), storeCursors))
-                                .illegalLabel(),
-                        (node, token) -> reporter.forNode(recordLoader.node(node.getId(), storeCursors))
-                                .labelNotInUse(token),
-                        storeCursors);
-                if (prevLabel != label) {
-                    observedCounts.incrementNodeLabel(label, 1);
-                    prevLabel = label;
-                }
+            int label = labels[i];
+            checkValidToken(
+                    nodeRecord,
+                    label,
+                    tokenHolders.labelTokens(),
+                    neoStores.getLabelTokenStore(),
+                    (node, token) -> reporter.forNode(recordLoader.node(node.getId(), storeCursors))
+                            .illegalLabel(),
+                    (node, token) -> reporter.forNode(recordLoader.node(node.getId(), storeCursors))
+                            .labelNotInUse(token),
+                    storeCursors);
+            if (prevLabel != label) {
+                observedCounts.incrementNodeLabel(label, 1);
+                prevLabel = label;
             }
 
             if (i > 0) {
@@ -309,7 +299,7 @@ class NodeChecker implements Checker {
             Iterator<EntityTokenRange> nodeLabelRangeIterator,
             EntityTokenIndexCheckState labelIndexState,
             long nodeId,
-            long[] labels,
+            int[] labels,
             long fromNodeId,
             StoreCursors storeCursors) {
         // Detect node-label combinations that exist in the label index, but not in the store
@@ -343,7 +333,7 @@ class NodeChecker implements Checker {
                             .nodeNotInUse(recordLoader.node(nodeIdMissingFromStore, storeCursors));
                 }
             }
-            long[] labelsInLabelIndex = labelIndexState.currentRange.tokens(nodeId);
+            int[] labelsInLabelIndex = labelIndexState.currentRange.tokens(nodeId);
             if (labels != null) {
                 validateLabelIds(
                         nodeRecord,
@@ -354,7 +344,7 @@ class NodeChecker implements Checker {
             }
             labelIndexState.lastCheckedEntityId = nodeId;
         } else if (labels != null) {
-            for (long label : labels) {
+            for (int label : labels) {
                 reporter.forNodeLabelScan(new TokenScanDocument(null))
                         .nodeLabelNotInIndex(recordLoader.node(nodeId, storeCursors), label);
             }
@@ -389,11 +379,11 @@ class NodeChecker implements Checker {
 
     private void validateLabelIds(
             NodeRecord node,
-            long[] labelsInStore,
-            long[] labelsInIndex,
+            int[] labelsInStore,
+            int[] labelsInIndex,
             EntityTokenRange entityTokenRange,
             StoreCursors storeCursors) {
-        compareTwoSortedLongArrays(
+        compareTwoSortedIntArrays(
                 PropertySchemaType.COMPLETE_ALL_TOKENS,
                 labelsInStore,
                 labelsInIndex,
@@ -403,19 +393,19 @@ class NodeChecker implements Checker {
                         .nodeLabelNotInIndex(recordLoader.node(node.getId(), storeCursors), storeLabel));
     }
 
-    static void compareTwoSortedLongArrays(
+    static void compareTwoSortedIntArrays(
             PropertySchemaType propertySchemaType,
-            long[] a,
-            long[] b,
-            LongConsumer bHasSomethingThatAIsMissingReport,
-            LongConsumer aHasSomethingThatBIsMissingReport) {
+            int[] a,
+            int[] b,
+            IntConsumer bHasSomethingThatAIsMissingReport,
+            IntConsumer aHasSomethingThatBIsMissingReport) {
         // The node must have all of the labels specified by the index.
         int bCursor = 0;
         int aCursor = 0;
         boolean anyFound = false;
         while (aCursor < a.length && bCursor < b.length && a[aCursor] != -1 && b[bCursor] != -1) {
-            long bValue = b[bCursor];
-            long aValue = a[aCursor];
+            int bValue = b[bCursor];
+            int aValue = a[aCursor];
 
             if (bValue < aValue) { // node store has a label which isn't in label scan store
                 if (propertySchemaType == PropertySchemaType.COMPLETE_ALL_TOKENS) {
@@ -456,7 +446,7 @@ class NodeChecker implements Checker {
         RelationshipCounter.NodeLabelsLookup nodeLabelsLookup = observedCounts.nodeLabelsLookup();
         SchemaDescriptor schema = descriptor.schema();
         PropertySchemaType propertySchemaType = schema.propertySchemaType();
-        long[] indexEntityTokenIds = toLongArray(schema.getEntityTokenIds());
+        int[] indexEntityTokenIds = schema.getEntityTokenIds();
         indexEntityTokenIds = sortAndDeduplicate(indexEntityTokenIds);
         try (var cursorContext = context.contextFactory.create(NODE_INDEXES_CHECKER_TAG);
                 var storeCursors = new CachedStoreCursors(context.neoStores, cursorContext);
@@ -469,8 +459,8 @@ class NodeChecker implements Checker {
                         reporter.forIndexEntry(new IndexEntry(descriptor, context.tokenNameLookup, entityId))
                                 .nodeNotInUse(recordLoader.node(entityId, storeCursors));
                     } else {
-                        long[] entityTokenIds = nodeLabelsLookup.nodeLabels(entityId);
-                        compareTwoSortedLongArrays(
+                        int[] entityTokenIds = nodeLabelsLookup.nodeLabels(entityId);
+                        compareTwoSortedIntArrays(
                                 propertySchemaType,
                                 entityTokenIds,
                                 indexEntityTokenIds,
@@ -491,14 +481,6 @@ class NodeChecker implements Checker {
         }
     }
 
-    private static long[] toLongArray(int[] intArray) {
-        long[] result = new long[intArray.length];
-        for (int i = 0; i < intArray.length; i++) {
-            result[i] = intArray[i];
-        }
-        return result;
-    }
-
     @Override
     public String toString() {
         CommonAbstractStore<NodeRecord, NoStoreHeader> nodeRecordNoStoreHeaderCommonAbstractStore =
@@ -510,10 +492,10 @@ class NodeChecker implements Checker {
                 smallIndexes.size());
     }
 
-    public static long[] sortAndDeduplicate(long[] labels) {
+    public static int[] sortAndDeduplicate(int[] labels) {
         if (ArrayUtils.isNotEmpty(labels)) {
             sort(labels);
-            return PrimitiveLongCollections.deduplicate(labels);
+            return PrimitiveArrays.deduplicate(labels);
         }
         return labels;
     }

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
@@ -134,7 +134,7 @@ class ReadEntityIdsStepUsingTokenIndexTest {
         try (IndexUpdater updater = indexAccessor.newUpdater(ONLINE, CursorContext.NULL_CONTEXT, false)) {
             long id = 0;
             for (int i = 0; i < count; i++) {
-                updater.process(IndexEntryUpdate.change(id, INDEX_DESCRIPTOR, EMPTY_LONG_ARRAY, new long[] {TOKEN_ID}));
+                updater.process(IndexEntryUpdate.change(id, INDEX_DESCRIPTOR, EMPTY_INT_ARRAY, new int[] {TOKEN_ID}));
                 entityIds.set((int) id);
                 id += random.nextInt(1, 5);
             }
@@ -164,7 +164,7 @@ class ReadEntityIdsStepUsingTokenIndexTest {
                     long candidateId = currentlyIndexedNodeId + i + 1;
                     if (!expectedEntityIds.get((int) candidateId)) {
                         updater.process(IndexEntryUpdate.change(
-                                candidateId, INDEX_DESCRIPTOR, EMPTY_LONG_ARRAY, new long[] {TOKEN_ID}));
+                                candidateId, INDEX_DESCRIPTOR, EMPTY_INT_ARRAY, new int[] {TOKEN_ID}));
                         expectedEntityIds.set((int) candidateId);
                     }
                 }
@@ -188,7 +188,7 @@ class ReadEntityIdsStepUsingTokenIndexTest {
         }
 
         @Override
-        protected void process(long[] entityIds, BatchSender sender, CursorContext cursorContext) throws Throwable {
+        protected void process(long[] entityIds, BatchSender sender, CursorContext cursorContext) {
             for (long entityId : entityIds) {
                 seenEntityIds.set((int) entityId);
             }

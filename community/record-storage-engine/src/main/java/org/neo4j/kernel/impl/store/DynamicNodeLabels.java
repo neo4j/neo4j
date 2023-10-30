@@ -51,15 +51,15 @@ public class DynamicNodeLabels implements NodeLabels {
     }
 
     @Override
-    public long[] get(NodeStore nodeStore, StoreCursors storeCursors) {
+    public int[] get(NodeStore nodeStore, StoreCursors storeCursors) {
         return get(node, nodeStore, storeCursors);
     }
 
-    public static long[] get(NodeRecord node, NodeStore nodeStore, StoreCursors storeCursors) {
+    public static int[] get(NodeRecord node, NodeStore nodeStore, StoreCursors storeCursors) {
         nodeStore.ensureHeavy(node, firstDynamicLabelRecordId(node.getLabelField()), storeCursors);
         var usedLabels = node.getUsedDynamicLabelRecords();
         if (usedLabels.isEmpty()) {
-            return ArrayUtils.EMPTY_LONG_ARRAY;
+            return ArrayUtils.EMPTY_INT_ARRAY;
         }
         return getDynamicLabelsArray(usedLabels, nodeStore.getDynamicLabelStore(), storeCursors);
     }
@@ -88,7 +88,7 @@ public class DynamicNodeLabels implements NodeLabels {
 
     @Override
     public Collection<DynamicRecord> put(
-            long[] labelIds,
+            int[] labelIds,
             NodeStore nodeStore,
             DynamicRecordAllocator allocator,
             CursorContext cursorContext,
@@ -100,7 +100,7 @@ public class DynamicNodeLabels implements NodeLabels {
 
     static Collection<DynamicRecord> putSorted(
             NodeRecord node,
-            long[] labelIds,
+            int[] labelIds,
             NodeStore nodeStore,
             DynamicRecordAllocator allocator,
             CursorContext cursorContext,
@@ -142,16 +142,16 @@ public class DynamicNodeLabels implements NodeLabels {
 
     @Override
     public Collection<DynamicRecord> add(
-            long labelId,
+            int labelId,
             NodeStore nodeStore,
             DynamicRecordAllocator allocator,
             CursorContext cursorContext,
             StoreCursors storeCursors,
             MemoryTracker memoryTracker) {
         nodeStore.ensureHeavy(node, firstDynamicLabelRecordId(node.getLabelField()), storeCursors);
-        long[] existingLabelIds = getDynamicLabelsArray(
+        int[] existingLabelIds = getDynamicLabelsArray(
                 node.getUsedDynamicLabelRecords(), nodeStore.getDynamicLabelStore(), storeCursors);
-        long[] newLabelIds = LabelIdArray.concatAndSort(existingLabelIds, labelId);
+        int[] newLabelIds = LabelIdArray.concatAndSort(existingLabelIds, labelId);
         Collection<DynamicRecord> existingRecords = node.getDynamicLabelRecords();
         List<DynamicRecord> changedDynamicRecords = allocateRecordsForDynamicLabels(
                 node.getId(),
@@ -165,16 +165,16 @@ public class DynamicNodeLabels implements NodeLabels {
 
     @Override
     public Collection<DynamicRecord> remove(
-            long labelId,
+            int labelId,
             NodeStore nodeStore,
             DynamicRecordAllocator allocator,
             CursorContext cursorContext,
             StoreCursors storeCursors,
             MemoryTracker memoryTracker) {
         nodeStore.ensureHeavy(node, firstDynamicLabelRecordId(node.getLabelField()), storeCursors);
-        long[] existingLabelIds = getDynamicLabelsArray(
+        int[] existingLabelIds = getDynamicLabelsArray(
                 node.getUsedDynamicLabelRecords(), nodeStore.getDynamicLabelStore(), storeCursors);
-        long[] newLabelIds = filter(existingLabelIds, labelId);
+        int[] newLabelIds = filter(existingLabelIds, labelId);
         List<DynamicRecord> existingRecords = node.getDynamicLabelRecords();
         if (InlineNodeLabels.tryInlineInNodeRecord(node, newLabelIds, existingRecords)) {
             setNotInUse(existingRecords);
@@ -229,7 +229,7 @@ public class DynamicNodeLabels implements NodeLabels {
 
     public static List<DynamicRecord> allocateRecordsForDynamicLabels(
             long nodeId,
-            long[] labels,
+            int[] labels,
             DynamicRecordAllocator allocator,
             CursorContext cursorContext,
             MemoryTracker memoryTracker) {
@@ -239,7 +239,7 @@ public class DynamicNodeLabels implements NodeLabels {
         return records;
     }
 
-    public static long[] getDynamicLabelsArray(
+    public static int[] getDynamicLabelsArray(
             Iterable<DynamicRecord> records, DynamicArrayStore dynamicLabelStore, StoreCursors storeCursors) {
         long[] storedLongs =
                 (long[]) dynamicLabelStore.getArrayFor(records, storeCursors).asObject();
@@ -253,7 +253,7 @@ public class DynamicNodeLabels implements NodeLabels {
         return storedLongs[0];
     }
 
-    private static long[] parseHeavyRecords(Iterable<DynamicRecord> records) {
+    private static int[] parseHeavyRecords(Iterable<DynamicRecord> records) {
         var heavyRecordData = readFullByteArrayFromHeavyRecords(records, ARRAY);
         long[] storedLongs =
                 (long[]) DynamicArrayStore.getNumbersArray(heavyRecordData.header(), heavyRecordData.data())

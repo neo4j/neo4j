@@ -37,10 +37,10 @@ public interface IndexImporter extends Closeable {
 
     class EmptyIndexImporter implements IndexImporter, Writer {
         @Override
-        public void add(long entity, long[] tokens) {}
+        public void add(long entity, int[] tokens) {}
 
         @Override
-        public void remove(long entity, long[] tokens) {}
+        public void remove(long entity, int[] tokens) {}
 
         @Override
         public void close() throws IOException {}
@@ -57,7 +57,7 @@ public interface IndexImporter extends Closeable {
          * @param entity the id of the entity (node id/relationship id)
          * @param tokens the tokens associated with the entity (labels/relationship types)
          */
-        void add(long entity, long[] tokens);
+        void add(long entity, int[] tokens);
 
         /**
          * Called by the batch importer for entity that is removed, typically after observing
@@ -65,6 +65,6 @@ public interface IndexImporter extends Closeable {
          * @param entity the id of the entity (node id/relationship id)
          * @param tokens the tokens associated with the entity (labels/relationship types)
          */
-        void remove(long entity, long[] tokens);
+        void remove(long entity, int[] tokens);
     }
 }

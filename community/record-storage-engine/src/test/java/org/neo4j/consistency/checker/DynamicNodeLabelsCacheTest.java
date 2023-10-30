@@ -38,24 +38,24 @@ class DynamicNodeLabelsCacheTest {
         // given
         DynamicNodeLabelsCache cache = new DynamicNodeLabelsCache(INSTANCE);
         long[] indexes = new long[1_000];
-        long[][] expectedLabels = new long[indexes.length][];
+        int[][] expectedLabels = new int[indexes.length][];
 
         // when
         for (int i = 0; i < indexes.length; i++) {
-            long[] labels = expectedLabels[i] = randomSortedLabels();
+            int[] labels = expectedLabels[i] = randomSortedLabels();
             indexes[i] = cache.put(labels);
         }
 
         // then
         for (int i = 0; i < indexes.length; i++) {
-            long[] expected = expectedLabels[i];
-            long[] actual = cache.get(indexes[i], new long[expected.length]);
+            int[] expected = expectedLabels[i];
+            int[] actual = cache.get(indexes[i], new int[expected.length]);
             assertArrayEquals(expected, actual);
         }
     }
 
-    private long[] randomSortedLabels() {
-        long[] labels = new long[random.nextInt(1, 10)];
+    private int[] randomSortedLabels() {
+        int[] labels = new int[random.nextInt(1, 10)];
         int strider = 0;
         for (int ii = 0; ii < labels.length; ii++) {
             strider += random.nextInt(1, 100);

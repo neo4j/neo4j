@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import static java.lang.Long.max;
-import static org.neo4j.collection.PrimitiveLongCollections.asArray;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.internal.helpers.collection.Iterables.reverse;
 
@@ -120,16 +120,19 @@ class NativeAllEntriesTokenScanReaderTest {
         Iterator<EntityTokenRange> iterator = reader.iterator();
         long highestRangeId = highestRangeId(data);
         for (long rangeId = 0; rangeId <= highestRangeId; rangeId++) {
-            SortedMap<Long /*nodeId*/, List<Long> /*labelIds*/> expected = rangeOf(data, rangeId, idLayout);
+            SortedMap<Long /*nodeId*/, List<Integer> /*labelIds*/> expected = rangeOf(data, rangeId, idLayout);
             if (expected != null) {
                 Assertions.assertTrue(iterator.hasNext(), "Was expecting range " + expected);
                 EntityTokenRange range = iterator.next();
 
                 Assertions.assertEquals(rangeId, range.id());
-                for (Map.Entry<Long, List<Long>> expectedEntry : expected.entrySet()) {
-                    long[] labels = range.tokens(expectedEntry.getKey());
-                    Assertions.assertArrayEquals(
-                            asArray(expectedEntry.getValue().iterator()), labels);
+                for (Map.Entry<Long, List<Integer>> expectedEntry : expected.entrySet()) {
+                    int[] labels = range.tokens(expectedEntry.getKey());
+                    assertArrayEquals(
+                            expectedEntry.getValue().stream()
+                                    .mapToInt(Integer::intValue)
+                                    .toArray(),
+                            labels);
                 }
             }
             // else there was nothing in this range
@@ -137,9 +140,9 @@ class NativeAllEntriesTokenScanReaderTest {
         Assertions.assertFalse(iterator.hasNext());
     }
 
-    private static SortedMap<Long, List<Long>> rangeOf(
+    private static SortedMap<Long, List<Integer>> rangeOf(
             Labels[] data, long rangeId, DefaultTokenIndexIdLayout idLayout) {
-        SortedMap<Long, List<Long>> result = new TreeMap<>();
+        SortedMap<Long, List<Integer>> result = new TreeMap<>();
         for (Labels label : data) {
             for (Pair<TokenScanKey, TokenScanValue> entry : label.entries) {
                 if (entry.first().idRange == rangeId) {
@@ -147,7 +150,7 @@ class NativeAllEntriesTokenScanReaderTest {
                     long bits = entry.other().bits;
                     while (bits != 0) {
                         long nodeId = baseNodeId + Long.numberOfTrailingZeros(bits);
-                        result.computeIfAbsent(nodeId, id -> new ArrayList<>()).add((long) label.labelId);
+                        result.computeIfAbsent(nodeId, id -> new ArrayList<>()).add(label.labelId);
                         bits &= bits - 1;
                     }
                 }

@@ -20,12 +20,11 @@
 package org.neo4j.kernel.impl.newapi;
 
 import static java.lang.String.format;
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
 import static org.apache.commons.lang3.ArrayUtils.contains;
 import static org.apache.commons.lang3.ArrayUtils.indexOf;
 import static org.apache.commons.lang3.ArrayUtils.remove;
 import static org.neo4j.collection.PrimitiveArrays.intersect;
-import static org.neo4j.collection.PrimitiveArrays.intsToLongs;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.additional_lock_verification;
@@ -59,11 +58,9 @@ import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.api.set.primitive.IntSet;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.api.tuple.primitive.IntObjectPair;
 import org.eclipse.collections.impl.factory.primitive.IntObjectMaps;
 import org.eclipse.collections.impl.factory.primitive.IntSets;
-import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
@@ -252,13 +249,7 @@ public class Operations implements Write, SchemaWrite {
         // And we don't need to take the exclusive lock on the node, because it was created in this transaction and
         // isn't visible to anyone else yet.
         ktx.assertOpen();
-        int labelCount = labels.length;
-        long[] lockingIds = new long[labelCount];
-        for (int i = 0; i < labelCount; i++) {
-            lockingIds[i] = labels[i];
-        }
-        Arrays.sort(lockingIds); // Sort to ensure labels are locked and assigned in order.
-        ktx.lockClient().acquireShared(ktx.lockTracer(), ResourceType.LABEL, lockingIds);
+        long[] lockingIds = acquireSharedLabelLocks(labels);
         sharedTokenSchemaLock(ResourceType.LABEL);
 
         TransactionState txState = ktx.txState();
@@ -278,6 +269,17 @@ public class Operations implements Write, SchemaWrite {
             }
         }
         return nodeId;
+    }
+
+    private long[] acquireSharedLabelLocks(int[] labels) {
+        int labelCount = labels.length;
+        long[] lockingIds = new long[labelCount];
+        for (int i = 0; i < labelCount; i++) {
+            lockingIds[i] = labels[i];
+        }
+        Arrays.sort(lockingIds); // Sort to ensure labels are locked and assigned in order.
+        ktx.lockClient().acquireShared(ktx.lockTracer(), ResourceType.LABEL, lockingIds);
+        return lockingIds;
     }
 
     @Override
@@ -443,7 +445,7 @@ public class Operations implements Write, SchemaWrite {
             // with the same label and property combination.
             if (existingPropertyKeyIds.length > 0) {
                 Collection<IndexDescriptor> indexes =
-                        storageReader.valueIndexesGetRelated(new long[] {nodeLabel}, existingPropertyKeyIds, NODE);
+                        storageReader.valueIndexesGetRelated(new int[] {nodeLabel}, existingPropertyKeyIds, NODE);
                 for (IndexDescriptor index : indexes) {
                     if (index.isUnique()) {
                         PropertyIndexQuery.ExactPredicate[] propertyValues = getAllPropertyValues(
@@ -548,9 +550,9 @@ public class Operations implements Write, SchemaWrite {
     /**
      * Assuming that the nodeCursor has been initialized to the node that labels are retrieved from
      */
-    private long[] acquireSharedNodeLabelLocks() {
-        long[] labels = nodeCursor.labels().all();
-        ktx.lockClient().acquireShared(ktx.lockTracer(), ResourceType.LABEL, labels);
+    private int[] acquireSharedNodeLabelLocks() {
+        int[] labels = nodeCursor.labels().all();
+        acquireSharedLabelLocks(labels);
         return labels;
     }
 
@@ -699,7 +701,7 @@ public class Operations implements Write, SchemaWrite {
             throws IndexNotFoundKernelException, IndexBrokenKernelException, UnableToValidateConstraintException {
         assertIndexOnline(index);
         SchemaDescriptor schema = index.schema();
-        long[] entityTokenIds = schema.lockingKeys();
+        int[] entityTokenIds = schema.getEntityTokenIds();
         if (entityTokenIds.length != 1) {
             throw new UnableToValidateConstraintException(
                     constraint,
@@ -787,7 +789,7 @@ public class Operations implements Write, SchemaWrite {
                     nodeCursor,
                     propertyCursor,
                     REMOVED_LABEL,
-                    storageReader.valueIndexesGetRelated(new long[] {labelId}, existingPropertyKeyIds, NODE));
+                    storageReader.valueIndexesGetRelated(new int[] {labelId}, existingPropertyKeyIds, NODE));
         }
         return true;
     }
@@ -800,7 +802,7 @@ public class Operations implements Write, SchemaWrite {
         ktx.assertOpen();
 
         singleNode(node);
-        long[] labels = acquireSharedNodeLabelLocks();
+        int[] labels = acquireSharedNodeLabelLocks();
         Value existingValue = readNodeProperty(propertyKey);
         int[] existingPropertyKeyIds = null;
         boolean hasRelatedSchema = storageReader.hasRelatedSchema(labels, propertyKey, NODE);
@@ -846,8 +848,7 @@ public class Operations implements Write, SchemaWrite {
         // change and could
         //      benefit from being done more bulky on the whole change instead.
 
-        assert intersect(intsToLongs(addedLabels.toSortedArray()), intsToLongs(removedLabels.toSortedArray())).length
-                == 0;
+        assert intersect(addedLabels.toSortedArray(), removedLabels.toSortedArray()).length == 0;
 
         ktx.assertOpen();
 
@@ -865,7 +866,7 @@ public class Operations implements Write, SchemaWrite {
         }
         acquireExclusiveNodeLock(node);
         singleNode(node);
-        long[] existingLabels = acquireSharedNodeLabelLocks();
+        int[] existingLabels = acquireSharedNodeLabelLocks();
 
         // read all affected property values in one go, to speed up changes below
         MutableIntObjectMap<Value> existingValuesForChangedProperties = null;
@@ -880,7 +881,7 @@ public class Operations implements Write, SchemaWrite {
         }
 
         // create a view of labels/properties as it will look after the changes would have been applied
-        long[] labelsAfter = combineLabelIds(existingLabels, addedLabels, removedLabels);
+        int[] labelsAfter = combineLabelIds(existingLabels, addedLabels, removedLabels);
         int[] existingPropertyKeyIds = loadSortedNodePropertyKeyList();
         MutableIntSet afterPropertyKeyIdsSet = IntSets.mutable.of(existingPropertyKeyIds);
         RichIterable<IntObjectPair<Value>> propertiesKeyValueView = properties.keyValuesView();
@@ -919,7 +920,7 @@ public class Operations implements Write, SchemaWrite {
         int[] uniquenessPropertiesCheck = addedLabels.isEmpty() ? changedPropertyKeyIds : afterPropertyKeyIds;
         Collection<IndexBackedConstraintDescriptor> uniquenessConstraints =
                 storageReader.uniquenessConstraintsGetRelated(
-                        combineLabelIds(EMPTY_LONG_ARRAY, addedLabels, IntSets.immutable.empty()),
+                        combineLabelIds(EMPTY_INT_ARRAY, addedLabels, IntSets.immutable.empty()),
                         labelsAfter,
                         uniquenessPropertiesCheck,
                         false,
@@ -952,14 +953,14 @@ public class Operations implements Write, SchemaWrite {
                                 propertyCursor,
                                 REMOVED_LABEL,
                                 storageReader.valueIndexesGetRelated(
-                                        new long[] {removedLabelId}, existingPropertyKeyIds, NODE));
+                                        new int[] {removedLabelId}, existingPropertyKeyIds, NODE));
                     }
                 }
             }
         }
         // remove properties
         if (removedPropertyKeyIdsSet != null) {
-            long[] existingLabelsMinusRemovedArray = removedLabels.isEmpty()
+            int[] existingLabelsMinusRemovedArray = removedLabels.isEmpty()
                     ? existingLabels
                     : combineLabelIds(existingLabels, IntSets.immutable.empty(), removedLabels);
             TokenSet existingLabelsMinusRemoved = Labels.from(existingLabelsMinusRemovedArray);
@@ -1004,7 +1005,7 @@ public class Operations implements Write, SchemaWrite {
                                 propertyCursor,
                                 ADDED_LABEL,
                                 storageReader.valueIndexesGetRelated(
-                                        new long[] {addedLabelId}, existingPropertyKeyIds, NODE));
+                                        new int[] {addedLabelId}, existingPropertyKeyIds, NODE));
                     }
                 }
             }
@@ -1115,7 +1116,7 @@ public class Operations implements Write, SchemaWrite {
 
             Collection<IndexBackedConstraintDescriptor> uniquenessConstraints =
                     storageReader.uniquenessConstraintsGetRelated(
-                            new long[] {type}, changedPropertyKeyIds, RELATIONSHIP);
+                            new int[] {type}, changedPropertyKeyIds, RELATIONSHIP);
             SchemaMatcher.onMatchingSchema(
                     uniquenessConstraints.iterator(),
                     TokenConstants.ANY_PROPERTY_KEY,
@@ -1149,7 +1150,7 @@ public class Operations implements Write, SchemaWrite {
                                     relationshipCursor.targetNodeReference(),
                                     key);
                     existingPropertyKeyIds = remove(existingPropertyKeyIds, existingPropertyKeyIdIndex);
-                    if (storageReader.hasRelatedSchema(new long[] {type}, key, RELATIONSHIP)) {
+                    if (storageReader.hasRelatedSchema(new int[] {type}, key, RELATIONSHIP)) {
                         updater.onPropertyRemove(
                                 relationshipCursor, propertyCursor, type, key, existingPropertyKeyIds, existingValue);
                     }
@@ -1176,7 +1177,7 @@ public class Operations implements Write, SchemaWrite {
                                     key,
                                     NO_VALUE,
                                     value);
-                    boolean hasRelatedSchema = storageReader.hasRelatedSchema(new long[] {type}, key, RELATIONSHIP);
+                    boolean hasRelatedSchema = storageReader.hasRelatedSchema(new int[] {type}, key, RELATIONSHIP);
                     if (hasRelatedSchema) {
                         updater.onPropertyAdd(
                                 relationshipCursor,
@@ -1200,7 +1201,7 @@ public class Operations implements Write, SchemaWrite {
                                     key,
                                     existingValue,
                                     value);
-                    boolean hasRelatedSchema = storageReader.hasRelatedSchema(new long[] {type}, key, RELATIONSHIP);
+                    boolean hasRelatedSchema = storageReader.hasRelatedSchema(new int[] {type}, key, RELATIONSHIP);
                     if (hasRelatedSchema) {
                         updater.onPropertyChange(
                                 relationshipCursor,
@@ -1217,21 +1218,21 @@ public class Operations implements Write, SchemaWrite {
         }
     }
 
-    private static long[] combineLabelIds(long[] existingLabels, IntSet addedLabels, IntSet removedLabels) {
+    private static int[] combineLabelIds(int[] existingLabels, IntSet addedLabels, IntSet removedLabels) {
         if (addedLabels.isEmpty() && removedLabels.isEmpty()) {
             return existingLabels;
         }
 
-        MutableLongSet result = LongSets.mutable.of(existingLabels);
+        MutableIntSet result = IntSets.mutable.of(existingLabels);
         addedLabels.forEach(result::add);
         removedLabels.forEach(result::remove);
         return result.toSortedArray();
     }
 
-    private String resolvePropertyKey(long propertyKey) {
+    private String resolvePropertyKey(int propertyKey) {
         String propKeyName;
         try {
-            propKeyName = token.propertyKeyName((int) propertyKey);
+            propKeyName = token.propertyKeyName(propertyKey);
         } catch (PropertyKeyIdNotFoundKernelException e) {
             propKeyName = "<unknown>";
         }
@@ -1239,7 +1240,7 @@ public class Operations implements Write, SchemaWrite {
     }
 
     private void checkUniquenessConstraints(
-            long node, int propertyKey, Value value, long[] labels, int[] existingPropertyKeyIds)
+            long node, int propertyKey, Value value, int[] labels, int[] existingPropertyKeyIds)
             throws ConstraintValidationException {
         Collection<IndexBackedConstraintDescriptor> uniquenessConstraints =
                 storageReader.uniquenessConstraintsGetRelated(labels, propertyKey, NODE);
@@ -1258,7 +1259,7 @@ public class Operations implements Write, SchemaWrite {
             long rel, int propertyKey, Value value, int type, int[] existingPropertyKeyIds)
             throws ConstraintValidationException {
         Collection<IndexBackedConstraintDescriptor> uniquenessConstraints =
-                storageReader.uniquenessConstraintsGetRelated(new long[] {type}, propertyKey, RELATIONSHIP);
+                storageReader.uniquenessConstraintsGetRelated(new int[] {type}, propertyKey, RELATIONSHIP);
         SchemaMatcher.onMatchingSchema(
                 uniquenessConstraints.iterator(),
                 propertyKey,
@@ -1278,7 +1279,7 @@ public class Operations implements Write, SchemaWrite {
         Value existingValue = readNodeProperty(propertyKey);
 
         if (existingValue != NO_VALUE) {
-            long[] labels = acquireSharedNodeLabelLocks();
+            int[] labels = acquireSharedNodeLabelLocks();
             ktx.securityAuthorizationHandler()
                     .assertAllowsSetProperty(
                             ktx.securityContext(), this::resolvePropertyKey, Labels.from(labels), propertyKey);
@@ -1306,7 +1307,7 @@ public class Operations implements Write, SchemaWrite {
         int type = acquireSharedRelationshipTypeLock();
         Value existingValue = readRelationshipProperty(propertyKey);
         int[] existingPropertyKeyIds = null;
-        boolean hasRelatedSchema = storageReader.hasRelatedSchema(new long[] {type}, propertyKey, RELATIONSHIP);
+        boolean hasRelatedSchema = storageReader.hasRelatedSchema(new int[] {type}, propertyKey, RELATIONSHIP);
         if (hasRelatedSchema) {
             existingPropertyKeyIds = loadSortedRelationshipPropertyKeyList();
         }
@@ -1381,7 +1382,7 @@ public class Operations implements Write, SchemaWrite {
                             relationshipCursor.sourceNodeReference(),
                             relationshipCursor.targetNodeReference(),
                             propertyKey);
-            if (storageReader.hasRelatedSchema(new long[] {type}, propertyKey, RELATIONSHIP)) {
+            if (storageReader.hasRelatedSchema(new int[] {type}, propertyKey, RELATIONSHIP)) {
                 updater.onPropertyRemove(
                         relationshipCursor,
                         propertyCursor,
@@ -2149,13 +2150,11 @@ public class Operations implements Write, SchemaWrite {
     }
 
     private void exclusiveSchemaLock(SchemaDescriptor schema) {
-        long[] lockingIds = schema.lockingKeys();
-        ktx.lockClient().acquireExclusive(ktx.lockTracer(), schema.keyType(), lockingIds);
+        ktx.lockClient().acquireExclusive(ktx.lockTracer(), schema.keyType(), schema.lockingKeys());
     }
 
     private void exclusiveSchemaUnlock(SchemaDescriptor schema) {
-        long[] lockingIds = schema.lockingKeys();
-        ktx.lockClient().releaseExclusive(schema.keyType(), lockingIds);
+        ktx.lockClient().releaseExclusive(schema.keyType(), schema.lockingKeys());
     }
 
     private void exclusiveSchemaNameLock(String schemaName) {

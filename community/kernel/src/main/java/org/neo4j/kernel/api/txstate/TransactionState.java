@@ -66,9 +66,9 @@ public interface TransactionState extends ReadableTransactionState {
 
     void relationshipDoRemoveProperty(long relationshipId, int type, long startNode, long endNode, int propertyKeyId);
 
-    void nodeDoAddLabel(long labelId, long nodeId);
+    void nodeDoAddLabel(int labelId, long nodeId);
 
-    void nodeDoRemoveLabel(long labelId, long nodeId);
+    void nodeDoRemoveLabel(int labelId, long nodeId);
 
     // TOKEN RELATED
 

@@ -20,26 +20,31 @@
 package org.neo4j.kernel.impl.newapi;
 
 import java.util.Arrays;
+import org.apache.commons.lang3.mutable.MutableInt;
+import org.eclipse.collections.api.set.primitive.IntSet;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.neo4j.internal.kernel.api.TokenSet;
 
 public class Labels implements TokenSet {
-    /**
-     * This really only needs to be {@code int[]}, but the underlying implementation uses {@code long[]} for some
-     * reason.
-     */
-    private final long[] labelIds;
+    private final int[] labelIds;
 
-    private Labels(long[] labelIds) {
+    private Labels(int[] labelIds) {
         this.labelIds = labelIds;
     }
 
-    public static Labels from(long... labels) {
+    public static Labels from(int... labels) {
         return new Labels(labels);
     }
 
-    static Labels from(LongSet set) {
+    static Labels from(IntSet set) {
         return new Labels(set.toArray());
+    }
+
+    static Labels from(LongSet set) {
+        final int[] labelIds = new int[set.size()];
+        MutableInt index = new MutableInt();
+        set.each(element -> labelIds[index.getAndIncrement()] = (int) element);
+        return new Labels(labelIds);
     }
 
     @Override
@@ -49,7 +54,7 @@ public class Labels implements TokenSet {
 
     @Override
     public int token(int offset) {
-        return (int) labelIds[offset];
+        return labelIds[offset];
     }
 
     @Override
@@ -57,8 +62,7 @@ public class Labels implements TokenSet {
         // It may look tempting to use binary search
         // however doing a linear search is actually faster for reasonable
         // label sizes (≤100 labels)
-        for (long label : labelIds) {
-            assert (int) label == label : "value too big to be represented as and int";
+        for (int label : labelIds) {
             if (label == token) {
                 return true;
             }
@@ -72,7 +76,7 @@ public class Labels implements TokenSet {
     }
 
     @Override
-    public long[] all() {
+    public int[] all() {
         return labelIds;
     }
 }

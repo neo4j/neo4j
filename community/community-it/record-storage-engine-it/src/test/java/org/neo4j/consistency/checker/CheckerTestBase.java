@@ -427,7 +427,7 @@ class CheckerTestBase {
         return propertyBlock;
     }
 
-    long[] nodeLabels(NodeRecord node) {
+    int[] nodeLabels(NodeRecord node) {
         return NodeLabelsField.get(node, neoStores.getNodeStore(), storeCursors);
     }
 
@@ -439,10 +439,9 @@ class CheckerTestBase {
 
     long node(long id, long nextProp, long nextRel, int... labels) {
         NodeRecord node = new NodeRecord(id).initialize(true, nextProp, false, NULL, 0);
-        long[] labelIds = toLongs(labels);
         InlineNodeLabels.putSorted(
                 node,
-                labelIds,
+                labels,
                 nodeStore,
                 null /*<-- intentionally prevent dynamic labels here*/,
                 CursorContext.NULL_CONTEXT,
@@ -527,14 +526,6 @@ class CheckerTestBase {
         client.putToCacheSingle(id, CacheSlots.NodeLink.SLOT_IN_USE, 1);
         client.putToCacheSingle(id, CacheSlots.NodeLink.SLOT_RELATIONSHIP_ID, nextRel);
         return node;
-    }
-
-    static long[] toLongs(int[] ints) {
-        long[] longs = new long[ints.length];
-        for (int i = 0; i < ints.length; i++) {
-            longs[i] = ints[i];
-        }
-        return longs;
     }
 
     protected void property(long id, long prev, long next, PropertyBlock... properties) {

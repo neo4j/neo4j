@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.internal.event;
 
-import static java.lang.Math.toIntExact;
 import static org.neo4j.collection.trackable.HeapTrackingCollections.newArrayList;
 import static org.neo4j.collection.trackable.HeapTrackingCollections.newLongObjectMap;
 import static org.neo4j.storageengine.api.PropertySelection.ALL_PROPERTIES;
@@ -317,7 +316,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
                     }
                 }
 
-                for (long labelId : node.labels()) {
+                for (int labelId : node.labels()) {
                     try {
                         removedLabels.add(createLabelView(memoryTracker, tokenRead, nodeId, labelId));
                     } catch (LabelNotFoundKernelException e) {
@@ -336,7 +335,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
     private void addLabelEntriesTo(long nodeId, LongSet labelIds, HeapTrackingArrayList<LabelEntry> target) {
         labelIds.each(labelId -> {
             try {
-                target.add(createLabelView(memoryTracker, transaction.tokenRead(), nodeId, labelId));
+                target.add(createLabelView(memoryTracker, transaction.tokenRead(), nodeId, (int) labelId));
             } catch (LabelNotFoundKernelException e) {
                 throw new IllegalStateException("Not existing label was modified for node " + nodeId, e);
             }
@@ -372,10 +371,10 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
         return entryView;
     }
 
-    private LabelEntryView createLabelView(MemoryTracker memoryTracker, TokenRead tokenRead, long nodeId, long labelId)
+    private LabelEntryView createLabelView(MemoryTracker memoryTracker, TokenRead tokenRead, long nodeId, int labelId)
             throws LabelNotFoundKernelException {
         memoryTracker.allocateHeap(LabelEntryView.SHALLOW_SIZE);
-        return new LabelEntryView(internalTransaction, nodeId, tokenRead.nodeLabelName(toIntExact(labelId)));
+        return new LabelEntryView(internalTransaction, nodeId, tokenRead.nodeLabelName(labelId));
     }
 
     private Relationship relationship(long relId) {

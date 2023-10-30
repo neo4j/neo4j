@@ -115,7 +115,7 @@ public class IndexTxStateUpdater {
     void onPropertyAdd(
             NodeCursor node,
             PropertyCursor propertyCursor,
-            long[] labels,
+            int[] labels,
             int propertyKeyId,
             int[] existingPropertyKeyIds,
             Value value) {
@@ -125,7 +125,7 @@ public class IndexTxStateUpdater {
     void onPropertyRemove(
             NodeCursor node,
             PropertyCursor propertyCursor,
-            long[] labels,
+            int[] labels,
             int propertyKeyId,
             int[] existingPropertyKeyIds,
             Value value) {
@@ -135,7 +135,7 @@ public class IndexTxStateUpdater {
     void onPropertyChange(
             NodeCursor node,
             PropertyCursor propertyCursor,
-            long[] labels,
+            int[] labels,
             int propertyKeyId,
             int[] existingPropertyKeyIds,
             Value beforeValue,
@@ -155,7 +155,7 @@ public class IndexTxStateUpdater {
                 relationship,
                 RELATIONSHIP,
                 propertyCursor,
-                new long[] {type},
+                new int[] {type},
                 propertyKeyId,
                 existingPropertyKeyIds,
                 value);
@@ -172,7 +172,7 @@ public class IndexTxStateUpdater {
                 relationship,
                 RELATIONSHIP,
                 propertyCursor,
-                new long[] {type},
+                new int[] {type},
                 propertyKeyId,
                 existingPropertyKeyIds,
                 value);
@@ -190,7 +190,7 @@ public class IndexTxStateUpdater {
                 relationship,
                 RELATIONSHIP,
                 propertyCursor,
-                new long[] {type},
+                new int[] {type},
                 propertyKeyId,
                 existingPropertyKeyIds,
                 beforeValue,
@@ -202,7 +202,7 @@ public class IndexTxStateUpdater {
     }
 
     void onDeleteUncreated(RelationshipScanCursor relationship, PropertyCursor propertyCursor) {
-        onDeleteUncreated(relationship, RELATIONSHIP, propertyCursor, new long[] {relationship.type()});
+        onDeleteUncreated(relationship, RELATIONSHIP, propertyCursor, new int[] {relationship.type()});
     }
 
     private boolean noSchemaChangedInTx() {
@@ -220,7 +220,7 @@ public class IndexTxStateUpdater {
      * @param tokens the entity tokens this entity has.
      */
     private void onDeleteUncreated(
-            EntityCursor entity, EntityType entityType, PropertyCursor propertyCursor, long[] tokens) {
+            EntityCursor entity, EntityType entityType, PropertyCursor propertyCursor, int[] tokens) {
         assert noSchemaChangedInTx();
         entity.properties(propertyCursor, PropertySelection.ALL_PROPERTY_KEYS);
         MutableIntList propertyKeyList = IntLists.mutable.empty();
@@ -254,7 +254,7 @@ public class IndexTxStateUpdater {
             EntityCursor entity,
             EntityType entityType,
             PropertyCursor propertyCursor,
-            long[] tokens,
+            int[] tokens,
             int propertyKeyId,
             int[] existingPropertyKeyIds,
             Value value) {
@@ -285,7 +285,7 @@ public class IndexTxStateUpdater {
             EntityCursor entity,
             EntityType entityType,
             PropertyCursor propertyCursor,
-            long[] tokens,
+            int[] tokens,
             int propertyKeyId,
             int[] existingPropertyKeyIds,
             Value value) {
@@ -315,7 +315,7 @@ public class IndexTxStateUpdater {
             EntityCursor entity,
             EntityType entityType,
             PropertyCursor propertyCursor,
-            long[] tokens,
+            int[] tokens,
             int propertyKeyId,
             int[] existingPropertyKeyIds,
             Value beforeValue,

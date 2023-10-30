@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.newapi;
 
 import static java.util.Collections.singletonList;
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -294,7 +294,7 @@ public class PlainOperationsTest extends OperationsTest {
         int propertyKeyId = 8;
         when(nodeCursor.next()).thenReturn(true);
         TokenSet tokenSet = mock(TokenSet.class);
-        when(tokenSet.all()).thenReturn(new long[] {relatedLabelId});
+        when(tokenSet.all()).thenReturn(new int[] {relatedLabelId});
         when(nodeCursor.labels()).thenReturn(tokenSet);
         Value value = Values.of(9);
         when(propertyCursor.next()).thenReturn(true);
@@ -754,7 +754,7 @@ public class PlainOperationsTest extends OperationsTest {
         when(transaction.ambientNodeCursor()).thenReturn(new StubNodeCursor(false).withNode(nodeId));
         when(nodeCursor.next()).thenReturn(true);
         TokenSet labels = mock(TokenSet.class);
-        when(labels.all()).thenReturn(EMPTY_LONG_ARRAY);
+        when(labels.all()).thenReturn(EMPTY_INT_ARRAY);
         when(nodeCursor.labels()).thenReturn(labels);
 
         operations.nodeDetachDelete(nodeId);
@@ -770,7 +770,7 @@ public class PlainOperationsTest extends OperationsTest {
         returnRelationships(transaction, new TestRelationshipChain(nodeId).outgoing(1, 2L, 42));
         when(transaction.ambientNodeCursor()).thenReturn(new StubNodeCursor(false).withNode(nodeId));
         TokenSet labels = mock(TokenSet.class);
-        when(labels.all()).thenReturn(EMPTY_LONG_ARRAY);
+        when(labels.all()).thenReturn(EMPTY_INT_ARRAY);
         when(nodeCursor.labels()).thenReturn(labels);
         when(nodeCursor.next()).thenReturn(true);
 
@@ -786,11 +786,11 @@ public class PlainOperationsTest extends OperationsTest {
     void shouldAcquiredSharedLabelLocksWhenDeletingNode() {
         // given
         long nodeId = 1L;
-        long labelId1 = 1;
-        long labelId2 = 2;
+        int labelId1 = 1;
+        int labelId2 = 2;
         when(nodeCursor.next()).thenReturn(true);
         TokenSet labels = mock(TokenSet.class);
-        when(labels.all()).thenReturn(new long[] {labelId1, labelId2});
+        when(labels.all()).thenReturn(new int[] {labelId1, labelId2});
         when(nodeCursor.labels()).thenReturn(labels);
 
         // when
@@ -808,14 +808,14 @@ public class PlainOperationsTest extends OperationsTest {
     void shouldAcquiredSharedLabelLocksWhenDetachDeletingNode() {
         // given
         long nodeId = 1L;
-        long labelId1 = 1;
-        long labelId2 = 2;
+        int labelId1 = 1;
+        int labelId2 = 2;
 
         returnRelationships(transaction, new TestRelationshipChain(nodeId));
         when(transaction.ambientNodeCursor()).thenReturn(new StubNodeCursor(false).withNode(nodeId));
         when(nodeCursor.next()).thenReturn(true);
         TokenSet labels = mock(TokenSet.class);
-        when(labels.all()).thenReturn(new long[] {labelId1, labelId2});
+        when(labels.all()).thenReturn(new int[] {labelId1, labelId2});
         when(nodeCursor.labels()).thenReturn(labels);
 
         // when
@@ -852,12 +852,12 @@ public class PlainOperationsTest extends OperationsTest {
     void shouldAcquiredSharedLabelLocksWhenRemovingNodeProperty() throws EntityNotFoundException {
         // given
         long nodeId = 1L;
-        long labelId1 = 1;
-        long labelId2 = 1;
+        int labelId1 = 1;
+        int labelId2 = 1;
         int propertyKeyId = 5;
         when(nodeCursor.next()).thenReturn(true);
         TokenSet labels = mock(TokenSet.class);
-        when(labels.all()).thenReturn(new long[] {labelId1, labelId2});
+        when(labels.all()).thenReturn(new int[] {labelId1, labelId2});
         when(nodeCursor.labels()).thenReturn(labels);
         when(propertyCursor.next()).thenReturn(true);
         when(propertyCursor.propertyKey()).thenReturn(propertyKeyId);

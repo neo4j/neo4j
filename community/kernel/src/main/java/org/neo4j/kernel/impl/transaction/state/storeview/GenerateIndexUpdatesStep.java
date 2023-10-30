@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
-import static org.neo4j.collection.PrimitiveArrays.intsToLongs;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
@@ -50,7 +48,7 @@ public class GenerateIndexUpdatesStep<CURSOR extends StorageEntityScanCursor<?>>
     private final Function<CursorContext, StoreCursors> storeCursorsFactory;
     private final PropertySelection propertySelection;
     private final EntityScanCursorBehaviour<CURSOR> entityCursorBehaviour;
-    private final long[] relevantTokenIds;
+    private final int[] relevantTokenIds;
     private final PropertyScanConsumer propertyScanConsumer;
     private final TokenScanConsumer tokenScanConsumer;
     private final boolean gatherTokenUpdates;
@@ -81,7 +79,7 @@ public class GenerateIndexUpdatesStep<CURSOR extends StorageEntityScanCursor<?>>
         this.storeCursorsFactory = storeCursorsFactory;
         this.propertySelection = propertySelection;
         this.entityCursorBehaviour = entityCursorBehaviour;
-        this.relevantTokenIds = intsToLongs(entityTokenIdFilter);
+        this.relevantTokenIds = entityTokenIdFilter;
         this.propertyScanConsumer = propertyScanConsumer;
         this.tokenScanConsumer = tokenScanConsumer;
         this.gatherPropertyUpdates = propertyScanConsumer != null;
@@ -125,7 +123,7 @@ public class GenerateIndexUpdatesStep<CURSOR extends StorageEntityScanCursor<?>>
 
     private void generateUpdates(
             GeneratedIndexUpdates updates, CURSOR entityCursor, StoragePropertyCursor propertyCursor) {
-        long[] tokens;
+        int[] tokens;
         if (gatherPropertyUpdates) {
             tokens = entityCursorBehaviour.readTokensAndProperties(entityCursor, propertyCursor, propertySelection);
         } else {
@@ -147,7 +145,7 @@ public class GenerateIndexUpdatesStep<CURSOR extends StorageEntityScanCursor<?>>
     }
 
     void readRelevantProperties(
-            CURSOR cursor, StoragePropertyCursor propertyCursor, long[] tokens, GeneratedIndexUpdates indexUpdates) {
+            CURSOR cursor, StoragePropertyCursor propertyCursor, int[] tokens, GeneratedIndexUpdates indexUpdates) {
         Map<Integer, Value> relevantProperties = new HashMap<>();
         while (propertyCursor.next()) {
             int propertyKeyId = propertyCursor.propertyKey();
@@ -169,8 +167,8 @@ public class GenerateIndexUpdatesStep<CURSOR extends StorageEntityScanCursor<?>>
         return TRACER_TAG_PREFIX + name();
     }
 
-    static boolean containsAnyEntityToken(long[] entityTokenFilter, long... entityTokens) {
-        for (long candidate : entityTokens) {
+    static boolean containsAnyEntityToken(int[] entityTokenFilter, int... entityTokens) {
+        for (int candidate : entityTokens) {
             if (ArrayUtils.contains(entityTokenFilter, candidate)) {
                 return true;
             }

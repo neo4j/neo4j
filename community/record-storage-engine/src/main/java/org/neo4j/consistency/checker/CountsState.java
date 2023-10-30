@@ -19,7 +19,7 @@
  */
 package org.neo4j.consistency.checker;
 
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
 import static org.neo4j.internal.counts.GBPTreeCountsStore.nodeKey;
 import static org.neo4j.internal.counts.GBPTreeCountsStore.relationshipKey;
 import static org.neo4j.internal.recordstorage.RelationshipCounter.labelsCountsLength;
@@ -50,8 +50,8 @@ import org.neo4j.memory.MemoryTracker;
  */
 class CountsState implements AutoCloseable {
     private static final long COUNT_VISITED_MARK = 0x40000000_00000000L;
-    private final long highLabelId;
-    private final long highRelationshipTypeId;
+    private final int highLabelId;
+    private final int highRelationshipTypeId;
     private final long highNodeId;
     private final CacheAccess cacheAccess;
     private final OffHeapLongArray nodeCounts;
@@ -63,16 +63,16 @@ class CountsState implements AutoCloseable {
 
     CountsState(NeoStores neoStores, CacheAccess cacheAccess, MemoryTracker memoryTracker) {
         this(
-                neoStores.getLabelTokenStore().getIdGenerator().getHighId(),
-                neoStores.getRelationshipTypeTokenStore().getIdGenerator().getHighId(),
+                (int) neoStores.getLabelTokenStore().getIdGenerator().getHighId(),
+                (int) neoStores.getRelationshipTypeTokenStore().getIdGenerator().getHighId(),
                 neoStores.getNodeStore().getIdGenerator().getHighId(),
                 cacheAccess,
                 memoryTracker);
     }
 
     CountsState(
-            long highLabelId,
-            long highRelationshipTypeId,
+            int highLabelId,
+            int highRelationshipTypeId,
             long highNodeId,
             CacheAccess cacheAccess,
             MemoryTracker memoryTracker) {
@@ -107,7 +107,7 @@ class CountsState implements AutoCloseable {
                 (array, index) -> ((OffHeapLongArray) array).getAndAdd(index, 1));
     }
 
-    long cacheDynamicNodeLabels(long[] labelIds) {
+    long cacheDynamicNodeLabels(int[] labelIds) {
         return dynamicNodeLabelsCache.put(labelIds);
     }
 
@@ -118,19 +118,19 @@ class CountsState implements AutoCloseable {
     RelationshipCounter.NodeLabelsLookup nodeLabelsLookup() {
         return new RelationshipCounter.NodeLabelsLookup() {
             private final CacheAccess.Client cacheAccessClient = cacheAccess.client();
-            private final long[] labelsHolder = new long[20]; // should be big enough for most cases, right?
+            private final int[] labelsHolder = new int[20]; // should be big enough for most cases, right?
 
             @Override
-            public long[] nodeLabels(long nodeId) {
+            public int[] nodeLabels(long nodeId) {
                 if (nodeId >= highNodeId) {
-                    return EMPTY_LONG_ARRAY;
+                    return EMPTY_INT_ARRAY;
                 }
                 boolean hasSingleLabel =
                         cacheAccessClient.getBooleanFromCache(nodeId, CacheSlots.NodeLink.SLOT_HAS_SINGLE_LABEL);
                 long labelField = cacheAccessClient.getFromCache(nodeId, CacheSlots.NodeLink.SLOT_LABELS);
                 if (hasSingleLabel) {
                     // Just grab the field, which represents a single label and then terminate the array with -1
-                    labelsHolder[0] = labelField;
+                    labelsHolder[0] = (int) labelField;
                     labelsHolder[1] = -1;
                     return labelsHolder;
                 } else {

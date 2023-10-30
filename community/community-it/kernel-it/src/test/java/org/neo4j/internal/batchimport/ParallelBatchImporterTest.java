@@ -294,8 +294,8 @@ public class ParallelBatchImporterTest {
                         var builder = new StringBuilder("Database contains inconsistencies. " + result);
                         if (result.reportFile() != null) {
                             builder.append(format("%nInconsistencies:"));
-                            try {
-                                Files.lines(result.reportFile()).forEach(line -> builder.append(format("%n%s", line)));
+                            try (var lines = Files.lines(result.reportFile())) {
+                                lines.forEach(line -> builder.append(format("%n%s", line)));
                             } catch (IOException e) {
                                 throw new UncheckedIOException(e);
                             }

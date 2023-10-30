@@ -157,8 +157,8 @@ public class OnlineIndexUpdates implements IndexUpdates {
             NodeCommand nodeChanges,
             EntityCommandGrouper<NodeCommand>.Cursor propertyCommandsForNode,
             CommandSelector commandSelector) {
-        long[] nodeLabelsBefore;
-        long[] nodeLabelsAfter;
+        int[] nodeLabelsBefore;
+        int[] nodeLabelsAfter;
         if (nodeChanges != null) {
             // Special case since the node may not be heavy, i.e. further loading may be required
             nodeLabelsBefore =
@@ -211,8 +211,8 @@ public class OnlineIndexUpdates implements IndexUpdates {
             RelationshipCommand relationshipCommand,
             EntityCommandGrouper<RelationshipCommand>.Cursor propertyCommands,
             CommandSelector commandSelector) {
-        long reltypeBefore;
-        long reltypeAfter;
+        int reltypeBefore;
+        int reltypeAfter;
         if (relationshipCommand != null) {
             reltypeBefore = commandSelector.getBefore(relationshipCommand).getType();
             reltypeAfter = commandSelector.getAfter(relationshipCommand).getType();

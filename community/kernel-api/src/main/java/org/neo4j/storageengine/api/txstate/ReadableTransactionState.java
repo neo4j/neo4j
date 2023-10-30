@@ -21,7 +21,7 @@ package org.neo4j.storageengine.api.txstate;
 
 import java.util.Iterator;
 import java.util.NavigableMap;
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.impl.UnmodifiableMap;
 import org.neo4j.collection.diffset.DiffSets;
 import org.neo4j.collection.diffset.LongDiffSets;
@@ -48,7 +48,7 @@ public interface ReadableTransactionState {
      *
      * @param label The label that has changed.
      */
-    LongDiffSets nodesWithLabelChanged(long label);
+    LongDiffSets nodesWithLabelChanged(int label);
 
     /**
      * Returns nodes that have been added and removed in this tx.
@@ -138,7 +138,7 @@ public interface ReadableTransactionState {
 
     RelationshipState getRelationshipState(long id);
 
-    MutableLongSet augmentLabels(MutableLongSet labels, NodeState nodeState);
+    MutableIntSet augmentLabels(MutableIntSet labels, NodeState nodeState);
 
     /**
      * The revision of the data changes in this transaction. This number is opaque, except that it is zero if there have been no data changes in this

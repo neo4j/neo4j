@@ -86,7 +86,7 @@ public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier> {
      * @param propertyKey a property key id to check.
      * @return {@code true} if there are one or more descriptors matching the given tokens.
      */
-    public boolean has(long[] entityTokenIds, int propertyKey) {
+    public boolean has(int[] entityTokenIds, int propertyKey) {
         // Abort right away if there are no descriptors at all
         if (isEmpty()) {
             return false;
@@ -147,7 +147,7 @@ public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier> {
      * @param sortedProperties complete and sorted array of property key token ids for the entity.
      */
     public void matchingDescriptorsForCompleteListOfProperties(
-            Collection<T> into, long[] entityTokenIds, int[] sortedProperties) {
+            Collection<T> into, int[] entityTokenIds, int[] sortedProperties) {
         for (long entityTokenId : entityTokenIds) {
             PropertyMultiSet first = byEntityToken.get(toIntExact(entityTokenId));
             if (first != null) {
@@ -168,7 +168,7 @@ public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier> {
      * @param sortedProperties complete and sorted array of property key token ids for the entity.
      */
     public void matchingDescriptorsForPartialListOfProperties(
-            Collection<T> into, long[] entityTokenIds, int[] sortedProperties) {
+            Collection<T> into, int[] entityTokenIds, int[] sortedProperties) {
         for (long entityTokenId : entityTokenIds) {
             PropertyMultiSet first = byEntityToken.get(toIntExact(entityTokenId));
             if (first != null) {
@@ -183,7 +183,7 @@ public class SchemaDescriptorLookupSet<T extends SchemaDescriptorSupplier> {
      * @param into {@link Collection} to add matching descriptors into.
      * @param entityTokenIds complete and sorted array of entity token ids for the entity.
      */
-    public void matchingDescriptors(Collection<T> into, long[] entityTokenIds) {
+    public void matchingDescriptors(Collection<T> into, int[] entityTokenIds) {
         for (long entityTokenId : entityTokenIds) {
             PropertyMultiSet set = byEntityToken.get(toIntExact(entityTokenId));
             if (set != null) {

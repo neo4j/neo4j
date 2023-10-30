@@ -39,12 +39,12 @@ public class NodeCursorBehaviour implements EntityScanCursorBehaviour<StorageNod
     }
 
     @Override
-    public long[] readTokens(StorageNodeCursor cursor) {
+    public int[] readTokens(StorageNodeCursor cursor) {
         return cursor.labels();
     }
 
     @Override
-    public long[] readTokensAndProperties(
+    public int[] readTokensAndProperties(
             StorageNodeCursor cursor, StoragePropertyCursor propertyCursor, PropertySelection selection) {
         return cursor.labelsAndProperties(propertyCursor, selection);
     }

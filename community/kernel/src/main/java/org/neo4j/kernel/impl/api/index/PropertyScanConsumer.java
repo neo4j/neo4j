@@ -33,7 +33,7 @@ public interface PropertyScanConsumer {
         /**
          * Adds a record to the batch.
          */
-        void addRecord(long entityId, long[] tokens, Map<Integer, Value> properties);
+        void addRecord(long entityId, int[] tokens, Map<Integer, Value> properties);
 
         /**
          * Processes the batch.

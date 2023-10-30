@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
 
 import java.util.NoSuchElementException;
 
@@ -36,11 +36,9 @@ public interface TokenSet {
 
     boolean contains(int token);
 
-    long[] all();
+    int[] all();
 
     TokenSet NONE = new TokenSet() {
-        private final long[] EMPTY = EMPTY_LONG_ARRAY;
-
         @Override
         public int numberOfTokens() {
             return 0;
@@ -57,8 +55,8 @@ public interface TokenSet {
         }
 
         @Override
-        public long[] all() {
-            return EMPTY;
+        public int[] all() {
+            return EMPTY_INT_ARRAY;
         }
     };
 }

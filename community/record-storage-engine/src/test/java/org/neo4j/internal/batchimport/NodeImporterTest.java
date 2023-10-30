@@ -135,7 +135,7 @@ class NodeImporterTest {
         NodeStore nodeStore = stores.getNodeStore();
         PageCursor nodeCursor = storeCursors.readCursor(NODE_CURSOR);
         NodeRecord record = nodeStore.getRecordByCursor(nodeId, nodeStore.newRecord(), RecordLoad.NORMAL, nodeCursor);
-        long[] labels = NodeLabelsField.parseLabelsField(record).get(nodeStore, storeCursors);
+        int[] labels = NodeLabelsField.parseLabelsField(record).get(nodeStore, storeCursors);
         assertEquals(numberOfLabels, labels.length);
     }
 
@@ -172,7 +172,7 @@ class NodeImporterTest {
         NodeStore nodeStore = stores.getNodeStore();
         PageCursor nodeCursor = storeCursors.readCursor(NODE_CURSOR);
         NodeRecord record = nodeStore.getRecordByCursor(nodeId, nodeStore.newRecord(), RecordLoad.NORMAL, nodeCursor);
-        long[] labels = NodeLabelsField.parseLabelsField(record).get(nodeStore, storeCursors);
+        int[] labels = NodeLabelsField.parseLabelsField(record).get(nodeStore, storeCursors);
         assertEquals(numberOfLabels, labels.length);
         assertThat(cacheTracer.faults()).isEqualTo(2);
         assertThat(cacheTracer.pins()).isEqualTo(5);

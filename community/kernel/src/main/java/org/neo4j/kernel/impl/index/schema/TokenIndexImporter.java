@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
 import static org.neo4j.collection.Dependencies.dependenciesOf;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.IOUtils.closeAll;
@@ -71,18 +71,18 @@ public class TokenIndexImporter implements IndexImporter {
         var actual = accessor.newUpdater(ONLINE, cursorContext, parallel);
         return new Writer() {
             @Override
-            public void add(long entity, long[] tokens) {
+            public void add(long entity, int[] tokens) {
                 try {
-                    actual.process(IndexEntryUpdate.change(entity, index, EMPTY_LONG_ARRAY, tokens, true));
+                    actual.process(IndexEntryUpdate.change(entity, index, EMPTY_INT_ARRAY, tokens, true));
                 } catch (IndexEntryConflictException e) {
                     throw new RuntimeException(e);
                 }
             }
 
             @Override
-            public void remove(long entity, long[] tokens) {
+            public void remove(long entity, int[] tokens) {
                 try {
-                    actual.process(IndexEntryUpdate.change(entity, index, tokens, EMPTY_LONG_ARRAY));
+                    actual.process(IndexEntryUpdate.change(entity, index, tokens, EMPTY_INT_ARRAY));
                 } catch (IndexEntryConflictException e) {
                     throw new RuntimeException(e);
                 }

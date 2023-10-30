@@ -30,7 +30,7 @@ public interface TokenScanConsumer {
         /**
          * Adds a record to the batch.
          */
-        void addRecord(long entityId, long[] tokens);
+        void addRecord(long entityId, int[] tokens);
 
         /**
          * Processes the batch.

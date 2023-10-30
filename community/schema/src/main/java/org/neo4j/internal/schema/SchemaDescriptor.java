@@ -100,7 +100,7 @@ public interface SchemaDescriptor {
      * @param entityTokenIds entity token ids to check against.
      * @return true if the supplied ids are relevant to this schema unit.
      */
-    boolean isAffected(long[] entityTokenIds);
+    boolean isAffected(int[] entityTokenIds);
 
     /**
      * Performs some side-effect type logic by processing this object using the given SchemaProcessor.

@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import static java.lang.Math.toIntExact;
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -90,7 +90,7 @@ class TokenIndexReaderTest {
         try (TokenIndexUpdater writer = new TokenIndexUpdater(expectedNodes, idLayout)) {
             writer.initialize(tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT));
             for (int i = 0; i < expectedNodes; i++) {
-                writer.process(TokenIndexEntryUpdate.change(i, null, EMPTY_LONG_ARRAY, new long[] {labelId}));
+                writer.process(TokenIndexEntryUpdate.change(i, null, EMPTY_INT_ARRAY, new int[] {labelId}));
             }
         }
 
@@ -141,7 +141,7 @@ class TokenIndexReaderTest {
             int updates = highNodeId / sparsity;
             for (int i = 0; i < updates; i++) {
                 int nodeId = random.nextInt(highNodeId);
-                writer.process(TokenIndexEntryUpdate.change(nodeId, null, EMPTY_LONG_ARRAY, new long[] {labelId}));
+                writer.process(TokenIndexEntryUpdate.change(nodeId, null, EMPTY_INT_ARRAY, new int[] {labelId}));
                 expected.set(nodeId);
             }
         }

@@ -19,7 +19,7 @@
  */
 package org.neo4j.consistency.checker;
 
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -307,8 +307,7 @@ class RelationshipCheckerWithRelationshipTypeIndexTest extends CheckerTestBase {
 
     private void createIndexEntry(IndexUpdater writer, long relationshipId, int type)
             throws IndexEntryConflictException {
-        writer.process(
-                TokenIndexEntryUpdate.change(relationshipId, rtiDescriptor, EMPTY_LONG_ARRAY, new long[] {type}));
+        writer.process(TokenIndexEntryUpdate.change(relationshipId, rtiDescriptor, EMPTY_INT_ARRAY, new int[] {type}));
     }
 
     private long createStoreEntry(int type) {

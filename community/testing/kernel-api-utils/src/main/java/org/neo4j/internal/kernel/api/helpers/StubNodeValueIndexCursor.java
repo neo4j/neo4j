@@ -24,6 +24,7 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import org.apache.commons.lang3.ArrayUtils;
 import org.neo4j.internal.kernel.api.DefaultCloseListenable;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -33,10 +34,10 @@ import org.neo4j.values.storable.Value;
 public class StubNodeValueIndexCursor extends DefaultCloseListenable implements NodeValueIndexCursor {
     private int position = -1;
     private final List<NodeData> nodes = new ArrayList<>();
-    private List<Value[]> values = new ArrayList<>();
+    private final List<Value[]> values = new ArrayList<>();
 
     public StubNodeValueIndexCursor withNode(long id, Value... vs) {
-        nodes.add(new NodeData(id, new long[] {}, Collections.emptyMap()));
+        nodes.add(new NodeData(id, ArrayUtils.EMPTY_INT_ARRAY, Collections.emptyMap()));
         values.add(vs);
         return this;
     }

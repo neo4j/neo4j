@@ -20,7 +20,6 @@
 package org.neo4j.internal.batchimport;
 
 import static java.lang.Long.max;
-import static org.neo4j.collection.PrimitiveArrays.intsToLongs;
 import static org.neo4j.kernel.impl.store.StoreType.NODE_LABEL;
 import static org.neo4j.kernel.impl.store.StoreType.PROPERTY_ARRAY;
 import static org.neo4j.kernel.impl.store.StoreType.PROPERTY_STRING;
@@ -177,7 +176,7 @@ public class NodeImporter extends EntityImporter {
                 }
                 InlineNodeLabels.putSorted(
                         nodeRecord,
-                        intsToLongs(labelIdsInts),
+                        labelIdsInts,
                         null,
                         allocatorProvider.allocator(NODE_LABEL),
                         cursorContext,

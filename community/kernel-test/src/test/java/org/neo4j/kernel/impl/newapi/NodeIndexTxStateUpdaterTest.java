@@ -68,7 +68,7 @@ class NodeIndexTxStateUpdaterTest extends IndexTxStateUpdaterTestBase {
         map.put(PROP_ID_1, Values.of("hi1"));
         map.put(PROP_ID_2, Values.of("hi2"));
         map.put(PROP_ID_3, Values.of("hi3"));
-        node = new StubNodeCursor().withNode(0, new long[] {LABEL_ID_1, LABEL_ID_2}, map);
+        node = new StubNodeCursor().withNode(0, new int[] {LABEL_ID_1, LABEL_ID_2}, map);
         node.next();
     }
 
@@ -91,7 +91,7 @@ class NodeIndexTxStateUpdaterTest extends IndexTxStateUpdaterTestBase {
                 node,
                 propertyCursor,
                 ADDED_LABEL,
-                storageReader.valueIndexesGetRelated(new long[] {LABEL_ID_1}, PROPS, NODE));
+                storageReader.valueIndexesGetRelated(new int[] {LABEL_ID_1}, PROPS, NODE));
 
         // THEN
         verifyIndexUpdate(indexOn1_1.schema(), node.nodeReference(), null, values("hi1"));
@@ -106,7 +106,7 @@ class NodeIndexTxStateUpdaterTest extends IndexTxStateUpdaterTestBase {
                 node,
                 propertyCursor,
                 REMOVED_LABEL,
-                storageReader.valueIndexesGetRelated(new long[] {LABEL_ID_2}, PROPS, NODE));
+                storageReader.valueIndexesGetRelated(new int[] {LABEL_ID_2}, PROPS, NODE));
 
         // THEN
         verifyIndexUpdate(uniqueOn2_2_3.schema(), node.nodeReference(), values("hi2", "hi3"), null);

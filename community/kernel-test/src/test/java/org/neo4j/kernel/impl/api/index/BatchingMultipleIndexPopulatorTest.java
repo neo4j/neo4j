@@ -247,7 +247,7 @@ public class BatchingMultipleIndexPopulatorTest {
                 Iterables.map(update -> update.valueUpdatesForIndexKeys(Iterables.asIterable(index)), entityUpdates)));
     }
 
-    private static Update nodeUpdate(int nodeId, int propertyId, String propertyValue, long... labelIds) {
+    private static Update nodeUpdate(int nodeId, int propertyId, String propertyValue, int... labelIds) {
         return new Update(nodeId, labelIds, propertyId, Values.stringValue(propertyValue));
     }
 
@@ -312,11 +312,11 @@ public class BatchingMultipleIndexPopulatorTest {
 
     private static class Update {
         private final long id;
-        private final long[] labels;
+        private final int[] labels;
         private final int propertyId;
         private final Value propertyValue;
 
-        private Update(long id, long[] labels, int propertyId, Value propertyValue) {
+        private Update(long id, int[] labels, int propertyId, Value propertyValue) {
             this.id = id;
             this.labels = labels;
             this.propertyId = propertyId;

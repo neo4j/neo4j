@@ -21,6 +21,7 @@ package org.neo4j.internal.schema;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singleton;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -67,7 +68,7 @@ class SchemaCacheTest {
     private final SchemaRule gretel = newIndexRule(3, 0, 7);
     private final ConstraintDescriptor robot = relPropertyExistenceConstraint(7L, 8, 9);
     private final IndexConfigCompleter indexConfigCompleter = (index, indexingBehaviour) -> index;
-    private static final long[] noEntityToken = {};
+    private static final int[] noEntityToken = EMPTY_INT_ARRAY;
 
     // For "related to" tests
     private final IndexDescriptor schema3_4 = newIndexRule(10, 3, 4);
@@ -1013,7 +1014,7 @@ class SchemaCacheTest {
                 Arguments.of(2, 0, 1));
     }
 
-    private static long[] entityTokens(long... entityTokenIds) {
+    private static int[] entityTokens(int... entityTokenIds) {
         return entityTokenIds;
     }
 

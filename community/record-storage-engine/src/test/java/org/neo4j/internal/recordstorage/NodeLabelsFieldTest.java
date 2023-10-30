@@ -135,7 +135,7 @@ class NodeLabelsFieldTest {
     @Test
     void shouldInlineOneLabel() {
         // GIVEN
-        long labelId = 10;
+        int labelId = 10;
         NodeRecord node = nodeRecordWithInlinedLabels();
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField(node);
 
@@ -149,7 +149,7 @@ class NodeLabelsFieldTest {
     @Test
     void shouldInlineOneLabelWithHighId() {
         // GIVEN
-        long labelId = 10000;
+        int labelId = 10000;
         NodeRecord node = nodeRecordWithInlinedLabels();
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField(node);
 
@@ -163,8 +163,8 @@ class NodeLabelsFieldTest {
     @Test
     void shouldInlineTwoSmallLabels() {
         // GIVEN
-        long labelId1 = 10;
-        long labelId2 = 30;
+        int labelId1 = 10;
+        int labelId2 = 30;
         NodeRecord node = nodeRecordWithInlinedLabels(labelId1);
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField(node);
 
@@ -178,9 +178,9 @@ class NodeLabelsFieldTest {
     @Test
     void shouldInlineThreeSmallLabels() {
         // GIVEN
-        long labelId1 = 10;
-        long labelId2 = 30;
-        long labelId3 = 4095;
+        int labelId1 = 10;
+        int labelId2 = 30;
+        int labelId3 = 4095;
         NodeRecord node = nodeRecordWithInlinedLabels(labelId1, labelId2);
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField(node);
 
@@ -194,10 +194,10 @@ class NodeLabelsFieldTest {
     @Test
     void shouldInlineFourSmallLabels() {
         // GIVEN
-        long labelId1 = 10;
-        long labelId2 = 30;
-        long labelId3 = 45;
-        long labelId4 = 60;
+        int labelId1 = 10;
+        int labelId2 = 30;
+        int labelId3 = 45;
+        int labelId4 = 60;
         NodeRecord node = nodeRecordWithInlinedLabels(labelId1, labelId2, labelId3);
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField(node);
 
@@ -211,11 +211,11 @@ class NodeLabelsFieldTest {
     @Test
     void shouldInlineFiveSmallLabels() {
         // GIVEN
-        long labelId1 = 10;
-        long labelId2 = 30;
-        long labelId3 = 45;
-        long labelId4 = 60;
-        long labelId5 = 61;
+        int labelId1 = 10;
+        int labelId2 = 30;
+        int labelId3 = 45;
+        int labelId4 = 60;
+        int labelId5 = 61;
         NodeRecord node = nodeRecordWithInlinedLabels(labelId1, labelId2, labelId3, labelId4);
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField(node);
 
@@ -231,9 +231,9 @@ class NodeLabelsFieldTest {
     @Test
     void shouldSpillOverToDynamicRecordIfExceedsInlinedSpace() {
         // GIVEN -- the upper limit for a label ID for 3 labels would be 36b/3 - 1 = 12b - 1 = 4095
-        long labelId1 = 10;
-        long labelId2 = 30;
-        long labelId3 = 4096;
+        int labelId1 = 10;
+        int labelId2 = 30;
+        int labelId3 = 4096;
         NodeRecord node = nodeRecordWithInlinedLabels(labelId1, labelId2);
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField(node);
 
@@ -250,7 +250,7 @@ class NodeLabelsFieldTest {
         assertEquals(1, Iterables.count(changedDynamicRecords));
         assertEquals(dynamicLabelsLongRepresentation(changedDynamicRecords), node.getLabelField());
         Assertions.assertArrayEquals(
-                new long[] {labelId1, labelId2, labelId3},
+                new int[] {labelId1, labelId2, labelId3},
                 DynamicNodeLabels.getDynamicLabelsArray(
                         changedDynamicRecords, nodeStore.getDynamicLabelStore(), StoreCursors.NULL));
     }
@@ -259,7 +259,7 @@ class NodeLabelsFieldTest {
     void oneDynamicRecordShouldExtendIntoAnAdditionalIfTooManyLabels() {
         // GIVEN
         // will occupy 60B of data, i.e. one dynamic record
-        NodeRecord node = nodeRecordWithDynamicLabels(nodeStore, storeCursors, oneByteLongs(56));
+        NodeRecord node = nodeRecordWithDynamicLabels(nodeStore, storeCursors, oneByteInt(56));
         Collection<DynamicRecord> initialRecords = node.getDynamicLabelRecords();
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField(node);
 
@@ -277,7 +277,7 @@ class NodeLabelsFieldTest {
         // GIVEN
         // will occupy 60B of data, i.e. one dynamic record
         long nodeId = 24L;
-        NodeRecord node = nodeRecordWithDynamicLabels(nodeId, nodeStore, storeCursors, oneByteLongs(56));
+        NodeRecord node = nodeRecordWithDynamicLabels(nodeId, nodeStore, storeCursors, oneByteInt(56));
         Collection<DynamicRecord> initialRecords = node.getDynamicLabelRecords();
 
         // WHEN
@@ -292,7 +292,7 @@ class NodeLabelsFieldTest {
     void twoDynamicRecordsShouldShrinkToOneWhenRemoving() {
         // GIVEN
         // will occupy 61B of data, i.e. just two dynamic records
-        NodeRecord node = nodeRecordWithDynamicLabels(nodeStore, storeCursors, oneByteLongs(57));
+        NodeRecord node = nodeRecordWithDynamicLabels(nodeStore, storeCursors, oneByteInt(57));
         Collection<DynamicRecord> initialRecords = node.getDynamicLabelRecords();
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField(node);
 
@@ -318,7 +318,7 @@ class NodeLabelsFieldTest {
         // GIVEN
         // will occupy 61B of data, i.e. just two dynamic records
         long nodeId = 42L;
-        NodeRecord node = nodeRecordWithDynamicLabels(nodeId, nodeStore, storeCursors, oneByteLongs(57));
+        NodeRecord node = nodeRecordWithDynamicLabels(nodeId, nodeStore, storeCursors, oneByteInt(57));
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField(node);
 
         List<DynamicRecord> changedDynamicRecords = addAll(
@@ -342,7 +342,7 @@ class NodeLabelsFieldTest {
     @Test
     void oneDynamicRecordShouldShrinkIntoInlinedWhenRemoving() {
         // GIVEN
-        NodeRecord node = nodeRecordWithDynamicLabels(nodeStore, storeCursors, oneByteLongs(5));
+        NodeRecord node = nodeRecordWithDynamicLabels(nodeStore, storeCursors, oneByteInt(5));
         Collection<DynamicRecord> initialRecords = node.getDynamicLabelRecords();
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField(node);
 
@@ -359,7 +359,7 @@ class NodeLabelsFieldTest {
     @Test
     void shouldReadIdOfDynamicRecordFromDynamicLabelsField() {
         // GIVEN
-        NodeRecord node = nodeRecordWithDynamicLabels(nodeStore, storeCursors, oneByteLongs(5));
+        NodeRecord node = nodeRecordWithDynamicLabels(nodeStore, storeCursors, oneByteInt(5));
         DynamicRecord dynamicRecord = node.getDynamicLabelRecords().iterator().next();
 
         // WHEN
@@ -417,7 +417,7 @@ class NodeLabelsFieldTest {
     @Test
     void addingAnAlreadyAddedLabelWhenLabelsAreInDynamicRecordsShouldFail() {
         // GIVEN
-        long[] labels = oneByteLongs(20);
+        int[] labels = oneByteInt(20);
         NodeRecord node = nodeRecordWithDynamicLabels(nodeStore, storeCursors, labels);
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField(node);
 
@@ -453,7 +453,7 @@ class NodeLabelsFieldTest {
     @Test
     void removingNonExistentLabelInDynamicRecordsShouldFail() {
         // GIVEN
-        long[] labels = oneByteLongs(20);
+        int[] labels = oneByteInt(20);
         NodeRecord node = nodeRecordWithDynamicLabels(nodeStore, storeCursors, labels);
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField(node);
 
@@ -471,13 +471,13 @@ class NodeLabelsFieldTest {
     @Test
     void shouldReallocateSomeOfPreviousDynamicRecords() {
         // GIVEN
-        NodeRecord node = nodeRecordWithDynamicLabels(nodeStore, storeCursors, oneByteLongs(5));
+        NodeRecord node = nodeRecordWithDynamicLabels(nodeStore, storeCursors, oneByteInt(5));
         Set<DynamicRecord> initialRecords = Iterables.asUniqueSet(node.getDynamicLabelRecords());
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField(node);
 
         // WHEN
         Set<DynamicRecord> reallocatedRecords = Iterables.asUniqueSet(nodeLabels.put(
-                fourByteLongs(100),
+                fourByteInts(100),
                 nodeStore,
                 allocatorProvider.allocator(NODE_LABEL),
                 NULL_CONTEXT,
@@ -492,13 +492,13 @@ class NodeLabelsFieldTest {
     @Test
     void shouldReallocateAllOfPreviousDynamicRecordsAndThenSome() {
         // GIVEN
-        NodeRecord node = nodeRecordWithDynamicLabels(nodeStore, storeCursors, fourByteLongs(100));
+        NodeRecord node = nodeRecordWithDynamicLabels(nodeStore, storeCursors, fourByteInts(100));
         Set<DynamicRecord> initialRecords = Iterables.asSet(cloned(node.getDynamicLabelRecords(), DynamicRecord.class));
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField(node);
 
         // WHEN
         Set<DynamicRecord> reallocatedRecords = Iterables.asUniqueSet(nodeLabels.put(
-                fourByteLongs(5),
+                fourByteInts(5),
                 nodeStore,
                 allocatorProvider.allocator(NODE_LABEL),
                 NULL_CONTEXT,
@@ -515,7 +515,7 @@ class NodeLabelsFieldTest {
     @Test
     void shouldNotFailWhenDynamicRecordsBecomeUnused() {
         // GIVEN
-        NodeRecord node = nodeRecordWithDynamicLabels(nodeStore, storeCursors, fourByteLongs(100));
+        NodeRecord node = nodeRecordWithDynamicLabels(nodeStore, storeCursors, fourByteInts(100));
         assertThat(NodeLabelsField.get(node, nodeStore, storeCursors)).isNotEmpty();
 
         // WHEN
@@ -561,9 +561,9 @@ class NodeLabelsFieldTest {
 
         // THEN
         NodeLabels labels = NodeLabelsField.parseLabelsField(node);
-        long[] readLabelIds = labels.get(nodeStore, StoreCursors.NULL);
-        for (long labelId : readLabelIds) {
-            assertTrue(key.remove((int) labelId), "Found an unexpected label " + labelId);
+        int[] readLabelIds = labels.get(nodeStore, StoreCursors.NULL);
+        for (int labelId : readLabelIds) {
+            assertTrue(key.remove(labelId), "Found an unexpected label " + labelId);
         }
         assertTrue(key.isEmpty());
     }
@@ -590,12 +590,12 @@ class NodeLabelsFieldTest {
         return node;
     }
 
-    private NodeRecord nodeRecordWithDynamicLabels(NodeStore nodeStore, StoreCursors storeCursors, long... labels) {
+    private NodeRecord nodeRecordWithDynamicLabels(NodeStore nodeStore, StoreCursors storeCursors, int... labels) {
         return nodeRecordWithDynamicLabels(0, nodeStore, storeCursors, labels);
     }
 
     private NodeRecord nodeRecordWithDynamicLabels(
-            long nodeId, NodeStore nodeStore, StoreCursors storeCursors, long... labels) {
+            long nodeId, NodeStore nodeStore, StoreCursors storeCursors, int... labels) {
         NodeRecord node = new NodeRecord(nodeId).initialize(false, 0, false, 0, 0);
         List<DynamicRecord> initialRecords = allocateAndApply(nodeStore, storeCursors, node.getId(), labels);
         node.setLabelField(dynamicLabelsLongRepresentation(initialRecords), initialRecords);
@@ -603,25 +603,25 @@ class NodeLabelsFieldTest {
     }
 
     private List<DynamicRecord> allocateAndApply(
-            NodeStore nodeStore, StoreCursors storeCursors, long nodeId, long[] longs) {
+            NodeStore nodeStore, StoreCursors storeCursors, long nodeId, int[] labelIds) {
         List<DynamicRecord> records = allocateRecordsForDynamicLabels(
-                nodeId, longs, allocatorProvider.allocator(NODE_LABEL), NULL_CONTEXT, INSTANCE);
+                nodeId, labelIds, allocatorProvider.allocator(NODE_LABEL), NULL_CONTEXT, INSTANCE);
         nodeStore.updateDynamicLabelRecords(records, IdUpdateListener.DIRECT, NULL_CONTEXT, storeCursors);
         return records;
     }
 
-    private static long[] oneByteLongs(int numberOfLongs) {
-        long[] result = new long[numberOfLongs];
-        for (int i = 0; i < numberOfLongs; i++) {
+    private static int[] oneByteInt(int numberOfInts) {
+        int[] result = new int[numberOfInts];
+        for (int i = 0; i < numberOfInts; i++) {
             result[i] = 255 - i;
         }
         Arrays.sort(result);
         return result;
     }
 
-    private static long[] fourByteLongs(int numberOfLongs) {
-        long[] result = new long[numberOfLongs];
-        for (int i = 0; i < numberOfLongs; i++) {
+    private static int[] fourByteInts(int numberOfInts) {
+        int[] result = new int[numberOfInts];
+        for (int i = 0; i < numberOfInts; i++) {
             result[i] = Integer.MAX_VALUE - i;
         }
         Arrays.sort(result);

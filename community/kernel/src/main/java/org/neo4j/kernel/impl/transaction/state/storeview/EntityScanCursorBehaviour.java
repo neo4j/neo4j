@@ -32,9 +32,9 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 interface EntityScanCursorBehaviour<CURSOR extends StorageEntityScanCursor<?>> {
     CURSOR allocateEntityScanCursor(CursorContext cursorContext, StoreCursors storeCursors);
 
-    long[] readTokens(CURSOR cursor);
+    int[] readTokens(CURSOR cursor);
 
-    default long[] readTokensAndProperties(
+    default int[] readTokensAndProperties(
             CURSOR cursor, StoragePropertyCursor propertyCursor, PropertySelection selection) {
         var tokens = readTokens(cursor);
         cursor.properties(propertyCursor, selection);

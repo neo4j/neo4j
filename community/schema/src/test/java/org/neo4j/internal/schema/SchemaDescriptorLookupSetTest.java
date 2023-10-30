@@ -174,26 +174,25 @@ class SchemaDescriptorLookupSetTest {
             int countToLookup = 20;
             for (int l = 0; l < countToLookup; l++) {
                 int[] entityTokenIdsInts = randomUniqueSortedIntArray(highEntityKeyId, random.nextInt(1, 3));
-                long[] entityTokenIds = toLongArray(entityTokenIdsInts);
                 int[] propertyKeyIds =
                         randomUniqueSortedIntArray(highPropertyKeyId, random.nextInt(1, maxNumberOfPropertyKeys));
                 var actual = new HashSet<SchemaDescriptorSupplier>();
 
                 // lookup by only entity tokens
                 actual.clear();
-                set.matchingDescriptors(actual, entityTokenIds);
+                set.matchingDescriptors(actual, entityTokenIdsInts);
                 assertEquals(expectedDescriptors(all, filterByEntity(entityTokenIdsInts)), actual);
 
                 // lookup by partial property list
                 actual.clear();
-                set.matchingDescriptorsForPartialListOfProperties(actual, entityTokenIds, propertyKeyIds);
+                set.matchingDescriptorsForPartialListOfProperties(actual, entityTokenIdsInts, propertyKeyIds);
                 assertEquals(
                         expectedDescriptors(all, filterByEntityAndPropertyPartial(entityTokenIdsInts, propertyKeyIds)),
                         actual);
 
                 // lookup by complete property list
                 actual.clear();
-                set.matchingDescriptorsForCompleteListOfProperties(actual, entityTokenIds, propertyKeyIds);
+                set.matchingDescriptorsForCompleteListOfProperties(actual, entityTokenIdsInts, propertyKeyIds);
                 assertEquals(
                         expectedDescriptors(all, filterByEntityAndPropertyComplete(entityTokenIdsInts, propertyKeyIds)),
                         actual);
@@ -264,19 +263,11 @@ class SchemaDescriptorLookupSetTest {
         return array;
     }
 
-    private static long[] toLongArray(int[] array) {
-        long[] result = new long[array.length];
-        for (int i = 0; i < array.length; i++) {
-            result[i] = array[i];
-        }
-        return result;
-    }
-
     private static int[] properties(int... properties) {
         return properties;
     }
 
-    private static long[] entityTokens(long... labels) {
+    private static int[] entityTokens(int... labels) {
         return labels;
     }
 

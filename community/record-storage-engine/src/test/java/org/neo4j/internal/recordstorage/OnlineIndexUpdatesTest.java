@@ -456,7 +456,7 @@ class OnlineIndexUpdatesTest {
                 NO_LABELS_FIELD.longValue());
         if (inUse) {
             InlineNodeLabels labelFieldWriter = new InlineNodeLabels(nodeRecord);
-            labelFieldWriter.put(new long[] {ENTITY_TOKEN}, null, null, NULL_CONTEXT, StoreCursors.NULL, INSTANCE);
+            labelFieldWriter.put(new int[] {ENTITY_TOKEN}, null, null, NULL_CONTEXT, StoreCursors.NULL, INSTANCE);
         }
         return nodeRecord;
     }

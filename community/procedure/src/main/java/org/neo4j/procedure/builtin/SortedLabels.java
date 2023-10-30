@@ -23,13 +23,13 @@ import java.util.Arrays;
 import org.neo4j.internal.kernel.api.TokenSet;
 
 public class SortedLabels {
-    private long[] labels;
+    private final int[] labels;
 
-    private SortedLabels(long[] labels) {
+    private SortedLabels(int[] labels) {
         this.labels = labels;
     }
 
-    public static SortedLabels from(long[] labels) {
+    public static SortedLabels from(int[] labels) {
         Arrays.sort(labels);
         return new SortedLabels(labels);
     }
@@ -38,7 +38,7 @@ public class SortedLabels {
         return from(tokenSet.all());
     }
 
-    private long[] all() {
+    private int[] all() {
         return labels;
     }
 
@@ -50,7 +50,7 @@ public class SortedLabels {
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof SortedLabels) {
-            long[] input = ((SortedLabels) obj).all();
+            int[] input = ((SortedLabels) obj).all();
             return Arrays.equals(labels, input);
         }
         return false;
@@ -61,6 +61,6 @@ public class SortedLabels {
     }
 
     public Integer label(int offset) {
-        return (int) labels[offset];
+        return labels[offset];
     }
 }

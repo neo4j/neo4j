@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.store;
 
 import static java.lang.Long.highestOneBit;
 import static java.lang.String.format;
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
 import static org.neo4j.kernel.impl.store.LabelIdArray.concatAndSort;
 import static org.neo4j.kernel.impl.store.LabelIdArray.filter;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsBody;
@@ -47,17 +47,17 @@ public class InlineNodeLabels implements NodeLabels {
     }
 
     @Override
-    public long[] get(NodeStore nodeStore, StoreCursors storeCursors) {
+    public int[] get(NodeStore nodeStore, StoreCursors storeCursors) {
         return get(node);
     }
 
-    public static long[] get(NodeRecord node) {
+    public static int[] get(NodeRecord node) {
         return parseInlined(node.getLabelField());
     }
 
     @Override
     public Collection<DynamicRecord> put(
-            long[] labelIds,
+            int[] labelIds,
             NodeStore nodeStore,
             DynamicRecordAllocator allocator,
             CursorContext cursorContext,
@@ -69,7 +69,7 @@ public class InlineNodeLabels implements NodeLabels {
 
     public static Collection<DynamicRecord> putSorted(
             NodeRecord node,
-            long[] labelIds,
+            int[] labelIds,
             NodeStore nodeStore,
             DynamicRecordAllocator allocator,
             CursorContext cursorContext,
@@ -85,14 +85,14 @@ public class InlineNodeLabels implements NodeLabels {
 
     @Override
     public Collection<DynamicRecord> add(
-            long labelId,
+            int labelId,
             NodeStore nodeStore,
             DynamicRecordAllocator allocator,
             CursorContext cursorContext,
             StoreCursors storeCursors,
             MemoryTracker memoryTracker) {
-        long[] augmentedLabelIds = labelCount(node.getLabelField()) == 0
-                ? new long[] {labelId}
+        int[] augmentedLabelIds = labelCount(node.getLabelField()) == 0
+                ? new int[] {labelId}
                 : concatAndSort(parseInlined(node.getLabelField()), labelId);
 
         return putSorted(node, augmentedLabelIds, nodeStore, allocator, cursorContext, storeCursors, memoryTracker);
@@ -100,19 +100,19 @@ public class InlineNodeLabels implements NodeLabels {
 
     @Override
     public Collection<DynamicRecord> remove(
-            long labelId,
+            int labelId,
             NodeStore nodeStore,
             DynamicRecordAllocator allocator,
             CursorContext cursorContext,
             StoreCursors storeCursors,
             MemoryTracker memoryTracker) {
-        long[] newLabelIds = filter(parseInlined(node.getLabelField()), labelId);
+        int[] newLabelIds = filter(parseInlined(node.getLabelField()), labelId);
         boolean inlined = tryInlineInNodeRecord(node, newLabelIds, node.getDynamicLabelRecords());
         assert inlined;
         return Collections.emptyList();
     }
 
-    static boolean tryInlineInNodeRecord(NodeRecord node, long[] ids, List<DynamicRecord> changedDynamicRecords) {
+    static boolean tryInlineInNodeRecord(NodeRecord node, int[] ids, List<DynamicRecord> changedDynamicRecords) {
         // We reserve the high header bit for future extensions of the format of the in-lined label bits
         // i.e. the 0-valued high header bit can allow for 0-7 in-lined labels in the bit-packed format.
         if (ids.length > 7) {
@@ -129,7 +129,7 @@ public class InlineNodeLabels implements NodeLabels {
         return true;
     }
 
-    private static boolean inlineValues(long[] values, int maxBitsPerLabel, BitBuffer target) {
+    private static boolean inlineValues(int[] values, int maxBitsPerLabel, BitBuffer target) {
         long limit = 1L << maxBitsPerLabel;
         for (long value : values) {
             if (highestOneBit(value) < limit) {
@@ -141,18 +141,18 @@ public class InlineNodeLabels implements NodeLabels {
         return true;
     }
 
-    public static long[] parseInlined(long labelField) {
+    public static int[] parseInlined(long labelField) {
         byte numberOfLabels = labelCount(labelField);
         if (numberOfLabels == 0) {
-            return EMPTY_LONG_ARRAY;
+            return EMPTY_INT_ARRAY;
         }
 
         long existingLabelsField = parseLabelsBody(labelField);
         byte bitsPerLabel = (byte) (LABEL_BITS / numberOfLabels);
         long mask = (1L << bitsPerLabel) - 1;
-        long[] result = new long[numberOfLabels];
+        int[] result = new int[numberOfLabels];
         for (int i = 0; i < numberOfLabels; i++) {
-            result[i] = existingLabelsField & mask;
+            result[i] = (int) (existingLabelsField & mask);
             existingLabelsField >>>= bitsPerLabel;
         }
         return result;

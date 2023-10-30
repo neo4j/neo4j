@@ -55,7 +55,7 @@ public class NodeLabelsField {
     /**
      * Get node labels without making node heavy
      */
-    public static long[] getNoEnsureHeavy(NodeRecord node, NodeStore nodeStore, StoreCursors storeCursors) {
+    public static int[] getNoEnsureHeavy(NodeRecord node, NodeStore nodeStore, StoreCursors storeCursors) {
         long labelField = node.getLabelField();
         if (!fieldPointsToDynamicRecordOfLabels(labelField)) {
             return InlineNodeLabels.parseInlined(labelField);
@@ -76,7 +76,7 @@ public class NodeLabelsField {
         return DynamicNodeLabels.getDynamicLabelsArray(dynamicLabelRecords, dynamicLabelStore, storeCursors);
     }
 
-    public static long[] get(NodeRecord node, NodeStore nodeStore, StoreCursors storeCursors) {
+    public static int[] get(NodeRecord node, NodeStore nodeStore, StoreCursors storeCursors) {
         return fieldPointsToDynamicRecordOfLabels(node.getLabelField())
                 ? DynamicNodeLabels.get(node, nodeStore, storeCursors)
                 : InlineNodeLabels.get(node);

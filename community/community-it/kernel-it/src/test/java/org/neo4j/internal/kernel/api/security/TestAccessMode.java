@@ -79,32 +79,32 @@ public class TestAccessMode implements AccessMode {
     }
 
     @Override
-    public boolean allowsTraverseAllNodesWithLabel(long label) {
+    public boolean allowsTraverseAllNodesWithLabel(int label) {
         return allowReadAll;
     }
 
     @Override
-    public boolean disallowsTraverseLabel(long label) {
+    public boolean disallowsTraverseLabel(int label) {
         return !allowRead;
     }
 
     @Override
-    public boolean allowsTraverseNode(long... labels) {
+    public boolean allowsTraverseNode(int... labels) {
         return allowRead;
     }
 
     @Override
-    public IntSet getTraverseSecurityProperties(long[] labels) {
+    public IntSet getTraverseSecurityProperties(int[] labels) {
         return IntSets.immutable.empty();
     }
 
     @Override
-    public boolean hasApplicableTraverseAllowPropertyRules(long label) {
+    public boolean hasApplicableTraverseAllowPropertyRules(int label) {
         return allowRead;
     }
 
     @Override
-    public boolean allowsTraverseNodeWithPropertyRules(ReadSecurityPropertyProvider propertyProvider, long... labels) {
+    public boolean allowsTraverseNodeWithPropertyRules(ReadSecurityPropertyProvider propertyProvider, int... labels) {
         return allowRead;
     }
 
@@ -236,12 +236,12 @@ public class TestAccessMode implements AccessMode {
     }
 
     @Override
-    public boolean allowsSetLabel(long labelId) {
+    public boolean allowsSetLabel(int labelId) {
         return allowWrite;
     }
 
     @Override
-    public boolean allowsRemoveLabel(long labelId) {
+    public boolean allowsRemoveLabel(int labelId) {
         return allowWrite;
     }
 

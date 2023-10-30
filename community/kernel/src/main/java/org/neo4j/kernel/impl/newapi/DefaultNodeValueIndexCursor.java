@@ -108,7 +108,7 @@ class DefaultNodeValueIndexCursor extends DefaultEntityValueIndexCursor<DefaultN
             return false;
         }
 
-        long[] labels = securityNodeCursor.labelsIgnoringTxStateSetRemove().all();
+        int[] labels = securityNodeCursor.labelsIgnoringTxStateSetRemove().all();
 
         if (accessMode.hasPropertyReadRules(propertyIds)) {
             ensureSecurityPropertyCursor();

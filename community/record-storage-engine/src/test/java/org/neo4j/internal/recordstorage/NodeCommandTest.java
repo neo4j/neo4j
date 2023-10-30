@@ -22,7 +22,6 @@ package org.neo4j.internal.recordstorage;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.internal.helpers.Numbers.safeCastLongToInt;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.kernel.impl.store.DynamicNodeLabels.dynamicPointer;
@@ -275,10 +274,10 @@ class NodeCommandTest {
     }
 
     private Set<Integer> labels(NodeRecord record) {
-        long[] rawLabels = parseLabelsField(record).get(nodeStore, StoreCursors.NULL);
+        int[] rawLabels = parseLabelsField(record).get(nodeStore, StoreCursors.NULL);
         Set<Integer> labels = new HashSet<>(rawLabels.length);
-        for (long label : rawLabels) {
-            labels.add(safeCastLongToInt(label));
+        for (int label : rawLabels) {
+            labels.add(label);
         }
         return labels;
     }

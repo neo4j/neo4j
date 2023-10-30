@@ -19,11 +19,10 @@
  */
 package org.neo4j.consistency.checker;
 
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.neo4j.internal.helpers.collection.Iterables.first;
 import static org.neo4j.internal.helpers.collection.Iterables.last;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
@@ -101,7 +100,7 @@ class NodeCheckerTest extends CheckerTestBase {
 
     @Test
     void shouldReportLabelsOutOfOrder() throws Exception {
-        testReportLabelInconsistency(report -> report.labelsOutOfOrder(anyLong(), anyLong()), label3, label1, label2);
+        testReportLabelInconsistency(report -> report.labelsOutOfOrder(anyInt(), anyInt()), label3, label1, label2);
     }
 
     @Test
@@ -113,8 +112,8 @@ class NodeCheckerTest extends CheckerTestBase {
                 writer.process(IndexEntryUpdate.change(
                         nodeStore.getIdGenerator().nextId(NULL_CONTEXT),
                         IndexDescriptor.NO_INDEX,
-                        EMPTY_LONG_ARRAY,
-                        new long[] {label1}));
+                        EMPTY_INT_ARRAY,
+                        new int[] {label1}));
             }
         }
 
@@ -135,14 +134,14 @@ class NodeCheckerTest extends CheckerTestBase {
                 for (int i = 0; i < 10; i++) {
                     long nodeId = node(idGenerator.nextId(NULL_CONTEXT), NULL, NULL, label1);
                     writer.process(IndexEntryUpdate.change(
-                            nodeId, IndexDescriptor.NO_INDEX, EMPTY_LONG_ARRAY, new long[] {label1}));
+                            nodeId, IndexDescriptor.NO_INDEX, EMPTY_INT_ARRAY, new int[] {label1}));
                 }
             }
 
             // Label index having (N) which is not in use in the store
             try (IndexUpdater writer = labelIndexWriter()) {
                 writer.process(IndexEntryUpdate.change(
-                        idGenerator.nextId(NULL_CONTEXT), IndexDescriptor.NO_INDEX, EMPTY_LONG_ARRAY, new long[] {label1
+                        idGenerator.nextId(NULL_CONTEXT), IndexDescriptor.NO_INDEX, EMPTY_INT_ARRAY, new int[] {label1
                         }));
             }
         }
@@ -223,7 +222,7 @@ class NodeCheckerTest extends CheckerTestBase {
             NodeRecord node = new NodeRecord(nodeId).initialize(true, NULL, false, NULL, 0);
             new InlineNodeLabels(node)
                     .put(
-                            toLongs(otherLabels),
+                            otherLabels,
                             nodeStore,
                             allocatorProvider.allocator(StoreType.NODE_LABEL),
                             NULL_CONTEXT,
@@ -254,8 +253,8 @@ class NodeCheckerTest extends CheckerTestBase {
             // LabelIndex does not have the N:L entry
             long nodeId = node(nodeStore.getIdGenerator().nextId(NULL_CONTEXT), NULL, NULL);
             try (IndexUpdater writer = labelIndexWriter()) {
-                writer.process(IndexEntryUpdate.change(
-                        nodeId, IndexDescriptor.NO_INDEX, EMPTY_LONG_ARRAY, new long[] {label1}));
+                writer.process(
+                        IndexEntryUpdate.change(nodeId, IndexDescriptor.NO_INDEX, EMPTY_INT_ARRAY, new int[] {label1}));
             }
         }
 
@@ -263,7 +262,7 @@ class NodeCheckerTest extends CheckerTestBase {
         check();
 
         // then
-        expect(LabelScanConsistencyReport.class, report -> report.nodeDoesNotHaveExpectedLabel(any(), anyLong()));
+        expect(LabelScanConsistencyReport.class, report -> report.nodeDoesNotHaveExpectedLabel(any(), anyInt()));
     }
 
     @Test
@@ -279,7 +278,7 @@ class NodeCheckerTest extends CheckerTestBase {
         check();
 
         // then
-        expect(LabelScanConsistencyReport.class, report -> report.nodeLabelNotInIndex(any(), anyLong()));
+        expect(LabelScanConsistencyReport.class, report -> report.nodeLabelNotInIndex(any(), anyInt()));
     }
 
     @Test
@@ -293,8 +292,8 @@ class NodeCheckerTest extends CheckerTestBase {
                     writer.process(IndexEntryUpdate.change(
                             nodeId,
                             IndexDescriptor.NO_INDEX,
-                            EMPTY_LONG_ARRAY,
-                            i == 10 ? new long[] {label1} : new long[] {label1, label2}));
+                            EMPTY_INT_ARRAY,
+                            i == 10 ? new int[] {label1} : new int[] {label1, label2}));
                 }
             }
         }
@@ -303,15 +302,16 @@ class NodeCheckerTest extends CheckerTestBase {
         check();
 
         // then
-        expect(LabelScanConsistencyReport.class, report -> report.nodeLabelNotInIndex(any(), anyLong()));
+        expect(LabelScanConsistencyReport.class, report -> report.nodeLabelNotInIndex(any(), anyInt()));
     }
 
     @Test
-    void shouldReportNodeLabelHigherThanInt() throws Exception {
+    void shouldReportIllegalNodeLabel() throws Exception {
         // given
         try (AutoCloseable ignored = tx()) {
+            // labels magic field is encoded into inlined NodeLabelField one label with id -1.
             NodeRecord node = new NodeRecord(nodeStore.getIdGenerator().nextId(NULL_CONTEXT))
-                    .initialize(true, NULL, false, NULL, 0x171f5bd081L);
+                    .initialize(true, NULL, false, NULL, 137438953471L);
             try (var storeCursor = storeCursors.writeCursor(NODE_CURSOR)) {
                 nodeStore.updateRecord(node, storeCursor, NULL_CONTEXT, storeCursors);
             }

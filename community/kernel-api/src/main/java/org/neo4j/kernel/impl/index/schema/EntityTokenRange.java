@@ -45,5 +45,5 @@ public interface EntityTokenRange {
      * @param entityId the entity id to return tokens for.
      * @return token ids for the given {@code entityId}.
      */
-    long[] tokens(long entityId);
+    int[] tokens(long entityId);
 }

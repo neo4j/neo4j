@@ -19,7 +19,7 @@
  */
 package org.neo4j.collection;
 
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
 
 import java.util.Arrays;
 
@@ -32,6 +32,29 @@ import java.util.Arrays;
 public final class PrimitiveArrays {
     private PrimitiveArrays() {
         // No instances allowed
+    }
+
+    /**
+     * Deduplicates values in the sorted {@code values} array.
+     *
+     * @param values sorted array of long values.
+     * @return the provided array if no duplicates were found, otherwise a new shorter array w/o duplicates.
+     */
+    public static int[] deduplicate(int[] values) {
+        if (values.length < 2) {
+            return values;
+        }
+        int lastValue = values[0];
+        int uniqueIndex = 1;
+        for (int i = 1; i < values.length; i++) {
+            int currentValue = values[i];
+            if (currentValue != lastValue) {
+                values[uniqueIndex] = currentValue;
+                lastValue = currentValue;
+                uniqueIndex++;
+            }
+        }
+        return uniqueIndex < values.length ? Arrays.copyOf(values, uniqueIndex) : values;
     }
 
     /**
@@ -109,9 +132,9 @@ public final class PrimitiveArrays {
      * @param right another sorted array set
      * @return the intersection, represented as a sorted long array
      */
-    public static long[] intersect(long[] left, long[] right) {
+    public static int[] intersect(int[] left, int[] right) {
         if (left == null || right == null) {
-            return EMPTY_LONG_ARRAY;
+            return EMPTY_INT_ARRAY;
         }
 
         assert isSortedSet(left) && isSortedSet(right);
@@ -123,10 +146,10 @@ public final class PrimitiveArrays {
         }
         if (right(uniqueCounts) == right.length || left(uniqueCounts) == left.length) // non-intersecting
         {
-            return EMPTY_LONG_ARRAY;
+            return EMPTY_INT_ARRAY;
         }
 
-        long[] intersect = new long[left.length - left(uniqueCounts)];
+        int[] intersect = new int[left.length - left(uniqueCounts)];
 
         int cursor = 0;
         int l = 0;
@@ -152,7 +175,7 @@ public final class PrimitiveArrays {
      * @param right another sorted array set
      * @return the symmetric difference, represented as a sorted long array
      */
-    public static long[] symmetricDifference(long[] left, long[] right) {
+    public static int[] symmetricDifference(int[] left, int[] right) {
         if (left == null || right == null) {
             return left == null ? right : left;
         }
@@ -162,10 +185,10 @@ public final class PrimitiveArrays {
         long uniqueCounts = countUnique(left, right);
         if (uniqueCounts == 0) // complete intersection
         {
-            return EMPTY_LONG_ARRAY;
+            return EMPTY_INT_ARRAY;
         }
 
-        long[] difference = new long[left(uniqueCounts) + right(uniqueCounts)];
+        int[] difference = new int[left(uniqueCounts) + right(uniqueCounts)];
 
         int cursor = 0;
         int l = 0;
@@ -201,7 +224,7 @@ public final class PrimitiveArrays {
      * @param right another sorted array set
      * @return int pair packed into long
      */
-    static long countUnique(long[] left, long[] right) {
+    static long countUnique(int[] left, int[] right) {
         int l = 0;
         int r = 0;
         int uniqueInLeft = 0;
@@ -221,10 +244,6 @@ public final class PrimitiveArrays {
         uniqueInLeft += left.length - l;
         uniqueInRight += right.length - r;
         return intPair(uniqueInLeft, uniqueInRight);
-    }
-
-    public static boolean sortedContains(final int[] array, final int key) {
-        return Arrays.binarySearch(array, key) >= 0;
     }
 
     public static boolean contains(int[] list, int value) {
@@ -253,20 +272,5 @@ public final class PrimitiveArrays {
             assert set[i] < set[i + 1] : "Array is not a sorted set: has " + set[i] + " before " + set[i + 1];
         }
         return true;
-    }
-
-    private static boolean isSortedSet(long[] set) {
-        for (int i = 0; i < set.length - 1; i++) {
-            assert set[i] < set[i + 1] : "Array is not a sorted set: has " + set[i] + " before " + set[i + 1];
-        }
-        return true;
-    }
-
-    public static long[] intsToLongs(int[] ints) {
-        long[] longs = new long[ints.length];
-        for (int i = 0; i < ints.length; i++) {
-            longs[i] = ints[i];
-        }
-        return longs;
     }
 }

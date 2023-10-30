@@ -77,33 +77,33 @@ public class RestrictedAccessMode extends WrappedAccessMode {
     }
 
     @Override
-    public boolean allowsTraverseAllNodesWithLabel(long label) {
+    public boolean allowsTraverseAllNodesWithLabel(int label) {
         return original.allowsTraverseAllNodesWithLabel(label) && wrapping.allowsTraverseAllNodesWithLabel(label);
     }
 
     @Override
-    public boolean disallowsTraverseLabel(long label) {
+    public boolean disallowsTraverseLabel(int label) {
         return original.disallowsTraverseLabel(label) || wrapping.disallowsTraverseLabel(label);
     }
 
     @Override
-    public boolean allowsTraverseNode(long... labels) {
+    public boolean allowsTraverseNode(int... labels) {
         return original.allowsTraverseNode(labels) && wrapping.allowsTraverseNode(labels);
     }
 
     @Override
-    public IntSet getTraverseSecurityProperties(long[] labels) {
+    public IntSet getTraverseSecurityProperties(int[] labels) {
         return original.getTraverseSecurityProperties(labels).union(wrapping.getTraverseSecurityProperties(labels));
     }
 
     @Override
-    public boolean hasApplicableTraverseAllowPropertyRules(long label) {
+    public boolean hasApplicableTraverseAllowPropertyRules(int label) {
         return original.hasApplicableTraverseAllowPropertyRules(label)
                 || wrapping.hasApplicableTraverseAllowPropertyRules(label);
     }
 
     @Override
-    public boolean allowsTraverseNodeWithPropertyRules(ReadSecurityPropertyProvider propertyProvider, long... labels) {
+    public boolean allowsTraverseNodeWithPropertyRules(ReadSecurityPropertyProvider propertyProvider, int... labels) {
         return original.allowsTraverseNodeWithPropertyRules(propertyProvider, labels)
                 && wrapping.allowsTraverseNodeWithPropertyRules(propertyProvider, labels);
     }
@@ -225,12 +225,12 @@ public class RestrictedAccessMode extends WrappedAccessMode {
     }
 
     @Override
-    public boolean allowsSetLabel(long labelId) {
+    public boolean allowsSetLabel(int labelId) {
         return original.allowsSetLabel(labelId) && wrapping.allowsSetLabel(labelId);
     }
 
     @Override
-    public boolean allowsRemoveLabel(long labelId) {
+    public boolean allowsRemoveLabel(int labelId) {
         return original.allowsRemoveLabel(labelId) && wrapping.allowsRemoveLabel(labelId);
     }
 

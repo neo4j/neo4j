@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.index;
 
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.params.ParameterizedTest;
@@ -34,7 +35,7 @@ class EntityTokenUpdatesTest {
     private static final int TOKEN_1_ID = 0;
     private static final int TOKEN_2_ID = 1;
 
-    private static final long[] EMPTY = new long[] {};
+    private static final int[] EMPTY = EMPTY_INT_ARRAY;
 
     @ParameterizedTest
     @EnumSource(Entity.class)
@@ -60,7 +61,7 @@ class EntityTokenUpdatesTest {
                 .build();
         assertThat(updates.tokenUpdateForIndexKey(entity.getTokenIndex()))
                 .contains(IndexEntryUpdate.change(
-                        ENTITY_ID, entity.getTokenIndex(), EMPTY, new long[] {TOKEN_1_ID, TOKEN_2_ID}));
+                        ENTITY_ID, entity.getTokenIndex(), EMPTY, new int[] {TOKEN_1_ID, TOKEN_2_ID}));
     }
 
     @ParameterizedTest
@@ -72,8 +73,7 @@ class EntityTokenUpdatesTest {
                 .build();
         assertThat(updates.tokenUpdateForIndexKey(entity.getTokenIndex()))
                 .contains(IndexEntryUpdate.change(
-                        ENTITY_ID, entity.getTokenIndex(), new long[] {TOKEN_1_ID}, new long[] {TOKEN_1_ID, TOKEN_2_ID
-                        }));
+                        ENTITY_ID, entity.getTokenIndex(), new int[] {TOKEN_1_ID}, new int[] {TOKEN_1_ID, TOKEN_2_ID}));
     }
 
     @ParameterizedTest
@@ -85,7 +85,7 @@ class EntityTokenUpdatesTest {
                 .build();
         assertThat(updates.tokenUpdateForIndexKey(entity.getTokenIndex()))
                 .contains(IndexEntryUpdate.change(
-                        ENTITY_ID, entity.getTokenIndex(), new long[] {TOKEN_1_ID, TOKEN_2_ID}, EMPTY));
+                        ENTITY_ID, entity.getTokenIndex(), new int[] {TOKEN_1_ID, TOKEN_2_ID}, EMPTY));
     }
 
     private enum Entity {

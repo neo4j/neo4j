@@ -25,10 +25,9 @@ import static org.neo4j.storageengine.api.LongReference.NULL_REFERENCE;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.IntSet;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
-import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
+import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 import org.neo4j.collection.diffset.LongDiffSets;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
@@ -138,9 +137,8 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
         } else if (hasChanges()) {
             // Get labels from store and put in intSet, unfortunately we get longs back
             TransactionState txState = read.txState();
-            long[] longs = storeCursor.labels();
-            final MutableLongSet labels = new LongHashSet();
-            for (long labelToken : longs) {
+            final MutableIntSet labels = new IntHashSet();
+            for (int labelToken : storeCursor.labels()) {
                 labels.add(labelToken);
             }
 

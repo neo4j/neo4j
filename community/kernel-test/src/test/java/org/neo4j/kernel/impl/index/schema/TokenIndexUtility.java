@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.function.Supplier;
 import org.apache.commons.lang3.ArrayUtils;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
-import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
+import org.eclipse.collections.impl.list.mutable.primitive.IntArrayList;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
@@ -38,14 +38,14 @@ import org.neo4j.storageengine.api.TokenIndexEntryUpdate;
 import org.neo4j.test.RandomSupport;
 
 public class TokenIndexUtility {
-    static final long[] TOKENS = {1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L};
+    static final int[] TOKENS = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
 
     /**
      * Compares the state of the tree with the expected values.
      * @param expected Mapping from entity id to expected entity tokens.
      */
     static void verifyUpdates(
-            MutableLongObjectMap<long[]> expected,
+            MutableLongObjectMap<int[]> expected,
             TokenScanLayout layout,
             Supplier<GBPTree<TokenScanKey, TokenScanValue>> treeSupplier,
             DefaultTokenIndexIdLayout idLayout)
@@ -62,7 +62,7 @@ public class TokenIndexUtility {
                     long posInBits = bits & mask;
                     if (posInBits != 0) {
                         long entity = entityIdBase + i;
-                        long[] tokens = expected.remove(entity);
+                        int[] tokens = expected.remove(entity);
                         assertThat(tokens)
                                 .withFailMessage(
                                         "Entity " + entity + " contained unexpected token " + key.tokenId + " in tree")
@@ -93,7 +93,7 @@ public class TokenIndexUtility {
     }
 
     static List<TokenIndexEntryUpdate<?>> generateSomeRandomUpdates(
-            MutableLongObjectMap<long[]> entityTokens, RandomSupport random) {
+            MutableLongObjectMap<int[]> entityTokens, RandomSupport random) {
         long currentScanId = 0;
         List<TokenIndexEntryUpdate<?>> updates = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
@@ -107,12 +107,12 @@ public class TokenIndexUtility {
 
     static void generateRandomUpdate(
             long entityId,
-            MutableLongObjectMap<long[]> trackingState,
+            MutableLongObjectMap<int[]> trackingState,
             List<TokenIndexEntryUpdate<?>> updates,
             RandomSupport random) {
-        long[] addTokens = generateRandomTokens(random);
+        int[] addTokens = generateRandomTokens(random);
         if (addTokens.length != 0) {
-            TokenIndexEntryUpdate<?> update = IndexEntryUpdate.change(entityId, null, EMPTY_LONG_ARRAY, addTokens);
+            TokenIndexEntryUpdate<?> update = IndexEntryUpdate.change(entityId, null, EMPTY_INT_ARRAY, addTokens);
             updates.add(update);
 
             // Add update to tracking structure
@@ -126,22 +126,22 @@ public class TokenIndexUtility {
      * Generated array contains specific tokens with different probability to get varying distribution - some bitset
      * should be quite full, while others should be quite empty and more likely to become empty with later updates.
      */
-    static long[] generateRandomTokens(RandomSupport random) {
-        long[] allTokens = TokenIndexUtility.TOKENS;
+    static int[] generateRandomTokens(RandomSupport random) {
+        int[] allTokens = TokenIndexUtility.TOKENS;
         double[] allTokensRatio = new double[] {0.9, 0.8, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.01, 0.001};
         double emptyRatio = 0.1;
 
         if (random.nextDouble() < emptyRatio) {
-            return EMPTY_LONG_ARRAY;
+            return EMPTY_INT_ARRAY;
         } else {
-            LongArrayList longArrayList = new LongArrayList();
+            IntArrayList intList = new IntArrayList();
 
             for (int i = 0; i < allTokens.length; i++) {
                 if (random.nextDouble() < allTokensRatio[i]) {
-                    longArrayList.add(allTokens[i]);
+                    intList.add(allTokens[i]);
                 }
             }
-            return longArrayList.toArray();
+            return intList.toArray();
         }
     }
 }

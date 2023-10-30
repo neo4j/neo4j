@@ -21,7 +21,6 @@ package org.neo4j.collection;
 
 import static java.util.Arrays.copyOf;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -254,29 +253,6 @@ public final class PrimitiveLongCollections {
             throw new IllegalStateException("Encountered an already added item:" + item
                     + " when adding items uniquely to a collection:" + collection);
         }
-    }
-
-    /**
-     * Deduplicates values in the sorted {@code values} array.
-     *
-     * @param values sorted array of long values.
-     * @return the provided array if no duplicates were found, otherwise a new shorter array w/o duplicates.
-     */
-    public static long[] deduplicate(long[] values) {
-        if (values.length < 2) {
-            return values;
-        }
-        long lastValue = values[0];
-        int uniqueIndex = 1;
-        for (int i = 1; i < values.length; i++) {
-            long currentValue = values[i];
-            if (currentValue != lastValue) {
-                values[uniqueIndex] = currentValue;
-                lastValue = currentValue;
-                uniqueIndex++;
-            }
-        }
-        return uniqueIndex < values.length ? Arrays.copyOf(values, uniqueIndex) : values;
     }
 
     /**

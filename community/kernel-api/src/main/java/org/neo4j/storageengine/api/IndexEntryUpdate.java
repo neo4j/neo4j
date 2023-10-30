@@ -104,13 +104,11 @@ public abstract class IndexEntryUpdate<INDEX_KEY extends SchemaDescriptorSupplie
     public abstract long roughSizeOfUpdate();
 
     /**
-     * Equality check for values in sub-class.
      * Need to align with {@link #valueHash() value hash code}.
      */
     protected abstract boolean valueEquals(IndexEntryUpdate<?> that);
 
     /**
-     * Hash code for values in sub-class.
      * Need to align with {@link #valueEquals(IndexEntryUpdate) value equals}.
      */
     protected abstract int valueHash();
@@ -142,7 +140,7 @@ public abstract class IndexEntryUpdate<INDEX_KEY extends SchemaDescriptorSupplie
     }
 
     public static <INDEX_KEY extends SchemaDescriptorSupplier> TokenIndexEntryUpdate<INDEX_KEY> change(
-            long entityId, INDEX_KEY indexKey, long[] before, long[] after) {
+            long entityId, INDEX_KEY indexKey, int[] before, int[] after) {
         return change(entityId, indexKey, before, after, false);
     }
 
@@ -152,7 +150,7 @@ public abstract class IndexEntryUpdate<INDEX_KEY extends SchemaDescriptorSupplie
      *     change and {@code after} means tokens after the change.
      */
     public static <INDEX_KEY extends SchemaDescriptorSupplier> TokenIndexEntryUpdate<INDEX_KEY> change(
-            long entityId, INDEX_KEY indexKey, long[] before, long[] after, boolean logical) {
+            long entityId, INDEX_KEY indexKey, int[] before, int[] after, boolean logical) {
         return new TokenIndexEntryUpdate<>(entityId, indexKey, before, after, logical);
     }
 }

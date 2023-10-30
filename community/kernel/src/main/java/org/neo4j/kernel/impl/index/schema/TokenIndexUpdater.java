@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import static java.lang.Long.min;
-import static java.lang.Math.toIntExact;
 import static org.neo4j.index.internal.gbptree.ValueMerger.MergeResult.MERGED;
 import static org.neo4j.index.internal.gbptree.ValueMerger.MergeResult.REMOVED;
 
@@ -121,7 +119,7 @@ class TokenIndexUpdater implements IndexUpdater {
      * For each round the current round tries to figure out which is the closest higher tokenId to apply
      * in the next round. This variable keeps track of that next tokenId.
      */
-    private long lowestTokenId;
+    private int lowestTokenId;
 
     private boolean closed = true;
 
@@ -138,7 +136,7 @@ class TokenIndexUpdater implements IndexUpdater {
         this.writer = writer;
         this.pendingUpdatesCursor = 0;
         this.addition = false;
-        this.lowestTokenId = Long.MAX_VALUE;
+        this.lowestTokenId = Integer.MAX_VALUE;
         closed = false;
         return this;
     }
@@ -164,19 +162,19 @@ class TokenIndexUpdater implements IndexUpdater {
         checkNextTokenId(tokenUpdate.values());
     }
 
-    private void checkNextTokenId(long[] tokens) {
+    private void checkNextTokenId(int[] tokens) {
         if (tokens.length > 0 && tokens[0] != -1) {
-            lowestTokenId = min(lowestTokenId, tokens[0]);
+            lowestTokenId = Math.min(lowestTokenId, tokens[0]);
         }
     }
 
     private void flushPendingChanges() {
         Arrays.sort(pendingUpdates, 0, pendingUpdatesCursor);
-        long currentTokenId = lowestTokenId;
+        int currentTokenId = lowestTokenId;
         value.clear();
         key.clear();
-        while (currentTokenId != Long.MAX_VALUE) {
-            long nextTokenId = Long.MAX_VALUE;
+        while (currentTokenId != Integer.MAX_VALUE) {
+            int nextTokenId = Integer.MAX_VALUE;
             for (int i = 0; i < pendingUpdatesCursor; i++) {
                 LogicalTokenUpdates update = pendingUpdates[i];
                 long entityId = update.entityId();
@@ -189,10 +187,10 @@ class TokenIndexUpdater implements IndexUpdater {
         pendingUpdatesCursor = 0;
     }
 
-    private long extractChange(long[] tokens, long currentTokenId, long entityId, long nextTokenId, boolean addition) {
-        long foundNextTokenId = nextTokenId;
+    private int extractChange(int[] tokens, int currentTokenId, long entityId, int nextTokenId, boolean addition) {
+        int foundNextTokenId = nextTokenId;
         for (int li = 0; li < tokens.length; li++) {
-            long tokenId = tokens[li];
+            int tokenId = tokens[li];
             if (tokenId == -1) {
                 break;
             }
@@ -205,25 +203,24 @@ class TokenIndexUpdater implements IndexUpdater {
                 // we just check the next if it's less than what we currently think is next tokenId
                 // and then break right after
                 if (li + 1 < tokens.length && tokens[li + 1] != -1) {
-                    long nextTokenCandidate = tokens[li + 1];
+                    int nextTokenCandidate = tokens[li + 1];
                     if (nextTokenCandidate < currentTokenId) {
                         throw new IllegalArgumentException(
                                 "The entity token contained unsorted tokens ids " + Arrays.toString(tokens));
                     }
                     if (nextTokenCandidate > currentTokenId) {
-                        foundNextTokenId = min(foundNextTokenId, nextTokenCandidate);
+                        foundNextTokenId = Math.min(foundNextTokenId, nextTokenCandidate);
                     }
                 }
                 break;
             } else if (tokenId > currentTokenId) {
-                foundNextTokenId = min(foundNextTokenId, tokenId);
+                foundNextTokenId = Math.min(foundNextTokenId, tokenId);
             }
         }
         return foundNextTokenId;
     }
 
-    private void change(long currentTokenId, long entityId, boolean add) {
-        int tokenId = toIntExact(currentTokenId);
+    private void change(int tokenId, long entityId, boolean add) {
         long idRange = idLayout.rangeOf(entityId);
         if (tokenId != key.tokenId || idRange != key.idRange || addition != add) {
             flushPendingRange();

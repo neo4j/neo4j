@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
 import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
 
 import java.util.Collection;
@@ -138,35 +138,35 @@ public class RecordStorageReader implements StorageReader {
     }
 
     @Override
-    public Collection<IndexDescriptor> valueIndexesGetRelated(long[] labels, int propertyKeyId, EntityType entityType) {
+    public Collection<IndexDescriptor> valueIndexesGetRelated(int[] labels, int propertyKeyId, EntityType entityType) {
         return schemaCache.getValueIndexesRelatedTo(
-                EMPTY_LONG_ARRAY, labels, new int[] {propertyKeyId}, false, entityType);
+                EMPTY_INT_ARRAY, labels, new int[] {propertyKeyId}, false, entityType);
     }
 
     @Override
     public Collection<IndexDescriptor> valueIndexesGetRelated(
-            long[] labels, int[] propertyKeyIds, EntityType entityType) {
-        return schemaCache.getValueIndexesRelatedTo(labels, EMPTY_LONG_ARRAY, propertyKeyIds, true, entityType);
+            int[] labels, int[] propertyKeyIds, EntityType entityType) {
+        return schemaCache.getValueIndexesRelatedTo(labels, EMPTY_INT_ARRAY, propertyKeyIds, true, entityType);
     }
 
     @Override
     public Collection<IndexBackedConstraintDescriptor> uniquenessConstraintsGetRelated(
-            long[] tokens, int propertyKeyId, EntityType entityType) {
+            int[] tokens, int propertyKeyId, EntityType entityType) {
         return schemaCache.getUniquenessConstraintsRelatedTo(
-                EMPTY_LONG_ARRAY, tokens, new int[] {propertyKeyId}, false, entityType);
+                EMPTY_INT_ARRAY, tokens, new int[] {propertyKeyId}, false, entityType);
     }
 
     @Override
     public Collection<IndexBackedConstraintDescriptor> uniquenessConstraintsGetRelated(
-            long[] entityTokens, int[] propertyKeyIds, EntityType entityType) {
+            int[] entityTokens, int[] propertyKeyIds, EntityType entityType) {
         return schemaCache.getUniquenessConstraintsRelatedTo(
-                EMPTY_LONG_ARRAY, entityTokens, propertyKeyIds, false, entityType);
+                EMPTY_INT_ARRAY, entityTokens, propertyKeyIds, false, entityType);
     }
 
     @Override
     public Collection<IndexBackedConstraintDescriptor> uniquenessConstraintsGetRelated(
-            long[] changedLabels,
-            long[] unchangedLabels,
+            int[] changedLabels,
+            int[] unchangedLabels,
             int[] propertyKeyIds,
             boolean propertyKeyListIsComplete,
             EntityType entityType) {
@@ -175,7 +175,7 @@ public class RecordStorageReader implements StorageReader {
     }
 
     @Override
-    public boolean hasRelatedSchema(long[] tokens, int propertyKey, EntityType entityType) {
+    public boolean hasRelatedSchema(int[] tokens, int propertyKey, EntityType entityType) {
         return schemaCache.hasRelatedSchema(tokens, propertyKey, entityType);
     }
 

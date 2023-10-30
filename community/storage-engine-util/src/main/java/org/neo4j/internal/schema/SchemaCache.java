@@ -21,7 +21,6 @@ package org.neo4j.internal.schema;
 
 import static java.util.Collections.emptySet;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -178,8 +177,8 @@ public class SchemaCache {
     }
 
     public Set<IndexDescriptor> getValueIndexesRelatedTo(
-            long[] changedEntityTokens,
-            long[] unchangedEntityTokens,
+            int[] changedEntityTokens,
+            int[] unchangedEntityTokens,
             int[] properties,
             boolean propertyListIsComplete,
             EntityType entityType) {
@@ -188,8 +187,8 @@ public class SchemaCache {
     }
 
     public Collection<IndexBackedConstraintDescriptor> getUniquenessConstraintsRelatedTo(
-            long[] changedLabels,
-            long[] unchangedLabels,
+            int[] changedLabels,
+            int[] unchangedLabels,
             int[] properties,
             boolean propertyListIsComplete,
             EntityType entityType) {
@@ -197,7 +196,7 @@ public class SchemaCache {
                 entityType, changedLabels, unchangedLabels, properties, propertyListIsComplete);
     }
 
-    public boolean hasRelatedSchema(long[] tokens, int propertyKey, EntityType entityType) {
+    public boolean hasRelatedSchema(int[] tokens, int propertyKey, EntityType entityType) {
         return schemaCacheState.hasRelatedSchema(tokens, propertyKey, entityType);
     }
 
@@ -374,7 +373,7 @@ public class SchemaCache {
                     .computeIfAbsent(
                             key,
                             k -> getSchemaRelatedTo(
-                                    indexesByNode, new long[] {labelId}, EMPTY_LONG_ARRAY, EMPTY_INT_ARRAY, false))
+                                    indexesByNode, new int[] {labelId}, EMPTY_INT_ARRAY, EMPTY_INT_ARRAY, false))
                     .iterator();
         }
 
@@ -392,8 +391,8 @@ public class SchemaCache {
                             key,
                             k -> getSchemaRelatedTo(
                                     indexesByRelationship,
-                                    new long[] {relationshipType},
-                                    EMPTY_LONG_ARRAY,
+                                    new int[] {relationshipType},
+                                    EMPTY_INT_ARRAY,
                                     EMPTY_INT_ARRAY,
                                     false))
                     .iterator();
@@ -401,8 +400,8 @@ public class SchemaCache {
 
         Set<IndexDescriptor> getIndexesRelatedTo(
                 EntityType entityType,
-                long[] changedEntityTokens,
-                long[] unchangedEntityTokens,
+                int[] changedEntityTokens,
+                int[] unchangedEntityTokens,
                 int[] properties,
                 boolean propertyListIsComplete) {
             SchemaDescriptorLookupSet<IndexDescriptor> set = selectIndexSetByEntityType(entityType);
@@ -423,8 +422,8 @@ public class SchemaCache {
 
         Set<IndexBackedConstraintDescriptor> getUniquenessConstraintsRelatedTo(
                 EntityType entityType,
-                long[] changedEntityTokens,
-                long[] unchangedEntityTokens,
+                int[] changedEntityTokens,
+                int[] unchangedEntityTokens,
                 int[] properties,
                 boolean propertyListIsComplete) {
             SchemaDescriptorLookupSet<IndexBackedConstraintDescriptor> set =
@@ -446,8 +445,8 @@ public class SchemaCache {
 
         private static <T extends SchemaDescriptorSupplier> Set<T> getSchemaRelatedTo(
                 SchemaDescriptorLookupSet<T> set,
-                long[] changedEntityTokens,
-                long[] unchangedEntityTokens,
+                int[] changedEntityTokens,
+                int[] unchangedEntityTokens,
                 int[] properties,
                 boolean propertyListIsComplete) {
             Set<T> descriptors = UnifiedSet.newSet();
@@ -480,7 +479,7 @@ public class SchemaCache {
             return descriptors;
         }
 
-        boolean hasRelatedSchema(long[] tokens, int propertyKey, EntityType entityType) {
+        boolean hasRelatedSchema(int[] tokens, int propertyKey, EntityType entityType) {
             return selectIndexSetByEntityType(entityType).has(tokens, propertyKey)
                     || selectUniquenessConstraintSetByEntityType(entityType).has(tokens, propertyKey);
         }
@@ -736,15 +735,15 @@ public class SchemaCache {
     private static class IndexesRelatedToKey extends QueryCacheKey {
         private static final int PRIME = nextPrime();
         private final EntityType entityType;
-        private final long[] changedEntityTokens;
-        private final long[] unchangedEntityTokens;
+        private final int[] changedEntityTokens;
+        private final int[] unchangedEntityTokens;
         private final int[] properties;
         private final boolean propertyListIsComplete;
 
         IndexesRelatedToKey(
                 EntityType entityType,
-                long[] changedEntityTokens,
-                long[] unchangedEntityTokens,
+                int[] changedEntityTokens,
+                int[] unchangedEntityTokens,
                 int[] properties,
                 boolean propertyListIsComplete) {
             this(
@@ -760,8 +759,8 @@ public class SchemaCache {
         IndexesRelatedToKey(
                 int hash,
                 EntityType entityType,
-                long[] changedEntityTokens,
-                long[] unchangedEntityTokens,
+                int[] changedEntityTokens,
+                int[] unchangedEntityTokens,
                 int[] properties,
                 boolean propertyListIsComplete) {
             super(hash);
@@ -774,8 +773,8 @@ public class SchemaCache {
 
         static int hash(
                 EntityType entityType,
-                long[] changedEntityTokens,
-                long[] unchangedEntityTokens,
+                int[] changedEntityTokens,
+                int[] unchangedEntityTokens,
                 int[] properties,
                 boolean propertyListIsComplete) {
             int result = 1;
@@ -824,8 +823,8 @@ public class SchemaCache {
 
         UniqueIndexesRelatedToKey(
                 EntityType entityType,
-                long[] changedEntityTokens,
-                long[] unchangedEntityTokens,
+                int[] changedEntityTokens,
+                int[] unchangedEntityTokens,
                 int[] properties,
                 boolean propertyListIsComplete) {
             super(

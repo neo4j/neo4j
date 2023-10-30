@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import static java.lang.Math.toIntExact;
 import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
 import static org.neo4j.token.api.TokenConstants.ANY_RELATIONSHIP_TYPE;
 
@@ -35,7 +34,7 @@ public class RelationshipCounter {
     private static final int SIDES = 2;
 
     private final NodeLabelsLookup nodeLabelsLookup;
-    private final long highLabelId;
+    private final int highLabelId;
     private final long highRelationshipTypeId;
     private final Incrementer incrementer;
     private final long sideSize;
@@ -44,8 +43,8 @@ public class RelationshipCounter {
 
     public RelationshipCounter(
             NodeLabelsLookup nodeLabelsLookup,
-            long highLabelId,
-            long highRelationshipTypeId,
+            int highLabelId,
+            int highRelationshipTypeId,
             LongArray wildcardCounts,
             LongArray labelsCounts,
             Incrementer incrementer) {
@@ -83,23 +82,21 @@ public class RelationshipCounter {
             boolean processEndNode) {
         int type = relationship.getType();
         if (processStartNode) {
-            for (long startNodeLabelId : nodeLabelsLookup.nodeLabels(relationship.getFirstNode())) {
-                if (startNodeLabelId == -1) { // We reached the end of it
+            for (int labelId : nodeLabelsLookup.nodeLabels(relationship.getFirstNode())) {
+                if (labelId == -1) { // We reached the end of it
                     break;
                 }
 
-                int labelId = toIntExact(startNodeLabelId);
                 increment(labelsCounts, labelId, ANY_RELATIONSHIP_TYPE, START, strayRelationshipReporter);
                 increment(labelsCounts, labelId, type, START, strayRelationshipReporter);
             }
         }
         if (processEndNode) {
-            for (long endNodeLabelId : nodeLabelsLookup.nodeLabels(relationship.getSecondNode())) {
-                if (endNodeLabelId == -1) { // We reached the end of it
+            for (int labelId : nodeLabelsLookup.nodeLabels(relationship.getSecondNode())) {
+                if (labelId == -1) { // We reached the end of it
                     break;
                 }
 
-                int labelId = toIntExact(endNodeLabelId);
                 increment(labelsCounts, labelId, ANY_RELATIONSHIP_TYPE, END, strayRelationshipReporter);
                 increment(labelsCounts, labelId, type, END, strayRelationshipReporter);
             }
@@ -117,7 +114,7 @@ public class RelationshipCounter {
         }
     }
 
-    private long arrayIndex(long labelId, long relationshipTypeId, long side) {
+    private long arrayIndex(int labelId, long relationshipTypeId, long side) {
         return (side * sideSize) + (labelId * (highRelationshipTypeId + 1) + relationshipTypeId);
     }
 
@@ -171,7 +168,7 @@ public class RelationshipCounter {
         return typeId == ANY_RELATIONSHIP_TYPE ? highRelationshipTypeId : typeId;
     }
 
-    private long labelPos(int labelId) {
+    private int labelPos(int labelId) {
         return labelId == ANY_LABEL ? highLabelId : labelId;
     }
 
@@ -223,6 +220,6 @@ public class RelationshipCounter {
     }
 
     public interface NodeLabelsLookup {
-        long[] nodeLabels(long nodeId);
+        int[] nodeLabels(long nodeId);
     }
 }

@@ -331,8 +331,8 @@ public class MultiIndexPopulationConcurrentUpdatesIT {
         assertSame(InternalIndexState.ONLINE, indexProxy.getState());
     }
 
-    private long[] id(String label) {
-        return new long[] {labelsNameIdMap.get(label)};
+    private int[] id(String label) {
+        return new int[] {labelsNameIdMap.get(label)};
     }
 
     private ValueIndexReader getIndexReader(int propertyId, Integer countryLabelId)

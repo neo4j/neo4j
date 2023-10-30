@@ -50,7 +50,7 @@ public class NodeIndexChecker extends IndexChecker<NodeRecord> {
     }
 
     @Override
-    long[] getEntityTokens(
+    int[] getEntityTokens(
             CheckerContext context,
             StoreCursors storeCursors,
             NodeRecord record,

@@ -93,7 +93,7 @@ class SchemaComplianceCheckerTest extends CheckerTestBase {
         long nodeId = 0;
         MutableIntObjectMap<Value> propertyValues = new IntObjectHashMap<>();
         propertyValues.put(propertyKey2, intValue(99));
-        long[] labels = new long[] {label1, label3};
+        int[] labels = new int[] {label1, label3};
         MutableIntObjectMap<MutableIntSet> mandatoryProperties = IntObjectMaps.mutable.empty();
         mandatoryProperties.put(label1, IntSets.mutable.of(propertyKey1, propertyKey2));
         mandatoryProperties.put(label2, IntSets.mutable.of(propertyKey1, propertyKey3));
@@ -120,7 +120,7 @@ class SchemaComplianceCheckerTest extends CheckerTestBase {
         long nodeId = 0;
         MutableIntObjectMap<Value> propertyValues = new IntObjectHashMap<>();
         propertyValues.put(propertyKey2, intValue(99));
-        long[] labels = new long[] {label1, label3};
+        int[] labels = new int[] {label1, label3};
         IntObjectMap<IntObjectMap<PropertyTypeSet>> allowedTypes = IntObjectMaps.immutable.of(
                 label1,
                 IntObjectMaps.immutable.of(
@@ -300,7 +300,7 @@ class SchemaComplianceCheckerTest extends CheckerTestBase {
 
             checker.checkCorrectlyIndexed(
                     record,
-                    new long[] {record.getType()},
+                    new int[] {record.getType()},
                     readPropertyValues(record, reporter::forRelationship),
                     reporter::forRelationship);
         }

@@ -77,7 +77,7 @@ class RecordLoading {
         this.neoStores = neoStores;
     }
 
-    static long[] safeGetNodeLabels(
+    static int[] safeGetNodeLabels(
             CheckerContext context,
             StoreCursors storeCursors,
             long nodeId,
@@ -117,8 +117,7 @@ class RecordLoading {
         return null;
     }
 
-    static Value[] entityIntersectionWithSchema(
-            long[] entityTokens, IntObjectMap<Value> values, IndexDescriptor index) {
+    static Value[] entityIntersectionWithSchema(int[] entityTokens, IntObjectMap<Value> values, IndexDescriptor index) {
         final var schema = index.schema();
         if (!schema.isAffected(entityTokens)) {
             return null;

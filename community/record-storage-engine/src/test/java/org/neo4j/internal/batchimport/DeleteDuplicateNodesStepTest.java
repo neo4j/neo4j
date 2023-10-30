@@ -310,8 +310,8 @@ class DeleteDuplicateNodesStepTest {
         return records.toArray(new PropertyRecord[0]);
     }
 
-    private static long[] labelIds(int labelCount) {
-        long[] result = new long[labelCount];
+    private static int[] labelIds(int labelCount) {
+        int[] result = new int[labelCount];
         for (int i = 0; i < labelCount; i++) {
             result[i] = i;
         }

@@ -27,7 +27,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.IntFunction;
-import org.eclipse.collections.api.list.primitive.MutableLongList;
+import org.eclipse.collections.api.list.primitive.MutableIntList;
 import org.neo4j.common.EntityType;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Seeker;
@@ -105,7 +105,7 @@ class NativeAllEntriesTokenScanReader implements AllEntriesTokenScanReader {
         private final EntityType entityType;
 
         // entityId (relative to lowestRange) --> tokenId[]
-        private final MutableLongList[] tokensForEachEntity = new MutableLongList[TokenScanValue.RANGE_SIZE];
+        private final MutableIntList[] tokensForEachEntity = new MutableIntList[TokenScanValue.RANGE_SIZE];
 
         EntityTokenRangeIterator(long lowestRange, EntityType entityType) {
             this.currentRange = lowestRange;
@@ -132,7 +132,7 @@ class NativeAllEntriesTokenScanReader implements AllEntriesTokenScanReader {
                         throw new IllegalStateException("Accessing cursor that is out of range");
                     } else if (idRange == currentRange) {
                         long bits = cursor.value().bits;
-                        long tokenId = cursor.key().tokenId;
+                        int tokenId = cursor.key().tokenId;
                         EntityTokenRangeImpl.readBitmap(bits, tokenId, tokensForEachEntity);
 
                         // Advance cursor and look ahead to the next range

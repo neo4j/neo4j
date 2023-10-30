@@ -131,8 +131,8 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter {
     @Override
     public void visitNodeLabelChanges(long id, final LongSet added, final LongSet removed) {
         // record the state changes to be made to the store
-        removed.each(label -> recordState.removeLabelFromNode(label, id));
-        added.each(label -> recordState.addLabelToNode(label, id));
+        removed.each(label -> recordState.removeLabelFromNode((int) label, id));
+        added.each(label -> recordState.addLabelToNode((int) label, id));
     }
 
     @Override

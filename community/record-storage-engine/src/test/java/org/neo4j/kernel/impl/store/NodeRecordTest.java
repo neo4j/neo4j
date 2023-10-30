@@ -90,10 +90,10 @@ class NodeRecordTest {
         ReusableRecordsAllocator recordAllocator =
                 new ReusableRecordsAllocator(30, new DynamicRecord(1), new DynamicRecord(2));
         NodeRecord node = newUsedNodeRecord(0);
-        long labelId = 10_123;
+        int labelId = 10_123;
         // A dynamic label record
         List<DynamicRecord> existing = allocateRecordsForDynamicLabels(
-                node.getId(), new long[] {labelId}, recordAllocator, NULL_CONTEXT, INSTANCE);
+                node.getId(), new int[] {labelId}, recordAllocator, NULL_CONTEXT, INSTANCE);
         // and a deleted one as well (simulating some deleted labels)
         DynamicRecord unused = newDeletedDynamicRecord(ids.nextId(NULL_CONTEXT));
         unused.setInUse(false);

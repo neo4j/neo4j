@@ -462,7 +462,7 @@ public class TransactionRecordState implements RecordState {
                 node, propertyKey, value, recordChangeSet.getPropertyRecords(), memoryTracker);
     }
 
-    void addLabelToNode(long labelId, long nodeId) {
+    void addLabelToNode(int labelId, long nodeId) {
         NodeRecord nodeRecord =
                 recordChangeSet.getNodeRecords().getOrLoad(nodeId, null).forChangingData();
         parseLabelsField(nodeRecord)
@@ -475,7 +475,7 @@ public class TransactionRecordState implements RecordState {
                         memoryTracker);
     }
 
-    void removeLabelFromNode(long labelId, long nodeId) {
+    void removeLabelFromNode(int labelId, long nodeId) {
         NodeRecord nodeRecord =
                 recordChangeSet.getNodeRecords().getOrLoad(nodeId, null).forChangingData();
         parseLabelsField(nodeRecord)

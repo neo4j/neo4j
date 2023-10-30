@@ -166,9 +166,9 @@ class TransactionRecordStateTest {
     private static final Value value2 = Values.of(4);
     private static final int labelIdOne = 3;
     private static final int labelIdSecond = 4;
-    private final long[] oneLabelId = new long[] {labelIdOne};
-    private final long[] secondLabelId = new long[] {labelIdSecond};
-    private final long[] bothLabelIds = new long[] {labelIdOne, labelIdSecond};
+    private final int[] oneLabelId = new int[] {labelIdOne};
+    private final int[] secondLabelId = new int[] {labelIdSecond};
+    private final int[] bothLabelIds = new int[] {labelIdOne, labelIdSecond};
     private RecordChangeSet recordChangeSet;
     private final SchemaCache schemaCache = new SchemaCache(
             new StandardConstraintRuleAccessor(),
@@ -1705,14 +1705,14 @@ class TransactionRecordStateTest {
                 .isFalse();
     }
 
-    private static void addLabelsToNode(TransactionRecordState recordState, long nodeId, long[] labelIds) {
-        for (long labelId : labelIds) {
+    private static void addLabelsToNode(TransactionRecordState recordState, long nodeId, int[] labelIds) {
+        for (int labelId : labelIds) {
             recordState.addLabelToNode(labelId, nodeId);
         }
     }
 
-    private static void removeLabelsFromNode(TransactionRecordState recordState, long nodeId, long[] labelIds) {
-        for (long labelId : labelIds) {
+    private static void removeLabelsFromNode(TransactionRecordState recordState, long nodeId, int[] labelIds) {
+        for (int labelId : labelIds) {
             recordState.removeLabelFromNode(labelId, nodeId);
         }
     }

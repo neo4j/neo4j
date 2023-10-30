@@ -46,11 +46,11 @@ class NodeLabelsCacheTest {
         long nodeId = 0;
 
         // WHEN
-        cache.put(nodeId, new long[] {1, 2, 3});
+        cache.put(nodeId, new int[] {1, 2, 3});
 
         // THEN
-        long[] readLabels = cache.get(client, nodeId);
-        assertArrayEquals(new long[] {1, 2, 3}, shrunk(readLabels));
+        int[] readLabels = cache.get(client, nodeId);
+        assertArrayEquals(new int[] {1, 2, 3}, shrunk(readLabels));
     }
 
     @Test
@@ -62,11 +62,11 @@ class NodeLabelsCacheTest {
         long nodeId = 0;
 
         // WHEN
-        long[] labels = randomLabels(200, 1000);
+        int[] labels = randomLabels(200, 1000);
         cache.put(nodeId, labels);
 
         // THEN
-        long[] readLabels = cache.get(client, nodeId);
+        int[] readLabels = cache.get(client, nodeId);
         assertArrayEquals(labels, readLabels);
     }
 
@@ -77,16 +77,16 @@ class NodeLabelsCacheTest {
         int numberOfNodes = 100_000;
         NodeLabelsCache cache = new NodeLabelsCache(AUTO_WITHOUT_PAGECACHE, numberOfNodes, highLabelId, INSTANCE);
         NodeLabelsCache.Client client = cache.newClient();
-        long[][] expectedLabels = new long[numberOfNodes][];
+        int[][] expectedLabels = new int[numberOfNodes][];
         for (int i = 0; i < numberOfNodes; i++) {
-            long[] labels = randomLabels(random.nextInt(30) + 1, highLabelId);
+            int[] labels = randomLabels(random.nextInt(30) + 1, highLabelId);
             expectedLabels[i] = labels;
             cache.put(i, labels);
         }
 
         // THEN
         for (int i = 0; i < numberOfNodes; i++) {
-            long[] labels = cache.get(client, i);
+            int[] labels = cache.get(client, i);
             assertArrayEquals(expectedLabels[i], shrunk(labels), "For node " + i);
         }
     }
@@ -96,10 +96,10 @@ class NodeLabelsCacheTest {
         // GIVEN
         NodeLabelsCache cache = new NodeLabelsCache(AUTO_WITHOUT_PAGECACHE, 20, 10, INSTANCE);
         NodeLabelsCache.Client client = cache.newClient();
-        cache.put(10, new long[] {5, 6, 7, 8});
+        cache.put(10, new int[] {5, 6, 7, 8});
 
         // WHEN
-        long[] target = cache.get(client, 10);
+        int[] target = cache.get(client, 10);
         assertEquals(5, target[0]);
         assertEquals(6, target[1]);
         assertEquals(7, target[2]);
@@ -116,7 +116,7 @@ class NodeLabelsCacheTest {
         NodeLabelsCache.Client client = cache.newClient();
 
         // WHEN
-        long[] target = cache.get(client, 0);
+        int[] target = cache.get(client, 0);
 
         // THEN
         assertEquals(-1, target[0]);
@@ -127,7 +127,7 @@ class NodeLabelsCacheTest {
         // GIVEN
         int highLabelId = 10;
         int numberOfNodes = 100;
-        long[][] expectedLabels = new long[numberOfNodes][];
+        int[][] expectedLabels = new int[numberOfNodes][];
         NodeLabelsCache cache = new NodeLabelsCache(AUTO_WITHOUT_PAGECACHE, numberOfNodes, highLabelId, INSTANCE);
         for (int i = 0; i < numberOfNodes; i++) {
             cache.put(i, expectedLabels[i] = randomLabels(random.nextInt(5), highLabelId));
@@ -145,12 +145,12 @@ class NodeLabelsCacheTest {
 
     private static class LabelGetter implements Runnable {
         private final NodeLabelsCache cache;
-        private final long[][] expectedLabels;
+        private final int[][] expectedLabels;
         private final NodeLabelsCache.Client client;
         private final int numberOfNodes;
-        private long[] scratch;
+        private int[] scratch;
 
-        LabelGetter(NodeLabelsCache cache, long[][] expectedLabels, int numberOfNodes) {
+        LabelGetter(NodeLabelsCache cache, int[][] expectedLabels, int numberOfNodes) {
             this.cache = cache;
             this.client = cache.newClient();
             this.expectedLabels = expectedLabels;
@@ -166,8 +166,8 @@ class NodeLabelsCacheTest {
             }
         }
 
-        private void assertCorrectLabels(int nodeId, long[] gotten) {
-            long[] expected = expectedLabels[nodeId];
+        private void assertCorrectLabels(int nodeId, int[] gotten) {
+            int[] expected = expectedLabels[nodeId];
             for (int i = 0; i < expected.length; i++) {
                 assertEquals(expected[i], gotten[i]);
             }
@@ -179,15 +179,15 @@ class NodeLabelsCacheTest {
         }
     }
 
-    private long[] randomLabels(int count, int highId) {
-        long[] result = new long[count];
+    private int[] randomLabels(int count, int highId) {
+        int[] result = new int[count];
         for (int i = 0; i < count; i++) {
             result[i] = random.nextInt(highId);
         }
         return result;
     }
 
-    private static long[] shrunk(long[] readLabels) {
+    private static int[] shrunk(int[] readLabels) {
         for (int i = 0; i < readLabels.length; i++) {
             if (readLabels[i] == -1) {
                 return Arrays.copyOf(readLabels, i);

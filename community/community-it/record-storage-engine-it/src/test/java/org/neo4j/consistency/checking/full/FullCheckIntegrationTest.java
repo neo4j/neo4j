@@ -21,6 +21,7 @@ package org.neo4j.consistency.checking.full;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -327,7 +328,7 @@ public class FullCheckIntegrationTest {
                 List<DynamicRecord> newRecords = new ArrayList<>();
                 allocateFromNumbers(
                         newRecords,
-                        prependNodeId(nodeRecord.getId(), new long[] {42L}),
+                        prependNodeId(nodeRecord.getId(), new int[] {42}),
                         new ReusableRecordsAllocator(60, record),
                         NULL_CONTEXT,
                         INSTANCE);
@@ -361,10 +362,10 @@ public class FullCheckIntegrationTest {
         // given
         GraphStoreFixture.IdGenerator idGenerator = fixture.idGenerator();
         long nodeId1 = idGenerator.node();
-        long labelId = idGenerator.label() - 1;
+        int labelId = idGenerator.label() - 1;
 
         Iterable<EntityTokenUpdate> nodeLabelUpdates =
-                asIterable(tokenChanges(nodeId1, new long[] {}, new long[] {labelId}));
+                asIterable(tokenChanges(nodeId1, EMPTY_INT_ARRAY, new int[] {labelId}));
         writeToNodeLabelStructure(fixture, nodeLabelUpdates);
 
         // when
@@ -380,13 +381,13 @@ public class FullCheckIntegrationTest {
         // relationship present in type index but not in store
         GraphStoreFixture.IdGenerator idGenerator = fixture.idGenerator();
         long relationshipId = idGenerator.relationship();
-        long relationshipTypeId = idGenerator.relationshipType() - 1;
+        int relationshipTypeId = idGenerator.relationshipType() - 1;
 
         IndexDescriptor rtiDescriptor = findTokenIndex(fixture, EntityType.RELATIONSHIP);
         IndexAccessor accessor = fixture.indexAccessorLookup().apply(rtiDescriptor);
         try (IndexUpdater indexUpdater = accessor.newUpdater(IndexUpdateMode.ONLINE, NULL_CONTEXT, false)) {
             indexUpdater.process(IndexEntryUpdate.change(
-                    relationshipId, rtiDescriptor, new long[] {}, new long[] {relationshipTypeId}));
+                    relationshipId, rtiDescriptor, EMPTY_INT_ARRAY, new int[] {relationshipTypeId}));
         }
 
         // when
@@ -548,9 +549,9 @@ public class FullCheckIntegrationTest {
             }
         });
 
-        long[] before = asArray(labels);
+        int[] before = asArray(labels);
         labels.remove(1);
-        long[] after = asArray(labels);
+        int[] after = asArray(labels);
 
         writeToNodeLabelStructure(fixture, singletonList(tokenChanges(42, before, after)));
 
@@ -561,10 +562,10 @@ public class FullCheckIntegrationTest {
         on(stats).verify(RecordType.LABEL_SCAN_DOCUMENT, 1).andThatsAllFolks();
     }
 
-    private static long[] asArray(List<? extends Number> in) {
-        long[] longs = new long[in.size()];
+    private static int[] asArray(List<? extends Number> in) {
+        int[] longs = new int[in.size()];
         for (int i = 0; i < in.size(); i++) {
-            longs[i] = in.get(i).longValue();
+            longs[i] = in.get(i).intValue();
         }
         return longs;
     }
@@ -583,7 +584,7 @@ public class FullCheckIntegrationTest {
             }
         });
 
-        EntityTokenUpdate update = tokenChanges(42, new long[] {label1, label2}, new long[] {label1});
+        EntityTokenUpdate update = tokenChanges(42, new int[] {label1, label2}, new int[] {label1});
         writeToNodeLabelStructure(fixture, singletonList(update));
 
         // when

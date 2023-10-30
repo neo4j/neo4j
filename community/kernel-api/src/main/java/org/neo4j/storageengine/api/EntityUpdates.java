@@ -20,7 +20,7 @@
 package org.neo4j.storageengine.api;
 
 import static java.lang.String.format;
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
 import static org.neo4j.internal.schema.PropertySchemaType.COMPLETE_ALL_TOKENS;
 import static org.neo4j.storageengine.api.EntityUpdates.PropertyValueType.Changed;
 import static org.neo4j.storageengine.api.EntityUpdates.PropertyValueType.NoValue;
@@ -55,8 +55,8 @@ public class EntityUpdates {
     private final long entityId;
 
     // ASSUMPTION: these long arrays are actually sorted sets
-    private long[] entityTokensBefore;
-    private long[] entityTokensAfter;
+    private int[] entityTokensBefore;
+    private int[] entityTokensAfter;
     private final boolean propertyListComplete;
     private final MutableIntObjectMap<PropertyValue> knownProperties;
     private int[] propertyKeyIds;
@@ -90,18 +90,18 @@ public class EntityUpdates {
             return this;
         }
 
-        public Builder withTokens(long... entityTokens) {
+        public Builder withTokens(int... entityTokens) {
             this.updates.entityTokensBefore = entityTokens;
             this.updates.entityTokensAfter = entityTokens;
             return this;
         }
 
-        public Builder withTokensBefore(long... entityTokensBefore) {
+        public Builder withTokensBefore(int... entityTokensBefore) {
             this.updates.entityTokensBefore = entityTokensBefore;
             return this;
         }
 
-        public Builder withTokensAfter(long... entityTokensAfter) {
+        public Builder withTokensAfter(int... entityTokensAfter) {
             this.updates.entityTokensAfter = entityTokensAfter;
             return this;
         }
@@ -122,11 +122,11 @@ public class EntityUpdates {
     }
 
     public static Builder forEntity(long entityId, boolean propertyListIsComplete) {
-        return new Builder(new EntityUpdates(entityId, EMPTY_LONG_ARRAY, EMPTY_LONG_ARRAY, propertyListIsComplete));
+        return new Builder(new EntityUpdates(entityId, EMPTY_INT_ARRAY, EMPTY_INT_ARRAY, propertyListIsComplete));
     }
 
     private EntityUpdates(
-            long entityId, long[] entityTokensBefore, long[] entityTokensAfter, boolean propertyListComplete) {
+            long entityId, int[] entityTokensBefore, int[] entityTokensAfter, boolean propertyListComplete) {
         this.entityId = entityId;
         this.entityTokensBefore = entityTokensBefore;
         this.entityTokensAfter = entityTokensAfter;
@@ -139,11 +139,11 @@ public class EntityUpdates {
         return entityId;
     }
 
-    public long[] entityTokensChanged() {
+    public int[] entityTokensChanged() {
         return PrimitiveArrays.symmetricDifference(entityTokensBefore, entityTokensAfter);
     }
 
-    public long[] entityTokensUnchanged() {
+    public int[] entityTokensUnchanged() {
         return PrimitiveArrays.intersect(entityTokensBefore, entityTokensAfter);
     }
 

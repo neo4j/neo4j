@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -120,7 +120,7 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey, Tok
     @Test
     void shouldAddWithUpdater() throws IndexEntryConflictException, IOException {
         // Give
-        MutableLongObjectMap<long[]> entityTokens = LongObjectMaps.mutable.empty();
+        MutableLongObjectMap<int[]> entityTokens = LongObjectMaps.mutable.empty();
         List<TokenIndexEntryUpdate<?>> updates = generateSomeRandomUpdates(entityTokens, random);
 
         // When
@@ -154,7 +154,7 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey, Tok
     }
 
     private void updaterShouldHandleRandomizedUpdates(Executable additionalOperation) throws Throwable {
-        MutableLongObjectMap<long[]> entityTokens = LongObjectMaps.mutable.empty();
+        MutableLongObjectMap<int[]> entityTokens = LongObjectMaps.mutable.empty();
         doRandomizedUpdatesWithAdditionalOperation(additionalOperation, entityTokens);
         forceAndCloseAccessor();
         verifyUpdates(entityTokens, layout, this::getTree, new DefaultTokenIndexIdLayout());
@@ -301,9 +301,9 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey, Tok
         long nodeId2 = 11;
         try (IndexUpdater indexUpdater = accessor.newUpdater(ONLINE, NULL_CONTEXT, false)) {
             indexUpdater.process(
-                    IndexEntryUpdate.change(nodeId1, indexDescriptor, EMPTY_LONG_ARRAY, new long[] {labelId1}));
-            indexUpdater.process(IndexEntryUpdate.change(
-                    nodeId2, indexDescriptor, EMPTY_LONG_ARRAY, new long[] {labelId1, labelId2}));
+                    IndexEntryUpdate.change(nodeId1, indexDescriptor, EMPTY_INT_ARRAY, new int[] {labelId1}));
+            indexUpdater.process(
+                    IndexEntryUpdate.change(nodeId2, indexDescriptor, EMPTY_INT_ARRAY, new int[] {labelId1, labelId2}));
         }
 
         // WHEN
@@ -313,8 +313,8 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey, Tok
 
         // THEN
         assertThat(new long[] {nodeId1, nodeId2}).isEqualTo(reducedNodes(range));
-        assertThat(new long[] {labelId1}).isEqualTo(sorted(range.tokens(nodeId1)));
-        assertThat(new long[] {labelId1, labelId2}).isEqualTo(sorted(range.tokens(nodeId2)));
+        assertThat(new int[] {labelId1}).isEqualTo(sorted(range.tokens(nodeId1)));
+        assertThat(new int[] {labelId1, labelId2}).isEqualTo(sorted(range.tokens(nodeId2)));
     }
 
     @Test
@@ -326,9 +326,9 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey, Tok
         long nodeId2 = 1280;
         try (IndexUpdater indexUpdater = accessor.newUpdater(ONLINE, NULL_CONTEXT, false)) {
             indexUpdater.process(
-                    IndexEntryUpdate.change(nodeId1, indexDescriptor, EMPTY_LONG_ARRAY, new long[] {labelId1}));
-            indexUpdater.process(IndexEntryUpdate.change(
-                    nodeId2, indexDescriptor, EMPTY_LONG_ARRAY, new long[] {labelId1, labelId2}));
+                    IndexEntryUpdate.change(nodeId1, indexDescriptor, EMPTY_INT_ARRAY, new int[] {labelId1}));
+            indexUpdater.process(
+                    IndexEntryUpdate.change(nodeId2, indexDescriptor, EMPTY_INT_ARRAY, new int[] {labelId1, labelId2}));
         }
 
         // WHEN
@@ -343,11 +343,11 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey, Tok
         assertThat(new long[] {nodeId1}).isEqualTo(reducedNodes(range1));
         assertThat(new long[] {nodeId2}).isEqualTo(reducedNodes(range2));
 
-        assertThat(new long[] {labelId1}).isEqualTo(sorted(range1.tokens(nodeId1)));
-        assertThat(new long[] {labelId1, labelId2}).isEqualTo(sorted(range2.tokens(nodeId2)));
+        assertThat(new int[] {labelId1}).isEqualTo(sorted(range1.tokens(nodeId1)));
+        assertThat(new int[] {labelId1, labelId2}).isEqualTo(sorted(range2.tokens(nodeId2)));
     }
 
-    private static long[] sorted(long[] input) {
+    private static int[] sorted(int[] input) {
         Arrays.sort(input);
         return input;
     }
@@ -365,13 +365,13 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey, Tok
     }
 
     private void readerShouldFindRandomizedUpdates(Executable additionalOperation) throws Throwable {
-        MutableLongObjectMap<long[]> entityTokens = LongObjectMaps.mutable.empty();
+        MutableLongObjectMap<int[]> entityTokens = LongObjectMaps.mutable.empty();
         doRandomizedUpdatesWithAdditionalOperation(additionalOperation, entityTokens);
         verifyReaderSeesAllUpdates(convertToExpectedEntitiesPerToken(entityTokens));
     }
 
     private void doRandomizedUpdatesWithAdditionalOperation(
-            Executable additionalOperation, MutableLongObjectMap<long[]> trackingStructure) throws Throwable {
+            Executable additionalOperation, MutableLongObjectMap<int[]> trackingStructure) throws Throwable {
         int numberOfEntities = 1_000;
         long currentMaxEntityId = 0;
 
@@ -379,11 +379,11 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey, Tok
             try (IndexUpdater updater = accessor.newUpdater(ONLINE, NULL_CONTEXT, false)) {
                 // Simply add random token ids to a new batch of 100 entities
                 for (int i = 0; i < 100; i++) {
-                    long[] afterTokens = generateRandomTokens(random);
+                    int[] afterTokens = generateRandomTokens(random);
                     if (afterTokens.length != 0) {
                         trackingStructure.put(currentMaxEntityId, Arrays.copyOf(afterTokens, afterTokens.length));
                         updater.process(
-                                IndexEntryUpdate.change(currentMaxEntityId, null, EMPTY_LONG_ARRAY, afterTokens));
+                                IndexEntryUpdate.change(currentMaxEntityId, null, EMPTY_INT_ARRAY, afterTokens));
                     }
                     currentMaxEntityId++;
                 }
@@ -394,11 +394,11 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey, Tok
                 for (int i = 0; i < 100; i++) {
                     long entityId = random.nextLong(currentMaxEntityId);
                     // Current tokens for the entity in the tree
-                    long[] beforeTokens = trackingStructure.get(entityId);
+                    int[] beforeTokens = trackingStructure.get(entityId);
                     if (beforeTokens == null) {
-                        beforeTokens = EMPTY_LONG_ARRAY;
+                        beforeTokens = EMPTY_INT_ARRAY;
                     }
-                    long[] afterTokens = generateRandomTokens(random);
+                    int[] afterTokens = generateRandomTokens(random);
                     trackingStructure.put(entityId, Arrays.copyOf(afterTokens, afterTokens.length));
                     updater.process(IndexEntryUpdate.change(entityId, null, beforeTokens, afterTokens));
                 }
@@ -408,7 +408,7 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey, Tok
     }
 
     private static MutableLongObjectMap<MutableLongList> convertToExpectedEntitiesPerToken(
-            MutableLongObjectMap<long[]> trackingStructure) {
+            MutableLongObjectMap<int[]> trackingStructure) {
         MutableLongObjectMap<MutableLongList> entitiesPerToken = LongObjectMaps.mutable.empty();
         trackingStructure.forEachKeyValue((entityId, tokens) -> {
             for (long token : tokens) {
@@ -423,7 +423,7 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey, Tok
         try (IndexUpdater updater = accessor.newUpdater(ONLINE, NULL_CONTEXT, false)) {
             for (long entityId : entityIds) {
                 updater.process(
-                        IndexEntryUpdate.change(entityId, indexDescriptor, EMPTY_LONG_ARRAY, new long[] {tokenId}));
+                        IndexEntryUpdate.change(entityId, indexDescriptor, EMPTY_INT_ARRAY, new int[] {tokenId}));
             }
         }
     }
@@ -490,7 +490,7 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey, Tok
     }
 
     private TokenIndexEntryUpdate<IndexDescriptor> simpleUpdate() {
-        return TokenIndexEntryUpdate.change(0, indexDescriptor, EMPTY_LONG_ARRAY, new long[] {0});
+        return TokenIndexEntryUpdate.change(0, indexDescriptor, EMPTY_INT_ARRAY, new int[] {0});
     }
 
     private static Stream<Arguments> orderCombinations() {

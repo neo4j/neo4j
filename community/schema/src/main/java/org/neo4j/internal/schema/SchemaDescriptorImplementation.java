@@ -41,8 +41,8 @@ public final class SchemaDescriptorImplementation
                 RelationTypeSchemaDescriptor,
                 FulltextSchemaDescriptor,
                 AnyTokenSchemaDescriptor {
-    public static final long TOKEN_INDEX_LOCKING_ID = Long.MAX_VALUE;
-    private static final long[] TOKEN_INDEX_LOCKING_IDS = {TOKEN_INDEX_LOCKING_ID};
+    public static final int TOKEN_INDEX_LOCKING_ID = Integer.MAX_VALUE;
+    public static final long[] TOKEN_INDEX_LOCKING_IDS = {TOKEN_INDEX_LOCKING_ID};
 
     private final EntityType entityType;
     private final PropertySchemaType propertySchemaType;
@@ -201,7 +201,7 @@ public final class SchemaDescriptorImplementation
     }
 
     @Override
-    public boolean isAffected(long[] entityTokenIds) {
+    public boolean isAffected(int[] entityTokenIds) {
         for (int id : entityTokens) {
             if (ArrayUtils.contains(entityTokenIds, id)) {
                 return true;
@@ -256,13 +256,13 @@ public final class SchemaDescriptorImplementation
             return TOKEN_INDEX_LOCKING_IDS;
         }
 
-        // TODO make getEntityTokenIds produce a long array directly, and avoid this extra copying.
         int[] tokenIds = getEntityTokenIds();
-        int length = tokenIds.length;
-        long[] lockingIds = new long[length];
-        for (int i = 0; i < length; i++) {
+        int tokenCount = tokenIds.length;
+        long[] lockingIds = new long[tokenCount];
+        for (int i = 0; i < tokenCount; i++) {
             lockingIds[i] = tokenIds[i];
         }
+        Arrays.sort(lockingIds); // Sort to ensure labels are locked and assigned in order.
         return lockingIds;
     }
 

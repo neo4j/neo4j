@@ -26,7 +26,7 @@ public interface StorageNodeCursor extends StorageEntityScanCursor<AllNodeScan> 
     /**
      * @return label ids of the node this cursor currently is placed at.
      */
-    long[] labels();
+    int[] labels();
 
     /**
      * @return {@code true} if the node this cursor is placed at has the given {@code label}, otherwise {@code false}.
@@ -36,7 +36,7 @@ public interface StorageNodeCursor extends StorageEntityScanCursor<AllNodeScan> 
     /**
      * Atomically read labels and properties.
      */
-    default long[] labelsAndProperties(StoragePropertyCursor propertyCursor, PropertySelection selection) {
+    default int[] labelsAndProperties(StoragePropertyCursor propertyCursor, PropertySelection selection) {
         var labels = labels();
         properties(propertyCursor, selection);
         return labels;

@@ -99,7 +99,7 @@ import org.neo4j.token.api.TokenHolder;
 import org.opentest4j.AssertionFailedError;
 
 abstract class OperationsTest {
-    protected static final long TOKEN_INDEX_RESOURCE_ID = Long.MAX_VALUE;
+    protected static final int TOKEN_INDEX_RESOURCE_ID = Integer.MAX_VALUE;
 
     protected final KernelTransactionImplementation transaction = mock(KernelTransactionImplementation.class);
     protected Operations operations;
@@ -288,7 +288,7 @@ abstract class OperationsTest {
         verify(locks).acquireShared(any(), eq(ResourceType.LABEL), eq(3L));
         verify(locks)
                 .acquireShared(
-                        any(), eq(ResourceType.LABEL), eq(SchemaDescriptorImplementation.TOKEN_INDEX_LOCKING_ID));
+                        any(), eq(ResourceType.LABEL), eq(SchemaDescriptorImplementation.TOKEN_INDEX_LOCKING_IDS));
         verify(locks).acquireShared(any(), eq(ResourceType.LABEL), eq(1L), eq(2L));
         verify(storageLocks).acquireNodeLabelChangeLock(any(), eq(node), eq(1));
         verify(storageLocks).acquireNodeLabelChangeLock(any(), eq(node), eq(3));

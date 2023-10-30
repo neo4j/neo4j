@@ -19,8 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
-import static java.util.stream.StreamSupport.stream;
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.eclipse.collections.api.list.primitive.MutableLongList;
@@ -28,6 +27,7 @@ import org.eclipse.collections.impl.factory.primitive.LongLists;
 import org.junit.jupiter.api.Test;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -58,7 +58,7 @@ class TokenIndexScanIdIteratorTest {
 
         IndexDescriptor index;
         try (Transaction tx = db.beginTx()) {
-            index = ((IndexDefinitionImpl) stream(tx.schema().getIndexes().spliterator(), false)
+            index = ((IndexDefinitionImpl) Iterables.stream(tx.schema().getIndexes())
                             .filter(IndexDefinition::isNodeIndex)
                             .findFirst()
                             .get())
@@ -69,16 +69,16 @@ class TokenIndexScanIdIteratorTest {
 
         try (IndexUpdater indexUpdater =
                 indexProxy.newUpdater(IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false)) {
-            indexUpdater.process(IndexEntryUpdate.change(2, index, EMPTY_LONG_ARRAY, new long[] {labelId1, labelId2}));
-            indexUpdater.process(IndexEntryUpdate.change(1, index, EMPTY_LONG_ARRAY, new long[] {labelId1}));
-            indexUpdater.process(IndexEntryUpdate.change(4, index, EMPTY_LONG_ARRAY, new long[] {labelId1, labelId3}));
+            indexUpdater.process(IndexEntryUpdate.change(2, index, EMPTY_INT_ARRAY, new int[] {labelId1, labelId2}));
+            indexUpdater.process(IndexEntryUpdate.change(1, index, EMPTY_INT_ARRAY, new int[] {labelId1}));
+            indexUpdater.process(IndexEntryUpdate.change(4, index, EMPTY_INT_ARRAY, new int[] {labelId1, labelId3}));
             indexUpdater.process(
-                    IndexEntryUpdate.change(5, index, EMPTY_LONG_ARRAY, new long[] {labelId1, labelId2, labelId3}));
-            indexUpdater.process(IndexEntryUpdate.change(3, index, EMPTY_LONG_ARRAY, new long[] {labelId1}));
-            indexUpdater.process(IndexEntryUpdate.change(7, index, EMPTY_LONG_ARRAY, new long[] {labelId2}));
-            indexUpdater.process(IndexEntryUpdate.change(8, index, EMPTY_LONG_ARRAY, new long[] {labelId3}));
-            indexUpdater.process(IndexEntryUpdate.change(6, index, EMPTY_LONG_ARRAY, new long[] {labelId2}));
-            indexUpdater.process(IndexEntryUpdate.change(9, index, EMPTY_LONG_ARRAY, new long[] {labelId3}));
+                    IndexEntryUpdate.change(5, index, EMPTY_INT_ARRAY, new int[] {labelId1, labelId2, labelId3}));
+            indexUpdater.process(IndexEntryUpdate.change(3, index, EMPTY_INT_ARRAY, new int[] {labelId1}));
+            indexUpdater.process(IndexEntryUpdate.change(7, index, EMPTY_INT_ARRAY, new int[] {labelId2}));
+            indexUpdater.process(IndexEntryUpdate.change(8, index, EMPTY_INT_ARRAY, new int[] {labelId3}));
+            indexUpdater.process(IndexEntryUpdate.change(6, index, EMPTY_INT_ARRAY, new int[] {labelId2}));
+            indexUpdater.process(IndexEntryUpdate.change(9, index, EMPTY_INT_ARRAY, new int[] {labelId3}));
         }
 
         // THEN

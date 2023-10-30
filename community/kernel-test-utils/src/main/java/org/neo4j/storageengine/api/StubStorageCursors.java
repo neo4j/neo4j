@@ -22,7 +22,7 @@ package org.neo4j.storageengine.api;
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
 import static java.util.Collections.emptyIterator;
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
 import static org.apache.commons.lang3.ArrayUtils.contains;
 import static org.neo4j.internal.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.internal.schema.IndexType.LOOKUP;
@@ -161,32 +161,32 @@ public class StubStorageCursors implements StorageReader {
     }
 
     @Override
-    public Collection<IndexDescriptor> valueIndexesGetRelated(long[] labels, int propertyKeyId, EntityType entityType) {
+    public Collection<IndexDescriptor> valueIndexesGetRelated(int[] labels, int propertyKeyId, EntityType entityType) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
     public Collection<IndexDescriptor> valueIndexesGetRelated(
-            long[] labels, int[] propertyKeyIds, EntityType entityType) {
+            int[] labels, int[] propertyKeyIds, EntityType entityType) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
     public Collection<IndexBackedConstraintDescriptor> uniquenessConstraintsGetRelated(
-            long[] tokens, int propertyKeyId, EntityType entityType) {
+            int[] tokens, int propertyKeyId, EntityType entityType) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
     public Collection<IndexBackedConstraintDescriptor> uniquenessConstraintsGetRelated(
-            long[] tokens, int[] propertyKeyIds, EntityType entityType) {
+            int[] tokens, int[] propertyKeyIds, EntityType entityType) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
     @Override
     public Collection<IndexBackedConstraintDescriptor> uniquenessConstraintsGetRelated(
-            long[] changedLabels,
-            long[] unchangedLabels,
+            int[] changedLabels,
+            int[] unchangedLabels,
             int[] propertyKeyIds,
             boolean propertyKeyListIsComplete,
             EntityType entityType) {
@@ -194,7 +194,7 @@ public class StubStorageCursors implements StorageReader {
     }
 
     @Override
-    public boolean hasRelatedSchema(long[] labels, int propertyKey, EntityType entityType) {
+    public boolean hasRelatedSchema(int[] labels, int propertyKey, EntityType entityType) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
@@ -383,14 +383,14 @@ public class StubStorageCursors implements StorageReader {
 
     public class NodeData extends EntityData<NodeData> {
         private final long id;
-        private long[] labels = EMPTY_LONG_ARRAY;
+        private int[] labels = EMPTY_INT_ARRAY;
         private long firstRelationship = NO_ID;
 
         NodeData(long id) {
             this.id = id;
         }
 
-        public NodeData labels(long... labels) {
+        public NodeData labels(int... labels) {
             this.labels = labels;
             return this;
         }
@@ -466,7 +466,7 @@ public class StubStorageCursors implements StorageReader {
         }
 
         @Override
-        public long[] labels() {
+        public int[] labels() {
             return current.labels;
         }
 

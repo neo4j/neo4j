@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.batchimport.input;
 
-import static java.lang.Math.toIntExact;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 
@@ -67,7 +66,7 @@ class LenientNodeReader extends LenientStoreInputChunk {
         nodeStore.getRecordByCursor(id, record, RecordLoad.LENIENT_CHECK, cursor);
         if (record.inUse()) {
             nodeStore.ensureHeavy(record, storeCursors);
-            long[] labelIds = parseLabelsField(record).get(nodeStore, storeCursors);
+            int[] labelIds = parseLabelsField(record).get(nodeStore, storeCursors);
             String[] labels = toNames(tokenHolders.labelTokens(), labelIds);
             if (readBehaviour.shouldIncludeNode(labels)) {
                 labels = readBehaviour.filterLabels(labels);
@@ -87,11 +86,11 @@ class LenientNodeReader extends LenientStoreInputChunk {
         }
     }
 
-    private String[] toNames(TokenHolder labelTokens, long[] labelIds) {
+    private String[] toNames(TokenHolder labelTokens, int[] labelIds) {
         String[] names = new String[labelIds.length];
         for (int i = 0; i < labelIds.length; i++) {
-            names[i] = LenientStoreInput.getTokenByIdSafe(labelTokens, toIntExact(labelIds[i]))
-                    .name();
+            names[i] =
+                    LenientStoreInput.getTokenByIdSafe(labelTokens, labelIds[i]).name();
         }
         return names;
     }

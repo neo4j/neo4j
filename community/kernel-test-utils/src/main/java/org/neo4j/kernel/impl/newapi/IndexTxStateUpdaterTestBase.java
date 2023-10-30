@@ -61,7 +61,7 @@ public class IndexTxStateUpdaterTestBase {
         when(txState.memoryTracker()).thenReturn(EmptyMemoryTracker.INSTANCE);
 
         when(storageReader.valueIndexesGetRelated(any(), anyInt(), any())).thenAnswer(invocationOnMock -> {
-            long[] tokens = invocationOnMock.getArgument(0);
+            int[] tokens = invocationOnMock.getArgument(0);
             int propertyKeyId = invocationOnMock.getArgument(1);
             Set<IndexDescriptor> descriptors = new HashSet<>();
             for (IndexDescriptor index : indexes) {
@@ -76,7 +76,7 @@ public class IndexTxStateUpdaterTestBase {
         });
         when(storageReader.valueIndexesGetRelated(any(), any(int[].class), any()))
                 .thenAnswer(invocationOnMock -> {
-                    long[] tokens = invocationOnMock.getArgument(0);
+                    int[] tokens = invocationOnMock.getArgument(0);
                     int[] propertyKeyIds = invocationOnMock.getArgument(1);
                     Set<IndexDescriptor> descriptors = new HashSet<>();
                     for (IndexDescriptor index : indexes) {

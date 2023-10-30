@@ -77,7 +77,7 @@ class NoSchemaDescriptor implements SchemaDescriptor {
     }
 
     @Override
-    public boolean isAffected(long[] entityIds) {
+    public boolean isAffected(int[] entityIds) {
         return false;
     }
 

@@ -30,7 +30,8 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.util.stream.LongStream;
 import org.eclipse.collections.api.set.primitive.LongSet;
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -111,7 +112,7 @@ class RecordNodeCursorIT {
     @RepeatedTest(10)
     void shouldProperlyReturnHasLabel() {
         // given/when
-        MutableLongSet labels = LongSets.mutable.empty();
+        var labels = IntSets.mutable.empty();
         long nodeId = createNodeWithRandomLabels(labels);
 
         // then
@@ -135,7 +136,7 @@ class RecordNodeCursorIT {
     @RepeatedTest(10)
     void shouldProperlyReturnHasAnyLabel() {
         // given/when
-        MutableLongSet labels = LongSets.mutable.empty();
+        var labels = IntSets.mutable.empty();
         long nodeId = createNodeWithRandomLabels(labels, 5);
 
         // then
@@ -215,11 +216,11 @@ class RecordNodeCursorIT {
         }
     }
 
-    private long createNodeWithRandomLabels(MutableLongSet labelsSet) {
+    private long createNodeWithRandomLabels(MutableIntSet labelsSet) {
         return createNodeWithRandomLabels(labelsSet, 100);
     }
 
-    private long createNodeWithRandomLabels(MutableLongSet labelsSet, int numberOfLabelsBound) {
+    private long createNodeWithRandomLabels(MutableIntSet labelsSet, int numberOfLabelsBound) {
         final var nodeRecord = createNodeRecord();
         final var labels = randomLabels(labelsSet, numberOfLabelsBound);
         NodeLabelsField.parseLabelsField(nodeRecord)
@@ -227,7 +228,7 @@ class RecordNodeCursorIT {
         return write(nodeRecord);
     }
 
-    private long[] randomLabels(MutableLongSet labelsSet, int numberOfLabelsBound) {
+    private int[] randomLabels(MutableIntSet labelsSet, int numberOfLabelsBound) {
         int count = random.nextInt(0, numberOfLabelsBound);
         int highId = random.nextBoolean() ? HIGH_LABEL_ID : count * 3;
         for (int i = 0; i < count; i++) {

@@ -36,7 +36,7 @@ public class NodeLabelsCache implements MemoryStatsVisitor.Visitable, AutoClosea
         private final BitBuffer labelBits;
         private final long[] fieldScratch = new long[1];
         private final BitBuffer fieldBits = BitBuffer.bitsFromLongs(fieldScratch);
-        private long[] target = new long[20];
+        private int[] target = new int[20];
 
         public Client(int worstCaseLongsNeeded) {
             this.labelScratch = new long[worstCaseLongsNeeded];
@@ -79,7 +79,7 @@ public class NodeLabelsCache implements MemoryStatsVisitor.Visitable, AutoClosea
         return new Client(worstCaseLongsNeeded);
     }
 
-    public void put(long nodeId, long[] labelIds) {
+    public void put(long nodeId, int[] labelIds) {
         put(putClient, nodeId, labelIds);
     }
 
@@ -95,11 +95,11 @@ public class NodeLabelsCache implements MemoryStatsVisitor.Visitable, AutoClosea
      * This method may only be called by a single thread, putting from multiple threads may cause undeterministic
      * behaviour.
      */
-    public void put(Client putClient, long nodeId, long[] labelIds) {
+    public void put(Client putClient, long nodeId, int[] labelIds) {
         putClient.labelBits.clear(true);
         putClient.labelBits.put(labelIds.length, bitsPerLabel);
-        for (long labelId : labelIds) {
-            putClient.labelBits.put((int) labelId, bitsPerLabel);
+        for (int labelId : labelIds) {
+            putClient.labelBits.put(labelId, bitsPerLabel);
         }
 
         int longsInUse = putClient.labelBits.longsInUse();
@@ -129,7 +129,7 @@ public class NodeLabelsCache implements MemoryStatsVisitor.Visitable, AutoClosea
      * Multiple threads may call this method simultaneously, given that they do so with each their own {@link Client}
      * instance.
      */
-    public long[] get(Client client, long nodeId) {
+    public int[] get(Client client, long nodeId) {
         // make this field available to our Bits instance, hackish? meh
         client.fieldBits.clear(false);
         client.fieldScratch[0] = cache.get(nodeId);
@@ -163,7 +163,7 @@ public class NodeLabelsCache implements MemoryStatsVisitor.Visitable, AutoClosea
         spillOver.acceptMemoryStatsVisitor(visitor);
     }
 
-    private void decode(BitBuffer bits, int length, long[] target) {
+    private void decode(BitBuffer bits, int length, int[] target) {
         for (int i = 0; i < length; i++) {
             target[i] = bits.getInt(bitsPerLabel);
         }
@@ -173,8 +173,8 @@ public class NodeLabelsCache implements MemoryStatsVisitor.Visitable, AutoClosea
         }
     }
 
-    private static long[] ensureCapacity(long[] target, int capacity) {
-        return capacity > target.length ? new long[capacity] : target;
+    private static int[] ensureCapacity(int[] target, int capacity) {
+        return capacity > target.length ? new int[capacity] : target;
     }
 
     @Override

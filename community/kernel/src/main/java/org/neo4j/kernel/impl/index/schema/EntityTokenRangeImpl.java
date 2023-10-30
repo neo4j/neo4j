@@ -20,11 +20,11 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import static java.lang.Math.toIntExact;
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
 
-import org.eclipse.collections.api.list.primitive.LongList;
-import org.eclipse.collections.api.list.primitive.MutableLongList;
-import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
+import org.eclipse.collections.api.list.primitive.IntList;
+import org.eclipse.collections.api.list.primitive.MutableIntList;
+import org.eclipse.collections.impl.list.mutable.primitive.IntArrayList;
 import org.neo4j.common.EntityType;
 
 /**
@@ -35,7 +35,7 @@ import org.neo4j.common.EntityType;
 public class EntityTokenRangeImpl implements EntityTokenRange {
     private final long idRange;
     private final long[] entities;
-    private final long[][] tokens;
+    private final int[][] tokens;
     private final EntityType entityType;
     private final long lowRangeId;
     private final long highRangeId;
@@ -47,7 +47,7 @@ public class EntityTokenRangeImpl implements EntityTokenRange {
      *                 The first dimension must be the size of the range.
      * @param idLayout id layout
      */
-    public EntityTokenRangeImpl(long idRange, long[][] tokens, EntityType entityType, TokenIndexIdLayout idLayout) {
+    public EntityTokenRangeImpl(long idRange, int[][] tokens, EntityType entityType, TokenIndexIdLayout idLayout) {
         this.idRange = idRange;
         this.tokens = tokens;
         this.entityType = entityType;
@@ -82,13 +82,13 @@ public class EntityTokenRangeImpl implements EntityTokenRange {
     }
 
     @Override
-    public long[] tokens(long entityId) {
+    public int[] tokens(long entityId) {
         int index = toIntExact(entityId - lowRangeId);
         assert index >= 0 && index < tokens.length : "entityId:" + entityId + ", idRange:" + idRange;
-        return tokens[index] != null ? tokens[index] : EMPTY_LONG_ARRAY;
+        return tokens[index] != null ? tokens[index] : EMPTY_INT_ARRAY;
     }
 
-    private static String toString(String prefix, long[] entities, long[][] tokens) {
+    private static String toString(String prefix, long[] entities, int[][] tokens) {
         StringBuilder result = new StringBuilder(prefix);
         result.append("; {");
         for (int i = 0; i < entities.length; i++) {
@@ -98,7 +98,7 @@ public class EntityTokenRangeImpl implements EntityTokenRange {
             result.append("Entity[").append(entities[i]).append("]: Tokens[");
             String sep = "";
             if (tokens[i] != null) {
-                for (long tokenId : tokens[i]) {
+                for (int tokenId : tokens[i]) {
                     result.append(sep).append(tokenId);
                     sep = ", ";
                 }
@@ -118,21 +118,21 @@ public class EntityTokenRangeImpl implements EntityTokenRange {
         return toString(prefix, entities, tokens);
     }
 
-    static void readBitmap(long bitmap, long tokenId, MutableLongList[] tokensPerEntity) {
+    static void readBitmap(long bitmap, int tokenId, MutableIntList[] tokensPerEntity) {
         while (bitmap != 0) {
             int relativeEntityId = Long.numberOfTrailingZeros(bitmap);
             if (tokensPerEntity[relativeEntityId] == null) {
-                tokensPerEntity[relativeEntityId] = new LongArrayList();
+                tokensPerEntity[relativeEntityId] = new IntArrayList();
             }
             tokensPerEntity[relativeEntityId].add(tokenId);
             bitmap &= bitmap - 1;
         }
     }
 
-    static long[][] convertState(LongList[] state) {
-        long[][] tokenIdsByEntityIndex = new long[state.length][];
+    static int[][] convertState(IntList[] state) {
+        int[][] tokenIdsByEntityIndex = new int[state.length][];
         for (int i = 0; i < state.length; i++) {
-            final LongList tokenIdList = state[i];
+            final IntList tokenIdList = state[i];
             if (tokenIdList != null) {
                 tokenIdsByEntityIndex[i] = tokenIdList.toArray();
             }

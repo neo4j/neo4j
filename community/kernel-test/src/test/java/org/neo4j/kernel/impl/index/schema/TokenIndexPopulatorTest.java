@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -101,7 +101,7 @@ class TokenIndexPopulatorTest extends IndexPopulatorTests<TokenScanKey, TokenSca
     @Test
     void addShouldApplyAllUpdatesOnce() throws Exception {
         // Give
-        MutableLongObjectMap<long[]> entityTokens = LongObjectMaps.mutable.empty();
+        MutableLongObjectMap<int[]> entityTokens = LongObjectMaps.mutable.empty();
 
         populator.create();
 
@@ -118,7 +118,7 @@ class TokenIndexPopulatorTest extends IndexPopulatorTests<TokenScanKey, TokenSca
     @Test
     void updaterShouldApplyUpdates() throws Exception {
         // Give
-        MutableLongObjectMap<long[]> entityTokens = LongObjectMaps.mutable.empty();
+        MutableLongObjectMap<int[]> entityTokens = LongObjectMaps.mutable.empty();
 
         populator.create();
 
@@ -148,7 +148,7 @@ class TokenIndexPopulatorTest extends IndexPopulatorTests<TokenScanKey, TokenSca
         IllegalStateException e = assertThrows(
                 IllegalStateException.class,
                 () -> updater.process(IndexEntryUpdate.change(
-                        random.nextInt(), null, EMPTY_LONG_ARRAY, TokenIndexUtility.generateRandomTokens(random))));
+                        random.nextInt(), null, EMPTY_INT_ARRAY, TokenIndexUtility.generateRandomTokens(random))));
         assertThat(e).hasMessageContaining("Updater has been closed");
         populator.close(true, NULL_CONTEXT);
     }
@@ -158,7 +158,7 @@ class TokenIndexPopulatorTest extends IndexPopulatorTests<TokenScanKey, TokenSca
         // Give
         int numberOfEntities = 1_000;
         long currentScanId = 0;
-        MutableLongObjectMap<long[]> entityTokens = LongObjectMaps.mutable.empty();
+        MutableLongObjectMap<int[]> entityTokens = LongObjectMaps.mutable.empty();
 
         populator.create();
 
@@ -179,11 +179,11 @@ class TokenIndexPopulatorTest extends IndexPopulatorTests<TokenScanKey, TokenSca
                 for (int i = 0; i < 100; i++) {
                     long entityId = random.nextLong(currentScanId);
                     // Current tokens for the entity in the tree
-                    long[] beforeTokens = entityTokens.get(entityId);
+                    int[] beforeTokens = entityTokens.get(entityId);
                     if (beforeTokens == null) {
-                        beforeTokens = EMPTY_LONG_ARRAY;
+                        beforeTokens = EMPTY_INT_ARRAY;
                     }
-                    long[] afterTokens = TokenIndexUtility.generateRandomTokens(random);
+                    int[] afterTokens = TokenIndexUtility.generateRandomTokens(random);
                     entityTokens.put(entityId, Arrays.copyOf(afterTokens, afterTokens.length));
                     updater.process(IndexEntryUpdate.change(entityId, null, beforeTokens, afterTokens));
                 }

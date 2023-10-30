@@ -183,7 +183,7 @@ public class DynamicIndexStoreViewIT {
             private final AtomicBoolean first = new AtomicBoolean(true);
 
             @Override
-            public void recordAdded(long entityId, long[] tokens) {
+            public void recordAdded(long entityId, int[] tokens) {
                 if (first.getAndSet(false)) {
                     barrier.reached();
                 }
