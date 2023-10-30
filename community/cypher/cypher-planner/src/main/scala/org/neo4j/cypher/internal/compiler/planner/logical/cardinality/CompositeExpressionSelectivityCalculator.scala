@@ -391,10 +391,9 @@ object CompositeExpressionSelectivityCalculator {
       // WHERE x.prop =/IN ...
       case AsPropertySeekable(seekable) =>
         val sizeHint = seekable.args.sizeHint
-        ExpressionSelectivityCalculator.indexSelectivityWithSizeHint(
-          sizeHint,
-          size => combiner.orTogetherSelectivities(Seq.fill(size)(assumedUniqueSelectivityPerPredicate)).get
-        )
+        ExpressionSelectivityCalculator.indexSelectivityWithSizeHint(sizeHint) { size =>
+          combiner.orTogetherSelectivities(Seq.fill(size)(assumedUniqueSelectivityPerPredicate)).get
+        }
 
       // WHERE x.prop STARTS WITH expression
       case AsStringRangeSeekable(PrefixRangeSeekable(PrefixRange(prefix), _, _, _)) =>

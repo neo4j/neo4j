@@ -2094,6 +2094,41 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
     result shouldBe Selectivity.ZERO
   }
 
+  test("equality selectivity should be zero given a contradicting node property type constraint") {
+    val predicate = equals(nProp, helloStringLiteral)
+
+    val calculator = setUpCalculator(
+      labelInfo = nIsPersonLabelInfo,
+      typeConstraints = Map(personLabelName -> Map(nodePropName -> Seq(SchemaValueType.INTEGER)))
+    )
+    val result = calculator(predicate)
+
+    result shouldBe Selectivity.ZERO
+  }
+
+  test("equality selectivity should be zero given a contradicting relationship property type constraint") {
+    val predicate = equals(rProp, pointLiteralX1Y2)
+    val calculator = setUpCalculator(
+      relTypeInfo = rFriendsRelTypeInfo,
+      typeConstraints = Map(friendsRelTypeName -> Map(relPropName -> Seq(SchemaValueType.STRING)))
+    )
+    val result = calculator(predicate)
+
+    result shouldBe Selectivity.ZERO
+  }
+
+  test("equality should ignore node property type constraint if argument type is CTAny") {
+    val predicate = equals(nProp, parameter("param", CTAny))
+
+    val calculator = setUpCalculator(
+      labelInfo = nIsPersonLabelInfo,
+      typeConstraints = Map(personLabelName -> Map(nodePropName -> Seq(SchemaValueType.INTEGER)))
+    )
+    val result = calculator(predicate)
+
+    result.factor shouldBe personPropIsNotNullSel * indexPersonUniqueSel
+  }
+
   // HELPER METHODS
 
   protected def setupSemanticTable(): SemanticTable = {

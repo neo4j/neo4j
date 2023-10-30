@@ -178,7 +178,8 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
         seekable.args.sizeHint,
         labelInfo,
         relTypeInfo,
-        seekable.propertyKey
+        seekable.propertyKey,
+        typeConstraints
       )
 
     // WHERE x.prop STARTS WITH expression
@@ -478,12 +479,23 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     sizeHint: Option[Int],
     labelInfo: LabelInfo,
     relTypeInfo: RelTypeInfo,
-    propertyKey: PropertyKeyName
+    propertyKey: PropertyKeyName,
+    typeConstraints: Map[ElementTypeName, Map[String, Seq[SchemaValueType]]]
   )(implicit semanticTable: SemanticTable): Selectivity = {
-    val indexTypesToConsider = indexTypesForPropertyEquality(cypherType)
-    indexSelectivityWithSizeHint(
-      sizeHint,
-      { size =>
+    val valueTypeContradictsTypeConstraint =
+      propertyTypeSelectivityFromTypeConstraints(
+        variable,
+        propertyKey,
+        cypherType,
+        labelInfo,
+        relTypeInfo,
+        typeConstraints
+      )
+        .contains(Selectivity.ZERO)
+
+    def indexSelectivity: Selectivity = {
+      val indexTypesToConsider = indexTypesForPropertyEquality(cypherType)
+      indexSelectivityWithSizeHint(sizeHint) { size =>
         val labels = labelInfo.getOrElse(variable, Set.empty)
         val relTypes = relTypeInfo.get(variable)
         val indexSelectivities = (labels ++ relTypes).toIndexedSeq.flatMap { name =>
@@ -505,7 +517,12 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
           .orElse(defaultSelectivityForPropertyEquality(size, combiner))
           .getOrElse(DEFAULT_PREDICATE_SELECTIVITY)
       }
-    )
+    }
+
+    if (valueTypeContradictsTypeConstraint)
+      Selectivity.ZERO
+    else
+      indexSelectivity
   }
 
   private def indexSelectivityForPropertyEquality(descriptor: IndexDescriptor, size: Int): Option[Selectivity] =
@@ -849,7 +866,7 @@ object ExpressionSelectivityCalculator {
    * @param sizeHint an optional hint for the size of the list
    * @param selectivityCalculator calculate the selectivity given a size
    */
-  def indexSelectivityWithSizeHint(sizeHint: Option[Int], selectivityCalculator: Int => Selectivity): Selectivity = {
+  def indexSelectivityWithSizeHint(sizeHint: Option[Int])(selectivityCalculator: Int => Selectivity): Selectivity = {
     sizeHint.getOrElse(DEFAULT_LIST_CARDINALITY.amount.toInt) match {
       case 0    => Selectivity.ZERO
       case size => selectivityCalculator(size)
