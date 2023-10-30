@@ -60,6 +60,7 @@ public abstract class TraceableCursorImpl<CURSOR> extends DefaultCloseListenable
     }
 
     @VisibleForTesting
+    @Override
     public boolean returnedToPool() {
         return returnedToPool;
     }

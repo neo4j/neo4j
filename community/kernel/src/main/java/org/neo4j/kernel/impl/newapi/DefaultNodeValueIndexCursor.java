@@ -135,6 +135,7 @@ class DefaultNodeValueIndexCursor extends DefaultEntityValueIndexCursor<DefaultN
                 .toImmutable();
     }
 
+    @Override
     public void release() {
         if (securityNodeCursor != null) {
             securityNodeCursor.close();

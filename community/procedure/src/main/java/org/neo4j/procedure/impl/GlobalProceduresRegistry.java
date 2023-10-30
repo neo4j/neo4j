@@ -198,6 +198,7 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
         }
     }
 
+    @Override
     public ProcedureView getCurrentView() {
         return currentProcedureView.getAcquire();
     }

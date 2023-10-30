@@ -21,6 +21,7 @@ package org.neo4j.internal.kernel.api.exceptions.schema;
 
 import static java.lang.String.format;
 
+import java.util.Locale;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -63,31 +64,21 @@ public class SchemaRuleException extends SchemaKernelException {
 
     public static String describe(SchemaDescriptorSupplier schemaThing) {
         SchemaDescriptor schema = schemaThing.schema();
-        String tagType;
-        switch (schema.entityType()) {
-            case NODE:
-                tagType = "label";
-                break;
-            case RELATIONSHIP:
-                tagType = "relationship type";
-                break;
-            default:
-                throw new AssertionError("Unknown entity type: " + schema.entityType());
-        }
+        String tagType =
+                switch (schema.entityType()) {
+                    case NODE -> "label";
+                    case RELATIONSHIP -> "relationship type";
+                };
 
         if (schemaThing instanceof ConstraintDescriptor constraint) {
-            switch (constraint.type()) {
-                case UNIQUE:
-                    return tagType + " uniqueness constraint";
-                case EXISTS:
-                    return tagType + " property existence constraint";
-                case UNIQUE_EXISTS:
-                    return schema.entityType().name().toLowerCase() + " key constraint";
-                default:
-                    throw new AssertionError("Unknown constraint type: " + constraint.type());
-            }
+            return switch (constraint.type()) {
+                case UNIQUE -> tagType + " uniqueness constraint";
+                case EXISTS -> tagType + " property existence constraint";
+                case UNIQUE_EXISTS -> schema.entityType().name().toLowerCase(Locale.ROOT) + " key constraint";
+                default -> throw new AssertionError("Unknown constraint type: " + constraint.type());
+            };
         } else if (schemaThing instanceof IndexDescriptor index) {
-            return index.getIndexType().name().toLowerCase() + " " + tagType + " index";
+            return index.getIndexType().name().toLowerCase(Locale.ROOT) + " " + tagType + " index";
         }
         return tagType + " schema";
     }

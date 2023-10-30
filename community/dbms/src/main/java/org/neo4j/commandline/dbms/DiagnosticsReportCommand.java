@@ -234,10 +234,6 @@ public class DiagnosticsReportCommand extends AbstractAdminCommand {
         return reporter;
     }
 
-    private Path configFile() {
-        return ctx.confDir().resolve(Config.DEFAULT_CONFIG_FILE_NAME);
-    }
-
     private void registerJMXSources(DiagnosticsReporter reporter) {
         Optional<JmxDump> jmxDump;
         jmxDump = jmxDumper.getJMXDump();

@@ -173,7 +173,7 @@ class AdminCommandConfigurationTest {
         return command;
     }
 
-    private class TestCommand extends AbstractAdminCommand {
+    private static class TestCommand extends AbstractAdminCommand {
 
         private Config config;
 

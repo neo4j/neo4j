@@ -173,7 +173,7 @@
     <jakarta.activation-api.version>1.2.2</jakarta.activation-api.version>
     <jakarta.ws.rs-api.version>2.1.6</jakarta.ws.rs-api.version>
     <antlr.version>4.13.1</antlr.version>
-    <error_prone_annotations.version>2.22.0</error_prone_annotations.version>
+    <error_prone_annotations.version>2.23.0</error_prone_annotations.version>
   </properties>
 
   <modules>
@@ -905,7 +905,7 @@
                   -Xep:ByteBufferBackingArray:OFF -Xep:LongDoubleConversion:OFF -Xep:NarrowCalculation:OFF \
                   -Xep:JavaUtilDate:OFF -Xep:JavaTimeDefaultTimeZone:OFF -Xep:SameNameButDifferent:OFF \
                   -Xep:EmptyCatch:OFF -Xep:TypeParameterUnusedInFormals:OFF -Xep:ThreadPriorityCheck:OFF \
-                  -Xep:NonApiType:OFF \
+                  -Xep:NonApiType:OFF -Xep:StaticAssignmentOfThrowable:OFF \
                   -XepExcludedPaths:.*/target/generated-sources/.*</arg>
                 <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED</arg>
                 <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED</arg>

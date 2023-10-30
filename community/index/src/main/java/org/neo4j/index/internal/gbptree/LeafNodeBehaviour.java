@@ -82,6 +82,7 @@ public interface LeafNodeBehaviour<KEY, VALUE> extends SharedNodeBehaviour<KEY> 
     Overflow overflow(PageCursor cursor, int currentKeyCount, KEY newKey, VALUE newValue, CursorContext cursorContext)
             throws IOException;
 
+    @Override
     int availableSpace(PageCursor cursor, int currentKeyCount);
 
     int underflowThreshold();

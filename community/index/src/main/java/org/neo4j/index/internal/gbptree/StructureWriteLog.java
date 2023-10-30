@@ -40,6 +40,7 @@ public interface StructureWriteLog extends AutoCloseable {
 
     void checkpoint(long previousStableGeneration, long newStableGeneration, long newUnstableGeneration);
 
+    @Override
     void close();
 
     static StructureWriteLog structureWriteLog(FileSystemAbstraction fs, Path gbpTreeFile, Config config) {

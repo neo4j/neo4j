@@ -19,6 +19,7 @@
  */
 package org.neo4j.importer;
 
+import java.util.Locale;
 import java.util.function.Function;
 import org.neo4j.csv.reader.Configuration;
 import org.neo4j.util.Preconditions;
@@ -34,7 +35,7 @@ public class CharacterConverter implements Function<String, Character> {
         // - \123 --> character with id 123
         // - U+XXXX --> unicode character HEX
         // - \t   --> tab character
-        String lowerCaseValue = value.toLowerCase();
+        String lowerCaseValue = value.toLowerCase(Locale.ROOT);
         if (lowerCaseValue.startsWith("\\u") || lowerCaseValue.startsWith("u+")) {
             String code = value.substring(2);
             Preconditions.checkState(

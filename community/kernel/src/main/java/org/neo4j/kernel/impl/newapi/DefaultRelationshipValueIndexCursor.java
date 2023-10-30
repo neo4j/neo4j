@@ -37,7 +37,7 @@ import org.neo4j.storageengine.api.Reference;
 class DefaultRelationshipValueIndexCursor extends DefaultEntityValueIndexCursor<DefaultRelationshipValueIndexCursor>
         implements RelationshipValueIndexCursor {
     private final InternalCursorFactory internalCursors;
-    private DefaultRelationshipScanCursor relationshipScanCursor;
+    private final DefaultRelationshipScanCursor relationshipScanCursor;
     private DefaultPropertyCursor securityPropertyCursor;
     private int[] propertyIds;
 
@@ -193,6 +193,7 @@ class DefaultRelationshipValueIndexCursor extends DefaultEntityValueIndexCursor<
         return "RelationshipValueIndexCursor";
     }
 
+    @Override
     public void release() {
         if (relationshipScanCursor != null) {
             relationshipScanCursor.close();

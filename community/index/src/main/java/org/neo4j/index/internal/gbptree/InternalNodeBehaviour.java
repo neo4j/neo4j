@@ -68,6 +68,7 @@ public sealed interface InternalNodeBehaviour<KEY> extends SharedNodeBehaviour<K
 
     Overflow overflow(PageCursor cursor, int currentKeyCount, KEY newKey);
 
+    @Override
     int availableSpace(PageCursor cursor, int currentKeyCount);
 
     int totalSpaceOfKeyChild(KEY key);

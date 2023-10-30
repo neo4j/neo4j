@@ -217,7 +217,7 @@ public class SslPolicyLoader {
         keyCertChain = loadCertificateChain(fileSystem, keyCertChainFile);
         if (!config.get(policyConfig.trust_expired)) {
             for (var cert : keyCertChain) {
-                if (cert instanceof X509Certificate) {
+                if (cert != null) {
                     try {
                         cert.checkValidity();
                     } catch (CertificateExpiredException | CertificateNotYetValidException e) {
