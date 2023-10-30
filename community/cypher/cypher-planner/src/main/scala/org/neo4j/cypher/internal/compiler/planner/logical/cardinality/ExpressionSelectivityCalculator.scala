@@ -779,12 +779,14 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
       schemaType <- PropertyTypeMapper.asSchemaValueType(typeName)
       propConstraints <- typeConstraints.get(elementTypeName)
       constraint <- propConstraints.get(propertyKey.name)
-      if constraint.contains(schemaType)
     } yield {
-      Selectivity.ONE
+      if (constraint.contains(schemaType))
+        Selectivity.ONE
+      else
+        Selectivity.ZERO
     }
 
-    matchingConstraintSelectivities.headOption
+    matchingConstraintSelectivities.maxOption
   }
 }
 

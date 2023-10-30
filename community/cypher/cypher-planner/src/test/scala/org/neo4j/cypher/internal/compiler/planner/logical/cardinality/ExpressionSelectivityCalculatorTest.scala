@@ -2041,6 +2041,59 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
     result.factor shouldBe friendsPropIsNotNullSel
   }
 
+  test("IS :: STRING selectivity should be zero given a contradicting node property type constraint") {
+    val predicate = isTyped(nProp, CTString)
+
+    val calculator = setUpCalculator(
+      labelInfo = nIsPersonLabelInfo,
+      typeConstraints = Map(personLabelName -> Map(nodePropName -> Seq(SchemaValueType.INTEGER)))
+    )
+    val result = calculator(predicate)
+
+    result shouldBe personPropIsNotNullSel.toSelectivity.negate
+  }
+
+  test("IS :: INTEGER selectivity should be zero given a contradicting relationship property type constraint") {
+    val predicate = isTyped(rProp, CTInteger)
+    val calculator = setUpCalculator(
+      relTypeInfo = rFriendsRelTypeInfo,
+      typeConstraints = Map(friendsRelTypeName -> Map(relPropName -> Seq(SchemaValueType.STRING)))
+    )
+    val result = calculator(predicate)
+
+    result shouldBe friendsPropIsNotNullSel.toSelectivity.negate
+  }
+
+  test("IS :: STRING NOT NULL selectivity should be zero given a contradicting node property type constraint") {
+    val predicate = isTyped(nProp, CTStringNotNull)
+    val calculator = setUpCalculator(
+      labelInfo = nIsPersonLabelInfo,
+      typeConstraints = Map(personLabelName -> Map(nodePropName -> Seq(SchemaValueType.INTEGER))),
+      stats = mockStats(
+        indexCardinalities = defaultIndexCardinalities.view.filterKeys(Set(indexPersonRange)).toMap,
+        indexUniqueCardinalities = defaultIndexUniqueCardinalities.view.filterKeys(Set(indexPersonRange)).toMap
+      )
+    )
+    val result = calculator(predicate)
+
+    result shouldBe Selectivity.ZERO
+  }
+
+  test("IS :: POINT NOT NULL selectivity should be zero given a contradicting relationship property type constraint") {
+    val predicate = isTyped(rProp, CTPointNotNull)
+    val calculator = setUpCalculator(
+      relTypeInfo = rFriendsRelTypeInfo,
+      typeConstraints = Map(friendsRelTypeName -> Map(relPropName -> Seq(SchemaValueType.STRING))),
+      stats = mockStats(
+        indexCardinalities = defaultIndexCardinalities.view.filterKeys(Set(indexPersonRange)).toMap,
+        indexUniqueCardinalities = defaultIndexUniqueCardinalities.view.filterKeys(Set(indexPersonRange)).toMap
+      )
+    )
+    val result = calculator(predicate)
+
+    result shouldBe Selectivity.ZERO
+  }
+
   // HELPER METHODS
 
   protected def setupSemanticTable(): SemanticTable = {
@@ -2085,6 +2138,25 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
     (exp: Expression) => calculator(exp, labelInfo, relTypeInfo, existenceConstraints, typeConstraints)
   }
 
+  protected def defaultIndexCardinalities: Map[IndexDescriptor, Double] =
+    Map(
+      indexPersonRange -> 200.0,
+      indexPersonText -> 100.0,
+      indexPersonPoint -> 100.0,
+      indexFriendsRange -> 200.0,
+      indexFriendsText -> 150.0,
+      indexFriendsPoint -> 50.0
+    )
+
+  protected def defaultIndexUniqueCardinalities: Map[IndexDescriptor, Double] = Map(
+    indexPersonRange -> 180.0,
+    indexPersonText -> 60.0,
+    indexPersonPoint -> 70.0,
+    indexFriendsRange -> 180.0,
+    indexFriendsText -> 100.0,
+    indexFriendsPoint -> 30.0
+  )
+
   /**
    * @param allNodesCardinality      total number of nodes
    * @param labelOrRelCardinalities  for each label, the number of nodes that have that label
@@ -2096,22 +2168,8 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
     allRelCardinality: Double = 10000.0,
     labelOrRelCardinalities: Map[NameId, Double] =
       Map(indexPersonRange.label -> 1000.0, indexFriendsRange.relType -> 1000.0),
-    indexCardinalities: Map[IndexDescriptor, Double] = Map(
-      indexPersonRange -> 200.0,
-      indexPersonText -> 100.0,
-      indexPersonPoint -> 100.0,
-      indexFriendsRange -> 200.0,
-      indexFriendsText -> 150.0,
-      indexFriendsPoint -> 50.0
-    ),
-    indexUniqueCardinalities: Map[IndexDescriptor, Double] = Map(
-      indexPersonRange -> 180.0,
-      indexPersonText -> 60.0,
-      indexPersonPoint -> 70.0,
-      indexFriendsRange -> 180.0,
-      indexFriendsText -> 100.0,
-      indexFriendsPoint -> 30.0
-    )
+    indexCardinalities: Map[IndexDescriptor, Double] = defaultIndexCardinalities,
+    indexUniqueCardinalities: Map[IndexDescriptor, Double] = defaultIndexUniqueCardinalities
   ) extends GraphStatistics {
 
     // sanity check:
