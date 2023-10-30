@@ -334,11 +334,11 @@ import org.neo4j.cypher.internal.ast.WriteAction
 import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.ast.YieldOrWhere
 import org.neo4j.cypher.internal.ast.generator.AstGenerator.boolean
-import org.neo4j.cypher.internal.ast.generator.AstGenerator.char
 import org.neo4j.cypher.internal.ast.generator.AstGenerator.listSetOfSizeBetween
 import org.neo4j.cypher.internal.ast.generator.AstGenerator.oneOrMore
 import org.neo4j.cypher.internal.ast.generator.AstGenerator.tuple
 import org.neo4j.cypher.internal.ast.generator.AstGenerator.twoOrMore
+import org.neo4j.cypher.internal.ast.generator.AstGenerator.validString
 import org.neo4j.cypher.internal.ast.generator.AstGenerator.zeroOrMore
 import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
@@ -476,7 +476,6 @@ import org.scalacheck.Gen.choose
 import org.scalacheck.Gen.chooseNum
 import org.scalacheck.Gen.const
 import org.scalacheck.Gen.frequency
-import org.scalacheck.Gen.listOf
 import org.scalacheck.Gen.listOfN
 import org.scalacheck.Gen.lzy
 import org.scalacheck.Gen.nonEmptyListOf
@@ -524,6 +523,11 @@ object AstGenerator {
 
   def char: Gen[Char] =
     Arbitrary.arbChar.arbitrary.suchThat(acceptedChar)
+
+  // It is difficult to randomly generate a valid unicode string, so this rejects any string
+  // that may contain a unicode looking sequence to avoid parser errors.
+  def validString: Gen[String] =
+    nonEmptyListOf(char).map(_.mkString).suchThat(!_.matches("^.*\\\\[u,U].*$"))
 
   def acceptedChar(c: Char): Boolean = {
     val DEL_ERROR = '\ufdea'
@@ -582,14 +586,14 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
 
   def string: Gen[String] =
     if (simpleStrings) alphaLowerChar.map(_.toString)
-    else listOf(char).map(_.mkString)
+    else validString
 
   // IDENTIFIERS
   // ==========================================================================
 
   def _identifier: Gen[String] =
     if (simpleStrings) alphaLowerChar.map(_.toString)
-    else nonEmptyListOf(char).map(_.mkString)
+    else validString
 
   def _labelName: Gen[LabelName] =
     _identifier.map(LabelName(_)(pos))
