@@ -76,8 +76,6 @@ import org.neo4j.test.utils.TestDirectory;
 class CorruptedLogsTruncatorTest {
     // Size of the log files, except the last one
     private static final long LOG_FILES_SIZE = 1162L;
-    // Offset in the last log file where data ends
-    private static final long LAST_LOG_DATA_END = LATEST_LOG_FORMAT.getHeaderSize() + 9L;
 
     private static final int TOTAL_NUMBER_OF_TRANSACTION_LOG_FILES = 12;
     // There is one file for the separate checkpoints as well
@@ -137,15 +135,14 @@ class CorruptedLogsTruncatorTest {
     @Test
     void doNotPruneNonCorruptedLogs() throws IOException {
         life.start();
-        generateTransactionLogFiles(logFiles);
+        LogPosition logPosAfterGeneratingLogs = generateTransactionLogFiles(logFiles);
 
         var logFile = logFiles.getLogFile();
         long highestLogVersion = logFile.getHighestLogVersion();
         long fileSizeBeforePrune = Files.size(logFile.getHighestLogFile());
-        LogPosition endOfLogsPosition = new LogPosition(highestLogVersion, fileSizeBeforePrune);
         assertEquals(TOTAL_NUMBER_OF_TRANSACTION_LOG_FILES - 1, highestLogVersion);
 
-        logPruner.truncate(endOfLogsPosition);
+        logPruner.truncate(logPosAfterGeneratingLogs);
 
         assertEquals(TOTAL_NUMBER_OF_LOG_FILES, logFiles.logFiles().length);
         assertEquals(fileSizeBeforePrune, Files.size(logFile.getHighestLogFile()));
@@ -155,12 +152,10 @@ class CorruptedLogsTruncatorTest {
     @Test
     void doNotTruncateLogWithPreAllocatedZeros() throws IOException {
         life.start();
-        generateTransactionLogFiles(logFiles);
+        LogPosition logPosAfterGeneratingLogs = generateTransactionLogFiles(logFiles);
 
         var logFile = logFiles.getLogFile();
-        long highestLogVersion = logFile.getHighestLogVersion();
         long fileSizeBeforeAppend = Files.size(logFile.getHighestLogFile());
-        LogPosition endOfLogsPosition = new LogPosition(highestLogVersion, fileSizeBeforeAppend);
 
         try (OutputStream outputStream = fs.openAsOutputStream(logFile.getHighestLogFile(), true)) {
             int zeroes = ThreadLocalRandom.current().nextInt(100, 10240);
@@ -171,7 +166,7 @@ class CorruptedLogsTruncatorTest {
 
         assertNotEquals(fileSizeBeforeAppend, fileAfterZeroAppend);
 
-        logPruner.truncate(endOfLogsPosition);
+        logPruner.truncate(logPosAfterGeneratingLogs);
 
         assertEquals(TOTAL_NUMBER_OF_LOG_FILES, logFiles.logFiles().length);
         assertEquals(fileAfterZeroAppend, Files.size(logFile.getHighestLogFile()));
@@ -182,13 +177,9 @@ class CorruptedLogsTruncatorTest {
     @Test
     void truncateLogWithCorruptionThatLooksLikePreAllocatedZeros() throws IOException {
         life.start();
-        generateTransactionLogFiles(logFiles);
+        LogPosition logPosAfterGeneratingLogs = generateTransactionLogFiles(logFiles);
 
         var logFile = logFiles.getLogFile();
-        long highestLogVersion = logFile.getHighestLogVersion();
-        long fileSizeBeforeAppend = Files.size(logFile.getHighestLogFile());
-        LogPosition endOfLogsPosition = new LogPosition(highestLogVersion, fileSizeBeforeAppend);
-
         FlushableLogPositionAwareChannel channel =
                 logFile.getTransactionLogWriter().getChannel();
         for (int i = 0; i < ThreadLocalRandom.current().nextInt(100, 10240); i++) {
@@ -200,14 +191,13 @@ class CorruptedLogsTruncatorTest {
             channel.putLong(0);
         }
         channel.prepareForFlush().flush();
+        LogPosition logPosAfterExtraWrite = channel.getCurrentLogPosition();
+        assertNotEquals(logPosAfterGeneratingLogs, logPosAfterExtraWrite);
 
-        long fileAfterZeroAppend = Files.size(logFile.getHighestLogFile());
-        assertNotEquals(fileSizeBeforeAppend, fileAfterZeroAppend);
-
-        logPruner.truncate(endOfLogsPosition);
+        logPruner.truncate(logPosAfterGeneratingLogs);
 
         assertEquals(TOTAL_NUMBER_OF_LOG_FILES, logFiles.logFiles().length);
-        assertEquals(fileSizeBeforeAppend, Files.size(logFile.getHighestLogFile()));
+        assertEquals(logPosAfterGeneratingLogs.getByteOffset(), Files.size(logFile.getHighestLogFile()));
 
         Path corruptedLogsDirectory = databaseDirectory.resolve(CORRUPTED_TX_LOGS_BASE_NAME);
         assertTrue(Files.exists(corruptedLogsDirectory));
@@ -220,13 +210,13 @@ class CorruptedLogsTruncatorTest {
     @EnabledOnOs(OS.LINUX) // based on pre-allocated files, which does not work on windows
     void pruneAndArchiveLastLog() throws IOException {
         life.start();
-        generateTransactionLogFiles(logFiles);
+        LogPosition logPosAfterGeneratingLogs = generateTransactionLogFiles(logFiles);
 
         var logFile = logFiles.getLogFile();
         long highestLogVersion = logFile.getHighestLogVersion();
         Path highestLogFile = logFile.getHighestLogFile();
-        int bytesToPrune = 5;
-        long byteOffset = LAST_LOG_DATA_END - bytesToPrune;
+        int bytesToPrune = 5; // 1 byte for (byte)42 + 4 bytes for the checksum, see generateTransactionLogFiles().
+        long byteOffset = logPosAfterGeneratingLogs.getByteOffset() - bytesToPrune;
         LogPosition prunePosition = new LogPosition(highestLogVersion, byteOffset);
 
         logPruner.truncate(prunePosition);
@@ -353,7 +343,10 @@ class CorruptedLogsTruncatorTest {
         assertTrue(FilenameUtils.isExtension(name, "zip"));
     }
 
-    private static void generateTransactionLogFiles(LogFiles logFiles) throws IOException {
+    /**
+     * Generate transaction log files and returns the {@link LogPosition} for the last file written.
+     */
+    private static LogPosition generateTransactionLogFiles(LogFiles logFiles) throws IOException {
         byte[] payload = new byte[PAYLOAD_LENGTH];
         Arrays.fill(payload, (byte) 0xFF);
 
@@ -377,5 +370,7 @@ class CorruptedLogsTruncatorTest {
         writer.put((byte) 42);
         writer.putChecksum();
         writer.prepareForFlush().flush();
+
+        return writer.getCurrentLogPosition();
     }
 }
