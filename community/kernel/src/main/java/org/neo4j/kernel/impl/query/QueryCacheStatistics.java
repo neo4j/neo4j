@@ -32,6 +32,10 @@ public interface QueryCacheStatistics {
 
     Long executableQueryCacheEntries();
 
+    Long numberOfReplans();
+
+    Long replanWaitTime();
+
     Map<String, CacheMetrics> metricsPerCacheKind();
 
     QueryCacheStatistics EMPTY = new QueryCacheStatistics() {
@@ -57,6 +61,16 @@ public interface QueryCacheStatistics {
 
         @Override
         public Long executableQueryCacheEntries() {
+            return 0L;
+        }
+
+        @Override
+        public Long numberOfReplans() {
+            return 0L;
+        }
+
+        @Override
+        public Long replanWaitTime() {
             return 0L;
         }
 

@@ -40,6 +40,10 @@ class CombinedQueryCacheStatistics(a: QueryCacheStatistics, b: QueryCacheStatist
   override def executableQueryCacheEntries(): lang.Long =
     a.executableQueryCacheEntries() + b.executableQueryCacheEntries
 
+  override def numberOfReplans(): lang.Long = a.numberOfReplans() + b.numberOfReplans()
+
+  override def replanWaitTime(): lang.Long = a.replanWaitTime() + b.replanWaitTime()
+
   override def metricsPerCacheKind(): java.util.Map[String, CacheMetrics] = {
     val aMap = Map.from(a.metricsPerCacheKind().asScala)
     val bMap = Map.from(b.metricsPerCacheKind().asScala)

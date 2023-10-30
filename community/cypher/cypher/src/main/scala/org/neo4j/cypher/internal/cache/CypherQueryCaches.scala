@@ -592,6 +592,12 @@ class CypherQueryCaches(
     override def executableQueryCacheEntries(): lang.Long =
       executableQueryCache.estimatedSize()
 
+    override def numberOfReplans(): lang.Long =
+      cacheTracers.executablePlan.numberOfReplans
+
+    override def replanWaitTime(): lang.Long =
+      cacheTracers.executablePlan.replanWaitTime
+
     override def metricsPerCacheKind(): java.util.Map[String, CacheMetrics] = {
       (cacheTracers.perCacheKind: Map[String, CacheMetrics]).asJava
     }
