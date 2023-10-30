@@ -116,13 +116,19 @@ public class ExecutionEngine implements QueryExecutionEngine {
             boolean prePopulate,
             QuerySubscriber subscriber)
             throws QueryExecutionKernelException {
-        return executeQuery(
-                query,
-                parameters,
-                context,
-                prePopulate,
-                subscriber,
-                cypherExecutionEngine.defaultQueryExecutionMonitor());
+        try {
+            checkParams(context, parameters);
+            return cypherExecutionEngine.execute(
+                    query,
+                    parameters,
+                    context,
+                    false,
+                    prePopulate,
+                    subscriber,
+                    cypherExecutionEngine.defaultQueryExecutionMonitor());
+        } catch (Neo4jException e) {
+            throw new QueryExecutionKernelException(e);
+        }
     }
 
     @Override

@@ -73,12 +73,30 @@ public class SnapshotExecutionEngine extends ExecutionEngine {
             MapValue parameters,
             TransactionalContext context,
             boolean prePopulate,
-            QuerySubscriber subscriber)
+            QuerySubscriber subscriber,
+            QueryExecutionMonitor monitor)
             throws QueryExecutionKernelException {
-        QueryExecutor queryExecutor =
-                querySubscriber -> super.executeQuery(query, parameters, context, prePopulate, querySubscriber);
+        QueryExecutor queryExecutor = querySubscriber ->
+                super.executeQuery(query, parameters, context, prePopulate, querySubscriber, monitor);
         MaterialisedResult materialisedResult = executeWithRetries(query, context, queryExecutor);
         return materialisedResult.stream(subscriber);
+    }
+
+    @Override
+    public QueryExecution executeQuery(
+            String query,
+            MapValue parameters,
+            TransactionalContext context,
+            boolean prePopulate,
+            QuerySubscriber subscriber)
+            throws QueryExecutionKernelException {
+        return executeQuery(
+                query,
+                parameters,
+                context,
+                prePopulate,
+                subscriber,
+                cypherExecutionEngine.defaultQueryExecutionMonitor());
     }
 
     @Override
