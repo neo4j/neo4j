@@ -164,9 +164,10 @@ class CorruptedLogsTruncatorTest {
                 logFile.getTransactionLogWriter().getChannel();
         int zeroes = random.nextInt(100, 10240);
         channel.put(new byte[zeroes], zeroes);
+        channel.prepareForFlush().flush();
+        LogPosition logPosAfterExtraWrite = channel.getCurrentLogPosition();
 
         long fileAfterZeroAppend = Files.size(logFile.getHighestLogFile());
-        LogPosition logPosAfterExtraWrite = channel.getCurrentLogPosition();
 
         logPruner.truncate(logPosAfterGeneratingLogs);
         LogPosition logPosAfterTruncate =
@@ -187,7 +188,6 @@ class CorruptedLogsTruncatorTest {
         var logFile = logFiles.getLogFile();
         FlushableLogPositionAwareChannel channel =
                 logFile.getTransactionLogWriter().getChannel();
-
         // Pad with zeroes before the corrupted byte
         int beforeZeroes = random.nextInt(100, 10240);
         channel.put(new byte[beforeZeroes], beforeZeroes);
@@ -196,9 +196,9 @@ class CorruptedLogsTruncatorTest {
         // After corrupted byte, pad with a few more zeroes.
         int afterZeroes = random.nextInt(10, 1024);
         channel.put(new byte[afterZeroes], afterZeroes);
-
         channel.prepareForFlush().flush();
         LogPosition logPosAfterExtraWrite = channel.getCurrentLogPosition();
+
         assertNotEquals(logPosAfterGeneratingLogs, logPosAfterExtraWrite);
 
         logPruner.truncate(logPosAfterGeneratingLogs);
