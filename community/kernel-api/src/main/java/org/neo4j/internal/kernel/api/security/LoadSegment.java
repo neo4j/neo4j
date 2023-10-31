@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.kernel.api.security;
 
-public class LoadSegment implements Segment {
+public record LoadSegment() implements Segment {
     @Override
     public boolean satisfies(Segment segment) {
         return segment instanceof LoadSegment;

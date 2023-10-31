@@ -19,37 +19,7 @@
  */
 package org.neo4j.internal.kernel.api.security;
 
-public class RelTypeSegment implements Segment {
-    private final String relType;
-
-    public RelTypeSegment(String relType) {
-        this.relType = relType;
-    }
-
-    public String getRelType() {
-        return relType;
-    }
-
-    @Override
-    public int hashCode() {
-        return relType != null ? relType.hashCode() : 0;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-
-        if (obj instanceof RelTypeSegment other) {
-            if (this.relType == null) {
-                return other.relType == null;
-            } else {
-                return this.relType.equals(other.getRelType());
-            }
-        }
-        return false;
-    }
+public record RelTypeSegment(String relType) implements Segment {
 
     @Override
     public String toString() {

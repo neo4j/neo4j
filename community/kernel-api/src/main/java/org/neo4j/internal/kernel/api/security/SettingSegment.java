@@ -19,14 +19,7 @@
  */
 package org.neo4j.internal.kernel.api.security;
 
-import java.util.Objects;
-
-public class SettingSegment implements Segment {
-    private final String setting;
-
-    public SettingSegment(String setting) {
-        this.setting = setting;
-    }
+public record SettingSegment(String setting) implements Segment {
 
     public String getSetting() {
         return setting;
@@ -38,25 +31,6 @@ public class SettingSegment implements Segment {
             return setting == null || setting.equals(other.setting);
         }
         return false;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-
-        SettingSegment that = (SettingSegment) o;
-
-        return Objects.equals(setting, that.setting);
-    }
-
-    @Override
-    public int hashCode() {
-        return setting != null ? setting.hashCode() : 0;
     }
 
     @Override

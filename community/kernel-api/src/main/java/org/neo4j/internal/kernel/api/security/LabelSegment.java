@@ -19,37 +19,7 @@
  */
 package org.neo4j.internal.kernel.api.security;
 
-import java.util.Objects;
-
-public class LabelSegment implements Segment {
-    private final String label;
-
-    public LabelSegment(String label) {
-        this.label = label;
-    }
-
-    public String getLabel() {
-        return label;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-
-        LabelSegment that = (LabelSegment) o;
-
-        return Objects.equals(label, that.label);
-    }
-
-    @Override
-    public int hashCode() {
-        return label != null ? label.hashCode() : 0;
-    }
+public record LabelSegment(String label) implements Segment {
 
     @Override
     public String toString() {
