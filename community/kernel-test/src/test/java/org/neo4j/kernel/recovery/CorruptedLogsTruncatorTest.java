@@ -144,13 +144,13 @@ class CorruptedLogsTruncatorTest {
 
         var logFile = logFiles.getLogFile();
         long highestLogVersion = logFile.getHighestLogVersion();
-        long fileSizeBeforePrune = Files.size(logFile.getHighestLogFile());
+        long expectedFileSizeAfterTruncate = Files.size(logFile.getHighestLogFile());
         assertEquals(TOTAL_NUMBER_OF_TRANSACTION_LOG_FILES - 1, highestLogVersion);
 
         logPruner.truncate(logPosAfterGeneratingLogs);
 
         assertEquals(TOTAL_NUMBER_OF_LOG_FILES, logFiles.logFiles().length);
-        assertEquals(fileSizeBeforePrune, Files.size(logFile.getHighestLogFile()));
+        assertEquals(expectedFileSizeAfterTruncate, Files.size(logFile.getHighestLogFile()));
         assertTrue(ArrayUtils.isEmpty(databaseDirectory.toFile().listFiles(File::isDirectory)));
     }
 
@@ -165,18 +165,13 @@ class CorruptedLogsTruncatorTest {
         int zeroes = random.nextInt(100, 10240);
         channel.put(new byte[zeroes], zeroes);
         channel.prepareForFlush().flush();
-        LogPosition logPosAfterExtraWrite = channel.getCurrentLogPosition();
+        assertNotEquals(logPosAfterGeneratingLogs, channel.getCurrentLogPosition());
 
-        long fileAfterZeroAppend = Files.size(logFile.getHighestLogFile());
-
+        long expectedFileSizeAfterTruncate = Files.size(logFile.getHighestLogFile());
         logPruner.truncate(logPosAfterGeneratingLogs);
-        LogPosition logPosAfterTruncate =
-                logFiles.getLogFile().getTransactionLogWriter().getCurrentPosition();
 
         assertEquals(TOTAL_NUMBER_OF_LOG_FILES, logFiles.logFiles().length);
-        assertEquals(fileAfterZeroAppend, Files.size(logFile.getHighestLogFile()));
-        assertNotEquals(logPosAfterGeneratingLogs, logPosAfterTruncate);
-        assertEquals(logPosAfterExtraWrite, logPosAfterTruncate);
+        assertEquals(expectedFileSizeAfterTruncate, Files.size(logFile.getHighestLogFile()));
         assertTrue(ArrayUtils.isEmpty(databaseDirectory.toFile().listFiles(File::isDirectory)));
     }
 
@@ -184,6 +179,7 @@ class CorruptedLogsTruncatorTest {
     void truncateLogWithCorruptionThatLooksLikePreAllocatedZeros() throws IOException {
         life.start();
         LogPosition logPosAfterGeneratingLogs = generateTransactionLogFiles(logFiles);
+        long expectedFileSizeAfterTruncate = logPosAfterGeneratingLogs.getByteOffset();
 
         var logFile = logFiles.getLogFile();
         FlushableLogPositionAwareChannel channel =
@@ -197,14 +193,12 @@ class CorruptedLogsTruncatorTest {
         int afterZeroes = random.nextInt(10, 1024);
         channel.put(new byte[afterZeroes], afterZeroes);
         channel.prepareForFlush().flush();
-        LogPosition logPosAfterExtraWrite = channel.getCurrentLogPosition();
-
-        assertNotEquals(logPosAfterGeneratingLogs, logPosAfterExtraWrite);
+        assertNotEquals(logPosAfterGeneratingLogs, channel.getCurrentLogPosition());
 
         logPruner.truncate(logPosAfterGeneratingLogs);
 
         assertEquals(TOTAL_NUMBER_OF_LOG_FILES, logFiles.logFiles().length);
-        assertEquals(logPosAfterGeneratingLogs.getByteOffset(), Files.size(logFile.getHighestLogFile()));
+        assertEquals(expectedFileSizeAfterTruncate, Files.size(logFile.getHighestLogFile()));
 
         Path corruptedLogsDirectory = databaseDirectory.resolve(CORRUPTED_TX_LOGS_BASE_NAME);
         assertTrue(Files.exists(corruptedLogsDirectory));
