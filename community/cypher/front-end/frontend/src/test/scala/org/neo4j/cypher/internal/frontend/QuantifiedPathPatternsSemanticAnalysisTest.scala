@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.frontend
 
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.frontend.label_expressions.Statement
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory.SyntaxException
 import org.neo4j.cypher.internal.util.symbols.CTList
