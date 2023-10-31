@@ -46,10 +46,13 @@ object SortPlanner {
    * If the interesting order is non-empty, and the given plan already satisfies the interesting order, return the same plan.
    * If the interesting order is non-empty, and the given plan does not already satisfy the interesting order, try to plan a Sort/PartialSort
    * to satisfy the interesting order. If that is possible, return the new plan, otherwise None.
+   *
+   * @param isPushDownSort `true` if this attempts to plan the sort earlier than written in the original query.
    */
   def maybeSortedPlan(
     plan: LogicalPlan,
     interestingOrderConfig: InterestingOrderConfig,
+    isPushDownSort: Boolean,
     context: LogicalPlanningContext,
     updateSolved: Boolean
   ): Option[LogicalPlan] = {
@@ -58,9 +61,9 @@ object SortPlanner {
         case FullSatisfaction() =>
           Some(plan)
         case NoSatisfaction() =>
-          planSort(plan, Seq.empty, interestingOrderConfig, context, updateSolved)
+          planSort(plan, Seq.empty, interestingOrderConfig, isPushDownSort, context, updateSolved)
         case Satisfaction(satisfiedPrefix, _) =>
-          planSort(plan, satisfiedPrefix, interestingOrderConfig, context, updateSolved)
+          planSort(plan, satisfiedPrefix, interestingOrderConfig, isPushDownSort, context, updateSolved)
       }
     } else {
       None
@@ -81,7 +84,8 @@ object SortPlanner {
     context: LogicalPlanningContext
   ): Option[LogicalPlan] = {
     // This plan will be fully sorted if possible, but even otherwise it might be as sorted as currently possible.
-    val newPlan = maybeSortedPlan(plan, interestingOrderConfig, context, updateSolved = true).getOrElse(plan)
+    val newPlan =
+      maybeSortedPlan(plan, interestingOrderConfig, isPushDownSort = true, context, updateSolved = true).getOrElse(plan)
     val asSortedAsPossible = SatisfiedForPlan(plan)
     orderSatisfaction(interestingOrderConfig, context, newPlan) match {
       case asSortedAsPossible() => Some(newPlan)
@@ -91,7 +95,7 @@ object SortPlanner {
 
   /**
    * Given a plan and an interesting order, plan a Sort if necessary.
-   * Update the Solveds attribute if no Sort planning was necessery.
+   * Update the Solveds attribute if no Sort planning was necessary.
    * Throw an exception if no plan that can solve the interesting order could be found.
    */
   def ensureSortedPlanWithSolved(
@@ -100,7 +104,7 @@ object SortPlanner {
     context: LogicalPlanningContext,
     updateSolved: Boolean
   ): LogicalPlan =
-    maybeSortedPlan(plan, interestingOrderConfig, context, updateSolved) match {
+    maybeSortedPlan(plan, interestingOrderConfig, isPushDownSort = false, context, updateSolved = updateSolved) match {
       case Some(sortedPlan) =>
         if (sortedPlan == plan) context.staticComponents.logicalPlanProducer.updateSolvedForSortedItems(
           sortedPlan,
@@ -144,10 +148,23 @@ object SortPlanner {
     }
   }
 
+  /**
+   * @param plan the plan to plan Sort on top of.
+   * @param satisfiedPrefix the prefix of the order to solve that is already satisfied.
+   * @param interestingOrderConfig the order to solve.
+   * @param isPushDownSort `true` if this attempts to plan the sort earlier than written in the original query.
+   * @param updateSolved `true` if the solved attribute should be updated. 
+   * @return `plan` with Sort on top, if 
+   *         * there was an order to solve,
+   *         * it was possible to solve it now, and
+   *         * it was OK to plan it now.
+   *         `None` otherwise.
+   */
   private def planSort(
     plan: LogicalPlan,
     satisfiedPrefix: Seq[ir.ordering.ColumnOrder],
     interestingOrderConfig: InterestingOrderConfig,
+    isPushDownSort: Boolean,
     context: LogicalPlanningContext,
     updateSolved: Boolean
   ): Option[LogicalPlan] = {
@@ -209,7 +226,11 @@ object SortPlanner {
     val sortColumns: Seq[ColumnOrder] = sortItems.map(_.columnOrder)
     val providedOrderColumns = sortItems.map(_.providedOrderColumn)
 
-    if (sortColumns.forall(column => projected2.availableSymbols.contains(column.id))) {
+    val sortSymbolsAvailable = sortColumns.forall(column => projected2.availableSymbols.contains(column.id))
+    def deterministicSortExpressionsOnly = providedOrderColumns.forall(_.expression.isDeterministic)
+    def okToSortNow = !isPushDownSort || deterministicSortExpressionsOnly
+
+    if (sortSymbolsAvailable && okToSortNow) {
       if (satisfiedPrefix.isEmpty) {
         // Full sort required
         Some(context.staticComponents.logicalPlanProducer.planSort(

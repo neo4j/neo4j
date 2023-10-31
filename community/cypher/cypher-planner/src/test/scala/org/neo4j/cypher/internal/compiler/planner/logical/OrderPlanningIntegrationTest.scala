@@ -2631,4 +2631,61 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       .nodeByLabelScan("a", "A", IndexOrderNone)
       .build()
   }
+
+  test("should not push down ORDER BY rand(), 2 components") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("A", 100)
+      .build()
+
+    val query =
+      """
+        |MATCH (a1:A), (a2:A)
+        |WHERE a1<>a2
+        |RETURN *
+        |ORDER BY rand()
+        |LIMIT 5
+        |""".stripMargin
+
+    planner.plan(query).stripProduceResults should equal(
+      planner.subPlanBuilder()
+        .top(5, "`rand()` ASC")
+        .projection("rand() AS `rand()`")
+        .filter("NOT a1 = a2")
+        .cartesianProduct()
+        .|.nodeByLabelScan("a2", "A")
+        .nodeByLabelScan("a1", "A")
+        .build()
+    )
+  }
+
+  test("should not push down ORDER BY rand(), 2 nodes in pattern") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setAllRelationshipsCardinality(1000)
+      .setLabelCardinality("A", 100)
+      .setRelationshipCardinality("(:A)-[]->(:A)", 100)
+      .setRelationshipCardinality("()-[]->(:A)", 100)
+      .setRelationshipCardinality("(:A)-[]->()", 100)
+      .build()
+
+    val query =
+      """
+        |MATCH (a1:A)-[r]->(a2:A)
+        |WHERE a1<>a2
+        |RETURN *
+        |ORDER BY rand()
+        |LIMIT 5
+        |""".stripMargin
+
+    planner.plan(query).stripProduceResults should equal(
+      planner.subPlanBuilder()
+        .top(5, "`rand()` ASC")
+        .projection("rand() AS `rand()`")
+        .filter("NOT a1 = a2", "a2:A")
+        .expandAll("(a1)-[r]->(a2)")
+        .nodeByLabelScan("a1", "A")
+        .build()
+    )
+  }
 }
