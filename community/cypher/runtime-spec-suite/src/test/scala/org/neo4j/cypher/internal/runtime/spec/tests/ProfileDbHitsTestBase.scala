@@ -812,9 +812,9 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     val fusedCostOfGetPropertyChain = if (canReuseAllScanLookup) 0 else costOfGetPropertyChain
     val expectedFilterDbHits = sizeHint * (fusedCostOfGetPropertyChain + costOfProperty)
     val expectedAllNodesScanDbHits = runtimeUsed match {
-      case Interpreted | Slotted | Pipelined   => sizeHint + 1
-      case Parallel if isParallelWithOneWorker => sizeHint + 1
-      case Parallel                            => sizeHint
+      case Interpreted | Slotted | Pipelined                             => sizeHint + 1
+      case Parallel if isParallelWithOneWorker && !canReuseAllScanLookup => sizeHint + 1
+      case Parallel                                                      => sizeHint
     }
 
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
@@ -934,12 +934,14 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     val expectedSecondFilterDbHits = (size / 2 * size) * (costOfGetPropertyChain + costOfProperty)
     val expectedFirstFilterDbHits = size * size * (fusedCostOfGetPropertyChain + costOfProperty)
     val expectedAllNodeScanRHS = runtimeUsed match {
-      case Interpreted | Slotted | Pipelined => be(size * (size + 1))
-      case Parallel                          => be >= size and be <= size * size
+      case Interpreted | Slotted | Pipelined                             => be(size * (size + 1))
+      case Parallel if isParallelWithOneWorker && !canReuseAllScanLookup => be(size * (size + 1))
+      case Parallel                                                      => be >= size and be <= size * size
     }
     val expectedAllNodeScanLHS = runtimeUsed match {
-      case Interpreted | Slotted | Pipelined => size + 1
-      case Parallel                          => size
+      case Interpreted | Slotted | Pipelined   => size + 1
+      case Parallel if isParallelWithOneWorker => size + 1
+      case Parallel                            => size
     }
     val queryProfile = runtimeResult.runtimeResult.queryProfile()
     queryProfile.operatorProfile(1).dbHits() shouldBe expectedSecondFilterDbHits // filter
@@ -1031,12 +1033,14 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     // then
     val numberOfChunks = Math.ceil(size / cartesianProductChunkSize.toDouble).toInt
     val expectedAllNodeScanRHS = runtimeUsed match {
-      case Interpreted | Slotted | Pipelined => be(numberOfChunks * (size + 1))
-      case Parallel                          => be >= numberOfChunks * size and be <= size * size
+      case Interpreted | Slotted | Pipelined   => be(numberOfChunks * (size + 1))
+      case Parallel if isParallelWithOneWorker => be(numberOfChunks * (size + 1))
+      case Parallel                            => be >= numberOfChunks * size and be <= size * size
     }
     val expectedAllNodeScanLHS = runtimeUsed match {
-      case Interpreted | Slotted | Pipelined => size + 1
-      case Parallel                          => size
+      case Interpreted | Slotted | Pipelined   => size + 1
+      case Parallel if isParallelWithOneWorker => size + 1
+      case Parallel                            => size
     }
     result.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe 0 // cartesian product
     result.runtimeResult.queryProfile().operatorProfile(
@@ -1093,12 +1097,14 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val expectedAllNodeScanRHS = runtimeUsed match {
-      case Interpreted | Slotted | Pipelined => size + 1
-      case Parallel                          => size
+      case Interpreted | Slotted | Pipelined   => size + 1
+      case Parallel if isParallelWithOneWorker => size + 1
+      case Parallel                            => size
     }
     val expectedAllNodeScanLHS = runtimeUsed match {
-      case Interpreted | Slotted | Pipelined => size + 1
-      case Parallel                          => size
+      case Interpreted | Slotted | Pipelined   => size + 1
+      case Parallel if isParallelWithOneWorker => size + 1
+      case Parallel                            => size
     }
     result.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe 0 // union
     result.runtimeResult.queryProfile().operatorProfile(2).dbHits() shouldBe expectedAllNodeScanRHS // all node scan
