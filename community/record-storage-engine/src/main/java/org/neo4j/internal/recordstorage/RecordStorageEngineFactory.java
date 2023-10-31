@@ -839,10 +839,11 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                         true,
                         LogTailLogVersionsMetadata.EMPTY_LOG_TAIL,
                         immutable.empty())
-                .openNeoStores(StoreType.NODE_LABEL, StoreType.NODE)) {
-            var nodeStore = neoStores.getNodeStore();
-            long highNodeId = nodeStore.getIdGenerator().getHighId();
-            return ByteArrayBitsManipulator.MAX_BYTES * highNodeId;
+                .openNeoStores(StoreType.NODE_LABEL, StoreType.NODE, StoreType.RELATIONSHIP)) {
+            var highId = Math.max(
+                    neoStores.getNodeStore().getIdGenerator().getHighId(),
+                    neoStores.getRelationshipStore().getIdGenerator().getHighId());
+            return ByteArrayBitsManipulator.MAX_BYTES * highId;
         }
     }
 

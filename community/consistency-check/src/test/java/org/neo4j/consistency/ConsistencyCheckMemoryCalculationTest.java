@@ -21,6 +21,7 @@ package org.neo4j.consistency;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import org.assertj.core.data.Offset;
 import org.junit.jupiter.api.Test;
 
 class ConsistencyCheckMemoryCalculationTest {
@@ -69,5 +70,57 @@ class ConsistencyCheckMemoryCalculationTest {
         // then
         assertThat(distribution.pageCacheMemory()).isLessThan(desiredPageCacheMemory);
         assertThat(distribution.offHeapCachingMemory()).isLessThan(desiredOffHeapCachingMemory);
+    }
+
+    @Test
+    void shouldAllocateAllAvailableMemoryWhenLimited() {
+        // given
+        var desiredPageCacheMemory = 100;
+        var desiredOffHeapCachingMemory = 100;
+        var maxOffHeapMemory = 150;
+
+        // when
+        var distribution = ConsistencyCheckMemoryCalculation.calculate(
+                maxOffHeapMemory, desiredPageCacheMemory, desiredOffHeapCachingMemory);
+
+        // then
+        assertThat(distribution.pageCacheMemory() + distribution.offHeapCachingMemory())
+                .isEqualTo(maxOffHeapMemory);
+    }
+
+    @Test
+    void shouldNotAllocateMoreThanNecessary() {
+        // given
+        var desiredPageCacheMemory = 100;
+        var desiredOffHeapCachingMemory = 100;
+        var maxOffHeapMemory = 1000;
+
+        // when
+        var distribution = ConsistencyCheckMemoryCalculation.calculate(
+                maxOffHeapMemory, desiredPageCacheMemory, desiredOffHeapCachingMemory);
+
+        // then
+        assertThat(distribution.pageCacheMemory() + distribution.offHeapCachingMemory())
+                .isEqualTo(desiredOffHeapCachingMemory + desiredPageCacheMemory);
+    }
+
+    @Test
+    void shouldConstrainOffHeapWhenLimitedOnMemory() {
+        // given
+        var desiredPageCacheMemory = 1_000;
+        var desiredOffHeapCachingMemory = 1000;
+        var maxOffHeapMemory = 150;
+
+        // when
+        var distribution = ConsistencyCheckMemoryCalculation.calculate(
+                maxOffHeapMemory, desiredPageCacheMemory, desiredOffHeapCachingMemory);
+
+        // then
+        assertThat(distribution.pageCacheMemory()).isLessThan(desiredPageCacheMemory);
+        assertThat(distribution.offHeapCachingMemory()).isLessThan(desiredOffHeapCachingMemory);
+        assertThat(distribution.pageCacheMemory() + distribution.offHeapCachingMemory())
+                .isEqualTo(maxOffHeapMemory);
+        assertThat((double) distribution.offHeapCachingMemory())
+                .isCloseTo(0.25D * maxOffHeapMemory, Offset.offset(0.5));
     }
 }

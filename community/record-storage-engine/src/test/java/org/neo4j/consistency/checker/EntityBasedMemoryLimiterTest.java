@@ -43,20 +43,32 @@ class EntityBasedMemoryLimiterTest {
     }
 
     @Test
-    void shouldHandleRangeWithHighNodeLessThanHighRel() {
+    void shouldLetHighRelationshipIdAffectNumberOfRangesOnEnoughMemory() {
         // given
         EntityBasedMemoryLimiter limiter = new EntityBasedMemoryLimiter(50, 1, 20, 40);
+        // The ranges are based on highNodeId - a range will never be larger than the number of nodes in the db.
+        assertEquals(1, limiter.numberOfRanges());
+
+        // when/then
+        assertRange(limiter.next(), 0, 20, 40);
+        assertFalse(limiter.hasNext());
+    }
+
+    @Test
+    void shouldLetHighRelationshipIdAffectNumberOfRangesOnLessMemory() {
+        // given
+        EntityBasedMemoryLimiter limiter = new EntityBasedMemoryLimiter(30, 1, 20, 40);
         // The ranges are based on highNodeId - a range will never be larger than the number of nodes in the db.
         assertEquals(2, limiter.numberOfRanges());
 
         // when/then
-        assertRange(limiter.next(), 0, 20, 20);
+        assertRange(limiter.next(), 0, 20, 30);
 
         EntityBasedMemoryLimiter.CheckRange range = limiter.next();
         assertFalse(range.applicableForNodeBasedChecks());
         assertNull(range.getNodeRange());
         assertTrue(range.applicableForRelationshipBasedChecks());
-        assertRange(range.getRelationshipRange(), 20, 40);
+        assertRange(range.getRelationshipRange(), 30, 40);
 
         assertFalse(limiter.hasNext());
     }

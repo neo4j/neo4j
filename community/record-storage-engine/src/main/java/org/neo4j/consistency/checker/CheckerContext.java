@@ -139,7 +139,8 @@ class CheckerContext {
         this.verbose = verbose;
         this.consistencyFlags = consistencyFlags;
         this.contextFactory = contextFactory;
-        this.indexSizes = new IndexSizes(execution, indexAccessors, highNodeId, highRelationshipId, contextFactory);
+        this.indexSizes =
+                new IndexSizes(execution, indexAccessors, highNodeId, highRelationshipId, contextFactory, limiter);
         this.execution = execution;
         this.reporter = reporter;
         this.cacheAccess = cacheAccess;

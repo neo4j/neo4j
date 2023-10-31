@@ -20,6 +20,7 @@
 package org.neo4j.consistency.checker;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -37,6 +38,7 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 class IndexSizes {
     private static final String SIZE_CALCULATOR_TAG = "sizeCalculator";
     private static final double SMALL_INDEX_FACTOR_THRESHOLD = 0.05;
+    private static final int INEFFICIENT_AMOUNT_OF_RELATIONSHIP_ROUNDS = 3;
 
     private final ParallelExecution execution;
     private final IndexAccessors indexAccessors;
@@ -45,18 +47,23 @@ class IndexSizes {
     private final long highNodeId;
     private final long highRelationshipId;
     private final CursorContextFactory contextFactory;
+    private final boolean shouldLetRelationshipIndexesBeLarge;
 
     IndexSizes(
             ParallelExecution execution,
             IndexAccessors indexAccessors,
             long highNodeId,
             long highRelationshipId,
-            CursorContextFactory contextFactory) {
+            CursorContextFactory contextFactory,
+            EntityBasedMemoryLimiter limiter) {
         this.execution = execution;
         this.indexAccessors = indexAccessors;
         this.highNodeId = highNodeId;
         this.highRelationshipId = highRelationshipId;
         this.contextFactory = contextFactory;
+        this.shouldLetRelationshipIndexesBeLarge =
+                limiter.numberOfRelationshipRanges() / Long.max(1, limiter.numberOfNodeRanges())
+                        <= INEFFICIENT_AMOUNT_OF_RELATIONSHIP_ROUNDS;
     }
 
     void initialize() throws Exception {
@@ -90,6 +97,12 @@ class IndexSizes {
     }
 
     List<IndexDescriptor> largeIndexes(EntityType entityType) {
+        if (entityType == EntityType.RELATIONSHIP && !shouldLetRelationshipIndexesBeLarge) {
+            // Having "large" relationship indexes checked by the IndexChecker would be inefficient
+            // due to doing too many rounds, so instead check them using the normal RelationshipChecker
+            return Collections.emptyList();
+        }
+
         List<IndexDescriptor> indexes = getAllIndexes(entityType);
         indexes.sort(Comparator.comparingLong(this::getEstimatedIndexSize).reversed());
         int threshold = 0;

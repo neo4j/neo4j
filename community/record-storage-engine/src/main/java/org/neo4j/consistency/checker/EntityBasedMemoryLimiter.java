@@ -59,7 +59,7 @@ public class EntityBasedMemoryLimiter extends PrefetchingIterator<EntityBasedMem
         this.highNodeId = highNodeId;
         this.highRelationshipId = highRelationshipId;
         this.highEntityId = max(highNodeId, highRelationshipId);
-        this.entitiesPerRange = max(1, min(highNodeId, maxOffHeapCachingMemory / requiredMemoryPerEntity));
+        this.entitiesPerRange = max(1, min(highEntityId, maxOffHeapCachingMemory / requiredMemoryPerEntity));
         this.currentRangeStart = 0;
         this.currentRangeEnd = min(this.highEntityId, entitiesPerRange);
     }

@@ -30,6 +30,8 @@ import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.consistency.checker.NodeIndexChecker.NUM_INDEXES_IN_CACHE;
 import static org.neo4j.consistency.checker.ParallelExecution.DEFAULT_IDS_PER_CHUNK;
 import static org.neo4j.consistency.checker.ParallelExecution.NOOP_EXCEPTION_HANDLER;
+import static org.neo4j.io.ByteUnit.kibiBytes;
+import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 
 import java.util.ArrayList;
@@ -57,13 +59,15 @@ class IndexSizesTest {
     private final int highNodeId = 10000;
     private final int highRelationshipId = 50000;
     private List<IndexDescriptor> indexes;
+    private ParallelExecution execution;
+    private IndexAccessors indexAccessors;
 
     @BeforeEach
     void setUp() {
-        ParallelExecution execution = new ParallelExecution(2, NOOP_EXCEPTION_HANDLER, DEFAULT_IDS_PER_CHUNK);
+        execution = new ParallelExecution(2, NOOP_EXCEPTION_HANDLER, DEFAULT_IDS_PER_CHUNK);
 
         indexes = new ArrayList<>();
-        var indexAccessors = mock(IndexAccessors.class);
+        indexAccessors = mock(IndexAccessors.class);
         when(indexAccessors.onlineRules(any())).then(invocation -> indexes.stream()
                 .filter(index -> index.schema().entityType() == invocation.getArgument(0))
                 .collect(Collectors.toList()));
@@ -73,13 +77,7 @@ class IndexSizesTest {
                     .thenReturn(invocation.getArgument(0, IndexDescriptor.class).getId());
             return mock;
         });
-
-        sizes = new IndexSizes(
-                execution,
-                indexAccessors,
-                highNodeId,
-                highRelationshipId,
-                new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER));
+        initializeIndexSizes(mebiBytes(1));
     }
 
     @Test
@@ -96,6 +94,17 @@ class IndexSizesTest {
         assertEquals(6 - NUM_INDEXES_IN_CACHE, smallNodeIndexes.size());
         assertEquals(NUM_INDEXES_IN_CACHE, largeRelIndexes.size());
         assertEquals(6 - NUM_INDEXES_IN_CACHE, smallRelIndexes.size());
+    }
+
+    @Test
+    void shouldNotConsiderRelationshipIndexesLargeOnVeryLimitedMemory() {
+        initializeIndexSizes(kibiBytes(10));
+        createIndexes(2, NUM_INDEXES_IN_CACHE, NODE);
+        createIndexes(3, NUM_INDEXES_IN_CACHE, RELATIONSHIP);
+        assertThat(sizes.largeIndexes(NODE)).hasSize(NUM_INDEXES_IN_CACHE);
+        assertThat(sizes.smallIndexes(NODE)).hasSize(2);
+        assertThat(sizes.largeIndexes(RELATIONSHIP)).hasSize(0);
+        assertThat(sizes.smallIndexes(RELATIONSHIP)).hasSize(NUM_INDEXES_IN_CACHE + 3);
     }
 
     @ParameterizedTest
@@ -232,6 +241,16 @@ class IndexSizesTest {
         IndexCapability capabilityWithValue = mock(IndexCapability.class);
         when(capabilityWithValue.supportsReturningValues()).thenReturn(true);
         return capabilityWithValue;
+    }
+
+    private void initializeIndexSizes(long memory) {
+        sizes = new IndexSizes(
+                execution,
+                indexAccessors,
+                highNodeId,
+                highRelationshipId,
+                new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER),
+                EntityBasedMemoryLimiter.defaultMemoryLimiter(memory).create(highNodeId, highRelationshipId));
     }
 
     private static IndexPrototype prototype(EntityType entityType) {

@@ -23,16 +23,18 @@ class ConsistencyCheckMemoryCalculation {
     static MemoryDistribution calculate(
             long maxOffHeapMemory, long desiredPageCacheMemory, long desiredOffHeapCachingMemory) {
         var pageCacheMemory = desiredPageCacheMemory;
-        var offHeapCachingMemory = desiredOffHeapCachingMemory;
         if (desiredPageCacheMemory + desiredOffHeapCachingMemory > maxOffHeapMemory) {
             // There isn't enough memory available to allocate optimal amount of memory,
             // we have to make some sacrifices to one or both of them.
             // The distribution between the two is difficult to empirically reason about since
             // a smaller page cache means more page faults, but a smaller off-heap caching for the checker
             // means more internal rounds of checking or suboptimal data structures.
-            pageCacheMemory = Long.max(maxOffHeapMemory - offHeapCachingMemory, (long) (maxOffHeapMemory * 0.75D));
+            long maxPageCacheSizeForOptimalCachingSize = Math.max(maxOffHeapMemory - desiredOffHeapCachingMemory, 0);
+            pageCacheMemory = Long.min(
+                    Long.max(maxPageCacheSizeForOptimalCachingSize, (long) (maxOffHeapMemory * 0.75D)),
+                    desiredPageCacheMemory);
         }
-        offHeapCachingMemory = maxOffHeapMemory - pageCacheMemory;
+        var offHeapCachingMemory = Math.min(maxOffHeapMemory - pageCacheMemory, desiredOffHeapCachingMemory);
         assert pageCacheMemory + offHeapCachingMemory <= maxOffHeapMemory
                 : "Too much memory being used " + "pageCacheMemory:" + pageCacheMemory + " offHeapCachingMemory:"
                         + offHeapCachingMemory;
