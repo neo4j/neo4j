@@ -71,7 +71,25 @@ class LoadPrivilegeParserTest extends AdministrationAndSchemaCommandParserTestBa
     yields(revokeGrantLoadPrivilege(ast.LoadCidrQualifier("not a cidr")(InputPosition.NONE), Seq(paramRole), i = false))
   }
 
+  test("GRANT LOAD ON CIDR $x TO `\u0885`, `x\u0885y`") {
+    yields(grantLoadPrivilege(
+      ast.LoadCidrQualifier(stringParam("x"))(InputPosition.NONE),
+      Seq(Left("\u0885"), Left("x\u0885y")),
+      i = false
+    ))
+  }
+
   // Error Cases
+
+  test("GRANT LOAD ON CIDR $x TO \u0885") {
+    // the `\u0885` needs to be escaped to be able to be parsed
+    assertFailsWithMessageStart(testName, "Invalid input '\u0885': expected a parameter or an identifier")
+  }
+
+  test("GRANT LOAD ON CIDR $x TO x\u0885y") {
+    // the `\u0885` needs to be escaped to be able to be parsed
+    assertFailsWithMessageStart(testName, "Invalid input '\u0885': expected \",\" or <EOF>")
+  }
 
   test("""GRANT LOAD ON DATABASE foo TO role""") {
     assertFailsWithMessageStart(testName, """Invalid input 'DATABASE': expected""")

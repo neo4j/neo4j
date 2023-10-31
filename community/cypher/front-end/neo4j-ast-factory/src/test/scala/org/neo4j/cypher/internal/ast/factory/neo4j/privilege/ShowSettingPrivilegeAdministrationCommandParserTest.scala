@@ -128,6 +128,22 @@ class ShowSettingPrivilegeAdministrationCommandParserTest extends Administration
                 )
               }
 
+              test(s"$verb$immutableString ${command}S dbms. ON DBMS $preposition role") {
+                yields(func(action, List(settingQualifier("dbms.")), Seq(literalRole), immutable))
+              }
+
+              test(s"$verb$immutableString ${command}S `dbms.` ON DBMS $preposition role") {
+                yields(func(action, List(settingQualifier("dbms.")), Seq(literalRole), immutable))
+              }
+
+              test(s"$verb$immutableString ${command}S db.transaction.concurrent. ON DBMS $preposition role") {
+                yields(func(action, List(settingQualifier("db.transaction.concurrent.")), Seq(literalRole), immutable))
+              }
+
+              test(s"$verb$immutableString ${command}S `db.transaction.concurrent..` ON DBMS $preposition role") {
+                yields(func(action, List(settingQualifier("db.transaction.concurrent..")), Seq(literalRole), immutable))
+              }
+
               test(
                 s"$verb$immutableString $command db.transaction.timeout, db.transaction.concurrent.maximum ON DBMS $preposition role"
               ) {

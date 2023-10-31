@@ -1419,8 +1419,17 @@ object Prettifier {
   }
 
   private def extractQualifierPart(qualifier: List[PrivilegeQualifier]): Option[String] = {
-    def stringifyQualifiedName(glob: String) =
-      glob.split('.').map(ExpressionStringifier.backtick(_, globbing = true)).mkString(".")
+    def stringifyQualifiedName(glob: String) = {
+      // If we have multiple . in a row, just escape the whole thing to not loose any of them
+      // or risk breaking parsing of the prettified string, as multiple . in a row cannot be parsed unescaped
+      if (glob.contains("..")) {
+        ExpressionStringifier.backtick(glob, globbing = true)
+      } else {
+        val escapedGlob = glob.split('.').map(ExpressionStringifier.backtick(_, globbing = true)).mkString(".")
+        // If we had a trailing . the splitting above would remove it so lets re-add it
+        if (glob.last.equals('.')) s"$escapedGlob." else escapedGlob
+      }
+    }
 
     def stringify: PartialFunction[PrivilegeQualifier, String] = {
       case LabelQualifier(name)        => ExpressionStringifier.backtick(name)

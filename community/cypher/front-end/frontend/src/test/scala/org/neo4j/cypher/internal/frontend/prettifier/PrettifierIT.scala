@@ -2004,6 +2004,8 @@ class PrettifierIT extends CypherFunSuite {
             s"$action READ {*} ON GRAPH foo NODE A $preposition role",
           s"$action read {bar} on graph FoO nodes A (*) $preposition role" ->
             s"$action READ {bar} ON GRAPH FoO NODE A $preposition role",
+          s"$action READ {`x\u0885y`} on graph `x\u0885y` nodes `x\u0885y` $preposition `x\u0885y`" ->
+            s"$action READ {`x\u0885y`} ON GRAPH `x\u0885y` NODE `x\u0885y` $preposition `x\u0885y`",
           s"$action read { `&bar` } on graph `#%¤` nodes `()/&` (*) $preposition role" ->
             s"$action READ {`&bar`} ON GRAPH `#%¤` NODE `()/&` $preposition role",
           s"$action read {foo,bar} on graph foo nodes A,B,C (*) $preposition x,y,$$z" ->
@@ -2302,6 +2304,8 @@ class PrettifierIT extends CypherFunSuite {
             s"$action TERMINATE TRANSACTION (foo, $$bar) ON HOME DATABASE $preposition role",
           s"$action terminate transaction (foo,$$bar) on default database $preposition role" ->
             s"$action TERMINATE TRANSACTION (foo, $$bar) ON DEFAULT DATABASE $preposition role",
+          s"$action terminate transaction (`\u0885`) on database `\u0885` $preposition `\u0885`" ->
+            s"$action TERMINATE TRANSACTION (`\u0885`) ON DATABASE `\u0885` $preposition `\u0885`",
           s"$action transaction on database * $preposition role" ->
             s"$action TRANSACTION MANAGEMENT (*) ON DATABASE * $preposition role",
           s"$action transaction (*) on database * $preposition role" ->
@@ -2388,12 +2392,18 @@ class PrettifierIT extends CypherFunSuite {
             s"$action EXECUTE PROCEDURE * ON DBMS $preposition role",
           s"$action execute procedure math.sin, ma*.`*/a?`,math.`c%s` on dbms $preposition role" ->
             s"$action EXECUTE PROCEDURE math.sin, ma*.`*/a?`, math.`c%s` ON DBMS $preposition role",
+          s"$action execute procedure math.`sin.`. on dbms $preposition role" ->
+            s"$action EXECUTE PROCEDURE `math.sin..` ON DBMS $preposition role",
+          s"$action execute procedure `..math..sin..`.`..math..sin..` on dbms $preposition role" ->
+            s"$action EXECUTE PROCEDURE `..math..sin.....math..sin..` ON DBMS $preposition role",
           s"$action execute boosted procedure * on dbms $preposition role" ->
             s"$action EXECUTE BOOSTED PROCEDURE * ON DBMS $preposition role",
           s"$action execute boosted procedures * on dbms $preposition role" ->
             s"$action EXECUTE BOOSTED PROCEDURE * ON DBMS $preposition role",
           s"$action execute boosted procedure math.`s/n`, `ma/*`.`*a?`,math.cos on dbms $preposition role" ->
             s"$action EXECUTE BOOSTED PROCEDURE math.`s/n`, `ma/*`.*a?, math.cos ON DBMS $preposition role",
+          s"$action execute boosted procedure `math.` on dbms $preposition role" ->
+            s"$action EXECUTE BOOSTED PROCEDURE math. ON DBMS $preposition role",
           s"$action execute admin procedures on dbms $preposition role" ->
             s"$action EXECUTE ADMIN PROCEDURES ON DBMS $preposition role",
           s"$action execute administrator procedures on dbms $preposition role" ->
@@ -2404,8 +2414,12 @@ class PrettifierIT extends CypherFunSuite {
             s"$action EXECUTE USER DEFINED FUNCTION * ON DBMS $preposition role",
           s"$action execute user defined functions * on dbms $preposition role" ->
             s"$action EXECUTE USER DEFINED FUNCTION * ON DBMS $preposition role",
+          s"$action execute functions `*.` on dbms $preposition role" ->
+            s"$action EXECUTE USER DEFINED FUNCTION *. ON DBMS $preposition role",
           s"$action execute boosted function math.sin, ma*.`*/a?`,math.`c%s` on dbms $preposition role" ->
             s"$action EXECUTE BOOSTED USER DEFINED FUNCTION math.sin, ma*.`*/a?`, math.`c%s` ON DBMS $preposition role",
+          s"$action execute boosted function ma*., math.si*. on dbms $preposition role" ->
+            s"$action EXECUTE BOOSTED USER DEFINED FUNCTION ma*., math.si*. ON DBMS $preposition role",
           s"$action execute boosted user function apoc.math on dbms $preposition role" ->
             s"$action EXECUTE BOOSTED USER DEFINED FUNCTION apoc.math ON DBMS $preposition role",
           s"$action execute boosted user defined functions ??? on dbms $preposition role" ->
@@ -2430,8 +2444,11 @@ class PrettifierIT extends CypherFunSuite {
             s"$action SHOW SETTING * ON DBMS $preposition role",
           s"$action show setting math.sin, ma*.`*/a?`,math.`c%s` on dbms $preposition role" ->
             s"$action SHOW SETTING math.sin, ma*.`*/a?`, math.`c%s` ON DBMS $preposition role",
+          s"$action show setting `*/a?`. on dbms $preposition role" ->
+            s"$action SHOW SETTING `*/a?`. ON DBMS $preposition role",
           s"$action load on all data $preposition role" -> s"$action LOAD ON ALL DATA $preposition role",
           s"$action load on cidr '192.168.1.6/20' $preposition role" -> s"""$action LOAD ON CIDR "192.168.1.6/20" $preposition role""",
+          s"$action load on cidr '192.168.1.6/20' $preposition `\u0885`" -> s"""$action LOAD ON CIDR "192.168.1.6/20" $preposition `\u0885`""",
           s"$action load on url 'ftp://www.data.com/mydata/*' $preposition role" -> s"""$action LOAD ON URL "ftp://www.data.com/mydata/*" $preposition role"""
         )
     }

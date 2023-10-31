@@ -142,6 +142,14 @@ class ExecuteFunctionPrivilegeAdministrationCommandParserTest extends Administra
                 )
               }
 
+              test(s"$verb$immutableString $execute math.sin. ON DBMS $preposition role") {
+                yields(func(action, List(functionQualifier("math.sin.")), Seq(literalRole), immutable))
+              }
+
+              test(s"$verb$immutableString $execute `math.sin.` ON DBMS $preposition role") {
+                yields(func(action, List(functionQualifier("math.sin.")), Seq(literalRole), immutable))
+              }
+
               test(s"$verb$immutableString $execute math.sin, math.cos ON DBMS $preposition role") {
                 yields(func(
                   action,
