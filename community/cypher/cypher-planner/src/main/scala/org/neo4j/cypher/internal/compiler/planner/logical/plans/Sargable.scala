@@ -168,6 +168,9 @@ object AsPropertyScannable {
     case regex: RegexMatch =>
       partialPropertyPredicate(regex, regex.lhs, cypherType = CTString)
 
+    case isTyped @ IsTyped(lhs, cypherType) if !cypherType.isNullable =>
+      partialPropertyPredicate(isTyped, lhs, cypherType = cypherType)
+
     case not @ Not(AsPropertyScannable(scannable)) =>
       partialPropertyPredicate(not, scannable.property, cypherType = scannable.cypherType)
 
@@ -196,10 +199,10 @@ object AsPropertyScannable {
 object AsStringRangeSeekable {
 
   def unapply(v: Any): Option[PrefixRangeSeekable] = v match {
-    case startsWith @ StartsWith(prop @ Property(ident: LogicalVariable, propertyKey), lit @ StringLiteral(prefix))
+    case startsWith @ StartsWith(prop @ Property(ident: LogicalVariable, _), lit @ StringLiteral(prefix))
       if prefix.nonEmpty =>
       Some(PrefixRangeSeekable(PrefixRange(lit), startsWith, ident, prop))
-    case startsWith @ StartsWith(prop @ Property(ident: LogicalVariable, propertyKey), rhs) =>
+    case startsWith @ StartsWith(prop @ Property(ident: LogicalVariable, _), rhs) =>
       Some(PrefixRangeSeekable(PrefixRange(rhs), startsWith, ident, prop))
     case _ =>
       None
@@ -291,6 +294,10 @@ object AsBoundingBoxSeekable {
   }
 }
 
+/**
+ * Predicate - or parts of it - the execution of which may be expedited with the use of an index.
+ * @see [[https://en.wikipedia.org/wiki/Sargable]]
+ */
 sealed trait Sargable[+T <: Expression] {
   def expr: T
   def ident: LogicalVariable
@@ -298,6 +305,9 @@ sealed trait Sargable[+T <: Expression] {
   def name: String = ident.name
 }
 
+/**
+ * Sargable which enables us to skip parts of the index and therefore _seek_ the first element to return.
+ */
 sealed trait Seekable[T <: Expression] extends Sargable[T] {
   def dependencies: Set[LogicalVariable]
 
@@ -440,6 +450,9 @@ case class InequalityRangeSeekable(ident: LogicalVariable, property: LogicalProp
   def propertyKeyName: PropertyKeyName = property.propertyKey
 }
 
+/**
+ * Sargable which requires us to return the entirety of all values in an index, as all values fulfill this predicate.
+ */
 sealed trait Scannable[+T <: Expression] extends Sargable[T] {
   def ident: LogicalVariable
   def property: LogicalProperty

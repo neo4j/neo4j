@@ -328,7 +328,7 @@ object VerifyBestPlan {
         case pred @ IndexCompatiblePredicate(`variable`, LogicalProperty(_, `propertyName`), _, _, _, _, _, _, _, _) =>
           pred
       }
-    if (matchingPredicates.exists(_.cypherType == CTString)) {
+    if (matchingPredicates.exists(_.cypherType.isSubtypeOf(CTString))) {
       Right(true)
     } else {
       Left(matchingPredicates)

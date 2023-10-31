@@ -235,6 +235,49 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     case Not(inner) =>
       apply(inner, labelInfo, relTypeInfo, existenceConstraints, typeConstraints).negate
 
+    // WHERE a.prop IS :: <TYPE> [NOT NULL]
+    case IsTyped(LogicalProperty(Variable(variable), propertyKey), typeName) =>
+      val indexesToAnswerCompletePredicate = typeName match {
+        // IS :: <TYPE> NOT NULL -> This could be answered by an index
+        case StringType(false) => Seq(IndexType.Text)
+        case PointType(false)  => Seq(IndexType.Point)
+        case _                 => Seq.empty
+      }
+      calculateSelectivityForPropertyTypePredicateFromIndex(
+        variable,
+        labelInfo,
+        relTypeInfo,
+        propertyKey,
+        indexesToAnswerCompletePredicate
+      )
+        .getOrElse {
+          // If we cannot get the selectivity from an index directly, we assume independence
+          // and calculate the type and the existence selectivity separately
+          val typeSelectivity =
+            isPropertyOfTypeSelectivity(variable, propertyKey, typeName, labelInfo, relTypeInfo, typeConstraints)
+
+          val propIsNotNullSelectivity =
+            calculateSelectivityForPropertyExistence(
+              variable,
+              labelInfo,
+              relTypeInfo,
+              propertyKey,
+              existenceConstraints
+            )
+
+          if (typeName.isNullable) {
+            // IS :: <TYPE>
+            combiner.orTogetherSelectivities(Seq(
+              typeSelectivity, // must be value of <TYPE>
+              propIsNotNullSelectivity.negate // OR NULL
+            )).getOrElse(DEFAULT_TYPE_SELECTIVITY)
+          } else {
+            // IS :: <TYPE> NOT NULL
+            typeSelectivity * // must be value of <TYPE>
+              propIsNotNullSelectivity // AND NOT NULL
+          }
+        }
+
     // WHERE x.prop IS NOT NULL
     case AsPropertyScannable(scannable) =>
       calculateSelectivityForPropertyExistence(
@@ -299,49 +342,6 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
 
     case _: AssertIsNode =>
       Selectivity.ONE
-
-    // WHERE a.prop IS :: <TYPE> [NOT NULL]
-    case IsTyped(LogicalProperty(Variable(variable), propertyKey), typeName) =>
-      val indexesToAnswerCompletePredicate = typeName match {
-        // IS :: <TYPE> NOT NULL -> This could be answered by an index
-        case StringType(false) => Seq(IndexType.Text)
-        case PointType(false)  => Seq(IndexType.Point)
-        case _                 => Seq.empty
-      }
-      calculateSelectivityForPropertyTypePredicateFromIndex(
-        variable,
-        labelInfo,
-        relTypeInfo,
-        propertyKey,
-        indexesToAnswerCompletePredicate
-      )
-        .getOrElse {
-          // If we cannot get the selectivity from an index directly, we assume independence
-          // and calculate the type and the existence selectivity separately
-          val typeSelectivity =
-            isPropertyOfTypeSelectivity(variable, propertyKey, typeName, labelInfo, relTypeInfo, typeConstraints)
-
-          val propIsNotNullSelectivity =
-            calculateSelectivityForPropertyExistence(
-              variable,
-              labelInfo,
-              relTypeInfo,
-              propertyKey,
-              existenceConstraints
-            )
-
-          if (typeName.isNullable) {
-            // IS :: <TYPE>
-            combiner.orTogetherSelectivities(Seq(
-              typeSelectivity, // must be value of <TYPE>
-              propIsNotNullSelectivity.negate // OR NULL
-            )).getOrElse(DEFAULT_TYPE_SELECTIVITY)
-          } else {
-            // IS :: <TYPE> NOT NULL
-            typeSelectivity * // must be value of <TYPE>
-              propIsNotNullSelectivity // AND NOT NULL
-          }
-        }
 
     case _ =>
       DEFAULT_PREDICATE_SELECTIVITY

@@ -95,6 +95,7 @@ import org.neo4j.cypher.internal.util.Cost
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.cypher.internal.util.symbols.CTStringNotNull
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.IndexHintException
 import org.neo4j.graphdb.schema.IndexType
@@ -960,7 +961,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     def query(hint: String): String =
       s"""MATCH (a)-[r:R]->(b:B) $hint
-         |WHERE r.prop STARTS WITH ''
+         |WHERE r.prop IS :: STRING NOT NULL
          |RETURN a""".stripMargin
   }
 
@@ -987,7 +988,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       .shouldEqual(
         planner.planBuilder()
           .produceResults("a")
-          .filter("r.prop STARTS WITH ''")
+          .filter("r.prop IS :: STRING NOT NULL")
           .expandAll("(b)<-[r:R]-(a)")
           .nodeByLabelScan("b", "B")
           .build()
@@ -1057,7 +1058,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         planner.planBuilder()
           .produceResults("a")
           .filter("b:B")
-          .relationshipIndexOperator("(a)-[r:R(prop STARTS WITH '')]->(b)", indexType = IndexType.TEXT)
+          .relationshipIndexOperator("(a)-[r:R(prop)]->(b)", indexType = IndexType.TEXT)
           .build()
       )
   }
@@ -1085,8 +1086,8 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       .shouldEqual(
         planner.planBuilder()
           .produceResults("a")
-          .filter("b:B")
-          .relationshipIndexOperator("(a)-[r:R(prop STARTS WITH '')]->(b)", indexType = IndexType.RANGE)
+          .filterExpression(andsReorderableAst(hasLabels("b", "B"), isTyped(prop("r", "prop"), CTStringNotNull)))
+          .relationshipIndexOperator("(a)-[r:R(prop)]->(b)", indexType = IndexType.RANGE)
           .build()
       )
   }

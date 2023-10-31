@@ -768,32 +768,34 @@ case class Match(
 
   private def collectPropertiesInPredicates(variable: String, whereExpression: Expression): Seq[String] =
     whereExpression.folder.treeFold(Seq.empty[String]) {
-      case Equals(Property(Variable(id), PropertyKeyName(name)), other) if id == variable && applicable(other) =>
+      case Equals(Property(Variable(`variable`), PropertyKeyName(name)), other) if applicable(other) =>
         acc => SkipChildren(acc :+ name)
-      case Equals(other, Property(Variable(id), PropertyKeyName(name))) if id == variable && applicable(other) =>
+      case Equals(other, Property(Variable(`variable`), PropertyKeyName(name))) if applicable(other) =>
         acc => SkipChildren(acc :+ name)
-      case In(Property(Variable(id), PropertyKeyName(name)), _) if id == variable =>
+      case In(Property(Variable(`variable`), PropertyKeyName(name)), _) =>
         acc => SkipChildren(acc :+ name)
-      case IsNotNull(Property(Variable(id), PropertyKeyName(name))) if id == variable =>
+      case IsNotNull(Property(Variable(`variable`), PropertyKeyName(name))) =>
         acc => SkipChildren(acc :+ name)
-      case StartsWith(Property(Variable(id), PropertyKeyName(name)), _) if id == variable =>
+      case IsTyped(Property(Variable(`variable`), PropertyKeyName(name)), typeName) if !typeName.isNullable =>
         acc => SkipChildren(acc :+ name)
-      case EndsWith(Property(Variable(id), PropertyKeyName(name)), _) if id == variable =>
+      case StartsWith(Property(Variable(`variable`), PropertyKeyName(name)), _) =>
         acc => SkipChildren(acc :+ name)
-      case Contains(Property(Variable(id), PropertyKeyName(name)), _) if id == variable =>
+      case EndsWith(Property(Variable(`variable`), PropertyKeyName(name)), _) =>
+        acc => SkipChildren(acc :+ name)
+      case Contains(Property(Variable(`variable`), PropertyKeyName(name)), _) =>
         acc => SkipChildren(acc :+ name)
       case FunctionInvocation(
           Namespace(List(namespace)),
           FunctionName(functionName),
           _,
-          Seq(Property(Variable(id), PropertyKeyName(name)), _, _)
-        ) if id == variable && namespace.equalsIgnoreCase("point") && functionName.equalsIgnoreCase("withinBBox") =>
+          Seq(Property(Variable(`variable`), PropertyKeyName(name)), _, _)
+        ) if namespace.equalsIgnoreCase("point") && functionName.equalsIgnoreCase("withinBBox") =>
         acc => SkipChildren(acc :+ name)
       case expr: InequalityExpression =>
         acc =>
           val newAcc: Seq[String] = Seq(expr.lhs, expr.rhs).foldLeft(acc) { (acc, expr) =>
             expr match {
-              case Property(Variable(id), PropertyKeyName(name)) if id == variable =>
+              case Property(Variable(`variable`), PropertyKeyName(name)) =>
                 acc :+ name
               case FunctionInvocation(
                   Namespace(List(namespace)),

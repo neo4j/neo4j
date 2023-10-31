@@ -1159,18 +1159,42 @@ class IndexPlanningIntegrationTest
       .build()
   }
 
-  test("should not plan node text index usage with IS NOT NULL predicate") {
-    val planner = plannerBuilder()
-      .setAllNodesCardinality(100)
-      .setLabelCardinality("A", 50)
+  private def plannerConfigForNodeTextIndex: StatisticsBackedLogicalPlanningConfiguration =
+    plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("A", 500)
       .addNodeIndex("A", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.TEXT)
       .build()
+
+  test("should not plan node text index usage with IS NOT NULL predicate") {
+    val planner = plannerConfigForNodeTextIndex
 
     val plan = planner.plan("MATCH (a:A) WHERE a.prop IS NOT NULL RETURN a, a.prop").stripProduceResults
     plan shouldEqual planner.subPlanBuilder()
       .projection("cacheN[a.prop] AS `a.prop`")
       .filter("cacheNFromStore[a.prop] IS NOT NULL")
       .nodeByLabelScan("a", "A")
+      .build()
+  }
+
+  test("should plan node text index scan with IS :: STRING NOT NULL predicate") {
+    val planner = plannerConfigForNodeTextIndex
+
+    val plan = planner.plan("MATCH (a:A) WHERE a.prop IS :: STRING NOT NULL RETURN a, a.prop").stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .projection("a.prop AS `a.prop`")
+      .nodeIndexOperator("a:A(prop)", indexType = IndexType.TEXT)
+      .build()
+  }
+
+  test("should plan type filter on top of node range index scan with IS :: STRING NOT NULL predicate") {
+    val planner = plannerConfigForRangeIndexOnLabelPropTests()
+
+    val plan = planner.plan("MATCH (a:Label) WHERE a.prop IS :: STRING NOT NULL RETURN a, a.prop").stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .projection("cacheN[a.prop] AS `a.prop`")
+      .filter("cacheNFromStore[a.prop] IS :: STRING NOT NULL")
+      .nodeIndexOperator("a:Label(prop)", indexType = IndexType.RANGE)
       .build()
   }
 
@@ -1196,11 +1220,7 @@ class IndexPlanningIntegrationTest
   }
 
   test("should plan node text index seek for supported predicates") {
-    val cfg = plannerBuilder()
-      .setAllNodesCardinality(1000)
-      .setLabelCardinality("A", 500)
-      .addNodeIndex("A", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.TEXT)
-      .build()
+    val cfg = plannerConfigForNodeTextIndex
 
     for (op <- List("STARTS WITH", "ENDS WITH", "CONTAINS")) {
       val plan = cfg.plan(s"MATCH (a:A) WHERE a.prop $op 'hello' RETURN a, a.prop").stripProduceResults
@@ -1466,11 +1486,7 @@ class IndexPlanningIntegrationTest
   }
 
   test("should not plan node text index usage when comparing with non-string") {
-    val cfg = plannerBuilder()
-      .setAllNodesCardinality(1000)
-      .setLabelCardinality("A", 500)
-      .addNodeIndex("A", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.TEXT)
-      .build()
+    val cfg = plannerConfigForNodeTextIndex
 
     val queryStr = (op: String, arg: String) => s"MATCH (a:A) WHERE a.prop $op $arg RETURN a, a.prop"
 
@@ -1800,6 +1816,16 @@ class IndexPlanningIntegrationTest
         .nodeByLabelScan("a", "A")
         .build()
     }
+  }
+
+  test("should plan node point index scan with IS :: POINT NOT NULL predicate") {
+    val planner = plannerConfigForNodePointIndex
+
+    val plan = planner.plan("MATCH (a:A) WHERE a.prop IS :: POINT NOT NULL RETURN a, a.prop").stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .projection("a.prop AS `a.prop`")
+      .nodeIndexOperator("a:A(prop)", indexType = IndexType.POINT)
+      .build()
   }
 
   test("should not plan node point index usage with IS NOT NULL predicate") {
@@ -2158,11 +2184,7 @@ class IndexPlanningIntegrationTest
   }
 
   test("should plan node text index scan with negated predicate") {
-    val planner = plannerBuilder()
-      .setAllNodesCardinality(2000)
-      .addNodeIndex("A", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.TEXT)
-      .setLabelCardinality("A", 1000)
-      .build()
+    val planner = plannerConfigForNodeTextIndex
 
     for (pred <- scannableTextPredicates("a.prop")) {
       val q = s"MATCH (a:A) WHERE NOT $pred RETURN a"
@@ -2238,11 +2260,7 @@ class IndexPlanningIntegrationTest
   }
 
   test("should plan index scan if text predicate depends on variable from same QueryGraph") {
-    val planner = plannerBuilder()
-      .setAllNodesCardinality(2000)
-      .addNodeIndex("A", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.TEXT)
-      .setLabelCardinality("A", 1000)
-      .build()
+    val planner = plannerConfigForNodeTextIndex
 
     val q = "MATCH (a:A) WHERE a.prop CONTAINS a.otherProp RETURN a"
 

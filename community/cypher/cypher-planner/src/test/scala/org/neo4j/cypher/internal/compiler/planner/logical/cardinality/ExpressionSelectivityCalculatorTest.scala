@@ -1829,6 +1829,22 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
   }
 
   test("IS :: STRING NOT NULL without label info should use default values") {
+    val predicate = isTyped(nProp, CTStringNotNull)
+    val calculator = setUpCalculator()
+    val result = calculator(predicate)
+
+    result should equal(DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_TYPE_SELECTIVITY)
+  }
+
+  test("STARTS WITH '' without label info should use default values") {
+    val predicate = startsWith(nProp, literalString(""))
+    val calculator = setUpCalculator()
+    val result = calculator(predicate)
+
+    result should equal(DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_TYPE_SELECTIVITY)
+  }
+
+  test("IS :: POINT NOT NULL without label info should use default values") {
     val predicate = isTyped(nProp, CTPointNotNull)
     val calculator = setUpCalculator()
     val result = calculator(predicate)
@@ -1880,6 +1896,36 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
       personPropIsNotNullSel.toSelectivity,
       personPropIsNotNullSel.toSelectivity.negate
     )).get
+  }
+
+  ignore("IS :: STRING NOT NULL with range index should use default values") {
+    val predicate = isTyped(nProp, CTStringNotNull)
+    val calculator = setUpCalculator(
+      labelInfo = nIsPersonLabelInfo,
+      stats = mockStats(
+        indexCardinalities = Map(
+          indexPersonRange -> 200.0
+        )
+      )
+    )
+    val result = calculator(predicate)
+
+    result.factor should equal(personPropIsNotNullSel * DEFAULT_TYPE_SELECTIVITY.factor)
+  }
+
+  test("STARTS WITH '' with range index should use default values") {
+    val predicate = startsWith(nProp, literalString(""))
+    val calculator = setUpCalculator(
+      labelInfo = nIsPersonLabelInfo,
+      stats = mockStats(
+        indexCardinalities = Map(
+          indexPersonRange -> 200.0
+        )
+      )
+    )
+    val result = calculator(predicate)
+
+    result.factor should equal(personPropIsNotNullSel * DEFAULT_TYPE_SELECTIVITY.factor)
   }
 
   test("IS :: STRING should use relationship TEXT index") {

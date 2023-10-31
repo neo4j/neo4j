@@ -19,14 +19,14 @@ package org.neo4j.cypher.internal.util.symbols
 import org.neo4j.cypher.internal.util.InputPosition
 
 case class StringType(isNullable: Boolean)(val position: InputPosition) extends CypherType {
-  val parentType: CypherType = CTAny
-  override val toString = "String"
-  override val toCypherTypeString = "STRING"
+  override val parentType: CypherType = CTAny
+  override val toString: String = if (isNullable) "String" else "String!"
+  override val toCypherTypeString: String = "STRING"
   override def sortOrder: Int = CypherTypeOrder.STRING.id
 
   override def hasValueRepresentation: Boolean = true
 
   override def withIsNullable(isNullable: Boolean): StringType = this.copy(isNullable = isNullable)(position)
 
-  def withPosition(newPosition: InputPosition): StringType = this.copy()(position = newPosition)
+  override def withPosition(newPosition: InputPosition): StringType = this.copy()(position = newPosition)
 }

@@ -50,9 +50,10 @@ import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
 import org.neo4j.cypher.internal.logical.plans.SingleSeekableArg
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
 import org.neo4j.cypher.internal.planner.spi.PlanContext
-import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTPoint
 import org.neo4j.cypher.internal.util.symbols.CTString
+import org.neo4j.cypher.internal.util.symbols.PointType
+import org.neo4j.cypher.internal.util.symbols.StringType
 import org.neo4j.internal.schema.IndexCapability
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType
 import org.neo4j.kernel.impl.index.schema.RangeIndexProvider
@@ -147,8 +148,10 @@ object IndexCompatiblePredicatesProvider {
       // n.prop IN [ ... ]
       case predicate @ AsPropertySeekable(seekable: PropertySeekable) if valid(seekable.ident, seekable.dependencies) =>
         val queryExpression = seekable.args.asQueryExpression
-        val exactness =
-          if (queryExpression.isInstanceOf[SingleQueryExpression[_]]) SingleExactPredicate else MultipleExactPredicate
+        val exactness = queryExpression match {
+          case _: SingleQueryExpression[_] => SingleExactPredicate
+          case _                           => MultipleExactPredicate
+        }
         Set(IndexCompatiblePredicate(
           seekable.ident,
           seekable.expr,
@@ -212,8 +215,8 @@ object IndexCompatiblePredicatesProvider {
         )
 
         Set(rangePredicate) ++
-          Option.when(cypherType == CTString)(rangePredicate.convertToTextScannable) ++
-          Option.when(cypherType == CTPoint)(rangePredicate.convertToPointScannable)
+          Option.when(cypherType.isSubtypeOf(CTString))(rangePredicate.convertToTextScannable) ++
+          Option.when(cypherType.isSubtypeOf(CTPoint))(rangePredicate.convertToPointScannable)
 
       case predicate @ AsBoundingBoxSeekable(seekable) if valid(seekable.ident, seekable.dependencies) =>
         val queryExpression = seekable.asQueryExpression
@@ -286,13 +289,13 @@ object IndexCompatiblePredicatesProvider {
           solvedPredicate = Some(predicate),
           dependencies = Set.empty,
           indexRequirements = Set(IndexRequirement.SupportsIndexQuery(IndexQueryType.EXISTS)),
-          cypherType = CTAny
+          cypherType = scannable.cypherType
         )
 
         val finalPredicate = scannable.cypherType match {
-          case CTString => explicitlyScannableRangePredicate.convertToTextScannable
-          case CTPoint  => explicitlyScannableRangePredicate.convertToPointScannable
-          case _        => explicitlyScannableRangePredicate.convertToRangeScannable
+          case StringType(_) => explicitlyScannableRangePredicate.convertToTextScannable
+          case PointType(_)  => explicitlyScannableRangePredicate.convertToPointScannable
+          case _             => explicitlyScannableRangePredicate.convertToRangeScannable
         }
 
         Set(finalPredicate)

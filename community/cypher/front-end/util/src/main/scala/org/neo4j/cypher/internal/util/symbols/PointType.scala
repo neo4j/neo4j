@@ -19,8 +19,8 @@ package org.neo4j.cypher.internal.util.symbols
 import org.neo4j.cypher.internal.util.InputPosition
 
 case class PointType(isNullable: Boolean)(val position: InputPosition) extends CypherType {
-  val parentType: CypherType = CTAny
-  override val toString = "Point"
+  override val parentType: CypherType = CTAny
+  override val toString = if (isNullable) "Point" else "Point!"
   override val toCypherTypeString = "POINT"
 
   override def sortOrder: Int = CypherTypeOrder.POINT.id
@@ -29,5 +29,5 @@ case class PointType(isNullable: Boolean)(val position: InputPosition) extends C
 
   override def withIsNullable(isNullable: Boolean): PointType = this.copy(isNullable = isNullable)(position)
 
-  def withPosition(newPosition: InputPosition): PointType = this.copy()(position = newPosition)
+  override def withPosition(newPosition: InputPosition): PointType = this.copy()(position = newPosition)
 }
