@@ -25,7 +25,6 @@ import java.io.PrintStream;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.time.Clock;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -530,14 +529,10 @@ public interface StorageEngineFactory {
 
     private static void validateNotKnownFormat(FileSystemAbstraction fs, DatabaseLayout databaseLayout) {
         if (fs.isDirectory(databaseLayout.databaseDirectory())) {
-            try {
-                assert selectStorageEngine(fs, databaseLayout).isEmpty();
-                Path[] files = fs.listFiles(databaseLayout.databaseDirectory());
-                if (Arrays.stream(files).anyMatch(path -> path.endsWith(BlockDatabaseExistMarker.NAME))) {
-                    throw new IllegalArgumentException("Block format detected for database "
-                            + databaseLayout.getDatabaseName() + " but unavailable in this edition.");
-                }
-            } catch (IOException ignored) {
+            assert selectStorageEngine(fs, databaseLayout).isEmpty();
+            if (fs.fileExists(databaseLayout.file(BlockDatabaseExistMarker.INSTANCE))) {
+                throw new IllegalArgumentException("Block format detected for database "
+                        + databaseLayout.getDatabaseName() + " but unavailable in this edition.");
             }
         }
     }

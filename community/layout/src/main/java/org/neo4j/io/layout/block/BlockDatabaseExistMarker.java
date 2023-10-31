@@ -22,6 +22,7 @@ package org.neo4j.io.layout.block;
 import org.neo4j.io.layout.DatabaseFile;
 
 public class BlockDatabaseExistMarker implements DatabaseFile {
+    public static final BlockDatabaseExistMarker INSTANCE = new BlockDatabaseExistMarker();
     public static final String NAME = "block.metadata.db";
 
     @Override
