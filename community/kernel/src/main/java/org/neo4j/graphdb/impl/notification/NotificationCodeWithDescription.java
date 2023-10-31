@@ -250,7 +250,15 @@ public enum NotificationCodeWithDescription {
 
     NO_DATABASES_REALLOCATED(
             Status.Cluster.NoDatabasesReallocated,
-            "No databases were reallocated. No better allocation is currently possible.");
+            "No databases were reallocated. No better allocation is currently possible."),
+
+    SIDE_EFFECT_VISIBILITY(
+            Status.Statement.SideEffectVisibility,
+            "The semantics of this statement may change in later versions."
+                    + " To overcome this, extract the subquery expression into a preceding WITH and potentially wrap the mutating statement into a CALL subquery.",
+            "Using a subquery expression within a mutating statement has implications for its side-effect visibility."
+                    + " The semantics of this statement may change in later versions."
+                    + " To overcome this, extract the subquery expression into a preceding WITH and potentially wrap the mutating statement into a CALL subquery.");
 
     private final Status status;
     private final String description;
@@ -508,6 +516,10 @@ public enum NotificationCodeWithDescription {
 
     public static NotificationImplementation noDatabasesReallocated(InputPosition position) {
         return NO_DATABASES_REALLOCATED.notification(position);
+    }
+
+    public static NotificationImplementation SideEffectVisibility(InputPosition position) {
+        return SIDE_EFFECT_VISIBILITY.notification(position);
     }
 
     private NotificationImplementation notification(InputPosition position, String... details) {

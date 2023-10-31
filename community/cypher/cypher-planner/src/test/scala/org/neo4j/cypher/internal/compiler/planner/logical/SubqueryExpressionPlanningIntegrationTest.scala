@@ -1769,10 +1769,10 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     val plan = planner.plan(q).stripProduceResults
 
     plan should equal(planner.subPlanBuilder()
-      .create(createNodeWithProperties("n", Seq(), "{foo: reduce(sum = 0, x IN anon_2 | sum + x)}"))
-      .rollUpApply("anon_2", "anon_0")
-      .|.projection("b.age AS anon_0")
-      .|.allRelationshipsScan("(a)-[anon_1]->(b)")
+      .create(createNodeWithProperties("n", Seq(), "{foo: reduce(sum = 0, x IN anon_3 | sum + x)}"))
+      .rollUpApply("anon_3", "anon_1")
+      .|.projection("b.age AS anon_1")
+      .|.allRelationshipsScan("(a)-[anon_2]->(b)")
       .argument()
       .build())
   }
@@ -1884,15 +1884,15 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       """.stripMargin
 
     val nestedPlan = planner.subPlanBuilder()
-      .projection("b.age AS anon_0")
-      .allRelationshipsScan("(a)-[anon_1]->(b)")
+      .projection("b.age AS anon_1")
+      .allRelationshipsScan("(a)-[anon_2]->(b)")
       .build()
     val nestedCollection =
       NestedPlanCollectExpression(
         nestedPlan,
-        varFor("anon_0"),
-        """COLLECT { MATCH (a)-[`anon_1`]->(b)
-          |RETURN b.age AS `anon_0` }""".stripMargin
+        varFor("anon_1"),
+        """COLLECT { MATCH (a)-[`anon_2`]->(b)
+          |RETURN b.age AS `anon_1` }""".stripMargin
       )(pos)
     val reduceExprWithNestedPlan = reduce(
       varFor("sum", pos),
@@ -1931,15 +1931,15 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       """.stripMargin
 
     val nestedPlan = planner.subPlanBuilder()
-      .projection("b.age AS anon_0")
-      .allRelationshipsScan("(a)-[anon_3]->(b)")
+      .projection("b.age AS anon_1")
+      .allRelationshipsScan("(a)-[anon_4]->(b)")
       .build()
     val nestedCollection =
       NestedPlanCollectExpression(
         nestedPlan,
-        varFor("anon_0"),
-        """COLLECT { MATCH (a)-[`anon_3`]->(b)
-          |RETURN b.age AS `anon_0` }""".stripMargin
+        varFor("anon_1"),
+        """COLLECT { MATCH (a)-[`anon_4`]->(b)
+          |RETURN b.age AS `anon_1` }""".stripMargin
       )(pos)
     val reduceExprWithNestedPlan = reduce(
       varFor("sum", pos),
@@ -1961,10 +1961,10 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       ))
       .projection("[r] AS rels")
       .eager(ListSet(
-        EagernessReason.ReadDeleteConflict("anon_1"),
-        EagernessReason.ReadDeleteConflict("anon_2")
+        EagernessReason.ReadDeleteConflict("anon_2"),
+        EagernessReason.ReadDeleteConflict("anon_3")
       ))
-      .allRelationshipsScan("(anon_1)-[r]->(anon_2)")
+      .allRelationshipsScan("(anon_2)-[r]->(anon_3)")
       .build())
   }
 
@@ -1981,15 +1981,15 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       """.stripMargin
 
     val nestedPlan = planner.subPlanBuilder()
-      .projection("b.age AS anon_0")
-      .allRelationshipsScan("(a)-[anon_3]->(b)")
+      .projection("b.age AS anon_1")
+      .allRelationshipsScan("(a)-[anon_4]->(b)")
       .build()
     val nestedCollection =
       NestedPlanCollectExpression(
         nestedPlan,
-        varFor("anon_0"),
-        """COLLECT { MATCH (a)-[`anon_3`]->(b)
-          |RETURN b.age AS `anon_0` }""".stripMargin
+        varFor("anon_1"),
+        """COLLECT { MATCH (a)-[`anon_4`]->(b)
+          |RETURN b.age AS `anon_1` }""".stripMargin
       )(pos)
     val reduceExprWithNestedPlan = reduce(
       varFor("sum", pos),
@@ -2012,10 +2012,10 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       ))
       .projection("{rel: r} AS rels")
       .eager(ListSet(
-        EagernessReason.ReadDeleteConflict("anon_1"),
-        EagernessReason.ReadDeleteConflict("anon_2")
+        EagernessReason.ReadDeleteConflict("anon_2"),
+        EagernessReason.ReadDeleteConflict("anon_3")
       ))
-      .allRelationshipsScan("(anon_1)-[r]->(anon_2)")
+      .allRelationshipsScan("(anon_2)-[r]->(anon_3)")
       .build())
   }
 

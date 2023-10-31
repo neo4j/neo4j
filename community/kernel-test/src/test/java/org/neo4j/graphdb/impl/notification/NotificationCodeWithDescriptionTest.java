@@ -21,6 +21,7 @@ package org.neo4j.graphdb.impl.notification;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.SideEffectVisibility;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.codeGenerationFailed;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.commandHasNoEffectAssignPrivilege;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.commandHasNoEffectGrantRole;
@@ -864,6 +865,23 @@ class NotificationCodeWithDescriptionTest {
                 null);
     }
 
+    @Test
+    void shouldConstructNotificationsFor_SIDE_EFFECT_VISIBILITY() {
+        NotificationImplementation notification = SideEffectVisibility(InputPosition.empty);
+
+        verifyNotification(
+                notification,
+                "Using a subquery expression within a mutating statement has implications for its side-effect visibility",
+                SeverityLevel.WARNING,
+                "Neo.ClientNotification.Statement.SideEffectVisibility",
+                "The semantics of this statement may change in later versions."
+                        + " To overcome this, extract the subquery expression into a preceding WITH and potentially wrap the mutating statement into a CALL subquery.",
+                NotificationCategory.DEPRECATION,
+                "Using a subquery expression within a mutating statement has implications for its side-effect visibility."
+                        + " The semantics of this statement may change in later versions."
+                        + " To overcome this, extract the subquery expression into a preceding WITH and potentially wrap the mutating statement into a CALL subquery.");
+    }
+
     private void verifyNotification(
             NotificationImplementation notification,
             String title,
@@ -919,8 +937,8 @@ class NotificationCodeWithDescriptionTest {
         byte[] notificationHash = DigestUtils.sha256(notificationBuilder.toString());
 
         byte[] expectedHash = new byte[] {
-            -83, -50, -62, 67, 107, -33, 99, 119, 51, -28, -35, -123, -8, -126, -109, 91, -62, -115, -111, -57, 57, -35,
-            120, 38, -45, 109, 54, -53, 43, -82, -102, -25
+            36, -63, 122, 56, -107, -123, -113, -11, 112, 83, -107, 111, 43, 70, 30, -124, 77, -76, 15, -56, 101, 123,
+            -102, 105, 121, 2, 2, -13, 15, 103, -36, 21
         };
 
         if (!Arrays.equals(notificationHash, expectedHash)) {

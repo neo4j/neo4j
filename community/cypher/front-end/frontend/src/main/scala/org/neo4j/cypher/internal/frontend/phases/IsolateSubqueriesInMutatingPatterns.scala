@@ -47,6 +47,7 @@ import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.SideEffectVisibility
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 import org.neo4j.cypher.internal.util.topDown
@@ -88,16 +89,18 @@ case object IsolateSubqueriesInMutatingPatterns extends StatementRewriter
   ): Transformer[BaseContext, BaseState, BaseState] = this
 
   def instance(from: BaseState, context: BaseContext): Rewriter =
-    getRewriter(from.anonymousVariableNameGenerator, from.semanticTable())
+    getRewriter(from.anonymousVariableNameGenerator, from.semanticTable(), context)
 
   // noinspection NameBooleanParameters
   def getRewriter(
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
-    semanticTable: => SemanticTable
+    semanticTable: => SemanticTable,
+    context: BaseContext
   ): Rewriter = {
     def rewrite(sq: SingleQuery, inSubqueryContext: Boolean): SingleQuery = {
       val clauses = sq.clauses
-      val rewrittenClauses = clauses.zipWithIndex.flatMap {
+      // val rewrittenClauses =
+      clauses.zipWithIndex.flatMap {
         // SET should (for now) have row-by-row visibility, so we must not rewrite it
         case (set: SetClause, _) => Seq(set)
         // Subquery expressions are not allowed in MERGE and
@@ -139,6 +142,7 @@ case object IsolateSubqueriesInMutatingPatterns extends StatementRewriter
             // Nothing to do
             Seq(uc)
           } else {
+            context.notificationLogger.log(SideEffectVisibility(uc.position))
             val uselessUnwind = if (inSubqueryContext && previousClause.isEmpty) {
               // For example
               // WITH COUNT { MATCH (b) } AS `  UNNAMED1`
@@ -152,7 +156,9 @@ case object IsolateSubqueriesInMutatingPatterns extends StatementRewriter
                 ListLiteral(Seq(False()(uc.position)))(uc.position),
                 Variable(uselessUnwindVarName)(uc.position)
               )(uc.position))
-            } else None
+            } else {
+              None
+            }
 
             // Prepend the clause with a new WITH clause
             // That projects the extracted expressions
@@ -173,14 +179,17 @@ case object IsolateSubqueriesInMutatingPatterns extends StatementRewriter
           }
         case (clause, _) => Seq(clause)
       }
-      sq.copy(rewrittenClauses)(sq.position)
+      // sq.copy(rewrittenClauses)(sq.position) TODO: Add this back when we are ready to rewrite
+      sq
     }
 
     topDown(Rewriter.lift {
       // Using top-down we will rewrite the subquery call before the inner query
       case call: SubqueryCall =>
-        val rewrittenQuery = call.innerQuery.mapEachSingleQuery(rewrite(_, inSubqueryContext = true))
-        call.copy(innerQuery = rewrittenQuery)(call.position)
+        // val rewrittenQuery =
+        call.innerQuery.mapEachSingleQuery(rewrite(_, inSubqueryContext = true))
+        // call.copy(innerQuery = rewrittenQuery)(call.position) TODO: Add this back when we are ready to rewrite
+        call
       case sq: SingleQuery => rewrite(sq, inSubqueryContext = false)
     })
   }

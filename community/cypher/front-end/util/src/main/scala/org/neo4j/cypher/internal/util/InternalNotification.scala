@@ -80,3 +80,4 @@ case class ImpossibleRevokeCommandWarning(command: String, cause: String) extend
 case class ServerAlreadyEnabled(server: String) extends InternalNotification
 case class ServerAlreadyCordoned(server: String) extends InternalNotification
 case class NoDatabasesReallocated() extends InternalNotification
+case class SideEffectVisibility(position: InputPosition) extends InternalNotification
