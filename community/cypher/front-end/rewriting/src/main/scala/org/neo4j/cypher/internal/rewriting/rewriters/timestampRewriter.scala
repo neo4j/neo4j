@@ -20,6 +20,7 @@ import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.functions.Timestamp
 import org.neo4j.cypher.internal.rewriting.conditions.FunctionInvocationsResolved
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.PreparatoryRewritingRewriterFactory
@@ -41,7 +42,7 @@ case object timestampRewriter extends Step with DefaultPostCondition with Prepar
   private val rewriter = Rewriter.lift {
 
     case f @ FunctionInvocation(namespace, FunctionName(name), _, _)
-      if namespace.parts.isEmpty && name.equalsIgnoreCase("timestamp") =>
+      if namespace.parts.isEmpty && name.equalsIgnoreCase(Timestamp.name) =>
       val datetimeFunction = f.copy(functionName = FunctionName("datetime")(f.functionName.position))(f.position)
       Property(datetimeFunction, PropertyKeyName("epochMillis")(datetimeFunction.position))(datetimeFunction.position)
   }

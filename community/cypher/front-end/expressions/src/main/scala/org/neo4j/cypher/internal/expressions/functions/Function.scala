@@ -126,6 +126,7 @@ object Function {
     ToStringList,
     ToStringOrNull,
     ToUpper,
+    Timestamp,
     Properties,
     Trim,
     Type,

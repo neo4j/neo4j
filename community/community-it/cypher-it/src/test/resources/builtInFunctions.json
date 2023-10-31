@@ -3281,6 +3281,26 @@
     "isDeprecated": false
   },
   {
+    "name": "timestamp",
+    "category": "Scalar",
+    "description": "Returns the difference, measured in milliseconds, between the current time and midnight, January 1, 1970 UTC",
+    "signature": "timestamp() :: INTEGER",
+    "isBuiltIn": true,
+    "argumentDescription": [],
+    "returnDescription": "INTEGER",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
+  },
+  {
     "name": "toBoolean",
     "category": "Scalar",
     "description": "Converts a `BOOLEAN`, `STRING` or `INTEGER` value to a `BOOLEAN` value. For `INTEGER` values, 0 is defined to be false and any other `INTEGER` is defined to be true.",
