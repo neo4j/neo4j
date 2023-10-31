@@ -31,6 +31,27 @@ abstract class SelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](
   val sizeHint: Int
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
+  test("would work on RHS of Apply below limit") {
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("i")
+      .apply()
+      .|.limit(1)
+      .|.selectOrSemiApply("true")
+      // NOTE: leave below comment to illustrate what happens in pipelined runtime
+      // .|.|.orderedUnion()
+      // .|.|.|.limit(1)
+      // .|.|.|.argument('onFalse')
+      // .|.|.argument('onTrue')
+      .|.|.argument()
+      .|.unwind("[10,20,30] AS j")
+      .|.argument("i")
+      .unwind("[1,2,3] AS i")
+      .argument()
+      .build()
+
+    execute(query, runtime) should beColumns("i").withRows(singleColumn(Seq(1, 2, 3)))
+  }
+
   test("should only let through the one that matches when the expression is false") {
     // given
     val inputRows = (0 until sizeHint).map { i =>
