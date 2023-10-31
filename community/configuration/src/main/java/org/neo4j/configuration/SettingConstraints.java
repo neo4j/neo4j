@@ -466,6 +466,10 @@ public final class SettingConstraints {
         return lessThanOrEqual(Long::valueOf, other);
     }
 
+    public static SettingConstraint<Long> lessThanOrEqualLong(Setting<Long> other) {
+        return lessThanOrEqual(Long::valueOf, other);
+    }
+
     public static <T, C extends Collection<T>> SettingConstraint<C> shouldNotContain(
             T value, String collectionDescription) {
         return new SettingConstraint<>() {

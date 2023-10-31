@@ -23,6 +23,7 @@ import static java.time.Duration.ofDays;
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofMinutes;
 import static java.time.Duration.ofSeconds;
+import static org.neo4j.configuration.SettingConstraints.lessThanOrEqualLong;
 import static org.neo4j.configuration.SettingConstraints.max;
 import static org.neo4j.configuration.SettingConstraints.min;
 import static org.neo4j.configuration.SettingConstraints.range;
@@ -847,10 +848,10 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     @Internal
     @Description("Chunk size for maximum heap memory reservation per worker from the transaction memory pool")
     public static final Setting<Long> max_transaction_heap_grab_size_per_worker = newBuilder(
-                    "internal.dbms.max_transaction_heap_grab_size_per_worker",
-                    BYTES,
-                    initial_transaction_heap_grab_size.defaultValue())
-            .build(); // TODO: Add constraint and default value based on actual initial_transaction_heap_grab_size
+                    "internal.dbms.max_transaction_heap_grab_size_per_worker", BYTES, null)
+            .setDependency(initial_transaction_heap_grab_size)
+            .addConstraint(lessThanOrEqualLong(initial_transaction_heap_grab_size))
+            .build();
     // setting
 
     @Internal
