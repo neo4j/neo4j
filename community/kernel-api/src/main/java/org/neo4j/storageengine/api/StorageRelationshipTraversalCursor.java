@@ -31,13 +31,4 @@ public interface StorageRelationshipTraversalCursor extends StorageRelationshipC
      * @param selection which relationships to select.
      */
     void init(long nodeReference, long reference, RelationshipSelection selection);
-
-    /**
-     * Called when traversing all relationships for a node.
-     *
-     * @param nodeCursor node cursor refers to these relationships.
-     */
-    default void init(StorageNodeCursor nodeCursor, RelationshipSelection selection) {
-        init(nodeCursor.entityReference(), nodeCursor.relationshipsReference(), selection);
-    }
 }
