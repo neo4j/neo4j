@@ -135,21 +135,16 @@ abstract class SlottedPipeFallbackTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("r", "n", "m")
-      .projectEndpoints("(n)-[r]->(m)", startInScope = true, endInScope = false)
-      .input(nodes = Seq("n"), relationships = Seq("r"))
+      .produceResults("n", "m")
+      .pruningVarExpand("(n)-[*1..1]->(m)")
+      .allNodeScan("n")
       .build()
 
-    val input = for {
-      r <- rels
-      n <- Seq(r.getStartNode, r.getEndNode)
-    } yield Array[Any](n, r)
-
-    val runtimeResult = execute(logicalQuery, runtime, inputValues(input.toSeq: _*))
+    val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = rels.map { r => Array(r, r.getStartNode, r.getEndNode) }
-    runtimeResult should beColumns("r", "n", "m").withRows(expected)
+    val expected = rels.map { r => Array(r.getStartNode, r.getEndNode) }
+    runtimeResult should beColumns("n", "m").withRows(expected)
   }
 
   test("should use fallback correctly if output morsel has more slots than input morsel") {
@@ -161,22 +156,17 @@ abstract class SlottedPipeFallbackTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("r", "foo")
+      .produceResults("foo")
       .projection("n.prop AS foo")
-      .projectEndpoints("(n)-[r]-(m)", startInScope = true, endInScope = false)
-      .input(nodes = Seq("n"), relationships = Seq("r"))
+      .pruningVarExpand("(n)-[*1..1]->(m)")
+      .allNodeScan("n")
       .build()
 
-    val input = for {
-      r <- rels
-      n = r.getStartNode
-    } yield Array[Any](n, r)
-
-    val runtimeResult = execute(logicalQuery, runtime, inputValues(input.toSeq: _*))
+    val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = rels.map { r => Array(r, null) }
-    runtimeResult should beColumns("r", "foo").withRows(expected)
+    val expected = rels.map { _ => Array(null) }
+    runtimeResult should beColumns("foo").withRows(expected)
   }
 
   test("should get exception with error plan") {
