@@ -19,11 +19,10 @@
  */
 package org.neo4j.storageengine.api;
 
-import static org.neo4j.values.storable.Values.NO_VALUE;
+import static org.neo4j.storageengine.api.LongReference.NULL;
 
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
-import org.neo4j.values.storable.Values;
 
 /**
  * Cursor that can read property data.
@@ -36,7 +35,7 @@ public interface StoragePropertyCursor extends StorageCursor {
     void initNodeProperties(Reference reference, PropertySelection selection, long ownerReference);
 
     default void initNodeProperties(Reference reference, PropertySelection selection) {
-        initNodeProperties(reference, selection, -1);
+        initNodeProperties(reference, selection, NULL);
     }
 
     /**
@@ -54,7 +53,7 @@ public interface StoragePropertyCursor extends StorageCursor {
     void initRelationshipProperties(Reference reference, PropertySelection selection, long ownerReference);
 
     default void initRelationshipProperties(Reference reference, PropertySelection selection) {
-        initRelationshipProperties(reference, selection, -1);
+        initRelationshipProperties(reference, selection, NULL);
     }
 
     /**
@@ -79,33 +78,4 @@ public interface StoragePropertyCursor extends StorageCursor {
      * @return value of the property this cursor currently is placed at.
      */
     Value propertyValue();
-
-    /**
-     * Seeks the given property key id and returns its value. This is a one-shot call and to get more properties from this
-     * cursor it will have to be initialized again.
-     *
-     * @param propertyKeyId the property key id to get the value for.
-     * @return the value for the given property key, or {@link Values#NO_VALUE} if no such property was found.
-     * @deprecated only a temporary method to allow compiled runtime to continue working w/o bigger rewrite.
-     */
-    default Value seekPropertyValue(int propertyKeyId) {
-        return seekProperty(propertyKeyId) ? propertyValue() : NO_VALUE;
-    }
-
-    /**
-     * Seeks the given property key id and returns whether or not it exists. This is a one-shot call and to get more properties from this
-     * cursor it will have to be initialized again.
-     *
-     * @param propertyKeyId the property key id to get the value for.
-     * @return {@code true} if the property exists, otherwise {@code false}.
-     * @deprecated only a temporary method to allow compiled runtime to continue working w/o bigger rewrite.
-     */
-    default boolean seekProperty(int propertyKeyId) {
-        while (next()) {
-            if (propertyKeyId == propertyKey()) {
-                return true;
-            }
-        }
-        return false;
-    }
 }
