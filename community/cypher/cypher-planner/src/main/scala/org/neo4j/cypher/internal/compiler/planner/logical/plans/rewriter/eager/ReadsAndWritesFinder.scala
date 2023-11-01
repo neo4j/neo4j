@@ -20,6 +20,8 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ReadFinder.AccessedLabel
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ReadFinder.AccessedProperty
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ReadFinder.PlanReads
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ReadFinder.collectReads
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.WriteFinder.CreatedNode
@@ -73,6 +75,11 @@ import org.neo4j.cypher.internal.util.helpers.MapSupport.PowerMap
 object ReadsAndWritesFinder {
 
   /**
+   * A plan that accesses something (e.g. a label or property), optionally through an accessor variable, if available.
+   */
+  case class PlanWithAccessor(plan: LogicalPlan, accessor: Option[LogicalVariable])
+
+  /**
    * Stores information about what plans read which symbol (label, property, relationship type).
    * This is a generalization from just a map from a symbol to a collection of plans, because some operators can read unknown labels or properties.
    *
@@ -81,29 +88,29 @@ object ReadsAndWritesFinder {
    * @tparam T type of symbol, that is whether this stores labels, relationship types or properties
    */
   private[eager] case class ReadingPlansProvider[T <: SymbolicName](
-    plansReadingConcreteSymbol: Map[T, Seq[LogicalPlan]] = Map.empty[T, Seq[LogicalPlan]],
-    plansReadingUnknownSymbols: Seq[LogicalPlan] = Seq.empty
+    plansReadingConcreteSymbol: Map[T, Seq[PlanWithAccessor]] = Map.empty[T, Seq[PlanWithAccessor]],
+    plansReadingUnknownSymbols: Seq[PlanWithAccessor] = Seq.empty
   ) {
 
     /**
      * @return all plans reading the given concrete symbol or unknown symbols.
      */
-    def plansReadingSymbol(symbol: T): Seq[LogicalPlan] =
+    def plansReadingSymbol(symbol: T): Seq[PlanWithAccessor] =
       plansReadingConcreteSymbol.getOrElse(symbol, Seq.empty) ++ plansReadingUnknownSymbols
 
     /**
      * @return all plans reading this kind of symbol.
      */
-    def plansReadingAnySymbol(): Seq[LogicalPlan] =
+    def plansReadingAnySymbol(): Seq[PlanWithAccessor] =
       plansReadingConcreteSymbol.values.flatten.toSeq ++ plansReadingUnknownSymbols
 
-    def withSymbolRead(symbol: T, plan: LogicalPlan): ReadingPlansProvider[T] = {
+    def withSymbolRead(symbol: T, planWithAccessor: PlanWithAccessor): ReadingPlansProvider[T] = {
       val previousPlans = plansReadingConcreteSymbol.getOrElse(symbol, Seq.empty)
-      copy(plansReadingConcreteSymbol.updated(symbol, previousPlans :+ plan))
+      copy(plansReadingConcreteSymbol.updated(symbol, previousPlans :+ planWithAccessor))
     }
 
-    def withUnknownSymbolsRead(plan: LogicalPlan): ReadingPlansProvider[T] = {
-      copy(plansReadingUnknownSymbols = plansReadingUnknownSymbols :+ plan)
+    def withUnknownSymbolsRead(planWithAccessor: PlanWithAccessor): ReadingPlansProvider[T] = {
+      copy(plansReadingUnknownSymbols = plansReadingUnknownSymbols :+ planWithAccessor)
     }
 
     def ++(other: ReadingPlansProvider[T]): ReadingPlansProvider[T] =
@@ -123,28 +130,38 @@ object ReadsAndWritesFinder {
    * @param plansWritingUnknownRelProperty all plans which write an unknown Relationship property
    */
   private[eager] case class PropertyWritingPlansProvider(
-    plansWritingConcreteNodeProperty: Map[PropertyKeyName, Seq[LogicalPlan]] = Map.empty,
-    plansWritingConcreteRelProperty: Map[PropertyKeyName, Seq[LogicalPlan]] = Map.empty,
-    plansWritingUnknownNodeProperty: Seq[LogicalPlan] = Seq.empty,
-    plansWritingUnknownRelProperty: Seq[LogicalPlan] = Seq.empty
+    plansWritingConcreteNodeProperty: Map[PropertyKeyName, Seq[PlanWithAccessor]] = Map.empty,
+    plansWritingConcreteRelProperty: Map[PropertyKeyName, Seq[PlanWithAccessor]] = Map.empty,
+    plansWritingUnknownNodeProperty: Seq[PlanWithAccessor] = Seq.empty,
+    plansWritingUnknownRelProperty: Seq[PlanWithAccessor] = Seq.empty
   ) {
 
-    def withNodePropertyWritten(property: PropertyKeyName, plan: LogicalPlan): PropertyWritingPlansProvider = {
+    def withNodePropertyWritten(
+      property: PropertyKeyName,
+      planWithAccessor: PlanWithAccessor
+    ): PropertyWritingPlansProvider = {
       val previousPlans = plansWritingConcreteNodeProperty.getOrElse(property, Seq.empty)
-      copy(plansWritingConcreteNodeProperty = plansWritingConcreteNodeProperty.updated(property, previousPlans :+ plan))
+      copy(plansWritingConcreteNodeProperty =
+        plansWritingConcreteNodeProperty.updated(property, previousPlans :+ planWithAccessor)
+      )
     }
 
-    def withRelPropertyWritten(property: PropertyKeyName, plan: LogicalPlan): PropertyWritingPlansProvider = {
+    def withRelPropertyWritten(
+      property: PropertyKeyName,
+      planWithAccessor: PlanWithAccessor
+    ): PropertyWritingPlansProvider = {
       val previousPlans = plansWritingConcreteRelProperty.getOrElse(property, Seq.empty)
-      copy(plansWritingConcreteRelProperty = plansWritingConcreteRelProperty.updated(property, previousPlans :+ plan))
+      copy(plansWritingConcreteRelProperty =
+        plansWritingConcreteRelProperty.updated(property, previousPlans :+ planWithAccessor)
+      )
     }
 
-    def withUnknownNodePropertyWritten(plan: LogicalPlan): PropertyWritingPlansProvider = {
-      copy(plansWritingUnknownNodeProperty = plansWritingUnknownNodeProperty :+ plan)
+    def withUnknownNodePropertyWritten(planWithAccessor: PlanWithAccessor): PropertyWritingPlansProvider = {
+      copy(plansWritingUnknownNodeProperty = plansWritingUnknownNodeProperty :+ planWithAccessor)
     }
 
-    def withUnknownRelPropertyWritten(plan: LogicalPlan): PropertyWritingPlansProvider = {
-      copy(plansWritingUnknownRelProperty = plansWritingUnknownRelProperty :+ plan)
+    def withUnknownRelPropertyWritten(planWithAccessor: PlanWithAccessor): PropertyWritingPlansProvider = {
+      copy(plansWritingUnknownRelProperty = plansWritingUnknownRelProperty :+ planWithAccessor)
     }
 
     def ++(other: PropertyWritingPlansProvider): PropertyWritingPlansProvider =
@@ -159,7 +176,7 @@ object ReadsAndWritesFinder {
      * @return A `Seq` of pairs that map a known nodes `PropertyKeyName` (if `Some`) or an unknown nodes `PropertyKeyName` (if `None`)
      *         to all plans writing that property.
      */
-    def nodeEntries: Seq[(Option[PropertyKeyName], Seq[LogicalPlan])] =
+    def nodeEntries: Seq[(Option[PropertyKeyName], Seq[PlanWithAccessor])] =
       plansWritingConcreteNodeProperty.toSeq.map {
         case (key, value) => (Some(key), value)
       } :+ (None, plansWritingUnknownNodeProperty)
@@ -168,7 +185,7 @@ object ReadsAndWritesFinder {
      * @return A `Seq` of pairs that map a known relationships `PropertyKeyName` (if `Some`) or an unknown relationships `PropertyKeyName` (if `None`)
      *         to all plans writing that property.
      */
-    def relEntries: Seq[(Option[PropertyKeyName], Seq[LogicalPlan])] =
+    def relEntries: Seq[(Option[PropertyKeyName], Seq[PlanWithAccessor])] =
       plansWritingConcreteRelProperty.toSeq.map {
         case (key, value) => (Some(key), value)
       } :+ (None, plansWritingUnknownRelProperty)
@@ -331,7 +348,7 @@ object ReadsAndWritesFinder {
      *                 if `None` look for plans that read any property.
      * @return all plans that read the given node property.
      */
-    def plansReadingNodeProperty(property: Option[PropertyKeyName]): Seq[LogicalPlan] =
+    def plansReadingNodeProperty(property: Option[PropertyKeyName]): Seq[PlanWithAccessor] =
       property match {
         case Some(property) => readNodeProperties.plansReadingSymbol(property)
         case None           => readNodeProperties.plansReadingAnySymbol()
@@ -342,7 +359,7 @@ object ReadsAndWritesFinder {
      *                 if `None` look for plans that read any node property.
      * @return all plans that read the given property.
      */
-    def plansReadingRelProperty(property: Option[PropertyKeyName]): Seq[LogicalPlan] =
+    def plansReadingRelProperty(property: Option[PropertyKeyName]): Seq[PlanWithAccessor] =
       property match {
         case Some(property) => readRelProperties.plansReadingSymbol(property)
         case None           => readRelProperties.plansReadingAnySymbol()
@@ -351,23 +368,27 @@ object ReadsAndWritesFinder {
     /**
      * @return all plans that could read the given label.
      */
-    def plansReadingLabel(label: LabelName): Seq[LogicalPlan] =
+    def plansReadingLabel(label: LabelName): Seq[PlanWithAccessor] =
       readLabels.plansReadingSymbol(label)
 
-    def withNodePropertyRead(property: PropertyKeyName, plan: LogicalPlan): Reads =
-      copy(readNodeProperties = readNodeProperties.withSymbolRead(property, plan))
+    def withNodePropertyRead(accessedProperty: AccessedProperty, plan: LogicalPlan): Reads =
+      copy(readNodeProperties =
+        readNodeProperties.withSymbolRead(accessedProperty.property, PlanWithAccessor(plan, accessedProperty.accessor))
+      )
 
-    def withRelPropertyRead(property: PropertyKeyName, plan: LogicalPlan): Reads =
-      copy(readRelProperties = readRelProperties.withSymbolRead(property, plan))
+    def withRelPropertyRead(accessedProperty: AccessedProperty, plan: LogicalPlan): Reads =
+      copy(readRelProperties =
+        readRelProperties.withSymbolRead(accessedProperty.property, PlanWithAccessor(plan, accessedProperty.accessor))
+      )
 
-    def withUnknownNodePropertiesRead(plan: LogicalPlan): Reads =
-      copy(readNodeProperties = readNodeProperties.withUnknownSymbolsRead(plan))
+    def withUnknownNodePropertiesRead(plan: LogicalPlan, accessor: Option[LogicalVariable]): Reads =
+      copy(readNodeProperties = readNodeProperties.withUnknownSymbolsRead(PlanWithAccessor(plan, accessor)))
 
-    def withUnknownRelPropertiesRead(plan: LogicalPlan): Reads =
-      copy(readRelProperties = readRelProperties.withUnknownSymbolsRead(plan))
+    def withUnknownRelPropertiesRead(plan: LogicalPlan, accessor: Option[LogicalVariable]): Reads =
+      copy(readRelProperties = readRelProperties.withUnknownSymbolsRead(PlanWithAccessor(plan, accessor)))
 
-    def withLabelRead(label: LabelName, plan: LogicalPlan): Reads = {
-      copy(readLabels = readLabels.withSymbolRead(label, plan))
+    def withLabelRead(accessedLabel: AccessedLabel, plan: LogicalPlan): Reads = {
+      copy(readLabels = readLabels.withSymbolRead(accessedLabel.label, PlanWithAccessor(plan, accessedLabel.accessor)))
     }
 
     def withCallInTx(plan: LogicalPlan): Reads = {
@@ -422,8 +443,8 @@ object ReadsAndWritesFinder {
       copy(relationshipFilterExpressions = relationshipFilterExpressions + (variable -> newExpressions))
     }
 
-    def withUnknownLabelsRead(plan: LogicalPlan): Reads =
-      copy(readLabels = readLabels.withUnknownSymbolsRead(plan))
+    def withUnknownLabelsRead(plan: LogicalPlan, maybeVar: Option[LogicalVariable]): Reads =
+      copy(readLabels = readLabels.withUnknownSymbolsRead(PlanWithAccessor(plan, maybeVar)))
 
     private def variableReferencesInPlan(
       plan: LogicalPlan,
@@ -532,8 +553,16 @@ object ReadsAndWritesFinder {
             case (acc, variable) => acc.updatePlansThatReferenceNodeVariable(plan, variable)
           }
         },
-        acc => if (planReads.readsUnknownLabels) acc.withUnknownLabelsRead(plan) else acc,
-        acc => if (planReads.readsUnknownNodeProperties) acc.withUnknownNodePropertiesRead(plan) else acc,
+        acc => {
+          planReads.unknownLabelAccessors.foldLeft(acc) {
+            case (acc, maybeVar) => acc.withUnknownLabelsRead(plan, maybeVar)
+          }
+        },
+        acc => {
+          planReads.unknownNodePropertiesAccessors.foldLeft(acc) {
+            case (acc, maybeVar) => acc.withUnknownNodePropertiesRead(plan, maybeVar)
+          }
+        },
         acc => planReads.readRelProperties.foldLeft(acc)(_.withRelPropertyRead(_, plan)),
         acc => {
           planReads.relationshipFilterExpressions.foldLeft(acc) {
@@ -552,7 +581,11 @@ object ReadsAndWritesFinder {
             case (acc, variable) => acc.updatePlansThatReferenceRelationshipVariable(plan, variable)
           }
         },
-        acc => if (planReads.readsUnknownRelProperties) acc.withUnknownRelPropertiesRead(plan) else acc,
+        acc => {
+          planReads.unknownRelPropertiesAccessors.foldLeft(acc) {
+            case (acc, maybeVar) => acc.withUnknownRelPropertiesRead(plan, maybeVar)
+          }
+        },
         acc => if (planReads.callInTx) acc.withCallInTx(plan) else acc
       ))(this)
     }
@@ -590,38 +623,54 @@ object ReadsAndWritesFinder {
    * An accumulator of SETs in the logical plan tree.
    *
    * @param writtenNodeProperties a provider to find out which plans set which properties.
-   * @param writtenLabels     for each label, all the plans that set that label.
+   * @param writtenLabels         for each label, all the plans that set that label.
    */
   private[eager] case class Sets(
     writtenNodeProperties: PropertyWritingPlansProvider = PropertyWritingPlansProvider(),
     writtenRelProperties: PropertyWritingPlansProvider = PropertyWritingPlansProvider(),
-    writtenLabels: Map[LabelName, Seq[LogicalPlan]] = Map.empty
+    writtenLabels: Map[LabelName, Seq[PlanWithAccessor]] = Map.empty
   ) {
 
-    def withNodePropertyWritten(property: PropertyKeyName, plan: LogicalPlan): Sets =
-      copy(writtenNodeProperties = writtenNodeProperties.withNodePropertyWritten(property, plan))
+    def withNodePropertyWritten(accessedProperty: AccessedProperty, plan: LogicalPlan): Sets =
+      copy(writtenNodeProperties =
+        writtenNodeProperties.withNodePropertyWritten(
+          accessedProperty.property,
+          PlanWithAccessor(plan, accessedProperty.accessor)
+        )
+      )
 
-    def withRelPropertyWritten(property: PropertyKeyName, plan: LogicalPlan): Sets =
-      copy(writtenRelProperties = writtenRelProperties.withRelPropertyWritten(property, plan))
+    def withRelPropertyWritten(accessedProperty: AccessedProperty, plan: LogicalPlan): Sets =
+      copy(writtenRelProperties =
+        writtenRelProperties.withRelPropertyWritten(
+          accessedProperty.property,
+          PlanWithAccessor(plan, accessedProperty.accessor)
+        )
+      )
 
-    def withUnknownNodePropertyWritten(plan: LogicalPlan): Sets =
-      copy(writtenNodeProperties = writtenNodeProperties.withUnknownNodePropertyWritten(plan))
+    def withUnknownNodePropertyWritten(plan: LogicalPlan, accessor: Option[LogicalVariable]): Sets =
+      copy(writtenNodeProperties =
+        writtenNodeProperties.withUnknownNodePropertyWritten(PlanWithAccessor(plan, accessor))
+      )
 
-    def withUnknownRelPropertyWritten(plan: LogicalPlan): Sets =
-      copy(writtenRelProperties = writtenRelProperties.withUnknownRelPropertyWritten(plan))
+    def withUnknownRelPropertyWritten(plan: LogicalPlan, accessor: Option[LogicalVariable]): Sets =
+      copy(writtenRelProperties =
+        writtenRelProperties.withUnknownRelPropertyWritten(PlanWithAccessor(plan, accessor))
+      )
 
-    def withLabelWritten(label: LabelName, plan: LogicalPlan): Sets = {
-      val wL = writtenLabels.getOrElse(label, Seq.empty)
-      copy(writtenLabels = writtenLabels.updated(label, wL :+ plan))
+    def withLabelWritten(accessedLabel: AccessedLabel, plan: LogicalPlan): Sets = {
+      val wL = writtenLabels.getOrElse(accessedLabel.label, Seq.empty)
+      copy(writtenLabels =
+        writtenLabels.updated(accessedLabel.label, wL :+ PlanWithAccessor(plan, accessedLabel.accessor))
+      )
     }
 
     def includePlanSets(plan: LogicalPlan, planSets: PlanSets): Sets = {
       Function.chain[Sets](Seq(
         acc => planSets.writtenNodeProperties.foldLeft(acc)(_.withNodePropertyWritten(_, plan)),
-        acc => if (planSets.writesUnknownNodeProperties) acc.withUnknownNodePropertyWritten(plan) else acc,
+        acc => planSets.unknownNodePropertiesAccessors.foldLeft(acc)(_.withUnknownNodePropertyWritten(plan, _)),
         acc => planSets.writtenLabels.foldLeft(acc)(_.withLabelWritten(_, plan)),
         acc => planSets.writtenRelProperties.foldLeft(acc)(_.withRelPropertyWritten(_, plan)),
-        acc => if (planSets.writesUnknownRelProperties) acc.withUnknownRelPropertyWritten(plan) else acc
+        acc => planSets.unknownRelPropertiesAccessors.foldLeft(acc)(_.withUnknownRelPropertyWritten(plan, _))
       ))(this)
     }
 

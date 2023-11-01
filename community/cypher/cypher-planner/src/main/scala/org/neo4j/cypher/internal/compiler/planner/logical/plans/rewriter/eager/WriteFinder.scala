@@ -19,9 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager
 
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ReadFinder.AccessedLabel
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ReadFinder.AccessedProperty
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ReadFinder.asMaybeVar
 import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.MapExpression
-import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.CreatesKnownPropertyKeys
@@ -75,38 +78,40 @@ import org.neo4j.cypher.internal.logical.plans.set.SimpleMutatingPattern
 object WriteFinder {
 
   /**
-   * Set write operations of a single plan
+   * Set write operations of a single plan.
    * Labels written on the same node for sets does not need to differentiated
    * since there can be a situation where another label already exists on the node.
    *
-   * @param writtenNodeProperties       all node properties written by this plan
-   * @param writesUnknownNodeProperties `true` if this plan writes unknown node properties, e.g. by doing SET m = n
-   * @param writtenLabels all labels written by this plan
-   * @param writtenRelProperties       all relationship properties written by this plan
-   * @param writesUnknownRelProperties `true` if this plan writes unknown relationship properties, e.g. by doing SET m = n
+   * @param writtenNodeProperties          all node properties written by this plan
+   * @param unknownNodePropertiesAccessors for each unknown Node properties access, e.g. by by doing SET m = n, the accessor variable, if available. 
+   * @param writtenLabels                  all labels written by this plan
+   * @param writtenRelProperties           all relationship properties written by this plan
+   * @param unknownRelPropertiesAccessors  for each unknown relationship properties access, e.g. by by doing SET m = n, the accessor variable, if available.
    */
   private[eager] case class PlanSets(
-    writtenNodeProperties: Seq[PropertyKeyName] = Seq.empty,
-    writtenRelProperties: Seq[PropertyKeyName] = Seq.empty,
-    writesUnknownNodeProperties: Boolean = false,
-    writesUnknownRelProperties: Boolean = false,
-    writtenLabels: Set[LabelName] = Set.empty
+    writtenNodeProperties: Seq[AccessedProperty] = Seq.empty,
+    writtenRelProperties: Seq[AccessedProperty] = Seq.empty,
+    unknownNodePropertiesAccessors: Seq[Option[LogicalVariable]] = Seq.empty,
+    unknownRelPropertiesAccessors: Seq[Option[LogicalVariable]] = Seq.empty,
+    writtenLabels: Set[AccessedLabel] = Set.empty
   ) {
 
-    def withNodePropertyWritten(property: PropertyKeyName): PlanSets =
-      copy(writtenNodeProperties = writtenNodeProperties :+ property)
+    def withNodePropertyWritten(accessedProperty: AccessedProperty): PlanSets =
+      copy(writtenNodeProperties = writtenNodeProperties :+ accessedProperty)
 
-    def withRelPropertyWritten(property: PropertyKeyName): PlanSets =
-      copy(writtenRelProperties = writtenRelProperties :+ property)
+    def withRelPropertyWritten(accessedProperty: AccessedProperty): PlanSets =
+      copy(writtenRelProperties = writtenRelProperties :+ accessedProperty)
 
-    def withUnknownNodePropertiesWritten: PlanSets = copy(writesUnknownNodeProperties = true)
+    def withUnknownNodePropertiesWritten(accessor: Option[LogicalVariable]): PlanSets =
+      copy(unknownNodePropertiesAccessors = unknownNodePropertiesAccessors :+ accessor)
 
-    def withUnknownRelPropertiesWritten: PlanSets = copy(writesUnknownRelProperties = true)
+    def withUnknownRelPropertiesWritten(accessor: Option[LogicalVariable]): PlanSets =
+      copy(unknownRelPropertiesAccessors = unknownRelPropertiesAccessors :+ accessor)
 
     /**
      * Call this to signal that this plan writes some labels.
      */
-    def withLabelsWritten(labels: Set[LabelName]): PlanSets = copy(writtenLabels = writtenLabels ++ labels)
+    def withLabelsWritten(labels: Set[AccessedLabel]): PlanSets = copy(writtenLabels = writtenLabels ++ labels)
   }
 
   sealed private[eager] trait CreatedEntity[A] {
@@ -196,66 +201,81 @@ object WriteFinder {
    */
   private[eager] def collectWrites(plan: LogicalPlan): PlanWrites = plan match {
     case up: UpdatingPlan => up match {
-        case SetNodeProperty(_, _, propertyName, _) =>
-          PlanWrites(sets = PlanSets(writtenNodeProperties = Seq(propertyName)))
+        case SetNodeProperty(_, variable, propertyName, _) =>
+          PlanWrites(sets = PlanSets(writtenNodeProperties = Seq(AccessedProperty(propertyName, Some(variable)))))
 
-        case SetRelationshipProperty(_, _, propertyName, _) =>
-          PlanWrites(sets = PlanSets(writtenRelProperties = Seq(propertyName)))
+        case SetRelationshipProperty(_, variable, propertyName, _) =>
+          PlanWrites(sets = PlanSets(writtenRelProperties = Seq(AccessedProperty(propertyName, Some(variable)))))
 
-        case SetNodeProperties(_, _, assignments) =>
-          PlanWrites(sets = PlanSets(writtenNodeProperties = assignments.map(_._1)))
+        case SetNodeProperties(_, variable, assignments) =>
+          PlanWrites(sets =
+            PlanSets(writtenNodeProperties = assignments.map(_._1).map(AccessedProperty(_, Some(variable))))
+          )
 
-        case SetRelationshipProperties(_, _, assignments) =>
-          PlanWrites(sets = PlanSets(writtenRelProperties = assignments.map(_._1)))
+        case SetRelationshipProperties(_, variable, assignments) =>
+          PlanWrites(sets =
+            PlanSets(writtenRelProperties = assignments.map(_._1).map(AccessedProperty(_, Some(variable))))
+          )
 
         // Set concrete properties, do not delete any other properties
-        case SetPropertiesFromMap(_, _, properties: MapExpression, false) =>
+        case SetPropertiesFromMap(_, entity, properties: MapExpression, false) =>
+          val props = properties.items.map(_._1).map(AccessedProperty(_, asMaybeVar(entity)))
           PlanWrites(sets =
             PlanSets(
-              writtenNodeProperties = properties.items.map(_._1),
-              writtenRelProperties = properties.items.map(_._1)
+              writtenNodeProperties = props,
+              writtenRelProperties = props
             )
           )
 
-        case _: SetPropertiesFromMap =>
-          PlanWrites(sets = PlanSets(writesUnknownNodeProperties = true, writesUnknownRelProperties = true))
-
-        case SetProperty(_, _, propertyName, _) =>
+        case SetPropertiesFromMap(_, entity, _, _) =>
           PlanWrites(sets =
             PlanSets(
-              writtenNodeProperties = Seq(propertyName),
-              writtenRelProperties = Seq(propertyName)
+              unknownNodePropertiesAccessors = Seq(asMaybeVar(entity)),
+              unknownRelPropertiesAccessors = Seq(asMaybeVar(entity))
             )
           )
 
-        case SetProperties(_, _, assignments) =>
+        case SetProperty(_, entity, propertyName, _) =>
           PlanWrites(sets =
             PlanSets(
-              writtenNodeProperties = assignments.map(_._1),
-              writtenRelProperties = assignments.map(_._1)
+              writtenNodeProperties = Seq(AccessedProperty(propertyName, asMaybeVar(entity))),
+              writtenRelProperties = Seq(AccessedProperty(propertyName, asMaybeVar(entity)))
+            )
+          )
+
+        case SetProperties(_, entity, assignments) =>
+          val props = assignments.map(_._1).map(AccessedProperty(_, asMaybeVar(entity)))
+          PlanWrites(sets =
+            PlanSets(
+              writtenNodeProperties = props,
+              writtenRelProperties = props
             )
           )
 
         // Set concrete relationship properties, do not delete any other properties
-        case SetRelationshipPropertiesFromMap(_, _, properties: MapExpression, false) =>
-          PlanWrites(sets = PlanSets(writtenRelProperties = properties.items.map(_._1)))
+        case SetRelationshipPropertiesFromMap(_, variable, properties: MapExpression, false) =>
+          PlanWrites(sets =
+            PlanSets(writtenRelProperties = properties.items.map(_._1).map(AccessedProperty(_, Some(variable))))
+          )
 
-        case _: SetRelationshipPropertiesFromMap =>
-          PlanWrites(sets = PlanSets(writesUnknownRelProperties = true))
+        case SetRelationshipPropertiesFromMap(_, variable, _, _) =>
+          PlanWrites(sets = PlanSets(unknownRelPropertiesAccessors = Seq(Some(variable))))
 
         // Set concrete node properties, do not delete any other properties
-        case SetNodePropertiesFromMap(_, _, properties: MapExpression, false) =>
-          PlanWrites(sets = PlanSets(writtenNodeProperties = properties.items.map(_._1)))
+        case SetNodePropertiesFromMap(_, variable, properties: MapExpression, false) =>
+          PlanWrites(sets =
+            PlanSets(writtenNodeProperties = properties.items.map(_._1).map(AccessedProperty(_, Some(variable))))
+          )
 
         // Set unknown properties (i.e. not a MapExpression) or delete any other properties
-        case _: SetNodePropertiesFromMap =>
-          PlanWrites(sets = PlanSets(writesUnknownNodeProperties = true))
+        case SetNodePropertiesFromMap(_, variable, _, _) =>
+          PlanWrites(sets = PlanSets(unknownNodePropertiesAccessors = Seq(Some(variable))))
 
-        case SetLabels(_, _, labelNames) =>
-          PlanWrites(sets = PlanSets(writtenLabels = labelNames))
+        case SetLabels(_, variable, labelNames) =>
+          PlanWrites(sets = PlanSets(writtenLabels = labelNames.map(AccessedLabel(_, Some(variable)))))
 
-        case RemoveLabels(_, _, labelNames) =>
-          PlanWrites(sets = PlanSets(writtenLabels = labelNames))
+        case RemoveLabels(_, variable, labelNames) =>
+          PlanWrites(sets = PlanSets(writtenLabels = labelNames.map(AccessedLabel(_, Some(variable)))))
 
         case c: Create =>
           val nodeCreates = processCreateNodes(PlanCreates(), c.nodes)
@@ -335,15 +355,23 @@ object WriteFinder {
     case _ => PlanWrites()
   }
 
-  private def processNodePropertyMap(acc: PlanSets, properties: MapExpression): PlanSets = {
+  private def processNodePropertyMap(
+    acc: PlanSets,
+    accessor: Option[LogicalVariable],
+    properties: MapExpression
+  ): PlanSets = {
     properties.items.foldLeft[PlanSets](acc) {
-      case (acc, (propertyName, _)) => acc.withNodePropertyWritten(propertyName)
+      case (acc, (propertyName, _)) => acc.withNodePropertyWritten(AccessedProperty(propertyName, accessor))
     }
   }
 
-  private def processRelationshipPropertyMap(acc: PlanSets, properties: MapExpression): PlanSets = {
+  private def processRelationshipPropertyMap(
+    acc: PlanSets,
+    accessor: Option[LogicalVariable],
+    properties: MapExpression
+  ): PlanSets = {
     properties.items.foldLeft[PlanSets](acc) {
-      case (acc, (propertyName, _)) => acc.withRelPropertyWritten(propertyName)
+      case (acc, (propertyName, _)) => acc.withRelPropertyWritten(AccessedProperty(propertyName, accessor))
     }
   }
 
@@ -379,53 +407,62 @@ object WriteFinder {
     setMutatingPatterns: Seq[SetMutatingPattern]
   ): PlanSets = {
     setMutatingPatterns.foldLeft[PlanSets](acc) {
-      case (acc, SetNodePropertyPattern(_, propertyName, _)) => acc.withNodePropertyWritten(propertyName)
+      case (acc, SetNodePropertyPattern(variable, propertyName, _)) =>
+        acc.withNodePropertyWritten(AccessedProperty(propertyName, Some(variable)))
 
-      case (acc, SetRelationshipPropertyPattern(_, propertyName, _)) => acc.withRelPropertyWritten(propertyName)
+      case (acc, SetRelationshipPropertyPattern(variable, propertyName, _)) =>
+        acc.withRelPropertyWritten(AccessedProperty(propertyName, Some(variable)))
 
-      case (acc, SetNodePropertiesPattern(_, assignments)) =>
+      case (acc, SetNodePropertiesPattern(variable, assignments)) =>
         assignments.foldLeft(acc) {
-          case (acc, (propertyName, _)) => acc.withNodePropertyWritten(propertyName)
+          case (acc, (propertyName, _)) => acc.withNodePropertyWritten(AccessedProperty(propertyName, Some(variable)))
         }
 
-      case (acc, SetRelationshipPropertiesPattern(_, assignments)) =>
+      case (acc, SetRelationshipPropertiesPattern(variable, assignments)) =>
         assignments.foldLeft(acc) {
-          case (acc, (propertyName, _)) => acc.withRelPropertyWritten(propertyName)
+          case (acc, (propertyName, _)) => acc.withRelPropertyWritten(AccessedProperty(propertyName, Some(variable)))
         }
 
       // Set concrete properties, do not delete any other properties
-      case (acc, SetNodePropertiesFromMapPattern(_, properties: MapExpression, false)) =>
-        processNodePropertyMap(acc, properties)
+      case (acc, SetNodePropertiesFromMapPattern(variable, properties: MapExpression, false)) =>
+        processNodePropertyMap(acc, Some(variable), properties)
 
       // Set unknown properties (i.e. not a MapExpression) or delete any other properties
-      case (acc, _: SetNodePropertiesFromMapPattern) =>
-        acc.withUnknownNodePropertiesWritten
+      case (acc, SetNodePropertiesFromMapPattern(variable, _, _)) =>
+        acc.withUnknownNodePropertiesWritten(Some(variable))
 
       // Set concrete properties, do not delete any other properties
-      case (acc, SetRelationshipPropertiesFromMapPattern(_, properties: MapExpression, false)) =>
-        processRelationshipPropertyMap(acc, properties)
+      case (acc, SetRelationshipPropertiesFromMapPattern(variable, properties: MapExpression, false)) =>
+        processRelationshipPropertyMap(acc, Some(variable), properties)
 
       // Set unknown properties (i.e. not a MapExpression) or delete any other properties
-      case (acc, _: SetRelationshipPropertiesFromMapPattern) =>
-        acc.withUnknownRelPropertiesWritten
+      case (acc, SetRelationshipPropertiesFromMapPattern(variable, _, _)) =>
+        acc.withUnknownRelPropertiesWritten(Some(variable))
 
-      case (acc, _: SetPropertyPattern) =>
-        acc.withUnknownRelPropertiesWritten.withUnknownNodePropertiesWritten
+      case (acc, SetPropertyPattern(entity, _, _)) =>
+        acc.withUnknownRelPropertiesWritten(asMaybeVar(entity))
+          .withUnknownNodePropertiesWritten(asMaybeVar(entity))
 
-      case (acc, _: SetPropertiesPattern) =>
-        acc.withUnknownRelPropertiesWritten.withUnknownNodePropertiesWritten
+      case (acc, SetPropertiesPattern(entity, _)) =>
+        acc.withUnknownRelPropertiesWritten(asMaybeVar(entity))
+          .withUnknownNodePropertiesWritten(asMaybeVar(entity))
 
-      case (acc, SetPropertiesFromMapPattern(_, properties: MapExpression, false)) =>
-        processRelationshipPropertyMap(processNodePropertyMap(acc, properties), properties)
+      case (acc, SetPropertiesFromMapPattern(entity, properties: MapExpression, false)) =>
+        processRelationshipPropertyMap(
+          processNodePropertyMap(acc, asMaybeVar(entity), properties),
+          asMaybeVar(entity),
+          properties
+        )
 
-      case (acc, _: SetPropertiesFromMapPattern) =>
-        acc.withUnknownRelPropertiesWritten.withUnknownNodePropertiesWritten
+      case (acc, SetPropertiesFromMapPattern(entity, _, _)) =>
+        acc.withUnknownRelPropertiesWritten(asMaybeVar(entity))
+          .withUnknownNodePropertiesWritten(asMaybeVar(entity))
 
-      case (acc, SetLabelPattern(_, labels)) =>
-        acc.withLabelsWritten(labels.toSet)
+      case (acc, SetLabelPattern(variable, labels)) =>
+        acc.withLabelsWritten(labels.map(AccessedLabel(_, Some(variable))).toSet)
 
-      case (acc, RemoveLabelPattern(_, labels)) =>
-        acc.withLabelsWritten(labels.toSet)
+      case (acc, RemoveLabelPattern(variable, labels)) =>
+        acc.withLabelsWritten(labels.map(AccessedLabel(_, Some(variable))).toSet)
     }
   }
 

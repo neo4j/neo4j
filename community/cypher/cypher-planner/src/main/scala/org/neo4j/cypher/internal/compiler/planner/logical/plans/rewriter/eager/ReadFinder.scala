@@ -197,21 +197,25 @@ import scala.collection.immutable.ListSet
  */
 object ReadFinder {
 
+  case class AccessedProperty(property: PropertyKeyName, accessor: Option[LogicalVariable])
+
+  case class AccessedLabel(label: LabelName, accessor: Option[LogicalVariable])
+
   /**
    * Reads of a single plan.
    * The Seqs may contain duplicates. These are filtered out later in [[ConflictFinder]].
    *
    * @param readNodeProperties              the read Node properties
-   * @param readsUnknownNodeProperties      `true` if the plan reads unknown Node properties, e.g. by calling the `properties` function.
+   * @param unknownNodePropertiesAccessors  for each unknown Node properties access, e.g. by calling the `properties` function, the accessor variable, if available.
    * @param readLabels                      the read labels
-   * @param readsUnknownLabels              `true` if the plan reads unknown labels, e.g. by calling the `labels` function.
+   * @param unknownLabelAccessors           for each unknown Node label access, e.g. by calling the `labels` function, the accessor variable, if available.
    * @param nodeFilterExpressions           All node expressions that filter the rows, in a map with the dependency as key.
    *                                        This also tracks if a variable is introduced by this plan.
    *                                        If a variable is introduced by this plan, and no predicates are applied on that variable,
    *                                        it is still present as a key in this map with an empty sequence of filter expressions.
    * @param referencedNodeVariables         all referenced node variables
    * @param readRelProperties               the read Relationship properties
-   * @param readsUnknownRelProperties       `true` if the plan reads Relationship unknown properties, e.g. by calling the `properties` function.
+   * @param unknownRelPropertiesAccessors   for each unknown Relationship properties access, e.g. by calling the `properties` function, the accessor variable, if available.
    * @param relationshipFilterExpressions   All type expressions that filter the rows, in a map with the dependency as key.
    *                                        This also tracks if a variable is introduced by this plan.
    *                                        If a variable is introduced by this plan, and no predicates are applied on that variable,
@@ -219,35 +223,35 @@ object ReadFinder {
    * @param referencedRelationshipVariables all referenced Relationship variables
    */
   private[eager] case class PlanReads(
-    readNodeProperties: Seq[PropertyKeyName] = Seq.empty,
-    readsUnknownNodeProperties: Boolean = false,
-    readLabels: Seq[LabelName] = Seq.empty,
-    readsUnknownLabels: Boolean = false,
+    readNodeProperties: Seq[AccessedProperty] = Seq.empty,
+    unknownNodePropertiesAccessors: Seq[Option[LogicalVariable]] = Seq.empty,
+    readLabels: Seq[AccessedLabel] = Seq.empty,
+    unknownLabelAccessors: Seq[Option[LogicalVariable]] = Seq.empty,
     nodeFilterExpressions: Map[LogicalVariable, Seq[Expression]] = Map.empty,
-    readRelProperties: Seq[PropertyKeyName] = Seq.empty,
-    readsUnknownRelProperties: Boolean = false,
+    readRelProperties: Seq[AccessedProperty] = Seq.empty,
+    unknownRelPropertiesAccessors: Seq[Option[LogicalVariable]] = Seq.empty,
     relationshipFilterExpressions: Map[LogicalVariable, Seq[Expression]] = Map.empty,
     referencedNodeVariables: Set[LogicalVariable] = Set.empty,
     referencedRelationshipVariables: Set[LogicalVariable] = Set.empty,
     callInTx: Boolean = false
   ) {
 
-    def withNodePropertyRead(property: PropertyKeyName): PlanReads = {
-      copy(readNodeProperties = readNodeProperties :+ property)
+    def withNodePropertyRead(accessedProperty: AccessedProperty): PlanReads = {
+      copy(readNodeProperties = readNodeProperties :+ accessedProperty)
     }
 
-    def withRelPropertyRead(property: PropertyKeyName): PlanReads = {
-      copy(readRelProperties = readRelProperties :+ property)
+    def withRelPropertyRead(accessedProperty: AccessedProperty): PlanReads = {
+      copy(readRelProperties = readRelProperties :+ accessedProperty)
     }
 
-    def withUnknownNodePropertiesRead(): PlanReads =
-      copy(readsUnknownNodeProperties = true)
+    def withUnknownNodePropertiesRead(accessor: Option[LogicalVariable]): PlanReads =
+      copy(unknownNodePropertiesAccessors = unknownNodePropertiesAccessors :+ accessor)
 
-    def withUnknownRelPropertiesRead(): PlanReads =
-      copy(readsUnknownRelProperties = true)
+    def withUnknownRelPropertiesRead(accessor: Option[LogicalVariable]): PlanReads =
+      copy(unknownRelPropertiesAccessors = unknownRelPropertiesAccessors :+ accessor)
 
-    def withLabelRead(label: LabelName): PlanReads = {
-      copy(readLabels = readLabels :+ label)
+    def withLabelRead(accessedLabel: AccessedLabel): PlanReads = {
+      copy(readLabels = readLabels :+ accessedLabel)
     }
 
     def withCallInTx: PlanReads = {
@@ -286,8 +290,8 @@ object ReadFinder {
       copy(relationshipFilterExpressions = relationshipFilterExpressions + (variable -> newExpressions))
     }
 
-    def withUnknownLabelsRead(): PlanReads =
-      copy(readsUnknownLabels = true)
+    def withUnknownLabelsRead(variable: Option[LogicalVariable]): PlanReads =
+      copy(unknownLabelAccessors = unknownLabelAccessors :+ variable)
 
     def withReferencedNodeVariable(variable: LogicalVariable): PlanReads =
       copy(referencedNodeVariables = referencedNodeVariables + variable)
@@ -313,7 +317,7 @@ object ReadFinder {
       case NodeByLabelScan(variable, labelName, _, _) =>
         val hasLabels = HasLabels(variable, Seq(labelName))(InputPosition.NONE)
         PlanReads()
-          .withLabelRead(labelName)
+          .withLabelRead(AccessedLabel(labelName, Some(variable)))
           .withIntroducedNodeVariable(variable)
           .withAddedNodeFilterExpression(variable, hasLabels)
 
@@ -326,7 +330,7 @@ object ReadFinder {
           .withIntroducedNodeVariable(variable)
           .withAddedNodeFilterExpression(variable, filterExpression)
         labelNames.foldLeft(acc) { (acc, labelName) =>
-          acc.withLabelRead(labelName)
+          acc.withLabelRead(AccessedLabel(labelName, Some(variable)))
         }
 
       case IntersectionNodeByLabelsScan(variable, labelNames, _, _) =>
@@ -334,7 +338,7 @@ object ReadFinder {
           .withIntroducedNodeVariable(variable)
         labelNames.foldLeft(acc) { (acc, labelName) =>
           val hasLabels = HasLabels(variable, Seq(labelName))(InputPosition.NONE)
-          acc.withLabelRead(labelName)
+          acc.withLabelRead(AccessedLabel(labelName, Some(variable)))
             .withAddedNodeFilterExpression(variable, hasLabels)
         }
 
@@ -344,7 +348,7 @@ object ReadFinder {
           .withIntroducedNodeVariable(variable)
         labelNames.flatten.foldLeft(acc) { (acc, labelName) =>
           val hasLabels = HasLabels(variable, Seq(labelName))(InputPosition.NONE)
-          acc.withLabelRead(labelName)
+          acc.withLabelRead(AccessedLabel(labelName, None))
             .withAddedNodeFilterExpression(variable, hasLabels)
         }
 
@@ -358,7 +362,7 @@ object ReadFinder {
         Function.chain[PlanReads](Seq(
           Seq(startLabel, endLabel).flatten.foldLeft(_) { (acc, labelName) =>
             val hasLabels = HasLabels(nodeVariable, Seq(labelName))(InputPosition.NONE)
-            acc.withLabelRead(labelName)
+            acc.withLabelRead(AccessedLabel(labelName, None))
               .withAddedNodeFilterExpression(nodeVariable, hasLabels)
           },
           typeNames.foldLeft(_) { (acc, typeName) =>
@@ -676,12 +680,12 @@ object ReadFinder {
           var res = acc
           if (semanticTable.typeFor(col.name).couldBe(CTNode)) {
             res = res
-              .withUnknownNodePropertiesRead()
-              .withUnknownLabelsRead()
+              .withUnknownNodePropertiesRead(Some(col))
+              .withUnknownLabelsRead(Some(col))
           }
           if (semanticTable.typeFor(col.name).couldBe(CTRelationship)) {
             res = res
-              .withUnknownRelPropertiesRead()
+              .withUnknownRelPropertiesRead(Some(col))
           }
           res
         }
@@ -901,10 +905,10 @@ object ReadFinder {
           var result = acc
           val typeGetter = semanticTable.typeFor(expr)
           if (typeGetter.couldBe(CTRelationship)) {
-            result = result.withRelPropertyRead(propertyName)
+            result = result.withRelPropertyRead(AccessedProperty(propertyName, asMaybeVar(expr)))
           }
           if (typeGetter.couldBe(CTNode)) {
-            result = result.withNodePropertyRead(propertyName)
+            result = result.withNodePropertyRead(AccessedProperty(propertyName, asMaybeVar(expr)))
           }
           TraverseChildren(result)
 
@@ -927,50 +931,62 @@ object ReadFinder {
           TraverseChildren(processDegreeRead(relType, acc))
 
       case f: FunctionInvocation if f.function == Labels =>
-        acc => TraverseChildren(acc.withUnknownLabelsRead())
+        acc =>
+          TraverseChildren(acc.withUnknownLabelsRead(asMaybeVar(f.args.head)))
 
       case f: FunctionInvocation if f.function == Properties =>
         acc =>
           var result = acc
           val typeGetter = semanticTable.typeFor(f.args(0))
           if (typeGetter.couldBe(CTRelationship)) {
-            result = result.withUnknownRelPropertiesRead()
+            result = result.withUnknownRelPropertiesRead(asMaybeVar(f.args.head))
           }
           if (typeGetter.couldBe(CTNode)) {
-            result = result.withUnknownNodePropertiesRead()
+            result = result.withUnknownNodePropertiesRead(asMaybeVar(f.args.head))
           }
           TraverseChildren(result)
 
-      case HasLabels(_, labels) =>
-        acc => TraverseChildren(labels.foldLeft(acc)((acc, label) => acc.withLabelRead(label)))
-
-      case HasALabel(Variable(_)) =>
-        acc => TraverseChildren(acc.withUnknownLabelsRead())
-
-      case HasLabelsOrTypes(_, labelsOrRels) =>
+      case HasLabels(expr, labels) =>
         acc =>
-          TraverseChildren(labelsOrRels.foldLeft(acc)((acc, labelOrType) => acc.withLabelRead(labelOrType.asLabelName)))
+          TraverseChildren(labels.foldLeft(acc)((acc, label) =>
+            acc.withLabelRead(AccessedLabel(label, asMaybeVar(expr)))
+          ))
+
+      case HasALabel(v: Variable) =>
+        acc => TraverseChildren(acc.withUnknownLabelsRead(Some(v)))
+
+      case HasLabelsOrTypes(expr, labelsOrRels) =>
+        acc =>
+          TraverseChildren(labelsOrRels.foldLeft(acc)((acc, labelOrType) =>
+            acc.withLabelRead(AccessedLabel(labelOrType.asLabelName, asMaybeVar(expr)))
+          ))
 
       case ContainerIndex(expr, index)
         if !semanticTable.typeFor(index).is(CTInteger) && !semanticTable.typeFor(expr).is(CTMap) =>
         // if we access by index, foo[0] or foo[&autoIntX] we must be accessing a list and hence we
         // are not accessing a property
         acc =>
-          SkipChildren(acc.withUnknownNodePropertiesRead())
+          SkipChildren(acc.withUnknownNodePropertiesRead(asMaybeVar(expr)))
 
       case npe: NestedPlanExpression =>
         // A nested plan expression cannot have writes
         val nestedReads = collectReadsAndWrites(npe.plan, semanticTable, anonymousVariableNameGenerator).reads
 
         // Remap all reads to the outer plan, i.e. to the PlanReads currently being built
-        val readProperties = nestedReads.readNodeProperties.plansReadingConcreteSymbol.keySet
-        val readsUnknownProperties = nestedReads.readNodeProperties.plansReadingUnknownSymbols.nonEmpty
-        val readLabels = nestedReads.readLabels.plansReadingConcreteSymbol.keySet
-        val readsUnknownLabels = nestedReads.readLabels.plansReadingUnknownSymbols.nonEmpty
+        val readNodeProperties = nestedReads.readNodeProperties.plansReadingConcreteSymbol.view
+          .mapValues(_.map(_.accessor))
+          .flatMap { case (p, vars) => vars.map(AccessedProperty(p, _)) }
+        val unknownNodePropertiesAccessors = nestedReads.readNodeProperties.plansReadingUnknownSymbols.map(_.accessor)
+        val readLabels = nestedReads.readLabels.plansReadingConcreteSymbol.view
+          .mapValues(_.map(_.accessor))
+          .flatMap { case (p, vars) => vars.map(AccessedLabel(p, _)) }
+        val unknownLabelsAccessors = nestedReads.readLabels.plansReadingUnknownSymbols.map(_.accessor)
         val nodeFilterExpressions = nestedReads.nodeFilterExpressions.view.mapValues(_.expression)
         val referencedNodeVariables = nestedReads.possibleNodeDeleteConflictPlans.keySet
-        val readRelProperties = nestedReads.readRelProperties.plansReadingConcreteSymbol.keySet
-        val readsUnknownRelProperties = nestedReads.readRelProperties.plansReadingUnknownSymbols.nonEmpty
+        val readRelProperties = nestedReads.readRelProperties.plansReadingConcreteSymbol.view
+          .mapValues(_.map(_.accessor))
+          .flatMap { case (p, vars) => vars.map(AccessedProperty(p, _)) }
+        val unknownRelPropertiesAccessors = nestedReads.readRelProperties.plansReadingUnknownSymbols.map(_.accessor)
         val relationshipFilterExpressions = nestedReads.relationshipFilterExpressions.view.mapValues(_.expression)
         val referencedRelationshipVariables = nestedReads.possibleRelDeleteConflictPlans.keySet
         val callInTx = nestedReads.callInTxPlans.nonEmpty
@@ -991,17 +1007,17 @@ object ReadFinder {
 
         acc => {
           val nextAcc = Function.chain[PlanReads](Seq(
-            acc => readProperties.foldLeft(acc)(_.withNodePropertyRead(_)),
-            acc => if (readsUnknownProperties) acc.withUnknownNodePropertiesRead() else acc,
+            acc => readNodeProperties.foldLeft(acc)(_.withNodePropertyRead(_)),
+            acc => unknownNodePropertiesAccessors.foldLeft(acc)(_.withUnknownNodePropertiesRead(_)),
             acc => readLabels.foldLeft(acc)(_.withLabelRead(_)),
-            acc => if (readsUnknownLabels) acc.withUnknownLabelsRead() else acc,
+            acc => unknownLabelsAccessors.foldLeft(acc)(_.withUnknownLabelsRead(_)),
             acc =>
               nodeFilterExpressions.foldLeft(acc) {
                 case (acc, (variable, nfe)) => acc.withAddedNodeFilterExpression(variable, nfe)
               },
             acc => referencedNodeVariables.foldLeft(acc)(_.withReferencedNodeVariable(_)),
             acc => readRelProperties.foldLeft(acc)(_.withRelPropertyRead(_)),
-            acc => if (readsUnknownRelProperties) acc.withUnknownRelPropertiesRead() else acc,
+            acc => unknownRelPropertiesAccessors.foldLeft(acc)(_.withUnknownRelPropertiesRead(_)),
             acc =>
               relationshipFilterExpressions.foldLeft(acc) {
                 case (acc, (variable, nfe)) => acc.withAddedRelationshipFilterExpression(variable, nfe)
@@ -1083,7 +1099,7 @@ object ReadFinder {
     val hasLabels = HasLabels(variable, Seq(lN))(InputPosition.NONE)
 
     val r = PlanReads()
-      .withLabelRead(lN)
+      .withLabelRead(AccessedLabel(lN, Some(variable)))
       .withIntroducedNodeVariable(variable)
       .withAddedNodeFilterExpression(variable, hasLabels)
 
@@ -1093,7 +1109,7 @@ object ReadFinder {
         val propPredicate = IsNotNull(Property(variable, propName)(InputPosition.NONE))(InputPosition.NONE)
 
         acc
-          .withNodePropertyRead(propName)
+          .withNodePropertyRead(AccessedProperty(propName, Some(variable)))
           .withAddedNodeFilterExpression(variable, propPredicate)
     }
   }
@@ -1142,7 +1158,7 @@ object ReadFinder {
         val propPredicate = IsNotNull(Property(relationship, propName)(InputPosition.NONE))(InputPosition.NONE)
 
         acc
-          .withRelPropertyRead(propName)
+          .withRelPropertyRead(AccessedProperty(propName, Some(relationship)))
           .withAddedRelationshipFilterExpression(relationship, propPredicate)
     }
   }
@@ -1211,5 +1227,12 @@ object ReadFinder {
       HasTypes(relationshipVariable, Seq(typeName))(InputPosition.NONE)
     }
     Ors.create(ListSet.from(predicates))
+  }
+
+  def asMaybeVar(expr: Expression): Option[LogicalVariable] = {
+    expr match {
+      case lv: LogicalVariable => Some(lv)
+      case _                   => None
+    }
   }
 }

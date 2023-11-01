@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager
 
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ReadsAndWritesFinder.FilterExpressions
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ReadsAndWritesFinder.PlanThatIntroducesVariable
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ReadsAndWritesFinder.PlanWithAccessor
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ReadsAndWritesFinder.PossibleDeleteConflictPlans
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ReadsAndWritesFinder.ReadsAndWrites
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.WriteFinder.CreatedNode
@@ -89,13 +90,13 @@ object ConflictFinder {
   private def propertyConflicts(
     readsAndWrites: ReadsAndWrites,
     wholePlan: LogicalPlan,
-    writtenProperties: ReadsAndWritesFinder.Sets => Seq[(Option[PropertyKeyName], Seq[LogicalPlan])],
-    plansReadingProperty: (ReadsAndWritesFinder.Reads, Option[PropertyKeyName]) => Seq[LogicalPlan]
+    writtenProperties: ReadsAndWritesFinder.Sets => Seq[(Option[PropertyKeyName], Seq[PlanWithAccessor])],
+    plansReadingProperty: (ReadsAndWritesFinder.Reads, Option[PropertyKeyName]) => Seq[PlanWithAccessor]
   ): Seq[ConflictingPlanPair] = {
     for {
       (prop, writePlans) <- writtenProperties(readsAndWrites.writes.sets)
-      readPlan <- plansReadingProperty(readsAndWrites.reads, prop)
-      writePlan <- writePlans
+      PlanWithAccessor(readPlan, readAccessor) <- plansReadingProperty(readsAndWrites.reads, prop)
+      PlanWithAccessor(writePlan, writeAccessor) <- writePlans
       if isValidConflict(readPlan, writePlan, wholePlan)
     } yield {
       val conflict = Conflict(writePlan.id, readPlan.id)
@@ -109,8 +110,8 @@ object ConflictFinder {
   private def labelConflicts(readsAndWrites: ReadsAndWrites, wholePlan: LogicalPlan): Iterable[ConflictingPlanPair] = {
     for {
       (label, writePlans) <- readsAndWrites.writes.sets.writtenLabels
-      readPlan <- readsAndWrites.reads.plansReadingLabel(label)
-      writePlan <- writePlans
+      PlanWithAccessor(readPlan, readAccessor) <- readsAndWrites.reads.plansReadingLabel(label)
+      PlanWithAccessor(writePlan, writeAccessor) <- writePlans
       if isValidConflict(readPlan, writePlan, wholePlan)
     } yield {
       val conflict = Conflict(writePlan.id, readPlan.id)
