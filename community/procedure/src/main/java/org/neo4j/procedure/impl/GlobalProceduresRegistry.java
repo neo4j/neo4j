@@ -249,9 +249,15 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
         }
 
         return new LoadInformation(
-                callables.procedures().size(),
-                callables.functions().size(),
-                callables.aggregationFunctions().size());
+                callables.procedures().stream()
+                        .map(CallableProcedure::signature)
+                        .toList(),
+                callables.functions().stream()
+                        .map(CallableUserFunction::signature)
+                        .toList(),
+                callables.aggregationFunctions().stream()
+                        .map(CallableUserAggregationFunction::signature)
+                        .toList());
     }
 
     @Override

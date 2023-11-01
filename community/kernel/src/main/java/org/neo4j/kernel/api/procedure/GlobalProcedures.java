@@ -20,13 +20,16 @@
 package org.neo4j.kernel.api.procedure;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.function.Predicate;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
+import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
+import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.util.VisibleForTesting;
 
 public interface GlobalProcedures {
@@ -55,5 +58,8 @@ public interface GlobalProcedures {
     // Allow tests to unregister some procedures so far intended only for tests usages
     void unregister(QualifiedName name);
 
-    record LoadInformation(int numProcedures, int numFunctions, int numAggregations) {}
+    record LoadInformation(
+            List<ProcedureSignature> procedures,
+            List<UserFunctionSignature> functions,
+            List<UserFunctionSignature> aggregations) {}
 }
