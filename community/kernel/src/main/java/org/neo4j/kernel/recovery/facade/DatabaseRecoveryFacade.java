@@ -61,6 +61,16 @@ public class DatabaseRecoveryFacade implements RecoveryFacade {
     }
 
     @Override
+    public void performRecovery(
+            DatabaseLayout layout,
+            RecoveryCriteria recoveryCriteria,
+            RecoveryFacadeMonitor recoveryFacadeMonitor,
+            RecoveryMode recoveryMode)
+            throws IOException {
+        recovery(layout, recoveryCriteria, recoveryFacadeMonitor, recoveryMode);
+    }
+
+    @Override
     public void performRecovery(DatabaseLayout databaseLayout) throws IOException {
         performRecovery(databaseLayout, EMPTY_MONITOR, RecoveryMode.FULL);
     }
@@ -68,14 +78,14 @@ public class DatabaseRecoveryFacade implements RecoveryFacade {
     @Override
     public void performRecovery(DatabaseLayout databaseLayout, RecoveryFacadeMonitor monitor, RecoveryMode mode)
             throws IOException {
-        recovery(databaseLayout, RecoveryCriteria.ALL, monitor, mode);
+        performRecovery(databaseLayout, RecoveryCriteria.ALL, monitor, mode);
     }
 
     @Override
     public void performRecovery(
             DatabaseLayout databaseLayout, RecoveryCriteria recoveryCriteria, RecoveryFacadeMonitor monitor)
             throws IOException {
-        recovery(databaseLayout, recoveryCriteria, monitor, RecoveryMode.FULL);
+        performRecovery(databaseLayout, recoveryCriteria, monitor, RecoveryMode.FULL);
     }
 
     private void recovery(

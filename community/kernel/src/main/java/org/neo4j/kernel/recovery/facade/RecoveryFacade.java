@@ -26,6 +26,13 @@ import org.neo4j.kernel.recovery.RecoveryMode;
 public interface RecoveryFacade {
     RecoveryFacade EMPTY = EmptyRecoveryFacade.INSTANCE;
 
+    void performRecovery(
+            DatabaseLayout layout,
+            RecoveryCriteria recoveryCriteria,
+            RecoveryFacadeMonitor recoveryFacadeMonitor,
+            RecoveryMode recoveryMode)
+            throws IOException;
+
     void performRecovery(DatabaseLayout databaseLayout) throws IOException;
 
     void performRecovery(DatabaseLayout databaseLayout, RecoveryFacadeMonitor monitor, RecoveryMode mode)
