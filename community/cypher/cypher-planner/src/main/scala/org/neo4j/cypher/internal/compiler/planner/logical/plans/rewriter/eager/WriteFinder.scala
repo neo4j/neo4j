@@ -105,10 +105,6 @@ object WriteFinder {
 
     /**
      * Call this to signal that this plan writes some labels.
-     * The method should be called once for each node, with all the labels that are written for that node.
-     * If a plan writes labels on multiple nodes, it should call this method multiple times.
-     *
-     * @param labels labels written on the same node for each write
      */
     def withLabelsWritten(labels: Set[LabelName]): PlanSets = copy(writtenLabels = writtenLabels ++ labels)
   }
@@ -430,11 +426,6 @@ object WriteFinder {
 
       case (acc, RemoveLabelPattern(_, labels)) =>
         acc.withLabelsWritten(labels.toSet)
-
-      case (_, mutatingPattern) =>
-        throw new UnsupportedOperationException(
-          s"Eagerness support for mutating pattern ${mutatingPattern.productPrefix} not implemented yet."
-        )
     }
   }
 

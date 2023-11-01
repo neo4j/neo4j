@@ -774,7 +774,7 @@ object ReadFinder {
       case TransactionForeach(_, _, _, _, _) =>
         PlanReads().withCallInTx
 
-      case Trail(_, _, _, start, end, _, _, _, _, _, _, _, _) =>
+      case Trail(_, _, _, _, end, _, _, _, _, _, _, _, _) =>
         PlanReads().withIntroducedNodeVariable(end)
 
       case BidirectionalRepeatTrail(_, _, _, _, _, _, _, _, _, _, _, _, _) |
