@@ -43,6 +43,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.neo4j.bolt.protocol.common.message.request.connection.RoutingContext;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.driver.AccessMode;
 import org.neo4j.driver.Driver;
@@ -59,13 +60,15 @@ import org.neo4j.kernel.database.DatabaseReferenceImpl;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.kernel.impl.query.QueryExecutionConfiguration;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.BoltDbmsExtension;
+import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.values.virtual.MapValue;
 
 // TODO: this test has been replaced by CommunityQueryRoutingAcceptanceTest
 // for the new Query router stack, so it can be removed when the old stack goes away
-@BoltDbmsExtension
+@BoltDbmsExtension(configurationCallback = "configuration")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CommunityEditionEndToEndTest {
 
@@ -80,6 +83,11 @@ class CommunityEditionEndToEndTest {
     @BeforeAll
     static void beforeAll() {
         driver = DriverUtils.createDriver(connectorPortRegister);
+    }
+
+    @ExtensionCallback
+    void configuration(TestDatabaseManagementServiceBuilder builder) {
+        builder.setConfig(GraphDatabaseInternalSettings.query_router_new_stack, false);
     }
 
     @BeforeEach

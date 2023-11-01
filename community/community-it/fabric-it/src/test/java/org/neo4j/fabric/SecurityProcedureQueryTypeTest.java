@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.common.DependencyResolver;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.cypher.internal.compiler.helpers.SignatureResolver;
 import org.neo4j.cypher.internal.planner.spi.ProcedureSignatureResolver;
@@ -58,6 +59,7 @@ class SecurityProcedureQueryTypeTest {
     static void beforeAll() {
         databaseManagementService = new TestDatabaseManagementServiceBuilder(testDirectory.homePath())
                 .setConfig(GraphDatabaseSettings.auth_enabled, true)
+                .setConfig(GraphDatabaseInternalSettings.query_router_new_stack, false)
                 .build();
         DependencyResolver dependencyResolver =
                 ((GraphDatabaseFacade) databaseManagementService.database("system")).getDependencyResolver();

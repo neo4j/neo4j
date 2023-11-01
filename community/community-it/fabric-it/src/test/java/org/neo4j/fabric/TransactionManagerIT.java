@@ -24,22 +24,30 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.fabric.transaction.TransactionManager;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.event.DatabaseEventContext;
 import org.neo4j.graphdb.event.DatabaseEventListenerAdapter;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 
-@DbmsExtension
+@DbmsExtension(configurationCallback = "configuration")
 class TransactionManagerIT {
     @Inject
     private DatabaseManagementService databaseManagementService;
 
     @Inject
     private GraphDatabaseAPI database;
+
+    @ExtensionCallback
+    void configuration(TestDatabaseManagementServiceBuilder builder) {
+        builder.setConfig(GraphDatabaseInternalSettings.query_router_new_stack, false);
+    }
 
     @Test
     void failToStartFabricTransactionAfterShutdown() {
