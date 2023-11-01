@@ -125,7 +125,8 @@ case class FabricFrontEnd(
       semanticFeatures =
         CompilationPhases.enabledSemanticFeatures(
           cypherConfig.enableExtraSemanticFeatures ++ cypherConfig.toggledFeatures(Map(
-            GraphDatabaseInternalSettings.show_setting -> SemanticFeature.ShowSetting.productPrefix
+            GraphDatabaseInternalSettings.show_setting -> SemanticFeature.ShowSetting.productPrefix,
+            GraphDatabaseInternalSettings.property_value_access_rules -> SemanticFeature.PropertyValueAccessRules.productPrefix
           ))
         ) ++ semanticFeatures,
       obfuscateLiterals = cypherConfig.obfuscateLiterals
