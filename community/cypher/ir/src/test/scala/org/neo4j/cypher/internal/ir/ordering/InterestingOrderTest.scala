@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Asc
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Desc
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.FullSatisfaction
@@ -560,6 +561,48 @@ class InterestingOrderTest extends CypherFunSuite with AstConstructionTestSuppor
     interestingOrder.satisfiedBy(
       ProvidedOrder.asc(varFor("a")).asc(varFor("x")).desc(varFor("y")).asc(varFor("z"))
     ) should matchPattern { case NoSatisfaction() => }
+  }
+
+  // forQueryGraph
+
+  test("forQueryGraph should keep only the column with dependencies met") {
+    val io = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("a")).asc(varFor("b")))
+
+    io.forQueryGraph(QueryGraph(patternNodes = Set("a"))) should equal(
+      InterestingOrder.required(RequiredOrderCandidate.asc(varFor("a")))
+    )
+    io.forQueryGraph(QueryGraph(patternNodes = Set("b"))) should equal(
+      InterestingOrder.required(RequiredOrderCandidate.asc(varFor("b")))
+    )
+  }
+
+  test("forQueryGraph should be empty if no column with dependencies met") {
+    val io = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("a")).asc(varFor("b")))
+
+    io.forQueryGraph(QueryGraph(patternNodes = Set("c"))) should equal(
+      InterestingOrder.empty
+    )
+  }
+
+  test("forQueryGraph should keep only the column with dependencies met, with no gaps in columns") {
+    val io = InterestingOrder.required(RequiredOrderCandidate
+      .asc(varFor("a"))
+      .asc(varFor("b"))
+      .asc(varFor("c"))
+      .asc(varFor("d")))
+
+    io.forQueryGraph(QueryGraph(patternNodes = Set("a", "b"))) should equal(
+      InterestingOrder.required(RequiredOrderCandidate.asc(varFor("a")).asc(varFor("b")))
+    )
+    io.forQueryGraph(QueryGraph(patternNodes = Set("a", "c"))) should equal(
+      InterestingOrder.required(RequiredOrderCandidate.asc(varFor("a")))
+    )
+    io.forQueryGraph(QueryGraph(patternNodes = Set("b", "c"))) should equal(
+      InterestingOrder.required(RequiredOrderCandidate.asc(varFor("b")).asc(varFor("c")))
+    )
+    io.forQueryGraph(QueryGraph(patternNodes = Set("b", "d"))) should equal(
+      InterestingOrder.required(RequiredOrderCandidate.asc(varFor("b")))
+    )
   }
 
 }

@@ -91,15 +91,13 @@ case class InterestingOrder(
     )
 
   /**
-   * For each candidate, keep only the columns that are solvable by the query graph
-   * and which are not arguments (because those should have been solved before)
-   * @return
+   * For each candidate, keep only the first contiguous block of columns that are solvable by the query graph
+   * and which are not arguments (because those should have been solved before).
    */
-  def forQueryGraph(queryGraph: QueryGraph): InterestingOrder = this.mapOrderCandidates {
-    _.filter { columnOrder =>
-      columnOrder.dependencies.map(_.name)
-        .subsetOf(queryGraph.allCoveredIds -- queryGraph.argumentIds)
-    }
+  def forQueryGraph(queryGraph: QueryGraph): InterestingOrder = {
+    def columnHasDependencies(co: ColumnOrder): Boolean =
+      co.dependencies.map(_.name).subsetOf(queryGraph.allCoveredIds -- queryGraph.argumentIds)
+    this.mapOrderCandidates { _.dropWhile(!columnHasDependencies(_)).takeWhile(columnHasDependencies) }
   }
 
   def withReverseProjectedColumns(
