@@ -79,6 +79,7 @@ import org.neo4j.procedure.Internal;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.procedure.builtin.BuiltInDbmsProcedures.UpgradeAllowedChecker.UpgradeNotAllowedException;
+import org.neo4j.router.QueryRouter;
 import org.neo4j.storageengine.api.StoreIdProvider;
 
 @SuppressWarnings("unused")
@@ -217,14 +218,22 @@ public class BuiltInDbmsProcedures {
         QueryExecutionEngine queryExecutionEngine =
                 graph.getDependencyResolver().resolveDependency(QueryExecutionEngine.class);
 
-        long clearedFabricQueries = 0;
+        // Composite queries and Query Router queries are exclusive.
+        // There cannot be a query that is at the same in Composite caches and Query router caches.
+        // The reason is that Composite queries don't go through Query Router at all.
+        long clearedRouterAndCompositeQueries = 0;
         if (graph.getDependencyResolver().containsDependency(FabricExecutor.class)) {
             FabricExecutor fabricExecutor = graph.getDependencyResolver().resolveDependency(FabricExecutor.class);
-            clearedFabricQueries = fabricExecutor.clearQueryCachesForDatabase(graph.databaseName());
+            clearedRouterAndCompositeQueries = fabricExecutor.clearQueryCachesForDatabase(graph.databaseName());
+        }
+        if (graph.getDependencyResolver().containsDependency(QueryRouter.class)) {
+            QueryRouter queryRouter = graph.getDependencyResolver().resolveDependency(QueryRouter.class);
+            clearedRouterAndCompositeQueries += queryRouter.clearQueryCachesForDatabase(graph.databaseName());
         }
 
         // we subtract 1 because the query "CALL db.queryClearCaches()" is compiled and thus populates the caches by 1
-        long numberOfClearedQueries = Math.max(queryExecutionEngine.clearQueryCaches(), clearedFabricQueries) - 1;
+        long numberOfClearedQueries =
+                Math.max(queryExecutionEngine.clearQueryCaches(), clearedRouterAndCompositeQueries) - 1;
 
         String result = numberOfClearedQueries == 0
                 ? "Query cache already empty."

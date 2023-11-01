@@ -45,4 +45,15 @@ public class PreParsedInfoCache implements QueryPreParsedInfoParser.Cache {
             String query, Supplier<QueryPreParsedInfoParser.PreParsedInfo> supplier) {
         return cache.computeIfAbsent(query, supplier::get);
     }
+
+    @Override
+    public long clearQueryCachesForDatabase(String databaseName) {
+        // Currently, we just clear everything.
+        // The reason is that this cache contains entries for databases
+        // that might not exist locally, so there is no way how to target
+        // such entries with the current API.
+        long size = cache.estimatedSize();
+        cache.clear();
+        return size;
+    }
 }

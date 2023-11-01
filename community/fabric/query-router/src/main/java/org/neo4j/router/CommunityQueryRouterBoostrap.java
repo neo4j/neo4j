@@ -162,23 +162,23 @@ public class CommunityQueryRouterBoostrap extends CommonQueryRouterBoostrap {
         var globalProcedures = resolve(GlobalProcedures.class);
 
         var transactionIdTracker = resolve(LocalGraphTransactionIdTracker.class);
-        return new QueryRouterBoltSpi.DatabaseManagementService(
-                new QueryRouterImpl(
-                        config,
-                        databaseReferenceResolver,
-                        this::createLocationService,
-                        new StandardQueryPreParser(
-                                targetCache, preParser, parsing, NO_COMPILATION_TRACING, () -> {}, globalProcedures),
-                        new LocalDatabaseTransactionFactory(databaseProvider, transactionIdTracker),
-                        createRemoteDatabaseTransactionFactory(),
-                        new ErrorReporter(this.logService),
-                        systemNanoClock,
-                        transactionIdTracker,
-                        statementLifecycles,
-                        monitors.newMonitor(QueryRoutingMonitor.class),
-                        new QueryRouterTransactionMonitor(config, systemNanoClock, this.logService)),
+        var queryRouter = new QueryRouterImpl(
+                config,
                 databaseReferenceResolver,
-                getCompositeDatabaseStack());
+                this::createLocationService,
+                new StandardQueryPreParser(
+                        targetCache, preParser, parsing, NO_COMPILATION_TRACING, () -> {}, globalProcedures),
+                new LocalDatabaseTransactionFactory(databaseProvider, transactionIdTracker),
+                createRemoteDatabaseTransactionFactory(),
+                new ErrorReporter(this.logService),
+                systemNanoClock,
+                transactionIdTracker,
+                statementLifecycles,
+                monitors.newMonitor(QueryRoutingMonitor.class),
+                new QueryRouterTransactionMonitor(config, systemNanoClock, this.logService));
+        dependencies.satisfyDependency(queryRouter);
+        return new QueryRouterBoltSpi.DatabaseManagementService(
+                queryRouter, databaseReferenceResolver, getCompositeDatabaseStack());
     }
 
     @Override

@@ -46,14 +46,11 @@ public interface QueryPreParsedInfoParser {
 
     PreParsedInfo parseQuery(Query query);
 
+    long clearQueryCachesForDatabase(String databaseName);
+
     interface Cache {
         PreParsedInfo computeIfAbsent(String query, Supplier<PreParsedInfo> supplier);
-    }
 
-    Cache NO_CACHE = new Cache() {
-        @Override
-        public PreParsedInfo computeIfAbsent(String query, Supplier<PreParsedInfo> supplier) {
-            return supplier.get();
-        }
-    };
+        long clearQueryCachesForDatabase(String databaseName);
+    }
 }

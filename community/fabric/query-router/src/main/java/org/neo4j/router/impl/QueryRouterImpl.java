@@ -171,6 +171,11 @@ public class QueryRouterImpl implements QueryRouter {
         }
     }
 
+    @Override
+    public long clearQueryCachesForDatabase(String databaseName) {
+        return queryPreParsedInfoParser.clearQueryCachesForDatabase(databaseName);
+    }
+
     private void updateQueryRouterMetric(Location location) {
         if (location instanceof Location.Local) {
             queryRoutingMonitor.queryRoutedLocal();

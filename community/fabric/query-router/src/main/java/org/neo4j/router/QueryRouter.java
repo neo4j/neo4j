@@ -33,4 +33,6 @@ public interface QueryRouter {
     RouterTransactionContext beginTransaction(TransactionInfo transactionInfo);
 
     QueryExecution executeQuery(RouterTransactionContext context, Query query, QuerySubscriber subscriber);
+
+    long clearQueryCachesForDatabase(String databaseName);
 }

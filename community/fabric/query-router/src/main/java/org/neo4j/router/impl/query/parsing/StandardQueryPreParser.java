@@ -75,6 +75,11 @@ public class StandardQueryPreParser implements QueryPreParsedInfoParser {
         return cache.computeIfAbsent(query.text(), () -> doParseQuery(query));
     }
 
+    @Override
+    public long clearQueryCachesForDatabase(String databaseName) {
+        return cache.clearQueryCachesForDatabase(databaseName);
+    }
+
     private PreParsedInfo doParseQuery(Query query) {
         var queryTracer = tracer.compileQuery(query.text());
         var notificationLogger = new RecordingNotificationLogger();
