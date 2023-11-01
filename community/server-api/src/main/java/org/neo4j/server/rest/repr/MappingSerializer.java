@@ -41,7 +41,7 @@ public class MappingSerializer extends Serializer {
         writer.writeString(key, value);
     }
 
-    void putBoolean(String key, boolean value) {
+    public void putBoolean(String key, boolean value) {
         writer.writeBoolean(key, value);
     }
 
