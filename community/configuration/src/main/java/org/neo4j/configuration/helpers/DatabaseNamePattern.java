@@ -21,7 +21,12 @@ package org.neo4j.configuration.helpers;
 
 import static org.neo4j.configuration.helpers.DatabaseNameValidator.validateDatabaseNamePattern;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 public class DatabaseNamePattern {
@@ -54,5 +59,24 @@ public class DatabaseNamePattern {
         } else {
             return "Database name=" + databaseName;
         }
+    }
+
+    public static Optional<Set<String>> exactNames(List<DatabaseNamePattern> patterns) {
+        Set<String> exact = new HashSet<>();
+        for (var pattern : patterns) {
+            if (pattern.containsPattern()) {
+                return Optional.empty();
+            }
+            exact.add(pattern.getDatabaseName());
+        }
+        return Optional.of(exact);
+    }
+
+    public static Predicate<String> matchAny(List<DatabaseNamePattern> patterns) {
+        return (string) -> patterns.stream().anyMatch(pattern -> pattern.matches(string));
+    }
+
+    public static List<DatabaseNamePattern> patternsOf(String... patterns) {
+        return Arrays.stream(patterns).map(DatabaseNamePattern::new).toList();
     }
 }

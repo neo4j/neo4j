@@ -20,12 +20,20 @@
 package org.neo4j.configuration.helpers;
 
 import static org.apache.commons.lang3.RandomStringUtils.randomAscii;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class DatabaseNamePatternTest {
 
@@ -108,6 +116,34 @@ class DatabaseNamePatternTest {
         Exception e3 = assertThrows(IllegalArgumentException.class, () -> assertValid("a" + randomAscii(64)));
 
         assertEquals("The provided database name must have a length between 1 and 63 characters.", e3.getMessage());
+    }
+
+    @ParameterizedTest
+    @MethodSource("values")
+    void shouldGetExactDatabaseNames(List<String> names, Optional<Set<String>> expected) {
+        assertThat(DatabaseNamePattern.exactNames(
+                        names.stream().map(DatabaseNamePattern::new).toList()))
+                .isEqualTo(expected);
+    }
+
+    static Stream<Arguments> values() {
+        return Stream.of(
+                Arguments.of(List.of("foo"), Optional.of(Set.of("foo"))),
+                Arguments.of(List.of("foo", "bar"), Optional.of(Set.of("foo", "bar"))),
+                Arguments.of(List.of("foo", "foo"), Optional.of(Set.of("foo"))),
+                Arguments.of(List.of("foo?", "bar"), Optional.empty()));
+    }
+
+    @Test
+    void shouldMatchAnyPattern() {
+        var patterns = List.of("foo*", "foo", "foo?", "bar");
+        var match = DatabaseNamePattern.matchAny(
+                patterns.stream().map(DatabaseNamePattern::new).toList());
+
+        assertThat(match.test("foo")).isTrue();
+        assertThat(match.test("bar")).isTrue();
+        assertThat(match.test("foobar")).isTrue();
+        assertThat(match.test("raboof")).isFalse();
     }
 
     private static void assertValid(String name) {
