@@ -4160,6 +4160,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .eager(ListSet(
           ReadDeleteConflict("n").withConflict(Conflict(Id(2), Id(5))),
           ReadDeleteConflict("m").withConflict(Conflict(Id(2), Id(3))),
+          ReadDeleteConflict("m").withConflict(Conflict(Id(2), Id(5))),
           ReadDeleteConflict("r").withConflict(Conflict(Id(2), Id(5)))
         ))
         .filter("m:M")
@@ -4191,7 +4192,10 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .produceResults("count")
         .aggregation(Seq.empty, Seq("count(*) AS count"))
         .deleteRelationship("r")
-        .eager(ListSet(ReadDeleteConflict("r").withConflict(Conflict(Id(2), Id(3)))))
+        .eager(ListSet(
+          ReadDeleteConflict("r").withConflict(Conflict(Id(2), Id(3))),
+          ReadDeleteConflict("r").withConflict(Conflict(Id(2), Id(6)))
+        ))
         .filter("r:REL") // Filter can crash if executed on deleted relationship.
         .unwind("[1,2,3] AS j")
         .apply()
@@ -4650,7 +4654,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .eager(ListSet(
           ReadDeleteConflict("n").withConflict(Conflict(Id(2), Id(4))),
           ReadDeleteConflict("n").withConflict(Conflict(Id(2), Id(5))),
-          ReadDeleteConflict("r").withConflict(Conflict(Id(2), Id(4)))
+          ReadDeleteConflict("r").withConflict(Conflict(Id(2), Id(4))),
+          ReadDeleteConflict("r").withConflict(Conflict(Id(2), Id(5)))
         ))
         .apply()
         .|.merge(Seq.empty, Seq(createRelationship("r", "n", "R", "n")))
@@ -4686,7 +4691,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .eager(ListSet(
           ReadDeleteConflict("n").withConflict(Conflict(Id(2), Id(4))),
           ReadDeleteConflict("n").withConflict(Conflict(Id(2), Id(5))),
-          ReadDeleteConflict("r").withConflict(Conflict(Id(2), Id(4)))
+          ReadDeleteConflict("r").withConflict(Conflict(Id(2), Id(4))),
+          ReadDeleteConflict("r").withConflict(Conflict(Id(2), Id(5)))
         ))
         .apply()
         .|.merge(
@@ -4726,7 +4732,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .eager(ListSet(
           ReadDeleteConflict("n").withConflict(Conflict(Id(2), Id(4))),
           ReadDeleteConflict("n").withConflict(Conflict(Id(2), Id(5))),
-          ReadDeleteConflict("r").withConflict(Conflict(Id(2), Id(4)))
+          ReadDeleteConflict("r").withConflict(Conflict(Id(2), Id(4))),
+          ReadDeleteConflict("r").withConflict(Conflict(Id(2), Id(5)))
         ))
         .apply()
         .|.merge(

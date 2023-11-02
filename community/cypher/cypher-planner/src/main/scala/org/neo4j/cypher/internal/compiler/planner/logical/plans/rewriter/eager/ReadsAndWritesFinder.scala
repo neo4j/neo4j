@@ -467,10 +467,10 @@ object ReadsAndWritesFinder {
           prev.plansThatIntroduceVariable
         }
 
-      val lastPlansToReferenceVariable = Seq(plan)
+      val plansThatReferenceVariable = prev.plansThatReferenceVariable :+ plan
 
       possibleDeleteConflictPlans
-        .updated(variable, PossibleDeleteConflictPlans(plansThatIntroduceVariable, lastPlansToReferenceVariable))
+        .updated(variable, PossibleDeleteConflictPlans(plansThatIntroduceVariable, plansThatReferenceVariable))
     }
 
     /**
