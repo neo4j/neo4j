@@ -609,6 +609,47 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
     runtimeResult should beColumns("x").withRows(singleColumn(inputRows.map(_(0))))
   }
+
+  test("node hash join on RHS of conditionalApply") {
+    // given
+    given {
+      nodeGraph(sizeHint)
+    }
+
+    val inputRows = (0 until sizeHint).map { i =>
+      Array[Any](i.toLong)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x") // 0
+      .apply() // 1
+      .|.conditionalApply("i")
+      // NOTE: leave commented out lines, they show how pipelined runtime rewrites this query
+      //      .|.|.orderedUnion()
+      //      .|.|.|.limit(1)
+      //      .|.|.|.nodeHashJoin("n")
+      //      .|.|.|.|.allNodeScan("n")
+      //      .|.|.|.allNodeScan("n")
+      //      .|.|.argument()
+      .|.|.limit(1)
+      .|.|.nodeHashJoin("n")
+      .|.|.|.allNodeScan("n")
+      .|.|.allNodeScan("n")
+      .|.unwind("[1,null,2,null,3,null] AS i")
+      .|.argument()
+      .input(variables = Seq("x"))
+      .build()
+
+    val expected = for {
+      x <- inputRows
+      i <- Seq[Any](1, null, 2, null, 3, null)
+    } yield x
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
+    runtimeResult should beColumns("x").withRows(expected)
+  }
 }
 
 trait OrderedConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
