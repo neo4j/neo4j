@@ -30,7 +30,6 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckable;
-import org.neo4j.util.VisibleForTesting;
 
 public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable {
     /**
@@ -84,7 +83,6 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
 
     void markHighestWrittenAtHighId();
 
-    @VisibleForTesting
     long getHighestWritten();
 
     long getHighId();
