@@ -21,8 +21,9 @@ package org.neo4j.kernel.impl.transaction.stats;
 
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
-import org.neo4j.kernel.impl.api.transaction.monitor.TransactionSizeMonitor;
-import org.neo4j.kernel.impl.transaction.TransactionMonitor;
+import org.neo4j.io.layout.DatabaseFile;
+import org.neo4j.kernel.impl.monitoring.TransactionMonitor;
+import org.neo4j.kernel.impl.monitoring.TransactionSizeMonitor;
 
 public class DatabaseTransactionStats implements TransactionMonitor, TransactionCounters {
     @FunctionalInterface
@@ -39,6 +40,7 @@ public class DatabaseTransactionStats implements TransactionMonitor, Transaction
     private final LongAdder rolledBackWriteTransactionCount = new LongAdder();
     private final LongAdder terminatedReadTransactionCount = new LongAdder();
     private final LongAdder terminatedWriteTransactionCount = new LongAdder();
+    private final LongAdder totalTransactionsValidationFailures = new LongAdder();
     private final AtomicLong peakTransactionCount = new AtomicLong();
     private volatile TransactionSizeMonitor transactionSizeCallback = NullTransactionSizeCallback.INSTANCE;
 
@@ -72,6 +74,11 @@ public class DatabaseTransactionStats implements TransactionMonitor, Transaction
     public void upgradeToWriteTransaction() {
         activeReadTransactionCount.decrementAndGet();
         activeWriteTransactionCount.increment();
+    }
+
+    @Override
+    public void transactionValidationFailure(DatabaseFile databaseFile) {
+        totalTransactionsValidationFailures.increment();
     }
 
     @Override
@@ -142,6 +149,11 @@ public class DatabaseTransactionStats implements TransactionMonitor, Transaction
     @Override
     public long getNumberOfRolledBackWriteTransactions() {
         return rolledBackWriteTransactionCount.longValue();
+    }
+
+    @Override
+    public long totalTransactionsValidationFailures() {
+        return totalTransactionsValidationFailures.longValue();
     }
 
     @Override

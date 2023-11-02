@@ -127,6 +127,7 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
 import org.neo4j.kernel.impl.locking.LockManager;
+import org.neo4j.kernel.impl.monitoring.TransactionMonitor;
 import org.neo4j.kernel.impl.newapi.AllStoreHolder;
 import org.neo4j.kernel.impl.newapi.DefaultPooledCursors;
 import org.neo4j.kernel.impl.newapi.IndexTxStateUpdater;
@@ -134,7 +135,6 @@ import org.neo4j.kernel.impl.newapi.KernelToken;
 import org.neo4j.kernel.impl.newapi.KernelTokenRead;
 import org.neo4j.kernel.impl.newapi.Operations;
 import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
-import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionCommitmentFactory;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionEvent;
@@ -420,7 +420,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         transactionHeapBytesLimit = config.get(memory_transaction_max_size);
         this.collectionsFactory = collectionsFactorySupplier.create();
         this.kernelTransactions = kernelTransactions;
-        this.transactionValidator = transactionValidatorFactory.createTransactionValidator(memoryTracker);
+        this.transactionValidator =
+                transactionValidatorFactory.createTransactionValidator(memoryTracker, transactionMonitor);
         this.committer = createCommitter(commitmentFactory, multiVersioned);
         this.txStateWriter = createChunkWriter(multiVersioned);
         registerConfigChangeListeners(config);

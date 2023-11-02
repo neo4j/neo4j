@@ -81,8 +81,8 @@ import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.locking.LockManager;
+import org.neo4j.kernel.impl.monitoring.TransactionMonitor;
 import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
-import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionCommitmentFactory;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionWriteEvent;
@@ -231,7 +231,7 @@ class KernelTransactionTestBase {
         DefaultPageCacheTracer pageCacheTracer = new DefaultPageCacheTracer();
         DefaultVersionStorageTracer versionStorageTracer = new DefaultVersionStorageTracer(pageCacheTracer);
         var validatorFactory = mock(TransactionValidatorFactory.class);
-        when(validatorFactory.createTransactionValidator(any())).thenReturn(transactionValidator);
+        when(validatorFactory.createTransactionValidator(any(), any())).thenReturn(transactionValidator);
         return new KernelTransactionImplementation(
                 config,
                 mock(DatabaseTransactionEventListeners.class),

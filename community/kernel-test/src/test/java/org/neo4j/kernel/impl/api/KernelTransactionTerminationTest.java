@@ -58,6 +58,7 @@ import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.internal.schema.SchemaState;
+import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -72,8 +73,8 @@ import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.locking.LockManager;
+import org.neo4j.kernel.impl.monitoring.TransactionMonitor;
 import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
-import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionCommitmentFactory;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
@@ -375,6 +376,9 @@ class KernelTransactionTerminationTest {
 
         @Override
         public void upgradeToWriteTransaction() {}
+
+        @Override
+        public void transactionValidationFailure(DatabaseFile databaseFile) {}
 
         @Override
         public void addHeapTransactionSize(long transactionSizeHeap) {}

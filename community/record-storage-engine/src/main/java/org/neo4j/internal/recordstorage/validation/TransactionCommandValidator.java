@@ -46,6 +46,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.VersionContext;
 import org.neo4j.kernel.impl.api.LeaseClient;
 import org.neo4j.kernel.impl.locking.LockManager;
+import org.neo4j.kernel.impl.monitoring.TransactionMonitor;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyType;
@@ -71,6 +72,7 @@ public class TransactionCommandValidator implements CommandVisitor, TransactionV
     private final LockManager.Client validationLockClient;
     private final MemoryTracker memoryTracker;
     private final Config config;
+    private final TransactionMonitor transactionMonitor;
     private final PageCursor[] validationCursors;
     private final Log log;
     private EnumMap<StoreType, MutableLongSet> checkedPages;
@@ -85,13 +87,15 @@ public class TransactionCommandValidator implements CommandVisitor, TransactionV
             LockManager lockManager,
             MemoryTracker memoryTracker,
             Config config,
-            LogProvider logProvider) {
+            LogProvider logProvider,
+            TransactionMonitor transactionMonitor) {
         this.neoStores = neoStores;
         this.validationLockClient = lockManager.newClient();
         this.memoryTracker = memoryTracker;
         this.config = config;
         this.validationCursors = new PageCursor[STORE_TYPES.length];
         this.checkedPages = new EnumMap<>(StoreType.class);
+        this.transactionMonitor = transactionMonitor;
         this.log = logProvider.getLog(getClass());
     }
 
@@ -278,6 +282,7 @@ public class TransactionCommandValidator implements CommandVisitor, TransactionV
         }
         if (pageCursor.next(pageId)) {
             if (versionContext.invisibleHeadObserved()) {
+                transactionMonitor.transactionValidationFailure(storeType.getDatabaseFile());
                 throw new TransactionConflictException(storeType.getDatabaseFile(), versionContext, pageId);
             }
         }

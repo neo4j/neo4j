@@ -21,6 +21,7 @@ package org.neo4j.internal.recordstorage.validation;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.locking.LockManager;
+import org.neo4j.kernel.impl.monitoring.TransactionMonitor;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.MemoryTracker;
@@ -48,8 +49,10 @@ public class TransactionCommandValidatorFactory implements TransactionValidatorF
     }
 
     @Override
-    public TransactionValidator createTransactionValidator(MemoryTracker memoryTracker) {
-        return new TransactionCommandValidator(neoStores, lockManager, memoryTracker, config, logProvider);
+    public TransactionValidator createTransactionValidator(
+            MemoryTracker memoryTracker, TransactionMonitor transactionMonitor) {
+        return new TransactionCommandValidator(
+                neoStores, lockManager, memoryTracker, config, logProvider, transactionMonitor);
     }
 
     @Override

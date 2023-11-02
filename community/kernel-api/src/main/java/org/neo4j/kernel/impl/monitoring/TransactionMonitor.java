@@ -17,9 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction;
+package org.neo4j.kernel.impl.monitoring;
 
-import org.neo4j.kernel.impl.api.transaction.monitor.TransactionSizeMonitor;
+import org.neo4j.io.layout.DatabaseFile;
 
 /**
  * This monitor is used to track transaction management. It is called when client code starts, finishes, or terminates transactions.
@@ -32,4 +32,6 @@ public interface TransactionMonitor extends TransactionSizeMonitor {
     void transactionTerminated(boolean writeTx);
 
     void upgradeToWriteTransaction();
+
+    void transactionValidationFailure(DatabaseFile databaseFile);
 }

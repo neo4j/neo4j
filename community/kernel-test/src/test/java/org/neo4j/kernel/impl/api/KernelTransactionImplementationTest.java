@@ -103,7 +103,7 @@ import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.database.DatabaseIdFactory;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace;
-import org.neo4j.kernel.impl.transaction.TransactionMonitor;
+import org.neo4j.kernel.impl.monitoring.TransactionMonitor;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.memory.MemoryLimitExceededException;
 import org.neo4j.memory.MemoryTracker;
