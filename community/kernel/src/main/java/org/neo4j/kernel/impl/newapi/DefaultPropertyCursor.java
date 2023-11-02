@@ -76,11 +76,11 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
 
         init(selection, read);
         this.type = NODE;
-        storeCursor.initNodeProperties(reference, selection);
+        initializeNodeTransactionState(nodeReference, read);
+        storeCursor.initNodeProperties(reference, filterSelectionForTxState(selection));
         initSecurityPropertyProvision(
                 (propertyCursor, propertySelection) -> propertyCursor.initNodeProperties(reference, propertySelection));
         this.entityReference = nodeReference;
-        initializeNodeTransactionState(nodeReference, read);
     }
 
     void initNode(DefaultNodeCursor nodeCursor, PropertySelection selection, Read read) {
@@ -90,16 +90,28 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
         init(selection, read);
         this.type = NODE;
         this.addedInTx = nodeCursor.currentNodeIsAddedInTx();
+        initializeNodeTransactionState(entityReference, read);
         if (!addedInTx) {
-            storeCursor.initNodeProperties(nodeCursor.storeCursor, selection);
+            storeCursor.initNodeProperties(nodeCursor.storeCursor, filterSelectionForTxState(selection));
             initSecurityPropertyProvision((propertyCursor, propertySelection) ->
                     propertyCursor.initNodeProperties(nodeCursor.storeCursor, propertySelection));
         } else {
             storeCursor.initNodeProperties(NULL_REFERENCE, ALL_PROPERTIES);
             securityPropertyProvider = null;
         }
+    }
 
-        initializeNodeTransactionState(entityReference, read);
+    /**
+     * Given the {@link PropertySelection} from the initial request, this narrows it down even further,
+     * removing keys that has been changed or removed for this entity so that they don't have to be
+     * selected from storage cursor. The returned {@link PropertySelection} should be passed to storage cursor.
+     */
+    private PropertySelection filterSelectionForTxState(PropertySelection selection) {
+        // We're giving the entity state to the created selection here, which could be non-ideal if
+        // this created selection is kept around in a larger context. But here it isn't.
+        return propertiesState == null || propertiesState == EntityState.EMPTY
+                ? selection
+                : selection.excluding(k -> propertiesState.isPropertyChangedOrRemoved(k));
     }
 
     void initSecurityPropertyProvision(BiConsumer<StoragePropertyCursor, PropertySelection> initNodeProperties) {
@@ -142,10 +154,9 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
         assert relationshipReference != NO_ID;
 
         init(selection, read);
-        storeCursor.initRelationshipProperties(reference, selection);
-        this.entityReference = relationshipReference;
-
         initializeRelationshipTransactionState(relationshipReference, read);
+        storeCursor.initRelationshipProperties(reference, filterSelectionForTxState(selection));
+        this.entityReference = relationshipReference;
     }
 
     void initRelationship(DefaultRelationshipCursor relationshipCursor, PropertySelection selection, Read read) {
@@ -153,14 +164,14 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
         assert entityReference != NO_ID;
 
         init(selection, read);
+        initializeRelationshipTransactionState(entityReference, read);
         this.addedInTx = relationshipCursor.currentRelationshipIsAddedInTx();
         if (!addedInTx) {
-            storeCursor.initRelationshipProperties(relationshipCursor.storeCursor, selection);
+            storeCursor.initRelationshipProperties(
+                    relationshipCursor.storeCursor, filterSelectionForTxState(selection));
         } else {
             storeCursor.initRelationshipProperties(NULL_REFERENCE, selection);
         }
-
-        initializeRelationshipTransactionState(entityReference, read);
     }
 
     private void initializeRelationshipTransactionState(long relationshipReference, Read read) {
@@ -233,8 +244,7 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
 
         while (storeCursor.next()) {
             int propertyKey = storeCursor.propertyKey();
-            boolean skip = propertiesState != null && propertiesState.isPropertyChangedOrRemoved(propertyKey);
-            if (!skip && allowed(propertyKey)) {
+            if (allowed(propertyKey)) {
                 if (tracer != null) {
                     tracer.onProperty(propertyKey);
                 }

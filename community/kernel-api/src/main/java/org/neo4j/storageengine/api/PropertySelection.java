@@ -19,15 +19,17 @@
  */
 package org.neo4j.storageengine.api;
 
-import static org.neo4j.token.api.TokenConstants.ANY_PROPERTY_KEY;
+import static org.neo4j.token.api.TokenConstants.NO_TOKEN;
 
 import java.util.Arrays;
-import org.neo4j.token.api.TokenConstants;
+import java.util.function.IntPredicate;
 
 /**
  * Specifies criteria for which properties to select.
  */
 public abstract class PropertySelection {
+    public static final int UNKNOWN_NUMBER_OF_KEYS = -1;
+
     private final boolean keysOnly;
 
     protected PropertySelection(boolean keysOnly) {
@@ -40,10 +42,13 @@ public abstract class PropertySelection {
     public abstract boolean isLimited();
 
     /**
-     * @return the number of keys in this selection. {@link #ALL_PROPERTIES} returns {@code 1} and with the key {@link TokenConstants#ANY_PROPERTY_KEY}
-     * from a call to {@code key(0)}.
+     * @return the number of keys in this selection. Selections that are not discrete returns {@code -1}.
      */
     public abstract int numberOfKeys();
+
+    public boolean isEmpty() {
+        return numberOfKeys() == 0;
+    }
 
     /**
      * @param index the selection index. A selection can have multiple keys.
@@ -52,7 +57,7 @@ public abstract class PropertySelection {
     public abstract int key(int index);
 
     /**
-     * @param key the key to tests whether or not it fits the criteria of this selection.
+     * @param key the key to tests whether it fits the criteria of this selection.
      * @return {@code true} if the given {@code key} is part of this selection, otherwise {@code false}.
      */
     public abstract boolean test(int key);
@@ -65,9 +70,21 @@ public abstract class PropertySelection {
         return keysOnly;
     }
 
+    /**
+     * @return lowest key in this selection.
+     */
     public abstract int lowestKey();
 
+    /**
+     * @return highest key in this selection.
+     */
     public abstract int highestKey();
+
+    /**
+     * @param filter a predicate such that for any key where {@link IntPredicate#test(int)} returns true will be excluded.
+     * @return a {@link PropertySelection} instance that excludes keys from the existing set of keys.
+     */
+    public abstract PropertySelection excluding(IntPredicate filter);
 
     @Override
     public String toString() {
@@ -112,7 +129,11 @@ public abstract class PropertySelection {
         if (keys.length == 0) {
             return NO_PROPERTIES;
         }
-        return keys.length == 1 ? SingleKey.singleKey(keysOnly, keys[0]) : new MultipleKeys(keysOnly, keys);
+        if (keys.length == 1) {
+            int key = keys[0];
+            return key == NO_TOKEN ? NO_PROPERTIES : SingleKey.singleKey(keysOnly, key);
+        }
+        return new MultipleKeys(keysOnly, keys);
     }
 
     private static class SingleKey extends PropertySelection {
@@ -173,6 +194,11 @@ public abstract class PropertySelection {
         }
 
         @Override
+        public PropertySelection excluding(IntPredicate filter) {
+            return filter.test(key) ? NO_PROPERTIES : this;
+        }
+
+        @Override
         public String toString() {
             return super.toString() + "[" + key + "]";
         }
@@ -183,8 +209,25 @@ public abstract class PropertySelection {
 
         private MultipleKeys(boolean keysOnly, int[] keys) {
             super(keysOnly);
-            this.keys = keys.clone();
-            Arrays.sort(this.keys);
+            this.keys = cloneAndCleanUp(keys);
+        }
+
+        /**
+         * Clones the {@code suppliedKeys} for safety, since it's coming from "user" call site.
+         * The cloned keys are sorted and also any -1 values (likely coming from name->id lookup
+         * returning {@link org.neo4j.token.api.TokenConstants#NO_TOKEN}.
+         */
+        private int[] cloneAndCleanUp(int[] suppliedKeys) {
+            var keys = suppliedKeys.clone();
+            Arrays.sort(keys);
+            if (keys[0] == NO_TOKEN) {
+                int start = 1;
+                while (start < keys.length && keys[start] == NO_TOKEN) {
+                    start++;
+                }
+                keys = Arrays.copyOfRange(keys, start, keys.length);
+            }
+            return keys;
         }
 
         @Override
@@ -224,8 +267,67 @@ public abstract class PropertySelection {
         }
 
         @Override
+        public PropertySelection excluding(IntPredicate filter) {
+            var newKeys = new int[keys.length];
+            int t = 0;
+            for (int key : keys) {
+                if (!filter.test(key)) {
+                    newKeys[t++] = key;
+                }
+            }
+            if (t == keys.length) {
+                return this;
+            }
+            return PropertySelection.selection(isKeysOnly(), Arrays.copyOf(newKeys, t));
+        }
+
+        @Override
         public String toString() {
             return super.toString() + "[" + Arrays.toString(keys) + "]";
+        }
+    }
+
+    private static class AllExcept extends PropertySelection {
+        private final IntPredicate excluded;
+
+        AllExcept(boolean keysOnly, IntPredicate excluded) {
+            super(keysOnly);
+            this.excluded = excluded;
+        }
+
+        @Override
+        public boolean isLimited() {
+            return true;
+        }
+
+        @Override
+        public int numberOfKeys() {
+            return UNKNOWN_NUMBER_OF_KEYS;
+        }
+
+        @Override
+        public int key(int index) {
+            throw new IllegalStateException("This selection has no discrete number of keys");
+        }
+
+        @Override
+        public boolean test(int key) {
+            return !excluded.test(key);
+        }
+
+        @Override
+        public int lowestKey() {
+            return 0;
+        }
+
+        @Override
+        public int highestKey() {
+            return Integer.MAX_VALUE;
+        }
+
+        @Override
+        public PropertySelection excluding(IntPredicate filter) {
+            throw new UnsupportedOperationException();
         }
     }
 
@@ -254,12 +356,17 @@ public abstract class PropertySelection {
 
         @Override
         public int lowestKey() {
-            throw new IllegalStateException("This selection has no keys");
+            return -1;
         }
 
         @Override
         public int highestKey() {
-            throw new IllegalStateException("This selection has no keys");
+            return -1;
+        }
+
+        @Override
+        public PropertySelection excluding(IntPredicate filter) {
+            return this;
         }
     };
 
@@ -272,12 +379,12 @@ public abstract class PropertySelection {
 
             @Override
             public int numberOfKeys() {
-                return 1;
+                return UNKNOWN_NUMBER_OF_KEYS;
             }
 
             @Override
             public int key(int index) {
-                return ANY_PROPERTY_KEY;
+                return NO_TOKEN;
             }
 
             @Override
@@ -287,12 +394,17 @@ public abstract class PropertySelection {
 
             @Override
             public int lowestKey() {
-                return ANY_PROPERTY_KEY;
+                return 0;
             }
 
             @Override
             public int highestKey() {
-                return ANY_PROPERTY_KEY;
+                return Integer.MAX_VALUE;
+            }
+
+            @Override
+            public PropertySelection excluding(IntPredicate filter) {
+                return new AllExcept(isKeysOnly(), filter);
             }
 
             @Override
