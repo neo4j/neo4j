@@ -46,7 +46,7 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
         implements PropertyCursor, Supplier<TokenSet>, RelTypeSupplier {
     private static final int NODE = -2;
     private Read read;
-    private final StoragePropertyCursor storeCursor;
+    final StoragePropertyCursor storeCursor;
     private final InternalCursorFactory internalCursors;
     private StoragePropertyCursor securityPropertyCursor;
     private FullAccessNodeCursor securityNodeCursor;
@@ -83,7 +83,7 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
         this.entityReference = nodeReference;
     }
 
-    void initNode(DefaultNodeCursor nodeCursor, PropertySelection selection, Read read) {
+    void initNode(DefaultNodeCursor nodeCursor, PropertySelection selection, Read read, boolean initStoreCursor) {
         entityReference = nodeCursor.nodeReference();
         assert entityReference != NO_ID;
 
@@ -92,7 +92,9 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
         this.addedInTx = nodeCursor.currentNodeIsAddedInTx();
         initializeNodeTransactionState(entityReference, read);
         if (!addedInTx) {
-            storeCursor.initNodeProperties(nodeCursor.storeCursor, filterSelectionForTxState(selection));
+            if (initStoreCursor) {
+                storeCursor.initNodeProperties(nodeCursor.storeCursor, filterSelectionForTxState(selection));
+            } // else it has already been externally initialized
             initSecurityPropertyProvision((propertyCursor, propertySelection) ->
                     propertyCursor.initNodeProperties(nodeCursor.storeCursor, propertySelection));
         } else {

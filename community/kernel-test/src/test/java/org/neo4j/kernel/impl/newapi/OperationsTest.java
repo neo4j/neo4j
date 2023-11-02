@@ -51,6 +51,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
+import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
@@ -87,6 +88,7 @@ import org.neo4j.logging.FormattedLogFormat;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.SecurityLogHelper;
 import org.neo4j.storageengine.api.CommandCreationContext;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StorageReader;
@@ -275,7 +277,10 @@ abstract class OperationsTest {
     void nodeApplyChangesShouldLockNodeAndLabels() throws Exception {
         // given
         when(nodeCursor.next()).thenReturn(true);
-        when(nodeCursor.labels()).thenReturn(Labels.from(1, 2));
+        Labels labels = Labels.from(1, 2);
+        when(nodeCursor.labels()).thenReturn(labels);
+        when(nodeCursor.labelsAndProperties(any(PropertyCursor.class), any(PropertySelection.class)))
+                .thenReturn(labels);
         long node = 1;
 
         // when

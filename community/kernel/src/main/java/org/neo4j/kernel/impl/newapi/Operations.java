@@ -867,8 +867,11 @@ public class Operations implements Write, SchemaWrite, Upgrade {
         ktx.assertOpen();
 
         singleNode(node);
-        int[] labels = acquireSharedNodeLabelLocks();
-        Value existingValue = readNodeProperty(propertyKey);
+        int[] labels = nodeCursor
+                .labelsAndProperties(propertyCursor, PropertySelection.selection(propertyKey))
+                .all();
+        var existingValue = propertyCursor.next() ? propertyCursor.propertyValue() : NO_VALUE;
+        acquireSharedLabelLocks(labels);
         int[] existingPropertyKeyIds = null;
         boolean hasRelatedSchema = storageReader.hasRelatedSchema(labels, propertyKey, NODE);
         if (hasRelatedSchema) {
@@ -931,19 +934,24 @@ public class Operations implements Write, SchemaWrite, Upgrade {
         }
         acquireExclusiveNodeLock(node);
         singleNode(node);
-        int[] existingLabels = acquireSharedNodeLabelLocks();
 
-        // read all affected property values in one go, to speed up changes below
+        int[] existingLabels;
         MutableIntObjectMap<Value> existingValuesForChangedProperties = null;
         if (!properties.isEmpty()) {
+            // read all affected property values in one go, to speed up changes below
+            existingLabels = nodeCursor
+                    .labelsAndProperties(
+                            propertyCursor,
+                            PropertySelection.selection(properties.keySet().toArray()))
+                    .all();
             existingValuesForChangedProperties = IntObjectMaps.mutable.empty();
-            nodeCursor.properties(
-                    propertyCursor,
-                    PropertySelection.selection(properties.keySet().toArray()));
             while (propertyCursor.next()) {
                 existingValuesForChangedProperties.put(propertyCursor.propertyKey(), propertyCursor.propertyValue());
             }
+        } else {
+            existingLabels = nodeCursor.labels().all();
         }
+        acquireSharedLabelLocks(existingLabels);
 
         // create a view of labels/properties as it will look after the changes would have been applied
         int[] labelsAfter = combineLabelIds(existingLabels, addedLabels, removedLabels);

@@ -63,6 +63,7 @@ import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
+import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
@@ -99,6 +100,7 @@ import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.logging.FormattedLogFormat;
 import org.neo4j.storageengine.api.CommandCreationContext;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.test.InMemoryTokens;
@@ -271,7 +273,8 @@ public class PlainOperationsTest extends OperationsTest {
     void shouldAcquireEntityWriteLockBeforeSettingPropertyOnNode() throws Exception {
         // given
         when(nodeCursor.next()).thenReturn(true);
-        when(nodeCursor.labels()).thenReturn(TokenSet.NONE);
+        when(nodeCursor.labelsAndProperties(any(PropertyCursor.class), any(PropertySelection.class)))
+                .thenReturn(TokenSet.NONE);
         int propertyKeyId = 8;
         Value value = Values.of(9);
         when(propertyCursor.next()).thenReturn(true);
@@ -295,7 +298,8 @@ public class PlainOperationsTest extends OperationsTest {
         when(nodeCursor.next()).thenReturn(true);
         TokenSet tokenSet = mock(TokenSet.class);
         when(tokenSet.all()).thenReturn(new int[] {relatedLabelId});
-        when(nodeCursor.labels()).thenReturn(tokenSet);
+        when(nodeCursor.labelsAndProperties(any(PropertyCursor.class), any(PropertySelection.class)))
+                .thenReturn(tokenSet);
         Value value = Values.of(9);
         when(propertyCursor.next()).thenReturn(true);
         when(propertyCursor.propertyKey()).thenReturn(propertyKeyId);
@@ -336,6 +340,8 @@ public class PlainOperationsTest extends OperationsTest {
         // given
         when(nodeCursor.next()).thenReturn(true);
         when(nodeCursor.labels()).thenReturn(TokenSet.NONE);
+        when(nodeCursor.labelsAndProperties(any(PropertyCursor.class), any(PropertySelection.class)))
+                .thenReturn(TokenSet.NONE);
         when(transaction.hasTxStateWithChanges()).thenReturn(true);
         txState.nodeDoCreate(123);
         int propertyKeyId = 8;

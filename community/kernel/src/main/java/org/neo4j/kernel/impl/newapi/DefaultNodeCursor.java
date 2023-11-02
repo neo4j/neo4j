@@ -140,6 +140,34 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
         }
     }
 
+    @Override
+    public TokenSet labelsAndProperties(PropertyCursor propertyCursor, PropertySelection selection) {
+        if (currentAddedInTx != NO_ID) {
+            // Node added in tx-state, no reason to go down to store and check
+            TransactionState txState = read.txState();
+            properties(propertyCursor, selection);
+            return Labels.from(txState.nodeStateLabelDiffSets(currentAddedInTx).getAdded());
+        } else if (hasChanges()) {
+            // Get labels from store and put in intSet, unfortunately we get longs back
+            TransactionState txState = read.txState();
+            final MutableIntSet labels = new IntHashSet();
+            for (int labelToken : storeCursor.labels()) {
+                labels.add(labelToken);
+            }
+
+            properties(propertyCursor, selection);
+
+            // Augment what was found in store with what we have in tx state
+            return Labels.from(txState.augmentLabels(labels, txState.getNodeState(storeCursor.entityReference())));
+        } else {
+            // Nothing in tx state, just read the data.
+            var defaultPropertyCursor = (DefaultPropertyCursor) propertyCursor;
+            int[] labels = storeCursor.labelsAndProperties(defaultPropertyCursor.storeCursor, selection);
+            defaultPropertyCursor.initNode(this, selection, read, false);
+            return Labels.from(labels);
+        }
+    }
+
     /**
      * The normal labels() method takes into account TxState for both created nodes and set/remove labels.
      * Some code paths need to consider created, but not changed labels.
@@ -222,7 +250,7 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
 
     @Override
     public void properties(PropertyCursor cursor, PropertySelection selection) {
-        ((DefaultPropertyCursor) cursor).initNode(this, selection, read);
+        ((DefaultPropertyCursor) cursor).initNode(this, selection, read, true);
     }
 
     @Override

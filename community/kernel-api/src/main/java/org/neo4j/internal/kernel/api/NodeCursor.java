@@ -20,6 +20,7 @@
 package org.neo4j.internal.kernel.api;
 
 import org.neo4j.storageengine.api.Degrees;
+import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.RelationshipSelection;
 
 /**
@@ -40,6 +41,11 @@ public interface NodeCursor extends EntityCursor {
     boolean hasLabel(int label);
 
     boolean hasLabel();
+
+    default TokenSet labelsAndProperties(PropertyCursor propertyCursor, PropertySelection selection) {
+        properties(propertyCursor, selection);
+        return labels();
+    }
 
     void relationships(RelationshipTraversalCursor relationships, RelationshipSelection selection);
 

@@ -133,6 +133,11 @@ public class FilteringNodeCursorWrapper implements NodeCursor {
     }
 
     @Override
+    public TokenSet labelsAndProperties(PropertyCursor propertyCursor, PropertySelection selection) {
+        return delegate.labelsAndProperties(propertyCursor, selection);
+    }
+
+    @Override
     public boolean supportsFastRelationshipsTo() {
         return delegate.supportsFastRelationshipsTo();
     }
