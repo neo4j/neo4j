@@ -78,6 +78,32 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "y").withNoRows()
   }
 
+  test("conditional apply on nonempty lhs and empty rhs, where condition(lhs) always is true - with sorts") {
+    // given
+    val nodes = given {
+      nodeGraph(19, "RHS")
+      nodeGraph(sizeHint)
+    }
+    val lhsRows = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .sort("x ASC")
+      .conditionalApply("x")
+      .|.sort("y ASC")
+      .|.expandInto("(y)--(x)")
+      .|.nodeByLabelScan("y", "RHS", IndexOrderNone, "x")
+      .input(nodes = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, lhsRows)
+
+    // then
+    // because graph contains no relationships, the expand will return no rows
+    runtimeResult should beColumns("x", "y").withNoRows()
+  }
+
   test("conditional apply on nonempty lhs and empty rhs") {
     // given
     givenGraph {
@@ -102,6 +128,32 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "y").withSingleRow(null, null)
   }
 
+  test("conditional apply on nonempty lhs and empty rhs - with sorts") {
+    // given
+    given {
+      nodeGraph(19, "RHS")
+      nodeGraph(sizeHint)
+    }
+    val lhsRows = inputValues(Array("42"), Array(null), Array("43"))
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .sort("x ASC")
+      .conditionalApply("x")
+      .|.sort("y ASC")
+      .|.filter("false")
+      .|.nodeByLabelScan("y", "RHS", IndexOrderNone, "x")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, lhsRows)
+
+    // then
+    // will only return lhs where condition(lhs) is false
+    runtimeResult should beColumns("x", "y").withSingleRow(null, null)
+  }
+
   test("conditional apply on nonempty lhs and nonempty rhs") {
     // given
     val nodes = givenGraph {
@@ -114,6 +166,32 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
       .conditionalApply("x")
+      .|.nodeByLabelScan("y", "RHS", IndexOrderNone, "x")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, lhsRows)
+
+    // then
+    val expected =
+      (nodes.map(n => Array[Any]("42", n)) :+ Array[Any](null, null)) ++ nodes.map(n => Array[Any]("43", n))
+    runtimeResult should beColumns("x", "y").withRows(expected)
+  }
+
+  test("conditional apply on nonempty lhs and nonempty rhs - with sorts") {
+    // given
+    val nodes = given {
+      nodeGraph(sizeHint)
+      nodeGraph(sizeHint, "RHS")
+    }
+    val lhsRows = inputValues(Array("42"), Array(null), Array("43"))
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .sort("x ASC")
+      .conditionalApply("x")
+      .|.sort("y ASC")
       .|.nodeByLabelScan("y", "RHS", IndexOrderNone, "x")
       .input(variables = Seq("x"))
       .build()
@@ -175,6 +253,35 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "y").withRows(expected)
   }
 
+  test("conditional apply on the RHS of an apply - with sorts") {
+    // given
+    val nodes = given {
+      nodeGraph(sizeHint)
+      nodeGraph(sizeHint, "RHS")
+    }
+    val lhsRows = inputValues(Array("42"), Array(null), Array("43"))
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .sort("x ASC")
+      .apply()
+      .|.sort("x ASC")
+      .|.conditionalApply("x")
+      .|.|.sort("y ASC")
+      .|.|.nodeByLabelScan("y", "RHS", IndexOrderNone, "x")
+      .|.filter("x = '42' OR x IS NULL")
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, lhsRows)
+
+    // then
+    val expected = nodes.map(n => Array[Any]("42", n)) :+ Array[Any](null, null)
+    runtimeResult should beColumns("x", "y").withRows(expected)
+  }
+
   test("conditional apply with limit on rhs") {
     val limit = 10
 
@@ -192,6 +299,47 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .conditionalApply("x")
+      .|.limit(limit)
+      .|.expandInto("(y)--(x)")
+      .|.allNodeScan("y", "x")
+      .input(nodes = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    val expectedRowCountsFromRhs = for {
+      x <- nodes
+      if x != null
+      subquery = for {
+        y <- unfilteredNodes
+        rel <- y.getRelationships.asScala if rel.getOtherNode(y) == x
+      } yield Array(x)
+    } yield math.min(subquery.size, limit)
+
+    val expectedRowCount = expectedRowCountsFromRhs.sum + nodes.count(_ == null)
+    runtimeResult should beColumns("x").withRows(rowCount(expectedRowCount))
+  }
+
+  test("conditional apply with limit on rhs - with sorts") {
+    val limit = 10
+
+    val unfilteredNodes = given {
+      val size = 100
+      val nodes = nodeGraph(size)
+      randomlyConnect(nodes, Connectivity(1, limit, "REL"))
+      nodes
+    }
+
+    val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.3)
+    val input = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .sort("x ASC")
+      .conditionalApply("x")
+      .|.sort("y ASC")
       .|.limit(limit)
       .|.expandInto("(y)--(x)")
       .|.allNodeScan("y", "x")
@@ -412,7 +560,7 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
     result should beColumns("prop1").withRows((0 until sizeHint).map(Array[Any](_)))
   }
 
-  test("limit after conditionalApply on the RHS of apply") {
+  test("exhaustive limit after conditionalApply on the RHS of apply") {
     // given
     val inputRows = (0 until sizeHint).map { i =>
       Array[Any](i.toLong)
@@ -423,6 +571,31 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x")
       .apply()
       .|.exhaustiveLimit(1)
+      .|.apply()
+      .|.|.conditionalApply("i")
+      .|.|.|.argument("x", "i")
+      .|.|.argument("x", "i")
+      .|.unwind("[1, null] AS i")
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
+    runtimeResult should beColumns("x").withRows(singleColumn(inputRows.map(_(0))))
+  }
+
+  test("limit after conditionalApply on the RHS of apply") {
+    // given
+    val inputRows = (0 until sizeHint).map { i =>
+      Array[Any](i.toLong)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .apply()
+      .|.limit(1)
       .|.apply()
       .|.|.conditionalApply("i")
       .|.|.|.argument("x", "i")
