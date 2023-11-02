@@ -2449,7 +2449,9 @@ class PrettifierIT extends CypherFunSuite {
           s"$action load on all data $preposition role" -> s"$action LOAD ON ALL DATA $preposition role",
           s"$action load on cidr '192.168.1.6/20' $preposition role" -> s"""$action LOAD ON CIDR "192.168.1.6/20" $preposition role""",
           s"$action load on cidr '192.168.1.6/20' $preposition `\u0885`" -> s"""$action LOAD ON CIDR "192.168.1.6/20" $preposition `\u0885`""",
-          s"$action load on url 'ftp://www.data.com/mydata/*' $preposition role" -> s"""$action LOAD ON URL "ftp://www.data.com/mydata/*" $preposition role"""
+          s"$action load on cidr $$cidr $preposition role" -> s"""$action LOAD ON CIDR $$cidr $preposition role""",
+          s"$action load on url 'ftp://www.data.com/mydata/*' $preposition role" -> s"""$action LOAD ON URL "ftp://www.data.com/mydata/*" $preposition role""",
+          s"$action load on url $$url $preposition role" -> s"""$action LOAD ON URL $$url $preposition role"""
         )
     }
   }

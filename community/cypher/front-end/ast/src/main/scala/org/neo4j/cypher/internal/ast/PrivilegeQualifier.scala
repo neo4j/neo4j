@@ -178,6 +178,8 @@ final case class SettingAllQualifier()(val position: InputPosition) extends Sett
   override def dup(children: Seq[AnyRef]): SettingAllQualifier.this.type = this
 }
 
+// Load qualifiers
+
 sealed trait LoadPrivilegeQualifier extends PrivilegeQualifier
 
 final case class LoadAllQualifier()(val position: InputPosition) extends LoadPrivilegeQualifier {

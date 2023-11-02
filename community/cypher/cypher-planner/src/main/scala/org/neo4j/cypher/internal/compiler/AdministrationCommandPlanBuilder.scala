@@ -748,7 +748,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
 
       // LOAD privileges
       case g @ GrantPrivilege(
-          LoadPrivilege(action),
+          privilege @ LoadPrivilege(action),
           immutable,
           optionalResource,
           qualifiers,
@@ -763,12 +763,17 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         }).foldLeft(
           plans.AssertAllowedDbmsActions(assignPrivilegeAction(immutable)).asInstanceOf[plans.PrivilegePlan]
         ) { case (source, (roleName, qualifier, resource)) =>
-          GrantLoadAction(source, action, resource, qualifier, roleName, immutable, prettifier.asString(g))
+          val subCommand = g.copy(
+            privilege = privilege,
+            qualifier = List(qualifier),
+            roleNames = List(roleName)
+          )(g.position)
+          GrantLoadAction(source, action, resource, qualifier, roleName, immutable, prettifier.asString(subCommand))
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(g)))
 
       case d @ DenyPrivilege(
-          LoadPrivilege(action),
+          privilege @ LoadPrivilege(action),
           immutable,
           optionalResource,
           qualifiers,
@@ -783,12 +788,17 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         }).foldLeft(
           plans.AssertAllowedDbmsActions(assignPrivilegeAction(immutable)).asInstanceOf[plans.PrivilegePlan]
         ) { case (source, (roleName, qualifier, resource)) =>
-          DenyLoadAction(source, action, resource, qualifier, roleName, immutable, prettifier.asString(d))
+          val subCommand = d.copy(
+            privilege = privilege,
+            qualifier = List(qualifier),
+            roleNames = List(roleName)
+          )(d.position)
+          DenyLoadAction(source, action, resource, qualifier, roleName, immutable, prettifier.asString(subCommand))
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(d)))
 
       case rp @ RevokePrivilege(
-          LoadPrivilege(action),
+          privilege @ LoadPrivilege(action),
           immutableOnly,
           optionalResource,
           qualifiers,
@@ -808,6 +818,12 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
             source,
             revokeType,
             (s, r) => {
+              val subCommand = rp.copy(
+                privilege = privilege,
+                qualifier = List(qualifier),
+                roleNames = List(roleName),
+                revokeType = r
+              )(rp.position)
               plans.RevokeLoadAction(
                 planRevokes(
                   s,
@@ -828,7 +844,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
                 roleName,
                 r.relType,
                 immutableOnly,
-                prettifier.asString(rp)
+                prettifier.asString(subCommand)
               )
             }
           )

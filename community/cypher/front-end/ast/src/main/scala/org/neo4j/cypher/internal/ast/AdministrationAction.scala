@@ -196,12 +196,6 @@ case object AssignPrivilegeAction extends PrivilegeManagementAction("ASSIGN PRIV
 
 case object RemovePrivilegeAction extends PrivilegeManagementAction("REMOVE PRIVILEGE")
 
-sealed trait DataExchangeAction extends AdministrationAction
-
-case object LoadAction extends DataExchangeAction {
-  override val name: String = "LOAD"
-}
-
 sealed trait UnassignableAction
 
 case object AssignImmutablePrivilegeAction extends PrivilegeManagementAction("ASSIGN IMMUTABLE PRIVILEGE")
@@ -209,3 +203,11 @@ case object AssignImmutablePrivilegeAction extends PrivilegeManagementAction("AS
 
 case object RemoveImmutablePrivilegeAction extends PrivilegeManagementAction("REMOVE IMMUTABLE PRIVILEGE")
     with UnassignableAction
+
+// Load privilege actions
+
+sealed trait DataExchangeAction extends AdministrationAction
+
+case object LoadAction extends DataExchangeAction {
+  override val name: String = "LOAD"
+}

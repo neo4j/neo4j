@@ -39,11 +39,16 @@ import org.neo4j.cypher.internal.ast.ExecuteAdminProcedureAction
 import org.neo4j.cypher.internal.ast.ExecuteBoostedProcedureAction
 import org.neo4j.cypher.internal.ast.ExecuteProcedureAction
 import org.neo4j.cypher.internal.ast.ExistsConstraints
+import org.neo4j.cypher.internal.ast.FileResource
 import org.neo4j.cypher.internal.ast.FulltextIndexes
 import org.neo4j.cypher.internal.ast.IfExistsDoNothing
 import org.neo4j.cypher.internal.ast.IndefiniteWait
 import org.neo4j.cypher.internal.ast.KeyConstraints
 import org.neo4j.cypher.internal.ast.LabelQualifier
+import org.neo4j.cypher.internal.ast.LoadAction
+import org.neo4j.cypher.internal.ast.LoadAllQualifier
+import org.neo4j.cypher.internal.ast.LoadCidrQualifier
+import org.neo4j.cypher.internal.ast.LoadUrlQualifier
 import org.neo4j.cypher.internal.ast.LookupIndexes
 import org.neo4j.cypher.internal.ast.NamespacedName
 import org.neo4j.cypher.internal.ast.NoOptions
@@ -182,6 +187,7 @@ import org.neo4j.cypher.internal.logical.plans.DeleteRelationship
 import org.neo4j.cypher.internal.logical.plans.DenyDatabaseAction
 import org.neo4j.cypher.internal.logical.plans.DenyDbmsAction
 import org.neo4j.cypher.internal.logical.plans.DenyGraphAction
+import org.neo4j.cypher.internal.logical.plans.DenyLoadAction
 import org.neo4j.cypher.internal.logical.plans.Descending
 import org.neo4j.cypher.internal.logical.plans.DetachDeleteExpression
 import org.neo4j.cypher.internal.logical.plans.DetachDeleteNode
@@ -225,6 +231,7 @@ import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.GrantDatabaseAction
 import org.neo4j.cypher.internal.logical.plans.GrantDbmsAction
 import org.neo4j.cypher.internal.logical.plans.GrantGraphAction
+import org.neo4j.cypher.internal.logical.plans.GrantLoadAction
 import org.neo4j.cypher.internal.logical.plans.GrantRoleToUser
 import org.neo4j.cypher.internal.logical.plans.HomeScope
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
@@ -296,6 +303,7 @@ import org.neo4j.cypher.internal.logical.plans.ResolvedFunctionInvocation
 import org.neo4j.cypher.internal.logical.plans.RevokeDatabaseAction
 import org.neo4j.cypher.internal.logical.plans.RevokeDbmsAction
 import org.neo4j.cypher.internal.logical.plans.RevokeGraphAction
+import org.neo4j.cypher.internal.logical.plans.RevokeLoadAction
 import org.neo4j.cypher.internal.logical.plans.RevokeRoleFromUser
 import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.RollUpApply
@@ -6018,6 +6026,55 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           NoResource()(pos),
           AllScope,
           ElementsAllQualifier()(pos),
+          util.Left("role1"),
+          "GRANTED",
+          immutableOnly = false,
+          "REVOKE GRANT ..."
+        ),
+        1.0
+      ),
+      adminPlanDescription
+    )
+
+    assertGood(
+      attach(
+        GrantLoadAction(
+          privLhsLP,
+          LoadAction,
+          FileResource()(pos),
+          LoadAllQualifier()(pos),
+          util.Left("role1"),
+          immutable = false,
+          "GRANT ..."
+        ),
+        1.0
+      ),
+      adminPlanDescription
+    )
+
+    assertGood(
+      attach(
+        DenyLoadAction(
+          privLhsLP,
+          LoadAction,
+          FileResource()(pos),
+          LoadCidrQualifier(Left("cidr"))(pos),
+          util.Left("role1"),
+          immutable = false,
+          "DENY ..."
+        ),
+        1.0
+      ),
+      adminPlanDescription
+    )
+
+    assertGood(
+      attach(
+        RevokeLoadAction(
+          privLhsLP,
+          LoadAction,
+          FileResource()(pos),
+          LoadUrlQualifier(Right(parameter("url", CTString)))(pos),
           util.Left("role1"),
           "GRANTED",
           immutableOnly = false,

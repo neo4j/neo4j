@@ -135,6 +135,14 @@ class LoadPrivilegeParserTest extends AdministrationAndSchemaCommandParserTestBa
     assertFailsWithMessageStart(testName, """Invalid input '1.2.3.4/22': expected""")
   }
 
+  test("GRANT LOAD ON CIDR 'x'+'y' TO role") {
+    assertFailsWithMessageStart(testName, """Invalid input '+': expected "TO""")
+  }
+
+  test("GRANT LOAD ON URL ['x'] TO role") {
+    assertFailsWithMessageStart(testName, """Invalid input '[': expected "\"", "\'" or a parameter""")
+  }
+
   // help methods
 
   def grantLoadPrivilege(
