@@ -212,9 +212,7 @@ public class QueryRouterImpl implements QueryRouter {
 
     private void verifyAccessModeWithStatementType(
             CypherExecutionMode executionMode, AccessMode accessMode, StatementType statementType, Location location) {
-        if (!(executionMode.isExplain())
-                && accessMode == AccessMode.READ
-                && statementType == StatementType.WRITE_QUERY) {
+        if (!(executionMode.isExplain()) && accessMode == AccessMode.READ && statementType.isWrite()) {
             throw new QueryRouterException(
                     Status.Statement.AccessMode,
                     WRITING_IN_READ_NOT_ALLOWED_MSG + ". Attempted write to %s",
