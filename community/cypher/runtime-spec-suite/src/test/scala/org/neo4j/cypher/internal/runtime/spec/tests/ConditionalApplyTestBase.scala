@@ -622,8 +622,8 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x") // 0
-      .apply() // 1
+      .produceResults("x")
+      .apply()
       .|.conditionalApply("i")
       // NOTE: leave commented out lines, they show how pipelined runtime rewrites this query
       //      .|.|.orderedUnion()
@@ -635,6 +635,220 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
       .|.|.limit(1)
       .|.|.nodeHashJoin("n")
       .|.|.|.allNodeScan("n")
+      .|.|.allNodeScan("n")
+      .|.unwind("[1,null,2,null,3,null] AS i")
+      .|.argument()
+      .input(variables = Seq("x"))
+      .build()
+
+    val expected = for {
+      x <- inputRows
+      i <- Seq[Any](1, null, 2, null, 3, null)
+    } yield x
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
+    runtimeResult should beColumns("x").withRows(expected)
+  }
+
+  test("union on RHS of conditionalApply") {
+    // given
+    given {
+      nodeGraph(sizeHint)
+    }
+
+    val inputRows = (0 until sizeHint).map { i =>
+      Array[Any](i.toLong)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .apply()
+      .|.conditionalApply("i")
+      // NOTE: leave commented out lines, they show how pipelined runtime rewrites this query
+      //      .|.|.orderedUnion()
+      //      .|.|.|.limit(1)
+      //      .|.|.|.union()
+      //      .|.|.|.|.allNodeScan("n")
+      //      .|.|.|.allNodeScan("n")
+      //      .|.|.argument()
+      .|.|.limit(1)
+      .|.|.union()
+      .|.|.|.allNodeScan("n")
+      .|.|.allNodeScan("n")
+      .|.unwind("[1,null,2,null,3,null] AS i")
+      .|.argument()
+      .input(variables = Seq("x"))
+      .build()
+
+    val expected = for {
+      x <- inputRows
+      i <- Seq[Any](1, null, 2, null, 3, null)
+    } yield x
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
+    runtimeResult should beColumns("x").withRows(expected)
+  }
+
+  test("cartesian product on RHS of conditionalApply") {
+    // given
+    given {
+      nodeGraph(sizeHint)
+    }
+
+    val inputRows = (0 until sizeHint).map { i =>
+      Array[Any](i.toLong)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .apply()
+      .|.conditionalApply("i")
+      // NOTE: leave commented out lines, they show how pipelined runtime rewrites this query
+      //      .|.|.orderedUnion()
+      //      .|.|.|.limit(1)
+      //      .|.|.|.cartesianProduct()
+      //      .|.|.|.|.allNodeScan("n")
+      //      .|.|.|.allNodeScan("n")
+      //      .|.|.argument()
+      .|.|.limit(1)
+      .|.|.cartesianProduct()
+      .|.|.|.allNodeScan("m")
+      .|.|.allNodeScan("n")
+      .|.unwind("[1,null,2,null,3,null] AS i")
+      .|.argument()
+      .input(variables = Seq("x"))
+      .build()
+
+    val expected = for {
+      x <- inputRows
+      i <- Seq[Any](1, null, 2, null, 3, null)
+    } yield x
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
+    runtimeResult should beColumns("x").withRows(expected)
+  }
+
+  test("node hash join on RHS of conditionalApply plus sorts") {
+    // given
+    given {
+      nodeGraph(sizeHint)
+    }
+
+    val inputRows = (0 until sizeHint).map { i =>
+      Array[Any](i.toLong)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .sort("n ASC")
+      .apply()
+      .|.sort("n ASC")
+      .|.conditionalApply("i")
+      // NOTE: leave commented out lines, they show how pipelined runtime rewrites this query
+      //      .|.|.orderedUnion()
+      //      .|.|.|.limit(1)
+      //      .|.|.|.nodeHashJoin("n")
+      //      .|.|.|.|.allNodeScan("n")
+      //      .|.|.|.allNodeScan("n")
+      //      .|.|.argument()
+      .|.|.sort("n ASC")
+      .|.|.limit(1)
+      .|.|.nodeHashJoin("n")
+      .|.|.|.allNodeScan("n")
+      .|.|.allNodeScan("n")
+      .|.unwind("[1,null,2,null,3,null] AS i")
+      .|.argument()
+      .input(variables = Seq("x"))
+      .build()
+
+    val expected = for {
+      x <- inputRows
+      i <- Seq[Any](1, null, 2, null, 3, null)
+    } yield x
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
+    runtimeResult should beColumns("x").withRows(expected)
+  }
+
+  test("union on RHS of conditionalApply plus sorts") {
+    // given
+    given {
+      nodeGraph(sizeHint)
+    }
+
+    val inputRows = (0 until sizeHint).map { i =>
+      Array[Any](i.toLong)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .sort("n ASC")
+      .apply()
+      .|.sort("n ASC")
+      .|.conditionalApply("i")
+      // NOTE: leave commented out lines, they show how pipelined runtime rewrites this query
+      //      .|.|.orderedUnion()
+      //      .|.|.|.limit(1)
+      //      .|.|.|.union()
+      //      .|.|.|.|.allNodeScan("n")
+      //      .|.|.|.allNodeScan("n")
+      //      .|.|.argument()
+      .|.|.sort("n ASC")
+      .|.|.limit(1)
+      .|.|.union()
+      .|.|.|.allNodeScan("n")
+      .|.|.allNodeScan("n")
+      .|.unwind("[1,null,2,null,3,null] AS i")
+      .|.argument()
+      .input(variables = Seq("x"))
+      .build()
+
+    val expected = for {
+      x <- inputRows
+      i <- Seq[Any](1, null, 2, null, 3, null)
+    } yield x
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
+    runtimeResult should beColumns("x").withRows(expected)
+  }
+
+  test("cartesian product on RHS of conditionalApply plus sorts") {
+    // given
+    given {
+      nodeGraph(sizeHint)
+    }
+
+    val inputRows = (0 until sizeHint).map { i =>
+      Array[Any](i.toLong)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .sort("n ASC")
+      .apply()
+      .|.sort("n ASC")
+      .|.conditionalApply("i")
+      // NOTE: leave commented out lines, they show how pipelined runtime rewrites this query
+      //      .|.|.orderedUnion()
+      //      .|.|.|.limit(1)
+      //      .|.|.|.cartesianProduct()
+      //      .|.|.|.|.allNodeScan("n")
+      //      .|.|.|.allNodeScan("n")
+      //      .|.|.argument()
+      .|.|.sort("n ASC")
+      .|.|.limit(1)
+      .|.|.cartesianProduct()
+      .|.|.|.allNodeScan("m")
       .|.|.allNodeScan("n")
       .|.unwind("[1,null,2,null,3,null] AS i")
       .|.argument()
