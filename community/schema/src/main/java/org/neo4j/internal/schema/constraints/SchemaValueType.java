@@ -127,9 +127,6 @@ public enum SchemaValueType implements TypeRepresentation {
             case LIST_DURATION -> PropertyType.LIST_DURATION_NOT_NULL;
             case LIST_POINT -> PropertyType.LIST_POINT_NOT_NULL;
             case POINT -> PropertyType.POINT;
-                // FIXME PTC remove default when we have all the types in Core API
-            default -> throw new IllegalArgumentException(
-                    "Property type '" + this.userDescription() + "' is not supported in Core API yet.");
         };
     }
 }

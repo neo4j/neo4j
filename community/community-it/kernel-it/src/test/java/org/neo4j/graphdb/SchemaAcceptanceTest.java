@@ -88,8 +88,6 @@ import org.neo4j.kernel.api.exceptions.schema.IndexWithNameAlreadyExistsExceptio
 import org.neo4j.kernel.api.exceptions.schema.NoSuchConstraintException;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
-import org.neo4j.kernel.impl.coreapi.schema.BaseNodeConstraintCreator;
-import org.neo4j.kernel.impl.coreapi.schema.BaseRelationshipConstraintCreator;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.IndexEntryTestUtil;
@@ -1212,9 +1210,8 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
     @Test
     void nodePropertyTypeConstraintsMustNotBeAvailableInCommunityEdition() {
         try (Transaction tx = db.beginTx()) {
-            ConstraintCreator constraintCreator = ((BaseNodeConstraintCreator)
-                            tx.schema().constraintFor(label))
-                    .assertPropertyHasType(propertyKey, PropertyType.DATE);
+            ConstraintCreator constraintCreator =
+                    tx.schema().constraintFor(label).assertPropertyHasType(propertyKey, PropertyType.DATE);
             ConstraintViolationException exception =
                     assertThrows(ConstraintViolationException.class, constraintCreator::create);
             assertThat(exception).hasMessageContaining("Enterprise Edition");
@@ -1225,9 +1222,8 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
     @Test
     void relationshipPropertyTypeConstraintsMustNotBeAvailableInCommunityEdition() {
         try (Transaction tx = db.beginTx()) {
-            ConstraintCreator constraintCreator = ((BaseRelationshipConstraintCreator)
-                            tx.schema().constraintFor(relType))
-                    .assertPropertyHasType(propertyKey, PropertyType.BOOLEAN);
+            ConstraintCreator constraintCreator =
+                    tx.schema().constraintFor(relType).assertPropertyHasType(propertyKey, PropertyType.BOOLEAN);
             ConstraintViolationException exception =
                     assertThrows(ConstraintViolationException.class, constraintCreator::create);
             assertThat(exception).hasMessageContaining("Enterprise Edition");
