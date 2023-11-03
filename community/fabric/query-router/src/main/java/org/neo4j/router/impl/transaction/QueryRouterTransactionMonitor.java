@@ -52,7 +52,7 @@ public class QueryRouterTransactionMonitor
         this.config = config;
     }
 
-    public void startMonitoringTransaction(RouterTransactionImpl transaction) {
+    void startMonitoringTransaction(RouterTransactionImpl transaction) {
         long startTimeNanos = clock.nanos();
         TransactionTimeout timeout;
         var transactionInfo = transaction.transactionInfo();
@@ -68,7 +68,7 @@ public class QueryRouterTransactionMonitor
                         transaction, startTimeNanos, timeout));
     }
 
-    public void stopMonitoringTransaction(RouterTransactionImpl transaction) {
+    void stopMonitoringTransaction(RouterTransactionImpl transaction) {
         transactions.remove(transaction);
     }
 

@@ -25,6 +25,7 @@ import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionTerm
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -44,8 +45,10 @@ import org.neo4j.kernel.api.TerminationMark;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.transaction.trace.TraceProvider;
 import org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.router.QueryRouterException;
 import org.neo4j.router.impl.query.StatementType;
+import org.neo4j.router.impl.transaction.database.LocalDatabaseTransaction;
 import org.neo4j.router.transaction.DatabaseTransaction;
 import org.neo4j.router.transaction.DatabaseTransactionFactory;
 import org.neo4j.router.transaction.RouterTransaction;
@@ -59,7 +62,7 @@ public class RouterTransactionImpl implements CompoundTransaction<DatabaseTransa
     private final TransactionBookmarkManager transactionBookmarkManager;
     private final Map<UUID, DatabaseTransaction> databaseTransactions;
     private final TransactionInitializationTrace initializationTrace;
-    private final QueryRouterTransactionMonitor routerTransactionMonitor;
+    private final RouterTransactionManager transactionManager;
     private final SystemNanoClock clock;
     private final ErrorReporter errorReporter;
 
@@ -100,13 +103,13 @@ public class RouterTransactionImpl implements CompoundTransaction<DatabaseTransa
             SystemNanoClock clock,
             TransactionBookmarkManager transactionBookmarkManager,
             TraceProvider traceProvider,
-            QueryRouterTransactionMonitor transactionMonitor) {
+            RouterTransactionManager transactionManager) {
         this.transactionInfo = transactionInfo;
         this.localDatabaseTransactionFactory = localDatabaseTransactionFactory;
         this.remoteDatabaseTransactionFactory = remoteDatabaseTransactionFactory;
         this.transactionBookmarkManager = transactionBookmarkManager;
         this.initializationTrace = traceProvider.getTraceInfo();
-        this.routerTransactionMonitor = transactionMonitor;
+        this.transactionManager = transactionManager;
         this.clock = clock;
         this.errorReporter = errorReporter;
         this.databaseTransactions = new HashMap<>();
@@ -397,7 +400,7 @@ public class RouterTransactionImpl implements CompoundTransaction<DatabaseTransa
 
     private void closeContextsAndRemoveTransaction() {
         databaseTransactions.values().forEach(DatabaseTransaction::close);
-        routerTransactionMonitor.stopMonitoringTransaction(this);
+        transactionManager.unregisterTransaction(this);
     }
 
     private QueryRouterException multipleWriteError(Location attempt, Location current) {
@@ -445,5 +448,28 @@ public class RouterTransactionImpl implements CompoundTransaction<DatabaseTransa
         }
 
         return new QueryRouterException(defaultStatus, message, t);
+    }
+
+    Set<InternalTransaction> getInternalTransactions() {
+        Set<InternalTransaction> internalTransactions = new HashSet<>();
+
+        readingTransactions.stream()
+                .map(ReadingChildTransaction::inner)
+                .filter(tx -> tx instanceof LocalDatabaseTransaction)
+                .map(LocalDatabaseTransaction.class::cast)
+                .map(LocalDatabaseTransaction::internalTransaction)
+                .forEach(internalTransactions::add);
+
+        if (writingTransaction != null
+                && writingTransaction instanceof LocalDatabaseTransaction localDatabaseTransaction) {
+            internalTransactions.add(localDatabaseTransaction.internalTransaction());
+        }
+
+        return internalTransactions;
+    }
+
+    @Override
+    public void setMetaData(Map<String, Object> txMeta) {
+        getInternalTransactions().forEach(tx -> tx.setMetaData(txMeta));
     }
 }

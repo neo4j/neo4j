@@ -19,6 +19,7 @@
  */
 package org.neo4j.router.transaction;
 
+import java.util.Map;
 import java.util.Optional;
 import org.neo4j.fabric.executor.Location;
 import org.neo4j.fabric.transaction.TransactionMode;
@@ -32,4 +33,6 @@ public interface RouterTransaction extends CompoundTransaction<DatabaseTransacti
     DatabaseTransaction transactionFor(Location location, TransactionMode mode);
 
     void verifyStatementType(StatementType type);
+
+    void setMetaData(Map<String, Object> txMeta);
 }

@@ -44,9 +44,9 @@ import org.neo4j.router.QueryRouterException;
 import org.neo4j.router.impl.query.CompositeQueryPreParsedInfoService;
 import org.neo4j.router.impl.query.StandardQueryPreParsedInfoService;
 import org.neo4j.router.impl.query.StatementType;
-import org.neo4j.router.impl.transaction.QueryRouterTransactionMonitor;
 import org.neo4j.router.impl.transaction.RouterTransactionContextImpl;
 import org.neo4j.router.impl.transaction.RouterTransactionImpl;
+import org.neo4j.router.impl.transaction.RouterTransactionManager;
 import org.neo4j.router.location.LocationService;
 import org.neo4j.router.query.DatabaseReferenceResolver;
 import org.neo4j.router.query.Query;
@@ -70,7 +70,7 @@ public class QueryRouterImpl implements QueryRouter {
     private final SystemNanoClock systemNanoClock;
     private final LocalGraphTransactionIdTracker transactionIdTracker;
     private final QueryStatementLifecycles statementLifecycles;
-    private final QueryRouterTransactionMonitor transactionMonitor;
+    private final RouterTransactionManager transactionManager;
     private final QueryRoutingMonitor queryRoutingMonitor;
 
     public QueryRouterImpl(
@@ -85,7 +85,7 @@ public class QueryRouterImpl implements QueryRouter {
             LocalGraphTransactionIdTracker transactionIdTracker,
             QueryStatementLifecycles statementLifecycles,
             QueryRoutingMonitor queryRoutingMonitor,
-            QueryRouterTransactionMonitor transactionMonitor) {
+            RouterTransactionManager transactionManager) {
         this.config = config;
         this.databaseReferenceResolver = databaseReferenceResolver;
         this.locationServiceFactory = locationServiceFactory;
@@ -97,7 +97,7 @@ public class QueryRouterImpl implements QueryRouter {
         this.transactionIdTracker = transactionIdTracker;
         this.statementLifecycles = statementLifecycles;
         this.queryRoutingMonitor = queryRoutingMonitor;
-        this.transactionMonitor = transactionMonitor;
+        this.transactionManager = transactionManager;
     }
 
     @Override
@@ -116,7 +116,7 @@ public class QueryRouterImpl implements QueryRouter {
         var queryTargetService = createQueryPreParsedInfoService(routingInfo);
         var locationService = createLocationService(routingInfo);
         var routerTransaction = createRouterTransaction(transactionInfo, transactionBookmarkManager);
-        transactionMonitor.startMonitoringTransaction(routerTransaction);
+        transactionManager.registerTransaction(routerTransaction);
         return new RouterTransactionContextImpl(
                 transactionInfo,
                 routingInfo,
@@ -154,7 +154,7 @@ public class QueryRouterImpl implements QueryRouter {
                 systemNanoClock,
                 transactionBookmarkManager,
                 TraceProviderFactory.getTraceProvider(config),
-                transactionMonitor);
+                transactionManager);
     }
 
     @Override

@@ -69,7 +69,7 @@
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-fabric</artifactId>
+      <artifactId>neo4j-query-router</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

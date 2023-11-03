@@ -50,6 +50,7 @@ import org.neo4j.capabilities.CapabilitiesService;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.Edition;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.SettingImpl;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -80,6 +81,7 @@ import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.procedure.builtin.BuiltInDbmsProcedures.UpgradeAllowedChecker.UpgradeNotAllowedException;
 import org.neo4j.router.QueryRouter;
+import org.neo4j.router.transaction.TransactionLookup;
 import org.neo4j.storageengine.api.StoreIdProvider;
 
 @SuppressWarnings("unused")
@@ -196,10 +198,18 @@ public class BuiltInDbmsProcedures {
 
         InternalTransaction internalTransaction = (InternalTransaction) this.transaction;
 
-        graph.getDependencyResolver()
-                .resolveDependency(TransactionManager.class)
-                .findTransactionContaining(internalTransaction)
-                .ifPresentOrElse(parent -> parent.setMetaData(data), () -> internalTransaction.setMetaData(data));
+        Config config = graph.getDependencyResolver().resolveDependency(Config.class);
+        if (config.get(GraphDatabaseInternalSettings.query_router_new_stack)) {
+            graph.getDependencyResolver()
+                    .resolveDependency(TransactionLookup.class)
+                    .findTransactionContaining(internalTransaction)
+                    .ifPresentOrElse(parent -> parent.setMetaData(data), () -> internalTransaction.setMetaData(data));
+        } else {
+            graph.getDependencyResolver()
+                    .resolveDependency(TransactionManager.class)
+                    .findTransactionContaining(internalTransaction)
+                    .ifPresentOrElse(parent -> parent.setMetaData(data), () -> internalTransaction.setMetaData(data));
+        }
     }
 
     @SystemProcedure

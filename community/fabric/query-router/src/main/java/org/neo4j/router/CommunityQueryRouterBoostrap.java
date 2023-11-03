@@ -49,6 +49,7 @@ import org.neo4j.fabric.bootstrap.CommonQueryRouterBoostrap;
 import org.neo4j.fabric.executor.Location;
 import org.neo4j.fabric.executor.QueryStatementLifecycles;
 import org.neo4j.fabric.transaction.ErrorReporter;
+import org.neo4j.fabric.transaction.TransactionManager;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -68,10 +69,12 @@ import org.neo4j.router.impl.query.DefaultDatabaseReferenceResolver;
 import org.neo4j.router.impl.query.parsing.PreParsedInfoCache;
 import org.neo4j.router.impl.query.parsing.StandardQueryPreParser;
 import org.neo4j.router.impl.transaction.QueryRouterTransactionMonitor;
+import org.neo4j.router.impl.transaction.RouterTransactionManager;
 import org.neo4j.router.impl.transaction.database.LocalDatabaseTransactionFactory;
 import org.neo4j.router.location.LocationService;
 import org.neo4j.router.transaction.DatabaseTransactionFactory;
 import org.neo4j.router.transaction.RoutingInfo;
+import org.neo4j.router.transaction.TransactionLookup;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.time.SystemNanoClock;
 
@@ -162,6 +165,14 @@ public class CommunityQueryRouterBoostrap extends CommonQueryRouterBoostrap {
         var globalProcedures = resolve(GlobalProcedures.class);
 
         var transactionIdTracker = resolve(LocalGraphTransactionIdTracker.class);
+        var txMonitor = new QueryRouterTransactionMonitor(config, systemNanoClock, this.logService);
+        var routerTxManager = new RouterTransactionManager(txMonitor);
+        TransactionManager compositeTxManager = null;
+        if (dependencies.containsDependency(TransactionManager.class)) {
+            compositeTxManager = dependencies.resolveDependency(TransactionManager.class);
+        }
+        var transactionLookup = new TransactionLookup(routerTxManager, compositeTxManager);
+        dependencies.satisfyDependency(transactionLookup);
         var queryRouter = new QueryRouterImpl(
                 config,
                 databaseReferenceResolver,
@@ -175,7 +186,7 @@ public class CommunityQueryRouterBoostrap extends CommonQueryRouterBoostrap {
                 transactionIdTracker,
                 statementLifecycles,
                 monitors.newMonitor(QueryRoutingMonitor.class),
-                new QueryRouterTransactionMonitor(config, systemNanoClock, this.logService));
+                routerTxManager);
         dependencies.satisfyDependency(queryRouter);
         return new QueryRouterBoltSpi.DatabaseManagementService(
                 queryRouter, databaseReferenceResolver, getCompositeDatabaseStack());

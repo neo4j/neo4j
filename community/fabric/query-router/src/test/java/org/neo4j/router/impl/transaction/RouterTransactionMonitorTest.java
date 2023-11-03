@@ -94,7 +94,7 @@ class RouterTransactionMonitorTest {
                 mock(LocalGraphTransactionIdTracker.class),
                 mock(QueryStatementLifecycles.class),
                 mock(QueryRoutingMonitor.class),
-                transactionMonitor);
+                new RouterTransactionManager(transactionMonitor));
     }
 
     @Test

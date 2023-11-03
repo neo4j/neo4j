@@ -164,6 +164,10 @@ public class LocalDatabaseTransaction implements DatabaseTransaction {
         openExecutionContexts.forEach(TransactionalContext::close);
     }
 
+    public InternalTransaction internalTransaction() {
+        return internalTransaction;
+    }
+
     private class TransactionalContextQueryExecution extends DelegatingQueryExecution {
 
         private final TransactionalContext transactionalContext;
