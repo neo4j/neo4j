@@ -180,10 +180,10 @@ public class StoreMigrator {
                         contextFactory,
                         logTailSupplier,
                         pageCacheTracer);
-                var logsCheckResult = logsMigrator.assertCleanlyShutDown();
                 if (logTailSupplier.get().kernelVersion().isLessThan(KernelVersion.getLatestVersion(config))) {
                     // The kernel version is read from the log tail on start up - migrate the logs to get to the
                     // latest kernel version
+                    var logsCheckResult = logsMigrator.assertCleanlyShutDown();
                     doOnlyLogsMigration(logsCheckResult, checkResult.versionToMigrateTo);
                 } else {
                     internalLog.info(
