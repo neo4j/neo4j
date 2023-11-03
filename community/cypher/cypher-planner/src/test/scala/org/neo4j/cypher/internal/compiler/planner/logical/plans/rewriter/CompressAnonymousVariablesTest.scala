@@ -24,9 +24,7 @@ import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningAttributesTestSupport
 import org.neo4j.cypher.internal.logical.builder.TestNFABuilder
-import org.neo4j.cypher.internal.logical.plans.Input
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
-import org.neo4j.cypher.internal.logical.plans.Trail
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class CompressAnonymousVariablesTest extends CypherFunSuite
@@ -76,28 +74,6 @@ class CompressAnonymousVariablesTest extends CypherFunSuite
 
     // we want the rewrite to be idempotent
     rewrite(nfa) should equal(rewrite(rewrite(nfa)))
-  }
-
-  test("x") {
-    val stuff = new StatefulShortestPath(
-      new Input(Seq.empty, Seq.empty, Seq.empty, false),
-      varFor("a"),
-      varFor("b"),
-      new TestNFABuilder(0, "s").build(),
-      None,
-      Set(
-        Trail.VariableGrouping(varFor("x"), varFor("y"))
-      ),
-      Set.empty,
-      Set.empty,
-      Set.empty,
-      StatefulShortestPath.Selector.Shortest(1),
-      "",
-      false
-    ).folder.treeCollect {
-      case e => e
-    }
-    println(stuff)
   }
 
   test("should compress anonymous variables in shortest path even in solved expression string") {

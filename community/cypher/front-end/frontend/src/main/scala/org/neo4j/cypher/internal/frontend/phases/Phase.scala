@@ -60,23 +60,3 @@ trait VisitorPhase[-C <: BaseContext, STATE] extends Phase[C, STATE, STATE] {
 
   override def postConditions: Set[StepSequencer.Condition] = Set.empty
 }
-
-/**
- * [[If]] for [[Phase]]
- */
-case class IfPhase[-C <: BaseContext, FROM, STATE <: FROM](f: STATE => Boolean)(inner: Phase[C, FROM, STATE])
-    extends Phase[C, STATE, STATE] {
-
-  override def phase: CompilationPhase = inner.phase
-
-  override def process(from: STATE, context: C): STATE = {
-    if (f(from))
-      inner.process(from, context)
-    else
-      from
-  }
-
-  override def name: String = s"if(<f>) ${inner.name}"
-
-  override def postConditions: Set[StepSequencer.Condition] = inner.postConditions
-}

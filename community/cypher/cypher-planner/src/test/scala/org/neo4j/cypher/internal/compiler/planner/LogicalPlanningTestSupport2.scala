@@ -71,7 +71,7 @@ import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
-import org.neo4j.cypher.internal.frontend.phases.IfPhase
+import org.neo4j.cypher.internal.frontend.phases.If
 import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.frontend.phases.Transformer
@@ -200,10 +200,10 @@ object LogicalPlanningTestSupport2 extends MockitoSugar {
       prepareForCaching andThen
       planPipeLine(pushdownPropertyReads = pushdownPropertyReads, semanticFeatures = parsingConfig.semanticFeatures)
     p1 andThen
-      IfPhase((_: LogicalPlanState) => compressAnonymousVariables)(
+      If((_: LogicalPlanState) => compressAnonymousVariables)(
         CompressAnonymousVariables
       ) andThen
-      IfPhase((_: LogicalPlanState) => deduplicateNames)(
+      If((_: LogicalPlanState) => deduplicateNames)(
         NameDeduplication
       )
   }

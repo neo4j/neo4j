@@ -32,13 +32,22 @@ import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.helpers.NameDeduplicator
 
+/**
+ * On the way from query to plan, we generate a number of anonymous variables. Not all of them are used in the final plan
+ * and sometimes we generate some for candidates that are discarded at a later stage.
+ * Therefore, the sequence of anonymous variables may be discontinuous, which this rewriter tries to fix, so that we get
+ * reliable anonymous variable names in the tests.
+ *
+ * While it would be a lot safer to work on Variables, the rewriter works on Strings, as variable names may appear in
+ * Strings such as `NestedPlanExpression#solvedExpressionAsString` where. This should therefore not be used in
+ * production but should be fine for use in tests.
+ */
 case object CompressAnonymousVariables extends Phase[PlannerContext, LogicalPlanState, LogicalPlanState] {
 
   override def phase: CompilationPhaseTracer.CompilationPhase = LOGICAL_PLANNING
 
   override def process(from: LogicalPlanState, context: PlannerContext): LogicalPlanState =
     from
-      .withMaybeQuery(from.maybeQuery.map(apply))
       .withMaybeLogicalPlan(from.maybeLogicalPlan.map(apply))
 
   def apply[T <: AnyRef](input: T): T = {
