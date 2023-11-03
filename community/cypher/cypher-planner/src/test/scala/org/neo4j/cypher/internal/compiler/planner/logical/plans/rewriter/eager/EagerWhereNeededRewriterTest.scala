@@ -62,6 +62,7 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setR
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setRelationshipProperty
 import org.neo4j.cypher.internal.logical.builder.TestNFABuilder
+import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NestedPlanCollectExpression
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
@@ -2901,7 +2902,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     )
   }
 
-  test("inserts no eager for DETACH DELETE in transactions") {
+  test("inserts no eager for NodeByLabelScan -> DETACH DELETE same node in transactions") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("one")
       .transactionApply()
@@ -2909,6 +2910,229 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.detachDeleteNode("n")
       .|.argument("n")
       .nodeByLabelScan("n", "A")
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(plan)
+  }
+
+  test("inserts no eager for NodeByLabelScan -> Remove label on same node in transactions") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("one")
+      .transactionApply()
+      .|.projection("1 as one")
+      .|.removeLabels("n", "A")
+      .|.argument("n")
+      .nodeByLabelScan("n", "A")
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(plan)
+  }
+
+  test("inserts eager for NodeIndexScan -> Update property on same node in transactions") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("one")
+      .transactionApply()
+      .|.projection("1 as one")
+      // Incrementing n and committing the transaction would mean that ne gets a now position in the n:A(prop) index.
+      // The index cursor scanning the index could now potentially find n again. That must not happen.
+      // Thus we need eager.
+      .|.setProperty("n", "prop", "n.prop + 1000")
+      .|.argument("n")
+      .nodeIndexOperator("n:A(prop)", indexOrder = IndexOrderAscending)
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(new LogicalPlanBuilder()
+      .produceResults("one")
+      .transactionApply()
+      .|.projection("1 as one")
+      .|.setProperty("n", "prop", "n.prop + 1000")
+      .|.argument("n")
+      .eager(ListSet(PropertyReadSetConflict(propName("prop")).withConflict(Conflict(Id(3), Id(5)))))
+      .nodeIndexOperator("n:A(prop)", indexOrder = IndexOrderAscending)
+      .build())
+  }
+
+  test(
+    "inserts no eager for NodeByLabelScan -> Distinct Property Filter -> Update property on same node in transactions"
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("one")
+      .transactionApply()
+      .|.projection("1 as one")
+      .|.setProperty("n", "prop", "n.prop - 1000")
+      .|.argument("n")
+      .filter("n.prop > 0")
+      .nodeByLabelScan("n", "A")
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(plan)
+  }
+
+  test(
+    "inserts no eager for NodeByLabelScan -> Distinct Property Filter -> Expand -> Update property on same node in transactions"
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("one")
+      .transactionApply()
+      .|.projection("1 as one")
+      .|.setProperty("n", "prop", "n.prop - m.prop2")
+      .|.argument("n", "m")
+      .expand("(n)-[r]->(m)")
+      .filter("n.prop > 0")
+      .nodeByLabelScan("n", "A")
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(plan)
+  }
+
+  test(
+    "inserts eager for NodeByLabelScan -> Expand -> Property Filter -> Update property on same node in transactions"
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("one")
+      .transactionApply()
+      .|.projection("1 as one")
+      .|.setProperty("n", "prop", "n.prop - m.prop2")
+      .|.argument("n", "m")
+      .filter("n.prop > 0")
+      .expand("(n)-[r]->(m)")
+      .nodeByLabelScan("n", "A")
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(new LogicalPlanBuilder()
+      .produceResults("one")
+      .transactionApply()
+      .|.projection("1 as one")
+      .|.setProperty("n", "prop", "n.prop - m.prop2")
+      .|.argument("n", "m")
+      .eager(ListSet(PropertyReadSetConflict(propName("prop")).withConflict(Conflict(Id(3), Id(5)))))
+      .filter("n.prop > 0")
+      .expand("(n)-[r]->(m)")
+      .nodeByLabelScan("n", "A")
+      .build())
+  }
+
+  test("inserts no eager for Distinct Read -> DETACH DELETE same node in transactions") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("one")
+      .transactionApply()
+      .|.projection("1 as one")
+      .|.detachDeleteNode("n")
+      .|.argument("n")
+      .distinct("n AS n")
+      .sort("one ASC") // Eager boundary to solve conflicts with plans below
+      .projection("1 AS one").newVar("one", CTInteger)
+      .expand("(n)-[r]->(m)")
+      .nodeByLabelScan("n", "A")
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(plan)
+  }
+
+  test("inserts eager for NodeByLabelScan -> Unwind -> Filter -> DETACH DELETE same node in transactions") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("one")
+      .transactionApply()
+      .|.projection("1 as one")
+      .|.detachDeleteNode("n")
+      .|.argument("n")
+      .filter("n.prop > 0")
+      .unwind("[1,2,3] AS i").newVar("i", CTInteger)
+      .nodeByLabelScan("n", "A")
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("one")
+        .transactionApply()
+        .|.projection("1 as one")
+        .|.detachDeleteNode("n")
+        .|.argument("n")
+        .eager(ListSet(ReadDeleteConflict("n").withConflict(Conflict(Id(3), Id(5)))))
+        .filter("n.prop > 0")
+        .unwind("[1,2,3] AS i")
+        .nodeByLabelScan("n", "A")
+        .build()
+    )
+  }
+
+  test("inserts no eager for Distinct Property Read -> Set property on same node") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("np")
+      .setNodeProperty("n", "p", "1")
+      .projection("n.p AS np")
+      .nodeByLabelScan("n", "A")
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(plan)
+  }
+
+  test("inserts no eager for Distinct Label Read -> Set Label on same node") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults()
+      .setLabels("n", "N")
+      .filter("n:!N")
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(plan)
+  }
+
+  test("inserts no eager for Set Label -> Distinct Label Read on same node") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("n") // reads n's labels
+      .setLabels("n", "N")
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(plan)
+  }
+
+  test("inserts eager for Set Property -> Distinct property Read on same node") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("n") // reads n's properties
+      .distinct("n AS n")
+      // mp is ordered, last one should "win" and get written to n.p.
+      // Not being Eager would mean we would return n nodes with a wrong n.p property.
+      .setNodeProperty("n", "p", "mp")
+      .sort("mp ASC")
+      .projection("m.p AS mp")
+      .expand("(n)-[r]->(m)")
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(new LogicalPlanBuilder()
+      .produceResults("n")
+      .eager(ListSet(PropertyReadSetConflict(propName("p")).withConflict(Conflict(Id(2), Id(0)))))
+      .distinct("n AS n")
+      .setNodeProperty("n", "p", "mp")
+      .sort("mp ASC")
+      .projection("m.p AS mp")
+      .expand("(n)-[r]->(m)")
+      .allNodeScan("n")
+      .build())
+  }
+
+  test("inserts no eager for Distinct Set Property -> property Read on same node") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("n") // reads n's properties
+      // n is distinct when setting the property.
+      // Each n gets only written once. So when reading later in the plan,
+      // we must be reading the correct updated value.
+      .setNodeProperty("n", "p", "4")
+      .allNodeScan("n")
     val plan = planBuilder.build()
     val result = eagerizePlan(planBuilder, plan)
 
@@ -4403,10 +4627,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .produceResults("count")
         .aggregation(Seq.empty, Seq("count(*) AS count"))
         .deleteNode("n")
-        .eager(ListSet(
-          ReadDeleteConflict("n").withConflict(Conflict(Id(2), Id(3))),
-          ReadDeleteConflict("m").withConflict(Conflict(Id(2), Id(3)))
-        ))
+        .eager(ListSet(ReadDeleteConflict("m").withConflict(Conflict(Id(2), Id(3)))))
         .filterExpression(nestedPlanExpression)
         .allNodeScan("n")
         .build()
@@ -4476,10 +4697,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .produceResults("count")
         .aggregation(Seq.empty, Seq("count(*) AS count"))
         .detachDeleteNode("n")
-        .eager(ListSet(
-          ReadDeleteConflict("n").withConflict(Conflict(Id(2), Id(3))),
-          ReadDeleteConflict("r").withConflict(Conflict(Id(2), Id(3)))
-        ))
+        .eager(ListSet(ReadDeleteConflict("r").withConflict(Conflict(Id(2), Id(3)))))
         .create(createRelationship("r", "n", "R", "n"))
         .nodeByLabelScan("n", "A")
         .build()
@@ -4502,10 +4720,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .produceResults("count")
         .aggregation(Seq.empty, Seq("count(*) AS count"))
         .detachDeleteNode("n")
-        .eager(ListSet(
-          ReadDeleteConflict("n").withConflict(Conflict(Id(2), Id(3))),
-          ReadDeleteConflict("r").withConflict(Conflict(Id(2), Id(3)))
-        ))
+        .eager(ListSet(ReadDeleteConflict("r").withConflict(Conflict(Id(2), Id(3)))))
         .foreach("x", "[1]", Seq(createPattern(Seq.empty, Seq(createRelationship("r", "n", "R", "n")))))
         .nodeByLabelScan("n", "A")
         .build()
@@ -6683,10 +6898,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .aggregation(Seq.empty, Seq("count(*) AS count"))
         .detachDeleteNode("n")
         // Important that this is ID 3 (NodeHashJoin)
-        .eager(ListSet(
-          ReadDeleteConflict("n").withConflict(Conflict(Id(2), Id(3))),
-          ReadDeleteConflict("n").withConflict(Conflict(Id(2), Id(4)))
-        ))
+        .eager(ListSet(ReadDeleteConflict("n").withConflict(Conflict(Id(2), Id(3)))))
         .nodeHashJoin("n")
         .|.nodeByLabelScan("n", "B")
         .unwind("[1,2,3] AS x")
@@ -6713,10 +6925,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .aggregation(Seq.empty, Seq("count(*) AS count"))
         .detachDeleteNode("n")
         // Important that this is ID 3 (LeftOuterHashJoin)
-        .eager(ListSet(
-          ReadDeleteConflict("n").withConflict(Conflict(Id(2), Id(3))),
-          ReadDeleteConflict("n").withConflict(Conflict(Id(2), Id(4)))
-        ))
+        .eager(ListSet(ReadDeleteConflict("n").withConflict(Conflict(Id(2), Id(3)))))
         .leftOuterHashJoin("n")
         .|.nodeByLabelScan("n", "B")
         .unwind("[1,2,3] AS x")
@@ -6743,10 +6952,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .aggregation(Seq.empty, Seq("count(*) AS count"))
         .detachDeleteNode("n")
         // Important that this is ID 3 (RightOuterHashJoin)
-        .eager(ListSet(
-          ReadDeleteConflict("n").withConflict(Conflict(Id(2), Id(3))),
-          ReadDeleteConflict("n").withConflict(Conflict(Id(2), Id(4)))
-        ))
+        .eager(ListSet(ReadDeleteConflict("n").withConflict(Conflict(Id(2), Id(3)))))
         .rightOuterHashJoin("n")
         .|.nodeByLabelScan("n", "B")
         .unwind("[1,2,3] AS x")
@@ -6935,10 +7141,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .aggregation(Seq.empty, Seq("count(*) AS count"))
         .detachDeleteNode("n")
         // Important that this is ID 3 (OrderedUnion)
-        .eager(ListSet(
-          ReadDeleteConflict("n").withConflict(Conflict(Id(2), Id(3))),
-          ReadDeleteConflict("n").withConflict(Conflict(Id(2), Id(4)))
-        ))
+        .eager(ListSet(ReadDeleteConflict("n").withConflict(Conflict(Id(2), Id(3)))))
         .orderedUnion("n ASC")
         .|.nodeByLabelScan("n", "B")
         .nodeByLabelScan("n", "A")
@@ -7798,8 +8001,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .deleteNode("n")
       .eager(ListSet(
         ReadDeleteConflict("secretN").withConflict(Conflict(Id(2), Id(3))),
-        ReadDeleteConflict("n").withConflict(Conflict(Id(2), Id(5))),
-        ReadDeleteConflict("secretN").withConflict(EagernessReason.Conflict(Id(2), Id(5)))
+        ReadDeleteConflict("secretN").withConflict(Conflict(Id(2), Id(5)))
       ))
       .filter("secretN.prop IS NOT NULL")
       .unwind("range(1, 10) AS increaseCardinality")
@@ -7829,7 +8031,6 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .deleteRelationship("r")
       .eager(ListSet(
         ReadDeleteConflict("secretR").withConflict(Conflict(Id(2), Id(3))),
-        ReadDeleteConflict("r").withConflict(Conflict(Id(2), Id(5))),
         ReadDeleteConflict("secretR").withConflict(Conflict(Id(2), Id(5)))
       ))
       .filter("secretR.prop IS NOT NULL")

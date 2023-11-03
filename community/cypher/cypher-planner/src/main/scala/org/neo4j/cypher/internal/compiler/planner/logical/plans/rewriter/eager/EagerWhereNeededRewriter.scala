@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.C
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ConflictFinder.findConflictingPlans
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.EagerWhereNeededRewriter.summarizeEagernessReasonsRewriter
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ReadsAndWritesFinder.collectReadsAndWrites
-import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.truncateDatabaseDeeagerizer
 import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.ir.EagernessReason.ReasonWithConflict
 import org.neo4j.cypher.internal.logical.plans.Eager
@@ -72,14 +71,9 @@ case class EagerWhereNeededRewriter(
     })
 
     val rewritingSteps = Seq(
-      insertEagerRewriter,
-
-      // Step 6: Hackily remove one case of Eager in Call-In-Transactions that is actually not needed.
-      // This rewriter is part of PlanRewriter, but that Phase must run before EagerRewriter, so we
-      // invoke it manually here
-      truncateDatabaseDeeagerizer
+      insertEagerRewriter
     ) ++
-      // Step 7: Optionally, compress reported eagerness reasons.
+      // Step 6: Optionally, compress reported eagerness reasons.
       Option.when(shouldCompressReasons)(summarizeEagernessReasonsRewriter)
 
     plan.endoRewrite(inSequence(rewritingSteps: _*))

@@ -48,25 +48,40 @@ import org.neo4j.cypher.internal.ir.helpers.overlaps.DeleteOverlaps
 import org.neo4j.cypher.internal.ir.helpers.overlaps.Expressions
 import org.neo4j.cypher.internal.label_expressions.LabelExpressionLeafName
 import org.neo4j.cypher.internal.label_expressions.NodeLabels
+import org.neo4j.cypher.internal.logical.plans.ApplyPlan
 import org.neo4j.cypher.internal.logical.plans.Argument
+import org.neo4j.cypher.internal.logical.plans.AssertSameNode
+import org.neo4j.cypher.internal.logical.plans.AssertSameRelationship
+import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.DeleteNode
 import org.neo4j.cypher.internal.logical.plans.DeleteRelationship
 import org.neo4j.cypher.internal.logical.plans.DetachDeleteNode
 import org.neo4j.cypher.internal.logical.plans.Foreach
+import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
+import org.neo4j.cypher.internal.logical.plans.LogicalBinaryPlan
+import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.LogicalUnaryPlan
 import org.neo4j.cypher.internal.logical.plans.Merge
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
+import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
+import org.neo4j.cypher.internal.logical.plans.OrderedUnion
 import org.neo4j.cypher.internal.logical.plans.RemoveLabels
+import org.neo4j.cypher.internal.logical.plans.RepeatOptions
+import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.StableLeafPlan
 import org.neo4j.cypher.internal.logical.plans.TransactionApply
 import org.neo4j.cypher.internal.logical.plans.TransactionForeach
+import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.logical.plans.UpdatingPlan
+import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.logical.plans.set.RemoveLabelPattern
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.helpers.MapSupport.PowerMap
 
+import scala.annotation.tailrec
 import scala.collection.mutable
 
 /**
@@ -95,8 +110,29 @@ object ConflictFinder {
   ): Seq[ConflictingPlanPair] = {
     for {
       (prop, writePlans) <- writtenProperties(readsAndWrites.writes.sets)
-      PlanWithAccessor(readPlan, readAccessor) <- plansReadingProperty(readsAndWrites.reads, prop)
-      PlanWithAccessor(writePlan, writeAccessor) <- writePlans
+      read @ PlanWithAccessor(readPlan, _) <- plansReadingProperty(readsAndWrites.reads, prop)
+      write @ PlanWithAccessor(writePlan, _) <- writePlans
+
+      conflictType = mostDownstreamPlan(wholePlan, Set(readPlan, writePlan)).get match {
+        case `readPlan` => WriteReadConflict
+        case _          => ReadWriteConflict
+      }
+
+      // Potentially discard distinct Read -> Write conflicts (keep non ReadWriteConflicts)
+      if conflictType != ReadWriteConflict ||
+        !distinctConflictOnSameSymbol(read, write, wholePlan) ||
+        // For property conflicts, we cannot disregard all conflicts with distinct reads on the same variable.
+        // We have to keep conflicts between property reads from leaf plans and writes in TransactionalApply.
+        // That is because changing the property of a node `n` and committing these changes might put `n`
+        // at a different position in the index that is being traversed by the read, so that `n` could potentially
+        // be encountered again.
+        (isInTransactionalApply(writePlan, wholePlan) && readPlan.isInstanceOf[LogicalLeafPlan])
+
+      // Discard distinct Write -> Read conflicts (keep non WriteReadConflict)
+      if conflictType != WriteReadConflict ||
+        // invoke distinctConflictOnSameSymbol with swapped read and write to check that the write is unique.
+        !distinctConflictOnSameSymbol(write, read, wholePlan)
+
       if isValidConflict(readPlan, writePlan, wholePlan)
     } yield {
       val conflict = Conflict(writePlan.id, readPlan.id)
@@ -110,8 +146,9 @@ object ConflictFinder {
   private def labelConflicts(readsAndWrites: ReadsAndWrites, wholePlan: LogicalPlan): Iterable[ConflictingPlanPair] = {
     for {
       (label, writePlans) <- readsAndWrites.writes.sets.writtenLabels
-      PlanWithAccessor(readPlan, readAccessor) <- readsAndWrites.reads.plansReadingLabel(label)
-      PlanWithAccessor(writePlan, writeAccessor) <- writePlans
+      read @ PlanWithAccessor(readPlan, _) <- readsAndWrites.reads.plansReadingLabel(label)
+      write @ PlanWithAccessor(writePlan, _) <- writePlans
+      if !distinctConflictOnSameSymbol(read, write, wholePlan)
       if isValidConflict(readPlan, writePlan, wholePlan)
     } yield {
       val conflict = Conflict(writePlan.id, readPlan.id)
@@ -225,12 +262,12 @@ object ConflictFinder {
       ReadsAndWritesFinder.Deletes,
       Ref[LogicalPlan]
     ) => Map[LogicalVariable, PossibleDeleteConflictPlans]
-  ): Map[LogicalVariable, (PossibleDeleteConflictPlans, DeleteConflictType)] = {
+  ): Map[LogicalVariable, (PossibleDeleteConflictPlans, ConflictType)] = {
     // If a variable exists in the snapshot, let's take it from there. This is when we have a read-write conflict.
     // But we have to include other possibleDeleteConflictPlans that are not in the snapshot, to also cover write-read conflicts.
     possibleDeleteConflictPlanSnapshots(readsAndWrites.writes.deletes, Ref(writePlan))
-      .view.mapValues[(PossibleDeleteConflictPlans, DeleteConflictType)](x => (x, MatchDeleteConflict)).toMap
-      .fuse(possibleDeleteConflictPlans(readsAndWrites.reads).view.mapValues(x => (x, DeleteMatchConflict)).toMap)(
+      .view.mapValues[(PossibleDeleteConflictPlans, ConflictType)](x => (x, ReadWriteConflict)).toMap
+      .fuse(possibleDeleteConflictPlans(readsAndWrites.reads).view.mapValues(x => (x, WriteReadConflict)).toMap)(
         (x, _) => x
       )
   }
@@ -262,12 +299,18 @@ object ConflictFinder {
         filterExpressions(readsAndWrites.reads).getOrElse(deletedEntity, FilterExpressions(Set.empty))
       if deleteOverlaps(readPlans, Seq(deletedExpression))
 
-      // For a MatchDeleteConflict we need to place the Eager between the plans that reference the variable and the Delete plan.
-      // For a DeleteMatchConflict we need to place the Eager between the Delete plan and the plan that introduced the variable.
+      // For a ReadWriteConflict we need to place the Eager between the plans that reference the variable and the Delete plan.
+      // For a WriteReadConflict we need to place the Eager between the Delete plan and the plan that introduced the variable.
       readPlan <- conflictType match {
-        case MatchDeleteConflict => plansThatReferenceVariable
-        case DeleteMatchConflict => readPlans.map(_.plan)
+        case ReadWriteConflict => plansThatReferenceVariable
+        case WriteReadConflict => readPlans.map(_.plan)
       }
+      // For delete, we can only disregard MatchDeleteConflicts. We therefore have to keep all DeleteMatchConflicts.
+      if conflictType == WriteReadConflict || !distinctConflictOnSameSymbol(
+        PlanWithAccessor(readPlan, Some(variable)),
+        PlanWithAccessor(writePlan, Some(deletedEntity)),
+        wholePlan
+      )
       if isValidConflict(readPlan, writePlan, wholePlan)
     } yield {
       deleteConflict(variable, readPlan, writePlan)
@@ -294,11 +337,11 @@ object ConflictFinder {
         deleteReadVariables(readsAndWrites, writePlan, possibleDeleteConflictPlans, possibleDeleteConflictPlanSnapshots)
       if deleteOverlaps(plansThatIntroduceVar, Seq.empty)
 
-      // For a MatchDeleteConflict we need to place the Eager between the plans that reference the variable and the Delete plan.
-      // For a DeleteMatchConflict we need to place the Eager between the Delete plan and the plan that introduced the variable.
+      // For a ReadWriteConflict we need to place the Eager between the plans that reference the variable and the Delete plan.
+      // For a WriteReadConflict we need to place the Eager between the Delete plan and the plan that introduced the variable.
       readPlan <- conflictType match {
-        case MatchDeleteConflict => plansThatReferenceVariable
-        case DeleteMatchConflict => plansThatIntroduceVar.map(_.plan)
+        case ReadWriteConflict => plansThatReferenceVariable
+        case WriteReadConflict => plansThatIntroduceVar.map(_.plan)
       }
       if isValidConflict(readPlan, writePlan, wholePlan)
     } yield {
@@ -320,10 +363,10 @@ object ConflictFinder {
     } else Iterable.empty
   }
 
-  // Conflicts between a MATCH and a DELETE
-  sealed private trait DeleteConflictType
-  private case object MatchDeleteConflict extends DeleteConflictType
-  private case object DeleteMatchConflict extends DeleteConflictType
+  // Conflicts between a Read and a Write
+  sealed private trait ConflictType
+  private case object ReadWriteConflict extends ConflictType
+  private case object WriteReadConflict extends ConflictType
 
   /**
    * Add a DELETE conflict
@@ -466,6 +509,22 @@ object ConflictFinder {
     }.toSeq
   }
 
+  /**
+   * Some conflicts can be disregarded if they access the same symbol through the same variable,
+   * and if that variable is distinct when reading.
+   */
+  private def distinctConflictOnSameSymbol(
+    read: PlanWithAccessor,
+    write: PlanWithAccessor,
+    wholePlan: LogicalPlan
+  ): Boolean = {
+    read.accessor match {
+      case Some(variable) =>
+        write.accessor.contains(variable) && isGloballyUniqueAndCursorInitialized(variable, read.plan, wholePlan)
+      case None => false
+    }
+  }
+
   private def isValidConflict(readPlan: LogicalPlan, writePlan: LogicalPlan, wholePlan: LogicalPlan): Boolean = {
     // A plan can never conflict with itself
     def conflictsWithItself = writePlan eq readPlan
@@ -481,10 +540,7 @@ object ConflictFinder {
     def conflictsWithUnstablePlan =
       (readPlan ne wholePlan.leftmostLeaf) ||
         !readPlan.isInstanceOf[StableLeafPlan] ||
-        isInTransactionalApply(
-          writePlan,
-          wholePlan
-        )
+        isInTransactionalApply(writePlan, wholePlan)
 
     def deletingPlan(plan: LogicalPlan) =
       plan.isInstanceOf[DeleteNode] || plan.isInstanceOf[DetachDeleteNode] ||
@@ -503,7 +559,7 @@ object ConflictFinder {
   }
 
   private def isInTransactionalApply(plan: LogicalPlan, wholePlan: LogicalPlan): Boolean = {
-    val parents = parentsOfIn(plan, wholePlan).get
+    val parents = pathFromRoot(plan, wholePlan).get
     parents.exists {
       case _: TransactionApply   => true
       case _: TransactionForeach => true
@@ -511,18 +567,81 @@ object ConflictFinder {
     }
   }
 
+  private def isGloballyUniqueAndCursorInitialized(
+    variable: LogicalVariable,
+    plan: LogicalPlan,
+    wholePlan: LogicalPlan
+  ): Boolean = {
+    // plan.distinctness is "per argument"
+    // In order to make sure a column is "globally unique", i.e. over multiple invocations,
+    // we need to make sure the operator does only execute once.
+    // Also, we must make sure that the cursor performing the read will be initialized at the point in
+    // time the write for the same variable happens.
+    plan.distinctness.covers(Seq(variable)) && !readMightNotBeInitialized(plan, wholePlan)
+  }
+
   /**
-   * Traverses the logical plan tree to find the path to the inner plan.
+   * Tests whether then plan is nested on the RHS of a binary plan that might not have initialized the rhs
+   * before yielding a row.
    */
-  private def parentsOfIn(
+  private[eager] def readMightNotBeInitialized(plan: LogicalPlan, wholePlan: LogicalPlan): Boolean = {
+    def rhsMightNotBeInitializedBeforeYieldingFirstRow(b: LogicalBinaryPlan): Boolean = b match {
+      case _: ApplyPlan              => true
+      case _: CartesianProduct       => true
+      case _: AssertSameNode         => true
+      case _: AssertSameRelationship => true
+      case _: RepeatOptions          => true
+      case _: LeftOuterHashJoin      => false
+      case _: NodeHashJoin           => false
+      case _: RightOuterHashJoin     => false
+      case _: ValueHashJoin          => false
+      case _: Union                  => true
+      case _: OrderedUnion           => false
+    }
+
+    @tailrec
+    def recurse(plans: List[LogicalPlan]): Boolean = plans match {
+      case head :: (p: LogicalBinaryPlan) :: _
+        if (p.right eq head) && rhsMightNotBeInitializedBeforeYieldingFirstRow(p) => true
+      case _ :: tail => recurse(tail)
+      case Seq()     => false
+    }
+
+    val parents = pathFromRoot(plan, wholePlan).get
+    recurse(parents.reverse.toList)
+  }
+
+  /**
+   * In `wholePlan`, finds the plan among `plans` that is most downstream.
+   */
+  private[eager] def mostDownstreamPlan(wholePlan: LogicalPlan, plans: Set[LogicalPlan]): Option[LogicalPlan] = {
+    if (plans.contains(wholePlan)) {
+      return Some(wholePlan)
+    }
+
+    wholePlan match {
+      case p: LogicalBinaryPlan =>
+        mostDownstreamPlan(p.right, plans).orElse(mostDownstreamPlan(p.left, plans))
+      case p: LogicalUnaryPlan =>
+        mostDownstreamPlan(p.source, plans)
+      case _ =>
+        None
+    }
+  }
+
+  /**
+   * Traverses the logical plan tree of `outerPlan` to find the path to `innerPlan`.
+   * Returns the path from the root (`outerPlan`) to `innerPlan`, including both plans.
+   */
+  private[eager] def pathFromRoot(
     innerPlan: LogicalPlan,
     outerPlan: LogicalPlan,
     acc: Seq[LogicalPlan] = Seq.empty
   ): Option[Seq[LogicalPlan]] = {
     outerPlan match {
-      case plan: LogicalPlan if plan eq innerPlan => Some(acc)
+      case plan: LogicalPlan if plan eq innerPlan => Some(acc :+ innerPlan)
       case _ =>
-        def recurse = plan => parentsOfIn(innerPlan, plan, acc :+ outerPlan)
+        def recurse = plan => pathFromRoot(innerPlan, plan, acc :+ outerPlan)
         val maybeLhs = outerPlan.lhs.flatMap(recurse)
         maybeLhs.orElse(outerPlan.rhs.flatMap(recurse))
     }
