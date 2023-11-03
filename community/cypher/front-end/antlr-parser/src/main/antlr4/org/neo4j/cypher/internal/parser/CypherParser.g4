@@ -86,13 +86,13 @@ setClause:
    SET setItem (COMMA setItem)*;
 
 setItem:
-   (propertyExpression EQ expression | variable EQ expression | variable PLUSEQUAL expression | variable nodeLabels);
+   (propertyExpression EQ expression | variable EQ expression | variable PLUSEQUAL expression | variable nodeLabels | variable nodeLabelsIs);
 
 removeClause:
    REMOVE removeItem (COMMA removeItem)*;
 
 removeItem:
-   (propertyExpression | variable nodeLabels);
+   (propertyExpression | variable nodeLabels | variable nodeLabelsIs);
 
 deleteClause:
    (DETACH | NODETACH)? DELETE expression (COMMA expression)*;
@@ -186,6 +186,9 @@ parenthesizedPath:
 
 nodeLabels:
    labelOrRelType+;
+
+nodeLabelsIs:
+   IS symbolicNameString labelOrRelType*;
 
 labelExpressionPredicate:
    labelExpression;

@@ -1908,7 +1908,8 @@ SET_ITEM SetItem() throws Exception:
     LOOKAHEAD( 2 ) p=PropertyExpression() <EQ> e=Expression() { return astFactory.setProperty( p, e ); }
     | LOOKAHEAD( 2 ) v=Variable() <EQ> e=Expression() { return astFactory.setVariable( v, e ); }
     | LOOKAHEAD( 2 ) v = Variable() <PLUSEQUAL> e=Expression() { return astFactory.addAndSetVariable( v, e ); }
-    | v = Variable() labels = NodeLabels() { return astFactory.setLabels( v, labels ); }
+    | LOOKAHEAD( 2 ) v = Variable() labels = NodeLabels() { return astFactory.setLabels( v, labels, false ); }
+    | v = Variable() labels = NodeLabelsIs() { return astFactory.setLabels( v, labels, true ); }
 }
 
 // REMOVE
@@ -1935,7 +1936,8 @@ REMOVE_ITEM RemoveItem() throws Exception:
 }
 {
     LOOKAHEAD(2) p=PropertyExpression() { return astFactory.removeProperty( p ); }
-    | v=Variable() labels=NodeLabels() { return astFactory.removeLabels( v, labels ); }
+    | LOOKAHEAD(2) v=Variable() labels=NodeLabels() { return astFactory.removeLabels( v, labels, false ); }
+    | v=Variable() labels=NodeLabelsIs() { return astFactory.removeLabels( v, labels, true ); }
 }
 
 // DELETE
@@ -2595,6 +2597,19 @@ List<StringPos<POS>> NodeLabels() :
 }
 {
     ( LOOKAHEAD( 2 ) label=LabelOrRelType() { labels.add( new StringPos<>( label.image, pos( label ) ) ); } )+
+    {
+        return labels;
+    }
+}
+
+List<StringPos<POS>> NodeLabelsIs() :
+{
+    Token label;
+    List<StringPos<POS>> labels = new ArrayList<>();
+}
+{
+    <IS> label=SymbolicNameString() { labels.add( new StringPos<>( label.image, pos( label ) ) ); }
+    ( label=LabelOrRelType() { labels.add( new StringPos<>( label.image, pos( label ) ) ); } )*
     {
         return labels;
     }

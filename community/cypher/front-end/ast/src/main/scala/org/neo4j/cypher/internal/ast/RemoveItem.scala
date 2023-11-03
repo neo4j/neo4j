@@ -32,8 +32,9 @@ import org.neo4j.cypher.internal.util.symbols.CTNode
 
 sealed trait RemoveItem extends ASTNode with SemanticCheckable with HasMappableExpressions[RemoveItem]
 
-case class RemoveLabelItem(variable: LogicalVariable, labels: Seq[LabelName])(val position: InputPosition)
-    extends RemoveItem {
+case class RemoveLabelItem(variable: LogicalVariable, labels: Seq[LabelName], containsIs: Boolean)(
+  val position: InputPosition
+) extends RemoveItem {
 
   override def semanticCheck: SemanticCheck =
     SemanticExpressionCheck.simple(variable) chain

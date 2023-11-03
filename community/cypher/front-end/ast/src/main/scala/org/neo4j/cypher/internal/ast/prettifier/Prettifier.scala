@@ -146,6 +146,7 @@ import org.neo4j.cypher.internal.ast.RelationshipAllQualifier
 import org.neo4j.cypher.internal.ast.RelationshipQualifier
 import org.neo4j.cypher.internal.ast.Remove
 import org.neo4j.cypher.internal.ast.RemoveHomeDatabaseAction
+import org.neo4j.cypher.internal.ast.RemoveItem
 import org.neo4j.cypher.internal.ast.RemoveLabelItem
 import org.neo4j.cypher.internal.ast.RemovePropertyItem
 import org.neo4j.cypher.internal.ast.RenameRole
@@ -162,6 +163,7 @@ import org.neo4j.cypher.internal.ast.SetClause
 import org.neo4j.cypher.internal.ast.SetExactPropertiesFromMapItem
 import org.neo4j.cypher.internal.ast.SetHomeDatabaseAction
 import org.neo4j.cypher.internal.ast.SetIncludingPropertiesFromMapItem
+import org.neo4j.cypher.internal.ast.SetItem
 import org.neo4j.cypher.internal.ast.SetLabelItem
 import org.neo4j.cypher.internal.ast.SetOwnPassword
 import org.neo4j.cypher.internal.ast.SetPropertyItem
@@ -235,6 +237,7 @@ import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.IsNull
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.ListLiteral
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.NotEquals
@@ -280,6 +283,36 @@ case class Prettifier(
       case Some(Right(parameter)) => s" $name ${expr(parameter)}"
       case None                   => ""
     }
+
+  def prettifySetItems(setItems: Seq[SetItem]): String = {
+    val items = setItems.map {
+      case SetPropertyItem(prop, exp) => s"${expr(prop)} = ${expr(exp)}"
+      case SetPropertyItems(entity, items) =>
+        items.map(i => s"${expr(entity)}.${i._1.name} = ${expr(i._2)}").mkString(", ")
+      case SetLabelItem(variable, labels, false)            => labelsString(variable, labels)
+      case SetLabelItem(variable, labels, true)             => isLabelsString(variable, labels)
+      case SetIncludingPropertiesFromMapItem(variable, exp) => s"${expr(variable)} += ${expr(exp)}"
+      case SetExactPropertiesFromMapItem(variable, exp)     => s"${expr(variable)} = ${expr(exp)}"
+    }
+    items.mkString(", ")
+  }
+
+  def prettifyRemoveItems(removeItems: Seq[RemoveItem]): String = {
+    val items = removeItems.map {
+      case RemovePropertyItem(prop)                 => s"${expr(prop)}"
+      case RemoveLabelItem(variable, labels, false) => labelsString(variable, labels)
+      case RemoveLabelItem(variable, labels, true)  => isLabelsString(variable, labels)
+    }
+    items.mkString(", ")
+  }
+
+  private def labelsString(variable: LogicalVariable, labels: Seq[LabelName]): String = {
+    expr(variable) + labels.map(l => s":${expr(l)}").mkString("")
+  }
+
+  private def isLabelsString(variable: LogicalVariable, labels: Seq[LabelName]): String = {
+    expr(variable) + " IS " + expr(labels.head) + labels.tail.map(l => s":${expr(l)}").mkString("")
+  }
 
   def asString(command: SchemaCommand): String = {
     def propertiesToString(properties: Seq[Property]): String =
@@ -1265,25 +1298,11 @@ case class Prettifier(
     }
 
     def asString(s: SetClause): String = {
-      val items = s.items.map {
-        case SetPropertyItem(prop, exp) => s"${expr(prop)} = ${expr(exp)}"
-        case SetPropertyItems(entity, items) =>
-          items.map(i => s"${expr(entity)}.${i._1.name} = ${expr(i._2)}").mkString(", ")
-        case SetLabelItem(variable, labels) => expr(variable) + labels.map(l => s":${expr(l)}").mkString("")
-        case SetIncludingPropertiesFromMapItem(variable, exp) => s"${expr(variable)} += ${expr(exp)}"
-        case SetExactPropertiesFromMapItem(variable, exp)     => s"${expr(variable)} = ${expr(exp)}"
-        case _                                                => s.asCanonicalStringVal
-      }
-      s"${INDENT}SET ${items.mkString(", ")}"
+      s"${INDENT}SET ${prettifySetItems(s.items)}"
     }
 
     def asString(r: Remove): String = {
-      val items = r.items.map {
-        case RemovePropertyItem(prop)          => s"${expr(prop)}"
-        case RemoveLabelItem(variable, labels) => expr(variable) + labels.map(l => s":${expr(l)}").mkString("")
-        case _                                 => r.asCanonicalStringVal
-      }
-      s"${INDENT}REMOVE ${items.mkString(", ")}"
+      s"${INDENT}REMOVE ${prettifyRemoveItems(r.items)}"
     }
 
     def asString(v: LoadCSV): String = {

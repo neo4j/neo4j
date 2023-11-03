@@ -248,7 +248,7 @@ public class LiteralInterpreter
     }
 
     @Override
-    public NULL setLabels(Object o, List<StringPos<NULL>> value) {
+    public NULL setLabels(Object o, List<StringPos<NULL>> value, boolean containsIs) {
         throw new UnsupportedOperationException("setLabels is not a literal");
     }
 
@@ -263,7 +263,7 @@ public class LiteralInterpreter
     }
 
     @Override
-    public NULL removeLabels(Object o, List<StringPos<NULL>> labels) {
+    public NULL removeLabels(Object o, List<StringPos<NULL>> labels, boolean containsIs) {
         throw new UnsupportedOperationException("removeLabels is not a literal");
     }
 

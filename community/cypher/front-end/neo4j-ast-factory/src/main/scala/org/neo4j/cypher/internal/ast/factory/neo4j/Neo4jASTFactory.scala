@@ -727,16 +727,26 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory)
   override def addAndSetVariable(variable: Variable, value: Expression): SetItem =
     SetIncludingPropertiesFromMapItem(variable, value)(variable.position)
 
-  override def setLabels(variable: Variable, labels: util.List[StringPos[InputPosition]]): SetItem =
-    SetLabelItem(variable, labels.asScala.toList.map(sp => LabelName(sp.string)(sp.pos)))(variable.position)
+  override def setLabels(
+    variable: Variable,
+    labels: util.List[StringPos[InputPosition]],
+    containsIs: Boolean
+  ): SetItem =
+    SetLabelItem(variable, labels.asScala.toList.map(sp => LabelName(sp.string)(sp.pos)), containsIs)(variable.position)
 
   override def removeClause(p: InputPosition, removeItems: util.List[RemoveItem]): Clause =
     Remove(removeItems.asScala.toList)(p)
 
   override def removeProperty(property: Property): RemoveItem = RemovePropertyItem(property)
 
-  override def removeLabels(variable: Variable, labels: util.List[StringPos[InputPosition]]): RemoveItem =
-    RemoveLabelItem(variable, labels.asScala.toList.map(sp => LabelName(sp.string)(sp.pos)))(variable.position)
+  override def removeLabels(
+    variable: Variable,
+    labels: util.List[StringPos[InputPosition]],
+    containsIs: Boolean
+  ): RemoveItem =
+    RemoveLabelItem(variable, labels.asScala.toList.map(sp => LabelName(sp.string)(sp.pos)), containsIs)(
+      variable.position
+    )
 
   override def deleteClause(p: InputPosition, detach: Boolean, expressions: util.List[Expression]): Clause =
     Delete(expressions.asScala.toList, detach)(p)

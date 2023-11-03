@@ -611,7 +611,7 @@ public class NullAstFactory
     }
 
     @Override
-    public NULL setLabels(NULL aNull, List<StringPos<NULL>> value) {
+    public NULL setLabels(NULL aNull, List<StringPos<NULL>> value, boolean containsIs) {
         return null;
     }
 
@@ -626,7 +626,7 @@ public class NullAstFactory
     }
 
     @Override
-    public NULL removeLabels(NULL aNull, List<StringPos<NULL>> labels) {
+    public NULL removeLabels(NULL aNull, List<StringPos<NULL>> labels, boolean containsIs) {
         return null;
     }
 

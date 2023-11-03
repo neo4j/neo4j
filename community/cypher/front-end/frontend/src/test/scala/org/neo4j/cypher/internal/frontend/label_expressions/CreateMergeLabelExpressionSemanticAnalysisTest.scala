@@ -19,7 +19,7 @@ package org.neo4j.cypher.internal.frontend.label_expressions
 import org.neo4j.cypher.internal.frontend.SemanticAnalysisTestSuiteWithDefaultQuery
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 
-abstract class LabelExpressionSemanticAnalysisTestSuiteWithStatement(statement: Statement)
+abstract class LabelExpressionSemanticAnalysisTestSuiteWithUpdateStatement(statement: UpdateStatement)
     extends SemanticAnalysisTestSuiteWithDefaultQuery
     with TestName {
 
@@ -186,15 +186,15 @@ abstract class LabelExpressionSemanticAnalysisTestSuiteWithStatement(statement: 
   }
 }
 
-sealed trait Statement
+sealed trait UpdateStatement
 
-object Statement {
-  case object CREATE extends Statement
-  case object MERGE extends Statement
+object UpdateStatement {
+  case object CREATE extends UpdateStatement
+  case object MERGE extends UpdateStatement
 }
 
 class LabelExpressionInCreateSemanticAnalysisTest
-    extends LabelExpressionSemanticAnalysisTestSuiteWithStatement(Statement.CREATE) {
+    extends LabelExpressionSemanticAnalysisTestSuiteWithUpdateStatement(UpdateStatement.CREATE) {
 
   // These queries do not parse for MERGE
 
@@ -212,4 +212,4 @@ class LabelExpressionInCreateSemanticAnalysisTest
 }
 
 class LabelExpressionInMergeSemanticAnalysisTest
-    extends LabelExpressionSemanticAnalysisTestSuiteWithStatement(Statement.MERGE) {}
+    extends LabelExpressionSemanticAnalysisTestSuiteWithUpdateStatement(UpdateStatement.MERGE) {}

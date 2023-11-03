@@ -164,6 +164,12 @@ class PrettifierIT extends CypherFunSuite {
     "match (n) SET n:Label" ->
       """MATCH (n)
         |SET n:Label""".stripMargin,
+    "match (n) SET n IS Label" ->
+      """MATCH (n)
+        |SET n IS Label""".stripMargin,
+    "match (n) SET n:Label, m is Label2:Label3" ->
+      """MATCH (n)
+        |SET n:Label, m IS Label2:Label3""".stripMargin,
     "match (n) SET n:`La bel`" ->
       """MATCH (n)
         |SET n:`La bel`""".stripMargin,
@@ -179,6 +185,15 @@ class PrettifierIT extends CypherFunSuite {
     "match (n) SET n:Label, n.prop = 1" ->
       """MATCH (n)
         |SET n:Label, n.prop = 1""".stripMargin,
+    "match (n) REMOVE n:Label" ->
+      """MATCH (n)
+        |REMOVE n:Label""".stripMargin,
+    "match (n) REMOVE n IS Label" ->
+      """MATCH (n)
+        |REMOVE n IS Label""".stripMargin,
+    "match (n) REMOVE n iS Label:Label1, m : Label2 : LaBeL3" ->
+      """MATCH (n)
+        |REMOVE n IS Label:Label1, m:Label2:LaBeL3""".stripMargin,
     "match (n) DELETE n" ->
       """MATCH (n)
         |DELETE n""".stripMargin,

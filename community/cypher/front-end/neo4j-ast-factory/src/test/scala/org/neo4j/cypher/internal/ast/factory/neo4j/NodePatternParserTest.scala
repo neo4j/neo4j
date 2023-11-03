@@ -550,22 +550,4 @@ class NodePatternParserTest extends PatternParserTestBase {
       )
     )
   }
-
-  test("Should not allow IS for SET label") {
-    val query =
-      """MATCH (n)
-        |SET n IS Label
-        |RETURN n""".stripMargin
-
-    assertFailsWithMessage(query, "Invalid input 'IS': expected \":\" (line 2, column 7 (offset: 16))")
-  }
-
-  test("Should not allow IS for REMOVE label") {
-    val query =
-      """MATCH (n)
-        |REMOVE n IS Label
-        |RETURN n""".stripMargin
-
-    assertFailsWithMessage(query, "Invalid input 'IS': expected \":\" (line 2, column 10 (offset: 19))")
-  }
 }

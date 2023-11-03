@@ -35,7 +35,8 @@ import org.neo4j.cypher.internal.util.symbols.CTRelationship
 
 sealed trait SetItem extends ASTNode with SemanticCheckable with HasMappableExpressions[SetItem]
 
-case class SetLabelItem(variable: Variable, labels: Seq[LabelName])(val position: InputPosition) extends SetItem {
+case class SetLabelItem(variable: Variable, labels: Seq[LabelName], containsIs: Boolean)(val position: InputPosition)
+    extends SetItem {
 
   def semanticCheck =
     SemanticExpressionCheck.simple(variable) chain

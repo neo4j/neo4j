@@ -177,13 +177,13 @@ public interface ASTFactory<
 
     SET_ITEM addAndSetVariable(VARIABLE variable, EXPRESSION value);
 
-    SET_ITEM setLabels(VARIABLE variable, List<StringPos<POS>> value);
+    SET_ITEM setLabels(VARIABLE variable, List<StringPos<POS>> value, boolean containsIs);
 
     CLAUSE removeClause(POS p, List<REMOVE_ITEM> removeItems);
 
     REMOVE_ITEM removeProperty(PROPERTY property);
 
-    REMOVE_ITEM removeLabels(VARIABLE variable, List<StringPos<POS>> labels);
+    REMOVE_ITEM removeLabels(VARIABLE variable, List<StringPos<POS>> labels, boolean containsIs);
 
     CLAUSE deleteClause(POS p, boolean detach, List<EXPRESSION> expressions);
 

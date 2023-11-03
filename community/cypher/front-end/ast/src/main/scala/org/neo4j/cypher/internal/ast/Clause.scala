@@ -235,6 +235,10 @@ sealed trait Clause extends ASTNode with SemanticCheckable with SemanticAnalysis
 
 sealed trait UpdateClause extends Clause with HasMappableExpressions[UpdateClause] {
   override def returnVariables: ReturnVariables = ReturnVariables.empty
+
+  protected def mixingIsWithMultipleLabelsMessage(statement: String, replacement: String): String = {
+    s"It is not supported to use the `IS` keyword together with multiple labels in `$statement`. Rewrite the expression as `$replacement`."
+  }
 }
 
 case class LoadCSV(
@@ -945,10 +949,35 @@ case class CreateUnique(pattern: Pattern.ForUpdate)(val position: InputPosition)
 case class SetClause(items: Seq[SetItem])(val position: InputPosition) extends UpdateClause {
   override def name = "SET"
 
-  override def clauseSpecificSemanticCheck: SemanticCheck = items.semanticCheck
+  override def clauseSpecificSemanticCheck: SemanticCheck =
+    items.semanticCheck chain fromFunction(checkIfMixingIsWithMultipleLabels)
 
   override def mapExpressions(f: Expression => Expression): UpdateClause =
     copy(items.map(_.mapExpressions(f)))(this.position)
+
+  private def checkIfMixingIsWithMultipleLabels(state: SemanticState): SemanticCheckResult = {
+    // Check for the IS keyword
+    val containsIs = this.folder.treeExists {
+      case _ @SetLabelItem(_, _, true) => true
+    }
+
+    // Check for multiple labels in the same item
+    val multipleLabels = this.folder.treeExists {
+      case _ @SetLabelItem(_, labels, _) if labels.size > 1 => true
+    }
+
+    // If both were present, throw error with improvement suggestion: n:A:B => n IS A, n IS B
+    when(containsIs && multipleLabels) {
+      val prettifier = Prettifier(ExpressionStringifier())
+      val setItems: Seq[SetItem] = this.items.flatMap {
+        case s @ SetLabelItem(variable, labels, _) =>
+          labels.map(label => SetLabelItem(variable, Seq(label), containsIs = true)(s.position))
+        case x => Seq(x)
+      }
+      val replacement = prettifier.prettifySetItems(setItems)
+      SemanticError(mixingIsWithMultipleLabelsMessage(name, replacement), position)
+    }(state)
+  }
 }
 
 case class Delete(expressions: Seq[Expression], forced: Boolean)(val position: InputPosition) extends UpdateClause {
@@ -970,10 +999,35 @@ case class Delete(expressions: Seq[Expression], forced: Boolean)(val position: I
 case class Remove(items: Seq[RemoveItem])(val position: InputPosition) extends UpdateClause {
   override def name = "REMOVE"
 
-  override def clauseSpecificSemanticCheck: SemanticCheck = items.semanticCheck
+  override def clauseSpecificSemanticCheck: SemanticCheck =
+    items.semanticCheck chain fromFunction(checkIfMixingIsWithMultipleLabels)
 
   override def mapExpressions(f: Expression => Expression): UpdateClause =
     copy(items.map(_.mapExpressions(f)))(this.position)
+
+  private def checkIfMixingIsWithMultipleLabels(state: SemanticState): SemanticCheckResult = {
+    // Check for the IS keyword
+    val containsIs = this.folder.treeExists {
+      case _ @RemoveLabelItem(_, _, true) => true
+    }
+
+    // Check for multiple labels in the same item
+    val multipleLabels = this.folder.treeExists {
+      case _ @RemoveLabelItem(_, labels, _) if labels.size > 1 => true
+    }
+
+    // If both were present, throw error with improvement suggestion: n:A:B => n IS A, n IS B
+    when(containsIs && multipleLabels) {
+      val prettifier = Prettifier(ExpressionStringifier())
+      val removeItems: Seq[RemoveItem] = this.items.flatMap {
+        case s @ RemoveLabelItem(variable, labels, _) =>
+          labels.map(label => RemoveLabelItem(variable, Seq(label), containsIs = true)(s.position))
+        case x => Seq(x)
+      }
+      val replacement = prettifier.prettifyRemoveItems(removeItems)
+      SemanticError(mixingIsWithMultipleLabelsMessage(name, replacement), position)
+    }(state)
+  }
 }
 
 case class Foreach(
