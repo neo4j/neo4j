@@ -1,3 +1,22 @@
+/*
+ * Copyright (c) "Neo4j"
+ * Neo4j Sweden AB [https://neo4j.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
 package org.neo4j.router.impl.query
 
 import org.neo4j.cypher.internal.ast.AdministrationCommand
@@ -12,6 +31,7 @@ import org.neo4j.cypher.internal.planner.spi.ProcedureSignatureResolver
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.fabric.util.Folded.FoldableOps
 import org.neo4j.fabric.util.Folded.Stop
+import org.neo4j.router.impl.query.StatementType.CommandType.AdministrationCommand
 import org.neo4j.router.impl.query.StatementType.CommandType.CommandType
 import org.neo4j.router.impl.query.StatementType.CommandType.QueryCommand
 import org.neo4j.router.impl.query.StatementType.CommandType.SchemaCommand
@@ -20,17 +40,27 @@ import scala.util.Try
 
 case class StatementType(commandType: CommandType, containsUpdatingClause: Option[Boolean]) {
 
-  def isQueryCommand(): Boolean =
+  def isQueryCommand: Boolean =
     commandType.eq(QueryCommand)
 
-  def isSchemaCommand(): Boolean =
+  def isSchemaCommand: Boolean =
     commandType.eq(SchemaCommand)
 
-  def isReadQuery(): Boolean =
-    isQueryCommand() && containsUpdatingClause.contains(false)
+  def isReadQuery: Boolean =
+    isQueryCommand && containsUpdatingClause.contains(false)
 
-  def isWrite(): Boolean =
+  def isWrite: Boolean =
     containsUpdatingClause.getOrElse(false)
+
+  override def toString: String = {
+    commandType match {
+      case AdministrationCommand => "Administration command"
+      case SchemaCommand => "Schema modification"
+      case QueryCommand if isReadQuery => "Read query"
+      case QueryCommand if isWrite => "Write query"
+      case _ => "Read query (with unresolved procedures)"
+    }
+  }
 }
 
 object StatementType {
@@ -41,9 +71,9 @@ object StatementType {
   }
 
   // Java access helpers
-  val AdministrationCommand: CommandType = AdministrationCommand
-  val SchemaCommand: CommandType = SchemaCommand
-  val QueryCommand: CommandType = QueryCommand
+  val AdministrationCommand: CommandType = CommandType.AdministrationCommand
+  val SchemaCommand: CommandType = CommandType.SchemaCommand
+  val QueryCommand: CommandType = CommandType.QueryCommand
 
   def of(commandType: CommandType): StatementType = StatementType(commandType, None)
 

@@ -149,12 +149,13 @@ public class RouterTransactionImpl implements CompoundTransaction<DatabaseTransa
             statementType = type;
         } else {
             var oldType = statementType;
-            if (oldType != type) {
-                var queryAfterQuery = type.isQueryCommand() && oldType.isQueryCommand();
+            if (!oldType.equals(type)) {
+                var sameStatementType = type.commandType().equals(oldType.commandType());
                 var readQueryAfterSchema = type.isReadQuery() && oldType.isSchemaCommand();
                 var schemaAfterReadQuery = type.isSchemaCommand() && oldType.isReadQuery();
-                var allowedCombination = queryAfterQuery || readQueryAfterSchema || schemaAfterReadQuery;
+                var allowedCombination = readQueryAfterSchema || schemaAfterReadQuery || sameStatementType;
                 if (allowedCombination) {
+                    var queryAfterQuery = type.isQueryCommand() && oldType.isQueryCommand();
                     var writeQueryAfterReadQuery = queryAfterQuery && !type.isReadQuery() && oldType.isReadQuery();
                     var upgrade = writeQueryAfterReadQuery || schemaAfterReadQuery;
                     if (upgrade) {
