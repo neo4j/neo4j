@@ -27,7 +27,6 @@ import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.internal.kernel.api.security.LoginContext;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.AuthToken;
@@ -77,9 +76,6 @@ public class BasicSystemGraphRealm extends AuthManager {
     public LoginContext impersonate(LoginContext originalAuth, String userToImpersonate) {
         throw new InvalidArgumentException("Impersonation is not supported in community edition.");
     }
-
-    @Override
-    public void log(String message, SecurityContext securityContext) {}
 
     private static void assertValidScheme(Map<String, Object> token) throws InvalidAuthTokenException {
         String scheme = AuthToken.safeCast(AuthToken.SCHEME_KEY, token);

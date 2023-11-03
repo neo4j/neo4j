@@ -23,7 +23,6 @@ import java.util.Map;
 import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
@@ -49,8 +48,6 @@ public abstract class AuthManager extends LifecycleAdapter {
 
     public abstract LoginContext impersonate(LoginContext originalAuth, String userToImpersonate);
 
-    public abstract void log(String message, SecurityContext securityContext);
-
     /**
      * Implementation that does no authentication.
      */
@@ -65,8 +62,5 @@ public abstract class AuthManager extends LifecycleAdapter {
         public LoginContext impersonate(LoginContext originalAuth, String userToImpersonate) {
             throw new InvalidArgumentException("Impersonation is not supported with auth disabled.");
         }
-
-        @Override
-        public void log(String message, SecurityContext securityContext) {}
     };
 }
