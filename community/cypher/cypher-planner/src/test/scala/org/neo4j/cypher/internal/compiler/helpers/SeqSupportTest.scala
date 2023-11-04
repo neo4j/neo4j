@@ -35,7 +35,7 @@ class SeqSupportTest extends AnyFunSuite with Matchers with CypherScalaCheckDriv
   }
 
   test("prefix strings with their indices using foldMap") {
-    forAll { is: List[String] =>
+    forAll { (is: List[String]) =>
       val result = is.foldMap(0) {
         case (index, string) => (index + 1, s"$index.$string")
       }
@@ -48,7 +48,7 @@ class SeqSupportTest extends AnyFunSuite with Matchers with CypherScalaCheckDriv
 
   test("foldMap using the identity function returns the initial accumulator and the original sequence") {
     forAll { (is: List[Int], c: Char) =>
-      is.foldMap(c)(Function.untupled(identity)) shouldEqual ((c, is))
+      is.foldMap(c)((x, y) => (x, y)) shouldEqual ((c, is))
     }
   }
 

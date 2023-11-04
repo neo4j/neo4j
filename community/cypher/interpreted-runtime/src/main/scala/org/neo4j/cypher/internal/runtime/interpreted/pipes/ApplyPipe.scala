@@ -30,7 +30,7 @@ case class ApplyPipe(source: Pipe, inner: Pipe)(val id: Id = Id.INVALID_ID) exte
     state: QueryState
   ): ClosingIterator[CypherRow] =
     input.flatMap {
-      outerContext: CypherRow =>
+      (outerContext: CypherRow) =>
         val innerState = state.withInitialContext(outerContext)
         inner.createResults(innerState)
     }

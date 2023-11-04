@@ -30,7 +30,7 @@ class CypherScalaCheckDrivenPropertyChecksTest extends CypherFunSuite
       setScalaCheckInitialSeed(123)
 
       val numbers = ArrayBuffer.empty[Int]
-      forAll { n: Int => numbers += n }
+      forAll { (n: Int) => numbers += n }
       numbers.toSeq
     }
 
@@ -42,7 +42,7 @@ class CypherScalaCheckDrivenPropertyChecksTest extends CypherFunSuite
     setScalaCheckInitialSeed(initialSeed)
 
     val t = Try {
-      forAll { _: Int => fail() }
+      forAll { (_: Int) => fail() }
     }
 
     t.failure.exception.getMessage should include regex s"Init Seed: $initialSeed$$"

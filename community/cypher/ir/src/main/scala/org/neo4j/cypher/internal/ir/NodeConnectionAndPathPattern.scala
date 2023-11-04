@@ -173,7 +173,7 @@ final case class PatternRelationship(
 
 object PatternRelationship {
 
-  implicit val byName: Ordering[PatternRelationship] = Ordering.by { patternRel: PatternRelationship =>
+  implicit val byName: Ordering[PatternRelationship] = Ordering.by { (patternRel: PatternRelationship) =>
     patternRel.name
   }
 }
@@ -536,7 +536,7 @@ final case class ShortestRelationshipPattern(name: Option[String], rel: PatternR
 
 object ShortestRelationshipPattern {
 
-  implicit val byRelName: Ordering[ShortestRelationshipPattern] = Ordering.by { sp: ShortestRelationshipPattern =>
+  implicit val byRelName: Ordering[ShortestRelationshipPattern] = Ordering.by { (sp: ShortestRelationshipPattern) =>
     sp.rel
   }
 }

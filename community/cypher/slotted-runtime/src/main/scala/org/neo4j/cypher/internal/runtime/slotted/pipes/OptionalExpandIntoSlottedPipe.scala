@@ -78,7 +78,7 @@ abstract class OptionalExpandIntoSlottedPipe(
     )
     state.query.resources.trace(expandInto)
     input.flatMap {
-      inputRow: CypherRow =>
+      (inputRow: CypherRow) =>
         val fromNode = getFromNodeFunction.applyAsLong(inputRow)
         val toNode = getToNodeFunction.applyAsLong(inputRow)
 

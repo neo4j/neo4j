@@ -117,7 +117,7 @@ class HttpServerTestSupportBuilder {
 
             val path = exchange.getRequestURI.getPath
             if (mapping.contains(path)) {
-              if (filters.getOrElse(path, { _: HttpExchange => true })(exchange)) {
+              if (filters.getOrElse(path, { (_: HttpExchange) => true })(exchange)) {
                 val reply = transformations.getOrElse(path, identity[HttpExchange](_))(exchange)
                 mapping(path)(reply)
               }

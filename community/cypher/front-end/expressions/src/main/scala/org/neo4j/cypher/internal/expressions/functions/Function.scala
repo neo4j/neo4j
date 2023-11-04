@@ -138,7 +138,7 @@ object Function {
 
   lazy val functionInfo: List[FunctionTypeSignature] = {
     lookup.values.flatMap {
-      f: Function =>
+      (f: Function) =>
         f.signatures.flatMap {
           case signature: FunctionTypeSignature if !signature.deprecated => Some(signature)
           case signature: FunctionTypeSignature if signature.deprecated  => None

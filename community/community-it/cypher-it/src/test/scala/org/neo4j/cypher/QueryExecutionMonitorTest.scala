@@ -45,7 +45,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
     with ExecutionEngineTestSupport {
   implicit def contextQuery(context: TransactionalContext): ExecutingQuery = context.executingQuery()
 
-  val defaultFunction: ResultSubscriber => Unit = { _: ResultSubscriber => }
+  val defaultFunction: ResultSubscriber => Unit = { (_: ResultSubscriber) => }
 
   private def runQuery(query: String, f: ResultSubscriber => Unit = defaultFunction): ExecutingQuery = {
     db.withTx(tx => {

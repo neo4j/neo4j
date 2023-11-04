@@ -52,14 +52,14 @@ class BitSetEqualityTest extends CypherFunSuite with CypherScalaCheckDrivenPrope
   }
 
   test("Fast equality should respect reflexivity") {
-    forAll { bitMask: BitMaskWithTrailingZeros =>
+    forAll { (bitMask: BitMaskWithTrailingZeros) =>
       val bitSet = bitMask.toBitSetWithTrailingZeros
       BitSetEquality.equalBitSets(bitSet, bitSet) shouldBe true
     }
   }
 
   test("Trailing zeros in the bit-mask should not affect equality") {
-    forAll { bitMask: BitMaskWithTrailingZeros =>
+    forAll { (bitMask: BitMaskWithTrailingZeros) =>
       val bitSet = bitMask.toBitSet
       val bitSetWithTrailingZeros = bitMask.toBitSetWithTrailingZeros
 
@@ -69,7 +69,7 @@ class BitSetEqualityTest extends CypherFunSuite with CypherScalaCheckDrivenPrope
   }
 
   test("Trailing zeros in the bit-mask should not affect hash-code") {
-    forAll { bitMask: BitMaskWithTrailingZeros =>
+    forAll { (bitMask: BitMaskWithTrailingZeros) =>
       val bitSet = bitMask.toBitSet
       val bitSetWithTrailingZeros = bitMask.toBitSetWithTrailingZeros
 

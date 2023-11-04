@@ -188,7 +188,7 @@ object ScenarioTestHelper {
     try {
       val denylistPath: Path = Paths.get(resourceUri)
       val denylistPaths = Files.walk(denylistPath).filter {
-        t: Path => Files.isRegularFile(t)
+        (t: Path) => Files.isRegularFile(t)
       }
       val denylistPathsList: List[Path] = denylistPaths.iterator().asScala.toList
       if (denylistPathsList.isEmpty) throw new NoSuchFileException(s"Denylist file not found at: $denylistPathString")

@@ -1301,7 +1301,7 @@ case class InterpretedPipeMapper(
               allowNullOrNaNProperty = false
             )
         } ++ createRelationships.map {
-          r: org.neo4j.cypher.internal.logical.plans.create.CreateRelationship =>
+          (r: org.neo4j.cypher.internal.logical.plans.create.CreateRelationship) =>
             CreateRelationship(
               CreateRelationshipCommand(
                 r.variable.name,

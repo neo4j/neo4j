@@ -57,7 +57,7 @@ object Neo4jValueRecords {
 
   def apply(record: CypherValueRecords): Neo4jValueRecords = {
     val tableValues = record.rows.map {
-      row: Map[String, CypherValue] =>
+      (row: Map[String, CypherValue]) =>
         record.header.map { columnName =>
           val value = row(columnName)
           val convertedValue = TCKValueToNeo4jValue(value)

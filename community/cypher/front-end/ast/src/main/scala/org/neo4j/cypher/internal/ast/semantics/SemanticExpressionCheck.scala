@@ -786,7 +786,7 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
     labelExpression: LabelExpression
   ): SemanticCheck =
     labelExpression.folder.treeFindByClass[ColonDisjunction]
-      .foldSemanticCheck(disjunction => { state: SemanticState =>
+      .foldSemanticCheck(disjunction => { (state: SemanticState) =>
         val isNode = state.expressionType(entity).actual == CTNode.invariant
         val sanitizedLabelExpression = stringifier.stringifyLabelExpression(labelExpression.replaceColonSyntax)
         val errorMessage = SemanticPatternCheck.legacyRelationshipDisjunctionError(

@@ -604,7 +604,7 @@ class ReadMatchPropertyPrivilegeAdministrationCommandParserTest
             s"(:A WHERE $expressionString)" // Missing variable is valid when parsing. Fail in semantic check
           )
         case _ => fail("Unexpected expression")
-      }).foreach { propertyRule: String =>
+      }).foreach { (propertyRule: String) =>
         // Missing ON
         assertFails(
           s"$verb$immutableString ${action.name} {$properties} $graphKeyword $graphName $patternKeyword $propertyRule $preposition role"
@@ -693,7 +693,7 @@ class ReadMatchPropertyPrivilegeAdministrationCommandParserTest
         s"(n:A WHERE n.prop1 = 1)",
         s"(:A {prop1:1})",
         s"(n:A {prop1:1})"
-      ).foreach { propertyRule: String =>
+      ).foreach { (propertyRule: String) =>
         {
           assertFails(
             s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $graphName $segment $propertyRule $preposition role"
@@ -713,7 +713,7 @@ class ReadMatchPropertyPrivilegeAdministrationCommandParserTest
     } yield {
       val immutableString = immutableOrEmpty(immutable)
 
-      disallowedPropertyRules.foreach { disallowedPropertyRule: String =>
+      disallowedPropertyRules.foreach { (disallowedPropertyRule: String) =>
         assertFails(
           s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $graphName $patternKeyword $disallowedPropertyRule $preposition role"
         )

@@ -448,11 +448,11 @@ class SingleQuerySlotAllocator private[physicalplanning] (
 
     plan.folder.treeFold[Accumulator](Accumulator(doNotTraverseExpression = None)) {
       case otherPlan: LogicalPlan if otherPlan.id != plan.id =>
-        acc: Accumulator =>
+        (acc: Accumulator) =>
           SkipChildren(acc) // Do not traverse the logical plan tree! We are only looking at the given lp
 
       case ProjectEndpoints(_, _, start, startInScope, end, endInScope, _, _, _) =>
-        acc: Accumulator => {
+        (acc: Accumulator) => {
           if (!startInScope) {
             slots.newLong(start, nullable, CTNode)
           }
@@ -464,7 +464,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
 
       case e: Expression =>
         allocateExpressionsInternal(e, slots, semanticTable, plan.id)
-        acc: Accumulator =>
+        (acc: Accumulator) =>
           SkipChildren(acc)
     }
   }
@@ -477,23 +477,23 @@ class SingleQuerySlotAllocator private[physicalplanning] (
   ): Unit = {
     plan.folder.treeFold[Accumulator](Accumulator(doNotTraverseExpression = None)) {
       case otherPlan: LogicalPlan if otherPlan.id != plan.id =>
-        acc: Accumulator =>
+        (acc: Accumulator) =>
           SkipChildren(acc) // Do not traverse the logical plan tree! We are only looking at the given lp
 
       case ValueHashJoin(_, _, Equals(_, rhsExpression)) if comingFromLeft =>
-        _: Accumulator =>
+        (_: Accumulator) =>
           TraverseChildren(Accumulator(doNotTraverseExpression = Some(rhsExpression))) // Only look at lhsExpression
 
       case ValueHashJoin(_, _, Equals(lhsExpression, _)) if !comingFromLeft =>
-        _: Accumulator =>
+        (_: Accumulator) =>
           TraverseChildren(Accumulator(doNotTraverseExpression = Some(lhsExpression))) // Only look at rhsExpression
 
       // Only allocate expression on the LHS for these other two-child plans (which have expressions)
       case _: ApplyPlan if !comingFromLeft =>
-        acc: Accumulator => SkipChildren(acc)
+        (acc: Accumulator) => SkipChildren(acc)
 
       case e: Expression =>
-        acc: Accumulator =>
+        (acc: Accumulator) =>
           allocateExpressionsInternal(e, slots, semanticTable, plan.id, acc)
           SkipChildren(acc)
     }
@@ -508,11 +508,11 @@ class SingleQuerySlotAllocator private[physicalplanning] (
   ): Unit = {
     expression.folder.treeFold[Accumulator](acc) {
       case otherPlan: LogicalPlan if otherPlan.id != planId =>
-        acc: Accumulator =>
+        (acc: Accumulator) =>
           SkipChildren(acc) // Do not traverse the logical plan tree! We are only looking at the given lp
 
       case e: NestedPlanExpression =>
-        acc: Accumulator => {
+        (acc: Accumulator) => {
           if (acc.doNotTraverseExpression.contains(e)) {
             SkipChildren(acc)
           } else {
@@ -576,7 +576,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
         }
 
       case e: Expression =>
-        acc: Accumulator => {
+        (acc: Accumulator) => {
           if (acc.doNotTraverseExpression.contains(e)) {
             SkipChildren(acc)
           } else {

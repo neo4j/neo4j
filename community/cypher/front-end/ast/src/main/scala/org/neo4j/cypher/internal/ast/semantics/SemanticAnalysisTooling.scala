@@ -273,7 +273,7 @@ trait SemanticAnalysisTooling {
   def declareVariables(symbols: Iterable[Symbol]): SemanticCheck =
     symbols.foldSemanticCheck(symbol => declareVariable(symbol.definition.asVariable, symbol.types))
 
-  def recordCurrentScope(astNode: ASTNode): SemanticCheck = { state: SemanticState =>
+  def recordCurrentScope(astNode: ASTNode): SemanticCheck = { (state: SemanticState) =>
     SemanticCheckResult.success(state.recordCurrentScope(astNode))
   }
 

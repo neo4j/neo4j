@@ -29,7 +29,7 @@ package object semantics {
 
   // Allows using a (SemanticState => Either[SemanticErrorDef, SemanticState]) func, where a (SemanticState => SemanticCheckResult) func is expected
   implicit def liftSemanticEitherFunc(func: SemanticState => Either[SemanticErrorDef, SemanticState]): SemanticCheck = {
-    state: SemanticState =>
+    (state: SemanticState) =>
       func(state).fold(
         error => SemanticCheckResult.error(state, error),
         s => SemanticCheckResult.success(s)

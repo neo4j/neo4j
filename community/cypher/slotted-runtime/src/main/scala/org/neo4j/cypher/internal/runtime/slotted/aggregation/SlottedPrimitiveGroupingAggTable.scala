@@ -114,7 +114,7 @@ class SlottedPrimitiveGroupingAggTable(
 
   override def result(): ClosingIterator[CypherRow] = {
     resultMap.autoClosingEntryIterator.asClosingIterator.map {
-      e: java.util.Map.Entry[LongArray, Array[AggregationFunction]] => createResultRow(e.getKey, e.getValue)
+      (e: java.util.Map.Entry[LongArray, Array[AggregationFunction]]) => createResultRow(e.getKey, e.getValue)
     }.closing(resultMap)
   }
 }

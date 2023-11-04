@@ -1102,7 +1102,7 @@ class SlottedPipeMapper(
               allowNullOrNaNProperty = false
             )
         } ++ createRelationships.map {
-          r: CreateRelationship =>
+          (r: CreateRelationship) =>
             CreateSlottedRelationship(
               CreateRelationshipSlottedCommand(
                 slots.getLongOffsetFor(r.variable),

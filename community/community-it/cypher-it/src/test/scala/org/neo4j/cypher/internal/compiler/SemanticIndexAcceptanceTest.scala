@@ -208,7 +208,7 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherSca
     }
 
     test(s"testing ${setup.name} with n.prop $operator $$argument") {
-      forAll(setup.generator) { propertyValue: T =>
+      forAll(setup.generator) { (propertyValue: T) =>
         createLabeledNode(Map("nonIndexed" -> propertyValue.asObject(), "indexed" -> propertyValue.asObject()), "Label")
 
         withClue("with TxState\n") {

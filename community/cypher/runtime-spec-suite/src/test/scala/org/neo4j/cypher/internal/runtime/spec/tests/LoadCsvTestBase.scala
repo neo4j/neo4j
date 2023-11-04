@@ -54,7 +54,7 @@ abstract class LoadCsvTestBase[CONTEXT <: RuntimeContext](
   def wrapInQuotations(c: String): String = "\"" + c + "\""
 
   def singleColumnCsvFile(withHeaders: Boolean = false): String = {
-    val url = createCSVTempFileURL({ writer: PrintWriter =>
+    val url = createCSVTempFileURL({ (writer: PrintWriter) =>
       if (withHeaders) {
         writer.println("a")
       }
@@ -66,7 +66,7 @@ abstract class LoadCsvTestBase[CONTEXT <: RuntimeContext](
   }
 
   def multipleColumnCsvFile(withHeaders: Boolean = false): String = {
-    val url = createCSVTempFileURL({ writer: PrintWriter =>
+    val url = createCSVTempFileURL({ (writer: PrintWriter) =>
       if (withHeaders) {
         writer.println("a,b,c")
       }
@@ -458,7 +458,7 @@ trait LoadCsvWithCallInTransactions[CONTEXT <: RuntimeContext] {
 
   test("should load csv file with one empty header") {
     // given
-    val fileString = createCSVTempFileURL { writer: PrintWriter =>
+    val fileString = createCSVTempFileURL { (writer: PrintWriter) =>
       writer.println("a,b,")
       Range(0, 10).foreach(i => writer.println(s"$i,${2 * i},${3 * i}"))
     }

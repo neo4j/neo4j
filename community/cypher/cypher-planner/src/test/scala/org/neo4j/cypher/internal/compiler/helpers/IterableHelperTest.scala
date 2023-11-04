@@ -34,21 +34,21 @@ class IterableHelperTest extends AnyFunSuite with Matchers with CypherScalaCheck
     PropertyCheckConfiguration(minSuccessful = 100)
 
   test("distinct values grouped by identity round-trip") {
-    forAll { distinctValues: Set[Int] =>
+    forAll { (distinctValues: Set[Int]) =>
       val values = distinctValues.toSeq
       sequentiallyGroupBy[Int, Int, Seq, Seq](values)(identity).flatMap(_._2) shouldEqual values
     }
   }
 
   test("previously grouped values round-trip") {
-    forAll { values: List[String] =>
+    forAll { (values: List[String]) =>
       val groups = values.groupBy(_.length).toSeq
       sequentiallyGroupBy[String, Int, Seq, Seq](groups.flatMap(_._2))(_.length) shouldEqual groups
     }
   }
 
   test("toMap . groupByOrder == groupBy") {
-    forAll { withDuplicates: WithDuplicates[Int] =>
+    forAll { (withDuplicates: WithDuplicates[Int]) =>
       sequentiallyGroupBy[Int, Int, Seq, Seq](withDuplicates.values)(
         _ % 5
       ).toMap shouldEqual withDuplicates.values.groupBy(_ % 5)
@@ -56,7 +56,7 @@ class IterableHelperTest extends AnyFunSuite with Matchers with CypherScalaCheck
   }
 
   test("for a sorted input, grouped keys are sorted") {
-    forAll { values: List[String] =>
+    forAll { (values: List[String]) =>
       val groups = sequentiallyGroupBy[String, Int, List, List](values.sortBy(_.length))(_.length)
       withClue(groups) {
         groups.map(_._1) shouldBe sorted

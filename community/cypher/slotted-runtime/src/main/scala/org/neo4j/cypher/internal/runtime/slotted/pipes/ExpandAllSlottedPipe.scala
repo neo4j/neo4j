@@ -62,7 +62,7 @@ case class ExpandAllSlottedPipe(
     state: QueryState
   ): ClosingIterator[CypherRow] = {
     input.flatMap {
-      inputRow: CypherRow =>
+      (inputRow: CypherRow) =>
         val fromNode = getFromNodeFunction.applyAsLong(inputRow)
 
         if (NullChecker.entityIsNull(fromNode)) {

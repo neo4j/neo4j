@@ -110,7 +110,7 @@ case class ShortestPathPipe(
                     val shortestPaths = biDirectionalBFS.shortestPathIterator()
 
                     val outputRows = ClosingIterator.asClosingIterator(shortestPaths).map {
-                      path: VirtualPathValue =>
+                      (path: VirtualPathValue) =>
                         val rels = VirtualValues.list(path.relationshipIds().map(VirtualValues.relationship): _*)
                         rowFactory.copyWith(row, pathName, path, relsName, rels)
 

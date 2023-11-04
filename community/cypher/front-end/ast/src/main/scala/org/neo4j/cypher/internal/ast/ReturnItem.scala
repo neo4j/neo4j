@@ -65,7 +65,7 @@ final case class ReturnItems(
 
   def declareVariables(previousScope: Scope): SemanticCheck =
     when(includeExisting) {
-      s: SemanticState => success(s.importValuesFromScope(previousScope))
+      (s: SemanticState) => success(s.importValuesFromScope(previousScope))
     } chain items.foldSemanticCheck(item =>
       item.alias match {
         case Some(variable) if item.expression == variable =>
@@ -73,7 +73,7 @@ final case class ReturnItems(
           declareVariable(variable, types(item.expression), maybePreviousSymbol, overriding = true)
         case Some(variable) =>
           declareVariable(variable, types(item.expression), overriding = true)
-        case None => state => SemanticCheckResult(state, Seq.empty)
+        case None => (state: SemanticState) => SemanticCheckResult(state, Seq.empty)
       }
     )
 

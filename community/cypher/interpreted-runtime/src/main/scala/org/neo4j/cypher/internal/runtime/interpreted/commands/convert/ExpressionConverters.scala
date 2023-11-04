@@ -104,7 +104,7 @@ class ExpressionConverters(converters: ExpressionConverter*) {
 
   @nowarn("msg=return statement")
   def toCommandExpression(id: Id, expression: internal.expressions.Expression): commands.expressions.Expression = {
-    converters foreach { c: ExpressionConverter =>
+    converters foreach { (c: ExpressionConverter) =>
       c.toCommandExpression(id, expression, this) match {
         case Some(x) => return x
         case None    =>
@@ -119,7 +119,7 @@ class ExpressionConverters(converters: ExpressionConverter*) {
     id: Id,
     projections: Map[LogicalVariable, internal.expressions.Expression]
   ): CommandProjection = {
-    converters foreach { c: ExpressionConverter =>
+    converters foreach { (c: ExpressionConverter) =>
       c.toCommandProjection(id, projections, this) match {
         case Some(x) => return x
         case None    =>
@@ -135,7 +135,7 @@ class ExpressionConverters(converters: ExpressionConverter*) {
     groupings: Map[LogicalVariable, internal.expressions.Expression],
     orderToLeverage: Seq[internal.expressions.Expression]
   ): GroupingExpression = {
-    converters foreach { c: ExpressionConverter =>
+    converters foreach { (c: ExpressionConverter) =>
       c.toGroupingExpression(id, groupings, orderToLeverage, this) match {
         case Some(x) => return x
         case None    =>

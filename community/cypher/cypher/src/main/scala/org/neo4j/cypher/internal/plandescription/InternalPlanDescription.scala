@@ -97,7 +97,7 @@ sealed trait InternalPlanDescription extends org.neo4j.graphdb.ExecutionPlanDesc
 
   def totalDbHits: TotalHits = {
     val allMaybeDbHits: Seq[TotalHits] = flatten.map {
-      plan: InternalPlanDescription =>
+      (plan: InternalPlanDescription) =>
         plan.arguments.collectFirst { case DbHits(x) => TotalHits(x, uncertain = false) }.getOrElse(TotalHits(
           0,
           uncertain = true

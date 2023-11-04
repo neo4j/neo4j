@@ -53,7 +53,7 @@ case class SelectOrSemiApplySlottedPipe(
           result
         }
     }.map {
-      row: CypherRow =>
+      (row: CypherRow) =>
         val output = SlottedRow(slots)
         output.copyAllFrom(row)
         output

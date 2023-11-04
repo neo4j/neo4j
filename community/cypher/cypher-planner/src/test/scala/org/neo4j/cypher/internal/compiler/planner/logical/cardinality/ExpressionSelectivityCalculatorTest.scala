@@ -2036,7 +2036,7 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
       simpleExpressionEvaluator
     )
 
-    exp: Expression => calculator(exp, labelInfo, relTypeInfo, existenceConstraints, typeConstraints)
+    (exp: Expression) => calculator(exp, labelInfo, relTypeInfo, existenceConstraints, typeConstraints)
   }
 
   /**

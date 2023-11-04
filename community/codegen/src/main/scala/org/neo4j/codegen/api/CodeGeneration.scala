@@ -466,7 +466,7 @@ class CodeGeneration(methodLimit: Int, val codeGenerationMode: CodeGenerationMod
         val parentClass: ClassHandle = block.classGenerator().handle()
         val generator = parentClass.generator
         val classHandle = beginBlock(generator.generateClass(overrides, parentClass.packageName(), className)) {
-          clazz: codegen.ClassGenerator =>
+          (clazz: codegen.ClassGenerator) =>
             beginBlock(clazz.generateConstructor(params.map(_.asCodeGen): _*)) { constructor =>
               constructor.expression(Expression.invokeSuper(overrides, params.map(p => constructor.load(p.name)): _*))
               fields.distinct.foreach {
@@ -512,7 +512,7 @@ class CodeGeneration(methodLimit: Int, val codeGenerationMode: CodeGenerationMod
       c.packageName,
       c.className,
       c.implementsInterfaces.toSeq: _*
-    )) { clazz: codegen.ClassGenerator =>
+    )) { (clazz: codegen.ClassGenerator) =>
       generateConstructor(
         clazz,
         c.fields,

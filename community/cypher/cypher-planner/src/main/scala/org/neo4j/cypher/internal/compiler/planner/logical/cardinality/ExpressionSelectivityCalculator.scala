@@ -431,12 +431,12 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     val relTypes = relTypeInfo.get(variable)
 
     val entityTypeAndPropertyIds: Seq[(NameId, PropertyKeyId)] = {
-      labels.toIndexedSeq.flatMap { labelName: LabelName =>
+      labels.toIndexedSeq.flatMap { (labelName: LabelName) =>
         for {
           labelId <- semanticTable.id(labelName)
           propId <- semanticTable.id(propertyKey)
         } yield (labelId, propId)
-      } ++ relTypes.toIndexedSeq.flatMap { relTypeName: RelTypeName =>
+      } ++ relTypes.toIndexedSeq.flatMap { (relTypeName: RelTypeName) =>
         for {
           relTypeId <- semanticTable.id(relTypeName)
           propId <- semanticTable.id(propertyKey)

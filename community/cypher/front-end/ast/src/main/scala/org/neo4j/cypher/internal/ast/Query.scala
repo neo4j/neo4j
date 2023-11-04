@@ -473,7 +473,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
     }
   }
 
-  private def checkShadowedVariables(outer: SemanticState): SemanticCheck = { inner: SemanticState =>
+  private def checkShadowedVariables(outer: SemanticState): SemanticCheck = { (inner: SemanticState) =>
     val outerScopeSymbols: Map[String, Symbol] = outer.currentScope.scope.symbolTable
     val innerScopeSymbols: Map[String, Set[Symbol]] = inner.currentScope.scope.allSymbols
 

@@ -121,7 +121,7 @@ class PlanDescriptionBuilder(
     val planDescription = BuildPlanDescription(explain())
       .addArgument(Arguments.GlobalMemory, queryProfile.maxAllocatedMemory())
       .plan
-      .map { input: InternalPlanDescription =>
+      .map { (input: InternalPlanDescription) =>
         val data = queryProfile.operatorProfile(input.id.x)
 
         BuildPlanDescription(input)

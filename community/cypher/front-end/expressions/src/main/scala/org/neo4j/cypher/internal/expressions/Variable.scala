@@ -30,7 +30,7 @@ case class Variable(name: String)(val position: InputPosition) extends LogicalVa
 object Variable {
 
   implicit val byName: Ordering[Variable] =
-    Ordering.by { variable: Variable =>
+    Ordering.by { (variable: Variable) =>
       (variable.name, variable.position)
     }(Ordering.Tuple2(implicitly[Ordering[String]], InputPosition.byOffset))
 }

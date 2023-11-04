@@ -58,7 +58,7 @@ abstract class CompositeExpressionSelectivityCalculatorWithSingleExpressionsTest
       compositeCalculator,
       simpleExpressionEvaluator
     )
-    exp: Expression => {
+    (exp: Expression) => {
       compositeCalculator(
         Selections.from(exp),
         labelInfo,

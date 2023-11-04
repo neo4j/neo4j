@@ -553,7 +553,7 @@ case class Match(
           SemanticError("Multiple join hints for same variable are not supported", variable.position)
       }.toVector
 
-    state: SemanticState => semantics.SemanticCheckResult(state, errors)
+    (state: SemanticState) => semantics.SemanticCheckResult(state, errors)
   }
 
   private def checkForCartesianProducts: SemanticCheck = (state: SemanticState) => {
@@ -1143,7 +1143,7 @@ sealed trait ProjectionClause extends HorizonClause {
 
   override def semanticCheckContinuation(previousScope: Scope, outerScope: Option[Scope] = None): SemanticCheck =
     SemanticCheck.fromState {
-      state: SemanticState =>
+      (state: SemanticState) =>
         /**
        * scopeToImportVariablesFrom will provide the scope to bring over only the variables that are needed from the
        * previous scope
@@ -1504,7 +1504,7 @@ case class SubqueryCall(innerQuery: Query, inTransactionsParameters: Option[Subq
   }
 
   override def semanticCheckContinuation(previousScope: Scope, outerScope: Option[Scope] = None): SemanticCheck = {
-    s: SemanticState =>
+    (s: SemanticState) =>
       SemanticCheckResult(s.importValuesFromScope(previousScope), Vector())
   }
 

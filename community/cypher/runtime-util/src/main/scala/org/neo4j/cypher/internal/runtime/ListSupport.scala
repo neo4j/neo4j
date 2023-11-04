@@ -49,7 +49,7 @@ trait ListSupport {
 
   @nowarn("msg=return statement")
   def asListOf[T](test: PartialFunction[AnyValue, T])(input: Iterable[AnyValue]): Option[Iterable[T]] =
-    Some(input map { elem: AnyValue => if (test.isDefinedAt(elem)) test(elem) else return None })
+    Some(input map { (elem: AnyValue) => if (test.isDefinedAt(elem)) test(elem) else return None })
 
   def makeTraversable(z: AnyValue): ListValue =
     if (isList(z)) {

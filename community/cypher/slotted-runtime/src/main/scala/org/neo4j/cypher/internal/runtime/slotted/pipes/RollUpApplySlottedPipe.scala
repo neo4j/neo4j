@@ -40,7 +40,7 @@ case class RollUpApplySlottedPipe(
 
   private val getValueToCollectFunction = {
     val expression: Expression = identifierToCollect._2
-    state: QueryState => (ctx: CypherRow) => expression(ctx, state)
+    (state: QueryState) => (ctx: CypherRow) => expression(ctx, state)
   }
 
   override protected def internalCreateResults(

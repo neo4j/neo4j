@@ -35,7 +35,7 @@ import scala.util.matching.Regex
 trait StringArgumentsMatcher extends Matcher[InternalPlanDescription] {
   def expected: Set[String]
 
-  def planArgs(plan: InternalPlanDescription): Set[String] = plan.arguments.toSet.map { arg: Argument =>
+  def planArgs(plan: InternalPlanDescription): Set[String] = plan.arguments.toSet.map { (arg: Argument) =>
     UNNAMED_PATTERN.replaceAllIn(PlanDescriptionArgumentSerializer.serialize(arg).toString, "")
   }
 }
