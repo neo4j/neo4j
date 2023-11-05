@@ -80,7 +80,7 @@ object QueryRenderer {
 
   private def stringifier(pretty: Boolean): ExpressionStringifier = {
     ExpressionStringifier(
-      extension = exprExtension,
+      extensionStringifier = exprExtension,
       alwaysParens = !pretty,
       alwaysBacktick = !pretty,
       preferSingleQuotes = false,

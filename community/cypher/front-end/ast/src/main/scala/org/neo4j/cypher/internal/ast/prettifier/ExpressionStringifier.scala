@@ -131,7 +131,7 @@ trait ExpressionStringifier {
 }
 
 private class DefaultExpressionStringifier(
-  extension: ExpressionStringifier.Extension,
+  extensionStringifier: ExpressionStringifier.Extension,
   alwaysParens: Boolean,
   alwaysBacktick: Boolean,
   preferSingleQuotes: Boolean,
@@ -411,7 +411,7 @@ private class DefaultExpressionStringifier(
         s"isRepeatTrailUnique(${apply(argument)})"
 
       case _ =>
-        extension(this)(ast)
+        extensionStringifier(this)(ast)
     }
   }
 
@@ -552,13 +552,13 @@ private class DefaultExpressionStringifier(
 object ExpressionStringifier {
 
   def apply(
-    extension: ExpressionStringifier.Extension,
+    extensionStringifier: ExpressionStringifier.Extension,
     alwaysParens: Boolean,
     alwaysBacktick: Boolean,
     preferSingleQuotes: Boolean,
     sensitiveParamsAsParams: Boolean
   ): ExpressionStringifier = new DefaultExpressionStringifier(
-    extension,
+    extensionStringifier,
     alwaysParens,
     alwaysBacktick,
     preferSingleQuotes,

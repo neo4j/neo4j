@@ -775,7 +775,7 @@ object QueryGraph {
   }
 
   val stringifier: ExpressionStringifier = ExpressionStringifier(
-    extension = new ExpressionStringifier.Extension {
+    extensionStringifier = new ExpressionStringifier.Extension {
 
       override def apply(ctx: ExpressionStringifier)(expression: Expression): String = expression match {
         case pp: PartialPredicate[_] => s"partial(${ctx(pp.coveredPredicate)}, ${ctx(pp.coveringPredicate)})"
