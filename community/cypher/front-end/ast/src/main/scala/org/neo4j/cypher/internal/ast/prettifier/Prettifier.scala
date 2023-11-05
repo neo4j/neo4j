@@ -263,8 +263,8 @@ case class Prettifier(
   }
 
   def asString(hint: Hint): String = hint match {
-    case using: UsingHint => base.asString(using)
-    case _                => hint.toString
+    case usingHint: UsingHint => base.asString(usingHint)
+    case _                    => hint.toString
   }
 
   def backtick(s: String): String = expr.backtick(s)
