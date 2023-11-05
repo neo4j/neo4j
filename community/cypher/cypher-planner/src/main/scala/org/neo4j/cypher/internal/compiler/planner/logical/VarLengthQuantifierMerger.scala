@@ -60,7 +60,7 @@ case object VarLengthQuantifierMerger extends PlannerQueryRewriter with StepSequ
   )
 
   override def preConditions: Set[StepSequencer.Condition] =
-    Set(CompilationContains[PlannerQuery]) // = CreatePlannerQuery.postConditions
+    Set(CompilationContains[PlannerQuery]()) // = CreatePlannerQuery.postConditions
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 

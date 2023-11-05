@@ -31,5 +31,5 @@ case object OpenCypherJavaCCParsing extends Phase[BaseContext, BaseState, BaseSt
 
   override val phase = PARSING
 
-  override def postConditions = Set(BaseContains[Statement])
+  override def postConditions = Set(BaseContains[Statement]())
 }

@@ -80,11 +80,11 @@ case class SyntaxDeprecationWarningsAndReplacements(deprecations: Deprecations)
 
   override def preConditions: Set[Condition] = deprecations match {
     case _: SyntacticDeprecations => Set(
-        BaseContains[Statement]
+        BaseContains[Statement]()
       )
     case _: SemanticDeprecations => Set(
-        BaseContains[Statement],
-        BaseContains[SemanticTable]
+        BaseContains[Statement](),
+        BaseContains[SemanticTable]()
       )
   }
 

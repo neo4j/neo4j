@@ -92,14 +92,14 @@ case object SemanticAnalysis extends StepSequencer.Step with ParsePipelineTransf
     with PlanPipelineTransformerFactory {
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
-    BaseContains[Statement],
+    BaseContains[Statement](),
     SemanticAnalysisPossible
   )
 
   override def postConditions: Set[StepSequencer.Condition] = Set(
-    BaseContains[SemanticState],
-    StatementCondition(containsNoNodesOfType[UnaliasedReturnItem]),
-    BaseContains[SemanticTable],
+    BaseContains[SemanticState](),
+    StatementCondition(containsNoNodesOfType[UnaliasedReturnItem]()),
+    BaseContains[SemanticTable](),
     ExpressionsHaveComputedDependencies
   ) ++ SemanticInfoAvailable
 

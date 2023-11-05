@@ -58,7 +58,7 @@ case class LiteralExtraction(literalExtraction: LiteralExtractionStrategy)
 case object LiteralExtraction extends StepSequencer.Step with ParsePipelineTransformerFactory {
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
-    BaseContains[Statement]
+    BaseContains[Statement]()
   )
 
   override def postConditions: Set[StepSequencer.Condition] = Set(LiteralsExtracted)

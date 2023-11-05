@@ -100,7 +100,7 @@ case object EagerRewriter extends Phase[PlannerContext, LogicalPlanState, Logica
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     // The rewriter operates on the LogicalPlan
-    CompilationContains[LogicalPlan]
+    CompilationContains[LogicalPlan]()
   )
 
   override def postConditions: Set[StepSequencer.Condition] = Set(

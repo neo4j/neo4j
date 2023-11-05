@@ -55,7 +55,7 @@ case object AmbiguousAggregationAnalysis extends StepSequencer.Step with Default
     with ParsePipelineTransformerFactory {
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
-    BaseContains[Statement],
+    BaseContains[Statement](),
     // This is needed, because ExpressionWithComputedDependencies will otherwise have an incorrect
     // `.introducedVariables`, which is called in this Phase.
     ExpressionsHaveComputedDependencies,

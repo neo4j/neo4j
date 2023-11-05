@@ -231,7 +231,7 @@ object CNFNormalizerTest {
             SemanticWrapper(semanticFeatures)
           ) ++ steps,
           initialConditions = Set(
-            BaseContains[Statement],
+            BaseContains[Statement](),
             SemanticAnalysisPossible
           )
         )

@@ -85,7 +85,7 @@ case object UnfulfillableQueryRewriter extends PlannerQueryRewriter with StepSeq
 
   // we just want to have the planner query created
   override def preConditions: Set[StepSequencer.Condition] =
-    Set(CompilationContains[PlannerQuery]) // = CreatePlannerQuery.postConditions
+    Set(CompilationContains[PlannerQuery]()) // = CreatePlannerQuery.postConditions
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 

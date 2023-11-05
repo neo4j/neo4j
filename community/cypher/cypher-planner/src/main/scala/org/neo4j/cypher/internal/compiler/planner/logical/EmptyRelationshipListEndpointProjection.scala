@@ -128,7 +128,7 @@ case object EmptyRelationshipListEndpointProjection extends PlannerQueryRewriter
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     // This works on the IR
-    CompilationContains[PlannerQuery],
+    CompilationContains[PlannerQuery](),
     VarLengthQuantifierMerger.completed
   )
 

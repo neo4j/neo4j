@@ -47,7 +47,7 @@ case object normalizePredicates extends StepSequencer.Step with DefaultPostCondi
     // unnamed pattern cannot be rewritten, so they need to be handled first
     noUnnamedNodesAndRelationships,
     // Pattern comprehensions must have been rewritten to COLLECT
-    containsNoNodesOfType[PatternComprehension]
+    containsNoNodesOfType[PatternComprehension]()
   )
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable + AndRewrittenToAnds

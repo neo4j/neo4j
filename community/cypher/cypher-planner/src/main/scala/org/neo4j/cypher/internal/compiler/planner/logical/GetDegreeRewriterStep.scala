@@ -38,7 +38,7 @@ case object GetDegreeRewriterStep extends PlannerQueryRewriter with StepSequence
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     // This works on the IR
-    CompilationContains[PlannerQuery]
+    CompilationContains[PlannerQuery]()
   )
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty

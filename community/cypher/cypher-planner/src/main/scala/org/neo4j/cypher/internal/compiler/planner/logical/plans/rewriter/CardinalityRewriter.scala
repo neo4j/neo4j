@@ -59,7 +59,7 @@ case object CardinalityRewriter extends LogicalPlanRewriter with StepSequencer.S
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     // The rewriters operate on the LogicalPlan
-    CompilationContains[LogicalPlan],
+    CompilationContains[LogicalPlan](),
     // This should happen after finding the final plan
     LogicalPlanRewritten,
     // This should happen after finding the final plan + Eager changes effective cardinality
@@ -68,7 +68,7 @@ case object CardinalityRewriter extends LogicalPlanRewriter with StepSequencer.S
 
   override def postConditions: Set[StepSequencer.Condition] = Set(
     completed,
-    AttributeFullyAssigned[EffectiveCardinalities]
+    AttributeFullyAssigned[EffectiveCardinalities]()
   )
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty

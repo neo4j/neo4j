@@ -105,7 +105,7 @@ case object CompressPlanIDs extends Phase[PlannerContext, LogicalPlanState, Logi
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     // Traverses the logical plan
-    CompilationContains[LogicalPlan]
+    CompilationContains[LogicalPlan]()
   )
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty

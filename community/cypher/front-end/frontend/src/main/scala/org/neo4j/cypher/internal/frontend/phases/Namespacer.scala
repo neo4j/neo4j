@@ -179,8 +179,8 @@ case object Namespacer extends Phase[BaseContext, BaseState, BaseState]
   override def preConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
 
   override def postConditions: Set[StepSequencer.Condition] = Set(
-    StatementCondition(containsNoNodesOfType[UnionAll]),
-    StatementCondition(containsNoNodesOfType[UnionDistinct]),
+    StatementCondition(containsNoNodesOfType[UnionAll]()),
+    StatementCondition(containsNoNodesOfType[UnionDistinct]()),
     completed
   )
 

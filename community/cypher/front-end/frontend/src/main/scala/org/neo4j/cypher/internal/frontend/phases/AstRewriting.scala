@@ -52,8 +52,8 @@ case class AstRewriting(parameterTypeMapping: Map[String, ParameterTypeInfo] = M
 case object AstRewriting extends StepSequencer.Step with ParsePipelineTransformerFactory {
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
-    BaseContains[Statement],
-    BaseContains[SemanticState]
+    BaseContains[Statement](),
+    BaseContains[SemanticState]()
   )
 
   // noReferenceEqualityAmongVariables is broken by later phases, e.g. Namespacer.

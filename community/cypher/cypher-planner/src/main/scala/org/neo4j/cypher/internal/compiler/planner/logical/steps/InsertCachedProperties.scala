@@ -473,7 +473,7 @@ case object InsertCachedProperties extends StepSequencer.Step with DefaultPostCo
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     // This rewriter operates on the LogicalPlan
-    CompilationContains[LogicalPlan],
+    CompilationContains[LogicalPlan](),
     // AndedPropertyInequalities contain the same property twice, which would mess up our counts.
     AndedPropertyInequalitiesRemoved,
     // PushdownPropertyReads needs effectiveCardinalities

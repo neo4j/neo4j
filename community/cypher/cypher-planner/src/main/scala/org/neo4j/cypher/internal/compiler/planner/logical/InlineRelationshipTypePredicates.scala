@@ -127,7 +127,7 @@ case object InlineRelationshipTypePredicates extends PlannerQueryRewriter with S
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     // This works on the IR
-    CompilationContains[PlannerQuery],
+    CompilationContains[PlannerQuery](),
     // We rewrite variables by name, so they need to be unique.
     Namespacer.completed
   )

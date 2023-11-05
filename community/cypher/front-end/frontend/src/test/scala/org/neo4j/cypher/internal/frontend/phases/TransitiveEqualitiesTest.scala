@@ -40,7 +40,7 @@ class TransitiveEqualitiesTest extends CypherFunSuite with AstConstructionTestSu
       .orderSteps(
         CNFNormalizer.steps ++ Set(SemanticWrapper(Nil)),
         initialConditions = Set(
-          BaseContains[Statement],
+          BaseContains[Statement](),
           SemanticAnalysisPossible
         )
       )

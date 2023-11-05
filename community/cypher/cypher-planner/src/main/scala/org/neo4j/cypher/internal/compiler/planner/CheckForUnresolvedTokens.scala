@@ -81,7 +81,7 @@ case object CheckForUnresolvedTokens extends VisitorPhase[BaseContext, LogicalPl
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     ResolveTokens.completed,
-    CompilationContains[PlannerQuery]
+    CompilationContains[PlannerQuery]()
   )
 
   // necessary because VisitorPhase defines empty postConditions

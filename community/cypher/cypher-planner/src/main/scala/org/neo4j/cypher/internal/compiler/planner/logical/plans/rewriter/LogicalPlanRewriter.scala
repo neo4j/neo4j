@@ -128,7 +128,7 @@ case object PlanRewriter extends LogicalPlanRewriter with StepSequencer.Step wit
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     // The rewriters operate on the LogicalPlan
-    CompilationContains[LogicalPlan],
+    CompilationContains[LogicalPlan](),
     // Rewriters mess with IDs so let's rather have this run before Eagerness analysis.
     !LogicalPlanContainsIDReferences
   )

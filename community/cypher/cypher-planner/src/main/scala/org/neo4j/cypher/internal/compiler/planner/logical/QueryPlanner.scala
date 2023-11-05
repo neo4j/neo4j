@@ -148,7 +148,7 @@ case object QueryPlanner
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     // This works on the IR
-    CompilationContains[PlannerQuery],
+    CompilationContains[PlannerQuery](),
     OptionalMatchRemover.completed,
     GetDegreeRewriterStep.completed,
     UnfulfillableQueryRewriter.completed,
@@ -160,10 +160,10 @@ case object QueryPlanner
   )
 
   override def postConditions: Set[StepSequencer.Condition] = Set(
-    CompilationContains[LogicalPlan],
-    AttributeFullyAssigned[Solveds],
-    AttributeFullyAssigned[Cardinalities],
-    AttributeFullyAssigned[ProvidedOrders]
+    CompilationContains[LogicalPlan](),
+    AttributeFullyAssigned[Solveds](),
+    AttributeFullyAssigned[Cardinalities](),
+    AttributeFullyAssigned[ProvidedOrders]()
   )
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty

@@ -46,7 +46,7 @@ case object RewriteSizeOfCollectToCount extends StepSequencer.Step with ASTRewri
 
   override def preConditions: Set[Condition] = Set(
     // Pattern comprehensions must have been rewritten to COLLECT
-    containsNoNodesOfType[PatternComprehension]
+    containsNoNodesOfType[PatternComprehension]()
   )
 
   override def postConditions: Set[Condition] = Set(SizeOfCollectRewrittenToCount)

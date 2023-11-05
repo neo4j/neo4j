@@ -108,7 +108,7 @@ object CompilationPhases {
           MoveBoundaryNodePredicates
         ) ++ CNFNormalizer.steps,
         initialConditions =
-          Set(BaseContains[Statement])
+          Set(BaseContains[Statement]())
             ++ PreparatoryRewriting.postConditions
             ++ AstRewriting.postConditions
             // ExpressionsHaveComputedDependencies is introduced by SemanticAnalysis.

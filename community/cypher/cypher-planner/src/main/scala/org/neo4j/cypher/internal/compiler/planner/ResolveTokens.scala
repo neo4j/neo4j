@@ -104,7 +104,7 @@ case object ResolveTokens extends VisitorPhase[PlannerContext, BaseState] with S
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     // This sets fields in the semantic table
-    BaseContains[SemanticTable]
+    BaseContains[SemanticTable]()
   )
 
   // necessary because VisitorPhase defines empty postConditions

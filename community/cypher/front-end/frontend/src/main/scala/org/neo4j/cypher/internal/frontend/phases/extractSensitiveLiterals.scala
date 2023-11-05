@@ -40,7 +40,7 @@ case object extractSensitiveLiterals extends Phase[BaseContext, BaseState, BaseS
   override def phase = AST_REWRITE
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
-    BaseContains[Statement],
+    BaseContains[Statement](),
     !LiteralsExtracted
   )
   override def postConditions: Set[StepSequencer.Condition] = Set(SensitiveLiteralsExtracted)

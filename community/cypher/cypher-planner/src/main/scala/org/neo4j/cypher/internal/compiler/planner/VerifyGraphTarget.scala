@@ -69,7 +69,8 @@ case object VerifyGraphTarget extends VisitorPhase[PlannerContext, BaseState] wi
     verifyGraphTarget(context.databaseReferenceRepository, value.statement(), context.databaseId)
   }
 
-  override def preConditions: Set[StepSequencer.Condition] = Set(BaseContains[Statement], BaseContains[SemanticState])
+  override def preConditions: Set[StepSequencer.Condition] =
+    Set(BaseContains[Statement](), BaseContains[SemanticState]())
 
   // necessary because VisitorPhase defines empty postConditions
   override def postConditions: Set[StepSequencer.Condition] = Set(completed)

@@ -41,7 +41,7 @@ case object ProjectNamedPathsRewriter extends Phase[BaseContext, BaseState, Base
       Namespacer.completed,
       // Pattern comprehensions must have been rewritten to COLLECT,
       // since this rewriter does not match on named paths in pattern comprehensions.
-      StatementCondition(containsNoNodesOfType[PatternComprehension])
+      StatementCondition(containsNoNodesOfType[PatternComprehension]())
     )
 
   override def postConditions: Set[StepSequencer.Condition] =

@@ -73,8 +73,8 @@ case object IsolateSubqueriesInMutatingPatterns extends StatementRewriter
   case object SubqueriesInMutatingPatternsIsolated extends StepSequencer.Condition
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
-    BaseContains[Statement],
-    BaseContains[SemanticTable]
+    BaseContains[Statement](),
+    BaseContains[SemanticTable]()
   ) ++ SemanticInfoAvailable
 
   override def postConditions: Set[StepSequencer.Condition] = Set(SubqueriesInMutatingPatternsIsolated)

@@ -67,8 +67,8 @@ case object CreatePlannerQuery extends Phase[BaseContext, BaseState, LogicalPlan
   override def preConditions: Set[StepSequencer.Condition] = Set(
     // We would get MatchErrors if the first 3 conditions would not be met.
     StatementCondition(containsNamedPathOnlyForShortestPath),
-    StatementCondition(containsNoNodesOfType[UnionAll]),
-    StatementCondition(containsNoNodesOfType[UnionDistinct]),
+    StatementCondition(containsNoNodesOfType[UnionAll]()),
+    StatementCondition(containsNoNodesOfType[UnionDistinct]()),
     // The PlannerQuery we create should already contain disambiguated names
     Namespacer.completed,
     // and we want to take advantage of isolated aggregations in the planner
@@ -80,7 +80,7 @@ case object CreatePlannerQuery extends Phase[BaseContext, BaseState, LogicalPlan
     // We look up semantic info during PlannerQuery building
     SemanticInfoAvailable
 
-  override def postConditions: Set[StepSequencer.Condition] = Set(CompilationContains[PlannerQuery])
+  override def postConditions: Set[StepSequencer.Condition] = Set(CompilationContains[PlannerQuery]())
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 

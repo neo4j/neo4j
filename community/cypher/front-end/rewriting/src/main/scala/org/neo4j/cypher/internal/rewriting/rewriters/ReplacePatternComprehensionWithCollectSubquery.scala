@@ -151,7 +151,7 @@ case object ReplacePatternComprehensionWithCollectSubquery extends Step with AST
     ExpressionsHaveComputedDependencies
   )
 
-  override def postConditions: Set[StepSequencer.Condition] = Set(containsNoNodesOfType[PatternComprehension])
+  override def postConditions: Set[StepSequencer.Condition] = Set(containsNoNodesOfType[PatternComprehension]())
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
     // It can invalidate this condition by rewriting things inside WITH/RETURN.

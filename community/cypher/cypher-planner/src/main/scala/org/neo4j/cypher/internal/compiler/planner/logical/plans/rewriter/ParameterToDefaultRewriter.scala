@@ -58,7 +58,7 @@ case object ParameterToDefaultRewriter extends LogicalPlanRewriter with StepSequ
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     // The rewriters operate on the LogicalPlan
-    CompilationContains[LogicalPlan],
+    CompilationContains[LogicalPlan](),
     // This should happen after finding the final plan
     LogicalPlanRewritten,
     // This should happen after finding the final plan + Eager changes effective cardinality

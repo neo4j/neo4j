@@ -74,7 +74,7 @@ case object PreparatoryRewriting extends Phase[BaseContext, BaseState, BaseState
 
   case object SemanticAnalysisPossible extends StepSequencer.Condition
 
-  override def preConditions: Set[StepSequencer.Condition] = Set(BaseContains[Statement])
+  override def preConditions: Set[StepSequencer.Condition] = Set(BaseContains[Statement]())
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 
