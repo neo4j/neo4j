@@ -350,7 +350,7 @@ object NotificationWrapping {
       )
 
     case SideEffectVisibility(position) =>
-      NotificationCodeWithDescription.SideEffectVisibility(
+      NotificationCodeWithDescription.sideEffectVisibility(
         position.withOffset(offset).asInputPosition
       )
 

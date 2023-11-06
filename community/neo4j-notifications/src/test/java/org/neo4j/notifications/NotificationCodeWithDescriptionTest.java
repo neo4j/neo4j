@@ -21,7 +21,6 @@ package org.neo4j.notifications;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
-import static org.neo4j.notifications.NotificationCodeWithDescription.SideEffectVisibility;
 import static org.neo4j.notifications.NotificationCodeWithDescription.cartesianProduct;
 import static org.neo4j.notifications.NotificationCodeWithDescription.codeGenerationFailed;
 import static org.neo4j.notifications.NotificationCodeWithDescription.commandHasNoEffectAssignPrivilege;
@@ -64,6 +63,7 @@ import static org.neo4j.notifications.NotificationCodeWithDescription.repeatedVa
 import static org.neo4j.notifications.NotificationCodeWithDescription.runtimeUnsupported;
 import static org.neo4j.notifications.NotificationCodeWithDescription.serverAlreadyCordoned;
 import static org.neo4j.notifications.NotificationCodeWithDescription.serverAlreadyEnabled;
+import static org.neo4j.notifications.NotificationCodeWithDescription.sideEffectVisibility;
 import static org.neo4j.notifications.NotificationCodeWithDescription.subqueryVariableShadowing;
 import static org.neo4j.notifications.NotificationCodeWithDescription.unboundedShortestPath;
 import static org.neo4j.notifications.NotificationCodeWithDescription.unionReturnOrder;
@@ -902,7 +902,7 @@ class NotificationCodeWithDescriptionTest {
 
     @Test
     void shouldConstructNotificationsFor_SIDE_EFFECT_VISIBILITY() {
-        NotificationImplementation notification = SideEffectVisibility(InputPosition.empty);
+        NotificationImplementation notification = sideEffectVisibility(InputPosition.empty);
 
         verifyNotification(
                 notification,

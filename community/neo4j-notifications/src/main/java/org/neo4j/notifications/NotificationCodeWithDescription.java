@@ -555,7 +555,7 @@ public enum NotificationCodeWithDescription {
         return NO_DATABASES_REALLOCATED.notification(position);
     }
 
-    public static NotificationImplementation SideEffectVisibility(InputPosition position) {
+    public static NotificationImplementation sideEffectVisibility(InputPosition position) {
         return SIDE_EFFECT_VISIBILITY.notification(position);
     }
 
