@@ -411,7 +411,7 @@ case class CommunityExpressionConverter(
       case e: ResolvedFunctionInvocation =>
         val callArgumentCommands = e.callArguments.map(Some(_))
           .zipAll(e.fcnSignature.get.inputSignature.map(_.default), None, None).map {
-            case (given, default) => given.map(self.toCommandExpression(id, _))
+            case (givenArg, default) => givenArg.map(self.toCommandExpression(id, _))
                 .getOrElse(commands.expressions.Literal(default.get))
           }
         val signature = e.fcnSignature.get

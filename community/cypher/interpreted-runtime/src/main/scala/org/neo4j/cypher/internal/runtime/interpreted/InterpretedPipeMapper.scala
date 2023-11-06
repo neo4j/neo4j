@@ -1249,7 +1249,7 @@ case class InterpretedPipeMapper(
         val callMode = ProcedureCallMode.fromAccessMode(signature.accessMode)
         val callArgumentCommands =
           callArguments.map(Some(_)).zipAll(signature.inputSignature.map(_.default), None, None).map {
-            case (given, default) => given.map(buildExpression).getOrElse(Literal(default.get))
+            case (givenArg, default) => givenArg.map(buildExpression).getOrElse(Literal(default.get))
           }
         val rowProcessing = ProcedureCallRowProcessing(signature)
         ProcedureCallPipe(
