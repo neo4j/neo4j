@@ -31,7 +31,7 @@ abstract class SelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](
   val sizeHint: Int
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
-  test("would work on RHS of Apply below limit") {
+  test("should work on RHS of Apply below limit") {
     val query = new LogicalQueryBuilder(this)
       .produceResults("i")
       .apply()
