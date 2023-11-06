@@ -100,7 +100,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
     )
 
   test("does not plan index seek when no index exist") {
-    new given {
+    new givenConfig {
       addTypeToSemanticTable(lit42, CTInteger.invariant)
       qg = queryGraph(Seq(relTypeName), BOTH, rPropInLit42)
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -116,7 +116,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
   test(
     "index seek (IN predicate) when there is an index on the property for when matching on undirected relationship"
   ) {
-    new given {
+    new givenConfig {
       addTypeToSemanticTable(lit42, CTInteger.invariant)
       qg = queryGraph(Seq(relTypeName), BOTH, rPropInLit42)
       relationshipIndexOn(relTypeName, prop)
@@ -139,7 +139,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
   }
 
   test("index seek (IN predicate) when there is an index on the property for when matching on incoming relationship") {
-    new given {
+    new givenConfig {
       addTypeToSemanticTable(lit42, CTInteger.invariant)
       qg = queryGraph(Seq(relTypeName), INCOMING, rPropInLit42)
       relationshipIndexOn(relTypeName, prop)
@@ -162,7 +162,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
   }
 
   test("index seek (IN predicate) when there is an index on the property for when matching on outgoing relationship") {
-    new given {
+    new givenConfig {
       addTypeToSemanticTable(lit42, CTInteger.invariant)
       qg = queryGraph(Seq(relTypeName), OUTGOING, rPropInLit42)
       relationshipIndexOn(relTypeName, prop)
@@ -185,7 +185,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
   }
 
   test("index seek (< predicate) when there is an index on the property") {
-    new given {
+    new givenConfig {
       addTypeToSemanticTable(lit42, CTInteger.invariant)
       qg = queryGraph(Seq(relTypeName), BOTH, rPropLessThanLit42)
 
@@ -208,7 +208,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
   }
 
   test("index seek with values (< predicate) when there is an index on the property which can provide values") {
-    new given {
+    new givenConfig {
       addTypeToSemanticTable(lit42, CTInteger.invariant)
       qg = queryGraph(Seq(relTypeName), BOTH, rPropLessThanLit42)
 
@@ -232,7 +232,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
   }
 
   test("plans index seeks when variable exists as an argument") {
-    new given {
+    new givenConfig {
       addTypeToSemanticTable(lit42, CTInteger.invariant)
       val x: Expression = varFor("x")
       qg = queryGraph(Seq(relTypeName), BOTH, in(rProp, listOf(x))).addArgumentIds(Seq("x"))
@@ -261,7 +261,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
   }
 
   test("does not plan an index seek when the RHS expression does not have its dependencies in scope") {
-    new given {
+    new givenConfig {
       addTypeToSemanticTable(lit42, CTInteger.invariant)
       qg = queryGraph(Seq(relTypeName), BOTH, in(rProp, listOf(varFor("x"))))
 
@@ -281,7 +281,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
     val xProp = prop(x, prop)
     val rPropEqualsXProp = equals(rProp, xProp)
     val rPropEquals = equals(lit42, rProp)
-    new given {
+    new givenConfig {
       addTypeToSemanticTable(lit42, CTInteger.invariant)
       addTypeToSemanticTable(lit6, CTInteger.invariant)
       addTypeToSemanticTable(rProp, CTInteger.invariant)
@@ -349,7 +349,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
     val rFooEqualsXProp = Equals(rFoo, xProp)(pos)
     val rFooEquals = equals(lit42, rFoo)
 
-    new given {
+    new givenConfig {
       addTypeToSemanticTable(lit42, CTInteger.invariant)
       addTypeToSemanticTable(lit6, CTInteger.invariant)
       addTypeToSemanticTable(rProp, CTInteger.invariant)
@@ -434,7 +434,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
     val rPropStartsWith = startsWith(rProp, literalFoo)
     val rPropEndsWith = endsWith(rProp, literalFoo)
     val rPropContains = contains(rProp, literalFoo)
-    new given {
+    new givenConfig {
       addTypeToSemanticTable(rProp, CTInteger.invariant)
       addTypeToSemanticTable(lit42, CTInteger.invariant)
       addTypeToSemanticTable(lit6, CTInteger.invariant)
@@ -531,7 +531,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
     val hint: UsingIndexHint =
       UsingIndexHint(varFor(relName), labelOrRelTypeName(relTypeName), Seq(PropertyKeyName(prop)(pos))) _
 
-    new given {
+    new givenConfig {
       qg = queryGraph(Seq(relTypeName), BOTH, rPropInLit42).addHints(Some(hint))
       relationshipIndexOn(relTypeName, prop).providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -560,7 +560,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
     val hint: UsingIndexHint =
       UsingIndexHint(varFor(relName), labelOrRelTypeName(relTypeName), Seq(PropertyKeyName(prop)(pos)), SeekOnly) _
 
-    new given {
+    new givenConfig {
       qg = queryGraph(Seq(relTypeName), BOTH, rPropInLit42).addHints(Some(hint))
       relationshipIndexOn(relTypeName, prop).providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -586,7 +586,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
   }
 
   test("should not plan using implicit IS NOT NULL if explicit IS NOT NULL exists") {
-    new given {
+    new givenConfig {
       addTypeToSemanticTable(lit42, CTInteger.invariant)
       qg = queryGraph(Seq(relTypeName), BOTH, rPropLessThanLit42, rFooIsNotNull)
 
@@ -619,7 +619,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
   }
 
   test("should plan seek with ENDS WITH as existence after range") {
-    new given {
+    new givenConfig {
       addTypeToSemanticTable(lit42, CTInteger.invariant)
       qg = queryGraph(Seq(relTypeName), BOTH, rFooLessThanLit42, rPropEndsWithLitText)
       relationshipIndexOn(relTypeName, foo, prop)
@@ -646,7 +646,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
   }
 
   test("should plan seek with CONTAINS as existence after range") {
-    new given {
+    new givenConfig {
       addTypeToSemanticTable(lit42, CTInteger.invariant)
       qg = queryGraph(Seq(relTypeName), BOTH, rFooLessThanLit42, rPropContainsLitText)
       relationshipIndexOn(relTypeName, foo, prop)
@@ -674,7 +674,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
 
   test("should plan seek with Regex as existence after range") {
     val reg = regex(rProp, literalString("Text"))
-    new given {
+    new givenConfig {
       addTypeToSemanticTable(lit42, CTInteger.invariant)
       qg = queryGraph(Seq(relTypeName), BOTH, rFooLessThanLit42, reg)
       relationshipIndexOn(relTypeName, foo, prop)
@@ -702,7 +702,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
   }
 
   test("should not plan relationship index seek for self-loop") {
-    new given {
+    new givenConfig {
       qg = QueryGraph(
         selections = Selections(Set(Predicate(Set(relName), rPropIsNotNull))),
         patternRelationships = Set(PatternRelationship(

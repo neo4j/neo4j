@@ -37,12 +37,12 @@ class ScopeTest extends CypherFunSuite with AstConstructionTestSupport {
   test("Should retrieve local symbol definitions") {
     val as = symbolUses("a", 1)
     val bs = symbolUses("b", 1)
-    val given = scope(
+    val givenScope = scope(
       intSymbol("a", as),
       intSymbol("b", bs)
     )()
 
-    given.symbolDefinitions should equal(Set(as.definition, bs.definition))
+    givenScope.symbolDefinitions should equal(Set(as.definition, bs.definition))
   }
 
   test("Should find all scopes") {
@@ -59,9 +59,9 @@ class ScopeTest extends CypherFunSuite with AstConstructionTestSupport {
     val child2 = scope(
       nodeSymbol("book", varFor("book"), varFor("book"))
     )()
-    val given = scope()(child1, child2)
+    val givenScope = scope()(child1, child2)
 
-    given.allScopes should equal(Seq(given, child1, child11, child2))
+    givenScope.allScopes should equal(Seq(givenScope, child1, child11, child2))
   }
 
   test("Should find all definitions") {
@@ -84,9 +84,9 @@ class ScopeTest extends CypherFunSuite with AstConstructionTestSupport {
     val child2 = scope(
       nodeSymbol("book", books1.defVar, books1.useVars(1))
     )()
-    val given = scope()(child1, child2)
+    val givenScope = scope()(child1, child2)
 
-    given.allSymbolDefinitions should equal(Map(
+    givenScope.allSymbolDefinitions should equal(Map(
       "name" -> Set(names.definition),
       "root" -> Set(roots.definition),
       "tag" -> Set(tags.definition),
@@ -122,12 +122,12 @@ class ScopeTest extends CypherFunSuite with AstConstructionTestSupport {
   test("Should build variable map for simple scope tree") {
     val as = symbolUses("a", 1)
     val bs = symbolUses("b", 0)
-    val given = scope(
+    val givenScope = scope(
       intSymbol("a", as),
       intSymbol("b", bs)
     )()
 
-    val actual = given.variableDefinitions
+    val actual = givenScope.variableDefinitions
 
     actual should equal(
       as.mapToDefinition ++
@@ -142,7 +142,7 @@ class ScopeTest extends CypherFunSuite with AstConstructionTestSupport {
     val books1 = symbolUses("book", 2)
     val books2 = symbolUses("book", 1)
 
-    val given = scope()(
+    val givenScope = scope()(
       scope(
         nodeSymbol("root", roots.defVar),
         nodeSymbol("book", books1.defVar, books1.useVars(0))
@@ -159,7 +159,7 @@ class ScopeTest extends CypherFunSuite with AstConstructionTestSupport {
       )()
     )
 
-    val actual = given.allVariableDefinitions
+    val actual = givenScope.allVariableDefinitions
 
     actual should equal(
       roots.mapToDefinition ++

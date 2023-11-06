@@ -188,7 +188,7 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
     val orderedNode = "n3"
     val graph = QueryGraph()
 
-    new given {
+    new givenConfig {
       qg = graph
     }.withLogicalPlanningContext { (cfg, context) =>
       val interestingOrder =
@@ -392,7 +392,7 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
     input: PlanningAttributes => Set[PlannedComponent],
     assertion: LogicalPlan => Unit
   ): Unit = {
-    new given {
+    new givenConfig {
       qg = graph
       cardinality = mapCardinality {
         case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a") => 1000.0

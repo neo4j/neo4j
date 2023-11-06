@@ -43,7 +43,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
-  private val GIVEN_FIXED_COST = new given {
+  private val GIVEN_FIXED_COST = new givenConfig {
 
     cost = {
       case _ => Cost(100)
@@ -60,7 +60,7 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
     val a = fakeLogicalPlanFor("a")
     val b = fakeLogicalPlanFor("b")
 
-    assertTopPlan(winner = b, newStubbedPlanningAttributes, Seq(a, b))(new given {
+    assertTopPlan(winner = b, newStubbedPlanningAttributes, Seq(a, b))(new givenConfig {
       cost = {
         case (p, _, _, _) if p == a => Cost(100)
         case (p, _, _, _) if p == b => Cost(50)
@@ -190,7 +190,7 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
       case _   => 0
     }
 
-    assertTopPlan(winner = d, newStubbedPlanningAttributes, Seq(a, b, c, d), preferPlanB)(new given {
+    assertTopPlan(winner = d, newStubbedPlanningAttributes, Seq(a, b, c, d), preferPlanB)(new givenConfig {
       cost = {
         case (`a`, _, _, _) => Cost(100)
         case (`b`, _, _, _) => Cost(100)
@@ -205,7 +205,7 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
     planningAttributes: PlanningAttributes,
     candidates: Seq[LogicalPlan],
     heuristic: SelectorHeuristic = SelectorHeuristic.constant
-  )(GIVEN: given): Unit = {
+  )(GIVEN: givenConfig): Unit = {
     val environment = LogicalPlanningEnvironment(GIVEN)
     val metrics: Metrics =
       environment.metricsFactory.newMetrics(GIVEN.planContext, simpleExpressionEvaluator, ExecutionModel.default)

@@ -551,9 +551,9 @@ trait LogicalPlanningTestSupport2 extends AstConstructionTestSupport with Logica
     stripProduceResults: Boolean = true,
     deduplicateNames: Boolean = deduplicateNames
   ): (LogicalPlan, SemanticTable, PlanningAttributes) =
-    new given().getLogicalPlanFor(queryString, config, queryGraphSolver, stripProduceResults, deduplicateNames)
+    new givenConfig().getLogicalPlanFor(queryString, config, queryGraphSolver, stripProduceResults, deduplicateNames)
 
-  class given extends StubbedLogicalPlanningConfiguration(realConfig)
+  class givenConfig extends StubbedLogicalPlanningConfiguration(realConfig)
 
   class givenPlanWithMinimumCardinalityEnabled
       extends StubbedLogicalPlanningConfiguration(RealLogicalPlanningConfiguration(cypherCompilerConfig))

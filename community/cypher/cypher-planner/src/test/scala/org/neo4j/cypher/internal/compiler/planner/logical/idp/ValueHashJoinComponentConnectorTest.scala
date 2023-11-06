@@ -37,7 +37,7 @@ class ValueHashJoinComponentConnectorTest extends CypherFunSuite with LogicalPla
     val registry: DefaultIdRegistry[QueryGraph] = IdRegistry[QueryGraph]
 
     val joinPred = equals(prop("n", "prop"), prop("m", "prop"))
-    new given().withLogicalPlanningContext { (cfg, ctx) =>
+    new givenConfig().withLogicalPlanningContext { (cfg, ctx) =>
       val order = InterestingOrderConfig.empty
       val kit = ctx.plannerState.config.toKit(order, ctx)
       val nQg = QueryGraph(patternNodes = Set("n"))
@@ -66,7 +66,7 @@ class ValueHashJoinComponentConnectorTest extends CypherFunSuite with LogicalPla
     val registry: DefaultIdRegistry[QueryGraph] = IdRegistry[QueryGraph]
 
     val joinPred = equals(prop("n", "prop"), prop("m", "prop"))
-    new given().withLogicalPlanningContext { (cfg, ctx) =>
+    new givenConfig().withLogicalPlanningContext { (cfg, ctx) =>
       val order = InterestingOrderConfig.empty
       val kit = ctx.plannerState.config.toKit(order, ctx)
       val nQg = QueryGraph(patternNodes = Set("n"))
@@ -103,7 +103,7 @@ class ValueHashJoinComponentConnectorTest extends CypherFunSuite with LogicalPla
     val joinPred1 = equals(prop("n", "prop"), prop("m", "prop"))
     val joinPred2 = equals(prop("m", "prop"), prop("o", "prop"))
     val joinPred3 = equals(prop("n", "prop"), prop("o", "prop"))
-    new given().withLogicalPlanningContext { (cfg, ctx) =>
+    new givenConfig().withLogicalPlanningContext { (cfg, ctx) =>
       val order = InterestingOrderConfig.empty
       val kit = ctx.plannerState.config.toKit(order, ctx)
       val nQg = QueryGraph(patternNodes = Set("n"))
@@ -152,7 +152,7 @@ class ValueHashJoinComponentConnectorTest extends CypherFunSuite with LogicalPla
     val table = IDPTable.empty[LogicalPlan]
     val registry: DefaultIdRegistry[QueryGraph] = IdRegistry[QueryGraph]
 
-    new given().withLogicalPlanningContext { (cfg, ctx) =>
+    new givenConfig().withLogicalPlanningContext { (cfg, ctx) =>
       val order = InterestingOrderConfig.empty
       val kit = ctx.plannerState.config.toKit(order, ctx)
       val nQg = QueryGraph(patternNodes = Set("n"))

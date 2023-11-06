@@ -61,7 +61,7 @@ class SelectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
       nFooBar -> 0.1 // Very selective, but most costly with 2 store accesses. Comes almost last.
     )
 
-    val plan = new given {
+    val plan = new givenConfig {
       // we have to force the planner not to do intersect scan
       cost = {
         case (Selection(_, _: IntersectionNodeByLabelsScan), _, _, _) => 50000.0

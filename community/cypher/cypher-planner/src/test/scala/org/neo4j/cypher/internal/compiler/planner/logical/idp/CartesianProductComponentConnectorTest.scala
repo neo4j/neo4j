@@ -34,7 +34,7 @@ class CartesianProductComponentConnectorTest extends CypherFunSuite with Logical
     val table = IDPTable.empty[LogicalPlan]
     val registry: DefaultIdRegistry[QueryGraph] = IdRegistry[QueryGraph]
 
-    new given().withLogicalPlanningContext { (cfg, ctx) =>
+    new givenConfig().withLogicalPlanningContext { (cfg, ctx) =>
       val order = InterestingOrderConfig.empty
       val kit = ctx.plannerState.config.toKit(order, ctx)
       val nQg = QueryGraph(patternNodes = Set("n"))
@@ -58,7 +58,7 @@ class CartesianProductComponentConnectorTest extends CypherFunSuite with Logical
     val table = IDPTable.empty[LogicalPlan]
     val registry: DefaultIdRegistry[QueryGraph] = IdRegistry[QueryGraph]
 
-    new given().withLogicalPlanningContext { (cfg, ctx) =>
+    new givenConfig().withLogicalPlanningContext { (cfg, ctx) =>
       val order = InterestingOrderConfig.empty
       val kit = ctx.plannerState.config.toKit(order, ctx)
       val nQg = QueryGraph(patternNodes = Set("n"))

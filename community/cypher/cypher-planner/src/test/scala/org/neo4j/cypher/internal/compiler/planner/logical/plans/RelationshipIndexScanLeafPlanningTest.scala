@@ -108,7 +108,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
     )
 
   test("does not plan index scan when no index exist") {
-    new given {
+    new givenConfig {
       qg = queryGraph(Seq(relTypeName), BOTH, propIsNotNull)
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
@@ -121,7 +121,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
   }
 
   test("index scan when there is an index on the property") {
-    new given {
+    new givenConfig {
       qg = queryGraph(Seq(relTypeName), BOTH, propIsNotNull)
       relationshipIndexOn(relTypeName, prop)
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -142,7 +142,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
   }
 
   test("index scan when there is an index on the property for when matching on incoming relationship") {
-    new given {
+    new givenConfig {
       qg = queryGraph(Seq(relTypeName), INCOMING, propIsNotNull)
       relationshipIndexOn(relTypeName, prop)
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -163,7 +163,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
   }
 
   test("index scan when there is an index on the property for when matching on outgoing relationship") {
-    new given {
+    new givenConfig {
       qg = queryGraph(Seq(relTypeName), OUTGOING, propIsNotNull)
       relationshipIndexOn(relTypeName, prop)
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -184,7 +184,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
   }
 
   test("no index scan when there is an index on the property but relationship variable is skipped") {
-    new given {
+    new givenConfig {
       qg = queryGraph(Seq(relTypeName), BOTH, propIsNotNull)
       relationshipIndexOn(relTypeName, prop)
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -201,7 +201,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
   }
 
   test("index scan solves is not null") {
-    new given {
+    new givenConfig {
       qg = queryGraph(Seq(relTypeName), BOTH, propIsNotNull)
       relationshipIndexOn(relTypeName, prop)
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -226,7 +226,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
   }
 
   test("index scan for equality solves is not null") {
-    new given {
+    new givenConfig {
       qg = queryGraph(Seq(relTypeName), BOTH, propEquals12, propIsNotNull)
       relationshipIndexOn(relTypeName, prop)
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -251,7 +251,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
   }
 
   test("index scan with values when there is an index on the property") {
-    new given {
+    new givenConfig {
       qg = queryGraph(Seq(relTypeName), BOTH, propIsNotNull)
       relationshipIndexOn(relTypeName, prop).providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -276,7 +276,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
     val hint: UsingIndexHint =
       UsingIndexHint(varFor(relName), labelOrRelTypeName(relTypeName), Seq(PropertyKeyName(prop)(pos))) _
 
-    new given {
+    new givenConfig {
       qg = queryGraph(Seq(relTypeName), BOTH, propIsNotNull).addHints(Some(hint))
       relationshipIndexOn(relTypeName, prop).providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -305,7 +305,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
     val hint: UsingIndexHint =
       UsingIndexHint(varFor(relName), labelOrRelTypeName(relTypeName), Seq(PropertyKeyName(prop)(pos)), SeekOnly) _
 
-    new given {
+    new givenConfig {
       qg = queryGraph(Seq(relTypeName), BOTH, propIsNotNull).addHints(Some(hint))
       relationshipIndexOn(relTypeName, prop).providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -331,7 +331,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
   }
 
   test("plans index scans for: n.prop STARTS WITH <pattern>") {
-    new given {
+    new givenConfig {
       qg = queryGraph(Seq(relTypeName), BOTH, propStartsWithEmpty)
       relationshipIndexOn(relTypeName, prop)
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -356,7 +356,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
   }
 
   test("plans index scans with value for: n.prop STARTS WITH <pattern>") {
-    new given {
+    new givenConfig {
       qg = queryGraph(Seq(relTypeName), BOTH, propStartsWithEmpty)
       relationshipIndexOn(relTypeName, prop).providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -382,7 +382,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
   }
 
   test("plans index scans for: n.prop < <value>") {
-    new given {
+    new givenConfig {
       qg = queryGraph(Seq(relTypeName), BOTH, propLessThan12)
       addTypeToSemanticTable(lit12, CTInteger.invariant)
       relationshipIndexOn(relTypeName, prop)
@@ -408,7 +408,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
   }
 
   test("plans index scans for: n.prop <> <value>") {
-    new given {
+    new givenConfig {
       qg = queryGraph(Seq(relTypeName), BOTH, propNotEquals12)
       relationshipIndexOn(relTypeName, prop)
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -433,7 +433,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
   }
 
   test("plans index scans for: n.prop = <value>") {
-    new given {
+    new givenConfig {
       qg = queryGraph(Seq(relTypeName), BOTH, propEquals12)
       relationshipIndexOn(relTypeName, prop)
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -458,7 +458,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
   }
 
   test("plans index scans for: n.prop = <pattern>") {
-    new given {
+    new givenConfig {
       qg = queryGraph(Seq(relTypeName), BOTH, propRegexMatchJohnny)
       relationshipIndexOn(relTypeName, prop)
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -483,7 +483,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
   }
 
   test("plans composite index scans when there is a composite index and multiple predicates") {
-    new given {
+    new givenConfig {
       qg = queryGraph(Seq(relTypeName), BOTH, fooContainsApa, propContainsApa, barIsNotNull, bazEquals12)
       relationshipIndexOn(relTypeName, foo, prop, bar, baz)
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -511,7 +511,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
   }
 
   test("plans composite index scans when there is a composite index and multiple predicates on the same property") {
-    new given {
+    new givenConfig {
       qg = queryGraph(Seq(relTypeName), BOTH, propContainsApa, propEquals12, fooIsNotNull, barIsNotNull, bazEquals12)
       relationshipIndexOn(relTypeName, foo, prop, bar, baz)
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -540,7 +540,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
   }
 
   test("plans no composite index scans when there is a composite index but not enough predicates") {
-    new given {
+    new givenConfig {
       qg = queryGraph(Seq(relTypeName), BOTH, propContainsApa, fooContainsApa, barIsNotNull)
       relationshipIndexOn(relTypeName, foo, prop, bar, baz)
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -556,7 +556,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
   // INDEX CONTAINS SCAN
 
   test("does not plan index contains scan when no index exist") {
-    new given {
+    new givenConfig {
       qg = queryGraph(Seq(relTypeName), BOTH, propContainsApa)
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
@@ -572,7 +572,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
   }
 
   test("does plan index contains scan when there is an index on the property") {
-    new given {
+    new givenConfig {
       qg = queryGraph(Seq(relTypeName), BOTH, propContainsApa)
       relationshipTextIndexOn(relTypeName, prop)
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -601,7 +601,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
   }
 
   test("does plan directed index contains scan when there is an index on the property") {
-    new given {
+    new givenConfig {
       qg = queryGraph(Seq(relTypeName), OUTGOING, propContainsApa)
       relationshipTextIndexOn(relTypeName, prop)
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -630,7 +630,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
   }
 
   test("index contains scan with values when there is an index on the property") {
-    new given {
+    new givenConfig {
       qg = queryGraph(Seq(relTypeName), BOTH, propContainsApa)
       relationshipTextIndexOn(relTypeName, prop).providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -659,7 +659,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
   }
 
   test("multiple index contains scans with values when there is an index on the property and multiple predicates") {
-    new given {
+    new givenConfig {
       qg = queryGraph(Seq(relTypeName), INCOMING, propContainsApa, propContainsBepa)
       relationshipTextIndexOn(relTypeName, prop).providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -698,7 +698,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
   }
 
   test("no index contains scans with values when there is a composite index on the property and multiple predicates") {
-    new given {
+    new givenConfig {
       qg = queryGraph(Seq(relTypeName), BOTH, propContainsApa, propContainsApa)
       relationshipIndexOn(relTypeName, prop, foo).providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -718,7 +718,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
     val hint: UsingIndexHint =
       UsingIndexHint(varFor(relName), labelOrRelTypeName(relTypeName), Seq(PropertyKeyName(prop)(pos))) _
 
-    new given {
+    new givenConfig {
       qg = queryGraph(Seq(relTypeName), BOTH, propContainsApa).addHints(Some(hint))
       relationshipTextIndexOn(relTypeName, prop)
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -754,7 +754,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
     val hint: UsingIndexHint =
       UsingIndexHint(varFor(relName), labelOrRelTypeName(relTypeName), Seq(PropertyKeyName(prop)(pos)), SeekOnly) _
 
-    new given {
+    new givenConfig {
       qg = queryGraph(Seq(relTypeName), BOTH, propContainsApa).addHints(Some(hint))
       relationshipTextIndexOn(relTypeName, prop)
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -787,7 +787,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
   }
 
   test("index contains scan when there is an index on the property but relationship variable is restricted") {
-    new given {
+    new givenConfig {
       qg = queryGraph(Seq(relTypeName), BOTH, propContainsApa)
       relationshipTextIndexOn(relTypeName, prop)
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -815,7 +815,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
   // INDEX ENDS WITH SCAN
 
   test("does not plan index ends with scan when no index exist") {
-    new given {
+    new givenConfig {
       qg = queryGraph(Seq(relTypeName), BOTH, propEndsWithApa)
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
@@ -831,7 +831,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
   }
 
   test("does plan index ends with scan when there is an index on the property") {
-    new given {
+    new givenConfig {
       qg = queryGraph(Seq(relTypeName), BOTH, propEndsWithApa)
       relationshipTextIndexOn(relTypeName, prop)
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -860,7 +860,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
   }
 
   test("does plan directed index ends with scan when there is an index on the property") {
-    new given {
+    new givenConfig {
       qg = queryGraph(Seq(relTypeName), OUTGOING, propEndsWithApa)
       relationshipTextIndexOn(relTypeName, prop)
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -889,7 +889,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
   }
 
   test("index ends with scan with values when there is an index on the property") {
-    new given {
+    new givenConfig {
       qg = queryGraph(Seq(relTypeName), BOTH, propEndsWithApa)
       relationshipTextIndexOn(relTypeName, prop).providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -918,7 +918,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
   }
 
   test("multiple index ends with scans with values when there is an index on the property and multiple predicates") {
-    new given {
+    new givenConfig {
       qg = queryGraph(Seq(relTypeName), INCOMING, propEndsWithApa, propEndsWithBepa)
       relationshipTextIndexOn(relTypeName, prop).providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -956,7 +956,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
   }
 
   test("no index ends with scans with values when there is a composite index on the property and multiple predicates") {
-    new given {
+    new givenConfig {
       qg = queryGraph(Seq(relTypeName), BOTH, propEndsWithApa, propEndsWithApa)
       relationshipIndexOn(relTypeName, prop, foo).providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -976,7 +976,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
     val hint: UsingIndexHint =
       UsingIndexHint(varFor(relName), labelOrRelTypeName(relTypeName), Seq(PropertyKeyName(prop)(pos))) _
 
-    new given {
+    new givenConfig {
       qg = queryGraph(Seq(relTypeName), BOTH, propEndsWithApa).addHints(Some(hint))
       relationshipTextIndexOn(relTypeName, prop)
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -1012,7 +1012,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
     val hint: UsingIndexHint =
       UsingIndexHint(varFor(relName), labelOrRelTypeName(relTypeName), Seq(PropertyKeyName(prop)(pos)), SeekOnly) _
 
-    new given {
+    new givenConfig {
       qg = queryGraph(Seq(relTypeName), BOTH, propEndsWithApa).addHints(Some(hint))
       relationshipTextIndexOn(relTypeName, prop)
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -1045,7 +1045,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
   }
 
   test("index ends with scan when there is an index on the property but relationship variable is restricted") {
-    new given {
+    new givenConfig {
       qg = queryGraph(Seq(relTypeName), BOTH, propEndsWithApa)
       relationshipTextIndexOn(relTypeName, prop)
     }.withLogicalPlanningContext { (cfg, ctx) =>

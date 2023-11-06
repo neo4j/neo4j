@@ -65,7 +65,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
   test("in an OR index plan should use cached values outside union for range predicates") {
     val plan =
-      new given {
+      new givenConfig {
         indexOn("Awesome", "prop1").providesValues()
         indexOn("Awesome", "prop2").providesValues()
       } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop1 > 42 OR n.prop2 > 3 RETURN n.prop1, n.prop2"
@@ -96,7 +96,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     "in an OR index plan should use cached values outside union for range predicates if they are on the same property"
   ) {
     val plan =
-      new given {
+      new givenConfig {
         indexOn("Awesome", "prop1").providesValues()
       } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop1 > 42 OR n.prop1 < 3 RETURN n.prop1, n.prop2"
     Seq(
@@ -123,7 +123,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
   test("in an OR index plan should use cached values outside union for equality predicates") {
     val plan =
-      new given {
+      new givenConfig {
         indexOn("Awesome", "prop1").providesValues()
         indexOn("Awesome", "prop2").providesValues()
       } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop1 = 42 OR n.prop2 = 3 RETURN n.prop1, n.prop2"
@@ -152,7 +152,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
   test("in an OR index plan with 4 indexes should get values for equality predicates") {
     val plan =
-      new given {
+      new givenConfig {
         indexOn("Awesome", "prop1").providesValues()
         indexOn("Awesome", "prop2").providesValues()
         indexOn("Awesome2", "prop1").providesValues()
@@ -200,7 +200,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
   test("should plan index seek with GetValue when the property is projected") {
     val plan =
-      new given {
+      new givenConfig {
         indexOn("Awesome", "prop").providesValues()
       } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop = 42 RETURN n.prop"
 
@@ -214,7 +214,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
   test("for exact seeks, should even plan index seek with GetValue when the index does not provide values") {
     val plan =
-      new given {
+      new givenConfig {
         indexOn("Awesome", "prop")
       } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop = 42 RETURN n.prop"
 
@@ -228,7 +228,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
   test("should plan projection and index seek with DoNotGetValue when another property is projected") {
     val plan =
-      new given {
+      new givenConfig {
         indexOn("Awesome", "prop").providesValues()
         indexOn("Awesome", "foo").providesValues()
       } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop = 42 RETURN n.foo"
@@ -243,7 +243,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
   test("should plan projection and index seek with GetValue when two properties are projected") {
     val plan =
-      new given {
+      new givenConfig {
         indexOn("Awesome", "prop").providesValues()
         indexOn("Awesome", "foo").providesValues()
       } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop = 42 RETURN n.foo, n.prop"
@@ -258,7 +258,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
   test("should plan projection and index seek with GetValue when another predicate uses the property") {
     val plan =
-      new given {
+      new givenConfig {
         indexOn("Awesome", "prop").providesValues()
       } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop <= 42 AND n.prop % 2 = 0 RETURN n.foo"
 
@@ -275,7 +275,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
   test("should plan projection and index seek with GetValue when another predicate uses the property 2") {
     val plan =
-      new given {
+      new givenConfig {
         indexOn("Awesome", "prop").providesValues()
       } getLogicalPlanFor "MATCH (n:Awesome)-[r]->(m) WHERE n.prop <= 42 AND n.prop % m.foo = 0 RETURN n.foo"
 
@@ -302,7 +302,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
   test("should plan index seek with GetValue when the property is projected after a renaming projection") {
     val plan =
-      new given {
+      new givenConfig {
         indexOn("Awesome", "prop").providesValues()
       } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop = 42 WITH n AS m MATCH (m)-[r]-(o) RETURN m.prop"
 
@@ -334,7 +334,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
   test("should plan index seek with GetValue when the property is used in a predicate after a renaming projection") {
     val plan =
-      new given {
+      new givenConfig {
         indexOn("Awesome", "prop").providesValues()
       } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop > 42 WITH n AS m MATCH (m)-[r]-(o) WHERE m.prop < 50 RETURN o"
 
@@ -358,7 +358,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
   test("should plan index seek with GetValue when the property is projected and renamed in a RETURN") {
     val plan =
-      new given {
+      new givenConfig {
         indexOn("Awesome", "prop").providesValues()
       } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop = 42 RETURN n.prop AS foo"
 
@@ -372,7 +372,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
   test("should plan index seek with GetValue when the property is projected and renamed in a WITH") {
     val plan =
-      new given {
+      new givenConfig {
         indexOn("Awesome", "prop").providesValues()
       } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop = 42 WITH n.prop AS foo, true AS bar RETURN foo, bar AS baz"
 
@@ -389,7 +389,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
   test("should not be fooled to use a variable when the node variable is defined twice") {
     val plan =
-      new given {
+      new givenConfig {
         indexOn("Awesome", "prop").providesValues()
       } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop = 42 WITH n as m MATCH (m)-[r]-(n) RETURN n.prop"
 
@@ -421,7 +421,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
   test("should plan index seek with GetValue when the property is projected before the property access") {
     val plan =
-      new given {
+      new givenConfig {
         indexOn("Awesome", "prop").providesValues()
       } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop = 42 WITH n MATCH (m)-[r]-(n) RETURN n.prop"
 
@@ -442,7 +442,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
   test("should plan projection and index seek with GetValue when the property is projected inside of a function") {
     val plan =
-      new given {
+      new givenConfig {
         indexOn("Awesome", "prop").providesValues()
       } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop = 'foo' RETURN toUpper(n.prop)"
 
@@ -456,7 +456,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
   test("should plan projection and index seek with GetValue when the property is used in ORDER BY") {
     val plan =
-      new given {
+      new givenConfig {
         indexOn("Awesome", "prop").providesValues()
       } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop = 'foo' RETURN n.foo ORDER BY toUpper(n.prop)"
 
@@ -479,7 +479,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
   test("should plan index seek with GetValue when the property is part of an aggregating column") {
     val plan =
-      new given {
+      new givenConfig {
         indexOn("Awesome", "prop").providesValues()
       } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop = 42 RETURN sum(n.prop), n.foo AS nums"
 
@@ -496,7 +496,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     "should plan projection and index seek with GetValue when the property is used in key column of an aggregation and in ORDER BY"
   ) {
     val plan =
-      new given {
+      new givenConfig {
         indexOn("Awesome", "prop").providesValues()
       } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop = 'foo' RETURN sum(n.foo), n.prop ORDER BY n.prop"
 
@@ -514,7 +514,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
   test("should plan index seek with GetValue when the property is part of a distinct column") {
     val plan =
-      new given {
+      new givenConfig {
         indexOn("Awesome", "prop").providesValues()
       } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop = 42 RETURN DISTINCT n.prop"
 
@@ -528,7 +528,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
   test("should plan projection and index seek with GetValue when the property is used in an unwind projection") {
     val plan =
-      new given {
+      new givenConfig {
         indexOn("Awesome", "prop").providesValues()
       } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop = 'foo' UNWIND [n.prop] AS foo RETURN foo"
 
@@ -552,7 +552,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     )
 
     val plan =
-      new given {
+      new givenConfig {
         procedure(signature)
         indexOn("Awesome", "prop").providesValues()
       } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop = 'foo' CALL fooProcedure(n.prop) YIELD value RETURN value"
@@ -573,7 +573,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
   test("should plan starts with seek with GetValue when the property is projected") {
     val plan =
-      new given {
+      new givenConfig {
         indexOn("Awesome", "prop").providesValues()
       } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop STARTS WITH 'foo' RETURN n.prop"
 
@@ -587,7 +587,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
   test("should plan projection and starts with seek with DoNotGetValue when the index does not provide values") {
     val plan =
-      new given {
+      new givenConfig {
         indexOn("Awesome", "prop")
       } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop STARTS WITH 'foo' RETURN n.prop"
 
@@ -601,7 +601,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
   test("should plan projection and starts with seek with DoNotGetValue when another property is projected") {
     val plan =
-      new given {
+      new givenConfig {
         indexOn("Awesome", "prop").providesValues()
         indexOn("Awesome", "foo").providesValues()
       } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop STARTS WITH 'foo' RETURN n.foo"
@@ -618,7 +618,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
   test("should plan range seek with GetValue when the property is projected") {
     val plan =
-      new given {
+      new givenConfig {
         indexOn("Awesome", "prop").providesValues()
       } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop > 'foo' RETURN n.prop"
 
@@ -632,7 +632,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
   test("should plan projection and range seek with DoNotGetValue when the index does not provide values") {
     val plan =
-      new given {
+      new givenConfig {
         indexOn("Awesome", "prop")
       } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop > 'foo' RETURN n.prop"
 
@@ -646,7 +646,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
   test("should plan projection and range seek with DoNotGetValue when another property is projected") {
     val plan =
-      new given {
+      new givenConfig {
         indexOn("Awesome", "prop")
         indexOn("Awesome", "foo")
       } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop > 'foo' RETURN n.foo"
@@ -663,7 +663,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
   test("should plan range seek with GetValue when the property is projected (unique index)") {
     val plan =
-      new given {
+      new givenConfig {
         uniqueIndexOn("Awesome", "prop").providesValues()
       } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop > 'foo' RETURN n.prop"
 
@@ -679,7 +679,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     "should plan projection and range seek with DoNotGetValue when the index does not provide values (unique index)"
   ) {
     val plan =
-      new given {
+      new givenConfig {
         uniqueIndexOn("Awesome", "prop")
       } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop > 'foo' RETURN n.prop"
 
@@ -693,7 +693,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
   test("should plan projection and range seek with DoNotGetValue when another property is projected (unique index)") {
     val plan =
-      new given {
+      new givenConfig {
         uniqueIndexOn("Awesome", "prop")
         uniqueIndexOn("Awesome", "foo")
       } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop > 'foo' RETURN n.foo"
@@ -712,7 +712,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     "should plan seek with GetValue when the property is projected (merge unique index), but need a projection because of the Optional"
   ) {
     val plan =
-      new given {
+      new givenConfig {
         uniqueIndexOn("Awesome", "prop").providesValues()
       } getLogicalPlanFor "MERGE (n:Awesome {prop: 'foo'}) RETURN n.prop"
 
@@ -743,7 +743,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     "for exact seeks, should even plan index seek with GetValue when the index does not provide values (merge unique index), but need a projection because of the Optional"
   ) {
     val plan =
-      new given {
+      new givenConfig {
         uniqueIndexOn("Awesome", "prop")
       } getLogicalPlanFor "MERGE (n:Awesome {prop: 'foo'}) RETURN n.prop"
 
@@ -774,7 +774,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     "should plan projection and range seek with DoNotGetValue when another property is projected (merge unique index)"
   ) {
     val plan =
-      new given {
+      new givenConfig {
         uniqueIndexOn("Awesome", "prop")
         uniqueIndexOn("Awesome", "foo")
       } getLogicalPlanFor "MERGE (n:Awesome {prop: 'foo'}) RETURN n.foo"
@@ -806,7 +806,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
   test("should plan index seek with GetValue when the property is projected (composite index)") {
     val plan =
-      new given {
+      new givenConfig {
         indexOn("Awesome", "prop", "foo").providesValues()
       } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop = 42 AND n.foo = 21 RETURN n.prop, n.foo"
 
@@ -822,7 +822,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     "for exact seeks, should even plan index seek with GetValue when the index does not provide values (composite index)"
   ) {
     val plan =
-      new given {
+      new givenConfig {
         indexOn("Awesome", "prop", "foo")
       } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop = 42 AND n.foo = 21 RETURN n.prop, n.foo"
 
@@ -838,7 +838,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     "should plan projection and index seek with DoNotGetValue when another property is projected (composite index)"
   ) {
     val plan =
-      new given {
+      new givenConfig {
         indexOn("Awesome", "prop", "foo").providesValues()
       } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop = 42 AND n.foo = 21 RETURN n.bar"
 
@@ -852,7 +852,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
   test("should plan index seek with GetValue and DoNotGetValue when only one property is projected (composite index)") {
     val plan =
-      new given {
+      new givenConfig {
         indexOn("Awesome", "prop", "foo").providesValues()
       } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop = 42 AND n.foo = 21 RETURN n.prop"
 
@@ -868,7 +868,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
   test("should plan index contains scan with GetValue when the property is projected") {
     val plan =
-      new given {
+      new givenConfig {
         textIndexOn("Awesome", "prop").providesValues()
       } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop CONTAINS 'foo' RETURN n.prop"
 
@@ -882,7 +882,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
   test("should plan projection and index contains scan with DoNotGetValue when the index does not provide values") {
     val plan =
-      new given {
+      new givenConfig {
         textIndexOn("Awesome", "prop")
       } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop CONTAINS 'foo' RETURN n.prop"
 
@@ -896,7 +896,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
   test("should plan projection and index contains scan with DoNotGetValue when another property is projected") {
     val plan =
-      new given {
+      new givenConfig {
         textIndexOn("Awesome", "prop").providesValues()
         textIndexOn("Awesome", "foo").providesValues()
       } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop CONTAINS 'foo' RETURN n.foo"
@@ -992,7 +992,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
   test("should plan exists scan with GetValue when the property is projected") {
     val plan =
-      new given {
+      new givenConfig {
         indexOn("Awesome", "prop").providesValues()
       } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop IS NOT NULL RETURN n.prop"
 
@@ -1058,7 +1058,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
   test("should plan exists scan with DoNotGetValue when the index does not provide values") {
     val plan =
-      new given {
+      new givenConfig {
         indexOn("Awesome", "prop")
       } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop IS NOT NULL RETURN n.prop"
 
@@ -1101,7 +1101,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
   test("should plan scan with GetValue when existence constraint on projected property") {
     val plan =
-      new given {
+      new givenConfig {
         indexOn("Awesome", "prop").providesValues()
         nodePropertyExistenceConstraintOn("Awesome", Set("prop"))
       } getLogicalPlanFor "MATCH (n:Awesome) RETURN n.prop"
@@ -1144,7 +1144,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
   test("should plan scan with DoNotGetValue when existence constraint but the index does not provide values") {
     val plan =
-      new given {
+      new givenConfig {
         indexOn("Awesome", "prop")
         nodePropertyExistenceConstraintOn("Awesome", Set("prop"))
       } getLogicalPlanFor "MATCH (n:Awesome) RETURN n.prop"
@@ -1189,7 +1189,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
   test("should plan scan with GetValue when composite existence constraint on projected property") {
     val plan =
-      new given {
+      new givenConfig {
         indexOn("Awesome", "prop2").providesValues()
         nodePropertyExistenceConstraintOn("Awesome", Set("prop1", "prop2"))
       } getLogicalPlanFor "MATCH (n:Awesome) RETURN n.prop2"
@@ -1269,7 +1269,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     "should plan scan with DoNotGetValue when composite existence constraint but the index does not provide values"
   ) {
     val plan =
-      new given {
+      new givenConfig {
         indexOn("Awesome", "prop2")
         nodePropertyExistenceConstraintOn("Awesome", Set("prop1", "prop2"))
       } getLogicalPlanFor "MATCH (n:Awesome) RETURN n.prop2"
@@ -1321,7 +1321,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
   test("should plan index ends with scan with GetValue when the property is projected") {
     val plan =
-      new given {
+      new givenConfig {
         textIndexOn("Awesome", "prop").providesValues()
       } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop ENDS WITH 'foo' RETURN n.prop"
 
@@ -1335,7 +1335,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
   test("should plan projection and index ends with scan with DoNotGetValue when the index does not provide values") {
     val plan =
-      new given {
+      new givenConfig {
         textIndexOn("Awesome", "prop")
       } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop ENDS WITH 'foo' RETURN n.prop"
 
@@ -1349,7 +1349,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
   test("should plan projection and index ends with scan with DoNotGetValue when another property is projected") {
     val plan =
-      new given {
+      new givenConfig {
         textIndexOn("Awesome", "prop").providesValues()
         textIndexOn("Awesome", "foo").providesValues()
       } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop ENDS WITH 'foo' RETURN n.foo"
@@ -1364,7 +1364,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
   test("should use cached access after projection of non returned property") {
     val plan =
-      new given {
+      new givenConfig {
         indexOn("Awesome", "prop").providesValues()
         indexOn("Awesome", "foo").providesValues()
       } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop < 2 RETURN n.prop ORDER BY n.foo"
@@ -1466,7 +1466,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
   test("should plan scan with GetValue when the property is used in avg function") {
     val plan =
-      new given {
+      new givenConfig {
         indexOn("Awesome", "prop").providesValues()
       } getLogicalPlanFor "MATCH (n:Awesome) RETURN avg(n.prop)"
 
@@ -1508,7 +1508,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
   test("should plan scan with DoNotGetValue when the property is used in avg function") {
     val plan =
-      new given {
+      new givenConfig {
         indexOn("Awesome", "prop")
       } getLogicalPlanFor "MATCH (n:Awesome) RETURN avg(n.prop)"
 
@@ -1550,7 +1550,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
   test("should plan scan with GetValue when the property is used in sum function") {
     val plan =
-      new given {
+      new givenConfig {
         indexOn("Awesome", "prop").providesValues()
       } getLogicalPlanFor "MATCH (n:Awesome) RETURN sum(n.prop)"
 
@@ -1592,7 +1592,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
   test("should plan scan with DoNotGetValue when the property is used in sum function") {
     val plan =
-      new given {
+      new givenConfig {
         indexOn("Awesome", "prop")
       } getLogicalPlanFor "MATCH (n:Awesome) RETURN sum(n.prop)"
 

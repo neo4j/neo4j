@@ -29,17 +29,17 @@ import org.neo4j.graphdb.ExecutionPlanDescription
 class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("cost should be default planner") {
-    given("match (n) return n")
+    givenQuery("match (n) return n")
       .shouldHavePlanner(CostBasedPlannerName.default)
   }
 
   test("slotted should be default runtime") {
-    given("match (n) return n")
+    givenQuery("match (n) return n")
       .shouldHaveRuntime(SlottedRuntimeName)
   }
 
   test("AllNodesScan should be the only child of the plan") {
-    val description = given("match (n) return n").planDescription
+    val description = givenQuery("match (n) return n").planDescription
     var children = description.getChildren
     children should have size 1
     while (children.get(0).getChildren.size() > 0) {
@@ -51,7 +51,7 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
   }
 
   test("DbHits should contain proper values in interpreted runtime") {
-    val description = given("match (n) return n")
+    val description = givenQuery("match (n) return n")
       .withRuntime(InterpretedRuntimeName)
       .planDescription
     val children = description.getChildren
@@ -61,17 +61,17 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
   }
 
   test("Rows should be properly formatted in interpreted runtime") {
-    given("match (n) return n")
+    givenQuery("match (n) return n")
       .withRuntime(InterpretedRuntimeName)
       .planDescription.getArguments.get("Rows") should equal(0)
   }
 
   test("EstimatedRows should be properly formatted") {
     // on missing statistics, we fake cardinality to 10
-    given("MATCH (n) RETURN n").planDescription.getArguments.get("EstimatedRows") should equal(10.0)
+    givenQuery("MATCH (n) RETURN n").planDescription.getArguments.get("EstimatedRows") should equal(10.0)
   }
 
-  def given(query: String) = TestQuery(query)
+  def givenQuery(query: String) = TestQuery(query)
 
   case class TestQuery(
     query: String,

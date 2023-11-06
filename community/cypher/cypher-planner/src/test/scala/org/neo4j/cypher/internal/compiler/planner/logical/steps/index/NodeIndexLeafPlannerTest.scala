@@ -28,7 +28,7 @@ class NodeIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
   test("testFindIndexCompatiblePredicates on hasLabel with label with constraint") {
 
-    new given {
+    new givenConfig {
       qg = QueryGraph()
       nodeConstraints = Set(("A", Set("prop1")))
     } withLogicalPlanningContext { (_, context) =>
@@ -49,7 +49,7 @@ class NodeIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
   test("testFindIndexCompatiblePredicates on hasLabel with label without constraint") {
 
-    new given {
+    new givenConfig {
       qg = QueryGraph()
     } withLogicalPlanningContext { (_, context) =>
       val compatiblePredicates = NodeIndexLeafPlanner.findIndexCompatiblePredicates(

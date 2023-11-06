@@ -44,7 +44,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 class LimitSelectivityTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   test("forLastPart: no LIMIT") {
-    new given().withLogicalPlanningContext { (_, context) =>
+    new givenConfig().withLogicalPlanningContext { (_, context) =>
       val query = RegularSinglePlannerQuery()
 
       // WHEN
@@ -60,7 +60,7 @@ class LimitSelectivityTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val nodes = 100
 
     // MATCH (n) RETURN n LIMIT 10
-    new given {
+    new givenConfig {
       statistics = new TestGraphStatistics() {
         override def nodesAllCardinality(): Cardinality = Cardinality(nodes)
       }
@@ -79,7 +79,7 @@ class LimitSelectivityTest extends CypherFunSuite with LogicalPlanningTestSuppor
   }
 
   test("forLastPart: no LIMIT, parentLimitSelectivity") {
-    new given().withLogicalPlanningContext { (_, context) =>
+    new givenConfig().withLogicalPlanningContext { (_, context) =>
       val query = RegularSinglePlannerQuery()
       val p = Selectivity(0.5)
 
@@ -96,7 +96,7 @@ class LimitSelectivityTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val nodes = 100
 
     // MATCH (n) RETURN n LIMIT 10
-    new given {
+    new givenConfig {
       statistics = new TestGraphStatistics() {
         override def nodesAllCardinality(): Cardinality = Cardinality(nodes)
       }
@@ -116,7 +116,7 @@ class LimitSelectivityTest extends CypherFunSuite with LogicalPlanningTestSuppor
   }
 
   test("forAllParts: no LIMIT") {
-    new given().withLogicalPlanningContext { (_, context) =>
+    new givenConfig().withLogicalPlanningContext { (_, context) =>
       val query = RegularSinglePlannerQuery()
 
       // WHEN
@@ -128,7 +128,7 @@ class LimitSelectivityTest extends CypherFunSuite with LogicalPlanningTestSuppor
   }
 
   test("forAllParts: no LIMIT, tail") {
-    new given().withLogicalPlanningContext { (_, context) =>
+    new givenConfig().withLogicalPlanningContext { (_, context) =>
       val query = RegularSinglePlannerQuery(
         tail = Some(RegularSinglePlannerQuery())
       )
@@ -146,7 +146,7 @@ class LimitSelectivityTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val nodes = 100
 
     // MATCH (n) RETURN n LIMIT 10
-    new given {
+    new givenConfig {
       statistics = new TestGraphStatistics() {
         override def nodesAllCardinality(): Cardinality = Cardinality(nodes)
       }
@@ -169,7 +169,7 @@ class LimitSelectivityTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val nodes = 100
 
     // MATCH (n) WITH n LIMIT 10 MATCH (m)
-    new given {
+    new givenConfig {
       statistics = new TestGraphStatistics() {
         override def nodesAllCardinality(): Cardinality = Cardinality(nodes)
       }
@@ -198,7 +198,7 @@ class LimitSelectivityTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val nodes = 100
 
     // MATCH (n) WITH n MATCH (m) RETURN * LIMIT 10
-    new given {
+    new givenConfig {
       statistics = new TestGraphStatistics() {
         override def nodesAllCardinality(): Cardinality = Cardinality(nodes)
       }
@@ -226,7 +226,7 @@ class LimitSelectivityTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val nodes = 100
 
     // MATCH (n) WITH n LIMIT <lowLimit> MATCH (m) RETURN * LIMIT <highLimit>
-    new given {
+    new givenConfig {
       statistics = new TestGraphStatistics() {
         override def nodesAllCardinality(): Cardinality = Cardinality(nodes)
       }
@@ -257,7 +257,7 @@ class LimitSelectivityTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val nodes = 100
 
     // MATCH (n) WITH n LIMIT <lowLimit> MATCH (m) RETURN * LIMIT <highLimit>
-    new given {
+    new givenConfig {
       statistics = new TestGraphStatistics() {
         override def nodesAllCardinality(): Cardinality = Cardinality(nodes)
       }
@@ -291,7 +291,7 @@ class LimitSelectivityTest extends CypherFunSuite with LogicalPlanningTestSuppor
     Seq(lowLimit, midLimit, highLimit).permutations.foreach {
       case Seq(firstLimit, secondLimit, thirdLimit) =>
         // MATCH (n) WITH * LIMIT <firstLimit> WITH * LIMIT <secondLimit> RETURN * LIMIT <thirdLimit>
-        new given {
+        new givenConfig {
           statistics = new TestGraphStatistics() {
             override def nodesAllCardinality(): Cardinality = Cardinality(nodes)
           }
@@ -334,7 +334,7 @@ class LimitSelectivityTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val nodes = 100
 
     // MATCH (n), (m) SET n.foo = 1 RETURN * LIMIT 10
-    new given {
+    new givenConfig {
       statistics = new TestGraphStatistics() {
         override def nodesAllCardinality(): Cardinality = Cardinality(nodes)
       }
@@ -367,7 +367,7 @@ class LimitSelectivityTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val resolvedCall = ResolvedCall(signature, Seq.empty, IndexedSeq.empty)(pos)
 
     // MATCH (n), (m) CALL my.proc.foo() RETURN * LIMIT 10
-    new given {
+    new givenConfig {
       statistics = new TestGraphStatistics() {
         override def nodesAllCardinality(): Cardinality = Cardinality(nodes)
       }
@@ -405,7 +405,7 @@ class LimitSelectivityTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val resolvedCall = ResolvedCall(signature, Seq.empty, IndexedSeq.empty)(pos)
 
     // MATCH (n), (m) CALL my.proc.foo() RETURN * LIMIT 10
-    new given {
+    new givenConfig {
       statistics = new TestGraphStatistics() {
         override def nodesAllCardinality(): Cardinality = Cardinality(nodes)
       }
@@ -442,7 +442,7 @@ class LimitSelectivityTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val resolvedCall = ResolvedCall(signature, Seq.empty, IndexedSeq.empty)(pos)
 
     // MATCH (n), (m) CALL my.proc.foo() RETURN * LIMIT 10
-    new given {
+    new givenConfig {
       statistics = new TestGraphStatistics() {
         override def nodesAllCardinality(): Cardinality = Cardinality(nodes)
       }
@@ -471,7 +471,7 @@ class LimitSelectivityTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val nodes = 100
 
     // MATCH (n), (m) WITH * LIMIT 10 SET n.foo = 1
-    new given {
+    new givenConfig {
       statistics = new TestGraphStatistics() {
         override def nodesAllCardinality(): Cardinality = Cardinality(nodes)
       }
@@ -503,7 +503,7 @@ class LimitSelectivityTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val nodes = 100
 
     // MATCH (n) WITH count(*) AS c MATCH (m) RETURN * LIMIT 10
-    new given {
+    new givenConfig {
       statistics = new TestGraphStatistics() {
         override def nodesAllCardinality(): Cardinality = Cardinality(nodes)
       }

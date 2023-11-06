@@ -75,7 +75,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
   test("should plan for a single node pattern") {
     val monitor = mock[IDPQueryGraphSolverMonitor]
 
-    new given {
+    new givenConfig {
       queryGraphSolver = createQueryGraphSolver(monitor = monitor, solverConfig = EmptySolverConfig())
       qg = QueryGraph(patternNodes = Set("a"))
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -94,7 +94,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
   test("should plan cartesian product between 3 pattern nodes") {
     val monitor = mock[IDPQueryGraphSolverMonitor]
 
-    new given {
+    new givenConfig {
       queryGraphSolver = IDPQueryGraphSolver(
         SingleComponentPlanner(solverConfig = EmptySolverConfig())(monitor),
         cartesianProductsOrValueJoins,
@@ -137,7 +137,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
   test("should plan for a single relationship pattern") {
     val monitor = mock[IDPQueryGraphSolverMonitor]
 
-    new given {
+    new givenConfig {
       queryGraphSolver = createQueryGraphSolver(monitor = monitor, solverConfig = EmptySolverConfig())
       qg = QueryGraph(
         patternNodes = Set("a", "b"),
@@ -176,7 +176,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
     val monitor = mock[IDPQueryGraphSolverMonitor]
 
     val labelBPredicate = hasLabels("b", "B")
-    new given {
+    new givenConfig {
       queryGraphSolver = createQueryGraphSolver(monitor = monitor, solverConfig = EmptySolverConfig())
       qg = QueryGraph(
         patternNodes = Set("a", "b"),
@@ -224,7 +224,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
     val monitor = mock[IDPQueryGraphSolverMonitor]
 
     // MATCH (a:A)-[r1]->(c)-[r2]->(b:B)
-    new given {
+    new givenConfig {
       queryGraphSolver = createQueryGraphSolver(monitor = monitor, solverConfig = JoinOnlyIDPSolverConfig)
       qg = QueryGraph(
         patternNodes = Set("a", "b", "c"),
@@ -284,7 +284,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
     val monitor = mock[IDPQueryGraphSolverMonitor]
 
     // MATCH (a:A)-[r1]->(c)-[r2]->(b:B) WHERE r1.foo = r2.foo
-    new given {
+    new givenConfig {
       val predicate: Expression = self.equals(prop("r1", "foo"), prop("r2", "foo"))
       queryGraphSolver = createQueryGraphSolver(monitor = monitor, solverConfig = JoinOnlyIDPSolverConfig)
       qg = QueryGraph(
@@ -350,7 +350,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
   test("should solve self looping pattern") {
     val monitor = mock[IDPQueryGraphSolverMonitor]
 
-    new given {
+    new givenConfig {
       queryGraphSolver = createQueryGraphSolver(monitor = monitor, solverConfig = EmptySolverConfig())
       qg = QueryGraph(
         patternNodes = Set("a"),
@@ -381,7 +381,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
   test("should solve double expand") {
     val monitor = mock[IDPQueryGraphSolverMonitor]
 
-    new given {
+    new givenConfig {
       queryGraphSolver = createQueryGraphSolver(monitor = monitor, solverConfig = ExpandOnlyIDPSolverConfig)
       qg = QueryGraph(
         patternNodes = Set("a", "b", "c"),
@@ -434,7 +434,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
   test("should solve empty graph with Argument") {
     val monitor = mock[IDPQueryGraphSolverMonitor]
 
-    new given {
+    new givenConfig {
       queryGraphSolver = createQueryGraphSolver(monitor = monitor, solverConfig = EmptySolverConfig())
       qg = QueryGraph.empty
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -454,7 +454,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
   test("should plan a simple argument row when everything is covered") {
     val monitor = mock[IDPQueryGraphSolverMonitor]
 
-    new given {
+    new givenConfig {
       queryGraphSolver = createQueryGraphSolver(monitor = monitor, solverConfig = EmptySolverConfig())
       qg = QueryGraph(argumentIds = Set("a"))
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -474,7 +474,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
   test("should handle projected endpoints") {
     val monitor = mock[IDPQueryGraphSolverMonitor]
 
-    new given {
+    new givenConfig {
       queryGraphSolver = createQueryGraphSolver(monitor = monitor, solverConfig = EmptySolverConfig())
       qg = QueryGraph(
         patternNodes = Set("a", "b"),
@@ -517,7 +517,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
      */
     val monitor = mock[IDPQueryGraphSolverMonitor]
 
-    new given {
+    new givenConfig {
       cost = {
         case (ProjectEndpoints(Expand(_, _, _, _, _, _, _), _, _, _, _, _, _, _, _), _, _, _) => 10.0
         case (Expand(ProjectEndpoints(_, _, _, _, _, _, _, _, _), _, _, _, _, _, _), _, _, _) => 1.0
@@ -573,7 +573,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
   test("should plan a relationship pattern based on an argument row since part of the node pattern is already solved") {
     val monitor = mock[IDPQueryGraphSolverMonitor]
 
-    new given {
+    new givenConfig {
       queryGraphSolver = createQueryGraphSolver(monitor = monitor, solverConfig = ExpandOnlyIDPSolverConfig)
       qg = QueryGraph(
         patternNodes = Set("a", "b"),
@@ -620,7 +620,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
     )
 
     solverConfigsToTest.foreach { solverConfig =>
-      new given {
+      new givenConfig {
 
         queryGraphSolver = createQueryGraphSolver(monitor = monitor, solverConfig = solverConfig)
 
@@ -704,7 +704,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
     // keep around, practical for investigating performance
     val numberOfPatternRelationships = 10
 
-    new given {
+    new givenConfig {
       queryGraphSolver = createQueryGraphSolver(monitor, DefaultIDPSolverConfig)
       val patternRels: Seq[PatternRelationship] = for (i <- 1 to numberOfPatternRelationships) yield {
         PatternRelationship("r" + i, ("n" + i, "x"), SemanticDirection.INCOMING, Seq.empty, SimplePatternLength)
@@ -726,7 +726,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
     // keep around, practical for investigating performance
     val numberOfPatternRelationships = 10
 
-    new given {
+    new givenConfig {
       val patternRels: Seq[PatternRelationship] = for (i <- 1 until numberOfPatternRelationships) yield {
         PatternRelationship(
           "r" + i,
@@ -751,7 +751,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
   test("should solve planning an empty QG with arguments") {
     val monitor = mock[IDPQueryGraphSolverMonitor]
 
-    new given {
+    new givenConfig {
       queryGraphSolver = createQueryGraphSolver(monitor = monitor, solverConfig = EmptySolverConfig())
       qg = QueryGraph(argumentIds = Set("a"), patternNodes = Set("a"))
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -772,7 +772,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
     val monitor = mock[IDPQueryGraphSolverMonitor]
     val predicate = equals(varFor("b"), varFor("c"))
 
-    new given {
+    new givenConfig {
       queryGraphSolver = createQueryGraphSolver(monitor = monitor, solverConfig = EmptySolverConfig())
       qg = QueryGraph(
         patternNodes = Set("a", "b", "c"),
@@ -809,7 +809,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
     val monitor = mock[IDPQueryGraphSolverMonitor]
     val predicate = equals(varFor("b"), varFor("c"))
 
-    new given {
+    new givenConfig {
       queryGraphSolver = createQueryGraphSolver(monitor = monitor, solverConfig = EmptySolverConfig())
       qg = QueryGraph(
         patternNodes = Set("a", "b", "c"),
@@ -834,7 +834,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
   test("should plan for optional single relationship pattern") {
     val monitor = mock[IDPQueryGraphSolverMonitor]
 
-    new given {
+    new givenConfig {
       queryGraphSolver = createQueryGraphSolver(monitor, DefaultIDPSolverConfig)
       qg = QueryGraph( // MATCH a OPTIONAL MATCH (a)-[r]-(b)
         patternNodes = Set("a"),
@@ -902,7 +902,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
   test("should plan for optional single relationship pattern between two known nodes") {
     val monitor = mock[IDPQueryGraphSolverMonitor]
 
-    new given {
+    new givenConfig {
       cost = {
         case (_: LeftOuterHashJoin, _, _, _) => 20.0
         case _                               => Double.MaxValue
@@ -935,7 +935,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
   test("should handle query starting with an optional match") {
     val monitor = mock[IDPQueryGraphSolverMonitor]
 
-    new given {
+    new givenConfig {
       queryGraphSolver = createQueryGraphSolver(monitor = monitor, solverConfig = EmptySolverConfig())
       qg = QueryGraph( // OPTIONAL MATCH a-->b RETURN b a
         patternNodes = Set.empty,
@@ -975,7 +975,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
   test("should handle relationship by id") {
     val monitor = mock[IDPQueryGraphSolverMonitor]
 
-    new given {
+    new givenConfig {
       queryGraphSolver = createQueryGraphSolver(monitor = monitor, solverConfig = EmptySolverConfig())
       qg = QueryGraph( // MATCH (a)-[r]->(b) WHERE id(r) = 42 RETURN *
         patternNodes = Set("a", "b"),
@@ -1007,7 +1007,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
   test("should handle multiple project end points on arguments when creating leaf plans") {
     val monitor = mock[IDPQueryGraphSolverMonitor]
 
-    new given {
+    new givenConfig {
       queryGraphSolver = createQueryGraphSolver(monitor, DefaultIDPSolverConfig)
       qg = QueryGraph(
         patternNodes = Set("a", "b", "c"),
@@ -1047,7 +1047,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
   test("should handle passing multiple projectible relationships as arguments") {
     val monitor = mock[IDPQueryGraphSolverMonitor]
 
-    new given {
+    new givenConfig {
 
       queryGraphSolver = createQueryGraphSolver(monitor = monitor, solverConfig = ExpandOnlyIDPSolverConfig)
       qg = QueryGraph(
@@ -1075,7 +1075,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
   test("should not plan cartesian products by duplicating argument rows") {
     val monitor = mock[IDPQueryGraphSolverMonitor]
 
-    new given {
+    new givenConfig {
       queryGraphSolver = createQueryGraphSolver(monitor = monitor, solverConfig = ExpandOnlyIDPSolverConfig)
       qg = QueryGraph(
         patternNodes = Set("a", "b"),
@@ -1114,7 +1114,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
   test("should cache the result of EXISTS subquery planning when caching is enabled") {
     val monitor = mock[IDPQueryGraphSolverMonitor]
 
-    new given {
+    new givenConfig {
       queryGraphSolver = createQueryGraphSolver(
         monitor = monitor,
         solverConfig = ExpandOnlyIDPSolverConfig,
@@ -1149,7 +1149,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
   test("should not cache the result of EXISTS subquery planning when caching is disabled") {
     val monitor = mock[IDPQueryGraphSolverMonitor]
 
-    new given {
+    new givenConfig {
       queryGraphSolver = createQueryGraphSolver(
         monitor = monitor,
         solverConfig = ExpandOnlyIDPSolverConfig,

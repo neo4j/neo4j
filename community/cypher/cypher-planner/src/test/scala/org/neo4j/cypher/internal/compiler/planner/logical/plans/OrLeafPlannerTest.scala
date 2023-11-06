@@ -49,7 +49,7 @@ class OrLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 
     // Node predicate disjunction
     val predicates: Set[Expression] = Set(ors(hasLabels("n", "A"), hasLabels("n", "B")))
 
-    new given {
+    new givenConfig {
       qg = QueryGraph(
         selections = Selections(predicates.flatMap(_.asPredicates)),
         patternNodes = Set("n", "m"),

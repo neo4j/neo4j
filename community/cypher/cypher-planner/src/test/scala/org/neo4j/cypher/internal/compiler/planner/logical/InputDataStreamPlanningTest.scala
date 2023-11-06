@@ -44,12 +44,12 @@ class InputDataStreamPlanningTest extends CypherFunSuite with LogicalPlanningTes
 
   test("INPUT DATA STREAM a, b, c RETURN *") {
     val ast = singleQuery(input(varFor("a"), varFor("b"), varFor("c")), returnAll)
-    new given().getLogicalPlanForAst(createInitStateFromAst(ast))._1 should equal(Input(Seq("a", "b", "c")))
+    new givenConfig().getLogicalPlanForAst(createInitStateFromAst(ast))._1 should equal(Input(Seq("a", "b", "c")))
   }
 
   test("INPUT DATA STREAM a, b, c RETURN DISTINCT a") {
     val ast = singleQuery(input(varFor("a"), varFor("b"), varFor("c")), returnDistinct(returnItem(varFor("a"), "a")))
-    new given().getLogicalPlanForAst(createInitStateFromAst(ast))._1 should equal(Distinct(
+    new givenConfig().getLogicalPlanForAst(createInitStateFromAst(ast))._1 should equal(Distinct(
       Input(Seq("a", "b", "c")),
       Map(varFor("a") -> varFor("a"))
     ))
@@ -57,7 +57,7 @@ class InputDataStreamPlanningTest extends CypherFunSuite with LogicalPlanningTes
 
   test("INPUT DATA STREAM a, b, c RETURN sum(a)") {
     val ast = singleQuery(input(varFor("a"), varFor("b"), varFor("c")), return_(returnItem(sum(varFor("a")), "sum(a)")))
-    new given().getLogicalPlanForAst(createInitStateFromAst(ast))._1 should equal(
+    new givenConfig().getLogicalPlanForAst(createInitStateFromAst(ast))._1 should equal(
       Aggregation(Input(Seq("a", "b", "c")), Map.empty, Map(varFor("sum(a)") -> sum(varFor("a"))))
     )
   }
@@ -70,7 +70,7 @@ class InputDataStreamPlanningTest extends CypherFunSuite with LogicalPlanningTes
         returnAll
       )
 
-    new given().getLogicalPlanForAst(createInitStateFromAst(ast))._1 should equal(
+    new givenConfig().getLogicalPlanForAst(createInitStateFromAst(ast))._1 should equal(
       Selection(ands(propEquality("a", "pid", 99)), Input(Seq("a", "b", "c")))
     )
   }
@@ -82,7 +82,7 @@ class InputDataStreamPlanningTest extends CypherFunSuite with LogicalPlanningTes
       return_(orderBy(sortItem(varFor("name"))), returnItem(prop("a", "name"), "name"))
     )
 
-    new given().getLogicalPlanForAst(createInitStateFromAst(ast))._1 should equal(
+    new givenConfig().getLogicalPlanForAst(createInitStateFromAst(ast))._1 should equal(
       Sort(
         Projection(
           Selection(ands(hasLabelsOrTypes("a", "Employee")), Input(Seq("a", "b", "c"))),
@@ -97,7 +97,7 @@ class InputDataStreamPlanningTest extends CypherFunSuite with LogicalPlanningTes
     val ast =
       singleQuery(input(varFor("a"), varFor("b"), varFor("c")), withAll(), match_(nodePat(Some("x"))), returnAll)
 
-    new given().getLogicalPlanForAst(createInitStateFromAst(ast))._1 should equal(
+    new givenConfig().getLogicalPlanForAst(createInitStateFromAst(ast))._1 should equal(
       Apply(
         Input(Seq("a", "b", "c")),
         AllNodesScan(varFor("x"), Set("a", "b", "c").map(varFor(_)))
@@ -107,7 +107,7 @@ class InputDataStreamPlanningTest extends CypherFunSuite with LogicalPlanningTes
 
   test("INPUT DATA STREAM g, uid, cids, cid, p RETURN *") {
     val ast = singleQuery(input(varFor("g"), varFor("uid"), varFor("cids"), varFor("cid"), varFor("p")), returnAll)
-    new given().getLogicalPlanForAst(createInitStateFromAst(ast))._1 should equal(
+    new givenConfig().getLogicalPlanForAst(createInitStateFromAst(ast))._1 should equal(
       Input(Seq("g", "uid", "cids", "cid", "p"))
     )
   }
@@ -115,7 +115,7 @@ class InputDataStreamPlanningTest extends CypherFunSuite with LogicalPlanningTes
   test("INPUT DATA STREAM with large number of columns") {
     val randomColumns = Random.shuffle(for (c <- 'a' to 'z'; n <- 1 to 10) yield s"$c$n")
     val ast = singleQuery(input(randomColumns.map(col => varFor(col)): _*), returnAll)
-    new given().getLogicalPlanForAst(createInitStateFromAst(ast))._1 should equal(
+    new givenConfig().getLogicalPlanForAst(createInitStateFromAst(ast))._1 should equal(
       Input(randomColumns)
     )
   }

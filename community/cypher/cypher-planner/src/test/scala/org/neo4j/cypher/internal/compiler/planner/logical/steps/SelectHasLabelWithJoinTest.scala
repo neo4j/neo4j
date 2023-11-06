@@ -55,7 +55,7 @@ class SelectHasLabelWithJoinTest extends CypherFunSuite with LogicalPlanningTest
   test("should solve labels with joins") {
 
     val plan =
-      new given {
+      new givenConfig {
         cost = {
           case (_: IntersectionNodeByLabelsScan, _, _, _) => 1000.0
           case (_: Selection, _, _, _)                    => 1000.0
@@ -85,7 +85,7 @@ class SelectHasLabelWithJoinTest extends CypherFunSuite with LogicalPlanningTest
     )
 
     val plan =
-      new given {
+      new givenConfig {
         procedure(signature)
         cost = {
           case (_: Selection, _, _, _)       => 1000.0
@@ -110,7 +110,7 @@ class SelectHasLabelWithJoinTest extends CypherFunSuite with LogicalPlanningTest
         |""".stripMargin
 
     val plan =
-      new given {
+      new givenConfig {
         cost = {
           case (_: Selection, _, _, _)          => 1000.0
           case (_: RightOuterHashJoin, _, _, _) => 1000.0
@@ -136,7 +136,7 @@ class SelectHasLabelWithJoinTest extends CypherFunSuite with LogicalPlanningTest
         |""".stripMargin
 
     val plan =
-      new given {
+      new givenConfig {
         cost = {
           case (_: Selection, _, _, _)       => 1000.0
           case (_: NodeHashJoin, _, _, _)    => 20.0

@@ -92,7 +92,7 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
     )
 
   test("empty query graph") {
-    new given().withLogicalPlanningContext { (_, ctx) =>
+    new givenConfig().withLogicalPlanningContext { (_, ctx) =>
       val options = leafPlanOptions(
         queryPlanConfig(IndexedSeq(allNodesScanLeafPlanner)),
         QueryGraph(patternNodes = Set()),
@@ -105,7 +105,7 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
   }
 
   test("query graph with single node and no interesting order") {
-    new given().withLogicalPlanningContext { (_, ctx) =>
+    new givenConfig().withLogicalPlanningContext { (_, ctx) =>
       val options = leafPlanOptions(
         queryPlanConfig(IndexedSeq(allNodesScanLeafPlanner)),
         QueryGraph(patternNodes = Set("a")),
@@ -118,7 +118,7 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
   }
 
   test("query graph with single node and interesting order") {
-    new given().withLogicalPlanningContext { (_, ctx) =>
+    new givenConfig().withLogicalPlanningContext { (_, ctx) =>
       val options = leafPlanOptions(
         queryPlanConfig(IndexedSeq(allNodesScanLeafPlanner)),
         QueryGraph(patternNodes = Set("a")),
@@ -136,7 +136,7 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
   }
 
   test("query graph with single node and label, without interesting order") {
-    new given().withLogicalPlanningContext { (_, ctx) =>
+    new givenConfig().withLogicalPlanningContext { (_, ctx) =>
       val options = leafPlanOptions(
         queryPlanConfig(IndexedSeq(allNodesScanLeafPlanner, labelScanLeafPlanner)),
         QueryGraph(patternNodes = Set("a")),
@@ -149,7 +149,7 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
   }
 
   test("query graph with single node and label, with interesting order") {
-    new given().withLogicalPlanningContext { (_, ctx) =>
+    new givenConfig().withLogicalPlanningContext { (_, ctx) =>
       val options = leafPlanOptions(
         queryPlanConfig(IndexedSeq(allNodesScanLeafPlanner, labelScanLeafPlanner)),
         QueryGraph(patternNodes = Set("a")),
@@ -168,7 +168,7 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
   }
 
   test("query graph with multiple nodes and no interesting order") {
-    new given().withLogicalPlanningContext { (_, ctx) =>
+    new givenConfig().withLogicalPlanningContext { (_, ctx) =>
       val options = leafPlanOptions(
         queryPlanConfig(IndexedSeq(allNodesScanLeafPlanner, labelScanLeafPlanner)),
         QueryGraph(patternNodes = Set("a", "b")),
@@ -184,7 +184,7 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
   }
 
   test("query graph with multiple nodes and interesting order") {
-    new given().withLogicalPlanningContext { (_, ctx) =>
+    new givenConfig().withLogicalPlanningContext { (_, ctx) =>
       val options = leafPlanOptions(
         queryPlanConfig(IndexedSeq(allNodesScanLeafPlanner, labelScanLeafPlanner)),
         QueryGraph(patternNodes = Set("a", "b")),
@@ -223,7 +223,7 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
       leafPlanners = LeafPlannerList(IndexedSeq(allNodesScanLeafPlanner, projectionPlanner))
     )
 
-    new given().withLogicalPlanningContext { (_, ctx) =>
+    new givenConfig().withLogicalPlanningContext { (_, ctx) =>
       val options = leafPlanOptions(
         queryPlanConfig,
         QueryGraph(patternNodes = Set("a")),
@@ -262,7 +262,7 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
       leafPlanners = LeafPlannerList(IndexedSeq(customLeafPlanner))
     )
 
-    new given().withLogicalPlanningContext { (_, ctx) =>
+    new givenConfig().withLogicalPlanningContext { (_, ctx) =>
       val options = leafPlanOptions(
         queryPlanConfig,
         QueryGraph(patternNodes = Set("a")),
@@ -303,7 +303,7 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
       leafPlanners = LeafPlannerList(IndexedSeq(customLeafPlanner))
     )
 
-    new given().withLogicalPlanningContext { (_, ctx) =>
+    new givenConfig().withLogicalPlanningContext { (_, ctx) =>
       val options = leafPlanOptions(
         queryPlanConfig,
         QueryGraph(patternNodes = Set("a", fresh1, fresh2)),

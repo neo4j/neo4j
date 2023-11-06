@@ -110,7 +110,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
     test(s"$cypherToken-$orderCapability: Order by index backed property should plan with provided order") {
       val plan =
-        new given {
+        new givenConfig {
           indexOn("Awesome", "prop").providesOrder(orderCapability)
         } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 'foo' RETURN n.prop ORDER BY n.prop $cypherToken"
 
@@ -126,7 +126,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       s"$cypherToken-$orderCapability: Order by index backed property should plan with provided order, even after initial WITH"
     ) {
       val plan =
-        new given {
+        new givenConfig {
           indexOn("Awesome", "prop").providesOrder(orderCapability)
         }.getLogicalPlanFor(
           s"WITH 1 AS foo MATCH (n:Awesome) WHERE n.prop > 'foo' RETURN n.prop AS p ORDER BY n.prop $cypherToken",
@@ -430,7 +430,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
 
     test(s"$cypherToken-$orderCapability: Order by variable from label and join in MATCH with multiple labels") {
-      val plan = new given {
+      val plan = new givenConfig {
         indexOn("Foo", "prop")
         indexOn("Bar", "unused") // otherwise we don't get a label id for Bar
         labelCardinality = Map(
@@ -462,7 +462,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
 
     test(s"$cypherToken-$orderCapability: Should not order label scan if ORDER BY aggregation of that node") {
-      val plan = new given().getLogicalPlanFor(
+      val plan = new givenConfig().getLogicalPlanFor(
         s"MATCH (n:Awesome)-[r]-(m) RETURN m AS mm, count(n) AS c ORDER BY c $cypherToken",
         stripProduceResults = false
       )
@@ -481,7 +481,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     test(
       s"$cypherToken-$orderCapability: Order by variable renamed in WITH from label scan should plan with provided order"
     ) {
-      val plan = new given().getLogicalPlanFor(
+      val plan = new givenConfig().getLogicalPlanFor(
         s"""MATCH (n:Awesome)
            |WITH n AS nnn
            |MATCH (m)-[r]->(nnn)
@@ -502,7 +502,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     test(
       s"$cypherToken-$orderCapability: Order by variable from label scan should plan with provided order and PartialSort"
     ) {
-      val plan = new given().getLogicalPlanFor(
+      val plan = new givenConfig().getLogicalPlanFor(
         s"MATCH (n:Awesome) WITH n, n.foo AS foo RETURN n ORDER BY n $cypherToken, foo",
         stripProduceResults = false
       )
@@ -563,7 +563,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       s"$cypherToken-$orderCapability: Order by index backed property should plan sort if index does not provide order"
     ) {
       val plan =
-        new given {
+        new givenConfig {
           indexOn("Awesome", "prop")
         } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 'foo' RETURN n.prop ORDER BY n.prop $cypherToken"
 
@@ -586,7 +586,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       s"$cypherToken-$orderCapability: Order by index backed property should plan with provided order, even after initial WITH and with Expand"
     ) {
       val plan =
-        new given {
+        new givenConfig {
           indexOn("Awesome", "prop").providesOrder(orderCapability)
         }.getLogicalPlanFor(
           s"WITH 1 AS foo MATCH (n:Awesome)-[r]->(m) WHERE n.prop > 'foo' RETURN n.prop AS p ORDER BY n.prop $cypherToken",
@@ -608,7 +608,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       s"$cypherToken-$orderCapability: Order by index backed property should plan partial sort if index does partially provide order"
     ) {
       val plan =
-        new given {
+        new givenConfig {
           indexOn("Awesome", "prop").providesOrder(orderCapability)
         } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 'foo' RETURN n.prop ORDER BY n.prop $cypherToken, n.foo ASC"
 
@@ -693,7 +693,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       s"$cypherToken-$orderCapability: Order by index backed property should plan partial sort if index does partially provide order and the second column is more complicated"
     ) {
       val plan =
-        new given {
+        new givenConfig {
           indexOn("Awesome", "prop").providesOrder(orderCapability)
         } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 'foo' RETURN n.prop ORDER BY n.prop $cypherToken, n.foo + 1 ASC"
 
@@ -717,7 +717,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
     test(s"$cypherToken-$orderCapability: Order by index backed property should plan multiple partial sorts") {
       val plan =
-        new given {
+        new givenConfig {
           indexOn("Awesome", "prop").providesOrder(orderCapability)
         } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 'foo' WITH n, n.prop AS p, n.foo AS f ORDER BY p $cypherToken, f ASC RETURN p ORDER BY p $cypherToken, f ASC, n.bar ASC"
 
@@ -745,7 +745,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
     test(s"$cypherToken-$orderCapability: Order by index backed property renamed in an earlier WITH") {
       val plan =
-        new given {
+        new givenConfig {
           indexOn("Awesome", "prop").providesOrder(orderCapability)
         } getLogicalPlanFor
           s"""MATCH (n:Awesome) WHERE n.prop > 'foo'
@@ -776,7 +776,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
     test(s"$cypherToken-$orderCapability: Order by index backed property renamed in same return") {
       val plan =
-        new given {
+        new givenConfig {
           indexOn("Awesome", "prop").providesOrder(orderCapability)
         } getLogicalPlanFor
           s"""MATCH (n:Awesome) WHERE n.prop > 'foo'
@@ -799,7 +799,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       )
 
       val plan =
-        new given {
+        new givenConfig {
           indexOn("Awesome", "prop").providesOrder(orderCapability)
         }.getLogicalPlanFor(
           s"MATCH (m:Awesome), (n:Awesome) WHERE n.prop > 'foo' RETURN m.prop ORDER BY m.prop $cypherToken",
@@ -825,7 +825,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       // With two relationships we use IDP to get the best plan.
       // By keeping the best overall and the best sorted plan, we should only have one sort.
       val plan =
-        new given {
+        new givenConfig {
           indexOn("Awesome", "prop").providesOrder(orderCapability)
         }.getLogicalPlanFor(
           s"MATCH (m:Awesome)-[r]-(x)-[p]-(y), (n:Awesome) WHERE n.prop > 'foo' RETURN m.prop ORDER BY m.prop $cypherToken",
@@ -844,7 +844,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       s"$cypherToken-$orderCapability: Order by index backed property should plan with provided order (starts with scan)"
     ) {
       val plan =
-        new given {
+        new givenConfig {
           indexOn("Awesome", "prop").providesOrder(orderCapability)
         } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop STARTS WITH 'foo' RETURN n.prop ORDER BY n.prop $cypherToken"
 
@@ -886,7 +886,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
     test(s"$cypherToken-$orderCapability: Order by index backed property should plan with provided order (scan)") {
       val plan =
-        new given {
+        new givenConfig {
           indexOn("Awesome", "prop").providesOrder(orderCapability)
         } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop IS NOT NULL RETURN n.prop ORDER BY n.prop $cypherToken"
 
@@ -1080,7 +1080,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
     test(s"$cypherToken-$orderCapability: Order by index backed property in a plan with an Apply") {
       val plan =
-        new given {
+        new givenConfig {
           indexOn("A", "prop").providesOrder(orderCapability)
           indexOn("B", "prop").providesOrder(orderCapability)
           cardinality = mapCardinality(byPredicateSelectivity(
@@ -1163,7 +1163,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
 
     test(s"$cypherToken-$orderCapability: Order by label variable in a plan with an Apply") {
-      val plan = new given {
+      val plan = new givenConfig {
         indexOn("B", "prop")
       }.getLogicalPlanFor(
         s"MATCH (a:A), (b:B) WHERE a.prop = b.prop RETURN a ORDER BY a $cypherToken",
@@ -1245,7 +1245,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       s"$cypherToken-$orderCapability: Order by index backed properties in a plan with an Apply needs Partial Sort if RHS order required"
     ) {
       val plan =
-        new given {
+        new givenConfig {
           indexOn("A", "prop").providesOrder(orderCapability)
           indexOn("B", "prop").providesOrder(orderCapability)
           // This query is very fragile in the sense that the slightest modification will result in a stupid plan
@@ -1274,7 +1274,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
     test(s"$cypherToken-$orderCapability: Order by index backed property in a plan with an renaming Projection") {
       val plan =
-        new given {
+        new givenConfig {
           indexOn("A", "prop").providesOrder(orderCapability)
         } getLogicalPlanFor s"MATCH (a:A) WHERE a.prop > 'foo' WITH a.prop AS theProp, 1 AS x RETURN theProp ORDER BY theProp $cypherToken"
 
@@ -1291,7 +1291,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
     test(s"$cypherToken-$orderCapability: Order by index backed property in a plan with an aggregation and an expand") {
       val plan =
-        new given {
+        new givenConfig {
           indexOn("A", "prop").providesOrder(orderCapability)
           cardinality = mapCardinality {
             // Force the planner to start at a
@@ -1324,7 +1324,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       s"$cypherToken-$orderCapability: Order by index backed property in a plan with partial provided order and with an expand"
     ) {
       val plan =
-        new given {
+        new givenConfig {
           indexOn("A", "prop").providesOrder(orderCapability)
           cardinality = mapCardinality {
             // Force the planner to start at a
@@ -1362,7 +1362,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       s"$cypherToken-$orderCapability: Order by index backed property in a plan with partial provided order and with two expand - should plan partial sort in the middle"
     ) {
       val plan =
-        new given {
+        new givenConfig {
           indexOn("A", "prop").providesOrder(orderCapability)
           cardinality = mapCardinality {
             // Force the planner to start at a
@@ -1413,7 +1413,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
     test(s"$cypherToken-$orderCapability: Order by index backed property in a plan with a distinct") {
       val plan =
-        new given {
+        new givenConfig {
           indexOn("A", "prop").providesOrder(orderCapability)
           cardinality = mapCardinality {
             // Force the planner to start at a
@@ -1493,7 +1493,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       // Left outer hash join can only maintain ASC order
       assume(sortOrder == Ascending)
       val plan =
-        new given {
+        new givenConfig {
           indexOn("A", "prop").providesOrder(orderCapability)
           cardinality = mapCardinality {
             // Force the planner to start at b
@@ -1526,7 +1526,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
     test(s"$cypherToken-$orderCapability: Order by index backed property in a plan with a tail apply") {
       val plan =
-        new given {
+        new givenConfig {
           indexOn("A", "prop").providesOrder(orderCapability)
         } getLogicalPlanFor
           s"""MATCH (a:A) WHERE a.prop > 'foo' WITH a SKIP 0
@@ -1616,7 +1616,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       s"$cypherToken-$orderCapability: Order by index backed property should plan with provided order (scan) in case of existence constraint"
     ) {
       val plan =
-        new given {
+        new givenConfig {
           indexOn("Awesome", "prop").providesOrder(orderCapability)
           nodePropertyExistenceConstraintOn("Awesome", Set("prop"))
         } getLogicalPlanFor s"MATCH (n:Awesome) RETURN n.prop ORDER BY n.prop $cypherToken"
@@ -1661,7 +1661,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     }
 
     test(s"$cypherToken-$orderCapability: Should use OrderedDistinct if there is an ordered index available") {
-      val plan = new given {
+      val plan = new givenConfig {
         indexOn("A", "prop")
           .providesOrder(orderCapability)
           .providesValues()
@@ -1686,7 +1686,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     test(
       s"$cypherToken-$orderCapability: Should use OrderedDistinct if there is an ordered index available (multiple columns)"
     ) {
-      val plan = new given {
+      val plan = new givenConfig {
         indexOn("A", "prop")
           .providesOrder(orderCapability)
           .providesValues()
@@ -1711,7 +1711,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     test(
       s"$cypherToken-$orderCapability: Should use OrderedDistinct if there is an ordered composite index available"
     ) {
-      val plan = new given {
+      val plan = new givenConfig {
         indexOn("A", "foo", "prop")
           .providesOrder(orderCapability)
           .providesValues()
@@ -1736,7 +1736,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     test(
       s"$cypherToken-$orderCapability: Should use OrderedDistinct if there is an ordered composite index available (reveresed column order)"
     ) {
-      val plan = new given {
+      val plan = new givenConfig {
         indexOn("A", "foo", "prop")
           .providesOrder(orderCapability)
           .providesValues()
@@ -1761,7 +1761,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     test(
       s"$cypherToken-$orderCapability: Should use OrderedAggregation if there is an ordered index available, in presence of ORDER BY for aggregating column"
     ) {
-      val plan = new given {
+      val plan = new givenConfig {
         indexOn("A", "prop")
           .providesOrder(orderCapability)
           .providesValues()
@@ -1992,7 +1992,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
                |RETURN n.prop1, n.prop2
                |ORDER BY $orderByString""".stripMargin
           val plan =
-            new given {
+            new givenConfig {
               indexOn("Label", "prop1", "prop2").providesOrder(orderCapability).providesValues()
             } getLogicalPlanFor query
 
@@ -2120,7 +2120,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
              |RETURN n.prop1, n.prop2, n.prop3
              |ORDER BY $orderByString""".stripMargin
         val plan =
-          new given {
+          new givenConfig {
             indexOn("Label", "prop1", "prop2").providesOrder(orderCapability).providesValues()
           } getLogicalPlanFor query
 
@@ -2431,7 +2431,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
              |RETURN n.prop1, n.prop2, n.prop3, n.prop4
              |ORDER BY $orderByString""".stripMargin
         val plan =
-          new given {
+          new givenConfig {
             indexOn("Label", "prop1", "prop2", "prop3", "prop4").providesOrder(orderCapability).providesValues()
           } getLogicalPlanFor query
 
@@ -2616,7 +2616,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
              |RETURN n.prop1, n.prop2, n.prop3, n.prop4
              |ORDER BY $orderByString""".stripMargin
         val plan =
-          new given {
+          new givenConfig {
             indexOn("Label", "prop1", "prop2", "prop3", "prop4").providesOrder(orderCapability).providesValues()
           } getLogicalPlanFor query
 
@@ -3215,7 +3215,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
              |ORDER BY $orderByString
           """.stripMargin
         val plan =
-          new given {
+          new givenConfig {
             indexOn("Label", "prop1", "prop2", "prop3").providesOrder(orderCapability)
           } getLogicalPlanFor query
 
@@ -3370,7 +3370,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
                |RETURN n.prop1, n.prop2
                |ORDER BY $orderByString""".stripMargin
           val plan =
-            new given {
+            new givenConfig {
               indexOn("Label", "prop1", "prop2").providesOrder(orderCapability).providesValues()
             } getLogicalPlanFor query
 
@@ -3504,7 +3504,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
                |RETURN n.prop1, n.prop2
                |ORDER BY $orderByString""".stripMargin
           val plan =
-            new given {
+            new givenConfig {
               indexOn("Label", "prop1", "prop2").providesOrder(orderCapability).providesValues()
             } getLogicalPlanFor query
 
@@ -3606,7 +3606,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
                |RETURN n.prop1, n.prop2
                |ORDER BY $orderByString""".stripMargin
           val plan =
-            new given {
+            new givenConfig {
               indexOn("Label", "prop1", "prop2").providesOrder(orderCapability).providesValues()
             } getLogicalPlanFor query
 
@@ -3675,7 +3675,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
     test(s"$orderCapability-$functionName: should use node label scan order") {
       val plan =
-        new given().getLogicalPlanFor(s"MATCH (n:Awesome) RETURN $functionName(n)", stripProduceResults = false)
+        new givenConfig().getLogicalPlanFor(s"MATCH (n:Awesome) RETURN $functionName(n)", stripProduceResults = false)
 
       plan._1 should equal(
         new LogicalPlanBuilder()
@@ -3692,7 +3692,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
     test(s"$orderCapability-$functionName: should use provided node index scan order") {
       val plan =
-        new given {
+        new givenConfig {
           indexOn("Awesome", "prop").providesOrder(orderCapability).providesValues()
         } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop IS NOT NULL RETURN $functionName(n.prop)"
 
@@ -3720,7 +3720,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       s"$orderCapability-$functionName: should plan aggregation for node index scan when there is no $orderCapability"
     ) {
       val plan =
-        new given {
+        new givenConfig {
           indexOn("Awesome", "prop").providesValues()
         } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop IS NOT NULL RETURN $functionName(n.prop)"
 
@@ -3744,7 +3744,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
     test(s"$orderCapability-$functionName: should use provided node index order with range") {
       val plan =
-        new given {
+        new givenConfig {
           indexOn("Awesome", "prop").providesOrder(orderCapability).providesValues()
         } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 0 RETURN $functionName(n.prop)"
 
@@ -3763,7 +3763,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
     test(s"$orderCapability-$functionName: should use provided node index order with ORDER BY") {
       val plan =
-        new given {
+        new givenConfig {
           indexOn("Awesome", "prop").providesOrder(orderCapability).providesValues()
         } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 0 RETURN $functionName(n.prop) ORDER BY $functionName(n.prop) $cypherToken"
 
@@ -3789,7 +3789,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       }
 
       val plan =
-        new given {
+        new givenConfig {
           indexOn("Awesome", "prop").providesOrder(orderCapability).providesValues()
         } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 0 RETURN $functionName(n.prop) ORDER BY $functionName(n.prop) $inverseOrder"
 
@@ -3811,7 +3811,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
     test(s"$orderCapability-$functionName: should use provided node index order with additional Limit") {
       val plan =
-        new given {
+        new givenConfig {
           indexOn("Awesome", "prop").providesOrder(orderCapability).providesValues()
         } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 0 RETURN $functionName(n.prop) LIMIT 2"
 
@@ -3833,7 +3833,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
     test(s"$orderCapability-$functionName: should use provided node index order for multiple QueryGraphs") {
       val plan =
-        new given {
+        new givenConfig {
           indexOn("Awesome", "prop").providesOrder(orderCapability).providesValues()
         } getLogicalPlanFor
           s"""MATCH (n:Awesome)
@@ -3857,7 +3857,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
     test(s"$orderCapability-$functionName: cannot use provided node index order for multiple aggregations") {
       val plan =
-        new given {
+        new givenConfig {
           indexOn("Awesome", "prop").providesOrder(orderCapability).providesValues()
         } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 0 RETURN $functionName(n.prop), count(n.prop)"
 
@@ -4098,7 +4098,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
   test("should mark leveragedOrder in collect with ORDER BY") {
     val (plan, _, attributes) =
-      new given {
+      new givenConfig {
         indexOn("Awesome", "prop").providesOrder(BOTH)
       } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 'foo' WITH n.prop AS p ORDER BY n.prop RETURN collect(p)"
     val leveragedOrders = attributes.leveragedOrders

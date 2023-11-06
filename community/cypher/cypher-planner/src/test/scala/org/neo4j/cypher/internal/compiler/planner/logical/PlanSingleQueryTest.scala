@@ -134,7 +134,7 @@ class PlanSingleQueryTest extends CypherFunSuite with LogicalPlanningTestSupport
       PlanWithTail(matchPlanner = recordingPlanMatch, eventHorizonPlanner = recordingPlanHorizon)
     )
 
-    new given().withLogicalPlanningContext { (_, context) => planner.plan(query, context) }
+    new givenConfig().withLogicalPlanningContext { (_, context) => planner.plan(query, context) }
     log.toVector
   }
 

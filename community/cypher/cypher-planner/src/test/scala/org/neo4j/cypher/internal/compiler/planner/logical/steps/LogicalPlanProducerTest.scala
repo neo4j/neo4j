@@ -75,7 +75,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
     with TableDrivenPropertyChecks {
 
   test("should rename provided order of property columns in projection if property projected") {
-    new given().withLogicalPlanningContext { (_, context) =>
+    new givenConfig().withLogicalPlanningContext { (_, context) =>
       val lpp = LogicalPlanProducer(context.cardinality, context.staticComponents.planningAttributes, idGen)
       // plan with provided order
       val plan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x.foo")
@@ -94,7 +94,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
   }
 
   test("should rename provided order of property columns in projection if node projected") {
-    new given().withLogicalPlanningContext { (_, context) =>
+    new givenConfig().withLogicalPlanningContext { (_, context) =>
       val lpp = LogicalPlanProducer(context.cardinality, context.staticComponents.planningAttributes, idGen)
       // plan with provided order
       val plan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x.foo")
@@ -114,7 +114,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
   }
 
   test("should rename provided order of variable columns in projection if variable projected") {
-    new given().withLogicalPlanningContext { (_, context) =>
+    new givenConfig().withLogicalPlanningContext { (_, context) =>
       val lpp = LogicalPlanProducer(context.cardinality, context.staticComponents.planningAttributes, idGen)
       // plan with provided order
       val plan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x")
@@ -133,7 +133,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
   }
 
   test("should rename provided order of variable columns in projection if cached node property is projected") {
-    new given().withLogicalPlanningContext { (_, context) =>
+    new givenConfig().withLogicalPlanningContext { (_, context) =>
       val lpp = LogicalPlanProducer(context.cardinality, context.staticComponents.planningAttributes, idGen)
       // plan with provided order
       val plan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x.foo")
@@ -152,7 +152,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
   }
 
   test("should rename provided order of property columns in distinct if property projected") {
-    new given().withLogicalPlanningContext { (_, context) =>
+    new givenConfig().withLogicalPlanningContext { (_, context) =>
       val lpp = LogicalPlanProducer(context.cardinality, context.staticComponents.planningAttributes, idGen)
       // plan with provided order
       val plan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x.foo")
@@ -171,7 +171,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
   }
 
   test("should rename provided order of function if function projected") {
-    new given().withLogicalPlanningContext { (_, context) =>
+    new givenConfig().withLogicalPlanningContext { (_, context) =>
       val lpp = LogicalPlanProducer(context.cardinality, context.staticComponents.planningAttributes, idGen)
       // plan with provided order
       val plan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "id(n)")
@@ -190,7 +190,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
   }
 
   test("should trim provided order (1 column) of property column if a sort column is also not a grouping column") {
-    new given().withLogicalPlanningContext { (_, context) =>
+    new givenConfig().withLogicalPlanningContext { (_, context) =>
       val lpp = LogicalPlanProducer(context.cardinality, context.staticComponents.planningAttributes, idGen)
       // plan with provided order
       val plan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x.foo", "y")
@@ -210,7 +210,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
   test(
     "should trim provided order (2 columns) in aggregation of property column if a sort column is also not a grouping column"
   ) {
-    new given().withLogicalPlanningContext { (_, context) =>
+    new givenConfig().withLogicalPlanningContext { (_, context) =>
       val lpp = LogicalPlanProducer(context.cardinality, context.staticComponents.planningAttributes, idGen)
       // plan with provided order
       val plan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x.foo", "y")
@@ -233,7 +233,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
   }
 
   test("should trim provided order (2 columns) in aggregation of property column and rename") {
-    new given().withLogicalPlanningContext { (_, context) =>
+    new givenConfig().withLogicalPlanningContext { (_, context) =>
       val lpp = LogicalPlanProducer(context.cardinality, context.staticComponents.planningAttributes, idGen)
       // plan with provided order
       val plan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x.foo", "y")
@@ -256,7 +256,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
   }
 
   test("should trim provided order (2 columns) in aggregation and only keep exact grouping column matches") {
-    new given().withLogicalPlanningContext { (_, context) =>
+    new givenConfig().withLogicalPlanningContext { (_, context) =>
       val lpp = LogicalPlanProducer(context.cardinality, context.staticComponents.planningAttributes, idGen)
       // plan with provided order
       val plan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x.foo", "y.bar")
@@ -277,7 +277,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
   }
 
   test("should trim provided order (2 columns) in aggregation of property column and rename property") {
-    new given().withLogicalPlanningContext { (_, context) =>
+    new givenConfig().withLogicalPlanningContext { (_, context) =>
       val lpp = LogicalPlanProducer(context.cardinality, context.staticComponents.planningAttributes, idGen)
       // plan with provided order
       val plan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x.foo", "y.bar")
@@ -300,7 +300,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
   }
 
   test("should trim provided order (2 columns) in aggregation of property column and rename cached node property") {
-    new given().withLogicalPlanningContext { (_, context) =>
+    new givenConfig().withLogicalPlanningContext { (_, context) =>
       val lpp = LogicalPlanProducer(context.cardinality, context.staticComponents.planningAttributes, idGen)
       // plan with provided order
       val plan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x.foo", "y.bar")
@@ -323,7 +323,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
   }
 
   test("should trim provided order in left outer hash join after variable access") {
-    new given().withLogicalPlanningContext { (_, context) =>
+    new givenConfig().withLogicalPlanningContext { (_, context) =>
       val lpp = LogicalPlanProducer(context.cardinality, context.staticComponents.planningAttributes, idGen)
       // plan with provided order
       val lhs = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x", "z.bar")
@@ -351,7 +351,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
   }
 
   test("should trim provided order in left outer hash join after property access") {
-    new given().withLogicalPlanningContext { (_, context) =>
+    new givenConfig().withLogicalPlanningContext { (_, context) =>
       val lpp = LogicalPlanProducer(context.cardinality, context.staticComponents.planningAttributes, idGen)
       // plan with provided order
       val lhs = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x", "z.bar")
@@ -379,7 +379,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
   }
 
   test("should trim provided order in left outer hash join after complex property access") {
-    new given().withLogicalPlanningContext { (_, context) =>
+    new givenConfig().withLogicalPlanningContext { (_, context) =>
       val lpp = LogicalPlanProducer(context.cardinality, context.staticComponents.planningAttributes, idGen)
       // plan with provided order
       val lhs = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x", "z.bar")
@@ -409,7 +409,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
   test(
     "should trim provided order (2 columns) in aggregation of function column if a sort column is also not a grouping column"
   ) {
-    new given().withLogicalPlanningContext { (_, context) =>
+    new givenConfig().withLogicalPlanningContext { (_, context) =>
       val lpp = LogicalPlanProducer(context.cardinality, context.staticComponents.planningAttributes, idGen)
       // plan with provided order
       val plan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "size(x)", "y")
@@ -434,7 +434,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
   test(
     "should trim provided order (2 columns) in aggregation of property of property column if a sort column is also not a grouping column"
   ) {
-    new given().withLogicalPlanningContext { (_, context) =>
+    new givenConfig().withLogicalPlanningContext { (_, context) =>
       val lpp = LogicalPlanProducer(context.cardinality, context.staticComponents.planningAttributes, idGen)
       // plan with provided order
       val plan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x.foo.bar", "y")
@@ -1037,14 +1037,14 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
   )
 
   private def shouldEliminateProvidedOrder(createPlan: PlanCreationContext => LogicalPlan) = {
-    new given().withLogicalPlanningContext { (_, context) =>
+    new givenConfig().withLogicalPlanningContext { (_, context) =>
       val result = getPlan(context, createPlan)
       context.staticComponents.planningAttributes.providedOrders.get(result.id) should be(ProvidedOrder.empty)
     }
   }
 
   private def shouldRetainProvidedOrder(createPlan: PlanCreationContext => LogicalPlan) = {
-    new given().withLogicalPlanningContext { (_, context) =>
+    new givenConfig().withLogicalPlanningContext { (_, context) =>
       val result = getPlan(context, createPlan)
       val lhsOrder = context.staticComponents.planningAttributes.providedOrders.get(result.lhs.get.id)
       context.staticComponents.planningAttributes.providedOrders.get(result.id) should be(lhsOrder.fromLeft)
@@ -1052,7 +1052,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
   }
 
   private def shouldFailAssertion(createPlan: PlanCreationContext => LogicalPlan) = {
-    new given().withLogicalPlanningContext { (_, context) =>
+    new givenConfig().withLogicalPlanningContext { (_, context) =>
       intercept[AssertionError](getPlan(context, createPlan))
     }
   }
@@ -1069,7 +1069,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
   }
 
   test("should mark leveraged order in plans and their origin") {
-    new given().withLogicalPlanningContext { (_, context) =>
+    new givenConfig().withLogicalPlanningContext { (_, context) =>
       val lpp = LogicalPlanProducer(context.cardinality, context.staticComponents.planningAttributes, idGen)
 
       val initialOrder = ProvidedOrder.asc(varFor("x"))
@@ -1150,7 +1150,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
   }
 
   test("should traverse tree towards order origin when marking leveraged order") {
-    new given().withLogicalPlanningContext { (_, context) =>
+    new givenConfig().withLogicalPlanningContext { (_, context) =>
       val lpp = LogicalPlanProducer(context.cardinality, context.staticComponents.planningAttributes, idGen)
 
       val initialOrder = ProvidedOrder.asc(varFor("x"))
@@ -1180,7 +1180,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
   }
 
   test("should traverse tree towards multiple order origins when marking leveraged order") {
-    new given().withLogicalPlanningContext { (_, context) =>
+    new givenConfig().withLogicalPlanningContext { (_, context) =>
       val lpp = LogicalPlanProducer(context.cardinality, context.staticComponents.planningAttributes, idGen)
 
       val initialOrder = ProvidedOrder.asc(varFor("x"))
@@ -1212,7 +1212,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
   }
 
   test("should retain solved hints when planning union for leaf plans") {
-    new given().withLogicalPlanningContext { (_, context) =>
+    new givenConfig().withLogicalPlanningContext { (_, context) =>
       val lpp = LogicalPlanProducer(context.cardinality, context.staticComponents.planningAttributes, idGen)
 
       val lhs = fakeLogicalPlanFor("x", "y")
@@ -1240,7 +1240,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
   }
 
   test("should validate the inner plan against the quantified path pattern when planning Trail") {
-    new given().withLogicalPlanningContext { (_, context) =>
+    new givenConfig().withLogicalPlanningContext { (_, context) =>
       val producer = LogicalPlanProducer(context.cardinality, context.staticComponents.planningAttributes, idGen)
 
       val sourcePlan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "source")

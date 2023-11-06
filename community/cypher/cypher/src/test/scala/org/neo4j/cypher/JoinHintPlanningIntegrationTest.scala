@@ -69,7 +69,7 @@ class JoinHintPlanningIntegrationTest extends CypherFunSuite with PatternGen wit
   }
 
   def logicalPlan(cypherQuery: String, solver: QueryGraphSolver) = {
-    val semanticPlan = new given {
+    val semanticPlan = new givenConfig {
       cardinality = mapCardinality {
         // expand - cheap
         case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternRelationships.size == 1 => 100.0

@@ -52,7 +52,7 @@ class NestedIndexJoinComponentConnectorTest extends CypherFunSuite with LogicalP
     val joinPred = equals(nProp, mProp)
     val labelNPred = hasLabels("n", "N")
     val labelMPred = hasLabels("m", "M")
-    new given() {
+    new givenConfig() {
       indexOn("N", "prop")
       indexOn("M", "prop")
       addTypeToSemanticTable(nProp, CTAny)
@@ -112,7 +112,7 @@ class NestedIndexJoinComponentConnectorTest extends CypherFunSuite with LogicalP
     val nProp = prop("n", "prop")
     val mProp = prop("m", "prop")
     val joinPred = equals(nProp, mProp)
-    new given() {
+    new givenConfig() {
       relationshipIndexOn("N", "prop")
       relationshipIndexOn("M", "prop")
       addTypeToSemanticTable(nProp, CTAny)
@@ -182,7 +182,7 @@ class NestedIndexJoinComponentConnectorTest extends CypherFunSuite with LogicalP
     val labelMPred = hasLabels("m", "M")
     val labelOPred = hasLabels("o", "P")
     val labelPPred = hasLabels("p", "P")
-    new given() {
+    new givenConfig() {
       indexOn("N", "prop")
       indexOn("M", "prop")
       indexOn("O", "prop")
@@ -240,7 +240,7 @@ class NestedIndexJoinComponentConnectorTest extends CypherFunSuite with LogicalP
     val joinPred = equals(nProp, mProp)
     val labelNPred = hasLabels("n", "N")
     val labelMPred = hasLabels("m", "M")
-    new given() {
+    new givenConfig() {
       indexOn("N", "prop")
       indexOn("M", "prop")
       addTypeToSemanticTable(nProp, CTAny)

@@ -111,7 +111,7 @@ class RelationshipIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanni
     val oAaaEqualsLit42 = equals(oAaa, lit42)
     val oBbbLessThan6 = lessThan(oBbb, lit6)
     val oCccLessThan6 = lessThan(oCcc, lit6)
-    new given {
+    new givenConfig {
       addTypeToSemanticTable(nProp, CTInteger.invariant)
       addTypeToSemanticTable(mProp, CTInteger.invariant)
       addTypeToSemanticTable(oProp, CTInteger.invariant)

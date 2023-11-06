@@ -124,7 +124,7 @@ class MergeRelationshipUniqueIndexSeekLeafPlanningTest
 
   test("does not plan index seek when no index is present") {
     // given
-    val config = new given()
+    val config = new givenConfig()
     val context = buildLogicalPlanningContext(config)
     val queryGraph = buildQueryGraph(rPropInLit42)
 
@@ -137,7 +137,7 @@ class MergeRelationshipUniqueIndexSeekLeafPlanningTest
 
   test("plans an index seek on a single property") {
     // given
-    val config = new given {
+    val config = new givenConfig {
       uniqueRelationshipIndexOn(relationshipTypeName, prop)
     }
     val context = buildLogicalPlanningContext(config)
@@ -169,7 +169,7 @@ class MergeRelationshipUniqueIndexSeekLeafPlanningTest
     "plans two index seek, with an assert same relationship, when querying two properties with two different indexes"
   ) {
     // given
-    val config = new given {
+    val config = new givenConfig {
       uniqueRelationshipIndexOn(relationshipTypeName, prop)
       uniqueRelationshipIndexOn(relationshipTypeName, prop2)
     }
@@ -219,7 +219,7 @@ class MergeRelationshipUniqueIndexSeekLeafPlanningTest
 
   test("plans a single index seek when querying two properties with a composite index") {
     // given
-    val config = new given {
+    val config = new givenConfig {
       uniqueRelationshipIndexOn(relationshipTypeName, prop, prop2)
     }
     val context = buildLogicalPlanningContext(config)
@@ -256,7 +256,7 @@ class MergeRelationshipUniqueIndexSeekLeafPlanningTest
 
   test("plans a single index seek and a composite one under an assert same relationship") {
     // given
-    val config = new given {
+    val config = new givenConfig {
       uniqueRelationshipIndexOn(relationshipTypeName, prop, prop2)
       uniqueRelationshipIndexOn(relationshipTypeName, prop3)
     }

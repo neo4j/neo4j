@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class CachedStatisticsBackedCardinalityModelTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
-  val config = new given()
+  val config = new givenConfig()
 
   val selectivityCalculator: Metrics.SelectivityCalculator =
     CompositeExpressionSelectivityCalculator(config.planContext)

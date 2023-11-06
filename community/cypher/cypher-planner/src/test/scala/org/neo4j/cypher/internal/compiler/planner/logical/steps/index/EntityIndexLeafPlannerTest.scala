@@ -228,7 +228,7 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
   )
 
   test("implicit IS NOT NULL predicates simple case") {
-    new given {
+    new givenConfig {
       qg = queryGraph(Set.empty)
     } withLogicalPlanningContext {
       (_, context) =>
@@ -249,7 +249,7 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
   }
 
   test("implicit IS NOT NULL predicates empty case") {
-    new given {
+    new givenConfig {
       qg = queryGraph(Set.empty)
     } withLogicalPlanningContext {
       (_, context) =>
@@ -264,7 +264,7 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
   }
 
   test("should find multiple index compatible predicates for less-than with string literal") {
-    new given {
+    new givenConfig {
       qg = queryGraph(Set.empty)
       addTypeToSemanticTable(stringLiteral, CTString.invariant)
     } withLogicalPlanningContext {
@@ -298,7 +298,7 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
   }
 
   test("should find multiple index compatible predicates for less-than with point literal") {
-    new given {
+    new givenConfig {
       qg = queryGraph(Set.empty)
       addTypeToSemanticTable(pointLiteral, CTPoint.invariant)
     } withLogicalPlanningContext {
@@ -403,7 +403,7 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
     val predicates = Set(predicate)
     val exactQueryTypeReq = IndexRequirement.SupportsIndexQuery(IndexQueryType.EXACT)
     test(s"findIndexCompatiblePredicates ($name)") {
-      new given {
+      new givenConfig {
         qg = queryGraph(predicates)
         propertyTypes.foreach(key => addTypeToSemanticTable(key._1, key._2))
         nodeConstraints = Set(("ConstraintLabel", Set("prop1")))

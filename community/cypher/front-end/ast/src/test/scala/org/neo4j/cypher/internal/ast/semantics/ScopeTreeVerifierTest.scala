@@ -26,12 +26,12 @@ class ScopeTreeVerifierTest extends CypherFunSuite with AstConstructionTestSuppo
   test("should reject scopes mapping the wrong name to a symbol") {
     val x = intSymbol("x", varFor("x"))
     val a = intSymbol("a", varFor("a"))
-    val given = Scope(Map("a" -> a, "b" -> x), Seq())
+    val givenScope = Scope(Map("a" -> a, "b" -> x), Seq())
 
-    val result = ScopeTreeVerifier.verify(given).map(_.fixNewLines)
+    val result = ScopeTreeVerifier.verify(givenScope).map(_.fixNewLines)
 
     result.head should startWith(
-      s"'b' points to symbol with different name '$x' in scope ${given.toIdString}. Scope tree:"
+      s"'b' points to symbol with different name '$x' in scope ${givenScope.toIdString}. Scope tree:"
     )
   }
 }

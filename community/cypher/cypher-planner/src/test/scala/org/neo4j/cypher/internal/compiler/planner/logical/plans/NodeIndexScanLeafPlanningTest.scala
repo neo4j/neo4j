@@ -95,7 +95,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
     NodeIndexLeafPlanner(Seq(nodeIndexScanPlanProvider, nodeIndexStringSearchScanPlanProvider), restrictions)
 
   test("does not plan index scan when no index exist") {
-    new given {
+    new givenConfig {
       qg = queryGraph(propIsNotNull, hasLabelAwesome)
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
@@ -108,7 +108,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("index scan when there is an index on the property") {
-    new given {
+    new givenConfig {
       qg = queryGraph(propIsNotNull, hasLabelAwesome)
 
       indexOn("Awesome", "prop")
@@ -132,7 +132,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("no index scan when there is an index on the property but node variable is restricted") {
-    new given {
+    new givenConfig {
       qg = queryGraph(propIsNotNull, hasLabelAwesome)
 
       indexOn("Awesome", "prop")
@@ -150,7 +150,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("index contains scan when there is an index on the property but relationship variable is restricted") {
-    new given {
+    new givenConfig {
       qg = queryGraph(propContainsApa, hasLabelAwesome)
       textIndexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -176,7 +176,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("index ends with scan when there is an index on the property but relationship variable is restricted") {
-    new given {
+    new givenConfig {
       qg = queryGraph(propEndsWithApa, hasLabelAwesome)
       textIndexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -202,7 +202,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("index scan solves is not null") {
-    new given {
+    new givenConfig {
       qg = queryGraph(propIsNotNull, hasLabelAwesome)
 
       indexOn("Awesome", "prop")
@@ -223,7 +223,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("index scan for equality solves is not null") {
-    new given {
+    new givenConfig {
       qg = queryGraph(propEquals12, propIsNotNull, hasLabelAwesome)
 
       indexOn("Awesome", "prop")
@@ -249,7 +249,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
     ).asSinglePlannerQuery.queryGraph.selections.predicates.map(_.expr)
 
   test("index scan with values when there is an index on the property") {
-    new given {
+    new givenConfig {
       qg = queryGraph(propIsNotNull, hasLabelAwesome)
 
       indexOn("Awesome", "prop").providesValues()
@@ -273,7 +273,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("unique index scan when there is an unique index on the property") {
-    new given {
+    new givenConfig {
       qg = queryGraph(propIsNotNull, hasLabelAwesome)
 
       uniqueIndexOn("Awesome", "prop")
@@ -297,7 +297,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("unique index scan with values when there is an unique index on the property") {
-    new given {
+    new givenConfig {
       qg = queryGraph(propIsNotNull, hasLabelAwesome)
 
       uniqueIndexOn("Awesome", "prop").providesValues()
@@ -324,7 +324,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
     val hint: UsingIndexHint =
       UsingIndexHint(varFor("n"), labelOrRelTypeName("Awesome"), Seq(PropertyKeyName("prop")(pos))) _
 
-    new given {
+    new givenConfig {
       qg = queryGraph(propIsNotNull, hasLabelAwesome).addHints(Some(hint))
 
       indexOn("Awesome", "prop")
@@ -348,7 +348,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
     val hint: UsingIndexHint =
       UsingIndexHint(varFor("n"), labelOrRelTypeName("Awesome"), Seq(PropertyKeyName("prop")(pos))) _
 
-    new given {
+    new givenConfig {
       qg = queryGraph(propIsNotNull, hasLabelAwesome).addHints(Some(hint))
 
       uniqueIndexOn("Awesome", "prop")
@@ -372,7 +372,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
     val hint: UsingIndexHint =
       UsingIndexHint(varFor("n"), labelOrRelTypeName("Awesome"), Seq(PropertyKeyName("prop")(pos)), SeekOnly) _
 
-    new given {
+    new givenConfig {
       qg = queryGraph(propIsNotNull, hasLabelAwesome).addHints(Some(hint))
 
       uniqueIndexOn("Awesome", "prop")
@@ -393,7 +393,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("plans index scans for: n.prop STARTS WITH <pattern>") {
-    new given {
+    new givenConfig {
       qg = queryGraph(propStartsWithEmpty, hasLabelAwesome)
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -423,7 +423,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("plans index scans with value for: n.prop STARTS WITH <pattern>") {
-    new given {
+    new givenConfig {
       qg = queryGraph(propStartsWithEmpty, hasLabelAwesome)
       indexOn("Awesome", "prop").providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -453,7 +453,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("plans index scans for: n.prop < <value>") {
-    new given {
+    new givenConfig {
       qg = queryGraph(propLessThan12, hasLabelAwesome)
       addTypeToSemanticTable(lit12, CTInteger.invariant)
       indexOn("Awesome", "prop")
@@ -484,7 +484,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("plans index scans with values for: n.prop < <value>") {
-    new given {
+    new givenConfig {
       qg = queryGraph(propLessThan12, hasLabelAwesome)
       addTypeToSemanticTable(lit12, CTInteger.invariant)
       indexOn("Awesome", "prop").providesValues()
@@ -515,7 +515,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("plans index scans for: n.prop <> <value>") {
-    new given {
+    new givenConfig {
       qg = queryGraph(propNotEquals12, hasLabelAwesome)
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -545,7 +545,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("plans index scans with values for: n.prop <> <value>") {
-    new given {
+    new givenConfig {
       qg = queryGraph(propNotEquals12, hasLabelAwesome)
       indexOn("Awesome", "prop").providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -575,7 +575,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("plans index scans for: n.prop = <value>") {
-    new given {
+    new givenConfig {
       qg = queryGraph(propEquals12, hasLabelAwesome)
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -605,7 +605,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("plans index scans with values for: n.prop = <value>") {
-    new given {
+    new givenConfig {
       qg = queryGraph(propEquals12, hasLabelAwesome)
       indexOn("Awesome", "prop").providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -635,7 +635,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("plans index scans for: n.prop = <pattern>") {
-    new given {
+    new givenConfig {
       qg = queryGraph(propRegexMatchJohnny, hasLabelAwesome)
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -665,7 +665,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("plans index scans with values for: n.prop = <pattern>") {
-    new given {
+    new givenConfig {
       qg = queryGraph(propRegexMatchJohnny, hasLabelAwesome)
       indexOn("Awesome", "prop").providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -695,7 +695,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("plans composite index scans when there is a composite index and multiple predicates") {
-    new given {
+    new givenConfig {
       qg = queryGraph(propContainsApa, fooContainsApa, barIsNotNull, bazEquals12, hasLabelAwesome)
 
       indexOn("Awesome", "foo", "prop", "bar", "baz").providesValues()
@@ -730,7 +730,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("plans composite index scans when there is a composite index and multiple predicates on the same property") {
-    new given {
+    new givenConfig {
       qg = queryGraph(propContainsApa, propLessThan12, fooIsNotNull, barIsNotNull, bazEquals12, hasLabelAwesome)
       addTypeToSemanticTable(lit12, CTInteger.invariant)
       indexOn("Awesome", "foo", "prop", "bar", "baz").providesValues()
@@ -768,7 +768,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("plans no composite index scans when there is a composite index but not enough predicates") {
-    new given {
+    new givenConfig {
       qg = queryGraph(propContainsApa, fooContainsApa, barIsNotNull, hasLabelAwesome)
 
       indexOn("Awesome", "foo", "prop", "bar", "baz").providesValues()
@@ -785,7 +785,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("does not plan index contains scan when no index exist") {
-    new given {
+    new givenConfig {
       qg = queryGraph(propContainsApa, hasLabelAwesome)
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
@@ -801,7 +801,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("index contains scan when there is an index on the property") {
-    new given {
+    new givenConfig {
       qg = queryGraph(propContainsApa, hasLabelAwesome)
 
       indexOn("Awesome", "prop")
@@ -829,7 +829,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("index contains scan with values when there is an index on the property") {
-    new given {
+    new givenConfig {
       qg = queryGraph(propContainsApa, hasLabelAwesome)
 
       indexOn("Awesome", "prop").providesValues()
@@ -857,7 +857,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("multiple index contains scans with values when there is an index on the property and multiple predicates") {
-    new given {
+    new givenConfig {
       qg = queryGraph(propContainsApa, propContainsBepa, hasLabelAwesome)
 
       indexOn("Awesome", "prop").providesValues()
@@ -894,7 +894,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("no index contains scans with values when there is a composite index on the property and multiple predicates") {
-    new given {
+    new givenConfig {
       qg = queryGraph(propContainsApa, fooContainsApa, hasLabelAwesome)
 
       indexOn("Awesome", "prop", "foo").providesValues()
@@ -912,7 +912,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("unique index contains scan when there is an unique index on the property") {
-    new given {
+    new givenConfig {
       qg = queryGraph(propContainsApa, hasLabelAwesome)
 
       uniqueIndexOn("Awesome", "prop")
@@ -940,7 +940,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("unique index contains scan with values when there is an unique index on the property") {
-    new given {
+    new givenConfig {
       qg = queryGraph(propContainsApa, hasLabelAwesome)
 
       uniqueIndexOn("Awesome", "prop").providesValues()
@@ -971,7 +971,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
     val hint: UsingIndexHint =
       UsingIndexHint(varFor("n"), labelOrRelTypeName("Awesome"), Seq(PropertyKeyName("prop")(pos))) _
 
-    new given {
+    new givenConfig {
       qg = queryGraph(propContainsApa, hasLabelAwesome).addHints(Some(hint))
 
       indexOn("Awesome", "prop")
@@ -998,7 +998,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
     val hint: UsingIndexHint =
       UsingIndexHint(varFor("n"), labelOrRelTypeName("Awesome"), Seq(PropertyKeyName("prop")(pos)), SeekOnly) _
 
-    new given {
+    new givenConfig {
       qg = queryGraph(propContainsApa, hasLabelAwesome).addHints(Some(hint))
 
       indexOn("Awesome", "prop")
@@ -1025,7 +1025,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
     val hint: UsingIndexHint =
       UsingIndexHint(varFor("n"), labelOrRelTypeName("Awesome"), Seq(PropertyKeyName("prop")(pos))) _
 
-    new given {
+    new givenConfig {
       qg = queryGraph(propContainsApa, hasLabelAwesome).addHints(Some(hint))
 
       uniqueIndexOn("Awesome", "prop")
@@ -1049,7 +1049,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("index ends with scan when there is an index on the property") {
-    new given {
+    new givenConfig {
       qg = queryGraph(propEndsWithApa, hasLabelAwesome)
 
       indexOn("Awesome", "prop")
@@ -1077,7 +1077,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("index ends with scan with values when there is an index on the property") {
-    new given {
+    new givenConfig {
       qg = queryGraph(propEndsWithApa, hasLabelAwesome)
 
       indexOn("Awesome", "prop").providesValues()
@@ -1105,7 +1105,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("multiple index ends with scans with values when there is an index on the property and multiple predicates") {
-    new given {
+    new givenConfig {
       qg = queryGraph(propEndsWithApa, propEndsWithBepa, hasLabelAwesome)
 
       indexOn("Awesome", "prop").providesValues()
@@ -1142,7 +1142,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("no index ends with scans with values when there is a composite index on the property and multiple predicates") {
-    new given {
+    new givenConfig {
       qg = queryGraph(propEndsWithApa, fooEndsWithApa, hasLabelAwesome)
 
       indexOn("Awesome", "prop", "foo").providesValues()
@@ -1165,7 +1165,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
     val hint: UsingIndexHint =
       UsingIndexHint(varFor("n"), labelOrRelTypeName("Awesome"), Seq(PropertyKeyName("prop")(pos))) _
 
-    new given {
+    new givenConfig {
       qg = queryGraph(propEndsWithApa, hasLabelAwesome).addHints(Some(hint))
 
       indexOn("Awesome", "prop")
@@ -1190,7 +1190,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
     val hint: UsingIndexHint =
       UsingIndexHint(varFor("n"), labelOrRelTypeName("Awesome"), Seq(PropertyKeyName("prop")(pos)), SeekOnly) _
 
-    new given {
+    new givenConfig {
       qg = queryGraph(propEndsWithApa, hasLabelAwesome).addHints(Some(hint))
 
       indexOn("Awesome", "prop")
@@ -1212,7 +1212,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("does not plan index scans for arguments for: n.prop = <value>") {
-    new given {
+    new givenConfig {
       qg = queryGraph(propEquals12, hasLabelAwesome)
         .withArgumentIds(Set(idName))
 
@@ -1228,7 +1228,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("does not plan index contains scan for arguments") {
-    new given {
+    new givenConfig {
       qg = queryGraph(propContainsApa, hasLabelAwesome)
         .withArgumentIds(Set(idName))
 
@@ -1244,7 +1244,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("does not plan index ends with scan for arguments") {
-    new given {
+    new givenConfig {
       qg = queryGraph(propEndsWithApa, hasLabelAwesome)
         .withArgumentIds(Set(idName))
 
@@ -1260,7 +1260,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("does not plan index scan on argument for (n:Label) with existence constraint") {
-    new given {
+    new givenConfig {
       qg = queryGraph(hasLabelAwesome)
         .withArgumentIds(Set(idName))
 
@@ -1277,7 +1277,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("does not plan index scan on argument for (n:Label) with aggregation") {
-    new given {
+    new givenConfig {
       qg = queryGraph(hasLabelAwesome)
         .withArgumentIds(Set(idName))
 
@@ -1300,7 +1300,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   test(
     "does plan scans when seeks are found for single property indexes, when used together with nodeIndexSeekPlanProvider"
   ) {
-    new given {
+    new givenConfig {
       indexOn("Awesome", "prop")
       addTypeToSemanticTable(lit12, CTInteger.invariant)
 
@@ -1318,7 +1318,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("does not plan EndsWithScan for composite indexes") {
-    new given {
+    new givenConfig {
       indexOn("Awesome", "prop", "foo")
 
       qg = queryGraph(propEndsWithApa, fooEndsWithApa, hasLabelAwesome)

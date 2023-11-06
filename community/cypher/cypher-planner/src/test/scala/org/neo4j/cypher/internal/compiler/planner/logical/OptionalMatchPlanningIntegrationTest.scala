@@ -83,7 +83,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
   }
 
   test("should build plans containing left outer joins") {
-    (new given {
+    (new givenConfig {
       cost = {
         case (_: AllNodesScan, _, _, _)                                                 => 2000000.0
         case (_: NodeByLabelScan, _, _, _)                                              => 20.0
@@ -117,7 +117,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
   }
 
   test("should build plans containing right outer joins") {
-    (new given {
+    (new givenConfig {
       cost = {
         case (_: AllNodesScan, _, _, _)                                                 => 2000000.0
         case (_: NodeByLabelScan, _, _, _)                                              => 20.0
@@ -151,7 +151,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
   }
 
   test("should choose left outer join if lhs has small cardinality") {
-    (new given {
+    (new givenConfig {
       labelCardinality = Map("X" -> 1.0, "Y" -> 10.0)
       statistics = new DelegatingGraphStatistics(parent.graphStatistics) {
         override def patternStepCardinality(
@@ -198,7 +198,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
   }
 
   test("should choose right outer join if rhs has small cardinality") {
-    (new given {
+    (new givenConfig {
       labelCardinality = Map("X" -> 10.0, "Y" -> 1.0)
       statistics = new DelegatingGraphStatistics(parent.graphStatistics) {
         override def patternStepCardinality(
@@ -377,7 +377,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
   }
 
   test("should solve optional matches with arguments and predicates") {
-    val plan = new given {
+    val plan = new givenConfig {
       cost = {
         case (_: Expand, _, _, _) => 1000.0
       }
@@ -480,7 +480,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
                   |RETURN c
                   |""".stripMargin
 
-    val cfg = new given {
+    val cfg = new givenConfig {
       cost = {
         case (_: RightOuterHashJoin, _, _, _) => 1.0
         case (_: LeftOuterHashJoin, _, _, _)  => 1.0
@@ -676,7 +676,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
   }
 
   test("should produce a valid plan for optional match with solved arguments passed to node by label scan") {
-    val config = new given {
+    val config = new givenConfig {
       statistics = new DelegatingGraphStatistics(parent.graphStatistics) {
         override def nodesAllCardinality(): Cardinality = 100000.0
       }
@@ -707,7 +707,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
   }
 
   test("should produce a valid plan for optional match with solved arguments passed to node index scan") {
-    val config = new given {
+    val config = new givenConfig {
       statistics = new DelegatingGraphStatistics(parent.graphStatistics) {
         override def nodesAllCardinality(): Cardinality = 100000.0
       }
@@ -769,7 +769,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
   The logic inside apply optional is covered by the other similar tests in this file anyway.
    */
   ignore("should produce a valid plan for optional match with solved arguments passed to a relationship index scan") {
-    val config = new given {
+    val config = new givenConfig {
       cost = {
         case (expand: OptionalExpand, _, _, _) if expand.mode == ExpandAll => Double.MaxValue
       }
@@ -832,7 +832,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
   test(
     "should produce a valid plan for optional match with solved arguments passed to an undirected relationship type scan"
   ) {
-    val config = new given {
+    val config = new givenConfig {
       cost = {
         case (expand: OptionalExpand, _, _, _) if expand.mode == ExpandAll => Double.MaxValue
       }
@@ -867,7 +867,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
   test(
     "should produce a valid plan for optional match with solved arguments passed to a directed relationship type scan"
   ) {
-    val config = new given {
+    val config = new givenConfig {
       cost = {
         case (expand: OptionalExpand, _, _, _) if expand.mode == ExpandAll => Double.MaxValue
       }
@@ -900,7 +900,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
   }
 
   test("should produce a valid plan for optional match with solved arguments passed to a node by id seek") {
-    val config = new given {
+    val config = new givenConfig {
       statistics = new DelegatingGraphStatistics(parent.graphStatistics) {
         override def nodesAllCardinality(): Cardinality = 100000.0
       }
@@ -934,7 +934,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
   test(
     "should produce a valid plan for optional match with solved arguments passed to an undirected relationship by id seek"
   ) {
-    val config = new given {
+    val config = new givenConfig {
       statistics = new DelegatingGraphStatistics(parent.graphStatistics) {
         override def nodesAllCardinality(): Cardinality = 100000.0
       }
@@ -967,7 +967,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
   test(
     "should produce a valid plan for optional match with solved arguments passed to a directed relationship by id seek"
   ) {
-    val config = new given {
+    val config = new givenConfig {
       statistics = new DelegatingGraphStatistics(parent.graphStatistics) {
         override def nodesAllCardinality(): Cardinality = 100000.0
       }
