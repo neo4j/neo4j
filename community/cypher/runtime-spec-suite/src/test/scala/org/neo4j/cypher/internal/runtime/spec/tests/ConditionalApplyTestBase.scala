@@ -821,50 +821,6 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x").withRows(expected)
   }
 
-  test("ordered union on RHS of conditionalApply plus sorts") {
-    // given
-    given {
-      nodeGraph(sizeHint)
-    }
-
-    val inputRows = (0 until sizeHint).map { i =>
-      Array[Any](i.toLong)
-    }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .sort("n ASC")
-      .apply()
-      .|.sort("n ASC")
-      .|.conditionalApply("i")
-      // NOTE: leave commented out lines, they show how pipelined runtime rewrites this query
-      //      .|.|.orderedUnion()
-      //      .|.|.|.limit(1)
-      //      .|.|.|.orderedUnion()
-      //      .|.|.|.|.allNodeScan("n")
-      //      .|.|.|.allNodeScan("n")
-      //      .|.|.argument()
-      .|.|.sort("n ASC")
-      .|.|.limit(1)
-      .|.|.orderedUnion("n ASC")
-      .|.|.|.allNodeScan("n")
-      .|.|.allNodeScan("n")
-      .|.unwind("[1,null,2,null,3,null] AS i")
-      .|.argument()
-      .input(variables = Seq("x"))
-      .build()
-
-    val expected = for {
-      x <- inputRows
-      i <- Seq[Any](1, null, 2, null, 3, null)
-    } yield x
-
-    // then
-    val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
-    runtimeResult should beColumns("x").withRows(expected)
-  }
-
   test("cartesian product on RHS of conditionalApply plus sorts") {
     // given
     given {
@@ -1017,69 +973,6 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
       .|.|.sort("n ASC")
       .|.|.limit(1)
       .|.|.union()
-      .|.|.|.allNodeScan("n")
-      .|.|.allNodeScan("n")
-      .|.unwind("[1,null,2,null,3,null] AS i")
-      .|.argument()
-      .input(variables = Seq("x"))
-      .build()
-
-    val expected = for {
-      x <- inputRows
-      _ <- Seq[Any](1, null, 2, null, 3, null)
-      _ <- Seq[Any](1, null, 2, null, 3, null)
-    } yield x
-
-    // then
-    val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
-    runtimeResult should beColumns("x").withRows(expected)
-  }
-
-  test("chained ordered union on RHS of conditionalApply plus sorts") {
-    // given
-    given {
-      nodeGraph(sizeHint)
-    }
-
-    val inputRows = (0 until sizeHint).map { i =>
-      Array[Any](i.toLong)
-    }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .sort("n ASC")
-      .apply()
-      .|.sort("m ASC")
-      .|.conditionalApply("j")
-      // NOTE: leave commented out lines, they show how pipelined runtime rewrites this query
-      //      .|.|.orderedUnion()
-      //      .|.|.|.limit(1)
-      //      .|.|.|.nodeHashJoin("m")
-      //      .|.|.|.|.allNodeScan("m")
-      //      .|.|.|.allNodeScan("m")
-      //      .|.|.argument()
-      .|.|.sort("m ASC")
-      .|.|.limit(1)
-      .|.|.orderedUnion("m ASC")
-      .|.|.|.allNodeScan("m")
-      .|.|.allNodeScan("m")
-      .|.unwind("[1,null,2,null,3,null] AS j")
-      .|.argument()
-      .sort("n ASC")
-      .apply()
-      .|.sort("n ASC")
-      .|.conditionalApply("i")
-      // NOTE: leave commented out lines, they show how pipelined runtime rewrites this query
-      //      .|.|.orderedUnion()
-      //      .|.|.|.limit(1)
-      //      .|.|.|.nodeHashJoin("n")
-      //      .|.|.|.|.allNodeScan("n")
-      //      .|.|.|.allNodeScan("n")
-      //      .|.|.argument()
-      .|.|.sort("n ASC")
-      .|.|.limit(1)
-      .|.|.orderedUnion("n ASC")
       .|.|.|.allNodeScan("n")
       .|.|.allNodeScan("n")
       .|.unwind("[1,null,2,null,3,null] AS i")
@@ -1549,7 +1442,7 @@ trait OrderedConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
       .sort("n ASC")
       .apply()
       .|.sort("n ASC")
-      .|.conditionalApply("i")
+      .|.conditionalApply("i").withLeveragedOrder()
       // NOTE: leave commented out lines, they show how pipelined runtime rewrites this query
       //      .|.|.orderedUnion()
       //      .|.|.|.limit(1)
@@ -1593,7 +1486,7 @@ trait OrderedConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
       .sort("n ASC")
       .apply()
       .|.sort("n ASC")
-      .|.conditionalApply("i")
+      .|.conditionalApply("i").withLeveragedOrder()
       // NOTE: leave commented out lines, they show how pipelined runtime rewrites this query
       //      .|.|.orderedUnion()
       //      .|.|.|.limit(1)
@@ -1637,7 +1530,7 @@ trait OrderedConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
       .sort("n ASC")
       .apply()
       .|.sort("n ASC")
-      .|.conditionalApply("i")
+      .|.conditionalApply("i").withLeveragedOrder()
       // NOTE: leave commented out lines, they show how pipelined runtime rewrites this query
       //      .|.|.orderedUnion()
       //      .|.|.|.limit(1)
@@ -1681,7 +1574,7 @@ trait OrderedConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
       .sort("n ASC")
       .apply()
       .|.sort("n ASC")
-      .|.conditionalApply("i")
+      .|.conditionalApply("i").withLeveragedOrder()
       // NOTE: leave commented out lines, they show how pipelined runtime rewrites this query
       //      .|.|.orderedUnion()
       //      .|.|.|.limit(1)
@@ -1725,7 +1618,7 @@ trait OrderedConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
       .sort("n ASC")
       .apply()
       .|.sort("m ASC")
-      .|.conditionalApply("j")
+      .|.conditionalApply("j").withLeveragedOrder()
       // NOTE: leave commented out lines, they show how pipelined runtime rewrites this query
       //      .|.|.orderedUnion()
       //      .|.|.|.limit(1)
@@ -1743,7 +1636,7 @@ trait OrderedConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
       .sort("n ASC")
       .apply()
       .|.sort("n ASC")
-      .|.conditionalApply("i")
+      .|.conditionalApply("i").withLeveragedOrder()
       // NOTE: leave commented out lines, they show how pipelined runtime rewrites this query
       //      .|.|.orderedUnion()
       //      .|.|.|.limit(1)
@@ -1788,7 +1681,7 @@ trait OrderedConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
       .sort("n ASC")
       .apply()
       .|.sort("m ASC")
-      .|.conditionalApply("j")
+      .|.conditionalApply("j").withLeveragedOrder()
       // NOTE: leave commented out lines, they show how pipelined runtime rewrites this query
       //      .|.|.orderedUnion()
       //      .|.|.|.limit(1)
@@ -1806,7 +1699,7 @@ trait OrderedConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
       .sort("n ASC")
       .apply()
       .|.sort("n ASC")
-      .|.conditionalApply("i")
+      .|.conditionalApply("i").withLeveragedOrder()
       // NOTE: leave commented out lines, they show how pipelined runtime rewrites this query
       //      .|.|.orderedUnion()
       //      .|.|.|.limit(1)
@@ -1851,7 +1744,7 @@ trait OrderedConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
       .sort("n ASC")
       .apply()
       .|.sort("m ASC")
-      .|.conditionalApply("j")
+      .|.conditionalApply("j").withLeveragedOrder()
       // NOTE: leave commented out lines, they show how pipelined runtime rewrites this query
       //      .|.|.orderedUnion()
       //      .|.|.|.limit(1)
@@ -1869,7 +1762,7 @@ trait OrderedConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
       .sort("n ASC")
       .apply()
       .|.sort("n ASC")
-      .|.conditionalApply("i")
+      .|.conditionalApply("i").withLeveragedOrder()
       // NOTE: leave commented out lines, they show how pipelined runtime rewrites this query
       //      .|.|.orderedUnion()
       //      .|.|.|.limit(1)
