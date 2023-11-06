@@ -368,7 +368,7 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
     val chunkSize = 17
     val topLimit = chunkSize + 1
     nodeIndex("B", "x")
-    val aNodes = given {
+    val aNodes = givenGraph {
       val aNodes = nodeGraph(2, "A")
       nodePropertyGraph(
         sizeHint,
@@ -407,7 +407,7 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
     val skip = chunkSize + 1
     val topLimit = chunkSize + skip
     nodeIndex("B", "x")
-    val aNodes = given {
+    val aNodes = givenGraph {
       val aNodes = nodeGraph(2, "A")
       nodePropertyGraph(
         sizeHint,

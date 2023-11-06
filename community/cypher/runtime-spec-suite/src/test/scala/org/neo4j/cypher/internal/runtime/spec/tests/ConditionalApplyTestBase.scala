@@ -56,7 +56,7 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
 
   test("conditional apply on nonempty lhs and empty rhs, where condition(lhs) always is true") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(19, "RHS")
       nodeGraph(sizeHint)
     }
@@ -80,7 +80,7 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
 
   test("conditional apply on nonempty lhs and empty rhs") {
     // given
-    given {
+    givenGraph {
       nodeGraph(19, "RHS")
       nodeGraph(sizeHint)
     }
@@ -104,7 +104,7 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
 
   test("conditional apply on nonempty lhs and nonempty rhs") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
       nodeGraph(sizeHint, "RHS")
     }
@@ -128,7 +128,7 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
 
   test("conditional apply on non-nullable node") {
     val nodeCount = sizeHint
-    val (nodes, _) = given {
+    val (nodes, _) = givenGraph {
       circleGraph(nodeCount, "L")
     }
 
@@ -151,7 +151,7 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
 
   test("conditional apply on the RHS of an apply") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
       nodeGraph(sizeHint, "RHS")
     }
@@ -178,7 +178,7 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
   test("conditional apply with limit on rhs") {
     val limit = 10
 
-    val unfilteredNodes = given {
+    val unfilteredNodes = givenGraph {
       val size = 100
       val nodes = nodeGraph(size)
       randomlyConnect(nodes, Connectivity(1, limit, "REL"))
@@ -217,7 +217,7 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
   test("should support limit on top of conditional apply") {
     // given
     val nodesPerLabel = 50
-    val (nodes, _) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    val (nodes, _) = givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
     val input = inputColumns(100000, 3, i => nodes(i % nodes.size)).stream()
 
     val limit = nodesPerLabel * nodesPerLabel - 1
@@ -245,7 +245,7 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
   test("should support reduce -> limit on the RHS of conditional apply") {
     // given
     val nodesPerLabel = 100
-    val (aNodes, bNodes) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    val (aNodes, bNodes) = givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -272,7 +272,7 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
   test("should aggregation on top of conditional apply with expand and limit and aggregation on rhs of apply") {
     // given
     val nodesPerLabel = 10
-    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     val limit = nodesPerLabel / 2
 
@@ -295,7 +295,7 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
   test("should aggregate with no grouping on top of conditional apply with expand on RHS") {
     // given
     val nodesPerLabel = 10
-    val (aNodes, bNodes) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    val (aNodes, bNodes) = givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -316,7 +316,7 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
   test("should aggregate on top of conditional apply with expand on RHS") {
     // given
     val nodesPerLabel = 10
-    val (aNodes, bNodes) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    val (aNodes, bNodes) = givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -338,7 +338,7 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
   test("should aggregate on top of conditional apply with expand on RHS with nulls") {
     // given
     val nodesPerLabel = 10
-    val (aNodes, bNodes) = given {
+    val (aNodes, bNodes) = givenGraph {
       bipartiteGraph(
         nodesPerLabel,
         "A",
@@ -386,7 +386,7 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle cachedProperties on RHS") {
-    given {
+    givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -443,7 +443,7 @@ trait OrderedConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
 
   test("conditional apply on the RHS of an apply should keep row order") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
       nodeGraph(sizeHint, "RHS")
     }
@@ -489,7 +489,7 @@ trait OrderedConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
 
   test("conditional apply on nonempty lhs and empty rhs, where condition(lhs) always is true - with leveraged order") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(19, "RHS")
       nodeGraph(sizeHint)
     }
@@ -513,7 +513,7 @@ trait OrderedConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
 
   test("conditional apply on nonempty lhs and empty rhs - with leveraged order") {
     // given
-    given {
+    givenGraph {
       nodeGraph(19, "RHS")
       nodeGraph(sizeHint)
     }
@@ -537,7 +537,7 @@ trait OrderedConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
 
   test("conditional apply on nonempty lhs and nonempty rhs - with leveraged order") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
       nodeGraph(sizeHint, "RHS")
     }
@@ -561,7 +561,7 @@ trait OrderedConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
 
   test("conditional apply on non-nullable node - with leveraged order") {
     val nodeCount = sizeHint
-    val (nodes, _) = given {
+    val (nodes, _) = givenGraph {
       circleGraph(nodeCount, "L")
     }
 
@@ -584,7 +584,7 @@ trait OrderedConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
 
   test("conditional apply on the RHS of an apply - with leveraged order") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
       nodeGraph(sizeHint, "RHS")
     }
@@ -611,7 +611,7 @@ trait OrderedConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
   test("conditional apply with limit on rhs - with leveraged order") {
     val limit = 10
 
-    val unfilteredNodes = given {
+    val unfilteredNodes = givenGraph {
       val size = 100
       val nodes = nodeGraph(size)
       randomlyConnect(nodes, Connectivity(1, limit, "REL"))
@@ -650,7 +650,7 @@ trait OrderedConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
   test("should support limit on top of conditional apply - with leveraged order") {
     // given
     val nodesPerLabel = 50
-    val (nodes, _) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    val (nodes, _) = givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
     val input = inputColumns(100000, 3, i => nodes(i % nodes.size)).stream()
 
     val limit = nodesPerLabel * nodesPerLabel - 1
@@ -678,7 +678,7 @@ trait OrderedConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
   test("should support reduce -> limit on the RHS of conditional apply - with leveraged order") {
     // given
     val nodesPerLabel = 100
-    val (aNodes, bNodes) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    val (aNodes, bNodes) = givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -707,7 +707,7 @@ trait OrderedConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
   ) {
     // given
     val nodesPerLabel = 10
-    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     val limit = nodesPerLabel / 2
 
@@ -730,7 +730,7 @@ trait OrderedConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
   test("should aggregate with no grouping on top of conditional apply with expand on RHS - with leveraged order") {
     // given
     val nodesPerLabel = 10
-    val (aNodes, bNodes) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    val (aNodes, bNodes) = givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -751,7 +751,7 @@ trait OrderedConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
   test("should aggregate on top of conditional apply with expand on RHS - with leveraged order") {
     // given
     val nodesPerLabel = 10
-    val (aNodes, bNodes) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    val (aNodes, bNodes) = givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -773,7 +773,7 @@ trait OrderedConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
   test("should aggregate on top of conditional apply with expand on RHS with nulls - with leveraged order") {
     // given
     val nodesPerLabel = 10
-    val (aNodes, bNodes) = given {
+    val (aNodes, bNodes) = givenGraph {
       bipartiteGraph(
         nodesPerLabel,
         "A",
@@ -821,7 +821,7 @@ trait OrderedConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("should handle cachedProperties on RHS - with leveraged order") {
-    given {
+    givenGraph {
       nodePropertyGraph(
         sizeHint,
         {

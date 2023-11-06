@@ -76,7 +76,7 @@ abstract class ErrorHandlingStressTestBase[CONTEXT <: RuntimeContext](
 
   test("should log accumulated crash reports") {
     // given
-    given {
+    givenGraph {
       nodeGraph(sizeHint)
     }
 

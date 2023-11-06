@@ -40,7 +40,7 @@ abstract class RelationshipTypeScanConcurrencyStressTestBase[CONTEXT <: RuntimeC
 
   private def executeWithConcurrentDeletes(directed: Boolean): Unit = {
     // given
-    val rels = given {
+    val rels = givenGraph {
       val (_, rels) = circleGraph(nNodes = SIZE_HINT, relType = "R", outDegree = 1)
       rels.map(_.getId)
     }

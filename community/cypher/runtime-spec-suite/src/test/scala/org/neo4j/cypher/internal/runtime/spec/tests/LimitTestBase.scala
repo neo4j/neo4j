@@ -105,7 +105,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("limit on top of all node scan") {
-    given {
+    givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -122,7 +122,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("limit on top of union of all node scans") {
-    given {
+    givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -177,7 +177,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
   test("should support limit in the first of two pipelines") {
     // given
     val nodesPerLabel = 100
-    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -195,7 +195,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
   test("should support apply-limit") {
     // given
     val nodesPerLabel = 100
-    val (aNodes, _) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    val (aNodes, _) = givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -216,7 +216,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
   test("should support apply-limit on top of union") {
     // given
     val nodesPerLabel = 100
-    val (aNodes, _) = given {
+    val (aNodes, _) = givenGraph {
       bipartiteGraph(nodesPerLabel, "A", "B", "R")
     }
 
@@ -240,7 +240,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should support apply-limit 0") {
-    given {
+    givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -259,7 +259,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
   test("should support limit on top of apply") {
     // given
     val nodesPerLabel = 50
-    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
     val limit = nodesPerLabel * nodesPerLabel - 1
 
     // when
@@ -280,7 +280,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
 
   test("should support limit 0 on top of apply") {
     val nodesPerLabel = 50
-    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
@@ -298,7 +298,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
   test("should support reduce -> limit on the RHS of apply") {
     // given
     val nodesPerLabel = 100
-    val (aNodes, bNodes) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    val (aNodes, bNodes) = givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -326,7 +326,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
     // given
     val NODES_PER_LABEL = 100
     val LIMIT = 10
-    given { bipartiteGraph(NODES_PER_LABEL, "A", "B", "R") }
+    givenGraph { bipartiteGraph(NODES_PER_LABEL, "A", "B", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -347,7 +347,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
   test("should support chained limits") {
     // given
     val nodesPerLabel = 100
-    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -371,7 +371,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
   test("should support chained limits in the same pipeline") {
     // given
     val nodesPerLabel = 100
-    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     // when
     // This is a hypothetical query used to excersise some logic
@@ -397,7 +397,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should support limit with expand") {
-    val nodeConnections = given {
+    val nodeConnections = givenGraph {
       val nodes = nodeGraph(sizeHint)
       randomlyConnect(nodes, Connectivity(0, 5, "OTHER")).map {
         case NodeConnections(node, connections) => (node.getId, connections)
@@ -440,7 +440,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
 
   test("LIMIT combined with fused-over-pipelines") {
     val nodesPerLabel = 100
-    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "rel", "y")
@@ -475,7 +475,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("limit 0 followed by aggregation") {
-    given {
+    givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -491,7 +491,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should support allnodes + limit under apply") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
     }
     val limit = 3
@@ -513,7 +513,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should support expand(all) + limit under apply") {
-    val (nodes, _) = given {
+    val (nodes, _) = givenGraph {
       bipartiteGraph(10, "A", "B", "R")
     }
     val limit = 2
@@ -536,7 +536,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should support varexpand + limit under apply") {
-    val (nodes, _) = given {
+    val (nodes, _) = givenGraph {
       bipartiteGraph(10, "A", "B", "R")
     }
     val limit = 2
@@ -559,7 +559,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should support optional expand + limit under apply") {
-    val (nodes, _) = given {
+    val (nodes, _) = givenGraph {
       bipartiteGraph(10, "A", "B", "R")
     }
     val limit = 2
@@ -582,7 +582,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should support expand(into) + limit under apply") {
-    val nodes = given {
+    val nodes = givenGraph {
       val (aNodes, bNodes) = bipartiteGraph(3, "A", "B", "R")
       for {
         a <- aNodes
@@ -613,7 +613,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should support optional expand(into) + limit under apply") {
-    val nodes = given {
+    val nodes = givenGraph {
       val (aNodes, bNodes) = bipartiteGraph(3, "A", "B", "R")
       for {
         a <- aNodes
@@ -644,7 +644,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should support labelscan + limit under apply") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint, "A")
     }
     val limit = 3
@@ -666,7 +666,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should support unwind + limit under apply") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint, "A")
     }
     val limit = 3
@@ -709,7 +709,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should support single-nodeByIdSeek + limit under apply") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint, "A")
     }
     val limit = 0
@@ -730,7 +730,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should support multi-nodeByIdSeek + limit under apply") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint, "A")
     }
     val limit = 3
@@ -752,7 +752,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should support single-directedRelationshipByIdSeek + limit under apply") {
-    val (nodes, relationships) = given {
+    val (nodes, relationships) = givenGraph {
       circleGraph(sizeHint, "A")
     }
     val limit = 0
@@ -773,7 +773,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should support multi-directedRelationshipByIdSeek + limit under apply") {
-    val (nodes, relationships) = given {
+    val (nodes, relationships) = givenGraph {
       circleGraph(sizeHint, "A")
     }
     val limit = 3
@@ -795,7 +795,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should support single-undirectedRelationshipByIdSeek + limit under apply") {
-    val (nodes, relationships) = given {
+    val (nodes, relationships) = givenGraph {
       circleGraph(sizeHint, "A")
     }
     val limit = 0
@@ -816,7 +816,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should support multi-undirectedRelationshipByIdSeek + limit under apply") {
-    val (nodes, relationships) = given {
+    val (nodes, relationships) = givenGraph {
       circleGraph(sizeHint, "A")
     }
     val limit = 3
@@ -838,7 +838,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should support nodeIndexScan + limit under apply") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodeIndex("A", "prop")
       nodePropertyGraph(
         sizeHint,
@@ -867,7 +867,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should support nodeIndexSeek + limit under apply") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodeIndex("A", "prop")
       nodePropertyGraph(
         sizeHint,
@@ -896,7 +896,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should support multi-nodeIndexSeek + limit under apply") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodeIndex("A", "prop")
       nodePropertyGraph(
         sizeHint,
@@ -925,7 +925,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should support composite-nodeIndexSeek + limit under apply") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodeIndex("A", "prop1", "prop2")
       nodePropertyGraph(
         sizeHint,
@@ -954,7 +954,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should support chained limits on RHS of Apply") {
-    val nodes = given {
+    val nodes = givenGraph {
       val (aNodes, _) = bipartiteGraph(10, "A", "B", "R")
       aNodes
     }
@@ -979,7 +979,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
 
   test("should support multiple limits on RHS of Apply where only first limit is limiting") {
     val nodeCount = 10
-    val nodes = given {
+    val nodes = givenGraph {
       val (aNodes, _) = bipartiteGraph(nodeCount, "A", "B", "R")
       aNodes
     }
@@ -1005,7 +1005,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
 
   test("should support multiple limits on RHS of Apply where only second limit is limiting") {
     val nodeCount = 10
-    val nodes = given {
+    val nodes = givenGraph {
       val (aNodes, _) = bipartiteGraph(nodeCount, "A", "B", "R")
       aNodes
     }
@@ -1031,7 +1031,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
 
   test("should support limit under apply, with multiple input-rows per argument") {
     // given
-    val aNodes = given {
+    val aNodes = givenGraph {
       val a1 = tx.createNode(label("A"))
       a1.createRelationshipTo(tx.createNode(label("B")), withName("R"))
       a1.createRelationshipTo(tx.createNode(label("B")), withName("R"))
@@ -1063,7 +1063,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
 
   test("should support limit under apply, with multiple input-rows per argument, produce result not fused") {
     // given
-    val aNodes = given {
+    val aNodes = givenGraph {
       val a1 = tx.createNode(label("A"))
       a1.createRelationshipTo(tx.createNode(label("B")), withName("R"))
       a1.createRelationshipTo(tx.createNode(label("B")), withName("R"))
@@ -1095,7 +1095,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should support limit under apply, with multiple input-rows per argument with random connections") {
-    val nodeConnections = given {
+    val nodeConnections = givenGraph {
       val nodes = nodeGraph(10, "A")
       randomlyConnect(nodes, Connectivity(0, 5, "OTHER")).map {
         case NodeConnections(node, connections) =>
@@ -1126,7 +1126,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
   test(
     "should support limit under apply, with multiple input-rows per argument with random connections, produce result not fused"
   ) {
-    val nodeConnections = given {
+    val nodeConnections = givenGraph {
       val nodes = nodeGraph(10, "A")
       randomlyConnect(nodes, Connectivity(0, 5, "OTHER")).map {
         case NodeConnections(node, connections) =>
@@ -1157,7 +1157,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
 
   test("should support two limits at different different nesting levels - when RHS limit is lower than top limit") {
     val nodeCount = 10
-    given {
+    givenGraph {
       val (aNodes, _) = bipartiteGraph(nodeCount, "A", "B", "R")
       aNodes
     }
@@ -1188,7 +1188,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
 
   test("should support two limits at  different nesting levels - when RHS limit is higher than top limit") {
     val nodeCount = 10
-    given {
+    givenGraph {
       val (aNodes, _) = bipartiteGraph(nodeCount, "A", "B", "R")
       aNodes
     }
@@ -1218,7 +1218,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should let through all LHS rows of antiSemiApply") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -1236,7 +1236,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
 
   test("should support reduce -> limit 0 on the RHS of apply") {
     val nodesPerLabel = 100
-    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
@@ -1254,7 +1254,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
 
   test("should support limit 0-> reduce on the RHS of apply") {
     val nodesPerLabel = 100
-    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
@@ -1272,7 +1272,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
 
   test("should support chained limit 0") {
     val nodesPerLabel = 100
-    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("a2")
@@ -1292,7 +1292,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should support optional expand(into) + limit 0 under apply") {
-    given {
+    givenGraph {
       val (aNodes, bNodes) = bipartiteGraph(3, "A", "B", "R")
       for {
         a <- aNodes
@@ -1317,7 +1317,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should support unwind + limit 0 under apply") {
-    given {
+    givenGraph {
       nodeGraph(sizeHint, "A")
     }
 
@@ -1335,7 +1335,7 @@ abstract class LimitTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should support chained limit 0 on RHS of Apply") {
-    given {
+    givenGraph {
       bipartiteGraph(10, "A", "B", "R")
     }
 

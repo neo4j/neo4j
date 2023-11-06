@@ -42,7 +42,7 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](
   protected val SIZE: Int = 10
 
   test("should profile memory of sort") {
-    given {
+    givenGraph {
       nodeGraph(SIZE)
     }
 
@@ -72,7 +72,7 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should profile memory of distinct") {
-    given {
+    givenGraph {
       nodePropertyGraph(SIZE, { case i => Map("p" -> i) })
     }
 
@@ -88,7 +88,7 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should profile memory of collect aggregation") {
-    given {
+    givenGraph {
       nodeGraph(SIZE)
     }
 
@@ -104,7 +104,7 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should profile memory of grouping aggregation - one large group") {
-    given {
+    givenGraph {
       nodePropertyGraph(SIZE, { case _ => Map("p" -> 0) })
     }
 
@@ -120,7 +120,7 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should profile memory of grouping aggregation - many groups") {
-    given {
+    givenGraph {
       nodePropertyGraph(SIZE, { case i => Map("p" -> i) })
     }
 
@@ -136,7 +136,7 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should profile memory of node hash join") {
-    given {
+    givenGraph {
       nodeGraph(SIZE)
     }
 
@@ -152,7 +152,7 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should profile memory of multi-column node hash join") {
-    given {
+    givenGraph {
       bipartiteGraph(SIZE, "X", "Y", "R")
     }
 
@@ -171,7 +171,7 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should profile memory of top n, where n < max array size") {
-    given {
+    givenGraph {
       nodeGraph(SIZE)
     }
 
@@ -187,7 +187,7 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should profile memory of top n, where n > max array size") {
-    given {
+    givenGraph {
       nodeGraph(SIZE)
     }
 
@@ -203,7 +203,7 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should profile memory of top1WithTies") {
-    given {
+    givenGraph {
       nodeGraph(SIZE)
     }
 
@@ -278,7 +278,7 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](
 
   test("should profile memory of var-length-expand") {
     // given
-    given { chainGraphs(3, "TO", "TO", "TO", "TOO", "TO") }
+    givenGraph { chainGraphs(3, "TO", "TO", "TO", "TOO", "TO") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -296,7 +296,7 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](
 
   test("should profile memory of distinct var-length-expand") {
     // given
-    given { chainGraphs(3, "TO", "TO", "TO", "TOO", "TO") }
+    givenGraph { chainGraphs(3, "TO", "TO", "TO", "TOO", "TO") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -312,7 +312,7 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should profile memory of IN") {
-    given {
+    givenGraph {
       nodeGraph(SIZE)
     }
 
@@ -331,7 +331,7 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should profile memory of varExpand") {
-    given {
+    givenGraph {
       circleGraph(SIZE)
     }
 
@@ -381,7 +381,7 @@ trait FullSupportProfileMemoryTestBase[CONTEXT <: RuntimeContext] {
   self: ProfileMemoryTestBase[CONTEXT] =>
 
   test("should profile memory of eager") {
-    given {
+    givenGraph {
       nodeGraph(SIZE)
     }
 
@@ -397,7 +397,7 @@ trait FullSupportProfileMemoryTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("should profile memory of percentileDisc aggregation") {
-    given {
+    givenGraph {
       nodePropertyGraph(SIZE, { case i => Map("p" -> i) })
     }
 
@@ -413,7 +413,7 @@ trait FullSupportProfileMemoryTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("should profile memory of percentileCont aggregation") {
-    given {
+    givenGraph {
       nodePropertyGraph(SIZE, { case i => Map("p" -> i) })
     }
 
@@ -429,7 +429,7 @@ trait FullSupportProfileMemoryTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("should profile memory of distinct aggregation") {
-    given {
+    givenGraph {
       nodeGraph(SIZE)
     }
 
@@ -445,7 +445,7 @@ trait FullSupportProfileMemoryTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("should profile memory of expand(into)") {
-    given {
+    givenGraph {
       bipartiteGraph(SIZE, "X", "Y", "R")
     }
 
@@ -463,7 +463,7 @@ trait FullSupportProfileMemoryTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("should profile memory of node left outer hash join") {
-    given {
+    givenGraph {
       nodeGraph(SIZE)
     }
 
@@ -479,7 +479,7 @@ trait FullSupportProfileMemoryTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("should profile memory of node right outer hash join") {
-    given {
+    givenGraph {
       nodeGraph(SIZE)
     }
 
@@ -496,7 +496,7 @@ trait FullSupportProfileMemoryTestBase[CONTEXT <: RuntimeContext] {
 
   test("should profile memory of value hash join") {
     // given
-    given {
+    givenGraph {
       nodePropertyGraph(
         SIZE,
         {

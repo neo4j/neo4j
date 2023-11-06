@@ -43,7 +43,7 @@ abstract class DeletePathTestBase[CONTEXT <: RuntimeContext](
 
   test("delete path with single node") {
     val nodeCount = 5
-    given {
+    givenGraph {
       val nodes = nodeGraph(nodeCount)
       nodes.last.addLabel(Label.label("PleaseKillMe"))
     }
@@ -65,7 +65,7 @@ abstract class DeletePathTestBase[CONTEXT <: RuntimeContext](
 
   test("delete path with relationships") {
     val chainCount = 3
-    given {
+    givenGraph {
       chainGraphs(chainCount, "SMELLS", "SMELLS", "STINKS")
     }
 
@@ -93,7 +93,7 @@ abstract class DeletePathTestBase[CONTEXT <: RuntimeContext](
 
   test("fail to delete path with relationships connected to other nodes") {
     val chainCount = 3
-    given {
+    givenGraph {
       chainGraphs(chainCount, "SMELLS", "SMELLS", "STINKS")
     }
 

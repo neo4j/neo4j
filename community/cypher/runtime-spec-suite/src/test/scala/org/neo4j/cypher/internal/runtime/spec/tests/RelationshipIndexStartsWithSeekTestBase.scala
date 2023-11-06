@@ -35,7 +35,7 @@ abstract class RelationshipIndexStartsWithSeekTestBase[CONTEXT <: RuntimeContext
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should be case sensitive for STARTS WITH with indexes directed seek") {
-    given {
+    givenGraph {
       relationshipIndex(IndexType.TEXT, "R", "text")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -59,7 +59,7 @@ abstract class RelationshipIndexStartsWithSeekTestBase[CONTEXT <: RuntimeContext
   }
 
   test("should be case sensitive for STARTS WITH with indexes undirected seek") {
-    given {
+    givenGraph {
       relationshipIndex(IndexType.TEXT, "R", "text")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -83,7 +83,7 @@ abstract class RelationshipIndexStartsWithSeekTestBase[CONTEXT <: RuntimeContext
   }
 
   test("should handle null input directed") {
-    given {
+    givenGraph {
       relationshipIndex(IndexType.TEXT, "R", "text")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -109,7 +109,7 @@ abstract class RelationshipIndexStartsWithSeekTestBase[CONTEXT <: RuntimeContext
   }
 
   test("should handle null input undirected") {
-    given {
+    givenGraph {
       relationshipIndex(IndexType.TEXT, "R", "text")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -135,7 +135,7 @@ abstract class RelationshipIndexStartsWithSeekTestBase[CONTEXT <: RuntimeContext
   }
 
   test("should handle non-text input directed") {
-    given {
+    givenGraph {
       relationshipIndex(IndexType.TEXT, "R", "text")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -156,7 +156,7 @@ abstract class RelationshipIndexStartsWithSeekTestBase[CONTEXT <: RuntimeContext
   }
 
   test("should handle non-text input undirected") {
-    given {
+    givenGraph {
       relationshipIndex(IndexType.TEXT, "R", "text")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -178,7 +178,7 @@ abstract class RelationshipIndexStartsWithSeekTestBase[CONTEXT <: RuntimeContext
 
   // We have no query that supports this at the moment
   ignore("should cache properties directed") {
-    val relationships = given {
+    val relationships = givenGraph {
       relationshipIndex(IndexType.TEXT, "R", "text")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -204,7 +204,7 @@ abstract class RelationshipIndexStartsWithSeekTestBase[CONTEXT <: RuntimeContext
 
   // We have no index that supports this query at the moment
   ignore("should cache properties undirected") {
-    val relationships = given {
+    val relationships = givenGraph {
       relationshipIndex(IndexType.TEXT, "R", "text")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -235,7 +235,7 @@ abstract class RelationshipIndexStartsWithSeekTestBase[CONTEXT <: RuntimeContext
   }
 
   test("undirected scans only find loop once") {
-    val rel = given {
+    val rel = givenGraph {
       relationshipIndex(IndexType.TEXT, "R", "text")
 
       val a = tx.createNode()

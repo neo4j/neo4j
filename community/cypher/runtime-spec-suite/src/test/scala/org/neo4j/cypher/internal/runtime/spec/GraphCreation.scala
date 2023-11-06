@@ -55,7 +55,7 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
    * @param f the graph creation
    * @return the graph, with entities that are valid in the new transaction
    */
-  def `given`[T <: AnyRef](f: => T): T = {
+  def givenGraph[T <: AnyRef](f: => T): T = {
     givenWithTransactionType(f, runtimeTestSupport.defaultTransactionType)
   }
 
@@ -82,7 +82,7 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
    *
    * @param f the graph creation
    */
-  def `given`(f: => Unit): Unit = {
+  def givenGraph(f: => Unit): Unit = {
     givenWithTransactionType(unitF = f, runtimeTestSupport.defaultTransactionType)
   }
 

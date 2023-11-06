@@ -36,7 +36,7 @@ abstract class LabelScanTestBase[CONTEXT <: RuntimeContext](
 
   test("should scan all nodes of a label") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint, "Butter")
       nodeGraph(sizeHint, "Almond")
       nodeGraph(sizeHint, "Honey")
@@ -56,7 +56,7 @@ abstract class LabelScanTestBase[CONTEXT <: RuntimeContext](
 
   test("should scan all nodes of a label in ascending order") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint, "Butter")
       nodeGraph(sizeHint, "Almond")
       nodeGraph(sizeHint, "Honey")
@@ -76,7 +76,7 @@ abstract class LabelScanTestBase[CONTEXT <: RuntimeContext](
 
   test("should scan all nodes of a label in descending order") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint, "Butter")
       nodeGraph(sizeHint, "Almond")
       nodeGraph(sizeHint, "Honey")
@@ -109,7 +109,7 @@ abstract class LabelScanTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle multiple scans") {
     // given
-    val nodes = given { nodeGraph(10, "Honey") }
+    val nodes = givenGraph { nodeGraph(10, "Honey") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)

@@ -70,7 +70,7 @@ abstract class OrderedDistinctTestBase[CONTEXT <: RuntimeContext](
 
   test("should work on input with no projection, one primitive column, sorted") {
     // given
-    val nodes = given { nodeGraph(10) }
+    val nodes = givenGraph { nodeGraph(10) }
     val input =
       inputValues((0 until sizeHint).map(i => Array[Any](nodes(i % 10))).sortBy(_.head.asInstanceOf[Node].getId): _*)
 
@@ -145,7 +145,7 @@ abstract class OrderedDistinctTestBase[CONTEXT <: RuntimeContext](
 
   test("should work on input with projection, two primitive columns, one sorted") {
     // given
-    val nodes = given { nodeGraph(110) }
+    val nodes = givenGraph { nodeGraph(110) }
     val input = inputValues((0 until sizeHint).map(i => Array[Any](nodes(i % 5), nodes(100 + (i % 10)))).sortBy(
       _.head.asInstanceOf[Node].getId
     ): _*)
@@ -166,7 +166,7 @@ abstract class OrderedDistinctTestBase[CONTEXT <: RuntimeContext](
 
   test("should work on input with projection, two primitive columns, both sorted") {
     // given
-    val nodes = given { nodeGraph(110) }
+    val nodes = givenGraph { nodeGraph(110) }
     val input = inputValues((0 until sizeHint).map(i => Array[Any](nodes(i % 5), nodes(100 + (i % 10)))).sortBy(a =>
       (a(0).asInstanceOf[Node].getId, a(1).asInstanceOf[Node].getId)
     ): _*)
@@ -187,7 +187,7 @@ abstract class OrderedDistinctTestBase[CONTEXT <: RuntimeContext](
 
   test("should work on input with projection, three columns, one sorted") {
     // given
-    val nodes = given { nodeGraph(110) }
+    val nodes = givenGraph { nodeGraph(110) }
     val input = inputValues((0 until sizeHint).map(i =>
       Array[Any](nodes(i % 5), nodes(100 + (i % 10)), nodes(i % 20))
     ).sortBy(_.head.asInstanceOf[Node].getId): _*)
@@ -208,7 +208,7 @@ abstract class OrderedDistinctTestBase[CONTEXT <: RuntimeContext](
 
   test("should work on input with projection, four columns, two sorted") {
     // given
-    val nodes = given { nodeGraph(110) }
+    val nodes = givenGraph { nodeGraph(110) }
     val input = inputValues((0 until sizeHint).map(i =>
       Array[Any](nodes(i % 5), nodes(100 + (i % 10)), nodes(i % 20), nodes(i % 4))
     ).sortBy(a => (a(0).asInstanceOf[Node].getId, a(3).asInstanceOf[Node].getId)): _*)
@@ -268,7 +268,7 @@ abstract class OrderedDistinctTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should work on cached property") {
-    given {
+    givenGraph {
       nodeIndex("A", "prop")
       nodePropertyGraph(
         sizeHint,

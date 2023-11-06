@@ -37,7 +37,7 @@ abstract class IntersectionLabelScanTestBase[CONTEXT <: RuntimeContext](
 
   test("should scan all nodes of a label") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint, "Butter")
       nodeGraph(sizeHint, "Almond")
       nodeGraph(sizeHint, "Honey")
@@ -59,7 +59,7 @@ abstract class IntersectionLabelScanTestBase[CONTEXT <: RuntimeContext](
 
   test("should scan all nodes of a label in ascending order") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint, "Butter")
       nodeGraph(sizeHint, "Almond")
       nodeGraph(sizeHint, "Honey")
@@ -81,7 +81,7 @@ abstract class IntersectionLabelScanTestBase[CONTEXT <: RuntimeContext](
 
   test("should scan all nodes of a label in descending order") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint, "Butter")
       nodeGraph(sizeHint, "Almond")
       nodeGraph(sizeHint, "Honey")
@@ -117,7 +117,7 @@ abstract class IntersectionLabelScanTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle multiple scans") {
     // given
-    val nodes = given { nodeGraph(10, "Honey", "Almond", "Butter") }
+    val nodes = givenGraph { nodeGraph(10, "Honey", "Almond", "Butter") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -152,21 +152,21 @@ abstract class IntersectionLabelScanTestBase[CONTEXT <: RuntimeContext](
     execute(executablePlan) should beColumns("x").withNoRows()
 
     // CREATE Almond
-    given(nodeGraph(sizeHint, "Almond"))
+    givenGraph(nodeGraph(sizeHint, "Almond"))
     execute(executablePlan) should beColumns("x").withNoRows()
 
     // CREATE Almond, Honey
-    given(nodeGraph(sizeHint, "Almond", "Honey"))
+    givenGraph(nodeGraph(sizeHint, "Almond", "Honey"))
     execute(executablePlan) should beColumns("x").withNoRows()
 
     // / CREATE Almond, Honey, Butter
-    given(nodeGraph(sizeHint, "Almond", "Honey", "Butter"))
+    givenGraph(nodeGraph(sizeHint, "Almond", "Honey", "Butter"))
     execute(executablePlan) should beColumns("x").withRows(rowCount(sizeHint))
   }
 
   test("scan on the RHS of apply") {
     // given
-    val (abNodes, cdNodes) = given {
+    val (abNodes, cdNodes) = givenGraph {
       val abNodes = nodeGraph(sizeHint / 2, "A", "B")
       val cdNodes = nodeGraph(sizeHint / 2, "C", "D")
       (abNodes, cdNodes)
@@ -191,7 +191,7 @@ abstract class IntersectionLabelScanTestBase[CONTEXT <: RuntimeContext](
 
   test("scan on the RHS of union") {
     // given
-    val (abNodes, cdNodes) = given {
+    val (abNodes, cdNodes) = givenGraph {
       val abNodes = nodeGraph(sizeHint, "A", "B")
       val cdNodes = nodeGraph(sizeHint, "C", "D")
       (abNodes, cdNodes)
@@ -215,7 +215,7 @@ abstract class IntersectionLabelScanTestBase[CONTEXT <: RuntimeContext](
 
   test("scan on the RHS of cartesian product") {
     // given
-    val (abNodes, cdNodes) = given {
+    val (abNodes, cdNodes) = givenGraph {
       val abNodes = nodeGraph(sizeHint / 2, "A", "B")
       val cdNodes = nodeGraph(sizeHint / 2, "C", "D")
       (abNodes, cdNodes)
@@ -240,7 +240,7 @@ abstract class IntersectionLabelScanTestBase[CONTEXT <: RuntimeContext](
 
   test("join two scans") {
     // given
-    val expected = given {
+    val expected = givenGraph {
       val abNodes = nodeGraph(sizeHint, "A", "B")
       nodeGraph(sizeHint, "B", "C")
       abNodes.zipWithIndex.foreach {
@@ -267,7 +267,7 @@ abstract class IntersectionLabelScanTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("scan + aggregation") {
-    given {
+    givenGraph {
       nodeGraph(sizeHint, "A")
       nodeGraph(sizeHint, "A", "B")
       nodeGraph(sizeHint, "A", "B", "C")
@@ -289,7 +289,7 @@ abstract class IntersectionLabelScanTestBase[CONTEXT <: RuntimeContext](
 
   test("scan on the RHS of apply with limit") {
     // given
-    val (abNodes, cdNodes) = given {
+    val (abNodes, cdNodes) = givenGraph {
       val abNodes = nodeGraph(sizeHint, "A", "B")
       val cdNodes = nodeGraph(sizeHint, "C", "D")
       (abNodes, cdNodes)

@@ -41,7 +41,7 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](
 
   test("should support simple hash join between two identifiers") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -66,7 +66,7 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle additional data when joining on two identifiers") {
     // given
-    given {
+    givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -93,7 +93,7 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](
 
   test("should join on a cached-property") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -125,7 +125,7 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](
         (i, (i + 1) % sizeHint, "R")
       )
     }).reduce(_ ++ _)
-    val nodes = given {
+    val nodes = givenGraph {
       val nodes = nodePropertyGraph(
         sizeHint,
         {
@@ -156,7 +156,7 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle cached properties from both lhs and rhs") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -185,7 +185,7 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](
 
   test("should join with alias on RHS") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -211,7 +211,7 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](
 
   test("should join with alias on LHS") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -237,7 +237,7 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](
 
   test("should join after expand on empty lhs") {
     // given
-    given {
+    givenGraph {
       val (nodes, _) = circleGraph(sizeHint)
       nodes.foreach(n => n.setProperty("prop", n.getId))
     }
@@ -260,7 +260,7 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](
 
   test("should join on empty rhs") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -288,7 +288,7 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](
 
   test("should join on empty lhs and rhs") {
     // given
-    given {
+    givenGraph {
       val (nodes, _) = circleGraph(sizeHint)
       nodes.foreach(n => n.setProperty("prop", n.getId))
     }
@@ -312,7 +312,7 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](
 
   test("should join after expand on rhs") {
     // given
-    val unfilteredNodes = given {
+    val unfilteredNodes = givenGraph {
       val (nodes, _) = circleGraph(sizeHint)
       nodes.foreach(n => n.setProperty("prop", n.getId))
       nodes
@@ -343,7 +343,7 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](
 
   test("should join after expand on lhs") {
     // given
-    val unfilteredNodes = given {
+    val unfilteredNodes = givenGraph {
       val (nodes, _) = circleGraph(sizeHint)
       nodes.foreach(n => n.setProperty("prop", n.getId))
       nodes
@@ -373,7 +373,7 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should join nested") {
-    val nodes = given {
+    val nodes = givenGraph {
       val (nodes, _) = circleGraph(sizeHint)
       nodes.foreach(n => n.setProperty("prop", n.getId))
       nodes
@@ -401,7 +401,7 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](
   test("should work under a cartesian product with cache property in join expression") {
     // given
     nodeIndex("A", "row")
-    val nodes = given {
+    val nodes = givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -429,7 +429,7 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](
 
   test("should support simple hash join with apply on lhs and rhs") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -506,7 +506,7 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](
       randomAmong(Seq(Seq("LHS"), Seq("RHS"), Seq("LHS", "RHS")))
     }
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodePropertyGraphFunctional(size, i => randomProps(), i => randomLabels())
     }
 

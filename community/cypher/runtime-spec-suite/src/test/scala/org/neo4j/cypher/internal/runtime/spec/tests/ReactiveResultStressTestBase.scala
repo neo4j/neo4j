@@ -54,7 +54,7 @@ abstract class ReactiveResultStressTestBase[CONTEXT <: RuntimeContext](
   private val random = new Random(seed = 31)
 
   test("should handle allNodeScan") {
-    given { nodeGraph(sizeHint) }
+    givenGraph { nodeGraph(sizeHint) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -68,7 +68,7 @@ abstract class ReactiveResultStressTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle expand") {
-    given { circleGraph(sizeHint) }
+    givenGraph { circleGraph(sizeHint) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)

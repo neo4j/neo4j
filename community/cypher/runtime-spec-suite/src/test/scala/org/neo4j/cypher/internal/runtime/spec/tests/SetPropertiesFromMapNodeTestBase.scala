@@ -39,7 +39,7 @@ abstract class SetPropertiesFromMapNodeTestBase[CONTEXT <: RuntimeContext](
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should add new node property with removeOtherProps") {
-    given {
+    givenGraph {
       nodePropertyGraph(1, { case _: Int => Map("prop1" -> 1) })
     }
 
@@ -60,7 +60,7 @@ abstract class SetPropertiesFromMapNodeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should add new node property without removeOtherProps") {
-    given {
+    givenGraph {
       nodePropertyGraph(1, { case _: Int => Map("prop1" -> 1) })
     }
 
@@ -81,7 +81,7 @@ abstract class SetPropertiesFromMapNodeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should remove all node properties with removeOtherProps") {
-    given {
+    givenGraph {
       nodePropertyGraph(1, { case _: Int => Map("prop1" -> 1, "prop2" -> 2) })
     }
 
@@ -102,7 +102,7 @@ abstract class SetPropertiesFromMapNodeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should remove specific node property without removeOtherProps") {
-    given {
+    givenGraph {
       nodePropertyGraph(1, { case _: Int => Map("prop1" -> 1, "prop2" -> 2) })
     }
 
@@ -124,7 +124,7 @@ abstract class SetPropertiesFromMapNodeTestBase[CONTEXT <: RuntimeContext](
 
   test("should throw on non node or relationship entity") {
     // given a single node
-    given {
+    givenGraph {
       nodePropertyGraph(1, { case _ => Map("prop" -> "1") })
     }
 
@@ -143,7 +143,7 @@ abstract class SetPropertiesFromMapNodeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle multiple set/remove without removeOtherProps") {
-    given {
+    givenGraph {
       nodePropertyGraph(1, { case _ => Map("prop" -> 0) })
     }
 
@@ -165,7 +165,7 @@ abstract class SetPropertiesFromMapNodeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle multiple set/remove without and with removeOtherProps") {
-    given {
+    givenGraph {
       nodePropertyGraph(1, { case _ => Map("prop" -> 0) })
     }
 
@@ -187,7 +187,7 @@ abstract class SetPropertiesFromMapNodeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should set and remove multiple node properties") {
-    given {
+    givenGraph {
       nodePropertyGraph(1, { case _ => Map("prop" -> 0) })
     }
 
@@ -208,7 +208,7 @@ abstract class SetPropertiesFromMapNodeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should set property on multiple nodes") {
-    given {
+    givenGraph {
       nodePropertyGraph(sizeHint, { case i => Map("prop" -> i) })
     }
 
@@ -233,7 +233,7 @@ abstract class SetPropertiesFromMapNodeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should set property on rhs of apply") {
-    given {
+    givenGraph {
       nodePropertyGraph(sizeHint, { case i => Map("prop" -> i) })
     }
 
@@ -260,7 +260,7 @@ abstract class SetPropertiesFromMapNodeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should set property after limit") {
-    given {
+    givenGraph {
       nodePropertyGraph(sizeHint, { case i => Map("prop" -> i) })
     }
 
@@ -286,7 +286,7 @@ abstract class SetPropertiesFromMapNodeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should set same node property multiple times") {
-    given {
+    givenGraph {
       nodePropertyGraph(sizeHint, { case i => Map("prop" -> i) })
     }
 
@@ -314,7 +314,7 @@ abstract class SetPropertiesFromMapNodeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should set cached node property") {
-    given {
+    givenGraph {
       nodeGraph(1)
     }
 
@@ -337,7 +337,7 @@ abstract class SetPropertiesFromMapNodeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should not add new token if node property is set to null value") {
-    given {
+    givenGraph {
       nodeGraph(1)
     }
 
@@ -357,7 +357,7 @@ abstract class SetPropertiesFromMapNodeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should throw on null map") {
-    given {
+    givenGraph {
       nodeGraph(1)
     }
 
@@ -377,7 +377,7 @@ abstract class SetPropertiesFromMapNodeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle empty map") {
-    given {
+    givenGraph {
       nodePropertyGraph(1, { case _ => Map("prop" -> 1) })
     }
 
@@ -398,7 +398,7 @@ abstract class SetPropertiesFromMapNodeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle set node property on null node") {
-    val n = given {
+    val n = givenGraph {
       nodeGraph(1)
     }
 
@@ -421,7 +421,7 @@ abstract class SetPropertiesFromMapNodeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should set node property from expression that requires null check") {
-    given {
+    givenGraph {
       nodeGraph(1)
     }
 
@@ -441,7 +441,7 @@ abstract class SetPropertiesFromMapNodeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should count node property updates even if values are not changed") {
-    val n = given {
+    val n = givenGraph {
       nodePropertyGraph(1, { case _ => Map("prop" -> 100) })
     }
 
@@ -462,7 +462,7 @@ abstract class SetPropertiesFromMapNodeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should fail when setting non-map node property") {
-    given {
+    givenGraph {
       nodePropertyGraph(1, { case _: Int => Map("prop1" -> 1) })
     }
 
@@ -484,7 +484,7 @@ abstract class SetPropertiesFromMapNodeTestBase[CONTEXT <: RuntimeContext](
    * virtual nodes
    */
   test("should delete existing properties from virtual node") {
-    val nodes = given {
+    val nodes = givenGraph {
       val nodes = nodeGraph(2)
       nodes.head.setProperty("prop1", 100)
       nodes.head.setProperty("prop2", 200)
@@ -512,7 +512,7 @@ abstract class SetPropertiesFromMapNodeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should update existing properties from virtual node") {
-    val nodes = given {
+    val nodes = givenGraph {
       val nodes = nodeGraph(2)
       nodes.head.setProperty("prop1", 100)
       nodes.head.setProperty("prop2", 200)
@@ -540,7 +540,7 @@ abstract class SetPropertiesFromMapNodeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should update existing properties from virtual relationship to virtual node") {
-    val relationships = given {
+    val relationships = givenGraph {
       val nodes = nodeGraph(2)
       val relationships = Seq(nodes.head.createRelationshipTo(nodes(1), RelationshipType.withName("R")))
       nodes.head.setProperty("prop1", 200)
@@ -567,7 +567,7 @@ abstract class SetPropertiesFromMapNodeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should set properties from map between two loops with continuation") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodePropertyGraph(sizeHint, { case _ => Map("prop" -> 0) })
     }
 
@@ -589,7 +589,7 @@ abstract class SetPropertiesFromMapNodeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should set multiple properties without violating constraint (removeOtherProps = true)") {
-    val nodes = given {
+    val nodes = givenGraph {
       uniqueNodeIndex("L", "p1", "p2")
 
       // p1 = 0, p2 = 0
@@ -614,7 +614,7 @@ abstract class SetPropertiesFromMapNodeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should set multiple properties without violating constraint (removeOtherProps = false)") {
-    val nodes = given {
+    val nodes = givenGraph {
       uniqueNodeIndex("L", "p1", "p2")
 
       // p1 = 0, p2 = 0

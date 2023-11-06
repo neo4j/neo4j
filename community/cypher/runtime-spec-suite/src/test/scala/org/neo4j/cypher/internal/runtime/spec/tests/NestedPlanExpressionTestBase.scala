@@ -60,7 +60,7 @@ abstract class NestedPlanExpressionTestBase[CONTEXT <: RuntimeContext](
   test("should support nested plan collect with rows") {
     // given
     val size = Math.sqrt(sizeHint).toInt
-    given {
+    givenGraph {
       bipartiteGraph(size, "A", "B", "R", PartialFunction.empty, { case i => Map("prop" -> i) })
     }
 
@@ -84,7 +84,7 @@ abstract class NestedPlanExpressionTestBase[CONTEXT <: RuntimeContext](
   test("should support nested plan collect with null dependency") {
     // given
     val size = Math.sqrt(sizeHint).toInt
-    given {
+    givenGraph {
       bipartiteGraph(size, "A", "B", "R", PartialFunction.empty, { case i => Map("prop" -> i) })
     }
 
@@ -108,7 +108,7 @@ abstract class NestedPlanExpressionTestBase[CONTEXT <: RuntimeContext](
   test("should support nested plan collect with dependency") {
     // given
     val size = Math.sqrt(sizeHint).toInt
-    given {
+    givenGraph {
       bipartiteGraph(size, "A", "B", "R", PartialFunction.empty, { case i => Map("prop" -> i) })
     }
 
@@ -132,7 +132,7 @@ abstract class NestedPlanExpressionTestBase[CONTEXT <: RuntimeContext](
   test("should support nested plan collect with var-expand") {
     // given
     val size = 10
-    val (nodes, rels) = given { circleGraph(size) }
+    val (nodes, rels) = givenGraph { circleGraph(size) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -175,7 +175,7 @@ abstract class NestedPlanExpressionTestBase[CONTEXT <: RuntimeContext](
   test("should support nested plan exists with rows") {
     // given
     val size = Math.sqrt(sizeHint).toInt
-    given {
+    givenGraph {
       bipartiteGraph(size, "A", "B", "R", PartialFunction.empty, { case i => Map("prop" -> i) })
     }
 
@@ -197,7 +197,7 @@ abstract class NestedPlanExpressionTestBase[CONTEXT <: RuntimeContext](
   test("should support nested plan exists with index seek") {
     // given
     val size = Math.sqrt(sizeHint).toInt
-    given {
+    givenGraph {
       nodeIndex("B", "prop")
       bipartiteGraph(size, "A", "B", "R", PartialFunction.empty, { case i => Map("prop" -> i) })
     }
@@ -220,7 +220,7 @@ abstract class NestedPlanExpressionTestBase[CONTEXT <: RuntimeContext](
   test("should support nested plan exists with null dependency") {
     // given
     val size = Math.sqrt(sizeHint).toInt
-    given {
+    givenGraph {
       bipartiteGraph(size, "A", "B", "R", PartialFunction.empty, { case i => Map("prop" -> i) })
     }
 
@@ -244,7 +244,7 @@ abstract class NestedPlanExpressionTestBase[CONTEXT <: RuntimeContext](
   test("should support nested plan exists with dependency") {
     // given
     val size = Math.sqrt(sizeHint).toInt
-    given {
+    givenGraph {
       bipartiteGraph(size, "A", "B", "R", PartialFunction.empty, { case i => Map("prop" -> i) })
     }
 
@@ -267,7 +267,7 @@ abstract class NestedPlanExpressionTestBase[CONTEXT <: RuntimeContext](
   test("should support nested plan exists under nested apply") {
     // given
     val size = Math.sqrt(sizeHint).toInt
-    given {
+    givenGraph {
       bipartiteGraph(size, "A", "B", "R", PartialFunction.empty, { case i => Map("prop" -> i) })
     }
 
@@ -293,7 +293,7 @@ abstract class NestedPlanExpressionTestBase[CONTEXT <: RuntimeContext](
 
   test("should support nested plan exists as predicate of SelectOrSemiApply") {
     // given
-    val seas = given {
+    val seas = givenGraph {
       val seas = nodeGraph(7, "Sea")
       seas.zipWithIndex.foreach {
         case (sea, seaNumber) =>
@@ -328,7 +328,7 @@ abstract class NestedPlanExpressionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should support cartesianProduct inside nestedPlan") {
-    given {
+    givenGraph {
       nodeIndex("A", "p")
       nodeIndex("B", "p")
       val a = tx.createNode(Label.label("A"))
@@ -375,7 +375,7 @@ abstract class NestedPlanExpressionTestBase[CONTEXT <: RuntimeContext](
   test("should support nested plan get by name with rows, aggregation on RHS") {
     // given
     val size = Math.sqrt(sizeHint).toInt
-    given {
+    givenGraph {
       bipartiteGraph(size, "A", "B", "R", PartialFunction.empty, { case i => Map("prop" -> i) })
     }
 
@@ -398,7 +398,7 @@ abstract class NestedPlanExpressionTestBase[CONTEXT <: RuntimeContext](
   test("should support nested plan get by name with rows, count store plan on RHS") {
     // given
     val size = Math.sqrt(sizeHint).toInt
-    given {
+    givenGraph {
       bipartiteGraph(size, "A", "B", "R", PartialFunction.empty, { case i => Map("prop" -> i) })
     }
 
@@ -419,7 +419,7 @@ abstract class NestedPlanExpressionTestBase[CONTEXT <: RuntimeContext](
   test("should support nested plan get by name with dependency") {
     // given
     val size = Math.sqrt(sizeHint).toInt
-    given {
+    givenGraph {
       bipartiteGraph(size, "A", "B", "R", PartialFunction.empty, { case i => Map("prop" -> i) })
     }
 
@@ -442,7 +442,7 @@ abstract class NestedPlanExpressionTestBase[CONTEXT <: RuntimeContext](
   test("should support nested plan get by name with null dependency") {
     // given
     val size = Math.sqrt(sizeHint).toInt
-    given {
+    givenGraph {
       bipartiteGraph(size, "A", "B", "R", PartialFunction.empty, { case i => Map("prop" -> i) })
     }
 

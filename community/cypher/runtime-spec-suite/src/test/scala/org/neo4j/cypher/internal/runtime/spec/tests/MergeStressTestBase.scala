@@ -60,7 +60,7 @@ abstract class MergeStressTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("node index seek") {
-    given {
+    givenGraph {
       nodeIndex(LABEL, PROP_KEY)
     }
 
@@ -79,7 +79,7 @@ abstract class MergeStressTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("relationship index seek") {
-    given {
+    givenGraph {
       relationshipIndex(TYPE, PROP_KEY)
     }
 

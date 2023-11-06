@@ -47,7 +47,7 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
     val chainCount = 4
     val chainDepth = 4
     // number of shortest paths = chainCount^chainDepth, i.e., 256 in this case
-    val (start, end) = given {
+    val (start, end) = givenGraph {
       linkedChainGraph(chainCount, chainDepth)
     }
 
@@ -70,7 +70,7 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
 
   test("shortest path in a sine graph") {
     // given
-    val (start, end, rels) = given {
+    val (start, end, rels) = givenGraph {
       val g = sineGraph()
       (g.start, g.end, Seq(g.startMiddle, g.endMiddle))
     }
@@ -96,7 +96,7 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
 
   test("all shortest paths in a lollipop graph") {
     // given
-    val (start, end, r1, r2, r3) = given {
+    val (start, end, r1, r2, r3) = givenGraph {
       val (Seq(n1, _, n3), Seq(r1, r2, r3)) = lollipopGraph()
       n3.addLabel(Label.label("END"))
       (n1, n3, r1, r2, r3)
@@ -126,7 +126,7 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
 
   test("should filter on relationship type A") {
     // given
-    val (start, end, rels) = given {
+    val (start, end, rels) = givenGraph {
       val g = sineGraph()
       val r2 = single(g.ea1.getRelationships(INCOMING))
       val r3 = single(g.ea1.getRelationships(OUTGOING))
@@ -152,7 +152,7 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
 
   test("should filter on relationship type B") {
     // given
-    val (start, end, rels) = given {
+    val (start, end, rels) = givenGraph {
       val g = sineGraph()
       val r1 = single(g.sb1.getRelationships(INCOMING))
       val r2 = single(g.sb2.getRelationships(INCOMING))
@@ -184,7 +184,7 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
 
   test("should filter on node predicate") {
     // given
-    val (start, end, forbidden, rels) = given {
+    val (start, end, forbidden, rels) = givenGraph {
       val g = sineGraph()
       val r2 = single(g.ec1.getRelationships(INCOMING))
       val r3 = single(g.ec2.getRelationships(INCOMING))
@@ -216,7 +216,7 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
 
   test("should filter on node predicate on first node") {
     // given
-    val start = given {
+    val start = givenGraph {
       val g = sineGraph()
       g.start
     }
@@ -242,7 +242,7 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
 
   test("should filter on node predicate on first node from reference") {
     // given
-    val start = given {
+    val start = givenGraph {
       val g = sineGraph()
       g.start
     }
@@ -269,7 +269,7 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
 
   test("should filter on relationship predicate") {
     // given
-    val (start, end, forbidden, rels) = given {
+    val (start, end, forbidden, rels) = givenGraph {
       val g = sineGraph()
       val r1 = single(g.sa1.getRelationships(INCOMING))
       val r2 = single(g.sa1.getRelationships(OUTGOING))
@@ -301,7 +301,7 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
 
   test("should filter on node predicat - don't fully fuse") {
     // given
-    val (start, end, forbidden, rels) = given {
+    val (start, end, forbidden, rels) = givenGraph {
       val g = sineGraph()
       val r2 = single(g.ec1.getRelationships(INCOMING))
       val r3 = single(g.ec2.getRelationships(INCOMING))
@@ -335,7 +335,7 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
 
   test("should filter on relationship predicate - don't fully fuse") {
     // given
-    val (start, end, forbidden, rels) = given {
+    val (start, end, forbidden, rels) = givenGraph {
       val g = sineGraph()
       val r1 = single(g.sa1.getRelationships(INCOMING))
       val r2 = single(g.sa1.getRelationships(OUTGOING))
@@ -370,7 +370,7 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
   test("should handle var expand + predicate on cached property") {
     // given
     val n = sizeHint / 6
-    val paths = given {
+    val paths = givenGraph {
       val ps = chainGraphs(n, "TO", "TO", "TO", "TOO", "TO")
       // set incrementing node property values along chain
       for {
@@ -408,7 +408,7 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle types missing on compile") {
-    given {
+    givenGraph {
       1 to 20 foreach { _ =>
         tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("BASE"))
       }
@@ -426,20 +426,20 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
     execute(logicalQuery, runtime) should beColumns("x", "y").withRows(List.empty)
 
     // CREATE S
-    given { tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("S")) }
+    givenGraph { tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("S")) }
     execute(logicalQuery, runtime) should beColumns("x", "y").withRows(RowCount(1))
 
     // CREATE R
-    given { tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("R")) }
+    givenGraph { tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("R")) }
     execute(logicalQuery, runtime) should beColumns("x", "y").withRows(RowCount(2))
 
     // CREATE T
-    given { tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("T")) }
+    givenGraph { tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("T")) }
     execute(logicalQuery, runtime) should beColumns("x", "y").withRows(RowCount(3))
   }
 
   test("cached plan should adapt to new relationship types") {
-    given {
+    givenGraph {
       1 to 20 foreach { _ =>
         tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("BASE"))
       }
@@ -459,22 +459,22 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
     execute(executablePlan) should beColumns("x", "y").withRows(List.empty)
 
     // CREATE S
-    given { tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("S")) }
+    givenGraph { tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("S")) }
     execute(executablePlan) should beColumns("x", "y").withRows(RowCount(1))
 
     // CREATE R
-    given { tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("R")) }
+    givenGraph { tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("R")) }
     execute(executablePlan) should beColumns("x", "y").withRows(RowCount(2))
 
     // CREATE T
-    given { tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("T")) }
+    givenGraph { tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("T")) }
     execute(executablePlan) should beColumns("x", "y").withRows(RowCount(3))
   }
 
   test("Shortest path on limited RHS of apply") {
 
     val dim = 5
-    given {
+    givenGraph {
       gridGraph(dim, dim)
     }
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -531,7 +531,7 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
   test("Shortest path on eagerly aggregated RHS of apply") {
 
     val dim = 5
-    given {
+    givenGraph {
       gridGraph(dim, dim)
     }
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -583,7 +583,7 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
 
   test("Shortest path on eagerly aggregated RHS of apply with an inlined node filter") {
     val dim = 5
-    given {
+    givenGraph {
       gridGraph(dim, dim)
     }
     val logicalQuery = new LogicalQueryBuilder(this)

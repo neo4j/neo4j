@@ -47,7 +47,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
   test("should project endpoints - OUTGOING - start in scope") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (aNodes, bNodes) = given { bipartiteGraph(nNodes, "A", "B", "R") }
+    val (aNodes, bNodes) = givenGraph { bipartiteGraph(nNodes, "A", "B", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -73,7 +73,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
   test("should project endpoints - INCOMING - start in scope") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (aNodes, bNodes) = given { bipartiteGraph(nNodes, "A", "B", "R") }
+    val (aNodes, bNodes) = givenGraph { bipartiteGraph(nNodes, "A", "B", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -99,7 +99,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
   test("should project endpoints - undirected - start in scope") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (aNodes, bNodes, _, _) = given { bidirectionalBipartiteGraph(nNodes, "A", "B", "RA", "RB") }
+    val (aNodes, bNodes, _, _) = givenGraph { bidirectionalBipartiteGraph(nNodes, "A", "B", "RA", "RB") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -125,7 +125,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
   test("should project endpoints - undirected - start in scope with relationship types") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (aNodes, bNodes, _, _) = given { bidirectionalBipartiteGraph(nNodes, "A", "B", "RA", "RB") }
+    val (aNodes, bNodes, _, _) = givenGraph { bidirectionalBipartiteGraph(nNodes, "A", "B", "RA", "RB") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -151,7 +151,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
   test("should project endpoints - undirected - nothing in scope") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (aNodes, bNodes) = given { bipartiteGraph(nNodes, "A", "B", "R") }
+    val (aNodes, bNodes) = givenGraph { bipartiteGraph(nNodes, "A", "B", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -181,7 +181,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
   test("should project endpoints - directed - nothing in scope - using input") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (aNodes, bNodes, aRels, _) = given { bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "R") }
+    val (aNodes, bNodes, aRels, _) = givenGraph { bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -207,7 +207,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
   test("should project endpoints - directed - nothing in scope - using input with nulls") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (aNodes, bNodes, aRels, _) = given { bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "R") }
+    val (aNodes, bNodes, aRels, _) = givenGraph { bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -234,7 +234,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
   test("should project endpoints - undirected - nothing in scope - using input") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (aNodes, bNodes, aRels, _) = given { bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "R") }
+    val (aNodes, bNodes, aRels, _) = givenGraph { bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -260,7 +260,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
   test("should project endpoints - undirected - nothing in scope - using input with relationship type") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (aNodes, bNodes, aRels, bRels) = given { bidirectionalBipartiteGraph(nNodes, "A", "B", "RA", "RB") }
+    val (aNodes, bNodes, aRels, bRels) = givenGraph { bidirectionalBipartiteGraph(nNodes, "A", "B", "RA", "RB") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -286,7 +286,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
   test("should project endpoints with hash join under apply - directed - nothing in scope - using input") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (aNodes, bNodes, aRels, bRels) = given { bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "R") }
+    val (aNodes, bNodes, aRels, bRels) = givenGraph { bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -317,7 +317,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
   test("should project endpoints with hash join under apply - undirected/directed - nothing in scope - using input") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (aNodes, bNodes, aRels, bRels) = given { bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "R") }
+    val (aNodes, bNodes, aRels, bRels) = givenGraph { bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -348,7 +348,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
   test("should project endpoints with hash join under apply - directed/undirected - nothing in scope - using input") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (aNodes, bNodes, aRels, bRels) = given { bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "R") }
+    val (aNodes, bNodes, aRels, bRels) = givenGraph { bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -379,7 +379,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
   test("should project endpoints - chained directed - both in scope - using input") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (aNodes, bNodes, aRels, bRels) = given { bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "R") }
+    val (aNodes, bNodes, aRels, bRels) = givenGraph { bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -406,7 +406,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
   test("should project endpoints - chained undirected/outgoing - end in scope - using input") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (aNodes, bNodes, aRels, bRels) = given { bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "R") }
+    val (aNodes, bNodes, aRels, bRels) = givenGraph { bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -433,7 +433,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
   test("should project endpoints - chained outgoing/undirected - start in scope - using input") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (aNodes, bNodes, aRels, bRels) = given { bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "R") }
+    val (aNodes, bNodes, aRels, bRels) = givenGraph { bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -459,7 +459,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
 
   test("single relationship one hop loop start in scope") {
     // given
-    val n = given {
+    val n = givenGraph {
       val n = runtimeTestSupport.tx.createNode()
       n.createRelationshipTo(n, RelationshipType.withName("1-HOP"))
       n
@@ -488,7 +488,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
   test("should project endpoints - varlength - start in scope") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (aNodes, bNodes, _, _) = given {
+    val (aNodes, bNodes, _, _) = givenGraph {
       bidirectionalBipartiteGraph(nNodes, "A", "B", "RA", "RB")
     }
 
@@ -524,7 +524,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
   test("should project endpoints - varlength directed, start in scope") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (aNodes, bNodes, _, _) = given {
+    val (aNodes, bNodes, _, _) = givenGraph {
       bidirectionalBipartiteGraph(nNodes, "A", "B", "RA", "RB")
     }
 
@@ -554,7 +554,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
   test("should project endpoints - varlength directed with type, start in scope") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (aNodes, bNodes, _, _) = given {
+    val (aNodes, bNodes, _, _) = givenGraph {
       bidirectionalBipartiteGraph(nNodes, "A", "B", "RA", "RB")
     }
 
@@ -582,7 +582,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
   test("should project endpoints - varlength directed, nothing in scope") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (aNodes, bNodes, _, _) = given {
+    val (aNodes, bNodes, _, _) = givenGraph {
       bidirectionalBipartiteGraph(nNodes, "A", "B", "RA", "RB")
     }
 
@@ -612,7 +612,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
   test("should project endpoints - varlength directed with type, nothing in scope") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (aNodes, bNodes, _, _) = given {
+    val (aNodes, bNodes, _, _) = givenGraph {
       bidirectionalBipartiteGraph(nNodes, "A", "B", "RA", "RB")
     }
 
@@ -640,7 +640,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
   test("should project endpoints - varlength directed, end in scope") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (aNodes, bNodes, _, _) = given {
+    val (aNodes, bNodes, _, _) = givenGraph {
       bidirectionalBipartiteGraph(nNodes, "A", "B", "RA", "RB")
     }
 
@@ -676,7 +676,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
   test("should project endpoints - varlength directed with type, end in scope") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (_, bNodes, _, _) = given {
+    val (_, bNodes, _, _) = givenGraph {
       bidirectionalBipartiteGraph(nNodes, "A", "B", "RA", "RB")
     }
 
@@ -704,7 +704,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
   test("should project endpoints - varlength undirected, start in scope") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (aNodes, bNodes, _, _) = given {
+    val (aNodes, bNodes, _, _) = givenGraph {
       bidirectionalBipartiteGraph(nNodes, "A", "B", "RA", "RB")
     }
 
@@ -734,7 +734,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
   test("should project endpoints - varlength undirected with type, start in scope") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (aNodes, bNodes, _, _) = given {
+    val (aNodes, bNodes, _, _) = givenGraph {
       bidirectionalBipartiteGraph(nNodes, "A", "B", "RA", "RB")
     }
 
@@ -762,7 +762,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
   test("should project endpoints - varlength undirected, nothing in scope") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (aNodes, bNodes, _, _) = given {
+    val (aNodes, bNodes, _, _) = givenGraph {
       bidirectionalBipartiteGraph(nNodes, "A", "B", "RA", "RB")
     }
 
@@ -858,7 +858,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
   test("should project endpoints - varlength undirected with type, nothing in scope") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (aNodes, bNodes, _, _) = given {
+    val (aNodes, bNodes, _, _) = givenGraph {
       bidirectionalBipartiteGraph(nNodes, "A", "B", "RA", "RB")
     }
 
@@ -892,7 +892,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
   test("should project endpoints - varlength undirected, end in scope") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (aNodes, bNodes, _, _) = given {
+    val (aNodes, bNodes, _, _) = givenGraph {
       bidirectionalBipartiteGraph(nNodes, "A", "B", "RA", "RB")
     }
 
@@ -939,7 +939,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
   test("should project endpoints - varlength undirected with type, end in scope") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (aNodes, bNodes, _, _) = given {
+    val (aNodes, bNodes, _, _) = givenGraph {
       bidirectionalBipartiteGraph(nNodes, "A", "B", "RA", "RB")
     }
 
@@ -979,7 +979,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
   test("start is in scope but does not match relationship source") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (_, bNodes, aRels, _) = given { bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "R") }
+    val (_, bNodes, aRels, _) = givenGraph { bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -999,7 +999,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
   test("end is in scope but does not match relationship target") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (aNodes, _, aRels, _) = given { bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "R") }
+    val (aNodes, _, aRels, _) = givenGraph { bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -1019,7 +1019,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
   test("start is in scope but does not match relationship list") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (aNodes, _, _, _) = given { bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "R") }
+    val (aNodes, _, _, _) = givenGraph { bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -1054,7 +1054,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
   test("relationship list does not produce any valid paths - BOTH directions but nodes don't match") {
     // given
     val nNodes = sizeHint
-    val (_, rels) = given { circleGraph(nNodes) }
+    val (_, rels) = givenGraph { circleGraph(nNodes) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -1080,7 +1080,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
   test("relationship list does not produce any valid paths - nodes match but not in INCOMING direction") {
     // given
     val nNodes = sizeHint
-    given { circleGraph(nNodes) }
+    givenGraph { circleGraph(nNodes) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -1099,7 +1099,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
   test("relationship list does not produce any valid paths - nodes match but not in OUTGOING direction") {
     // given
     val nNodes = sizeHint
-    given { circleGraph(nNodes) }
+    givenGraph { circleGraph(nNodes) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -1117,7 +1117,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
 
   test("empty relationship list, directed, nothing in scope is not supported") {
     // given
-    given { nodeGraph(sizeHint) }
+    givenGraph { nodeGraph(sizeHint) }
 
     // when
     val builder = new LogicalQueryBuilder(this)
@@ -1134,7 +1134,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
 
   test("empty relationship list, undirected, nothing in scope is not supported") {
     // given
-    given { nodeGraph(sizeHint) }
+    givenGraph { nodeGraph(sizeHint) }
 
     // when
     val builder = new LogicalQueryBuilder(this)
@@ -1151,7 +1151,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
 
   test("empty relationship list, directed, start in scope, return 1 row per incoming row") {
     // given
-    val nodes = given { nodeGraph(sizeHint) }
+    val nodes = givenGraph { nodeGraph(sizeHint) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -1171,7 +1171,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
 
   test("empty relationship list, directed, both in scope, return 1 row per incoming row") {
     // given
-    val nodes = given { nodeGraph(sizeHint) }
+    val nodes = givenGraph { nodeGraph(sizeHint) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -1191,7 +1191,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
 
   test("empty relationship list, undirected, start in scope, return 1 row per incoming row") {
     // given
-    val nodes = given { nodeGraph(sizeHint) }
+    val nodes = givenGraph { nodeGraph(sizeHint) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -1216,7 +1216,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
     // We are keeping the tests for this reason.
 
     // given
-    val (nodes, rs, loops) = given {
+    val (nodes, rs, loops) = givenGraph {
       val start = runtimeTestSupport.tx.createNode(Label.label("Start"))
       val n1 = runtimeTestSupport.tx.createNode()
       val n2 = runtimeTestSupport.tx.createNode()
@@ -1269,7 +1269,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
     // We are keeping the tests for this reason.
 
     // given
-    val (nodes, rs, loops) = given {
+    val (nodes, rs, loops) = givenGraph {
       val start = runtimeTestSupport.tx.createNode(Label.label("Start"))
       val n1 = runtimeTestSupport.tx.createNode()
       val n2 = runtimeTestSupport.tx.createNode()
@@ -1320,7 +1320,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
   test("should project endpoints - start in scope and is reference") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (aNodes: Seq[Node], bNodes: Seq[Node]) = given { bipartiteGraph(nNodes, "A", "B", "R") }
+    val (aNodes: Seq[Node], bNodes: Seq[Node]) = givenGraph { bipartiteGraph(nNodes, "A", "B", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -1346,7 +1346,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
   test("should project endpoints - end node in scope and is reference") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (aNodes: Seq[Node], bNodes: Seq[Node]) = given { bipartiteGraph(nNodes, "A", "B", "R") }
+    val (aNodes: Seq[Node], bNodes: Seq[Node]) = givenGraph { bipartiteGraph(nNodes, "A", "B", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -1372,7 +1372,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
   test("should project endpoints - varlength - start node in scope and is reference") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (aNodes, bNodes, _, _) = given {
+    val (aNodes, bNodes, _, _) = givenGraph {
       bidirectionalBipartiteGraph(nNodes, "A", "B", "RA", "RB")
     }
 
@@ -1407,7 +1407,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
 
   test("should project endpoints with continuation") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       for {
         _ <- Range(0, 16)
         a = runtimeTestSupport.tx.createNode(Label.label("A"))
@@ -1446,7 +1446,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
 
   test("should project endpoint with optional - end in scope") {
     // (n1:START) → (n2) → (n3) → (n4)
-    given {
+    givenGraph {
       chainGraphs(1, "R", "R", "R")
     }
 
@@ -1471,7 +1471,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
 
   test("should project endpoint with optional - start in scope") {
     // (n1:START) → (n2) → (n3) → (n4)
-    given {
+    givenGraph {
       chainGraphs(1, "R", "R", "R")
     }
 
@@ -1496,7 +1496,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
 
   test("should project endpoint with optional - varlength - end in scope") {
     // (n1:START) → (n2) → (n3) → (n4)
-    given {
+    givenGraph {
       chainGraphs(1, "R", "R", "R")
     }
 
@@ -1523,7 +1523,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
 
   test("should project endpoint with optional - varlength - start in scope") {
     // (n1:START) → (n2) → (n3) → (n4)
-    given {
+    givenGraph {
       chainGraphs(1, "R", "R", "R")
     }
 
@@ -1549,7 +1549,7 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should not project empty rows when incoming relationship is optionally empty") {
-    given {
+    givenGraph {
       nodeGraph(2, "Label")
     }
 

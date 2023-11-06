@@ -34,7 +34,7 @@ abstract class NodeIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should be case sensitive for CONTAINS with indexes") {
-    given {
+    givenGraph {
       nodeIndex(IndexType.TEXT, "Label", "text")
       nodePropertyGraph(
         sizeHint,
@@ -62,7 +62,7 @@ abstract class NodeIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
 
   // Right no we have no indexes that supports uniqueness constraints and contains
   ignore("should be case sensitive for CONTAINS with unique indexes") {
-    given {
+    givenGraph {
       uniqueNodeIndex(IndexType.TEXT, "Label", "text")
       nodePropertyGraph(
         sizeHint,
@@ -89,7 +89,7 @@ abstract class NodeIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle null input") {
-    given {
+    givenGraph {
       nodeIndex(IndexType.TEXT, "Label", "text")
       nodePropertyGraph(
         sizeHint,
@@ -115,7 +115,7 @@ abstract class NodeIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle non-text input") {
-    given {
+    givenGraph {
       nodeIndex(IndexType.TEXT, "Label", "text")
       nodePropertyGraph(
         sizeHint,
@@ -140,7 +140,7 @@ abstract class NodeIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
 
   // Right now we have no index that supports contains and providing values
   ignore("should cache properties") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodeIndex(IndexType.TEXT, "Label", "text")
       nodePropertyGraph(
         sizeHint,
@@ -168,7 +168,7 @@ abstract class NodeIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
 
   // Right now we have no index that supports contains and providing values
   ignore("should cache properties with a unique index") {
-    val nodes = given {
+    val nodes = givenGraph {
       uniqueNodeIndex(IndexType.RANGE, "Label", "text")
       nodePropertyGraph(
         sizeHint,

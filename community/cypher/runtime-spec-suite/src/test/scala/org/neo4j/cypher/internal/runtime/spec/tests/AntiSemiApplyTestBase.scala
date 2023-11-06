@@ -217,7 +217,7 @@ abstract class AntiSemiApplyTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("non-empty expand on rhs") {
-    given {
+    givenGraph {
       circleGraph(sizeHint)
     }
 
@@ -236,7 +236,7 @@ abstract class AntiSemiApplyTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("empty expand on rhs") {
-    given {
+    givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -376,7 +376,7 @@ abstract class AntiSemiApplyTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("empty sort on rhs") {
-    given {
+    givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -396,7 +396,7 @@ abstract class AntiSemiApplyTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("non-empty sort on rhs") {
-    given {
+    givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -415,7 +415,7 @@ abstract class AntiSemiApplyTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("empty top on rhs") {
-    given {
+    givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -435,7 +435,7 @@ abstract class AntiSemiApplyTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("non-empty top on rhs") {
-    given {
+    givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -535,7 +535,7 @@ abstract class AntiSemiApplyTestBase[CONTEXT <: RuntimeContext](
 
   test("with column introduced after apply") {
     // flaky
-    val (nodes, _) = given {
+    val (nodes, _) = givenGraph {
       circleGraph(sizeHint)
     }
     val nodeId = nodes.head.getId

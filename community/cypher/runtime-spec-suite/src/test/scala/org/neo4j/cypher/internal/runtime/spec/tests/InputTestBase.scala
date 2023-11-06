@@ -33,7 +33,7 @@ abstract class InputTestBase[CONTEXT <: RuntimeContext](
 
   test("should produce input") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(3)
     }
 
@@ -90,7 +90,7 @@ abstract class InputTestBase[CONTEXT <: RuntimeContext](
 
   test("should input all kinds of input at once") {
     val (nodes, rels) =
-      given {
+      givenGraph {
         circleGraph(2)
       }
 

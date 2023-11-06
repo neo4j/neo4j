@@ -151,7 +151,7 @@ abstract class SubqueryForeachTestBase[CONTEXT <: RuntimeContext](
     //  }
     // }
     // RETURN *
-    val nNodes = given {
+    val nNodes = givenGraph {
       nodeGraph(sizeHint, "N")
     }
     val query = new LogicalQueryBuilder(this)
@@ -350,7 +350,7 @@ abstract class SubqueryForeachTestBase[CONTEXT <: RuntimeContext](
     // given
     val n = Math.sqrt(sizeHint).toInt
 
-    val (xNodes, yNodes) = given {
+    val (xNodes, yNodes) = givenGraph {
       (nodeGraph(n, "X"), nodeGraph(n, "Y"))
 
     }
@@ -419,7 +419,7 @@ abstract class SubqueryForeachTestBase[CONTEXT <: RuntimeContext](
     val nodeCountB = 3
     val nodeCountC = 5
 
-    given {
+    givenGraph {
       for (_ <- 0 until nodeCountA) yield runtimeTestSupport.tx.createNode(Label.label("A"))
       for (_ <- 0 until nodeCountB) yield runtimeTestSupport.tx.createNode(Label.label("B"))
       for (_ <- 0 until nodeCountC) yield runtimeTestSupport.tx.createNode(Label.label("C"))

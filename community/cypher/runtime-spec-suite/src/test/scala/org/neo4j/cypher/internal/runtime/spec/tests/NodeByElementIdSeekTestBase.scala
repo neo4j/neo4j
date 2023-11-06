@@ -39,7 +39,7 @@ abstract class NodeByElementIdSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should find single node") {
     // given
-    val nodes = given { nodeGraph(17) }
+    val nodes = givenGraph { nodeGraph(17) }
     val toFind = nodes(random.nextInt(nodes.length))
 
     // when
@@ -56,7 +56,7 @@ abstract class NodeByElementIdSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should not find non-existing node") {
     // given
-    given { nodeGraph(sizeHint) }
+    givenGraph { nodeGraph(sizeHint) }
     val toNotFind = "bad-id"
 
     // when
@@ -73,7 +73,7 @@ abstract class NodeByElementIdSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should find multiple nodes") {
     // given
-    val nodes = given { nodeGraph(sizeHint) }
+    val nodes = givenGraph { nodeGraph(sizeHint) }
     val toFind = (1 to 5).map(_ => nodes(random.nextInt(nodes.length)))
 
     // when
@@ -90,7 +90,7 @@ abstract class NodeByElementIdSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should find some nodes and not others") {
     // given
-    val nodes = given { nodeGraph(sizeHint) }
+    val nodes = givenGraph { nodeGraph(sizeHint) }
     val toFind = (1 to 5).map(_ => nodes(random.nextInt(nodes.length)))
     val toNotFind1 = nodes.last.getElementId.drop(1)
     val toNotFind2 = toNotFind1.drop(1)
@@ -110,7 +110,7 @@ abstract class NodeByElementIdSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle nodeByElementId + filter") {
     // given
-    val nodes = given { nodeGraph(sizeHint) }
+    val nodes = givenGraph { nodeGraph(sizeHint) }
     val toSeekFor = (1 to 5).map(_ => nodes(random.nextInt(nodes.length)))
     val toFind = toSeekFor(random.nextInt(toSeekFor.length))
     // when
@@ -128,7 +128,7 @@ abstract class NodeByElementIdSeekTestBase[CONTEXT <: RuntimeContext](
 
   test("should work on rhs of apply") {
     // given
-    val nodes = given { nodeGraph(10) }
+    val nodes = givenGraph { nodeGraph(10) }
     val toSeekFor = (1 to 5).map(_ => nodes(random.nextInt(nodes.length)))
     val toFind = toSeekFor(random.nextInt(toSeekFor.length))
 

@@ -49,7 +49,7 @@ abstract class SortTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle null values, one column") {
-    val unfilteredNodes = given { nodeGraph(sizeHint) }
+    val unfilteredNodes = givenGraph { nodeGraph(sizeHint) }
     val nodes = select(unfilteredNodes, nullProbability = 0.52)
     val input = inputValues(nodes.map(n => Array[Any](n)): _*)
 
@@ -87,7 +87,7 @@ abstract class SortTestBase[CONTEXT <: RuntimeContext](
 
   test("should sort under apply") {
     val nodesPerLabel = 100
-    val (aNodes, bNodes) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    val (aNodes, bNodes) = givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -112,7 +112,7 @@ abstract class SortTestBase[CONTEXT <: RuntimeContext](
 
   test("should sort twice in a row") {
     // given
-    val nodes = given { nodeGraph(1000) }
+    val nodes = givenGraph { nodeGraph(1000) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -129,7 +129,7 @@ abstract class SortTestBase[CONTEXT <: RuntimeContext](
 
   test("should sort on top of apply with all node scan and sort on rhs of apply") {
     // given
-    val nodes = given { nodeGraph(10) }
+    val nodes = givenGraph { nodeGraph(10) }
     val inputRows = inputValues(nodes.map(node => Array[Any](node)): _*)
 
     // when
@@ -148,7 +148,7 @@ abstract class SortTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should sort on top of apply") {
-    given { circleGraph(1000) }
+    givenGraph { circleGraph(1000) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -167,7 +167,7 @@ abstract class SortTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should apply apply sort") {
-    given { circleGraph(1000) }
+    givenGraph { circleGraph(1000) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)

@@ -197,7 +197,7 @@ abstract class SemiApplyTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("non-empty optional on rhs") {
-    given { nodeGraph(sizeHint) }
+    givenGraph { nodeGraph(sizeHint) }
     val inputRows = (0 until sizeHint).map { i =>
       Array[Any](i.toLong)
     }
@@ -217,7 +217,7 @@ abstract class SemiApplyTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("empty expand on rhs") {
-    given {
+    givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -236,7 +236,7 @@ abstract class SemiApplyTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("non-empty expand on rhs") {
-    given {
+    givenGraph {
       circleGraph(sizeHint)
     }
 
@@ -333,7 +333,7 @@ abstract class SemiApplyTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("sort on rhs") {
-    given {
+    givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -352,7 +352,7 @@ abstract class SemiApplyTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("top on rhs") {
-    given {
+    givenGraph {
       nodeGraph(sizeHint)
     }
 

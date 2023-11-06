@@ -32,7 +32,7 @@ abstract class MemoryLeakTestBase[CONTEXT <: RuntimeContext](
 
   test("var-expand should not leak memory") {
     // given
-    val (nodes, _) = given(circleGraph(1000))
+    val (nodes, _) = givenGraph(circleGraph(1000))
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -48,7 +48,7 @@ abstract class MemoryLeakTestBase[CONTEXT <: RuntimeContext](
 
   test("pruning-var-expand should not leak memory") {
     // given
-    val (nodes, _) = given(circleGraph(1000))
+    val (nodes, _) = givenGraph(circleGraph(1000))
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -65,7 +65,7 @@ abstract class MemoryLeakTestBase[CONTEXT <: RuntimeContext](
 
   test("bfs-pruning-var-expand should not leak memory") {
     // given
-    val (nodes, _) = given(circleGraph(1000))
+    val (nodes, _) = givenGraph(circleGraph(1000))
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)

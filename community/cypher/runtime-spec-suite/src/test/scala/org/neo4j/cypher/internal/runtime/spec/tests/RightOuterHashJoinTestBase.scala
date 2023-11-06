@@ -37,7 +37,7 @@ abstract class RightOuterHashJoinTestBase[CONTEXT <: RuntimeContext](
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should support simple hash join over nodes") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(4, "Left") ++
         nodeGraph(4, "Right", "Left") ++
         nodeGraph(4, "Right")
@@ -59,7 +59,7 @@ abstract class RightOuterHashJoinTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should work when LHS is empty") {
-    val nodes = given {
+    val nodes = givenGraph {
       val randomSmallIntProps: PartialFunction[Int, Map[String, Any]] = {
         case _ => Map("leftProp" -> Random.nextInt(4), "rightProp" -> Random.nextInt(4))
       }
@@ -101,7 +101,7 @@ abstract class RightOuterHashJoinTestBase[CONTEXT <: RuntimeContext](
   test("should work when RHS is empty, and not fetch anything from LHS") {
 
     val sizeHint = 4
-    val nodes = given {
+    val nodes = givenGraph {
       val randomSmallIntProps: PartialFunction[Int, Map[String, Any]] = {
         case _ => Map("leftProp" -> Random.nextInt(4), "rightProp" -> Random.nextInt(4))
       }
@@ -145,7 +145,7 @@ abstract class RightOuterHashJoinTestBase[CONTEXT <: RuntimeContext](
       case _ => Map("leftProp" -> Random.nextInt(4), "rightProp" -> Random.nextInt(4))
     }
 
-    val nodes = given {
+    val nodes = givenGraph {
       nodePropertyGraph(sizeHint, randomSmallIntProps, "Left") ++
         nodePropertyGraph(sizeHint, randomSmallIntProps, "Right") ++
         nodePropertyGraph(sizeHint, randomSmallIntProps, "Right", "Left")
@@ -189,7 +189,7 @@ abstract class RightOuterHashJoinTestBase[CONTEXT <: RuntimeContext](
       case _ => Map("leftProp" -> Random.nextInt(4), "rightProp" -> Random.nextInt(4))
     }
 
-    val nodes = given {
+    val nodes = givenGraph {
       nodePropertyGraph(sizeHint, randomSmallIntProps, "Left") ++
         nodePropertyGraph(sizeHint, randomSmallIntProps, "Right") ++
         nodePropertyGraph(sizeHint, randomSmallIntProps, "Right", "Left")
@@ -234,7 +234,7 @@ abstract class RightOuterHashJoinTestBase[CONTEXT <: RuntimeContext](
       case _ => Map("leftProp" -> Random.nextInt(4), "rightProp" -> Random.nextInt(4))
     }
 
-    val nodes = given {
+    val nodes = givenGraph {
       nodePropertyGraph(sizeHint, randomSmallIntProps, "Left") ++
         nodePropertyGraph(sizeHint, randomSmallIntProps, "Right") ++
         nodePropertyGraph(sizeHint, randomSmallIntProps, "Right", "Left")
@@ -283,7 +283,7 @@ abstract class RightOuterHashJoinTestBase[CONTEXT <: RuntimeContext](
 
     val sizeHint = 2
 
-    val nodes = given {
+    val nodes = givenGraph {
       nodePropertyGraph(sizeHint, randomSmallIntProps, "Left") ++
         nodePropertyGraph(sizeHint, randomSmallIntProps, "Right") ++
         nodePropertyGraph(sizeHint, randomSmallIntProps, "Right", "Left") ++
@@ -344,7 +344,7 @@ abstract class RightOuterHashJoinTestBase[CONTEXT <: RuntimeContext](
       case _ => Map("leftProp" -> Random.nextInt(4), "rightProp" -> Random.nextInt(4))
     }
 
-    val nodes = given {
+    val nodes = givenGraph {
       nodePropertyGraph(sizeHint, randomSmallIntProps, "Left") ++
         nodePropertyGraph(sizeHint, randomSmallIntProps, "Right") ++
         nodePropertyGraph(sizeHint, randomSmallIntProps, "Right", "Left")
@@ -409,7 +409,7 @@ abstract class RightOuterHashJoinTestBase[CONTEXT <: RuntimeContext](
 
   test("should join with alias on non-join-key on RHS") {
     // given
-    val (nodes, _) = given { circleGraph(sizeHint) }
+    val (nodes, _) = givenGraph { circleGraph(sizeHint) }
     val lhsRows = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
     // when
@@ -435,7 +435,7 @@ abstract class RightOuterHashJoinTestBase[CONTEXT <: RuntimeContext](
 
   test("should join on nodes with different types on rhs and lhs") {
     // given
-    val (nodes, _) = given {
+    val (nodes, _) = givenGraph {
       circleGraph(sizeHint)
     }
 
@@ -457,7 +457,7 @@ abstract class RightOuterHashJoinTestBase[CONTEXT <: RuntimeContext](
 
   test("should join on nodes with different types and different nullability") {
     // given
-    val (nodes, _) = given {
+    val (nodes, _) = givenGraph {
       circleGraph(sizeHint)
     }
 
@@ -479,7 +479,7 @@ abstract class RightOuterHashJoinTestBase[CONTEXT <: RuntimeContext](
 
   test("nested joins on nodes with different types and different nullability") {
     // given
-    val (nodes, _) = given {
+    val (nodes, _) = givenGraph {
       circleGraph(sizeHint)
     }
 
@@ -507,7 +507,7 @@ abstract class RightOuterHashJoinTestBase[CONTEXT <: RuntimeContext](
 
   test("should join with alias on join-key on RHS") {
     // given
-    val (nodes, _) = given { circleGraph(sizeHint) }
+    val (nodes, _) = givenGraph { circleGraph(sizeHint) }
     val lhsRows = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
     // when
@@ -533,7 +533,7 @@ abstract class RightOuterHashJoinTestBase[CONTEXT <: RuntimeContext](
 
   test("should join with alias on non-join-key on LHS") {
     // given
-    val (nodes, _) = given { circleGraph(sizeHint) }
+    val (nodes, _) = givenGraph { circleGraph(sizeHint) }
     val lhsRows = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
     // when
@@ -559,7 +559,7 @@ abstract class RightOuterHashJoinTestBase[CONTEXT <: RuntimeContext](
 
   test("should join with alias on join-key on LHS") {
     // given
-    val (nodes, _) = given { circleGraph(sizeHint) }
+    val (nodes, _) = givenGraph { circleGraph(sizeHint) }
     val lhsRows = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
     // when
@@ -585,7 +585,7 @@ abstract class RightOuterHashJoinTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle apply on LHS and RHS") {
     // given
-    val (nodes, _) = given { circleGraph(sizeHint) }
+    val (nodes, _) = givenGraph { circleGraph(sizeHint) }
     val lhsRows = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
     // when
@@ -615,7 +615,7 @@ abstract class RightOuterHashJoinTestBase[CONTEXT <: RuntimeContext](
 
   test("should join under Apply with alias on non-join-key on RHS") {
     // given
-    val (nodes, _) = given { circleGraph(sizeHint) }
+    val (nodes, _) = givenGraph { circleGraph(sizeHint) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -644,7 +644,7 @@ abstract class RightOuterHashJoinTestBase[CONTEXT <: RuntimeContext](
     assume(runtime.name != "interpreted")
 
     val size = 15
-    given {
+    givenGraph {
       nodePropertyGraph(size, { case i => Map("p" -> i) })
     }
 
@@ -680,7 +680,7 @@ abstract class RightOuterHashJoinTestBase[CONTEXT <: RuntimeContext](
     val lhsLimit = 3
     val rhsLimit = 3
 
-    given {
+    givenGraph {
       nodeGraph(1)
     }
 

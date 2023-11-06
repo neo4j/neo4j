@@ -42,7 +42,7 @@ abstract class RelationshipIndexLockingUniqueSeekConcurrencyStressTestBase[CONTE
 
   private def seekWithConcurrentDeletes(directed: Boolean): Unit = {
     val propValue = Random.nextInt(SIZE_HINT)
-    val rels = given {
+    val rels = givenGraph {
       uniqueRelationshipIndex("R", "prop")
       val (_, rels) = circleGraph(nNodes = SIZE_HINT, relType = "R", outDegree = 1)
       rels.zipWithIndex.foreach {

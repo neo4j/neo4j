@@ -38,7 +38,7 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](
 
   test("should join after expand on empty lhs") {
     // given
-    given { circleGraph(sizeHint) }
+    givenGraph { circleGraph(sizeHint) }
     val lhsRows = inputValues()
 
     // when
@@ -58,7 +58,7 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](
 
   test("should join on empty LHS when on RHS of apply") {
     // given
-    given {
+    givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -82,7 +82,7 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](
 
   test("should join on empty rhs") {
     // given
-    val nodes = given { nodeGraph(sizeHint) }
+    val nodes = givenGraph { nodeGraph(sizeHint) }
     val lhsRows = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
     // when
@@ -103,7 +103,7 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](
 
   test("should join on empty RHS when on RHS of apply") {
     // given
-    given {
+    givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -127,7 +127,7 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](
 
   test("should join on empty lhs and rhs") {
     // given
-    given { nodeGraph(sizeHint) }
+    givenGraph { nodeGraph(sizeHint) }
     val lhsRows = inputValues()
 
     // when
@@ -148,7 +148,7 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](
 
   test("should join with nulls in lhs and rhs") {
     // given
-    val nodes = given { nodeGraph(1) }
+    val nodes = givenGraph { nodeGraph(1) }
     val lhsRows = inputValues()
 
     // when
@@ -170,7 +170,7 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](
 
   test("should join with nodes in ref slots") {
     // given
-    val nodes = given { nodeGraph(1) }
+    val nodes = givenGraph { nodeGraph(1) }
     val lhsRows = inputValues()
 
     // when
@@ -196,7 +196,7 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](
 
   test("should join after expand on rhs") {
     // given
-    val (unfilteredNodes, _) = given { circleGraph(sizeHint) }
+    val (unfilteredNodes, _) = givenGraph { circleGraph(sizeHint) }
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.1)
     val lhsRows = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
@@ -223,7 +223,7 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](
 
   test("should join after expand on lhs") {
     // given
-    val (unfilteredNodes, _) = given { circleGraph(sizeHint) }
+    val (unfilteredNodes, _) = givenGraph { circleGraph(sizeHint) }
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.1)
     val lhsRows = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
@@ -250,7 +250,7 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](
 
   test("should join after expand on both sides") {
     // given
-    val (unfilteredNodes, _) = given { circleGraph(sizeHint) }
+    val (unfilteredNodes, _) = givenGraph { circleGraph(sizeHint) }
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.1)
     val lhsRows = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
@@ -277,7 +277,7 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should join nested") {
-    val withAllLabels = given {
+    val withAllLabels = givenGraph {
       nodePropertyGraph(sizeHint, { case i => Map("prop" -> i) }, "A", "C")
       nodePropertyGraph(sizeHint, { case i => Map("prop" -> i) }, "A", "B")
       nodePropertyGraph(sizeHint, { case i => Map("prop" -> i) }, "A", "B", "C", "D")
@@ -313,7 +313,7 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](
 
   test("should join below an apply") {
     // given
-    val (unfilteredNodes, _) = given { circleGraph(sizeHint) }
+    val (unfilteredNodes, _) = givenGraph { circleGraph(sizeHint) }
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.1)
     val lhsRows = inputValues(nodes.map(n => Array[Any](n)): _*)
 
@@ -345,7 +345,7 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](
 
   test("should join below an apply and sort") {
     // given
-    val (unfilteredNodes, _) = given { circleGraph(sizeHint) }
+    val (unfilteredNodes, _) = givenGraph { circleGraph(sizeHint) }
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.1)
     val lhsRows = inputValues(nodes.map(n => Array[Any](n)): _*)
 
@@ -379,7 +379,7 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](
 
   test("should join with double sort and limit after join") {
     // given
-    val (unfilteredNodes, _) = given { circleGraph(sizeHint) }
+    val (unfilteredNodes, _) = givenGraph { circleGraph(sizeHint) }
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.1)
     val lhsRows = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
     val limitCount = nodes.size / 2
@@ -411,7 +411,7 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](
 
   test("should join with sort and limit after join") {
     // given
-    val (unfilteredNodes, _) = given { circleGraph(sizeHint) }
+    val (unfilteredNodes, _) = givenGraph { circleGraph(sizeHint) }
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.1)
     val lhsRows = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
     val limitCount = nodes.size / 2
@@ -442,7 +442,7 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](
 
   test("should join with sort and limit on lhs") {
     // given
-    val (unfilteredNodes, _) = given { circleGraph(sizeHint) }
+    val (unfilteredNodes, _) = givenGraph { circleGraph(sizeHint) }
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.1)
     val lhsRows = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
     val limitCount = nodes.size / 2
@@ -472,7 +472,7 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](
 
   test("should join with limit after join") {
     // given
-    val (unfilteredNodes, _) = given { circleGraph(sizeHint) }
+    val (unfilteredNodes, _) = givenGraph { circleGraph(sizeHint) }
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.1)
     val lhsRows = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
     val limitCount = nodes.size / 2
@@ -495,7 +495,7 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](
 
   test("should join with limit on lhs") {
     // given
-    val (unfilteredNodes, _) = given { circleGraph(sizeHint) }
+    val (unfilteredNodes, _) = givenGraph { circleGraph(sizeHint) }
     // We cannot have a nullProbability in this test. Otherwise we would not know if null-rows survive through the limit or not,
     // and that influences the number of result rows.
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5)
@@ -523,7 +523,7 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](
 
   test("should join with sort and limit on rhs") {
     // given
-    val (unfilteredNodes, _) = given { circleGraph(sizeHint) }
+    val (unfilteredNodes, _) = givenGraph { circleGraph(sizeHint) }
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.1)
     val lhsRows = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
     val limitCount = nodes.size / 2
@@ -561,7 +561,7 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](
 
   test("should join with limit on rhs") {
     // given
-    val (nodes, _) = given { circleGraph(sizeHint) }
+    val (nodes, _) = givenGraph { circleGraph(sizeHint) }
     val lhsRows = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
     val limitCount = nodes.size / 2
 
@@ -583,7 +583,7 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](
 
   test("should join on more than 5 variables") {
     // given
-    given { circleGraph(sizeHint, "A", "B") }
+    givenGraph { circleGraph(sizeHint, "A", "B") }
     val limitCount = 1
 
     // when
@@ -614,7 +614,7 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should pass cached properties through after join") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodePropertyGraph(sizeHint, { case i => Map("prop" -> i) })
     }
 
@@ -644,7 +644,7 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](
 
   test("should join with alias on non-join-key on RHS") {
     // given
-    val (unfilteredNodes, _) = given { circleGraph(sizeHint) }
+    val (unfilteredNodes, _) = givenGraph { circleGraph(sizeHint) }
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.1)
     val lhsRows = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
@@ -671,7 +671,7 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](
 
   test("should join on nodes with different types on rhs and lhs") {
     // given
-    val (nodes, _) = given {
+    val (nodes, _) = givenGraph {
       circleGraph(sizeHint)
     }
 
@@ -693,7 +693,7 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](
 
   test("nested joins on nodes with different types and different nullability") {
     // given
-    val (nodes, _) = given {
+    val (nodes, _) = givenGraph {
       circleGraph(sizeHint)
     }
 
@@ -721,7 +721,7 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](
 
   test("should join with alias on join-key on RHS") {
     // given
-    val (unfilteredNodes, _) = given { circleGraph(sizeHint) }
+    val (unfilteredNodes, _) = givenGraph { circleGraph(sizeHint) }
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.1)
     val lhsRows = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
@@ -748,7 +748,7 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](
 
   test("should join with alias on non-join-key on LHS") {
     // given
-    val (unfilteredNodes, _) = given { circleGraph(sizeHint) }
+    val (unfilteredNodes, _) = givenGraph { circleGraph(sizeHint) }
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.1)
     val lhsRows = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
@@ -775,7 +775,7 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](
 
   test("should join with alias on join-key on LHS") {
     // given
-    val (unfilteredNodes, _) = given { circleGraph(sizeHint) }
+    val (unfilteredNodes, _) = givenGraph { circleGraph(sizeHint) }
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.1)
     val lhsRows = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
@@ -802,7 +802,7 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](
 
   test("should join after expand and apply on both sides") {
     // given
-    val (unfilteredNodes, _) = given { circleGraph(sizeHint) }
+    val (unfilteredNodes, _) = givenGraph { circleGraph(sizeHint) }
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.1)
     val lhsRows = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
@@ -834,7 +834,7 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](
 
   test("should join after expand and apply on both sides with aggregation on top") {
     // given
-    val (unfilteredNodes, _) = given { circleGraph(sizeHint) }
+    val (unfilteredNodes, _) = givenGraph { circleGraph(sizeHint) }
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.1)
     val lhsRows = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
@@ -871,7 +871,7 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](
     assume(runtime.name != "interpreted")
 
     val size = 15
-    given {
+    givenGraph {
       nodePropertyGraph(size, { case i => Map("p" -> i) })
     }
 
@@ -906,7 +906,7 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](
     val lhsLimit = 3
     val rhsLimit = 3
 
-    given {
+    givenGraph {
       nodeGraph(1)
     }
 
@@ -947,7 +947,7 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle argument cancellation 2") {
     // given
-    val Seq(n) = given {
+    val Seq(n) = givenGraph {
       nodeGraph(1)
     }
 

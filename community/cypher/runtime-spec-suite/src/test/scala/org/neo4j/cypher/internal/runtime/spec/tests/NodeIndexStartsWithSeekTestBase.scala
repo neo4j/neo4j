@@ -34,7 +34,7 @@ abstract class NodeIndexStartsWithSeekTestBase[CONTEXT <: RuntimeContext](
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should be case sensitive for STARTS WITH with indexes") {
-    given {
+    givenGraph {
       nodeIndex(IndexType.TEXT, "Label", "text")
       nodePropertyGraph(
         sizeHint,
@@ -61,7 +61,7 @@ abstract class NodeIndexStartsWithSeekTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should be case sensitive for STARTS WITH with unique indexes") {
-    given {
+    givenGraph {
       uniqueNodeIndex(IndexType.RANGE, "Label", "text")
       nodePropertyGraph(
         sizeHint,
@@ -88,7 +88,7 @@ abstract class NodeIndexStartsWithSeekTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle null input") {
-    given {
+    givenGraph {
       nodeIndex(IndexType.TEXT, "Label", "text")
       nodePropertyGraph(
         sizeHint,
@@ -114,7 +114,7 @@ abstract class NodeIndexStartsWithSeekTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle non-text input") {
-    given {
+    givenGraph {
       nodeIndex(IndexType.TEXT, "Label", "text")
       nodePropertyGraph(
         sizeHint,
@@ -138,7 +138,7 @@ abstract class NodeIndexStartsWithSeekTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should cache properties") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodeIndex(IndexType.RANGE, "Label", "text")
       nodePropertyGraph(
         sizeHint,
@@ -165,7 +165,7 @@ abstract class NodeIndexStartsWithSeekTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should cache properties with a unique index") {
-    val nodes = given {
+    val nodes = givenGraph {
       uniqueNodeIndex(IndexType.RANGE, "Label", "text")
       nodePropertyGraph(
         sizeHint,

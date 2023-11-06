@@ -38,7 +38,7 @@ abstract class RemoveLabelsTestBase[CONTEXT <: RuntimeContext](
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("remove single label") {
-    given {
+    givenGraph {
       nodeGraph(sizeHint, "RemoveMe")
     }
 
@@ -48,7 +48,7 @@ abstract class RemoveLabelsTestBase[CONTEXT <: RuntimeContext](
   test("remove multiple labels") {
     val nodeCount = 2
     val labels = Seq("RemoveMe", "MeToo", "AndMe")
-    given {
+    givenGraph {
       nodeGraph(2, labels.toSeq: _*)
     }
 
@@ -57,7 +57,7 @@ abstract class RemoveLabelsTestBase[CONTEXT <: RuntimeContext](
 
   test("remove non-existing label") {
     val nodeCount = 10
-    given {
+    givenGraph {
       nodeGraph(nodeCount, "DontMindMe", "MeNeither")
     }
 
@@ -65,7 +65,7 @@ abstract class RemoveLabelsTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("remove subset of labels") {
-    given {
+    givenGraph {
       nodeGraph(7, "Cynist")
       nodeGraph(5, "Utilitarian")
       nodeGraph(3, "Nihilist")
@@ -77,7 +77,7 @@ abstract class RemoveLabelsTestBase[CONTEXT <: RuntimeContext](
 
   test("remove nodes on rhs of apply") {
     val nodeCount = 13
-    given {
+    givenGraph {
       nodeGraph(nodeCount, "DeleteMe", "DeleteMeToo")
     }
 
@@ -105,7 +105,7 @@ abstract class RemoveLabelsTestBase[CONTEXT <: RuntimeContext](
 
   test("not return removed labels") {
     val nodeCount = 2
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(2, "DeleteMe", "KeepMe")
     }
 
@@ -128,7 +128,7 @@ abstract class RemoveLabelsTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should not remove too many labels if setLabel is between two loops with continuation") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint, "Label")
     }
 

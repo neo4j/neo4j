@@ -36,7 +36,7 @@ abstract class UnionLabelScanTestBase[CONTEXT <: RuntimeContext](
 
   test("should scan all nodes of a label") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint, "Butter") ++
         nodeGraph(sizeHint, "Almond") ++
         nodeGraph(sizeHint, "Honey")
@@ -56,7 +56,7 @@ abstract class UnionLabelScanTestBase[CONTEXT <: RuntimeContext](
 
   test("should scan all nodes of a label and not produce duplicates if nodes have multiple labels") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint, "Butter", "Almond") ++
         nodeGraph(sizeHint, "Almond") ++
         nodeGraph(sizeHint, "Butter")
@@ -76,7 +76,7 @@ abstract class UnionLabelScanTestBase[CONTEXT <: RuntimeContext](
 
   test("should scan all nodes of a label in ascending order") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint, "Butter") ++
         nodeGraph(sizeHint, "Almond") ++
         nodeGraph(sizeHint, "Honey")
@@ -96,7 +96,7 @@ abstract class UnionLabelScanTestBase[CONTEXT <: RuntimeContext](
 
   test("should scan all nodes of a label in descending order") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint, "Butter") ++
         nodeGraph(sizeHint, "Almond") ++
         nodeGraph(sizeHint, "Honey")
@@ -129,7 +129,7 @@ abstract class UnionLabelScanTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle multiple scans") {
     // given
-    val nodes = given { nodeGraph(10, "Honey") }
+    val nodes = givenGraph { nodeGraph(10, "Honey") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -160,21 +160,21 @@ abstract class UnionLabelScanTestBase[CONTEXT <: RuntimeContext](
     execute(executablePlan) should beColumns("x").withNoRows()
 
     // CREATE Almond
-    given(nodeGraph(sizeHint, "Almond"))
+    givenGraph(nodeGraph(sizeHint, "Almond"))
     execute(executablePlan) should beColumns("x").withRows(rowCount(sizeHint))
 
     // CREATE Honey
-    given(nodeGraph(sizeHint, "Honey"))
+    givenGraph(nodeGraph(sizeHint, "Honey"))
     execute(executablePlan) should beColumns("x").withRows(rowCount(2 * sizeHint))
 
     // CREATE Butter
-    given(nodeGraph(sizeHint, "Butter"))
+    givenGraph(nodeGraph(sizeHint, "Butter"))
     execute(executablePlan) should beColumns("x").withRows(rowCount(3 * sizeHint))
   }
 
   test("scan on the RHS of apply") {
     // given
-    val (aNodes, bNodes, cNodes, dNodes) = given {
+    val (aNodes, bNodes, cNodes, dNodes) = givenGraph {
       val aNodes = nodeGraph(10, "A")
       val bNodes = nodeGraph(10, "B")
       val cNodes = nodeGraph(10, "C")

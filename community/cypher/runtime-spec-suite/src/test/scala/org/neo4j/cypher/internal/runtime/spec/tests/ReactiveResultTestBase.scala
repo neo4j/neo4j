@@ -183,7 +183,7 @@ abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle cancel stream and close cursors") {
-    val nodes = given { nodeGraph(3) }
+    val nodes = givenGraph { nodeGraph(3) }
 
     val subscriber = TestSubscriber.concurrent
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -214,7 +214,7 @@ abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle multiple times cancel stream and close cursors") {
-    val nodes = given { nodeGraph(3) }
+    val nodes = givenGraph { nodeGraph(3) }
 
     val subscriber = TestSubscriber.concurrent
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -252,7 +252,7 @@ abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](
     //       (=> larger buffer limits before backpressure is applied)
     //       we can get a flaky test if this is too low
     val nNodes = if (isParallel) 5000 else 1000
-    val (nodes, _) = given { circleGraph(nNodes) }
+    val (nodes, _) = givenGraph { circleGraph(nNodes) }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")

@@ -43,7 +43,7 @@ abstract class OptionalTestBase[CONTEXT <: RuntimeContext](
     // given
     val n = sizeHint
 
-    val nodeConnections = given {
+    val nodeConnections = givenGraph {
       val nodes = nodeGraph(n)
       randomlyConnect(nodes, Connectivity(0, 5, "OTHER"), Connectivity(0, 5, "NEXT"))
     }
@@ -74,7 +74,7 @@ abstract class OptionalTestBase[CONTEXT <: RuntimeContext](
   test("should optional expand - all nulls") {
     // given
     val n = sizeHint
-    val nodes = given { nodeGraph(n) }
+    val nodes = givenGraph { nodeGraph(n) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -99,7 +99,7 @@ abstract class OptionalTestBase[CONTEXT <: RuntimeContext](
     // given
     val n = sizeHint
 
-    val nodeConnections = given {
+    val nodeConnections = givenGraph {
       val nodes = nodeGraph(n)
       randomlyConnect(nodes, Connectivity(0, 5, "OTHER"), Connectivity(0, 5, "NEXT"))
     }
@@ -132,7 +132,7 @@ abstract class OptionalTestBase[CONTEXT <: RuntimeContext](
     // given
     val n = Math.sqrt(sizeHint).toInt
 
-    val nodeConnections = given {
+    val nodeConnections = givenGraph {
       val nodes = nodeGraph(n, "Honey")
       randomlyConnect(nodes, Connectivity(0, 5, "NEXT"))
     }
@@ -168,7 +168,7 @@ abstract class OptionalTestBase[CONTEXT <: RuntimeContext](
     // given
     val n = Math.sqrt(sizeHint).toInt
 
-    val nodeConnections = given {
+    val nodeConnections = givenGraph {
       val nodes = nodeGraph(n, "Honey")
       randomlyConnect(nodes, Connectivity(0, 5, "OTHER"), Connectivity(0, 5, "NEXT"))
     }
@@ -204,7 +204,7 @@ abstract class OptionalTestBase[CONTEXT <: RuntimeContext](
     // given
     val n = sizeHint
 
-    val nodeConnections = given {
+    val nodeConnections = givenGraph {
       val nodes = nodeGraph(n, "Honey")
       randomlyConnect(nodes, Connectivity(0, 5, "OTHER")).map {
         case NodeConnections(node, connections) => (node.getId, connections)
@@ -275,7 +275,7 @@ abstract class OptionalTestBase[CONTEXT <: RuntimeContext](
     // given
     val n = sizeHint
 
-    val nodeConnections = given {
+    val nodeConnections = givenGraph {
       val nodes = nodeGraph(n)
       randomlyConnect(nodes, Connectivity(0, 5, "OTHER"), Connectivity(0, 5, "NEXT"))
     }

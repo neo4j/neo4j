@@ -260,7 +260,7 @@ abstract class SelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("non-empty optional on rhs") {
-    given { nodeGraph(sizeHint) }
+    givenGraph { nodeGraph(sizeHint) }
     val inputRows = (0 until sizeHint).map { i =>
       Array[Any](i.toLong)
     }
@@ -280,7 +280,7 @@ abstract class SelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("empty expand on rhs") {
-    given {
+    givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -299,7 +299,7 @@ abstract class SelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("non-empty expand on rhs") {
-    given {
+    givenGraph {
       circleGraph(sizeHint)
     }
 
@@ -396,7 +396,7 @@ abstract class SelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("sort on rhs") {
-    given {
+    givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -415,7 +415,7 @@ abstract class SelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("top on rhs") {
-    given {
+    givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -521,7 +521,7 @@ abstract class SelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle cached properties in selectOrSemiApply") {
-    given {
+    givenGraph {
       nodePropertyGraph(sizeHint, { case i => Map("prop" -> i) })
     }
 
@@ -776,7 +776,7 @@ trait OrderedSelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("non-empty optional on rhs - with leveraged order") {
-    given {
+    givenGraph {
       nodeGraph(sizeHint)
     }
     val inputRows = (0 until sizeHint).map { i =>
@@ -798,7 +798,7 @@ trait OrderedSelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("empty expand on rhs - with leveraged order") {
-    given {
+    givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -817,7 +817,7 @@ trait OrderedSelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("non-empty expand on rhs - with leveraged order") {
-    given {
+    givenGraph {
       circleGraph(sizeHint)
     }
 
@@ -914,7 +914,7 @@ trait OrderedSelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("sort on rhs - with leveraged order") {
-    given {
+    givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -933,7 +933,7 @@ trait OrderedSelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("top on rhs - with leveraged order") {
-    given {
+    givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -1039,7 +1039,7 @@ trait OrderedSelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("should handle cached properties in selectOrSemiApply - with leveraged order") {
-    given {
+    givenGraph {
       nodePropertyGraph(sizeHint, { case i => Map("prop" -> i) })
     }
 

@@ -187,7 +187,7 @@ abstract class ForeachApplyTestBase[CONTEXT <: RuntimeContext](
   test("should work with eager") {
     // given
     val sizeHint = 5
-    given(nodeGraph(sizeHint))
+    givenGraph(nodeGraph(sizeHint))
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)

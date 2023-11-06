@@ -65,7 +65,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
   testWithIndex(_.supports(EXACT), "should exact (single) directed relationship seek of an index with a property") {
     index =>
       val propertyType = randomAmong(index.querySupport(EXACT))
-      val relationships = given(indexedRandomCircleGraph(index.indexType, propertyType))
+      val relationships = givenGraph(indexedRandomCircleGraph(index.indexType, propertyType))
       val lookFor = asValue(randomAmong(relationships).getProperty("prop"))
 
       // when
@@ -88,7 +88,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
   testWithIndex(_.supports(EXACT), "should exact (single) undirected relationship seek of an index with a property") {
     index =>
       val propertyType = randomAmong(index.querySupport(EXACT))
-      val relationships = given(indexedRandomCircleGraph(index.indexType, propertyType))
+      val relationships = givenGraph(indexedRandomCircleGraph(index.indexType, propertyType))
       val lookFor = asValue(randomAmong(relationships).getProperty("prop"))
 
       // when
@@ -114,7 +114,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
   ) { index =>
     val propertyType = randomAmong(index.querySupport(EXACT))
     val propertyValues = randomValues(5, propertyType)
-    val relationships = given {
+    val relationships = givenGraph {
       indexedCircleGraph(index.indexType, "R", "prop") {
         case (r, _) => r.setProperty("prop", randomAmong(propertyValues).asObject())
       }
@@ -144,7 +144,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     "should exact (single) undirected seek nodes of an index with a property with multiple matches"
   ) { index =>
     val propertyValues = randomValues(5, index.querySupport(EXACT): _*)
-    val relationships = given {
+    val relationships = givenGraph {
       indexedCircleGraph(index.indexType, "R", "prop") {
         case (r, _) => r.setProperty("prop", randomAmong(propertyValues).asObject())
       }
@@ -171,7 +171,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   testWithIndex(_.supports(EXACT), "exact single directed seek should handle null") { index =>
     val types = index.querySupport(EXACT)
-    given {
+    givenGraph {
       indexedCircleGraph(index.indexType, "R", "prop") {
         case (r, i) if i % 10 == 0 => r.setProperty("prop", randomValue(randomAmong(types)).asObject())
       }
@@ -195,7 +195,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   testWithIndex(_.supports(EXACT), "exact single undirected seek should handle null") { index =>
     val types = index.querySupport(EXACT)
-    given {
+    givenGraph {
       indexedCircleGraph(index.indexType, "R", "prop") {
         case (r, i) if i % 10 == 0 => r.setProperty("prop", randomValue(randomAmong(types)).asObject())
       }
@@ -219,7 +219,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   testWithIndex(_.supports(EXACT), "should exact (multiple) directed seek nodes of an index with a property") { index =>
     val propertyType = randomAmong(index.querySupport(EXACT))
-    val relationships = given(indexedRandomCircleGraph(index.indexType, propertyType))
+    val relationships = givenGraph(indexedRandomCircleGraph(index.indexType, propertyType))
 
     val lookFor = Seq(randomAmong(relationships), randomAmong(relationships)).map(r => asValue(r.getProperty("prop")))
 
@@ -243,7 +243,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
   testWithIndex(_.supports(EXACT), "should exact (multiple) undirected seek nodes of an index with a property") {
     index =>
       val propertyType = randomAmong(index.querySupport(EXACT))
-      val relationships = given(indexedRandomCircleGraph(index.indexType, propertyType))
+      val relationships = givenGraph(indexedRandomCircleGraph(index.indexType, propertyType))
 
       val lookFor = Seq(randomAmong(relationships), randomAmong(relationships)).map(r => asValue(r.getProperty("prop")))
 
@@ -267,7 +267,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   testWithIndex(_.supports(EXACT), "should handle null in exact multiple directed seek") { index =>
     val types = index.querySupport(EXACT)
-    given {
+    givenGraph {
       indexedCircleGraph(index.indexType, "R", "prop") {
         case (r, i) if i % 10 == 0 => r.setProperty("prop", randomValue(randomAmong(types)).asObject())
       }
@@ -291,7 +291,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   testWithIndex(_.supports(EXACT), "should handle null in exact multiple undirected seek") { index =>
     val types = index.querySupport(EXACT)
-    given {
+    givenGraph {
       indexedCircleGraph(index.indexType, "R", "prop") {
         case (r, i) if i % 10 == 0 => r.setProperty("prop", randomValue(randomAmong(types)).asObject())
       }
@@ -318,7 +318,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     "should exact (multiple, but empty) directed seek relationships of an index with a property"
   ) { index =>
     val types = index.querySupport(EXACT)
-    given {
+    givenGraph {
       indexedCircleGraph(index.indexType, "R", "prop") {
         case (r, i) if i % 10 == 0 => r.setProperty("prop", randomValue(randomAmong(types)).asObject())
       }
@@ -344,7 +344,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     _.supports(EXACT),
     "should exact (multiple, but empty) undirected seek relationships of an index with a property"
   ) { index =>
-    given {
+    givenGraph {
       indexedCircleGraph(index.indexType, "R", "prop") {
         case (r, i) if i % 10 == 0 => r.setProperty("prop", i)
       }
@@ -371,7 +371,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     "should exact (multiple, with null) directed seek relationships of an index with a property"
   ) { index =>
     val propertyType = randomAmong(index.querySupport(EXACT))
-    val relationships = given(indexedRandomCircleGraph(index.indexType, propertyType))
+    val relationships = givenGraph(indexedRandomCircleGraph(index.indexType, propertyType))
 
     val lookFor = asValue(randomAmong(relationships).getProperty("prop"))
 
@@ -397,7 +397,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     "should exact (multiple, with null) undirected seek relationships of an index with a property"
   ) { index =>
     val propertyType = randomAmong(index.querySupport(EXACT))
-    val relationships = given(indexedRandomCircleGraph(index.indexType, propertyType))
+    val relationships = givenGraph(indexedRandomCircleGraph(index.indexType, propertyType))
     val lookFor = asValue(randomAmong(relationships).getProperty("prop"))
 
     // when
@@ -422,7 +422,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     "should exact seek for value that cannot be indexed"
   ) { index =>
     val propertyType = randomAmong(index.querySupport(EXACT))
-    val relationships = given(indexedRandomCircleGraph(index.indexType, propertyType))
+    val relationships = givenGraph(indexedRandomCircleGraph(index.indexType, propertyType))
     val lookFor = asValue(randomAmong(relationships).getProperty("prop"))
 
     // when
@@ -446,7 +446,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     index =>
       val propertyType1 = randomAmong(index.querySupport(EXACT))
       val propertyType2 = randomAmong(index.querySupport(EXACT))
-      val relationships = given {
+      val relationships = givenGraph {
         indexedCircleGraph(index.indexType, "R", "prop", "prop2") {
           case (r, i) if i % 10 == 0 =>
             r.setProperty("prop", randomValue(propertyType1).asObject())
@@ -486,7 +486,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     "should exact (multiple, but identical) directed seek relationships of an index with a property"
   ) { index =>
     val propertyType = randomAmong(index.querySupport(EXACT))
-    val relationships = given(indexedRandomCircleGraph(index.indexType, propertyType))
+    val relationships = givenGraph(indexedRandomCircleGraph(index.indexType, propertyType))
     val lookFor = asValue(randomAmong(relationships).getProperty("prop"))
 
     // when
@@ -511,7 +511,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     "should exact (multiple, but identical) undirected seek relationships of an index with a property"
   ) { index =>
     val propertyType = randomAmong(index.querySupport(EXACT))
-    val relationships = given(indexedRandomCircleGraph(index.indexType, propertyType))
+    val relationships = givenGraph(indexedRandomCircleGraph(index.indexType, propertyType))
     val lookFor = asValue(randomAmong(relationships).getProperty("prop"))
 
     // when
@@ -534,7 +534,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
   // RANGE queries
   testWithIndex(_.supports(RANGE), "should directed seek relationships of an index with a property") { index =>
     val propertyType = randomAmong(index.querySupport(RANGE))
-    val relationships = given(indexedRandomCircleGraph(index.indexType, propertyType))
+    val relationships = givenGraph(indexedRandomCircleGraph(index.indexType, propertyType))
     val someProp = asValue(randomAmong(relationships).getProperty("prop"))
 
     // when
@@ -556,7 +556,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   testWithIndex(_.supports(RANGE), "should undirected seek relationships of an index with a property") { index =>
     val propertyType = randomAmong(index.querySupport(RANGE))
-    val relationships = given(indexedRandomCircleGraph(index.indexType, propertyType))
+    val relationships = givenGraph(indexedRandomCircleGraph(index.indexType, propertyType))
     val someProp = asValue(randomAmong(relationships).getProperty("prop"))
 
     // when
@@ -578,7 +578,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   testWithIndex(_.supports(RANGE), "should directed seek relationships with multiple less than bounds") { index =>
     val propertyType = randomAmong(index.querySupport(RANGE))
-    val relationships = given(indexedRandomCircleGraph(index.indexType, propertyType))
+    val relationships = givenGraph(indexedRandomCircleGraph(index.indexType, propertyType))
     val someProps = Seq(randomAmong(relationships), randomAmong(relationships)).map(r => asValue(r.getProperty("prop")))
 
     // when
@@ -603,7 +603,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   testWithIndex(_.supports(RANGE), "should undirected seek relationships with multiple less than bounds") { index =>
     val propertyType = randomAmong(index.querySupport(RANGE))
-    val relationships = given(indexedRandomCircleGraph(index.indexType, propertyType))
+    val relationships = givenGraph(indexedRandomCircleGraph(index.indexType, propertyType))
     val someProps = Seq(randomAmong(relationships), randomAmong(relationships)).map(r => asValue(r.getProperty("prop")))
 
     // when
@@ -631,7 +631,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     "should directed seek relationships with multiple less than bounds with different types"
   ) { index =>
     val propertyType = randomAmong(Seq(ValueType.STRING, ValueType.INT))
-    given(indexedRandomCircleGraph(index.indexType, propertyType))
+    givenGraph(indexedRandomCircleGraph(index.indexType, propertyType))
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -650,7 +650,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     "should undirected seek relationships with multiple less than bounds with different types"
   ) { index =>
     val propertyType = randomAmong(Seq(ValueType.STRING, ValueType.INT))
-    given(indexedRandomCircleGraph(index.indexType, propertyType))
+    givenGraph(indexedRandomCircleGraph(index.indexType, propertyType))
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -668,7 +668,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     _.supportsComposite(EXACT, ValueCategory.NUMBER, ValueCategory.TEXT),
     "should support directed seek on composite index"
   ) { index =>
-    val relationships = given {
+    val relationships = givenGraph {
       indexedCircleGraph(index.indexType, "R", "prop", "prop2") {
         case (r, i) if i % 10 == 0 =>
           r.setProperty("prop", i)
@@ -693,7 +693,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     _.supportsComposite(EXACT, ValueCategory.NUMBER, ValueCategory.TEXT),
     "should support undirected seek on composite index"
   ) { index =>
-    val relationships = given {
+    val relationships = givenGraph {
       indexedCircleGraph(index.indexType, "R", "prop", "prop2") {
         case (r, i) if i % 10 == 0 =>
           r.setProperty("prop", i)
@@ -718,7 +718,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     _.supportsComposite(EXACT, ValueCategory.NUMBER, ValueCategory.NUMBER),
     "should support directed seek on composite index (multiple results)"
   ) { index =>
-    val relationships = given {
+    val relationships = givenGraph {
       indexedCircleGraph(index.indexType, "R", "prop", "prop2") {
         case (r, i) if i % 2 == 0 =>
           r.setProperty("prop", i % 5)
@@ -744,7 +744,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     _.supportsComposite(EXACT, ValueCategory.TEXT, ValueCategory.TEXT),
     "should support undirected seek on composite index (multiple results)"
   ) { index =>
-    val relationships = given {
+    val relationships = givenGraph {
       indexedCircleGraph(index.indexType, "R", "prop", "prop2") {
         case (r, i) if i % 2 == 0 =>
           r.setProperty("prop", (i % 5).toString)
@@ -771,7 +771,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     _.supportsComposite(EXACT, ValueCategory.NUMBER, ValueCategory.TEXT),
     "should support directed seek on composite index (multiple values)"
   ) { index =>
-    val relationships = given {
+    val relationships = givenGraph {
       indexedCircleGraph(index.indexType, "R", "prop", "prop2") {
         case (r, i) if i % 10 == 0 =>
           r.setProperty("prop", i)
@@ -796,7 +796,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     _.supportsComposite(EXACT, ValueCategory.NUMBER, ValueCategory.TEXT),
     "should support undirected seek on composite index (multiple values)"
   ) { index =>
-    val relationships = given {
+    val relationships = givenGraph {
       indexedCircleGraph(index.indexType, "R", "prop", "prop2") {
         case (r, i) if i % 10 == 0 =>
           r.setProperty("prop", i)
@@ -821,7 +821,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     _.supportsComposite(EXACT, ValueCategory.NUMBER, ValueCategory.TEXT),
     "should support directed composite index seek with equality and existence check"
   ) { index =>
-    val relationships = given {
+    val relationships = givenGraph {
       indexedCircleGraph(index.indexType, "R", "prop", "prop2") {
         case (r, i) if i % 3 == 0 =>
           r.setProperty("prop", i % 20)
@@ -850,7 +850,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     _.supportsComposite(EXACT, ValueCategory.NUMBER, ValueCategory.TEXT),
     "should support undirected composite index seek with equality and existence check"
   ) { index =>
-    val relationships = given {
+    val relationships = givenGraph {
       indexedCircleGraph(index.indexType, "R", "prop", "prop2") {
         case (r, i) if i % 3 == 0 =>
           r.setProperty("prop", i % 20)
@@ -879,7 +879,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     _.supportsComposite(RANGE, ValueCategory.NUMBER, ValueCategory.NUMBER),
     "should support directed composite index seek with equality and range check"
   ) { index =>
-    val relationships = given {
+    val relationships = givenGraph {
       indexedCircleGraph(index.indexType, "R", "prop", "prop2") {
         case (r, i) =>
           r.setProperty("prop", i % 20)
@@ -906,7 +906,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     _.supportsComposite(RANGE, ValueCategory.NUMBER, ValueCategory.NUMBER),
     "should support undirected composite index seek with equality and range check"
   ) { index =>
-    val relationships = given {
+    val relationships = givenGraph {
       indexedCircleGraph(index.indexType, "R", "prop", "prop2") {
         case (r, i) =>
           r.setProperty("prop", i % 20)
@@ -933,7 +933,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     _.supportsComposite(RANGE, ValueCategory.NUMBER, ValueCategory.TEXT),
     "should support directed seek on composite index with range check and existence check"
   ) { index =>
-    val relationships = given {
+    val relationships = givenGraph {
       indexedCircleGraph(index.indexType, "R", "prop", "prop2") {
         case (r, i) if i % 3 == 0 =>
           r.setProperty("prop", i)
@@ -962,7 +962,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     _.supportsComposite(RANGE, ValueCategory.NUMBER, ValueCategory.TEXT),
     "should support undirected seek on composite index with range check and existence check"
   ) { index =>
-    val relationships = given {
+    val relationships = givenGraph {
       indexedCircleGraph(index.indexType, "R", "prop", "prop2") {
         case (r, i) if i % 3 == 0 =>
           r.setProperty("prop", i)
@@ -991,7 +991,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     _.supportsComposite(EXACT, ValueCategory.NUMBER, ValueCategory.TEXT),
     "should support null in directed seek on composite index"
   ) { index =>
-    given {
+    givenGraph {
       indexedCircleGraph(index.indexType, "R", "prop", "prop2") {
         case (r, i) if i % 10 == 0 =>
           r.setProperty("prop", i)
@@ -1019,7 +1019,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     _.supportsComposite(EXACT, ValueCategory.NUMBER, ValueCategory.TEXT),
     "should support null in undirected seek on composite index"
   ) { index =>
-    given {
+    givenGraph {
       indexedCircleGraph(index.indexType, "R", "prop", "prop2") {
         case (r, i) if i % 10 == 0 =>
           r.setProperty("prop", i)
@@ -1045,7 +1045,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   testWithIndex(_.supportsValues(EXACT), "directed exact seek should cache properties") { index =>
     val propertyType = randomAmong(index.provideValueSupport(EXACT))
-    val relationships = given(indexedRandomCircleGraph(index.indexType, propertyType))
+    val relationships = givenGraph(indexedRandomCircleGraph(index.indexType, propertyType))
     val lookFor = asValue(randomAmong(relationships).getProperty("prop"))
 
     // when
@@ -1069,7 +1069,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   testWithIndex(_.supportsValues(EXACT), "undirected exact seek should cache properties") { index =>
     val propertyType = randomAmong(index.provideValueSupport(EXACT))
-    val relationships = given(indexedRandomCircleGraph(index.indexType, propertyType))
+    val relationships = givenGraph(indexedRandomCircleGraph(index.indexType, propertyType))
     val lookFor = asValue(randomAmong(relationships).getProperty("prop"))
 
     // when
@@ -1096,7 +1096,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   testWithIndex(_.supportsValues(RANGE), "directed seek should cache properties") { index =>
     val propertyType = randomAmong(index.querySupport(RANGE))
-    val relationships = given(indexedRandomCircleGraph(index.indexType, propertyType))
+    val relationships = givenGraph(indexedRandomCircleGraph(index.indexType, propertyType))
     val someProp = asValue(randomAmong(relationships).getProperty("prop"))
 
     // when
@@ -1122,7 +1122,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   testWithIndex(_.supportsValues(RANGE), "undirected seek should cache properties") { index =>
     val propertyType = randomAmong(index.querySupport(RANGE))
-    val relationships = given(indexedRandomCircleGraph(index.indexType, propertyType))
+    val relationships = givenGraph(indexedRandomCircleGraph(index.indexType, propertyType))
     val someProp = asValue(randomAmong(relationships).getProperty("prop"))
 
     // when
@@ -1151,7 +1151,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     _.supportsComposite(EXACT, ValueCategory.NUMBER, ValueCategory.TEXT),
     "directed composite seek should cache properties"
   ) { index =>
-    val relationships = given {
+    val relationships = givenGraph {
       indexedCircleGraph(index.indexType, "R", "prop", "prop2") {
         case (r, i) if i % 10 == 0 =>
           r.setProperty("prop", i)
@@ -1180,7 +1180,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     _.supportsComposite(EXACT, ValueCategory.NUMBER, ValueCategory.TEXT),
     "undirected composite seek should cache properties"
   ) { index =>
-    val relationships = given {
+    val relationships = givenGraph {
       indexedCircleGraph(index.indexType, "R", "prop", "prop2") {
         case (r, i) if i % 10 == 0 => {
           r.setProperty("prop", i)
@@ -1214,7 +1214,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     "should use existing values from arguments when available in directed seek"
   ) { index =>
     val propertyType = randomAmong(index.provideValueSupport(EXACT))
-    val relationships = given(indexedRandomCircleGraph(index.indexType, propertyType))
+    val relationships = givenGraph(indexedRandomCircleGraph(index.indexType, propertyType))
     val lookFor = Seq(randomAmong(relationships), randomAmong(relationships)).map(r => asValue(r.getProperty("prop")))
 
     // when
@@ -1249,7 +1249,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     "should use existing values from arguments when available in undirected seek"
   ) { index =>
     val propertyType = randomAmong(index.provideValueSupport(EXACT))
-    val relationships = given(indexedRandomCircleGraph(index.indexType, propertyType))
+    val relationships = givenGraph(indexedRandomCircleGraph(index.indexType, propertyType))
     val lookFor = Seq(randomAmong(relationships), randomAmong(relationships)).map(r => asValue(r.getProperty("prop")))
 
     // when
@@ -1284,7 +1284,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     "should directed seek relationships of an index with a property in ascending order"
   ) { index =>
     val propertyType = randomAmong(index.orderAscSupport(RANGE))
-    val relationships = given(indexedRandomCircleGraph(index.indexType, propertyType))
+    val relationships = givenGraph(indexedRandomCircleGraph(index.indexType, propertyType))
     val someProp = asValue(randomAmong(relationships).getProperty("prop"))
 
     // when
@@ -1314,7 +1314,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     "should undirected seek relationships of an index with a property in ascending order"
   ) { index =>
     val propertyType = randomAmong(index.orderAscSupport(RANGE))
-    val relationships = given(indexedRandomCircleGraph(index.indexType, propertyType))
+    val relationships = givenGraph(indexedRandomCircleGraph(index.indexType, propertyType))
     val someProp = asValue(randomAmong(relationships).getProperty("prop"))
 
     // when
@@ -1345,7 +1345,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     "should directed seek relationships of an index with a property in descending order"
   ) { index =>
     val propertyType = randomAmong(index.orderDescSupport(RANGE))
-    val relationships = given(indexedRandomCircleGraph(index.indexType, propertyType))
+    val relationships = givenGraph(indexedRandomCircleGraph(index.indexType, propertyType))
     val someProp = asValue(randomAmong(relationships).getProperty("prop"))
 
     // when
@@ -1375,7 +1375,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     "should undirected seek relationships of an index with a property in descending order"
   ) { index =>
     val propertyType = randomAmong(index.orderDescSupport(RANGE))
-    val relationships = given(indexedRandomCircleGraph(index.indexType, propertyType))
+    val relationships = givenGraph(indexedRandomCircleGraph(index.indexType, propertyType))
     val someProp = asValue(randomAmong(relationships).getProperty("prop"))
 
     // when
@@ -1406,7 +1406,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     "should handle order in multiple directed index seek, ascending"
   ) { index =>
     val propertyType = randomAmong(index.orderAscSupport(EXACT))
-    val relationships = given(indexedRandomCircleGraph(index.indexType, propertyType))
+    val relationships = givenGraph(indexedRandomCircleGraph(index.indexType, propertyType))
     val someProps = Seq(randomAmong(relationships), randomAmong(relationships), randomAmong(relationships))
       .map(r => asValue(r.getProperty("prop")))
 
@@ -1437,7 +1437,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     "should handle order in multiple undirected index seek, ascending"
   ) { index =>
     val propertyType = randomAmong(index.orderAscSupport(EXACT))
-    val relationships = given(indexedRandomCircleGraph(index.indexType, propertyType))
+    val relationships = givenGraph(indexedRandomCircleGraph(index.indexType, propertyType))
     val someProps = Seq(randomAmong(relationships), randomAmong(relationships), randomAmong(relationships))
       .map(r => asValue(r.getProperty("prop")))
 
@@ -1469,7 +1469,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     "should handle order in multiple directed index seek, descending"
   ) { index =>
     val propertyType = randomAmong(index.orderDescSupport(EXACT))
-    val relationships = given(indexedRandomCircleGraph(index.indexType, propertyType))
+    val relationships = givenGraph(indexedRandomCircleGraph(index.indexType, propertyType))
     val someProps = Seq(randomAmong(relationships), randomAmong(relationships), randomAmong(relationships))
       .map(r => asValue(r.getProperty("prop")))
 
@@ -1500,7 +1500,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     "should handle order in multiple undirected index seek, descending"
   ) { index =>
     val propertyType = randomAmong(index.orderDescSupport(EXACT))
-    val relationships = given(indexedRandomCircleGraph(index.indexType, propertyType))
+    val relationships = givenGraph(indexedRandomCircleGraph(index.indexType, propertyType))
     val someProps = Seq(randomAmong(relationships), randomAmong(relationships), randomAmong(relationships))
       .map(r => asValue(r.getProperty("prop")))
 
@@ -1550,7 +1550,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should work with multiple index types") {
-    val rels = given {
+    val rels = givenGraph {
       relationshipIndex(IndexType.RANGE, "R", "prop")
       relationshipIndex(IndexType.TEXT, "R", "prop")
 
@@ -1585,7 +1585,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("undirected seek should only find loop once") {
-    val rel = given {
+    val rel = givenGraph {
       relationshipIndex(IndexType.RANGE, "R", "prop")
 
       val a = tx.createNode()
@@ -1638,7 +1638,7 @@ trait RelationshipLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
   self: RelationshipIndexSeekTestBase[CONTEXT] =>
 
   test("should grab shared lock when finding a relationship (directed)") {
-    val relationships = given {
+    val relationships = givenGraph {
       indexedCircleGraph(IndexType.RANGE, "R", "prop") {
         case (r, i) => r.setProperty("prop", i)
       }
@@ -1663,7 +1663,7 @@ trait RelationshipLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("should grab shared lock when finding a relationship (undirected)") {
-    val relationships = given {
+    val relationships = givenGraph {
       indexedCircleGraph(IndexType.RANGE, "R", "prop") {
         case (r, i) => r.setProperty("prop", i)
       }
@@ -1688,7 +1688,7 @@ trait RelationshipLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("should grab shared lock when finding a relationship (directed, multiple properties)") {
-    val relationships = given {
+    val relationships = givenGraph {
       indexedCircleGraph(IndexType.RANGE, "R", "prop1", "prop2") {
         case (r, i) =>
           r.setProperty("prop1", i)
@@ -1715,7 +1715,7 @@ trait RelationshipLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("should grab shared lock when finding a relationship (undirected, multiple properties)") {
-    val relationships = given {
+    val relationships = givenGraph {
       indexedCircleGraph(IndexType.RANGE, "R", "prop1", "prop2") {
         case (r, i) =>
           r.setProperty("prop1", i)
@@ -1742,7 +1742,7 @@ trait RelationshipLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("should grab an exclusive lock when not finding a relationship (directed)") {
-    given {
+    givenGraph {
       indexedCircleGraph(IndexType.RANGE, "R", "prop") {
         case (r, i) =>
           r.setProperty("prop", i)
@@ -1764,7 +1764,7 @@ trait RelationshipLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("should grab an exclusive lock when not finding a relationship (undirected)") {
-    given {
+    givenGraph {
       indexedCircleGraph(IndexType.RANGE, "R", "prop") {
         case (r, i) =>
           r.setProperty("prop", i)
@@ -1786,7 +1786,7 @@ trait RelationshipLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("should not grab any lock when readOnly = true (directed)") {
-    val relationships = given {
+    val relationships = givenGraph {
       indexedCircleGraph(IndexType.RANGE, "R", "prop") {
         case (r, i) =>
           r.setProperty("prop", i)
@@ -1809,7 +1809,7 @@ trait RelationshipLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("should not grab any lock when readOnly = true (undirected)") {
-    val relationships = given {
+    val relationships = givenGraph {
       indexedCircleGraph(IndexType.RANGE, "R", "prop") {
         case (r, i) =>
           r.setProperty("prop", i)
@@ -1832,7 +1832,7 @@ trait RelationshipLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("should exact seek relationships of a locking unique index with a property (directed)") {
-    val relationships = given {
+    val relationships = givenGraph {
       indexedCircleGraph(IndexType.RANGE, "R", "prop") {
         case (r, i) =>
           r.setProperty("prop", i)
@@ -1857,7 +1857,7 @@ trait RelationshipLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("should exact seek relationships of a locking unique index with a property (undirected)") {
-    val relationships = given {
+    val relationships = givenGraph {
       indexedCircleGraph(IndexType.RANGE, "R", "prop") {
         case (r, i) =>
           r.setProperty("prop", i)
@@ -1882,7 +1882,7 @@ trait RelationshipLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("should exact seek relationships of a locking composite unique index with properties (directed)") {
-    val relationships = given {
+    val relationships = givenGraph {
       indexedCircleGraph(IndexType.RANGE, "R", "prop1", "prop2") {
         case (r, i) =>
           if (i % 10 == 0) {
@@ -1910,7 +1910,7 @@ trait RelationshipLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("should exact seek relationships of a locking composite unique index with properties (undirected)") {
-    val relationships = given {
+    val relationships = givenGraph {
       indexedCircleGraph(IndexType.RANGE, "R", "prop1", "prop2") {
         case (r, i) =>
           if (i % 10 == 0) {
@@ -1940,7 +1940,7 @@ trait RelationshipLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
   test(
     "should exact (multiple, but identical) seek relationships of a locking unique index with a property (directed)"
   ) {
-    val relationships = given {
+    val relationships = givenGraph {
       indexedCircleGraph(IndexType.RANGE, "R", "prop") {
         case (r, i) =>
           if (i % 10 == 0) {
@@ -1969,7 +1969,7 @@ trait RelationshipLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
   test(
     "should exact (multiple, but identical) seek relationships of a locking unique index with a property (undirected)"
   ) {
-    val relationships = given {
+    val relationships = givenGraph {
       indexedCircleGraph(IndexType.RANGE, "R", "prop") {
         case (r, i) =>
           if (i % 10 == 0) {
@@ -1996,7 +1996,7 @@ trait RelationshipLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("should exact seek relationships of a composite unique index with properties (directed)") {
-    val relationships = given {
+    val relationships = givenGraph {
       indexedCircleGraph(IndexType.RANGE, "R", "prop1", "prop2") {
         case (r, i) =>
           if (i % 10 == 0) {
@@ -2021,7 +2021,7 @@ trait RelationshipLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("should exact seek relationships of a composite unique index with properties (undirected)") {
-    val relationships = given {
+    val relationships = givenGraph {
       indexedCircleGraph(IndexType.RANGE, "R", "prop1", "prop2") {
         case (r, i) =>
           if (i % 10 == 0) {
@@ -2046,7 +2046,7 @@ trait RelationshipLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("should seek relationships of a composite unique index with properties (directed)") {
-    val relationships = given {
+    val relationships = givenGraph {
       indexedCircleGraph(IndexType.RANGE, "R", "prop1", "prop2") {
         case (r, i) =>
           if (i % 10 == 0) {
@@ -2071,7 +2071,7 @@ trait RelationshipLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("should seek relationships of a composite unique index with properties (undirected)") {
-    val relationships = given {
+    val relationships = givenGraph {
       indexedCircleGraph(IndexType.RANGE, "R", "prop1", "prop2") {
         case (r, i) =>
           if (i % 10 == 0) {
@@ -2099,7 +2099,7 @@ trait RelationshipLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
   test(
     "should exact (multiple, not identical) seek relationships of a locking unique index with a property (directed)"
   ) {
-    val relationships = given {
+    val relationships = givenGraph {
       indexedCircleGraph(IndexType.RANGE, "R", "prop") {
         case (r, i) =>
           if (i % 10 == 0) {
@@ -2129,7 +2129,7 @@ trait RelationshipLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
   test(
     "should exact (multiple, not identical) seek relationships of a locking unique index with a property (undirected)"
   ) {
-    val relationships = given {
+    val relationships = givenGraph {
       indexedCircleGraph(IndexType.RANGE, "R", "prop") {
         case (r, i) =>
           if (i % 10 == 0) {
@@ -2157,7 +2157,7 @@ trait RelationshipLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("should support composite index and unique locking (directed)") {
-    val relationships = given {
+    val relationships = givenGraph {
       indexedCircleGraph(IndexType.RANGE, "R", "prop1", "prop2") {
         case (r, i) =>
           if (i % 10 == 0) {
@@ -2185,7 +2185,7 @@ trait RelationshipLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("should support composite index and unique locking (undirected)") {
-    val relationships = given {
+    val relationships = givenGraph {
       indexedCircleGraph(IndexType.RANGE, "R", "prop1", "prop2") {
         case (r, i) =>
           if (i % 10 == 0) {
@@ -2213,7 +2213,7 @@ trait RelationshipLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("should support composite unique index and unique locking (directed)") {
-    val relationships = given {
+    val relationships = givenGraph {
       indexedCircleGraph(IndexType.RANGE, "R", "prop1", "prop2") {
         case (r, i) =>
           if (i % 10 == 0) {
@@ -2241,7 +2241,7 @@ trait RelationshipLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("should support composite unique index and unique locking (undirected)") {
-    val relationships = given {
+    val relationships = givenGraph {
       indexedCircleGraph(IndexType.RANGE, "R", "prop1", "prop2") {
         case (r, i) =>
           if (i % 10 == 0) {
@@ -2269,7 +2269,7 @@ trait RelationshipLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("should cache properties in locking unique index (directed)") {
-    val relationships = given {
+    val relationships = givenGraph {
       indexedCircleGraph(IndexType.RANGE, "R", "prop") {
         case (r, i) =>
           if (i % 10 == 0) {
@@ -2295,7 +2295,7 @@ trait RelationshipLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("should cache properties in locking unique index (undirected)") {
-    val relationships = given {
+    val relationships = givenGraph {
       indexedCircleGraph(IndexType.RANGE, "R", "prop") {
         case (r, i) =>
           if (i % 10 == 0) {
@@ -2321,7 +2321,7 @@ trait RelationshipLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test(s"should multi seek nodes of a unique index with locking (directed)") {
-    val relationships = given {
+    val relationships = givenGraph {
       indexedCircleGraph(IndexType.RANGE, "R", "prop") {
         case (r, i) =>
           if (i % 10 == 0) {
@@ -2357,7 +2357,7 @@ trait RelationshipLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test(s"should multi seek nodes of a unique index with locking (undirected)") {
-    val relationships = given {
+    val relationships = givenGraph {
       indexedCircleGraph(IndexType.RANGE, "R", "prop") {
         case (r, i) =>
           if (i % 10 == 0) {

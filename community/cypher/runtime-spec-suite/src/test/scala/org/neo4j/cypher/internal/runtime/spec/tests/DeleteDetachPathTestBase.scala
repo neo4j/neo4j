@@ -44,7 +44,7 @@ abstract class DeleteDetachPathTestBase[CONTEXT <: RuntimeContext](
 
   test("detach delete paths") {
     val chainCount = 3
-    given {
+    givenGraph {
       chainGraphs(chainCount, "SMELLS", "SMELLS", "STINKS")
     }
 
@@ -69,7 +69,7 @@ abstract class DeleteDetachPathTestBase[CONTEXT <: RuntimeContext](
 
   test("detach delete path that is part of connected graph") {
     val nodeCount = 4
-    given {
+    givenGraph {
       val allNodes = nodeGraph(nodeCount)
       allNodes.head.addLabel(Label.label("A"))
       allNodes(1).addLabel(Label.label("B"))
@@ -104,7 +104,7 @@ abstract class DeleteDetachPathTestBase[CONTEXT <: RuntimeContext](
 
   test("multiple detach delete") {
     val chainCount = 3
-    given {
+    givenGraph {
       chainGraphs(chainCount, "SMELLS", "SMELLS", "STINKS")
     }
 
@@ -131,7 +131,7 @@ abstract class DeleteDetachPathTestBase[CONTEXT <: RuntimeContext](
 
   test("detach delete on rhs of apply") {
     val chainCount = 3
-    given {
+    givenGraph {
       chainGraphs(chainCount, "SMELLS", "SMELLS", "STINKS")
     }
 
@@ -158,7 +158,7 @@ abstract class DeleteDetachPathTestBase[CONTEXT <: RuntimeContext](
 
   test("detach delete paths with single node") {
     val nodeCount = 5
-    given {
+    givenGraph {
       val nodes = nodeGraph(nodeCount)
       nodes.last.addLabel(Label.label("PleaseKillMe"))
     }

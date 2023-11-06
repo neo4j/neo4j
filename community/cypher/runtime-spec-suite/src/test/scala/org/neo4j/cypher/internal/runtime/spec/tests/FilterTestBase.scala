@@ -33,7 +33,7 @@ abstract class FilterTestBase[CONTEXT <: RuntimeContext](
 
   test("should filter with (cached) IN expression") {
     // given
-    given {
+    givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -109,7 +109,7 @@ abstract class FilterTestBase[CONTEXT <: RuntimeContext](
 
   test("should filter on cached property predicate") {
     // given
-    given {
+    givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -135,7 +135,7 @@ abstract class FilterTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle filter + limit on the RHS of an apply") {
-    given(nodeGraph(sizeHint))
+    givenGraph(nodeGraph(sizeHint))
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)

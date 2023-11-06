@@ -147,7 +147,7 @@ abstract class SkipTestBase[CONTEXT <: RuntimeContext](
   test("should support skip in the first of two pipelines") {
     // given
     val nodesPerLabel = 100
-    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -165,7 +165,7 @@ abstract class SkipTestBase[CONTEXT <: RuntimeContext](
   test("should support apply-skip") {
     // given
     val nodesPerLabel = 100
-    val (aNodes, _) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    val (aNodes, _) = givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -186,7 +186,7 @@ abstract class SkipTestBase[CONTEXT <: RuntimeContext](
   test("should support skip on top of apply") {
     // given
     val nodesPerLabel = 50
-    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
     val toSkip = nodesPerLabel * nodesPerLabel - 1
 
     // when
@@ -208,7 +208,7 @@ abstract class SkipTestBase[CONTEXT <: RuntimeContext](
   test("should support reduce -> skip on the RHS of apply") {
     // given
     val nodesPerLabel = 100
-    val (aNodes, bNodes) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    val (aNodes, bNodes) = givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -236,7 +236,7 @@ abstract class SkipTestBase[CONTEXT <: RuntimeContext](
     // given
     val NODES_PER_LABEL = 100
     val SKIP = 90
-    given { bipartiteGraph(NODES_PER_LABEL, "A", "B", "R") }
+    givenGraph { bipartiteGraph(NODES_PER_LABEL, "A", "B", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -257,7 +257,7 @@ abstract class SkipTestBase[CONTEXT <: RuntimeContext](
   test("should support chained skips") {
     // given
     val nodesPerLabel = 10
-    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -281,7 +281,7 @@ abstract class SkipTestBase[CONTEXT <: RuntimeContext](
   test("should support chained skips in the same pipeline") {
     // given
     val nodesPerLabel = 100
-    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -308,7 +308,7 @@ abstract class SkipTestBase[CONTEXT <: RuntimeContext](
   test("should support chained skip and limits") {
     // given
     val nodesPerLabel = 10
-    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -335,7 +335,7 @@ abstract class SkipTestBase[CONTEXT <: RuntimeContext](
 
   test("SKIP combined with fused-over-pipelines") {
     val nodesPerLabel = 100
-    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "rel", "y")
@@ -372,7 +372,7 @@ abstract class SkipTestBase[CONTEXT <: RuntimeContext](
 
   test("should work with aggregation on the RHS of an apply") {
     // given
-    given {
+    givenGraph {
       nodePropertyGraph(
         sizeHint,
         properties = {
@@ -400,7 +400,7 @@ abstract class SkipTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should work with chained skips on the RHS of an apply") {
-    given {
+    givenGraph {
       nodePropertyGraph(
         sizeHint,
         properties = {

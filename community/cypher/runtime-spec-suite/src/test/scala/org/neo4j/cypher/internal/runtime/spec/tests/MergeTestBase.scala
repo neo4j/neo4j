@@ -139,7 +139,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("merge should not create node with non-empty all node scan") {
-    val nodes = given(nodeGraph(sizeHint))
+    val nodes = givenGraph(nodeGraph(sizeHint))
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -154,7 +154,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("merge should create node with empty label scan") {
-    given {
+    givenGraph {
       nodeGraph(sizeHint, "L")
     }
 
@@ -173,7 +173,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("merge should not create node with non-empty label scan") {
-    val nodes = given(
+    val nodes = givenGraph(
       nodeGraph(sizeHint, "L")
     )
 
@@ -190,7 +190,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("merge should not create node with non-empty index scan") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodeIndex("L", "prop")
       nodePropertyGraph(
         sizeHint,
@@ -214,7 +214,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("merge should create node with empty index scan") {
-    given {
+    givenGraph {
       nodeIndex("L", "prop")
       nodeGraph(sizeHint, "L")
     }
@@ -238,7 +238,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("merge should not create node with non-empty index seek") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodeIndex("L", "prop")
       nodePropertyGraph(
         sizeHint,
@@ -262,7 +262,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("merge should create node with empty index seek") {
-    given {
+    givenGraph {
       nodeIndex("L", "prop")
       nodePropertyGraph(
         sizeHint,
@@ -292,7 +292,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("merge should not create node nor relationships with non-empty relationship index seek") {
-    val rels = given {
+    val rels = givenGraph {
       relationshipIndex("R", "prop")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -317,7 +317,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("merge should create nodes and relationship with empty relationship index seek") {
-    given {
+    givenGraph {
       relationshipIndex("R", "prop")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -348,7 +348,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("merge should not create node nor relationships with non-empty relationship index scan") {
-    val rels = given {
+    val rels = givenGraph {
       relationshipIndex("R", "prop")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -370,7 +370,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("merge should create nodes and relationship with empty relationship index scan") {
-    given {
+    givenGraph {
       relationshipIndex("S", "prop")
       circleGraph(sizeHint)
     }
@@ -399,7 +399,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
     "merge should create nodes and relationships when there are nodes but no relationships, all node scan + expand"
   ) {
     // given nodes with no relationships
-    given(nodeGraph(sizeHint))
+    givenGraph(nodeGraph(sizeHint))
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -445,7 +445,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
   test(
     "merge should not create nodes nor relationships when there are nodes with relationships, all node scan + expand"
   ) {
-    given {
+    givenGraph {
       circleGraph(sizeHint)
     }
 
@@ -472,7 +472,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
 
   test("merge should create nodes and relationships when there are nodes but no relationships, expand into") {
     // given nodes with no relationships
-    given(nodeGraph(sizeHint))
+    givenGraph(nodeGraph(sizeHint))
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -514,7 +514,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("merge should not create nodes nor relationships when there are nodes with relationships, expand into") {
-    given {
+    givenGraph {
       val nodes = nodeGraph(sizeHint)
       nodes.foreach(n => n.createRelationshipTo(n, RelationshipType.withName("R")))
     }
@@ -544,7 +544,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
     "merge should create nodes and relationships when there are nodes but no relationships, all node scan + expand + project endpoints (start in scope)"
   ) {
     // given nodes with no relationships
-    given(nodeGraph(sizeHint))
+    givenGraph(nodeGraph(sizeHint))
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -592,7 +592,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
   test(
     "merge should not create nodes nor relationships when there are nodes with relationships, all node scan + expand + project endpoints (start in scope)"
   ) {
-    given {
+    givenGraph {
       circleGraph(sizeHint)
     }
 
@@ -622,7 +622,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
     "merge should create nodes and relationships when there are nodes but no relationships, all node scan + expand + project endpoints (end in scope)"
   ) {
     // given nodes with no relationships
-    given(nodeGraph(sizeHint))
+    givenGraph(nodeGraph(sizeHint))
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -670,7 +670,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
   test(
     "merge should not create nodes nor relationships when there are nodes with relationships, all node scan + expand + project endpoints (end in scope)"
   ) {
-    given {
+    givenGraph {
       circleGraph(sizeHint)
     }
 
@@ -700,7 +700,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
     "merge should create nodes and relationships when there are nodes but no relationships, all node scan + expand + project endpoints (nothing in scope)"
   ) {
     // given nodes with no relationships
-    given(nodeGraph(sizeHint))
+    givenGraph(nodeGraph(sizeHint))
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -748,7 +748,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
   test(
     "merge should not create nodes nor relationships when there are nodes with relationships, all node scan + expand + project endpoints (nothing in scope)"
   ) {
-    given {
+    givenGraph {
       circleGraph(sizeHint)
     }
 
@@ -818,7 +818,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
 
   test("merge and project endpoints with non-matching type input") {
 
-    val (_, rels) = given {
+    val (_, rels) = givenGraph {
       circleGraph(sizeHint)
     }
 
@@ -849,7 +849,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
 
   test("merge and project endpoints with matching type input") {
 
-    val (_, rels) = given {
+    val (_, rels) = givenGraph {
       circleGraph(sizeHint)
     }
 
@@ -888,7 +888,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("merge should create node with multiple labels when no nodes with both types") {
-    given(
+    givenGraph(
       nodeGraph(sizeHint, "L")
     )
 
@@ -935,7 +935,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("merge on the RHS of an apply") {
-    given(nodePropertyGraph(
+    givenGraph(nodePropertyGraph(
       sizeHint,
       {
         case i if i % 2 == 0 => Map("prop" -> i)
@@ -989,7 +989,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("merge should perform on match side effect") {
-    val nodes = given(nodeGraph(sizeHint))
+    val nodes = givenGraph(nodeGraph(sizeHint))
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -1062,7 +1062,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("merge followed by non-fuseable with continuations should not create nodes on matches") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -1081,7 +1081,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
 
   test("merge followed by optional expand into with no updates") {
     val size = Math.sqrt(sizeHint).intValue()
-    val (nodes, rels) = given {
+    val (nodes, rels) = givenGraph {
       circleGraph(size)
     }
 
@@ -1107,7 +1107,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
 
   test("merge followed by optional expand into with updates") {
     val size = Math.sqrt(sizeHint).intValue()
-    val (nodes, _) = given {
+    val (nodes, _) = givenGraph {
       circleGraph(size)
     }
 
@@ -1132,7 +1132,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
 
   test("merge followed by aggregation into with no updates") {
     val size = Math.sqrt(sizeHint).intValue()
-    given {
+    givenGraph {
       circleGraph(size)
     }
 
@@ -1155,7 +1155,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
 
   test("merge followed by aggregation into with updates") {
     val size = Math.sqrt(sizeHint).intValue()
-    given {
+    givenGraph {
       circleGraph(size)
     }
 
@@ -1178,7 +1178,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
 
   test("merge followed by limit with no updates") {
     val size = Math.sqrt(sizeHint).intValue()
-    given {
+    givenGraph {
       circleGraph(size)
     }
 
@@ -1201,7 +1201,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
 
   test("merge followed by limit with no updates not fused to produce results") {
     val size = Math.sqrt(sizeHint).intValue()
-    given {
+    givenGraph {
       circleGraph(size)
     }
 
@@ -1225,7 +1225,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
 
   test("handle continuations from rhs of apply") {
     val size = Math.sqrt(sizeHint).toInt
-    given(nodeGraph(size))
+    givenGraph(nodeGraph(size))
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -1255,7 +1255,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
 
   test("should lock nodes if no matches") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -1282,7 +1282,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
 
   test("should not lock nodes if on matches") {
     // given
-    val (nodes, _) = given {
+    val (nodes, _) = givenGraph {
       circleGraph(sizeHint)
     }
 
@@ -1309,7 +1309,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
 
   test("should lock refslot nodes") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -1337,7 +1337,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
 
   test("should profile rows and dbhits of merge correctly") {
     // given
-    given {
+    givenGraph {
       bipartiteGraph(sizeHint, "A", "B", "R")
     }
 
@@ -1430,7 +1430,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("assert same node with merge") {
-    given {
+    givenGraph {
       uniqueNodeIndex("Honey", "prop")
       uniqueNodeIndex("Milk", "prop")
       nodePropertyGraph(sizeHint, { case i if i % 2 == 0 => Map("prop" -> i, "age" -> "old") }, "Honey", "Milk")
@@ -1462,7 +1462,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("assert same node with merge throws MergeConstraintConflictException when lhs is empty but rhs isnt") {
-    given {
+    givenGraph {
       uniqueNodeIndex("Person", "id")
       uniqueNodeIndex("Person", "mail")
       val n = tx.createNode(Label.label("Person"))
@@ -1666,7 +1666,7 @@ trait PipelinedMergeTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("merge should not create node with non-empty multi index seek") {
-    val (drunkNodes, childNodes) = given {
+    val (drunkNodes, childNodes) = givenGraph {
       nodeIndex("Drunk", "prop")
       nodeIndex("Child", "prop")
       val drunks = nodePropertyGraph(sizeHint, { case i => Map("prop" -> i) }, "Drunk")
@@ -1696,7 +1696,7 @@ trait PipelinedMergeTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("merge should create node with empty multi index seek") {
-    given {
+    givenGraph {
       nodeIndex("Drunk", "prop")
       nodeIndex("Child", "prop")
       nodePropertyGraph(sizeHint, { case i => Map("prop" -> i) }, "Drunk")
@@ -1797,7 +1797,7 @@ trait PipelinedMergeTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("merge should create nodes and relationship with empty undirected relationship type scan") {
-    given {
+    givenGraph {
       relationshipIndex("R", "prop")
     }
 
@@ -1822,7 +1822,7 @@ trait PipelinedMergeTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("merge should match nodes and relationship with undirected relationship type scan") {
-    val (_, rels) = given {
+    val (_, rels) = givenGraph {
       relationshipIndex("R", "prop")
       circleGraph(sizeHint)
     }
@@ -1864,7 +1864,7 @@ trait PipelinedMergeTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("merge should match nodes and relationship with undirected all relationship scan") {
-    val (_, rels) = given {
+    val (_, rels) = givenGraph {
       circleGraph(sizeHint)
     }
 
@@ -1882,7 +1882,7 @@ trait PipelinedMergeTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("merge should create nodes and relationship with empty undirected relationship index scan") {
-    given {
+    givenGraph {
       relationshipIndex("R", "prop")
     }
 
@@ -1915,7 +1915,7 @@ trait PipelinedMergeTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("merge should match nodes and relationship with undirected relationship index scan") {
-    val rels = given {
+    val rels = givenGraph {
       relationshipIndex("R", "prop")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -1941,7 +1941,7 @@ trait PipelinedMergeTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("merge should create nodes and relationship with empty undirected relationship index seek") {
-    given {
+    givenGraph {
       relationshipIndex("R", "prop")
     }
     // when
@@ -1965,7 +1965,7 @@ trait PipelinedMergeTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("merge should match nodes and relationship with undirected relationship index seek") {
-    val rels = given {
+    val rels = givenGraph {
       relationshipIndex("R", "prop")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {

@@ -42,7 +42,7 @@ abstract class SlottedPipeFallbackTestBase[CONTEXT <: RuntimeContext](
     ) {
 
   test("should work with limit cancellation in nested apply") {
-    val (nodes1, nodes2, rels1, rels2) = given {
+    val (nodes1, nodes2, rels1, rels2) = givenGraph {
       bidirectionalBipartiteGraph(5, "A", "B", "AB", "BA")
     }
 
@@ -73,7 +73,7 @@ abstract class SlottedPipeFallbackTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should work with limit cancellation") {
-    val (_, rels) = given {
+    val (_, rels) = givenGraph {
       circleGraph(sizeHint, "R", 1)
     }
 
@@ -102,7 +102,7 @@ abstract class SlottedPipeFallbackTestBase[CONTEXT <: RuntimeContext](
       )
     }).reduce(_ ++ _)
 
-    val (nodes, rels) = given {
+    val (nodes, rels) = givenGraph {
       val nodes = nodeGraph(n, "Honey")
       val rels = connect(nodes, relTuples)
       (nodes, rels)
@@ -128,7 +128,7 @@ abstract class SlottedPipeFallbackTestBase[CONTEXT <: RuntimeContext](
 
   test("should use fallback correctly if rows are filtered out by fallback pipe") {
     // given
-    val rels = given {
+    val rels = givenGraph {
       val (_, rels) = circleGraph(sizeHint)
       rels
     }
@@ -149,7 +149,7 @@ abstract class SlottedPipeFallbackTestBase[CONTEXT <: RuntimeContext](
 
   test("should use fallback correctly if output morsel has more slots than input morsel") {
     // given
-    val rels = given {
+    val rels = givenGraph {
       val (_, rels) = circleGraph(sizeHint)
       rels
     }
@@ -170,7 +170,7 @@ abstract class SlottedPipeFallbackTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should get exception with error plan") {
-    given { nodeGraph(10) }
+    givenGraph { nodeGraph(10) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -196,7 +196,7 @@ abstract class SlottedPipeFallbackTestBase[CONTEXT <: RuntimeContext](
       )
     }).reduce(_ ++ _)
 
-    val (nodes, rels) = given {
+    val (nodes, rels) = givenGraph {
       val nodes = nodeGraph(n, "Honey")
       val rels = connect(nodes, relTuples)
       (nodes, rels)
@@ -237,7 +237,7 @@ abstract class SlottedPipeFallbackTestBase[CONTEXT <: RuntimeContext](
 
   test("should profile head with multiple middle correctly") {
     // given
-    val (nodes, rels) = given {
+    val (nodes, rels) = givenGraph {
       circleGraph(sizeHint)
     }
 

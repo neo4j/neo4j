@@ -228,7 +228,7 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
   test("should deallocate memory between single node hash joins") {
     val nNodes = sizeHint
 
-    given {
+    givenGraph {
       nodeGraph(nNodes)
     }
 
@@ -261,7 +261,7 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
   test("should deallocate memory between multi node hash joins") {
     val nNodes = sizeHint
 
-    val paths = given { chainGraphs(nNodes, "R") }
+    val paths = givenGraph { chainGraphs(nNodes, "R") }
     val random = new Random(seed = 1337)
     val data = (0 until nNodes).map { i => Array[Any](paths(i).startNode, paths(i).endNode()) }
     val shuffledData = random.shuffle(data).toArray
@@ -310,7 +310,7 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
     val n = nodeGraph(nNodes / 2)
 
     def input(): InputDataStream = {
-      val nodes = given { n }
+      val nodes = givenGraph { n }
       val random = new Random(seed = 1337)
       val payload: Array[ListValue] = (1 to nNodes).map { _ =>
         VirtualValues.list((1 to 8).map(Values.longValue(_)).toArray: _*)
@@ -358,7 +358,7 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
 
     val n = nodeGraph(nNodes / 2)
     def input(): InputDataStream = {
-      val nodes = given { n }
+      val nodes = givenGraph { n }
       val random = new Random(seed = 1337)
       val payload: Array[ListValue] = (1 to nNodes).map { _ =>
         VirtualValues.list((1 to 8).map(Values.longValue(_)).toArray: _*)
@@ -404,7 +404,7 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
   test("should deallocate memory between value hash joins") {
     val nNodes = sizeHint
 
-    given {
+    givenGraph {
       val nodes = nodeGraph(nNodes)
       nodes.foreach(n => n.setProperty("prop", n.getId))
     }
@@ -459,7 +459,7 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should deallocate memory for single primitive distinct on RHS of apply") {
-    given {
+    givenGraph {
       nodeGraph(5)
     }
 
@@ -481,7 +481,7 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should deallocate memory for multiple primitive distinct on RHS of apply") {
-    given {
+    givenGraph {
       nodeGraph(5)
     }
 
@@ -895,7 +895,7 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should account for memory allocated in value population") {
-    val nodes = given {
+    val nodes = givenGraph {
       // Some nodes with memory hungry properties and labels
       nodePropertyGraphFunctional(
         nNodes = 32,

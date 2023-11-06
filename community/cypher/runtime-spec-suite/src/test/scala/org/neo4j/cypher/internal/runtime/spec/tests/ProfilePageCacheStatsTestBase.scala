@@ -51,7 +51,7 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](
   val NoEntryInPageCacheStat: PageCacheStats = PageCacheStats(-1, -1)
 
   test("should profile page cache stats of linear plan") {
-    given {
+    givenGraph {
       nodePropertyGraph(
         SIZE,
         {
@@ -93,7 +93,7 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should profile page cache stats of linear plan with breaks") {
-    given {
+    givenGraph {
       nodePropertyGraph(
         SIZE,
         {
@@ -130,7 +130,7 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should profile page cache stats of branched plan") {
-    given {
+    givenGraph {
       nodeIndex("M", "prop")
       nodePropertyGraph(
         SIZE,
@@ -178,7 +178,7 @@ abstract class ProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should profile page cache stats of plan with apply over aggregation") {
-    given {
+    givenGraph {
       nodeIndex("M", "prop")
       nodePropertyGraph(
         SIZE,
@@ -285,7 +285,7 @@ trait UpdatingProfilePageCacheStatsTestBase[CONTEXT <: RuntimeContext] {
   self: ProfilePageCacheStatsTestBase[CONTEXT] =>
 
   test("should profile page cache stats of create with new label") {
-    given {
+    givenGraph {
       uniqueNodeIndex("M", "prop")
       nodePropertyGraph(
         SIZE,

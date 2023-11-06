@@ -42,7 +42,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should seek 2d cartesian points") {
-    given {
+    givenGraph {
       nodeIndex(IndexType.POINT, "Place", "location")
       nodePropertyGraph(
         sizeHint,
@@ -73,7 +73,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should seek 3d cartesian points") {
-    given {
+    givenGraph {
       nodeIndex(IndexType.POINT, "Place", "location")
       nodePropertyGraph(
         sizeHint,
@@ -104,7 +104,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should seek 2d geographic points") {
-    given {
+    givenGraph {
       nodeIndex(IndexType.POINT, "Place", "location")
       nodePropertyGraph(
         180,
@@ -135,7 +135,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should seek 3d geographic points") {
-    given {
+    givenGraph {
       nodeIndex(IndexType.POINT, "Place", "location")
       nodePropertyGraph(
         180,
@@ -166,7 +166,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should cache properties") {
-    given {
+    givenGraph {
       nodeIndex(IndexType.POINT, "Place", "location")
       nodePropertyGraph(
         sizeHint,
@@ -203,7 +203,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle bbox on the north-western hemisphere") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodeIndex(IndexType.POINT, "Place", "location")
       nodePropertyGraph(
         sizeHint,
@@ -243,7 +243,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle bbox on the north-eastern hemisphere") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodeIndex(IndexType.POINT, "Place", "location")
       nodePropertyGraph(
         sizeHint,
@@ -283,7 +283,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle bbox on the south-western hemisphere") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodeIndex(IndexType.POINT, "Place", "location")
       nodePropertyGraph(
         sizeHint,
@@ -323,7 +323,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle bbox on the south-eastern hemisphere") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodeIndex(IndexType.POINT, "Place", "location")
       nodePropertyGraph(
         sizeHint,
@@ -363,7 +363,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle bbox crossing the dateline") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodeIndex(IndexType.POINT, "Place", "location")
       nodePropertyGraph(
         sizeHint,
@@ -402,7 +402,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle bbox crossing the equator") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodeIndex(IndexType.POINT, "Place", "location")
       nodePropertyGraph(
         180,
@@ -441,7 +441,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle bbox crossing the dateline and the equator") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodeIndex(IndexType.POINT, "Place", "location")
       nodePropertyGraph(
         sizeHint,
@@ -480,7 +480,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle bbox with lowerLeft east of upperRight on the north-western hemisphere") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodeIndex(IndexType.POINT, "Place", "location")
       nodePropertyGraph(
         sizeHint,
@@ -519,7 +519,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle bbox with lowerLeft east of upperRight on the north-eastern hemisphere") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodeIndex(IndexType.POINT, "Place", "location")
       nodePropertyGraph(
         sizeHint,
@@ -558,7 +558,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle bbox with lowerLeft east of upperRight on the south-western hemisphere") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodeIndex(IndexType.POINT, "Place", "location")
       nodePropertyGraph(
         sizeHint,
@@ -597,7 +597,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle bbox with lowerLeft east of upperRight on the south-eastern hemisphere") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodeIndex(IndexType.POINT, "Place", "location")
       nodePropertyGraph(
         sizeHint,
@@ -636,7 +636,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle bbox crossing the dateline with lowerLeft east of upperRight") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodeIndex(IndexType.POINT, "Place", "location")
       nodePropertyGraph(
         sizeHint,
@@ -675,7 +675,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("bbox with lowerLeft north of upperRight is empty") {
-    given {
+    givenGraph {
       nodeIndex(IndexType.POINT, "Place", "location")
       nodePropertyGraph(
         180,
@@ -708,7 +708,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle 3D bbox") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodeIndex(IndexType.POINT, "Place", "location")
       nodePropertyGraph(
         sizeHint,
@@ -752,7 +752,7 @@ abstract class NodeIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should ignore non-points and points with different CRS") {
-    given {
+    givenGraph {
       nodeIndex(IndexType.POINT, "Place", "location")
       nodePropertyGraph(
         100,

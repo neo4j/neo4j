@@ -38,7 +38,7 @@ abstract class DeleteNodeTestBase[CONTEXT <: RuntimeContext](
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("delete all nodes") {
-    given {
+    givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -52,7 +52,7 @@ abstract class DeleteNodeTestBase[CONTEXT <: RuntimeContext](
   test("delete all nodes with exhaustive limit") {
     val nodeCount = 10
 
-    given {
+    givenGraph {
       nodeGraph(nodeCount)
     }
 
@@ -75,7 +75,7 @@ abstract class DeleteNodeTestBase[CONTEXT <: RuntimeContext](
     val nodeCount = sizeHint
     val deleteNodeCount = nodeCount / 3
 
-    given {
+    givenGraph {
       nodeGraph(deleteNodeCount, "DELETE_ME")
       nodeGraph(nodeCount - deleteNodeCount, "SAVE_ME")
     }
@@ -95,7 +95,7 @@ abstract class DeleteNodeTestBase[CONTEXT <: RuntimeContext](
 
   test("duplicate delete") {
     val nodeCount = 10
-    given {
+    givenGraph {
       nodeGraph(10)
     }
 
@@ -115,7 +115,7 @@ abstract class DeleteNodeTestBase[CONTEXT <: RuntimeContext](
 
   test("delete on rhs of apply") {
     val nodeCount = 10
-    given {
+    givenGraph {
       nodeGraph(10)
     }
 
@@ -136,7 +136,7 @@ abstract class DeleteNodeTestBase[CONTEXT <: RuntimeContext](
 
   test("fail to delete nodes with relationships") {
     val nodeCount = 5
-    given {
+    givenGraph {
       val nodes = nodeGraph(nodeCount)
       // Add one relationship
       nodes.head.createRelationshipTo(nodes(1), RelationshipType.withName("KNOWS"))
@@ -163,7 +163,7 @@ abstract class DeleteNodeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should not delete too many nodes if delete is between two loops with continuation") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
     }
 

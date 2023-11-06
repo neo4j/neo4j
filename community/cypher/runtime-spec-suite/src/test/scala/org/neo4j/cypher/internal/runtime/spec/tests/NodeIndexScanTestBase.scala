@@ -43,7 +43,7 @@ abstract class NodeIndexScanTestBase[CONTEXT <: RuntimeContext](
 
   testWithIndex(_.supports(EXISTS), "should scan all nodes of an index with a property") { index =>
     val propertyType = randomAmong(index.querySupport(EXISTS))
-    val nodes = given {
+    val nodes = givenGraph {
       nodeIndex(index.indexType, "Honey", "calories")
       nodeGraph(5, "Milk")
       nodePropertyGraph(
@@ -70,7 +70,7 @@ abstract class NodeIndexScanTestBase[CONTEXT <: RuntimeContext](
 
   testWithIndex(_.supportsUniqueness(EXISTS), "should scan all nodes of a unique index with a property") { index =>
     val propertyType = randomAmong(index.querySupport(EXISTS))
-    val nodes = given {
+    val nodes = givenGraph {
       uniqueNodeIndex(index.indexType, "Honey", "calories")
       nodeGraph(5, "Milk")
       val seen = mutable.Set.empty[Value]
@@ -102,7 +102,7 @@ abstract class NodeIndexScanTestBase[CONTEXT <: RuntimeContext](
     _.supportsComposite(EXISTS, ValueCategory.NUMBER, ValueCategory.NUMBER),
     "should scan all nodes of an index with multiple properties"
   ) { index =>
-    val nodes = given {
+    val nodes = givenGraph {
       nodeIndex(index.indexType, "Honey", "calories", "taste")
       nodeGraph(5, "Milk")
       nodePropertyGraph(
@@ -130,7 +130,7 @@ abstract class NodeIndexScanTestBase[CONTEXT <: RuntimeContext](
 
   testWithIndex(_.supportsValues(EXISTS), "should cache properties") { index =>
     val propertyType = randomAmong(index.provideValueSupport(EXISTS))
-    val nodes = given {
+    val nodes = givenGraph {
       nodeIndex(index.indexType, "Honey", "calories")
       nodeGraph(5, "Milk")
       nodePropertyGraph(
@@ -160,7 +160,7 @@ abstract class NodeIndexScanTestBase[CONTEXT <: RuntimeContext](
 
   testWithIndex(_.supportsUniqueness(EXISTS), "should cache properties with a unique index") { index =>
     val propertyType = randomAmong(index.provideValueSupport(EXISTS))
-    val nodes = given {
+    val nodes = givenGraph {
       uniqueNodeIndex(index.indexType, "Honey", "calories")
       nodeGraph(5, "Milk")
       val seen = mutable.Set.empty[Value]

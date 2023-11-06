@@ -40,7 +40,7 @@ abstract class RelationshipIndexSeekConcurrencyStressTestBase[CONTEXT <: Runtime
 
   private def seekWithConcurrentDeletes(directed: Boolean): Unit = {
     val propValue = 42L
-    val rels = given {
+    val rels = givenGraph {
       relationshipIndex("R", "prop")
       val (_, rels) = circleGraph(nNodes = SIZE_HINT, relType = "R", outDegree = 1)
       rels.foreach(r => r.setProperty("prop", propValue))

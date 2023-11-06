@@ -178,8 +178,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
     val nodeCountB = 3
     val nodeCountC = 5
     val batchSize = 2
-
-    given {
+    givenGraph {
       for (_ <- 0 until nodeCountA) yield runtimeTestSupport.tx.createNode(Label.label("A"))
       for (_ <- 0 until nodeCountB) yield runtimeTestSupport.tx.createNode(Label.label("B"))
       for (_ <- 0 until nodeCountC) yield runtimeTestSupport.tx.createNode(Label.label("C"))
@@ -370,7 +369,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       Array[Any](i.toLong)
     }
 
-    given {
+    givenGraph {
       nodeGraph(1, "N")
     }
 
@@ -422,7 +421,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       Array[Any](i.toLong)
     }
 
-    given {
+    givenGraph {
       nodeGraph(1, "N")
     }
 
@@ -477,7 +476,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       Array[Any](i.toLong)
     }
 
-    given {
+    givenGraph {
       nodeIndex("Label", "prop")
       nodePropertyGraph(1, { case _ => Map[String, Any]("prop" -> 2) }, "Label")
     }
@@ -529,7 +528,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       Array[Any](i.toLong)
     }
 
-    given {
+    givenGraph {
       nodeGraph(1, "N")
     }
 
@@ -644,7 +643,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("Should not throw exception when reading before call subquery") {
-    given {
+    givenGraph {
       nodeGraph(sizeHint) ++ nodeGraph(2, "X")
     }
     val query = new LogicalQueryBuilder(this)
@@ -661,7 +660,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("Make sure transaction state is empty before opening inner transaction") {
-    given {
+    givenGraph {
       nodeGraph(sizeHint)
     }
     val query = new LogicalQueryBuilder(this)
@@ -682,7 +681,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("Index seeks should see data created from previous transactions") {
-    given {
+    givenGraph {
       nodeIndex("N", "prop")
       nodePropertyGraph(10, { case i => Map("prop" -> i) }, "N")
     }
@@ -707,7 +706,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("Index seeks should see data created in same transaction") {
-    given {
+    givenGraph {
       nodeIndex("N", "prop")
       nodePropertyGraph(10, { case i => Map("prop" -> i) }, "N")
     }
@@ -739,7 +738,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("Label scans should see data created from previous transactions") {
-    given {
+    givenGraph {
       nodePropertyGraph(10, { case i => Map("prop" -> i) }, "N")
     }
 
@@ -763,7 +762,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("Label scans should see data created in same transaction") {
-    given {
+    givenGraph {
       nodePropertyGraph(10, { case i => Map("prop" -> i) }, "N")
     }
 
@@ -794,7 +793,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("Relationship type scans should see data created from previous transactions") {
-    given {
+    givenGraph {
       val nodes = nodeGraph(10)
       connectWithProperties(nodes, nodes.indices.map(i => (i, i, "R", Map("prop" -> i))))
     }
@@ -823,7 +822,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("Relationship type scans should see data created in same transaction") {
-    given {
+    givenGraph {
       val nodes = nodeGraph(10)
       connectWithProperties(nodes, nodes.indices.map(i => (i, i, "R", Map("prop" -> i))))
     }
@@ -863,7 +862,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should allow node entity values as params") {
-    val nodes = given {
+    val nodes = givenGraph {
       val n = runtimeTestSupport.tx.createNode()
       n.setProperty("prop", 1L)
       val m = runtimeTestSupport.tx.createNode()
@@ -903,7 +902,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should allow relationship entity values as params") {
-    val relationships = given {
+    val relationships = givenGraph {
       val n = runtimeTestSupport.tx.createNode()
       val m = runtimeTestSupport.tx.createNode()
       val r = n.createRelationshipTo(m, RelationshipType.withName("R"))
@@ -946,7 +945,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should allow path entity values as params") {
-    val paths = given {
+    val paths = givenGraph {
       val n = runtimeTestSupport.tx.createNode()
       n.setProperty("prop", 1L)
       val p = Paths.singleNodePath(n)
@@ -989,7 +988,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should allow lists of node entity values as params") {
-    val nodeRows = given {
+    val nodeRows = givenGraph {
       val n = runtimeTestSupport.tx.createNode()
       n.setProperty("prop", 1L)
       val m = runtimeTestSupport.tx.createNode()
@@ -1030,7 +1029,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should allow maps of node entity values as params") {
-    val nodes = given {
+    val nodes = givenGraph {
       val n = runtimeTestSupport.tx.createNode()
       n.setProperty("prop", 1L)
       val m = runtimeTestSupport.tx.createNode()
@@ -1244,7 +1243,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
     errorBehaviour: InTransactionsOnErrorBehaviour,
     status: Boolean = true
   ): (Seq[MapValue], Int, LogicalQuery) = {
-    given {
+    givenGraph {
       nodeConstraint("Dog") { creator =>
         creator.assertPropertyExists("tail")
       }
@@ -1359,7 +1358,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
   test("no resource leaks with continuations on rhs") {
     val size = 10
-    val relCount = given {
+    val relCount = givenGraph {
       val (as, bs) = bipartiteGraph(size, "A", "B", "R")
       val rIdGen = new AtomicInteger(0)
       for {
@@ -1491,7 +1490,7 @@ trait RandomisedTransactionForEachTests[CONTEXT <: RuntimeContext]
   def sizeHint: Int
 
   test("should handle random failures with ON ERROR FAIL") {
-    given {
+    givenGraph {
       uniqueNodeIndex("N", "p")
       val node = runtimeTestSupport.tx.createNode(Label.label("N"))
       node.setProperty("p", 42)
@@ -1553,7 +1552,7 @@ trait RandomisedTransactionForEachTests[CONTEXT <: RuntimeContext]
   }
 
   test("should handle random failures with ON ERROR BREAK") {
-    given {
+    givenGraph {
       uniqueNodeIndex("N", "p")
       val node = runtimeTestSupport.tx.createNode(Label.label("N"))
       node.setProperty("p", 42)
@@ -1634,7 +1633,7 @@ trait RandomisedTransactionForEachTests[CONTEXT <: RuntimeContext]
   }
 
   test("should handle random failures with ON ERROR CONTINUE") {
-    given {
+    givenGraph {
       uniqueNodeIndex("N", "p")
       val node = runtimeTestSupport.tx.createNode(Label.label("N"))
       node.setProperty("p", 42)

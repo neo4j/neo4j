@@ -57,7 +57,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
 
   test("should count(*) on single primitive ordered grouping column") {
     // given
-    val (nodes, _) = given { circleGraph(sizeHint) }
+    val (nodes, _) = givenGraph { circleGraph(sizeHint) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -77,7 +77,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should count(*) on single ordered grouping column with nulls") {
-    given {
+    givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -107,7 +107,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
 
   test("should count(*) on single primitive ordered grouping column with nulls") {
     // given
-    val (unfilteredNodes, _) = given { circleGraph(sizeHint) }
+    val (unfilteredNodes, _) = givenGraph { circleGraph(sizeHint) }
     val nodes = select(unfilteredNodes, nullProbability = 0.5)
     val input = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
@@ -177,7 +177,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
 
   test("should count(*) on two primitive grouping columns with nulls, one ordered") {
     // given
-    val (unfilteredNodes, _) = given { circleGraph(sizeHint) }
+    val (unfilteredNodes, _) = givenGraph { circleGraph(sizeHint) }
     val nodes = select(unfilteredNodes, nullProbability = 0.5)
     val input = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
@@ -200,7 +200,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
 
   test("should count(*) on two primitive grouping columns with nulls, two ordered") {
     // given
-    val (unfilteredNodes, _) = given { circleGraph(sizeHint) }
+    val (unfilteredNodes, _) = givenGraph { circleGraph(sizeHint) }
     val nodes = select(unfilteredNodes, nullProbability = 0.5)
     val input = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
@@ -470,7 +470,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
   test("should count on single ordered grouping column under apply") {
     val nodesPerLabel = 100
     nodeIndex("B", "prop")
-    val (aNodes, bNodes) = given {
+    val (aNodes, bNodes) = givenGraph {
       val aNodes = nodeGraph(nodesPerLabel, "A")
       val bNodes = nodePropertyGraph(
         nodesPerLabel,
@@ -524,7 +524,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
     val propValue = 10
     val nodesPerLabel = 100
     nodeIndex("B", "prop")
-    val (aNodes, bNodes) = given {
+    val (aNodes, bNodes) = givenGraph {
       val aNodes = nodeGraph(nodesPerLabel, "A")
       val bNodes = nodePropertyGraph(
         nodesPerLabel,

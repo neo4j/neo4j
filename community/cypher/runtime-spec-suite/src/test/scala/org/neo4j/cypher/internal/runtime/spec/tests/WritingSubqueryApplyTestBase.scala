@@ -39,7 +39,7 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
     val inputVals = (0 until sizeHint).toArray
     val input = inputValues(inputVals.map(Array[Any](_)): _*)
 
-    given {
+    givenGraph {
       nodeGraph(1)
     }
 
@@ -69,7 +69,7 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
     val inputVals = inputValsToCancel ++ inputValsToPassThrough ++ inputValsToCancel
     val input = inputValues(inputVals.map(Array[Any](_)): _*)
 
-    given {
+    givenGraph {
       nodeGraph(1)
     }
 
@@ -100,7 +100,7 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
     val inputVals = inputValsToCancel ++ inputValsToPassThrough ++ inputValsToCancel
     val input = inputValues(inputVals.map(Array[Any](_)): _*)
 
-    given {
+    givenGraph {
       nodeGraph(1)
     }
 
@@ -130,7 +130,7 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
     val inputVals = (0 until sizeHint).toArray
     val input = inputValues(inputVals.map(Array[Any](_)): _*)
 
-    given {
+    givenGraph {
       nodeGraph(1)
     }
 
@@ -163,7 +163,7 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
     val inputVals = inputValsToCancel ++ inputValsToPassThrough ++ inputValsToCancel
     val input = inputValues(inputVals.map(Array[Any](_)): _*)
 
-    given {
+    givenGraph {
       nodeGraph(1)
     }
 
@@ -199,7 +199,7 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
     // given
     val sizeHint = 16
 
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -226,7 +226,7 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
     val inputVals = (0 until sizeHint).toArray
     val input = inputValues(inputVals.map(Array[Any](_)): _*)
 
-    given {
+    givenGraph {
       nodeGraph(1)
     }
 
@@ -253,7 +253,7 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
     // given
     val sizeHint = 16
 
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -281,7 +281,7 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
     val inputVals = (0 until sizeHint).toArray
     val input = inputValues(inputVals.map(Array[Any](_)): _*)
 
-    given {
+    givenGraph {
       nodeGraph(1)
     }
 
@@ -309,7 +309,7 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
     // given
     val sizeHint = 16
 
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -340,7 +340,7 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
     val inputVals = (0 until sizeHint).toArray
     val input = inputValues(inputVals.map(Array[Any](_)): _*)
 
-    given {
+    givenGraph {
       nodeGraph(1)
     }
 
@@ -371,7 +371,7 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
     // given
     val sizeHint = 16
 
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -402,7 +402,7 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
     val inputVals = (0 until sizeHint).toArray
     val input = inputValues(inputVals.map(Array[Any](_)): _*)
 
-    given {
+    givenGraph {
       nodeGraph(initialNodeCount)
     }
 
@@ -440,7 +440,7 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
     // given
     val sizeHint = 4
 
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -472,7 +472,7 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
     val inputVals = (0 until sizeHint).toArray
     val input = inputValues(inputVals.map(Array[Any](_)): _*)
 
-    given {
+    givenGraph {
       nodeGraph(initialNodeCount)
     }
 
@@ -513,7 +513,7 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
     // given
     val sizeHint = 4
 
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -542,8 +542,7 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
     val nodeCountA = 7
     val nodeCountB = 3
     val nodeCountC = 5
-
-    given {
+    givenGraph {
       for (_ <- 0 until nodeCountA) yield runtimeTestSupport.tx.createNode(Label.label("A"))
       for (_ <- 0 until nodeCountB) yield runtimeTestSupport.tx.createNode(Label.label("B"))
       for (_ <- 0 until nodeCountC) yield runtimeTestSupport.tx.createNode(Label.label("C"))
@@ -580,7 +579,7 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
     val inputVals = (0 until sizeHint).toArray
     val input = inputValues(inputVals.map(Array[Any](_)): _*)
 
-    given {
+    givenGraph {
       nodeGraph(initialNodeCount)
     }
 
@@ -618,7 +617,7 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
     // given
     val sizeHint = 4
 
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -650,7 +649,7 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
     val inputVals = (0 until sizeHint).toArray
     val input = inputValues(inputVals.map(Array[Any](_)): _*)
 
-    given {
+    givenGraph {
       nodeGraph(initialNodeCount)
     }
 
@@ -691,7 +690,7 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
     // given
     val sizeHint = 4
 
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -722,7 +721,7 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
     val inputVals = (0 until sizeHint).toArray
     val input = inputValues(inputVals.map(Array[Any](_)): _*)
 
-    given {
+    givenGraph {
       nodeGraph(initialNodeCount)
     }
 
@@ -763,7 +762,7 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
     // given
     val sizeHint = 4
 
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -798,7 +797,7 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
     val inputVals = (0 until sizeHint).toArray
     val input = inputValues(inputVals.map(Array[Any](_)): _*)
 
-    given {
+    givenGraph {
       nodeGraph(initialNodeCount)
     }
 
@@ -842,7 +841,7 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
     // given
     val sizeHint = 4
 
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -871,7 +870,7 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle node creation in deeply nested apply") {
     val sizeHint = 4
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -912,7 +911,7 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle nested apply and exhaustive limit") {
     val sizeHint = 4
-    given {
+    givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -969,7 +968,7 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle nested apply and exhaustive limit and skip") {
     val sizeHint = 4
-    given {
+    givenGraph {
       nodeGraph(sizeHint)
     }
 

@@ -40,7 +40,7 @@ abstract class SetNodePropertiesTestBase[CONTEXT <: RuntimeContext](
 
   test("should set node properties") {
     // given a single node
-    given {
+    givenGraph {
       nodeGraph(1)
     }
 
@@ -62,7 +62,7 @@ abstract class SetNodePropertiesTestBase[CONTEXT <: RuntimeContext](
 
   test("should set node properties from refslot") {
     // given a single node
-    given {
+    givenGraph {
       nodeGraph(1)
     }
 
@@ -85,7 +85,7 @@ abstract class SetNodePropertiesTestBase[CONTEXT <: RuntimeContext](
 
   test("should remove and set node properties") {
     // given a single node
-    given {
+    givenGraph {
       nodePropertyGraph(1, { case i: Int => Map("p1" -> i) })
     }
 
@@ -108,7 +108,7 @@ abstract class SetNodePropertiesTestBase[CONTEXT <: RuntimeContext](
 
   test("should set already existing node properties") {
     // given a single node
-    given {
+    givenGraph {
       nodePropertyGraph(1, { case _ => Map("p1" -> 0, "p2" -> 0) })
     }
 
@@ -126,7 +126,7 @@ abstract class SetNodePropertiesTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should set properties on multiple nodes") {
-    given {
+    givenGraph {
       nodePropertyGraph(sizeHint, { case i => Map("p1" -> i, "p2" -> i) })
     }
 
@@ -148,7 +148,7 @@ abstract class SetNodePropertiesTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should set properties on rhs of apply") {
-    given {
+    givenGraph {
       nodePropertyGraph(sizeHint, { case i => Map("p1" -> i, "p2" -> i) })
     }
 
@@ -172,7 +172,7 @@ abstract class SetNodePropertiesTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should set properties after limit") {
-    given {
+    givenGraph {
       nodePropertyGraph(sizeHint, { case i => Map("p1" -> i, "p2" -> i) })
     }
 
@@ -195,7 +195,7 @@ abstract class SetNodePropertiesTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should set same properties multiple times") {
-    given {
+    givenGraph {
       nodePropertyGraph(sizeHint, { case i => Map("p1" -> i, "p2" -> i) })
     }
 
@@ -221,7 +221,7 @@ abstract class SetNodePropertiesTestBase[CONTEXT <: RuntimeContext](
 
   test("should set cached node properties") {
     // given a single node
-    given {
+    givenGraph {
       nodeGraph(1)
     }
 
@@ -242,7 +242,7 @@ abstract class SetNodePropertiesTestBase[CONTEXT <: RuntimeContext](
 
   test("set properties should invalidate cached properties") {
     // given a single node
-    given {
+    givenGraph {
       nodePropertyGraph(1, { case _ => Map("prop" -> 0) })
     }
 
@@ -264,7 +264,7 @@ abstract class SetNodePropertiesTestBase[CONTEXT <: RuntimeContext](
 
   test("set properties should invalidate cached properties with pipeline break") {
     // given a single node
-    given {
+    givenGraph {
       nodePropertyGraph(1, { case _ => Map("prop" -> 0) })
     }
 
@@ -288,7 +288,7 @@ abstract class SetNodePropertiesTestBase[CONTEXT <: RuntimeContext](
 
   test("should set node properties from null value") {
     // given a single node
-    given {
+    givenGraph {
       nodeGraph(1)
     }
 
@@ -309,7 +309,7 @@ abstract class SetNodePropertiesTestBase[CONTEXT <: RuntimeContext](
 
   test("should set node properties on null node") {
     // given a single node
-    val n = given {
+    val n = givenGraph {
       nodeGraph(1)
     }
 
@@ -332,7 +332,7 @@ abstract class SetNodePropertiesTestBase[CONTEXT <: RuntimeContext](
 
   test("should set node properties from expression that requires null check") {
     // given a single node
-    given {
+    givenGraph {
       nodeGraph(1)
     }
 
@@ -352,7 +352,7 @@ abstract class SetNodePropertiesTestBase[CONTEXT <: RuntimeContext](
 
   test("should count node properties updates even if values are not changed") {
     // given single node
-    val n = given {
+    val n = givenGraph {
       nodePropertyGraph(1, { case i => Map("p1" -> 100, "p2" -> 100) })
     }
 
@@ -371,7 +371,7 @@ abstract class SetNodePropertiesTestBase[CONTEXT <: RuntimeContext](
 
   test("should lock node") {
     // given a single node
-    val n = given {
+    val n = givenGraph {
       nodeGraph(1).head
     }
 
@@ -391,7 +391,7 @@ abstract class SetNodePropertiesTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should set node properties between two loops with continuation") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodePropertyGraph(sizeHint, { case _ => Map("p1" -> 0, "p2" -> 0) })
     }
 
@@ -414,7 +414,7 @@ abstract class SetNodePropertiesTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should set multiple properties without violating constraint") {
-    val nodes = given {
+    val nodes = givenGraph {
       uniqueNodeIndex("L", "p1", "p2")
 
       // p1 = 0, p2 = 0
@@ -440,7 +440,7 @@ abstract class SetNodePropertiesTestBase[CONTEXT <: RuntimeContext](
 
   test("should not take exclusive lock if value not changing") {
     // given a single node
-    given {
+    givenGraph {
       uniqueNodeIndex("L", "prop")
       nodePropertyGraph(1, { case _ => Map("prop" -> 1) }, "L")
     }
@@ -463,7 +463,7 @@ abstract class SetNodePropertiesTestBase[CONTEXT <: RuntimeContext](
 
   test("should take exclusive lock if value changing") {
     // given a single node
-    given {
+    givenGraph {
       uniqueNodeIndex("L", "prop")
       nodePropertyGraph(1, { case _ => Map("prop" -> 1) }, "L")
     }

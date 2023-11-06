@@ -37,7 +37,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
   test("var-length-expand with no relationships") {
     // given
-    given { nodeGraph(sizeHint) }
+    givenGraph { nodeGraph(sizeHint) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -55,7 +55,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
   test("undirected var-length-expand with no relationships") {
     // given
-    given { nodeGraph(sizeHint) }
+    givenGraph { nodeGraph(sizeHint) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -73,7 +73,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
   test("var-length-expand with max length") {
     // given
-    val (Seq(_, n2, _), _) = given { lollipopGraph() }
+    val (Seq(_, n2, _), _) = givenGraph { lollipopGraph() }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -93,7 +93,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
   test("undirected var-length-expand with max length") {
     // given
-    val (Seq(_, n2, _), _) = given { lollipopGraph() }
+    val (Seq(_, n2, _), _) = givenGraph { lollipopGraph() }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -113,7 +113,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
   test("var-length-expand with max length including start node") {
     // given
-    val (Seq(n1, n2, _), _) = given { lollipopGraph() }
+    val (Seq(n1, n2, _), _) = givenGraph { lollipopGraph() }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -137,7 +137,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
   test("undirected var-length-expand with max length including start node") {
     // given
-    val (Seq(n1, n2, _), _) = given { lollipopGraph() }
+    val (Seq(n1, n2, _), _) = givenGraph { lollipopGraph() }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -161,7 +161,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
   test("var-length-expand with min and max length") {
     // given
-    val paths = given { chainGraphs(3, "TO", "TO", "TO", "TOO", "TO") }
+    val paths = givenGraph { chainGraphs(3, "TO", "TO", "TO", "TOO", "TO") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -188,7 +188,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
   test("undirected var-length-expand with min and max length") {
     // given
-    val paths = given { chainGraphs(3, "TO", "TO", "TO", "TOO", "TO") }
+    val paths = givenGraph { chainGraphs(3, "TO", "TO", "TO", "TOO", "TO") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -215,7 +215,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
   test("var-length-expand with length 0") {
     // given
-    val (Seq(n1, _, _), _) = given { lollipopGraph() }
+    val (Seq(n1, _, _), _) = givenGraph { lollipopGraph() }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -234,7 +234,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
   test("undirected var-length-expand with length 0") {
     // given
-    val (Seq(n1, _, _), _) = given { lollipopGraph() }
+    val (Seq(n1, _, _), _) = givenGraph { lollipopGraph() }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -253,7 +253,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
   test("var-length-expand with length 0..2") {
     // given
-    val (Seq(n1, n2, n3), _) = given { lollipopGraph() }
+    val (Seq(n1, n2, n3), _) = givenGraph { lollipopGraph() }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -276,7 +276,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
   test("undirected var-length-expand with length 0..2") {
     // given
-    val (Seq(n1, n2, n3), _) = given { lollipopGraph() }
+    val (Seq(n1, n2, n3), _) = givenGraph { lollipopGraph() }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -299,7 +299,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
   test("var-length-expand with self-loop") {
     // given
-    val (n1, n2) = given {
+    val (n1, n2) = givenGraph {
       val n1 = tx.createNode(Label.label("START"))
       val n2 = tx.createNode()
       val relType = RelationshipType.withName("R")
@@ -328,7 +328,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
   test("undirected var-length-expand with self-loop") {
     // given
-    val (n1, n2) = given {
+    val (n1, n2) = givenGraph {
       val n1 = tx.createNode(Label.label("START"))
       val n2 = tx.createNode()
       val relType = RelationshipType.withName("R")
@@ -364,7 +364,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
      */
 
     // given
-    val (n1, n1_2, n2, n3, n4) = given {
+    val (n1, n1_2, n2, n3, n4) = givenGraph {
       val n1 = tx.createNode(Label.label("START"))
       val n2 = tx.createNode()
       val n3 = tx.createNode()
@@ -411,7 +411,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
      */
 
     // given
-    val (n1, n1_2, n2, n3, n4) = given {
+    val (n1, n1_2, n2, n3, n4) = givenGraph {
       val n1 = tx.createNode(Label.label("START"))
       val n2 = tx.createNode()
       val n3 = tx.createNode()
@@ -459,7 +459,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
      */
 
     // given
-    val (n1, n1_2a, n1_2b, n2, n3, n4) = given {
+    val (n1, n1_2a, n1_2b, n2, n3, n4) = givenGraph {
       val n1 = tx.createNode(Label.label("START"))
       val n2 = tx.createNode()
       val n3 = tx.createNode()
@@ -509,7 +509,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
      */
 
     // given
-    val (n1, n1_2a, n1_2b, n2, n3, n4) = given {
+    val (n1, n1_2a, n1_2b, n2, n3, n4) = givenGraph {
       val n1 = tx.createNode(Label.label("START"))
       val n2 = tx.createNode()
       val n3 = tx.createNode()
@@ -560,7 +560,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
      */
 
     // given
-    val (n1, n2, n3, y, z) = given {
+    val (n1, n2, n3, y, z) = givenGraph {
       val x = tx.createNode(Label.label("START"))
       val n1 = tx.createNode()
       val n2 = tx.createNode()
@@ -610,7 +610,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
      */
 
     // given
-    val (n1, n2, n3, y, z) = given {
+    val (n1, n2, n3, y, z) = givenGraph {
       val x = tx.createNode(Label.label("START"))
       val n1 = tx.createNode()
       val n2 = tx.createNode()
@@ -689,7 +689,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
   test("should filter on outgoing direction") {
     // given
-    val g = given { sineGraph() }
+    val g = givenGraph { sineGraph() }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -716,7 +716,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
   test("should filter on incoming direction") {
     // given
-    val g = given { sineGraph() }
+    val g = givenGraph { sineGraph() }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -737,7 +737,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
   test("should expand on both direction") {
     // given
-    val g = given { sineGraph() }
+    val g = givenGraph { sineGraph() }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -769,7 +769,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
   test("should filter on relationship type A") {
     // given
-    val g = given { sineGraph() }
+    val g = givenGraph { sineGraph() }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -793,7 +793,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
   test("should filter on relationship type B") {
     // given
-    val g = given { sineGraph() }
+    val g = givenGraph { sineGraph() }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -814,7 +814,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
   test("should filter on relationship type A, undirected") {
     // given
-    val g = given { sineGraph() }
+    val g = givenGraph { sineGraph() }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -841,7 +841,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
   test("should filter on relationship type B, undirected") {
     // given
-    val g = given { sineGraph() }
+    val g = givenGraph { sineGraph() }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -865,7 +865,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   test("should filter on node predicate") {
 
     // given
-    val g = given { sineGraph() }
+    val g = givenGraph { sineGraph() }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -891,7 +891,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
   test("should filter on two node predicates") {
     // given
-    val g = given { sineGraph() }
+    val g = givenGraph { sineGraph() }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -923,7 +923,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   test("should filter on node predicate on first node") {
 
     // given
-    val g = given { sineGraph() }
+    val g = givenGraph { sineGraph() }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -946,7 +946,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   test("should filter on node predicate on first node, undirected") {
 
     // given
-    val g = given { sineGraph() }
+    val g = givenGraph { sineGraph() }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -969,7 +969,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   test("should filter on node predicate on first node from reference") {
 
     // given
-    val g = given { sineGraph() }
+    val g = givenGraph { sineGraph() }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -993,7 +993,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   test("should filter on node predicate on first node from reference, undirected") {
 
     // given
-    val g = given { sineGraph() }
+    val g = givenGraph { sineGraph() }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -1016,7 +1016,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
   test("should filter on relationship predicate") {
     // given
-    val g = given { sineGraph() }
+    val g = givenGraph { sineGraph() }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -1043,7 +1043,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
   test("should filter on two relationship predicates") {
     // given
-    val g = given { sineGraph() }
+    val g = givenGraph { sineGraph() }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -1079,7 +1079,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
   test("should filter on relationship predicate, undirected") {
     // given
-    val g = given { sineGraph() }
+    val g = givenGraph { sineGraph() }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -1109,7 +1109,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   test("should filter on node and relationship predicate") {
 
     // given
-    val g = given { sineGraph() }
+    val g = givenGraph { sineGraph() }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -1136,7 +1136,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   test("should filter on node and relationship predicate, undirected") {
 
     // given
-    val g = given { sineGraph() }
+    val g = givenGraph { sineGraph() }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -1166,7 +1166,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // given
     val n = closestMultipleOf(10, 4)
-    val paths = given { chainGraphs(n, "TO", "TO", "TO", "TOO", "TO") }
+    val paths = givenGraph { chainGraphs(n, "TO", "TO", "TO", "TOO", "TO") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -1196,7 +1196,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // given
     val n = closestMultipleOf(10, 4)
-    val paths = given { chainGraphs(n, "TO", "TO", "TO", "TOO", "TO") }
+    val paths = givenGraph { chainGraphs(n, "TO", "TO", "TO", "TOO", "TO") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -1226,7 +1226,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // given
     val n = closestMultipleOf(10, 4)
-    val paths = given { chainGraphs(n, "TO", "TO", "TO", "TOO", "TO") }
+    val paths = givenGraph { chainGraphs(n, "TO", "TO", "TO", "TOO", "TO") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -1256,7 +1256,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // given
     val n = closestMultipleOf(10, 4)
-    val paths = given { chainGraphs(n, "TO", "TO", "TO", "TOO", "TO") }
+    val paths = givenGraph { chainGraphs(n, "TO", "TO", "TO", "TOO", "TO") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -1286,7 +1286,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // given
     val n = closestMultipleOf(10, 4)
-    val paths = given { chainGraphs(n, "TO", "TO", "TO", "TOO", "TO") }
+    val paths = givenGraph { chainGraphs(n, "TO", "TO", "TO", "TOO", "TO") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -1317,7 +1317,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // given
     val n = closestMultipleOf(10, 4)
-    val paths = given { chainGraphs(n, "TO", "TO", "TO", "TOO", "TO") }
+    val paths = givenGraph { chainGraphs(n, "TO", "TO", "TO", "TOO", "TO") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -1348,7 +1348,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // given
     val n = closestMultipleOf(10, 4)
-    val paths = given { chainGraphs(n, "TO", "TO", "TO", "TOO", "TO") }
+    val paths = givenGraph { chainGraphs(n, "TO", "TO", "TO", "TOO", "TO") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -1379,7 +1379,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // given
     val n = closestMultipleOf(10, 4)
-    val paths = given { chainGraphs(n, "TO", "TO", "TO", "TOO", "TO") }
+    val paths = givenGraph { chainGraphs(n, "TO", "TO", "TO", "TOO", "TO") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -1410,7 +1410,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // given
     val n = closestMultipleOf(10, 4)
-    val paths = given { chainGraphs(n, "TO", "TO", "TO", "TOO", "TO") }
+    val paths = givenGraph { chainGraphs(n, "TO", "TO", "TO", "TOO", "TO") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -1441,7 +1441,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // given
     val n = closestMultipleOf(10, 4)
-    val paths = given { chainGraphs(n, "TO", "TO", "TO", "TOO", "TO") }
+    val paths = givenGraph { chainGraphs(n, "TO", "TO", "TO", "TOO", "TO") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -1472,7 +1472,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // given
     val n = closestMultipleOf(10, 4)
-    val paths = given { chainGraphs(n, "TO", "TO", "TO", "TOO", "TO") }
+    val paths = givenGraph { chainGraphs(n, "TO", "TO", "TO", "TOO", "TO") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -1503,7 +1503,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // given
     val n = closestMultipleOf(10, 4)
-    val paths = given { chainGraphs(n, "TO", "TO", "TO", "TOO", "TO") }
+    val paths = givenGraph { chainGraphs(n, "TO", "TO", "TO", "TOO", "TO") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -1532,7 +1532,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
   test("var-length-expand should only find start node once") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       val (nodes, _) = circleGraph(10)
       nodes.head.addLabel(Label.label("START"))
       nodes
@@ -1556,7 +1556,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
   test("var-length-expand should only find start node once, undirected") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       val (nodes, _) = circleGraph(10)
       nodes.head.addLabel(Label.label("START"))
       nodes
@@ -1581,7 +1581,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   test("var-length-expand should only find start node once with node filtering") {
 
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       val (nodes, _) = circleGraph(10)
       nodes.head.addLabel(Label.label("START"))
       nodes
@@ -1606,7 +1606,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   test("var-length-expand should only find start node once with node filtering, undirected") {
 
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       val (nodes, _) = circleGraph(10)
       nodes.head.addLabel(Label.label("START"))
       nodes
@@ -1631,7 +1631,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   test("should work on the RHS of an apply") {
 
     // given
-    val g = given { sineGraph() }
+    val g = givenGraph { sineGraph() }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -1658,7 +1658,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   test("should work on the RHS of an apply, undirected") {
 
     // given
-    val g = given { sineGraph() }
+    val g = givenGraph { sineGraph() }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -1687,7 +1687,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   test("should work on the RHS of an apply including start node") {
 
     // given
-    val g = given { sineGraph() }
+    val g = givenGraph { sineGraph() }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -1715,7 +1715,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   test("should work on the RHS of an apply including start node, undirected") {
 
     // given
-    val g = given { sineGraph() }
+    val g = givenGraph { sineGraph() }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)

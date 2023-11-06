@@ -39,7 +39,7 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
 
   test("should not explode on cached properties") {
     // given
-    val nodes = given { nodePropertyGraph(sizeHint, { case i => Map("p" -> i) }) }
+    val nodes = givenGraph { nodePropertyGraph(sizeHint, { case i => Map("p" -> i) }) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -57,7 +57,7 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("node index exact seek should cache properties") {
-    given {
+    givenGraph {
       nodeIndex("A", "prop")
       nodePropertyGraph(sizeHint, { case i => Map("prop" -> i % 3) }, "A")
     }
@@ -80,7 +80,7 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("node index range seek should cache properties") {
-    given {
+    givenGraph {
       nodeIndex("A", "prop")
       nodePropertyGraph(sizeHint, { case i => Map("prop" -> i % 3) }, "A")
     }
@@ -103,7 +103,7 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("node asserting multi index exact seek should cache properties") {
-    given {
+    givenGraph {
       nodeIndex("A", "prop")
       nodePropertyGraph(sizeHint, { case i => Map("prop" -> i) }, "A")
     }
@@ -128,7 +128,7 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("relationship asserting multi relationship index exact seek should cache properties") {
-    given {
+    givenGraph {
       relationshipIndex("R", "prop")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -156,7 +156,7 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("many node index exact seek should cache properties") {
-    given {
+    givenGraph {
       nodeIndex("A", "prop")
       nodePropertyGraph(sizeHint, { case i => Map("prop" -> i % 3) }, "A")
     }
@@ -179,7 +179,7 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("directed relationship index exact seek should cache properties") {
-    given {
+    givenGraph {
       relationshipIndex("R", "prop")
       val (_, rels) = circleGraph(sizeHint, "A")
       rels.zipWithIndex.foreach {
@@ -205,7 +205,7 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("undirected relationship index exact seek should cache properties") {
-    given {
+    givenGraph {
       relationshipIndex("R", "prop")
       val (_, rels) = circleGraph(sizeHint, "A")
       rels.zipWithIndex.foreach {
@@ -231,7 +231,7 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("directed relationship index range seek should cache properties") {
-    given {
+    givenGraph {
       relationshipIndex("R", "prop")
       val (_, rels) = circleGraph(sizeHint, "A")
       rels.zipWithIndex.foreach {
@@ -257,7 +257,7 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("undirected relationship index range seek should cache properties") {
-    given {
+    givenGraph {
       relationshipIndex("R", "prop")
       val (_, rels) = circleGraph(sizeHint, "A")
       rels.zipWithIndex.foreach {
@@ -283,7 +283,7 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("directed relationship multi index range seek should cache properties") {
-    given {
+    givenGraph {
       relationshipIndex("R", "prop")
       val (_, rels) = circleGraph(sizeHint, "A")
       rels.zipWithIndex.foreach {
@@ -309,7 +309,7 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("undirected relationship multi index range seek should cache properties") {
-    given {
+    givenGraph {
       relationshipIndex("R", "prop")
       val (_, rels) = circleGraph(sizeHint, "A")
       rels.zipWithIndex.foreach {
@@ -336,7 +336,7 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
 
   test("handle cached properties in node index seek on the RHS of an apply") {
     // given
-    val b = given {
+    val b = givenGraph {
       nodeIndex("B", "id")
       nodePropertyGraph(
         sizeHint,
@@ -362,7 +362,7 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
   test("should handle missing long entities") {
     // given
     val size = 10
-    val nodes = given { nodeGraph(size) }
+    val nodes = givenGraph { nodeGraph(size) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -398,7 +398,7 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
   test("should handle missing property token") {
     // given
     val size = 10
-    val nodes = given { nodeGraph(size) }
+    val nodes = givenGraph { nodeGraph(size) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -417,7 +417,7 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle missing property token becoming created") {
     // given
-    val node = given { nodeGraph(1) }.head
+    val node = givenGraph { nodeGraph(1) }.head
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
@@ -431,7 +431,7 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
     profiled.runtimeResult.queryProfile().operatorProfile(1).dbHits() shouldBe tokenLookupDbHits
 
     // when
-    given { node.setProperty("p", 42L) }
+    givenGraph { node.setProperty("p", 42L) }
 
     // then
     val queryProfile = profile(logicalQuery, runtime)
@@ -443,7 +443,7 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
   test("should handle missing property value") {
     // given
     val size = 10
-    given { nodePropertyGraph(size, { case i => if (i % 2 == 0) Map() else Map("p" -> i) }) }
+    givenGraph { nodePropertyGraph(size, { case i => if (i % 2 == 0) Map() else Map("p" -> i) }) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -461,7 +461,7 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle token being created") {
-    val node = given { nodePropertyGraph(1, { case _ => Map("x1" -> "1") }) }.head
+    val node = givenGraph { nodePropertyGraph(1, { case _ => Map("x1" -> "1") }) }.head
 
     // given
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -482,7 +482,7 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
     assert(profileResult1.operatorProfile(2).dbHits() >= (1 + 2 * tokenLookupDbHits)) // cache properties
 
     // when
-    given {
+    givenGraph {
       node.setProperty("x2", "2")
     }
     val result2 = profile(executablePlan, NoInput, readOnly = true)
@@ -501,7 +501,9 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
     val numStoreProperties = 51
     val numUnresolvedPropertyTokens = numProps - numStoreProperties
     val node =
-      given { nodePropertyGraph(1, { case _ => Map((0 until numStoreProperties).map(i => "p" + i -> i): _*) }) }.head
+      givenGraph {
+        nodePropertyGraph(1, { case _ => Map((0 until numStoreProperties).map(i => "p" + i -> i): _*) })
+      }.head
     val random = new Random()
     def inAnyOrder[T](f: Int => T) =
       random.shuffle((0 until numProps).map(f))
@@ -543,7 +545,7 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
     // when creating new properties
     val numTxProperties = 25
     val numExistingProperties = numStoreProperties + numTxProperties
-    given {
+    givenGraph {
       (numStoreProperties until numExistingProperties).map(i => node.setProperty("p" + i, i))
     }
     val resultTokenWithUpdates = profile(executionPlan, NoInput, readOnly = true)
@@ -571,7 +573,7 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
 
   test("should cached node property existence") {
     // given
-    val nodes = given { nodePropertyGraph(sizeHint, { case i if i % 2 == 0 => Map("p" -> i) }) }
+    val nodes = givenGraph { nodePropertyGraph(sizeHint, { case i if i % 2 == 0 => Map("p" -> i) }) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -591,7 +593,7 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
 
   test("should cache node property existence on rhs of an apply") {
     // given
-    val nodes = given { nodePropertyGraph(sizeHint, { case i if i % 2 == 0 => Map("p" -> i) }) }
+    val nodes = givenGraph { nodePropertyGraph(sizeHint, { case i if i % 2 == 0 => Map("p" -> i) }) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -613,7 +615,7 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
 
   test("should cache relationship property existence") {
     // given
-    val rels = given {
+    val rels = givenGraph {
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
         case (r, i) if i % 2 == 0 => r.setProperty("prop", i)
@@ -640,7 +642,7 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
 
   test("should cache relationship property existence on rhs of an apply") {
     // given
-    val rels = given {
+    val rels = givenGraph {
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
         case (r, i) if i % 2 == 0 => r.setProperty("prop", i)
@@ -672,7 +674,7 @@ trait CachePropertiesTxStateTestBase[CONTEXT <: RuntimeContext] {
 
   test("should not have any db hits if properties are in transaction state") {
     // given
-    val node = given { nodePropertyGraph(1, { case i => Map("p1" -> 1, "p2" -> 2) }) }.head
+    val node = givenGraph { nodePropertyGraph(1, { case i => Map("p1" -> 1, "p2" -> 2) }) }.head
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
@@ -692,7 +694,7 @@ trait CachePropertiesTxStateTestBase[CONTEXT <: RuntimeContext] {
 
   test("should not whole chain when one sought property has been removed in transaction state") {
     // given
-    val node = given {
+    val node = givenGraph {
       nodePropertyGraph(
         1,
         { case i =>
@@ -723,7 +725,9 @@ trait CachePropertiesTxStateTestBase[CONTEXT <: RuntimeContext] {
     val numProps = 100
     val numStoreProperties = 51
     val node =
-      given { nodePropertyGraph(1, { case _ => Map((0 until numStoreProperties).map(i => "p" + i -> i): _*) }) }.head
+      givenGraph {
+        nodePropertyGraph(1, { case _ => Map((0 until numStoreProperties).map(i => "p" + i -> i): _*) })
+      }.head
     val random = new Random()
     def inAnyOrder[T](f: Int => T) =
       random.shuffle((0 until numProps).map(f))

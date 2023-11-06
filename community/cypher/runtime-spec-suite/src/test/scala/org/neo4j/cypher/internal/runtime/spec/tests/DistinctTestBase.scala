@@ -54,7 +54,7 @@ abstract class DistinctTestBase[CONTEXT <: RuntimeContext](
 
   test("should work on distinct on single primitive node column") {
     // given
-    val nodes = given { nodeGraph(sizeHint) }
+    val nodes = givenGraph { nodeGraph(sizeHint) }
     val inputNodes = inputValues(nodes.flatMap(n => Seq.fill(11)(n)).map(Array[Any](_)): _*)
 
     // when
@@ -72,7 +72,7 @@ abstract class DistinctTestBase[CONTEXT <: RuntimeContext](
 
   test("should work on distinct on single primitive relationship column") {
     // given
-    val (_, relationships) = given { circleGraph(sizeHint) }
+    val (_, relationships) = givenGraph { circleGraph(sizeHint) }
     val inputNodes = inputValues(relationships.flatMap(n => Seq.fill(11)(n)).map(Array[Any](_)): _*)
 
     // when
@@ -90,7 +90,7 @@ abstract class DistinctTestBase[CONTEXT <: RuntimeContext](
 
   test("should work on distinct on multiple primitive columns") {
     // given
-    val (nodes, relationships) = given { circleGraph(sizeHint) }
+    val (nodes, relationships) = givenGraph { circleGraph(sizeHint) }
     val inputNodes = inputValues(nodes.flatMap(n => Seq.fill(11)(n)).map(Array[Any](_)): _*)
 
     // when
@@ -250,7 +250,7 @@ abstract class DistinctTestBase[CONTEXT <: RuntimeContext](
 
   test("should work with distinct on single primitive node column on RHS of apply") {
     // given
-    val nodes = given { nodeGraph(sizeHint) }
+    val nodes = givenGraph { nodeGraph(sizeHint) }
     val inputNodes = inputValues(nodes.flatMap(n => Seq.fill(11)(n)).map(Array[Any](_)): _*)
 
     // when
@@ -271,7 +271,7 @@ abstract class DistinctTestBase[CONTEXT <: RuntimeContext](
 
   test("should work with distinct on single primitive node column on RHS of apply, not in final pipeline") {
     // given
-    val nodes = given { nodeGraph(sizeHint) }
+    val nodes = givenGraph { nodeGraph(sizeHint) }
     val inputNodes = inputValues(nodes.flatMap(n => Seq.fill(11)(n)).map(Array[Any](_)): _*)
 
     // when
@@ -293,7 +293,7 @@ abstract class DistinctTestBase[CONTEXT <: RuntimeContext](
 
   test("should work with distinct on multiple primitive columns on RHS of apply") {
     // given
-    val (nodes, _) = given { circleGraph(sizeHint) }
+    val (nodes, _) = givenGraph { circleGraph(sizeHint) }
     val inputNodes = inputValues(nodes.flatMap(n => Seq.fill(11)(n)).map(Array[Any](_)): _*)
 
     // when
@@ -319,7 +319,7 @@ abstract class DistinctTestBase[CONTEXT <: RuntimeContext](
 
   test("should work with distinct on multiple primitive columns on RHS of apply, not in final pipeline") {
     // given
-    val (nodes, _) = given { circleGraph(sizeHint) }
+    val (nodes, _) = givenGraph { circleGraph(sizeHint) }
     val inputNodes = inputValues(nodes.flatMap(n => Seq.fill(11)(n)).map(Array[Any](_)): _*)
 
     // when
@@ -347,7 +347,7 @@ abstract class DistinctTestBase[CONTEXT <: RuntimeContext](
   test("should support distinct on top of apply") {
     // given
     val nodesPerLabel = 50
-    val (aNodes, _) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    val (aNodes, _) = givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -367,7 +367,7 @@ abstract class DistinctTestBase[CONTEXT <: RuntimeContext](
 
   test("should work on cached property, one column") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodePropertyGraph(
         sizeHint,
         properties = {
@@ -398,7 +398,7 @@ abstract class DistinctTestBase[CONTEXT <: RuntimeContext](
     val relTuples = (for (i <- 0 until n) yield {
       Seq((i, (i + 1) % n, "NEXT"))
     }).reduce(_ ++ _)
-    given {
+    givenGraph {
       // prop = [0, 0, 1, 1, 2, 2,..]
       val nodes = nodePropertyGraph(n, { case i => Map("prop" -> i / 2) })
       connect(nodes, relTuples)
@@ -421,7 +421,7 @@ abstract class DistinctTestBase[CONTEXT <: RuntimeContext](
 
   test("should work with aggregation") {
     // given
-    given {
+    givenGraph {
       nodePropertyGraph(
         sizeHint,
         properties = {
@@ -449,7 +449,7 @@ abstract class DistinctTestBase[CONTEXT <: RuntimeContext](
   test("should work after multiple streaming operators") {
     // given
     val nodeCount = 100
-    given {
+    givenGraph {
       bipartiteGraph(
         nodeCount,
         "A",
@@ -480,7 +480,7 @@ abstract class DistinctTestBase[CONTEXT <: RuntimeContext](
 
   test("should work between streaming operators with aggregation") {
     val nodeCount = 100
-    given {
+    givenGraph {
       bipartiteGraph(
         nodeCount,
         "A",
@@ -514,7 +514,7 @@ abstract class DistinctTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should work with chained distincts") {
-    given {
+    givenGraph {
       nodePropertyGraph(
         sizeHint,
         properties = {
@@ -540,7 +540,7 @@ abstract class DistinctTestBase[CONTEXT <: RuntimeContext](
 
   test("should work with aggregation on the RHS of an apply") {
     // given
-    given {
+    givenGraph {
       nodePropertyGraph(
         sizeHint,
         properties = {
@@ -571,7 +571,7 @@ abstract class DistinctTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should work with chained distincts on the RHS of an apply") {
-    given {
+    givenGraph {
       nodePropertyGraph(
         sizeHint,
         properties = {

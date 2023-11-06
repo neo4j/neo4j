@@ -343,7 +343,7 @@ class InterpretedProfileDbHitsTest
     with TransactionForeachDbHitsTestBase[CommunityRuntimeContext] {
 
   test("DEBUG should profile dbHits of all nodes scan") {
-    given { nodeGraph(sizeHint) }
+    givenGraph { nodeGraph(sizeHint) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)

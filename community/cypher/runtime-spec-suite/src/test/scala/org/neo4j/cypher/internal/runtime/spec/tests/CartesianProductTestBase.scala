@@ -43,7 +43,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
   test("handle cached properties and cartesian product on LHS of apply") {
     // given
     nodeIndex("Label", "prop")
-    val nodes = given {
+    val nodes = givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -71,7 +71,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
   test("should handle multiple columns ") {
     // given
     val size = 10 // sizehint is a bit too big here
-    val nodes = given {
+    val nodes = givenGraph {
       val nodes = nodePropertyGraph(
         size,
         {
@@ -107,7 +107,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle different cached-properties on lhs and rhs of cartesian product") {
-    given {
+    givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -137,7 +137,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle cached properties from both lhs and rhs") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -166,7 +166,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
 
   test("cartesian product after expand on empty lhs") {
     // given
-    given { circleGraph(sizeHint) }
+    givenGraph { circleGraph(sizeHint) }
     val lhsRows = inputValues()
 
     // when
@@ -186,7 +186,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
 
   test("cartesian product with aggregation on RHS") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -208,7 +208,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
 
   test("cartesian product on empty rhs") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(19, "RHS")
       nodeGraph(sizeHint)
     }
@@ -249,7 +249,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("cartesian product after expand on rhs") {
-    val (unfilteredNodes, _) = given { circleGraph(Math.sqrt(sizeHint).toInt) }
+    val (unfilteredNodes, _) = givenGraph { circleGraph(Math.sqrt(sizeHint).toInt) }
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.3)
     val input = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
@@ -277,7 +277,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
 
   test("cartesian product after expand on lhs") {
     // given
-    val (unfilteredNodes, _) = given { circleGraph(Math.sqrt(sizeHint).toInt) }
+    val (unfilteredNodes, _) = givenGraph { circleGraph(Math.sqrt(sizeHint).toInt) }
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.3)
     val input = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
@@ -305,7 +305,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
 
   // This test mainly assert that we get the right slot configuration for Arraycopy and don't get IndexOutOfBounds there
   test("cartesian product with apply everywhere") {
-    val (unfilteredNodes, _) = given { circleGraph(Math.sqrt(sizeHint).toInt) }
+    val (unfilteredNodes, _) = givenGraph { circleGraph(Math.sqrt(sizeHint).toInt) }
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.3)
     val input = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
@@ -337,7 +337,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
 
   test("cartesian product after optional on lhs") {
     // given
-    val (unfilteredNodes, _) = given { circleGraph(Math.sqrt(sizeHint).toInt) }
+    val (unfilteredNodes, _) = givenGraph { circleGraph(Math.sqrt(sizeHint).toInt) }
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.3)
     val input = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
@@ -366,7 +366,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
 
   test("cartesian product with optional on top") {
     // given
-    val (unfilteredNodes, _) = given { circleGraph(Math.sqrt(sizeHint).toInt) }
+    val (unfilteredNodes, _) = givenGraph { circleGraph(Math.sqrt(sizeHint).toInt) }
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.3)
     val input = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
@@ -396,7 +396,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
   test("cartesian product nested") {
     // given
     val n = Math.pow(sizeHint, 1.0 / 4).toInt * 2
-    val (as, bs, cs, ds) = given {
+    val (as, bs, cs, ds) = givenGraph {
       val as = nodeGraph(n, "A")
       val bs = nodeGraph(n, "B")
       val cs = nodeGraph(n, "C")
@@ -432,7 +432,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
   test("cartesian product below an apply") {
     // given
     val n = Math.pow(sizeHint, 1.0 / 3).toInt * 2
-    val (as, _) = given { bipartiteGraph(n, "A", "B", "REL") }
+    val (as, _) = givenGraph { bipartiteGraph(n, "A", "B", "REL") }
     val nodes = select(as, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.1)
     val input = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
@@ -463,7 +463,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
   test("cartesian product with limit on rhs") {
     val nodesPerLabel = Math.sqrt(sizeHint).toInt
     val limit = nodesPerLabel - 1
-    val (aNodes, _) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    val (aNodes, _) = givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
     val nodes = select(aNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.3)
     val input = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
@@ -485,7 +485,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
 
   test("cartesian product with double sort and limit after join") {
     // given
-    val (unfilteredNodes, _) = given { circleGraph(Math.sqrt(sizeHint).toInt) }
+    val (unfilteredNodes, _) = givenGraph { circleGraph(Math.sqrt(sizeHint).toInt) }
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5)
     val limitCount = nodes.size / 2
     val input = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
@@ -518,7 +518,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
 
   test("cartesian product with limit on top of join") {
     // given
-    val (unfilteredNodes, _) = given { circleGraph(Math.sqrt(sizeHint).toInt) }
+    val (unfilteredNodes, _) = givenGraph { circleGraph(Math.sqrt(sizeHint).toInt) }
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5)
     val limitCount = nodes.size / 2
     val input = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
@@ -541,7 +541,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
 
   test("should support cartesian product with hash-join on RHS") {
     // given
-    val (unfilteredNodes, _) = given { circleGraph(Math.sqrt(sizeHint).toInt) }
+    val (unfilteredNodes, _) = givenGraph { circleGraph(Math.sqrt(sizeHint).toInt) }
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5)
     val input = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
@@ -576,7 +576,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
   // This test was useful in showcasing we cannot use the LHS slot configuration in fused pipelines in the RHS of cartesian product
   test("should support cartesian product with hash-join on RHS 2") {
     // given
-    val (unfilteredNodes, _) = given { circleGraph(Math.sqrt(sizeHint).toInt) }
+    val (unfilteredNodes, _) = givenGraph { circleGraph(Math.sqrt(sizeHint).toInt) }
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5)
     val input = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
@@ -614,7 +614,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
 
   test("should support join with cartesian product on RHS") {
     // given
-    val (unfilteredNodes, _) = given { circleGraph(Math.sqrt(sizeHint).toInt) }
+    val (unfilteredNodes, _) = givenGraph { circleGraph(Math.sqrt(sizeHint).toInt) }
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5)
     val input = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
@@ -649,7 +649,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
     }.toArray: _*)
 
     nodeIndex("Label", "prop")
-    given {
+    givenGraph {
       nodePropertyGraph(
         nValues,
         {
@@ -688,7 +688,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
 
     // given
     val n = Math.pow(sizeHint, 1.0 / 4).toInt * 2
-    val (as, bs) = given {
+    val (as, bs) = givenGraph {
       val as = nodeGraph(n, "A")
       val bs = nodeGraph(n, "B")
       (as, bs)
@@ -740,7 +740,7 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
 
     // given
     val n = Math.pow(sizeHint, 1.0 / 4).toInt * 2
-    val (as, bs, cs, ds) = given {
+    val (as, bs, cs, ds) = givenGraph {
       val as = nodeGraph(n, "A")
       val bs = nodeGraph(n, "B")
       val cs = nodeGraph(n, "C")

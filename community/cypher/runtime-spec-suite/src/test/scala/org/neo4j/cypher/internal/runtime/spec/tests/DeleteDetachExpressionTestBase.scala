@@ -43,7 +43,7 @@ abstract class DeleteDetachExpressionTestBase[CONTEXT <: RuntimeContext](
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("detach delete node in map") {
-    val nodes = given {
+    val nodes = givenGraph {
       chainGraphs(3, "FEELS", "FEELS", "SEES")
     }
 
@@ -68,7 +68,7 @@ abstract class DeleteDetachExpressionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("detach delete relationship in map") {
-    val nodes = given {
+    val nodes = givenGraph {
       chainGraphs(3, "LOVES", "LOVES", "LOVES_TO_HATE")
     }
 
@@ -94,7 +94,7 @@ abstract class DeleteDetachExpressionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("detach delete path in map") {
-    given {
+    givenGraph {
       chainGraphs(3, "LOVES", "LOVES", "LOVES_TO_HATE")
     }
 

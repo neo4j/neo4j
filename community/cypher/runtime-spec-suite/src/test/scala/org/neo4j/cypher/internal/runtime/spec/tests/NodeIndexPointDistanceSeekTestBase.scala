@@ -39,7 +39,7 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should seek 2d cartesian points (inclusively)") {
-    given {
+    givenGraph {
       nodeIndex(IndexType.POINT, "Place", "location")
       nodePropertyGraph(
         sizeHint,
@@ -71,7 +71,7 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should seek 2d cartesian points (non-inclusively)") {
-    given {
+    givenGraph {
       nodeIndex(IndexType.POINT, "Place", "location")
       nodePropertyGraph(
         sizeHint,
@@ -103,7 +103,7 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should seek 3d cartesian points (inclusively)") {
-    given {
+    givenGraph {
       nodeIndex(IndexType.POINT, "Place", "location")
       nodePropertyGraph(
         sizeHint,
@@ -135,7 +135,7 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should seek 3d cartesian points (non-inclusively)") {
-    given {
+    givenGraph {
       nodeIndex(IndexType.POINT, "Place", "location")
       nodePropertyGraph(
         sizeHint,
@@ -167,7 +167,7 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should seek 2d geographic points") {
-    given {
+    givenGraph {
       nodeIndex(IndexType.POINT, "Place", "location")
       nodePropertyGraph(
         180,
@@ -200,7 +200,7 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should seek 3d geographic points") {
-    given {
+    givenGraph {
       nodeIndex(IndexType.POINT, "Place", "location")
       nodePropertyGraph(
         180,
@@ -233,7 +233,7 @@ abstract class NodeIndexPointDistanceSeekTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should cache properties") {
-    given {
+    givenGraph {
       nodeIndex(IndexType.POINT, "Place", "location")
       nodePropertyGraph(
         sizeHint,

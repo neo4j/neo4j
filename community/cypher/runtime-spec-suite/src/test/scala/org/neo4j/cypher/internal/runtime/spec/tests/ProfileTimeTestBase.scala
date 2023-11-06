@@ -59,7 +59,7 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](
   // different time on different tested systems.
 
   test("should profile time of all nodes scan + produce results") {
-    given { nodeGraph(sizeHint) }
+    givenGraph { nodeGraph(sizeHint) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -80,7 +80,7 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](
 
   test("should profile time with apply") {
     val size = sizeHint / 10
-    given {
+    givenGraph {
       nodePropertyGraph(
         size,
         {
@@ -117,7 +117,7 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](
 
   test("should profile time with conditional apply") {
     val size = sizeHint / 10
-    given {
+    givenGraph {
       nodePropertyGraph(
         size,
         {
@@ -153,7 +153,7 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](
   test("should profile time with rollup apply") {
     val size = Math.sqrt(sizeHint).toInt
     val (aNodes, bNodes) =
-      given {
+      givenGraph {
         bipartiteGraph(size, "A", "B", "R")
       }
 
@@ -182,7 +182,7 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](
 
   test("should profile time with hash join") {
     val size = sizeHint / 10
-    given { nodeGraph(size) }
+    givenGraph { nodeGraph(size) }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
@@ -206,7 +206,7 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](
 
   test("should profile time with value hash join") {
     val size = sizeHint / 10
-    given {
+    givenGraph {
       nodePropertyGraph(
         size,
         {
@@ -237,7 +237,7 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](
 
   test("should profile time with expand all") {
     val size = sizeHint / 10
-    given { circleGraph(size) }
+    givenGraph { circleGraph(size) }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
@@ -259,7 +259,7 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](
 
   test("should profile time with var expand") {
     val size = sizeHint / 10
-    given { circleGraph(size) }
+    givenGraph { circleGraph(size) }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
@@ -281,7 +281,7 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](
 
   test("should profile time with pruning var expand") {
     val size = sizeHint / 10
-    given { circleGraph(size) }
+    givenGraph { circleGraph(size) }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
@@ -309,7 +309,7 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](
 
     // given
     val nodesPerLabel = 10
-    given {
+    givenGraph {
       for (_ <- 0 until nodesPerLabel)
         sineGraph()
     }
@@ -338,7 +338,7 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](
 
   test("should profile time with expand into") {
     val size = sizeHint / 10
-    given { circleGraph(size) }
+    givenGraph { circleGraph(size) }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
@@ -363,7 +363,7 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](
   test("should profile time with optional expand all") {
     // given
     val size = sizeHint / 10
-    given { circleGraph(size) }
+    givenGraph { circleGraph(size) }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
@@ -386,7 +386,7 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](
   test("should profile time with optional expand into") {
     // given
     val size = Math.sqrt(sizeHint).toInt
-    given { circleGraph(size) }
+    givenGraph { circleGraph(size) }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
@@ -412,7 +412,7 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](
 
   test("should profile time with optional") {
     val size = sizeHint / 10
-    given { nodeGraph(size) }
+    givenGraph { nodeGraph(size) }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
@@ -433,7 +433,7 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should profile time of sort") {
-    given { nodeGraph(sizeHint) }
+    givenGraph { nodeGraph(sizeHint) }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
@@ -455,7 +455,7 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](
 
   test("should profile time of cartesian product") {
     val size = Math.sqrt(sizeHint).toInt
-    given { nodeGraph(size) }
+    givenGraph { nodeGraph(size) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -479,7 +479,7 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](
 
   test("should profile time of union") {
     val size = Math.sqrt(sizeHint).toInt
-    given { nodeGraph(size) }
+    givenGraph { nodeGraph(size) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -504,7 +504,7 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](
   test("should profile time with project endpoints") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (aNodes, bNodes, aRels, _) = given { bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "R") }
+    val (aNodes, bNodes, aRels, _) = givenGraph { bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -566,7 +566,7 @@ trait NonParallelProfileTimeTestBase[CONTEXT <: RuntimeContext] {
 
   test("should profile time of ordered distinct") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -592,7 +592,7 @@ trait NonParallelProfileTimeTestBase[CONTEXT <: RuntimeContext] {
 
   test("should profile time of ordered aggregation") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -640,7 +640,7 @@ trait NonParallelProfileTimeTestBase[CONTEXT <: RuntimeContext] {
 
   test("should profile time of triadic selection") {
     // given
-    given { chainGraphs(sizeHint, "A", "B") }
+    givenGraph { chainGraphs(sizeHint, "A", "B") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)

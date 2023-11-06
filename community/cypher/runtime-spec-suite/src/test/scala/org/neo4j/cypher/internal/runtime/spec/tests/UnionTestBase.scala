@@ -53,7 +53,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("limit on top of union on rhs of apply") {
-    val nodes = given { nodeGraph(sizeHint) }
+    val nodes = givenGraph { nodeGraph(sizeHint) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -75,7 +75,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("limit 2 on top of union on rhs of apply") {
-    val nodes = given { nodeGraph(sizeHint) }
+    val nodes = givenGraph { nodeGraph(sizeHint) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -99,7 +99,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("limit 3 on top of union on rhs of apply") {
-    val nodes = given { nodeGraph(sizeHint) }
+    val nodes = givenGraph { nodeGraph(sizeHint) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -124,7 +124,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
 
   test("should union single node variable") {
     // given
-    val nodes = given { nodeGraph(Math.sqrt(sizeHint).toInt) }
+    val nodes = givenGraph { nodeGraph(Math.sqrt(sizeHint).toInt) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -142,7 +142,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
 
   test("should union after expands") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       val (nodes, _) = circleGraph(Math.sqrt(sizeHint).toInt)
       nodes
     }
@@ -167,7 +167,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
 
   test("should union node and non-node variable") {
     // given
-    val nodes = given { nodeGraph(sizeHint / 2) }
+    val nodes = givenGraph { nodeGraph(sizeHint / 2) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -190,7 +190,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
 
   test("should union node and relationship variables") {
     // given
-    val (_, rels) = given { circleGraph(sizeHint / 2) }
+    val (_, rels) = givenGraph { circleGraph(sizeHint / 2) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -214,7 +214,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
   test("should union nodes with other values") {
     val size = sizeHint / 2
     // given
-    val nodes = given { nodeGraph(size) }
+    val nodes = givenGraph { nodeGraph(size) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -276,7 +276,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
 
   test("should union cached properties") {
     val size = sizeHint / 2
-    given { nodePropertyGraph(size, { case i => Map("prop" -> i) }) }
+    givenGraph { nodePropertyGraph(size, { case i => Map("prop" -> i) }) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -299,7 +299,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
 
   test("should union different cached properties from left and right") {
     val size = sizeHint / 2
-    given {
+    givenGraph {
       nodePropertyGraph(size, { case i => Map("foo" -> s"foo-$i", "bar" -> s"bar-$i") })
     }
 
@@ -325,7 +325,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
   test("should unwind after union") {
     val size = sizeHint / 2
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(size)
     }
 
@@ -353,7 +353,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
 
   test("should distinct after union") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -381,7 +381,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
 
   test("should work with limit on RHS") {
     val size = sizeHint / 2
-    given { nodeGraph(size) }
+    givenGraph { nodeGraph(size) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -402,7 +402,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
 
   test("should work with limit on LHS") {
     val size = sizeHint / 2
-    given { nodeGraph(size) }
+    givenGraph { nodeGraph(size) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -424,7 +424,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
   test("should work with limit on top") {
     val size = sizeHint / 2
     // given
-    given { nodeGraph(size) }
+    givenGraph { nodeGraph(size) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -445,7 +445,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
 
   test("should work with limit under apply") {
     val size = sizeHint / 2
-    given { nodeGraph(size) }
+    givenGraph { nodeGraph(size) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -466,7 +466,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
 
   test("should work with distinct and limit under apply, filter on lhs") {
     val size = sizeHint / 2
-    given { nodeGraph(size) }
+    givenGraph { nodeGraph(size) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -489,7 +489,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
 
   test("should work with distinct and limit under apply, filter on rhs") {
     val size = sizeHint / 2
-    given { nodeGraph(size) }
+    givenGraph { nodeGraph(size) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -515,7 +515,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
   test("should union under apply") {
     val size = Math.sqrt(sizeHint).toInt
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(size)
     }
 
@@ -548,7 +548,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
   test("should union under apply with long slot aliases") {
     val size = Math.sqrt(sizeHint).toInt
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(size)
     }
 
@@ -578,7 +578,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
 
   test("should union under apply with follow-up operator") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -610,7 +610,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
   test("should union under cartesian product with follow-up operator") {
     val size = 5 // Math.sqrt(sizeHint).toInt
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(size)
     }
 
@@ -641,7 +641,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
 
   test("should union with alias on RHS") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -669,7 +669,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
 
   test("should union with alias on LHS") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -698,7 +698,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
   test("union with apply on RHS") {
     val size = sizeHint / 2
     // given
-    val nodes = given { nodeGraph(size) }
+    val nodes = givenGraph { nodeGraph(size) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -725,7 +725,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
   test("union with apply on LHS") {
     val size = sizeHint / 2
     // given
-    val nodes = given { nodeGraph(size) }
+    val nodes = givenGraph { nodeGraph(size) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -752,7 +752,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
   test("should union on the RHS of a hash join") {
     val size = sizeHint / 3
     // given
-    val (as, bs) = given {
+    val (as, bs) = givenGraph {
       val as = nodeGraph(size, "A")
       val bs = nodeGraph(size, "B")
       nodeGraph(size, "C")
@@ -782,7 +782,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
   test("should union with reducers") {
     val size = sizeHint / 3
     // given
-    val (as, bs) = given {
+    val (as, bs) = givenGraph {
       val as = nodeGraph(size, "A")
       val bs = nodeGraph(size, "B")
       nodeGraph(size, "C")
@@ -812,7 +812,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
 
   test("should work with non-fused limit") {
     val size = sizeHint / 2
-    given { nodeGraph(size) }
+    givenGraph { nodeGraph(size) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -834,7 +834,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("union + unwind followed by apply") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHintAlignedToMorselSize)
     }
 
@@ -853,7 +853,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("union + unwind on RHS of apply, followed by apply") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHintAlignedToMorselSize)
     }
 
@@ -876,7 +876,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
   test("union must not initialize RHS before LHS is exhausted") {
     assume(!isParallel, "Parallel does not yet support `Create`")
 
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHintAlignedToMorselSize)
     }.size
 
@@ -897,7 +897,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("union works between long and ref slots") {
-    val nodeA = given {
+    val nodeA = givenGraph {
       val nodeA = nodeGraph(1, "A").head
       val nodeB = nodeGraph(2, "B")
       nodeB.foreach(node => nodeA.createRelationshipTo(node, RelationshipType.withName("REL")))

@@ -55,7 +55,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   test(
     "should profile rows of filter under limit correctly when there are downstream cardinality increasing operators"
   ) {
-    given {
+    givenGraph {
       val a = runtimeTestSupport.tx.createNode(Label.label("A"))
       val b1 = runtimeTestSupport.tx.createNode(Label.label("B"))
       val b2 = runtimeTestSupport.tx.createNode(Label.label("B"))
@@ -85,7 +85,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should profile rows of all nodes scan + aggregation + produce results") {
-    given { nodeGraph(sizeHint) }
+    givenGraph { nodeGraph(sizeHint) }
 
     val aggregationGroups = sizeHint / 2
 
@@ -110,7 +110,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should profile rows of all nodes scan + produce results") {
-    given { nodeGraph(sizeHint) }
+    givenGraph { nodeGraph(sizeHint) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -129,7 +129,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
 
   test("should profile rows of input + produce results") {
     // given
-    val nodes = given { nodeGraph(sizeHint) }
+    val nodes = givenGraph { nodeGraph(sizeHint) }
     val input = inputColumns(sizeHint / 4, 4, i => nodes(i % nodes.size))
 
     // when
@@ -150,7 +150,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   test("should profile rows with filter (fused pipelines)") {
     // given
     val nodesPerLabel = 20
-    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
@@ -175,7 +175,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   test("should profile rows with projection (fused pipelines)") {
     // given
     val nodesPerLabel = 20
-    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
@@ -200,7 +200,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   test("should profile rows with project endpoints (fused pipelines)") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (aNodes, bNodes, aRels, _) = given { bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "R") }
+    val (aNodes, bNodes, aRels, _) = givenGraph { bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -227,7 +227,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   test("should profile rows with skip (fused pipelines)") {
     // given
     val nodesPerLabel = 20
-    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
@@ -252,7 +252,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   test("should profile rows with limit (fused pipelines)") {
     // given
     val nodesPerLabel = 20
-    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
@@ -277,7 +277,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   test("should profile rows with argument & limit on RHS of Apply (fused pipelines)") {
     // given
     val nodesPerLabel = 20
-    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
@@ -306,7 +306,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   test("should profile rows with cacheProperties (fused pipelines)") {
     // given
     val nodesPerLabel = 20
-    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
@@ -331,7 +331,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   test("should profile rows with distinct (fused pipelines)") {
     // given
     val nodesPerLabel = 20
-    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
@@ -356,7 +356,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   test("should profile rows with primitive distinct (fused pipelines)") {
     // given
     val nodesPerLabel = 20
-    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
@@ -381,7 +381,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   test("should profile rows with single primitive distinct (fused pipelines)") {
     // given
     val nodesPerLabel = 20
-    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
@@ -406,7 +406,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   test("should profile rows with distinct on the RHS of apply (fused pipelines)") {
     // given
     val nodesPerLabel = 20
-    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("a")
@@ -435,7 +435,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   test("should profile rows with expand (fused pipelines)") {
     // given
     val nodesPerLabel = 10
-    given {
+    givenGraph {
       bipartiteGraph(nodesPerLabel, "A", "B", "R")
     }
 
@@ -462,7 +462,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   test("should profile rows with optional expand (fused pipelines)") {
     // given
     val nodesPerLabel = 10
-    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
@@ -491,7 +491,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   test("should profile rows with optional expand into (fused pipelines)") {
     // given
     val nodesPerLabel = 10
-    given {
+    givenGraph {
       bipartiteGraph(nodesPerLabel, "A", "B", "R")
     }
 
@@ -524,7 +524,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   test("should profile rows with union (fused pipelines)") {
     // given
     val nodesPerLabel = 20
-    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
@@ -551,7 +551,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   test("should profile rows with single node by id seek (fused pipelines)") {
     // given
     val nodesPerLabel = 20
-    val (as, _) = given {
+    val (as, _) = givenGraph {
       bipartiteGraph(nodesPerLabel, "A", "B", "R")
     }
     val id = as.head.getId
@@ -577,7 +577,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   test("should profile rows with multiple node by id seek (fused pipelines)") {
     // given
     val nodesPerLabel = 20
-    val (as, _) = given {
+    val (as, _) = givenGraph {
       bipartiteGraph(nodesPerLabel, "A", "B", "R")
     }
     val ids = as.map(_.getId)
@@ -603,7 +603,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   test("should profile rows with directed all relationships scan") {
     // given
     val nodesPerLabel = 20
-    val (_, _, rs, _) = given {
+    val (_, _, rs, _) = givenGraph {
       bidirectionalBipartiteGraph(nodesPerLabel, "A", "B", "R", "R2")
     }
     val id = rs.head.getId
@@ -629,7 +629,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   test("should profile rows undirected all relationships scan") {
     // given
     val nodesPerLabel = 20
-    val (_, _, rs, _) = given {
+    val (_, _, rs, _) = givenGraph {
       bidirectionalBipartiteGraph(nodesPerLabel, "A", "B", "R", "R2")
     }
     val id = rs.head.getId
@@ -655,7 +655,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   test("should profile rows with directed relationship type scan") {
     // given
     val nodesPerLabel = 20
-    val (_, _, rs, _) = given {
+    val (_, _, rs, _) = givenGraph {
       bidirectionalBipartiteGraph(nodesPerLabel, "A", "B", "R", "R2")
     }
     val id = rs.head.getId
@@ -681,7 +681,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   test("should profile rows undirected relationship type scan") {
     // given
     val nodesPerLabel = 20
-    val (_, _, rs, _) = given {
+    val (_, _, rs, _) = givenGraph {
       bidirectionalBipartiteGraph(nodesPerLabel, "A", "B", "R", "R2")
     }
     val id = rs.head.getId
@@ -707,7 +707,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   test("should profile rows with single directed rel by id seek (fused pipelines)") {
     // given
     val nodesPerLabel = 20
-    val (_, _, rs, _) = given {
+    val (_, _, rs, _) = givenGraph {
       bidirectionalBipartiteGraph(nodesPerLabel, "A", "B", "R", "R2")
     }
     val id = rs.head.getId
@@ -733,7 +733,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   test("should profile rows with multiple directed rel by id seek (fused pipelines)") {
     // given
     val nodesPerLabel = 20
-    val (_, _, rs, _) = given {
+    val (_, _, rs, _) = givenGraph {
       bidirectionalBipartiteGraph(nodesPerLabel, "A", "B", "R", "R2")
     }
     val ids = rs.map(_.getId)
@@ -759,7 +759,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   test("should profile rows with single undirected rel by id seek (fused pipelines)") {
     // given
     val nodesPerLabel = 20
-    val (_, _, rs, _) = given {
+    val (_, _, rs, _) = givenGraph {
       bidirectionalBipartiteGraph(nodesPerLabel, "A", "B", "R", "R2")
     }
     val id = rs.head.getId
@@ -785,7 +785,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   test("should profile rows with multiple undirected rel by id seek (fused pipelines)") {
     // given
     val nodesPerLabel = 20
-    val (_, _, rs, _) = given {
+    val (_, _, rs, _) = givenGraph {
       bidirectionalBipartiteGraph(nodesPerLabel, "A", "B", "R", "R2")
     }
     val ids = rs.map(_.getId)
@@ -811,7 +811,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   test("should profile rows with node count from count store (fused pipelines)") {
     // given
     val nodesPerLabel = 20
-    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
@@ -838,7 +838,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   test("should profile rows with rel count from count store (fused pipelines)") {
     // given
     val nodesPerLabel = 20
-    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
@@ -863,7 +863,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should profile rows of sort + filter") {
-    given {
+    givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -891,7 +891,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should profile rows of limit") {
-    given { nodeGraph(sizeHint) }
+    givenGraph { nodeGraph(sizeHint) }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
@@ -910,7 +910,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should profile rows with limit + expand") {
-    given {
+    givenGraph {
       circleGraph(sizeHint * 10)
     }
 
@@ -940,7 +940,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
     // at some point but not deemed important enough just now.
     assume(!isParallel)
     val nodeCount = sizeHint * 10
-    given {
+    givenGraph {
       circleGraph(nodeCount)
     }
 
@@ -973,7 +973,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
     // at some point but not deemed important enough just now.
     assume(!isParallel)
     val nodeCount = sizeHint
-    given {
+    givenGraph {
       circleGraph(nodeCount)
     }
 
@@ -1027,7 +1027,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should profile rows of skip") {
-    given { nodeGraph(sizeHint) }
+    givenGraph { nodeGraph(sizeHint) }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
@@ -1046,7 +1046,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should profile rows with skip + expand") {
-    given {
+    givenGraph {
       circleGraph(sizeHint * 10)
     }
 
@@ -1075,7 +1075,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
     // given
     val nodesPerLabel = 100
     val extraANodes = 20
-    given {
+    givenGraph {
       bipartiteGraph(nodesPerLabel, "A", "B", "R")
       nodeGraph(extraANodes, "A")
     }
@@ -1099,7 +1099,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   test("should profile rows with expand into") {
     // given
     val nodesPerLabel = 100
-    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
@@ -1122,7 +1122,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   test("should profile rows with var-expand and expand into") {
     // given
     val nodesPerLabel = 100
-    given {
+    givenGraph {
       bipartiteGraph(nodesPerLabel, "A", "B", "R")
     }
 
@@ -1147,7 +1147,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   test("should profile rows with pruning var-expand") {
     // given
     val nodesPerLabel = 100
-    given {
+    givenGraph {
       bipartiteGraph(nodesPerLabel, "A", "B", "R")
     }
 
@@ -1174,7 +1174,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   test("should profile rows with bfs pruning var-expand") {
     // given
     val nodesPerLabel = 100
-    given {
+    givenGraph {
       bipartiteGraph(nodesPerLabel, "A", "B", "R")
     }
 
@@ -1203,7 +1203,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
     assume(!isParallel) // Parallel does not yet support `FindShortestPaths`
     // given
     val nodesPerLabel = 100
-    given {
+    givenGraph {
       for (_ <- 0 until nodesPerLabel)
         sineGraph()
     }
@@ -1228,7 +1228,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   test("should profile rows with label scan and expand") {
     // given
     val nodesPerLabel = 10
-    given {
+    givenGraph {
       bipartiteGraph(nodesPerLabel, "A", "B", "R")
     }
 
@@ -1253,7 +1253,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   test("should profile rows with index scan and expand") {
     // given
     val nodesPerLabel = 100
-    given {
+    givenGraph {
       nodeIndex("A", "prop")
       val (aNodes, _) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
       aNodes.foreach(_.setProperty("prop", 42))
@@ -1278,7 +1278,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   test("should profile rows with index seek and expand") {
     // given
     val nodesPerLabel = 100
-    given {
+    givenGraph {
       nodeIndex("A", "prop")
       val (aNodes, _) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
       aNodes.foreach(_.setProperty("prop", 42))
@@ -1303,7 +1303,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   test("should profile rows with multiple index seek and expand") {
     // given
     val nodesPerLabel = 100
-    given {
+    givenGraph {
       nodeIndex("A", "prop")
       val (aNodes, _) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
       aNodes.zipWithIndex.foreach {
@@ -1331,7 +1331,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   test("should profile rows with string search and expand") {
     // given
     val nodesPerLabel = 100
-    given {
+    givenGraph {
       nodeIndex(IndexType.TEXT, "A", "prop")
       val (aNodes, _) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
       aNodes.foreach(_.setProperty("prop", "hello"))
@@ -1357,7 +1357,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   test("should profile rows with single node-by id seek and expand") {
     // given
     val nodesPerLabel = 100
-    val node = given {
+    val node = givenGraph {
       nodeIndex("A", "prop")
       val (aNodes, _) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
       aNodes.foreach(_.setProperty("prop", "hello"))
@@ -1383,7 +1383,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   test("should profile rows with input and expand") {
     // given
     val nodesPerLabel = 100
-    val aNodes = given {
+    val aNodes = givenGraph {
       nodeIndex("A", "prop")
       val (aNodes, _) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
       aNodes.foreach(_.setProperty("prop", 42))
@@ -1410,7 +1410,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   test("should profile rows with projection and expand") {
     // given
     val nodesPerLabel = 100
-    val aNodes = given {
+    val aNodes = givenGraph {
       nodeIndex("A", "prop")
       val (aNodes, _) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
       aNodes.foreach(_.setProperty("prop", 42))
@@ -1439,7 +1439,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   test("should profile rows with double expand") {
     // given
     val nodesPerLabel = 20
-    given {
+    givenGraph {
       bipartiteGraph(nodesPerLabel, "A", "B", "R")
     }
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -1467,7 +1467,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   test("should profile rows with argument and expand") {
     // given
     val nodesPerLabel = 20
-    given {
+    givenGraph {
       bipartiteGraph(nodesPerLabel, "A", "B", "R")
     }
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -1495,7 +1495,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   test("should profile rows with argument and two expands") {
     // given
     val nodesPerLabel = 5
-    given {
+    givenGraph {
       bipartiteGraph(nodesPerLabel, "A", "B", "R")
     }
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -1531,7 +1531,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   test("should profile rows with argument and var-expand") {
     // given
     val nodesPerLabel = 20
-    given {
+    givenGraph {
       bipartiteGraph(nodesPerLabel, "A", "B", "R")
     }
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -1568,7 +1568,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   test("should profile rows with many node-by id seek and expand") {
     // given
     val nodesPerLabel = 100
-    val aNodes = given {
+    val aNodes = givenGraph {
       nodeIndex("A", "prop")
       val (aNodes, _) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
       aNodes.foreach(_.setProperty("prop", "hello"))
@@ -1594,7 +1594,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   test("should not count invalid rows with many node-by id seek and expand") {
     // given
     val nodesPerLabel = 100
-    val aNodes = given {
+    val aNodes = givenGraph {
       nodeIndex("A", "prop")
       val (aNodes, _) = bipartiteGraph(nodesPerLabel, "A", "B", "R")
       aNodes.foreach(_.setProperty("prop", "hello"))
@@ -1621,7 +1621,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
     // given
     val nodesPerLabel = 20
     val unwindCardinality = 7
-    given {
+    givenGraph {
       bipartiteGraph(nodesPerLabel, "A", "B", "R")
     }
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -1657,7 +1657,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   test("should profile rows with optional expand into") {
     // given
     val nodesPerLabel = 100
-    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
@@ -1678,7 +1678,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should profile rows with node hash join") {
-    given {
+    givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -1710,7 +1710,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should profile rows with value hash join") {
-    given {
+    givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -1742,7 +1742,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should profile rows with cartesian product") {
-    given {
+    givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -1773,7 +1773,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   test("should profile rows with apply") {
     // given
     val size = sizeHint / 10
-    given {
+    givenGraph {
       nodePropertyGraph(
         size,
         {
@@ -1805,7 +1805,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should profile rows of labelscan + produce results") {
-    given {
+    givenGraph {
       nodeGraph(sizeHint, "L1")
       nodeGraph(sizeHint, "L2")
     }
@@ -1826,7 +1826,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should profile rows of nodeIndexSeek + produce results") {
-    given {
+    givenGraph {
       nodeIndex("L1", "prop")
       nodePropertyGraph(
         sizeHint,
@@ -1854,7 +1854,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should profile rows of directed relationshipIndexSeek + produce results") {
-    given {
+    givenGraph {
       relationshipIndex("R", "prop")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -1879,7 +1879,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should profile rows of undirected relationshipIndexSeek + produce results") {
-    given {
+    givenGraph {
       relationshipIndex("R", "prop")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -1904,7 +1904,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should profile rows of directed relationshipIndexScan + produce results") {
-    given {
+    givenGraph {
       relationshipIndex("R", "prop")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -1929,7 +1929,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should profile rows of undirected relationshipIndexScan + produce results") {
-    given {
+    givenGraph {
       relationshipIndex("R", "prop")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -1955,7 +1955,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
 
   test("should profile rows of cartesian product") {
     val size = Math.sqrt(sizeHint).toInt
-    given { nodeGraph(size) }
+    givenGraph { nodeGraph(size) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -1983,7 +1983,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
 
   test("should profile rows of union") {
     val size = Math.sqrt(sizeHint).toInt
-    given { nodeGraph(size) }
+    givenGraph { nodeGraph(size) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -2005,7 +2005,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
   test("should profile rows with project endpoints") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (aNodes, bNodes, aRels, _) = given { bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "R") }
+    val (aNodes, bNodes, aRels, _) = givenGraph { bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -2029,7 +2029,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
 
   test("should profile rows with union label scan") {
     // given
-    given {
+    givenGraph {
       nodeGraph(sizeHint, "A")
       nodeGraph(sizeHint, "B")
     }
@@ -2052,7 +2052,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
 
   test("should profile rows with intersection label scan") {
     // given
-    given {
+    givenGraph {
       nodeGraph(sizeHint, "A", "B")
     }
 
@@ -2078,7 +2078,7 @@ trait EagerLimitProfileRowsTestBase[CONTEXT <: RuntimeContext] {
 
   test("should profile rows with exhaustive limit + expand") {
     val nodeCount = sizeHint * 10
-    given {
+    givenGraph {
       circleGraph(nodeCount)
     }
 
@@ -2104,7 +2104,7 @@ trait EagerLimitProfileRowsTestBase[CONTEXT <: RuntimeContext] {
 
   test("should profile rows with exhaustive limit + expand on RHS of Apply") {
     val nodeCount = sizeHint * 10
-    given {
+    givenGraph {
       circleGraph(nodeCount)
     }
 
@@ -2132,7 +2132,7 @@ trait EagerLimitProfileRowsTestBase[CONTEXT <: RuntimeContext] {
 
   test("should profile rows with exhaustive limit + expand on RHS of ConditionalApply non-nullable") {
     val nodeCount = sizeHint
-    given {
+    givenGraph {
       circleGraph(nodeCount)
     }
 
@@ -2161,7 +2161,7 @@ trait EagerLimitProfileRowsTestBase[CONTEXT <: RuntimeContext] {
   test("should profile rows with exhaustive limit (fused pipelines)") {
     // given
     val nodesPerLabel = 20
-    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
@@ -2219,7 +2219,7 @@ trait NonParallelProfileRowsTestBase[CONTEXT <: RuntimeContext] {
 
   test("should profile rows with ordered distinct") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -2243,7 +2243,7 @@ trait NonParallelProfileRowsTestBase[CONTEXT <: RuntimeContext] {
 
   test("should profile rows with ordered aggregation") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -2287,7 +2287,7 @@ trait NonParallelProfileRowsTestBase[CONTEXT <: RuntimeContext] {
 
   test("should profile rows with partial top") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -2313,7 +2313,7 @@ trait NonParallelProfileRowsTestBase[CONTEXT <: RuntimeContext] {
 
   test("should profile rows with triadic selection") {
     // given
-    given { chainGraphs(sizeHint, "A", "B") }
+    givenGraph { chainGraphs(sizeHint, "A", "B") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -2356,7 +2356,7 @@ trait MergeProfileRowsTestBase[CONTEXT <: RuntimeContext] {
   self: ProfileRowsTestBase[CONTEXT] =>
 
   test("should profile rows of merge on match") {
-    given { nodeGraph(sizeHint) }
+    givenGraph { nodeGraph(sizeHint) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)

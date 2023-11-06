@@ -66,7 +66,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   testWithIndex(_.supports(EXACT), s"should exact (single) seek nodes of an index with a property") { index =>
     val propertyType = randomAmong(index.querySupport(EXACT))
-    val nodes = given(randomIndexedNodePropertyGraph(index.indexType, propertyType))
+    val nodes = givenGraph(randomIndexedNodePropertyGraph(index.indexType, propertyType))
     val lookFor = asValue(randomAmong(nodes).getProperty("prop"))
 
     // when
@@ -94,7 +94,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     val numMatches = sizeHint / 5
     val propertyType = randomAmong(index.querySupport(EXACT))
     val propertyValue = randomValue(propertyType)
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(5, "Milk")
       indexedNodeGraph(index.indexType, "Honey", "prop") {
         case (n, i) if i < numMatches => n.setProperty("prop", propertyValue.asObject())
@@ -120,7 +120,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   testWithIndex(_.supports(EXACT), "exact single seek should handle null") { index =>
     val propertyType = randomAmong(index.querySupport(EXACT))
-    given(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
+    givenGraph(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -137,7 +137,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   testWithIndex(_.supports(EXACT), "should exact (multiple) seek nodes of an index with a property") { index =>
     val propertyType = randomAmong(index.querySupport(EXACT))
-    val nodes = given(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
+    val nodes = givenGraph(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
     val lookFor = Seq(randomAmong(nodes), randomAmong(nodes)).map(n => asValue(n.getProperty("prop")))
 
     // when
@@ -160,7 +160,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   testWithIndex(_.supports(EXACT), "should handle null in exact multiple seek") { index =>
     val propertyType = randomAmong(index.querySupport(EXACT))
-    given(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
+    givenGraph(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -181,7 +181,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   testWithIndex(_.supports(EXACT), "should handle null in exact multiple seek 2") { index =>
     val propertyType = randomAmong(index.querySupport(EXACT))
-    val nodes = given(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
+    val nodes = givenGraph(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
     val someValues = Seq(randomAmong(nodes), randomAmong(nodes)).map(n => asValue(n.getProperty("prop")))
 
     // when
@@ -205,7 +205,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
   testWithIndex(_.supports(EXACT), "should handle null in exact multiple seek 3") { index =>
     val propertyType = randomAmong(index.querySupport(EXACT))
     val otherPropertyType = randomAmong(index.querySupport(EXACT))
-    val nodes = given(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
+    val nodes = givenGraph(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
     val lookForNode = randomAmong(nodes)
     val lookForExisting = asValue(lookForNode.getProperty("prop"))
     val lookForRandom = randomValue(otherPropertyType)
@@ -231,7 +231,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
   testWithIndex(_.supports(EXACT), "should exact (multiple, but empty) seek nodes of an index with a property") {
     index =>
       val propertyType = randomAmong(index.querySupport(EXACT))
-      given(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
+      givenGraph(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
 
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
@@ -252,7 +252,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
   testWithIndex(_.supports(EXACT), "should exact (multiple, with null) seek nodes of an index with a property") {
     index =>
       val propertyType = randomAmong(index.querySupport(EXACT))
-      val nodes = given(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
+      val nodes = givenGraph(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
       val lookFor = asValue(randomAmong(nodes).getProperty("prop"))
 
       // when
@@ -275,7 +275,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
   testWithIndex(_.supports(EXACT), "should exact (multiple, but identical) seek nodes of an index with a property") {
     index =>
       val propertyType = randomAmong(index.querySupport(EXACT))
-      val nodes = given(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
+      val nodes = givenGraph(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
       val lookFor = asValue(randomAmong(nodes).getProperty("prop"))
 
       // when
@@ -300,7 +300,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     "should exact (single) seek nodes for a value that cannot be indexed"
   ) { index =>
     val propertyType = randomAmong(index.querySupport(EXACT))
-    given(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
+    givenGraph(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -324,7 +324,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     "should exact (multiple) seek nodes for values that cannot be indexed"
   ) { index =>
     val propertyType = randomAmong(index.querySupport(EXACT))
-    given(randomIndexedNodePropertyGraph(index.indexType, propertyType))
+    givenGraph(randomIndexedNodePropertyGraph(index.indexType, propertyType))
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -348,7 +348,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     "should exact (multiple) seek nodes for values where some cannot be indexed"
   ) { index =>
     val propertyType = randomAmong(index.querySupport(EXACT))
-    val nodes = given(randomIndexedNodePropertyGraph(index.indexType, propertyType))
+    val nodes = givenGraph(randomIndexedNodePropertyGraph(index.indexType, propertyType))
     val lookFor = asValue(randomAmong(nodes).getProperty("prop"))
 
     // when
@@ -374,7 +374,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     s"should exact seek nodes of a unique index with a property"
   ) { index =>
     val propertyType = randomAmong(index.querySupport(EXACT))
-    val nodes = given(defaultUniqueNodePropertyGraph(index.indexType, propertyType))
+    val nodes = givenGraph(defaultUniqueNodePropertyGraph(index.indexType, propertyType))
     val lookFor = asValue(randomAmong(nodes).getProperty("prop"))
 
     // when
@@ -401,7 +401,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     s"should exact (multiple, but identical) seek nodes of a unique index with a property"
   ) { index =>
     val propertyType = randomAmong(index.querySupport(EXACT))
-    val nodes = given(defaultUniqueNodePropertyGraph(index.indexType, propertyType))
+    val nodes = givenGraph(defaultUniqueNodePropertyGraph(index.indexType, propertyType))
     val lookFor = asValue(randomAmong(nodes).getProperty("prop"))
 
     // when
@@ -428,7 +428,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     "should exact (multiple, with null) seek nodes of a unique index with a property"
   ) { index =>
     val propertyType = randomAmong(index.querySupport(EXACT))
-    val nodes = given(defaultUniqueNodePropertyGraph(index.indexType, propertyType))
+    val nodes = givenGraph(defaultUniqueNodePropertyGraph(index.indexType, propertyType))
     val lookFor = asValue(randomAmong(nodes).getProperty("prop"))
 
     // when
@@ -453,7 +453,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
   // RANGE queries
   testWithIndex(_.supports(RANGE), "should seek nodes of an index with a property") { index =>
     val propertyType = randomAmong(index.querySupport(RANGE))
-    val nodes = given(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
+    val nodes = givenGraph(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
     val largerThan = asValue(randomAmong(nodes).getProperty("prop"))
 
     // when
@@ -476,7 +476,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   testWithIndex(_.supports(RANGE), "should seek nodes of an index with a property that cannot be indexed") { index =>
     val propertyType = randomAmong(index.querySupport(RANGE))
-    given(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
+    givenGraph(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -496,7 +496,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
   }
 
   testWithIndex(_.supports(RANGE, BOOLEAN), s"should handle range seeks: > false") { index =>
-    given {
+    givenGraph {
       nodeIndex(index.indexType, "L", "boolean")
       tx.createNode(Label.label("L")).setProperty("boolean", 42)
       tx.createNode(Label.label("L")).setProperty("boolean", "wut!")
@@ -521,7 +521,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
   }
 
   testWithIndex(_.supports(RANGE, BOOLEAN), "should handle range seeks: >= false") { index =>
-    given {
+    givenGraph {
       nodeIndex(index.indexType, "L", "boolean")
       tx.createNode(Label.label("L")).setProperty("boolean", 42)
       tx.createNode(Label.label("L")).setProperty("boolean", "wut!")
@@ -546,7 +546,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
   }
 
   testWithIndex(_.supports(RANGE, BOOLEAN), "should handle range seeks: < false") { index =>
-    given {
+    givenGraph {
       nodeIndex(index.indexType, "L", "boolean")
       tx.createNode(Label.label("L")).setProperty("boolean", 42)
       tx.createNode(Label.label("L")).setProperty("boolean", "wut!")
@@ -571,7 +571,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
   }
 
   testWithIndex(_.supports(RANGE, BOOLEAN), "should handle range seeks: <= false") { index =>
-    given {
+    givenGraph {
       nodeIndex(index.indexType, "L", "boolean")
       tx.createNode(Label.label("L")).setProperty("boolean", 42)
       tx.createNode(Label.label("L")).setProperty("boolean", "wut!")
@@ -596,7 +596,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
   }
 
   testWithIndex(_.supports(RANGE, BOOLEAN), "should handle range seeks: > true") { index =>
-    given {
+    givenGraph {
       nodeIndex(index.indexType, "L", "boolean")
       tx.createNode(Label.label("L")).setProperty("boolean", 42)
       tx.createNode(Label.label("L")).setProperty("boolean", "wut!")
@@ -621,7 +621,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
   }
 
   testWithIndex(_.supports(RANGE, BOOLEAN), "should handle range seeks: >= true") { index =>
-    given {
+    givenGraph {
       nodeIndex(index.indexType, "L", "boolean")
       tx.createNode(Label.label("L")).setProperty("boolean", 42)
       tx.createNode(Label.label("L")).setProperty("boolean", "wut!")
@@ -646,7 +646,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
   }
 
   testWithIndex(_.supports(RANGE, BOOLEAN), "should handle range seeks: < true") { index =>
-    given {
+    givenGraph {
       nodeIndex(index.indexType, "L", "boolean")
       tx.createNode(Label.label("L")).setProperty("boolean", 42)
       tx.createNode(Label.label("L")).setProperty("boolean", "wut!")
@@ -671,7 +671,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
   }
 
   testWithIndex(_.supports(RANGE, BOOLEAN), "should handle range seeks: <= true") { index =>
-    given {
+    givenGraph {
       nodeIndex(index.indexType, "L", "boolean")
       tx.createNode(Label.label("L")).setProperty("boolean", false)
       tx.createNode(Label.label("L")).setProperty("boolean", false)
@@ -695,7 +695,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   testWithIndex(_.supports(RANGE), "should seek nodes with multiple less than bounds") { index =>
     val propertyType = randomAmong(index.querySupport(RANGE))
-    val nodes = given(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
+    val nodes = givenGraph(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
     val someProps = Seq(randomAmong(nodes), randomAmong(nodes)).map(n => asValue(n.getProperty("prop")))
 
     // when
@@ -723,7 +723,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     _.supports(RANGE, ValueType.INT),
     "should seek nodes with multiple less than bounds with different types"
   ) { index =>
-    given {
+    givenGraph {
       nodeGraph(5, "Milk")
       nodeGraph(5, "Honey")
       indexedNodeGraph(index.indexType, "Honey", "prop") { case (node, i) => node.setProperty("prop", i) }
@@ -744,7 +744,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   testWithIndex(_.supports(RANGE), "should seek nodes with multiple less than bounds one inclusive") { index =>
     val propertyType = randomAmong(index.querySupport(RANGE))
-    val nodes = given(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
+    val nodes = givenGraph(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
     val lessThanValue = asValue(randomAmong(nodes).getProperty("prop"))
 
     // when
@@ -767,7 +767,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   testWithIndex(_.supports(RANGE), "should seek nodes with multiple greater than bounds") { index =>
     val propertyType = randomAmong(index.querySupport(RANGE))
-    val nodes = given(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
+    val nodes = givenGraph(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
     val greaterThanValue = asValue(randomAmong(nodes).getProperty("prop"))
 
     // when
@@ -791,7 +791,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
   testWithIndex(_.supports(RANGE), "should seek nodes with multiple greater than bounds with different types") {
     index =>
       val propertyType = randomAmong(index.querySupport(RANGE))
-      given(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
+      givenGraph(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
 
       // when
       val logicalQuery = new LogicalQueryBuilder(this)
@@ -807,7 +807,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   testWithIndex(_.supports(RANGE), "should seek nodes with multiple greater than bounds one inclusive") { index =>
     val propertyType = randomAmong(index.querySupport(RANGE))
-    val nodes = given(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
+    val nodes = givenGraph(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
     val someProperty = asValue(randomAmong(nodes).getProperty("prop"))
 
     // when
@@ -832,7 +832,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     _.supportsComposite(EXACT, ValueCategory.NUMBER, ValueCategory.TEXT),
     "should support composite index"
   ) { index =>
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(5, "Milk")
       indexedNodeGraph(index.indexType, "Honey", "prop", "prop2") {
         case (node, i) if i % 10 == 0 =>
@@ -858,7 +858,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     _.supportsComposite(EXACT, ValueCategory.TEXT, ValueCategory.TEXT),
     "should support composite index (multiple results)"
   ) { index =>
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(5, "Milk")
       indexedNodeGraph(index.indexType, "Honey", "prop", "prop2") {
         case (node, i) if i % 2 == 0 =>
@@ -885,7 +885,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     _.supportsComposite(EXACT, ValueCategory.NUMBER, ValueCategory.TEXT),
     "should support composite index (multiple values)"
   ) { index =>
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(5, "Milk")
       indexedNodeGraph(index.indexType, "Honey", "prop", "prop2") {
         case (node, i) if i % 10 == 0 =>
@@ -911,7 +911,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     _.supportsComposite(EXACT, ValueCategory.NUMBER, ValueCategory.TEXT),
     "should support composite index with equality and existence check"
   ) { index =>
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(5, "Milk")
       indexedNodeGraph(index.indexType, "Honey", "prop", "prop2") {
         case (node, i) if i % 3 == 0 =>
@@ -940,7 +940,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     _.supportsComposite(EXACT, ValueCategory.NUMBER, ValueCategory.TEXT),
     "should support composite index seeks for values that cannot be indexed"
   ) { index =>
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(5, "Milk")
       indexedNodeGraph(index.indexType, "Honey", "prop", "prop2") {
         case (node, i) if i % 10 == 0 =>
@@ -969,7 +969,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     _.supportsComposite(RANGE, ValueCategory.TEXT, ValueCategory.TEXT),
     "should support composite index with equality and range check"
   ) { index =>
-    given {
+    givenGraph {
       nodeGraph(5, "Milk")
       indexedNodeGraph(index.indexType, "Honey", "prop", "prop2") {
         case (node, i) =>
@@ -995,7 +995,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     _.supportsComposite(RANGE, ValueCategory.NUMBER, ValueCategory.TEXT),
     "should support composite index with range check and existence check"
   ) { index =>
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(5, "Milk")
       indexedNodeGraph(index.indexType, "Honey", "prop", "prop2") {
         case (node, i) =>
@@ -1022,7 +1022,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     _.supportsComposite(EXACT, ValueCategory.NUMBER, ValueCategory.TEXT),
     "should support composite index seek with null"
   ) { index =>
-    given {
+    givenGraph {
       nodeGraph(5, "Milk")
       indexedNodeGraph(index.indexType, "Honey", "prop", "prop2") {
         case (node, i) if i % 10 == 0 =>
@@ -1052,7 +1052,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     _.supportsComposite(RANGE, ValueCategory.NUMBER, ValueCategory.TEXT),
     "should support composite index seek with null 2"
   ) { index =>
-    given {
+    givenGraph {
       nodeGraph(5, "Milk")
       indexedNodeGraph(index.indexType, "Honey", "prop", "prop2") {
         case (node, i) if i % 10 == 0 =>
@@ -1082,7 +1082,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     _.supportsComposite(EXACT, ValueCategory.NUMBER, ValueCategory.TEXT),
     "should support composite index (multiple values) and null"
   ) { index =>
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(5, "Milk")
       indexedNodeGraph(index.indexType, "Honey", "prop", "prop2") {
         case (node, i) if i % 10 == 0 =>
@@ -1112,7 +1112,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     _.supportsComposite(EXACT, ValueCategory.NUMBER, ValueCategory.TEXT),
     "should support composite index with duplicated seek term"
   ) { index =>
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(5, "Milk")
       indexedNodeGraph(index.indexType, "Honey", "prop", "prop2") {
         case (node, i) if i % 10 == 0 =>
@@ -1140,7 +1140,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   testWithIndex(_.supports(EXACT), "should cache properties with exact seek") { index =>
     val propertyType = randomAmong(index.querySupport(EXACT))
-    val nodes = given(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
+    val nodes = givenGraph(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
     val lookFor = asValue(randomAmong(nodes).getProperty("prop"))
 
     // when
@@ -1163,7 +1163,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   testWithIndex(_.supportsValues(RANGE), "should cache properties") { index =>
     val propertyType = randomAmong(index.provideValueSupport(RANGE))
-    val nodes = given(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
+    val nodes = givenGraph(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
     val someProperty = asValue(randomAmong(nodes).getProperty("prop"))
 
     // when
@@ -1193,7 +1193,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
   ) { index =>
     val type1 = randomAmong(index.provideValueSupport(EXACT))
     val type2 = randomAmong(index.provideValueSupport(EXACT))
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(5, "Milk")
       indexedNodeGraph(index.indexType, "Honey", "prop", "prop2") {
         case (node, i) if i % 10 == 0 =>
@@ -1231,7 +1231,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   testWithIndex(_.supportsValues(EXACT), "should use existing values from arguments when available") { index =>
     val propertyType = randomAmong(index.querySupport(EXACT))
-    val nodes = given(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
+    val nodes = givenGraph(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
     val values = Seq(randomAmong(nodes), randomAmong(nodes)).map(n => asValue(n.getProperty("prop")))
 
     // when
@@ -1264,7 +1264,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     "should seek nodes of an index with a property in ascending order"
   ) { index =>
     val propertyType = randomAmong(index.orderAscSupport(RANGE))
-    val nodes = given(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
+    val nodes = givenGraph(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
     val someProp = asValue(randomAmong(nodes).getProperty("prop"))
 
     // when
@@ -1294,7 +1294,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     "should seek nodes of an index with a property in descending order"
   ) { index =>
     val propertyType = randomAmong(index.orderDescSupport(RANGE))
-    val nodes = given(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
+    val nodes = givenGraph(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
     val someProp = asValue(randomAmong(nodes).getProperty("prop"))
 
     // when
@@ -1322,7 +1322,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   testWithIndex(_.supportsOrderAsc(EXACT), "should handle order in multiple index seek, int ascending") { index =>
     val propertyType = randomAmong(index.orderAscSupport(EXACT))
-    val nodes = given(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
+    val nodes = givenGraph(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
     val someValues =
       Seq(randomAmong(nodes), randomAmong(nodes), randomAmong(nodes)).map(n => asValue(n.getProperty("prop")))
 
@@ -1350,7 +1350,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   testWithIndex(_.supportsOrderDesc(EXACT), "should handle order in multiple index seek, int descending") { index =>
     val propertyType = randomAmong(index.orderDescSupport(EXACT))
-    val nodes = given(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
+    val nodes = givenGraph(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
     val someProps =
       Seq(randomAmong(nodes), randomAmong(nodes), randomAmong(nodes)).map(n => asValue(n.getProperty("prop")))
 
@@ -1380,7 +1380,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     _.supportsOrderDesc(EXACT, ValueType.STRING),
     "should handle order in multiple index seek, string descending"
   ) { index =>
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(5, "Milk")
       indexedNodeGraph(index.indexType, "Honey", "prop") {
         case (node, i) => node.setProperty("prop", (i % 10).toString)
@@ -1415,7 +1415,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     val value1 = randomValue(propertyType)
     val value2 = randomValue(propertyType)
     // given
-    given {
+    givenGraph {
       indexedNodeGraph(index.indexType, "A", "prop") { case (node, i) =>
         if (i % 2 == 0) node.setProperty("prop", value1.asObject())
         else node.setProperty("prop", value2.asObject())
@@ -1448,7 +1448,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     _.supports(EXACT, ValueType.INT_ARRAY),
     "should exact (single) seek nodes of an index with an array property"
   ) { index =>
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(5, "Milk")
       indexedNodeGraph(index.indexType, "Honey", "prop") {
         case (node, i) if i % 10 == 0 => node.setProperty("prop", Array[Int](i))
@@ -1477,7 +1477,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     "should seek nodes of a unique index with a property"
   ) { index =>
     val propertyType = randomAmong(index.querySupport(RANGE))
-    val nodes = given(defaultUniqueNodePropertyGraph(index.indexType, propertyType))
+    val nodes = givenGraph(defaultUniqueNodePropertyGraph(index.indexType, propertyType))
     val someProp = Values.of(randomAmong(nodes).getProperty("prop"))
 
     // when
@@ -1501,7 +1501,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   testWithIndex(_.supportsUniqueness(EXACT), "should multi seek nodes of a unique index with property") { index =>
     val propertyType = randomAmong(index.querySupport(EXACT))
-    val nodes = given(defaultUniqueNodePropertyGraph(index.indexType, propertyType))
+    val nodes = givenGraph(defaultUniqueNodePropertyGraph(index.indexType, propertyType))
     val someRandomProps = Range(0, 3).map(_ => randomValue(propertyType))
     val someExistingProps = Seq(randomAmong(nodes), randomAmong(nodes), randomAmong(nodes))
       .map(n => asValue(n.getProperty("prop")))
@@ -1527,7 +1527,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should work with multiple index types") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodeIndex(IndexType.RANGE, "Label", "prop")
       nodeIndex(IndexType.TEXT, "Label", "prop")
 
@@ -1565,7 +1565,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   testWithIndex(_.supports(EXACT), s"should support filter in in the same pipeline") { index =>
     val propertyType = randomAmong(index.querySupport(EXACT))
-    val nodes = given(randomIndexedNodePropertyGraph(index.indexType, propertyType))
+    val nodes = givenGraph(randomIndexedNodePropertyGraph(index.indexType, propertyType))
     val lookFor = asValue(randomAmong(nodes).getProperty("prop"))
 
     // when
@@ -1587,7 +1587,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
   }
 
   testWithIndex(_.supports(EXACT, ValueType.STRING_ARRAY), s"should exact (single) seek an empty array") { index =>
-    val n = given {
+    val n = givenGraph {
       nodeIndex(index.indexType, "Honey", "prop")
       val n = tx.createNode(Label.label("Honey"))
       n.setProperty("prop", Array.empty[String])
@@ -1689,7 +1689,7 @@ trait NodeLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
   self: NodeIndexSeekTestBase[CONTEXT] =>
 
   test("should grab shared lock when finding a node") {
-    val nodes = given {
+    val nodes = givenGraph {
       uniqueNodeIndex(IndexType.RANGE, "Honey", "prop")
       nodeGraph(5, "Milk")
       nodePropertyGraph(
@@ -1717,7 +1717,7 @@ trait NodeLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("should grab shared lock when finding a node (multiple properties)") {
-    val nodes = given {
+    val nodes = givenGraph {
       uniqueNodeIndex(IndexType.RANGE, "Honey", "prop1", "prop2")
       nodeGraph(5, "Milk")
       nodePropertyGraph(
@@ -1745,7 +1745,7 @@ trait NodeLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("should grab an exclusive lock when not finding a node") {
-    given {
+    givenGraph {
       uniqueNodeIndex(IndexType.RANGE, "Honey", "prop")
       nodeGraph(5, "Milk")
       nodePropertyGraph(
@@ -1772,7 +1772,7 @@ trait NodeLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("should not grab any lock when readOnly = true") {
-    val nodes = given {
+    val nodes = givenGraph {
       uniqueNodeIndex(IndexType.RANGE, "Honey", "prop")
       nodeGraph(5, "Milk")
       nodePropertyGraph(
@@ -1800,7 +1800,7 @@ trait NodeLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("should exact seek nodes of a locking unique index with a property") {
-    val nodes = given {
+    val nodes = givenGraph {
       uniqueNodeIndex(IndexType.RANGE, "Honey", "prop")
       nodeGraph(5, "Milk")
       nodePropertyGraph(
@@ -1827,7 +1827,7 @@ trait NodeLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("should exact seek nodes of a locking composite unique index with properties") {
-    val nodes = given {
+    val nodes = givenGraph {
       uniqueNodeIndex(IndexType.RANGE, "Honey", "prop1", "prop2")
       nodeGraph(5, "Milk")
       nodePropertyGraph(
@@ -1854,7 +1854,7 @@ trait NodeLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("should exact (multiple, but identical) seek nodes of a locking unique index with a property") {
-    val nodes = given {
+    val nodes = givenGraph {
       uniqueNodeIndex(IndexType.RANGE, "Honey", "prop")
       nodeGraph(5, "Milk")
       nodePropertyGraph(
@@ -1884,7 +1884,7 @@ trait NodeLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("should exact seek nodes of a composite unique index with properties") {
-    val nodes = given {
+    val nodes = givenGraph {
       uniqueNodeIndex(IndexType.RANGE, "Honey", "prop1", "prop2")
       nodeGraph(5, "Milk")
       nodePropertyGraph(
@@ -1911,7 +1911,7 @@ trait NodeLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("should seek nodes of a composite unique index with properties") {
-    val nodes = given {
+    val nodes = givenGraph {
       uniqueNodeIndex(IndexType.RANGE, "Honey", "prop1", "prop2")
       nodeGraph(5, "Milk")
       nodePropertyGraph(
@@ -1938,7 +1938,7 @@ trait NodeLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("should exact (multiple, not identical) seek nodes of a locking unique index with a property") {
-    val nodes = given {
+    val nodes = givenGraph {
       uniqueNodeIndex(IndexType.RANGE, "Honey", "prop")
       nodeGraph(5, "Milk")
       nodePropertyGraph(
@@ -1969,7 +1969,7 @@ trait NodeLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("should support composite index and unique locking") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodeIndex(IndexType.RANGE, "Honey", "prop", "prop2")
       nodeGraph(5, "Milk")
       nodePropertyGraph(
@@ -1996,7 +1996,7 @@ trait NodeLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("should support composite unique index and unique locking") {
-    val nodes = given {
+    val nodes = givenGraph {
       uniqueNodeIndex(IndexType.RANGE, "Honey", "prop", "prop2")
       nodeGraph(5, "Milk")
       nodePropertyGraph(
@@ -2023,7 +2023,7 @@ trait NodeLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("should cache properties in locking unique index") {
-    val nodes = given {
+    val nodes = givenGraph {
       uniqueNodeIndex(IndexType.RANGE, "Honey", "prop")
       nodeGraph(5, "Milk")
       nodePropertyGraph(
@@ -2052,7 +2052,7 @@ trait NodeLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("should verify that two nodes are identical with locking reads") {
-    val nodes = given {
+    val nodes = givenGraph {
       uniqueNodeIndex(IndexType.RANGE, "Honey", "prop")
       nodePropertyGraph(
         sizeHint,
@@ -2079,7 +2079,7 @@ trait NodeLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test(s"should multi seek nodes of a unique index with locking") {
-    val nodes = given {
+    val nodes = givenGraph {
       uniqueNodeIndex(IndexType.RANGE, "Honey", "prop")
       nodePropertyGraph(sizeHint, { case i if i % 10 == 0 => Map("prop" -> i) }, "Honey")
     }
@@ -2116,7 +2116,7 @@ trait EnterpriseNodeIndexSeekTestBase[CONTEXT <: RuntimeContext] {
   self: NodeIndexSeekTestBase[CONTEXT] =>
 
   test("should support composite index with equality and equality check on the RHS of Apply with Node Key constraint") {
-    val (milk, honey) = given {
+    val (milk, honey) = givenGraph {
       nodeKey("Honey", "prop", "prop2")
       val milk = nodeGraph(5, "Milk")
       val honey = nodePropertyGraph(
@@ -2159,7 +2159,7 @@ trait SerialEnterpriseNodeIndexSeekTestBase[CONTEXT <: RuntimeContext] {
   self: NodeIndexSeekTestBase[CONTEXT] =>
 
   test("should handle null in exact unique multiple seek") {
-    given {
+    givenGraph {
       nodeKey("Honey", "prop1", "prop2")
       nodeGraph(5, "Milk")
       nodePropertyGraph(

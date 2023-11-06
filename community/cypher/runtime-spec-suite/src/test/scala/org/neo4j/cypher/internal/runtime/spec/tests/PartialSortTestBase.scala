@@ -311,7 +311,7 @@ abstract class PartialSortTestBase[CONTEXT <: RuntimeContext](
   test("should work on RHS of apply") {
     val chunkSize = 17
     nodeIndex("B", "x")
-    val aNodes = given {
+    val aNodes = givenGraph {
       val aNodes = nodeGraph(2, "A")
       nodePropertyGraph(
         sizeHint,
@@ -349,7 +349,7 @@ abstract class PartialSortTestBase[CONTEXT <: RuntimeContext](
     val chunkSize = 17
     val skip = chunkSize + 1
     nodeIndex("B", "x")
-    val aNodes = given {
+    val aNodes = givenGraph {
       val aNodes = nodeGraph(2, "A")
       nodePropertyGraph(
         sizeHint,

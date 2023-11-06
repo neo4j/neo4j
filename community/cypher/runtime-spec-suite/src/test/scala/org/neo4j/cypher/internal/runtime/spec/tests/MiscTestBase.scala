@@ -63,7 +63,7 @@ abstract class MiscTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT]
   }
 
   test("should complete query with error and close cursors") {
-    given {
+    givenGraph {
       nodePropertyGraph(
         1000,
         {
@@ -88,7 +88,7 @@ abstract class MiscTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT]
   }
 
   test("should prepopulate results") {
-    given { circleGraph(11) }
+    givenGraph { circleGraph(11) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -105,7 +105,7 @@ abstract class MiscTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT]
 
   test("should handle expand - aggregation - expand ") {
     // given
-    val paths = given { chainGraphs(11, "TO", "TO") }
+    val paths = givenGraph { chainGraphs(11, "TO", "TO") }
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("a", "bs", "d")
       .expand("(c)-[r3*1..2]->(d)") // assuming we do not fuse var-expand
@@ -131,7 +131,7 @@ abstract class MiscTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT]
 
   test("should handle expand - aggregation - filter - expand ") {
     // given
-    val paths = given { chainGraphs(11, "TO", "TO") }
+    val paths = givenGraph { chainGraphs(11, "TO", "TO") }
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("a", "bs", "d")
       .expand("(c)-[r3*1..2]->(d)") // assuming we do not fuse var-expand

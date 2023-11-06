@@ -43,7 +43,7 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
   test("should support directed relationship scan") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (_, _, relationships, _) = given {
+    val (_, _, relationships, _) = givenGraph {
       bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "S")
     }
 
@@ -65,7 +65,7 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
   test("should handle directed relationship scan for non-existing type") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    given {
+    givenGraph {
       bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "S")
     }
 
@@ -85,7 +85,7 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
   test("should combine directed type scan and filter") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    given {
+    givenGraph {
       bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "S")
     }
 
@@ -104,7 +104,7 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle multiple directed scans") {
     // given
-    val (_, relationships) = given { circleGraph(10, "L") }
+    val (_, relationships) = givenGraph { circleGraph(10, "L") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -125,7 +125,7 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle an argument in a directed scan") {
     // given
-    val (_, relationships) = given { circleGraph(10, "L") }
+    val (_, relationships) = givenGraph { circleGraph(10, "L") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -144,7 +144,7 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
   test("should support undirected relationship scan") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (_, _, relationships, _) = given {
+    val (_, _, relationships, _) = givenGraph {
       bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "S")
     }
 
@@ -165,7 +165,7 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
   test("should handle undirected relationship scan for non-existent type") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    given {
+    givenGraph {
       bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "S")
     }
 
@@ -184,7 +184,7 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
   test("should combine undirected type scan and filter") {
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    given {
+    givenGraph {
       bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "S")
     }
 
@@ -203,7 +203,7 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle multiple undirected scans") {
     // given
-    val (_, relationships) = given { circleGraph(10, "L") }
+    val (_, relationships) = givenGraph { circleGraph(10, "L") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -226,7 +226,7 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle an argument in an undirected scan") {
     // given
-    val (_, relationships) = given { circleGraph(10, "L") }
+    val (_, relationships) = givenGraph { circleGraph(10, "L") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -246,7 +246,7 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
     assume(RelationshipTypeIndexIsOrdered)
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (_, _, relationships, _) = given {
+    val (_, _, relationships, _) = givenGraph {
       bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "S")
     }
 
@@ -272,7 +272,7 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
     assume(RelationshipTypeIndexIsOrdered)
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (_, _, relationships, _) = given {
+    val (_, _, relationships, _) = givenGraph {
       bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "S")
     }
 
@@ -298,7 +298,7 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
     assume(RelationshipTypeIndexIsOrdered)
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (_, _, relationships, _) = given {
+    val (_, _, relationships, _) = givenGraph {
       bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "S")
     }
 
@@ -324,7 +324,7 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
     assume(RelationshipTypeIndexIsOrdered)
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
-    val (_, _, relationships, _) = given {
+    val (_, _, relationships, _) = givenGraph {
       bidirectionalBipartiteGraph(nNodes, "A", "B", "R", "S")
     }
 
@@ -348,7 +348,7 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle undirected and continuation") {
     val size = 100
-    val (_, rels) = given {
+    val (_, rels) = givenGraph {
       circleGraph(size)
     }
 
@@ -367,7 +367,7 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("undirected scans only find loop once") {
-    val rel = given {
+    val rel = givenGraph {
       val a = tx.createNode()
       a.createRelationshipTo(a, RelationshipType.withName("R"))
     }

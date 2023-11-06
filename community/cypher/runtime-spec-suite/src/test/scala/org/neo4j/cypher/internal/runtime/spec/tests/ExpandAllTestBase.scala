@@ -73,7 +73,7 @@ abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
         (i, (i + 1) % n, "NEXT")
       )
     }).reduce(_ ++ _)
-    val (nodes, rels) = given {
+    val (nodes, rels) = givenGraph {
       val nodes = nodeGraph(n, "Honey")
       val rels = connect(nodes, relTuples)
       (nodes, rels)
@@ -105,7 +105,7 @@ abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
         (i, (i + 1) % n, "NEXT")
       )
     }).reduce(_ ++ _)
-    val (nodes, rels) = given {
+    val (nodes, rels) = givenGraph {
       val nodes = nodeGraph(n, "Honey")
       val rels = connect(nodes, relTuples)
       (nodes, rels)
@@ -138,7 +138,7 @@ abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
         (i, (3 * i + 5) % n, "BLACKHOLE")
       )
     }).reduce(_ ++ _)
-    val (nodes, rels) = given {
+    val (nodes, rels) = givenGraph {
       val nodes = nodeGraph(n, "Honey")
       val rels = connect(nodes, relTuples)
       (nodes, rels)
@@ -169,7 +169,7 @@ abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
         (i, i, "ME")
       )
     }).reduce(_ ++ _)
-    val (nodes, rels) = given {
+    val (nodes, rels) = givenGraph {
       val nodes = nodeGraph(n, "Honey")
       val rels = connect(nodes, relTuples)
       (nodes, rels)
@@ -209,7 +209,7 @@ abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle expand outgoing") {
     // given
-    val (_, rels) = given { circleGraph(sizeHint) }
+    val (_, rels) = givenGraph { circleGraph(sizeHint) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -231,7 +231,7 @@ abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle expand incoming") {
     // given
-    val (_, rels) = given { circleGraph(sizeHint) }
+    val (_, rels) = givenGraph { circleGraph(sizeHint) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -253,7 +253,7 @@ abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle existing types") {
     // given
-    val (r1, r2, r3) = given {
+    val (r1, r2, r3) = givenGraph {
       val node = tx.createNode(Label.label("L"))
       val other = tx.createNode(Label.label("L"))
       (
@@ -283,7 +283,7 @@ abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle types missing on compile") {
-    given {
+    givenGraph {
       1 to sizeHint foreach { _ =>
         tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("BASE"))
       }
@@ -298,20 +298,20 @@ abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
     execute(logicalQuery, runtime) should beColumns("x", "y").withRows(List.empty)
 
     // CREATE S
-    given { tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("S")) }
+    givenGraph { tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("S")) }
     execute(logicalQuery, runtime) should beColumns("x", "y").withRows(RowCount(1))
 
     // CREATE R
-    given { tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("R")) }
+    givenGraph { tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("R")) }
     execute(logicalQuery, runtime) should beColumns("x", "y").withRows(RowCount(2))
 
     // CREATE T
-    given { tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("T")) }
+    givenGraph { tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("T")) }
     execute(logicalQuery, runtime) should beColumns("x", "y").withRows(RowCount(3))
   }
 
   test("cached plan should adapt to new relationship types") {
-    given {
+    givenGraph {
       1 to sizeHint foreach { _ =>
         tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("BASE"))
       }
@@ -328,15 +328,15 @@ abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
     execute(executablePlan) should beColumns("x", "y").withRows(List.empty)
 
     // CREATE S
-    given { tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("S")) }
+    givenGraph { tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("S")) }
     execute(executablePlan) should beColumns("x", "y").withRows(RowCount(1))
 
     // CREATE R
-    given { tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("R")) }
+    givenGraph { tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("R")) }
     execute(executablePlan) should beColumns("x", "y").withRows(RowCount(2))
 
     // CREATE T
-    given { tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("T")) }
+    givenGraph { tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("T")) }
     execute(executablePlan) should beColumns("x", "y").withRows(RowCount(3))
   }
 
@@ -345,7 +345,7 @@ abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
     // where an argument will span two morsels that are put into a MorselBuffer
 
     // given
-    val (a1, a2, b1, b2, b3, c) = given { smallTestGraph(tx) }
+    val (a1, a2, b1, b2, b3, c) = givenGraph { smallTestGraph(tx) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -393,7 +393,7 @@ trait ExpandAllWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
     // NOTE: This is a specific test for pipelined runtime with morsel size _4_
     // where an argument will span two morsels that are put into a MorselBuffer
 
-    val (a1, a2, b1, b2, b3, c) = given { smallTestGraph(tx) }
+    val (a1, a2, b1, b2, b3, c) = givenGraph { smallTestGraph(tx) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -431,7 +431,7 @@ trait ExpandAllWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
         (i, (i + 1) % n, "NEXT")
       )
     }).reduce(_ ++ _)
-    val (nodes, rels) = given {
+    val (nodes, rels) = givenGraph {
       val nodes = nodeGraph(n, "Honey")
       val rels = connect(nodes, relTuples)
       (nodes, rels)
@@ -474,7 +474,7 @@ trait ExpandAllWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
   test("should handle expand + filter") {
     // given
     val size = 1000
-    val (_, rels) = given { circleGraph(size) }
+    val (_, rels) = givenGraph { circleGraph(size) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -500,7 +500,7 @@ trait ExpandAllWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
     // given
     val size = 100
 
-    val (aNodes, bNodes) = given {
+    val (aNodes, bNodes) = givenGraph {
       bipartiteGraph(
         size,
         "A",
@@ -539,7 +539,7 @@ trait ExpandAllWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
     // given
     val size = 100
 
-    val (aNodes, bNodes) = given {
+    val (aNodes, bNodes) = givenGraph {
       bipartiteGraph(
         size,
         "A",

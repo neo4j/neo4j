@@ -40,7 +40,7 @@ abstract class DeleteDetachNodeTestBase[CONTEXT <: RuntimeContext](
   test("detach delete all nodes without relationships") {
     val nodeCount = 10
 
-    given {
+    givenGraph {
       nodeGraph(nodeCount)
     }
 
@@ -52,7 +52,7 @@ abstract class DeleteDetachNodeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("detach delete all nodes with relationsships") {
-    given {
+    givenGraph {
       chainGraphs(1, "LIKES", "LIKES", "KIND_OF_LIKES")
     }
 
@@ -60,7 +60,7 @@ abstract class DeleteDetachNodeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("detach delete node with loop relationship") {
-    given {
+    givenGraph {
       val narcissisticNode = runtimeTestSupport.tx.createNode()
       narcissisticNode.createRelationshipTo(narcissisticNode, RelationshipType.withName("ADORES"))
       narcissisticNode.createRelationshipTo(narcissisticNode, RelationshipType.withName("LOVES"))
@@ -71,7 +71,7 @@ abstract class DeleteDetachNodeTestBase[CONTEXT <: RuntimeContext](
 
   test("detach delete single connected node") {
     val nodeCount = 10
-    given {
+    givenGraph {
       val deleteNode = runtimeTestSupport.tx.createNode(Label.label("DELETE_ME"))
       val saveNodes = nodeGraph(nodeCount - 1, "SAVE_ME")
       val allNodes = saveNodes :+ deleteNode
@@ -103,7 +103,7 @@ abstract class DeleteDetachNodeTestBase[CONTEXT <: RuntimeContext](
 
   test("duplicate detach delete") {
     val nodeCount = 10
-    given {
+    givenGraph {
       nodeGraph(10)
     }
 
@@ -122,7 +122,7 @@ abstract class DeleteDetachNodeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("detach delete on rhs of apply") {
-    given {
+    givenGraph {
       linkedChainGraph(3, 4)
     }
 

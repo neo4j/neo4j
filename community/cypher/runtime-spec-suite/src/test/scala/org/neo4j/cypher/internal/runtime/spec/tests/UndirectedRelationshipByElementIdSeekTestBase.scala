@@ -40,7 +40,7 @@ abstract class UndirectedRelationshipByElementIdSeekTestBase[CONTEXT <: RuntimeC
 
   test("should find single relationship") {
     // given
-    val (_, relationships) = given { circleGraph(17) }
+    val (_, relationships) = givenGraph { circleGraph(17) }
     val relToFind = relationships(random.nextInt(relationships.length))
 
     // when
@@ -60,7 +60,7 @@ abstract class UndirectedRelationshipByElementIdSeekTestBase[CONTEXT <: RuntimeC
 
   test("should not find non-existing relationship") {
     // given
-    given { circleGraph(17) }
+    givenGraph { circleGraph(17) }
     val toNotFind = "bad-id"
 
     // when
@@ -77,7 +77,7 @@ abstract class UndirectedRelationshipByElementIdSeekTestBase[CONTEXT <: RuntimeC
 
   test("should find multiple relationships") {
     // given
-    val (_, relationships) = given { circleGraph(sizeHint) }
+    val (_, relationships) = givenGraph { circleGraph(sizeHint) }
     val toFind = (1 to 5).map(_ => relationships(random.nextInt(relationships.length)))
     restartTx()
 
@@ -99,7 +99,7 @@ abstract class UndirectedRelationshipByElementIdSeekTestBase[CONTEXT <: RuntimeC
 
   test("should find some relationships and not others") {
     // given
-    val (_, relationships) = given { circleGraph(sizeHint) }
+    val (_, relationships) = givenGraph { circleGraph(sizeHint) }
     val toFind = (1 to 5).map(_ => relationships(random.nextInt(relationships.length)))
     val toNotFind1 = relationships.last.getElementId.drop(1)
     val toNotFind2 = toNotFind1.drop(1)
@@ -124,7 +124,7 @@ abstract class UndirectedRelationshipByElementIdSeekTestBase[CONTEXT <: RuntimeC
 
   test("should handle relById + filter") {
     // given
-    val (_, relationships) = given { circleGraph(sizeHint) }
+    val (_, relationships) = givenGraph { circleGraph(sizeHint) }
     val toSeekFor = (1 to 5).map(_ => relationships(random.nextInt(relationships.length)))
     val toFind = toSeekFor(random.nextInt(toSeekFor.length))
     restartTx()
@@ -147,7 +147,7 @@ abstract class UndirectedRelationshipByElementIdSeekTestBase[CONTEXT <: RuntimeC
   }
 
   test("should handle limit + sort") {
-    val (nodes, relationships) = given {
+    val (nodes, relationships) = givenGraph {
       circleGraph(sizeHint, "A")
     }
     val limit = 1
@@ -171,7 +171,7 @@ abstract class UndirectedRelationshipByElementIdSeekTestBase[CONTEXT <: RuntimeC
   test("should handle continuation from single undirectedRelationshipByElementIdSeek") {
     // given
     val nodesPerLabel = sizeHint / 4
-    val (r, nodes) = given {
+    val (r, nodes) = givenGraph {
       val (_, _, rs, _) = bidirectionalBipartiteGraph(nodesPerLabel, "A", "B", "R", "R2")
       val r = rs.head
       val nodes = Seq(r.getStartNode, r.getEndNode)
@@ -197,7 +197,7 @@ abstract class UndirectedRelationshipByElementIdSeekTestBase[CONTEXT <: RuntimeC
   test("should handle continuation from multiple undirectedRelationshipByElementIdSeek") {
     // given
     val nodesPerLabel = 20
-    val (rs, nodes) = given {
+    val (rs, nodes) = givenGraph {
       val (_, _, rs, _) = bidirectionalBipartiteGraph(nodesPerLabel, "A", "B", "R", "R2")
       val nodes = rs.map(r => r -> Seq(r.getStartNode, r.getEndNode)).toMap
       (rs, nodes)
@@ -222,7 +222,7 @@ abstract class UndirectedRelationshipByElementIdSeekTestBase[CONTEXT <: RuntimeC
 
   test("should only find loop once") {
     // given
-    val relToFind = given {
+    val relToFind = givenGraph {
       val a = tx.createNode()
       a.createRelationshipTo(a, RelationshipType.withName("R"))
     }
@@ -243,7 +243,7 @@ abstract class UndirectedRelationshipByElementIdSeekTestBase[CONTEXT <: RuntimeC
 
   test("should only find loop once, many ids") {
     // given
-    val relToFind = given {
+    val relToFind = givenGraph {
       val a = tx.createNode()
       a.createRelationshipTo(a, RelationshipType.withName("R"))
     }

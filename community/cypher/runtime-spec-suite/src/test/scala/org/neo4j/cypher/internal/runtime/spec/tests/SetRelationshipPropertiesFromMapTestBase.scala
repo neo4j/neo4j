@@ -38,7 +38,7 @@ abstract class SetRelationshipPropertiesFromMapTestBase[CONTEXT <: RuntimeContex
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should add relationship property with removeOtherProps") {
-    given {
+    givenGraph {
       val nodes = nodeGraph(2)
       val relationship = nodes.head.createRelationshipTo(nodes(1), RelationshipType.withName("R"))
       relationship.setProperty("prop1", 1)
@@ -62,7 +62,7 @@ abstract class SetRelationshipPropertiesFromMapTestBase[CONTEXT <: RuntimeContex
   }
 
   test("should add relationship property without removeOtherProps") {
-    given {
+    givenGraph {
       val nodes = nodeGraph(2)
       val relationship = nodes.head.createRelationshipTo(nodes(1), RelationshipType.withName("R"))
       relationship.setProperty("prop1", 1)
@@ -86,7 +86,7 @@ abstract class SetRelationshipPropertiesFromMapTestBase[CONTEXT <: RuntimeContex
   }
 
   test("should remove all relationship properties with removeOtherProps") {
-    given {
+    givenGraph {
       val nodes = nodeGraph(2)
       val relationship = nodes.head.createRelationshipTo(nodes(1), RelationshipType.withName("R"))
       relationship.setProperty("prop1", 1)
@@ -111,7 +111,7 @@ abstract class SetRelationshipPropertiesFromMapTestBase[CONTEXT <: RuntimeContex
   }
 
   test("should remove specific relationship property without removeOtherProps") {
-    given {
+    givenGraph {
       val nodes = nodeGraph(2)
       val relationship = nodes.head.createRelationshipTo(nodes(1), RelationshipType.withName("R"))
       relationship.setProperty("prop1", 1)
@@ -136,7 +136,7 @@ abstract class SetRelationshipPropertiesFromMapTestBase[CONTEXT <: RuntimeContex
   }
 
   test("should handle multiple set/remove without removeOtherProps") {
-    given {
+    givenGraph {
       val nodes = nodeGraph(2)
       val relationship = nodes.head.createRelationshipTo(nodes(1), RelationshipType.withName("R"))
       relationship.setProperty("prop1", 1)
@@ -161,7 +161,7 @@ abstract class SetRelationshipPropertiesFromMapTestBase[CONTEXT <: RuntimeContex
   }
 
   test("should handle multiple set/remove with removeOtherProps") {
-    given {
+    givenGraph {
       val nodes = nodeGraph(2)
       val relationship = nodes.head.createRelationshipTo(nodes(1), RelationshipType.withName("R"))
       relationship.setProperty("prop1", 1)
@@ -186,7 +186,7 @@ abstract class SetRelationshipPropertiesFromMapTestBase[CONTEXT <: RuntimeContex
   }
 
   test("should set and remove multiple relationship properties") {
-    given {
+    givenGraph {
       val nodes = nodeGraph(2)
       val relationship = nodes.head.createRelationshipTo(nodes(1), RelationshipType.withName("R"))
       relationship.setProperty("prop1", 1)
@@ -210,7 +210,7 @@ abstract class SetRelationshipPropertiesFromMapTestBase[CONTEXT <: RuntimeContex
   }
 
   test("should set relationship property to multiple relationships") {
-    val (_, relationships) = given {
+    val (_, relationships) = givenGraph {
       circleGraph(sizeHint)
     }
 
@@ -234,7 +234,7 @@ abstract class SetRelationshipPropertiesFromMapTestBase[CONTEXT <: RuntimeContex
   }
 
   test("should set relationship property on rhs of apply") {
-    val (_, relationships) = given {
+    val (_, relationships) = givenGraph {
       circleGraph(sizeHint)
     }
 
@@ -260,7 +260,7 @@ abstract class SetRelationshipPropertiesFromMapTestBase[CONTEXT <: RuntimeContex
   }
 
   test("should set relationship property after limit") {
-    given {
+    givenGraph {
       circleGraph(sizeHint)
     }
 
@@ -285,7 +285,7 @@ abstract class SetRelationshipPropertiesFromMapTestBase[CONTEXT <: RuntimeContex
   }
 
   test("should set same relationship property multiple times") {
-    val (_, relationships) = given {
+    val (_, relationships) = givenGraph {
       circleGraph(sizeHint)
     }
 
@@ -312,7 +312,7 @@ abstract class SetRelationshipPropertiesFromMapTestBase[CONTEXT <: RuntimeContex
   }
 
   test("should set cached relationship property") {
-    given {
+    givenGraph {
       val nodes = nodeGraph(2)
       val relationship = nodes.head.createRelationshipTo(nodes(1), RelationshipType.withName("R"))
       relationship.setProperty("prop1", 1)
@@ -340,7 +340,7 @@ abstract class SetRelationshipPropertiesFromMapTestBase[CONTEXT <: RuntimeContex
   }
 
   test("should not add new token if relationship property is set to null value") {
-    given {
+    givenGraph {
       val nodes = nodeGraph(2)
       nodes.head.createRelationshipTo(nodes(1), RelationshipType.withName("R"))
     }
@@ -364,7 +364,7 @@ abstract class SetRelationshipPropertiesFromMapTestBase[CONTEXT <: RuntimeContex
   }
 
   test("should throw on null map") {
-    given {
+    givenGraph {
       val nodes = nodeGraph(2)
       nodes.head.createRelationshipTo(nodes(1), RelationshipType.withName("R"))
     }
@@ -386,7 +386,7 @@ abstract class SetRelationshipPropertiesFromMapTestBase[CONTEXT <: RuntimeContex
   }
 
   test("should handle empty map") {
-    given {
+    givenGraph {
       val nodes = nodeGraph(2)
       val r = nodes.head.createRelationshipTo(nodes(1), RelationshipType.withName("R"))
       r.setProperty("prop", "1")
@@ -410,7 +410,7 @@ abstract class SetRelationshipPropertiesFromMapTestBase[CONTEXT <: RuntimeContex
   }
 
   test("should set relationship property on null node with removeOtherProps") {
-    val r = given {
+    val r = givenGraph {
       val nodes = nodeGraph(2)
       nodes.head.createRelationshipTo(nodes(1), RelationshipType.withName("R"))
     }
@@ -434,7 +434,7 @@ abstract class SetRelationshipPropertiesFromMapTestBase[CONTEXT <: RuntimeContex
   }
 
   test("should set relationship property on null node without removeOtherProps") {
-    val r = given {
+    val r = givenGraph {
       val nodes = nodeGraph(2)
       nodes.head.createRelationshipTo(nodes(1), RelationshipType.withName("R"))
     }
@@ -458,7 +458,7 @@ abstract class SetRelationshipPropertiesFromMapTestBase[CONTEXT <: RuntimeContex
   }
 
   test("should set relationship property from expression that requires null check") {
-    val r = given {
+    val r = givenGraph {
       val nodes = nodeGraph(2)
       nodes.head.createRelationshipTo(nodes(1), RelationshipType.withName("R"))
     }
@@ -479,7 +479,7 @@ abstract class SetRelationshipPropertiesFromMapTestBase[CONTEXT <: RuntimeContex
   }
 
   test("should count relationship updates even if values are not changed") {
-    val r = given {
+    val r = givenGraph {
       val nodes = nodeGraph(2)
       val r = nodes.head.createRelationshipTo(nodes(1), RelationshipType.withName("R"))
       r.setProperty("prop", "100")
@@ -503,7 +503,7 @@ abstract class SetRelationshipPropertiesFromMapTestBase[CONTEXT <: RuntimeContex
   }
 
   test("should fail when setting non-map relationship property") {
-    given {
+    givenGraph {
       val nodes = nodeGraph(2)
       val relationship = nodes.head.createRelationshipTo(nodes(1), RelationshipType.withName("R"))
       relationship.setProperty("prop1", 1)
@@ -528,7 +528,7 @@ abstract class SetRelationshipPropertiesFromMapTestBase[CONTEXT <: RuntimeContex
    * virtual relationships
    */
   test("should delete existing properties from virtual relationship") {
-    val relationships = given {
+    val relationships = givenGraph {
       val nodes = nodeGraph(3)
       val relationships = Seq(
         nodes.head.createRelationshipTo(nodes(1), RelationshipType.withName("R")),
@@ -560,7 +560,7 @@ abstract class SetRelationshipPropertiesFromMapTestBase[CONTEXT <: RuntimeContex
   }
 
   test("should update existing properties from virtual relationship") {
-    val relationships = given {
+    val relationships = givenGraph {
       val nodes = nodeGraph(3)
       val relationships = Seq(
         nodes.head.createRelationshipTo(nodes(1), RelationshipType.withName("R")),
@@ -592,7 +592,7 @@ abstract class SetRelationshipPropertiesFromMapTestBase[CONTEXT <: RuntimeContex
   }
 
   test("should update existing properties from virtual node to virtual relationship") {
-    val relationships = given {
+    val relationships = givenGraph {
       val nodes = nodeGraph(2)
       val relationships = Seq(nodes.head.createRelationshipTo(nodes(1), RelationshipType.withName("R")))
       nodes.head.setProperty("prop1", 200)
@@ -619,7 +619,7 @@ abstract class SetRelationshipPropertiesFromMapTestBase[CONTEXT <: RuntimeContex
   }
 
   test("should set relationship properties from map between two loops with continuation") {
-    val rels = given {
+    val rels = givenGraph {
       val (_, rs) = circleGraph(sizeHint)
       rs.foreach(_.setProperty("prop", 0))
       rs

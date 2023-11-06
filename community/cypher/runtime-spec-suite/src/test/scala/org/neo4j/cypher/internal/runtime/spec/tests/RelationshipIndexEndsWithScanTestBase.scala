@@ -35,7 +35,7 @@ abstract class RelationshipIndexEndsWithScanTestBase[CONTEXT <: RuntimeContext](
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should be case sensitive for ENDS WITH with directed index scan") {
-    given {
+    givenGraph {
       relationshipIndex(IndexType.TEXT, "R", "text")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -59,7 +59,7 @@ abstract class RelationshipIndexEndsWithScanTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should be case sensitive for ENDS WITH with undirected index scan") {
-    given {
+    givenGraph {
       relationshipIndex(IndexType.TEXT, "R", "text")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -83,7 +83,7 @@ abstract class RelationshipIndexEndsWithScanTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle null input with direction") {
-    given {
+    givenGraph {
       relationshipIndex(IndexType.TEXT, "R", "text")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -110,7 +110,7 @@ abstract class RelationshipIndexEndsWithScanTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle null input with no direction") {
-    given {
+    givenGraph {
       relationshipIndex(IndexType.TEXT, "R", "text")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -137,7 +137,7 @@ abstract class RelationshipIndexEndsWithScanTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("directed scan should handle non-text input") {
-    given {
+    givenGraph {
       relationshipIndex(IndexType.TEXT, "R", "text")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -157,7 +157,7 @@ abstract class RelationshipIndexEndsWithScanTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("undirected scan should handle non-text input") {
-    given {
+    givenGraph {
       relationshipIndex(IndexType.TEXT, "R", "text")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -178,7 +178,7 @@ abstract class RelationshipIndexEndsWithScanTestBase[CONTEXT <: RuntimeContext](
 
   // We have no index that supports this query at the moment
   ignore("directed scan should cache properties") {
-    val rels = given {
+    val rels = givenGraph {
       relationshipIndex(IndexType.TEXT, "R", "text")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -203,7 +203,7 @@ abstract class RelationshipIndexEndsWithScanTestBase[CONTEXT <: RuntimeContext](
 
   // We have no index that supports this query at the moment
   ignore("undirected scan should cache properties") {
-    val rels = given {
+    val rels = givenGraph {
       relationshipIndex(IndexType.TEXT, "R", "text")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -234,7 +234,7 @@ abstract class RelationshipIndexEndsWithScanTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle directed scan on the RHS of an Apply") {
-    val rels = given {
+    val rels = givenGraph {
       relationshipIndex(IndexType.TEXT, "R", "text")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -264,7 +264,7 @@ abstract class RelationshipIndexEndsWithScanTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle undirected scan on the RHS of an Apply") {
-    val rels = given {
+    val rels = givenGraph {
       relationshipIndex(IndexType.TEXT, "R", "text")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -294,7 +294,7 @@ abstract class RelationshipIndexEndsWithScanTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle directed scan and cartesian product") {
-    val rels = given {
+    val rels = givenGraph {
       relationshipIndex(IndexType.TEXT, "R", "text")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -322,7 +322,7 @@ abstract class RelationshipIndexEndsWithScanTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle undirected scan and cartesian product") {
-    val rels = given {
+    val rels = givenGraph {
       relationshipIndex(IndexType.TEXT, "R", "text")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -351,7 +351,7 @@ abstract class RelationshipIndexEndsWithScanTestBase[CONTEXT <: RuntimeContext](
 
   test("aggregation and limit on top of directed scan") {
     // given
-    given {
+    givenGraph {
       relationshipIndex(IndexType.TEXT, "R", "text")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -377,7 +377,7 @@ abstract class RelationshipIndexEndsWithScanTestBase[CONTEXT <: RuntimeContext](
 
   test("aggregation and limit on top of undirected scan") {
     // given
-    given {
+    givenGraph {
       relationshipIndex(IndexType.TEXT, "R", "text")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -403,7 +403,7 @@ abstract class RelationshipIndexEndsWithScanTestBase[CONTEXT <: RuntimeContext](
 
   test("limit and directed scan on the RHS of an apply") {
     // given
-    given {
+    givenGraph {
       relationshipIndex(IndexType.TEXT, "R", "text")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -435,7 +435,7 @@ abstract class RelationshipIndexEndsWithScanTestBase[CONTEXT <: RuntimeContext](
 
   test("limit and undirected scan on the RHS of an apply") {
     // given
-    given {
+    givenGraph {
       relationshipIndex(IndexType.TEXT, "R", "text")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -467,7 +467,7 @@ abstract class RelationshipIndexEndsWithScanTestBase[CONTEXT <: RuntimeContext](
 
   test("limit on top of apply with directed scan on the RHS of an apply") {
     // given
-    given {
+    givenGraph {
       relationshipIndex(IndexType.TEXT, "R", "text")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -499,7 +499,7 @@ abstract class RelationshipIndexEndsWithScanTestBase[CONTEXT <: RuntimeContext](
 
   test("limit on top of apply with undirected scan on the RHS of an apply") {
     // given
-    given {
+    givenGraph {
       relationshipIndex(IndexType.TEXT, "R", "text")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -530,7 +530,7 @@ abstract class RelationshipIndexEndsWithScanTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("undirected scans only find loop once") {
-    val rel = given {
+    val rel = givenGraph {
       relationshipIndex(IndexType.TEXT, "R", "text")
 
       val a = tx.createNode()

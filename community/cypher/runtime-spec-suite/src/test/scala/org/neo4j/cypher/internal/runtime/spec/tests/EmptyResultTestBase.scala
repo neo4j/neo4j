@@ -35,7 +35,7 @@ abstract class EmptyResultTestBase[CONTEXT <: RuntimeContext](
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should not produce any rows") {
-    given {
+    givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -50,7 +50,7 @@ abstract class EmptyResultTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should not produce any rows on RHS of apply") {
-    given {
+    givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -67,7 +67,7 @@ abstract class EmptyResultTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should work with aggregation") {
-    given {
+    givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -83,7 +83,7 @@ abstract class EmptyResultTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should let through all LHS rows of antiSemiApply") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -101,7 +101,7 @@ abstract class EmptyResultTestBase[CONTEXT <: RuntimeContext](
 
   test("should work on top of apply") {
     val nodesPerLabel = 50
-    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
@@ -118,7 +118,7 @@ abstract class EmptyResultTestBase[CONTEXT <: RuntimeContext](
 
   test("should support reduce -> emptyResult on the RHS of apply") {
     val nodesPerLabel = 100
-    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
@@ -136,7 +136,7 @@ abstract class EmptyResultTestBase[CONTEXT <: RuntimeContext](
 
   test("should support emptyResult -> reduce on the RHS of apply") {
     val nodesPerLabel = 100
-    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
@@ -154,7 +154,7 @@ abstract class EmptyResultTestBase[CONTEXT <: RuntimeContext](
 
   test("should support chained emptyResult") {
     val nodesPerLabel = 100
-    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("a2")
@@ -174,7 +174,7 @@ abstract class EmptyResultTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should support optional expand(into) + emptyResult under apply") {
-    given {
+    givenGraph {
       val (aNodes, bNodes) = bipartiteGraph(3, "A", "B", "R")
       for {
         a <- aNodes
@@ -199,7 +199,7 @@ abstract class EmptyResultTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should support unwind + emptyResult under apply") {
-    given {
+    givenGraph {
       nodeGraph(sizeHint, "A")
     }
 
@@ -217,7 +217,7 @@ abstract class EmptyResultTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should support chained emptyResult on RHS of Apply") {
-    given {
+    givenGraph {
       bipartiteGraph(10, "A", "B", "R")
     }
 

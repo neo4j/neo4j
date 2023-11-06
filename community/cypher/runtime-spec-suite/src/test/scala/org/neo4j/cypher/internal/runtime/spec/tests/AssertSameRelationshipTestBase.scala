@@ -34,7 +34,7 @@ abstract class AssertSameRelationshipTestBase[CONTEXT <: RuntimeContext](
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should verify that two relationships are identical (directed)") {
-    val rels = given {
+    val rels = givenGraph {
       uniqueRelationshipIndex("R", "prop")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -59,7 +59,7 @@ abstract class AssertSameRelationshipTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should verify that two relationships are identical (undirected)") {
-    val rels = given {
+    val rels = givenGraph {
       uniqueRelationshipIndex("R", "prop")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -84,7 +84,7 @@ abstract class AssertSameRelationshipTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should fail if two relationships are different (directed)") {
-    given {
+    givenGraph {
       uniqueRelationshipIndex("R", "prop")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -106,7 +106,7 @@ abstract class AssertSameRelationshipTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should fail if two relationships are different (undirected)") {
-    given {
+    givenGraph {
       uniqueRelationshipIndex("R", "prop")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -128,7 +128,7 @@ abstract class AssertSameRelationshipTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should verify that many relationships are identical (directed)") {
-    val rels = given {
+    val rels = givenGraph {
       uniqueRelationshipIndex("R", "prop")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -157,7 +157,7 @@ abstract class AssertSameRelationshipTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should verify that many relationships are identical (undirected)") {
-    val rels = given {
+    val rels = givenGraph {
       uniqueRelationshipIndex("R", "prop")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -186,7 +186,7 @@ abstract class AssertSameRelationshipTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should fail if two relationships out of many are different (directed)") {
-    given {
+    givenGraph {
       uniqueRelationshipIndex("R", "prop")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -212,7 +212,7 @@ abstract class AssertSameRelationshipTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should fail if two relationships out of many are different (undirected)") {
-    given {
+    givenGraph {
       uniqueRelationshipIndex("R", "prop")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -238,7 +238,7 @@ abstract class AssertSameRelationshipTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should verify that three relationships are identical (directed)") {
-    val rels = given {
+    val rels = givenGraph {
       uniqueRelationshipIndex("R", "prop")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -265,7 +265,7 @@ abstract class AssertSameRelationshipTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should verify that three relationships are identical (undirected)") {
-    val rels = given {
+    val rels = givenGraph {
       uniqueRelationshipIndex("R", "prop")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -292,7 +292,7 @@ abstract class AssertSameRelationshipTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should fail if any of that three nodes are different (directed)") {
-    given {
+    givenGraph {
       uniqueRelationshipIndex("R", "prop")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -316,7 +316,7 @@ abstract class AssertSameRelationshipTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should fail if any of that three nodes are different (undirected)") {
-    given {
+    givenGraph {
       uniqueRelationshipIndex("R", "prop")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -340,7 +340,7 @@ abstract class AssertSameRelationshipTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should verify that two relationships are identical on the RHS of an apply (directed)") {
-    val rels = given {
+    val rels = givenGraph {
       uniqueRelationshipIndex("R", "prop")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -367,7 +367,7 @@ abstract class AssertSameRelationshipTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should verify that two relationships are identical on the RHS of an apply (undirected)") {
-    val rels = given {
+    val rels = givenGraph {
       uniqueRelationshipIndex("R", "prop")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -394,7 +394,7 @@ abstract class AssertSameRelationshipTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should fail if two relationships are different on the RHS of an apply (directed)") {
-    given {
+    givenGraph {
       uniqueRelationshipIndex("R", "prop")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -418,7 +418,7 @@ abstract class AssertSameRelationshipTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should fail if two relationships are different on the RHS of an apply (undirected)") {
-    given {
+    givenGraph {
       uniqueRelationshipIndex("R", "prop")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -442,7 +442,7 @@ abstract class AssertSameRelationshipTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should fail if only lhs is empty (directed)") {
-    given {
+    givenGraph {
       uniqueRelationshipIndex("R", "prop")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -464,7 +464,7 @@ abstract class AssertSameRelationshipTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should fail if only lhs is empty (undirected)") {
-    given {
+    givenGraph {
       uniqueRelationshipIndex("R", "prop")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -486,7 +486,7 @@ abstract class AssertSameRelationshipTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should fail if only rhs is empty (directed)") {
-    given {
+    givenGraph {
       uniqueRelationshipIndex("R", "prop")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -508,7 +508,7 @@ abstract class AssertSameRelationshipTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should fail if only rhs is empty (undirected)") {
-    given {
+    givenGraph {
       uniqueRelationshipIndex("R", "prop")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -530,7 +530,7 @@ abstract class AssertSameRelationshipTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should work if lhs and rhs are empty (directed)") {
-    given {
+    givenGraph {
       uniqueRelationshipIndex("R", "prop")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -554,7 +554,7 @@ abstract class AssertSameRelationshipTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should work if lhs and rhs are empty (undirected)") {
-    given {
+    givenGraph {
       uniqueRelationshipIndex("R", "prop")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -578,7 +578,7 @@ abstract class AssertSameRelationshipTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should assert same relationships on top of range seek and fail (directed)") {
-    given {
+    givenGraph {
       uniqueRelationshipIndex("R", "prop")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -600,7 +600,7 @@ abstract class AssertSameRelationshipTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should assert same relationships on top of range seek and fail (undirected)") {
-    given {
+    givenGraph {
       uniqueRelationshipIndex("R", "prop")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -624,7 +624,7 @@ abstract class AssertSameRelationshipTestBase[CONTEXT <: RuntimeContext](
   test(
     "should fail on merge using multiple unique indexes if it found a relationship matching single property only (directed)"
   ) {
-    given {
+    givenGraph {
       uniqueRelationshipIndex("R", "id")
       uniqueRelationshipIndex("R", "email")
       tx.createNode()
@@ -647,7 +647,7 @@ abstract class AssertSameRelationshipTestBase[CONTEXT <: RuntimeContext](
   test(
     "should fail on merge using multiple unique indexes if it found a relationship matching single property only (undirected)"
   ) {
-    given {
+    givenGraph {
       uniqueRelationshipIndex("R", "id")
       uniqueRelationshipIndex("R", "email")
       tx.createNode()
@@ -670,7 +670,7 @@ abstract class AssertSameRelationshipTestBase[CONTEXT <: RuntimeContext](
   test(
     "should fail on merge using multiple unique indexes if it found a relationship matching single property only, flipped order (directed)"
   ) {
-    given {
+    givenGraph {
       uniqueRelationshipIndex("R", "id")
       uniqueRelationshipIndex("R", "email")
       tx.createNode()
@@ -693,7 +693,7 @@ abstract class AssertSameRelationshipTestBase[CONTEXT <: RuntimeContext](
   test(
     "should fail on merge using multiple unique indexes if it found a relationship matching single property only, flipped order (undirected)"
   ) {
-    given {
+    givenGraph {
       uniqueRelationshipIndex("R", "id")
       uniqueRelationshipIndex("R", "email")
       tx.createNode()
@@ -714,7 +714,7 @@ abstract class AssertSameRelationshipTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("two unique indexes same relationships (directed)") {
-    val rels = given {
+    val rels = givenGraph {
       uniqueRelationshipIndex("R", "prop1")
       uniqueRelationshipIndex("R", "prop2")
       val (_, rels) = circleGraph(sizeHint)
@@ -742,7 +742,7 @@ abstract class AssertSameRelationshipTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("two unique indexes same relationships (undirected)") {
-    val rels = given {
+    val rels = givenGraph {
       uniqueRelationshipIndex("R", "prop1")
       uniqueRelationshipIndex("R", "prop2")
       val (_, rels) = circleGraph(sizeHint)

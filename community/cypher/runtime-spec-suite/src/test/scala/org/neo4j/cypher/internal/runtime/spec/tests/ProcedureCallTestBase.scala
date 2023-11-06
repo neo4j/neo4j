@@ -176,7 +176,7 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
 
   test("should call read void procedure") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -196,7 +196,7 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
 
   test("should call read int procedure") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -233,7 +233,7 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
 
   test("should call echo procedure") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -253,7 +253,7 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
 
   test("should call echo procedure with default argument") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -273,7 +273,7 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
 
   test("should call cardinality increasing procedure") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -297,7 +297,7 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
 
   test("should work on rhs of apply") {
     // given
-    val nodes = given { nodeGraph(sizeHint) }
+    val nodes = givenGraph { nodeGraph(sizeHint) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -321,7 +321,7 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
 
   test("should call cardinality increasing procedure twice") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -349,7 +349,7 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
     // given
     val nodesPerLabel = 20
     val procedureCallCardinality = 7
-    given {
+    givenGraph {
       bipartiteGraph(nodesPerLabel, "A", "B", "R")
     }
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -415,7 +415,7 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
     assume(!isParallel)
 
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint, "OUTPROC")
     }
 
@@ -447,7 +447,7 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
     assume(!isParallel)
 
     // given
-    given {
+    givenGraph {
       nodeGraph(sizeHint, "OUTPROC")
     }
 

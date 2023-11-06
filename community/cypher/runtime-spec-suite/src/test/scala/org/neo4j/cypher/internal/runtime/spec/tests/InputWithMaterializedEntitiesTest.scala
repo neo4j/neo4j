@@ -49,7 +49,7 @@ abstract class InputWithMaterializedEntitiesTest[CONTEXT <: RuntimeContext](
 ) extends RuntimeTestSuite(edition, runtime) {
 
   test("node property access") {
-    val node = given { createNode(1, "Person", Map("name" -> "Anna")) }
+    val node = givenGraph { createNode(1, "Person", Map("name" -> "Anna")) }
     val input = inputValues(Array(node))
 
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -66,7 +66,7 @@ abstract class InputWithMaterializedEntitiesTest[CONTEXT <: RuntimeContext](
 
   test("relationship property access") {
     val relationship =
-      given { createRelationship(1, createNode(1), createNode(2), "AWESOME_RELATIONSHIP", Map("active" -> true)) }
+      givenGraph { createRelationship(1, createNode(1), createNode(2), "AWESOME_RELATIONSHIP", Map("active" -> true)) }
     val input = inputValues(Array(relationship))
 
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -82,7 +82,7 @@ abstract class InputWithMaterializedEntitiesTest[CONTEXT <: RuntimeContext](
   }
 
   test("node property existence") {
-    val (node1, node2) = given {
+    val (node1, node2) = givenGraph {
       val node1 = createNode(1, "Person", Map("name" -> "Anna"))
       val node2 = createNode(2)
       (node1, node2)
@@ -103,7 +103,7 @@ abstract class InputWithMaterializedEntitiesTest[CONTEXT <: RuntimeContext](
   }
 
   test("relationship property existence") {
-    val (relationship1, relationship2) = given {
+    val (relationship1, relationship2) = givenGraph {
       val node1 = createNode(1)
       val node2 = createNode(2)
       val relationship1 = createRelationship(1, node1, node2, "AWESOME_RELATIONSHIP", Map("active" -> true))
@@ -126,7 +126,7 @@ abstract class InputWithMaterializedEntitiesTest[CONTEXT <: RuntimeContext](
   }
 
   test("label existence check") {
-    val node = given { createNode(1, "Person", Map("name" -> "Anna")) }
+    val node = givenGraph { createNode(1, "Person", Map("name" -> "Anna")) }
     val input = inputValues(Array(node))
 
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -143,7 +143,7 @@ abstract class InputWithMaterializedEntitiesTest[CONTEXT <: RuntimeContext](
   }
 
   test("node 'keys' function") {
-    val node = given { createNode(1, "Person", Map("name" -> "Anna")) }
+    val node = givenGraph { createNode(1, "Person", Map("name" -> "Anna")) }
     val input = inputValues(Array(node))
 
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -159,7 +159,7 @@ abstract class InputWithMaterializedEntitiesTest[CONTEXT <: RuntimeContext](
   }
 
   test("relationship 'keys' function") {
-    val (startNode, endNode) = given {
+    val (startNode, endNode) = givenGraph {
       val startNode = createNode(1)
       val endNode = createNode(2)
       (startNode, endNode)
@@ -181,7 +181,7 @@ abstract class InputWithMaterializedEntitiesTest[CONTEXT <: RuntimeContext](
   }
 
   test("node 'labels' function") {
-    val node = given { createNode(1, "Person", Map("name" -> "Anna")) }
+    val node = givenGraph { createNode(1, "Person", Map("name" -> "Anna")) }
     val input = inputValues(Array(node))
 
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -197,7 +197,7 @@ abstract class InputWithMaterializedEntitiesTest[CONTEXT <: RuntimeContext](
   }
 
   test("node id") {
-    val node = given { createNode(123, "Person", Map("name" -> "Anna")) }
+    val node = givenGraph { createNode(123, "Person", Map("name" -> "Anna")) }
     val input = inputValues(Array(node))
 
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -213,7 +213,7 @@ abstract class InputWithMaterializedEntitiesTest[CONTEXT <: RuntimeContext](
   }
 
   test("relationship 'type' function") {
-    val (startNode, endNode) = given {
+    val (startNode, endNode) = givenGraph {
       val startNode = nodeValue(1, "1", Values.stringArray(), MapValue.EMPTY)
       val endNode = nodeValue(2, "2", Values.stringArray(), MapValue.EMPTY)
       (startNode, endNode)

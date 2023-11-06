@@ -34,7 +34,7 @@ abstract class NodeIndexEndsWithScanTestBase[CONTEXT <: RuntimeContext](
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should be case sensitive for ENDS WITH with indexes") {
-    given {
+    givenGraph {
       nodeIndex(IndexType.TEXT, "Label", "text")
       nodePropertyGraph(
         sizeHint,
@@ -62,7 +62,7 @@ abstract class NodeIndexEndsWithScanTestBase[CONTEXT <: RuntimeContext](
 
   // No index supports this query
   ignore("should be case sensitive for ENDS WITH with unique indexes") {
-    given {
+    givenGraph {
       uniqueNodeIndex(IndexType.TEXT, "Label", "text")
       nodePropertyGraph(
         sizeHint,
@@ -89,7 +89,7 @@ abstract class NodeIndexEndsWithScanTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle null input") {
-    given {
+    givenGraph {
       nodeIndex(IndexType.TEXT, "Label", "text")
       nodePropertyGraph(
         sizeHint,
@@ -115,7 +115,7 @@ abstract class NodeIndexEndsWithScanTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle non-text input") {
-    given {
+    givenGraph {
       nodeIndex(IndexType.TEXT, "Label", "text")
       nodePropertyGraph(
         sizeHint,
@@ -140,7 +140,7 @@ abstract class NodeIndexEndsWithScanTestBase[CONTEXT <: RuntimeContext](
 
   // No index supports this query
   ignore("should cache properties") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodeIndex(IndexType.TEXT, "Label", "text")
       nodePropertyGraph(
         sizeHint,
@@ -168,7 +168,7 @@ abstract class NodeIndexEndsWithScanTestBase[CONTEXT <: RuntimeContext](
 
   // No index supports this query
   ignore("should cache properties with a unique index") {
-    val nodes = given {
+    val nodes = givenGraph {
       uniqueNodeIndex(IndexType.TEXT, "Label", "text")
       nodePropertyGraph(
         sizeHint,

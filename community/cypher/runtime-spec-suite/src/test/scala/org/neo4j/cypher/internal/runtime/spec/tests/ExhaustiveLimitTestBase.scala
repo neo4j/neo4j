@@ -140,7 +140,7 @@ abstract class ExhaustiveLimitTestBase[CONTEXT <: RuntimeContext](
   test("should support exhaustive limit in the first of two pipelines") {
     // given
     val nodesPerLabel = 100
-    val (aNodes, _) = given {
+    val (aNodes, _) = givenGraph {
       bipartiteGraph(nodesPerLabel, "A", "B", "R")
     }
 
@@ -166,7 +166,7 @@ abstract class ExhaustiveLimitTestBase[CONTEXT <: RuntimeContext](
   test("should support apply-exhaustive limit") {
     // given
     val nodesPerLabel = 100
-    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -185,7 +185,7 @@ abstract class ExhaustiveLimitTestBase[CONTEXT <: RuntimeContext](
   test("should support exhaustive exhaustive limit on top of apply") {
     // given
     val nodesPerLabel = 50
-    val (aNodes, _) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    val (aNodes, _) = givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
     val limit = nodesPerLabel * nodesPerLabel - 1
 
     // when

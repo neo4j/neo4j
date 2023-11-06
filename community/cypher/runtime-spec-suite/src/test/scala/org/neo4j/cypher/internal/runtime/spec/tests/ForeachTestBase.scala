@@ -162,7 +162,7 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
 
   test("foreach should work with eager") {
     // given
-    given(nodeGraph(sizeHint))
+    givenGraph(nodeGraph(sizeHint))
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -260,7 +260,7 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("foreach should set label") {
-    val nodes = given(nodeGraph(sizeHint))
+    val nodes = givenGraph(nodeGraph(sizeHint))
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
@@ -287,7 +287,7 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("foreach should + set label should handle null") {
-    val nodes = given(nodeGraph(sizeHint))
+    val nodes = givenGraph(nodeGraph(sizeHint))
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
@@ -314,7 +314,7 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("foreach should set node property") {
-    val nodes = given(nodeGraph(sizeHint))
+    val nodes = givenGraph(nodeGraph(sizeHint))
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
@@ -339,7 +339,7 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("foreach + set node property should handle null") {
-    val nodes = given(nodeGraph(sizeHint))
+    val nodes = givenGraph(nodeGraph(sizeHint))
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
@@ -364,7 +364,7 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("foreach should set node properties from map") {
-    val nodes = given(nodeGraph(sizeHint))
+    val nodes = givenGraph(nodeGraph(sizeHint))
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
@@ -389,7 +389,7 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("foreach + set node properties from map should handle null") {
-    val nodes = given(nodeGraph(sizeHint))
+    val nodes = givenGraph(nodeGraph(sizeHint))
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
@@ -414,7 +414,7 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("foreach should set relationship property") {
-    val (_, rels) = given(circleGraph(sizeHint))
+    val (_, rels) = givenGraph(circleGraph(sizeHint))
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
@@ -440,7 +440,7 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("foreach + set relationship property should handle null") {
-    val (_, rels) = given(circleGraph(sizeHint))
+    val (_, rels) = givenGraph(circleGraph(sizeHint))
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
@@ -466,7 +466,7 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("foreach should set relationship properties from map") {
-    val (_, rels) = given(circleGraph(sizeHint))
+    val (_, rels) = givenGraph(circleGraph(sizeHint))
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
@@ -492,7 +492,7 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("foreach + set relationship properties from map should handle null") {
-    val (_, rels) = given(circleGraph(sizeHint))
+    val (_, rels) = givenGraph(circleGraph(sizeHint))
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
@@ -518,7 +518,7 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("foreach should set property") {
-    val nodes = given(nodeGraph(sizeHint))
+    val nodes = givenGraph(nodeGraph(sizeHint))
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
@@ -543,7 +543,7 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("foreach + set property should handle null") {
-    val nodes = given(nodeGraph(sizeHint))
+    val nodes = givenGraph(nodeGraph(sizeHint))
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
@@ -568,7 +568,7 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("foreach should set property from map") {
-    val nodes = given(nodeGraph(sizeHint))
+    val nodes = givenGraph(nodeGraph(sizeHint))
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
@@ -595,7 +595,7 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("foreach + set property from map should handle null") {
-    val nodes = given(nodeGraph(sizeHint))
+    val nodes = givenGraph(nodeGraph(sizeHint))
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
@@ -620,7 +620,7 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("foreach + remove label") {
-    val nodes = given(nodeGraph(sizeHint, "A", "B", "C"))
+    val nodes = givenGraph(nodeGraph(sizeHint, "A", "B", "C"))
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
@@ -647,7 +647,7 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("foreach + delete") {
-    val nodes = given(nodeGraph(sizeHint))
+    val nodes = givenGraph(nodeGraph(sizeHint))
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
@@ -665,7 +665,7 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("foreach + detach delete") {
-    val (nodes, _) = given(circleGraph(sizeHint))
+    val (nodes, _) = givenGraph(circleGraph(sizeHint))
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
@@ -709,7 +709,7 @@ abstract class ForeachTestBase[CONTEXT <: RuntimeContext](
   test("foreach should create relationships and ignore null properties") {
     // given
     val size = sizeHint / 10
-    val nodes = given(nodeGraph(size))
+    val nodes = givenGraph(nodeGraph(size))
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)

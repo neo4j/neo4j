@@ -37,7 +37,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
   test("var-length-expand with no relationships") {
     // given
-    given { nodeGraph(sizeHint) }
+    givenGraph { nodeGraph(sizeHint) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -55,7 +55,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
   test("var-length-expand with max length") {
     // given
-    val (Seq(n1, n2, _), _) = given { lollipopGraph() }
+    val (Seq(n1, n2, _), _) = givenGraph { lollipopGraph() }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -75,7 +75,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
   test("var-length-expand with max length including start node") {
     // given
-    val (Seq(n1, n2, _), _) = given { lollipopGraph() }
+    val (Seq(n1, n2, _), _) = givenGraph { lollipopGraph() }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -99,7 +99,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
   test("var-length-expand with min and max length") {
     // given
-    val paths = given { chainGraphs(3, "TO", "TO", "TO", "TOO", "TO") }
+    val paths = givenGraph { chainGraphs(3, "TO", "TO", "TO", "TOO", "TO") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -126,7 +126,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
   test("var-length-expand with length 0") {
     // given
-    val (Seq(n1, _, _), _) = given { lollipopGraph() }
+    val (Seq(n1, _, _), _) = givenGraph { lollipopGraph() }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -145,7 +145,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
   test("var-length-expand with length 0..1") {
     // given
-    val (Seq(n1, n2, _), _) = given { lollipopGraph() }
+    val (Seq(n1, n2, _), _) = givenGraph { lollipopGraph() }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -167,7 +167,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
   test("var-length-expand with length 0..2") {
     // given
-    val (Seq(n1, n2, n3), _) = given { lollipopGraph() }
+    val (Seq(n1, n2, n3), _) = givenGraph { lollipopGraph() }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -190,7 +190,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
   test("var-length-expand with self-loop") {
     // given
-    val n2 = given {
+    val n2 = givenGraph {
       val n1 = tx.createNode(Label.label("START"))
       val n2 = tx.createNode()
       val relType = RelationshipType.withName("R")
@@ -225,7 +225,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
      */
 
     // given
-    val n4 = given {
+    val n4 = givenGraph {
       val n1 = tx.createNode(Label.label("START"))
       val n2 = tx.createNode()
       val n3 = tx.createNode()
@@ -269,7 +269,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
      */
 
     // given
-    val n4 = given {
+    val n4 = givenGraph {
       val n1 = tx.createNode(Label.label("START"))
       val n2 = tx.createNode()
       val n3 = tx.createNode()
@@ -315,7 +315,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
      */
 
     // given
-    val (n1, n2, n3, y, z) = given {
+    val (n1, n2, n3, y, z) = givenGraph {
       val x = tx.createNode(Label.label("START"))
       val n1 = tx.createNode()
       val n2 = tx.createNode()
@@ -378,7 +378,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
   test("should filter on outgoing direction") {
     // given
-    val g = given { sineGraph() }
+    val g = givenGraph { sineGraph() }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -405,7 +405,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
   test("should filter on incoming direction") {
     // given
-    val g = given { sineGraph() }
+    val g = givenGraph { sineGraph() }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -426,7 +426,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
   test("should expand on BOTH direction") {
     // given
-    val g = given { sineGraph() }
+    val g = givenGraph { sineGraph() }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -458,7 +458,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
   test("should filter on relationship type A") {
     // given
-    val g = given { sineGraph() }
+    val g = givenGraph { sineGraph() }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -482,7 +482,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
   test("should filter on relationship type B") {
     // given
-    val g = given { sineGraph() }
+    val g = givenGraph { sineGraph() }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -505,7 +505,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
   test("should filter on node predicate") {
     // given
-    val g = given { sineGraph() }
+    val g = givenGraph { sineGraph() }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -529,7 +529,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
   test("should filter on two node predicates") {
     // given
-    val g = given { sineGraph() }
+    val g = givenGraph { sineGraph() }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -559,7 +559,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
   test("should filter on node predicate on first node") {
     // given
-    val g = given { sineGraph() }
+    val g = givenGraph { sineGraph() }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -577,7 +577,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
   test("should filter on node predicate on first node from reference") {
     // given
-    val g = given { sineGraph() }
+    val g = givenGraph { sineGraph() }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -596,7 +596,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
   test("should filter on relationship predicate") {
     // given
-    val g = given { sineGraph() }
+    val g = givenGraph { sineGraph() }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -622,7 +622,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
   test("should filter on two relationship predicates") {
     // given
-    val g = given { sineGraph() }
+    val g = givenGraph { sineGraph() }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -657,7 +657,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
   test("should filter on node and relationship predicate") {
     // given
-    val g = given { sineGraph() }
+    val g = givenGraph { sineGraph() }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -683,7 +683,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   test("should handle predicate accessing start node") {
     // given
     val n = closestMultipleOf(10, 4)
-    val paths = given { chainGraphs(n, "TO", "TO", "TO", "TOO", "TO") }
+    val paths = givenGraph { chainGraphs(n, "TO", "TO", "TO", "TOO", "TO") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -708,7 +708,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   test("should handle predicate accessing start node including start node") {
     // given
     val n = closestMultipleOf(10, 4)
-    val paths = given { chainGraphs(n, "TO", "TO", "TO", "TOO", "TO") }
+    val paths = givenGraph { chainGraphs(n, "TO", "TO", "TO", "TOO", "TO") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -733,7 +733,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   test("should handle predicate accessing reference in context") {
     // given
     val n = closestMultipleOf(10, 4)
-    val paths = given { chainGraphs(n, "TO", "TO", "TO", "TOO", "TO") }
+    val paths = givenGraph { chainGraphs(n, "TO", "TO", "TO", "TOO", "TO") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -759,7 +759,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   test("should handle predicate accessing reference in context and including start node") {
     // given
     val n = closestMultipleOf(10, 4)
-    val paths = given { chainGraphs(n, "TO", "TO", "TO", "TOO", "TO") }
+    val paths = givenGraph { chainGraphs(n, "TO", "TO", "TO", "TOO", "TO") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -785,7 +785,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   test("should handle predicate accessing node in context") {
     // given
     val n = closestMultipleOf(10, 4)
-    val paths = given { chainGraphs(n, "TO", "TO", "TO", "TOO", "TO") }
+    val paths = givenGraph { chainGraphs(n, "TO", "TO", "TO", "TOO", "TO") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -811,7 +811,7 @@ abstract class PruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
   test("should handle predicate accessing node in context and including start node") {
     // given
     val n = closestMultipleOf(10, 4)
-    val paths = given { chainGraphs(n, "TO", "TO", "TO", "TOO", "TO") }
+    val paths = givenGraph { chainGraphs(n, "TO", "TO", "TO", "TOO", "TO") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)

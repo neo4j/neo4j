@@ -43,7 +43,7 @@ abstract class SetLabelsTestBase[CONTEXT <: RuntimeContext](
 
   test("should set label on a node") {
     // given a single node
-    given {
+    givenGraph {
       nodeGraph(1)
     }
 
@@ -68,7 +68,7 @@ abstract class SetLabelsTestBase[CONTEXT <: RuntimeContext](
 
   test("should set the label on a node with the same label") {
     // given a single node with label
-    given {
+    givenGraph {
       nodeGraph(1, "Label")
     }
 
@@ -94,7 +94,7 @@ abstract class SetLabelsTestBase[CONTEXT <: RuntimeContext](
 
   test("should set new label on a node with a label") {
     // given a single node with label
-    given {
+    givenGraph {
       nodeGraph(1, "Label")
     }
 
@@ -122,7 +122,7 @@ abstract class SetLabelsTestBase[CONTEXT <: RuntimeContext](
 
   test("should throw on set label to node property") {
     // given a single node
-    given {
+    givenGraph {
       nodePropertyGraph(1, { case i => Map("prop" -> "1") })
     }
 
@@ -174,7 +174,7 @@ abstract class SetLabelsTestBase[CONTEXT <: RuntimeContext](
 
   test("should set label on a node and remove it") {
     // given a single node
-    given {
+    givenGraph {
       nodeGraph(1)
     }
 
@@ -209,7 +209,7 @@ abstract class SetLabelsTestBase[CONTEXT <: RuntimeContext](
 
   test("should lock node") {
     // given a single node
-    val n = given {
+    val n = givenGraph {
       nodeGraph(1).head
     }
 
@@ -239,7 +239,7 @@ abstract class SetLabelsTestBase[CONTEXT <: RuntimeContext](
 
   test("should set label from refslot") {
     // given a single node
-    given {
+    givenGraph {
       nodeGraph(1)
     }
 
@@ -265,7 +265,7 @@ abstract class SetLabelsTestBase[CONTEXT <: RuntimeContext](
 
   test("should set multiple labels from refslot/longslot") {
     // given a single node
-    given {
+    givenGraph {
       nodeGraph(1)
     }
 
@@ -300,7 +300,7 @@ abstract class SetLabelsTestBase[CONTEXT <: RuntimeContext](
 
   test("should set label on multiple nodes") {
     // given a single node
-    given {
+    givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -330,7 +330,7 @@ abstract class SetLabelsTestBase[CONTEXT <: RuntimeContext](
   test("should set label on multiple nodes with limit") {
     val limit = 2
     // given a single node
-    given {
+    givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -361,7 +361,7 @@ abstract class SetLabelsTestBase[CONTEXT <: RuntimeContext](
   test("should set label on multiple nodes with limit on top of apply") {
     val limit = 2
     // given a single node
-    given {
+    givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -393,7 +393,7 @@ abstract class SetLabelsTestBase[CONTEXT <: RuntimeContext](
 
   test("should set label then remove it") {
     // given a single node
-    given {
+    givenGraph {
       nodeGraph(1)
     }
 
@@ -424,7 +424,7 @@ abstract class SetLabelsTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should not create too many labels if setLabel is between two loops with continuation") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
     }
 

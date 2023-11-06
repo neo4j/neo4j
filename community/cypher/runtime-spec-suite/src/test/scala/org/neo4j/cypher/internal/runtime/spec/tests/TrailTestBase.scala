@@ -204,7 +204,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
     //     (n4)     (n2)
     //        ↖     ↙
     //          (n3)
-    val (n1, n2, n3, n4, r12, r23, r34, r41) = given {
+    val (n1, n2, n3, n4, r12, r23, r34, r41) = givenGraph {
       val n1 = tx.createNode(label("START"))
       val n2 = tx.createNode()
       val n3 = tx.createNode()
@@ -273,7 +273,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
     //     ↓  ↑
     //     (n3)
 
-    val (n1, n2, n3, r12, r21, r23, r32) = given {
+    val (n1, n2, n3, r12, r21, r23, r32) = givenGraph {
       val n1 = tx.createNode(label("START"))
       val n2 = tx.createNode()
       val n3 = tx.createNode()
@@ -366,7 +366,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
     //      ↓ ↑
     //      (n7)
 
-    val (n1, n2, n3, n4, n5, n6, n7, r12, r23, r32, r14, r45a, r45b, r54, r16, r67, r76) = given {
+    val (n1, n2, n3, n4, n5, n6, n7, r12, r23, r32, r14, r45a, r45b, r54, r16, r67, r76) = givenGraph {
       val n1 = tx.createNode(label("START"))
       val n2 = tx.createNode()
       val n3 = tx.createNode()
@@ -532,7 +532,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
     //     (n4)     (n2)
     //        ↖     ↙
     //          (n3)
-    val (n1, n2, n3, n4, n5, r12, r23, r34, r45, r51) = given {
+    val (n1, n2, n3, n4, n5, r12, r23, r34, r45, r51) = givenGraph {
       val n1 = tx.createNode(label("START"))
       val n2 = tx.createNode()
       val n3 = tx.createNode()
@@ -576,7 +576,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
     // (n1)
     //     ↘
     //      (n3) → (n5)
-    val (n1, n2, n3, n4, n5, r12, r13, r24, r35) = given {
+    val (n1, n2, n3, n4, n5, r12, r13, r24, r35) = givenGraph {
       val n1 = tx.createNode(label("START"))
       val n2 = tx.createNode()
       val n3 = tx.createNode()
@@ -644,7 +644,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
 
   test("should be able to reference LHS from RHS") {
     // (n1) → (n2) → (n3) → (n4)
-    val (n1, n2, n3, n4, r12, r23, r34) = given {
+    val (n1, n2, n3, n4, r12, r23, r34) = givenGraph {
       val n1 = tx.createNode()
       n1.setProperty("prop", 1)
       val n2 = tx.createNode()
@@ -905,7 +905,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle double relationship path with filter") {
-    val (n1, n2, n3, r1, r2) = given {
+    val (n1, n2, n3, r1, r2) = givenGraph {
       val n1 = tx.createNode()
       val n2 = tx.createNode()
       val n3 = tx.createNode()
@@ -1633,7 +1633,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
   test("should respect relationship uniqueness between inner relationships") {
 
     // (n1:START) → (n2)
-    val (n1, n2, r12) = given {
+    val (n1, n2, r12) = givenGraph {
       val n1 = tx.createNode(label("START"))
       val n2 = tx.createNode()
       val r12 = n1.createRelationshipTo(n2, RelationshipType.withName("R"))
@@ -1664,7 +1664,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
   test("should respect relationship uniqueness between more inner relationships") {
 
     // (n1:START) → (n2) -> (n3)
-    val (n1, n2, n3, r12, r23) = given {
+    val (n1, n2, n3, r12, r23) = givenGraph {
       val n1 = tx.createNode(label("START"))
       val n2 = tx.createNode()
       val n3 = tx.createNode()
@@ -1702,7 +1702,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
 
   test("should work with nested trails on rhs") {
     // (n1:A) <- (n2) -> (n3)
-    val (n1, n2, n3, r21, r23) = given {
+    val (n1, n2, n3, r21, r23) = givenGraph {
       val n1 = tx.createNode(label("A"))
       val n2 = tx.createNode()
       val n3 = tx.createNode()
@@ -1747,7 +1747,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
 
   test("should work with multiple nested trails on rhs") {
     // (n1:A) <- (n2) -> (n3)
-    val (n1, n2, n3, r21, r23) = given {
+    val (n1, n2, n3, r21, r23) = givenGraph {
       val n1 = tx.createNode(label("A"))
       val n2 = tx.createNode()
       val n3 = tx.createNode()
@@ -1844,7 +1844,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("handle limit with trail as argument") {
-    given(complexGraph())
+    givenGraph(complexGraph())
 
     val plan0 = new LogicalQueryBuilder(this)
       .produceResults("start", "firstMiddle", "middle", "end", "a", "b", "r1", "c", "d", "r2", "iteration")
@@ -2113,7 +2113,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
   //             ↗             ←                                ↖     ↓
   //  (n2:START)                                                  (n7:LOOP)
   protected def givenComplexGraph(): ComplexGraph = {
-    given(complexGraph())
+    givenGraph(complexGraph())
   }
 
   /**
@@ -2595,7 +2595,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
 
   // (n1) → (n2) → (n3) → (n4)
   protected def smallChainGraph: (Node, Node, Node, Node, Relationship, Relationship, Relationship) = {
-    given {
+    givenGraph {
       val chain = chainGraphs(1, "R", "R", "R").head
       (
         chain.nodeAt(0),
@@ -2613,7 +2613,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
   //        ↗     ↘
   //      (n3) <- (n2)
   protected def smallCircularGraph: (Node, Node, Node, Relationship, Relationship, Relationship) = {
-    given {
+    givenGraph {
       val n1 = tx.createNode(label("START"))
       val n2 = tx.createNode()
       val n3 = tx.createNode()
@@ -2971,7 +2971,7 @@ trait OrderedTrailTestBase[CONTEXT <: RuntimeContext] {
 
   // (n1:A) <- (n2) -> (n3)
   private def smallTreeGraph = {
-    given {
+    givenGraph {
       val n1 = tx.createNode(label("A"))
       val n2 = tx.createNode()
       val n3 = tx.createNode()
@@ -3098,7 +3098,7 @@ trait OrderedTrailTestBase[CONTEXT <: RuntimeContext] {
     //     (n5)     (n3)
     //        ↖     ↙
     //          (n4)
-    val (n0, n1, n2, n3, n4, n5, r02, r12, r23, r34, r45, r52) = given {
+    val (n0, n1, n2, n3, n4, n5, r02, r12, r23, r34, r45, r52) = givenGraph {
       val n0 = tx.createNode(label("START"))
       val n1 = tx.createNode(label("START"))
       n0.setProperty("foo", 0)
@@ -3166,7 +3166,7 @@ trait OrderedTrailTestBase[CONTEXT <: RuntimeContext] {
     //             ↓  ↑
     //             (n4)
 
-    val (n0, n1, n2, n3, n4, r02, r12, r23, r32, r34, r43) = given {
+    val (n0, n1, n2, n3, n4, r02, r12, r23, r32, r34, r43) = givenGraph {
       val n0 = tx.createNode(label("START"))
       val n1 = tx.createNode(label("START"))
       n0.setProperty("foo", 0)
@@ -3244,7 +3244,7 @@ trait OrderedTrailTestBase[CONTEXT <: RuntimeContext] {
     //      (n5)     (n3)
     //        ↖     ↙
     //          (n4)
-    val (n0, n1, n2, n3, n4, n5, r02, r12, r23, r34, r45, r52) = given {
+    val (n0, n1, n2, n3, n4, n5, r02, r12, r23, r34, r45, r52) = givenGraph {
       val n0 = tx.createNode(label("START"))
       val n1 = tx.createNode(label("START"))
       n0.setProperty("foo", 0)
@@ -3303,7 +3303,7 @@ trait OrderedTrailTestBase[CONTEXT <: RuntimeContext] {
     // (n1:START) ↗     \
     //                    ↘
     //                     (n4) → (n6)
-    val (n0, n1, n2, n3, n4, n5, n6, r02, r12, r23, r24, r35, r46) = given {
+    val (n0, n1, n2, n3, n4, n5, n6, r02, r12, r23, r24, r35, r46) = givenGraph {
       val n0 = tx.createNode(label("START"))
       val n1 = tx.createNode(label("START"))
       n0.setProperty("foo", 0)
@@ -3365,7 +3365,7 @@ trait OrderedTrailTestBase[CONTEXT <: RuntimeContext] {
             (n2) → (n3) → (n4)
       (n1) ↗
      */
-    val (n0, n1, n2, n3, n4, r02, r12, r23, r34) = given {
+    val (n0, n1, n2, n3, n4, r02, r12, r23, r34) = givenGraph {
       val n0 = tx.createNode()
       n0.setProperty("prop", 42)
       val n1 = tx.createNode()
@@ -3525,7 +3525,7 @@ trait OrderedTrailTestBase[CONTEXT <: RuntimeContext] {
     //          (n2)
     //        ↗     ↘
     //      (n4) <- (n3)
-    val (n0, n1, n2, n3, n4, r02, r12, r23, r34, r42) = given {
+    val (n0, n1, n2, n3, n4, r02, r12, r23, r34, r42) = givenGraph {
       val n0 = tx.createNode(label("START"))
       val n1 = tx.createNode(label("START"))
       val n2 = tx.createNode()
@@ -3672,7 +3672,7 @@ trait OrderedTrailTestBase[CONTEXT <: RuntimeContext] {
     //      ↑   ↘ (n1:START) ↗  |
     //      |                   |
     //       -------------------
-    val (n0, n1, n2, n3, r02, r12, r23, r30, r31) = given {
+    val (n0, n1, n2, n3, r02, r12, r23, r30, r31) = givenGraph {
       val n0 = tx.createNode(label("START"))
       val n1 = tx.createNode(label("START"))
       val n2 = tx.createNode()
@@ -4073,31 +4073,32 @@ trait OrderedTrailTestBase[CONTEXT <: RuntimeContext] {
     //      ↓ ↑
     //      (n7)
 
-    val (n0, n1, n2, n3, n4, n5, n6, n7, r02, r12, r23, r32, r04, r14, r45a, r45b, r54, r06, r16, r67, r76) = given {
-      val n0 = tx.createNode(label("START"))
-      val n1 = tx.createNode(label("START"))
-      val n2 = tx.createNode()
-      val n3 = tx.createNode()
-      val n4 = tx.createNode()
-      val n5 = tx.createNode()
-      val n6 = tx.createNode()
-      val n7 = tx.createNode()
+    val (n0, n1, n2, n3, n4, n5, n6, n7, r02, r12, r23, r32, r04, r14, r45a, r45b, r54, r06, r16, r67, r76) =
+      givenGraph {
+        val n0 = tx.createNode(label("START"))
+        val n1 = tx.createNode(label("START"))
+        val n2 = tx.createNode()
+        val n3 = tx.createNode()
+        val n4 = tx.createNode()
+        val n5 = tx.createNode()
+        val n6 = tx.createNode()
+        val n7 = tx.createNode()
 
-      val r02 = n0.createRelationshipTo(n2, RelationshipType.withName("R"))
-      val r12 = n1.createRelationshipTo(n2, RelationshipType.withName("R"))
-      val r23 = n2.createRelationshipTo(n3, RelationshipType.withName("R"))
-      val r32 = n3.createRelationshipTo(n2, RelationshipType.withName("R"))
-      val r04 = n0.createRelationshipTo(n4, RelationshipType.withName("R"))
-      val r14 = n1.createRelationshipTo(n4, RelationshipType.withName("R"))
-      val r45a = n4.createRelationshipTo(n5, RelationshipType.withName("R"))
-      val r45b = n4.createRelationshipTo(n5, RelationshipType.withName("R"))
-      val r54 = n5.createRelationshipTo(n4, RelationshipType.withName("R"))
-      val r06 = n0.createRelationshipTo(n6, RelationshipType.withName("R"))
-      val r16 = n1.createRelationshipTo(n6, RelationshipType.withName("R"))
-      val r67 = n6.createRelationshipTo(n7, RelationshipType.withName("R"))
-      val r76 = n7.createRelationshipTo(n6, RelationshipType.withName("R"))
-      (n0, n1, n2, n3, n4, n5, n6, n7, r02, r12, r23, r32, r04, r14, r45a, r45b, r54, r06, r16, r67, r76)
-    }
+        val r02 = n0.createRelationshipTo(n2, RelationshipType.withName("R"))
+        val r12 = n1.createRelationshipTo(n2, RelationshipType.withName("R"))
+        val r23 = n2.createRelationshipTo(n3, RelationshipType.withName("R"))
+        val r32 = n3.createRelationshipTo(n2, RelationshipType.withName("R"))
+        val r04 = n0.createRelationshipTo(n4, RelationshipType.withName("R"))
+        val r14 = n1.createRelationshipTo(n4, RelationshipType.withName("R"))
+        val r45a = n4.createRelationshipTo(n5, RelationshipType.withName("R"))
+        val r45b = n4.createRelationshipTo(n5, RelationshipType.withName("R"))
+        val r54 = n5.createRelationshipTo(n4, RelationshipType.withName("R"))
+        val r06 = n0.createRelationshipTo(n6, RelationshipType.withName("R"))
+        val r16 = n1.createRelationshipTo(n6, RelationshipType.withName("R"))
+        val r67 = n6.createRelationshipTo(n7, RelationshipType.withName("R"))
+        val r76 = n7.createRelationshipTo(n6, RelationshipType.withName("R"))
+        (n0, n1, n2, n3, n4, n5, n6, n7, r02, r12, r23, r32, r04, r14, r45a, r45b, r54, r06, r16, r67, r76)
+      }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("me", "you", "a", "b", "r")
@@ -5279,7 +5280,7 @@ trait OrderedTrailTestBase[CONTEXT <: RuntimeContext] {
   test("should respect relationship uniqueness between inner relationships - with leveraged order on lhs") {
 
     // (n1:START) → (n2)
-    val (n1, n2, r12) = given {
+    val (n1, n2, r12) = givenGraph {
       val n1 = tx.createNode(label("START"))
       val n2 = tx.createNode()
       val r12 = n1.createRelationshipTo(n2, RelationshipType.withName("R"))
@@ -5310,7 +5311,7 @@ trait OrderedTrailTestBase[CONTEXT <: RuntimeContext] {
   test("should respect relationship uniqueness between more inner relationships - with leveraged order on lhs") {
 
     // (n1:START) → (n2) -> (n3)
-    val (n1, n2, n3, r12, r23) = given {
+    val (n1, n2, n3, r12, r23) = givenGraph {
       val n1 = tx.createNode(label("START"))
       val n2 = tx.createNode()
       val n3 = tx.createNode()
@@ -5351,7 +5352,7 @@ trait OrderedTrailTestBase[CONTEXT <: RuntimeContext] {
   // (n1:START) ↗
   protected def smallDoubleChainGraph
     : (Node, Node, Node, Node, Node, Relationship, Relationship, Relationship, Relationship) = {
-    given {
+    givenGraph {
       val chain = chainGraphs(1, "R", "R", "R").head
       val _n0 = tx.createNode(label("START"))
       val _n1 = chain.nodeAt(0)

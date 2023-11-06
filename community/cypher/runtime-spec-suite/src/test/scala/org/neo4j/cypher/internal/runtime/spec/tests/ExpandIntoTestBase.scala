@@ -52,7 +52,7 @@ abstract class ExpandIntoTestBase[CONTEXT <: RuntimeContext](
         (i, (i + 1) % n, "NEXT")
       )
     }).reduce(_ ++ _)
-    val (nodes, rels) = given {
+    val (nodes, rels) = givenGraph {
       val nodes = nodeGraph(n, "Honey")
       val rels = connect(nodes, relTuples)
       (nodes, rels)
@@ -85,7 +85,7 @@ abstract class ExpandIntoTestBase[CONTEXT <: RuntimeContext](
         (i, (i + 1) % n, "NEXT")
       )
     }).reduce(_ ++ _)
-    val (nodes, rels) = given {
+    val (nodes, rels) = givenGraph {
       val nodes = nodeGraph(n, "Honey")
       val rels = connect(nodes, relTuples)
       (nodes, rels)
@@ -119,7 +119,7 @@ abstract class ExpandIntoTestBase[CONTEXT <: RuntimeContext](
         (i, i, "SELF")
       )
     }).reduce(_ ++ _)
-    val (nodes, rels) = given {
+    val (nodes, rels) = givenGraph {
       val nodes = nodeGraph(n, "Honey")
       val rels = connect(nodes, relTuples)
       (nodes, rels)
@@ -151,7 +151,7 @@ abstract class ExpandIntoTestBase[CONTEXT <: RuntimeContext](
         (i, i, "ME")
       )
     }).reduce(_ ++ _)
-    val (nodes, rels) = given {
+    val (nodes, rels) = givenGraph {
       val nodes = nodeGraph(n, "Honey")
       val rels = connect(nodes, relTuples)
       (nodes, rels)
@@ -194,7 +194,7 @@ abstract class ExpandIntoTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle expand outgoing") {
     // given
-    val (_, rels) = given { circleGraph(sizeHint) }
+    val (_, rels) = givenGraph { circleGraph(sizeHint) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -217,7 +217,7 @@ abstract class ExpandIntoTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle expand incoming") {
     // given
-    val (_, rels) = given { circleGraph(sizeHint) }
+    val (_, rels) = givenGraph { circleGraph(sizeHint) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -239,7 +239,7 @@ abstract class ExpandIntoTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle expand undirected after expandAll") {
-    val (_, rels) = given { circleGraph(sizeHint) }
+    val (_, rels) = givenGraph { circleGraph(sizeHint) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -262,7 +262,7 @@ abstract class ExpandIntoTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle existing types") {
     // given
-    val (r1, r2, r3) = given {
+    val (r1, r2, r3) = givenGraph {
       val node = tx.createNode(Label.label("L"))
       val other = tx.createNode(Label.label("L"))
       (
@@ -294,7 +294,7 @@ abstract class ExpandIntoTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle types missing on compile") {
-    given {
+    givenGraph {
       1 to sizeHint foreach { _ =>
         tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("BASE"))
       }
@@ -310,20 +310,20 @@ abstract class ExpandIntoTestBase[CONTEXT <: RuntimeContext](
     execute(logicalQuery, runtime) should beColumns("x", "y").withRows(List.empty)
 
     // CREATE S
-    given { tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("S")) }
+    givenGraph { tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("S")) }
     execute(logicalQuery, runtime) should beColumns("x", "y").withRows(RowCount(1))
 
     // CREATE R
-    given { tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("R")) }
+    givenGraph { tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("R")) }
     execute(logicalQuery, runtime) should beColumns("x", "y").withRows(RowCount(2))
 
     // CREATE T
-    given { tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("T")) }
+    givenGraph { tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("T")) }
     execute(logicalQuery, runtime) should beColumns("x", "y").withRows(RowCount(3))
   }
 
   test("cached plan should adapt to new relationship types") {
-    given {
+    givenGraph {
       1 to sizeHint foreach { _ =>
         tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("BASE"))
       }
@@ -341,15 +341,15 @@ abstract class ExpandIntoTestBase[CONTEXT <: RuntimeContext](
     execute(executablePlan) should beColumns("x", "y").withRows(List.empty)
 
     // CREATE S
-    given { tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("S")) }
+    givenGraph { tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("S")) }
     execute(executablePlan) should beColumns("x", "y").withRows(RowCount(1))
 
     // CREATE R
-    given { tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("R")) }
+    givenGraph { tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("R")) }
     execute(executablePlan) should beColumns("x", "y").withRows(RowCount(2))
 
     // CREATE T
-    given { tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("T")) }
+    givenGraph { tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("T")) }
     execute(executablePlan) should beColumns("x", "y").withRows(RowCount(3))
   }
 
@@ -358,7 +358,7 @@ abstract class ExpandIntoTestBase[CONTEXT <: RuntimeContext](
     // where an argument will span two morsels that are put into a MorselBuffer
 
     // given
-    val (a1, a2, b1, b2, b3, c) = given { smallTestGraph(tx) }
+    val (a1, a2, b1, b2, b3, c) = givenGraph { smallTestGraph(tx) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -384,7 +384,7 @@ abstract class ExpandIntoTestBase[CONTEXT <: RuntimeContext](
   test("should support expandInto on RHS of apply") {
     // given
     val size = sizeHint / 16
-    val (as, bs) = given {
+    val (as, bs) = givenGraph {
       nodeGraph(size, "A")
       nodeGraph(size, "B")
       bipartiteGraph(size, "A", "B", "R")
@@ -413,7 +413,7 @@ abstract class ExpandIntoTestBase[CONTEXT <: RuntimeContext](
   test("should support undirected expandInto on RHS of apply") {
     val size = sizeHint / 16
     // given
-    val (as, bs, as2, bs2) = given {
+    val (as, bs, as2, bs2) = givenGraph {
       val (as, bs) = bipartiteGraph(size, "A", "B", "R")
       val (bs2, as2) = bipartiteGraph(size, "B", "A", "R2")
       // Some not connected nodes as well
@@ -443,7 +443,7 @@ abstract class ExpandIntoTestBase[CONTEXT <: RuntimeContext](
     val relsToCreate = edition.getSetting(dense_node_threshold).getOrElse(dense_node_threshold.defaultValue()) + 1
 
     // given
-    given {
+    givenGraph {
       // Two A nodes, and one dense B node.
       val a1 = tx.createNode(Label.label("A"))
       tx.createNode(Label.label("A"))
@@ -468,7 +468,7 @@ abstract class ExpandIntoTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("expand into in plan with eager and let anti semi apply") {
-    val (nodes, rels) = given {
+    val (nodes, rels) = givenGraph {
       val nodes = nodeGraph(3, "A")
       val rels = for {
         a <- nodes
@@ -526,7 +526,7 @@ trait ExpandIntoWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
     // NOTE: This is a specific test for pipelined runtime with morsel size _4_
     // where an argument will span two morsels that are put into a MorselBuffer
 
-    val (a1, a2, b1, b2, b3, c) = given { smallTestGraph(tx) }
+    val (a1, a2, b1, b2, b3, c) = givenGraph { smallTestGraph(tx) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -581,7 +581,7 @@ trait ExpandIntoWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
         (i, (i + 1) % n, "NEXT")
       )
     }).reduce(_ ++ _)
-    val (nodes, rels) = given {
+    val (nodes, rels) = givenGraph {
       val nodes = nodeGraph(n, "Honey")
       val rels = connect(nodes, relTuples)
       (nodes, rels)
@@ -625,7 +625,7 @@ trait ExpandIntoWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
   test("should handle expand + filter") {
     // given
     val size = 1000
-    val (_, rels) = given { circleGraph(size) }
+    val (_, rels) = givenGraph { circleGraph(size) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -650,7 +650,7 @@ trait ExpandIntoWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
 
   test("should filter on cached relationship property") {
     // given
-    val rels = given {
+    val rels = givenGraph {
       val (_, rs) = circleGraph(sizeHint)
       rs.indices.foreach(i => rs(i).setProperty("prop", i))
       rs
@@ -679,7 +679,7 @@ trait ExpandIntoWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
 
   test("two connected dense nodes where one node appears twice I") {
     // given
-    val (a, b) = given {
+    val (a, b) = givenGraph {
       val a = tx.createNode(Label.label("A"))
       makeDense(a)
 
@@ -709,7 +709,7 @@ trait ExpandIntoWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
 
   test("two connected dense nodes where one node appears twice II") {
     // given
-    val (a, b) = given {
+    val (a, b) = givenGraph {
       val a = tx.createNode(Label.label("A"), Label.label("B"))
       makeDense(a)
       a.createRelationshipTo(tx.createNode(Label.label("FOO")), RelationshipType.withName("T"))
@@ -737,7 +737,7 @@ trait ExpandIntoWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
 
   test("two connected dense nodes where one node appears twice III") {
     // given
-    val (a, b) = given {
+    val (a, b) = givenGraph {
       val b = tx.createNode(Label.label("B"))
       val ab = tx.createNode(Label.label("A"), Label.label("B"))
       val a = tx.createNode(Label.label("A"))
@@ -768,7 +768,7 @@ trait ExpandIntoWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
 
   test("one dense and one sparse node where one node appears twice I") {
     // given
-    val (a, b) = given {
+    val (a, b) = givenGraph {
       val a = tx.createNode(Label.label("A"))
       makeDense(a)
       val ba = tx.createNode(Label.label("B"), Label.label("A"))
@@ -795,7 +795,7 @@ trait ExpandIntoWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
 
   test("one dense node and one sparse node where one node appears twice II") {
     // given
-    val (a, b) = given {
+    val (a, b) = givenGraph {
       val a = tx.createNode(Label.label("A"), Label.label("B"))
       makeDense(a)
       a.createRelationshipTo(tx.createNode(Label.label("FOO")), RelationshipType.withName("T"))
@@ -822,7 +822,7 @@ trait ExpandIntoWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
 
   test("one dense node and one sparse node where one node appears twice III") {
     // given
-    val (a, b) = given {
+    val (a, b) = givenGraph {
       val b = tx.createNode(Label.label("B"))
       val ab = tx.createNode(Label.label("A"), Label.label("B"))
       val a = tx.createNode(Label.label("A"))
@@ -852,7 +852,7 @@ trait ExpandIntoWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
 
   test("one sparse and one dense node where one node appears twice I") {
     // given
-    val (a, b) = given {
+    val (a, b) = givenGraph {
       tx.createNode(Label.label("A"))
       val ba = tx.createNode(Label.label("B"), Label.label("A"))
       val b = tx.createNode(Label.label("B"))
@@ -878,7 +878,7 @@ trait ExpandIntoWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
 
   test("one sparse node and one dense node where one node appears twice II") {
     // given
-    val (a, b) = given {
+    val (a, b) = givenGraph {
       val a = tx.createNode(Label.label("A"), Label.label("B"))
       a.createRelationshipTo(tx.createNode(Label.label("FOO")), RelationshipType.withName("T"))
       val b = tx.createNode(Label.label("B"))
@@ -905,7 +905,7 @@ trait ExpandIntoWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
 
   test("one sparse node and dense node where one node appears twice III") {
     // given
-    val (a, b) = given {
+    val (a, b) = givenGraph {
       val b = tx.createNode(Label.label("B"))
       val ab = tx.createNode(Label.label("A"), Label.label("B"))
       val a = tx.createNode(Label.label("A"))
@@ -934,7 +934,7 @@ trait ExpandIntoWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
 
   test("two connected sparse nodes where one node appears twice I") {
     // given
-    val (a, b) = given {
+    val (a, b) = givenGraph {
       tx.createNode(Label.label("A"))
       val ba = tx.createNode(Label.label("B"), Label.label("A"))
       val b = tx.createNode(Label.label("B"))
@@ -959,7 +959,7 @@ trait ExpandIntoWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
 
   test("wo connected sparse nodes where one node appears twice II") {
     // given
-    val (a, b) = given {
+    val (a, b) = givenGraph {
       val a = tx.createNode(Label.label("A"), Label.label("B"))
       a.createRelationshipTo(tx.createNode(Label.label("FOO")), RelationshipType.withName("T"))
       val b = tx.createNode(Label.label("B"))
@@ -985,7 +985,7 @@ trait ExpandIntoWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
 
   test("two connected sparse nodes where one node appears twice III") {
     // given
-    val (a, b) = given {
+    val (a, b) = givenGraph {
       val b = tx.createNode(Label.label("B"))
       val ab = tx.createNode(Label.label("A"), Label.label("B"))
       val a = tx.createNode(Label.label("A"))
@@ -1013,7 +1013,7 @@ trait ExpandIntoWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
 
   test("two connected sparse nodes where one node appears twice IV") {
     // given
-    val (a, b) = given {
+    val (a, b) = givenGraph {
       val a = tx.createNode(Label.label("A"))
       val ab = tx.createNode(Label.label("A"), Label.label("B"))
       val ba = tx.createNode(Label.label("B"), Label.label("A"))
@@ -1048,7 +1048,7 @@ trait ExpandIntoWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
     //  (a1)          (a5)
     //      ↖↘      ↙↗
     //         (a7)
-    given {
+    givenGraph {
       val nNodes = 7
       val rType = RelationshipType.withName("R")
 
@@ -1124,7 +1124,7 @@ trait ExpandIntoRandomTest[CONTEXT <: RuntimeContext] extends CypherScalaCheckDr
     val aLikesOrLovesB = expandIntoPlan("-[r:LIKES|LOVES]->")
 
     forAll(genRandomGraph(Seq("LIKES", "LOVES")), minSuccessful(20)) { createGraph =>
-      val relationships = given {
+      val relationships = givenGraph {
         // Clean previous data
         tx.getAllRelationships.forEach(r => r.delete())
         tx.getAllNodes.forEach(n => n.delete())

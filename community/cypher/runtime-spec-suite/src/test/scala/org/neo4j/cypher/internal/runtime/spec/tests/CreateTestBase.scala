@@ -153,7 +153,7 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
 
   test("should create many nodes with labels") {
     // given
-    given {
+    givenGraph {
       circleGraph(sizeHint, "L")
     }
 
@@ -197,7 +197,7 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
 
   test("should only create n nodes if LIMIT n") {
     // given
-    given {
+    givenGraph {
       circleGraph(sizeHint, "L")
     }
     // when
@@ -220,7 +220,7 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle LIMIT and CREATE on the RHS of an Apply") {
     // given
-    given {
+    givenGraph {
       circleGraph(sizeHint, "L")
     }
     // when
@@ -268,7 +268,7 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
 
   test("should create many node with labels on the RHS of an Apply") {
     // given
-    given {
+    givenGraph {
       circleGraph(sizeHint, "L")
     }
 
@@ -378,7 +378,7 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
 
   test("should create many relationships on the RHS of an Apply") {
     // given
-    given {
+    givenGraph {
       circleGraph(sizeHint, "L")
     }
 
@@ -531,7 +531,7 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
   test("should not create too many nodes when create is after after loop with continuations 2") {
     // NOTE: using sizeHint here can make the tx state unnecessarily big
     val size = 100
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(size)
     }
 
@@ -553,7 +553,7 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
   test("should not create too many nodes when create is after after loop with continuations 3") {
     // NOTE: using sizeHint here can make the tx state unnecessarily big
     val size = 100
-    val (nodes, _) = given {
+    val (nodes, _) = givenGraph {
       circleGraph(size)
     }
 
@@ -629,7 +629,7 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
   test("should not create too many nodes if creates is between two loops with continuation 2") {
     // NOTE: using sizeHint here can make the tx state unnecessarily big
     val size = 100
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(size)
     }
 
@@ -681,7 +681,7 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
   test("should not create too many nodes if creates is between two loops with continuation 4") {
     // NOTE: using sizeHint here can make the tx state unnecessarily big
     val size = 100
-    val (_, rels) = given {
+    val (_, rels) = givenGraph {
       circleGraph(size)
     }
 
@@ -704,7 +704,7 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
   test("should not create too many nodes after a single node by id seek") {
     // NOTE: using sizeHint here can make the tx state unnecessarily big
     val size = 100
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(size)
     }
 
@@ -727,7 +727,7 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
   test("should not create too many nodes after a multiple node by id seek") {
     // NOTE: using sizeHint here can make the tx state unnecessarily big
     val size = 100
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(size)
     }
 
@@ -750,7 +750,7 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
   test("should not create too many nodes after a single directed relationship by id seek") {
     // NOTE: using sizeHint here can make the tx state unnecessarily big
     val size = 100
-    val (_, rels) = given {
+    val (_, rels) = givenGraph {
       circleGraph(size)
     }
 
@@ -772,7 +772,7 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
 
   test("should not create too many nodes after a multiple directed relationship by id seek") {
     val size = 100
-    val (_, rels) = given {
+    val (_, rels) = givenGraph {
       // NOTE: using sizeHint here can make the tx state unnecessarily big
       circleGraph(size)
     }
@@ -796,7 +796,7 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
   test("should not create too many nodes after a single undirected relationship by id seek") {
     // NOTE: using sizeHint here can make the tx state unnecessarily big
     val size = 100
-    val (_, rels) = given {
+    val (_, rels) = givenGraph {
       circleGraph(size)
     }
 
@@ -819,7 +819,7 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
   test("should not create too many nodes after a multiple undirected relationship by id seek") {
     // NOTE: using sizeHint here can make the tx state unnecessarily big
     val size = 100
-    val (_, rels) = given {
+    val (_, rels) = givenGraph {
       circleGraph(size)
     }
 
@@ -842,7 +842,7 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
   test("should not create too many nodes after a node index seek") {
     // NOTE: using sizeHint here can make the tx state unnecessarily big
     val size = 100
-    val nodes = given {
+    val nodes = givenGraph {
       nodeIndex("L", "prop")
       nodePropertyGraph(size, { case i => Map("prop" -> i) }, "L")
     }
@@ -866,7 +866,7 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
   test("should not create too many nodes after a optional expand all") {
     // NOTE: using sizeHint here can make the tx state unnecessarily big
     val size = 100
-    val startNode = given {
+    val startNode = givenGraph {
       val Seq(start, end) = nodeGraph(2)
       (1 to size).foreach(_ => start.createRelationshipTo(end, RelationshipType.withName("R")))
       start
@@ -892,7 +892,7 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
   test("should not create too many nodes after a optional expand into") {
     // NOTE: using sizeHint here can make the tx state unnecessarily big
     val size = 100
-    val (startNode, endNode) = given {
+    val (startNode, endNode) = givenGraph {
       val Seq(start, end) = nodeGraph(2)
       (1 to size).foreach(_ => start.createRelationshipTo(end, RelationshipType.withName("R")))
       (start, end)

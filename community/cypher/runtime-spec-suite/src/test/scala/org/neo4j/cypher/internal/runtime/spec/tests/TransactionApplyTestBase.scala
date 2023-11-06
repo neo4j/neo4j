@@ -313,8 +313,7 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
     val nodeCountB = 5
     val nodeCountC = 3
     val batchSize = 2
-
-    given {
+    givenGraph {
       for (_ <- 0 until nodeCountA) yield runtimeTestSupport.tx.createNode(Label.label("A"))
       for (_ <- 0 until nodeCountB) yield runtimeTestSupport.tx.createNode(Label.label("B"))
       for (_ <- 0 until nodeCountC) yield runtimeTestSupport.tx.createNode(Label.label("C"))
@@ -477,7 +476,7 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
       Array[Any](i.toLong)
     }
 
-    given {
+    givenGraph {
       nodeGraph(1, "N")
     }
 
@@ -524,7 +523,7 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
       Array[Any](i.toLong)
     }
 
-    given {
+    givenGraph {
       nodeIndex("Label", "prop")
       nodePropertyGraph(1, { case _ => Map[String, Any]("prop" -> 2) }, "Label")
     }
@@ -646,8 +645,7 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
     val inputVals = inputValsToCancel ++ inputValsToPassThrough ++ inputValsToCancel
     val input = inputValues(inputVals.map(Array[Any](_)): _*)
     val batchSize = sizeHint / 4
-
-    given {
+    givenGraph {
       nodeGraph(1)
     }
 
@@ -683,8 +681,7 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
     val inputVals = inputValsToCancel ++ inputValsToPassThrough ++ inputValsToCancel
     val input = inputValues(inputVals.map(Array[Any](_)): _*)
     val batchSize = sizeHint / 2
-
-    given {
+    givenGraph {
       nodeGraph(1)
     }
 
@@ -928,7 +925,7 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
 
   test("complex case: complex RHS") {
     // given
-    val graph = given(complexGraph())
+    val graph = givenGraph(complexGraph())
     val setup = defaultComplexRhsSetup().copy(onError = randomErrorBehaviour())
     val (planBuilder, expected) = setupComplexRhsTest(graph, setup)
 
@@ -942,7 +939,7 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
 
   test("complex case: random failures with complex RHS") {
     // given
-    val graph = given(complexGraph())
+    val graph = givenGraph(complexGraph())
     val (planBuilder, _) = setupComplexRhsTest(graph)
 
     val query = planBuilder.build()
@@ -976,7 +973,7 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
 
   test("complex case: random failures with complex RHS ON ERROR CONTINUE") {
     // given
-    val graph = given(complexGraph())
+    val graph = givenGraph(complexGraph())
     val iterations = random.nextInt(8) + 1
     val batchSize = random.nextInt(iterations + 1) + 1
     val setup = ComplexRhsTestSetup(
@@ -1227,7 +1224,7 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
     errorBehaviour: InTransactionsOnErrorBehaviour,
     status: Boolean = true
   ): (Seq[MapValue], Int, LogicalQuery) = {
-    given {
+    givenGraph {
       nodeConstraint("Dog") { creator =>
         creator.assertPropertyExists("tail")
       }
@@ -1337,7 +1334,7 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("handle errors with union on RHS") {
-    given {
+    givenGraph {
       uniqueNodeIndex("Animal", "id")
       nodePropertyGraph(1, { case _ => Map("id" -> 0) }, "Animal")
     }
@@ -1416,7 +1413,7 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
 
   test("no resource leaks with continuations on rhs") {
     val size = 10
-    val relCount = given {
+    val relCount = givenGraph {
       val (as, bs) = bipartiteGraph(size, "A", "B", "R")
       val rIdGen = new AtomicInteger(0)
       for {
@@ -1453,7 +1450,7 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("transaction apply with index seeks that are not used in all batches") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodeIndex("N")(_.withIndexType(IndexType.FULLTEXT).on("fullText").withName("fullTextIndex"))
       nodeIndex(IndexType.TEXT, "N", "text")
       nodeIndex(IndexType.POINT, "N", "point")
@@ -1591,7 +1588,7 @@ trait RandomisedTransactionApplyTests[CONTEXT <: RuntimeContext]
   // supports it and it makes it easier to test.
   test("should handle random failures with ON ERROR FAIL REPORT STATUS") {
     assume(runtime.name != "Pipelined")
-    given {
+    givenGraph {
       uniqueNodeIndex("N", "p")
       val node = runtimeTestSupport.tx.createNode(Label.label("N"))
       node.setProperty("p", 42)
@@ -1661,7 +1658,7 @@ trait RandomisedTransactionApplyTests[CONTEXT <: RuntimeContext]
   }
 
   test("should handle random failures with ON ERROR FAIL") {
-    given {
+    givenGraph {
       uniqueNodeIndex("N", "p")
       val node = runtimeTestSupport.tx.createNode(Label.label("N"))
       node.setProperty("p", 42)
@@ -1723,7 +1720,7 @@ trait RandomisedTransactionApplyTests[CONTEXT <: RuntimeContext]
   }
 
   test("should handle random failures with ON ERROR BREAK") {
-    given {
+    givenGraph {
       uniqueNodeIndex("N", "p")
       val node = runtimeTestSupport.tx.createNode(Label.label("N"))
       node.setProperty("p", 42)
@@ -1805,7 +1802,7 @@ trait RandomisedTransactionApplyTests[CONTEXT <: RuntimeContext]
   }
 
   test("should handle random failures with ON ERROR CONTINUE") {
-    given {
+    givenGraph {
       uniqueNodeIndex("N", "p")
       val node = runtimeTestSupport.tx.createNode(Label.label("N"))
       node.setProperty("p", 42)

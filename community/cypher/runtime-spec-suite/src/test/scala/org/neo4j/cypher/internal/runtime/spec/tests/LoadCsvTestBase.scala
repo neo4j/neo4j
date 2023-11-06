@@ -487,7 +487,7 @@ trait LoadCsvWithCallInTransactionsAndMerge[CONTEXT <: RuntimeContext] {
   test("should close open cursors on call in tx - scenario") {
     val url = multipleColumnCsvFile(withHeaders = true)
 
-    given {
+    givenGraph {
       nodeIndex("L", "prop")
     }
 
@@ -514,7 +514,7 @@ trait LoadCsvWithCallInTransactionsAndMerge[CONTEXT <: RuntimeContext] {
       .argument()
       .build(readOnly = false)
 
-    val setupResult = given {
+    val setupResult = givenGraph {
       val setupPlan = buildPlan(setupQuery, runtime)
       val setupResult = execute(setupPlan, readOnly = false)
       consume(setupResult)

@@ -35,7 +35,7 @@ abstract class RelationshipTypeReadConcurrencyStressTestBase[CONTEXT <: RuntimeC
   test("should not throw when reading type of relationship that has been deleted") {
     val SIZE_HINT = 10000
     // given
-    val rels = given {
+    val rels = givenGraph {
       val (_, rels) = circleGraph(nNodes = SIZE_HINT, relType = "R", outDegree = 1)
       rels.map(_.getId)
     }

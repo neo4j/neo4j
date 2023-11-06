@@ -39,7 +39,7 @@ abstract class DirectedRelationshipByElementIdSeekTestBase[CONTEXT <: RuntimeCon
 
   test("should find single relationship") {
     // given
-    val (_, relationships) = given { circleGraph(17) }
+    val (_, relationships) = givenGraph { circleGraph(17) }
     val relToFind = relationships(random.nextInt(relationships.length))
 
     // when
@@ -60,7 +60,7 @@ abstract class DirectedRelationshipByElementIdSeekTestBase[CONTEXT <: RuntimeCon
 
   test("should not find non-existing relationship") {
     // given
-    given { circleGraph(17) }
+    givenGraph { circleGraph(17) }
     val toNotFind = "bad-id"
 
     // when
@@ -77,7 +77,7 @@ abstract class DirectedRelationshipByElementIdSeekTestBase[CONTEXT <: RuntimeCon
 
   test("should find multiple relationships") {
     // given
-    val (_, relationships) = given { circleGraph(sizeHint) }
+    val (_, relationships) = givenGraph { circleGraph(sizeHint) }
     val toFind = (1 to 5).map(_ => relationships(random.nextInt(relationships.length)))
 
     // when
@@ -95,7 +95,7 @@ abstract class DirectedRelationshipByElementIdSeekTestBase[CONTEXT <: RuntimeCon
 
   test("should find some relationships and not others") {
     // given
-    val (_, relationships) = given { circleGraph(sizeHint) }
+    val (_, relationships) = givenGraph { circleGraph(sizeHint) }
     val toFind = (1 to 5).map(_ => relationships(random.nextInt(relationships.length)))
     val toNotFind1 = relationships.last.getElementId.drop(1)
     val toNotFind2 = toNotFind1.drop(1)
@@ -116,7 +116,7 @@ abstract class DirectedRelationshipByElementIdSeekTestBase[CONTEXT <: RuntimeCon
 
   test("should handle relById + filter") {
     // given
-    val (_, relationships) = given { circleGraph(sizeHint) }
+    val (_, relationships) = givenGraph { circleGraph(sizeHint) }
     val toSeekFor = (1 to 5).map(_ => relationships(random.nextInt(relationships.length)))
     val toFind = toSeekFor(random.nextInt(toSeekFor.length))
     // when

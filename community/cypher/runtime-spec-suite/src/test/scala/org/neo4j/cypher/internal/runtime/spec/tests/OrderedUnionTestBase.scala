@@ -40,7 +40,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should union two empty streams") {
-    given {
+    givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -79,7 +79,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
 
   test("should union single node variable") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       val nodes = nodeGraph(Math.sqrt(sizeHint).toInt)
       nodes.zipWithIndex.foreach {
         case (node, i) => node.addLabel(Label.label(if (i % 2 == 0) "A" else "B"))
@@ -103,7 +103,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
 
   test("should union node and non-node variable") {
     // given
-    val (as, bs) = given {
+    val (as, bs) = givenGraph {
       val nodes = nodeGraph(Math.sqrt(sizeHint).toInt)
       val (asWI, bsWI) = nodes.zipWithIndex.partition(_._2 % 2 == 0)
       val as = asWI.map(_._1)
@@ -166,7 +166,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
 
   test("should union cached properties") {
     val size = sizeHint / 2
-    given {
+    givenGraph {
       val nodes = nodePropertyGraph(size, { case i => Map("prop" -> i) })
       nodes.zipWithIndex.foreach {
         case (node, i) => node.addLabel(Label.label(if (i % 2 == 0) "A" else "B"))
@@ -194,7 +194,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
 
   test("should union different cached properties from left and right") {
     val size = sizeHint / 2
-    given {
+    givenGraph {
       val nodes = nodePropertyGraph(size, { case i => Map("foo" -> s"foo-$i", "bar" -> s"bar-$i") })
       nodes.zipWithIndex.foreach {
         case (node, i) => node.addLabel(Label.label(if (i % 2 == 0) "A" else "B"))
@@ -225,7 +225,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
 
     val size = Math.sqrt(sizeHint).toInt
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       val nodes = nodeGraph(size)
       nodes.zipWithIndex.foreach {
         case (node, i) => node.addLabel(Label.label(if (i % 2 == 0) "Y" else "Z"))
@@ -264,7 +264,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
 
     val size = Math.sqrt(sizeHint).toInt
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       val nodes = nodeGraph(size)
       nodes.zipWithIndex.foreach {
         case (node, i) => node.addLabel(Label.label(if (i % 2 == 0) "Y" else "Z"))
@@ -300,7 +300,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
   test("should nested union") {
     val size = sizeHint / 2
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(size)
     }
 
@@ -330,7 +330,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
 
     val size = Math.max(sizeHint / 100, 10)
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(size)
     }
 
@@ -435,7 +435,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
 
     val size = Math.max(sizeHint / 100, 10)
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(size)
     }
 
@@ -510,7 +510,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
 
     val size = sizeHint / 2
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(size)
     }
 
@@ -537,7 +537,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
 
   test("should distinct after union") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -567,7 +567,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
     assume(!isParallel) // TODO: Why does this fail with morsel size 1?
 
     val size = sizeHint / 2
-    val nodes = given { nodeGraph(size) }
+    val nodes = givenGraph { nodeGraph(size) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -589,7 +589,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
 
   test("should work with limit on LHS") {
     val size = sizeHint / 2
-    val nodes = given { nodeGraph(size) }
+    val nodes = givenGraph { nodeGraph(size) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -611,7 +611,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
 
   test("should work with limit on top") {
     val size = sizeHint / 2
-    val nodes = given { nodeGraph(size) }
+    val nodes = givenGraph { nodeGraph(size) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -633,7 +633,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
 
   test("should work with limit under apply") {
     val size = sizeHint / 2
-    val nodes = given { nodeGraph(size) }
+    val nodes = givenGraph { nodeGraph(size) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -658,7 +658,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
 
     val size = Math.sqrt(sizeHint).toInt
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(size)
     }
 
@@ -690,7 +690,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
     assume(!isParallel)
 
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -722,7 +722,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
   test("should union under cartesian product with follow-up operator") {
     val size = 5 // Math.sqrt(sizeHint).toInt
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(size)
     }
 
@@ -754,7 +754,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
   test("should union with alias on RHS") {
     // given
     val size = sizeHint / 2
-    val nodes = given {
+    val nodes = givenGraph {
       val nodes = nodePropertyGraph(size, { case i => Map("prop" -> i) })
       nodes.zipWithIndex.foreach {
         case (node, i) => node.addLabel(Label.label(if (i % 2 == 0) "A" else "B"))
@@ -783,7 +783,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
 
   test("should union with alias on LHS") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -812,7 +812,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
   test("union with apply on RHS") {
     val size = sizeHint / 2
     // given
-    val nodes = given { nodeGraph(size) }
+    val nodes = givenGraph { nodeGraph(size) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -839,7 +839,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
   test("union with apply on LHS") {
     val size = sizeHint / 2
     // given
-    val nodes = given { nodeGraph(size) }
+    val nodes = givenGraph { nodeGraph(size) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -866,7 +866,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
   test("should union on the RHS of a hash join") {
     val size = sizeHint / 3
     // given
-    val (as, bs) = given {
+    val (as, bs) = givenGraph {
       val as = nodeGraph(size, "A")
       val bs = nodeGraph(size, "B")
       nodeGraph(size, "C")
@@ -896,7 +896,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
   test("should union with reducers") {
     val size = sizeHint / 3
     // given
-    val (as, bs) = given {
+    val (as, bs) = givenGraph {
       val as = nodeGraph(size, "A")
       val bs = nodeGraph(size, "B")
       nodeGraph(size, "C")
@@ -924,7 +924,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should nested union of union") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -959,7 +959,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
   test("should union of ordered union with apply") {
     val size = sizeHint / 4
     // given
-    val (as, bs, cs, ds) = given {
+    val (as, bs, cs, ds) = givenGraph {
       val as = nodeGraph(size, "A")
       val bs = nodeGraph(size, "B")
       val cs = nodeGraph(size, "C")
@@ -1000,7 +1000,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
   test("should union of nested ordered union with apply") {
     val size = sizeHint / 5
     // given
-    val (as, bs, cs, ds, es) = given {
+    val (as, bs, cs, ds, es) = givenGraph {
       val as = nodeGraph(size, "A")
       val bs = nodeGraph(size, "B")
       val cs = nodeGraph(size, "C")
@@ -1043,7 +1043,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
 
   test("should union of nested ordered union with aggregations") {
     // given
-    given {
+    givenGraph {
       nodeGraph(sizeHint, "A", "B", "C", "D", "E", "F", "G", "H")
     }
 

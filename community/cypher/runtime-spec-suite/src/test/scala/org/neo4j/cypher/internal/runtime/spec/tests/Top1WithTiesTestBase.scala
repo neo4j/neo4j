@@ -52,7 +52,7 @@ abstract class Top1WithTiesTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle null values, one column") {
-    val unfilteredNodes = given { nodeGraph(sizeHint) }
+    val unfilteredNodes = givenGraph { nodeGraph(sizeHint) }
     val nodes = select(unfilteredNodes, nullProbability = 0.52)
     val input = inputValues(nodes.flatMap(n => Seq.fill(5)(Array[Any](n))): _*)
 
@@ -91,7 +91,7 @@ abstract class Top1WithTiesTestBase[CONTEXT <: RuntimeContext](
 
   test("should top under apply") {
     val nodesPerLabel = 100
-    val (aNodes, bNodes) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    val (aNodes, bNodes) = givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -133,7 +133,7 @@ abstract class Top1WithTiesTestBase[CONTEXT <: RuntimeContext](
 
   test("should top twice in a row") {
     // given
-    val nodes = given { nodeGraph(1000) }
+    val nodes = givenGraph { nodeGraph(1000) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -154,7 +154,7 @@ abstract class Top1WithTiesTestBase[CONTEXT <: RuntimeContext](
   test("should top on top of apply with expand and top on rhs of apply") {
     // given
     val nodesPerLabel = 10
-    val (aNodes, bNodes) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    val (aNodes, bNodes) = givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -177,7 +177,7 @@ abstract class Top1WithTiesTestBase[CONTEXT <: RuntimeContext](
   test("should top on top of apply") {
     // given
     val nodeCount = 10
-    val (nodes, _) = given { circleGraph(nodeCount) }
+    val (nodes, _) = givenGraph { circleGraph(nodeCount) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -207,7 +207,7 @@ abstract class Top1WithTiesTestBase[CONTEXT <: RuntimeContext](
   test("should apply apply top") {
     // given
     val nodesPerLabel = 100
-    val (aNodes, _) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    val (aNodes, _) = givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)

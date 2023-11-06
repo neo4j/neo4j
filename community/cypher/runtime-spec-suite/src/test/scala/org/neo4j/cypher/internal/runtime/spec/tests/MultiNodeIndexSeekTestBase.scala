@@ -51,7 +51,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // given
     val size = Math.max(sizeHint, 10)
     nodeIndex(IndexType.RANGE, "Label", "prop")
-    val nodes = given {
+    val nodes = givenGraph {
       nodePropertyGraph(
         size,
         {
@@ -86,7 +86,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // given
     val size = 100
     nodeIndex(IndexType.RANGE, "Label", "prop")
-    val nodes = given {
+    val nodes = givenGraph {
       nodePropertyGraph(
         size,
         {
@@ -123,7 +123,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
   test("should handle lots of index seeks") {
     // given
     nodeIndex(IndexType.RANGE, "Label", "prop")
-    given {
+    givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -158,7 +158,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // given
     val size = 100
     nodeIndex(IndexType.RANGE, "Label", "prop")
-    val nodes = given {
+    val nodes = givenGraph {
       nodePropertyGraph(
         size,
         {
@@ -196,7 +196,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // given
     val size = 100
     nodeIndex(IndexType.RANGE, "Label", "prop")
-    given {
+    givenGraph {
       nodePropertyGraph(
         size,
         {
@@ -225,7 +225,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // given
     val size = Math.max(sizeHint, 10)
     nodeIndex(IndexType.RANGE, "Label", "prop")
-    val nodes = given {
+    val nodes = givenGraph {
       nodePropertyGraph(
         size,
         {
@@ -267,7 +267,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // given
     val size = Math.max(sizeHint, 10)
     nodeIndex(IndexType.RANGE, "Label", "prop")
-    given {
+    givenGraph {
       nodePropertyGraph(
         size,
         {
@@ -295,7 +295,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // given
     val size = Math.max(sizeHint, 10)
     nodeIndex(IndexType.RANGE, "Label", "prop")
-    given {
+    givenGraph {
       nodePropertyGraph(
         size,
         {
@@ -320,7 +320,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should work with multiple index types") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodeIndex(IndexType.RANGE, "Label", "prop")
       nodeIndex(IndexType.TEXT, "Label", "prop")
 
@@ -371,7 +371,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // given
     val size = Math.max(sizeHint, 10)
     nodeIndex(IndexType.RANGE, "Label", "prop")
-    val nodes = given {
+    val nodes = givenGraph {
       nodePropertyGraph(
         size,
         {
@@ -408,7 +408,7 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // NOTE: using sizeHint here can make the tx state unnecessarily big
     val size = 100
     nodeIndex(IndexType.RANGE, "L", "prop")
-    val nodes = given {
+    val nodes = givenGraph {
       nodePropertyGraph(size, { case i => Map("prop" -> i) }, "L")
     }
 

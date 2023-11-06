@@ -84,7 +84,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
   test("hasLabel on top of allNodeScan") {
     // given
     val size = 100
-    given {
+    givenGraph {
       for (i <- 0 until size) {
         if (i % 2 == 0) {
           tx.createNode(label("Label"))
@@ -109,7 +109,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
   test("hasLabel on top of indexScan") {
     // given
     val size = 100
-    given {
+    givenGraph {
       nodeIndex("Label", "prop")
       for (i <- 0 until size) {
         if (i % 2 == 0) {
@@ -135,7 +135,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
   test("hasLabel on top of labelNodeScan") {
     // given
     val size = 100
-    given {
+    givenGraph {
       nodeIndex("Label", "prop")
       for (i <- 0 until size) {
         if (i % 2 == 0) {
@@ -160,7 +160,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
 
   test("hasLabel is false on non-existing node") {
     // given
-    given { tx.createNode(label("Label")) }
+    givenGraph { tx.createNode(label("Label")) }
     val node = mock[Node]
     when(node.getElementId).thenReturn("dummy")
     when(node.getId).thenReturn(1337L)
@@ -181,7 +181,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
   test("hasALabel on top of indexScan") {
     // given
     val size = 100
-    given {
+    givenGraph {
       nodeIndex("Label", "prop")
       for (i <- 0 until size) {
         if (i % 2 == 0) {
@@ -207,7 +207,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
   test("hasALabel on top of labelNodeScan") {
     // given
     val size = 100
-    given {
+    givenGraph {
       for (i <- 0 until size) {
         if (i % 2 == 0) {
           tx.createNode(label("Label"), label("Other"))
@@ -232,7 +232,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
   test("hasALabel on top of allNodesScan") {
     // given
     val size = 100
-    given {
+    givenGraph {
       for (i <- 0 until size) {
         if (i % 2 == 0) {
           tx.createNode(label("Label"), label("Other"))
@@ -258,7 +258,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
   test("hasALabelOrType on null") {
     // given
     val size = 100
-    val unfilteredNodes = given { nodeGraph(size) }
+    val unfilteredNodes = givenGraph { nodeGraph(size) }
     val nodes = select(unfilteredNodes, nullProbability = 0.5)
     val input = inputValues(nodes.map(n => Array[Any](n)): _*)
 
@@ -279,7 +279,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
   test("hasALabel on null") {
     // given
     val size = 100
-    val unfilteredNodes = given { nodeGraph(size) }
+    val unfilteredNodes = givenGraph { nodeGraph(size) }
     val nodes = select(unfilteredNodes, nullProbability = 0.5)
     val input = inputValues(nodes.map(n => Array[Any](n)): _*)
 
@@ -300,7 +300,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
   test("should handle node property access on top of allNode") {
     // given
     val size = 100
-    given {
+    givenGraph {
       nodePropertyGraph(
         size,
         {
@@ -326,7 +326,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
   test("should handle node property access on top of labelScan") {
     // given
     val size = 100
-    given {
+    givenGraph {
       nodePropertyGraph(
         size,
         {
@@ -352,7 +352,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
   test("should handle node property access on top of indexScan") {
     // given
     val size = 100
-    given {
+    givenGraph {
       nodeIndex("Label", "prop")
       nodePropertyGraph(
         size,
@@ -379,7 +379,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
   test("should handle hasProperty on top of allNode") {
     // given
     val size = 100
-    given {
+    givenGraph {
       nodePropertyGraph(
         size,
         {
@@ -405,7 +405,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
   test("should handle hasProperty on top of labelScan") {
     // given
     val size = 100
-    given {
+    givenGraph {
       nodePropertyGraph(
         size,
         {
@@ -430,7 +430,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
   test("should handle hasProperty on top of indexScan") {
     // given
     val size = 100
-    given {
+    givenGraph {
       nodeIndex("Label", "other")
       nodePropertyGraph(
         size,
@@ -457,7 +457,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
 
   test("should handle relationship property exists - fuseable with expand") {
     val size = 100
-    given {
+    givenGraph {
       val (_, rels) = circleGraph(size, "Label")
       var i = 0
       rels.foreach { r =>
@@ -484,7 +484,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
 
   test("should handle relationship property exists - separate pipeline") {
     val size = 100
-    given {
+    givenGraph {
       val (_, rels) = circleGraph(size, "Label")
       var i = 0
       rels.foreach { r =>
@@ -515,7 +515,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
   test("should return null if node property is not there") {
     // given
     val size = 100
-    given {
+    givenGraph {
       nodePropertyGraph(
         size,
         {
@@ -540,7 +540,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
 
   test("should ignore if trying to get node property from node that isn't there") {
     // given
-    given { nodePropertyGraph(1, { case i: Int => Map("prop" -> i) }, "Label") }
+    givenGraph { nodePropertyGraph(1, { case i: Int => Map("prop" -> i) }, "Label") }
     val node = mock[Node]
     when(node.getId).thenReturn(1337L)
     when(node.getElementId).thenReturn("dummy")
@@ -560,7 +560,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
   test("should handle relationship property access") {
     // given
     val size = 100
-    val rels = given {
+    val rels = givenGraph {
       val (_, rels) = circleGraph(size, "L")
       rels.foreach(_.setProperty("prop", 42))
       rels
@@ -582,7 +582,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
   test("should return null if relationship property is not there") {
     // given
     val size = 100
-    val rels = given {
+    val rels = givenGraph {
       val (_, rels) = circleGraph(size, "L")
       rels.foreach(_.setProperty("prop", 42))
       rels
@@ -604,7 +604,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
 
   test("should ignore if trying to get relationship property from relationship that isn't there") {
     // given
-    given { nodePropertyGraph(1, { case i: Int => Map("prop" -> i) }, "Label") }
+    givenGraph { nodePropertyGraph(1, { case i: Int => Map("prop" -> i) }, "Label") }
     val relationship = mock[Relationship]
     when(relationship.getId).thenReturn(1337L)
 
@@ -626,7 +626,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
     val size = 100
     val halfSize = size / 2
     val nodes =
-      given {
+      givenGraph {
         nodePropertyGraph(size, { case i => Map("prop" -> i) })
       }
 
@@ -650,7 +650,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
     val size = 100
     val halfSize = size / 2
     val nodes =
-      given {
+      givenGraph {
         nodePropertyGraph(size, { case i => Map("prop" -> i) })
       }
 
@@ -832,7 +832,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
   test("should filter with reorderable ANDS") {
     // given
     val size = 10 * SelectivityTracker.MIN_ROWS_BEFORE_SORT.toInt
-    val nodes = given {
+    val nodes = givenGraph {
       for (i <- 0 until size) yield {
         val n = tx.createNode()
         n.setProperty("prop", i % 100)
@@ -904,7 +904,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
   test("should filter with has any label predicate") {
     // given
     val size = 100
-    val nodes = given {
+    val nodes = givenGraph {
       Range(0, size).map {
         case i if i % 5 == 0 => runtimeTestSupport.tx.createNode()
         case i if i % 5 == 1 => runtimeTestSupport.tx.createNode(label("A"))
@@ -931,7 +931,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
   test("should filter with has any label predicate and input nodes") {
     // given
     val size = 100
-    val nodes = given {
+    val nodes = givenGraph {
       Range(0, size).map {
         case i if i % 5 == 0 => runtimeTestSupport.tx.createNode()
         case i if i % 5 == 1 => runtimeTestSupport.tx.createNode(label("A"))
@@ -959,7 +959,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
 
   test("should handle non-existing node with has any label expression") {
     // given
-    given { tx.createNode(label("Label")) }
+    givenGraph { tx.createNode(label("Label")) }
     val node = mock[Node]
     when(node.getId).thenReturn(1337L)
     when(node.getElementId).thenReturn("dummy")
@@ -980,7 +980,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
   test("should get type of relationship") {
     // given
     val size = 11
-    given { chainGraphs(size, "TO") }
+    givenGraph { chainGraphs(size, "TO") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -1060,7 +1060,7 @@ trait ExpressionWithTxStateChangesTests[CONTEXT <: RuntimeContext] {
 
   test("hasLabel is false on deleted node") {
     // given
-    val node = given { tx.createNode(label("Label")) }
+    val node = givenGraph { tx.createNode(label("Label")) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -1078,7 +1078,7 @@ trait ExpressionWithTxStateChangesTests[CONTEXT <: RuntimeContext] {
 
   test("should throw if node was deleted before accessing node property") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodePropertyGraph(
         1,
         {
@@ -1103,7 +1103,7 @@ trait ExpressionWithTxStateChangesTests[CONTEXT <: RuntimeContext] {
 
   test("should throw if relationship was deleted before accessing relationship property") {
     // given
-    val rels = given {
+    val rels = givenGraph {
       val (_, rels) = circleGraph(2, "L")
       rels.foreach(_.setProperty("prop", 42))
       rels
@@ -1164,7 +1164,7 @@ trait ExpressionWithTxStateChangesTests[CONTEXT <: RuntimeContext] {
   test("hasType on top of expand all") {
     // given
     val size = 100
-    given {
+    givenGraph {
       for (i <- 0 until size) {
         if (i % 2 == 0) {
           tx.createNode().createRelationshipTo(tx.createNode(), RelationshipType.withName("A"))
@@ -1190,7 +1190,7 @@ trait ExpressionWithTxStateChangesTests[CONTEXT <: RuntimeContext] {
   test("hasType on top of expand into") {
     // given
     val size = 100
-    given {
+    givenGraph {
       for (i <- 0 until size) {
         if (i % 2 == 0) {
           tx.createNode(label("START")).createRelationshipTo(
@@ -1224,7 +1224,7 @@ trait ExpressionWithTxStateChangesTests[CONTEXT <: RuntimeContext] {
   test("hasType on top of optional expand all") {
     // given
     val size = 100
-    given {
+    givenGraph {
       for (i <- 0 until size) {
         if (i % 3 == 0) {
           tx.createNode(label("START")).createRelationshipTo(tx.createNode(), RelationshipType.withName("A"))
@@ -1255,7 +1255,7 @@ trait ExpressionWithTxStateChangesTests[CONTEXT <: RuntimeContext] {
   test("hasType on top of optional expand into") {
     // given
     val size = 100
-    given {
+    givenGraph {
       for (i <- 0 until size) {
         if (i % 3 == 0) {
           tx.createNode(label("START")).createRelationshipTo(
@@ -1295,7 +1295,7 @@ trait ExpressionWithTxStateChangesTests[CONTEXT <: RuntimeContext] {
 
   test("should handle deleted node with has any label expression") {
     // given
-    val node = given { tx.createNode(label("Label")) }
+    val node = givenGraph { tx.createNode(label("Label")) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)

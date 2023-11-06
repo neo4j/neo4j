@@ -54,7 +54,7 @@ abstract class AntiConditionalApplyTestBase[CONTEXT <: RuntimeContext](
 
   test("anti conditional apply on nonempty lhs and empty rhs, where condition(lhs) always is false") {
     // given
-    given {
+    givenGraph {
       nodeGraph(19, "RHS")
       nodeGraph(sizeHint)
     }
@@ -78,7 +78,7 @@ abstract class AntiConditionalApplyTestBase[CONTEXT <: RuntimeContext](
 
   test("anti conditional apply on nonempty lhs and empty rhs") {
     // given
-    given {
+    givenGraph {
       nodeGraph(19, "RHS")
       nodeGraph(sizeHint)
     }
@@ -102,7 +102,7 @@ abstract class AntiConditionalApplyTestBase[CONTEXT <: RuntimeContext](
 
   test("anti conditional apply on nonempty lhs and nonempty rhs") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
       nodeGraph(sizeHint, "RHS")
     }
@@ -125,7 +125,7 @@ abstract class AntiConditionalApplyTestBase[CONTEXT <: RuntimeContext](
 
   test("anti conditional apply on non-nullable node") {
     val nodeCount = sizeHint
-    val (nodes, _) = given {
+    val (nodes, _) = givenGraph {
       circleGraph(nodeCount, "L")
     }
 
@@ -148,7 +148,7 @@ abstract class AntiConditionalApplyTestBase[CONTEXT <: RuntimeContext](
 
   test("anti conditional apply on the RHS of an apply") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
       nodeGraph(sizeHint, "RHS")
     }
@@ -175,7 +175,7 @@ abstract class AntiConditionalApplyTestBase[CONTEXT <: RuntimeContext](
   test("should support limit on top of anti conditional apply") {
     // given
     val nodesPerLabel = 50
-    val (nodes, _) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    val (nodes, _) = givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
     val input = inputColumns(100000, 3, i => if (i % 2 == 0) nodes(i % nodes.size) else null).stream()
 
     val limit = nodesPerLabel * nodesPerLabel - 1
@@ -203,7 +203,7 @@ abstract class AntiConditionalApplyTestBase[CONTEXT <: RuntimeContext](
   test("should support reduce -> limit on the RHS of anti conditional apply") {
     // given
     val nodesPerLabel = 100
-    val (_, bNodes) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    val (_, bNodes) = givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     val limit = 10
     // when
@@ -226,7 +226,7 @@ abstract class AntiConditionalApplyTestBase[CONTEXT <: RuntimeContext](
   test("should aggregate on top of anti conditional apply with expand and limit and aggregation on rhs of apply") {
     // given
     val nodesPerLabel = 10
-    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     val limit = nodesPerLabel / 2
 
@@ -250,7 +250,7 @@ abstract class AntiConditionalApplyTestBase[CONTEXT <: RuntimeContext](
   test("should aggregate with no grouping on top of anti conditional apply with expand on RHS") {
     // given
     val nodesPerLabel = 10
-    val (aNodes, bNodes) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    val (aNodes, bNodes) = givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -272,7 +272,7 @@ abstract class AntiConditionalApplyTestBase[CONTEXT <: RuntimeContext](
   test("should aggregate on top of anti conditional apply with expand on RHS") {
     // given
     val nodesPerLabel = 10
-    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -297,7 +297,7 @@ abstract class AntiConditionalApplyTestBase[CONTEXT <: RuntimeContext](
   test("should aggregate on top of anti conditional apply with expand on RHS with nulls") {
     // given
     val nodesPerLabel = 10
-    val (aNodes, bNodes) = given {
+    val (aNodes, bNodes) = givenGraph {
       bipartiteGraph(
         nodesPerLabel,
         "A",
@@ -360,7 +360,7 @@ trait OrderedAntiConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
 
   test("anti conditional apply on the RHS of an apply should keep row order") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
       nodeGraph(sizeHint, "RHS")
     }
@@ -408,7 +408,7 @@ trait OrderedAntiConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
     "anti conditional apply on nonempty lhs and empty rhs, where condition(lhs) always is false - with leveraged order"
   ) {
     // given
-    given {
+    givenGraph {
       nodeGraph(19, "RHS")
       nodeGraph(sizeHint)
     }
@@ -432,7 +432,7 @@ trait OrderedAntiConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
 
   test("anti conditional apply on nonempty lhs and empty rhs - with leveraged order") {
     // given
-    given {
+    givenGraph {
       nodeGraph(19, "RHS")
       nodeGraph(sizeHint)
     }
@@ -456,7 +456,7 @@ trait OrderedAntiConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
 
   test("anti conditional apply on nonempty lhs and nonempty rhs  - with leveraged order") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
       nodeGraph(sizeHint, "RHS")
     }
@@ -479,7 +479,7 @@ trait OrderedAntiConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
 
   test("anti conditional apply on non-nullable node - with leveraged order") {
     val nodeCount = sizeHint
-    val (nodes, _) = given {
+    val (nodes, _) = givenGraph {
       circleGraph(nodeCount, "L")
     }
 
@@ -502,7 +502,7 @@ trait OrderedAntiConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
 
   test("anti conditional apply on the RHS of an apply - with leveraged order") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
       nodeGraph(sizeHint, "RHS")
     }
@@ -529,7 +529,7 @@ trait OrderedAntiConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
   test("should support limit on top of anti conditional apply - with leveraged order") {
     // given
     val nodesPerLabel = 50
-    val (nodes, _) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    val (nodes, _) = givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
     val input = inputColumns(100000, 3, i => if (i % 2 == 0) nodes(i % nodes.size) else null).stream()
 
     val limit = nodesPerLabel * nodesPerLabel - 1
@@ -557,7 +557,7 @@ trait OrderedAntiConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
   test("should support reduce -> limit on the RHS of anti conditional apply - with leveraged order") {
     // given
     val nodesPerLabel = 100
-    val (_, bNodes) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    val (_, bNodes) = givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     val limit = 10
     // when
@@ -585,7 +585,7 @@ trait OrderedAntiConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
   ) {
     // given
     val nodesPerLabel = 10
-    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     val limit = nodesPerLabel / 2
 
@@ -609,7 +609,7 @@ trait OrderedAntiConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
   test("should aggregate with no grouping on top of anti conditional apply with expand on RHS - with leveraged order") {
     // given
     val nodesPerLabel = 10
-    val (aNodes, bNodes) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    val (aNodes, bNodes) = givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -631,7 +631,7 @@ trait OrderedAntiConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
   test("should aggregate on top of anti conditional apply with expand on RHS - with leveraged order") {
     // given
     val nodesPerLabel = 10
-    given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -656,7 +656,7 @@ trait OrderedAntiConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
   test("should aggregate on top of anti conditional apply with expand on RHS with nulls - with leveraged order") {
     // given
     val nodesPerLabel = 10
-    val (aNodes, bNodes) = given {
+    val (aNodes, bNodes) = givenGraph {
       bipartiteGraph(
         nodesPerLabel,
         "A",

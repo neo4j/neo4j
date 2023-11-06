@@ -36,7 +36,7 @@ abstract class SetRelationshipPropertiesTestBase[CONTEXT <: RuntimeContext](
 
   test("should set relationship properties") {
     // given a single relationship
-    val r = given {
+    val r = givenGraph {
       val Seq(n1, n2) = nodeGraph(2)
       n1.createRelationshipTo(n2, RelationshipType.withName("R"))
     }
@@ -59,7 +59,7 @@ abstract class SetRelationshipPropertiesTestBase[CONTEXT <: RuntimeContext](
 
   test("should set relationship properties from refslot") {
     // given a single relationship
-    val r = given {
+    val r = givenGraph {
       val Seq(n1, n2) = nodeGraph(2)
       n1.createRelationshipTo(n2, RelationshipType.withName("R"))
     }
@@ -83,7 +83,7 @@ abstract class SetRelationshipPropertiesTestBase[CONTEXT <: RuntimeContext](
 
   test("should remove and set relationship properties") {
     // given a single relationship
-    val r = given {
+    val r = givenGraph {
       val Seq(n1, n2) = nodeGraph(2)
       val r = n1.createRelationshipTo(n2, RelationshipType.withName("R"))
       r.setProperty("p1", "1")
@@ -109,7 +109,7 @@ abstract class SetRelationshipPropertiesTestBase[CONTEXT <: RuntimeContext](
 
   test("should set already existing relationship properties") {
     // given a single relationship
-    val r = given {
+    val r = givenGraph {
       val Seq(n1, n2) = nodeGraph(2)
       val r = n1.createRelationshipTo(n2, RelationshipType.withName("R"))
       r.setProperty("p1", "0")
@@ -131,7 +131,7 @@ abstract class SetRelationshipPropertiesTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should set properties on multiple relationships") {
-    val rs = given {
+    val rs = givenGraph {
       val (_, r) = circleGraph(sizeHint, "A")
       var i = 0
       r.foreach { r =>
@@ -160,7 +160,7 @@ abstract class SetRelationshipPropertiesTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should set properties on rhs of apply") {
-    val rs = given {
+    val rs = givenGraph {
       val (_, r) = circleGraph(sizeHint, "A")
       var i = 0
       r.foreach { r =>
@@ -191,7 +191,7 @@ abstract class SetRelationshipPropertiesTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should set properties after limit") {
-    val rs = given {
+    val rs = givenGraph {
       val (_, r) = circleGraph(sizeHint, "A")
       var i = 0
       r.foreach { r =>
@@ -221,7 +221,7 @@ abstract class SetRelationshipPropertiesTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should set same properties multiple times") {
-    val rs = given {
+    val rs = givenGraph {
       val (_, r) = circleGraph(sizeHint, "A")
       var i = 0
       r.foreach { r =>
@@ -253,7 +253,7 @@ abstract class SetRelationshipPropertiesTestBase[CONTEXT <: RuntimeContext](
 
   test("should set cached relationship properties") {
     // given a single relationship
-    val r = given {
+    val r = givenGraph {
       val Seq(n1, n2) = nodeGraph(2)
       val r = n1.createRelationshipTo(n2, RelationshipType.withName("R"))
       r
@@ -276,7 +276,7 @@ abstract class SetRelationshipPropertiesTestBase[CONTEXT <: RuntimeContext](
 
   test("should set relationship properties from null value") {
     // given a single relationship
-    val r = given {
+    val r = givenGraph {
       val Seq(n1, n2) = nodeGraph(2)
       val r = n1.createRelationshipTo(n2, RelationshipType.withName("R"))
       r
@@ -299,7 +299,7 @@ abstract class SetRelationshipPropertiesTestBase[CONTEXT <: RuntimeContext](
 
   test("should set relationship properties on null relationship") {
     // given a single relationship
-    val r = given {
+    val r = givenGraph {
       val Seq(n1, n2) = nodeGraph(2)
       val r = n1.createRelationshipTo(n2, RelationshipType.withName("R"))
       r
@@ -324,7 +324,7 @@ abstract class SetRelationshipPropertiesTestBase[CONTEXT <: RuntimeContext](
 
   test("should set relationship properties from expression that requires null check") {
     // given a single relationship
-    val r = given {
+    val r = givenGraph {
       val Seq(n1, n2) = nodeGraph(2)
       val r = n1.createRelationshipTo(n2, RelationshipType.withName("R"))
       r
@@ -346,7 +346,7 @@ abstract class SetRelationshipPropertiesTestBase[CONTEXT <: RuntimeContext](
 
   test("should count relationship properties updates even if values are not changed") {
     // given a single relationship
-    val r = given {
+    val r = givenGraph {
       val Seq(n1, n2) = nodeGraph(2)
       val r = n1.createRelationshipTo(n2, RelationshipType.withName("R"))
       r
@@ -366,7 +366,7 @@ abstract class SetRelationshipPropertiesTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should set relationship properties between two loops with continuation") {
-    val rels = given {
+    val rels = givenGraph {
       val (_, rs) = circleGraph(sizeHint)
       rs.foreach(r => {
         r.setProperty("p1", 0)

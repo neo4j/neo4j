@@ -49,7 +49,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
       )
     }).reduce(_ ++ _)
 
-    val (nodes, rels) = given {
+    val (nodes, rels) = givenGraph {
       val nodes = nodeGraph(n, "Honey")
       val rels = connect(nodes, relTuples)
       (nodes, rels)
@@ -82,7 +82,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
       )
     }).reduce(_ ++ _)
 
-    val (nodes, rels) = given {
+    val (nodes, rels) = givenGraph {
       val nodes = nodeGraph(n, "Honey")
       val rels = connect(nodes, relTuples)
       (nodes, rels)
@@ -116,7 +116,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
       )
     }).reduce(_ ++ _)
 
-    val (nodes, rels) = given {
+    val (nodes, rels) = givenGraph {
       val nodes = nodeGraph(n, "Honey")
       val rels = connect(nodes, relTuples)
       (nodes, rels)
@@ -149,7 +149,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
       )
     }).reduce(_ ++ _)
 
-    val (nodes, rels) = given {
+    val (nodes, rels) = givenGraph {
       val nodes = nodeGraph(n, "Honey")
       val rels = connect(nodes, relTuples)
       (nodes, rels)
@@ -183,7 +183,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
       )
     }).reduce(_ ++ _)
 
-    val (nodes, rels) = given {
+    val (nodes, rels) = givenGraph {
       val nodes = nodeGraph(n, "Honey")
       val rels = connect(nodes, relTuples)
       (nodes, rels)
@@ -218,7 +218,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
       )
     }).reduce(_ ++ _)
 
-    val (nodes, rels) = given {
+    val (nodes, rels) = givenGraph {
       val nodes = nodeGraph(n, "Honey")
       val rels = connect(nodes, relTuples)
       (nodes, rels)
@@ -252,7 +252,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
       )
     }).reduce(_ ++ _)
 
-    val (nodes, rels) = given {
+    val (nodes, rels) = givenGraph {
       val nodes = nodeGraph(n, "Honey")
       val rels = connect(nodes, relTuples)
       (nodes, rels)
@@ -286,7 +286,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
       )
     }).reduce(_ ++ _)
 
-    val (nodes, rels) = given {
+    val (nodes, rels) = givenGraph {
       val nodes = nodeGraph(n, "Honey")
       val rels = connect(nodes, relTuples)
       (nodes, rels)
@@ -324,7 +324,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
       )
     }).reduce(_ ++ _)
 
-    val (nodes, rels) = given {
+    val (nodes, rels) = givenGraph {
       val nodes = nodeGraph(n, "Honey")
       val rels = connect(nodes, relTuples)
       (nodes, rels)
@@ -362,7 +362,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
       )
     }).reduce(_ ++ _)
 
-    val (nodes, rels) = given {
+    val (nodes, rels) = givenGraph {
       val nodes = nodeGraph(n, "Honey")
       val rels = connect(nodes, relTuples)
       (nodes, rels)
@@ -395,7 +395,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
       )
     }).reduce(_ ++ _)
 
-    val (nodes, rels) = given {
+    val (nodes, rels) = givenGraph {
       val nodes = nodeGraph(n, "Honey")
       val rels = connect(nodes, relTuples)
       (nodes, rels)
@@ -434,7 +434,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle types missing on compile") {
-    val (n1, n2) = given {
+    val (n1, n2) = givenGraph {
       val n1 = tx.createNode()
       val n2 = tx.createNode()
       n1.createRelationshipTo(n2, RelationshipType.withName("BASE"))
@@ -453,7 +453,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
     ))
 
     // CREATE S
-    val (m1, m2, m3, m4) = given {
+    val (m1, m2, m3, m4) = givenGraph {
       val m3 = tx.createNode()
       val m4 = tx.createNode()
       m3.createRelationshipTo(m4, RelationshipType.withName("S"))
@@ -467,7 +467,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
     ))
 
     // CREATE R
-    val (o1, o2, o3, o4, o5, o6) = given {
+    val (o1, o2, o3, o4, o5, o6) = givenGraph {
       val o5 = tx.createNode()
       val o6 = tx.createNode()
       o5.createRelationshipTo(o6, RelationshipType.withName("R"))
@@ -484,7 +484,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("cached plan should adapt to new relationship types") {
-    val (n1, n2) = given {
+    val (n1, n2) = givenGraph {
       val n1 = tx.createNode()
       val n2 = tx.createNode()
       n1.createRelationshipTo(n2, RelationshipType.withName("BASE"))
@@ -505,7 +505,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
     ))
 
     // CREATE S
-    val (m1, m2, m3, m4) = given {
+    val (m1, m2, m3, m4) = givenGraph {
       val m3 = tx.createNode()
       val m4 = tx.createNode()
       m3.createRelationshipTo(m4, RelationshipType.withName("S"))
@@ -519,7 +519,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
     ))
 
     // CREATE R
-    val (o1, o2, o3, o4, o5, o6) = given {
+    val (o1, o2, o3, o4, o5, o6) = givenGraph {
       val o5 = tx.createNode()
       val o6 = tx.createNode()
       o5.createRelationshipTo(o6, RelationshipType.withName("R"))
@@ -561,7 +561,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
       )
     }).reduce(_ ++ _)
 
-    val (nodes, rels) = given {
+    val (nodes, rels) = givenGraph {
       val nodes = nodeGraph(n, "Honey")
       val rels = connect(nodes, relTuples)
       (nodes, rels)
@@ -603,7 +603,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
   test("should support expandInto on RHS of apply") {
     // given
     val size = sizeHint / 16
-    val (as, bs, moreAs) = given {
+    val (as, bs, moreAs) = givenGraph {
       val (as, bs) = bipartiteGraph(size, "A", "B", "R")
       // Some not connected nodes as well
       val moreAs = nodeGraph(size, "A")
@@ -634,7 +634,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
   test("should support undirected expandInto on RHS of apply") {
     // given
     val size = sizeHint / 16
-    val (as, bs, as2, bs2, moreAs) = given {
+    val (as, bs, as2, bs2, moreAs) = givenGraph {
       val (as, bs) = bipartiteGraph(size, "A", "B", "R")
       val (bs2, as2) = bipartiteGraph(size, "B", "A", "R2")
       // Some not connected nodes as well
@@ -667,7 +667,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
   test("should support undirected expandInto on RHS of apply II") {
     // given
     val size = sizeHint / 16
-    val (as, bs, as2, bs2, moreAs) = given {
+    val (as, bs, as2, bs2, moreAs) = givenGraph {
       val (as, bs) = bipartiteGraph(size, "A", "B", "R")
       val (bs2, as2) = bipartiteGraph(size, "B", "A", "R2")
       // Some not connected nodes as well
@@ -707,7 +707,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
       )
     }).reduce(_ ++ _)
 
-    val (nodes, rels) = given {
+    val (nodes, rels) = givenGraph {
       val nodes = nodePropertyGraph(
         n,
         {
@@ -748,7 +748,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
       )
     }).reduce(_ ++ _)
 
-    val (nodes, rels) = given {
+    val (nodes, rels) = givenGraph {
       val nodes = nodePropertyGraph(
         n,
         {
@@ -783,7 +783,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
       )
     }).reduce(_ ++ _)
 
-    val (nodes, rels) = given {
+    val (nodes, rels) = givenGraph {
       val nodes = nodePropertyGraph(
         n,
         {
@@ -820,7 +820,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
     // given
     val size = 100
 
-    val (aNodes, bNodes) = given {
+    val (aNodes, bNodes) = givenGraph {
       bipartiteGraph(
         size,
         "A",
@@ -857,7 +857,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
     // given
     val size = 100
 
-    val (aNodes, bNodes) = given {
+    val (aNodes, bNodes) = givenGraph {
       bipartiteGraph(
         size,
         "A",
@@ -894,7 +894,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle relationship property predicate") {
     // given
-    val node = given {
+    val node = givenGraph {
       val person = tx.createNode(label("START"))
       val r = person.createRelationshipTo(tx.createNode(), RelationshipType.withName("R"))
       r.setProperty("prop", 100)
@@ -916,7 +916,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
 
   test("should not return nulls when some rows match the predicate") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       val relType = RelationshipType.withName("R")
       val labels = Seq("Idx", "Zero", "One").map(label)
 
@@ -958,7 +958,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
 
   test("should be able to access property on null node without errors") {
     // given
-    given {
+    givenGraph {
       nodeGraph(1)
     }
 
@@ -979,7 +979,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
 
   test("should be able to check property existence on null node without errors") {
     // given
-    given {
+    givenGraph {
       nodeGraph(1)
     }
 
@@ -1000,7 +1000,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
 
   test("should be able to check label existence on null node without errors") {
     // given
-    given {
+    givenGraph {
       nodeGraph(1)
     }
 
@@ -1021,7 +1021,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
 
   test("should be able access property on nulled relationship") {
     // given
-    given {
+    givenGraph {
       nodeGraph(1)
     }
 
@@ -1041,7 +1041,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
 
   test("should be able access property on nulled relationship, property token existing") {
     // given
-    given {
+    givenGraph {
       val n = nodeGraph(1).head
       n.createRelationshipTo(n, RelationshipType.withName("R")).setProperty("prop", "hello")
     }
@@ -1063,7 +1063,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
   test("should handle multiple optional expands when first predicate fails") {
     // given
     val nodeLabel = label("Label")
-    val nodes = given {
+    val nodes = givenGraph {
       val nodes = nodeGraph(sizeHint, "N")
       nodes.foreach(n => {
         n.createRelationshipTo(tx.createNode(nodeLabel), RelationshipType.withName("A"))
@@ -1093,7 +1093,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
   test("should handle multiple optional expands when second predicate fails") {
     // given
     val nodeLabel = label("Label")
-    val nodes = given {
+    val nodes = givenGraph {
       val nodes = nodeGraph(sizeHint, "N")
       nodes.foreach(n => {
         n.createRelationshipTo(tx.createNode(nodeLabel), RelationshipType.withName("A"))
@@ -1122,7 +1122,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle many optional expand with random predicates") {
     // given
-    given {
+    givenGraph {
       val allLabels = Array("A", "B", "C", "D", "E")
       def randomLabel = label(allLabels(Random.nextInt(allLabels.length)))
       val nodes = nodeGraph(sizeHint, "N")
@@ -1167,7 +1167,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
   test("should handle multiple optional expands when first predicate fails with limit") {
     // given
     val nodeLabel = label("Label")
-    given {
+    givenGraph {
       val nodes = nodeGraph(sizeHint, "N")
       nodes.foreach(n => {
         n.createRelationshipTo(tx.createNode(nodeLabel), RelationshipType.withName("A"))
@@ -1198,7 +1198,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
   test("should handle multiple optional expands when second predicate fails with limit") {
     // given
     val nodeLabel = label("Label")
-    given {
+    givenGraph {
       val nodes = nodeGraph(sizeHint, "N")
       nodes.foreach(n => {
         n.createRelationshipTo(tx.createNode(nodeLabel), RelationshipType.withName("A"))
@@ -1229,7 +1229,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
   test("should handle multiple optional expands when first predicate fails on the RHS of Apply") {
     // given
     val nodeLabel = label("Label")
-    val nodes = given {
+    val nodes = givenGraph {
       val nodes = nodeGraph(sizeHint, "N")
       nodes.foreach(n => {
         n.createRelationshipTo(tx.createNode(nodeLabel), RelationshipType.withName("A"))
@@ -1261,7 +1261,7 @@ abstract class OptionalExpandAllTestBase[CONTEXT <: RuntimeContext](
   test("should handle multiple optional expands when second predicate fails on the RHS of an Apply") {
     // given
     val nodeLabel = label("Label")
-    val nodes = given {
+    val nodes = givenGraph {
       val nodes = nodeGraph(sizeHint, "N")
       nodes.foreach(n => {
         n.createRelationshipTo(tx.createNode(nodeLabel), RelationshipType.withName("A"))

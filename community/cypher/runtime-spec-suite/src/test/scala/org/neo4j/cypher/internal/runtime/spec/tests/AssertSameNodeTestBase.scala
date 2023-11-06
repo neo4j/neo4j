@@ -36,7 +36,7 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should verify that two nodes are identical") {
-    val nodes = given {
+    val nodes = givenGraph {
       uniqueNodeIndex("Honey", "prop")
       nodePropertyGraph(
         sizeHint,
@@ -63,7 +63,7 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should fail if two nodes are different") {
-    given {
+    givenGraph {
       uniqueNodeIndex("Honey", "prop")
       nodePropertyGraph(
         sizeHint,
@@ -87,7 +87,7 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should verify that many nodes are identical") {
-    val nodes = given {
+    val nodes = givenGraph {
       uniqueNodeIndex("Honey", "prop")
       nodePropertyGraph(
         sizeHint,
@@ -118,7 +118,7 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should fail if two nodes out of many are different") {
-    given {
+    givenGraph {
       uniqueNodeIndex("Honey", "prop")
       nodePropertyGraph(
         sizeHint,
@@ -146,7 +146,7 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should verify that three nodes are identical") {
-    val nodes = given {
+    val nodes = givenGraph {
       uniqueNodeIndex("Honey", "prop")
       nodePropertyGraph(
         sizeHint,
@@ -175,7 +175,7 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should fail if any of  that three nodes are different") {
-    given {
+    givenGraph {
       uniqueNodeIndex("Honey", "prop")
       nodePropertyGraph(
         sizeHint,
@@ -201,7 +201,7 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should verify that two nodes are identical on the RHS of an apply") {
-    val nodes = given {
+    val nodes = givenGraph {
       uniqueNodeIndex("Honey", "prop")
       nodePropertyGraph(
         sizeHint,
@@ -230,7 +230,7 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should fail if two nodes are different on the RHS of an apply") {
-    given {
+    givenGraph {
       uniqueNodeIndex("Honey", "prop")
       nodePropertyGraph(
         sizeHint,
@@ -256,7 +256,7 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should fail if only lhs is empty") {
-    given {
+    givenGraph {
       uniqueNodeIndex("Honey", "prop")
       nodePropertyGraph(
         sizeHint,
@@ -280,7 +280,7 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should fail if only rhs is empty") {
-    given {
+    givenGraph {
       uniqueNodeIndex("Honey", "prop")
       nodePropertyGraph(
         sizeHint,
@@ -304,7 +304,7 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should work if lhs and rhs are empty") {
-    given {
+    givenGraph {
       uniqueNodeIndex("Honey", "prop")
       nodePropertyGraph(
         sizeHint,
@@ -330,7 +330,7 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should assert same nodes on top of range seek and fail") {
-    given {
+    givenGraph {
       uniqueNodeIndex("Honey", "prop")
       nodePropertyGraph(
         sizeHint,
@@ -354,7 +354,7 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should fail on merge using multiple unique indexes if it found a node matching single property only") {
-    given {
+    givenGraph {
       uniqueNodeIndex("Person", "id")
       uniqueNodeIndex("Person", "email")
       nodePropertyGraph(
@@ -381,7 +381,7 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
   test(
     "should fail on merge using multiple unique indexes if it found a node matching single property only, flipped order"
   ) {
-    given {
+    givenGraph {
       uniqueNodeIndex("Person", "id")
       uniqueNodeIndex("Person", "email")
       nodePropertyGraph(
@@ -406,7 +406,7 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("two unique indexes same node") {
-    val nodes = given {
+    val nodes = givenGraph {
       uniqueNodeIndex("L", "prop1")
       uniqueNodeIndex("L", "prop2")
       nodePropertyGraph(
@@ -434,7 +434,7 @@ abstract class AssertSameNodeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("two unique indexes different nodes") {
-    given {
+    givenGraph {
       uniqueNodeIndex("L", "prop1")
       uniqueNodeIndex("L", "prop2")
       nodePropertyGraph(
@@ -463,7 +463,7 @@ trait EnterpriseAssertSameNodeTestBase[CONTEXT <: RuntimeContext] {
   self: AssertSameNodeTestBase[CONTEXT] =>
 
   test("one node key constraint, same node") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodeKey("L", "prop1", "prop2")
       nodePropertyGraph(
         sizeHint,
@@ -490,7 +490,7 @@ trait EnterpriseAssertSameNodeTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("one node key constraint, different nodes") {
-    given {
+    givenGraph {
       nodeKey("L", "prop1", "prop2")
       nodePropertyGraph(
         sizeHint,
@@ -514,7 +514,7 @@ trait EnterpriseAssertSameNodeTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("two node key constraints, same node") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodeKey("L", "prop1", "prop2")
       nodeKey("L", "prop3", "prop4")
       nodePropertyGraph(
@@ -542,7 +542,7 @@ trait EnterpriseAssertSameNodeTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("two node key constraints, different nodes") {
-    given {
+    givenGraph {
       nodeKey("L", "prop1", "prop2")
       nodeKey("L", "prop3", "prop4")
       nodePropertyGraph(
@@ -576,7 +576,7 @@ trait EsotericAssertSameNodeTestBase[CONTEXT <: RuntimeContext] {
   self: AssertSameNodeTestBase[CONTEXT] =>
 
   test("should fail if lhs is not a node") {
-    given {
+    givenGraph {
       uniqueNodeIndex("Honey", "prop")
       nodePropertyGraph(
         sizeHint,
@@ -601,7 +601,7 @@ trait EsotericAssertSameNodeTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("should fail if rhs is not a node") {
-    given {
+    givenGraph {
       uniqueNodeIndex("Honey", "prop")
       nodePropertyGraph(
         sizeHint,
@@ -626,7 +626,7 @@ trait EsotericAssertSameNodeTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("should handle more nodes on the lhs") {
-    val (nodes, _) = given {
+    val (nodes, _) = givenGraph {
       uniqueNodeIndex("Honey", "prop")
       bipartiteGraph(
         sizeHint,
@@ -656,7 +656,7 @@ trait EsotericAssertSameNodeTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("should handle more nodes on the rhs") {
-    val (nodes, _) = given {
+    val (nodes, _) = givenGraph {
       uniqueNodeIndex("Honey", "prop")
       bipartiteGraph(
         sizeHint,
@@ -686,7 +686,7 @@ trait EsotericAssertSameNodeTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("should fail if some of the nodes coming from rhs are different") {
-    given {
+    givenGraph {
       uniqueNodeIndex("Honey", "prop")
       bipartiteGraph(
         sizeHint,

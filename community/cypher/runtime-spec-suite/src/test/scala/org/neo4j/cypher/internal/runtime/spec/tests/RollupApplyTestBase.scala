@@ -98,7 +98,7 @@ abstract class RollupApplyTestBase[CONTEXT <: RuntimeContext](
   test("non-empty lhs, non-empty rhs should produce lists preserving nulls") {
     val size = Math.sqrt(sizeHint).toInt
     val (aNodes, bNodes) =
-      given {
+      givenGraph {
         bipartiteGraph(size, "A", "B", "R")
       }
 
@@ -123,7 +123,7 @@ abstract class RollupApplyTestBase[CONTEXT <: RuntimeContext](
   test("should RollUpApply under apply") {
     val size = Math.sqrt(sizeHint).toInt
     val (aNodes, bNodes) =
-      given {
+      givenGraph {
         bipartiteGraph(size, "A", "B", "R")
       }
 
@@ -153,7 +153,7 @@ abstract class RollupApplyTestBase[CONTEXT <: RuntimeContext](
     val size = Math.sqrt(sizeHint).toInt
     val limit = size / 2
     val (aNodes, bNodes) =
-      given {
+      givenGraph {
         bipartiteGraph(size, "A", "B", "R")
       }
 
@@ -182,7 +182,7 @@ abstract class RollupApplyTestBase[CONTEXT <: RuntimeContext](
   test("should RollUpApply under join") {
     val size = Math.sqrt(sizeHint).toInt
     val (aNodes, bNodes) =
-      given {
+      givenGraph {
         bipartiteGraph(size, "A", "B", "R")
       }
 
@@ -205,7 +205,7 @@ abstract class RollupApplyTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("with column introduced after apply") {
-    val (nodes, rels) = given {
+    val (nodes, rels) = givenGraph {
       circleGraph(sizeHint)
     }
     val relId = rels.head.getId

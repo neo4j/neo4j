@@ -73,7 +73,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should count(*)") {
-    given { nodeGraph(sizeHint, "Honey") }
+    givenGraph { nodeGraph(sizeHint, "Honey") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -90,7 +90,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
   test("should count(*) with limit") {
     // given
-    given { nodeGraph(sizeHint, "Honey") }
+    givenGraph { nodeGraph(sizeHint, "Honey") }
     val limit = sizeHint / 10
 
     // when
@@ -109,7 +109,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
   test("should count(*) under apply") {
     val nodesPerLabel = 100
-    val (aNodes, _) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    val (aNodes, _) = givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
     val limit = nodesPerLabel / 2
 
     // when
@@ -132,7 +132,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
   test("should count(*) under apply when all arguments are filtered out") {
     val nodesPerLabel = 100
-    val (aNodes, _) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    val (aNodes, _) = givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
     val limit = nodesPerLabel / 2
 
     // when
@@ -155,7 +155,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should count(*) on single grouping column") {
-    given {
+    givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -205,7 +205,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
   test("should count(*) on single grouping column under apply") {
     val nodesPerLabel = 100
-    val (aNodes, _) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    val (aNodes, _) = givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
     val limit = nodesPerLabel / 2
 
     // when
@@ -228,7 +228,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
   test("should count(*) on single grouping column under apply when all arguments are filtered out") {
     val nodesPerLabel = 100
-    val (aNodes, _) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    val (aNodes, _) = givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
     val limit = nodesPerLabel / 2
 
     // when
@@ -250,7 +250,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
   test("should count(*) on single primitive grouping column") {
     // given
-    val (nodes, _) = given { circleGraph(sizeHint) }
+    val (nodes, _) = givenGraph { circleGraph(sizeHint) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -269,7 +269,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should count(*) on single grouping column with nulls") {
-    given {
+    givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -297,7 +297,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
   test("should count(*) on single primitive grouping column with nulls") {
     // given
-    val (unfilteredNodes, _) = given { circleGraph(sizeHint) }
+    val (unfilteredNodes, _) = givenGraph { circleGraph(sizeHint) }
     val nodes = select(unfilteredNodes, nullProbability = 0.5)
     val input = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
@@ -317,7 +317,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should count(*) on two grouping columns") {
-    given {
+    givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -345,7 +345,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
   test("should count(*) on two primitive grouping columns with nulls") {
     // given
-    val (unfilteredNodes, _) = given { circleGraph(sizeHint) }
+    val (unfilteredNodes, _) = givenGraph { circleGraph(sizeHint) }
     val nodes = select(unfilteredNodes, nullProbability = 0.5)
     val input = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
@@ -366,7 +366,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should count(*) on three grouping columns") {
-    given {
+    givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -394,7 +394,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should count(n.prop)") {
-    given {
+    givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -418,7 +418,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should count(DISTINCT n.prop)") {
-    given {
+    givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -442,7 +442,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should collect(n.prop)") {
-    given {
+    givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -502,7 +502,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should sum(n.prop)") {
-    given {
+    givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -576,7 +576,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should min(n.prop)") {
-    given {
+    givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -620,7 +620,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should max(n.prop)") {
-    given {
+    givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -664,7 +664,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should avg(n.prop)") {
-    given {
+    givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -690,7 +690,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should avg(n.prop) with grouping") {
-    given {
+    givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -731,7 +731,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should avg(n.prop) with durations") {
-    given {
+    givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -759,7 +759,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should avg(n.prop) without numerical overflow") {
-    given {
+    givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -938,7 +938,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
   test("should aggregate twice in a row") {
     // given
-    val nodes = given { nodeGraph(1000) }
+    val nodes = givenGraph { nodeGraph(1000) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -959,7 +959,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
   test("should aggregation on top of apply with expand and limit and aggregation on rhs of apply") {
     // given
     val nodesPerLabel = 10
-    val (aNodes, _) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    val (aNodes, _) = givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     val limit = nodesPerLabel / 2
 
@@ -985,7 +985,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
   test("should aggregate with no grouping on top of apply with expand on RHS") {
     // given
     val nodesPerLabel = 10
-    val (aNodes, bNodes) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    val (aNodes, bNodes) = givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -1006,7 +1006,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
   test("should aggregate on top of apply with expand on RHS") {
     // given
     val nodesPerLabel = 10
-    val (aNodes, bNodes) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    val (aNodes, bNodes) = givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -1028,7 +1028,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
   test("should perform aggregation with multiple nested apply plans") {
     // given
     val nodesPerLabel = 4
-    val (aNodes, _) = given { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
+    val (aNodes, _) = givenGraph { bipartiteGraph(nodesPerLabel, "A", "B", "R") }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -1068,7 +1068,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should count(cache[n.prop]) with nulls") {
-    given {
+    givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -1094,7 +1094,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
   test("should count(cache[n.prop]) with nulls and limit") {
     // given
-    given {
+    givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -1124,7 +1124,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should count(*) on cache[n.prop] grouping column with nulls") {
-    given {
+    givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -1153,7 +1153,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
   test("should count(*) on cache[n.prop] grouping column under apply") {
     val nodesPerLabel = 100
-    val (aNodes, _) = given {
+    val (aNodes, _) = givenGraph {
       bipartiteGraph(
         nodesPerLabel,
         "A",
@@ -1186,7 +1186,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle percentileDisc") {
-    given {
+    givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -1210,7 +1210,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle percentileDisc with nulls") {
-    given {
+    givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -1234,7 +1234,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle percentileDisc with distinct") {
-    given {
+    givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -1275,7 +1275,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("percentileDisc should return one row for one input row") {
-    given {
+    givenGraph {
       nodePropertyGraph(
         1,
         {
@@ -1299,7 +1299,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle percentileCont") {
-    given {
+    givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -1323,7 +1323,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle percentileCont with nulls") {
-    given {
+    givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -1347,7 +1347,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle percentileCont with distinct") {
-    given {
+    givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -1388,7 +1388,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("percentileCont should return one row for one input row") {
-    given {
+    givenGraph {
       nodePropertyGraph(
         1,
         {
@@ -1575,7 +1575,7 @@ trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] extends BeforeAnd
   }
 
   test("should support user-defined aggregation") {
-    given {
+    givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -1615,7 +1615,7 @@ trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] extends BeforeAnd
   }
 
   test("should support user-defined aggregation with no argument") {
-    given {
+    givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -1639,7 +1639,7 @@ trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] extends BeforeAnd
   }
 
   test("should support user-defined aggregation with grouping") {
-    given {
+    givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -1664,7 +1664,7 @@ trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] extends BeforeAnd
   }
 
   test("should support user-defined aggregation under apply") {
-    given {
+    givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -1691,7 +1691,7 @@ trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] extends BeforeAnd
   }
 
   test("should support combine user-defined aggregation and aggregation") {
-    given {
+    givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -1715,7 +1715,7 @@ trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] extends BeforeAnd
   }
 
   test("should support user-defined aggregation with multiple inputs") {
-    given {
+    givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -1739,7 +1739,7 @@ trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] extends BeforeAnd
   }
 
   test("should support user-defined aggregation with multiple arguments and grouping") {
-    given {
+    givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -1764,7 +1764,7 @@ trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] extends BeforeAnd
   }
 
   test("should support user-defined aggregation with multiple arguments under apply") {
-    given {
+    givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -1791,7 +1791,7 @@ trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] extends BeforeAnd
   }
 
   test("should support combine user-defined aggregation with multiple arguments and aggregation") {
-    given {
+    givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -1818,7 +1818,7 @@ trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] extends BeforeAnd
   }
 
   test("should support user-defined aggregation with multiple inputs with default") {
-    given {
+    givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -1842,7 +1842,7 @@ trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] extends BeforeAnd
   }
 
   test("should only call createReducer once") {
-    given {
+    givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -1866,7 +1866,7 @@ trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] extends BeforeAnd
   }
 
   test("should handle non-thread-safe user-defined aggregation with no argument") {
-    given {
+    givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -1909,7 +1909,7 @@ abstract class AggregationLargeMorselTestBase[CONTEXT <: RuntimeContext](
     val enemySize = 2
     val enemyOfEnemySize = 2
     val enemyType = RelationshipType.withName("HAS_ENEMY")
-    val potentialFriends = given {
+    val potentialFriends = givenGraph {
       for {
         person <- nodeGraph(personSize, "Person")
         enemy <- nodeGraph(enemySize, "Prick")

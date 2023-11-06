@@ -37,7 +37,7 @@ abstract class UnionRelationshipTypeTestBase[CONTEXT <: RuntimeContext](
 
   test("should do directed scan of all relationships with types") {
     // given
-    val rels = given {
+    val rels = givenGraph {
       val (_, aRels) = circleGraph(sizeHint / 3, "A", 1)
       val (_, bRels) = circleGraph(sizeHint / 3, "B", 1)
       val (_, cRels) = circleGraph(sizeHint / 3, "C", 1)
@@ -58,7 +58,7 @@ abstract class UnionRelationshipTypeTestBase[CONTEXT <: RuntimeContext](
 
   test("should do undirected scan of all relationships with types") {
     // given
-    val rels = given {
+    val rels = givenGraph {
       val (_, aRels) = circleGraph(sizeHint / 3, "A", 1)
       val (_, bRels) = circleGraph(sizeHint / 3, "B", 1)
       val (_, cRels) = circleGraph(sizeHint / 3, "C", 1)
@@ -79,7 +79,7 @@ abstract class UnionRelationshipTypeTestBase[CONTEXT <: RuntimeContext](
 
   test("should do directed scan of all relationships of a label in ascending order") {
     // given
-    val rels = given {
+    val rels = givenGraph {
       val (_, aRels) = circleGraph(sizeHint / 3, "A", 1)
       val (_, bRels) = circleGraph(sizeHint / 3, "B", 1)
       val (_, cRels) = circleGraph(sizeHint / 3, "C", 1)
@@ -100,7 +100,7 @@ abstract class UnionRelationshipTypeTestBase[CONTEXT <: RuntimeContext](
 
   test("should do undirected scan of all relationships of a label in ascending order") {
     // given
-    val rels = given {
+    val rels = givenGraph {
       val (_, aRels) = circleGraph(sizeHint / 3, "A", 1)
       val (_, bRels) = circleGraph(sizeHint / 3, "B", 1)
       val (_, cRels) = circleGraph(sizeHint / 3, "C", 1)
@@ -121,7 +121,7 @@ abstract class UnionRelationshipTypeTestBase[CONTEXT <: RuntimeContext](
 
   test("should do directed scan of all relationships of a label in descending order") {
     // given
-    val rels = given {
+    val rels = givenGraph {
       val (_, aRels) = circleGraph(sizeHint / 3, "A", 1)
       val (_, bRels) = circleGraph(sizeHint / 3, "B", 1)
       val (_, cRels) = circleGraph(sizeHint / 3, "C", 1)
@@ -142,7 +142,7 @@ abstract class UnionRelationshipTypeTestBase[CONTEXT <: RuntimeContext](
 
   test("should do undirected scan of all relationships of a label in descending order") {
     // given
-    val rels = given {
+    val rels = givenGraph {
       val (_, aRels) = circleGraph(sizeHint / 3, "A", 1)
       val (_, bRels) = circleGraph(sizeHint / 3, "B", 1)
       val (_, cRels) = circleGraph(sizeHint / 3, "C", 1)
@@ -189,7 +189,7 @@ abstract class UnionRelationshipTypeTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle multiple directed scans") {
     // given
-    val (_, rels) = given { circleGraph(10, "A", 1) }
+    val (_, rels) = givenGraph { circleGraph(10, "A", 1) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -210,7 +210,7 @@ abstract class UnionRelationshipTypeTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle multiple undirected scans") {
     // given
-    val (_, rels) = given { circleGraph(10, "A", 1) }
+    val (_, rels) = givenGraph { circleGraph(10, "A", 1) }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -243,15 +243,15 @@ abstract class UnionRelationshipTypeTestBase[CONTEXT <: RuntimeContext](
     execute(executablePlan) should beColumns("x").withNoRows()
 
     // CREATE A
-    given(circleGraph(sizeHint, "A", 1))
+    givenGraph(circleGraph(sizeHint, "A", 1))
     execute(executablePlan) should beColumns("x").withRows(rowCount(sizeHint))
 
     // CREATE B
-    given(circleGraph(sizeHint, "B", 1))
+    givenGraph(circleGraph(sizeHint, "B", 1))
     execute(executablePlan) should beColumns("x").withRows(rowCount(2 * sizeHint))
 
     // CREATE C
-    given(circleGraph(sizeHint, "C", 1))
+    givenGraph(circleGraph(sizeHint, "C", 1))
     execute(executablePlan) should beColumns("x").withRows(rowCount(3 * sizeHint))
   }
 
@@ -268,21 +268,21 @@ abstract class UnionRelationshipTypeTestBase[CONTEXT <: RuntimeContext](
     execute(executablePlan) should beColumns("x").withNoRows()
 
     // CREATE A
-    given(circleGraph(batchSize, "A", 1))
+    givenGraph(circleGraph(batchSize, "A", 1))
     execute(executablePlan) should beColumns("x").withRows(rowCount(2 * batchSize))
 
     // CREATE B
-    given(circleGraph(batchSize, "B", 1))
+    givenGraph(circleGraph(batchSize, "B", 1))
     execute(executablePlan) should beColumns("x").withRows(rowCount(4 * batchSize))
 
     // CREATE C
-    given(circleGraph(batchSize, "C", 1))
+    givenGraph(circleGraph(batchSize, "C", 1))
     execute(executablePlan) should beColumns("x").withRows(rowCount(6 * batchSize))
   }
 
   test("directed scan on the RHS of apply") {
     // given
-    val (aRels, bRels, cRels, dRels) = given {
+    val (aRels, bRels, cRels, dRels) = givenGraph {
       val (_, aRels) = circleGraph(10, "A", 1)
       val (_, bRels) = circleGraph(10, "B", 1)
       val (_, cRels) = circleGraph(10, "C", 1)
@@ -308,7 +308,7 @@ abstract class UnionRelationshipTypeTestBase[CONTEXT <: RuntimeContext](
 
   test("undirected scan on the RHS of apply") {
     // given
-    val (aRels, bRels, cRels, dRels) = given {
+    val (aRels, bRels, cRels, dRels) = givenGraph {
       val (_, aRels) = circleGraph(10, "A", 1)
       val (_, bRels) = circleGraph(10, "B", 1)
       val (_, cRels) = circleGraph(10, "C", 1)
@@ -337,7 +337,7 @@ abstract class UnionRelationshipTypeTestBase[CONTEXT <: RuntimeContext](
 
   test("scan should get source, target and type") {
     // given
-    val rels = given {
+    val rels = givenGraph {
       val (_, aRels) = circleGraph(sizeHint / 3, "A", 1)
       val (_, bRels) = circleGraph(sizeHint / 3, "B", 1)
       val (_, cRels) = circleGraph(sizeHint / 3, "C", 1)
@@ -359,7 +359,7 @@ abstract class UnionRelationshipTypeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("undirected scans only find loop once") {
-    val rel = given {
+    val rel = givenGraph {
       val a = tx.createNode()
       a.createRelationshipTo(a, RelationshipType.withName("R"))
     }

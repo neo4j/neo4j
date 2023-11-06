@@ -41,7 +41,7 @@ abstract class UnionRelationshipTypesScanConcurrencyStressTestBase[CONTEXT <: Ru
 
   private def executeWithConcurrentDeletes(directed: Boolean): Unit = {
     // given
-    val rels = given {
+    val rels = givenGraph {
       val (_, relsA) = circleGraph(nNodes = SIZE_HINT / 3, relType = "A", outDegree = 1)
       val (_, relsB) = circleGraph(nNodes = SIZE_HINT / 3, relType = "B", outDegree = 1)
       val (_, relsC) = circleGraph(nNodes = SIZE_HINT / 3, relType = "C", outDegree = 1)

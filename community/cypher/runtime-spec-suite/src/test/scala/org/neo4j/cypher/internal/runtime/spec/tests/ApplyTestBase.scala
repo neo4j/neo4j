@@ -58,7 +58,7 @@ abstract class ApplyTestBase[CONTEXT <: RuntimeContext](
 
   test("apply on empty rhs") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(19, "RHS")
       nodeGraph(sizeHint)
     }
@@ -82,7 +82,7 @@ abstract class ApplyTestBase[CONTEXT <: RuntimeContext](
 
   test("apply on empty lhs") {
     // given
-    given {
+    givenGraph {
       nodeGraph(19, "RHS")
       nodeGraph(sizeHint)
     }
@@ -104,7 +104,7 @@ abstract class ApplyTestBase[CONTEXT <: RuntimeContext](
 
   test("apply on empty lhs argument should preserve rhs order") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(19, "RHS")
     }
 
@@ -124,7 +124,7 @@ abstract class ApplyTestBase[CONTEXT <: RuntimeContext](
 
   test("apply on aggregation should carry through argument variables") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -152,7 +152,7 @@ abstract class ApplyTestBase[CONTEXT <: RuntimeContext](
 
   test("apply on grouped aggregation should carry through argument variables") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -180,7 +180,7 @@ abstract class ApplyTestBase[CONTEXT <: RuntimeContext](
 
   test("apply on entity aggregation should carry through argument variables") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodePropertyGraph(
         sizeHint,
         {
@@ -207,7 +207,7 @@ abstract class ApplyTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("apply after expand on rhs") {
-    val (unfilteredNodes, _) = given { circleGraph(Math.sqrt(sizeHint).toInt) }
+    val (unfilteredNodes, _) = givenGraph { circleGraph(Math.sqrt(sizeHint).toInt) }
     val nodes = select(unfilteredNodes, selectivity = 0.5, duplicateProbability = 0.5, nullProbability = 0.3)
     val input = batchedInputValues(sizeHint / 8, nodes.map(n => Array[Any](n)): _*).stream()
 
@@ -235,7 +235,7 @@ abstract class ApplyTestBase[CONTEXT <: RuntimeContext](
   test("apply with limit on rhs") {
     val limit = 10
 
-    val unfilteredNodes = given {
+    val unfilteredNodes = givenGraph {
       val size = 100
       val nodes = nodeGraph(size)
       randomlyConnect(nodes, Connectivity(1, limit, "REL"))
@@ -320,7 +320,7 @@ abstract class ApplyTestBase[CONTEXT <: RuntimeContext](
 
   test("nested apply with identical branches ending in optional multiple identifiers") {
     val numberOfNodes = 3
-    val (nodes, _) = given {
+    val (nodes, _) = givenGraph {
       bipartiteGraph(numberOfNodes, "A", "B", "R")
     }
     // when
@@ -346,7 +346,7 @@ abstract class ApplyTestBase[CONTEXT <: RuntimeContext](
 
   test("nested apply with identical branches ending in optional single identifier") {
     val numberOfNodes = 3
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(numberOfNodes)
     }
     // when
@@ -372,7 +372,7 @@ abstract class ApplyTestBase[CONTEXT <: RuntimeContext](
 
   test("cartesian product nested under apply") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       val (aNodes, bNodes, _, _) = bidirectionalBipartiteGraph(2, "A", "B", "AB", "BA")
       aNodes ++ bNodes
     }

@@ -117,7 +117,7 @@ abstract class LetAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](
   test("should support limit on top of let anti semi apply") {
     // given
     val nodesPerLabel = 50
-    val (nodes, _) = given {
+    val (nodes, _) = givenGraph {
       bipartiteGraph(nodesPerLabel, "A", "B", "R")
     }
     val input = inputColumns(100000, 3, i => nodes(i % nodes.size)).stream()
@@ -149,7 +149,7 @@ abstract class LetAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](
   ) {
     // given
     val nodesPerLabel = 10
-    given {
+    givenGraph {
       bipartiteGraph(nodesPerLabel, "A", "B", "R")
     }
 
@@ -174,7 +174,7 @@ abstract class LetAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](
   test("should handle aggregation with no grouping on top of let semi apply with expand on RHS") {
     // given
     val nodesPerLabel = 10
-    val (aNodes, _) = given {
+    val (aNodes, _) = givenGraph {
       bipartiteGraph(nodesPerLabel, "A", "B", "R")
     }
 
@@ -196,7 +196,7 @@ abstract class LetAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](
 
   test("should aggregate with grouping on top of let anti semi apply") {
     // given
-    given {
+    givenGraph {
       nodePropertyGraph(
         sizeHint,
         {

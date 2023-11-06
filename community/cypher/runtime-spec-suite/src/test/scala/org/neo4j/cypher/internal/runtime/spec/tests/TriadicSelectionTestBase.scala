@@ -95,7 +95,7 @@ abstract class TriadicSelectionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("friend of a friend that is not already a friend") {
-    val (nodes, _, _) = given {
+    val (nodes, _, _) = givenGraph {
       nestedStarGraph(3, 3, "C", "R")
     }
 
@@ -106,7 +106,7 @@ abstract class TriadicSelectionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("empty output when no friend of a friend that is not already a friend") {
-    given {
+    givenGraph {
       val size = 100
       val nodes = nodeGraph(size)
       val rels = for {
@@ -123,7 +123,7 @@ abstract class TriadicSelectionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("mutual friends") {
-    val nodes = given {
+    val nodes = givenGraph {
       val size = 100
       val nodes = nodeGraph(size)
       val rels = for {
@@ -142,7 +142,7 @@ abstract class TriadicSelectionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("empty output when no mutual friends") {
-    given {
+    givenGraph {
       nestedStarGraph(3, 3, "C", "R")
     }
 
@@ -164,7 +164,7 @@ abstract class TriadicSelectionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("friend of a friend that is not already a friend under apply") {
-    val (nodes, _, _) = given {
+    val (nodes, _, _) = givenGraph {
       nestedStarGraph(3, 3, "C", "R")
     }
 
@@ -175,7 +175,7 @@ abstract class TriadicSelectionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("empty output when no friend of a friend that is not already a friend under apply") {
-    given {
+    givenGraph {
       val size = 100
       val nodes = nodeGraph(size)
       val rels = for {
@@ -192,7 +192,7 @@ abstract class TriadicSelectionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("mutual friends under apply") {
-    val nodes = given {
+    val nodes = givenGraph {
       val size = 100
       val nodes = nodeGraph(size)
       val rels = for {
@@ -211,7 +211,7 @@ abstract class TriadicSelectionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("empty output when no mutual friends under apply") {
-    given {
+    givenGraph {
       nestedStarGraph(3, 3, "C", "R")
     }
 
@@ -221,7 +221,7 @@ abstract class TriadicSelectionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("works with limit") {
-    given {
+    givenGraph {
       nestedStarGraph(2, 5, "C", "R")
     }
 
@@ -242,7 +242,7 @@ abstract class TriadicSelectionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("works with aggregation") {
-    given {
+    givenGraph {
       chainGraphs(sizeHint, "A", "B")
     }
 
@@ -261,7 +261,7 @@ abstract class TriadicSelectionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("works with a single variable") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -278,7 +278,7 @@ abstract class TriadicSelectionTestBase[CONTEXT <: RuntimeContext](
 
   test("works with limit on RHS") {
     val ringSize = 5
-    given {
+    givenGraph {
       nestedStarGraph(2, ringSize, "C", "R")
     }
 
@@ -300,7 +300,7 @@ abstract class TriadicSelectionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("works with apply on RHS") {
-    given {
+    givenGraph {
       chainGraphs(sizeHint, "A", "B")
     }
 
@@ -320,7 +320,7 @@ abstract class TriadicSelectionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle repeated pattern with loop") {
-    val node = given {
+    val node = givenGraph {
       val node = tx.createNode()
       node.createRelationshipTo(node, RelationshipType.withName("R"))
       (1 to sizeHint).foreach(_ => {

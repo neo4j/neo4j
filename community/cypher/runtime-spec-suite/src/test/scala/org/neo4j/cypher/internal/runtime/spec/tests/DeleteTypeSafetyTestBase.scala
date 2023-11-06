@@ -40,7 +40,7 @@ abstract class DeleteTypeSafetyTestBase[CONTEXT <: RuntimeContext](
 
   test("delete node fail to delete relationship") {
 
-    given {
+    givenGraph {
       chainGraphs(1, "NOT_A_NODE")
     }
 
@@ -58,7 +58,7 @@ abstract class DeleteTypeSafetyTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("delete node fail to delete path") {
-    given {
+    givenGraph {
       tx.createNode(Label.label("PleaseKillMe"))
     }
 
@@ -77,7 +77,7 @@ abstract class DeleteTypeSafetyTestBase[CONTEXT <: RuntimeContext](
 
   test("delete path fail to delete node") {
 
-    given {
+    givenGraph {
       nodeGraph(1)
     }
 
@@ -95,7 +95,7 @@ abstract class DeleteTypeSafetyTestBase[CONTEXT <: RuntimeContext](
 
   test("delete path fail to delete relationship") {
 
-    given {
+    givenGraph {
       chainGraphs(1, "SEES")
     }
 
@@ -114,7 +114,7 @@ abstract class DeleteTypeSafetyTestBase[CONTEXT <: RuntimeContext](
 
   test("delete relationship fail to delete node") {
 
-    given {
+    givenGraph {
       nodeGraph(1)
     }
 
@@ -132,7 +132,7 @@ abstract class DeleteTypeSafetyTestBase[CONTEXT <: RuntimeContext](
 
   test("delete relationship fail to delete path") {
 
-    given {
+    givenGraph {
       nodeGraph(1)
     }
 
@@ -150,7 +150,7 @@ abstract class DeleteTypeSafetyTestBase[CONTEXT <: RuntimeContext](
 
   test("detach delete node fail to delete relationship") {
 
-    given {
+    givenGraph {
       chainGraphs(1, "NOT_A_NODE")
     }
 
@@ -168,7 +168,7 @@ abstract class DeleteTypeSafetyTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("detach delete node fail to delete path") {
-    given {
+    givenGraph {
       tx.createNode()
     }
 
@@ -187,7 +187,7 @@ abstract class DeleteTypeSafetyTestBase[CONTEXT <: RuntimeContext](
 
   test("detach delete path fail to delete node") {
 
-    given {
+    givenGraph {
       nodeGraph(1)
     }
 
@@ -205,7 +205,7 @@ abstract class DeleteTypeSafetyTestBase[CONTEXT <: RuntimeContext](
 
   test("detach delete path fail to delete relationship") {
 
-    given {
+    givenGraph {
       chainGraphs(1, "SEES")
     }
 

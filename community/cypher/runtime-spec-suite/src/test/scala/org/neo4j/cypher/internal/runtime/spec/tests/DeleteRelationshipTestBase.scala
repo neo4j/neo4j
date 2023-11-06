@@ -43,7 +43,7 @@ abstract class DeleteRelationshipTestBase[CONTEXT <: RuntimeContext](
 
   test("delete all relationships") {
     val relCount = sizeHint
-    given {
+    givenGraph {
       chainGraphs(1, (1 to relCount).map(_ => "KNOWS"): _*)
     }
 
@@ -55,7 +55,7 @@ abstract class DeleteRelationshipTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("delete relationships with exhaustive limit") {
-    given {
+    givenGraph {
       chainGraphs(1, "KNOWS", "KNOWS", "KNOWS")
     }
 
@@ -76,7 +76,7 @@ abstract class DeleteRelationshipTestBase[CONTEXT <: RuntimeContext](
 
   test("delete some relationships") {
 
-    given {
+    givenGraph {
       chainGraphs(2, "DELETE_ME", "SAVE_ME", "DELETE_ME", "SAVE_ME")
     }
 
@@ -94,7 +94,7 @@ abstract class DeleteRelationshipTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("duplicate delete") {
-    given {
+    givenGraph {
       lollipopGraph()
     }
 
@@ -113,7 +113,7 @@ abstract class DeleteRelationshipTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("delete on rhs of apply") {
-    given {
+    givenGraph {
       chainGraphs(2, "FANCY", "FANCY", "FANCY")
     }
 

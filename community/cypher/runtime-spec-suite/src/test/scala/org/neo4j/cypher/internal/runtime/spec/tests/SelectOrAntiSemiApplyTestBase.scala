@@ -238,7 +238,7 @@ abstract class SelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("non-empty optional on rhs") {
-    given { nodeGraph(sizeHint) }
+    givenGraph { nodeGraph(sizeHint) }
     val inputRows = (0 until sizeHint).map { i =>
       Array[Any](i.toLong)
     }
@@ -258,7 +258,7 @@ abstract class SelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("empty expand on rhs") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -277,7 +277,7 @@ abstract class SelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("non-empty expand on rhs") {
-    given {
+    givenGraph {
       circleGraph(sizeHint)
     }
 
@@ -377,7 +377,7 @@ abstract class SelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("sort on rhs") {
-    given {
+    givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -397,7 +397,7 @@ abstract class SelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("top on rhs") {
-    given {
+    givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -504,7 +504,7 @@ abstract class SelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle cached properties in selectOrAntiSemiApply") {
-    given {
+    givenGraph {
       nodePropertyGraph(sizeHint, { case i => Map("prop" -> i) })
     }
 
@@ -524,7 +524,7 @@ abstract class SelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle cached properties in selectOrAntiSemiApply, include start node") {
-    given {
+    givenGraph {
       nodePropertyGraph(sizeHint, { case i => Map("prop" -> i) })
     }
 
@@ -781,7 +781,7 @@ trait OrderedSelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("non-empty optional on rhs - with leveraged order") {
-    given {
+    givenGraph {
       nodeGraph(sizeHint)
     }
     val inputRows = (0 until sizeHint).map { i =>
@@ -803,7 +803,7 @@ trait OrderedSelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("empty expand on rhs - with leveraged order") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -822,7 +822,7 @@ trait OrderedSelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("non-empty expand on rhs - with leveraged order") {
-    given {
+    givenGraph {
       circleGraph(sizeHint)
     }
 
@@ -922,7 +922,7 @@ trait OrderedSelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("sort on rhs - with leveraged order") {
-    given {
+    givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -942,7 +942,7 @@ trait OrderedSelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("top on rhs - with leveraged order") {
-    given {
+    givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -1049,7 +1049,7 @@ trait OrderedSelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("should handle cached properties in selectOrAntiSemiApply - with leveraged order") {
-    given {
+    givenGraph {
       nodePropertyGraph(sizeHint, { case i => Map("prop" -> i) })
     }
 
@@ -1069,7 +1069,7 @@ trait OrderedSelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("should handle cached properties in selectOrAntiSemiApply, include start node - with leveraged order") {
-    given {
+    givenGraph {
       nodePropertyGraph(sizeHint, { case i => Map("prop" -> i) })
     }
 

@@ -36,7 +36,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should directed scan all relationships of an index with a property") {
-    val rels = given {
+    val rels = givenGraph {
       relationshipIndex(IndexType.RANGE, "R", "prop")
       circleGraph(5) // these doesn't have prop
       val (_, rels) = circleGraph(sizeHint)
@@ -61,7 +61,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should undirected scan all relationships of an index with a property") {
-    val rels = given {
+    val rels = givenGraph {
       relationshipIndex(IndexType.RANGE, "R", "prop")
       circleGraph(5) // these doesn't have prop
       val (_, rels) = circleGraph(sizeHint)
@@ -89,7 +89,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should directed scan all relationship of an index with multiple properties") {
-    val rels = given {
+    val rels = givenGraph {
       relationshipIndex(IndexType.RANGE, "R", "prop1", "prop2")
       circleGraph(5) // these doesn't have prop
       val (_, rels) = circleGraph(sizeHint)
@@ -122,7 +122,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should undirected scan all relationship of an index with multiple properties") {
-    val rels = given {
+    val rels = givenGraph {
       relationshipIndex(IndexType.RANGE, "R", "prop1", "prop2")
       circleGraph(5) // these doesn't have prop
       val (_, rels) = circleGraph(sizeHint)
@@ -160,7 +160,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should cache properties in directed scan") {
-    val rels = given {
+    val rels = givenGraph {
       relationshipIndex(IndexType.RANGE, "R", "prop")
       circleGraph(5) // these doesn't have prop
       val (_, rels) = circleGraph(sizeHint)
@@ -189,7 +189,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should cache properties in undirected scan") {
-    val rels = given {
+    val rels = givenGraph {
       relationshipIndex(IndexType.RANGE, "R", "prop")
       circleGraph(5) // these doesn't have prop
       val (_, rels) = circleGraph(sizeHint)
@@ -219,7 +219,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle directed scan on the RHS of an Apply") {
-    val rels = given {
+    val rels = givenGraph {
       relationshipIndex(IndexType.RANGE, "R", "prop")
       circleGraph(5) // these doesn't have prop
       val (_, rels) = circleGraph(sizeHint)
@@ -251,7 +251,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle undirected scan on the RHS of an Apply") {
-    val rels = given {
+    val rels = givenGraph {
       relationshipIndex(IndexType.RANGE, "R", "prop")
       circleGraph(5) // these doesn't have prop
       val (_, rels) = circleGraph(sizeHint)
@@ -284,7 +284,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle directed scan and cartesian product") {
     val size = Math.sqrt(sizeHint).intValue()
-    val rels = given {
+    val rels = givenGraph {
       relationshipIndex(IndexType.RANGE, "R", "prop")
       circleGraph(5) // these doesn't have prop
       val (_, rels) = circleGraph(size)
@@ -315,7 +315,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle undirected scan and cartesian product") {
     val size = Math.sqrt(sizeHint).intValue()
-    val rels = given {
+    val rels = givenGraph {
       relationshipIndex(IndexType.RANGE, "R", "prop")
       circleGraph(5) // these doesn't have prop
       val (_, rels) = circleGraph(size)
@@ -346,7 +346,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
 
   test("aggregation and limit on top of directed scan") {
     // given
-    given {
+    givenGraph {
       relationshipIndex(IndexType.RANGE, "R", "prop")
       circleGraph(5) // these doesn't have prop
       val (_, rels) = circleGraph(sizeHint)
@@ -374,7 +374,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
 
   test("aggregation and limit on top of undirected scan") {
     // given
-    given {
+    givenGraph {
       relationshipIndex(IndexType.RANGE, "R", "prop")
       circleGraph(5) // these doesn't have prop
       val (_, rels) = circleGraph(sizeHint)
@@ -402,7 +402,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
 
   test("limit and directed scan on the RHS of an apply") {
     // given
-    given {
+    givenGraph {
       relationshipIndex(IndexType.RANGE, "R", "prop")
       circleGraph(5) // these doesn't have prop
       val (_, rels) = circleGraph(sizeHint)
@@ -432,7 +432,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
 
   test("limit and undirected scan on the RHS of an apply") {
     // given
-    given {
+    givenGraph {
       relationshipIndex(IndexType.RANGE, "R", "prop")
       circleGraph(5) // these doesn't have prop
       val (_, rels) = circleGraph(sizeHint)
@@ -462,7 +462,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
 
   test("limit on top of apply with directed scan on the RHS of an apply") {
     // given
-    given {
+    givenGraph {
       relationshipIndex(IndexType.RANGE, "R", "prop")
       circleGraph(5) // these doesn't have prop
       val (_, rels) = circleGraph(sizeHint)
@@ -492,7 +492,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
 
   test("limit on top of apply with undirected scan on the RHS of an apply") {
     // given
-    given {
+    givenGraph {
       relationshipIndex(IndexType.RANGE, "R", "prop")
       circleGraph(5) // these doesn't have prop
       val (_, rels) = circleGraph(sizeHint)
@@ -522,7 +522,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
 
   test("should handle undirected and continuation") {
     val size = 100
-    val rels = given {
+    val rels = givenGraph {
       relationshipIndex(IndexType.RANGE, "R", "prop")
       val (_, rels) = circleGraph(size)
       rels.zipWithIndex.foreach {
@@ -546,7 +546,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("undirected scans only find loop once") {
-    val rel = given {
+    val rel = givenGraph {
       relationshipIndex(IndexType.RANGE, "R", "prop")
       val a = tx.createNode()
       val r = a.createRelationshipTo(a, RelationshipType.withName("R"))

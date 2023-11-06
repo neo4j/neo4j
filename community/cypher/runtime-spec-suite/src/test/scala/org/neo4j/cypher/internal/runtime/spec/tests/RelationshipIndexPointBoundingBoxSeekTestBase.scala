@@ -43,7 +43,7 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should seek 2d cartesian points") {
-    given {
+    givenGraph {
       relationshipIndex(IndexType.POINT, "R", "location")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -73,7 +73,7 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
   }
 
   test("should seek 3d cartesian points") {
-    given {
+    givenGraph {
       relationshipIndex(IndexType.POINT, "R", "location")
       val (_, rels) = circleGraph(sizeHint)
       rels.zipWithIndex.foreach {
@@ -103,7 +103,7 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
   }
 
   test("should seek 2d geographic points") {
-    given {
+    givenGraph {
       relationshipIndex(IndexType.POINT, "R", "location")
       val (_, rels) = circleGraph(180)
       rels.zipWithIndex.foreach {
@@ -133,7 +133,7 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
   }
 
   test("should seek 3d geographic points") {
-    given {
+    givenGraph {
       relationshipIndex(IndexType.POINT, "R", "location")
       val (_, rels) = circleGraph(180)
       rels.zipWithIndex.foreach {
@@ -163,7 +163,7 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
   }
 
   test("should cache properties") {
-    given {
+    givenGraph {
       relationshipIndex(IndexType.POINT, "R", "location")
       val (_, rels) = circleGraph(180)
       rels.zipWithIndex.foreach {
@@ -199,7 +199,7 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
   }
 
   test("should handle bbox on the north-western hemisphere") {
-    val rels = given {
+    val rels = givenGraph {
       relationshipIndex(IndexType.POINT, "R", "location")
       val (_, rels) = circleGraph(sizeHint)
       rels.foreach {
@@ -239,7 +239,7 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
   }
 
   test("should handle bbox on the north-eastern hemisphere") {
-    val rels = given {
+    val rels = givenGraph {
       relationshipIndex(IndexType.POINT, "R", "location")
       val (_, rels) = circleGraph(sizeHint)
       rels.foreach {
@@ -279,7 +279,7 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
   }
 
   test("should handle bbox on the south-western hemisphere") {
-    val rels = given {
+    val rels = givenGraph {
       relationshipIndex(IndexType.POINT, "R", "location")
       val (_, rels) = circleGraph(sizeHint)
       rels.foreach {
@@ -319,7 +319,7 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
   }
 
   test("should handle bbox on the south-eastern hemisphere") {
-    val rels = given {
+    val rels = givenGraph {
       relationshipIndex(IndexType.POINT, "R", "location")
       val (_, rels) = circleGraph(sizeHint)
       rels.foreach {
@@ -359,7 +359,7 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
   }
 
   test("should handle bbox crossing the dateline") {
-    val rels = given {
+    val rels = givenGraph {
       relationshipIndex(IndexType.POINT, "R", "location")
       val (_, rels) = circleGraph(sizeHint)
       rels.foreach {
@@ -398,7 +398,7 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
   }
 
   test("should handle bbox crossing the equator") {
-    val rels = given {
+    val rels = givenGraph {
       relationshipIndex(IndexType.POINT, "R", "location")
       val (_, rels) = circleGraph(sizeHint)
       rels.foreach {
@@ -437,7 +437,7 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
   }
 
   test("should handle bbox crossing the dateline and the equator") {
-    val rels = given {
+    val rels = givenGraph {
       relationshipIndex(IndexType.POINT, "R", "location")
       val (_, rels) = circleGraph(sizeHint)
       rels.foreach {
@@ -476,7 +476,7 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
   }
 
   test("should handle bbox with lowerLeft east of upperRight on the north-western hemisphere") {
-    val rels = given {
+    val rels = givenGraph {
       relationshipIndex(IndexType.POINT, "R", "location")
       val (_, rels) = circleGraph(sizeHint)
       rels.foreach {
@@ -515,7 +515,7 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
   }
 
   test("should handle bbox with lowerLeft east of upperRight on the north-eastern hemisphere") {
-    val rels = given {
+    val rels = givenGraph {
       relationshipIndex(IndexType.POINT, "R", "location")
       val (_, rels) = circleGraph(sizeHint)
       rels.foreach {
@@ -554,7 +554,7 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
   }
 
   test("should handle bbox with lowerLeft east of upperRight on the south-western hemisphere") {
-    val rels = given {
+    val rels = givenGraph {
       relationshipIndex(IndexType.POINT, "R", "location")
       val (_, rels) = circleGraph(sizeHint)
       rels.foreach {
@@ -593,7 +593,7 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
   }
 
   test("should handle bbox with lowerLeft east of upperRight on the south-eastern hemisphere") {
-    val rels = given {
+    val rels = givenGraph {
       relationshipIndex(IndexType.POINT, "R", "location")
       val (_, rels) = circleGraph(sizeHint)
       rels.foreach {
@@ -632,7 +632,7 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
   }
 
   test("should handle bbox crossing the dateline with lowerLeft east of upperRight") {
-    val rels = given {
+    val rels = givenGraph {
       relationshipIndex(IndexType.POINT, "R", "location")
       val (_, rels) = circleGraph(sizeHint)
       rels.foreach {
@@ -671,7 +671,7 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
   }
 
   test("bbox with lowerLeft north of upperRight is empty") {
-    given {
+    givenGraph {
       relationshipIndex(IndexType.POINT, "R", "location")
       val (_, rels) = circleGraph(sizeHint)
       rels.foreach {
@@ -704,7 +704,7 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
   }
 
   test("should handle 3D bbox") {
-    val rels = given {
+    val rels = givenGraph {
       relationshipIndex(IndexType.POINT, "R", "location")
       val (_, rels) = circleGraph(sizeHint)
       rels.foreach {
@@ -748,7 +748,7 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
   }
 
   test("should ignore non-points and points with different CRS") {
-    given {
+    givenGraph {
       relationshipIndex(IndexType.POINT, "R", "location")
       circleGraph(100)._2.zipWithIndex.foreach {
         case (rel, i) => rel.setProperty("location", i)
@@ -789,7 +789,7 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
   }
 
   test("undirected scans only find loop once") {
-    val rel = given {
+    val rel = givenGraph {
       relationshipIndex(IndexType.POINT, "R", "location")
       val a = tx.createNode()
       val r = a.createRelationshipTo(a, RelationshipType.withName("R"))

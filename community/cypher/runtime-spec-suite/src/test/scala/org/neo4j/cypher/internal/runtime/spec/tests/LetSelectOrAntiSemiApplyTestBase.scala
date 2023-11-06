@@ -266,7 +266,7 @@ abstract class LetSelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("non-empty optional on rhs") {
-    given {
+    givenGraph {
       nodeGraph(sizeHint)
     }
     val inputRows = (0 until sizeHint).map { i =>
@@ -371,7 +371,7 @@ abstract class LetSelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("sort on rhs") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -390,7 +390,7 @@ abstract class LetSelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("top on rhs") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -493,7 +493,7 @@ abstract class LetSelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("NULL expression with non-empty RHS should produce NULL") {
-    given {
+    givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -767,7 +767,7 @@ trait OrderedLetSelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("non-empty optional on rhs - with leveraged order") {
-    given {
+    givenGraph {
       nodeGraph(sizeHint)
     }
     val inputRows = (0 until sizeHint).map { i =>
@@ -872,7 +872,7 @@ trait OrderedLetSelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("sort on rhs - with leveraged order") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -891,7 +891,7 @@ trait OrderedLetSelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("top on rhs - with leveraged order") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -994,7 +994,7 @@ trait OrderedLetSelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("NULL expression with non-empty RHS should produce NULL - with leveraged order") {
-    given {
+    givenGraph {
       nodeGraph(sizeHint)
     }
 

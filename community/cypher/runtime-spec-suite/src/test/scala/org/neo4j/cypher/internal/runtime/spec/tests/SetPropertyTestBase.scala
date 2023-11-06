@@ -40,7 +40,7 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
 
   test("should set node property") {
     // given a single node
-    given {
+    givenGraph {
       nodeGraph(1)
     }
 
@@ -62,7 +62,7 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
 
   test("should remove node property") {
     // given a single node
-    given {
+    givenGraph {
       nodePropertyGraph(1, { case i: Int => Map("prop" -> i) })
     }
 
@@ -84,7 +84,7 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
 
   test("should set relationship property") {
     // given a single node
-    val (_, relationships) = given {
+    val (_, relationships) = givenGraph {
       circleGraph(sizeHint)
     }
 
@@ -109,7 +109,7 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
 
   test("should set already existing node property") {
     // given a single node
-    given {
+    givenGraph {
       nodePropertyGraph(1, { case _ => Map("prop" -> 0) })
     }
 
@@ -131,7 +131,7 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
 
   test("should set and remove already existing node property") {
     // given a single node
-    given {
+    givenGraph {
       nodePropertyGraph(1, { case _ => Map("prop" -> 0) })
     }
 
@@ -154,7 +154,7 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
 
   test("should throw on none node or relationship entity") {
     // given a single node
-    given {
+    givenGraph {
       nodePropertyGraph(1, { case i => Map("prop" -> "1") })
     }
 
@@ -176,7 +176,7 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
 
   test("should set property on multiple nodes") {
     // given a single node
-    given {
+    givenGraph {
       nodePropertyGraph(sizeHint, { case i => Map("prop" -> i) })
     }
 
@@ -202,7 +202,7 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
 
   test("should set property on rhs of apply") {
     // given a single node
-    given {
+    givenGraph {
       nodePropertyGraph(sizeHint, { case i => Map("prop" -> i) })
     }
 
@@ -230,7 +230,7 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
 
   test("should set property after limit") {
     // given a single node
-    given {
+    givenGraph {
       nodePropertyGraph(sizeHint, { case i => Map("prop" -> i) })
     }
 
@@ -257,7 +257,7 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
 
   test("should set same property multiple times") {
     // given a single node
-    given {
+    givenGraph {
       nodePropertyGraph(sizeHint, { case i => Map("prop" -> i) })
     }
 
@@ -286,7 +286,7 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
 
   test("should set cached node property") {
     // given a single node
-    given {
+    givenGraph {
       nodeGraph(1)
     }
 
@@ -310,7 +310,7 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
 
   test("should set node property from null value") {
     // given a single node
-    given {
+    givenGraph {
       nodeGraph(1)
     }
 
@@ -331,7 +331,7 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
 
   test("should set node property on null node") {
     // given a single node
-    val n = given {
+    val n = givenGraph {
       nodeGraph(1)
     }
 
@@ -355,7 +355,7 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
 
   test("should set node property from expression that requires null check") {
     // given a single node
-    given {
+    givenGraph {
       nodeGraph(1)
     }
 
@@ -376,7 +376,7 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
 
   test("should count node property updates even if values are not changed") {
     // given single node
-    val n = given {
+    val n = givenGraph {
       nodePropertyGraph(1, { case i => Map("prop" -> 100) })
     }
 
@@ -398,7 +398,7 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
 
   test("should set relationship property from null value") {
     // given a single relationship
-    val r = given {
+    val r = givenGraph {
       val nodes = nodeGraph(2)
       nodes.head.createRelationshipTo(nodes(1), RelationshipType.withName("R"))
     }
@@ -420,7 +420,7 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
 
   test("should set relationship property on null node") {
     // given a single relationship
-    val r = given {
+    val r = givenGraph {
       val nodes = nodeGraph(2)
       nodes.head.createRelationshipTo(nodes(1), RelationshipType.withName("R"))
     }
@@ -445,7 +445,7 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
 
   test("should set relationship property from expression that requires null check") {
     // given a single relationship
-    val r = given {
+    val r = givenGraph {
       val nodes = nodeGraph(2)
       nodes.head.createRelationshipTo(nodes(1), RelationshipType.withName("R"))
     }
@@ -467,7 +467,7 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
 
   test("should count updates even if value is not changed") {
     // given a single relationship
-    val r = given {
+    val r = givenGraph {
       val nodes = nodeGraph(2)
       val r = nodes.head.createRelationshipTo(nodes(1), RelationshipType.withName("R"))
       r.setProperty("prop", "100")
@@ -492,7 +492,7 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
 
   test("should remove relationship property with eager") {
     // given CREATE (a), (b), (a)-[:X {num: 42}]->(b)
-    given {
+    givenGraph {
       val a = runtimeTestSupport.tx.createNode(Label.label("START"))
       val b = runtimeTestSupport.tx.createNode(Label.label("START"))
       val r = a.createRelationshipTo(b, RelationshipType.withName("X"))
@@ -517,7 +517,7 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should set properties between two loops with continuation") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodePropertyGraph(sizeHint, { case _ => Map("prop" -> 0) })
     }
 
