@@ -37,7 +37,8 @@ abstract class SelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](
       .apply()
       .|.limit(1)
       .|.selectOrSemiApply("true")
-      // NOTE: leave below comment to illustrate what happens in pipelined runtime
+      // NOTE: leave the below comment to illustrate what happens in pipelined runtime.
+      //       i.e., in pipelined runtime SelectOrSemiApply is rewritten to OrderedUnion.
       // .|.|.orderedUnion()
       // .|.|.|.limit(1)
       // .|.|.|.argument('onFalse')
