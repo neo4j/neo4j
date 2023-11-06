@@ -40,4 +40,12 @@ class FunctionInvocationParserTest extends ParserSyntaxTreeBase[Cst.FunctionInvo
   test("my.namespace.foo('test', 1 + 2)") {
     gives(function(List("my", "namespace"), "foo", literalString("test"), add(literalInt(1), literalInt(2))))
   }
+
+  test("sum(DISTINCT foo)") {
+    gives(distinctFunction("sum", varFor("foo")))
+  }
+
+  test("sum(ALL foo)") {
+    gives(function("sum", varFor("foo")))
+  }
 }

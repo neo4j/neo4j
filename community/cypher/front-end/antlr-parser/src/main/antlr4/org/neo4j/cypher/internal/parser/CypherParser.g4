@@ -387,7 +387,7 @@ parameterName:
    (variable | UNSIGNED_DECIMAL_INTEGER);
 
 functionInvocation:
-   functionName LPAREN DISTINCT? functionArgument? (COMMA functionArgument)* RPAREN;
+   namespace symbolicNameString LPAREN (DISTINCT | ALL)? expression? (COMMA expression)* RPAREN;
 
 functionName:
    namespace symbolicNameString;

@@ -3803,7 +3803,7 @@ EXPRESSION FunctionInvocation()  throws Exception:
 {
     namespace=Namespace() nameToken=SymbolicNameString()
     <LPAREN>
-        ( LOOKAHEAD( 2 ) <DISTINCT> { distinct=true; })?
+        ( LOOKAHEAD( 2 ) <DISTINCT> { distinct = true; } | <ALL> )?
         ( e=Expression() { arguments.add( e ); } )? ( <COMMA> e=Expression() { arguments.add( e ); } )*
     <RPAREN>
     {

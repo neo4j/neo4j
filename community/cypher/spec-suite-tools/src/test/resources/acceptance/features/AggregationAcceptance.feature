@@ -67,6 +67,23 @@ Feature: AggregationAcceptance
       | 'White teeth'       | 1        | 1                 |
     And no side effects
 
+  Scenario: Set Quantifier behaviour (ALL, DISTINCT or none)
+    And having executed:
+      """
+      CREATE (:A {prop: 5})
+      CREATE (:A {prop: 10})
+      CREATE (:A {prop: 10})
+      """
+    When executing query:
+     """
+     MATCH (a)
+     RETURN sum(a.prop), sum(ALL a.prop), sum(DISTINCT a.prop)
+     """
+    Then the result should be, in order:
+      | sum(a.prop) | sum(ALL a.prop) | sum(DISTINCT a.prop) |
+      | 25          | 25              | 15                   |
+    And no side effects
+
   Scenario: Distinct should work with multiple equal grouping keys and only one different
     And having executed:
       """
