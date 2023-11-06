@@ -40,7 +40,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
 
     @Test
     void shouldWarnWhenRequestingSlottedRuntimeOnUnsupportedQuery() {
-        shouldNotifyInStreamWithDetail(
+        shouldNotifyInStream(
                 "EXPLAIN CYPHER runtime=pipelined RETURN 1",
                 NotificationCodeWithDescription.runtimeUnsupported(
                         InputPosition.empty,
@@ -68,12 +68,12 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
 
     @Test
     void shouldWarnOnceWhenSingleIndexHintCannotBeFulfilled() {
-        shouldNotifyInStreamWithDetailAndMessage(
+        shouldNotifyInStream(
                 " EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n",
-                InputPosition.empty,
-                NotificationDetail.indexHint(EntityType.NODE, IndexHintIndexType.ANY, "n", "Person", "name"),
-                NotificationDetail.index(IndexHintIndexType.ANY, "Person", List.of("name")),
-                NotificationCodeWithDescription::indexHintUnfulfillable);
+                NotificationCodeWithDescription.indexHintUnfulfillable(
+                        InputPosition.empty,
+                        NotificationDetail.indexHint(EntityType.NODE, IndexHintIndexType.ANY, "n", "Person", "name"),
+                        NotificationDetail.index(IndexHintIndexType.ANY, "Person", List.of("name"))));
     }
 
     @Test
@@ -86,30 +86,30 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
                 + "WHERE n.name = 'John' AND m.city = 'Reykjavik' AND k.species = 'Sloth' AND o.text STARTS WITH 'a' "
                 + "RETURN n";
 
-        shouldNotifyInStreamWithDetailAndMessage(
+        shouldNotifyInStream(
                 query,
-                InputPosition.empty,
-                NotificationDetail.indexHint(EntityType.NODE, IndexHintIndexType.ANY, "n", "Person", "name"),
-                NotificationDetail.index(IndexHintIndexType.ANY, "Person", List.of("name")),
-                NotificationCodeWithDescription::indexHintUnfulfillable);
-        shouldNotifyInStreamWithDetailAndMessage(
+                NotificationCodeWithDescription.indexHintUnfulfillable(
+                        InputPosition.empty,
+                        NotificationDetail.indexHint(EntityType.NODE, IndexHintIndexType.ANY, "n", "Person", "name"),
+                        NotificationDetail.index(IndexHintIndexType.ANY, "Person", List.of("name"))));
+        shouldNotifyInStream(
                 query,
-                InputPosition.empty,
-                NotificationDetail.indexHint(EntityType.NODE, IndexHintIndexType.ANY, "m", "Party", "city"),
-                NotificationDetail.index(IndexHintIndexType.ANY, "Party", List.of("city")),
-                NotificationCodeWithDescription::indexHintUnfulfillable);
-        shouldNotifyInStreamWithDetailAndMessage(
+                NotificationCodeWithDescription.indexHintUnfulfillable(
+                        InputPosition.empty,
+                        NotificationDetail.indexHint(EntityType.NODE, IndexHintIndexType.ANY, "m", "Party", "city"),
+                        NotificationDetail.index(IndexHintIndexType.ANY, "Party", List.of("city"))));
+        shouldNotifyInStream(
                 query,
-                InputPosition.empty,
-                NotificationDetail.indexHint(EntityType.NODE, IndexHintIndexType.ANY, "k", "Animal", "species"),
-                NotificationDetail.index(IndexHintIndexType.ANY, "Animal", List.of("species")),
-                NotificationCodeWithDescription::indexHintUnfulfillable);
-        shouldNotifyInStreamWithDetailAndMessage(
+                NotificationCodeWithDescription.indexHintUnfulfillable(
+                        InputPosition.empty,
+                        NotificationDetail.indexHint(EntityType.NODE, IndexHintIndexType.ANY, "k", "Animal", "species"),
+                        NotificationDetail.index(IndexHintIndexType.ANY, "Animal", List.of("species"))));
+        shouldNotifyInStream(
                 query,
-                InputPosition.empty,
-                NotificationDetail.indexHint(EntityType.NODE, IndexHintIndexType.TEXT, "o", "Other", "text"),
-                NotificationDetail.index(IndexHintIndexType.TEXT, "Other", List.of("text")),
-                NotificationCodeWithDescription::indexHintUnfulfillable);
+                NotificationCodeWithDescription.indexHintUnfulfillable(
+                        InputPosition.empty,
+                        NotificationDetail.indexHint(EntityType.NODE, IndexHintIndexType.TEXT, "o", "Other", "text"),
+                        NotificationDetail.index(IndexHintIndexType.TEXT, "Other", List.of("text"))));
     }
 
     @Test
@@ -167,8 +167,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
     void shouldWarnOnEagerAfterLoadCSV() {
         shouldNotifyInStream(
                 "EXPLAIN MATCH (n) LOAD CSV FROM 'file:///ignore/ignore.csv' AS line WITH * DELETE n MERGE () RETURN line",
-                InputPosition.empty,
-                NotificationCodeWithDescription::eagerLoadCsv);
+                NotificationCodeWithDescription.eagerLoadCsv(InputPosition.empty));
     }
 
     @Test
@@ -222,8 +221,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
     void shouldWarnOnUnboundedShortestPath() {
         shouldNotifyInStream(
                 "EXPLAIN MATCH p = shortestPath((n)-[*]->(m)) RETURN m",
-                new InputPosition(31, 1, 32),
-                pos -> NotificationCodeWithDescription.unboundedShortestPath(pos, "(n)-[*]->(m)"));
+                NotificationCodeWithDescription.unboundedShortestPath(new InputPosition(31, 1, 32), "(n)-[*]->(m)"));
     }
 
     @Test
@@ -470,12 +468,13 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
 
     @Test
     void shouldWarnOnRuntimeInterpreted() {
-        shouldNotifyInStreamWithDetail(
+        shouldNotifyInStream(
                 "EXPLAIN CYPHER runtime=interpreted RETURN 1",
-                InputPosition.empty,
-                "'runtime=interpreted' is deprecated, please use 'runtime=slotted' instead",
-                (position, param) -> NotificationCodeWithDescription.deprecatedRuntimeOption(
-                        position, param, "runtime=interpreted", "runtime=slotted"));
+                NotificationCodeWithDescription.deprecatedRuntimeOption(
+                        InputPosition.empty,
+                        "'runtime=interpreted' is deprecated, please use 'runtime=slotted' instead",
+                        "runtime=interpreted",
+                        "runtime=slotted"));
     }
 
     @Test
