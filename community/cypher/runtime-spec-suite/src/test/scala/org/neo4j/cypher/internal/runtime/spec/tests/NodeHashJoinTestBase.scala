@@ -56,6 +56,30 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "y").withNoRows()
   }
 
+  test("should join on empty LHS when on RHS of apply") {
+    // given
+    given {
+      nodeGraph(sizeHint)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a")
+      .apply()
+      .|.nodeHashJoin("a")
+      .|.|.argument("a")
+      .|.filter("false")
+      .|.argument("a")
+      .filter("true")
+      .allNodeScan("a")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("a").withNoRows()
+  }
+
   test("should join on empty rhs") {
     // given
     val nodes = given { nodeGraph(sizeHint) }
@@ -75,6 +99,30 @@ abstract class NodeHashJoinTestBase[CONTEXT <: RuntimeContext](
     // then
     // because graph contains no relationships, the expand will return no rows
     runtimeResult should beColumns("x", "y").withNoRows()
+  }
+
+  test("should join on empty RHS when on RHS of apply") {
+    // given
+    given {
+      nodeGraph(sizeHint)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a")
+      .apply()
+      .|.nodeHashJoin("a")
+      .|.|.filter("false")
+      .|.|.argument("a")
+      .|.argument("a")
+      .filter("true")
+      .allNodeScan("a")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("a").withNoRows()
   }
 
   test("should join on empty lhs and rhs") {
