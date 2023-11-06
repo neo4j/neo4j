@@ -49,7 +49,7 @@ case class SystemCommandRuntimeResult(
   runtimeNotifications: Set[InternalNotification]
 ) extends RuntimeResult {
 
-  override val fieldNames: Array[String] = execution.fieldNames()
+  override val fieldNames: Array[String] = execution.fieldNames
   private var state = ConsumptionState.NOT_STARTED
 
   override def queryStatistics(): QueryStatistics = QueryStatistics()
@@ -85,7 +85,7 @@ case class SystemCommandRuntimeResult(
 }
 
 class SystemCommandExecutionResult(val inner: InternalExecutionResult) {
-  def fieldNames(): Array[String] = inner.fieldNames()
+  def fieldNames: Array[String] = inner.fieldNames()
 }
 
 class ColumnMappingSystemCommandExecutionResult(

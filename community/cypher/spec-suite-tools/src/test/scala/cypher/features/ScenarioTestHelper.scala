@@ -124,8 +124,8 @@ trait ScenarioTestHelper extends FeatureTest {
 
   @Test
   def checkDenyList(): Unit = {
-    checkForDuplicates(scenarios, denylist.toList)
-    val unusedDenylistEntries = denylist.filterNot(b => scenarios.exists(s => b.isDenylisted(s)))
+    checkForDuplicates(scenarios, denylist().toList)
+    val unusedDenylistEntries = denylist().filterNot(b => scenarios.exists(s => b.isDenylisted(s)))
     if (unusedDenylistEntries.nonEmpty) {
       throw new IllegalStateException("The following entries of the denylist were not found: \n"
         + unusedDenylistEntries.mkString("\n"))

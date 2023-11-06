@@ -36,7 +36,7 @@ case class ShortestRelationshipPattern(
 )(
   val expr: ShortestPathsPatternPart
 ) extends Rewritable {
-  def availableSymbols(): Set[LogicalVariable] = rel.availableSymbols() ++ name
+  def availableSymbols: Set[LogicalVariable] = rel.availableSymbols() ++ name
 
   override def dup(children: Seq[AnyRef]): this.type =
     copy(
