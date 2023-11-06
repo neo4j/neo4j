@@ -303,20 +303,10 @@ abstract class LeftOuterHashJoinTestBase[CONTEXT <: RuntimeContext](
 
     // then
 
-    val lhsRows = for {
+    val expectedRows = for {
       n <- nodes.filter(_.hasLabel(Label.label("Left")))
       l = n.getProperty("leftProp").asInstanceOf[Int]
-    } yield (n, l)
-
-    val rhsRows = for {
-      n <- nodes.filter(_.hasLabel(Label.label("Right")))
-      r = n.getProperty("rightProp").asInstanceOf[Int]
-    } yield (n, r)
-
-    val expectedRows = for {
-      (n, l) <- lhsRows
-      (_, r) <- matchingRowsOuter(rhsRows, n)
-    } yield Array(n, l, r)
+    } yield Array(n, l, null)
 
     runtimeResult should beColumns("n", "l", "r").withRows(expectedRows)
   }
