@@ -747,6 +747,72 @@ abstract class LeftOuterHashJoinTestBase[CONTEXT <: RuntimeContext](
     result.awaitAll()
   }
 
+  test("should handle argument cancellation 2") {
+    // given
+    val Seq(n) = given {
+      nodeGraph(1)
+    }
+
+    /**
+     * Generates an input that results in a repeating sequence of 9 scenarios:
+     *
+     * LHS             RHS
+     * 0   []              []
+     * 1   []              [1]
+     * 2   []              [1...100]
+     * 3   [1]             []
+     * 4   [1]             [1]
+     * 5   [1]             [1...100]
+     * 6   [1...100]      []
+     * 7   [1...100]      [1]
+     * 8   [1...100]      [1...100]
+     * 9   []              []
+     * etc.
+     * etc.
+     *
+     * This is intended to stress the join buffers, including work cancellation which kicks in when either side is empty.
+     */
+
+    val none = -1
+    val one = 0
+    val many = 100
+    val rowCounts = Array(none, one, many)
+
+    val input = for {
+      i <- 0 until sizeHint
+      iLhs = (i / 3) % 3
+      iRhs = i % 3
+      lhsRows = rowCounts(iLhs)
+      rhsRows = rowCounts(iRhs)
+    } yield {
+      Array(lhsRows, rhsRows)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .apply()
+      .|.leftOuterHashJoin("n")
+      .|.|.unwind("range(0, rhs) as r")
+      .|.|.allNodeScan("n")
+      .|.unwind("range(0, lhs) as l")
+      .|.allNodeScan("n")
+      .input(variables = Seq("lhs", "rhs"))
+      .build()
+
+    val expected = for {
+      Array(lhs, rhs) <- input
+      _ <- none until lhs
+      lohjRhs = if (rhs == none) one else rhs
+      _ <- none until lohjRhs
+    } yield {
+      n
+    }
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input.map(_.toArray[Any]): _*))
+    runtimeResult should beColumns("n").withRows(singleColumn(expected))
+  }
+
   // Emulates outer join.
   // Given keyed rows (k, v) and a key k',
   // return the rows that have a matching key (k', v)
