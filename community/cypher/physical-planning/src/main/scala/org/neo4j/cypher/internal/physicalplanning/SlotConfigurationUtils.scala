@@ -349,7 +349,7 @@ object SlotConfigurationUtils {
   def finalizeSlotConfiguration(slots: SlotConfiguration): Unit = {
     if (!slots.finalized) {
       generateSlotAccessorFunctions(slots)
-      slots.updateHasCachedProperties
+      slots.updateHasCachedProperties()
       slots.finalized = true
     }
   }

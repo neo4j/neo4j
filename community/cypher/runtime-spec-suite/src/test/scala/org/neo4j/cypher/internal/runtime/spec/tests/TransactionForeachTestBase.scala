@@ -701,7 +701,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(query, runtime)
-    runtimeResult should beColumns().withNoRows
+    runtimeResult should beColumns().withNoRows()
     val nNodes = tx.findNodes(label("N")).asScala.toList
     nNodes.map(_.getProperty("prop")) should contain theSameElementsAs (0 until (10 + 3))
   }
@@ -729,7 +729,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(query, runtime)
-    runtimeResult should beColumns().withNoRows
+    runtimeResult should beColumns().withNoRows()
     val nNodes = tx.findNodes(label("N")).asScala.toList
     nNodes.map(_.getProperty("prop")) should contain theSameElementsAs (
       (0 until 10) ++ // nodes from given
@@ -757,7 +757,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(query, runtime)
-    runtimeResult should beColumns().withNoRows
+    runtimeResult should beColumns().withNoRows()
     val nNodes = tx.findNodes(label("N")).asScala.toList
     nNodes.map(_.getProperty("prop")) should contain theSameElementsAs (0 until (10 + 3))
   }
@@ -784,7 +784,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(query, runtime)
-    runtimeResult should beColumns().withNoRows
+    runtimeResult should beColumns().withNoRows()
     val nNodes = tx.findNodes(label("N")).asScala.toList
     nNodes.map(_.getProperty("prop")) should contain theSameElementsAs (
       (0 until 10) ++ // nodes from given
@@ -817,7 +817,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(query, runtime)
-    runtimeResult should beColumns().withNoRows
+    runtimeResult should beColumns().withNoRows()
     val nRels = tx.findRelationships(RelationshipType.withName("R")).asScala.toList
     nRels.map(_.getProperty("prop")) should contain theSameElementsAs (0 until (10 + 3))
   }
@@ -853,7 +853,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(query, runtime)
-    runtimeResult should beColumns().withNoRows
+    runtimeResult should beColumns().withNoRows()
     val nRels = tx.findRelationships(RelationshipType.withName("R")).asScala.toList
     nRels.map(_.getProperty("prop")) should contain theSameElementsAs (
       (0 until 10) ++ // rels from given

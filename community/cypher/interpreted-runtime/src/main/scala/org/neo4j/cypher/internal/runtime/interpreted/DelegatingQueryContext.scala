@@ -742,7 +742,7 @@ class DelegatingQueryTransactionalContext(val inner: QueryTransactionalContext) 
 
   override def isTransactionOpen: Boolean = inner.isTransactionOpen
 
-  override def assertTransactionOpen(): Unit = inner.assertTransactionOpen
+  override def assertTransactionOpen(): Unit = inner.assertTransactionOpen()
 
   override def close(): Unit = inner.close()
 

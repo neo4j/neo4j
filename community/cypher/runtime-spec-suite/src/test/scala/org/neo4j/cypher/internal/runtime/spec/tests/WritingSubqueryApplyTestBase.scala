@@ -992,6 +992,6 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
     // then
     runtimeResult should beColumns("n")
       .withStatistics(nodesCreated = 3 * sizeHint, labelsAdded = 3 * sizeHint)
-      .withNoRows
+      .withNoRows()
   }
 }

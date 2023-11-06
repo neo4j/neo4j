@@ -32,7 +32,7 @@ class TransactionCommittedCounterIterator(inner: ClosingIterator[CypherRow], que
 
   def innerHasNext: Boolean = executeWithHandling(inner.hasNext, queryState)
 
-  def next(): CypherRow = executeWithHandling(inner.next, queryState)
+  def next(): CypherRow = executeWithHandling(inner.next(), queryState)
 }
 
 object TransactionCommittedCounterIterator {

@@ -4548,7 +4548,7 @@ trait OrderedTrailTestBase[CONTEXT <: RuntimeContext] {
     //  (n1:START) → (n3:MIDDLE) → (n4:MIDDLE) → (n5:MIDDLE:LOOP)       |
     //             ↗             ←                                ↖     ↓
     //  (n2:START)                                                  (n7:LOOP)
-    val expectedResult = complexGraphAndPartiallyOrderedExpectedResult
+    val expectedResult = complexGraphAndPartiallyOrderedExpectedResult()
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("start", "firstMiddle", "middle", "end", "a", "b", "r1", "c", "d", "r2")
@@ -4636,7 +4636,7 @@ trait OrderedTrailTestBase[CONTEXT <: RuntimeContext] {
     //  (n1:START) → (n3:MIDDLE) → (n4:MIDDLE) → (n5:MIDDLE:LOOP)       |
     //             ↗             ←                                ↖     ↓
     //  (n2:START)                                                  (n7:LOOP)
-    val expectedResult = complexGraphAndPartiallyOrderedExpectedResult
+    val expectedResult = complexGraphAndPartiallyOrderedExpectedResult()
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("start", "firstMiddle", "middle", "end", "a", "b", "r1", "c", "d", "r2")
@@ -4680,7 +4680,7 @@ trait OrderedTrailTestBase[CONTEXT <: RuntimeContext] {
     //  (n1:START) → (n3:MIDDLE) → (n4:MIDDLE) → (n5:MIDDLE:LOOP)       |
     //             ↗             ←                                ↖     ↓
     //  (n2:START)                                                  (n7:LOOP)
-    val expectedResult = complexGraphAndPartiallyOrderedExpectedResult
+    val expectedResult = complexGraphAndPartiallyOrderedExpectedResult()
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("start", "firstMiddle", "middle", "end", "a", "b", "r1", "c", "d", "r2").withLeveragedOrder()
@@ -4780,7 +4780,7 @@ trait OrderedTrailTestBase[CONTEXT <: RuntimeContext] {
     //  (n1:START) → (n3:MIDDLE) → (n4:MIDDLE) → (n5:MIDDLE:LOOP)       |
     //             ↗             ←                                ↖     ↓
     //  (n2:START)                                                  (n7:LOOP)
-    val expectedResult = complexGraphAndPartiallyOrderedExpectedResult
+    val expectedResult = complexGraphAndPartiallyOrderedExpectedResult()
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("start", "firstMiddle", "middle", "end", "a", "b", "r1", "c", "d", "r2")
@@ -4832,7 +4832,7 @@ trait OrderedTrailTestBase[CONTEXT <: RuntimeContext] {
     //  (n1:START) → (n3:MIDDLE) → (n4:MIDDLE) → (n5:MIDDLE:LOOP)       |
     //             ↗             ←                                ↖     ↓
     //  (n2:START)                                                  (n7:LOOP)
-    val expectedResult = complexGraphAndPartiallyOrderedExpectedResult
+    val expectedResult = complexGraphAndPartiallyOrderedExpectedResult()
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("start", "firstMiddle", "middle", "end", "a", "b", "r1", "c", "d", "r2")
@@ -5108,7 +5108,7 @@ trait OrderedTrailTestBase[CONTEXT <: RuntimeContext] {
     //  (n1:START) → (n3:MIDDLE) → (n4:MIDDLE) → (n5:MIDDLE:LOOP)       |
     //             ↗             ←                                ↖     ↓
     //  (n2:START)                                                  (n7:LOOP)
-    val expectedResult = complexGraphAndPartiallyOrderedExpectedResult
+    val expectedResult = complexGraphAndPartiallyOrderedExpectedResult()
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("start", "firstMiddle", "middle", "end", "a", "b", "r1", "c", "d", "r2")
