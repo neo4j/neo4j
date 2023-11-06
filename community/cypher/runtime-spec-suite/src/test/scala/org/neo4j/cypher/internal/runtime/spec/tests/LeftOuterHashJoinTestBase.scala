@@ -281,6 +281,30 @@ abstract class LeftOuterHashJoinTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("n", "l", "r").withNoRows()
   }
 
+  test("should work when LHS is empty when on RHS of apply") {
+    // given
+    val nodes = given {
+      nodeGraph(sizeHint)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a")
+      .apply()
+      .|.leftOuterHashJoin("a")
+      .|.|.argument("a")
+      .|.filter("false")
+      .|.argument("a")
+      .filter("true")
+      .allNodeScan("a")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("a").withNoRows()
+  }
+
   test("should work when RHS is empty") {
     val nodes = given {
       val randomSmallIntProps: PartialFunction[Int, Map[String, Any]] = {
