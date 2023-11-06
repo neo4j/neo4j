@@ -148,7 +148,7 @@ final case class SensitiveStringLiteral(value: Array[Byte])(val position: InputP
 
   override def hashCode(): Int = util.Arrays.hashCode(value)
 
-  // we can't trust the value.lenth here because the length of the literal in
+  // we can't trust the value.length here because the length of the literal in
   // the query depends on how we quote it
   override def literalLength: Option[Int] = None
 

@@ -798,8 +798,9 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory)
     source: Expression,
     v: Variable,
     fieldTerminator: String
-  ): Clause =
-    LoadCSV(headers, source, v, Option(fieldTerminator).map(StringLiteral(_)(p)))(p)
+  ): Clause = {
+    LoadCSV.fromUrl(headers, source, v, Option(fieldTerminator).map(StringLiteral(_)(p)))(p)
+  }
 
   override def foreachClause(p: InputPosition, v: Variable, list: Expression, clauses: util.List[Clause]): Clause =
     Foreach(v, list, clauses.asScala.toList)(p)

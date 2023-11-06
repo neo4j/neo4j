@@ -270,6 +270,27 @@ case class LoadCSV(
   }
 }
 
+object LoadCSV {
+  private val FtpUserPassConnectionStringRegex = """[\w]+://.+:.+@.+""".r
+
+  def isSensitiveUrl(url: String): Boolean = {
+    FtpUserPassConnectionStringRegex.matches(url)
+  }
+
+  def fromUrl(
+    withHeaders: Boolean,
+    source: Expression,
+    variable: Variable,
+    fieldTerminator: Option[StringLiteral]
+  )(position: InputPosition): LoadCSV = {
+    val sensitiveSource = source match {
+      case x: StringLiteral if isSensitiveUrl(x.value) => x.asSensitiveLiteral
+      case x                                           => x
+    }
+    LoadCSV(withHeaders, sensitiveSource, variable, fieldTerminator)(position)
+  }
+}
+
 case class InputDataStream(variables: Seq[Variable])(val position: InputPosition) extends Clause
     with SemanticAnalysisTooling {
 
