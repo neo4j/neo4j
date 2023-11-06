@@ -21,6 +21,7 @@ package org.neo4j.server.http;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.SettingValueParsers.FALSE;
 import static org.neo4j.configuration.SettingValueParsers.TRUE;
 import static org.neo4j.logging.log4j.LogConfig.HTTP_LOG;
 import static org.neo4j.logging.log4j.LogConfig.STRUCTURED_LOG_JSON_TEMPLATE_WITH_MESSAGE;
@@ -45,6 +46,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -87,6 +89,8 @@ class HttpStructuredLoggingIT extends ExclusiveWebContainerTestBase {
                             TRUE,
                             HttpConnector.enabled.name(),
                             TRUE,
+                            BoltConnector.enabled.name(),
+                            FALSE,
                             GraphDatabaseSettings.server_logging_config_path.name(),
                             log4jConfig.toString()));
             assertThat(start).isEqualTo(0);
