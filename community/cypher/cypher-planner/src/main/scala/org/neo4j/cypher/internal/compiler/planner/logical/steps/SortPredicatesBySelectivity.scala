@@ -40,8 +40,7 @@ import org.neo4j.cypher.internal.ir.UnionQuery
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.Selection.LabelAndRelTypeInfo
 import org.neo4j.cypher.internal.macros.AssertMacros
-import org.neo4j.cypher.internal.util.CostPerRow
-import org.neo4j.cypher.internal.util.PredicateOrdering
+import org.neo4j.cypher.internal.util.PredicateCost
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.Selectivity
 import org.neo4j.cypher.internal.util.StepSequencer
@@ -111,7 +110,7 @@ case object SortPredicatesBySelectivity extends Phase[PlannerContext, LogicalPla
           RegularSinglePlannerQuery(QueryGraph(argumentIds = s.source.availableSymbols.map(_.name)))
       }
 
-      def sortCriteria(predicate: Expression): (CostPerRow, Selectivity) = {
+      def sortCriteria(predicate: Expression): PredicateCost = {
         val costPerRow = CardinalityCostModel.costPerRowFor(predicate, from.semanticTable())
         val solved = solvedBeforePredicate.updateTailOrSelf(_.amendQueryGraph(_.addPredicates(predicate)))
         val cardinality = context.metrics.cardinality(
@@ -122,19 +121,19 @@ case object SortPredicatesBySelectivity extends Phase[PlannerContext, LogicalPla
           IndexCompatiblePredicatesProviderContext.default
         )
         val selectivity = (cardinality / incomingCardinality).getOrElse(Selectivity.ONE)
-        (costPerRow, selectivity)
+        PredicateCost(costPerRow, selectivity)
       }
 
       val sortedPredicates = s.predicate.exprs.toSeq
         .map(p => (p, sortCriteria(p)))
-        .sortBy(_._2)(PredicateOrdering)
+        .sortBy(_._2)
 
       // gather consecutive predicates with the same cost
       val groupedByCost: Seq[Seq[Expression]] =
-        sortedPredicates.foldLeft(List.empty[((CostPerRow, Selectivity), Seq[Expression])]) {
+        sortedPredicates.foldLeft(List.empty[(PredicateCost, Seq[Expression])]) {
           case (groups, (expr, exprCost)) =>
             groups match {
-              case (groupCost, exprs) :: groupsTail if PredicateOrdering.equiv(groupCost, exprCost) =>
+              case (groupCost, exprs) :: groupsTail if groupCost == exprCost =>
                 (groupCost, (exprs :+ expr)) :: groupsTail
               case _ =>
                 (exprCost, Seq(expr)) :: groups
