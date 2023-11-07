@@ -47,13 +47,14 @@ import org.neo4j.storageengine.api.StorageEngineFactory;
 public interface CheckDatabase {
     /**
      * @param autoCloseables Collection to add resources that should be closed/cleaned up after done with the
-     * extracted data.
+     *                       extracted data.
      */
     static DatabaseLayout selectAndExtract(
             FileSystemAbstraction fs,
             Source source,
             NormalizedDatabaseName database,
             PrintStream out,
+            Config config,
             boolean force,
             AutoCloseables autoCloseables)
             throws IOException {
@@ -65,7 +66,7 @@ public interface CheckDatabase {
 
             try {
                 final var targetLayout = checkDatabase.targetLayoutFrom(fs, source, database, autoCloseables);
-                checkDatabase.tryExtract(fs, targetLayout, source, database, out, force);
+                checkDatabase.tryExtract(fs, config, targetLayout, source, database, out, force);
 
                 final var storageEngineFactory = StorageEngineFactory.selectStorageEngine(fs, targetLayout)
                         .orElseThrow(() ->
@@ -97,6 +98,7 @@ public interface CheckDatabase {
 
     void tryExtract(
             FileSystemAbstraction fs,
+            Config config,
             DatabaseLayout targetLayout,
             Source source,
             NormalizedDatabaseName database,

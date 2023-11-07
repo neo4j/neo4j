@@ -169,7 +169,8 @@ public class CheckCommand extends AbstractAdminCommand {
         try (var autoClosables = new AutoCloseables<>(IOException::new)) {
             final DatabaseLayout layout;
             try {
-                layout = CheckDatabase.selectAndExtract(ctx.fs(), source, database, ctx.out(), force, autoClosables);
+                layout = CheckDatabase.selectAndExtract(
+                        ctx.fs(), source, database, ctx.out(), config, force, autoClosables);
             } catch (IOException e) {
                 throw new CommandFailedException(
                         "Failed to prepare for consistency check: " + e.getMessage(), e, ExitCode.IOERR);

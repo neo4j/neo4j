@@ -21,6 +21,7 @@ package org.neo4j.consistency;
 
 import java.io.PrintStream;
 import org.neo4j.annotations.service.ServiceProvider;
+import org.neo4j.configuration.Config;
 import org.neo4j.dbms.archive.CheckDatabase;
 import org.neo4j.dbms.archive.CheckDatabase.Source.DataTxnSource;
 import org.neo4j.io.IOUtils.AutoCloseables;
@@ -57,6 +58,7 @@ public class CheckNativeDatabase implements CheckDatabase {
     @Override
     public void tryExtract(
             FileSystemAbstraction fs,
+            Config config,
             DatabaseLayout targetLayout,
             Source source,
             NormalizedDatabaseName database,

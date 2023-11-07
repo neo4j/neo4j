@@ -27,6 +27,7 @@ import java.nio.file.FileSystemException;
 import java.nio.file.Path;
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.commandline.dbms.CannotWriteException;
+import org.neo4j.configuration.Config;
 import org.neo4j.dbms.archive.CheckDatabase.Source.PathSource;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.IOUtils.AutoCloseables;
@@ -62,6 +63,7 @@ public class CheckDump implements CheckDatabase {
     @Override
     public void tryExtract(
             FileSystemAbstraction fs,
+            Config config,
             DatabaseLayout targetLayout,
             Source source,
             NormalizedDatabaseName database,
