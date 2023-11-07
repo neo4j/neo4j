@@ -538,7 +538,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
                 throw new RetryableHttpException( unexpectedResponse( verbose, connection, "Initiating upload target" ) );
             case HTTP_ACCEPTED:
                 // the import request was accepted, and the server has not seen this dump file, meaning the import request is a new operation.
-                return safeUrl( extractSignedURIFromResponse( verbose, connection ) );
+                return safeUrl( extractSignedURIFromResponse( connection ) );
             default:
                 throw unexpectedResponse( verbose, connection, "Initiating upload target" );
             }
@@ -801,12 +801,11 @@ public class HttpCopier implements PushToCloudCommand.Copier
         }
     }
 
-    private String extractSignedURIFromResponse( boolean verbose, HttpURLConnection connection ) throws IOException
+    private String extractSignedURIFromResponse( HttpURLConnection connection ) throws IOException
     {
         try ( InputStream responseData = connection.getInputStream() )
         {
             String json = new String( toByteArray( responseData ), UTF_8 );
-            debug( verbose, "Got json '" + json + "' back expecting to contain the signed URL" );
             return parseJsonUsingJacksonParser( json, SignedURIBody.class ).SignedURI;
         }
     }
