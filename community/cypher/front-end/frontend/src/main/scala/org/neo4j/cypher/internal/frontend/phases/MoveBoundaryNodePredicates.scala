@@ -62,7 +62,11 @@ case object MoveBoundaryNodePredicates extends StatementRewriter with StepSequen
               val element = part.element
               val boundaryNodes = PatternElement.boundaryNodes(element)
               val (extractedPredicates, notExtractedPredicates) = extractPredicates(where, boundaryNodes)
-              (pp.copy(optionalWhereClause = notExtractedPredicates)(pp.position), extractedPredicates)
+              val newElement = notExtractedPredicates match {
+                case Some(predicates) => pp.copy(optionalWhereClause = Some(predicates))(pp.position)
+                case None => part.element
+              }
+              (newElement, extractedPredicates)
             case element => (element, ListSet.empty)
           }
           (patternPart.replaceElement(newElement), extractedPredicates)
