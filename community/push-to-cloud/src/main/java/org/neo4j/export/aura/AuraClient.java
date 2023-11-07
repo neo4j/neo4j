@@ -154,18 +154,16 @@ public class AuraClient {
                 case HTTP_ACCEPTED ->
                 // the import request was accepted, and the server has not seen this dump file, meaning the import
                 // request is a new operation.
-                extractSignedURIFromResponse(verbose, connection);
+                extractSignedURIFromResponse(connection);
                 default -> throw commandResponseHandler.unexpectedResponse(
                         verbose, connection, "Initiating upload target");
             };
         }
     }
 
-    private SignedURIBodyResponse extractSignedURIFromResponse(boolean verbose, HttpURLConnection connection)
-            throws IOException {
+    private SignedURIBodyResponse extractSignedURIFromResponse(HttpURLConnection connection) throws IOException {
         try (InputStream responseData = connection.getInputStream()) {
             String json = new String(toByteArray(responseData), UTF_8);
-            commandResponseHandler.debug(verbose, "Got json '" + json + "' back expecting to contain the signed URL");
             return IOCommon.parseJsonUsingJacksonParser(json, AuraJsonMapper.SignedURIBodyResponse.class);
         }
     }
