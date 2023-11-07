@@ -47,7 +47,6 @@ class ResultSubscriberTest extends CypherFunSuite {
 
     val execution = mock[QueryExecution]
     when(execution.cancel()).thenThrow(exception2)
-    when(execution.cancelAfterFailure()).thenThrow(exception2)
 
     val thrown = the[Exception] thrownBy subscriber.init(execution)
     thrown should be theSameInstanceAs exception1

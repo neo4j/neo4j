@@ -60,6 +60,8 @@ public interface RuntimeResult extends AutoCloseable, QuerySubscription, HeapHig
 
     Set<InternalNotification> notifications();
 
+    Throwable getErrorOrNull();
+
     /**
      * Wait for a query execution that has ended or has been cancelled
      * to finish cleanup. This is to be called before closing the query result.

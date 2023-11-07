@@ -147,6 +147,7 @@ class ClosingExecutionResultTest extends CypherFunSuite {
     override def close(reason: CloseReason): Unit =
       closeReason = reason
 
+    override def getError: Option[Throwable] = None
   }
 
   class NiceInner(values: Array[Int]) extends ClosingInner {

@@ -37,10 +37,6 @@ public interface QuerySubscription {
      */
     void cancel();
 
-    default void cancelAfterFailure() {
-        cancel();
-    }
-
     /**
      * Synchronously await until all the demanded records have been streamed to the {@link QuerySubscriber}
      *

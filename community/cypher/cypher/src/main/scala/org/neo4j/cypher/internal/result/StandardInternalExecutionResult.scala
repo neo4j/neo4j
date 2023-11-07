@@ -144,6 +144,8 @@ class StandardInternalExecutionResult(
   }
 
   override def notifications: Iterable[Notification] = internalNotifications
+
+  override def getError: Option[Throwable] = Option(runtimeResult.getErrorOrNull)
 }
 
 object StandardInternalExecutionResult {

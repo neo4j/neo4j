@@ -56,4 +56,6 @@ case class UpdatingSystemCommandRuntimeResult(
   override def heapHighWaterMark(): Long = HeapHighWaterMarkTracker.ALLOCATIONS_NOT_TRACKED
 
   override def notifications(): util.Set[InternalNotification] = runtimeNotifications.asJava
+
+  override def getErrorOrNull: Throwable = null
 }

@@ -51,4 +51,6 @@ case class SchemaRuntimeResult(ctx: QueryContext, subscriber: QuerySubscriber)
   override def queryProfile(): QueryProfile = QueryProfile.NONE
 
   override def notifications(): util.Set[InternalNotification] = Collections.emptySet()
+
+  override def getErrorOrNull: Throwable = null
 }

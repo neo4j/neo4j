@@ -140,6 +140,7 @@ case class IgnoredRuntimeResult(runtimeNotifications: Set[InternalNotification])
   override def cancel(): Unit = {}
   override def await(): Boolean = false
   override def notifications(): util.Set[InternalNotification] = runtimeNotifications.asJava
+  override def getErrorOrNull: Throwable = null
 }
 
 case object IgnoredRuntimeResult {

@@ -131,4 +131,6 @@ case class NoRuntimeResult(subscriber: QuerySubscriber, runtimeNotifications: Se
   override def queryProfile(): QueryProfile = QueryProfile.NONE
 
   override def notifications(): util.Set[InternalNotification] = runtimeNotifications.asJava
+
+  override def getErrorOrNull: Throwable = null
 }

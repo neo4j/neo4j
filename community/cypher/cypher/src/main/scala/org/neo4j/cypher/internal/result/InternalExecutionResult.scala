@@ -46,6 +46,8 @@ trait InternalExecutionResult extends QueryExecution {
 
   def notifications: Iterable[Notification]
 
+  def getError: Option[Throwable]
+
   override def getNotifications: lang.Iterable[Notification] = notifications.asJava
 
   def executionType: QueryExecutionType = {

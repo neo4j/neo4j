@@ -36,6 +36,8 @@ abstract class EmptyExecutionResult(
 
   override def isClosed: Boolean = true
 
+  override def getError: Option[Throwable] = None
+
   override def close(reason: CloseReason): Unit = {}
 
   override def executionMode: ExecutionMode = ExplainMode

@@ -89,6 +89,8 @@ class ClosingExecutionResult private (
       case e: Throwable => handleErrorOnClose(reason)(e)
     }
 
+  override def getError: Option[Throwable] = inner.getError
+
   override def queryType: InternalQueryType = safely { inner.queryType }
 
   override def notifications: Iterable[Notification] = safely { inner.notifications }
@@ -156,19 +158,11 @@ class ClosingExecutionResult private (
   override def cancel(): Unit =
     try {
       inner.cancel()
-      if (errorDeliveredToSubscriber == null) {
+      if (errorDeliveredToSubscriber == null && inner.getError.isEmpty) {
         monitor.endSuccess(query)
       } else {
         monitor.endFailure(query)
       }
-    } catch {
-      case NonFatalCypherError(e) => closeAndCallOnError(e)
-    }
-
-  override def cancelAfterFailure(): Unit =
-    try {
-      inner.cancelAfterFailure()
-      monitor.endFailure(query)
     } catch {
       case NonFatalCypherError(e) => closeAndCallOnError(e)
     }

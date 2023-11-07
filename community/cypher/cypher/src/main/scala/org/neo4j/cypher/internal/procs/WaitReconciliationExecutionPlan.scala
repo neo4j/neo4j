@@ -203,4 +203,6 @@ case class SingleRowRuntimeResult(
   override def await(): Boolean = cs == ConsumptionState.NOT_STARTED
 
   override def notifications(): util.Set[InternalNotification] = runtimeNotifications.asJava
+
+  override def getErrorOrNull: Throwable = null
 }

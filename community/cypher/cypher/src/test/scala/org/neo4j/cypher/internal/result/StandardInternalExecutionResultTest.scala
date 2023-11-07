@@ -217,6 +217,8 @@ class StandardInternalExecutionResultTest extends CypherFunSuite {
     override def await(): Boolean = iterator.hasNext
 
     override def notifications(): util.Set[InternalNotification] = Collections.emptySet()
+
+    override def getErrorOrNull: Throwable = null
   }
 
 }

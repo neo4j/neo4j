@@ -151,6 +151,8 @@ class ClosingRuntimeTestResult(
 
   override def notifications(): util.Set[InternalNotification] = Collections.emptySet()
 
+  override def getErrorOrNull: Throwable = this.error
+
   private def closeResources(): Unit = {
     // Capture page cache statistics before closing
     if (_pageCacheHits == -1L)

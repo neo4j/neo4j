@@ -82,6 +82,8 @@ case class SystemCommandRuntimeResult(
   }
 
   override def notifications(): util.Set[InternalNotification] = runtimeNotifications.asJava
+
+  override def getErrorOrNull: Throwable = null
 }
 
 class SystemCommandExecutionResult(val inner: InternalExecutionResult) {

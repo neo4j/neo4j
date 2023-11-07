@@ -47,6 +47,8 @@ class PipeExecutionResult(
   private var inner: ClosingIterator[_] = _
   private val numberOfFields = fieldNames.length
 
+  override def getErrorOrNull: Throwable = null
+
   override def queryStatistics(): QueryStatistics = state.getStatistics
 
   override def heapHighWaterMark: Long = state.queryMemoryTracker.heapHighWaterMark
