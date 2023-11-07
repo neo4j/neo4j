@@ -95,7 +95,7 @@ class BoltIT extends ExclusiveWebContainerTestBase {
     }
 
     private void startServerWithBoltEnabled() throws IOException {
-        startServerWithBoltEnabled("localhost", 7687, "localhost", 7687);
+        startServerWithBoltEnabled("localhost", 0, "localhost", 0);
     }
 
     private void startServerWithBoltEnabled(
