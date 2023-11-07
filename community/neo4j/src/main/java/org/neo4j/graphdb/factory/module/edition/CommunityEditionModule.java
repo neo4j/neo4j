@@ -400,7 +400,8 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
                     globalModule.getGlobalDependencies(),
                     globalModule.getLogService(),
                     databaseRepository,
-                    databaseReferenceRepo);
+                    databaseReferenceRepo,
+                    CommunitySecurityLog.NULL_LOG);
             globalModule
                     .getGlobalDependencies()
                     .satisfyDependency(queryRouterBoostrap.bootstrapServices(databaseManagementService));

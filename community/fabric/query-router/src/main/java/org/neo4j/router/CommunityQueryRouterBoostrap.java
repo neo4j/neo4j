@@ -51,6 +51,7 @@ import org.neo4j.fabric.executor.QueryStatementLifecycles;
 import org.neo4j.fabric.transaction.ErrorReporter;
 import org.neo4j.fabric.transaction.TransactionManager;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
+import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
@@ -83,17 +84,20 @@ public class CommunityQueryRouterBoostrap extends CommonQueryRouterBoostrap {
     private final LogService logService;
     private final DatabaseContextProvider<? extends DatabaseContext> databaseProvider;
     private final DatabaseReferenceRepository databaseReferenceRepo;
+    private final AbstractSecurityLog securityLog;
 
     public CommunityQueryRouterBoostrap(
             LifeSupport lifeSupport,
             Dependencies dependencies,
             LogService logService,
             DatabaseContextProvider<? extends DatabaseContext> databaseProvider,
-            DatabaseReferenceRepository databaseReferenceRepo) {
+            DatabaseReferenceRepository databaseReferenceRepo,
+            AbstractSecurityLog securityLog) {
         super(lifeSupport, dependencies, databaseProvider);
         this.logService = logService;
         this.databaseProvider = databaseProvider;
         this.databaseReferenceRepo = databaseReferenceRepo;
+        this.securityLog = securityLog;
     }
 
     public BoltGraphDatabaseManagementServiceSPI bootstrapServices(
@@ -186,7 +190,8 @@ public class CommunityQueryRouterBoostrap extends CommonQueryRouterBoostrap {
                 transactionIdTracker,
                 statementLifecycles,
                 monitors.newMonitor(QueryRoutingMonitor.class),
-                routerTxManager);
+                routerTxManager,
+                securityLog);
         dependencies.satisfyDependency(queryRouter);
         return new QueryRouterBoltSpi.DatabaseManagementService(
                 queryRouter, databaseReferenceResolver, getCompositeDatabaseStack());

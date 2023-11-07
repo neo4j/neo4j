@@ -33,8 +33,11 @@ import org.neo4j.fabric.executor.Location;
 import org.neo4j.fabric.executor.QueryStatementLifecycles;
 import org.neo4j.fabric.transaction.ErrorReporter;
 import org.neo4j.fabric.transaction.TransactionMode;
+import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
+import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.database.DatabaseReference;
+import org.neo4j.kernel.database.DatabaseReferenceImpl;
 import org.neo4j.kernel.impl.api.transaction.trace.TraceProviderFactory;
 import org.neo4j.kernel.impl.query.QueryExecution;
 import org.neo4j.kernel.impl.query.QueryRoutingMonitor;
@@ -72,6 +75,7 @@ public class QueryRouterImpl implements QueryRouter {
     private final QueryStatementLifecycles statementLifecycles;
     private final RouterTransactionManager transactionManager;
     private final QueryRoutingMonitor queryRoutingMonitor;
+    private final AbstractSecurityLog securityLog;
 
     public QueryRouterImpl(
             Config config,
@@ -85,7 +89,8 @@ public class QueryRouterImpl implements QueryRouter {
             LocalGraphTransactionIdTracker transactionIdTracker,
             QueryStatementLifecycles statementLifecycles,
             QueryRoutingMonitor queryRoutingMonitor,
-            RouterTransactionManager transactionManager) {
+            RouterTransactionManager transactionManager,
+            AbstractSecurityLog securityLog) {
         this.config = config;
         this.databaseReferenceResolver = databaseReferenceResolver;
         this.locationServiceFactory = locationServiceFactory;
@@ -98,6 +103,7 @@ public class QueryRouterImpl implements QueryRouter {
         this.statementLifecycles = statementLifecycles;
         this.queryRoutingMonitor = queryRoutingMonitor;
         this.transactionManager = transactionManager;
+        this.securityLog = securityLog;
     }
 
     @Override
@@ -111,6 +117,7 @@ public class QueryRouterImpl implements QueryRouter {
                         localBookmark -> transactionIdTracker.awaitSystemGraphUpToDate(localBookmark.transactionId()));
         var transactionInfo = incomingTransactionInfo.withDefaults(config);
         var sessionDatabaseReference = resolveSessionDatabaseReference(transactionInfo);
+        authorize(sessionDatabaseReference, incomingTransactionInfo.loginContext());
         var routingInfo = new RoutingInfo(
                 sessionDatabaseReference, transactionInfo.routingContext(), transactionInfo.accessMode());
         var queryTargetService = createQueryPreParsedInfoService(routingInfo);
@@ -155,6 +162,14 @@ public class QueryRouterImpl implements QueryRouter {
                 transactionBookmarkManager,
                 TraceProviderFactory.getTraceProvider(config),
                 transactionManager);
+    }
+
+    private void authorize(DatabaseReference sessionDb, LoginContext loginContext) {
+        var databaseNameToAuthorizeFor = sessionDb instanceof DatabaseReferenceImpl.Internal
+                ? ((DatabaseReferenceImpl.Internal) sessionDb).databaseId().name()
+                : sessionDb.alias().name();
+
+        loginContext.authorize(LoginContext.IdLookup.EMPTY, databaseNameToAuthorizeFor, securityLog);
     }
 
     @Override

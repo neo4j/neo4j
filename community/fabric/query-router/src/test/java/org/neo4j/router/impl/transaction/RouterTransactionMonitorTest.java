@@ -43,6 +43,7 @@ import org.neo4j.fabric.bookmark.LocalGraphTransactionIdTracker;
 import org.neo4j.fabric.executor.QueryStatementLifecycles;
 import org.neo4j.fabric.transaction.ErrorReporter;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
+import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.database.DatabaseIdFactory;
 import org.neo4j.kernel.database.DatabaseReferenceImpl;
@@ -94,7 +95,8 @@ class RouterTransactionMonitorTest {
                 mock(LocalGraphTransactionIdTracker.class),
                 mock(QueryStatementLifecycles.class),
                 mock(QueryRoutingMonitor.class),
-                new RouterTransactionManager(transactionMonitor));
+                new RouterTransactionManager(transactionMonitor),
+                mock(AbstractSecurityLog.class));
     }
 
     @Test
