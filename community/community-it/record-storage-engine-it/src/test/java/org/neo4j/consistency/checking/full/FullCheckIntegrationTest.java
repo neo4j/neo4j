@@ -1954,6 +1954,31 @@ public class FullCheckIntegrationTest {
         on(stats).verify(RecordType.COUNTS, 1).andThatsAllFolks();
     }
 
+    @Test
+    void shouldReportCountsMissingEvenForInvalidTokens() throws Exception {
+        // given
+        fixture.apply(new GraphStoreFixture.Transaction() {
+            @Override
+            protected void transactionData(
+                    GraphStoreFixture.TransactionDataBuilder tx, GraphStoreFixture.IdGenerator next) {
+                NodeRecord node = new NodeRecord(42).initialize(false, -1, false, -1, 0);
+                node.setInUse(true);
+                node.setLabelField(inlinedLabelsLongRepresentation(1024), Collections.emptyList());
+                tx.createNoCountUpdate(node);
+                tx.incrementNodeCount(ANY_LABEL, 1);
+            }
+        });
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        on(stats)
+                .verify(RecordType.NODE, 1) // Node with invalid label token
+                .verify(RecordType.COUNTS, 1)
+                .andThatsAllFolks();
+    }
+
     @ParameterizedTest
     @EnumSource(EntityType.class)
     void shouldReportDuplicatedIndexRules(EntityType entityType) throws Exception {

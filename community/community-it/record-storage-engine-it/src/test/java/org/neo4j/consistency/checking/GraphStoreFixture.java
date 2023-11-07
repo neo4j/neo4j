@@ -543,6 +543,10 @@ public abstract class GraphStoreFixture implements AutoCloseable {
             writer.create(node);
         }
 
+        public void createNoCountUpdate(NodeRecord node) {
+            writer.create(node);
+        }
+
         public void update(NodeRecord before, NodeRecord after) {
             updateCounts(before, -1);
             updateCounts(after, 1);

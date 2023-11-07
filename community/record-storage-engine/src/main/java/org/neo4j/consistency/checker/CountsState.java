@@ -278,10 +278,13 @@ class CountsState implements AutoCloseable {
                     }
                 }
 
+                // Entities with invalid tokens that are missing from the counts store
                 nodeCountsStray.forEach(
-                        (countsKey, count) -> reporter.forCounts(new CountsEntry(countsKey, count.get())));
+                        (countsKey, count) -> reporter.forCounts(new CountsEntry(countsKey, count.get()))
+                                .inconsistentNodeCount(0));
                 relationshipCountsStray.forEach(
-                        (countsKey, count) -> reporter.forCounts(new CountsEntry(countsKey, count.get())));
+                        (countsKey, count) -> reporter.forCounts(new CountsEntry(countsKey, count.get()))
+                                .inconsistentRelationshipCount(0));
             }
         };
     }
