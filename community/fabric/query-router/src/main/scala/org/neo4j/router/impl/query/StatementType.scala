@@ -54,11 +54,11 @@ case class StatementType(commandType: CommandType, containsUpdatingClause: Optio
 
   override def toString: String = {
     commandType match {
-      case AdministrationCommand => "Administration command"
-      case SchemaCommand => "Schema modification"
+      case AdministrationCommand       => "Administration command"
+      case SchemaCommand               => "Schema modification"
       case QueryCommand if isReadQuery => "Read query"
-      case QueryCommand if isWrite => "Write query"
-      case _ => "Read query (with unresolved procedures)"
+      case QueryCommand if isWrite     => "Write query"
+      case _                           => "Read query (with unresolved procedures)"
     }
   }
 }
@@ -110,7 +110,7 @@ object StatementType {
       case a: AdministrationCommand => Stop(if (a.isReadOnly) Some(false) else Some(true))
     }
 
-  def containsUpdates(ast: CallClause): Option[Boolean] = ast match {
+  private def containsUpdates(ast: CallClause): Option[Boolean] = ast match {
     case _: UnresolvedCall                      => None
     case c: ResolvedCall if c.containsNoUpdates => Some(false)
     case _                                      => Some(true)
@@ -124,7 +124,7 @@ object StatementType {
   private def tryResolve(unresolved: UnresolvedCall, resolver: ProcedureSignatureResolver): CallClause =
     Try(ResolvedCall(resolver.procedureSignature)(unresolved)).getOrElse(unresolved)
 
-  def merge: (Option[Boolean], Option[Boolean]) => Option[Boolean] = {
+  private def merge: (Option[Boolean], Option[Boolean]) => Option[Boolean] = {
     // If any of the two options are true (contains update clause) => then return true (contains updating clause)
     case (maybeIsWrite1, maybeIsWrite2) if maybeIsWrite1.getOrElse(false) || maybeIsWrite2.getOrElse(false) =>
       Some(true)
