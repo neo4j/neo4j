@@ -131,12 +131,12 @@ sealed trait Clause extends ASTNode with SemanticCheckable with SemanticAnalysis
 
   final override def semanticCheck: SemanticCheck =
     clauseSpecificSemanticCheck chain
-      when(shouldRunGpmChecks) {
-        fromFunction(checkIfMixingLabelExpressionWithOldSyntax) chain
-          checkIfMixingLegacyVarLengthWithQPPs
+      fromFunction(checkIfMixingLabelExpressionWithOldSyntax) chain
+      when(shouldRunQPPChecks) {
+        checkIfMixingLegacyVarLengthWithQPPs
       }
 
-  protected def shouldRunGpmChecks: Boolean = true
+  protected def shouldRunQPPChecks: Boolean = true
 
   private val stringifier = ExpressionStringifier()
 
@@ -885,7 +885,7 @@ case class Merge(pattern: NonPrefixedPatternPart, actions: Seq[MergeAction], whe
 
   override def name = "MERGE"
 
-  override protected def shouldRunGpmChecks: Boolean = false
+  override protected def shouldRunQPPChecks: Boolean = false
 
   override def mapExpressions(f: Expression => Expression): UpdateClause =
     copy(pattern.mapExpressions(f), actions.map(_.mapExpressions(f)), where.map(_.mapExpressions(f)))(this.position)
@@ -924,7 +924,7 @@ case class Create(pattern: Pattern.ForUpdate)(val position: InputPosition) exten
       checkRelTypes(pattern) chain
       SemanticState.recordCurrentScope(pattern)
 
-  override protected def shouldRunGpmChecks: Boolean = false
+  override protected def shouldRunQPPChecks: Boolean = false
 
   override def mapExpressions(f: Expression => Expression): UpdateClause =
     copy(pattern.mapExpressions(f))(this.position)

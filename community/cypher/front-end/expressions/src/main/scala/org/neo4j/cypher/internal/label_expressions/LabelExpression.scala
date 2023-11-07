@@ -65,6 +65,22 @@ sealed trait LabelExpression extends ASTNode {
     case _       => true
   }
 
+  /**
+   * Whether this label expression is disallowed in CREATE and MERGE.
+   * Only label expressions that are allowed are:
+   * leaf (:A)
+   * colon conjunction (:A:B)
+   * conjunction(:A&B)
+   */
+  def containsMatchSpecificLabelExpression: Boolean = this match {
+    case conj: ColonConjunction =>
+      conj.lhs.containsMatchSpecificLabelExpression || conj.rhs.containsMatchSpecificLabelExpression
+    case conj: Conjunctions =>
+      conj.children.exists(expr => expr.containsMatchSpecificLabelExpression)
+    case _: Leaf => false
+    case _       => true
+  }
+
   def replaceColonSyntax: LabelExpression = this.endoRewrite(bottomUp({
     case disj @ ColonDisjunction(lhs, rhs, _) => Disjunctions.flat(lhs, rhs, disj.position, disj.containsIs)
     case conj @ ColonConjunction(lhs, rhs, _) => Conjunctions.flat(lhs, rhs, conj.position, conj.containsIs)

@@ -356,8 +356,7 @@ class RelationshipPatternParserTest extends PatternParserTestBase {
         )
       }
 
-      // CREATE + MERGE, these should parse but will be disallowed in semantic checking,
-      // in a similar fashion as the label expressions
+      // CREATE + MERGE, these should parse, but all label expressions except : and & will be disallowed in semantic checking
 
       test(s"CREATE ()-[$maybeVariable $expr $maybePathLength $maybeProperties $maybeWhere]->()") {
         gives(

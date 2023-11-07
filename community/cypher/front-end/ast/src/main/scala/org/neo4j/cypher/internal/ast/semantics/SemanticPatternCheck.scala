@@ -286,13 +286,11 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
       case x: RelationshipChain =>
         check(ctx, x.element) chain
           check(ctx, x.relationship) chain
-          check(ctx, x.rightNode) chain
-          checkIsKeyword(ctx, x.relationship.labelExpression)
+          check(ctx, x.rightNode)
 
       case x: NodePattern =>
         checkNodeProperties(ctx, x.properties) chain
           checkLabelExpressions(ctx, x.labelExpression) chain
-          checkIsKeyword(ctx, x.labelExpression) chain
           checkPredicate(ctx, x)
 
       case PathConcatenation(factors) =>
@@ -716,7 +714,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
   ): SemanticCheck =
     labelExpression.foldSemanticCheck { labelExpression =>
       when(
-        labelExpression.containsGpmSpecificLabelExpression && (ctx != SemanticContext.Match && ctx != SemanticContext.Expression)
+        labelExpression.containsMatchSpecificLabelExpression && (ctx != SemanticContext.Match && ctx != SemanticContext.Expression)
       ) {
         error(
           s"Label expressions in patterns are not allowed in ${ctx.description}, but only in a MATCH clause and in expressions",
@@ -724,21 +722,6 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
         )
       } chain
         SemanticExpressionCheck.checkLabelExpression(Some(NODE_TYPE), labelExpression)
-    }
-
-  private def checkIsKeyword(
-    ctx: SemanticContext,
-    labelExpression: Option[LabelExpression]
-  ): SemanticCheck =
-    labelExpression.foldSemanticCheck { labelExpression =>
-      when(
-        labelExpression.containsIs && (ctx != SemanticContext.Match && ctx != SemanticContext.Expression)
-      ) {
-        error(
-          s"The IS keyword in patterns is not allowed in ${ctx.description}, but only in a MATCH clause and in expressions",
-          labelExpression.position
-        )
-      }
     }
 
   def checkValidPropertyKeyNamesInReturnItems(returnItems: ReturnItems): SemanticCheck = {

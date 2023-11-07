@@ -28,17 +28,12 @@ abstract class LabelExpressionSemanticAnalysisTestSuiteWithStatement(statement: 
   private val labelExprErrorMessage =
     s"Label expressions in patterns are not allowed in a $statement clause, but only in a MATCH clause and in expressions"
 
-  private val isErrorMessage =
-    s"The IS keyword in patterns is not allowed in a $statement clause, but only in a MATCH clause and in expressions"
-
   test("(n:A:B)") {
     runSemanticAnalysis().errors shouldBe empty
   }
 
   test("(n:A&B)") {
-    runSemanticAnalysis().errorMessages shouldEqual Seq(
-      labelExprErrorMessage
-    )
+    runSemanticAnalysis().errors shouldBe empty
   }
 
   test("(n:A|B)") {
@@ -55,48 +50,39 @@ abstract class LabelExpressionSemanticAnalysisTestSuiteWithStatement(statement: 
   }
 
   test("(IS A)") {
-    runSemanticAnalysis().errorMessages shouldEqual Seq(
-      isErrorMessage
-    )
+    runSemanticAnalysis().errors shouldBe empty
   }
 
   test("(n IS A&B)") {
-    runSemanticAnalysis().errorMessages.toSet shouldEqual Set(
-      labelExprErrorMessage,
-      isErrorMessage
-    )
+    runSemanticAnalysis().errors shouldBe empty
   }
 
   test("(n IS !(A&B))") {
     runSemanticAnalysis().errorMessages.toSet shouldEqual Set(
-      labelExprErrorMessage,
-      isErrorMessage
+      labelExprErrorMessage
+    )
+  }
+
+  test("(n IS A&!B)") {
+    runSemanticAnalysis().errorMessages.toSet shouldEqual Set(
+      labelExprErrorMessage
     )
   }
 
   test("(n IS A|B)") {
     runSemanticAnalysis().errorMessages.toSet shouldEqual Set(
-      labelExprErrorMessage,
-      isErrorMessage
+      labelExprErrorMessage
     )
   }
 
   test("(n IS %)") {
     runSemanticAnalysis().errorMessages.toSet shouldEqual Set(
-      labelExprErrorMessage,
-      isErrorMessage
-    )
-  }
-
-  test("(n IS A:B)") {
-    runSemanticAnalysis().errorMessages shouldEqual Seq(
-      isErrorMessage
+      labelExprErrorMessage
     )
   }
 
   test("(n IS A|:B)") {
     runSemanticAnalysis().errorMessages.toSet shouldEqual Set(
-      isErrorMessage,
       labelExprErrorMessage,
       "Label expressions are not allowed to contain '|:'."
     )
@@ -104,6 +90,27 @@ abstract class LabelExpressionSemanticAnalysisTestSuiteWithStatement(statement: 
 
   test("(IS:IS)") {
     runSemanticAnalysis().errors shouldBe empty
+  }
+
+  test("(n:A&B:C)") {
+    // should not allow mixing colon as label conjunction symbol with GPM label expression symbols in label expression
+    runSemanticAnalysis().errorMessages shouldEqual Seq(
+      "Mixing label expression symbols ('|', '&', '!', and '%') with colon (':') is not allowed. Please only use one set of symbols. This expression could be expressed as :A&B&C."
+    )
+  }
+
+  test("(n IS A:B)") {
+    // should not allow mixing colon as label conjunction symbol with IS keyword in label expression
+    runSemanticAnalysis().errorMessages shouldEqual Seq(
+      "Mixing the IS keyword with colon (':') between labels is not allowed. This expression could be expressed as IS A&B."
+    )
+  }
+
+  test("(n IS A&B:C)") {
+    // should not allow mixing colon as label conjunction symbol with GPM label expression symbols in label expression
+    runSemanticAnalysis().errorMessages shouldEqual Seq(
+      "Mixing the IS keyword with colon (':') between labels is not allowed. This expression could be expressed as IS A&B&C."
+    )
   }
 
   test("()-[:Rel1]->()") {
@@ -114,6 +121,11 @@ abstract class LabelExpressionSemanticAnalysisTestSuiteWithStatement(statement: 
     runSemanticAnalysis().errorMessages shouldEqual Seq(
       s"A single relationship type must be specified for $statement"
     )
+  }
+
+  test("()-[:Rel1&Rel2]->()") {
+    runSemanticAnalysis().errorMessages should contain
+    s"A single relationship type must be specified for $statement"
   }
 
   test("()-[:Rel1&!Rel2]->()") {
@@ -133,40 +145,32 @@ abstract class LabelExpressionSemanticAnalysisTestSuiteWithStatement(statement: 
   }
 
   test("()-[r IS Rel1]->()") {
-    runSemanticAnalysis().errorMessages shouldEqual Seq(
-      isErrorMessage
-    )
+    runSemanticAnalysis().errors shouldBe empty
   }
 
   test("(n IS A)-[:REL]->()") {
-    runSemanticAnalysis().errorMessages shouldEqual Seq(
-      isErrorMessage
-    )
+    runSemanticAnalysis().errors shouldBe empty
   }
 
   test("()-[:REL]->(IS B)") {
-    runSemanticAnalysis().errorMessages shouldEqual Seq(
-      isErrorMessage
-    )
+    runSemanticAnalysis().errors shouldBe empty
   }
 
   test("()-[IS Rel1|Rel2]->()") {
     runSemanticAnalysis().errorMessages.toSet shouldEqual Set(
-      isErrorMessage,
       s"A single relationship type must be specified for $statement"
     )
   }
 
   test("()-[IS Rel1|:Rel2]->()") {
     runSemanticAnalysis().errorMessages.toSet shouldEqual Set(
-      isErrorMessage,
-      s"A single relationship type must be specified for $statement"
+      s"A single relationship type must be specified for $statement",
+      "Mixing the IS keyword with colon (':') between labels is not allowed. This expression could be expressed as IS Rel1|Rel2."
     )
   }
 
   test("()-[IS !Rel1]->()") {
     runSemanticAnalysis().errorMessages.toSet shouldEqual Set(
-      isErrorMessage,
       s"A single plain relationship type like `:Rel1` must be specified for $statement",
       s"Relationship type expressions in patterns are not allowed in a $statement clause, but only in a MATCH clause"
     )
@@ -176,6 +180,10 @@ abstract class LabelExpressionSemanticAnalysisTestSuiteWithStatement(statement: 
     runSemanticAnalysis().errors shouldBe empty
   }
 
+  test("(n IS A)-[r IS R]->(m:B) RETURN *") {
+    // Mixing colon (not as conjunction) and IS keyword should be allowed as they are both part of GQL
+    runSemanticAnalysis().errors shouldBe empty
+  }
 }
 
 sealed trait Statement
@@ -186,7 +194,22 @@ object Statement {
 }
 
 class LabelExpressionInCreateSemanticAnalysisTest
-    extends LabelExpressionSemanticAnalysisTestSuiteWithStatement(Statement.CREATE)
+    extends LabelExpressionSemanticAnalysisTestSuiteWithStatement(Statement.CREATE) {
+
+  // These queries do not parse for MERGE
+
+  test("(n:A:B), (m:A&B)") {
+    // should not allow mixing colon as label conjunction symbol with GPM label expression symbols in label expression
+    runSemanticAnalysis().errorMessages shouldEqual Seq(
+      "Mixing label expression symbols ('|', '&', '!', and '%') with colon (':') is not allowed. Please only use one set of symbols. This expression could be expressed as :A&B."
+    )
+  }
+
+  test("(n:A), (m IS B) RETURN *") {
+    // Mixing colon (not as conjunction) and IS keyword should be allowed as they are both part of GQL
+    runSemanticAnalysis().errors shouldBe empty
+  }
+}
 
 class LabelExpressionInMergeSemanticAnalysisTest
     extends LabelExpressionSemanticAnalysisTestSuiteWithStatement(Statement.MERGE)
