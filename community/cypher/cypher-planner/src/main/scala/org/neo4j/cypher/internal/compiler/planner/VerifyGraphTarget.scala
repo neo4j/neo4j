@@ -46,6 +46,7 @@ import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.database.NormalizedDatabaseName
 
 import scala.annotation.tailrec
+import scala.jdk.CollectionConverters.IterableHasAsScala
 import scala.jdk.javaapi.OptionConverters.toScala
 
 /**
@@ -89,12 +90,14 @@ case object VerifyGraphTarget extends VisitorPhase[PlannerContext, BaseState] wi
   ): Unit = {
     evaluateGraphSelection(statement) match {
       case Some(graphNameWithContext) =>
+        val normalizedDatabaseName = new NormalizedDatabaseName(graphNameWithContext.graphName.qualifiedNameString)
         toScala(
           databaseReferenceRepository.getInternalByAlias(
-            new NormalizedDatabaseName(graphNameWithContext.graphName.qualifiedNameString)
+            normalizedDatabaseName
           )
         ) match {
-          case None => throw new DatabaseNotFoundException(
+          case None if !isConstituent(databaseReferenceRepository, normalizedDatabaseName) =>
+            throw new DatabaseNotFoundException(
               s"Database ${graphNameWithContext.graphName.qualifiedNameString} not found"
             )
           case Some(databaseReference) if !databaseReference.databaseId().equals(databaseId) =>
@@ -111,12 +114,20 @@ case object VerifyGraphTarget extends VisitorPhase[PlannerContext, BaseState] wi
                   "Query routing is not available in embedded sessions. Try running the query using a Neo4j driver or the HTTP API."
                 )
             }
-
           case _ =>
         }
       case _ =>
     }
   }
+
+  private def isConstituent(
+    databaseReferenceRepository: DatabaseReferenceRepository,
+    normalizedDatabaseName: NormalizedDatabaseName
+  ): Boolean =
+    databaseReferenceRepository.getCompositeDatabaseReferences.asScala
+      .flatMap(_.constituents().asScala)
+      .map(_.fullName())
+      .exists(_ == normalizedDatabaseName)
 
   private def evaluateGraphSelection(statement: Statement): Option[GraphNameWithContext] =
     findGraphSelection(statement).map(evaluateGraphSelection)

@@ -60,14 +60,17 @@ public class QueryRouterBoltSpi {
         private final QueryRouter queryRouter;
         private final DatabaseReferenceResolver databaseReferenceResolver;
         private final BoltGraphDatabaseManagementServiceSPI compositeStack;
+        private final boolean useQueryRouterForCompositeQueries;
 
         public DatabaseManagementService(
                 QueryRouter queryRouter,
                 DatabaseReferenceResolver databaseReferenceResolver,
-                BoltGraphDatabaseManagementServiceSPI compositeStack) {
+                BoltGraphDatabaseManagementServiceSPI compositeStack,
+                boolean useQueryRouterForCompositeQueries) {
             this.queryRouter = queryRouter;
             this.databaseReferenceResolver = databaseReferenceResolver;
             this.compositeStack = compositeStack;
+            this.useQueryRouterForCompositeQueries = useQueryRouterForCompositeQueries;
         }
 
         @Override
@@ -77,7 +80,8 @@ public class QueryRouterBoltSpi {
                     databaseName,
                     queryRouter,
                     databaseReferenceResolver,
-                    compositeStack.database(databaseName, memoryTracker));
+                    compositeStack.database(databaseName, memoryTracker),
+                    useQueryRouterForCompositeQueries);
         }
     }
 
@@ -85,7 +89,8 @@ public class QueryRouterBoltSpi {
             String sessionDatabaseName,
             QueryRouter queryRouter,
             DatabaseReferenceResolver databaseReferenceResolver,
-            BoltGraphDatabaseServiceSPI compositeStack)
+            BoltGraphDatabaseServiceSPI compositeStack,
+            boolean useQueryRouterForCompositeQueries)
             implements BoltGraphDatabaseServiceSPI {
 
         @Override
@@ -103,7 +108,7 @@ public class QueryRouterBoltSpi {
             var sessionDatabaseReference =
                     databaseReferenceResolver.resolve(new NormalizedDatabaseName(sessionDatabaseName));
 
-            if (sessionDatabaseReference.isComposite()) {
+            if (!useQueryRouterForCompositeQueries && sessionDatabaseReference.isComposite()) {
                 return compositeStack.beginTransaction(
                         type,
                         loginContext,
@@ -115,7 +120,6 @@ public class QueryRouterBoltSpi {
                         TestOverrides.routingContext(routingContext),
                         queryExecutionConfiguration);
             }
-
             TransactionInfo transactionInfo = new TransactionInfo(
                     normalizedSessionDatabaseName,
                     type,

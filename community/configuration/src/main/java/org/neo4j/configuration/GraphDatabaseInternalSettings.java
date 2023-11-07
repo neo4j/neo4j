@@ -1174,6 +1174,12 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             newBuilder("internal.dbms.query_router.new_stack", BOOL, false).build();
 
     @Internal
+    @Description("A feature toggle behind which composite queries are routed through the new query router stack")
+    public static final Setting<Boolean> composite_queries_with_query_router = newBuilder(
+                    "internal.dbms.query_router.composite_queries", BOOL, true)
+            .build();
+
+    @Internal
     @Description("A feature toggle to enable respecting routing policies in server-side routing")
     public static final Setting<Boolean> query_router_respect_policies = newBuilder(
                     "internal.dbms.query_router.respect_policies", BOOL, true)

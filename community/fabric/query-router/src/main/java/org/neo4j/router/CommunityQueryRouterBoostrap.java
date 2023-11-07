@@ -34,6 +34,7 @@ import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.bolt.protocol.common.message.request.connection.RoutingContext;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.cypher.internal.PreParser;
 import org.neo4j.cypher.internal.cache.CacheTracer;
 import org.neo4j.cypher.internal.cache.ExecutorBasedCaffeineCacheFactory;
@@ -166,6 +167,8 @@ public class CommunityQueryRouterBoostrap extends CommonQueryRouterBoostrap {
         var statementLifecycles = new QueryStatementLifecycles(
                 databaseManager, monitors, config, tracers.getLockTracer(), systemNanoClock);
         var globalProcedures = resolve(GlobalProcedures.class);
+        var useQueryRouterForCompositeQueries =
+                config.get(GraphDatabaseInternalSettings.composite_queries_with_query_router);
 
         var transactionIdTracker = resolve(LocalGraphTransactionIdTracker.class);
         var txMonitor = new QueryRouterTransactionMonitor(config, systemNanoClock, this.logService);
@@ -193,7 +196,7 @@ public class CommunityQueryRouterBoostrap extends CommonQueryRouterBoostrap {
                 securityLog);
         dependencies.satisfyDependency(queryRouter);
         return new QueryRouterBoltSpi.DatabaseManagementService(
-                queryRouter, databaseReferenceResolver, getCompositeDatabaseStack());
+                queryRouter, databaseReferenceResolver, getCompositeDatabaseStack(), useQueryRouterForCompositeQueries);
     }
 
     @Override
