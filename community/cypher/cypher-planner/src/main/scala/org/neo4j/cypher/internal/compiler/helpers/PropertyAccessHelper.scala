@@ -39,15 +39,16 @@ object PropertyAccessHelper {
    * Find all direct property accesses in the head of this planner query. Used when selecting between index plans.
    */
   def findLocalPropertyAccesses(query: SinglePlannerQuery): Set[PropertyAccess] = {
-    val horizonPropertyAccesses = query.horizon.folder.treeFold(Set[PropertyAccess]()) {
+    val propertyAccessLocations: Seq[Any] = Seq(
+      query.horizon,
+      query.queryGraph,
+      query.interestingOrder
+    )
+
+    propertyAccessLocations.folder.treeFold(Set[PropertyAccess]()) {
       case Property(Variable(varName), PropertyKeyName(propName)) => set =>
           SkipChildren(set + PropertyAccess(varName, propName))
     }
-    val queryGraphPropertyAccesses = query.queryGraph.folder.treeFold(Set[PropertyAccess]()) {
-      case Property(Variable(varName), PropertyKeyName(propName)) => set =>
-          SkipChildren(set + PropertyAccess(varName, propName))
-    }
-    horizonPropertyAccesses ++ queryGraphPropertyAccesses
   }
 
   /*

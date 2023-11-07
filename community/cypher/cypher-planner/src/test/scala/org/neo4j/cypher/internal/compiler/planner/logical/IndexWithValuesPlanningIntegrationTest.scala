@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.ProcedureResultItem
+import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfiguration
@@ -1875,6 +1876,35 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
         if d.properties.map(p => p.propertyKeyToken.name -> p.getValueFromIndex) ==
           Seq("prop1" -> DoNotGetValue, "prop2" -> GetValue) => ()
     }
+  }
+
+  test("should plan an index scan in parallel runtime when property is accessed in ORDER BY") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("Question", 1000)
+      .addNodeIndex("Question", Seq("views"), existsSelectivity = 1, uniqueSelectivity = 0.1, withValues = true)
+      .addNodeExistenceConstraint("Question", "views")
+      .setExecutionModel(ExecutionModel.BatchedParallel(128, 1024))
+      .build()
+
+    val q =
+      """
+        |MATCH (q:Question)
+        |WITH q ORDER BY q.views DESC
+        |LIMIT 1000
+        |RETURN q.name AS tag, count(*) AS count
+        |ORDER BY count DESC
+        |LIMIT 10
+        |""".stripMargin
+
+    val plan = planner.plan(q).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .top(10, "count DESC")
+      .aggregation(Seq("q.name AS tag"), Seq("count(*) AS count"))
+      .top(1000, "`q.views` DESC")
+      .projection("cacheN[q.views] AS `q.views`")
+      .nodeIndexOperator("q:Question(views)", getValue = Map("views" -> GetValue), indexType = IndexType.RANGE)
+      .build()
   }
 
   private def cachedNodePropertyProj(node: String, property: String) =
