@@ -150,33 +150,22 @@ case object Namespacer extends Phase[BaseContext, BaseState, BaseState]
     })
   }
 
-  private def renamingRewriter(renamings: VariableRenamings): Rewriter = inSequence(
-    bottomUp(Rewriter.lift {
-      case item @ ProcedureResultItem(None, v: Variable) if renamings.contains(Ref(v)) =>
-        item.copy(output = Some(ProcedureOutput(v.name)(v.position)))(item.position)
-    }),
-    bottomUp(Rewriter.lift {
-      case v: Variable =>
-        renamings.get(Ref(v)) match {
-          case Some(newVariable) => newVariable
-          case None              => v
-        }
-      case e: ExpressionWithComputedDependencies =>
-        val newIntroducedVariables = e.introducedVariables.map(v => {
-          renamings.get(Ref(v)) match {
-            case Some(newVariable) => newVariable
-            case None              => v
-          }
-        })
-        val newScopeDependencies = e.scopeDependencies.map(v => {
-          renamings.get(Ref(v)) match {
-            case Some(newVariable) => newVariable
-            case None              => v
-          }
-        })
-        e.withComputedIntroducedVariables(newIntroducedVariables).withComputedScopeDependencies(newScopeDependencies)
-    })
-  )
+  private def renamingRewriter(renamings: VariableRenamings): Rewriter = {
+    def rename(v: LogicalVariable) = renamings.getOrElse(Ref(v), v)
+    inSequence(
+      bottomUp(Rewriter.lift {
+        case item @ ProcedureResultItem(None, v: Variable) if renamings.contains(Ref(v)) =>
+          item.copy(output = Some(ProcedureOutput(v.name)(v.position)))(item.position)
+      }),
+      bottomUp(Rewriter.lift {
+        case v: Variable => rename(v)
+        case e: ExpressionWithComputedDependencies =>
+          val newIntroducedVariables = e.introducedVariables.map(rename)
+          val newScopeDependencies = e.scopeDependencies.map(rename)
+          e.withComputedIntroducedVariables(newIntroducedVariables).withComputedScopeDependencies(newScopeDependencies)
+      })
+    )
+  }
 
   override def preConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
 

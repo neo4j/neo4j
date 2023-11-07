@@ -52,7 +52,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
   // This saves us from windows line break mismatches in those strings.
   implicit val windowsSafe: WindowsSafeAnyRef[LogicalPlan] = new WindowsSafeAnyRef[LogicalPlan]
 
-  private val planner = plannerBuilder()
+  private val plannerBase = plannerBuilder()
     .setAllNodesCardinality(100)
     .setAllRelationshipsCardinality(40)
     .setLabelCardinality("User", 4)
@@ -74,7 +74,13 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     .setRelationshipCardinality("(:B)-[]->(:N)", 10)
     .setRelationshipCardinality("()-[:T]->()", 10)
     .addSemanticFeature(SemanticFeature.GpmShortestPath)
-    .build()
+
+  private val planner = plannerBase.build()
+
+  private val nonDeduplicatingPlanner =
+    plannerBase
+      .enableDeduplicateNames(false)
+      .build()
 
   test("should plan SHORTEST with 1 QPP, + quantifier, no predicates, left-to-right") {
     val query = "MATCH ANY SHORTEST (u:User)((n)-[r]->(m))+(v) RETURN *"
@@ -259,12 +265,12 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     val nfa =
       new TestNFABuilder(0, "a")
         .addTransition(0, 1, "(a) (b)")
-        .addTransition(0, 3, "(a) (anon_1 WHERE d = anon_1)")
+        .addTransition(0, 3, "(a) (d WHERE d = d)")
         .addTransition(1, 2, "(b)-[r]->(c)")
         .addTransition(2, 1, "(c) (b)")
-        .addTransition(2, 3, "(c) (anon_1 WHERE d = anon_1)")
-        .addTransition(3, 4, "(anon_1) (e)")
-        .addTransition(3, 6, "(anon_1) (g)")
+        .addTransition(2, 3, "(c) (d WHERE d = d)")
+        .addTransition(3, 4, "(d) (e)")
+        .addTransition(3, 6, "(d) (g)")
         .addTransition(4, 5, "(e)-[s]->(f)")
         .addTransition(5, 4, "(f) (e)")
         .addTransition(5, 6, "(f) (g)")
@@ -277,11 +283,11 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "a",
           "g",
-          "SHORTEST 1 ((a) ((b)-[r]->(c)){0, } (anon_0) ((e)-[s]->(f)){0, } (g) WHERE d = `anon_0` AND disjoint(`r`, `s`) AND unique(`r`) AND unique(`s`))",
+          "SHORTEST 1 ((a) ((b)-[r]->(c)){0, } (d) ((e)-[s]->(f)){0, } (g) WHERE `d` = d AND disjoint(`r`, `s`) AND unique(`r`) AND unique(`s`))",
           None,
           groupNodes = Set(("b", "b"), ("c", "c"), ("e", "e"), ("f", "f")),
           groupRelationships = Set(("r", "r"), ("s", "s")),
-          singletonNodeVariables = Set("anon_1" -> "anon_0", "g" -> "g"),
+          singletonNodeVariables = Set("d" -> "d", "g" -> "g"),
           Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
@@ -302,10 +308,10 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     val nfa =
       new TestNFABuilder(0, "a")
         .addTransition(0, 1, "(a) (b)")
-        .addTransition(0, 3, "(a) (anon_1 WHERE d = anon_1)")
+        .addTransition(0, 3, "(a) (d WHERE d = d)")
         .addTransition(1, 2, "(b)-[r]->(c)")
         .addTransition(2, 1, "(c) (b)")
-        .addTransition(2, 3, "(c) (anon_1 WHERE d = anon_1)")
+        .addTransition(2, 3, "(c) (d WHERE d = d)")
         .addFinalState(3)
         .build()
 
@@ -314,12 +320,12 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       planner.subPlanBuilder()
         .statefulShortestPath(
           "a",
-          "anon_0",
-          "SHORTEST 1 ((a) ((b)-[r]->(c)){0, } (anon_0) WHERE d = `anon_0` AND unique(`r`))",
+          "d",
+          "SHORTEST 1 ((a) ((b)-[r]->(c)){0, } (d) WHERE `d` = d AND unique(`r`))",
           None,
           Set(("b", "b"), ("c", "c")),
           Set(("r", "r")),
-          Set("anon_1" -> "anon_0"),
+          Set("d" -> "d"),
           Set(),
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
@@ -341,12 +347,12 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     val nfa =
       new TestNFABuilder(0, "a")
         .addTransition(0, 1, "(a) (b)")
-        .addTransition(0, 3, "(a) (anon_1 WHERE d = anon_1)")
+        .addTransition(0, 3, "(a) (d WHERE d = d)")
         .addTransition(1, 2, "(b)-[r]->(c)")
         .addTransition(2, 1, "(c) (b)")
-        .addTransition(2, 3, "(c) (anon_1 WHERE d = anon_1)")
-        .addTransition(3, 4, "(anon_1) (e)")
-        .addTransition(3, 6, "(anon_1) (g)")
+        .addTransition(2, 3, "(c) (d WHERE d = d)")
+        .addTransition(3, 4, "(d) (e)")
+        .addTransition(3, 6, "(d) (g)")
         .addTransition(4, 5, "(e)-[s]->(f)")
         .addTransition(5, 4, "(f) (e)")
         .addTransition(5, 6, "(f) (g)")
@@ -359,12 +365,12 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "a",
           "g",
-          "SHORTEST 1 ((a) ((b)-[r]->(c)){0, } (anon_0) ((e)-[s]->(f)){0, } (g) WHERE d = `anon_0` AND d.prop IN [5] AND disjoint(`r`, `s`) AND unique(`r`) AND unique(`s`))",
+          "SHORTEST 1 ((a) ((b)-[r]->(c)){0, } (d) ((e)-[s]->(f)){0, } (g) WHERE `d` = d AND d.prop IN [5] AND disjoint(`r`, `s`) AND unique(`r`) AND unique(`s`))",
           // TODO: This could be moved to the earlier nodeByLabelScan making it a indexSeek. We could also rewrite the variable name here to inline the predicate but that would make it impossible to optimise it later.
           Some("cacheN[d.prop] = 5"),
           Set(("b", "b"), ("c", "c"), ("e", "e"), ("f", "f")),
           Set(("r", "r"), ("s", "s")),
-          Set("anon_1" -> "anon_0", "g" -> "g"),
+          Set("d" -> "d", "g" -> "g"),
           Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
@@ -385,35 +391,34 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
 
     val nfa =
       new TestNFABuilder(0, "a")
-        .addTransition(0, 1, "(a) (b)")
-        .addTransition(0, 3, "(a) (d WHERE d.prop = 5)")
-        .addTransition(1, 2, "(b)-[r]->(c)")
-        .addTransition(2, 1, "(c) (b)")
-        .addTransition(2, 3, "(c) (d WHERE d.prop = 5)")
-        .addTransition(3, 4, "(d) (e)")
-        .addTransition(3, 6, "(d) (anon_1)")
-        .addTransition(4, 5, "(e)-[s]->(f)")
-        .addTransition(5, 4, "(f) (e)")
-        .addTransition(5, 6, "(f) (anon_1)")
+        .addTransition(0, 1, "(a) (`  b@1`)")
+        .addTransition(0, 3, "(a) (`  d@13`)") // it would be more efficient to add "WHERE `  d@13`.prop = 5"
+        .addTransition(1, 2, "(`  b@1`)-[`  r@2`]->(`  c@3`)")
+        .addTransition(2, 1, "(`  c@3`) (`  b@1`)")
+        .addTransition(2, 3, "(`  c@3`) (`  d@13`)") // it would be more efficient to add "WHERE `  d@13`.prop = 5"
+        .addTransition(3, 4, "(`  d@13`) (`  e@7`)")
+        .addTransition(3, 6, "(`  d@13`) (`  d@14` WHERE `  d@14`.prop = 5)")
+        .addTransition(4, 5, "(`  e@7`)-[`  s@8`]->(`  f@9`)")
+        .addTransition(5, 4, "(`  f@9`) (`  e@7`)")
+        .addTransition(5, 6, "(`  f@9`) (`  d@14` WHERE `  d@14`.prop = 5)")
         .addFinalState(6)
         .build()
 
-    val plan = planner.plan(query).stripProduceResults
+    val plan = nonDeduplicatingPlanner.plan(query).stripProduceResults
     plan should equal(
-      planner.subPlanBuilder()
+      nonDeduplicatingPlanner.subPlanBuilder()
         .statefulShortestPath(
           "a",
-          "anon_0",
-          "SHORTEST 1 ((a) ((b)-[r]->(c)){0, } (d) ((e)-[s]->(f)){0, } (anon_0) WHERE d = `anon_0` AND d.prop IN [5] AND disjoint(`r`, `s`) AND unique(`r`) AND unique(`s`))",
-          Some("d = anon_0"),
-          Set(("b", "b"), ("c", "c"), ("e", "e"), ("f", "f")),
-          Set(("r", "r"), ("s", "s")),
-          Set("anon_1" -> "anon_0", "d" -> "d"),
+          "d",
+          "SHORTEST 1 ((a) ((  b@1)-[  r@2]->(  c@3)){0, } (  d@0) ((  e@7)-[  s@8]->(  f@9)){0, } (d) WHERE `  d@0` = d AND d.prop IN [5] AND disjoint(`  r@5`, `  s@11`) AND unique(`  r@5`) AND unique(`  s@11`))",
+          Some("`  d@0` = d"),
+          Set(("  b@1", "  b@4"), ("  c@3", "  c@6"), ("  e@7", "  e@10"), ("  f@9", "  f@12")),
+          Set(("  r@2", "  r@5"), ("  s@8", "  s@11")),
+          Set("  d@13" -> "  d@0", "  d@14" -> "d"),
           Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
-          ExpandAll,
-          reverseGroupVariableProjections = false
+          ExpandAll
         )
         .nodeByLabelScan("a", "User")
         .build()
@@ -426,30 +431,30 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
 
     val nfa =
       new TestNFABuilder(0, "d")
-        .addTransition(0, 1, "(d) (f)")
-        .addTransition(0, 3, "(d) (anon_1 WHERE d = anon_1)")
-        .addTransition(1, 2, "(f)<-[s]-(e)")
-        .addTransition(2, 1, "(e) (f)")
-        .addTransition(2, 3, "(e) (anon_1 WHERE d = anon_1)")
-        .addTransition(3, 4, "(anon_1) (c)")
-        .addTransition(3, 6, "(anon_1) (a)")
-        .addTransition(4, 5, "(c)<-[r]-(b)")
-        .addTransition(5, 4, "(b) (c)")
-        .addTransition(5, 6, "(b) (a)")
+        .addTransition(0, 1, "(d) (`  f@9`)")
+        .addTransition(0, 3, "(d) (`  d@14` WHERE `  d@14` = d)")
+        .addTransition(1, 2, "(`  f@9`)<-[`  s@8`]-(`  e@7`)")
+        .addTransition(2, 1, "(`  e@7`) (`  f@9`)")
+        .addTransition(2, 3, "(`  e@7`) (`  d@14` WHERE `  d@14` = d)")
+        .addTransition(3, 4, "(`  d@14`) (`  c@3`)")
+        .addTransition(3, 6, "(`  d@14`) (`  a@13`)")
+        .addTransition(4, 5, "(`  c@3`)<-[`  r@2`]-(`  b@1`)")
+        .addTransition(5, 4, "(`  b@1`) (`  c@3`)")
+        .addTransition(5, 6, "(`  b@1`) (`  a@13`)")
         .addFinalState(6)
         .build()
 
-    val plan = planner.plan(query).stripProduceResults
+    val plan = nonDeduplicatingPlanner.plan(query).stripProduceResults
     plan should equal(
-      planner.subPlanBuilder()
+      nonDeduplicatingPlanner.subPlanBuilder()
         .statefulShortestPath(
           "d",
           "a",
-          "SHORTEST 1 ((a) ((b)-[r]->(c)){0, } (anon_0) ((e)-[s]->(f)){0, } (d) WHERE d = `anon_0` AND disjoint(`r`, `s`) AND unique(`r`) AND unique(`s`))",
+          "SHORTEST 1 ((a) ((  b@1)-[  r@2]->(  c@3)){0, } (  d@0) ((  e@7)-[  s@8]->(  f@9)){0, } (d) WHERE `  d@0` = d AND disjoint(`  r@5`, `  s@11`) AND unique(`  r@5`) AND unique(`  s@11`))",
           None,
-          Set(("b", "b"), ("c", "c"), ("e", "e"), ("f", "f")),
-          Set(("r", "r"), ("s", "s")),
-          Set("a" -> "a", "anon_1" -> "anon_0"),
+          Set(("  b@1", "  b@4"), ("  c@3", "  c@6"), ("  e@7", "  e@10"), ("  f@9", "  f@12")),
+          Set(("  r@2", "  r@5"), ("  s@8", "  s@11")),
+          Set(("  a@13", "a"), ("  d@14", "  d@0")),
           Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
@@ -461,36 +466,36 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     )
   }
 
-  test("Shortest with Bound interior Node with predicate - reversed") {
+  test("should plan shortest with bound interior node with predicate - reversed") {
     val query =
       "MATCH ANY SHORTEST (a) ((b)-[r]->(c))* (a WHERE a.prop = 5) ((e)-[s]->(f))* (d:User) RETURN *"
 
     val nfa =
       new TestNFABuilder(0, "d")
-        .addTransition(0, 1, "(d) (f)")
-        .addTransition(0, 3, "(d) (a WHERE a.prop = 5)")
-        .addTransition(1, 2, "(f)<-[s]-(e)")
-        .addTransition(2, 1, "(e) (f)")
-        .addTransition(2, 3, "(e) (a WHERE a.prop = 5)")
-        .addTransition(3, 4, "(a) (c)")
-        .addTransition(3, 6, "(a) (anon_1)")
-        .addTransition(4, 5, "(c)<-[r]-(b)")
-        .addTransition(5, 4, "(b) (c)")
-        .addTransition(5, 6, "(b) (anon_1)")
+        .addTransition(0, 1, "(d) (`  f@9`)")
+        .addTransition(0, 3, "(d) (`  a@14`)") // it would be more efficient to add "WHERE `  a@14`.prop = 5"
+        .addTransition(1, 2, "(`  f@9`)<-[`  s@8`]-(`  e@7`)")
+        .addTransition(2, 1, "(`  e@7`) (`  f@9`)")
+        .addTransition(2, 3, "(`  e@7`) (`  a@14`)") // it would be more efficient to add "WHERE `  a@14`.prop = 5"
+        .addTransition(3, 4, "(`  a@14`) (`  c@3`)")
+        .addTransition(3, 6, "(`  a@14`) (`  a@13` WHERE `  a@13`.prop = 5)")
+        .addTransition(4, 5, "(`  c@3`)<-[`  r@2`]-(`  b@1`)")
+        .addTransition(5, 4, "(`  b@1`) (`  c@3`)")
+        .addTransition(5, 6, "(`  b@1`) (`  a@13` WHERE `  a@13`.prop = 5)")
         .addFinalState(6)
         .build()
 
-    val plan = planner.plan(query).stripProduceResults
+    val plan = nonDeduplicatingPlanner.plan(query).stripProduceResults
     plan should equal(
-      planner.subPlanBuilder()
+      nonDeduplicatingPlanner.subPlanBuilder()
         .statefulShortestPath(
           "d",
-          "anon_0",
-          "SHORTEST 1 ((anon_0) ((b)-[r]->(c)){0, } (a) ((e)-[s]->(f)){0, } (d) WHERE a = `anon_0` AND a.prop IN [5] AND disjoint(`r`, `s`) AND unique(`r`) AND unique(`s`))",
-          Some("a = anon_0"),
-          Set(("b", "b"), ("c", "c"), ("e", "e"), ("f", "f")),
-          Set(("r", "r"), ("s", "s")),
-          Set("anon_1" -> "anon_0", "a" -> "a"),
+          "a",
+          "SHORTEST 1 ((a) ((  b@1)-[  r@2]->(  c@3)){0, } (  a@0) ((  e@7)-[  s@8]->(  f@9)){0, } (d) WHERE `  a@0` = a AND a.prop IN [5] AND disjoint(`  r@5`, `  s@11`) AND unique(`  r@5`) AND unique(`  s@11`))",
+          Some("`  a@0` = a"),
+          Set(("  b@1", "  b@4"), ("  c@3", "  c@6"), ("  e@7", "  e@10"), ("  f@9", "  f@12")),
+          Set(("  r@2", "  r@5"), ("  s@8", "  s@11")),
+          Set("  a@14" -> "  a@0", "  a@13" -> "a"),
           Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
@@ -506,34 +511,34 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     "should allow planning of shortest with already bound interior start and end node with predicate on interior node"
   ) {
     val query =
-      "MATCH (a), (d) WITH *, 1 AS dummy MATCH ANY SHORTEST (a) ((b)-[r]->(c))* (d WHERE d.prop = 5) ((e)-[s]->(f))* (d) RETURN *"
+      "MATCH (a), (d) WITH * SKIP 0 MATCH ANY SHORTEST (a) ((b)-[r]->(c))* (d WHERE d.prop = 5) ((e)-[s]->(f))* (d) RETURN *"
 
     val nfa =
       new TestNFABuilder(0, "a")
-        .addTransition(0, 1, "(a) (b)")
-        .addTransition(0, 3, "(a) (anon_2 WHERE d = anon_2)")
-        .addTransition(1, 2, "(b)-[r]->(c)")
-        .addTransition(2, 1, "(c) (b)")
-        .addTransition(2, 3, "(c) (anon_2 WHERE d = anon_2)")
-        .addTransition(3, 4, "(anon_2) (e)")
-        .addTransition(3, 6, "(anon_2) (anon_3 WHERE d = anon_3)")
-        .addTransition(4, 5, "(e)-[s]->(f)")
-        .addTransition(5, 4, "(f) (e)")
-        .addTransition(5, 6, "(f) (anon_3 WHERE d = anon_3)")
+        .addTransition(0, 1, "(a) (`  b@1`)")
+        .addTransition(0, 3, "(a) (`  d@14` WHERE `  d@14` = d)")
+        .addTransition(1, 2, "(`  b@1`)-[`  r@2`]->(`  c@3`)")
+        .addTransition(2, 1, "(`  c@3`) (`  b@1`)")
+        .addTransition(2, 3, "(`  c@3`) (`  d@14` WHERE `  d@14` = d)")
+        .addTransition(3, 4, "(`  d@14`) (`  e@7`)")
+        .addTransition(3, 6, "(`  d@14`) (`  d@15` WHERE `  d@15` = d)")
+        .addTransition(4, 5, "(`  e@7`)-[`  s@8`]->(`  f@9`)")
+        .addTransition(5, 4, "(`  f@9`) (`  e@7`)")
+        .addTransition(5, 6, "(`  f@9`) (`  d@15` WHERE `  d@15` = d)")
         .addFinalState(6)
         .build()
 
-    val plan = planner.plan(query).stripProduceResults
+    val plan = nonDeduplicatingPlanner.plan(query).stripProduceResults
     plan should equal(
-      planner.subPlanBuilder()
+      nonDeduplicatingPlanner.subPlanBuilder()
         .statefulShortestPath(
           "a",
-          "anon_1",
-          "SHORTEST 1 ((a) ((b)-[r]->(c)){0, } (anon_0) ((e)-[s]->(f)){0, } (anon_1) WHERE d = `anon_0` AND d = `anon_1` AND disjoint(`r`, `s`) AND unique(`r`) AND unique(`s`))",
+          "  d@13",
+          "SHORTEST 1 ((a) ((  b@1)-[  r@2]->(  c@3)){0, } (  d@0) ((  e@7)-[  s@8]->(  f@9)){0, } (  d@13) WHERE `  d@0` = d AND `  d@13` = d AND disjoint(`  r@5`, `  s@11`) AND unique(`  r@5`) AND unique(`  s@11`))",
           None,
-          Set(("b", "b"), ("c", "c"), ("e", "e"), ("f", "f")),
-          Set(("r", "r"), ("s", "s")),
-          Set("anon_2" -> "anon_0", "anon_3" -> "anon_1"),
+          Set(("  b@1", "  b@4"), ("  c@3", "  c@6"), ("  e@7", "  e@10"), ("  f@9", "  f@12")),
+          Set(("  r@2", "  r@5"), ("  s@8", "  s@11")),
+          Set(("  d@14", "  d@0"), ("  d@15", "  d@13")),
           Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
@@ -541,7 +546,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           reverseGroupVariableProjections = false
         )
         .filter("cacheN[d.prop] = 5")
-        .projection("1 AS dummy")
+        .skip(0)
         .cartesianProduct()
         .|.cacheProperties("cacheNFromStore[d.prop]")
         .|.allNodeScan("d")
@@ -556,35 +561,42 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
 
     val nfa =
       new TestNFABuilder(0, "a")
-        .addTransition(0, 1, "(a) (b)")
-        .addTransition(0, 3, "(a) (d)")
-        .addTransition(1, 2, "(b)-[r]->(c)")
-        .addTransition(2, 1, "(c) (b)")
-        .addTransition(2, 3, "(c) (d)")
-        .addTransition(3, 4, "(d) (e)")
-        .addTransition(3, 6, "(d) (anon_2)")
-        .addTransition(4, 5, "(e)-[s]->(f)")
-        .addTransition(5, 4, "(f) (e)")
-        .addTransition(5, 6, "(f) (anon_2)")
-        .addTransition(6, 7, "(anon_2) (g)")
-        .addTransition(6, 9, "(anon_2) (anon_3)")
-        .addTransition(7, 8, "(g)-[t]->(h)")
-        .addTransition(8, 7, "(h) (g)")
-        .addTransition(8, 9, "(h) (anon_3)")
+        .addTransition(0, 1, "(a) (`  b@2`)")
+        .addTransition(0, 3, "(a) (`  d@20`)")
+        .addTransition(1, 2, "(`  b@2`)-[`  r@3`]->(`  c@4`)")
+        .addTransition(2, 1, "(`  c@4`) (`  b@2`)")
+        .addTransition(2, 3, "(`  c@4`) (`  d@20`)")
+        .addTransition(3, 4, "(`  d@20`) (`  e@8`)")
+        .addTransition(3, 6, "(`  d@20`) (`  d@21`)")
+        .addTransition(4, 5, "(`  e@8`)-[`  s@9`]->(`  f@10`)")
+        .addTransition(5, 4, "(`  f@10`) (`  e@8`)")
+        .addTransition(5, 6, "(`  f@10`) (`  d@21`)")
+        .addTransition(6, 7, "(`  d@21`) (`  g@14`)")
+        .addTransition(6, 9, "(`  d@21`) (`  d@22`)")
+        .addTransition(7, 8, "(`  g@14`)-[`  t@15`]->(`  h@16`)")
+        .addTransition(8, 7, "(`  h@16`) (`  g@14`)")
+        .addTransition(8, 9, "(`  h@16`) (`  d@22`)")
         .addFinalState(9)
         .build()
 
-    val plan = planner.plan(query).stripProduceResults
+    val plan = nonDeduplicatingPlanner.plan(query).stripProduceResults
     plan should equal(
-      planner.subPlanBuilder()
+      nonDeduplicatingPlanner.subPlanBuilder()
         .statefulShortestPath(
           "a",
-          "anon_1",
-          "SHORTEST 1 ((a) ((b)-[r]->(c)){0, } (d) ((e)-[s]->(f)){0, } (anon_0) ((g)-[t]->(h)){0, } (anon_1) WHERE d = `anon_0` AND d = `anon_1` AND disjoint(`r`, `s`) AND disjoint(`r`, `t`) AND disjoint(`s`, `t`) AND unique(`r`) AND unique(`s`) AND unique(`t`))",
-          Some("d = anon_0 AND d = anon_1"),
-          Set(("g", "g"), ("c", "c"), ("f", "f"), ("b", "b"), ("e", "e"), ("h", "h")),
-          Set(("r", "r"), ("s", "s"), ("t", "t")),
-          Set("d" -> "d", "anon_2" -> "anon_0", "anon_3" -> "anon_1"),
+          "d",
+          "SHORTEST 1 ((a) ((  b@2)-[  r@3]->(  c@4)){0, } (  d@0) ((  e@8)-[  s@9]->(  f@10)){0, } (  d@1) ((  g@14)-[  t@15]->(  h@16)){0, } (d) WHERE `  d@0` = d AND `  d@1` = d AND disjoint(`  r@6`, `  s@12`) AND disjoint(`  r@6`, `  t@18`) AND disjoint(`  s@12`, `  t@18`) AND unique(`  r@6`) AND unique(`  s@12`) AND unique(`  t@18`))",
+          Some("`  d@1` = d AND `  d@0` = d"),
+          Set(
+            ("  h@16", "  h@19"),
+            ("  f@10", "  f@13"),
+            ("  c@4", "  c@7"),
+            ("  e@8", "  e@11"),
+            ("  g@14", "  g@17"),
+            ("  b@2", "  b@5")
+          ),
+          Set(("  r@3", "  r@6"), ("  s@9", "  s@12"), ("  t@15", "  t@18")),
+          Set("  d@22" -> "d", "  d@20" -> "  d@0", "  d@21" -> "  d@1"),
           Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
@@ -602,35 +614,42 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
 
     val nfa =
       new TestNFABuilder(0, "a")
-        .addTransition(0, 1, "(a) (b)")
-        .addTransition(0, 3, "(a) (anon_2 WHERE a = anon_2)")
-        .addTransition(1, 2, "(b)-[r]->(c)")
-        .addTransition(2, 1, "(c) (b)")
-        .addTransition(2, 3, "(c) (anon_2 WHERE a = anon_2)")
-        .addTransition(3, 4, "(anon_2) (e)")
-        .addTransition(3, 6, "(anon_2) (anon_3 WHERE a = anon_3)")
-        .addTransition(4, 5, "(e)-[s]->(f)")
-        .addTransition(5, 4, "(f) (e)")
-        .addTransition(5, 6, "(f) (anon_3 WHERE a = anon_3)")
-        .addTransition(6, 7, "(anon_3) (g)")
-        .addTransition(6, 9, "(anon_3) (d)")
-        .addTransition(7, 8, "(g)-[t]->(h)")
-        .addTransition(8, 7, "(h) (g)")
-        .addTransition(8, 9, "(h) (d)")
+        .addTransition(0, 1, "(a) (`  b@2`)")
+        .addTransition(0, 3, "(a) (`  a@20` WHERE `  a@20` = a)")
+        .addTransition(1, 2, "(`  b@2`)-[`  r@3`]->(`  c@4`)")
+        .addTransition(2, 1, "(`  c@4`) (`  b@2`)")
+        .addTransition(2, 3, "(`  c@4`) (`  a@20` WHERE `  a@20` = a)")
+        .addTransition(3, 4, "(`  a@20`) (`  e@8`)")
+        .addTransition(3, 6, "(`  a@20`) (`  a@21` WHERE `  a@21` = a)")
+        .addTransition(4, 5, "(`  e@8`)-[`  s@9`]->(`  f@10`)")
+        .addTransition(5, 4, "(`  f@10`) (`  e@8`)")
+        .addTransition(5, 6, "(`  f@10`) (`  a@21` WHERE `  a@21` = a)")
+        .addTransition(6, 7, "(`  a@21`) (`  g@14`)")
+        .addTransition(6, 9, "(`  a@21`) (`  d@22`)")
+        .addTransition(7, 8, "(`  g@14`)-[`  t@15`]->(`  h@16`)")
+        .addTransition(8, 7, "(`  h@16`) (`  g@14`)")
+        .addTransition(8, 9, "(`  h@16`) (`  d@22`)")
         .addFinalState(9)
         .build()
 
-    val plan = planner.plan(query).stripProduceResults
+    val plan = nonDeduplicatingPlanner.plan(query).stripProduceResults
     plan should equal(
-      planner.subPlanBuilder()
+      nonDeduplicatingPlanner.subPlanBuilder()
         .statefulShortestPath(
           "a",
           "d",
-          "SHORTEST 1 ((a) ((b)-[r]->(c)){0, } (anon_0) ((e)-[s]->(f)){0, } (anon_1) ((g)-[t]->(h)){0, } (d) WHERE a = `anon_0` AND a = `anon_1` AND disjoint(`r`, `s`) AND disjoint(`r`, `t`) AND disjoint(`s`, `t`) AND unique(`r`) AND unique(`s`) AND unique(`t`))",
+          "SHORTEST 1 ((a) ((  b@2)-[  r@3]->(  c@4)){0, } (  a@0) ((  e@8)-[  s@9]->(  f@10)){0, } (  a@1) ((  g@14)-[  t@15]->(  h@16)){0, } (d) WHERE `  a@0` = a AND `  a@1` = a AND disjoint(`  r@6`, `  s@12`) AND disjoint(`  r@6`, `  t@18`) AND disjoint(`  s@12`, `  t@18`) AND unique(`  r@6`) AND unique(`  s@12`) AND unique(`  t@18`))",
           None,
-          Set(("g", "g"), ("c", "c"), ("f", "f"), ("b", "b"), ("e", "e"), ("h", "h")),
-          Set(("r", "r"), ("s", "s"), ("t", "t")),
-          Set("anon_2" -> "anon_0", "anon_3" -> "anon_1", "d" -> "d"),
+          Set(
+            ("  h@16", "  h@19"),
+            ("  f@10", "  f@13"),
+            ("  c@4", "  c@7"),
+            ("  e@8", "  e@11"),
+            ("  g@14", "  g@17"),
+            ("  b@2", "  b@5")
+          ),
+          Set(("  r@3", "  r@6"), ("  s@9", "  s@12"), ("  t@15", "  t@18")),
+          Set("  a@20" -> "  a@0", "  a@21" -> "  a@1", "  d@22" -> "d"),
           Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
@@ -648,35 +667,42 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
 
     val nfa =
       new TestNFABuilder(0, "a")
-        .addTransition(0, 1, "(a) (b)")
-        .addTransition(0, 3, "(a) (d)")
-        .addTransition(1, 2, "(b)-[r]->(c)")
-        .addTransition(2, 1, "(c) (b)")
-        .addTransition(2, 3, "(c) (d)")
-        .addTransition(3, 4, "(d) (e)")
-        .addTransition(3, 6, "(d) (anon_1)")
-        .addTransition(4, 5, "(e)-[s]->(f)")
-        .addTransition(5, 4, "(f) (e)")
-        .addTransition(5, 6, "(f) (anon_1)")
-        .addTransition(6, 7, "(anon_1) (g)")
-        .addTransition(6, 9, "(anon_1) (i)")
-        .addTransition(7, 8, "(g)-[t]->(h)")
-        .addTransition(8, 7, "(h) (g)")
-        .addTransition(8, 9, "(h) (i)")
+        .addTransition(0, 1, "(a) (`  b@1`)")
+        .addTransition(0, 3, "(a) (`  d@19`)")
+        .addTransition(1, 2, "(`  b@1`)-[`  r@2`]->(`  c@3`)")
+        .addTransition(2, 1, "(`  c@3`) (`  b@1`)")
+        .addTransition(2, 3, "(`  c@3`) (`  d@19`)")
+        .addTransition(3, 4, "(`  d@19`) (`  e@7`)")
+        .addTransition(3, 6, "(`  d@19`) (`  d@20`)")
+        .addTransition(4, 5, "(`  e@7`)-[`  s@8`]->(`  f@9`)")
+        .addTransition(5, 4, "(`  f@9`) (`  e@7`)")
+        .addTransition(5, 6, "(`  f@9`) (`  d@20`)")
+        .addTransition(6, 7, "(`  d@20`) (`  g@13`)")
+        .addTransition(6, 9, "(`  d@20`) (`  i@21`)")
+        .addTransition(7, 8, "(`  g@13`)-[`  t@14`]->(`  h@15`)")
+        .addTransition(8, 7, "(`  h@15`) (`  g@13`)")
+        .addTransition(8, 9, "(`  h@15`) (`  i@21`)")
         .addFinalState(9)
         .build()
 
-    val plan = planner.plan(query).stripProduceResults
+    val plan = nonDeduplicatingPlanner.plan(query).stripProduceResults
     plan should equal(
-      planner.subPlanBuilder()
+      nonDeduplicatingPlanner.subPlanBuilder()
         .statefulShortestPath(
           "a",
           "i",
-          "SHORTEST 1 ((a) ((b)-[r]->(c)){0, } (d) ((e)-[s]->(f)){0, } (anon_0) ((g)-[t]->(h)){0, } (i) WHERE d = `anon_0` AND disjoint(`r`, `s`) AND disjoint(`r`, `t`) AND disjoint(`s`, `t`) AND unique(`r`) AND unique(`s`) AND unique(`t`))",
-          Some("d = anon_0"),
-          Set(("g", "g"), ("c", "c"), ("f", "f"), ("b", "b"), ("e", "e"), ("h", "h")),
-          Set(("r", "r"), ("s", "s"), ("t", "t")),
-          Set("d" -> "d", "anon_1" -> "anon_0", "i" -> "i"),
+          "SHORTEST 1 ((a) ((  b@1)-[  r@2]->(  c@3)){0, } (d) ((  e@7)-[  s@8]->(  f@9)){0, } (  d@0) ((  g@13)-[  t@14]->(  h@15)){0, } (i) WHERE `  d@0` = d AND disjoint(`  r@5`, `  s@11`) AND disjoint(`  r@5`, `  t@17`) AND disjoint(`  s@11`, `  t@17`) AND unique(`  r@5`) AND unique(`  s@11`) AND unique(`  t@17`))",
+          Some("`  d@0` = d"),
+          Set(
+            ("  e@7", "  e@10"),
+            ("  g@13", "  g@16"),
+            ("  b@1", "  b@4"),
+            ("  c@3", "  c@6"),
+            ("  h@15", "  h@18"),
+            ("  f@9", "  f@12")
+          ),
+          Set(("  r@2", "  r@5"), ("  s@8", "  s@11"), ("  t@14", "  t@17")),
+          Set("  d@19" -> "d", "  d@20" -> "  d@0", "  i@21" -> "i"),
           Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
@@ -695,10 +721,10 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     val nfa =
       new TestNFABuilder(0, "a")
         .addTransition(0, 1, "(a) (b)")
-        .addTransition(0, 3, "(a) (anon_1 WHERE a = anon_1)")
+        .addTransition(0, 3, "(a) (a WHERE a = a)")
         .addTransition(1, 2, "(b)-[r]->(c)")
         .addTransition(2, 1, "(c) (b)")
-        .addTransition(2, 3, "(c) (anon_1 WHERE a = anon_1)")
+        .addTransition(2, 3, "(c) (a WHERE a = a)")
         .addFinalState(3)
         .build()
 
@@ -707,12 +733,12 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       planner.subPlanBuilder()
         .statefulShortestPath(
           "a",
-          "anon_0",
-          "SHORTEST 1 ((a) ((b)-[r]->(c)){0, } (anon_0) WHERE a = `anon_0` AND unique(`r`))",
+          "a",
+          "SHORTEST 1 ((a) ((b)-[r]->(c)){0, } (a) WHERE `a` = a AND unique(`r`))",
           None,
           Set(("b", "b"), ("c", "c")),
           Set(("r", "r")),
-          Set("anon_1" -> "anon_0"),
+          Set("a" -> "a"),
           Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
@@ -966,15 +992,6 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     )
   }
 
-  test("Should not support a strict interior relationship of a shortest path pattern from a previous MATCH clause") {
-    val query =
-      """MATCH ()-[r]->()
-        |MATCH ANY SHORTEST (a)-[r]->(b)-->*(c)
-        |RETURN *""".stripMargin
-
-    an[InternalException] should be thrownBy planner.plan(query)
-  }
-
   test("Should not support a strict interior node of a shortest path pattern to be repeated, inside QPP") {
     val query =
       """MATCH ANY SHORTEST (a) ((b)--(b))* (c)
@@ -1076,7 +1093,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .addTransition(0, 1, "(n) (n_inner)")
       .addTransition(1, 2, "(n_inner)-[r_inner]->(m_inner)")
       .addTransition(2, 1, "(m_inner) (n_inner)")
-      .addTransition(2, 3, "(m_inner) (anon_1 WHERE m = anon_1)")
+      .addTransition(2, 3, "(m_inner) (m WHERE m = m)")
       .addFinalState(3)
       .build()
 
@@ -1084,12 +1101,12 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       planner.subPlanBuilder()
         .statefulShortestPath(
           "n",
-          "anon_0",
-          "SHORTEST 1 ((n) ((n_inner)-[r_inner]->(m_inner)){1, } (anon_0) WHERE m = `anon_0` AND unique(`r_inner`))",
+          "m",
+          "SHORTEST 1 ((n) ((n_inner)-[r_inner]->(m_inner)){1, } (m) WHERE `m` = m AND unique(`r_inner`))",
           None,
           groupNodes = Set(("n_inner", "n_inner"), ("m_inner", "m_inner")),
           groupRelationships = Set(("r_inner", "r_inner")),
-          singletonNodeVariables = Set("anon_1" -> "anon_0"),
+          singletonNodeVariables = Set("m" -> "m"),
           singletonRelationshipVariables = Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
@@ -1119,7 +1136,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .addTransition(1, 2, "(n_inner)-[r_inner]->(m_inner)")
       .addTransition(2, 1, "(m_inner) (n_inner)")
       .addTransition(2, 3, "(m_inner) (m WHERE m.prop = cacheN[o.prop])")
-      .addTransition(3, 4, "(m)-[r2]->(anon_1 WHERE o = anon_1)")
+      .addTransition(3, 4, "(m)-[r2]->(o WHERE o = o)")
       .addFinalState(4)
       .build()
 
@@ -1127,12 +1144,12 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       planner.subPlanBuilder()
         .statefulShortestPath(
           "n",
-          "anon_0",
-          "SHORTEST 1 ((n) ((n_inner)-[r_inner]->(m_inner)){1, } (m)-[r2]->(anon_0) WHERE NOT r2 IN `r_inner` AND m.prop = o.prop AND o = `anon_0` AND unique(`r_inner`))",
+          "o",
+          "SHORTEST 1 ((n) ((n_inner)-[r_inner]->(m_inner)){1, } (m)-[r2]->(o) WHERE NOT r2 IN `r_inner` AND `o` = o AND m.prop = o.prop AND unique(`r_inner`))",
           None,
           groupNodes = Set(("n_inner", "n_inner"), ("m_inner", "m_inner")),
           groupRelationships = Set(("r_inner", "r_inner")),
-          singletonNodeVariables = Set("m" -> "m", "anon_1" -> "anon_0"),
+          singletonNodeVariables = Set("m" -> "m", "o" -> "o"),
           singletonRelationshipVariables = Set("r2" -> "r2"),
           StatefulShortestPath.Selector.Shortest(1),
           nfa,

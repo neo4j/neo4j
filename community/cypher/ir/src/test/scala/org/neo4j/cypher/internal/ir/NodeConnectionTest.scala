@@ -37,6 +37,14 @@ class NodeConnectionTest extends CypherFunSuite with AstConstructionTestSupport 
     SimplePatternLength
   )
 
+  private val `(start)-[y]->(bar)` = PatternRelationship(
+    v"y",
+    (v"start", v"bar"),
+    SemanticDirection.OUTGOING,
+    Seq.empty,
+    SimplePatternLength
+  )
+
   private val `(start) ((a)-[r]->(b)-[s]->(c))+ (end)` = QuantifiedPathPattern(
     leftBinding = NodeBinding(v"a", v"start"),
     rightBinding = NodeBinding(v"c", v"end"),
@@ -128,6 +136,26 @@ class NodeConnectionTest extends CypherFunSuite with AstConstructionTestSupport 
       RelationshipPathVariable(v"s"),
       NodePathVariable(v"c"),
       NodePathVariable(v"end")
+    ))
+  }
+
+  test("pathVariables of an SPP without QPP") {
+    val spp =
+      SelectivePathPattern(
+        pathPattern = ExhaustivePathPattern.NodeConnections(NonEmptyList(
+          `(foo)-[x]->(start)`,
+          `(start)-[y]->(bar)`
+        )),
+        selections = Selections.empty,
+        selector = SelectivePathPattern.Selector.ShortestGroups(1)
+      )
+
+    spp.pathVariables should equal(Seq(
+      NodePathVariable(v"foo"),
+      RelationshipPathVariable(v"x"),
+      NodePathVariable(v"start"),
+      RelationshipPathVariable(v"y"),
+      NodePathVariable(v"bar")
     ))
   }
 

@@ -563,7 +563,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
       case PathConcatenation(factors) =>
         factors.map(declareVariables(ctx, _)).reduce(_ chain _)
 
-      case q @ QuantifiedPath(pattern, _, where, entityBindings) =>
+      case q @ QuantifiedPath(pattern, _, _, entityBindings) =>
         withScopedState {
           declareVariables(ctx, pattern.element) chain
             ensureNoPathVariable(pattern) ifOkChain

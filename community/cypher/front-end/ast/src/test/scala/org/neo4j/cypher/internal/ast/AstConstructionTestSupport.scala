@@ -106,6 +106,7 @@ import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.PatternPart
+import org.neo4j.cypher.internal.expressions.PatternPart.Selector
 import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
 import org.neo4j.cypher.internal.expressions.PlusQuantifier
 import org.neo4j.cypher.internal.expressions.Pow
@@ -720,8 +721,8 @@ trait AstConstructionTestSupport {
   def anyPathSelector(count: String): PatternPart.AnyPath =
     PatternPart.AnyPath(UnsignedDecimalIntegerLiteral(count)(pos))(pos)
 
-  def anyShortestPathSelector(count: String): PatternPart.AnyShortestPath =
-    PatternPart.AnyShortestPath(UnsignedDecimalIntegerLiteral(count)(pos))(pos)
+  def anyShortestPathSelector(count: Int): PatternPart.AnyShortestPath =
+    PatternPart.AnyShortestPath(UnsignedDecimalIntegerLiteral(count.toString)(pos))(pos)
 
   def allShortestPathsSelector(): PatternPart.AllShortestPaths =
     PatternPart.AllShortestPaths()(pos)
@@ -824,6 +825,20 @@ trait AstConstructionTestSupport {
 
   def match_(patterns: Seq[PatternElement], where: Option[Where]): Match =
     Match(optional = false, MatchMode.default(pos), patternForMatch(patterns: _*), Seq(), where)(pos)
+
+  def match_shortest(
+    selector: Selector,
+    pattern: PatternElement,
+    matchMode: MatchMode = MatchMode.default(pos),
+    where: Option[Where] = None
+  ): Match =
+    Match(
+      optional = false,
+      matchMode = matchMode,
+      Pattern.ForMatch(Seq(PatternPartWithSelector(selector, PatternPart(pattern))))(pos),
+      Seq(),
+      where
+    )(pos)
 
   def patternForMatch(parts: NonPrefixedPatternPart*): Pattern.ForMatch = {
     Pattern.ForMatch(parts.map(_.withAllPathsSelector))(pos)

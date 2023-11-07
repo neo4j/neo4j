@@ -230,7 +230,9 @@ object PatternPart {
  * That is that `factors(i)` is concatenated with `factors(i - 1)` and `factors(i + 1)` if they exist.
  */
 case class PathConcatenation(factors: Seq[PathFactor])(val position: InputPosition) extends PatternElement {
-  override def allVariables: Set[LogicalVariable] = factors.flatMap(_.allVariables).toSet
+  override def allVariables: Set[LogicalVariable] = allVariablesLeftToRight.toSet
+
+  def allVariablesLeftToRight: Seq[LogicalVariable] = factors.flatMap(_.allVariablesLeftToRight)
 
   override def variable: Option[LogicalVariable] = None
 
@@ -260,6 +262,8 @@ case class QuantifiedPath(
     extends PathFactor with PatternAtom {
 
   override def allVariables: Set[LogicalVariable] = variableGroupings.map(_.group)
+
+  override def allVariablesLeftToRight: Seq[LogicalVariable] = Seq.empty
 
   override def variable: Option[LogicalVariable] = None
 
@@ -326,6 +330,7 @@ case class ParenthesizedPath(
     extends PathFactor with PatternAtom {
 
   override def allVariables: Set[LogicalVariable] = part.element.allVariables
+  override def allVariablesLeftToRight: Seq[LogicalVariable] = part.element.allVariablesLeftToRight
 
   override def variable: Option[LogicalVariable] = None
 
@@ -348,6 +353,11 @@ object ParenthesizedPath {
 
 sealed abstract class PatternElement extends ASTNode with HasMappableExpressions[PatternElement] {
   def allVariables: Set[LogicalVariable]
+
+  /**
+   * In contrast to allVariables, this returns singletons of every grouping.
+   */
+  def allVariablesLeftToRight: Seq[LogicalVariable]
   def variable: Option[LogicalVariable]
   def isBounded: Boolean
   def isFixedLength: Boolean

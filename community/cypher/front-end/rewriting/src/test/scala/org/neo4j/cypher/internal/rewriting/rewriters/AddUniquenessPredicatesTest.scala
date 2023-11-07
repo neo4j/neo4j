@@ -70,6 +70,7 @@ class AddUniquenessPredicatesTest extends CypherFunSuite with RewriteTest with A
       "(a)-[r]->(b)-[r]->(c)",
       "(a)-[r]->+(b)-[r]->(c)",
       "(a)(()-[r]->(b)-[r]->())+(c)",
+      "(a)-[r*]->(b)-[r*]->(c)",
       "SHORTEST 1 (a)-[r]->+(b)-[r]->(c)"
     ).foreach { pattern =>
       assertIsNotRewritten(s"MATCH REPEATABLE ELEMENTS $pattern RETURN *")
