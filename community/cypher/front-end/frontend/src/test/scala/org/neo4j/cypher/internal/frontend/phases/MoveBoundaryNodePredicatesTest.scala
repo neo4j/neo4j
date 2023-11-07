@@ -104,4 +104,13 @@ class MoveBoundaryNodePredicatesTest extends CypherFunSuite with RewritePhaseTes
     )
   }
 
+  test(
+    "MATCH REPEATABLE ELEMENTS ANY SHORTEST (p = (start:A) (()-->())+ ()), ANY SHORTEST () (()-->())+ (end:B) RETURN count(*) AS c"
+  ) {
+    assertRewritten(
+      testName,
+      "MATCH REPEATABLE ELEMENTS ANY SHORTEST (p = (start) (()-->())+ ()), ANY SHORTEST () (()-->())+ (end) WHERE start:A AND end:B RETURN count(*) AS c"
+    )
+  }
+
 }

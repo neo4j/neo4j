@@ -20,8 +20,10 @@ import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.expressions.Ands
+import org.neo4j.cypher.internal.expressions.AnonymousPatternPart
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.NamedPatternPart
 import org.neo4j.cypher.internal.expressions.ParenthesizedPath
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternElement
@@ -64,7 +66,11 @@ case object MoveBoundaryNodePredicates extends StatementRewriter with StepSequen
               val (extractedPredicates, notExtractedPredicates) = extractPredicates(where, boundaryNodes)
               val newElement = notExtractedPredicates match {
                 case Some(predicates) => pp.copy(optionalWhereClause = Some(predicates))(pp.position)
-                case None => part.element
+                case None => part match {
+                    // Named pattern parts inside needs to be kept
+                    case NamedPatternPart(_, _)     => pp.copy(optionalWhereClause = None)(pp.position)
+                    case part: AnonymousPatternPart => part.element
+                  }
               }
               (newElement, extractedPredicates)
             case element => (element, ListSet.empty)
