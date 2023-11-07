@@ -2041,7 +2041,7 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
     result.factor shouldBe friendsPropIsNotNullSel
   }
 
-  test("IS :: STRING selectivity should be zero given a contradicting node property type constraint") {
+  test("IS :: STRING selectivity should be that of IS NULL given a contradicting node property type constraint") {
     val predicate = isTyped(nProp, CTString)
 
     val calculator = setUpCalculator(
@@ -2053,7 +2053,24 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
     result shouldBe personPropIsNotNullSel.toSelectivity.negate
   }
 
-  test("IS :: INTEGER selectivity should be zero given a contradicting relationship property type constraint") {
+  test(
+    "IS :: STRING selectivity should be zero given a contradicting node property type constraint and existence constraint"
+  ) {
+    val predicate = isTyped(nProp, CTString)
+
+    val calculator = setUpCalculator(
+      labelInfo = nIsPersonLabelInfo,
+      typeConstraints = Map(personLabelName -> Map(nodePropName -> Seq(SchemaValueType.INTEGER))),
+      existenceConstraints = Set(personLabelName -> nodePropName)
+    )
+    val result = calculator(predicate)
+
+    result shouldBe Selectivity.ZERO
+  }
+
+  test(
+    "IS :: INTEGER selectivity should be that of IS NULL given a contradicting relationship property type constraint"
+  ) {
     val predicate = isTyped(rProp, CTInteger)
     val calculator = setUpCalculator(
       relTypeInfo = rFriendsRelTypeInfo,
@@ -2062,6 +2079,20 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
     val result = calculator(predicate)
 
     result shouldBe friendsPropIsNotNullSel.toSelectivity.negate
+  }
+
+  test(
+    "IS :: INTEGER selectivity should be zero given a contradicting node property type constraint and existence constraint"
+  ) {
+    val predicate = isTyped(rProp, CTInteger)
+    val calculator = setUpCalculator(
+      relTypeInfo = rFriendsRelTypeInfo,
+      typeConstraints = Map(friendsRelTypeName -> Map(relPropName -> Seq(SchemaValueType.STRING))),
+      existenceConstraints = Set(friendsRelTypeName -> relPropName)
+    )
+    val result = calculator(predicate)
+
+    result shouldBe Selectivity.ZERO
   }
 
   test("IS :: STRING NOT NULL selectivity should be zero given a contradicting node property type constraint") {

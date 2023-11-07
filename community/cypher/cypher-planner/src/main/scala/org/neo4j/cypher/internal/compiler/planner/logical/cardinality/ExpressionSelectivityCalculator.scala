@@ -803,7 +803,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
         Selectivity.ZERO
     }
 
-    matchingConstraintSelectivities.maxOption
+    matchingConstraintSelectivities.minOption // if at least one constraint contradicts `typeName`, the whole thing should be zero, therefore we take the `min` value
   }
 }
 
