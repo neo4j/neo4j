@@ -225,6 +225,7 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
       runtimeTestSupport = null
       kernel = null
       graphDb = null
+      logProvider.clear()
     }
   }
 
