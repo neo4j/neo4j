@@ -470,6 +470,7 @@ public class RouterTransactionImpl implements CompoundTransaction<DatabaseTransa
 
     @Override
     public void setMetaData(Map<String, Object> txMeta) {
+        transactionInfo.setTxMetadata(txMeta);
         getInternalTransactions().forEach(tx -> tx.setMetaData(txMeta));
     }
 }

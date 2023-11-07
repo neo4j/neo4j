@@ -24,6 +24,7 @@ import static java.util.Collections.emptyMap;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.bolt.protocol.common.message.request.connection.RoutingContext;
 import org.neo4j.configuration.Config;
@@ -33,21 +34,45 @@ import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
+import org.neo4j.kernel.impl.query.QueryExecutionConfiguration;
 
 /**
  * Container for all the information given by the bolt server for a given transaction
  */
-public record TransactionInfo(
-        NormalizedDatabaseName sessionDatabaseName,
-        KernelTransaction.Type type,
-        LoginContext loginContext,
-        ClientConnectionInfo clientInfo,
-        List<String> bookmarks,
-        Duration txTimeout,
-        AccessMode accessMode,
-        Map<String, Object> txMetadata,
-        RoutingContext routingContext,
-        org.neo4j.kernel.impl.query.QueryExecutionConfiguration queryExecutionConfiguration) {
+public final class TransactionInfo {
+    private final NormalizedDatabaseName sessionDatabaseName;
+    private final KernelTransaction.Type type;
+    private final LoginContext loginContext;
+    private final ClientConnectionInfo clientInfo;
+    private final List<String> bookmarks;
+    private final Duration txTimeout;
+    private final AccessMode accessMode;
+    private Map<String, Object> txMetadata;
+    private final RoutingContext routingContext;
+    private final QueryExecutionConfiguration queryExecutionConfiguration;
+
+    public TransactionInfo(
+            NormalizedDatabaseName sessionDatabaseName,
+            KernelTransaction.Type type,
+            LoginContext loginContext,
+            ClientConnectionInfo clientInfo,
+            List<String> bookmarks,
+            Duration txTimeout,
+            AccessMode accessMode,
+            Map<String, Object> txMetadata,
+            RoutingContext routingContext,
+            QueryExecutionConfiguration queryExecutionConfiguration) {
+        this.sessionDatabaseName = sessionDatabaseName;
+        this.type = type;
+        this.loginContext = loginContext;
+        this.clientInfo = clientInfo;
+        this.bookmarks = bookmarks;
+        this.txTimeout = txTimeout;
+        this.accessMode = accessMode;
+        this.txMetadata = txMetadata;
+        this.routingContext = routingContext;
+        this.queryExecutionConfiguration = queryExecutionConfiguration;
+    }
 
     public TransactionInfo withDefaults(Config config) {
         return new TransactionInfo(
@@ -65,5 +90,96 @@ public record TransactionInfo(
 
     public StatementLifecycleTransactionInfo statementLifecycleTransactionInfo() {
         return new StatementLifecycleTransactionInfo(loginContext, clientInfo, txMetadata);
+    }
+
+    public void setTxMetadata(Map<String, Object> txMeta) {
+        this.txMetadata = txMeta;
+    }
+
+    public NormalizedDatabaseName sessionDatabaseName() {
+        return sessionDatabaseName;
+    }
+
+    public KernelTransaction.Type type() {
+        return type;
+    }
+
+    public LoginContext loginContext() {
+        return loginContext;
+    }
+
+    public ClientConnectionInfo clientInfo() {
+        return clientInfo;
+    }
+
+    public List<String> bookmarks() {
+        return bookmarks;
+    }
+
+    public Duration txTimeout() {
+        return txTimeout;
+    }
+
+    public AccessMode accessMode() {
+        return accessMode;
+    }
+
+    public Map<String, Object> txMetadata() {
+        return txMetadata;
+    }
+
+    public RoutingContext routingContext() {
+        return routingContext;
+    }
+
+    public QueryExecutionConfiguration queryExecutionConfiguration() {
+        return queryExecutionConfiguration;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (obj == null || obj.getClass() != this.getClass()) return false;
+        var that = (TransactionInfo) obj;
+        return Objects.equals(this.sessionDatabaseName, that.sessionDatabaseName)
+                && Objects.equals(this.type, that.type)
+                && Objects.equals(this.loginContext, that.loginContext)
+                && Objects.equals(this.clientInfo, that.clientInfo)
+                && Objects.equals(this.bookmarks, that.bookmarks)
+                && Objects.equals(this.txTimeout, that.txTimeout)
+                && Objects.equals(this.accessMode, that.accessMode)
+                && Objects.equals(this.txMetadata, that.txMetadata)
+                && Objects.equals(this.routingContext, that.routingContext)
+                && Objects.equals(this.queryExecutionConfiguration, that.queryExecutionConfiguration);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(
+                sessionDatabaseName,
+                type,
+                loginContext,
+                clientInfo,
+                bookmarks,
+                txTimeout,
+                accessMode,
+                txMetadata,
+                routingContext,
+                queryExecutionConfiguration);
+    }
+
+    @Override
+    public String toString() {
+        return "TransactionInfo[" + "sessionDatabaseName="
+                + sessionDatabaseName + ", " + "type="
+                + type + ", " + "loginContext="
+                + loginContext + ", " + "clientInfo="
+                + clientInfo + ", " + "bookmarks="
+                + bookmarks + ", " + "txTimeout="
+                + txTimeout + ", " + "accessMode="
+                + accessMode + ", " + "txMetadata="
+                + txMetadata + ", " + "routingContext="
+                + routingContext + ", " + "queryExecutionConfiguration="
+                + queryExecutionConfiguration + ']';
     }
 }
