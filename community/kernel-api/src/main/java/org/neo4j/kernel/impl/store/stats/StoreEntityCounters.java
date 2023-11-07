@@ -22,13 +22,13 @@ package org.neo4j.kernel.impl.store.stats;
 import org.neo4j.io.pagecache.context.CursorContext;
 
 public interface StoreEntityCounters {
-    long nodes();
+    long nodes(CursorContext cursorContext);
 
-    long relationships();
+    long relationships(CursorContext cursorContext);
 
-    long properties();
+    long properties(CursorContext cursorContext);
 
-    long relationshipTypes();
+    long relationshipTypes(CursorContext cursorContext);
 
     long allNodesCountStore(CursorContext cursorContext);
 
