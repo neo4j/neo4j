@@ -41,22 +41,24 @@ trait CypherType extends ASTNode {
   // e.g ClosedDynamicUnionType, ListType etc
   def normalizedCypherTypeString(): String = description
 
-  def isSubtypeOf(otherCypherType: CypherType): Boolean = this match {
-    case thisDynamicUnion: ClosedDynamicUnionType => otherCypherType match {
-        case otherDynamicUnion: ClosedDynamicUnionType =>
-          thisDynamicUnion.innerTypes.forall(otherDynamicUnion.innerTypes.contains)
-        case _ => false
-      }
-    case _ => otherCypherType match {
-        case otherDynamicUnion: ClosedDynamicUnionType =>
-          otherDynamicUnion.innerTypes.contains(this)
-        case _: AnyType => isNullableSubtypeOf(this, otherCypherType)
-        case _ =>
-          toCypherTypeString.equals(otherCypherType.toCypherTypeString) && isNullableSubtypeOf(
-            this,
-            otherCypherType
-          )
-      }
+  /**
+   * Only simple types make it here for 'this'.
+   * LIST<>, CLOSED DYNAMIC UNION, NULL, NOTHING and ANY override this method themselves.
+    */
+  def isSubtypeOf(otherCypherType: CypherType): Boolean = otherCypherType match {
+    // A simple type is a subtype of any as long as the nullability matches
+    // (e.g null is not a subtype of ANY NOT NULL)
+    case _: AnyType => isNullableSubtypeOf(this, otherCypherType)
+    // A simple type os a subtype of a closed dynamic union if it contains this type or is a subtype of
+    // one of the inner types.
+    case otherDynamicUnion: ClosedDynamicUnionType =>
+      otherDynamicUnion.innerTypes.exists(innerType =>
+        this.isSubtypeOf(innerType) && isNullableSubtypeOf(this, innerType)
+      )
+    // A simple type is only of another type, if they are the same type and the nullabilities are subtypeable
+    case _ =>
+      toCypherTypeString.equals(otherCypherType.toCypherTypeString) &&
+      isNullableSubtypeOf(this, otherCypherType)
   }
 
   protected def isNullableSubtypeOf(cypherType: CypherType, otherCypherType: CypherType): Boolean =

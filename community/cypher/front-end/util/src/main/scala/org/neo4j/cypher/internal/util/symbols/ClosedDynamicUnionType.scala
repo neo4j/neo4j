@@ -43,6 +43,15 @@ case class ClosedDynamicUnionType(innerTypes: Set[CypherType])(val position: Inp
     if (flattenedInner.size == 1) flattenedInner.head else this.copy(flattenedInner)(position)
   }
 
+  override def isSubtypeOf(otherCypherType: CypherType): Boolean = {
+    otherCypherType match {
+      case otherDynamicUnion: ClosedDynamicUnionType =>
+        this.innerTypes.forall(innerType => otherDynamicUnion.innerTypes.exists(innerType.isSubtypeOf))
+      case anyType: AnyType => isNullableSubtypeOf(this, anyType)
+      case _                => this.innerTypes.forall(_.isSubtypeOf(otherCypherType))
+    }
+  }
+
   override def withIsNullable(isNullable: Boolean): CypherType =
     this.copy(innerTypes.map(_.withIsNullable(isNullable)))(position)
 

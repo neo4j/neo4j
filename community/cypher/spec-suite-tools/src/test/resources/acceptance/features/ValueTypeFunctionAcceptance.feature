@@ -250,3 +250,16 @@ Feature: ValueTypeFunctionAcceptance
       | 'LIST<INTEGER NOT NULL> NOT NULL' |
 
     And no side effects
+
+  Scenario: Test stored list with non null versions are encapsulated in lists with nullable types
+    Given an empty graph
+    When executing query:
+      """
+      WITH [[1, 2], null, [1.0, 1, null]] as val
+      RETURN valueType(val) as result
+      """
+    Then the result should be, in any order:
+      | result                                  |
+      | 'LIST<LIST<INTEGER \| FLOAT>> NOT NULL' |
+
+    And no side effects

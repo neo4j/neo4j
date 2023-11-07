@@ -759,6 +759,69 @@ class CypherTypeNameTest extends CypherFunSuite {
       ))(pos),
       isNullable = true
     )(pos))
+
+    // Nullable unions: LIST<INTEGER NOT NULL> | LIST<INTEGER | FLOAT> = LIST<INTEGER | FLOAT>
+    CypherType.normalizeTypes(
+      ClosedDynamicUnionType(Set(
+        ListType(IntegerType(isNullable = false)(pos), isNullable = true)(pos),
+        ListType(
+          ClosedDynamicUnionType(Set(
+            IntegerType(isNullable = true)(pos),
+            FloatType(isNullable = true)(pos)
+          ))(pos),
+          isNullable = true
+        )(pos)
+      ))(pos)
+    ) should be(ListType(
+      ClosedDynamicUnionType(Set(
+        IntegerType(isNullable = true)(pos),
+        FloatType(isNullable = true)(pos)
+      ))(pos),
+      isNullable = true
+    )(pos))
+
+    // Nullable unions: LIST<INTEGER> | LIST<INTEGER | FLOAT> = LIST<INTEGER | FLOAT>
+    CypherType.normalizeTypes(
+      ClosedDynamicUnionType(Set(
+        ListType(IntegerType(isNullable = true)(pos), isNullable = true)(pos),
+        ListType(
+          ClosedDynamicUnionType(Set(
+            IntegerType(isNullable = true)(pos),
+            FloatType(isNullable = true)(pos)
+          ))(pos),
+          isNullable = true
+        )(pos)
+      ))(pos)
+    ) should be(ListType(
+      ClosedDynamicUnionType(Set(
+        IntegerType(isNullable = true)(pos),
+        FloatType(isNullable = true)(pos)
+      ))(pos),
+      isNullable = true
+    )(pos))
+
+    // Nullable unions: LIST<INTEGER> | LIST<INTEGER NOT NULL | FLOAT NOT NULL> = LIST<INTEGER> | LIST<INTEGER NOT NULL | FLOAT NOT NULL>
+    CypherType.normalizeTypes(
+      ClosedDynamicUnionType(Set(
+        ListType(IntegerType(isNullable = true)(pos), isNullable = true)(pos),
+        ListType(
+          ClosedDynamicUnionType(Set(
+            IntegerType(isNullable = false)(pos),
+            FloatType(isNullable = false)(pos)
+          ))(pos),
+          isNullable = true
+        )(pos)
+      ))(pos)
+    ) should be(ClosedDynamicUnionType(Set(
+      ListType(IntegerType(isNullable = true)(pos), isNullable = true)(pos),
+      ListType(
+        ClosedDynamicUnionType(Set(
+          IntegerType(isNullable = false)(pos),
+          FloatType(isNullable = false)(pos)
+        ))(pos),
+        isNullable = true
+      )(pos)
+    ))(pos))
   }
 
   typesWithoutInnerTypesPlusSimpleList.foreach { case (typeName, typeExpr) =>
@@ -1402,4 +1465,69 @@ class CypherTypeNameTest extends CypherFunSuite {
     ).description should be("ANY")
   }
 
+  // Test isSubtype of method for types
+  test("simpleTypes isSubtype works as expected") {
+    val `STRING` = StringType(isNullable = true)(pos)
+    val `INTEGER` = IntegerType(isNullable = true)(pos)
+    val `INTEGER NOT NULL` = IntegerType(isNullable = false)(pos)
+    val `ANY` = AnyType(isNullable = true)(pos)
+    val `STRING | ANY` = ClosedDynamicUnionType(Set(`STRING`, `ANY`))(pos)
+    val `STRING | INTEGER` = ClosedDynamicUnionType(Set(`STRING`, `INTEGER`))(pos)
+
+    // Simple type isSubtypeOf itself but only if nullabilities match
+    `INTEGER`.isSubtypeOf(`ANY`) shouldBe true
+    `INTEGER`.isSubtypeOf(`INTEGER`) shouldBe true
+    `INTEGER NOT NULL`.isSubtypeOf(`INTEGER`) shouldBe true
+    `INTEGER`.isSubtypeOf(`INTEGER NOT NULL`) shouldBe false
+    `INTEGER`.isSubtypeOf(`ANY`) shouldBe true
+    `INTEGER NOT NULL`.isSubtypeOf(`ANY`) shouldBe true
+
+    // Simple type isSubtype if contained in Closed Dynamic Union
+    `INTEGER`.isSubtypeOf(`STRING | INTEGER`) shouldBe true
+    `INTEGER`.isSubtypeOf(`STRING | ANY`) shouldBe true
+  }
+
+  test("listTypes isSubtype works as expected") {
+    val `LIST<STRING>` = ListType(StringType(isNullable = true)(pos), isNullable = true)(pos)
+    val `LIST<INTEGER>` = ListType(IntegerType(isNullable = true)(pos), isNullable = true)(pos)
+    val `LIST<STRING NOT NULL>` = ListType(StringType(isNullable = false)(pos), isNullable = true)(pos)
+    val `LIST<INTEGER NOT NULL>` = ListType(IntegerType(isNullable = false)(pos), isNullable = true)(pos)
+    val `LIST<ANY>` = ListType(AnyType(isNullable = true)(pos), isNullable = true)(pos)
+
+    // Lists are contained in LIST<ANY>
+    `LIST<STRING>`.isSubtypeOf(`LIST<ANY>`) shouldBe true
+    `LIST<INTEGER>`.isSubtypeOf(`LIST<ANY>`) shouldBe true
+
+    // Closed dynamic unions of lists are contained in LIST<ANY>
+    val `LIST<STRING> | LIST<INTEGER>` = ClosedDynamicUnionType(Set(`LIST<STRING>`, `LIST<INTEGER>`))(pos)
+    `LIST<STRING> | LIST<INTEGER>`.isSubtypeOf(`LIST<ANY>`) shouldBe true
+
+    // Closed dynamic unions of lists are contained in nullable versions of themselves, but not the other way around
+    val `LIST<STRING NOT NULL> | LIST<INTEGER NOT NULL>` =
+      ClosedDynamicUnionType(Set(`LIST<STRING NOT NULL>`, `LIST<INTEGER NOT NULL>`))(pos)
+    `LIST<STRING NOT NULL> | LIST<INTEGER NOT NULL>`.isSubtypeOf(`LIST<STRING> | LIST<INTEGER>`) shouldBe true
+    `LIST<STRING> | LIST<INTEGER>`.isSubtypeOf(`LIST<STRING NOT NULL> | LIST<INTEGER NOT NULL>`) shouldBe false
+  }
+
+  test("Closed Dynamic Unions types isSubtype works as expected") {
+    val `STRING` = StringType(isNullable = true)(pos)
+    val `BOOLEAN NOT NULL` = BooleanType(isNullable = false)(pos)
+    val `LIST<INTEGER NOT NULL>` = ListType(IntegerType(isNullable = false)(pos), isNullable = true)(pos)
+    val `LIST<ANY>` = ListType(AnyType(isNullable = true)(pos), isNullable = true)(pos)
+    val `LIST<INTEGER>` = ListType(IntegerType(isNullable = true)(pos), isNullable = true)(pos)
+    val `STRING | LIST<INTEGER NOT NULL>` = ClosedDynamicUnionType(Set(`STRING`, `LIST<INTEGER NOT NULL>`))(pos)
+    val `STRING | LIST<INTEGER>` = ClosedDynamicUnionType(Set(`STRING`, `LIST<INTEGER>`))(pos)
+    val `STRING | BOOLEAN NOT NULL | LIST<ANY>` =
+      ClosedDynamicUnionType(Set(`STRING`, `BOOLEAN NOT NULL`, `LIST<ANY>`))(pos)
+    val `STRING | BOOLEAN NOT NULL | LIST<INTEGER>` =
+      ClosedDynamicUnionType(Set(`STRING`, `BOOLEAN NOT NULL`, `LIST<INTEGER>`))(pos)
+    val `ANY` = AnyType(isNullable = true)(pos)
+    val `ANY NOT NULL` = AnyType(isNullable = false)(pos)
+
+    `STRING`.isSubtypeOf(`LIST<ANY>`) shouldBe false
+    `STRING | LIST<INTEGER NOT NULL>`.isSubtypeOf(`STRING | LIST<INTEGER>`) shouldBe true
+    `STRING | BOOLEAN NOT NULL | LIST<INTEGER>`.isSubtypeOf(`STRING | BOOLEAN NOT NULL | LIST<ANY>`) shouldBe true
+    `STRING | BOOLEAN NOT NULL | LIST<INTEGER>`.isSubtypeOf(`ANY`) shouldBe true
+    `STRING | LIST<INTEGER>`.isSubtypeOf(`ANY NOT NULL`) shouldBe false
+  }
 }
