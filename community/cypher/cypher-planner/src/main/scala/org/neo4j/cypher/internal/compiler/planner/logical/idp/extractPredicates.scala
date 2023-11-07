@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.extractPredicates.AllRelationships
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.extractPredicates.NoRelationships
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.extractPredicates.NodesFunctionArguments
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.extractPredicates.RelationshipsFunctionArguments
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
@@ -306,12 +308,14 @@ object extractShortestPathPredicates {
 
     availablePredicates.foldLeft(seed) {
       // MATCH p=shortestPath((a)-[rs*]-(b)) WHERE all(r IN rs WHERE r.prop = 2)
-      case ((n, e, s), p @ AllRelationshipsUnnamedPath(variable, `relsName`, innerPredicate)) =>
+      case ((n, e, s), p @ AllRelationships(variable, relationshipsName, innerPredicate))
+        if !pathDependent(innerPredicate) && relsName.contains(relationshipsName) =>
         val predicate = VariablePredicate(variable, innerPredicate)
         (n, e + predicate, s + p)
 
       // MATCH p=shortestPath((a)-[rs*]-(b)) WHERE NONE(r IN rs WHERE r.prop = 2)
-      case ((n, e, s), p @ NoRelationshipsUnnamedPath(variable, `relsName`, innerPredicate)) =>
+      case ((n, e, s), p @ NoRelationships(variable, relationshipsName, innerPredicate))
+        if !pathDependent(innerPredicate) && relsName.contains(relationshipsName) =>
         val predicate = VariablePredicate(variable, Not(innerPredicate)(innerPredicate.position))
         (n, e + predicate, s + p)
 
@@ -345,30 +349,6 @@ object extractShortestPathPredicates {
       case (acc, _) =>
         acc
     }
-  }
-
-  object AllRelationshipsUnnamedPath {
-
-    def unapply(v: Any): Option[(LogicalVariable, Option[String], Expression)] =
-      v match {
-        case AllIterablePredicate(FilterScope(variable, Some(innerPredicate)), relId @ LogicalVariable(name))
-          if variable == relId || !innerPredicate.dependencies(relId) =>
-          Some((variable, Some(name), innerPredicate))
-
-        case _ => None
-      }
-  }
-
-  object NoRelationshipsUnnamedPath {
-
-    def unapply(v: Any): Option[(LogicalVariable, Option[String], Expression)] =
-      v match {
-        case NoneIterablePredicate(FilterScope(variable, Some(innerPredicate)), relId @ LogicalVariable(name))
-          if variable == relId || !innerPredicate.dependencies(relId) =>
-          Some((variable, Some(name), innerPredicate))
-
-        case _ => None
-      }
   }
 
   object AllRelationshipsInNamedPath {

@@ -1041,8 +1041,14 @@ case class LogicalPlanProducer(
           .addPatternRelationship(patternRelationship)
           .addPredicates(solvedPredicates.toSeq: _*))
 
-        val (rewrittenRelationshipPredicates, rewrittenNodePredicates, rewrittenSource) =
-          solveSubqueryExpressionsForExtractedPredicates(source, nodePredicates, relationshipPredicates, context)
+        val (rewrittenRelationshipPredicates, rewrittenNodePredicates, _, rewrittenSource) =
+          solveSubqueryExpressionsForExtractedPredicates(
+            source,
+            nodePredicates,
+            relationshipPredicates,
+            Set.empty,
+            context
+          )
         annotate(
           VarExpand(
             source = rewrittenSource,
@@ -1072,13 +1078,16 @@ case class LogicalPlanProducer(
    * or plan the wrong `NestedPlanExpression`. Since extracting the scope instead of the inner predicate is not straightforward,
    * the easiest solution is this one: we wrap each predicate in a FilterScope, give it to the ListSubqueryExpressionSolver,
    * and then extract it from the FilterScope again.
+   *
+   * @return rewritten predicates and source (Relationship, Node, Path, Source)
    */
   private def solveSubqueryExpressionsForExtractedPredicates(
     source: LogicalPlan,
     nodePredicates: Set[VariablePredicate],
     relationshipPredicates: Set[VariablePredicate],
+    pathPredicates: Set[Expression],
     context: LogicalPlanningContext
-  ): (Set[VariablePredicate], Set[VariablePredicate], LogicalPlan) = {
+  ): (Set[VariablePredicate], Set[VariablePredicate], Set[Expression], LogicalPlan) = {
     val solver = SubqueryExpressionSolver.solverFor(source, context)
 
     def solveVariablePredicate(variablePredicate: VariablePredicate): VariablePredicate = {
@@ -1091,8 +1100,9 @@ case class LogicalPlanProducer(
 
     val rewrittenRelationshipPredicates = relationshipPredicates.map(solveVariablePredicate)
     val rewrittenNodePredicates = nodePredicates.map(solveVariablePredicate)
+    val rewrittenPathPredicates = pathPredicates.map(solver.solve(_))
     val rewrittenSource = solver.rewrittenPlan()
-    (rewrittenRelationshipPredicates, rewrittenNodePredicates, rewrittenSource)
+    (rewrittenRelationshipPredicates, rewrittenNodePredicates, rewrittenPathPredicates, rewrittenSource)
   }
 
   def fixupTrailRhsPlan(
@@ -2287,8 +2297,8 @@ case class LogicalPlanProducer(
       _.addShortestRelationship(shortestRelationship).addPredicates(solvedPredicates.toSeq: _*)
     )
 
-    val (rewrittenRelationshipPredicates, rewrittenNodePredicates, rewrittenSource) =
-      solveSubqueryExpressionsForExtractedPredicates(inner, nodePredicates, relPredicates, context)
+    val (rewrittenRelationshipPredicates, rewrittenNodePredicates, rewrittenPathPredicates, rewrittenSource) =
+      solveSubqueryExpressionsForExtractedPredicates(inner, nodePredicates, relPredicates, pathPredicates, context)
 
     annotate(
       FindShortestPaths(
@@ -2296,7 +2306,7 @@ case class LogicalPlanProducer(
         org.neo4j.cypher.internal.logical.plans.shortest.ShortestRelationshipPattern.from(shortestRelationship),
         rewrittenNodePredicates.toSeq,
         rewrittenRelationshipPredicates.toSeq,
-        pathPredicates.toSeq,
+        rewrittenPathPredicates.toSeq,
         withFallBack,
         disallowSameNode
       ),
