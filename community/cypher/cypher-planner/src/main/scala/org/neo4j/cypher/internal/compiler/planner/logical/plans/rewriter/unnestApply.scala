@@ -70,9 +70,27 @@ case class unnestApply(
 
   private val instance: Rewriter = topDown(Rewriter.lift {
     // Arg Ax R => R
-    case Apply(arg: Argument, rhs) if arg.argumentIds.subsetOf(rhs.availableSymbols) =>
+    case orig @ Apply(arg: Argument, rhs) =>
       assertArgumentHasCardinality1(arg)
-      rhs
+      if (arg.argumentIds.subsetOf(rhs.availableSymbols)) {
+        rhs
+      } else {
+        rhs match {
+          case UnaryPlansOnTopOfArgument() =>
+            // Switch out arg on RHS
+            val newRhs = putOnTopOf(arg, rhs)
+            // Check if we now have the correct available symbols
+            if (arg.argumentIds.subsetOf(newRhs.availableSymbols)) {
+              newRhs
+            } else {
+              // Do not unnest
+              orig
+            }
+          case _ =>
+            // Do not unnest
+            orig
+        }
+      }
 
     // L Ax Arg => L
     case Apply(lhs, _: Argument) =>
@@ -172,6 +190,15 @@ object UnnestableUnaryPlan {
     case p: VarExpand            => Some(p)
     case p: StatefulShortestPath => Some(p)
     case _                       => None
+  }
+}
+
+object UnaryPlansOnTopOfArgument {
+
+  def unapply(p: LogicalPlan): Boolean = p match {
+    case LogicalUnaryPlan(UnaryPlansOnTopOfArgument()) => true
+    case _: Argument                                   => true
+    case _                                             => false
   }
 }
 

@@ -60,4 +60,41 @@ class ForeachPlanningIntegrationTest extends CypherFunSuite with LogicalPlanning
       .nodeByLabelScan("a", "PROFILES", IndexOrderAscending)
       .build()
   }
+
+  test("should be able to unnest apply for MERGE and SET inside FOREACH") {
+    val cfg = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("PROFILES", 100)
+      .setRelationshipCardinality("()-[:RELATION]->()", 100)
+      .setRelationshipCardinality("(:PROFILES)-[:RELATION]->()", 100)
+      .setRelationshipCardinality("()-[:KNOWS]->()", 100)
+      .setRelationshipCardinality("()-[:KNOWS]->(:PROFILES)", 100)
+      .build()
+
+    val query =
+      """MATCH (a:PROFILES { _key: $_key })-[r:RELATION]->(b)
+        |WITH a, COLLECT(b) AS others
+        |SET a.knows = size(others)
+        |FOREACH (o IN others |
+        |  MERGE (o)-[:KNOWS]->(a)
+        |  SET a.prop = others
+        |)
+        |""".stripMargin
+
+    val plan = cfg.plan(query).stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .emptyResult()
+      .foreachApply("o", "others")
+      .|.setNodeProperty("a", "prop", "others")
+      .|.merge(Seq(), Seq(createRelationship("anon_0", "o", "KNOWS", "a", OUTGOING)), lockNodes = Set("o", "a"))
+      .|.expandInto("(o)-[anon_0:KNOWS]->(a)")
+      .|.argument("a", "o", "others")
+      .setNodeProperty("a", "knows", "size(others)")
+      .orderedAggregation(Seq("a AS a"), Seq("COLLECT(b) AS others"), Seq("a"))
+      .expandAll("(a)-[r:RELATION]->(b)")
+      .filter("a._key = $_key")
+      .nodeByLabelScan("a", "PROFILES", IndexOrderAscending)
+      .build()
+  }
+
 }

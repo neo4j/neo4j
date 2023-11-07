@@ -23,7 +23,9 @@ import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningAttributesTestSupport
+import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.logical.builder.TestNFABuilder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
@@ -679,6 +681,26 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
       .build()
 
     rewrite(input) should equal(input)
+  }
+
+  test("should unnest Apply with lhs Argument if RHS has fewer arguments, but keeps all arguments") {
+    val input = new LogicalPlanBuilder()
+      .produceResults("p", "c")
+      .apply() // Can be un-nested even though ...
+      .|.merge(Seq(), Seq(createRelationship("anon_0", "o", "KNOWS", "a", OUTGOING)), lockNodes = Set("o", "a"))
+      .|.expandInto("(o)-[anon_0:KNOWS]->(a)")
+      .|.argument("a", "o") // ... RHS does not use `others`.
+      .argument("a", "o", "others")
+      .build()
+
+    val expected = new LogicalPlanBuilder()
+      .produceResults("p", "c")
+      .merge(Seq(), Seq(createRelationship("anon_0", "o", "KNOWS", "a", OUTGOING)), lockNodes = Set("o", "a"))
+      .expandInto("(o)-[anon_0:KNOWS]->(a)")
+      .argument("a", "o", "others")
+      .build()
+
+    rewrite(input) should equal(expected)
   }
 
   implicit private class AssertableInputBuilder(inputBuilder: LogicalPlanBuilder) {
