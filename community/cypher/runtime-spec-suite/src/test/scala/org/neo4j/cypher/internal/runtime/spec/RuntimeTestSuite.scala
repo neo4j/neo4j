@@ -222,7 +222,6 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
       if (managementService != null) {
         runtimeTestSupport.stop()
         managementService.shutdown()
-        logProvider.clear()
       }
     } finally {
       managementService = null
@@ -230,7 +229,11 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
       runtimeTestSupport = null
       kernel = null
       graphDb = null
-      logProvider = null
+      // NOTE: AssertFusingSucceeded relies on logProvider not being null, so delay setting it to null
+      //       in case a test case explicitly calls shutdownDatabase() (looking at you, SchedulerTracerTestBase...)
+      if (logProvider != null) {
+        logProvider.clear()
+      }
     }
   }
 
@@ -405,10 +408,16 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](
 
   override protected def afterEach(): Unit = {
     try {
-      runtimeTestSupport.stopTx()
+      if (runtimeTestSupport != null) {
+        runtimeTestSupport.stopTx()
+      }
       DebugSupport.TIMELINE.log("")
     } finally {
-      shutdownDatabase()
+      try {
+        shutdownDatabase()
+      } finally {
+        logProvider = null
+      }
       super.afterEach()
     }
   }
