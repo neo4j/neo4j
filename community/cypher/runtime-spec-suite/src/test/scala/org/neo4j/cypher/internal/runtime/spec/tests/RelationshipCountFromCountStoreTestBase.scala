@@ -286,4 +286,18 @@ abstract class RelationshipCountFromCountStoreTestBase[CONTEXT <: RuntimeContext
     val expectedCount = aNodes.size * bNodes.size + aNodes.size * bNodes.size
     execute(plan) should beColumns("x").withRows(singleColumn(Seq(expectedCount)))
   }
+
+  test("empty count followed by optional") {
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("r1", "r2")
+      .projection("1 % j AS r1", "j ^ j AS r2")
+      .optional()
+      .cartesianProduct()
+      .|.relationshipCountFromCountStore("j", None, List("R"), None, "i")
+      .unwind("[] AS i")
+      .argument()
+      .build()
+
+    execute(query, runtime) should beColumns("r1", "r2").withSingleRow(null, null)
+  }
 }

@@ -244,4 +244,18 @@ abstract class NodeCountFromCountStoreTestBase[CONTEXT <: RuntimeContext](
     // then
     an[org.neo4j.exceptions.ArithmeticException] should be thrownBy consume(execute(logicalQuery, runtime))
   }
+
+  test("empty count followed by optional") {
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("r1", "r2")
+      .projection("1 % j AS r1", "j ^ j AS r2")
+      .optional()
+      .cartesianProduct()
+      .|.nodeCountFromCountStore("j", List(None), "i")
+      .unwind("[] AS i")
+      .argument()
+      .build()
+
+    execute(query, runtime) should beColumns("r1", "r2").withSingleRow(null, null)
+  }
 }

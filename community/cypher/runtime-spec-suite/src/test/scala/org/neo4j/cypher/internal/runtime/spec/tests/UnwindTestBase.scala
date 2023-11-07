@@ -261,4 +261,16 @@ abstract class UnwindTestBase[CONTEXT <: RuntimeContext](
       Array(2, 3)
     ))
   }
+
+  test("empty UNWIND followed by optional") {
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("r1", "r2")
+      .projection("1 % i AS r1", "i ^ i AS r2")
+      .optional()
+      .unwind("[] AS i")
+      .argument()
+      .build()
+
+    execute(query, runtime) should beColumns("r1", "r2").withSingleRow(null, null)
+  }
 }

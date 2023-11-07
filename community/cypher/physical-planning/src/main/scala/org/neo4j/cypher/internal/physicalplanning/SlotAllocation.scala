@@ -656,22 +656,22 @@ class SingleQuerySlotAllocator private[physicalplanning] (
       case _: Argument =>
 
       case leaf: NodeCountFromCountStore =>
-        slots.newReference(leaf.idName, false, CTInteger)
+        slots.newReference(leaf.idName, nullable, CTInteger)
 
       case leaf: RelationshipCountFromCountStore =>
-        slots.newReference(leaf.idName, false, CTInteger)
+        slots.newReference(leaf.idName, nullable, CTInteger)
 
       case leaf: CommandLogicalPlan =>
         for (v <- leaf.availableSymbols.map(_.name) ++ leaf.defaultColumns.map(_.name))
-          slots.newReference(v, false, CTAny)
+          slots.newReference(v, nullable, CTAny)
 
       case Input(nodes, relationships, variables, nullableInput) =>
         for (v <- nodes)
-          slots.newLong(v, nullableInput, CTNode)
+          slots.newLong(v, nullableInput || nullable, CTNode)
         for (v <- relationships)
-          slots.newLong(v, nullableInput, CTRelationship)
+          slots.newLong(v, nullableInput || nullable, CTRelationship)
         for (v <- variables)
-          slots.newReference(v, nullableInput, CTAny)
+          slots.newReference(v, nullableInput || nullable, CTAny)
 
       case p => throw new SlotAllocationFailed(s"Don't know how to handle $p")
     }
@@ -800,7 +800,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
         _: Eager =>
 
       case UnwindCollection(_, variable, expression) =>
-        val nullable = expression match {
+        val nullableExpression = expression match {
           case ListLiteral(expressions) => expressions.exists {
               case Null()             => true
               case _: Literal         => false
@@ -811,7 +811,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
           case _                  => true
         }
 
-        slots.newReference(variable, nullable, CTAny)
+        slots.newReference(variable, nullableExpression || nullable, CTAny)
 
       case _: DeleteNode |
         _: DeleteRelationship |
