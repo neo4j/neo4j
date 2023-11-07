@@ -159,7 +159,7 @@ case object PlanUpdates extends UpdatesPlanner {
           val innerLeaf = context.staticComponents.logicalPlanProducer.planArgument(
             Set.empty,
             Set.empty,
-            source.availableSymbols.map(_.name) + foreach.variable,
+            foreach.innerUpdates.queryGraph.argumentIds,
             context
           )
           val innerUpdatePlan = planAllUpdatesRecursively(foreach.innerUpdates, innerLeaf)

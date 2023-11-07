@@ -37,13 +37,16 @@ import org.neo4j.cypher.internal.util.InputPosition
 
 import scala.collection.immutable.ListSet
 
-case class PlannerQueryBuilder(private val q: SinglePlannerQuery, semanticTable: SemanticTable) {
+case class PlannerQueryBuilder(q: SinglePlannerQuery, semanticTable: SemanticTable) {
 
   def amendQueryGraph(f: QueryGraph => QueryGraph): PlannerQueryBuilder =
     copy(q = q.updateTailOrSelf(_.amendQueryGraph(f)))
 
   def withHorizon(horizon: QueryHorizon): PlannerQueryBuilder =
     copy(q = q.updateTailOrSelf(_.withHorizon(horizon)))
+
+  def withInitialArguments(arguments: Set[String]): PlannerQueryBuilder =
+    copy(q.amendQueryGraph(_.withArgumentIds(arguments)))
 
   def withCallSubquery(
     subquery: PlannerQuery,

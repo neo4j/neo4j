@@ -242,18 +242,7 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
       .|.apply()
       .|.|.merge(Seq(createNode("p", "Project")), Seq(), Seq(), Seq(), Set())
       .|.|.nodeByLabelScan("p", "Project")
-      .|.argument(
-        "anon_1",
-        "benchmark_tool_version",
-        "benchmark_config",
-        "anon_2",
-        "test_run",
-        "neo4j_config",
-        "anon_0",
-        "benchmark_tool",
-        "project",
-        "anon_3"
-      )
+      .|.argument("test_run")
       .create(
         createNodeWithProperties("test_run", Seq("TestRun"), "$test_run"),
         createNodeWithProperties("benchmark_config", Seq("BenchmarkConfig"), "$benchmark_config"),

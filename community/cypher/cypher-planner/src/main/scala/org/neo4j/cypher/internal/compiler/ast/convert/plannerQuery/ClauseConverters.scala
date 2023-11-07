@@ -901,21 +901,28 @@ object ClauseConverters {
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
     cancellationChecker: CancellationChecker
   ): PlannerQueryBuilder = {
-    val currentlyAvailableVariables = builder.currentlyAvailableVariables
+    val availableBeforeForeach = builder.currentlyAvailableVariables
+    val availableToInnerClauses = availableBeforeForeach + clause.variable.name
 
-    val foreachVariable = clause.variable
-
-    val innerBuilder = new PlannerQueryBuilder(SinglePlannerQuery.empty, builder.semanticTable)
-      .amendQueryGraph(_.addArgumentIds(foreachVariable.name +: currentlyAvailableVariables.toIndexedSeq))
-      .withHorizon(PassthroughAllHorizon())
-
-    val innerPlannerQuery = StatementConverters.addClausesToPlannerQueryBuilder(
+    val innerBuilder = StatementConverters.addClausesToPlannerQueryBuilder(
       clause.updates,
-      innerBuilder,
+      new PlannerQueryBuilder(SinglePlannerQuery.empty, builder.semanticTable)
+        // First, set all available symbols as arguments. Will be fixed a little further down.
+        .amendQueryGraph(_.withArgumentIds(availableToInnerClauses))
+        .withHorizon(PassthroughAllHorizon()),
       anonymousVariableNameGenerator,
       cancellationChecker,
       nonTerminating = false
-    ).build()
+    )
+
+    val dependencies = innerBuilder.q.allPlannerQueries.view
+      .flatMap(_.queryGraph.mutatingPatterns.flatMap(_.dependencies)).to(Set)
+    val arguments = availableToInnerClauses.intersect(dependencies)
+    // This fixes the arguments of the first planner query inside the foreach.
+    // All subsequent planner queries will get their arguments fixed by `.build()`.
+    val innerBuilderWithFixedArguments = innerBuilder.withInitialArguments(arguments)
+
+    val innerPlannerQuery = innerBuilderWithFixedArguments.build()
 
     val foreachPattern = ForeachPattern(
       variable = clause.variable.name,
@@ -924,7 +931,7 @@ object ClauseConverters {
     )
 
     val foreachGraph = QueryGraph(
-      argumentIds = currentlyAvailableVariables,
+      argumentIds = availableBeforeForeach,
       mutatingPatterns = IndexedSeq(foreachPattern)
     )
 

@@ -176,7 +176,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
             Set.empty,
             Set.empty,
             Set.empty,
-            Set("i"),
+            Set.empty,
             Selections(Set.empty),
             Vector.empty,
             Set.empty,
@@ -188,6 +188,67 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
           None
         )
       ))
+    )
+  }
+
+  test("FOREACH with MERGE uses right arguments") {
+    val query = buildSinglePlannerQuery(
+      """
+        |WITH 5 AS x, [1, 2] AS list 
+        |MATCH (b) 
+        |FOREACH (i IN list | 
+        |  MERGE (a {prop: x + i})-[r:R]->(b)
+        |)""".stripMargin
+    )
+    val foreach = query.allPlannerQueries(2).queryGraph.mutatingPatterns.head.asInstanceOf[ForeachPattern]
+    foreach.innerUpdates.allPlannerQueries.map(_.queryGraph.argumentIds) shouldEqual Seq(
+      Set("x", "b", "i"),
+      Set("x", "b", "i"),
+      Set("x", "b", "i", "a", "r")
+    )
+  }
+
+  test("FOREACH uses right arguments in multi-part inner-update-query") {
+    val query = buildSinglePlannerQuery(
+      """
+        |WITH 5 AS x, 6 AS y, [1, 2] AS list 
+        |MATCH (b), (c), (d)
+        |FOREACH (i IN list | 
+        |  MERGE (a {prop: x + i})-[r1:R]->(b)
+        |  MERGE (a)-[r2:R {prop: y + i}]->(c)
+        |)""".stripMargin
+    )
+    val foreach = query.allPlannerQueries(2).queryGraph.mutatingPatterns.head.asInstanceOf[ForeachPattern]
+    foreach.innerUpdates.allPlannerQueries.map(_.queryGraph.argumentIds) shouldEqual Seq(
+      Set("x", "b", "i", "y", "c"),
+      Set("x", "b", "i", "y", "c"),
+      Set("x", "b", "i", "y", "c", "a", "r1"),
+      Set("x", "b", "i", "y", "c", "a", "r1"),
+      Set("x", "b", "i", "y", "c", "a", "r1", "r2")
+    )
+  }
+
+  test("nested FOREACH uses right arguments") {
+    val query = buildSinglePlannerQuery(
+      """
+        |WITH 5 AS x, 6 AS y, [1, 2] AS list, [3, 4] AS list2, [5, 6] AS list3
+        |MATCH (b), (c), (d)
+        |FOREACH (i IN list | 
+        |  FOREACH (j IN list2 |
+        |     SET b.prop = c.prop + i + j
+        |  )
+        |)""".stripMargin
+    )
+    val outerForeach = query.allPlannerQueries(2).queryGraph.mutatingPatterns.head.asInstanceOf[ForeachPattern]
+    outerForeach.innerUpdates.allPlannerQueries.map(_.queryGraph.argumentIds) shouldEqual Seq(
+      Set("b", "c", "i", "list2"),
+      Set("b", "c", "i", "list2"),
+      Set("b", "c", "i", "list2")
+    )
+    val innerForeach =
+      outerForeach.innerUpdates.allPlannerQueries(1).queryGraph.mutatingPatterns.head.asInstanceOf[ForeachPattern]
+    innerForeach.innerUpdates.allPlannerQueries.map(_.queryGraph.argumentIds) shouldEqual Seq(
+      Set("b", "c", "i", "j")
     )
   }
 
