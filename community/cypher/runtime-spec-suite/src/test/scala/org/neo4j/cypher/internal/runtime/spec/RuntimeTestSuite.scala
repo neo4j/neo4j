@@ -121,7 +121,7 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
   protected var runtimeTestSupport: RuntimeTestSupport[CONTEXT] = _
   protected var kernel: Kernel = _
   val ANY_VALUE_ORDERING: Ordering[AnyValue] = Ordering.comparatorToOrdering(AnyValues.COMPARATOR)
-  val logProvider: AssertableLogProvider = new AssertableLogProvider()
+  var logProvider: AssertableLogProvider = _
   def debugOptions: CypherDebugOptions = CypherDebugOptions.default
   val isParallel: Boolean = RuntimeTestSuite.isParallel(runtime)
 
@@ -173,6 +173,7 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
   }
 
   protected def restartDB(): Unit = {
+    logProvider = new AssertableLogProvider()
     val dbms = edition.newGraphManagementService(logProvider)
     managementService = dbms.dbms
     dbmsFileSystem = dbms.filesystem
@@ -217,15 +218,19 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
   }
 
   protected def shutdownDatabase(): Unit = {
-    if (managementService != null) {
-      runtimeTestSupport.stop()
-      managementService.shutdown()
+    try {
+      if (managementService != null) {
+        runtimeTestSupport.stop()
+        managementService.shutdown()
+        logProvider.clear()
+      }
+    } finally {
       managementService = null
       dbmsFileSystem = null
       runtimeTestSupport = null
       kernel = null
       graphDb = null
-      logProvider.clear()
+      logProvider = null
     }
   }
 
@@ -399,10 +404,13 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](
   }
 
   override protected def afterEach(): Unit = {
-    runtimeTestSupport.stopTx()
-    DebugSupport.TIMELINE.log("")
-    shutdownDatabase()
-    super.afterEach()
+    try {
+      runtimeTestSupport.stopTx()
+      DebugSupport.TIMELINE.log("")
+    } finally {
+      shutdownDatabase()
+      super.afterEach()
+    }
   }
 }
 
