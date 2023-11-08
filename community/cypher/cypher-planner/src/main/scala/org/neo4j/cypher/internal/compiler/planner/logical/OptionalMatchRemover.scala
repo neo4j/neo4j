@@ -82,7 +82,8 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
             proj @ AggregatingQueryProjection(distinctExpressions, aggregations, _, _, _),
             tail,
             queryInput
-          ) if noOptionalShortestPathOrQpp(graph) && validAggregations(aggregations) =>
+          )
+          if noOptionalShortestPathOrQpp(graph) && graph.mutatingPatterns.isEmpty && validAggregations(aggregations) =>
           val projectionDeps: Iterable[LogicalVariable] =
             (distinctExpressions.values ++ aggregations.values).flatMap(_.dependencies)
           rewrite(projectionDeps, graph, interestingOrder, proj, tail, queryInput, from.anonymousVariableNameGenerator)
@@ -93,7 +94,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
             proj @ DistinctQueryProjection(distinctExpressions, _, _, _),
             tail,
             queryInput
-          ) if noOptionalShortestPathOrQpp(graph) =>
+          ) if noOptionalShortestPathOrQpp(graph) && graph.mutatingPatterns.isEmpty =>
           val projectionDeps: Iterable[LogicalVariable] = distinctExpressions.values.flatMap(_.dependencies)
           rewrite(projectionDeps, graph, interestingOrder, proj, tail, queryInput, from.anonymousVariableNameGenerator)
 

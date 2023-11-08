@@ -750,6 +750,24 @@ class OptionalMatchRemoverTest extends CypherFunSuite with PlannerQueryRewriterT
     assertIsNotRewritten(testName)
   }
 
+  test(
+    """OPTIONAL MATCH (a)
+      |CREATE (b) 
+      |RETURN DISTINCT 1 AS result
+      |""".stripMargin
+  ) {
+    assertIsNotRewritten(testName)
+  }
+
+  test(
+    """OPTIONAL MATCH (a)
+      |CREATE (b) 
+      |RETURN collect(DISTINCT 1) AS result
+      |""".stripMargin
+  ) {
+    assertIsNotRewritten(testName)
+  }
+
   val x = "x"
   val n = "n"
   val m = "m"
