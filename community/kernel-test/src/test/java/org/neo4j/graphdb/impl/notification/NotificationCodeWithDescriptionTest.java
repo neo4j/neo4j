@@ -27,6 +27,7 @@ import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescriptio
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.commandHasNoEffectGrantRole;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.commandHasNoEffectRevokePrivilege;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.commandHasNoEffectRevokeRole;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.cordonedServersExist;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedConnectComponentsPlannerPreParserOption;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedDatabaseName;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedFormat;
@@ -882,6 +883,21 @@ class NotificationCodeWithDescriptionTest {
                         + " To overcome this, extract the subquery expression into a preceding WITH and potentially wrap the mutating statement into a CALL subquery.");
     }
 
+    @Test
+    void shouldConstructNotificationsFor_CORDONED_SERVERS_EXIST() {
+        NotificationImplementation notification =
+                cordonedServersExist(InputPosition.empty, "server-1,server-2,server-3");
+
+        verifyNotification(
+                notification,
+                "Cordoned servers existed when making an allocation decision.",
+                SeverityLevel.INFORMATION,
+                "Neo.ClientNotification.Cluster.CordonedServersExistedDuringAllocation",
+                "Server(s) `server-1,server-2,server-3` are cordoned. This can impact allocation decisions.",
+                NotificationCategory.TOPOLOGY,
+                null);
+    }
+
     private void verifyNotification(
             NotificationImplementation notification,
             String title,
@@ -937,8 +953,8 @@ class NotificationCodeWithDescriptionTest {
         byte[] notificationHash = DigestUtils.sha256(notificationBuilder.toString());
 
         byte[] expectedHash = new byte[] {
-            36, -63, 122, 56, -107, -123, -113, -11, 112, 83, -107, 111, 43, 70, 30, -124, 77, -76, 15, -56, 101, 123,
-            -102, 105, 121, 2, 2, -13, 15, 103, -36, 21
+            41, 68, 126, 49, -10, 91, 32, 95, -93, -34, -91, 77, -53, 70, -93, -41, 54, 52, 64, 63, 75, -82, 119, 80,
+            -54, 44, 27, 102, -65, -17, -24, -68
         };
 
         if (!Arrays.equals(notificationHash, expectedHash)) {

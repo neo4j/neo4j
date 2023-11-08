@@ -682,6 +682,12 @@ public interface Status {
                 ClientNotification,
                 "`REALLOCATE DATABASES` had no effect.",
                 SeverityLevel.INFORMATION,
+                NotificationCategory.TOPOLOGY),
+
+        CordonedServersExistedDuringAllocation(
+                ClientNotification,
+                "Cordoned servers existed when making an allocation decision.",
+                SeverityLevel.INFORMATION,
                 NotificationCategory.TOPOLOGY);
 
         private final Code code;

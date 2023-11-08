@@ -258,7 +258,10 @@ public enum NotificationCodeWithDescription {
                     + " To overcome this, extract the subquery expression into a preceding WITH and potentially wrap the mutating statement into a CALL subquery.",
             "Using a subquery expression within a mutating statement has implications for its side-effect visibility."
                     + " The semantics of this statement may change in later versions."
-                    + " To overcome this, extract the subquery expression into a preceding WITH and potentially wrap the mutating statement into a CALL subquery.");
+                    + " To overcome this, extract the subquery expression into a preceding WITH and potentially wrap the mutating statement into a CALL subquery."),
+    CORDONED_SERVERS_EXISTED_DURING_ALLOCATION(
+            Status.Cluster.CordonedServersExistedDuringAllocation,
+            "Server(s) `%s` are cordoned. This can impact allocation decisions.");
 
     private final Status status;
     private final String description;
@@ -520,6 +523,10 @@ public enum NotificationCodeWithDescription {
 
     public static NotificationImplementation SideEffectVisibility(InputPosition position) {
         return SIDE_EFFECT_VISIBILITY.notification(position);
+    }
+
+    public static NotificationImplementation cordonedServersExist(InputPosition position, String servers) {
+        return CORDONED_SERVERS_EXISTED_DURING_ALLOCATION.notification(position, servers);
     }
 
     private NotificationImplementation notification(InputPosition position, String... details) {

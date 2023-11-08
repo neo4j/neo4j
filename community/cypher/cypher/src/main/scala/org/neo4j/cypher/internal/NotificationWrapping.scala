@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.compiler.RelationshipIndexLookupUnfulfillableNo
 import org.neo4j.cypher.internal.compiler.RuntimeUnsupportedNotification
 import org.neo4j.cypher.internal.util.AssignPrivilegeCommandHasNoEffectNotification
 import org.neo4j.cypher.internal.util.CartesianProductNotification
+import org.neo4j.cypher.internal.util.CordonedServersExistedDuringAllocation
 import org.neo4j.cypher.internal.util.DeprecatedConnectComponentsPlannerPreParserOption
 import org.neo4j.cypher.internal.util.DeprecatedDatabaseNameNotification
 import org.neo4j.cypher.internal.util.DeprecatedFunctionNotification
@@ -350,6 +351,12 @@ object NotificationWrapping {
     case SideEffectVisibility(position) =>
       NotificationCodeWithDescription.SideEffectVisibility(
         position.withOffset(offset).asInputPosition
+      )
+
+    case CordonedServersExistedDuringAllocation(servers) =>
+      NotificationCodeWithDescription.cordonedServersExist(
+        graphdb.InputPosition.empty,
+        servers
       )
 
     case _ => throw new IllegalStateException("Missing mapping for notification detail.")
