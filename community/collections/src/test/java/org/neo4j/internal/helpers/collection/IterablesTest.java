@@ -22,10 +22,12 @@ package org.neo4j.internal.helpers.collection;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.neo4j.internal.helpers.collection.Iterables.union;
 import static org.neo4j.internal.helpers.collection.Iterators.iterator;
 import static org.neo4j.internal.helpers.collection.ResourceClosingIterator.newResourceIterator;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.junit.jupiter.api.Test;
@@ -34,6 +36,14 @@ import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 
 class IterablesTest {
+
+    @Test
+    void unionLists() {
+        assertThat(union(List.of(), List.of(1, 2))).hasSize(2).containsExactly(1, 2);
+        assertThat(union(List.of(), List.of())).isEmpty();
+        assertThat(union(List.of(1, 3), List.of(2, 4))).hasSize(4).containsExactly(1, 3, 2, 4);
+    }
+
     @Test
     void safeForAllShouldConsumeAllSubjectsRegardlessOfSuccess() {
         // given

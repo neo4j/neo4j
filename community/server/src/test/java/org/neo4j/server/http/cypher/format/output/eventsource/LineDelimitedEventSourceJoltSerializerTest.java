@@ -68,7 +68,6 @@ import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.apache.commons.collections.IteratorUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -77,6 +76,7 @@ import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription;
+import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -629,7 +629,7 @@ public class LineDelimitedEventSourceJoltSerializerTest extends AbstractEventSou
                         "double",
                         "listOfInts",
                         "listOfListOfInts")
-                .containsAll(IteratorUtils.toList(plan.fieldNames())));
+                .containsAll(Iterators.asList(plan.fieldNames())));
 
         assertEquals(wrapWithType("U", operatorType), plan.get("operatorType"));
         assertEquals(wrapWithType("U", args.get("string")), plan.get("string"));
@@ -668,8 +668,8 @@ public class LineDelimitedEventSourceJoltSerializerTest extends AbstractEventSou
         JsonNode plan = jsonNode(resultString.split("\n")[2]).get("summary");
         JsonNode rootPlan = assertIsPlanRoot(plan);
 
-        assertTrue(asSet("operatorType", "identifiers", "children")
-                .containsAll(IteratorUtils.toList(rootPlan.fieldNames())));
+        assertTrue(
+                asSet("operatorType", "identifiers", "children").containsAll(Iterators.asList(rootPlan.fieldNames())));
 
         assertEquals(wrapWithType("U", operatorType), rootPlan.get("operatorType"));
         assertEquals(jsonNode("[{\"U\":\"id2\"},{\"U\":\"id1\"},{\"U\":\"id3\"}]"), rootPlan.get("identifiers"));

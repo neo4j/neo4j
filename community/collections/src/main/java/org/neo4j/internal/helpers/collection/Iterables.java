@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.helpers.collection;
 
+import static java.util.Objects.requireNonNull;
+
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,7 +30,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Objects;
 import java.util.Set;
 import java.util.Spliterator;
 import java.util.function.Consumer;
@@ -534,7 +535,7 @@ public final class Iterables {
      * @throws NullPointerException when the given iterable is {@code null}
      */
     public static <T> Stream<T> stream(Iterable<T> iterable, int characteristics) {
-        Objects.requireNonNull(iterable);
+        requireNonNull(iterable);
         return Iterators.stream(iterable.iterator(), characteristics).onClose(() -> tryCloseResource(iterable));
     }
 
@@ -586,6 +587,15 @@ public final class Iterables {
         } finally {
             tryCloseResource(subjects);
         }
+    }
+
+    public static <T> List<T> union(List<T> list1, List<T> list2) {
+        requireNonNull(list1);
+        requireNonNull(list2);
+        var result = new ArrayList<T>(list1.size() + list2.size());
+        result.addAll(list1);
+        result.addAll(list2);
+        return result;
     }
 
     /**

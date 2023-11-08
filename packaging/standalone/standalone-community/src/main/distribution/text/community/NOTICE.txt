@@ -44,8 +44,6 @@ Apache Software License, Version 2.0
   @firebase/storage-types
   @firebase/util
   @firebase/webchannel-wrapper
-  Apache Commons BeanUtils
-  Apache Commons Collections
   Apache Commons Compress
   Apache Commons Configuration
   Apache Commons IO
@@ -61,7 +59,6 @@ Apache Software License, Version 2.0
   Apache Lucene (module: queryparser)
   Apache Shiro :: Cache
   Apache Shiro :: Configuration :: Core
-  Apache Shiro :: Configuration :: OGDL
   Apache Shiro :: Core
   Apache Shiro :: Cryptography :: Ciphers
   Apache Shiro :: Cryptography :: Core

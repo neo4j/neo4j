@@ -26,8 +26,6 @@ Third-party licenses
 --------------------
 
 Apache Software License, Version 2.0
-  Apache Commons BeanUtils
-  Apache Commons Collections
   Java Native Access
   java-diff-utils
   openCypher TCK Features and Graphs
