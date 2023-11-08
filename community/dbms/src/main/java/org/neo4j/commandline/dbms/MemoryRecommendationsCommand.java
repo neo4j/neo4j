@@ -23,11 +23,8 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
 import java.io.IOException;
-import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.function.Predicate;
-import java.util.function.ToDoubleFunction;
 
 import org.neo4j.cli.AbstractCommand;
 import org.neo4j.cli.CommandFailedException;
@@ -36,65 +33,34 @@ import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.ConfigUtils;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.MemoryRecommendation;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.os.OsBeanUtil;
-import org.neo4j.kernel.api.impl.index.storage.FailureStorage;
-import org.neo4j.kernel.internal.NativeIndexFileFilter;
-import org.neo4j.storageengine.api.StorageEngineFactory;
 
-import static java.lang.String.format;
-import static java.util.Locale.ROOT;
 import static org.neo4j.configuration.BootloaderSettings.additional_jvm;
 import static org.neo4j.configuration.BootloaderSettings.initial_heap_size;
 import static org.neo4j.configuration.BootloaderSettings.max_heap_size;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.databases_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_max_off_heap_memory;
-import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_memory_allocation;
-import static org.neo4j.io.ByteUnit.ONE_GIBI_BYTE;
-import static org.neo4j.io.ByteUnit.ONE_KIBI_BYTE;
-import static org.neo4j.io.ByteUnit.ONE_MEBI_BYTE;
-import static org.neo4j.io.ByteUnit.gibiBytes;
-import static org.neo4j.io.ByteUnit.mebiBytes;
-import static org.neo4j.io.ByteUnit.tebiBytes;
+import static org.neo4j.dbms.MemoryRecommendation.bytesToString;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.baseSchemaIndexFolder;
 
 @Command(
         name = "memrec",
         header = "Print Neo4j heap and pagecache memory settings recommendations.",
         description = "Print heuristic memory setting recommendations for the Neo4j JVM heap and pagecache. The " +
-                "heuristic is based on the total memory of the system the command is running on, or on the amount of " +
-                "memory specified with the --memory argument. The heuristic assumes that the system is dedicated to " +
-                "running Neo4j. If this is not the case, then use the --memory argument to specify how much memory " +
-                "can be expected to be dedicated to Neo4j. The output is formatted such that it can be copy-pasted into the neo4j.conf file."
+                      "heuristic is based on the total memory of the system the command is running on, or on the amount of " +
+                      "memory specified with the --memory argument. The heuristic assumes that the system is dedicated to " +
+                      "running Neo4j. If this is not the case, then use the --memory argument to specify how much memory " +
+                      "can be expected to be dedicated to Neo4j. The output is formatted such that it can be copy-pasted into the neo4j.conf file."
 )
 public class MemoryRecommendationsCommand extends AbstractCommand
 {
-    // Fields: {System Memory in GiBs; OS memory reserve in GiBs; JVM Heap memory in GiBs}.
-    // And the page cache gets what's left, though always at least 100 MiB.
-    // Heap never goes beyond 31 GiBs.
-    private static final Bracket[] datapoints = {
-            new Bracket( 0.01, 0.007, 0.002 ),
-            new Bracket( 1.0, 0.65, 0.3 ),
-            new Bracket( 2.0, 1, 0.5 ),
-            new Bracket( 4.0, 1.5, 2 ),
-            new Bracket( 6.0, 2, 3 ),
-            new Bracket( 8.0, 2.5, 3.5 ),
-            new Bracket( 10.0, 3, 4 ),
-            new Bracket( 12.0, 3.5, 4.5 ),
-            new Bracket( 16.0, 4, 5 ),
-            new Bracket( 24.0, 6, 8 ),
-            new Bracket( 32.0, 8, 12 ),
-            new Bracket( 64.0, 12, 24 ),
-            new Bracket( 128.0, 16, 31 ),
-            new Bracket( 256.0, 20, 31 ),
-            new Bracket( 512.0, 24, 31 ),
-            new Bracket( 1024.0, 30, 31 ),
-    };
 
     @Option(
             names = "--memory", paramLabel = "<size>", converter = Converters.ByteUnitConverter.class,
@@ -103,114 +69,14 @@ public class MemoryRecommendationsCommand extends AbstractCommand
     private Long memory;
 
     @Option( names = "--docker", arity = "0", description = "The recommended memory settings are produced in the form of environment variables " +
-            "that can be directly passed to Neo4j docker container. The recommended use is to save the generated environment variables to a file " +
-            "and pass the file to a docker container using '--env-file' docker option." )
+                                                            "that can be directly passed to Neo4j docker container. The recommended use is to save " +
+                                                            "the generated environment variables to a file " +
+                                                            "and pass the file to a docker container using '--env-file' docker option." )
     private boolean dockerOutput;
 
     public MemoryRecommendationsCommand( ExecutionContext ctx )
     {
         super( ctx );
-    }
-
-    static long recommendOsMemory( long totalMemoryBytes )
-    {
-        Brackets brackets = findMemoryBrackets( totalMemoryBytes );
-        return brackets.recommend( Bracket::osMemory );
-    }
-
-    static long recommendHeapMemory( long totalMemoryBytes )
-    {
-        Brackets brackets = findMemoryBrackets( totalMemoryBytes );
-        return brackets.recommend( Bracket::heapMemory );
-    }
-
-    static long recommendTxStateMemory( Config config, long heapMemoryBytes )
-    {
-        switch ( config.get( tx_state_memory_allocation ) )
-        {
-            case OFF_HEAP:
-                long recommendation = heapMemoryBytes / 4;
-                recommendation = Math.max( mebiBytes( 128 ), recommendation );
-                recommendation = Math.min( gibiBytes( 8 ), recommendation );
-                return recommendation;
-            case ON_HEAP:
-                return 0;
-            default:
-                throw new IllegalArgumentException( "Unsupported type of memory allocation." );
-        }
-    }
-
-    static long recommendPageCacheMemory( long totalMemoryBytes, long offHeapMemory )
-    {
-        long osMemory = recommendOsMemory( totalMemoryBytes );
-        long heapMemory = recommendHeapMemory( totalMemoryBytes );
-        long recommendation = totalMemoryBytes - osMemory - heapMemory - offHeapMemory;
-        recommendation = Math.max( mebiBytes( 8 ), recommendation );
-        recommendation = Math.min( tebiBytes( 16 ), recommendation );
-        return recommendation;
-    }
-
-    private static Brackets findMemoryBrackets( long totalMemoryBytes )
-    {
-        double totalMemoryGB = ((double) totalMemoryBytes) / ((double) gibiBytes( 1 ));
-        Bracket lower = null;
-        Bracket upper = null;
-        for ( int i = 1; i < datapoints.length; i++ )
-        {
-            if ( totalMemoryGB < datapoints[i].totalMemory )
-            {
-                lower = datapoints[i - 1];
-                upper = datapoints[i];
-                break;
-            }
-        }
-        if ( lower == null )
-        {
-            lower = datapoints[datapoints.length - 1];
-            upper = datapoints[datapoints.length - 1];
-        }
-        return new Brackets( totalMemoryGB, lower, upper );
-    }
-
-    static String bytesToString( double bytes )
-    {
-        double gibi1 = ONE_GIBI_BYTE;
-        double mebi1 = ONE_MEBI_BYTE;
-        double mebi100 = 100 * mebi1;
-        double kibi1 = ONE_KIBI_BYTE;
-        double kibi100 = 100 * kibi1;
-        if ( bytes >= gibi1 )
-        {
-            double gibibytes = bytes / gibi1;
-            double modMebi = bytes % gibi1;
-            if ( modMebi >= mebi100 )
-            {
-                return format( ROOT, "%dm", Math.round( bytes / mebi100 ) * 100 );
-            }
-            else
-            {
-                return format( ROOT, "%.0fg", gibibytes );
-            }
-        }
-        else if ( bytes >= mebi1 )
-        {
-            double mebibytes = bytes / mebi1;
-            double modKibi = bytes % mebi1;
-            if ( modKibi >= kibi100 )
-            {
-                return format( ROOT, "%dk", Math.round( bytes / kibi100 ) * 100 );
-            }
-            else
-            {
-                return format( ROOT, "%.0fm", mebibytes );
-            }
-        }
-        else
-        {
-            // For kilobytes there's no need to bother with decimals, just print a rough figure rounded upwards
-            double kibiBytes = bytes / kibi1;
-            return format( ROOT, "%dk", (long) Math.ceil( kibiBytes ) );
-        }
     }
 
     @Override
@@ -223,10 +89,11 @@ public class MemoryRecommendationsCommand extends AbstractCommand
         Path configFile = ctx.confDir().resolve( Config.DEFAULT_CONFIG_FILE_NAME );
         Config config = getConfig( configFile );
 
-        final long offHeapMemory = recommendTxStateMemory( config, memory );
-        String os = bytesToString( recommendOsMemory( memory ) );
-        String heap = bytesToString( recommendHeapMemory( memory ) );
-        String pagecache = bytesToString( recommendPageCacheMemory( memory, offHeapMemory ) );
+        final long offHeapMemory = MemoryRecommendation.recommendTxStateMemory( config, memory );
+        String os = bytesToString( MemoryRecommendation.recommendOsMemory( memory ) );
+        String heap = bytesToString( MemoryRecommendation.recommendHeapMemory( memory ) );
+        String pageCache = bytesToString(
+                MemoryRecommendation.recommendPageCacheMemory( memory, offHeapMemory ) );
         String txState = bytesToString( offHeapMemory );
 
         Path databasesRoot = config.get( databases_root_path );
@@ -238,7 +105,7 @@ public class MemoryRecommendationsCommand extends AbstractCommand
         print( "# Memory settings recommendation from neo4j-admin memrec:" );
         print( "#" );
         print( "# Assuming the system is dedicated to running Neo4j and has " + ByteUnit.bytesToString( memory ) + " of memory," );
-        print( "# we recommend a heap size of around " + heap + ", and a page cache of around " + pagecache + "," );
+        print( "# we recommend a heap size of around " + heap + ", and a page cache of around " + pageCache + "," );
         print( "# and that about " + os + " is left for the operating system, and the native memory" );
         print( "# needed by Lucene and Netty." );
         print( "#" );
@@ -265,7 +132,7 @@ public class MemoryRecommendationsCommand extends AbstractCommand
         print( "# Based on the above, the following memory settings are recommended:" );
         printSetting( initial_heap_size, heap );
         printSetting( max_heap_size, heap );
-        printSetting( pagecache_memory, pagecache );
+        printSetting( pagecache_memory, pageCache );
         if ( offHeapMemory != 0 )
         {
             printSetting( tx_state_max_off_heap_memory, txState );
@@ -307,9 +174,11 @@ public class MemoryRecommendationsCommand extends AbstractCommand
 
     private long getDatabasePageCacheSize( DatabaseLayout layout ) throws IOException
     {
-        return sumStoreFiles( layout ) +
-                sumIndexFiles( baseSchemaIndexFolder( layout.databaseDirectory() ), getNativeIndexFileFilter(
-                        layout.databaseDirectory(), false ) );
+        FileSystemAbstraction fs = ctx.fs();
+        return MemoryRecommendation.sumStoreFiles( layout, fs )
+               + MemoryRecommendation.sumIndexFiles(
+                baseSchemaIndexFolder( layout.databaseDirectory() ),
+                MemoryRecommendation.getNativeIndexFileFilter( layout.databaseDirectory(), false, fs ), fs );
     }
 
     private long luceneSize( Collection<DatabaseLayout> layouts ) throws IOException
@@ -325,77 +194,9 @@ public class MemoryRecommendationsCommand extends AbstractCommand
     private long getDatabaseLuceneSize( DatabaseLayout databaseLayout ) throws IOException
     {
         Path databaseDirectory = databaseLayout.databaseDirectory();
-        return sumIndexFiles( baseSchemaIndexFolder( databaseDirectory ), getNativeIndexFileFilter( databaseDirectory, true ) );
-    }
-
-    private DirectoryStream.Filter<Path> getNativeIndexFileFilter( Path storeDir, boolean inverse )
-    {
-        Predicate<Path> nativeIndexFilter = new NativeIndexFileFilter( storeDir );
-        return file ->
-        {
-            if ( ctx.fs().isDirectory( file ) )
-            {
-                // Always go down directories
-                return true;
-            }
-            if ( file.getFileName().toString().equals( FailureStorage.DEFAULT_FAILURE_FILE_NAME ) )
-            {
-                // Never include failure-storage files
-                return false;
-            }
-
-            return inverse != nativeIndexFilter.test( file );
-        };
-    }
-
-    private long sumStoreFiles( DatabaseLayout databaseLayout )
-    {
-        StorageEngineFactory storageEngineFactory = StorageEngineFactory.defaultStorageEngine();
-        FileSystemAbstraction fileSystem = ctx.fs();
-        try
-        {
-            long total = 0L;
-            for ( Path path : storageEngineFactory.listStorageFiles( fileSystem, databaseLayout ) )
-            {
-                total += fileSystem.getFileSize( path );
-            }
-
-            // Include label index
-            total += sizeOfFileIfExists( databaseLayout.labelScanStore() );
-            total += sizeOfFileIfExists( databaseLayout.relationshipTypeScanStore() );
-            return total;
-        }
-        catch ( IOException e )
-        {
-            return 0;
-        }
-    }
-
-    private long sizeOfFileIfExists( Path file ) throws IOException
-    {
-        FileSystemAbstraction fileSystem = ctx.fs();
-        return fileSystem.fileExists( file ) ? fileSystem.getFileSize( file ) : 0;
-    }
-
-    private long sumIndexFiles( Path file, DirectoryStream.Filter<Path> filter ) throws IOException
-    {
-        long total = 0;
-        if ( ctx.fs().isDirectory( file ) )
-        {
-            Path[] children = ctx.fs().listFiles( file, filter );
-            if ( children != null )
-            {
-                for ( Path child : children )
-                {
-                    total += sumIndexFiles( child, filter );
-                }
-            }
-        }
-        else if ( ctx.fs().fileExists( file ) )
-        {
-            total += ctx.fs().getFileSize( file );
-        }
-        return total;
+        FileSystemAbstraction fs = ctx.fs();
+        return MemoryRecommendation.sumIndexFiles( baseSchemaIndexFolder( databaseDirectory ),
+                                                   MemoryRecommendation.getNativeIndexFileFilter( databaseDirectory, true, fs ), fs );
     }
 
     private Config getConfig( Path configFile )
@@ -416,62 +217,5 @@ public class MemoryRecommendationsCommand extends AbstractCommand
     private void print( String text )
     {
         ctx.out().println( text );
-    }
-
-    private static final class Bracket
-    {
-        private final double totalMemory;
-        private final double osMemory;
-        private final double heapMemory;
-
-        private Bracket( double totalMemory, double osMemory, double heapMemory )
-        {
-            this.totalMemory = totalMemory;
-            this.osMemory = osMemory;
-            this.heapMemory = heapMemory;
-        }
-
-        double osMemory()
-        {
-            return osMemory;
-        }
-
-        double heapMemory()
-        {
-            return heapMemory;
-        }
-    }
-
-    private static final class Brackets
-    {
-        private final double totalMemoryGB;
-        private final Bracket lower;
-        private final Bracket upper;
-
-        private Brackets( double totalMemoryGB, Bracket lower, Bracket upper )
-        {
-            this.totalMemoryGB = totalMemoryGB;
-            this.lower = lower;
-            this.upper = upper;
-        }
-
-        private double differenceFactor()
-        {
-            if ( lower == upper )
-            {
-                return 0;
-            }
-            return (totalMemoryGB - lower.totalMemory) / (upper.totalMemory - lower.totalMemory);
-        }
-
-        public long recommend( ToDoubleFunction<Bracket> parameter )
-        {
-            double factor = differenceFactor();
-            double lowerParam = parameter.applyAsDouble( lower );
-            double upperParam = parameter.applyAsDouble( upper );
-            double diff = upperParam - lowerParam;
-            double recommend = lowerParam + (diff * factor);
-            return mebiBytes( (long) (recommend * 1024.0) );
-        }
     }
 }

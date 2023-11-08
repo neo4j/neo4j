@@ -36,6 +36,7 @@ import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings.TransactionStateMemoryAllocation;
 import org.neo4j.configuration.SettingImpl;
+import org.neo4j.dbms.MemoryRecommendation;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -57,11 +58,6 @@ import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.bytesToString;
-import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.recommendHeapMemory;
-import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.recommendOsMemory;
-import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.recommendPageCacheMemory;
-import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.recommendTxStateMemory;
 import static org.neo4j.configuration.BootloaderSettings.additional_jvm;
 import static org.neo4j.configuration.BootloaderSettings.initial_heap_size;
 import static org.neo4j.configuration.BootloaderSettings.max_heap_size;
@@ -76,6 +72,11 @@ import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_max_off_heap_memory;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_memory_allocation;
 import static org.neo4j.configuration.SettingValueParsers.BYTES;
+import static org.neo4j.dbms.MemoryRecommendation.bytesToString;
+import static org.neo4j.dbms.MemoryRecommendation.recommendHeapMemory;
+import static org.neo4j.dbms.MemoryRecommendation.recommendOsMemory;
+import static org.neo4j.dbms.MemoryRecommendation.recommendPageCacheMemory;
+import static org.neo4j.dbms.MemoryRecommendation.recommendTxStateMemory;
 import static org.neo4j.internal.helpers.collection.MapUtil.store;
 import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.ByteUnit.exbiBytes;
@@ -264,6 +265,40 @@ class MemoryRecommendationsCommandTest
         verify( output ).println( "NEO4J_dbms_jvm_additional='" + "-XX:+ExitOnOutOfMemoryError" + "'" );
     }
 
+    private static long[] calculatePageCacheFileSize( DatabaseLayout databaseLayout ) throws IOException
+    {
+        MutableLong pageCacheTotal = new MutableLong();
+        MutableLong luceneTotal = new MutableLong();
+        for ( StoreType storeType : StoreType.values() )
+        {
+            long length = Files.size( databaseLayout.file( storeType.getDatabaseFile() ) );
+            pageCacheTotal.add( length );
+        }
+
+        Path indexFolder = IndexDirectoryStructure.baseSchemaIndexFolder( databaseLayout.databaseDirectory() );
+        if ( Files.exists( indexFolder ) )
+        {
+            Files.walkFileTree( indexFolder, new SimpleFileVisitor<>()
+            {
+                @Override
+                public FileVisitResult visitFile( Path path, BasicFileAttributes attrs ) throws IOException
+                {
+                    Path name = path.getName( path.getNameCount() - 3 );
+                    boolean isLuceneFile = (path.getNameCount() >= 3 && name.toString().startsWith( "lucene-" )) ||
+                                           (path.getNameCount() >= 4 && path.getName( path.getNameCount() - 4 ).toString().equals( "lucene" ));
+                    if ( !FailureStorage.DEFAULT_FAILURE_FILE_NAME.equals( path.getFileName().toString() ) )
+                    {
+                        (isLuceneFile ? luceneTotal : pageCacheTotal).add( Files.size( path ) );
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+            } );
+        }
+        pageCacheTotal.add( Files.size( databaseLayout.labelScanStore() ) );
+        pageCacheTotal.add( Files.size( databaseLayout.relationshipTypeScanStore() ) );
+        return new long[]{pageCacheTotal.longValue(), luceneTotal.longValue()};
+    }
+
     @Test
     void doNotPrintRecommendationsForOffHeapWhenOnHeapIsConfigured() throws Exception
     {
@@ -273,7 +308,7 @@ class MemoryRecommendationsCommandTest
         Path configFile = configDir.resolve( DEFAULT_CONFIG_FILE_NAME );
         Files.createDirectories( configDir );
         store( stringMap( data_directory.name(), homeDir.toString(),
-                tx_state_memory_allocation.name(), TransactionStateMemoryAllocation.ON_HEAP.name() ), configFile );
+                          tx_state_memory_allocation.name(), TransactionStateMemoryAllocation.ON_HEAP.name() ), configFile );
 
         MemoryRecommendationsCommand command = new MemoryRecommendationsCommand(
                 new ExecutionContext( homeDir, configDir, output, mock( PrintStream.class ), testDirectory.getFileSystem() ) );
@@ -289,25 +324,6 @@ class MemoryRecommendationsCommandTest
         verify( output ).println( max_heap_size.name() + "=" + heap );
         verify( output ).println( pagecache_memory.name() + "=" + pagecache );
         verify( output, never() ).println( tx_state_max_off_heap_memory.name() + "=" + offHeap );
-    }
-
-    @Test
-    void shouldPrintKilobytesEvenForByteSizeBelowAKiloByte()
-    {
-        // given
-        long bytesBelowK = 176;
-        long bytesBelow10K = 1762;
-        long bytesBelow100K = 17625;
-
-        // when
-        String stringBelowK = MemoryRecommendationsCommand.bytesToString( bytesBelowK );
-        String stringBelow10K = MemoryRecommendationsCommand.bytesToString( bytesBelow10K );
-        String stringBelow100K = MemoryRecommendationsCommand.bytesToString( bytesBelow100K );
-
-        // then
-        assertThat( stringBelowK ).isEqualTo( "1k" );
-        assertThat( stringBelow10K ).isEqualTo( "2k" );
-        assertThat( stringBelow100K ).isEqualTo( "18k" );
     }
 
     @Test
@@ -384,38 +400,23 @@ class MemoryRecommendationsCommandTest
         verify( output ).println( contains( "Total size of data and native indexes in all databases: " + bytesToString( expectedPageCacheSize ) ) );
     }
 
-    private static long[] calculatePageCacheFileSize( DatabaseLayout databaseLayout ) throws IOException
+    @Test
+    void shouldPrintKilobytesEvenForByteSizeBelowAKiloByte()
     {
-        MutableLong pageCacheTotal = new MutableLong();
-        MutableLong luceneTotal = new MutableLong();
-        for ( StoreType storeType : StoreType.values() )
-        {
-            long length = Files.size( databaseLayout.file( storeType.getDatabaseFile() ) );
-            pageCacheTotal.add( length );
-        }
+        // given
+        long bytesBelowK = 176;
+        long bytesBelow10K = 1762;
+        long bytesBelow100K = 17625;
 
-        Path indexFolder = IndexDirectoryStructure.baseSchemaIndexFolder( databaseLayout.databaseDirectory() );
-        if ( Files.exists( indexFolder ) )
-        {
-            Files.walkFileTree( indexFolder, new SimpleFileVisitor<>()
-            {
-                @Override
-                public FileVisitResult visitFile( Path path, BasicFileAttributes attrs ) throws IOException
-                {
-                    Path name = path.getName( path.getNameCount() - 3 );
-                    boolean isLuceneFile = (path.getNameCount() >= 3 && name.toString().startsWith( "lucene-" )) ||
-                            (path.getNameCount() >= 4 && path.getName( path.getNameCount() - 4 ).toString().equals( "lucene" ));
-                    if ( !FailureStorage.DEFAULT_FAILURE_FILE_NAME.equals( path.getFileName().toString() ) )
-                    {
-                        (isLuceneFile ? luceneTotal : pageCacheTotal).add( Files.size( path ) );
-                    }
-                    return FileVisitResult.CONTINUE;
-                }
-            } );
-        }
-        pageCacheTotal.add( Files.size( databaseLayout.labelScanStore() ) );
-        pageCacheTotal.add( Files.size( databaseLayout.relationshipTypeScanStore() ) );
-        return new long[]{pageCacheTotal.longValue(), luceneTotal.longValue()};
+        // when
+        String stringBelowK = MemoryRecommendation.bytesToString( bytesBelowK );
+        String stringBelow10K = MemoryRecommendation.bytesToString( bytesBelow10K );
+        String stringBelow100K = MemoryRecommendation.bytesToString( bytesBelow100K );
+
+        // then
+        assertThat( stringBelowK ).isEqualTo( "1k" );
+        assertThat( stringBelow10K ).isEqualTo( "2k" );
+        assertThat( stringBelow100K ).isEqualTo( "18k" );
     }
 
     private static void createDatabaseWithNativeIndexes( Path homeDirectory, String databaseName )
