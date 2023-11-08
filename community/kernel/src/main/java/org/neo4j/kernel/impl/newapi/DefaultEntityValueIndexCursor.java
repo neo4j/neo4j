@@ -101,8 +101,7 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
         this.indexOrder = constraints.order();
         this.needsValues = constraints.needsValues();
         this.needStoreFilter = needStoreFilter;
-        this.propertySelection = PropertySelection.selection(
-                stream(query).mapToInt(PropertyIndexQuery::propertyKeyId).toArray());
+        this.propertySelection = PropertySelection.selection(indexQueryKeys(query));
         sortedMergeJoin.initialize(indexOrder);
 
         this.query = query;
@@ -455,6 +454,14 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
 
     private boolean setupSecurity(IndexDescriptor descriptor) {
         return allowsAll() || canAccessAllDescribedEntities(descriptor, accessMode);
+    }
+
+    private static int[] indexQueryKeys(PropertyIndexQuery[] query) {
+        int[] keys = new int[query.length];
+        for (int i = 0; i < query.length; i++) {
+            keys[i] = query[i].propertyKeyId();
+        }
+        return keys;
     }
 
     boolean allowed(long reference) {
