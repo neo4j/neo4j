@@ -613,9 +613,9 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(query, runtime)
 
     runtimeResult should beColumns("c", "item", "1").withRows(Seq(
-      Array(1, true, 1),
-      Array(2, true, 1),
-      Array(3, true, 1)
+      Array[AnyVal](1, true, 1),
+      Array[AnyVal](2, true, 1),
+      Array[AnyVal](3, true, 1)
     ))
   }
 
@@ -635,9 +635,9 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(query, runtime)
 
     runtimeResult should beColumns("c", "item", "1").withRows(Seq(
-      Array(1, true, 1),
-      Array(2, true, 1),
-      Array(3, true, 1)
+      Array[AnyVal](1, true, 1),
+      Array[AnyVal](2, true, 1),
+      Array[AnyVal](3, true, 1)
     ))
   }
 }

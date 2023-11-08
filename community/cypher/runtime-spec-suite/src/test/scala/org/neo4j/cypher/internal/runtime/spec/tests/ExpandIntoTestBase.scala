@@ -498,21 +498,21 @@ abstract class ExpandIntoTestBase[CONTEXT <: RuntimeContext](
     val result = execute(query, runtime)
 
     val expected = Seq(
-      Array(false, rels(0), nodes(0), rels(0), nodes(0)),
-      Array(false, rels(1), nodes(0), rels(1), nodes(1)),
-      Array(false, rels(1), nodes(1), rels(3), nodes(0)),
-      Array(false, rels(2), nodes(0), rels(2), nodes(2)),
-      Array(false, rels(2), nodes(2), rels(6), nodes(0)),
-      Array(false, rels(3), nodes(0), rels(1), nodes(1)),
-      Array(false, rels(3), nodes(1), rels(3), nodes(0)),
-      Array(false, rels(4), nodes(1), rels(4), nodes(1)),
-      Array(false, rels(5), nodes(1), rels(5), nodes(2)),
-      Array(false, rels(5), nodes(2), rels(7), nodes(1)),
-      Array(false, rels(6), nodes(0), rels(2), nodes(2)),
-      Array(false, rels(6), nodes(2), rels(6), nodes(0)),
-      Array(false, rels(7), nodes(1), rels(5), nodes(2)),
-      Array(false, rels(7), nodes(2), rels(7), nodes(1)),
-      Array(false, rels(8), nodes(2), rels(8), nodes(2))
+      Array[Any](false, rels(0), nodes(0), rels(0), nodes(0)),
+      Array[Any](false, rels(1), nodes(0), rels(1), nodes(1)),
+      Array[Any](false, rels(1), nodes(1), rels(3), nodes(0)),
+      Array[Any](false, rels(2), nodes(0), rels(2), nodes(2)),
+      Array[Any](false, rels(2), nodes(2), rels(6), nodes(0)),
+      Array[Any](false, rels(3), nodes(0), rels(1), nodes(1)),
+      Array[Any](false, rels(3), nodes(1), rels(3), nodes(0)),
+      Array[Any](false, rels(4), nodes(1), rels(4), nodes(1)),
+      Array[Any](false, rels(5), nodes(1), rels(5), nodes(2)),
+      Array[Any](false, rels(5), nodes(2), rels(7), nodes(1)),
+      Array[Any](false, rels(6), nodes(0), rels(2), nodes(2)),
+      Array[Any](false, rels(6), nodes(2), rels(6), nodes(0)),
+      Array[Any](false, rels(7), nodes(1), rels(5), nodes(2)),
+      Array[Any](false, rels(7), nodes(2), rels(7), nodes(1)),
+      Array[Any](false, rels(8), nodes(2), rels(8), nodes(2))
     )
     result should beColumns("var6", "var0", "var1", "var3", "var2").withRows(inAnyOrder(expected))
   }

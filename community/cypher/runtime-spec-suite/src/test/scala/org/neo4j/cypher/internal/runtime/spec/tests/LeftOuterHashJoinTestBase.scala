@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.graphdb.Label
+import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.RelationshipType
 import org.neo4j.values.storable.Values.stringValue
 
@@ -330,7 +331,7 @@ abstract class LeftOuterHashJoinTestBase[CONTEXT <: RuntimeContext](
     val expectedRows = for {
       n <- nodes.filter(_.hasLabel(Label.label("Left")))
       l = n.getProperty("leftProp").asInstanceOf[Int]
-    } yield Array(n, l, null)
+    } yield Array[Any](n, l, null)
 
     runtimeResult should beColumns("n", "l", "r").withRows(expectedRows)
   }
@@ -397,7 +398,7 @@ abstract class LeftOuterHashJoinTestBase[CONTEXT <: RuntimeContext](
 
     val expectedRows = for {
       (n, l) <- lhsRows
-      (_, r) <- matchingRowsOuter(rhsRows, n)
+      (_, r) <- matchingRowsOuter[Node, Any](rhsRows, n)
     } yield Array(n, l, r)
 
     runtimeResult should beColumns("n", "l", "r").withRows(expectedRows)
@@ -455,7 +456,7 @@ abstract class LeftOuterHashJoinTestBase[CONTEXT <: RuntimeContext](
 
       val expectedRows = for {
         (n, l) <- lhsRows
-        (_, r) <- matchingRowsOuter(rhsRows, n)
+        (_, r) <- matchingRowsOuter[Node, Any](rhsRows, n)
       } yield Array[Any](n, l, r)
 
       runtimeResult should beColumns("n", "l", "r").withRows(expectedRows)
@@ -503,7 +504,7 @@ abstract class LeftOuterHashJoinTestBase[CONTEXT <: RuntimeContext](
 
     val expectedRows = for {
       (n, l) <- lhsRows
-      (_, r) <- matchingRowsOuter(rhsRows, n)
+      (_, r) <- matchingRowsOuter[Node, Any](rhsRows, n)
     } yield Array(n, l, r)
     runtimeResult should beColumns("n", "l", "r").withRows(expectedRows)
   }
@@ -610,7 +611,7 @@ abstract class LeftOuterHashJoinTestBase[CONTEXT <: RuntimeContext](
 
     val expectedRows = for {
       (n, _) <- lhsRows
-      (_, _) <- matchingRowsOuter(rhsRows, n)
+      (_, _) <- matchingRowsOuter[Node, Any](rhsRows, n)
       l = n.getProperty("leftProp").asInstanceOf[Int]
       r = n.getProperty("rightProp").asInstanceOf[Int]
     } yield Array[Any](n, l, r)

@@ -603,7 +603,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     // given
     val input = batchedInputValues(
       sizeHint / 8,
-      Random.shuffle(Seq.fill(sizeHint - 1)(null) :+ 1).map(x => Array[Any](x)): _*
+      Random.shuffle(Seq.fill[Any](sizeHint - 1)(null) :+ 1).map(x => Array[Any](x)): _*
     ).stream()
 
     // when
@@ -647,7 +647,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     // given
     val input = batchedInputValues(
       sizeHint / 8,
-      Random.shuffle(Seq.fill(sizeHint - 1)(null) :+ 1).map(x => Array[Any](x)): _*
+      Random.shuffle(Seq.fill[Any](sizeHint - 1)(null) :+ 1).map(x => Array[Any](x)): _*
     ).stream()
 
     // when
@@ -1426,9 +1426,9 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(query, runtime)
 
     runtimeResult should beColumns("c", "item", "1").withRows(Seq(
-      Array(1, true, 1),
-      Array(2, true, 1),
-      Array(3, true, 1)
+      Array[Any](1, true, 1),
+      Array[Any](2, true, 1),
+      Array[Any](3, true, 1)
     ))
   }
 
@@ -1448,9 +1448,9 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(query, runtime)
 
     runtimeResult should beColumns("c", "item", "1").withRows(Seq(
-      Array(1, true, 1),
-      Array(2, true, 1),
-      Array(3, true, 1)
+      Array[Any](1, true, 1),
+      Array[Any](2, true, 1),
+      Array[Any](3, true, 1)
     ))
   }
 }
