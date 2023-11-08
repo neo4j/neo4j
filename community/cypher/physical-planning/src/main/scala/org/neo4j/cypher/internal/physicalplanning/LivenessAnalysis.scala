@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.physicalplanning
 
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.logical.plans.LogicalBinaryPlan
+import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
 import org.neo4j.cypher.internal.logical.plans.Projection
@@ -40,33 +41,46 @@ object LivenessAnalysis {
   /**
    *
    * @param currentlyLive variables that are currently live while walking the plan
-   * @param liveFromLhs variables that are live on the lhs when traversing the rhs
+   * @param liveFromBinaryParents variables that are live on the parent binary plans
    * @param result plan id and the resulting live variables
    */
-  private case class Acc(currentlyLive: Set[String], liveFromLhs: Map[Id, Set[String]], result: Seq[(Id, Set[String])])
+  private case class Acc(
+    currentlyLive: Set[String] = Set.empty,
+    liveFromBinaryParents: List[Set[String]] = List.empty,
+    result: Seq[(Id, Set[String])] = Seq.empty
+  )
 
   def computeLiveVariables(root: LogicalPlan, breakingPolicy: PipelineBreakingPolicy): LiveVariables = {
     // Use reverseTreeFold so that we go into RHS before LHS
-    val Acc(_, _, result) = root.folder.reverseTreeFold(Acc(Set.empty, Map.empty, Seq.empty)) {
+    val Acc(_, _, result) = root.folder.reverseTreeFold(Acc()) {
       case p: LogicalPlan => acc =>
-          // Variables used by this plan.
-          val varsInPlan = findVariablesInPlan(p, p.id)
+          val liveInPlan = findVariablesInPlan(p, p.id)
+          val liveAndAvailable = acc.currentlyLive.intersect(p.availableSymbols.map(_.name))
+          val newLive = liveAndAvailable ++ liveInPlan
 
-          // On LHS of a binary plans, this is the live variables of the parent.
-          val liveFromParent = acc.liveFromLhs.getOrElse(p.id, Set.empty)
+          val newResult =
+            if (breakingPolicy.canBeDiscardingPlan(p)) {
+              /*
+               * On the RHS of a binary plan we need to include variables that are live in binary parent plans.
+               * On the logical plan level this might seem unnecessary.
+               * But the execution plan driving table can carry variables across the rhs to be used later.
+               */
+              val liveFromParents = acc.liveFromBinaryParents.reduceOption(_ ++ _).getOrElse(Set.empty)
+              acc.result.appended(p.id -> (newLive ++ liveFromParents))
+            } else {
+              acc.result
+            }
 
-          val newLive = (acc.currentlyLive ++ liveFromParent).intersect(p.availableSymbols.map(_.name)) ++ varsInPlan
-          val newMap =
-            if (breakingPolicy.canBeDiscardingPlan(p)) acc.result.appended(p.id -> newLive)
-            else acc.result
           p match {
-            case binaryPlan: LogicalBinaryPlan =>
-              // Carry LHS variables through RHS, to keep them even if they are not available during RHS
-              val newLiveFromLhs = acc.liveFromLhs.removed(p.id).updated(binaryPlan.left.id, newLive)
-              TraverseChildren(Acc(newLive, newLiveFromLhs, newMap))
+            case _: LogicalBinaryPlan =>
+              TraverseChildren(Acc(newLive, newLive :: acc.liveFromBinaryParents, newResult))
+            case _: LogicalLeafPlan =>
+              acc.liveFromBinaryParents match {
+                case head :: tail => TraverseChildren(Acc(newLive ++ head, tail, newResult))
+                case Nil          => TraverseChildren(Acc(newLive, Nil, newResult))
+              }
             case _ =>
-              val newLiveFromLhs = acc.liveFromLhs.removed(p.id)
-              TraverseChildren(Acc(newLive, newLiveFromLhs, newMap))
+              TraverseChildren(Acc(newLive, acc.liveFromBinaryParents, newResult))
           }
       case _ => acc => SkipChildren(acc) // We ignore nested plan expressions
     }

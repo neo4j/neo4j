@@ -148,6 +148,26 @@ abstract class VariableLivenessTestBase[CONTEXT <: RuntimeContext](
     // then
     runtimeResult should beColumns("a", "b", "c").withSingleRow(1, 2, 2)
   }
+
+  test("semi apply with eager operator on rhs") {
+    givenGraph {
+      val (nodes, _) = gridGraph()
+      nodes.foreach(_.setProperty("propInt", 1))
+    }
+
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("var0", "var1")
+      .semiApply()
+      .|.distinct("var2.propInt AS var5")
+      .|.sort("var2 ASC", "var4 ASC", "var3 ASC")
+      .|.allRelationshipsScan("(var2)-[var4]-(var3)", "var0", "var1")
+      .unwind("['k'] AS var1")
+      .relationshipCountFromCountStore("var0", Some("2,4"), Seq("AB", "BA", "DOWN"), None)
+      .build()
+
+    execute(query, runtime) should beColumns("var0", "var1")
+      .withSingleRow(1L, "k")
+  }
 }
 
 object VariableLivenessTestBase {

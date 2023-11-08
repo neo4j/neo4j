@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.frontend.phases.ProcedureSignature
 import org.neo4j.cypher.internal.frontend.phases.QualifiedName
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.pos
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodeProperty
 import org.neo4j.cypher.internal.logical.builder.Resolver
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.physicalplanning.LivenessAnalysisTest.IncorrectLivenessException
@@ -69,8 +70,8 @@ class LivenessAnalysisTest extends CypherFunSuite {
       .produceResults("a", "b").expectLive("a", "b")
       .eager().expectLive("a", "b")
       .apply().expectLive("a", "b")
-      .|.eager().expectLive("a")
-      .|.argument("a").expectLive("a")
+      .|.eager().expectLive("a", "b")
+      .|.argument("a").expectLive("a", "b")
       .eager().expectLive("a", "b")
       .projection("1 AS a", "2 AS b", "3 AS c").expectLive("a", "b", "c")
       .argument().expectLive()
@@ -172,12 +173,14 @@ class LivenessAnalysisTest extends CypherFunSuite {
         "readTopOfApply3"
       )
       .|.eager().expectLive(
-        "readResult1",
-        "readResult2",
         "readApplyRhs1b",
         "readApplyRhs2",
+        "readResult1",
+        "readResult2",
+        "readResult3",
         "readTopOfApply1",
-        "readTopOfApply2"
+        "readTopOfApply2",
+        "readTopOfApply3"
       )
       .|.projection(
         "readApplyRhs1a + readApplyRhs1b AS readApplyRhs2",
@@ -191,14 +194,20 @@ class LivenessAnalysisTest extends CypherFunSuite {
         "readApplyRhs2",
         "readResult1",
         "readResult2",
+        "readResult3",
         "readTopOfApply1",
-        "readTopOfApply2"
+        "readTopOfApply2",
+        "readTopOfApply3"
       )
       .|.argument("readResult1", "readApplyRhs1a", "readApplyRhs1b", "readTopOfApply1").expectLive(
-        "readResult1",
         "readApplyRhs1a",
         "readApplyRhs1b",
-        "readTopOfApply1"
+        "readResult1",
+        "readResult2",
+        "readResult3",
+        "readTopOfApply1",
+        "readTopOfApply2",
+        "readTopOfApply3"
       )
       .eager().expectLive("readApplyRhs1a", "readApplyRhs1b", "readResult1", "readTopOfApply1")
       .projection(
@@ -217,8 +226,8 @@ class LivenessAnalysisTest extends CypherFunSuite {
       .produceResults("a", "b").expectLive("a", "b")
       .eager().expectLive("a", "b")
       .semiApply().expectLive("a", "b")
-      .|.eager().expectLive("a")
-      .|.argument("a").expectLive("a")
+      .|.eager().expectLive("a", "b")
+      .|.argument("a").expectLive("a", "b")
       .eager().expectLive("a", "b").expectLive("a", "b")
       .projection("1 AS a", "2 AS b", "3 AS c").expectLive("a", "b", "c")
       .argument().expectLive()
@@ -262,8 +271,8 @@ class LivenessAnalysisTest extends CypherFunSuite {
     new PlanWithLiveAsserts()
       .produceResults("a").expectLive("a")
       .apply().expectLive("a")
-      .|.filter("b > 0").expectLive("b")
-      .|.argument("b").expectLive("b")
+      .|.filter("b > 0").expectLive("a", "b")
+      .|.argument("b").expectLive("a", "b")
       .eager().expectLive("a", "b").expectLive("a", "b")
       .projection("1 AS a", "2 AS b", "3 AS c").expectLive("a", "b", "c")
       .argument().expectLive()
@@ -352,6 +361,57 @@ class LivenessAnalysisTest extends CypherFunSuite {
       )).expectLive("p", "n", "m")
       .eager().expectLive("n", "m")
       .projection("n AS m").expectLive("n", "m")
+      .allNodeScan("n").expectLive("n")
+      .assertCorrectLiveness()
+  }
+
+  test("semi apply with distinct") {
+    new PlanWithLiveAsserts()
+      .produceResults("a", "b", "n").expectLive("a", "b", "n")
+      .semiApply().expectLive("a", "b", "n")
+      .|.filter("false").expectLive("a", "b", "n")
+      .|.sort("c ASC").expectLive("a", "b", "c", "n")
+      .|.distinct("n.c as c").expectLive("a", "b", "c", "n")
+      .|.argument("n", "a", "b").expectLive("a", "b", "n")
+      .projection("n.a as a", "n.b as b").expectLive("a", "b", "n")
+      .allNodeScan("n").expectLive("n")
+      .assertCorrectLiveness()
+  }
+
+  test("nested semi apply with distinct") {
+    new PlanWithLiveAsserts()
+      .produceResults("a", "b").expectLive("a", "b")
+      .semiApply().expectLive("a", "b")
+      .|.sort("a ASC").expectLive("a", "b")
+      .|.distinct("a+c as y").expectLive("a", "b", "c", "y")
+      .|.semiApply().expectLive("a", "b", "c")
+      .|.|.eager().expectLive("a", "b", "c")
+      .|.|.distinct("b+1 as x").expectLive("a", "b", "c", "x")
+      .|.|.argument("a", "b", "c").expectLive("a", "b", "c")
+      .|.projection("3 as c").expectLive("a", "b", "c")
+      .|.argument("a", "b").expectLive("a", "b")
+      .projection("1 as a", "2 as b").expectLive("a", "b")
+      .argument().expectLive()
+      .assertCorrectLiveness()
+  }
+
+  test("transaction apply") {
+    new PlanWithLiveAsserts()
+      .produceResults("i", "prop", "prop2", "`n.prop`").expectLive("i", "prop", "prop2", "n.prop")
+      .projection("n.prop AS `n.prop`").expectLive("i", "n", "prop", "prop2", "n.prop")
+      .eager().expectLive("i", "n", "prop", "prop2")
+      .transactionApply().expectLive("i", "n", "prop", "prop2")
+      .|.projection("n.prop AS prop2").expectLive("i", "n", "prop", "prop2")
+      .|.eager().expectLive("i", "n", "prop", "prop2")
+      .|.foreach(
+        "ignored",
+        "CASE i WHEN 1 THEN [1] ELSE [] END",
+        Seq(setNodeProperty("n", "prop", "'new'"))
+      ).expectLive("i", "ignored", "n", "prop", "prop2")
+      .|.argument("n", "i").expectLive("i", "n", "prop", "prop2")
+      .unwind("[0,1,2] AS i").expectLive("i", "n", "prop")
+      .eager().expectLive("n", "prop")
+      .projection("n.prop AS prop").expectLive("n", "prop")
       .allNodeScan("n").expectLive("n")
       .assertCorrectLiveness()
   }
