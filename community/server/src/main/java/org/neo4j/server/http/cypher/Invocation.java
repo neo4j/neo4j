@@ -41,6 +41,7 @@ import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryPool;
+import org.neo4j.router.QueryRouterException;
 import org.neo4j.server.http.cypher.consumer.OutputEventStreamResponseHandler;
 import org.neo4j.server.http.cypher.consumer.SingleNodeResponseHandler;
 import org.neo4j.server.http.cypher.format.api.ConnectionException;
@@ -302,9 +303,9 @@ class Invocation {
 
     private void handleNeo4jError(Status status, Throwable cause) {
 
-        if (cause instanceof FabricException) {
-            // unwrap FabricException where possible.
-            var rootCause = ((FabricException) cause).status();
+        if (cause instanceof FabricException || cause instanceof QueryRouterException) {
+            // unwrap FabricException and QueryRouterException where possible.
+            var rootCause = ((Status.HasStatus) cause).status();
             if (rootCause.equals(Status.Statement.AccessMode)
                     && cause.getMessage() != null
                     && cause.getMessage().startsWith(WRITING_IN_READ_NOT_ALLOWED_MSG)) {
