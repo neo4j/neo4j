@@ -185,7 +185,7 @@ public class CommunityQueryRouterBoostrap extends CommonQueryRouterBoostrap {
                 this::createLocationService,
                 new QueryProcessorImpl(
                         targetCache, preParser, parsing, NO_COMPILATION_TRACING, () -> {}, globalProcedures),
-                new LocalDatabaseTransactionFactory(databaseProvider, transactionIdTracker),
+                getLocalDatabaseTransactionFactory(databaseProvider, transactionIdTracker),
                 createRemoteDatabaseTransactionFactory(),
                 new ErrorReporter(this.logService),
                 systemNanoClock,
@@ -197,6 +197,12 @@ public class CommunityQueryRouterBoostrap extends CommonQueryRouterBoostrap {
         dependencies.satisfyDependency(queryRouter);
         return new QueryRouterBoltSpi.DatabaseManagementService(
                 queryRouter, databaseReferenceResolver, getCompositeDatabaseStack(), useQueryRouterForCompositeQueries);
+    }
+
+    protected LocalDatabaseTransactionFactory getLocalDatabaseTransactionFactory(
+            DatabaseContextProvider<? extends DatabaseContext> databaseProvider,
+            LocalGraphTransactionIdTracker transactionIdTracker) {
+        return new LocalDatabaseTransactionFactory(databaseProvider, transactionIdTracker);
     }
 
     @Override

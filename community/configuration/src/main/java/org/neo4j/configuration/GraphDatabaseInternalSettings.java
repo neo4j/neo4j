@@ -1182,7 +1182,7 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     @Internal
     @Description("A feature toggle to enable respecting routing policies in server-side routing")
     public static final Setting<Boolean> query_router_respect_policies = newBuilder(
-                    "internal.dbms.query_router.respect_policies", BOOL, true)
+                    "internal.dbms.query_router.respect_policies", BOOL, true) // set to false
             .build();
 
     @Internal

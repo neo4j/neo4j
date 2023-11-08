@@ -19,10 +19,10 @@
  */
 package org.neo4j.router.impl.transaction.database;
 
-import com.neo4j.dbms.database.virtual.VirtualTransactionalContextFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.fabric.bookmark.LocalGraphTransactionIdTracker;
@@ -74,14 +74,7 @@ public class LocalDatabaseTransactionFactory implements DatabaseTransactionFacto
 
         var queryExecutionEngine = resolver.resolveDependency(QueryExecutionEngine.class);
 
-        TransactionalContextFactory transactionalContextFactory;
-        if (location.databaseReference().isComposite()) {
-            transactionalContextFactory = resolver.resolveDependency(VirtualTransactionalContextFactory.class);
-        } else {
-            transactionalContextFactory = Neo4jTransactionalContextFactory.create(
-                    resolver.provideDependency(GraphDatabaseQueryService.class),
-                    resolver.resolveDependency(KernelTransactionFactory.class));
-        }
+        TransactionalContextFactory transactionalContextFactory = getTransactionalContextFactory(location, resolver);
 
         bookmarkManager
                 .getBookmarkForLocal(location)
@@ -98,6 +91,13 @@ public class LocalDatabaseTransactionFactory implements DatabaseTransactionFacto
                 queryExecutionEngine,
                 bookmarkManager,
                 transactionIdTracker);
+    }
+
+    protected TransactionalContextFactory getTransactionalContextFactory(
+            Location.Local location, DependencyResolver resolver) {
+        return Neo4jTransactionalContextFactory.create(
+                resolver.provideDependency(GraphDatabaseQueryService.class),
+                resolver.resolveDependency(KernelTransactionFactory.class));
     }
 
     private InternalTransaction beginInternalTransaction(
