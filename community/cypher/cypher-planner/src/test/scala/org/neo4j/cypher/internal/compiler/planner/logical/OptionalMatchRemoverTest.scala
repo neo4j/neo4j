@@ -534,6 +534,24 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
     assert_that(testName).is_not_rewritten()
   }
 
+  test(
+    """OPTIONAL MATCH (a)
+      |CREATE (b) 
+      |RETURN DISTINCT 1 AS result
+      |""".stripMargin
+  ) {
+    assert_that(testName).is_not_rewritten()
+  }
+
+  test(
+    """OPTIONAL MATCH (a)
+      |CREATE (b) 
+      |RETURN collect(DISTINCT 1) AS result
+      |""".stripMargin
+  ) {
+    assert_that(testName).is_not_rewritten()
+  }
+
   val x = "x"
   val n = "n"
   val m = "m"

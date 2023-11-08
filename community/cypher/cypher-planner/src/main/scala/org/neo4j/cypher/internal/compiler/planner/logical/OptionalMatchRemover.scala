@@ -72,12 +72,12 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
   override def instance(from: LogicalPlanState, context: PlannerContext): Rewriter = topDown(
     rewriter = Rewriter.lift {
       case RegularSinglePlannerQuery(graph, interestingOrder, proj@AggregatingQueryProjection(distinctExpressions, aggregations, _, _, _), tail, queryInput)
-        if noOptionalShortestPath(graph) && validAggregations(aggregations) =>
+        if noOptionalShortestPath(graph) && graph.mutatingPatterns.isEmpty &&validAggregations(aggregations) =>
         val projectionDeps: Iterable[LogicalVariable] = (distinctExpressions.values ++ aggregations.values).flatMap(_.dependencies)
         rewrite(projectionDeps, graph, interestingOrder, proj, tail, queryInput, from.anonymousVariableNameGenerator)
 
       case RegularSinglePlannerQuery(graph, interestingOrder, proj@DistinctQueryProjection(distinctExpressions, _, _, _), tail, queryInput)
-        if noOptionalShortestPath(graph) =>
+        if noOptionalShortestPath(graph) && graph.mutatingPatterns.isEmpty =>
         val projectionDeps: Iterable[LogicalVariable] = distinctExpressions.values.flatMap(_.dependencies)
         rewrite(projectionDeps, graph, interestingOrder, proj, tail, queryInput, from.anonymousVariableNameGenerator)
 
