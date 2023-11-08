@@ -305,7 +305,7 @@ object ConflictFinder {
         case ReadWriteConflict => plansThatReferenceVariable
         case WriteReadConflict => readPlans.map(_.plan)
       }
-      // For delete, we can only disregard MatchDeleteConflicts. We therefore have to keep all DeleteMatchConflicts.
+      // For delete, we can only disregard ReadWriteConflicts. We therefore have to keep all WriteReadConflicts.
       if conflictType == WriteReadConflict || !distinctConflictOnSameSymbol(
         PlanWithAccessor(readPlan, Some(variable)),
         PlanWithAccessor(writePlan, Some(deletedEntity)),

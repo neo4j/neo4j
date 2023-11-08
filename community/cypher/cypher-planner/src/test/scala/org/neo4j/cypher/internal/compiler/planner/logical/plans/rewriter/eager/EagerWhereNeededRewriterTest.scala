@@ -2935,7 +2935,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .produceResults("one")
       .transactionApply()
       .|.projection("1 as one")
-      // Incrementing n and committing the transaction would mean that ne gets a now position in the n:A(prop) index.
+      // Incrementing n and committing the transaction would mean that n gets a new position in the n:A(prop) index.
       // The index cursor scanning the index could now potentially find n again. That must not happen.
       // Thus we need eager.
       .|.setProperty("n", "prop", "n.prop + 1000")
