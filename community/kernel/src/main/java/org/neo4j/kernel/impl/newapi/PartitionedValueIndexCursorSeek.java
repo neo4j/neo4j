@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.newapi;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.PartitionedScan;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.ExecutionContext;
@@ -59,8 +58,8 @@ public class PartitionedValueIndexCursorSeek<Cursor extends org.neo4j.internal.k
     }
 
     @Override
-    public boolean reservePartition(Cursor cursor, CursorContext cursorContext, AccessMode accessMode) {
-        return reservePartition(cursor, initialRead, cursorContext, accessMode);
+    public boolean reservePartition(Cursor cursor, CursorContext cursorContext) {
+        return reservePartition(cursor, initialRead, cursorContext);
     }
 
     @Override
@@ -68,11 +67,10 @@ public class PartitionedValueIndexCursorSeek<Cursor extends org.neo4j.internal.k
         return reservePartition(
                 cursor,
                 (org.neo4j.kernel.impl.newapi.Read) executionContext.dataRead(),
-                executionContext.cursorContext(),
-                executionContext.securityContext().mode());
+                executionContext.cursorContext());
     }
 
-    private boolean reservePartition(Cursor cursor, Read read, CursorContext cursorContext, AccessMode accessMode) {
+    private boolean reservePartition(Cursor cursor, Read read, CursorContext cursorContext) {
         final var indexCursor = (DefaultEntityValueIndexCursor<?>) cursor;
         indexCursor.setRead(read);
         final var indexProgressor = valueSeek.reservePartition(indexCursor, cursorContext);
@@ -80,7 +78,7 @@ public class PartitionedValueIndexCursorSeek<Cursor extends org.neo4j.internal.k
             return false;
         }
         indexCursor.initialize(
-                descriptor, indexProgressor, accessMode, false, false, IndexQueryConstraints.unorderedValues(), query);
+                descriptor, indexProgressor, false, false, IndexQueryConstraints.unorderedValues(), query);
         return true;
     }
 }

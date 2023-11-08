@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 import org.neo4j.internal.kernel.api.NodeCursor;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.ExecutionContext;
 import org.neo4j.storageengine.api.AllNodeScan;
@@ -33,16 +32,10 @@ final class PartitionedNodeCursorScan extends PartitionedEntityCursorScan<NodeCu
     }
 
     @Override
-    public boolean reservePartition(NodeCursor cursor, CursorContext cursorContext, AccessMode accessMode) {
+    public boolean reservePartition(NodeCursor cursor, CursorContext cursorContext) {
 
         return ((DefaultNodeCursor) cursor)
-                .scanBatch(
-                        fallbackRead,
-                        storageScan,
-                        computeBatchSize(),
-                        ImmutableEmptyLongIterator.INSTANCE,
-                        false,
-                        accessMode);
+                .scanBatch(fallbackRead, storageScan, computeBatchSize(), ImmutableEmptyLongIterator.INSTANCE, false);
     }
 
     @Override
@@ -54,7 +47,6 @@ final class PartitionedNodeCursorScan extends PartitionedEntityCursorScan<NodeCu
                         storageScan,
                         computeBatchSize(),
                         ImmutableEmptyLongIterator.INSTANCE,
-                        false,
-                        executionContext.securityContext().mode());
+                        false);
     }
 }

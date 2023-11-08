@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.internal.kernel.api.PartitionedScan;
 import org.neo4j.internal.kernel.api.TokenPredicate;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.ExecutionContext;
 import org.neo4j.kernel.api.index.IndexProgressor;
@@ -54,8 +53,8 @@ public class PartitionedTokenIndexCursorScan<Cursor extends org.neo4j.internal.k
     }
 
     @Override
-    public boolean reservePartition(Cursor cursor, CursorContext cursorContext, AccessMode accessMode) {
-        return reservePartition(cursor, fallbackRead, cursorContext, accessMode);
+    public boolean reservePartition(Cursor cursor, CursorContext cursorContext) {
+        return reservePartition(cursor, fallbackRead, cursorContext);
     }
 
     @Override
@@ -63,18 +62,17 @@ public class PartitionedTokenIndexCursorScan<Cursor extends org.neo4j.internal.k
         return reservePartition(
                 cursor,
                 (org.neo4j.kernel.impl.newapi.Read) executionContext.dataRead(),
-                executionContext.cursorContext(),
-                executionContext.securityContext().mode());
+                executionContext.cursorContext());
     }
 
-    private boolean reservePartition(Cursor cursor, Read read, CursorContext cursorContext, AccessMode accessMode) {
+    private boolean reservePartition(Cursor cursor, Read read, CursorContext cursorContext) {
         final var indexCursor = (InternalTokenIndexCursor) cursor;
         indexCursor.setRead(read);
         final var indexProgressor = tokenScan.reservePartition(indexCursor, cursorContext);
         if (indexProgressor == IndexProgressor.EMPTY) {
             return false;
         }
-        indexCursor.initialize(indexProgressor, query.tokenId(), null, null, accessMode);
+        indexCursor.initialize(indexProgressor, query.tokenId(), null, null);
         return true;
     }
 

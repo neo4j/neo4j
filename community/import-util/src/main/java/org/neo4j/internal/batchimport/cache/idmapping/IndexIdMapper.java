@@ -23,7 +23,6 @@ import static org.neo4j.configuration.GraphDatabaseInternalSettings.index_popula
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exact;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
-import static org.neo4j.internal.kernel.api.security.AccessMode.Static.FULL;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.kernel.impl.index.schema.IndexUsageTracker.NO_USAGE_TRACKER;
 
@@ -280,7 +279,6 @@ public class IndexIdMapper implements IdMapper {
                     index.reader.query(
                             client,
                             NULL_CONTEXT,
-                            FULL,
                             unconstrained(),
                             exact(index.schemaDescriptor.getPropertyId(), inputId));
                     return client.hasNext() ? client.next() : -1;

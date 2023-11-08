@@ -43,7 +43,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.neo4j.annotations.documented.ReporterFactories;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
@@ -130,8 +129,7 @@ abstract class IndexAccessorCompatibility extends PropertyIndexProviderCompatibi
     protected List<Long> queryNoSort(PropertyIndexQuery... predicates) throws Exception {
         try (ValueIndexReader reader = accessor.newValueReader(NO_USAGE_TRACKER)) {
             SimpleEntityValueClient nodeValueClient = new SimpleEntityValueClient();
-            reader.query(
-                    nodeValueClient, QueryContext.NULL_CONTEXT, AccessMode.Static.READ, unconstrained(), predicates);
+            reader.query(nodeValueClient, QueryContext.NULL_CONTEXT, unconstrained(), predicates);
             List<Long> list = new LinkedList<>();
             while (nodeValueClient.next()) {
                 long entityId = nodeValueClient.reference;
@@ -146,7 +144,7 @@ abstract class IndexAccessorCompatibility extends PropertyIndexProviderCompatibi
     protected AutoCloseable query(SimpleEntityValueClient client, IndexOrder order, PropertyIndexQuery... predicates)
             throws Exception {
         ValueIndexReader reader = accessor.newValueReader(NO_USAGE_TRACKER);
-        reader.query(client, QueryContext.NULL_CONTEXT, AccessMode.Static.READ, constrained(order, false), predicates);
+        reader.query(client, QueryContext.NULL_CONTEXT, constrained(order, false), predicates);
         return reader;
     }
 

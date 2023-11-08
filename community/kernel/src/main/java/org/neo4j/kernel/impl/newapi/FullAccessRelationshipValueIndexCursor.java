@@ -25,12 +25,7 @@ class FullAccessRelationshipValueIndexCursor extends DefaultRelationshipValueInd
     }
 
     @Override
-    final boolean allowed(long reference) {
-        return true;
-    }
-
-    @Override
-    final boolean allowsAll() {
+    protected final boolean allowsAll() {
         return true;
     }
 }

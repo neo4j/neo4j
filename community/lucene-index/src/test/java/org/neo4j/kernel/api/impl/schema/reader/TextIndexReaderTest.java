@@ -42,7 +42,6 @@ import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -136,8 +135,7 @@ class TextIndexReaderTest {
 
     private static void doQuery(ValueIndexReader reader, PropertyIndexQuery query)
             throws IndexNotApplicableKernelException {
-        reader.query(
-                new NodeValueIterator(), QueryContext.NULL_CONTEXT, AccessMode.Static.READ, unconstrained(), query);
+        reader.query(new NodeValueIterator(), QueryContext.NULL_CONTEXT, unconstrained(), query);
     }
 
     private TextIndexReader getNonUniqueSimpleReader() {

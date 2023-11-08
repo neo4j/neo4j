@@ -139,8 +139,9 @@ class DefaultRelationshipValueIndexCursor extends DefaultEntityValueIndexCursor<
      * </ul>
      */
     @Override
-    protected boolean canAccessAllDescribedEntities(IndexDescriptor descriptor, AccessMode accessMode) {
+    protected boolean canAccessAllDescribedEntities(IndexDescriptor descriptor) {
         propertyIds = descriptor.schema().getPropertyIds();
+        AccessMode accessMode = read.getAccessMode();
 
         for (int relType : descriptor.schema().getEntityTokenIds()) {
             if (!accessMode.allowsTraverseRelType(relType)) {
@@ -167,7 +168,7 @@ class DefaultRelationshipValueIndexCursor extends DefaultEntityValueIndexCursor<
     }
 
     @Override
-    protected boolean allowed(long reference, AccessMode accessMode) {
+    protected final boolean canAccessEntityAndProperties(long reference) {
         readEntity(read -> read.singleRelationship(reference, relationshipScanCursor));
         if (!relationshipScanCursor.next()) {
             // This relationship is not visible to this security context
@@ -176,7 +177,7 @@ class DefaultRelationshipValueIndexCursor extends DefaultEntityValueIndexCursor<
 
         int relType = relationshipScanCursor.type();
         for (int prop : propertyIds) {
-            if (!accessMode.allowsReadRelationshipProperty(() -> relType, prop)) {
+            if (!read.getAccessMode().allowsReadRelationshipProperty(() -> relType, prop)) {
                 return false;
             }
         }

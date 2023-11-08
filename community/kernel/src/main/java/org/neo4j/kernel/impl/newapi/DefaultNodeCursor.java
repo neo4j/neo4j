@@ -62,7 +62,6 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
     private long currentAddedInTx = NO_ID;
     private long single;
     private boolean isSingle;
-    private AccessMode accessMode;
 
     DefaultNodeCursor(
             CursorPool<DefaultNodeCursor> pool, StorageNodeCursor storeCursor, InternalCursorFactory internalCursors) {
@@ -78,26 +77,18 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
         this.currentAddedInTx = NO_ID;
         this.checkHasChanges = true;
         this.addedNodes = ImmutableEmptyLongIterator.INSTANCE;
-        this.accessMode = read.getAccessMode();
         if (tracer != null) {
             tracer.onAllNodesScan();
         }
     }
 
-    boolean scanBatch(
-            Read read,
-            AllNodeScan scan,
-            long sizeHint,
-            LongIterator addedNodes,
-            boolean hasChanges,
-            AccessMode accessMode) {
+    boolean scanBatch(Read read, AllNodeScan scan, long sizeHint, LongIterator addedNodes, boolean hasChanges) {
         this.read = read;
         this.isSingle = false;
         this.currentAddedInTx = NO_ID;
         this.checkHasChanges = false;
         this.hasChanges = hasChanges;
         this.addedNodes = addedNodes;
-        this.accessMode = accessMode;
         boolean scanBatch = storeCursor.scanBatch(scan, sizeHint);
         return addedNodes.hasNext() || scanBatch;
     }
@@ -109,7 +100,6 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
         this.isSingle = true;
         this.currentAddedInTx = NO_ID;
         this.checkHasChanges = true;
-        this.accessMode = read.getAccessMode();
         this.addedNodes = ImmutableEmptyLongIterator.INSTANCE;
         this.singleIsAddedInTx = false;
     }
@@ -308,7 +298,7 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
         storeCursor.relationships(securityStoreRelationshipCursor, selection);
         while (securityStoreRelationshipCursor.next()) {
             int type = securityStoreRelationshipCursor.type();
-            if (accessMode.allowsTraverseRelType(type)) {
+            if (read.getAccessMode().allowsTraverseRelType(type)) {
                 long source = securityStoreRelationshipCursor.sourceNodeReference();
                 long target = securityStoreRelationshipCursor.targetNodeReference();
                 boolean loop = source == target;
@@ -332,6 +322,7 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
     }
 
     private boolean allowsTraverse(StorageNodeCursor nodeCursor) {
+        AccessMode accessMode = read.getAccessMode();
         if (accessMode.allowsTraverseAllLabels()) {
             return true;
         }
@@ -400,11 +391,12 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
         return false;
     }
 
-    boolean allowsTraverse() {
+    protected boolean allowsTraverse() {
         return allowsTraverse(storeCursor);
     }
 
-    boolean allowsTraverseAll() {
+    protected boolean allowsTraverseAll() {
+        AccessMode accessMode = read.getAccessMode();
         return accessMode.allowsTraverseAllRelTypes() && accessMode.allowsTraverseAllLabels();
     }
 
@@ -425,7 +417,6 @@ class DefaultNodeCursor extends TraceableCursorImpl<DefaultNodeCursor> implement
             if (securityPropertyCursor != null) {
                 securityPropertyCursor.reset();
             }
-            accessMode = null;
         }
         super.closeInternal();
     }

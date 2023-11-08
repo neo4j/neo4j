@@ -26,7 +26,6 @@ import org.eclipse.collections.api.set.primitive.LongSet;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.txstate.TransactionState;
 
@@ -68,13 +67,13 @@ class DefaultNodeLabelIndexCursor extends DefaultEntityTokenIndexCursor<DefaultN
     }
 
     @Override
-    protected boolean allowedToSeeAllEntitiesWithToken(AccessMode accessMode, int token) {
-        return accessMode.allowsTraverseAllNodesWithLabel(token);
+    protected boolean allowedToSeeAllEntitiesWithToken(int token) {
+        return read.getAccessMode().allowsTraverseAllNodesWithLabel(token);
     }
 
     @Override
-    protected boolean allowedToSeeEntity(AccessMode accessMode, long entityReference) {
-        if (accessMode.allowsTraverseAllLabels()) {
+    protected boolean allowedToSeeEntity(long entityReference) {
+        if (read.getAccessMode().allowsTraverseAllLabels()) {
             return true;
         }
         if (securityNodeCursor == null) {

@@ -26,7 +26,6 @@ import java.util.NoSuchElementException;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.neo4j.internal.kernel.api.TokenPredicate;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.index.EntityRange;
@@ -124,8 +123,7 @@ public class TokenIndexScanIdIterator implements EntityIdIterator {
         }
 
         @Override
-        public void initialize(
-                IndexProgressor progressor, int token, LongIterator added, LongSet removed, AccessMode accessMode) {
+        public void initialize(IndexProgressor progressor, int token, LongIterator added, LongSet removed) {
             // used for scan
             throw new UnsupportedOperationException();
         }

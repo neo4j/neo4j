@@ -38,7 +38,6 @@ import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
 import org.neo4j.io.IOUtils;
@@ -95,7 +94,6 @@ public class FulltextIndexReader implements ValueIndexReader {
     public void query(
             IndexProgressor.EntityValueClient client,
             QueryContext context,
-            AccessMode accessMode,
             IndexQueryConstraints constraints,
             PropertyIndexQuery... queries)
             throws IndexNotApplicableKernelException {
@@ -123,7 +121,7 @@ public class FulltextIndexReader implements ValueIndexReader {
         ValuesIterator itr =
                 searchLucene(query, constraints, context, context.cursorContext(), context.memoryTracker());
         IndexProgressor progressor = new LuceneScoredEntityIndexProgressor(itr, client, constraints);
-        client.initialize(index, progressor, accessMode, true, false, constraints, queries);
+        client.initialize(index, progressor, true, false, constraints, queries);
     }
 
     @Override

@@ -54,7 +54,6 @@ import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -446,7 +445,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>>
     static NodeValueIterator query(ValueIndexReader reader, PropertyIndexQuery query)
             throws IndexNotApplicableKernelException {
         NodeValueIterator client = new NodeValueIterator();
-        reader.query(client, QueryContext.NULL_CONTEXT, AccessMode.Static.READ, unconstrained(), query);
+        reader.query(client, QueryContext.NULL_CONTEXT, unconstrained(), query);
         return client;
     }
 

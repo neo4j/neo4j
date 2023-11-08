@@ -23,7 +23,6 @@ import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.values.storable.Value;
@@ -76,7 +75,6 @@ public interface IndexProgressor extends AutoCloseable {
          * propertyIds provided here. Called by index implementation.
          * @param descriptor The descriptor
          * @param progressor The progressor
-         * @param accessMode security store access mode.
          * @param indexIncludesTransactionState {@code true} if the index takes transaction state into account such that the entities delivered through
          * {@link #acceptEntity(long, float, Value...)} have already been filtered through, and merged with, the transaction state. If this is {@code true},
          * then the client does not need to do its own transaction state filtering. This is the case for the fulltext schema indexes, for instance.
@@ -89,7 +87,6 @@ public interface IndexProgressor extends AutoCloseable {
         void initialize(
                 IndexDescriptor descriptor,
                 IndexProgressor progressor,
-                AccessMode accessMode,
                 boolean indexIncludesTransactionState,
                 boolean needStoreFilter,
                 IndexQueryConstraints constraints,
@@ -130,10 +127,8 @@ public interface IndexProgressor extends AutoCloseable {
          * @param token The token id to query
          * @param added Added entities that should be included in the results.
          * @param removed Removed entities that should be excluded from the results.
-         * @param accessMode security access mode
          */
-        void initialize(
-                IndexProgressor progressor, int token, LongIterator added, LongSet removed, AccessMode accessMode);
+        void initialize(IndexProgressor progressor, int token, LongIterator added, LongSet removed);
 
         /**
          * Accept the entity id and token of a candidate index entry. Return true if the entry

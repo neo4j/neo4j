@@ -44,7 +44,6 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
@@ -247,7 +246,7 @@ abstract class BlockBasedIndexPopulatorUpdatesTest<KEY extends NativeIndexKey<KE
             SimpleEntityValueClient valueClient = new SimpleEntityValueClient();
             PropertyIndexQuery.ExactPredicate exact =
                     PropertyIndexQuery.exact(INDEX_DESCRIPTOR.schema().getPropertyId(), entry);
-            reader.query(valueClient, QueryContext.NULL_CONTEXT, AccessMode.Static.READ, unconstrained(), exact);
+            reader.query(valueClient, QueryContext.NULL_CONTEXT, unconstrained(), exact);
             assertTrue(valueClient.next());
             long id = valueClient.reference;
             assertEquals(expectedId, id);
@@ -269,7 +268,6 @@ abstract class BlockBasedIndexPopulatorUpdatesTest<KEY extends NativeIndexKey<KE
             reader.query(
                     cursor,
                     QueryContext.NULL_CONTEXT,
-                    AccessMode.Static.READ,
                     unorderedValues(),
                     PropertyIndexQuery.exact(INDEX_DESCRIPTOR.schema().getPropertyId(), value));
             assertTrue(cursor.next());

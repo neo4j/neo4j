@@ -35,7 +35,6 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -89,7 +88,6 @@ abstract class CompositeIndexPopulatorCompatibility extends PropertyIndexProvide
                     reader.query(
                             nodes,
                             QueryContext.NULL_CONTEXT,
-                            AccessMode.Static.READ,
                             unconstrained(),
                             PropertyIndexQuery.exact(1, "v1"),
                             PropertyIndexQuery.exact(1, "v2"));

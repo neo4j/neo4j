@@ -32,7 +32,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
@@ -68,13 +67,7 @@ class FilteringNativeHitIndexProgressorTest {
         try (FilteringNativeHitIndexProgressor<RangeKey> progressor =
                 new FilteringNativeHitIndexProgressor<>(cursor, valueClient, predicates)) {
             valueClient.initialize(
-                    TestIndexDescriptorFactory.forLabel(0, 0),
-                    progressor,
-                    AccessMode.Static.READ,
-                    false,
-                    false,
-                    unorderedValues(),
-                    predicates);
+                    TestIndexDescriptorFactory.forLabel(0, 0), progressor, false, false, unorderedValues(), predicates);
             List<Long> result = new ArrayList<>();
 
             // when

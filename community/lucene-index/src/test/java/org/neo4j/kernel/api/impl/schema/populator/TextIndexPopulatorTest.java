@@ -37,7 +37,6 @@ import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexType;
@@ -148,12 +147,7 @@ class TextIndexPopulatorTest {
         index.maybeRefreshBlocking();
         try (ValueIndexReader reader = index.getIndexReader(NO_USAGE_TRACKER);
                 NodeValueIterator allEntities = new NodeValueIterator()) {
-            reader.query(
-                    allEntities,
-                    QueryContext.NULL_CONTEXT,
-                    AccessMode.Static.READ,
-                    unconstrained(),
-                    PropertyIndexQuery.allEntries());
+            reader.query(allEntities, QueryContext.NULL_CONTEXT, unconstrained(), PropertyIndexQuery.allEntries());
             assertArrayEquals(new long[] {1, 2, 42}, PrimitiveLongCollections.asArray(allEntities));
         }
     }

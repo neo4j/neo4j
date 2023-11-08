@@ -32,7 +32,6 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery.NearestNeighborsPredicate;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.IOUtils.AutoCloseables;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -87,11 +86,10 @@ class VectorIndexReader extends AbstractLuceneIndexReader {
     public void query(
             EntityValueClient client,
             QueryContext context,
-            AccessMode accessMode,
             IndexQueryConstraints constraints,
             PropertyIndexQuery... predicates)
             throws IndexNotApplicableKernelException {
-        super.query(client, context, accessMode, adjustedConstraints(constraints, predicates), predicates);
+        super.query(client, context, adjustedConstraints(constraints, predicates), predicates);
     }
 
     @Override

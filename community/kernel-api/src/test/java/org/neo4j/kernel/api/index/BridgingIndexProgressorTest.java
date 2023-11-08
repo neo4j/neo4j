@@ -26,7 +26,6 @@ import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptors;
@@ -51,7 +50,7 @@ class BridgingIndexProgressorTest {
 
         // Given
         for (IndexProgressor part : parts) {
-            progressor.initialize(index, part, AccessMode.Static.ACCESS, false, false, unconstrained());
+            progressor.initialize(index, part, false, false, unconstrained());
         }
 
         // When
@@ -78,7 +77,7 @@ class BridgingIndexProgressorTest {
         for (IndexProgressor part : parts) {
             var needStoreFilter = random.nextBoolean();
             anyNeedStoreFilter |= needStoreFilter;
-            progressor.initialize(index, part, AccessMode.Static.ACCESS, false, needStoreFilter, unconstrained());
+            progressor.initialize(index, part, false, needStoreFilter, unconstrained());
         }
 
         // When

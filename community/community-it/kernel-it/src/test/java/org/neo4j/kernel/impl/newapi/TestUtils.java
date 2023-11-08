@@ -136,8 +136,7 @@ public final class TestUtils {
                     CURSOR cursor,
                     KernelTransaction tx,
                     ExecutionContext executionContext) {
-                return scan.reservePartition(
-                        cursor, tx.cursorContext(), tx.securityContext().mode());
+                return scan.reservePartition(cursor, executionContext);
             }
         };
 

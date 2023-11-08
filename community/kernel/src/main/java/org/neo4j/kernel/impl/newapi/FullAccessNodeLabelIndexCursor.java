@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.neo4j.internal.kernel.api.security.AccessMode;
-
 class FullAccessNodeLabelIndexCursor extends DefaultNodeLabelIndexCursor {
     FullAccessNodeLabelIndexCursor(CursorPool<DefaultNodeLabelIndexCursor> pool) {
         super(pool, null);
@@ -32,7 +30,7 @@ class FullAccessNodeLabelIndexCursor extends DefaultNodeLabelIndexCursor {
     }
 
     @Override
-    protected final boolean allowedToSeeEntity(AccessMode accessMode, long entityReference) {
+    protected final boolean allowedToSeeEntity(long unused) {
         return true;
     }
 }

@@ -54,7 +54,6 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
     private EntityState propertiesState;
     private Iterator<StorageProperty> txStateChangedProperties;
     private StorageProperty txStateValue;
-    private AccessMode accessMode;
     private long entityReference = NO_ID;
     private TokenSet labels;
     // stores relationship type or NODE if not a relationship
@@ -78,7 +77,6 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
         init(selection, read);
         this.type = NODE;
         storeCursor.initNodeProperties(reference, selection);
-        ensureAccessMode();
         initSecurityPropertyProvision(
                 (propertyCursor, propertySelection) -> propertyCursor.initNodeProperties(reference, propertySelection));
         this.entityReference = nodeReference;
@@ -94,7 +92,6 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
         this.addedInTx = nodeCursor.currentNodeIsAddedInTx();
         if (!addedInTx) {
             storeCursor.initNodeProperties(nodeCursor.storeCursor, selection);
-            ensureAccessMode();
             initSecurityPropertyProvision((propertyCursor, propertySelection) ->
                     propertyCursor.initNodeProperties(nodeCursor.storeCursor, propertySelection));
         } else {
@@ -106,6 +103,7 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
     }
 
     void initSecurityPropertyProvision(BiConsumer<StoragePropertyCursor, PropertySelection> initNodeProperties) {
+        AccessMode accessMode = read.getAccessMode();
         securityPropertyProvider = null;
         if (internalCursors == null || !accessMode.hasPropertyReadRules()) {
             return;
@@ -194,7 +192,7 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
     }
 
     boolean allowed(int[] propertyKeys, int[] labels) {
-        ensureAccessMode();
+        AccessMode accessMode = read.getAccessMode();
         if (isNode()) {
             return accessMode.allowsReadNodeProperties(
                     () -> Labels.from(labels), propertyKeys, securityPropertyProvider);
@@ -208,12 +206,11 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
         return true;
     }
 
-    boolean allowed(int propertyKey) {
+    protected boolean allowed(int propertyKey) {
+        AccessMode accessMode = read.getAccessMode();
         if (isNode()) {
-            ensureAccessMode();
             return accessMode.allowsReadNodeProperty(this, propertyKey, securityPropertyProvider);
         } else {
-            ensureAccessMode();
             return accessMode.allowsReadRelationshipProperty(this, propertyKey);
         }
     }
@@ -259,7 +256,6 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
                 securityPropertyCursor.reset();
             }
             securityPropertyProvider = null;
-            accessMode = null;
         }
         super.closeInternal();
     }
@@ -343,12 +339,6 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
             this.type = securityRelCursor.type();
         }
         return type;
-    }
-
-    private void ensureAccessMode() {
-        if (accessMode == null) {
-            accessMode = read.getAccessMode();
-        }
     }
 
     public void release() {

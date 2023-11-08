@@ -28,7 +28,7 @@ public class FullAccessRelationshipTraversalCursor extends DefaultRelationshipTr
     }
 
     @Override
-    final boolean allowed() {
+    protected final boolean allowed() {
         return true;
     }
 }

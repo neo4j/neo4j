@@ -63,7 +63,6 @@ import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
@@ -226,14 +225,8 @@ abstract class IndexPopulationStressTest {
                 var referenceReader = referenceAccessor.newValueReader(NO_USAGE_TRACKER)) {
             RecordingClient entries = new RecordingClient();
             RecordingClient referenceEntries = new RecordingClient();
-            reader.query(
-                    entries, QueryContext.NULL_CONTEXT, AccessMode.Static.READ, unordered(hasValues), allEntries());
-            referenceReader.query(
-                    referenceEntries,
-                    QueryContext.NULL_CONTEXT,
-                    AccessMode.Static.READ,
-                    unordered(hasValues),
-                    allEntries());
+            reader.query(entries, QueryContext.NULL_CONTEXT, unordered(hasValues), allEntries());
+            referenceReader.query(referenceEntries, QueryContext.NULL_CONTEXT, unordered(hasValues), allEntries());
 
             exhaustAndSort(referenceEntries);
             exhaustAndSort(entries);
@@ -416,7 +409,6 @@ abstract class IndexPopulationStressTest {
         public void initialize(
                 IndexDescriptor descriptor,
                 IndexProgressor progressor,
-                AccessMode accessMode,
                 boolean indexIncludesTransactionState,
                 boolean needStoreFilter,
                 IndexQueryConstraints constraints,

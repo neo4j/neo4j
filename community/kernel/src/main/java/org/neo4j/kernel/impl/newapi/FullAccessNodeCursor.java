@@ -32,12 +32,12 @@ class FullAccessNodeCursor extends DefaultNodeCursor {
     }
 
     @Override
-    final boolean allowsTraverse() {
+    protected final boolean allowsTraverse() {
         return true;
     }
 
     @Override
-    final boolean allowsTraverseAll() {
+    protected final boolean allowsTraverseAll() {
         return true;
     }
 }

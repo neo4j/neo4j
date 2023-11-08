@@ -37,7 +37,6 @@ import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.constraints.PropertyTypeSet;
@@ -150,7 +149,7 @@ class SchemaComplianceChecker implements AutoCloseable {
     private static LongIterator queryIndexOrEmpty(ValueIndexReader reader, PropertyIndexQuery[] query) {
         try {
             NodeValueIterator indexedNodeIds = new NodeValueIterator();
-            reader.query(indexedNodeIds, NULL_CONTEXT, AccessMode.Static.READ, unconstrained(), query);
+            reader.query(indexedNodeIds, NULL_CONTEXT, unconstrained(), query);
             return indexedNodeIds;
         } catch (IndexNotApplicableKernelException e) {
             throw new RuntimeException(

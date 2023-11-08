@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.values.storable.Value;
@@ -42,7 +41,6 @@ public class GatheringNodeValueClient implements IndexProgressor.EntityValueClie
     public void initialize(
             IndexDescriptor descriptor,
             IndexProgressor progressor,
-            AccessMode accessMode,
             boolean indexIncludesTransactionState,
             boolean needStoreFilter,
             IndexQueryConstraints constraints,

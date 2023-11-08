@@ -24,7 +24,6 @@ import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexSampler;
@@ -56,11 +55,10 @@ public class TrackingIndexReader implements ValueIndexReader {
     public void query(
             IndexProgressor.EntityValueClient client,
             QueryContext context,
-            AccessMode accessMode,
             IndexQueryConstraints constraints,
             PropertyIndexQuery... query)
             throws IndexNotApplicableKernelException {
-        delegate.query(client, context, accessMode, constraints, query);
+        delegate.query(client, context, constraints, query);
     }
 
     @Override

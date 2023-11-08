@@ -32,7 +32,6 @@ import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
 import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector.InRangeEntityConsumer;
@@ -54,7 +53,6 @@ public abstract class AbstractLuceneIndexReader implements ValueIndexReader {
     public void query(
             IndexProgressor.EntityValueClient client,
             QueryContext context,
-            AccessMode accessMode,
             IndexQueryConstraints constraints,
             PropertyIndexQuery... predicates)
             throws IndexNotApplicableKernelException {
@@ -65,7 +63,7 @@ public abstract class AbstractLuceneIndexReader implements ValueIndexReader {
 
         final var progressor = indexProgressor(query, constraints, client);
         final var needStoreFilter = needStoreFilter(predicate);
-        client.initialize(descriptor, progressor, accessMode, false, needStoreFilter, constraints, predicate);
+        client.initialize(descriptor, progressor, false, needStoreFilter, constraints, predicate);
     }
 
     protected PropertyIndexQuery validateQuery(PropertyIndexQuery... predicates)

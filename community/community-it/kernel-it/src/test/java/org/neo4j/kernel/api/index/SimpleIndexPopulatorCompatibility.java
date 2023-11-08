@@ -28,7 +28,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
-import static org.neo4j.internal.kernel.api.security.AccessMode.Static.READ;
 import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.kernel.impl.index.schema.IndexUsageTracker.NO_USAGE_TRACKER;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -180,7 +179,6 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
                 reader.query(
                         nodes,
                         QueryContext.NULL_CONTEXT,
-                        READ,
                         unconstrained(),
                         PropertyIndexQuery.exact(propertyKeyId, propertyValue));
                 assertEquals(asSet(1L), PrimitiveLongCollections.toSet(nodes));
@@ -267,7 +265,6 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
                         reader.query(
                                 nodes,
                                 QueryContext.NULL_CONTEXT,
-                                READ,
                                 unconstrained(),
                                 PropertyIndexQuery.exact(propertyKeyId, entry.value));
                         assertEquals(entry.nodeId, nodes.next());
@@ -360,7 +357,6 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
                     reader.query(
                             nodes,
                             QueryContext.NULL_CONTEXT,
-                            READ,
                             unconstrained(),
                             PropertyIndexQuery.exact(propertyKeyId, nodeAndValue.value));
                     boolean anyHits = false;
@@ -390,7 +386,6 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
                         reader.query(
                                 nodes,
                                 QueryContext.NULL_CONTEXT,
-                                READ,
                                 unconstrained(),
                                 PropertyIndexQuery.exact(propertyKeyId, entry.value));
                         assertEquals(entry.nodeId, nodes.next());
@@ -438,7 +433,6 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
                             reader.query(
                                     nodes,
                                     QueryContext.NULL_CONTEXT,
-                                    READ,
                                     unconstrained(),
                                     PropertyIndexQuery.exact(propertyKeyId, entry.value));
                             assertEquals(

@@ -32,7 +32,6 @@ import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.index.EntityRange;
 import org.neo4j.kernel.api.index.IndexProgressor;
@@ -112,8 +111,7 @@ public class TokenScanValueIndexProgressorTest {
         public void initialize(IndexProgressor progressor, int token, IndexOrder order) {}
 
         @Override
-        public void initialize(
-                IndexProgressor progressor, int token, LongIterator added, LongSet removed, AccessMode accessMode) {}
+        public void initialize(IndexProgressor progressor, int token, LongIterator added, LongSet removed) {}
 
         @Override
         public boolean acceptEntity(long reference, int tokenId) {

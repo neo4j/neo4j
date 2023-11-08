@@ -24,7 +24,6 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
 
 import org.junit.jupiter.api.Test;
 import org.neo4j.internal.kernel.api.Cursor;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.ExecutionContext;
 
@@ -64,7 +63,7 @@ class PartitionedEntityCursorScanTest {
         }
 
         @Override
-        public boolean reservePartition(Cursor cursor, CursorContext cursorContext, AccessMode accessMode) {
+        public boolean reservePartition(Cursor cursor, CursorContext cursorContext) {
             return true;
         }
 

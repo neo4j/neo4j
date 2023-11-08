@@ -21,7 +21,6 @@ package org.neo4j.storageengine.api.schema;
 
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.values.storable.Value;
@@ -33,7 +32,6 @@ public class SimpleEntityValueClient extends SimpleEntityClient implements Index
     public void initialize(
             IndexDescriptor descriptor,
             IndexProgressor progressor,
-            AccessMode accessMode,
             boolean indexIncludesTransactionState,
             boolean needStoreFilter,
             IndexQueryConstraints constraints,

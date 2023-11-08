@@ -24,7 +24,6 @@ import static org.neo4j.internal.helpers.collection.Iterators.asResourceIterator
 import static org.neo4j.internal.helpers.collection.Iterators.iterator;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.exact;
-import static org.neo4j.internal.kernel.api.security.AccessMode.Static.FULL;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.index.schema.IndexUsageTracker.NO_USAGE_TRACKER;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_ONLINE;
@@ -209,7 +208,7 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>> exten
                                         queries[i] = exact(propertyKeyIds[i], values[i]);
                                     }
                                     try (var client = new NodeValueIterator()) {
-                                        reader.query(client, QueryContext.NULL_CONTEXT, FULL, unconstrained(), queries);
+                                        reader.query(client, QueryContext.NULL_CONTEXT, unconstrained(), queries);
                                         if (client.hasNext()) {
                                             var existingEntityId = client.next();
                                             conflictHandler.indexEntryConflict(existingEntityId, entityId, values);

@@ -47,7 +47,6 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
-import org.neo4j.internal.kernel.api.security.AccessMode.Static;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -345,11 +344,7 @@ public class IndexAccessorUsageStatsTest {
             throws IndexNotApplicableKernelException {
         clock.forward(deltaMillis, MILLISECONDS);
         reader.query(
-                new SimpleEntityValueClient(),
-                QueryContext.NULL_CONTEXT,
-                Static.ACCESS,
-                IndexQueryConstraints.unconstrained(),
-                query);
+                new SimpleEntityValueClient(), QueryContext.NULL_CONTEXT, IndexQueryConstraints.unconstrained(), query);
     }
 
     private static void assertUsage(IndexUsageStats usageStats, long expectedLastUsedTime, long expectedQueryCount) {

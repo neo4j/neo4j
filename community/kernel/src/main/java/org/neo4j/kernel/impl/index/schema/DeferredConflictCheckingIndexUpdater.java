@@ -29,7 +29,6 @@ import java.util.Set;
 import java.util.function.Supplier;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -93,7 +92,7 @@ public class DeferredConflictCheckingIndexUpdater implements IndexUpdater {
         try (ValueIndexReader reader = readerSupplier.get()) {
             for (ValueTuple tuple : touchedTuples) {
                 try (NodeValueIterator client = new NodeValueIterator()) {
-                    reader.query(client, NULL_CONTEXT, AccessMode.Static.READ, unconstrained(), queryOf(tuple));
+                    reader.query(client, NULL_CONTEXT, unconstrained(), queryOf(tuple));
                     if (client.hasNext()) {
                         long firstEntityId = client.next();
                         if (client.hasNext()) {

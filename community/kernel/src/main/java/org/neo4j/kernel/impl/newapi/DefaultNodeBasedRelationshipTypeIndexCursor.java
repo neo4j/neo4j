@@ -27,7 +27,6 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.kernel.api.index.IndexProgressor;
@@ -77,19 +76,12 @@ public class DefaultNodeBasedRelationshipTypeIndexCursor
                     .longIterator();
             removedNodes = read.txState().addedAndRemovedNodes().getRemoved().freeze();
         }
-        initialize(progressor, type, addedRelationships, removedNodes, null);
+        initialize(progressor, type, addedRelationships, removedNodes);
     }
 
     @Override
     public void initialize(
-            IndexProgressor progressor,
-            int type,
-            LongIterator addedRelationships,
-            LongSet removedNodes,
-            AccessMode ignored) {
-        // AccessMode here is ignored as we rely on security in the internal cursors and read object.
-        // If this access mode is different from what is in read.accessMode() this cursor may give incorrect result
-        // but the DefaultRelationshipBasedRelationshipTypeIndexCursor suffers from the same issue
+            IndexProgressor progressor, int type, LongIterator addedRelationships, LongSet removedNodes) {
         super.initialize(progressor);
         this.type = type;
         this.selection = RelationshipSelection.selection(type, Direction.OUTGOING);

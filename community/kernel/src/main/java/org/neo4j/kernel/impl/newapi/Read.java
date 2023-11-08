@@ -120,7 +120,7 @@ abstract class Read
 
         EntityIndexSeekClient client = (EntityIndexSeekClient) cursor;
         client.setRead(this);
-        indexSession.reader.query(client, queryContext, getAccessMode(), constraints, query);
+        indexSession.reader.query(client, queryContext, constraints, query);
     }
 
     @Override
@@ -157,7 +157,7 @@ abstract class Read
 
         EntityIndexSeekClient client = (EntityIndexSeekClient) cursor;
         client.setRead(this);
-        indexSession.reader.query(client, queryContext, getAccessMode(), constraints, query);
+        indexSession.reader.query(client, queryContext, constraints, query);
     }
 
     @Override
@@ -226,7 +226,7 @@ abstract class Read
             PropertyIndexQuery.ExactPredicate... query)
             throws IndexNotApplicableKernelException {
         cursor.setRead(this);
-        indexReader.query(cursor, this, getAccessMode(), unconstrained(), query);
+        indexReader.query(cursor, this, unconstrained(), query);
     }
 
     @Override
@@ -236,7 +236,7 @@ abstract class Read
             PropertyIndexQuery.ExactPredicate... query)
             throws IndexNotApplicableKernelException {
         cursor.setRead(this);
-        indexReader.query(cursor, this, getAccessMode(), unconstrained(), query);
+        indexReader.query(cursor, this, unconstrained(), query);
     }
 
     @Override
@@ -303,7 +303,7 @@ abstract class Read
             IndexQueryConstraints constraints)
             throws KernelException {
         indexSeekClient.setRead(this);
-        indexSession.reader.query(indexSeekClient, this, getAccessMode(), constraints, PropertyIndexQuery.allEntries());
+        indexSession.reader.query(indexSeekClient, this, constraints, PropertyIndexQuery.allEntries());
     }
 
     @Override

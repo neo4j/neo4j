@@ -40,7 +40,6 @@ import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -216,8 +215,7 @@ abstract class BaseAccessorTilesTest<KEY extends NativeIndexKey<KEY>> {
 
             var boundingBox = PropertyIndexQuery.boundingBox(
                     descriptor.schema().getPropertyId(), Values.pointValue(WGS_84, searchStart), limitPoint);
-            indexReader.query(
-                    client, QueryContext.NULL_CONTEXT, AccessMode.Static.READ, unorderedValues(), boundingBox);
+            indexReader.query(client, QueryContext.NULL_CONTEXT, unorderedValues(), boundingBox);
 
             List<Value> queryResult = new ArrayList<>();
             while (client.next()) {
@@ -264,7 +262,7 @@ abstract class BaseAccessorTilesTest<KEY extends NativeIndexKey<KEY>> {
             for (Value value : values) {
                 PropertyIndexQuery.ExactPredicate exact =
                         PropertyIndexQuery.exact(descriptor.schema().getPropertyId(), value);
-                indexReader.query(client, QueryContext.NULL_CONTEXT, AccessMode.Static.READ, unorderedValues(), exact);
+                indexReader.query(client, QueryContext.NULL_CONTEXT, unorderedValues(), exact);
 
                 // then
                 assertTrue(client.next());

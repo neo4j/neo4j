@@ -27,7 +27,6 @@ import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -48,8 +47,6 @@ abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenInde
     private LongSet removed;
     private boolean useMergeSort;
     private final PrimitiveSortedMergeJoin sortedMergeJoin = new PrimitiveSortedMergeJoin();
-
-    private AccessMode accessMode;
     private boolean shortcutSecurity;
 
     DefaultEntityTokenIndexCursor(CursorPool<SELF> pool) {
@@ -72,9 +69,9 @@ abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenInde
 
     protected abstract void traceNext(KernelReadTracer tracer, long entity);
 
-    protected abstract boolean allowedToSeeAllEntitiesWithToken(AccessMode accessMode, int token);
+    protected abstract boolean allowedToSeeAllEntitiesWithToken(int token);
 
-    protected abstract boolean allowedToSeeEntity(AccessMode accessMode, long entityReference);
+    protected abstract boolean allowedToSeeEntity(long entityReference);
 
     @Override
     public void initialize(IndexProgressor progressor, int token, IndexOrder order) {
@@ -89,8 +86,6 @@ abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenInde
         } else {
             useMergeSort = false;
         }
-
-        accessMode = read.getAccessMode();
         tokenId = token;
         initSecurity(token);
 
@@ -100,13 +95,11 @@ abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenInde
     }
 
     @Override
-    public void initialize(
-            IndexProgressor progressor, int token, LongIterator added, LongSet removed, AccessMode accessMode) {
+    public void initialize(IndexProgressor progressor, int token, LongIterator added, LongSet removed) {
         initialize(progressor);
         useMergeSort = false;
         this.added = added;
         this.removed = removed;
-        this.accessMode = accessMode;
         this.tokenId = token;
         initSecurity(token);
 
@@ -147,7 +140,6 @@ abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenInde
             read = null;
             added = null;
             removed = null;
-            accessMode = null;
         }
         super.closeInternal();
     }
@@ -167,7 +159,7 @@ abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenInde
     }
 
     protected boolean allowed(long reference) {
-        return shortcutSecurity || allowedToSeeEntity(accessMode, reference);
+        return shortcutSecurity || allowedToSeeEntity(reference);
     }
 
     protected long nextEntity() {
@@ -175,7 +167,7 @@ abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenInde
     }
 
     private void initSecurity(int token) {
-        shortcutSecurity = allowedToSeeAllEntitiesWithToken(accessMode, token);
+        shortcutSecurity = allowedToSeeAllEntitiesWithToken(token);
     }
 
     private boolean nextWithoutOrder() {

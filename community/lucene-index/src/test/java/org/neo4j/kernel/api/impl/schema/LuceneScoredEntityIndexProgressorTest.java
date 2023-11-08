@@ -27,7 +27,6 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.impl.index.collector.StubValuesIterator;
 import org.neo4j.kernel.api.index.IndexProgressor;
@@ -127,7 +126,6 @@ class LuceneScoredEntityIndexProgressorTest {
         public void initialize(
                 IndexDescriptor descriptor,
                 IndexProgressor progressor,
-                AccessMode accessMode,
                 boolean indexIncludesTransactionState,
                 boolean needStoreFilter,
                 IndexQueryConstraints constraints,

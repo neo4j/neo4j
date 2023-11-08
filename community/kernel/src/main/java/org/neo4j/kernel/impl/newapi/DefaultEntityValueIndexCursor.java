@@ -49,7 +49,6 @@ import org.neo4j.internal.kernel.api.IndexResultScore;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.ValueIndexCursor;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
@@ -75,7 +74,6 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
     private boolean needsValues;
     private IndexOrder indexOrder;
     private final SortedMergeJoin sortedMergeJoin = new SortedMergeJoin();
-    private AccessMode accessMode;
     private boolean shortcutSecurity;
     private boolean needStoreFilter;
     private PropertySelection propertySelection;
@@ -91,7 +89,6 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
     public final void initialize(
             IndexDescriptor descriptor,
             IndexProgressor progressor,
-            AccessMode accessMode,
             boolean indexIncludesTransactionState,
             boolean needStoreFilter,
             IndexQueryConstraints constraints,
@@ -110,7 +107,6 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
             tracer.onIndexSeek();
         }
 
-        this.accessMode = accessMode;
         shortcutSecurity = setupSecurity(descriptor);
 
         if (!indexIncludesTransactionState && read.hasTxStateWithChanges() && query.length > 0) {
@@ -220,7 +216,7 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
     protected abstract boolean doStoreValuePassesQueryFilter(
             long reference, PropertySelection propertySelection, PropertyIndexQuery[] query);
 
-    boolean allowsAll() {
+    protected boolean allowsAll() {
         return false;
     }
 
@@ -323,7 +319,6 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
             this.query = null;
             this.values = null;
             this.read = null;
-            this.accessMode = null;
             this.added = ImmutableEmptyLongIterator.INSTANCE;
             this.addedWithValues = Collections.emptyIterator();
             this.removed = LongSets.immutable.empty();
@@ -453,7 +448,7 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
     }
 
     private boolean setupSecurity(IndexDescriptor descriptor) {
-        return allowsAll() || canAccessAllDescribedEntities(descriptor, accessMode);
+        return allowsAll() || canAccessAllDescribedEntities(descriptor);
     }
 
     private static int[] indexQueryKeys(PropertyIndexQuery[] query) {
@@ -464,8 +459,8 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
         return keys;
     }
 
-    boolean allowed(long reference) {
-        return shortcutSecurity || allowed(reference, accessMode);
+    final boolean allowed(long reference) {
+        return shortcutSecurity || canAccessEntityAndProperties(reference);
     }
 
     /**
@@ -473,7 +468,7 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
      * <p>
      * If {@code true} is returned, it means that security check does not need to be performed for each item in the cursor.
      */
-    abstract boolean canAccessAllDescribedEntities(IndexDescriptor descriptor, AccessMode accessMode);
+    abstract boolean canAccessAllDescribedEntities(IndexDescriptor descriptor);
 
     /**
      * Gets entities removed in the current transaction that are relevant for the index.
@@ -483,7 +478,7 @@ abstract class DefaultEntityValueIndexCursor<CURSOR> extends IndexCursor<IndexPr
     /**
      * Checks if the user is allowed to see the entity and properties the cursor is currently pointing at.
      */
-    abstract boolean allowed(long reference, AccessMode accessMode);
+    protected abstract boolean canAccessEntityAndProperties(long reference);
 
     /**
      * An abstraction over {@link KernelReadTracer#onNode(long)} and {@link KernelReadTracer#onRelationship(long)}.

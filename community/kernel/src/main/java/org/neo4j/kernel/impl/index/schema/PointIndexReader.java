@@ -32,7 +32,6 @@ import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
@@ -91,7 +90,6 @@ class PointIndexReader extends NativeIndexReader<PointKey> {
     public void query(
             IndexProgressor.EntityValueClient client,
             QueryContext context,
-            AccessMode accessMode,
             IndexQueryConstraints constraints,
             PropertyIndexQuery... predicates) {
         if (predicates.length == 0) {
@@ -110,8 +108,7 @@ class PointIndexReader extends NativeIndexReader<PointKey> {
                 // into a query that is split into multiple sub-queries.
                 BridgingIndexProgressor multiProgressor =
                         new BridgingIndexProgressor(client, descriptor.schema().getPropertyIds());
-                client.initialize(
-                        descriptor, multiProgressor, accessMode, false, false, constraints, boundingBoxPredicate);
+                client.initialize(descriptor, multiProgressor, false, false, constraints, boundingBoxPredicate);
                 double[] from = boundingBoxPredicate.from().coordinate();
                 double[] to = boundingBoxPredicate.to().coordinate();
                 CoordinateReferenceSystem crs = boundingBoxPredicate.crs();
@@ -132,18 +129,16 @@ class PointIndexReader extends NativeIndexReader<PointKey> {
                             treeKeyFrom,
                             treeKeyTo,
                             context.cursorContext(),
-                            accessMode,
                             true,
                             constraints,
                             boundingBoxPredicate);
                 }
             } catch (IllegalArgumentException e) {
                 // Invalid query ranges will cause this state (eg. min>max)
-                client.initialize(
-                        descriptor, IndexProgressor.EMPTY, accessMode, false, false, constraints, boundingBoxPredicate);
+                client.initialize(descriptor, IndexProgressor.EMPTY, false, false, constraints, boundingBoxPredicate);
             }
         } else {
-            super.query(client, context, accessMode, constraints, predicates);
+            super.query(client, context, constraints, predicates);
         }
     }
 

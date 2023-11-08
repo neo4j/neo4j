@@ -69,7 +69,6 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptors;
@@ -364,7 +363,7 @@ public class DatabaseCompositeIndexAccessorTest {
     private static Set<Long> resultSet(ValueIndexReader reader, PropertyIndexQuery... queries)
             throws IndexNotApplicableKernelException {
         try (NodeValueIterator results = new NodeValueIterator()) {
-            reader.query(results, QueryContext.NULL_CONTEXT, AccessMode.Static.READ, unconstrained(), queries);
+            reader.query(results, QueryContext.NULL_CONTEXT, unconstrained(), queries);
             return toSet(results);
         }
     }

@@ -118,7 +118,6 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -374,7 +373,7 @@ class IndexingServiceTest {
                 .thenReturn(updater);
         ValueIndexReader indexReader = mock(ValueIndexReader.class);
         when(accessor.newValueReader(any())).thenReturn(indexReader);
-        doAnswer(new NodeIdsIndexReaderQueryAnswer(index)).when(indexReader).query(any(), any(), any(), any(), any());
+        doAnswer(new NodeIdsIndexReaderQueryAnswer(index)).when(indexReader).query(any(), any(), any(), any());
 
         IndexingService indexingService = newIndexingServiceWithMockedDependencies(populator, accessor, withData());
 
@@ -1596,7 +1595,6 @@ class IndexingServiceTest {
             reader.query(
                     new SimpleEntityValueClient(),
                     QueryContext.NULL_CONTEXT,
-                    AccessMode.Static.FULL,
                     IndexQueryConstraints.unconstrained(),
                     PropertyIndexQuery.allEntries());
         }
@@ -2033,7 +2031,6 @@ class IndexingServiceTest {
         public void query(
                 IndexProgressor.EntityValueClient client,
                 QueryContext context,
-                AccessMode accessMode,
                 IndexQueryConstraints constraints,
                 PropertyIndexQuery... query) {
             tracker.queried();

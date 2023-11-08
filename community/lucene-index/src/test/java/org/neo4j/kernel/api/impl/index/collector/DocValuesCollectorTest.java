@@ -43,7 +43,6 @@ import org.eclipse.collections.api.iterator.LongIterator;
 import org.junit.jupiter.api.Test;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.impl.index.IndexReaderStub;
 import org.neo4j.kernel.api.index.IndexProgressor;
@@ -382,7 +381,6 @@ final class DocValuesCollectorTest {
         public void initialize(
                 IndexDescriptor descriptor,
                 IndexProgressor progressor,
-                AccessMode accessMode,
                 boolean indexIncludesTransactionState,
                 boolean needStoreFilter,
                 IndexQueryConstraints constraints,

@@ -83,7 +83,6 @@ import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
 import org.neo4j.internal.recordstorage.SchemaStorage;
@@ -464,7 +463,6 @@ class FulltextIndexProviderTest {
                 public void initialize(
                         IndexDescriptor descriptor,
                         IndexProgressor progressor,
-                        AccessMode accessMode,
                         boolean indexIncludesTransactionState,
                         boolean needStoreFilter,
                         IndexQueryConstraints constraints,

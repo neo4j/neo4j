@@ -51,9 +51,10 @@ class DefaultNodeValueIndexCursor extends DefaultEntityValueIndexCursor<DefaultN
      * of all nodes in the index, we can skip checking on every node we get back.
      */
     @Override
-    protected boolean canAccessAllDescribedEntities(IndexDescriptor descriptor, AccessMode accessMode) {
+    protected boolean canAccessAllDescribedEntities(IndexDescriptor descriptor) {
         propertyIds = descriptor.schema().getPropertyIds();
         int[] labelIds = descriptor.schema().getEntityTokenIds();
+        AccessMode accessMode = read.getAccessMode();
 
         for (int label : labelIds) {
             /*
@@ -100,7 +101,7 @@ class DefaultNodeValueIndexCursor extends DefaultEntityValueIndexCursor<DefaultN
     }
 
     @Override
-    protected boolean allowed(long reference, AccessMode accessMode) {
+    protected final boolean canAccessEntityAndProperties(long reference) {
         ensureSecurityNodeCursor();
         readEntity(read -> read.singleNode(reference, securityNodeCursor));
         if (!securityNodeCursor.next()) {
@@ -110,6 +111,7 @@ class DefaultNodeValueIndexCursor extends DefaultEntityValueIndexCursor<DefaultN
 
         int[] labels = securityNodeCursor.labelsIgnoringTxStateSetRemove().all();
 
+        AccessMode accessMode = read.getAccessMode();
         if (accessMode.hasPropertyReadRules(propertyIds)) {
             ensureSecurityPropertyCursor();
             securityNodeCursor.properties(securityPropertyCursor, PropertySelection.selection(propertyIds));

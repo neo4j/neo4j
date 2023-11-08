@@ -42,7 +42,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
@@ -119,11 +118,7 @@ class PointIndexAccessorTest extends NativeIndexAccessorTests<PointKey> {
         try (var reader = accessor.newValueReader(NO_USAGE_TRACKER)) {
             assertThatThrownBy(
                             () -> reader.query(
-                                    new SimpleEntityValueClient(),
-                                    NULL_CONTEXT,
-                                    AccessMode.Static.ACCESS,
-                                    unorderedValues(),
-                                    predicate),
+                                    new SimpleEntityValueClient(), NULL_CONTEXT, unorderedValues(), predicate),
                             "%s is an unsupported query",
                             predicate)
                     .isInstanceOf(IllegalArgumentException.class)
@@ -140,11 +135,7 @@ class PointIndexAccessorTest extends NativeIndexAccessorTests<PointKey> {
             PropertyIndexQuery.ExactPredicate query = PropertyIndexQuery.exact(0, PointValue.MAX_VALUE);
             assertThatThrownBy(
                             () -> reader.query(
-                                    new SimpleEntityValueClient(),
-                                    NULL_CONTEXT,
-                                    AccessMode.Static.ACCESS,
-                                    constrained(indexOrder, false),
-                                    query),
+                                    new SimpleEntityValueClient(), NULL_CONTEXT, constrained(indexOrder, false), query),
                             "order is not supported with point index")
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContainingAll(

@@ -55,12 +55,7 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor implements
     }
 
     boolean scanBatch(
-            Read read,
-            AllRelationshipsScan scan,
-            long sizeHint,
-            LongIterator addedRelationships,
-            boolean hasChanges,
-            AccessMode accessMode) {
+            Read read, AllRelationshipsScan scan, long sizeHint, LongIterator addedRelationships, boolean hasChanges) {
         this.read = read;
         this.single = NO_ID;
         this.isSingle = false;
@@ -68,7 +63,6 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor implements
         this.addedRelationships = addedRelationships;
         this.hasChanges = hasChanges;
         this.checkHasChanges = false;
-        this.accessMode = accessMode;
         boolean scanBatch = storeCursor.scanBatch(scan, sizeHint);
         return addedRelationships.hasNext() || scanBatch;
     }
@@ -118,7 +112,8 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor implements
         return false;
     }
 
-    boolean allowed() {
+    protected boolean allowed() {
+        AccessMode accessMode = read.getAccessMode();
         return accessMode.allowsTraverseRelType(storeCursor.type()) && allowedToSeeEndNode(accessMode);
     }
 
@@ -141,7 +136,6 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor implements
     public void closeInternal() {
         if (!isClosed()) {
             read = null;
-            accessMode = null;
             storeCursor.close();
         }
         super.closeInternal();

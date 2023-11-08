@@ -20,7 +20,6 @@
 package org.neo4j.internal.kernel.api;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.ExecutionContext;
 
@@ -53,14 +52,13 @@ public interface PartitionedScan<Cursor extends org.neo4j.internal.kernel.api.Cu
      *
      * @param cursor The cursor to be used for reading.
      * @param cursorContext The underlying page cursor context for the thread doing the seek.
-     * @param accessMode security store access mode.
      * @throws IllegalStateException if transaction contains changed state.
      * @return <code>true</code> if there are more data to read, otherwise <code>false</code>
      *
      * @see #reservePartition(org.neo4j.internal.kernel.api.Cursor, ExecutionContext)
      */
     @Deprecated(since = "5.7", forRemoval = false)
-    boolean reservePartition(Cursor cursor, CursorContext cursorContext, AccessMode accessMode);
+    boolean reservePartition(Cursor cursor, CursorContext cursorContext);
 
     /**
      * Will attempt to reserve a partition to scan.

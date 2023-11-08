@@ -26,7 +26,6 @@ import static org.neo4j.internal.helpers.collection.Iterators.array;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.NodeValueIndexProgressor;
@@ -45,19 +44,13 @@ public class NodeIdsIndexReaderQueryAnswer implements Answer<Object> {
         IndexProgressor.EntityValueClient client = invocation.getArgument(0);
         NodeValueIndexProgressor progressor = new NodeValueIndexProgressor(iterator(EMPTY, nodeIds), client);
         client.initialize(
-                descriptor,
-                progressor,
-                AccessMode.Static.READ,
-                false,
-                false,
-                invocation.getArgument(3),
-                getIndexQueryArgument(invocation));
+                descriptor, progressor, false, false, invocation.getArgument(2), getIndexQueryArgument(invocation));
         return null;
     }
 
     public static PropertyIndexQuery[] getIndexQueryArgument(InvocationOnMock invocation) {
         // Apparently vararg arguments from mockito can either be non-existent, a single value or an array...
-        Object rawQuery = invocation.getArgument(4);
+        Object rawQuery = invocation.getArgument(3);
         return rawQuery.getClass().isArray() ? (PropertyIndexQuery[]) rawQuery : array((PropertyIndexQuery) rawQuery);
     }
 }

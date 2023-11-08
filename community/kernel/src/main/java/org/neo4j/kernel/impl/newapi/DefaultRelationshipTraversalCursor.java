@@ -40,7 +40,7 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Defau
     private LongIterator addedRelationships;
     private long originNodeReference;
     private RelationshipSelection selection;
-    private AccessMode mode;
+
     private long neighbourNodeReference;
 
     DefaultRelationshipTraversalCursor(
@@ -187,22 +187,19 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Defau
         super.removeTracer();
     }
 
-    boolean allowed() {
-        if (mode == null) {
-            mode = read.getAccessMode();
+    protected boolean allowed() {
+        AccessMode accessMode = read.getAccessMode();
+        if (accessMode.allowsTraverseRelType(storeCursor.type())) {
+            if (accessMode.allowsTraverseAllLabels()) {
+                return true;
+            }
+            if (securityNodeCursor == null) {
+                securityNodeCursor = internalCursors.allocateNodeCursor();
+            }
+            read.singleNode(storeCursor.neighbourNodeReference(), securityNodeCursor);
+            return securityNodeCursor.next();
         }
-        return mode.allowsTraverseRelType(storeCursor.type()) && allowedToSeeEndNode(mode);
-    }
-
-    private boolean allowedToSeeEndNode(AccessMode mode) {
-        if (mode.allowsTraverseAllLabels()) {
-            return true;
-        }
-        if (securityNodeCursor == null) {
-            securityNodeCursor = internalCursors.allocateNodeCursor();
-        }
-        read.singleNode(storeCursor.neighbourNodeReference(), securityNodeCursor);
-        return securityNodeCursor.next();
+        return false;
     }
 
     @Override
@@ -210,7 +207,6 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Defau
         if (!isClosed()) {
             read = null;
             selection = null;
-            mode = null;
             storeCursor.close();
         }
         super.closeInternal();

@@ -38,7 +38,6 @@ import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.kernel.api.index.IndexProgressor;
@@ -234,7 +233,7 @@ abstract class GenericNativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>> 
             PropertyIndexQuery rangeQuery =
                     ValueCreatorUtil.rangeQuery(valueOf(updates[0]), true, valueOf(updates[2]), true);
             IndexProgressor.EntityValueClient filterClient = filterClient(iter, filter);
-            reader.query(filterClient, NULL_CONTEXT, AccessMode.Static.ACCESS, unconstrained(), rangeQuery);
+            reader.query(filterClient, NULL_CONTEXT, unconstrained(), rangeQuery);
 
             // then
             assertTrue(iter.hasNext());
@@ -320,7 +319,7 @@ abstract class GenericNativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>> 
             Arrays.sort(expectedValues, Values.COMPARATOR.reversed());
         }
         SimpleEntityValueClient client = new SimpleEntityValueClient();
-        reader.query(client, NULL_CONTEXT, AccessMode.Static.READ, constrained(supportedOrder, true), supportedQuery);
+        reader.query(client, NULL_CONTEXT, constrained(supportedOrder, true), supportedQuery);
         int i = 0;
         while (client.next()) {
             assertEquals(expectedValues[i++], client.values[0], "values in order");
@@ -339,19 +338,12 @@ abstract class GenericNativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>> 
             public void initialize(
                     IndexDescriptor descriptor,
                     IndexProgressor progressor,
-                    AccessMode accessMode,
                     boolean indexIncludesTransactionState,
                     boolean needStoreFilter,
                     IndexQueryConstraints constraints,
                     PropertyIndexQuery... query) {
                 iter.initialize(
-                        descriptor,
-                        progressor,
-                        accessMode,
-                        indexIncludesTransactionState,
-                        needStoreFilter,
-                        constraints,
-                        query);
+                        descriptor, progressor, indexIncludesTransactionState, needStoreFilter, constraints, query);
             }
 
             @Override

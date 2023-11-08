@@ -64,7 +64,6 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.TokenPredicate;
-import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
@@ -519,8 +518,7 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey, Tok
         }
 
         @Override
-        public void initialize(
-                IndexProgressor progressor, int token, LongIterator added, LongSet removed, AccessMode accessMode) {
+        public void initialize(IndexProgressor progressor, int token, LongIterator added, LongSet removed) {
             throw new UnsupportedOperationException("Did not expect to use this method");
         }
 
