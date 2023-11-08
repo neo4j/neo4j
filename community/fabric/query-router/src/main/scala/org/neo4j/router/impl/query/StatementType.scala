@@ -31,54 +31,63 @@ import org.neo4j.cypher.internal.planner.spi.ProcedureSignatureResolver
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.fabric.util.Folded.FoldableOps
 import org.neo4j.fabric.util.Folded.Stop
-import org.neo4j.router.impl.query.StatementType.CommandType.AdministrationCommand
-import org.neo4j.router.impl.query.StatementType.CommandType.CommandType
-import org.neo4j.router.impl.query.StatementType.CommandType.QueryCommand
-import org.neo4j.router.impl.query.StatementType.CommandType.SchemaCommand
+import org.neo4j.router.impl.query.StatementType.CommandOrQueryType.AdministrationCommand
+import org.neo4j.router.impl.query.StatementType.CommandOrQueryType.CommandOrQueryType
+import org.neo4j.router.impl.query.StatementType.CommandOrQueryType.Query
+import org.neo4j.router.impl.query.StatementType.CommandOrQueryType.SchemaCommand
+import org.neo4j.router.impl.query.StatementType.Mode.MaybeWrite
+import org.neo4j.router.impl.query.StatementType.Mode.Mode
+import org.neo4j.router.impl.query.StatementType.Mode.Read
+import org.neo4j.router.impl.query.StatementType.Mode.Write
 
 import scala.util.Try
 
-case class StatementType(commandType: CommandType, containsUpdatingClause: Option[Boolean]) {
+case class StatementType(statementType: CommandOrQueryType, private val mode: Mode) {
 
-  def isQueryCommand: Boolean =
-    commandType.eq(QueryCommand)
+  def isQuery: Boolean =
+    statementType.eq(Query)
 
   def isSchemaCommand: Boolean =
-    commandType.eq(SchemaCommand)
+    statementType.eq(SchemaCommand)
 
   def isReadQuery: Boolean =
-    isQueryCommand && containsUpdatingClause.contains(false)
+    isQuery && mode.eq(Read)
 
   def isWrite: Boolean =
-    containsUpdatingClause.getOrElse(false)
+    mode.eq(Write)
 
   override def toString: String = {
-    commandType match {
-      case AdministrationCommand       => "Administration command"
-      case SchemaCommand               => "Schema modification"
-      case QueryCommand if isReadQuery => "Read query"
-      case QueryCommand if isWrite     => "Write query"
-      case _                           => "Read query (with unresolved procedures)"
+    statementType match {
+      case AdministrationCommand => "Administration command"
+      case SchemaCommand         => "Schema modification"
+      case Query if isReadQuery  => "Read query"
+      case Query if isWrite      => "Write query"
+      case _                     => "Read query (with unresolved procedures)"
     }
   }
 }
 
 object StatementType {
 
-  object CommandType extends Enumeration {
-    type CommandType = Value
-    val AdministrationCommand, SchemaCommand, QueryCommand = Value
+  object CommandOrQueryType extends Enumeration {
+    type CommandOrQueryType = Value
+    val AdministrationCommand, SchemaCommand, Query = Value
+  }
+
+  object Mode extends Enumeration {
+    type Mode = Value
+    val Read, Write, MaybeWrite = Value
   }
 
   // Java access helpers
-  val AdministrationCommand: CommandType = CommandType.AdministrationCommand
-  val SchemaCommand: CommandType = CommandType.SchemaCommand
-  val QueryCommand: CommandType = CommandType.QueryCommand
+  val AdministrationCommand: CommandOrQueryType = CommandOrQueryType.AdministrationCommand
+  private val SchemaCommand: CommandOrQueryType = CommandOrQueryType.SchemaCommand
+  val Query: CommandOrQueryType = CommandOrQueryType.Query
 
-  def of(commandType: CommandType): StatementType = StatementType(commandType, None)
+  def of(commandType: CommandOrQueryType): StatementType = StatementType(commandType, MaybeWrite)
 
-  def of(commandType: CommandType, containsUpdates: Boolean): StatementType =
-    StatementType(commandType, Some(containsUpdates))
+  def of(commandType: CommandOrQueryType, containsUpdates: Boolean): StatementType =
+    StatementType(commandType, if (containsUpdates) Write else Read)
 
   /*
    * Creates a StatementType given a statement and a procedure signature resolver.
@@ -89,7 +98,7 @@ object StatementType {
     val maybeContainsUpdates = containsUpdates(statement, callClause => containsUpdates(callClause, resolver))
 
     statement match {
-      case _: Query                 => StatementType(QueryCommand, maybeContainsUpdates)
+      case _: Query                 => StatementType(Query, maybeContainsUpdates)
       case _: SchemaCommand         => StatementType(SchemaCommand, maybeContainsUpdates)
       case _: AdministrationCommand => StatementType(AdministrationCommand, maybeContainsUpdates)
     }
@@ -102,21 +111,21 @@ object StatementType {
    * - Some(FALSE) if `ast` does neither have any updating clause nor any unresolved procedure call(s).
    * - None        if `ast` does not have any updating clause, but does have unresolved procedure call(s).
    */
-  private def containsUpdates(ast: ASTNode, callClauseHandler: CallClause => Option[Boolean]): Option[Boolean] =
-    ast.folded[Option[Boolean]](Some(false))(merge) {
-      case _: UpdateClause          => Stop(Some(true))
+  private def containsUpdates(ast: ASTNode, callClauseHandler: CallClause => Mode): Mode =
+    ast.folded(Read)(merge) {
+      case _: UpdateClause          => Stop(Write)
       case c: CallClause            => Stop(callClauseHandler.apply(c))
-      case _: SchemaCommand         => Stop(Some(true))
-      case a: AdministrationCommand => Stop(if (a.isReadOnly) Some(false) else Some(true))
+      case _: SchemaCommand         => Stop(Write)
+      case a: AdministrationCommand => Stop(if (a.isReadOnly) Read else Write)
     }
 
-  private def containsUpdates(ast: CallClause): Option[Boolean] = ast match {
-    case _: UnresolvedCall                      => None
-    case c: ResolvedCall if c.containsNoUpdates => Some(false)
-    case _                                      => Some(true)
+  private def containsUpdates(ast: CallClause): Mode = ast match {
+    case _: UnresolvedCall                      => MaybeWrite
+    case c: ResolvedCall if c.containsNoUpdates => Read
+    case _                                      => Write
   }
 
-  private def containsUpdates(ast: CallClause, resolver: ProcedureSignatureResolver): Option[Boolean] = ast match {
+  private def containsUpdates(ast: CallClause, resolver: ProcedureSignatureResolver): Mode = ast match {
     case unresolved: UnresolvedCall => containsUpdates(tryResolve(unresolved, resolver))
     case c                          => containsUpdates(c)
   }
@@ -124,14 +133,10 @@ object StatementType {
   private def tryResolve(unresolved: UnresolvedCall, resolver: ProcedureSignatureResolver): CallClause =
     Try(ResolvedCall(resolver.procedureSignature)(unresolved)).getOrElse(unresolved)
 
-  private def merge: (Option[Boolean], Option[Boolean]) => Option[Boolean] = {
-    // If any of the two options are true (contains update clause) => then return true (contains updating clause)
-    case (maybeIsWrite1, maybeIsWrite2) if maybeIsWrite1.getOrElse(false) || maybeIsWrite2.getOrElse(false) =>
-      Some(true)
-    // If any of them does not yet know if they contain updates => return None
-    case (maybeIsWrite1, maybeIsWrite2) if maybeIsWrite1.isEmpty || maybeIsWrite2.isEmpty => None
-    // Both of them are read queries
-    case _ => Some(false)
-
+  private def merge: (Mode, Mode) => Mode = {
+    case (Write, _)   => Write
+    case (_, Write)   => Write
+    case (Read, Read) => Read
+    case _            => MaybeWrite
   }
 }
