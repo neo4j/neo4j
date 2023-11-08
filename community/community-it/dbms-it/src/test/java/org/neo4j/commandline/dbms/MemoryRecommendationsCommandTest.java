@@ -25,11 +25,6 @@ import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.bytesToString;
-import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.recommendHeapMemory;
-import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.recommendOsMemory;
-import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.recommendPageCacheMemory;
-import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.recommendTxStateMemory;
 import static org.neo4j.configuration.BootloaderSettings.additional_jvm;
 import static org.neo4j.configuration.BootloaderSettings.initial_heap_size;
 import static org.neo4j.configuration.BootloaderSettings.max_heap_size;
@@ -43,6 +38,11 @@ import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_max_off_heap_memory;
 import static org.neo4j.configuration.GraphDatabaseSettings.tx_state_memory_allocation;
 import static org.neo4j.configuration.SettingValueParsers.BYTES;
+import static org.neo4j.dbms.MemoryRecommendation.bytesToString;
+import static org.neo4j.dbms.MemoryRecommendation.recommendHeapMemory;
+import static org.neo4j.dbms.MemoryRecommendation.recommendOsMemory;
+import static org.neo4j.dbms.MemoryRecommendation.recommendPageCacheMemory;
+import static org.neo4j.dbms.MemoryRecommendation.recommendTxStateMemory;
 import static org.neo4j.internal.helpers.collection.MapUtil.store;
 import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.ByteUnit.exbiBytes;
@@ -65,6 +65,7 @@ import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings.TransactionStateMemoryAllocation;
 import org.neo4j.configuration.SettingImpl;
+import org.neo4j.dbms.MemoryRecommendation;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexSettingUtil;
@@ -319,9 +320,9 @@ class MemoryRecommendationsCommandTest {
         long bytesBelow100K = 17625;
 
         // when
-        String stringBelowK = MemoryRecommendationsCommand.bytesToString(bytesBelowK);
-        String stringBelow10K = MemoryRecommendationsCommand.bytesToString(bytesBelow10K);
-        String stringBelow100K = MemoryRecommendationsCommand.bytesToString(bytesBelow100K);
+        String stringBelowK = MemoryRecommendation.bytesToString(bytesBelowK);
+        String stringBelow10K = MemoryRecommendation.bytesToString(bytesBelow10K);
+        String stringBelow100K = MemoryRecommendation.bytesToString(bytesBelow100K);
 
         // then
         assertThat(stringBelowK).isEqualTo("1k");
