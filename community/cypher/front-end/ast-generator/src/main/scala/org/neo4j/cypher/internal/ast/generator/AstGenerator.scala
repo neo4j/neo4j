@@ -56,6 +56,7 @@ import org.neo4j.cypher.internal.ast.AssignRoleAction
 import org.neo4j.cypher.internal.ast.BuiltInFunctions
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.CollectExpression
+import org.neo4j.cypher.internal.ast.CommandClause
 import org.neo4j.cypher.internal.ast.CommandResultItem
 import org.neo4j.cypher.internal.ast.CompositeDatabaseManagementActions
 import org.neo4j.cypher.internal.ast.ConstraintVersion2
@@ -1640,13 +1641,14 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
         CommandResultItem(variable.name, aliasedVariable)(pos)
       }).toList
     val itemOrder = if (returnItems.items.nonEmpty) Some(returnItems.items.map(_.name).toList) else None
+    val (orderBy, where) = CommandClause.updateAliasedVariablesFromYieldInOrderByAndWhere(yieldClause)
     val withClause = With(
       distinct = false,
       ReturnItems(includeExisting = true, Seq(), itemOrder)(returnItems.position),
-      yieldClause.orderBy,
+      orderBy,
       yieldClause.skip,
       yieldClause.limit,
-      yieldClause.where,
+      where,
       withType = ParsedAsYield
     )(yieldClause.position)
 

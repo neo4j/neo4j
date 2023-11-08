@@ -40,6 +40,8 @@ import org.neo4j.cypher.internal.ast.ShowIndexesClause
 import org.neo4j.cypher.internal.ast.TextIndexes
 import org.neo4j.cypher.internal.ast.UniqueConstraints
 import org.neo4j.cypher.internal.ast.ValidSyntax
+import org.neo4j.cypher.internal.expressions.AllIterablePredicate
+import org.neo4j.cypher.internal.util.symbols.IntegerType
 
 /* Tests for listing indexes and constraints */
 class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
@@ -295,6 +297,169 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
       )(pos)),
       comparePosition = false
     )
+  }
+
+  test("SHOW INDEXES YIELD a ORDER BY a WHERE a = 1") {
+    assertAst(singleQuery(
+      ShowIndexesClause(
+        AllIndexes,
+        brief = false,
+        verbose = false,
+        None,
+        hasYield = true
+      )(pos),
+      yieldClause(
+        returnItems(variableReturnItem("a")),
+        Some(orderBy(sortItem(varFor("a")))),
+        where = Some(where(equals(varFor("a"), literalInt(1))))
+      )
+    ))
+  }
+
+  test("SHOW INDEXES YIELD a AS b ORDER BY b WHERE b = 1") {
+    assertAst(singleQuery(
+      ShowIndexesClause(
+        AllIndexes,
+        brief = false,
+        verbose = false,
+        None,
+        hasYield = true
+      )(pos),
+      yieldClause(
+        returnItems(aliasedReturnItem("a", "b")),
+        Some(orderBy(sortItem(varFor("b")))),
+        where = Some(where(equals(varFor("b"), literalInt(1))))
+      )
+    ))
+  }
+
+  test("SHOW INDEXES YIELD a AS b ORDER BY a WHERE a = 1") {
+    assertAst(singleQuery(
+      ShowIndexesClause(
+        AllIndexes,
+        brief = false,
+        verbose = false,
+        None,
+        hasYield = true
+      )(pos),
+      yieldClause(
+        returnItems(aliasedReturnItem("a", "b")),
+        Some(orderBy(sortItem(varFor("a")))),
+        where = Some(where(equals(varFor("a"), literalInt(1))))
+      )
+    ))
+  }
+
+  test("SHOW INDEXES YIELD a ORDER BY EXISTS { (a) } WHERE EXISTS { (a) }") {
+    assertAst(singleQuery(
+      ShowIndexesClause(
+        AllIndexes,
+        brief = false,
+        verbose = false,
+        None,
+        hasYield = true
+      )(pos),
+      yieldClause(
+        returnItems(variableReturnItem("a")),
+        Some(orderBy(sortItem(simpleExistsExpression(patternForMatch(nodePat(Some("a"))), None)))),
+        where = Some(where(simpleExistsExpression(patternForMatch(nodePat(Some("a"))), None)))
+      )
+    ))
+  }
+
+  test("SHOW INDEXES YIELD a ORDER BY EXISTS { (b) } WHERE EXISTS { (b) }") {
+    assertAst(singleQuery(
+      ShowIndexesClause(
+        AllIndexes,
+        brief = false,
+        verbose = false,
+        None,
+        hasYield = true
+      )(pos),
+      yieldClause(
+        returnItems(variableReturnItem("a")),
+        Some(orderBy(sortItem(simpleExistsExpression(patternForMatch(nodePat(Some("b"))), None)))),
+        where = Some(where(simpleExistsExpression(patternForMatch(nodePat(Some("b"))), None)))
+      )
+    ))
+  }
+
+  test("SHOW INDEXES YIELD a AS b ORDER BY COUNT { (b) } WHERE EXISTS { (b) }") {
+    assertAst(singleQuery(
+      ShowIndexesClause(
+        AllIndexes,
+        brief = false,
+        verbose = false,
+        None,
+        hasYield = true
+      )(pos),
+      yieldClause(
+        returnItems(aliasedReturnItem("a", "b")),
+        Some(orderBy(sortItem(simpleCountExpression(patternForMatch(nodePat(Some("b"))), None)))),
+        where = Some(where(simpleExistsExpression(patternForMatch(nodePat(Some("b"))), None)))
+      )
+    ))
+  }
+
+  test("SHOW INDEXES YIELD a AS b ORDER BY EXISTS { (a) } WHERE COLLECT { MATCH (a) RETURN a } <> []") {
+    assertAst(singleQuery(
+      ShowIndexesClause(
+        AllIndexes,
+        brief = false,
+        verbose = false,
+        None,
+        hasYield = true
+      )(pos),
+      yieldClause(
+        returnItems(aliasedReturnItem("a", "b")),
+        Some(orderBy(sortItem(simpleExistsExpression(patternForMatch(nodePat(Some("a"))), None)))),
+        where = Some(where(notEquals(
+          simpleCollectExpression(patternForMatch(nodePat(Some("a"))), None, return_(returnItem(varFor("a"), "a"))),
+          listOf()
+        )))
+      )
+    ))
+  }
+
+  test("SHOW INDEXES YIELD a AS b ORDER BY b + COUNT { () } WHERE b OR EXISTS { () }") {
+    assertAst(singleQuery(
+      ShowIndexesClause(
+        AllIndexes,
+        brief = false,
+        verbose = false,
+        None,
+        hasYield = true
+      )(pos),
+      yieldClause(
+        returnItems(aliasedReturnItem("a", "b")),
+        Some(orderBy(sortItem(add(varFor("b"), simpleCountExpression(patternForMatch(nodePat()), None))))),
+        where = Some(where(or(varFor("b"), simpleExistsExpression(patternForMatch(nodePat()), None))))
+      )
+    ))
+  }
+
+  test("SHOW INDEXES YIELD a AS b ORDER BY a + EXISTS { () } WHERE a OR ALL (x IN [1, 2] WHERE x IS :: INT)") {
+    assertAst(singleQuery(
+      ShowIndexesClause(
+        AllIndexes,
+        brief = false,
+        verbose = false,
+        None,
+        hasYield = true
+      )(pos),
+      yieldClause(
+        returnItems(aliasedReturnItem("a", "b")),
+        Some(orderBy(sortItem(add(varFor("a"), simpleExistsExpression(patternForMatch(nodePat()), None))))),
+        where = Some(where(or(
+          varFor("a"),
+          AllIterablePredicate(
+            varFor("x"),
+            listOfInt(1, 2),
+            Some(isTyped(varFor("x"), IntegerType(isNullable = true)(pos)))
+          )(pos)
+        )))
+      )
+    ))
   }
 
   // Negative tests for show indexes
@@ -654,6 +819,169 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
       )(pos)),
       comparePosition = false
     )
+  }
+
+  test("SHOW CONSTRAINTS YIELD a ORDER BY a WHERE a = 1") {
+    assertAst(singleQuery(
+      ShowConstraintsClause(
+        AllConstraints,
+        brief = false,
+        verbose = false,
+        None,
+        hasYield = true
+      )(pos),
+      yieldClause(
+        returnItems(variableReturnItem("a")),
+        Some(orderBy(sortItem(varFor("a")))),
+        where = Some(where(equals(varFor("a"), literalInt(1))))
+      )
+    ))
+  }
+
+  test("SHOW CONSTRAINTS YIELD a AS b ORDER BY b WHERE b = 1") {
+    assertAst(singleQuery(
+      ShowConstraintsClause(
+        AllConstraints,
+        brief = false,
+        verbose = false,
+        None,
+        hasYield = true
+      )(pos),
+      yieldClause(
+        returnItems(aliasedReturnItem("a", "b")),
+        Some(orderBy(sortItem(varFor("b")))),
+        where = Some(where(equals(varFor("b"), literalInt(1))))
+      )
+    ))
+  }
+
+  test("SHOW CONSTRAINTS YIELD a AS b ORDER BY a WHERE a = 1") {
+    assertAst(singleQuery(
+      ShowConstraintsClause(
+        AllConstraints,
+        brief = false,
+        verbose = false,
+        None,
+        hasYield = true
+      )(pos),
+      yieldClause(
+        returnItems(aliasedReturnItem("a", "b")),
+        Some(orderBy(sortItem(varFor("a")))),
+        where = Some(where(equals(varFor("a"), literalInt(1))))
+      )
+    ))
+  }
+
+  test("SHOW CONSTRAINTS YIELD a ORDER BY EXISTS { (a) } WHERE EXISTS { (a) }") {
+    assertAst(singleQuery(
+      ShowConstraintsClause(
+        AllConstraints,
+        brief = false,
+        verbose = false,
+        None,
+        hasYield = true
+      )(pos),
+      yieldClause(
+        returnItems(variableReturnItem("a")),
+        Some(orderBy(sortItem(simpleExistsExpression(patternForMatch(nodePat(Some("a"))), None)))),
+        where = Some(where(simpleExistsExpression(patternForMatch(nodePat(Some("a"))), None)))
+      )
+    ))
+  }
+
+  test("SHOW CONSTRAINTS YIELD a ORDER BY EXISTS { (b) } WHERE EXISTS { (b) }") {
+    assertAst(singleQuery(
+      ShowConstraintsClause(
+        AllConstraints,
+        brief = false,
+        verbose = false,
+        None,
+        hasYield = true
+      )(pos),
+      yieldClause(
+        returnItems(variableReturnItem("a")),
+        Some(orderBy(sortItem(simpleExistsExpression(patternForMatch(nodePat(Some("b"))), None)))),
+        where = Some(where(simpleExistsExpression(patternForMatch(nodePat(Some("b"))), None)))
+      )
+    ))
+  }
+
+  test("SHOW CONSTRAINTS YIELD a AS b ORDER BY COUNT { (b) } WHERE EXISTS { (b) }") {
+    assertAst(singleQuery(
+      ShowConstraintsClause(
+        AllConstraints,
+        brief = false,
+        verbose = false,
+        None,
+        hasYield = true
+      )(pos),
+      yieldClause(
+        returnItems(aliasedReturnItem("a", "b")),
+        Some(orderBy(sortItem(simpleCountExpression(patternForMatch(nodePat(Some("b"))), None)))),
+        where = Some(where(simpleExistsExpression(patternForMatch(nodePat(Some("b"))), None)))
+      )
+    ))
+  }
+
+  test("SHOW CONSTRAINTS YIELD a AS b ORDER BY EXISTS { (a) } WHERE COLLECT { MATCH (a) RETURN a } <> []") {
+    assertAst(singleQuery(
+      ShowConstraintsClause(
+        AllConstraints,
+        brief = false,
+        verbose = false,
+        None,
+        hasYield = true
+      )(pos),
+      yieldClause(
+        returnItems(aliasedReturnItem("a", "b")),
+        Some(orderBy(sortItem(simpleExistsExpression(patternForMatch(nodePat(Some("a"))), None)))),
+        where = Some(where(notEquals(
+          simpleCollectExpression(patternForMatch(nodePat(Some("a"))), None, return_(returnItem(varFor("a"), "a"))),
+          listOf()
+        )))
+      )
+    ))
+  }
+
+  test("SHOW CONSTRAINTS YIELD a AS b ORDER BY b + COUNT { () } WHERE b OR EXISTS { () }") {
+    assertAst(singleQuery(
+      ShowConstraintsClause(
+        AllConstraints,
+        brief = false,
+        verbose = false,
+        None,
+        hasYield = true
+      )(pos),
+      yieldClause(
+        returnItems(aliasedReturnItem("a", "b")),
+        Some(orderBy(sortItem(add(varFor("b"), simpleCountExpression(patternForMatch(nodePat()), None))))),
+        where = Some(where(or(varFor("b"), simpleExistsExpression(patternForMatch(nodePat()), None))))
+      )
+    ))
+  }
+
+  test("SHOW CONSTRAINTS YIELD a AS b ORDER BY a + EXISTS { () } WHERE a OR ALL (x IN [1, 2] WHERE x IS :: INT)") {
+    assertAst(singleQuery(
+      ShowConstraintsClause(
+        AllConstraints,
+        brief = false,
+        verbose = false,
+        None,
+        hasYield = true
+      )(pos),
+      yieldClause(
+        returnItems(aliasedReturnItem("a", "b")),
+        Some(orderBy(sortItem(add(varFor("a"), simpleExistsExpression(patternForMatch(nodePat()), None))))),
+        where = Some(where(or(
+          varFor("a"),
+          AllIterablePredicate(
+            varFor("x"),
+            listOfInt(1, 2),
+            Some(isTyped(varFor("x"), IntegerType(isNullable = true)(pos)))
+          )(pos)
+        )))
+      )
+    ))
   }
 
   // Negative tests for show constraints

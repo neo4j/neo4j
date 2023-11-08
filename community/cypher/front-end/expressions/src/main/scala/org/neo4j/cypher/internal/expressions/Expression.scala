@@ -121,8 +121,10 @@ abstract class Expression extends ASTNode {
    * This method must not be called before SemanticAnalysis has passed.
    * Otherwise an [[ExpressionWithComputedDependencies]] will not have computed
    * its dependencies.
+   *
+   * Setting `skipScopeExpression` to true will skip checking [[ScopeExpression]]
    */
-  def occurrences(variable: LogicalVariable): Set[Ref[Variable]] = {
+  def occurrences(variable: LogicalVariable, skipScopeExpression: Boolean = false): Set[Ref[Variable]] = {
     def visitOccurrence(
       acc: Expression.TreeAcc[Set[Ref[Variable]]],
       occurrence: Variable
@@ -132,7 +134,7 @@ abstract class Expression extends ASTNode {
     }
 
     this.folder.treeFold(Expression.TreeAcc[Set[Ref[Variable]]](Set.empty)) {
-      case scope: ScopeExpression =>
+      case scope: ScopeExpression if !skipScopeExpression =>
         acc =>
           val accStep1 = scope match {
             case ewcd: ExpressionWithComputedDependencies =>
@@ -161,13 +163,18 @@ abstract class Expression extends ASTNode {
    *
    * @param variable    the variable to replace
    * @param replacement the replacement expression
+   * @param skipExpressionsWithComputedDependencies allows skipping replacement for [[ExpressionWithComputedDependencies]]
    * @return this expression with `variable` replaced by `replacement`.
    */
-  def replaceAllOccurrencesBy(variable: LogicalVariable, replacement: => Expression): Expression = {
-    val occurrencesToReplace = occurrences(variable)
+  def replaceAllOccurrencesBy(
+    variable: LogicalVariable,
+    replacement: => Expression,
+    skipExpressionsWithComputedDependencies: Boolean = false
+  ): Expression = {
+    val occurrencesToReplace = occurrences(variable, skipExpressionsWithComputedDependencies)
     self.endoRewrite(bottomUp(Rewriter.lift {
-      case occurrence: Variable if occurrencesToReplace(Ref(occurrence)) => replacement
-      case ewcd: ExpressionWithComputedDependencies                      =>
+      case occurrence: Variable if occurrencesToReplace(Ref(occurrence))                        => replacement
+      case ewcd: ExpressionWithComputedDependencies if !skipExpressionsWithComputedDependencies =>
         // Rewrite scope dependencies.
         // No need to rewrite introducedVariables, as they will always shadow and can't be an occurrence of the same
         // variable.

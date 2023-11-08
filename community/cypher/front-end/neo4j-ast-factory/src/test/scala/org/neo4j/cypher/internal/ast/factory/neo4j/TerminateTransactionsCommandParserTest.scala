@@ -17,8 +17,10 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.cypher.internal.util.symbols.IntegerType
 
 /* Tests for terminating transactions */
 class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
@@ -510,6 +512,162 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
       ),
       comparePosition = false
     )
+  }
+
+  test("TERMINATE TRANSACTIONS YIELD a ORDER BY a WHERE a = 1") {
+    assertAst(singleQuery(
+      ast.TerminateTransactionsClause(
+        Left(List.empty),
+        List(commandResultItem("a")),
+        yieldAll = false,
+        None
+      )(pos),
+      withFromYield(
+        returnAllItems.withDefaultOrderOnColumns(List("a")),
+        Some(orderBy(sortItem(varFor("a")))),
+        where = Some(where(equals(varFor("a"), literalInt(1))))
+      )
+    ))
+  }
+
+  test("TERMINATE TRANSACTIONS YIELD a AS b ORDER BY b WHERE b = 1") {
+    assertAst(singleQuery(
+      ast.TerminateTransactionsClause(
+        Left(List.empty),
+        List(commandResultItem("a", Some("b"))),
+        yieldAll = false,
+        None
+      )(pos),
+      withFromYield(
+        returnAllItems.withDefaultOrderOnColumns(List("b")),
+        Some(orderBy(sortItem(varFor("b")))),
+        where = Some(where(equals(varFor("b"), literalInt(1))))
+      )
+    ))
+  }
+
+  test("TERMINATE TRANSACTIONS YIELD a AS b ORDER BY a WHERE a = 1") {
+    assertAst(singleQuery(
+      ast.TerminateTransactionsClause(
+        Left(List.empty),
+        List(commandResultItem("a", Some("b"))),
+        yieldAll = false,
+        None
+      )(pos),
+      withFromYield(
+        returnAllItems.withDefaultOrderOnColumns(List("b")),
+        Some(orderBy(sortItem(varFor("b")))),
+        where = Some(where(equals(varFor("b"), literalInt(1))))
+      )
+    ))
+  }
+
+  test("TERMINATE TRANSACTIONS YIELD a ORDER BY EXISTS { (a) } WHERE EXISTS { (a) }") {
+    assertAst(singleQuery(
+      ast.TerminateTransactionsClause(
+        Left(List.empty),
+        List(commandResultItem("a")),
+        yieldAll = false,
+        None
+      )(pos),
+      withFromYield(
+        returnAllItems.withDefaultOrderOnColumns(List("a")),
+        Some(orderBy(sortItem(simpleExistsExpression(patternForMatch(nodePat(Some("a"))), None)))),
+        where = Some(where(simpleExistsExpression(patternForMatch(nodePat(Some("a"))), None)))
+      )
+    ))
+  }
+
+  test("TERMINATE TRANSACTIONS YIELD a ORDER BY EXISTS { (b) } WHERE EXISTS { (b) }") {
+    assertAst(singleQuery(
+      ast.TerminateTransactionsClause(
+        Left(List.empty),
+        List(commandResultItem("a")),
+        yieldAll = false,
+        None
+      )(pos),
+      withFromYield(
+        returnAllItems.withDefaultOrderOnColumns(List("a")),
+        Some(orderBy(sortItem(simpleExistsExpression(patternForMatch(nodePat(Some("b"))), None)))),
+        where = Some(where(simpleExistsExpression(patternForMatch(nodePat(Some("b"))), None)))
+      )
+    ))
+  }
+
+  test("TERMINATE TRANSACTIONS YIELD a AS b ORDER BY COUNT { (b) } WHERE EXISTS { (b) }") {
+    assertAst(singleQuery(
+      ast.TerminateTransactionsClause(
+        Left(List.empty),
+        List(commandResultItem("a", Some("b"))),
+        yieldAll = false,
+        None
+      )(pos),
+      withFromYield(
+        returnAllItems.withDefaultOrderOnColumns(List("b")),
+        Some(orderBy(sortItem(simpleCountExpression(patternForMatch(nodePat(Some("b"))), None)))),
+        where = Some(where(simpleExistsExpression(patternForMatch(nodePat(Some("b"))), None)))
+      )
+    ))
+  }
+
+  test("TERMINATE TRANSACTIONS YIELD a AS b ORDER BY EXISTS { (a) } WHERE COLLECT { MATCH (a) RETURN a } <> []") {
+    assertAst(singleQuery(
+      ast.TerminateTransactionsClause(
+        Left(List.empty),
+        List(commandResultItem("a", Some("b"))),
+        yieldAll = false,
+        None
+      )(pos),
+      withFromYield(
+        returnAllItems.withDefaultOrderOnColumns(List("b")),
+        Some(orderBy(sortItem(simpleExistsExpression(patternForMatch(nodePat(Some("b"))), None)))),
+        where = Some(where(notEquals(
+          simpleCollectExpression(patternForMatch(nodePat(Some("b"))), None, return_(returnItem(varFor("b"), "a"))),
+          listOf()
+        )))
+      )
+    ))
+  }
+
+  test("TERMINATE TRANSACTIONS YIELD a AS b ORDER BY b + COUNT { () } WHERE b OR EXISTS { () }") {
+    assertAst(singleQuery(
+      ast.TerminateTransactionsClause(
+        Left(List.empty),
+        List(commandResultItem("a", Some("b"))),
+        yieldAll = false,
+        None
+      )(pos),
+      withFromYield(
+        returnAllItems.withDefaultOrderOnColumns(List("b")),
+        Some(orderBy(sortItem(add(varFor("b"), simpleCountExpression(patternForMatch(nodePat()), None))))),
+        where = Some(where(or(varFor("b"), simpleExistsExpression(patternForMatch(nodePat()), None))))
+      )
+    ))
+  }
+
+  test(
+    "TERMINATE TRANSACTIONS YIELD a AS b ORDER BY a + EXISTS { () } WHERE a OR ALL (x IN [1, 2] WHERE x IS :: INT)"
+  ) {
+    assertAst(singleQuery(
+      ast.TerminateTransactionsClause(
+        Left(List.empty),
+        List(commandResultItem("a", Some("b"))),
+        yieldAll = false,
+        None
+      )(pos),
+      withFromYield(
+        returnAllItems.withDefaultOrderOnColumns(List("b")),
+        Some(orderBy(sortItem(add(varFor("b"), simpleExistsExpression(patternForMatch(nodePat()), None))))),
+        where = Some(where(or(
+          varFor("b"),
+          AllIterablePredicate(
+            varFor("x"),
+            listOfInt(1, 2),
+            Some(isTyped(varFor("x"), IntegerType(isNullable = true)(pos)))
+          )(pos)
+        )))
+      )
+    ))
   }
 
   // Negative tests

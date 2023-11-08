@@ -24,8 +24,10 @@ import org.neo4j.cypher.internal.ast.ShowProceduresClause
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.User
 import org.neo4j.cypher.internal.ast.Where
+import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.StringLiteral
+import org.neo4j.cypher.internal.util.symbols.IntegerType
 
 /* Tests for listing procedures */
 class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
@@ -147,6 +149,151 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
       ),
       comparePosition = false
     )
+  }
+
+  test("SHOW PROCEDURES YIELD a ORDER BY a WHERE a = 1") {
+    assertAst(singleQuery(
+      ShowProceduresClause(
+        None,
+        None,
+        hasYield = true
+      )(pos),
+      yieldClause(
+        returnItems(variableReturnItem("a")),
+        Some(orderBy(sortItem(varFor("a")))),
+        where = Some(where(equals(varFor("a"), literalInt(1))))
+      )
+    ))
+  }
+
+  test("SHOW PROCEDURES YIELD a AS b ORDER BY b WHERE b = 1") {
+    assertAst(singleQuery(
+      ShowProceduresClause(
+        None,
+        None,
+        hasYield = true
+      )(pos),
+      yieldClause(
+        returnItems(aliasedReturnItem("a", "b")),
+        Some(orderBy(sortItem(varFor("b")))),
+        where = Some(where(equals(varFor("b"), literalInt(1))))
+      )
+    ))
+  }
+
+  test("SHOW PROCEDURES YIELD a AS b ORDER BY a WHERE a = 1") {
+    assertAst(singleQuery(
+      ShowProceduresClause(
+        None,
+        None,
+        hasYield = true
+      )(pos),
+      yieldClause(
+        returnItems(aliasedReturnItem("a", "b")),
+        Some(orderBy(sortItem(varFor("a")))),
+        where = Some(where(equals(varFor("a"), literalInt(1))))
+      )
+    ))
+  }
+
+  test("SHOW PROCEDURES YIELD a ORDER BY EXISTS { (a) } WHERE EXISTS { (a) }") {
+    assertAst(singleQuery(
+      ShowProceduresClause(
+        None,
+        None,
+        hasYield = true
+      )(pos),
+      yieldClause(
+        returnItems(variableReturnItem("a")),
+        Some(orderBy(sortItem(simpleExistsExpression(patternForMatch(nodePat(Some("a"))), None)))),
+        where = Some(where(simpleExistsExpression(patternForMatch(nodePat(Some("a"))), None)))
+      )
+    ))
+  }
+
+  test("SHOW PROCEDURES YIELD a ORDER BY EXISTS { (b) } WHERE EXISTS { (b) }") {
+    assertAst(singleQuery(
+      ShowProceduresClause(
+        None,
+        None,
+        hasYield = true
+      )(pos),
+      yieldClause(
+        returnItems(variableReturnItem("a")),
+        Some(orderBy(sortItem(simpleExistsExpression(patternForMatch(nodePat(Some("b"))), None)))),
+        where = Some(where(simpleExistsExpression(patternForMatch(nodePat(Some("b"))), None)))
+      )
+    ))
+  }
+
+  test("SHOW PROCEDURES YIELD a AS b ORDER BY COUNT { (b) } WHERE EXISTS { (b) }") {
+    assertAst(singleQuery(
+      ShowProceduresClause(
+        None,
+        None,
+        hasYield = true
+      )(pos),
+      yieldClause(
+        returnItems(aliasedReturnItem("a", "b")),
+        Some(orderBy(sortItem(simpleCountExpression(patternForMatch(nodePat(Some("b"))), None)))),
+        where = Some(where(simpleExistsExpression(patternForMatch(nodePat(Some("b"))), None)))
+      )
+    ))
+  }
+
+  test("SHOW PROCEDURES YIELD a AS b ORDER BY EXISTS { (a) } WHERE COLLECT { MATCH (a) RETURN a } <> []") {
+    assertAst(singleQuery(
+      ShowProceduresClause(
+        None,
+        None,
+        hasYield = true
+      )(pos),
+      yieldClause(
+        returnItems(aliasedReturnItem("a", "b")),
+        Some(orderBy(sortItem(simpleExistsExpression(patternForMatch(nodePat(Some("a"))), None)))),
+        where = Some(where(notEquals(
+          simpleCollectExpression(patternForMatch(nodePat(Some("a"))), None, return_(returnItem(varFor("a"), "a"))),
+          listOf()
+        )))
+      )
+    ))
+  }
+
+  test("SHOW PROCEDURES YIELD a AS b ORDER BY b + COUNT { () } WHERE b OR EXISTS { () }") {
+    assertAst(singleQuery(
+      ShowProceduresClause(
+        None,
+        None,
+        hasYield = true
+      )(pos),
+      yieldClause(
+        returnItems(aliasedReturnItem("a", "b")),
+        Some(orderBy(sortItem(add(varFor("b"), simpleCountExpression(patternForMatch(nodePat()), None))))),
+        where = Some(where(or(varFor("b"), simpleExistsExpression(patternForMatch(nodePat()), None))))
+      )
+    ))
+  }
+
+  test("SHOW PROCEDURES YIELD a AS b ORDER BY a + EXISTS { () } WHERE a OR ALL (x IN [1, 2] WHERE x IS :: INT)") {
+    assertAst(singleQuery(
+      ShowProceduresClause(
+        None,
+        None,
+        hasYield = true
+      )(pos),
+      yieldClause(
+        returnItems(aliasedReturnItem("a", "b")),
+        Some(orderBy(sortItem(add(varFor("a"), simpleExistsExpression(patternForMatch(nodePat()), None))))),
+        where = Some(where(or(
+          varFor("a"),
+          AllIterablePredicate(
+            varFor("x"),
+            listOfInt(1, 2),
+            Some(isTyped(varFor("x"), IntegerType(isNullable = true)(pos)))
+          )(pos)
+        )))
+      )
+    ))
   }
 
   // Negative tests

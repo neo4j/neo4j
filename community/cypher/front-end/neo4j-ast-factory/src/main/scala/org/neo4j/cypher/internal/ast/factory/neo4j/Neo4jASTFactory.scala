@@ -58,6 +58,7 @@ import org.neo4j.cypher.internal.ast.BtreeIndexes
 import org.neo4j.cypher.internal.ast.BuiltInFunctions
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.CollectExpression
+import org.neo4j.cypher.internal.ast.CommandClause
 import org.neo4j.cypher.internal.ast.CommandResultItem
 import org.neo4j.cypher.internal.ast.CompositeDatabaseManagementActions
 import org.neo4j.cypher.internal.ast.ConstraintVersion0
@@ -1607,13 +1608,14 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory)
   override def turnYieldToWith(yieldClause: Yield): Clause = {
     val returnItems = yieldClause.returnItems
     val itemOrder = if (returnItems.items.nonEmpty) Some(returnItems.items.map(_.name).toList) else None
+    val (orderBy, where) = CommandClause.updateAliasedVariablesFromYieldInOrderByAndWhere(yieldClause)
     With(
       distinct = false,
       ReturnItems(includeExisting = true, Seq(), itemOrder)(returnItems.position),
-      yieldClause.orderBy,
+      orderBy,
       yieldClause.skip,
       yieldClause.limit,
-      yieldClause.where,
+      where,
       withType = ParsedAsYield
     )(yieldClause.position)
   }

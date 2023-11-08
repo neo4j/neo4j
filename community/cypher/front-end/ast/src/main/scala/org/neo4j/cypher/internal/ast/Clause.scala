@@ -1554,6 +1554,40 @@ object CommandClause {
 
   def unapply(cc: CommandClause): Option[(List[ShowColumn], Option[Where])] =
     Some((cc.unfilteredColumns.columns, cc.where))
+
+  // Update variables in ORDER BY and WHERE to alias if renamed in YIELD
+  // To allow YIELD x AS y ORDER BY x WHERE x = 'something' (which is allowed in WITH)
+  // No need to update SKIP and LIMIT as those can only take integer values (for commands)
+  // This method lives here to not need to be duplicated in Neo4jASTFactory and AstGenerator
+  def updateAliasedVariablesFromYieldInOrderByAndWhere(yieldClause: Yield): (Option[OrderBy], Option[Where]) = {
+    val returnAliasesMap = yieldClause.returnItems.items.map(ri => (ri.expression, ri.alias)).toMap
+
+    def updateExpression(e: Expression): Expression = {
+      returnAliasesMap.filter {
+        // They should all be variables as that is what we allow parsing
+        // Only need replacing if there is a differing replacement value
+        // (parsing seems to add replacement even for unaliased columns (`YIELD x`))
+        // (also skips replacing `YIELD x AS x`)
+        case (ov: LogicalVariable, Some(nv)) => !nv.equals(ov)
+        case _                               => false
+      }.map {
+        // we know the key is a LogicalVariable and that the value exists based on previous filtering
+        case (key, value) => (key.asInstanceOf[LogicalVariable], value.get)
+      }.foldLeft(e) {
+        case (acc, (oldV, newV)) =>
+          // Computed dependencies aren't available before semantic analysis
+          acc.replaceAllOccurrencesBy(oldV, newV.copyId, skipExpressionsWithComputedDependencies = true)
+      }
+    }
+
+    val orderBy = yieldClause.orderBy.map(ob => {
+      val updatedSortItems = ob.sortItems.map(si => si.mapExpression(updateExpression))
+      ob.copy(updatedSortItems)(ob.position)
+    })
+    val where = yieldClause.where.map(w => w.mapExpressions(updateExpression))
+
+    (orderBy, where)
+  }
 }
 
 // For a query to be allowed to run on system it needs to consist of:
