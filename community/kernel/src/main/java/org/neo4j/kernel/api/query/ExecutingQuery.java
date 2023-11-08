@@ -26,8 +26,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
@@ -99,12 +99,10 @@ public class ExecutingQuery {
     private volatile long pageFaultsOfClosedTransactionCommits;
 
     /**
-     * List of all transactions that are active executing this query.
+     * Map of all transactions that are active executing this query.
      * Needs to be thread-safe because other Threads traverse the list when calling {@link #snapshot()}.
-     * The first element of this list is always the outer transaction, given that {@link #onTransactionBound(TransactionBinding)}
-     * will be called with the outer transaction first.
      */
-    private final Queue<TransactionBinding> openTransactionBindings = new ConcurrentLinkedQueue<>();
+    private final ConcurrentMap<Long, TransactionBinding> openTransactionBindings = new ConcurrentHashMap<>();
 
     /**
      * Database id of the outer (first) transaction binding.
@@ -246,7 +244,7 @@ public class ExecutingQuery {
             namedDatabaseId = transactionBinding.namedDatabaseId;
             outerTransactionId = transactionBinding.transactionId;
         }
-        this.openTransactionBindings.add(transactionBinding);
+        this.openTransactionBindings.put(transactionBinding.transactionId, transactionBinding);
     }
 
     /**
@@ -254,13 +252,10 @@ public class ExecutingQuery {
      * Removes the TransactionBinding for that transaction.
      */
     public void onTransactionUnbound(long userTransactionId) {
-        this.openTransactionBindings.stream()
-                .filter(binding -> binding.transactionId == userTransactionId)
-                .findFirst()
-                .ifPresentOrElse(openTransactionBindings::remove, () -> {
-                    throw new IllegalStateException(
-                            "Unbound a transaction that was never bound. ID: " + userTransactionId);
-                });
+        var binding = openTransactionBindings.remove(userTransactionId);
+        if (binding == null) {
+            throw new IllegalStateException("Unbound a transaction that was never bound. ID: " + userTransactionId);
+        }
     }
 
     /**
@@ -269,18 +264,11 @@ public class ExecutingQuery {
      * NOTE: this only captures statistics that happened before commit, not during the commit, since this is called before
      */
     public void onPrepareTransactionOnbound(long userTransactionId) {
-        this.openTransactionBindings.stream()
-                .filter(binding -> binding.transactionId == userTransactionId)
-                .findFirst()
-                .ifPresentOrElse(
-                        foundBinding -> {
-                            recordStatisticsOfTransactionAboutToClose(
-                                    foundBinding.hitsSupplier.getAsLong(), foundBinding.faultsSupplier.getAsLong());
-                        },
-                        () -> {
-                            throw new IllegalStateException(
-                                    "Unbound a transaction that was never bound. ID: " + userTransactionId);
-                        });
+        var binding = openTransactionBindings.get(userTransactionId);
+        if (binding == null) {
+            throw new IllegalStateException("Unbound a transaction that was never bound. ID: " + userTransactionId);
+        }
+        recordStatisticsOfTransactionAboutToClose(binding.hitsSupplier.getAsLong(), binding.faultsSupplier.getAsLong());
     }
 
     @VisibleForTesting
@@ -396,7 +384,7 @@ public class ExecutingQuery {
         long activeLocks = 0;
         long hits = pageHitsOfClosedTransactions();
         long faults = pageFaultsOfClosedTransactions();
-        for (TransactionBinding tx : openTransactionBindings) {
+        for (TransactionBinding tx : openTransactionBindings.values()) {
             activeLocks += tx.getActiveLocks();
             hits += tx.hitsSupplier.getAsLong();
             faults += tx.faultsSupplier.getAsLong();
