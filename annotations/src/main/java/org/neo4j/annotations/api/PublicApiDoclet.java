@@ -41,6 +41,13 @@ import jdk.javadoc.internal.tool.DocEnvImpl;
  * that we can pass into {@link StandardDoclet#run(DocletEnvironment)} is {@link DocEnvImpl} because of internal cast inside of HtmlDoclet inside a
  * WorkArounds constructor.
  * In case if that will be fixed in future version we can implement {@link DocletEnvironment} instead of extending {@link DocEnvImpl}.
+ *
+ * <p/>
+ * Update for JDK 17 (JDK 21 still has the same cast).
+ * Cast still in place: `toolEnv = ((DocEnvImpl)this.configuration.docEnv).toolEnv` here:
+ * <a href="https://github.com/openjdk/jdk/blob/master/src/jdk.javadoc/share/classes/jdk/javadoc/internal/doclets/toolkit/WorkArounds.java#L96">WorkArounds constructor</a>
+ *
+ * For reference there is also unresolved issue registered: <a href="https://bugs.openjdk.org/browse/JDK-8224092">JDK-8224092</a>
  */
 public class PublicApiDoclet extends StandardDoclet {
     @Override
