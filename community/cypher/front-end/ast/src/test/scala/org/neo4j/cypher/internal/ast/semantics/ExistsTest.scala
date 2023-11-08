@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.ast.semantics
 
 import org.neo4j.cypher.internal.ast.ExistsExpression
+import org.neo4j.cypher.internal.ast.SemanticCheckInTest.SemanticCheckWithDefaultContext
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Pattern
@@ -41,7 +42,7 @@ class ExistsTest extends SemanticFunSuite {
     val expression = simpleExistsExpression(pattern, Some(where(property)))
 
     val result =
-      SemanticExpressionCheck.simple(expression)(SemanticState.clean)
+      SemanticExpressionCheck.simple(expression).run(SemanticState.clean)
 
     result.errors shouldBe empty
   }
@@ -51,7 +52,7 @@ class ExistsTest extends SemanticFunSuite {
     val expression = simpleExistsExpression(multiPattern, Some(where(property)))
 
     val result =
-      SemanticExpressionCheck.simple(expression)(SemanticState.clean)
+      SemanticExpressionCheck.simple(expression).run(SemanticState.clean)
 
     result.errors shouldBe empty
   }
@@ -60,7 +61,7 @@ class ExistsTest extends SemanticFunSuite {
     val expression = simpleExistsExpression(pattern, Some(where(failingProperty)))
 
     val result =
-      SemanticExpressionCheck.simple(expression)(SemanticState.clean)
+      SemanticExpressionCheck.simple(expression).run(SemanticState.clean)
 
     result.errors shouldBe Seq(SemanticError("Variable `missing` not defined", pos))
   }
@@ -71,7 +72,7 @@ class ExistsTest extends SemanticFunSuite {
     val semanticState = SemanticState.clean.declareVariable(variable("n"), CTBoolean).right.get
 
     val result =
-      SemanticExpressionCheck.simple(expression)(semanticState)
+      SemanticExpressionCheck.simple(expression).run(semanticState)
 
     result.errors shouldBe Seq(
       SemanticError("Type mismatch: n defined with conflicting type Boolean (expected Node)", pos)
@@ -84,7 +85,7 @@ class ExistsTest extends SemanticFunSuite {
     )(pos, None, None)
 
     val result =
-      SemanticExpressionCheck.simple(expression)(SemanticState.clean)
+      SemanticExpressionCheck.simple(expression).run(SemanticState.clean)
 
     result.errors shouldBe empty
   }
@@ -95,7 +96,7 @@ class ExistsTest extends SemanticFunSuite {
     )(pos, None, None)
 
     val result =
-      SemanticExpressionCheck.simple(expression)(SemanticState.clean)
+      SemanticExpressionCheck.simple(expression).run(SemanticState.clean)
 
     result.errors shouldBe Seq(
       SemanticError("An Exists Expression cannot contain any updates", pos)
@@ -108,7 +109,7 @@ class ExistsTest extends SemanticFunSuite {
     )(pos, None, None)
 
     val result =
-      SemanticExpressionCheck.simple(expression)(SemanticState.clean)
+      SemanticExpressionCheck.simple(expression).run(SemanticState.clean)
 
     result.errors shouldBe Seq(SemanticError("Variable `missing` not defined", pos))
   }
@@ -120,7 +121,7 @@ class ExistsTest extends SemanticFunSuite {
 
     val semanticState = SemanticState.clean.declareVariable(variable("n"), CTBoolean).right.get
 
-    val result = SemanticExpressionCheck.simple(expression)(semanticState)
+    val result = SemanticExpressionCheck.simple(expression).run(semanticState)
 
     result.errors shouldBe Seq(
       SemanticError("Type mismatch: n defined with conflicting type Boolean (expected Node)", pos)

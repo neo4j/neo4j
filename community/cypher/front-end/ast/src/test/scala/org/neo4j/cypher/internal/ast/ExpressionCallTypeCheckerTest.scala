@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast
 
+import org.neo4j.cypher.internal.ast.semantics.SemanticCheckContext
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
 import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
@@ -128,7 +129,8 @@ class ExpressionCallTypeCheckerTest extends CypherFunSuite {
       case (state, inner) => state.specifyType(inner, inner.possibleTypes).right.get
     }
     val expr = TypeExpr(argExpressions)
-    val check = SemanticExpressionCheck.checkTypes(expr, ExpressionSignatures)(semanticState)
+    val check =
+      SemanticExpressionCheck.checkTypes(expr, ExpressionSignatures).run(semanticState, SemanticCheckContext.default)
     (expr, check)
   }
 

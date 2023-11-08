@@ -18,6 +18,7 @@ package org.neo4j.cypher.internal.frontend.phases.rewriting.cnf
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
+import org.neo4j.cypher.internal.ast.semantics.SemanticCheckContext
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
@@ -127,7 +128,7 @@ class NormalizeSargablePredicatesTest extends CypherFunSuite with AstConstructio
     val expected =
       JavaCCParser.parse(expectedQuery, OpenCypherExceptionFactory(None))
 
-    val checkResult = original.semanticCheck(SemanticState.clean)
+    val checkResult = original.semanticCheck.run(SemanticState.clean, SemanticCheckContext.default)
     val semanticTable = SemanticTable(types = checkResult.state.typeTable)
     val rewriter = normalizeSargablePredicatesRewriter(semanticTable)
 

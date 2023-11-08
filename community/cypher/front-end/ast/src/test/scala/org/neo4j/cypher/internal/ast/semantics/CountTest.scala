@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.ast.semantics
 
 import org.neo4j.cypher.internal.ast.CountExpression
+import org.neo4j.cypher.internal.ast.SemanticCheckInTest.SemanticCheckWithDefaultContext
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.MapExpression
@@ -54,7 +55,7 @@ class CountTest extends SemanticFunSuite {
   test("valid count expression passes semantic check") {
     val expression = simpleCountExpression(pattern, Some(where(property)))
 
-    val result = SemanticExpressionCheck.simple(expression)(SemanticState.clean)
+    val result = SemanticExpressionCheck.simple(expression).run(SemanticState.clean)
 
     result.errors shouldBe empty
   }
@@ -62,7 +63,7 @@ class CountTest extends SemanticFunSuite {
   test("inner where using missing identifier reports error") {
     val expression = simpleCountExpression(pattern, Some(where(failingProperty)))
 
-    val result = SemanticExpressionCheck.simple(expression)(SemanticState.clean)
+    val result = SemanticExpressionCheck.simple(expression).run(SemanticState.clean)
 
     result.errors shouldBe Seq(SemanticError("Variable `missing` not defined", pos))
   }
@@ -72,7 +73,7 @@ class CountTest extends SemanticFunSuite {
 
     val semanticState = SemanticState.clean.declareVariable(variable("n"), CTBoolean).right.get
 
-    val result = SemanticExpressionCheck.simple(expression)(semanticState)
+    val result = SemanticExpressionCheck.simple(expression).run(semanticState)
 
     result.errors shouldBe Seq(
       SemanticError("Type mismatch: n defined with conflicting type Boolean (expected Node)", pos)
@@ -86,7 +87,7 @@ class CountTest extends SemanticFunSuite {
 
     val semanticState = SemanticState.clean.declareVariable(variable("n"), CTNode).right.get
 
-    val result = SemanticExpressionCheck.simple(expression)(semanticState)
+    val result = SemanticExpressionCheck.simple(expression).run(semanticState)
 
     result.errors shouldBe empty
   }
@@ -98,7 +99,7 @@ class CountTest extends SemanticFunSuite {
 
     val semanticState = SemanticState.clean.declareVariable(variable("x"), CTNode).right.get
 
-    val result = SemanticExpressionCheck.simple(expression)(semanticState)
+    val result = SemanticExpressionCheck.simple(expression).run(semanticState)
 
     result.errors shouldBe empty
   }
@@ -109,7 +110,7 @@ class CountTest extends SemanticFunSuite {
 
     val semanticState = SemanticState.clean.declareVariable(variable("x"), CTNode).right.get
 
-    val result = SemanticExpressionCheck.simple(expression)(semanticState)
+    val result = SemanticExpressionCheck.simple(expression).run(semanticState)
 
     result.errors shouldBe empty
   }
@@ -120,7 +121,7 @@ class CountTest extends SemanticFunSuite {
 
     val semanticState = SemanticState.clean.declareVariable(variable("x"), CTNode).right.get
 
-    val result = SemanticExpressionCheck.simple(expression)(semanticState)
+    val result = SemanticExpressionCheck.simple(expression).run(semanticState)
 
     result.errors shouldBe empty
   }
@@ -132,7 +133,7 @@ class CountTest extends SemanticFunSuite {
 
     val semanticState = SemanticState.clean.declareVariable(variable("n"), CTNode).right.get
 
-    val result = SemanticExpressionCheck.simple(expression)(semanticState)
+    val result = SemanticExpressionCheck.simple(expression).run(semanticState)
 
     result.errors shouldBe empty
   }
@@ -144,7 +145,7 @@ class CountTest extends SemanticFunSuite {
 
     val semanticState = SemanticState.clean.declareVariable(variable("n"), CTNode).right.get
 
-    val result = SemanticExpressionCheck.simple(expression)(semanticState)
+    val result = SemanticExpressionCheck.simple(expression).run(semanticState)
 
     result.errors shouldBe empty
   }
@@ -156,7 +157,7 @@ class CountTest extends SemanticFunSuite {
 
     val semanticState = SemanticState.clean.declareVariable(variable("n"), CTNode).right.get
 
-    val result = SemanticExpressionCheck.simple(expression)(semanticState)
+    val result = SemanticExpressionCheck.simple(expression).run(semanticState)
 
     result.errors shouldBe empty
   }
@@ -168,7 +169,7 @@ class CountTest extends SemanticFunSuite {
 
     val semanticState = SemanticState.clean.declareVariable(variable("n"), CTNode).right.get
 
-    val result = SemanticExpressionCheck.simple(expression)(semanticState)
+    val result = SemanticExpressionCheck.simple(expression).run(semanticState)
 
     result.errors shouldBe empty
   }
@@ -179,7 +180,7 @@ class CountTest extends SemanticFunSuite {
     )(pos, None, None)
 
     val result =
-      SemanticExpressionCheck.simple(expression)(SemanticState.clean)
+      SemanticExpressionCheck.simple(expression).run(SemanticState.clean)
 
     result.errors shouldBe empty
   }
@@ -190,7 +191,7 @@ class CountTest extends SemanticFunSuite {
     )(pos, None, None)
 
     val result =
-      SemanticExpressionCheck.simple(expression)(SemanticState.clean)
+      SemanticExpressionCheck.simple(expression).run(SemanticState.clean)
 
     result.errors shouldBe Seq(
       SemanticError("A Count Expression cannot contain any updates", pos)
@@ -203,7 +204,7 @@ class CountTest extends SemanticFunSuite {
     )(pos, None, None)
 
     val result =
-      SemanticExpressionCheck.simple(expression)(SemanticState.clean)
+      SemanticExpressionCheck.simple(expression).run(SemanticState.clean)
 
     result.errors shouldBe Seq(SemanticError("Variable `missing` not defined", pos))
   }
@@ -215,7 +216,7 @@ class CountTest extends SemanticFunSuite {
 
     val semanticState = SemanticState.clean.declareVariable(variable("n"), CTBoolean).right.get
 
-    val result = SemanticExpressionCheck.simple(expression)(semanticState)
+    val result = SemanticExpressionCheck.simple(expression).run(semanticState)
 
     result.errors shouldBe Seq(
       SemanticError("Type mismatch: n defined with conflicting type Boolean (expected Node)", pos)

@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.ast.semantics
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.SemanticCheckInTest.SemanticCheckWithDefaultContext
 import org.neo4j.cypher.internal.expressions.DummyExpression
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Expression.SemanticContext
@@ -43,7 +44,7 @@ class SemanticAnalysisToolingTest extends CypherFunSuite with AstConstructionTes
     val state = (
       toTest.specifyType(CTNode | CTInteger, expression) chain
         toTest.expectType(CTNumber.covariant, expression)
-    )(SemanticState.clean).state
+    ).run(SemanticState.clean).state
 
     state.expressionType(expression).actual should equal(CTInteger.invariant)
   }
@@ -52,7 +53,7 @@ class SemanticAnalysisToolingTest extends CypherFunSuite with AstConstructionTes
     val result = (
       toTest.specifyType(CTNode | CTInteger, expression) chain
         toTest.expectType(CTString.covariant, expression)
-    )(SemanticState.clean)
+    ).run(SemanticState.clean)
 
     result.errors should have size 1
     result.errors.head.position should equal(expression.position)
@@ -68,7 +69,7 @@ class SemanticAnalysisToolingTest extends CypherFunSuite with AstConstructionTes
           expression,
           (expected: String, existing: String) => s"lhs was $expected yet rhs was $existing"
         )
-    )(SemanticState.clean)
+    ).run(SemanticState.clean)
 
     result.errors should have size 1
     result.errors.head.position should equal(expression.position)
@@ -86,7 +87,7 @@ class SemanticAnalysisToolingTest extends CypherFunSuite with AstConstructionTes
     val expression = ands(varExpr)
 
     // When
-    val checkResult = SemanticExpressionCheck.check(SemanticContext.Simple, expression).apply(SemanticState.clean)
+    val checkResult = SemanticExpressionCheck.check(SemanticContext.Simple, expression).run(SemanticState.clean)
 
     // Then
     checkResult.state.typeTable(varExpr).expected should be(Some(CTBoolean.covariant))

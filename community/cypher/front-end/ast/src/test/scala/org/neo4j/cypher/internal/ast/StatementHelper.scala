@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast
 
+import SemanticCheckInTest.SemanticCheckWithDefaultContext
 import org.neo4j.cypher.internal.ast.semantics.Scope
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
@@ -29,7 +30,7 @@ object StatementHelper extends Assertions {
     private val allVariables = ast.folder.findAllByClass[Variable]
 
     def semanticState(features: SemanticFeature*): SemanticState =
-      ast.semanticCheck(SemanticState.clean.withFeatures(features: _*)) match {
+      ast.semanticCheck.run(SemanticState.clean.withFeatures(features: _*)) match {
         case SemanticCheckResult(state, errors) =>
           if (errors.isEmpty) {
             state

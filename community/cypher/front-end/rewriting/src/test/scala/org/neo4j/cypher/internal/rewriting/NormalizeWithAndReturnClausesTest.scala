@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.rewriting
 
+import org.neo4j.cypher.internal.ast.semantics.SemanticCheckContext
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.MultipleDatabases
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
@@ -1230,7 +1231,7 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
     $expectedQuery
     but was rewritten to:${prettifier.asString(result)}"""
     )
-    result.semanticCheck(SemanticState.clean.withFeatures(MultipleDatabases))
+    result.semanticCheck.run(SemanticState.clean.withFeatures(MultipleDatabases), SemanticCheckContext.default)
   }
 
   override protected def assertRewrite(originalQuery: String, expectedQuery: String): Unit = {

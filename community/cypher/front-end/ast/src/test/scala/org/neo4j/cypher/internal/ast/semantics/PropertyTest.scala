@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast.semantics
 
+import org.neo4j.cypher.internal.ast.SemanticCheckInTest.SemanticCheckWithDefaultContext
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.symbols.CTAny
@@ -42,7 +43,7 @@ class PropertyTest extends SemanticFunSuite {
       val beforeState = SemanticState.clean.newChildScope.declareVariable(mapExpr, cypherType).right.get
 
       val propExpr = property(mapExpr, propertyKey)
-      val result = SemanticExpressionCheck.simple(propExpr)(beforeState)
+      val result = SemanticExpressionCheck.simple(propExpr).run(beforeState)
 
       result.errors shouldBe empty
       types(propExpr)(result.state) should equal(CTAny.covariant)
@@ -56,7 +57,7 @@ class PropertyTest extends SemanticFunSuite {
     val beforeState = SemanticState.clean.newChildScope.declareVariable(mapExpr, CTNode).right.get
 
     val propExpr = property(mapExpr, propertyKey)
-    val result = SemanticExpressionCheck.simple(property(mapExpr, propertyKey))(beforeState)
+    val result = SemanticExpressionCheck.simple(property(mapExpr, propertyKey)).run(beforeState)
 
     result.errors shouldBe empty
     types(propExpr)(result.state) should equal(StorableType.storableType)
@@ -69,7 +70,7 @@ class PropertyTest extends SemanticFunSuite {
     val beforeState = SemanticState.clean.newChildScope.declareVariable(mapExpr, CTRelationship).right.get
 
     val propExpr = property(mapExpr, propertyKey)
-    val result = SemanticExpressionCheck.simple(propExpr)(beforeState)
+    val result = SemanticExpressionCheck.simple(propExpr).run(beforeState)
 
     result.errors shouldBe empty
     types(propExpr)(result.state) should equal(StorableType.storableType)
@@ -81,7 +82,7 @@ class PropertyTest extends SemanticFunSuite {
 
     val beforeState = SemanticState.clean.newChildScope.declareVariable(mapExpr, CTInteger).right.get
 
-    val result = SemanticExpressionCheck.simple(property(mapExpr, propertyKey))(beforeState)
+    val result = SemanticExpressionCheck.simple(property(mapExpr, propertyKey)).run(beforeState)
 
     result.errors should equal(Seq(SemanticError(
       "Type mismatch: expected Map, Node, Relationship, Point, Duration, Date, Time, LocalTime, LocalDateTime or DateTime but was Integer",

@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.rewriting.rewriters
 
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
+import org.neo4j.cypher.internal.ast.semantics.SemanticCheckContext
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.inSequence
@@ -486,7 +487,8 @@ class addDependenciesToProjectionInSubqueryExpressionsTest extends CypherFunSuit
 
     val normalizedWithAndReturnClauses =
       original.endoRewrite(normalizeWithAndReturnClauses.getRewriter(cypherExceptionFactory))
-    val checkResult = normalizedWithAndReturnClauses.semanticCheck(SemanticState.clean)
+    val checkResult =
+      normalizedWithAndReturnClauses.semanticCheck.run(SemanticState.clean, SemanticCheckContext.default)
     val rewriter =
       inSequence(
         computeDependenciesForExpressions(checkResult.state),
