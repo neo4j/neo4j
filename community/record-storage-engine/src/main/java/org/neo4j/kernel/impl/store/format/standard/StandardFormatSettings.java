@@ -28,7 +28,11 @@ public final class StandardFormatSettings {
     static final int RELATIONSHIP_MAXIMUM_ID_BITS = 35;
     static final int PROPERTY_MAXIMUM_ID_BITS = 36;
     public static final int DYNAMIC_MAXIMUM_ID_BITS = 36;
-    public static final int LABEL_TOKEN_MAXIMUM_ID_BITS = 32;
+    // 31 bits is too much in some VMs. The token registry has an HashMap that internally uses
+    // an int[] for its keys. That array size is limited to Integer.MAX_VALUE - header.
+    // Not limiting ids to less than 31 bits here since depending on VM someone might have managed to
+    // create a token bigger than the Integer.MAX_VALUE - 8 we would want to limit it to.
+    public static final int LABEL_TOKEN_MAXIMUM_ID_BITS = 31;
     public static final int RELATIONSHIP_TYPE_TOKEN_MAXIMUM_ID_BITS = 16;
     static final int RELATIONSHIP_GROUP_MAXIMUM_ID_BITS = 35;
     public static final int SCHEMA_RECORD_ID_BITS = 32; // Should ideally be less than PROPERTY_MAXIMUM_ID_BITS.

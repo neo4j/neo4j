@@ -26,10 +26,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.collection.Dependencies.dependenciesOf;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.db_format;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.collection.Iterables.asList;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
 import static org.neo4j.internal.helpers.collection.Iterables.map;
@@ -37,48 +36,27 @@ import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
-import java.nio.file.OpenOption;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.function.LongSupplier;
 import java.util.stream.Stream;
-import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.Test;
-import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.graphdb.factory.module.id.IdContextFactory;
-import org.neo4j.graphdb.factory.module.id.IdContextFactoryBuilder;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
-import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGenerator;
-import org.neo4j.internal.id.IdSlotDistribution;
-import org.neo4j.internal.id.IdType;
-import org.neo4j.internal.id.SchemaIdType;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.TokenSet;
+import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
-import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
-import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
+import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.kernel.lifecycle.Lifespan;
-import org.neo4j.memory.EmptyMemoryTracker;
-import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
@@ -200,21 +178,23 @@ class LabelsAcceptanceTest {
 
     @Test
     void oversteppingMaxNumberOfLabelsShouldFailGracefully() throws IOException {
-        JobScheduler scheduler = JobSchedulerFactory.createScheduler();
-        DefaultPageCacheTracer cacheTracer = new DefaultPageCacheTracer();
-        MuninnPageCache.Configuration config = MuninnPageCache.config(1_000).pageCacheTracer(cacheTracer);
-        try (EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
-                Lifespan lifespan = new Lifespan(scheduler);
-                PageCache pageCache = new MuninnPageCache(swapper(fileSystem, cacheTracer), scheduler, config)) {
+        try (EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction()) {
 
             DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder()
                     .setFileSystem(fileSystem)
                     .noOpSystemGraphInitializer()
-                    .setExternalDependencies(
-                            dependenciesOf(createIdContextFactoryWithMaxedOutLabelTokenIds(fileSystem, scheduler)))
+                    .setConfig(db_format, FormatFamily.ALIGNED.name())
                     .build();
 
             GraphDatabaseService graphDatabase = managementService.database(DEFAULT_DATABASE_NAME);
+            IdGenerator idGenerator = ((GraphDatabaseAPI) graphDatabase)
+                    .getDependencyResolver()
+                    .resolveDependency(RecordStorageEngine.class)
+                    .testAccessNeoStores()
+                    .getLabelTokenStore()
+                    .getIdGenerator();
+            idGenerator.setHighId(Integer.MAX_VALUE + 1L);
+            idGenerator.markHighestWrittenAtHighId();
 
             // When
             try (Transaction tx = graphDatabase.beginTx()) {
@@ -719,77 +699,5 @@ class LabelsAcceptanceTest {
             tx.commit();
             return node;
         }
-    }
-
-    private IdContextFactory createIdContextFactoryWithMaxedOutLabelTokenIds(
-            FileSystemAbstraction fileSystem, JobScheduler jobScheduler) {
-        var cacheTracer = PageCacheTracer.NULL;
-        return IdContextFactoryBuilder.of(fileSystem, jobScheduler, Config.defaults(), cacheTracer)
-                .withIdGenerationFactoryProvider(
-                        any -> new DefaultIdGeneratorFactory(fileSystem, immediate(), cacheTracer, db.databaseName()) {
-                            @Override
-                            public IdGenerator open(
-                                    PageCache pageCache,
-                                    Path fileName,
-                                    IdType idType,
-                                    LongSupplier highId,
-                                    long maxId,
-                                    boolean readOnly,
-                                    Config config,
-                                    CursorContextFactory contextFactory,
-                                    ImmutableSet<OpenOption> openOptions,
-                                    IdSlotDistribution slotDistribution)
-                                    throws IOException {
-                                return super.open(
-                                        pageCache,
-                                        fileName,
-                                        idType,
-                                        highId,
-                                        maxId(idType, maxId, highId),
-                                        readOnly,
-                                        config,
-                                        contextFactory,
-                                        openOptions,
-                                        slotDistribution);
-                            }
-
-                            @Override
-                            public IdGenerator create(
-                                    PageCache pageCache,
-                                    Path fileName,
-                                    IdType idType,
-                                    long highId,
-                                    boolean throwIfFileExists,
-                                    long maxId,
-                                    boolean readOnly,
-                                    Config config,
-                                    CursorContextFactory contextFactory,
-                                    ImmutableSet<OpenOption> openOptions,
-                                    IdSlotDistribution slotDistribution)
-                                    throws IOException {
-                                return super.create(
-                                        pageCache,
-                                        fileName,
-                                        idType,
-                                        highId,
-                                        throwIfFileExists,
-                                        maxId(idType, maxId, () -> highId),
-                                        readOnly,
-                                        config,
-                                        contextFactory,
-                                        openOptions,
-                                        slotDistribution);
-                            }
-
-                            private long maxId(IdType idType, long maxId, LongSupplier highId) {
-                                return SchemaIdType.LABEL_TOKEN.equals(idType) ? highId.getAsLong() - 1 : maxId;
-                            }
-                        })
-                .build();
-    }
-
-    private static PageSwapperFactory swapper(
-            EphemeralFileSystemAbstraction fileSystem, PageCacheTracer pageCacheTracer) {
-        return new SingleFilePageSwapperFactory(fileSystem, pageCacheTracer, EmptyMemoryTracker.INSTANCE);
     }
 }
