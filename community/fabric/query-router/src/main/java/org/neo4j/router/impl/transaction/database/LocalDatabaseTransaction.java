@@ -122,12 +122,12 @@ public class LocalDatabaseTransaction implements DatabaseTransaction {
             Query query,
             QuerySubscriber querySubscriber,
             QueryStatementLifecycles.StatementLifecycle statementLifecycle) {
-        statementLifecycle.startExecution(true);
         return translateLocalError(() -> {
             var transactionalContext = transactionalContextFactory.newContextForQuery(
                     internalTransaction,
                     statementLifecycle.getMonitoredQuery(),
                     transactionInfo.queryExecutionConfiguration());
+            statementLifecycle.startExecution(true);
             openExecutionContexts.add(transactionalContext);
             var execution = queryExecutionEngine.executeQuery(
                     query.text(),
