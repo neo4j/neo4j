@@ -1176,7 +1176,6 @@ trait CartesianProductProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
     )
   ) {
     test(s"cartesian product keeps LHS index provided $orderString order") {
-      assume(!isParallel) // Parallel runtime cannot maintain provided order
       // given
       val n = sizeHint / 10
       val modulo = 100
