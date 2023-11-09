@@ -335,7 +335,6 @@ object ConflictFinder {
 
       (variable, (PossibleDeleteConflictPlans(plansThatIntroduceVar, plansThatReferenceVariable), conflictType)) <-
         deleteReadVariables(readsAndWrites, writePlan, possibleDeleteConflictPlans, possibleDeleteConflictPlanSnapshots)
-      if deleteOverlaps(plansThatIntroduceVar, Seq.empty)
 
       // For a ReadWriteConflict we need to place the Eager between the plans that reference the variable and the Delete plan.
       // For a WriteReadConflict we need to place the Eager between the Delete plan and the plan that introduced the variable.
