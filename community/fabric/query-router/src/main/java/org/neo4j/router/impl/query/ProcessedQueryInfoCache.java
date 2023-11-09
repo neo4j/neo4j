@@ -17,36 +17,51 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.router.impl.query.parsing;
+package org.neo4j.router.impl.query;
 
-import java.util.function.Supplier;
 import org.neo4j.cypher.internal.cache.CacheSize;
 import org.neo4j.cypher.internal.cache.CacheTracer;
 import org.neo4j.cypher.internal.cache.CaffeineCacheFactory;
 import org.neo4j.cypher.internal.cache.LFUCache;
 import org.neo4j.function.Observable;
-import org.neo4j.router.query.QueryPreParsedInfoParser;
+import org.neo4j.router.query.QueryProcessor;
+import org.neo4j.router.query.TargetService;
+import org.neo4j.util.VisibleForTesting;
 
-public class PreParsedInfoCache implements QueryPreParsedInfoParser.Cache {
+public class ProcessedQueryInfoCache {
 
-    private final LFUCache<String, QueryPreParsedInfoParser.PreParsedInfo> cache;
+    public static final String MONITOR_TAG = "cypher.cache.router";
 
-    public PreParsedInfoCache(
+    private final LFUCache<String, Value> cache;
+
+    @VisibleForTesting
+    public ProcessedQueryInfoCache(
             CaffeineCacheFactory cacheFactory, Observable<Integer> cacheSize, CacheTracer<String> tracer) {
         this.cache = new LFUCache<>(cacheFactory, new CacheSize.Dynamic(cacheSize), tracer);
     }
 
-    public PreParsedInfoCache(CaffeineCacheFactory cacheFactory, int cacheSize, CacheTracer<String> tracer) {
+    public ProcessedQueryInfoCache(CaffeineCacheFactory cacheFactory, int cacheSize, CacheTracer<String> tracer) {
         this.cache = new LFUCache<>(cacheFactory, new CacheSize.Static(cacheSize), tracer);
     }
 
-    @Override
-    public QueryPreParsedInfoParser.PreParsedInfo computeIfAbsent(
-            String query, Supplier<QueryPreParsedInfoParser.PreParsedInfo> supplier) {
-        return cache.computeIfAbsent(query, supplier::get);
+    public Value get(String query) {
+        var maybeValue = cache.get(query);
+        if (maybeValue.isEmpty()) {
+            return null;
+        }
+        return maybeValue.get();
     }
 
-    @Override
+    public void put(String query, Value value) {
+        cache.put(query, value);
+    }
+
+    public void remove(String query) {
+        cache.invalidate(query);
+    }
+
+    public record Value(TargetService.CatalogInfo catalogInfo, QueryProcessor.ProcessedQueryInfo processedQueryInfo) {}
+
     public long clearQueryCachesForDatabase(String databaseName) {
         // Currently, we just clear everything.
         // The reason is that this cache contains entries for databases

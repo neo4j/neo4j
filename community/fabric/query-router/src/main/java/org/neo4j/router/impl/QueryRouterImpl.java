@@ -44,8 +44,8 @@ import org.neo4j.kernel.impl.query.QueryRoutingMonitor;
 import org.neo4j.kernel.impl.query.QuerySubscriber;
 import org.neo4j.router.QueryRouter;
 import org.neo4j.router.QueryRouterException;
-import org.neo4j.router.impl.query.CompositeQueryPreParsedInfoService;
-import org.neo4j.router.impl.query.StandardQueryPreParsedInfoService;
+import org.neo4j.router.impl.query.CompositeTargetService;
+import org.neo4j.router.impl.query.StandardTargetService;
 import org.neo4j.router.impl.query.StatementType;
 import org.neo4j.router.impl.transaction.RouterTransactionContextImpl;
 import org.neo4j.router.impl.transaction.RouterTransactionImpl;
@@ -53,8 +53,8 @@ import org.neo4j.router.impl.transaction.RouterTransactionManager;
 import org.neo4j.router.location.LocationService;
 import org.neo4j.router.query.DatabaseReferenceResolver;
 import org.neo4j.router.query.Query;
-import org.neo4j.router.query.QueryPreParsedInfoParser;
-import org.neo4j.router.query.QueryPreParsedInfoService;
+import org.neo4j.router.query.QueryProcessor;
+import org.neo4j.router.query.TargetService;
 import org.neo4j.router.transaction.DatabaseTransactionFactory;
 import org.neo4j.router.transaction.RouterTransactionContext;
 import org.neo4j.router.transaction.RoutingInfo;
@@ -63,7 +63,7 @@ import org.neo4j.time.SystemNanoClock;
 
 public class QueryRouterImpl implements QueryRouter {
 
-    private final QueryPreParsedInfoParser queryPreParsedInfoParser;
+    private final QueryProcessor queryProcessor;
     private final DatabaseTransactionFactory<Location.Local> localDatabaseTransactionFactory;
     private final DatabaseTransactionFactory<Location.Remote> remoteDatabaseTransactionFactory;
     private final Function<RoutingInfo, LocationService> locationServiceFactory;
@@ -81,7 +81,7 @@ public class QueryRouterImpl implements QueryRouter {
             Config config,
             DatabaseReferenceResolver databaseReferenceResolver,
             Function<RoutingInfo, LocationService> locationServiceFactory,
-            QueryPreParsedInfoParser queryTargetParser,
+            QueryProcessor queryProcessor,
             DatabaseTransactionFactory<Location.Local> localDatabaseTransactionFactory,
             DatabaseTransactionFactory<Location.Remote> remoteDatabaseTransactionFactory,
             ErrorReporter errorReporter,
@@ -94,7 +94,7 @@ public class QueryRouterImpl implements QueryRouter {
         this.config = config;
         this.databaseReferenceResolver = databaseReferenceResolver;
         this.locationServiceFactory = locationServiceFactory;
-        this.queryPreParsedInfoParser = queryTargetParser;
+        this.queryProcessor = queryProcessor;
         this.localDatabaseTransactionFactory = localDatabaseTransactionFactory;
         this.remoteDatabaseTransactionFactory = remoteDatabaseTransactionFactory;
         this.errorReporter = errorReporter;
@@ -120,7 +120,7 @@ public class QueryRouterImpl implements QueryRouter {
         authorize(sessionDatabaseReference, incomingTransactionInfo.loginContext());
         var routingInfo = new RoutingInfo(
                 sessionDatabaseReference, transactionInfo.routingContext(), transactionInfo.accessMode());
-        var queryTargetService = createQueryPreParsedInfoService(routingInfo);
+        var queryTargetService = createTargetService(routingInfo);
         var locationService = createLocationService(routingInfo);
         var routerTransaction = createRouterTransaction(transactionInfo, transactionBookmarkManager);
         transactionManager.registerTransaction(routerTransaction);
@@ -138,12 +138,12 @@ public class QueryRouterImpl implements QueryRouter {
         return databaseReferenceResolver.resolve(sessionDatabaseName);
     }
 
-    private QueryPreParsedInfoService createQueryPreParsedInfoService(RoutingInfo routingInfo) {
+    private TargetService createTargetService(RoutingInfo routingInfo) {
         var sessionDatabaseReference = routingInfo.sessionDatabaseReference();
         if (sessionDatabaseReference.isComposite()) {
-            return new CompositeQueryPreParsedInfoService(sessionDatabaseReference);
+            return new CompositeTargetService(sessionDatabaseReference);
         } else {
-            return new StandardQueryPreParsedInfoService(sessionDatabaseReference, databaseReferenceResolver);
+            return new StandardTargetService(sessionDatabaseReference, databaseReferenceResolver);
         }
     }
 
@@ -178,19 +178,19 @@ public class QueryRouterImpl implements QueryRouter {
                 context.transactionInfo().statementLifecycleTransactionInfo(), query.text(), query.parameters(), null);
         statementLifecycle.startProcessing();
         try {
-            var preParsedInfo = queryPreParsedInfoParser.parseQuery(query);
-            StatementType statementType = preParsedInfo.statementType();
-            CypherExecutionMode executionMode = preParsedInfo.cypherExecutionMode();
+            var processedQueryInfo = queryProcessor.processQuery(query, context.targetService());
+            StatementType statementType = processedQueryInfo.statementType();
+            CypherExecutionMode executionMode = processedQueryInfo.cypherExecutionMode();
             AccessMode accessMode = context.transactionInfo().accessMode();
             context.verifyStatementType(statementType);
-            var target = context.preParsedInfo().target(preParsedInfo);
+            var target = processedQueryInfo.target();
             var location = context.locationService().locationOf(target);
             verifyAccessModeWithStatementType(executionMode, accessMode, statementType, location);
             updateQueryRouterMetric(location);
             var databaseTransaction =
                     context.transactionFor(location, transactionMode(accessMode, statementType, executionMode));
             statementLifecycle.doneRouterProcessing(
-                    preParsedInfo.obfuscationMetadata().get(), target.isComposite());
+                    processedQueryInfo.obfuscationMetadata().get(), target.isComposite());
             return databaseTransaction.executeQuery(query, subscriber, statementLifecycle);
         } catch (RuntimeException e) {
             statementLifecycle.endFailure(e);
@@ -224,7 +224,7 @@ public class QueryRouterImpl implements QueryRouter {
 
     @Override
     public long clearQueryCachesForDatabase(String databaseName) {
-        return queryPreParsedInfoParser.clearQueryCachesForDatabase(databaseName);
+        return queryProcessor.clearQueryCachesForDatabase(databaseName);
     }
 
     private void updateQueryRouterMetric(Location location) {

@@ -19,12 +19,21 @@
  */
 package org.neo4j.router.query;
 
+import java.util.List;
+import java.util.Optional;
+import org.neo4j.cypher.internal.ast.CatalogName;
 import org.neo4j.kernel.database.DatabaseReference;
 
 /**
- * Determines the target database for the given query
+ * Determines the target database for the given catalog information.
  */
-public interface QueryPreParsedInfoService {
+public interface TargetService {
 
-    DatabaseReference target(QueryPreParsedInfoParser.PreParsedInfo preparsedInfo);
+    DatabaseReference target(CatalogInfo catalogInfo);
+
+    sealed interface CatalogInfo permits SingleQueryCatalogInfo, UnionQueryCatalogInfo {}
+
+    record SingleQueryCatalogInfo(Optional<CatalogName> catalogName) implements CatalogInfo {}
+
+    record UnionQueryCatalogInfo(List<Optional<CatalogName>> catalogNames) implements CatalogInfo {}
 }

@@ -23,22 +23,24 @@ import java.util.Optional;
 import org.neo4j.cypher.internal.ast.CatalogName;
 import org.neo4j.exceptions.InvalidSemanticsException;
 import org.neo4j.kernel.database.DatabaseReference;
+import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.router.query.DatabaseReferenceResolver;
-import org.neo4j.router.query.QueryPreParsedInfoParser;
+import org.neo4j.router.query.TargetService;
 
-public class StandardQueryPreParsedInfoService extends AbstractQueryPreParsedInfoService {
+public class StandardTargetService implements TargetService {
 
+    private final DatabaseReference sessionDatabase;
     private final DatabaseReferenceResolver databaseReferenceResolver;
 
-    public StandardQueryPreParsedInfoService(
+    public StandardTargetService(
             DatabaseReference sessionDatabase, DatabaseReferenceResolver databaseReferenceResolver) {
-        super(sessionDatabase);
+        this.sessionDatabase = sessionDatabase;
         this.databaseReferenceResolver = databaseReferenceResolver;
     }
 
     @Override
-    public DatabaseReference target(QueryPreParsedInfoParser.PreParsedInfo preParsedInfo) {
-        var parsedTarget = toCatalogName(preParsedInfo.catalogInfo())
+    public DatabaseReference target(CatalogInfo catalogInfo) {
+        var parsedTarget = toCatalogName(catalogInfo)
                 .map(CatalogName::qualifiedNameString)
                 .map(databaseReferenceResolver::resolve);
         if (parsedTarget
@@ -53,12 +55,12 @@ public class StandardQueryPreParsedInfoService extends AbstractQueryPreParsedInf
         return parsedTarget.orElse(sessionDatabase);
     }
 
-    private Optional<CatalogName> toCatalogName(QueryPreParsedInfoParser.CatalogInfo catalogInfo) {
-        if (catalogInfo instanceof QueryPreParsedInfoParser.SingleQueryCatalogInfo singleQueryCatalogInfo) {
+    private Optional<CatalogName> toCatalogName(CatalogInfo catalogInfo) {
+        if (catalogInfo instanceof SingleQueryCatalogInfo singleQueryCatalogInfo) {
             return singleQueryCatalogInfo.catalogName();
         }
 
-        if (catalogInfo instanceof QueryPreParsedInfoParser.UnionQueryCatalogInfo unionQueryCatalogInfo) {
+        if (catalogInfo instanceof UnionQueryCatalogInfo unionQueryCatalogInfo) {
             var catalogName = unionQueryCatalogInfo.catalogNames().get(0);
             // We have to check for one specific combination of an ambient and explicit graph:
 
@@ -73,7 +75,9 @@ public class StandardQueryPreParsedInfoService extends AbstractQueryPreParsedInf
 
             if (catalogName.isPresent()
                     && unionQueryCatalogInfo.catalogNames().stream().anyMatch(Optional::isEmpty)) {
-                if (!sessionDatabase.fullName().name().equals(catalogName.get().qualifiedNameString())) {
+                var normalizedDatabaseName =
+                        new NormalizedDatabaseName(catalogName.get().qualifiedNameString());
+                if (!sessionDatabase.fullName().name().equals(normalizedDatabaseName.name())) {
                     throw new InvalidSemanticsException(
                             "Using multiple graphs in the same query is not supported on standard databases. "
                                     + "This capability is supported on composite databases only.");

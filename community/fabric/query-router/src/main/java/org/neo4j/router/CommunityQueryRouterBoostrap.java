@@ -20,6 +20,7 @@
 package org.neo4j.router;
 
 import static org.neo4j.cypher.internal.tracing.CompilationTracer.NO_COMPILATION_TRACING;
+import static org.neo4j.router.impl.query.ProcessedQueryInfoCache.MONITOR_TAG;
 import static org.neo4j.scheduler.Group.CYPHER_CACHE;
 import static org.neo4j.scheduler.JobMonitoringParams.systemJob;
 
@@ -67,8 +68,8 @@ import org.neo4j.router.impl.CommunityLocationService;
 import org.neo4j.router.impl.QueryRouterImpl;
 import org.neo4j.router.impl.bolt.QueryRouterBoltSpi;
 import org.neo4j.router.impl.query.DefaultDatabaseReferenceResolver;
-import org.neo4j.router.impl.query.parsing.PreParsedInfoCache;
-import org.neo4j.router.impl.query.parsing.StandardQueryPreParser;
+import org.neo4j.router.impl.query.ProcessedQueryInfoCache;
+import org.neo4j.router.impl.query.QueryProcessorImpl;
 import org.neo4j.router.impl.transaction.QueryRouterTransactionMonitor;
 import org.neo4j.router.impl.transaction.RouterTransactionManager;
 import org.neo4j.router.impl.transaction.database.LocalDatabaseTransactionFactory;
@@ -151,10 +152,8 @@ public class CommunityQueryRouterBoostrap extends CommonQueryRouterBoostrap {
         var monitors = resolve(Monitors.class);
         var cacheFactory = new ExecutorBasedCaffeineCacheFactory(
                 job -> monitoredExecutor.execute(systemJob("Query plan cache maintenance"), job));
-        var targetCache = new PreParsedInfoCache(
-                cacheFactory,
-                cypherConfig.queryCacheSize(),
-                monitors.newMonitor(CacheTracer.class, "cypher.cache.target"));
+        var targetCache = new ProcessedQueryInfoCache(
+                cacheFactory, cypherConfig.queryCacheSize(), monitors.newMonitor(CacheTracer.class, MONITOR_TAG));
         var preParser = new PreParser(cypherConfig);
         CypherPlannerConfiguration plannerConfig =
                 CypherPlannerConfiguration.fromCypherConfiguration(cypherConfig, config, true);
@@ -181,7 +180,7 @@ public class CommunityQueryRouterBoostrap extends CommonQueryRouterBoostrap {
                 config,
                 databaseReferenceResolver,
                 this::createLocationService,
-                new StandardQueryPreParser(
+                new QueryProcessorImpl(
                         targetCache, preParser, parsing, NO_COMPILATION_TRACING, () -> {}, globalProcedures),
                 new LocalDatabaseTransactionFactory(databaseProvider, transactionIdTracker),
                 createRemoteDatabaseTransactionFactory(),

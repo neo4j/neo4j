@@ -24,7 +24,7 @@ import org.neo4j.fabric.executor.Location;
 import org.neo4j.fabric.transaction.TransactionMode;
 import org.neo4j.router.impl.query.StatementType;
 import org.neo4j.router.location.LocationService;
-import org.neo4j.router.query.QueryPreParsedInfoService;
+import org.neo4j.router.query.TargetService;
 import org.neo4j.router.transaction.DatabaseTransaction;
 import org.neo4j.router.transaction.RouterTransaction;
 import org.neo4j.router.transaction.RouterTransactionContext;
@@ -35,7 +35,7 @@ public record RouterTransactionContextImpl(
         TransactionInfo transactionInfo,
         RoutingInfo routingInfo,
         RouterTransaction routerTransaction,
-        QueryPreParsedInfoService queryTargetService,
+        TargetService targetService,
         LocationService locationService,
         TransactionBookmarkManager txBookmarkManager)
         implements RouterTransactionContext {
@@ -46,8 +46,8 @@ public record RouterTransactionContextImpl(
     }
 
     @Override
-    public QueryPreParsedInfoService preParsedInfo() {
-        return queryTargetService;
+    public TargetService targetService() {
+        return targetService;
     }
 
     @Override

@@ -19,42 +19,27 @@
  */
 package org.neo4j.router.query;
 
-import java.util.List;
 import java.util.Optional;
-import java.util.function.Supplier;
-import org.neo4j.cypher.internal.ast.CatalogName;
 import org.neo4j.cypher.internal.options.CypherExecutionMode;
 import org.neo4j.cypher.internal.util.ObfuscationMetadata;
+import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.router.impl.query.StatementType;
 
 /**
- * Parse a query into a target database override
- *
- * A query can override the target database if it:
- * - contains a USE-clause, or
- * - contains a system admin command
+ * Parse a query and extract all information interesting for Query Router from it.
+ * It also might rewrite the query, so the query returned as result should be used
+ * in the steps after this one.
  */
-public interface QueryPreParsedInfoParser {
+public interface QueryProcessor {
 
-    record PreParsedInfo(
-            CatalogInfo catalogInfo,
+    record ProcessedQueryInfo(
+            DatabaseReference target,
+            Query rewrittenQuery,
             Optional<ObfuscationMetadata> obfuscationMetadata,
             StatementType statementType,
             CypherExecutionMode cypherExecutionMode) {}
 
-    sealed interface CatalogInfo permits SingleQueryCatalogInfo, UnionQueryCatalogInfo {}
-
-    record SingleQueryCatalogInfo(Optional<CatalogName> catalogName) implements CatalogInfo {}
-
-    record UnionQueryCatalogInfo(List<Optional<CatalogName>> catalogNames) implements CatalogInfo {}
-
-    PreParsedInfo parseQuery(Query query);
+    ProcessedQueryInfo processQuery(Query query, TargetService targetService);
 
     long clearQueryCachesForDatabase(String databaseName);
-
-    interface Cache {
-        PreParsedInfo computeIfAbsent(String query, Supplier<PreParsedInfo> supplier);
-
-        long clearQueryCachesForDatabase(String databaseName);
-    }
 }

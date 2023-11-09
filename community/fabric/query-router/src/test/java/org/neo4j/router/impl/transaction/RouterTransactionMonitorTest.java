@@ -56,7 +56,7 @@ import org.neo4j.logging.internal.LogService;
 import org.neo4j.router.QueryRouter;
 import org.neo4j.router.impl.QueryRouterImpl;
 import org.neo4j.router.query.DatabaseReferenceResolver;
-import org.neo4j.router.query.QueryPreParsedInfoParser;
+import org.neo4j.router.query.QueryProcessor;
 import org.neo4j.router.transaction.DatabaseTransactionFactory;
 import org.neo4j.router.transaction.TransactionInfo;
 import org.neo4j.time.FakeClock;
@@ -87,7 +87,7 @@ class RouterTransactionMonitorTest {
                 config,
                 databaseReferenceResolver,
                 ignored -> null,
-                mock(QueryPreParsedInfoParser.class),
+                mock(QueryProcessor.class),
                 mock(DatabaseTransactionFactory.class),
                 mock(DatabaseTransactionFactory.class),
                 mock(ErrorReporter.class),
