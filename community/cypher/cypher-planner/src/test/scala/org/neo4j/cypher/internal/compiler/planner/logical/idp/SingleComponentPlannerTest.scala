@@ -284,8 +284,8 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
 
     assertPlanSolvesHints(
       logicalPlans.filter {
-        case join: NodeHashJoin if join.nodes == Set("a") => true
-        case _                                            => false
+        case join: NodeHashJoin if join.nodes.map(_.name) == Set("a") => true
+        case _                                                        => false
       },
       context.staticComponents.planningAttributes.solveds,
       hint
@@ -345,8 +345,8 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
 
     assertPlanSolvesHints(
       logicalPlans.filter {
-        case join: NodeHashJoin if join.nodes == Set("b") => true
-        case _                                            => false
+        case join: NodeHashJoin if join.nodes.map(_.name) == Set("b") => true
+        case _                                                        => false
       },
       context.staticComponents.planningAttributes.solveds,
       hint
@@ -409,8 +409,8 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
 
     assertPlanSolvesHints(
       logicalPlans.filter {
-        case join: NodeHashJoin if join.nodes == Set("a") => true
-        case _                                            => false
+        case join: NodeHashJoin if join.nodes.map(_.name) == Set("a") => true
+        case _                                                        => false
       },
       context.staticComponents.planningAttributes.solveds,
       hint
@@ -418,6 +418,7 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
   }
 
   private def assertPlanSolvesHints(plans: Iterable[LogicalPlan], solveds: Solveds, hints: Hint*): Unit = {
+    plans should not be empty
     for (
       h <- hints;
       p <- plans
