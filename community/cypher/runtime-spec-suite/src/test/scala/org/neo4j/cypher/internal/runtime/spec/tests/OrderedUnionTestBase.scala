@@ -99,6 +99,62 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
     execute(query, runtime) should beColumns("n").withRows(singleColumn(expected))
   }
 
+  test("should nested ordered unions with limits under apply") {
+    val nodes = given {
+      nodeGraph(sizeHint)
+    }
+
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("n0")
+      .apply()
+      .|.limit(1)
+      .|.orderedUnion("n1 ASC")
+      .|.|.limit(sizeHint / 10)
+      .|.|.orderedUnion("n1 ASC")
+      .|.|.|.limit(sizeHint / 10)
+      .|.|.|.orderedUnion("n1 ASC")
+      .|.|.|.|.sort("n1 ASC")
+      .|.|.|.|.allNodeScan("n1")
+      .|.|.|.limit(sizeHint / 10)
+      .|.|.|.sort("n1 ASC")
+      .|.|.|.allNodeScan("n1")
+      .|.|.sort("n1 ASC")
+      .|.|.allNodeScan("n1")
+      .|.allNodeScan("n1")
+      .allNodeScan("n0")
+      .build()
+
+    execute(query, runtime) should beColumns("n").withRows(singleColumn(nodes))
+  }
+
+  test("should nested ordered unions with limits under nested applys") {
+    val nodes = given {
+      nodeGraph(sizeHint)
+    }
+
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("n0")
+      .apply()
+      .|.limit(1)
+      .|.apply()
+      .|.|.limit(1)
+      .|.|.orderedUnion("n2 ASC")
+      .|.|.|.orderedUnion("n2 ASC")
+      .|.|.|.|.orderedUnion("n2 ASC")
+      .|.|.|.|.|.sort("n2 ASC")
+      .|.|.|.|.|.allNodeScan("n2")
+      .|.|.|.|.sort("n2 ASC")
+      .|.|.|.|.allNodeScan("n2")
+      .|.|.|.sort("n2 ASC")
+      .|.|.|.allNodeScan("n2")
+      .|.|.allNodeScan("n2")
+      .|.allNodeScan("n1")
+      .allNodeScan("n0")
+      .build()
+
+    execute(query, runtime) should beColumns("n0").withRows(singleColumn(nodes))
+  }
+
   test("should union two empty streams") {
     givenGraph {
       nodeGraph(sizeHint)
