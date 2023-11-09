@@ -39,6 +39,37 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
   sizeHint: Int
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
+  test("should not fail when nested with limits") {
+    val nodes = given {
+      nodePropertyGraph(sizeHint, { case i => Map("propBool" -> (i % 2 == 0)) })
+    }
+
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("n0")
+      .apply()
+      .|.limit(1)
+      .|.selectOrSemiApply("bool")
+// NOTE: in pipelined this plan gets rewritten to something like the following
+//    .|.|.orderedUnion("n1 ASC")  // pipeline 7
+//    .|.|.|.limit(1)
+//    .|.|.|.orderedUnion("n1 ASC")  // pipeline 6
+//    .|.|.|.|.argument()  // pipeline 5
+//    .|.|.|.sort("n2 ASC")  // pipeline 4
+//    .|.|.|.allNodeScan("n2")  // pipeline 3
+//    .|.|.lhsUnionInputBuffer()
+      .|.|.orderedUnion("n1 ASC")
+      .|.|.|.argument()
+      .|.|.sort("n2 ASC")
+      .|.|.allNodeScan("n2")
+      .|.projection("n1.propBool AS bool")
+      .|.sort("n1 ASC") // pipeline 2
+      .|.allNodeScan("n1") // pipeline 1
+      .allNodeScan("n0") // pipeline 0
+      .build()
+
+    execute(query, runtime) should beColumns("n0").withRows(singleColumn(nodes))
+  }
+
   test("should union two empty streams") {
     givenGraph {
       nodeGraph(sizeHint)
