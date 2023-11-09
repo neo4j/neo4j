@@ -70,6 +70,35 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
     execute(query, runtime) should beColumns("n0").withRows(singleColumn(nodes))
   }
 
+  test("should nested ordered unions with limits") {
+    val nodes = given {
+      nodeGraph(sizeHint)
+    }
+
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("n")
+      .limit(sizeHint / 10)
+      .orderedUnion("n ASC")
+      .|.limit(sizeHint / 10)
+      .|.orderedUnion("n ASC")
+      .|.|.limit(sizeHint / 10)
+      .|.|.orderedUnion("n ASC")
+      .|.|.|.sort("n ASC")
+      .|.|.|.allNodeScan("n")
+      .|.|.sort("n ASC")
+      .|.|.allNodeScan("n")
+      .|.sort("n ASC")
+      .|.allNodeScan("n")
+      .allNodeScan("n")
+      .build()
+
+    val innerMost = (nodes ++ nodes).sortBy(_.getId).take(sizeHint / 10)
+    val inner = (nodes ++ innerMost).sortBy(_.getId).take(sizeHint / 10)
+    val expected = (nodes ++ inner).sortBy(_.getId).take(sizeHint / 10)
+
+    execute(query, runtime) should beColumns("n").withRows(singleColumn(expected))
+  }
+
   test("should union two empty streams") {
     givenGraph {
       nodeGraph(sizeHint)
