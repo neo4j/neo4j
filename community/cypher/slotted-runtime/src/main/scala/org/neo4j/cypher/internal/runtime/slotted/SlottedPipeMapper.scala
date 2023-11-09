@@ -1447,8 +1447,11 @@ class SlottedPipeMapper(
 
       case joinPlan: NodeHashJoin =>
         val nodes = joinPlan.nodes.toArray // Make sure that leftNodes and rightNodes have the same order
-        val leftNodes = KeyOffsets.create(slots, nodes)
+
+        val lhsSlots = slotConfigs(joinPlan.left.id)
         val rhsSlots = slotConfigs(joinPlan.right.id)
+
+        val leftNodes = KeyOffsets.create(lhsSlots, nodes)
         val rightNodes = KeyOffsets.create(rhsSlots, nodes)
 
         // Verify the assumption that the argument slots are the same on both sides

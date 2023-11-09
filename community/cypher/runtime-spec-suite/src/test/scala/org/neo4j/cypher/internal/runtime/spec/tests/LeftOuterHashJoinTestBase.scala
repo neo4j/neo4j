@@ -852,6 +852,67 @@ abstract class LeftOuterHashJoinTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("n").withRows(singleColumn(expected))
   }
 
+  test("should join when join-key is alias on rhs") {
+    val nodes = givenGraph {
+      nodeGraph(sizeHint)
+    }
+
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .leftOuterHashJoin("x")
+      .|.projection("y as x")
+      .|.allNodeScan("y")
+      .allNodeScan("x")
+      .build()
+
+    val result = execute(query, runtime)
+
+    val expected = nodes.map(n => Array(n, n))
+
+    result should beColumns("x", "y").withRows(expected)
+  }
+
+  test("should join when join-key is alias on lhs") {
+    val nodes = givenGraph {
+      nodeGraph(sizeHint)
+    }
+
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .leftOuterHashJoin("y")
+      .|.allNodeScan("y")
+      .projection("x as y")
+      .allNodeScan("x")
+      .build()
+
+    val result = execute(query, runtime)
+
+    val expected = nodes.map(n => Array(n, n))
+
+    result should beColumns("x", "y").withRows(expected)
+  }
+
+  test("should join when join-key is alias on both lhs and rhs") {
+    val nodes = givenGraph {
+      nodeGraph(sizeHint)
+    }
+
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("x", "y", "z")
+      .leftOuterHashJoin("z")
+      .|.projection("y as z")
+      .|.allNodeScan("y")
+      .projection("x as z")
+      .allNodeScan("x")
+      .build()
+
+    val result = execute(query, runtime)
+
+    val expected = nodes.map(n => Array(n, n, n))
+
+    result should beColumns("x", "y", "z").withRows(expected)
+  }
+
   // Emulates outer join.
   // Given keyed rows (k, v) and a key k',
   // return the rows that have a matching key (k', v)

@@ -574,4 +574,83 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](
       Range.inclusive(0, sizeHint)
         .map(i => Seq(stringValue(s"$i"), null, stringValue(s"${i + 2}"), stringValue(s"${i + 3}")))
   }
+
+  test("should join when join key is alias on rhs") {
+    // given
+    val nodes = givenGraph {
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("prop" -> i)
+        }
+      )
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b", "b2")
+      .valueHashJoin("a.prop=b2.prop")
+      .|.projection("b as b2")
+      .|.allNodeScan("b")
+      .allNodeScan("a")
+      .build()
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.map(n => Array(n, n, n))
+    runtimeResult should beColumns("a", "b", "b2").withRows(expected)
+  }
+
+  test("should join when join key is alias on lhs") {
+    // given
+    val nodes = givenGraph {
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("prop" -> i)
+        }
+      )
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b", "a2")
+      .valueHashJoin("a2.prop=b.prop")
+      .|.allNodeScan("b")
+      .projection("a as a2")
+      .allNodeScan("a")
+      .build()
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.map(n => Array(n, n, n))
+    runtimeResult should beColumns("a", "b", "a2").withRows(expected)
+  }
+
+  test("should join when join key is alias on both lhs and rhs") {
+    // given
+    val nodes = givenGraph {
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i => Map("prop" -> i)
+        }
+      )
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b", "a2", "b2")
+      .valueHashJoin("a2.prop=b2.prop")
+      .|.projection("b as b2")
+      .|.allNodeScan("b")
+      .projection("a as a2")
+      .allNodeScan("a")
+      .build()
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.map(n => Array(n, n, n, n))
+    runtimeResult should beColumns("a", "b", "a2", "b2").withRows(expected)
+  }
 }
