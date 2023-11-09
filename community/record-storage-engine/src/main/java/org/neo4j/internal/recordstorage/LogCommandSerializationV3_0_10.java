@@ -170,10 +170,9 @@ class LogCommandSerializationV3_0_10 extends LogCommandSerialization
         long firstLoop = channel.getLong();
         long owningNode = channel.getLong();
         RelationshipGroupRecord record = new RelationshipGroupRecord( id ).initialize( inUse, type, firstOut, firstIn, firstLoop, owningNode, next );
-        record.setRequiresSecondaryUnit( requireSecondaryUnit );
         if ( hasSecondaryUnit )
         {
-            record.setSecondaryUnitIdOnLoad( channel.getLong() );
+            record.setSecondaryUnitIdOnLoad( channel.getLong(), requireSecondaryUnit );
         }
         record.setUseFixedReferences( usesFixedReferenceFormat );
         return record;
@@ -205,10 +204,9 @@ class LogCommandSerializationV3_0_10 extends LogCommandSerialization
         long firstLoop = channel.getLong();
         long owningNode = channel.getLong();
         RelationshipGroupRecord record = new RelationshipGroupRecord( id ).initialize( inUse, type, firstOut, firstIn, firstLoop, owningNode, next );
-        record.setRequiresSecondaryUnit( requireSecondaryUnit );
         if ( hasSecondaryUnit )
         {
-            record.setSecondaryUnitIdOnLoad( channel.getLong() );
+            record.setSecondaryUnitIdOnLoad( channel.getLong(), requireSecondaryUnit );
         }
         record.setUseFixedReferences( usesFixedReferenceFormat );
         return record;
@@ -411,10 +409,9 @@ class LogCommandSerializationV3_0_10 extends LogCommandSerialization
             record = new NodeRecord( id ).initialize( false, nextProp, dense, nextRel, 0 );
             // labels
             labelField = channel.getLong();
-            record.setRequiresSecondaryUnit( requiresSecondaryUnit );
             if ( hasSecondaryUnit )
             {
-                record.setSecondaryUnitIdOnLoad( channel.getLong() );
+                record.setSecondaryUnitIdOnLoad( channel.getLong(), requiresSecondaryUnit );
             }
             record.setUseFixedReferences( usesFixedReferenceFormat );
         }
@@ -446,7 +443,6 @@ class LogCommandSerializationV3_0_10 extends LogCommandSerialization
             record = new RelationshipRecord( id );
             record.setLinks( channel.getLong(), channel.getLong(), channel.getInt() );
             record.setInUse( true );
-            record.setRequiresSecondaryUnit( requiresSecondaryUnit );
             record.setFirstPrevRel( channel.getLong() );
             record.setFirstNextRel( channel.getLong() );
             record.setSecondPrevRel( channel.getLong() );
@@ -457,7 +453,7 @@ class LogCommandSerializationV3_0_10 extends LogCommandSerialization
             record.setFirstInSecondChain( (extraByte & 0x2) > 0 );
             if ( hasSecondaryUnit )
             {
-                record.setSecondaryUnitIdOnLoad( channel.getLong() );
+                record.setSecondaryUnitIdOnLoad( channel.getLong(), requiresSecondaryUnit );
             }
             record.setUseFixedReferences( usesFixedReferenceFormat );
         }
@@ -537,7 +533,6 @@ class LogCommandSerializationV3_0_10 extends LogCommandSerialization
         boolean hasSecondaryUnit = bitFlag( flags, Record.HAS_SECONDARY_UNIT );
         boolean usesFixedReferenceFormat = bitFlag( flags, Record.USES_FIXED_REFERENCE_FORMAT );
 
-        record.setRequiresSecondaryUnit( requireSecondaryUnit );
         record.setUseFixedReferences( usesFixedReferenceFormat );
 
         long nextProp = channel.getLong(); // 8
@@ -556,7 +551,7 @@ class LogCommandSerializationV3_0_10 extends LogCommandSerialization
         }
         if ( hasSecondaryUnit )
         {
-            record.setSecondaryUnitIdOnLoad( channel.getLong() );
+            record.setSecondaryUnitIdOnLoad( channel.getLong(), requireSecondaryUnit );
         }
         int nrPropBlocks = channel.get();
         assert nrPropBlocks >= 0;

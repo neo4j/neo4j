@@ -30,7 +30,8 @@ import java.util.Objects;
  * <ul>
  *     <li>{@link #requiresSecondaryUnit()} set when a record is prepared, at a time where actual ids cannot be allocated, for one or more reasons.
  *     This state is accessed at some point later and if this record doesn't have a secondary unit it assigned already, such an id will be allocated
- *     and assigned {@link #setSecondaryUnitIdOnLoad(long)} and the {@link #setSecondaryUnitIdOnCreate(long)} flag raised because it was set right now.</li>
+ *     and assigned {@link #setSecondaryUnitIdOnLoad(long, boolean)} and the {@link #setSecondaryUnitIdOnCreate(long)}
+ *     flag raised because it was set right now.</li>
  *     <li>{@link #getSecondaryUnitId()} set when a large record requires a secondary unit. If such a large record is created right now
  *     (and not loaded from store) the {@link #setSecondaryUnitIdOnCreate(long)} should also be set to reflect this fact.</li>
  *     <li>{@link #isSecondaryUnitCreated()} whether or not the secondary unit in this record (assuming it has one) was created now
@@ -120,25 +121,27 @@ public abstract class AbstractBaseRecord
     }
 
     /**
-     * Sets a secondary record unit ID for this record on loading the record. Setting this id is separate from setting {@link #requiresSecondaryUnit()}
-     * since this secondary unit id may be used to just free that id at the time of updating in the store if a record goes from two to one unit.
+     * Sets a secondary record unit ID for this record on loading the record.
+     * This also requires being explicit about {@link #requiresSecondaryUnit()}, since not requiring a secondary unit but still having a pointer
+     * is a valid state at the time of updating in the store if a record goes from two to one unit.
      */
-    public void setSecondaryUnitIdOnLoad( long id )
+    public void setSecondaryUnitIdOnLoad( long id, boolean requiresSecondaryUnit )
     {
+        assert !requiresSecondaryUnit || id != NO_ID : "Secondary unit must either not be required or have an ID";
         this.secondaryUnitId = id;
-        this.requiresSecondaryUnit = secondaryUnitId != NO_ID;
+        this.requiresSecondaryUnit = requiresSecondaryUnit;
     }
 
     /**
-     * Sets a secondary record unit ID for this record on creating the secondary unit. This method also sets the {@link #setSecondaryUnitIdOnLoad(long)}.
-     * Setting this id is separate from setting {@link #requiresSecondaryUnit()} since this secondary unit id may be used to just free that id
-     * at the time of updating in the store if a record goes from two to one unit.
+     * Sets a secondary record unit ID for this record on creating the secondary unit.
+     * Setting this also sets {@link #requiresSecondaryUnit()}.
      */
     public void setSecondaryUnitIdOnCreate( long id )
     {
+        assert id != NO_ID : "Secondary unit cannot be set as created with NO_ID";
         this.secondaryUnitId = id;
         this.createdSecondaryUnit = true;
-        this.requiresSecondaryUnit = secondaryUnitId != NO_ID;
+        this.requiresSecondaryUnit = true;
     }
 
     public boolean hasSecondaryUnitId()
@@ -147,7 +150,7 @@ public abstract class AbstractBaseRecord
     }
 
     /**
-     * @return secondary record unit ID set by {@link #setSecondaryUnitIdOnLoad(long)} or {@link #setSecondaryUnitIdOnCreate(long)}.
+     * @return secondary record unit ID set by {@link #setSecondaryUnitIdOnLoad(long, boolean)} or {@link #setSecondaryUnitIdOnCreate(long)}.
      */
     public long getSecondaryUnitId()
     {

@@ -20,7 +20,6 @@
 package org.neo4j.internal.recordstorage;
 
 import java.io.IOException;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 
 import org.junit.jupiter.api.RepeatedTest;
@@ -376,7 +375,6 @@ class LogCommandSerializationV4_0Test
                 if ( secondaryUnitId != NO_ID )
                 {
                     after.setSecondaryUnitIdOnCreate( secondaryUnitId );
-                    after.setRequiresSecondaryUnit( true );
                     after.setUseFixedReferences( random.nextBoolean() );
                 }
             }
@@ -398,25 +396,20 @@ class LogCommandSerializationV4_0Test
                     {
                         // before has none and after requires, i.e. grows into a created secondary unit
                         after.setSecondaryUnitIdOnCreate( secondaryUnitId );
-                        after.setRequiresSecondaryUnit( true );
                         break;
                     }
                     case 1:
                     {
                         // before has and after keeps it
-                        before.setSecondaryUnitIdOnLoad( secondaryUnitId );
-                        before.setRequiresSecondaryUnit( true );
-                        after.setSecondaryUnitIdOnLoad( secondaryUnitId );
-                        after.setRequiresSecondaryUnit( true );
+                        before.setSecondaryUnitIdOnLoad( secondaryUnitId, true );
+                        after.setSecondaryUnitIdOnLoad( secondaryUnitId, true );
                         break;
                     }
                     case 2:
                     {
                         // before has and after has none (shrink)
-                        before.setSecondaryUnitIdOnLoad( secondaryUnitId );
-                        before.setRequiresSecondaryUnit( true );
-                        after.setSecondaryUnitIdOnLoad( secondaryUnitId );
-                        after.setRequiresSecondaryUnit( false );
+                        before.setSecondaryUnitIdOnLoad( secondaryUnitId, true );
+                        after.setSecondaryUnitIdOnLoad( secondaryUnitId, false );
                         break;
                     }
                     default:
@@ -514,24 +507,23 @@ class LogCommandSerializationV4_0Test
         return random.nextLong( 1L << 50 );
     }
 
-    private static SchemaRecord createRandomSchemaRecord()
+    private SchemaRecord createRandomSchemaRecord()
     {
-        ThreadLocalRandom rng = ThreadLocalRandom.current();
         SchemaRecord record = new SchemaRecord( 42 );
-        boolean inUse = rng.nextBoolean();
+        boolean inUse = random.nextBoolean();
         if ( inUse )
         {
-            record.initialize( inUse, rng.nextLong() );
-            if ( rng.nextBoolean() )
+            record.initialize( inUse, randomEntityId() );
+            if ( random.nextBoolean() )
             {
                 record.setCreated();
             }
-            record.setConstraint( rng.nextBoolean() );
-            record.setUseFixedReferences( rng.nextBoolean() );
-            boolean requiresSecondaryUnit = rng.nextBoolean();
+            record.setConstraint( random.nextBoolean() );
+            record.setUseFixedReferences( random.nextBoolean() );
+            boolean requiresSecondaryUnit = random.nextBoolean();
             if ( requiresSecondaryUnit )
             {
-                record.setSecondaryUnitIdOnLoad( rng.nextLong() );
+                record.setSecondaryUnitIdOnLoad( randomEntityId(), true );
             }
         }
         else

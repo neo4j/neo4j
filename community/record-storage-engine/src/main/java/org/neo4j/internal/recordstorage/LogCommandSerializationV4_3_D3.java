@@ -204,10 +204,9 @@ class LogCommandSerializationV4_3_D3 extends LogCommandSerializationV4_2
         record.setHasExternalDegreesOut( hasExternalDegreesOut );
         record.setHasExternalDegreesIn( hasExternalDegreesIn );
         record.setHasExternalDegreesLoop( hasExternalDegreesLoop );
-        record.setRequiresSecondaryUnit( requireSecondaryUnit );
         if ( hasSecondaryUnit )
         {
-            record.setSecondaryUnitIdOnLoad( channel.getLong() );
+            record.setSecondaryUnitIdOnLoad( channel.getLong(), requireSecondaryUnit );
         }
         record.setUseFixedReferences( usesFixedReferenceFormat );
         return record;
@@ -246,10 +245,9 @@ class LogCommandSerializationV4_3_D3 extends LogCommandSerializationV4_2
         record.setHasExternalDegreesOut( hasExternalDegreesOut );
         record.setHasExternalDegreesIn( hasExternalDegreesIn );
         record.setHasExternalDegreesLoop( hasExternalDegreesLoop );
-        record.setRequiresSecondaryUnit( requireSecondaryUnit );
         if ( hasSecondaryUnit )
         {
-            record.setSecondaryUnitIdOnLoad( channel.getLong() );
+            record.setSecondaryUnitIdOnLoad( channel.getLong(), requireSecondaryUnit );
         }
         record.setUseFixedReferences( usesFixedReferenceFormat );
         return record;

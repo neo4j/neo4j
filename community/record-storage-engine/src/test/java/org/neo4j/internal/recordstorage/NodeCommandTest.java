@@ -160,7 +160,7 @@ class NodeCommandTest
         // a record that is changed to include a secondary unit
         NodeRecord before = new NodeRecord( 13 ).initialize( false, 2, false, 1, 0 );
         before.setInUse( true );
-        before.setSecondaryUnitIdOnLoad( NO_ID ); // this and the previous line set the defaults, they are here for clarity
+        before.setSecondaryUnitIdOnLoad( NO_ID, false ); // this sets the defaults, it is here for clarity
         NodeRecord after = new NodeRecord( 13 ).initialize( false, 2, false, 1, 0 );
         after.setInUse( true );
         after.setSecondaryUnitIdOnCreate( 14L );

@@ -332,7 +332,7 @@ class NodeStoreTest
         // GIVEN
         nodeStore = newNodeStore( fs );
         NodeRecord record = new NodeRecord( 5L );
-        record.setSecondaryUnitIdOnLoad( 10L );
+        record.setSecondaryUnitIdOnLoad( 10L, true );
         record.setInUse( true );
         try ( var storeCursor = storeCursors.writeCursor( NODE_CURSOR ) )
         {
@@ -359,7 +359,7 @@ class NodeStoreTest
         // GIVEN
         nodeStore = newNodeStore( fs );
         NodeRecord record = new NodeRecord( 5L );
-        record.setSecondaryUnitIdOnLoad( 10L );
+        record.setSecondaryUnitIdOnLoad( 10L, true );
         record.setInUse( true );
         try ( var storeCursor = storeCursors.writeCursor( NODE_CURSOR ) )
         {

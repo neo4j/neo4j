@@ -70,7 +70,7 @@ class LogCommandSerializationV3_0_10Test
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         RelationshipRecord before = new RelationshipRecord( 42 );
         before.initialize( true, 0, 1, 2, 3, 4, 5, 6, 7, true, true );
-        before.setSecondaryUnitIdOnLoad( 47 );
+        before.setSecondaryUnitIdOnLoad( 47, true );
         RelationshipRecord after = new RelationshipRecord( 42 );
         after.initialize( true, 0, 1, 8, 3, 4, 5, 6, 7, true, true );
         new Command.RelationshipCommand( writer(), before, after ).serialize( channel );
@@ -90,7 +90,7 @@ class LogCommandSerializationV3_0_10Test
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         RelationshipRecord before = new RelationshipRecord( 42 );
         before.initialize( true, 0, 1, 2, 3, 4, 5, 6, 7, true, true );
-        before.setSecondaryUnitIdOnLoad( 52 );
+        before.setSecondaryUnitIdOnLoad( 52, true );
         RelationshipRecord after = new RelationshipRecord( 42 );
         after.initialize( true, 0, 1, 8, 3, 4, 5, 6, 7, true, true );
         new Command.RelationshipCommand( writer(), before, after ).serialize( channel );
