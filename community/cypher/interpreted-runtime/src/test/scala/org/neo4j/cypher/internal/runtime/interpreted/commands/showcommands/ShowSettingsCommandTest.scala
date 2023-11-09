@@ -99,11 +99,11 @@ class ShowSettingsCommandTest extends ShowCommandTestBase {
     isDeprecated: Option[Boolean] = None
   ): Unit = {
     name.foreach(expected => resultMap("name") should be(Values.stringValue(expected)))
-    value.foreach(expected => resultMap("value") should be(Values.stringValue(expected)))
+    value.foreach(expected => resultMap("value") should be(Values.stringOrNoValue(expected)))
     isDynamic.foreach(expected => resultMap("isDynamic") should be(Values.booleanValue(expected)))
-    defaultValue.foreach(expected => resultMap("defaultValue") should be(Values.stringValue(expected)))
+    defaultValue.foreach(expected => resultMap("defaultValue") should be(Values.stringOrNoValue(expected)))
     description.foreach(expected => resultMap("description") should be(Values.stringValue(expected)))
-    startupValue.foreach(expected => resultMap("startupValue") should be(Values.stringValue(expected)))
+    startupValue.foreach(expected => resultMap("startupValue") should be(Values.stringOrNoValue(expected)))
     isExplicitlySet.foreach(expected => resultMap("isExplicitlySet") should be(Values.booleanValue(expected)))
     validValues.foreach(expected => resultMap("validValues") should be(Values.stringValue(expected)))
     isDeprecated.foreach(expected => resultMap("isDeprecated") should be(Values.booleanValue(expected)))

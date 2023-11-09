@@ -83,7 +83,7 @@ public final class SettingImpl<T> implements Setting<T> {
         if (value != null) {
             return parser.valueToString(value);
         }
-        return "No Value";
+        return null;
     }
 
     T solveDefault(T value, T defaultValue) {
