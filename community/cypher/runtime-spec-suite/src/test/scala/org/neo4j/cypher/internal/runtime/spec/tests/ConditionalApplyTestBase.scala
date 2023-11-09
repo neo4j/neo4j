@@ -80,7 +80,7 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
 
   test("conditional apply on nonempty lhs and empty rhs, where condition(lhs) always is true - with sorts") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(19, "RHS")
       nodeGraph(sizeHint)
     }
@@ -130,7 +130,7 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
 
   test("conditional apply on nonempty lhs and empty rhs - with sorts") {
     // given
-    given {
+    givenGraph {
       nodeGraph(19, "RHS")
       nodeGraph(sizeHint)
     }
@@ -180,7 +180,7 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
 
   test("conditional apply on nonempty lhs and nonempty rhs - with sorts") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
       nodeGraph(sizeHint, "RHS")
     }
@@ -255,7 +255,7 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
 
   test("conditional apply on the RHS of an apply - with sorts") {
     // given
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
       nodeGraph(sizeHint, "RHS")
     }
@@ -324,7 +324,7 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
   test("conditional apply with limit on rhs - with sorts") {
     val limit = 10
 
-    val unfilteredNodes = given {
+    val unfilteredNodes = givenGraph {
       val size = 100
       val nodes = nodeGraph(size)
       randomlyConnect(nodes, Connectivity(1, limit, "REL"))
@@ -612,7 +612,7 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
 
   test("node hash join on RHS of conditionalApply") {
     // given
-    given {
+    givenGraph {
       nodeGraph(10)
     }
 
@@ -653,7 +653,7 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
 
   test("union on RHS of conditionalApply") {
     // given
-    given {
+    givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -694,7 +694,7 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
 
   test("cartesian product on RHS of conditionalApply") {
     // given
-    given {
+    givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -735,7 +735,7 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
 
   test("node hash join on RHS of conditionalApply plus sorts") {
     // given
-    given {
+    givenGraph {
       nodeGraph(10)
     }
 
@@ -779,7 +779,7 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
 
   test("union on RHS of conditionalApply plus sorts") {
     // given
-    given {
+    givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -823,7 +823,7 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
 
   test("cartesian product on RHS of conditionalApply plus sorts") {
     // given
-    given {
+    givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -867,7 +867,7 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
 
   test("chained node hash join on RHS of conditionalApply plus sorts") {
     // given
-    given {
+    givenGraph {
       nodeGraph(10)
     }
 
@@ -930,7 +930,7 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
 
   test("chained union on RHS of conditionalApply plus sorts") {
     // given
-    given {
+    givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -1428,7 +1428,7 @@ trait OrderedConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
 
   test("node hash join on RHS of conditionalApply plus sorts - with leveraged order") {
     // given
-    given {
+    givenGraph {
       nodeGraph(10)
     }
 
@@ -1472,7 +1472,7 @@ trait OrderedConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
 
   test("union on RHS of conditionalApply plus sorts - with leveraged order") {
     // given
-    given {
+    givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -1516,7 +1516,7 @@ trait OrderedConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
 
   test("ordered union on RHS of conditionalApply plus sorts - with leveraged order") {
     // given
-    given {
+    givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -1560,7 +1560,7 @@ trait OrderedConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
 
   test("cartesian product on RHS of conditionalApply plus sorts - with leveraged order") {
     // given
-    given {
+    givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -1604,7 +1604,7 @@ trait OrderedConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
 
   test("chained node hash join on RHS of conditionalApply plus sorts - with leveraged order") {
     // given
-    given {
+    givenGraph {
       nodeGraph(10)
     }
 
@@ -1667,7 +1667,7 @@ trait OrderedConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
 
   test("chained union on RHS of conditionalApply plus sorts - with leveraged order") {
     // given
-    given {
+    givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -1730,7 +1730,7 @@ trait OrderedConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
 
   test("chained ordered union on RHS of conditionalApply plus sorts - with leveraged order") {
     // given
-    given {
+    givenGraph {
       nodeGraph(sizeHint)
     }
 
