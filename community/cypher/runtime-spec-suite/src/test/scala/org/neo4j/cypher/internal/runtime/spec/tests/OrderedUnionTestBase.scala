@@ -40,7 +40,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should not fail when nested with limits") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodePropertyGraph(sizeHint, { case i => Map("propBool" -> (i % 2 == 0)) })
     }
 
@@ -71,7 +71,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should nested ordered unions with limits") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -100,7 +100,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should nested ordered unions with limits under apply") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
     }
 
@@ -128,7 +128,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should nested ordered unions with limits under nested applys") {
-    val nodes = given {
+    val nodes = givenGraph {
       nodeGraph(sizeHint)
     }
 
