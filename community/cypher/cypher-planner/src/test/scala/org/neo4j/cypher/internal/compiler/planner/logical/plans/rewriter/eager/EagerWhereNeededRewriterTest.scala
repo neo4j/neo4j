@@ -7348,6 +7348,29 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     )
   }
 
+  test("Should be eager in Delete/Read conflict with read in Projection after the delete") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("e")
+      // r was removed by the detach delete, this will be a node with id -1
+      .projection("endNode(r) AS e")
+      // Default type of variables in tests is CTAny.invariant (which does not include CTNode).
+      .newVar("e", CTNode)
+      .detachDeleteNode("a")
+      .allRelationshipsScan("(a)-[r]->(b)")
+    val plan = planBuilder.build()
+
+    val result = eagerizePlan(planBuilder, plan)
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("e")
+        .projection("endNode(r) AS e")
+        .eager(ListSet(ReadDeleteConflict("e").withConflict(Conflict(Id(2), Id(1)))))
+        .detachDeleteNode("a")
+        .allRelationshipsScan("(a)-[r]->(b)")
+        .build()
+    )
+  }
+
   test("Should be eager in Delete/Read conflict with node read in ProjectEndpoints") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("count")
