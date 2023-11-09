@@ -124,7 +124,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
       .allNodeScan("n0")
       .build()
 
-    execute(query, runtime) should beColumns("n").withRows(singleColumn(nodes))
+    execute(query, runtime) should beColumns("n0").withRows(singleColumn(nodes))
   }
 
   test("should nested ordered unions with limits under nested applys") {
