@@ -341,8 +341,6 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should union under apply") {
-    assume(!isParallel)
-
     val size = Math.sqrt(sizeHint).toInt
     // given
     val nodes = givenGraph {
@@ -380,8 +378,6 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should union with alias under apply") {
-    assume(!isParallel)
-
     val size = Math.sqrt(sizeHint).toInt
     // given
     val nodes = givenGraph {
@@ -446,8 +442,6 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should nested union under apply") {
-    assume(!isParallel)
-
     val size = Math.max(sizeHint / 100, 10)
     // given
     val nodes = givenGraph {
@@ -479,8 +473,6 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should nested union under apply 2") {
-    assume(!isParallel)
-
     val sizeHint = 10
     val argSize = Math.max(sizeHint / 100, 10)
     val rangeLimit1 = Math.max(sizeHint / 100, 10)
@@ -515,8 +507,6 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should nested union under apply 3") {
-    assume(!isParallel)
-
     val sizeHint = 10
     val argSize = Math.max(sizeHint / 100, 10)
     val rangeLimit1 = Math.max(sizeHint / 100, 10)
@@ -551,8 +541,6 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should nested union under nested apply") {
-    assume(!isParallel)
-
     val size = Math.max(sizeHint / 100, 10)
     // given
     val nodes = givenGraph {
@@ -588,8 +576,6 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should nested union under nested apply 2") {
-    assume(!isParallel)
-
     val sizeHint = 10
     val argSize = Math.max(sizeHint / 100, 10)
     val rangeLimit = Math.max(sizeHint / 100, 30)
@@ -626,8 +612,6 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should unwind after union") {
-    assume(!isParallel)
-
     val size = sizeHint / 2
     // given
     val nodes = givenGraph {
@@ -684,8 +668,6 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should work with limit on RHS") {
-    assume(!isParallel) // TODO: Why does this fail with morsel size 1?
-
     val size = sizeHint / 2
     val nodes = givenGraph { nodeGraph(size) }
 
@@ -774,8 +756,6 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should union under apply with long slot aliases") {
-    assume(!isParallel)
-
     val size = Math.sqrt(sizeHint).toInt
     // given
     val nodes = givenGraph {
@@ -807,8 +787,6 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should union under apply with follow-up operator") {
-    assume(!isParallel)
-
     // given
     val nodes = givenGraph {
       nodeGraph(sizeHint)
@@ -1208,7 +1186,6 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("github issue #13169") {
-    assume(!isParallel)
     // given empty graph
 
     // when
@@ -1243,7 +1220,6 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("github issue #13169 variant") {
-    assume(!isParallel)
     // given empty graph
 
     // when

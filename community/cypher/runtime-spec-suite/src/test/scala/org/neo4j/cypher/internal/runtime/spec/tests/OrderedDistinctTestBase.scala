@@ -246,8 +246,6 @@ abstract class OrderedDistinctTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should keep input order") {
-    // NOTE: parallel input doesn't preserve order
-    assume(!isParallel)
     // given
     // (x is always 0, y is a sawtooth pattern)
     val f: Int => Int = i => i - ((i / 10) * 10) / 2
