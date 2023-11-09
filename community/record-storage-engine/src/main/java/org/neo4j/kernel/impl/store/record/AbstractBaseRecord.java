@@ -205,7 +205,7 @@ public abstract class AbstractBaseRecord
     @Override
     public int hashCode()
     {
-        return Objects.hash( id, inUse );
+        return Objects.hash( id, inUse, requiresSecondaryUnit, useFixedReferences );
     }
 
     @Override
@@ -225,7 +225,10 @@ public abstract class AbstractBaseRecord
         }
         AbstractBaseRecord other = (AbstractBaseRecord) obj;
         // Don't compare 'created' flag because it isn't properly set on reading a record from the store
-        return id == other.id && inUse == other.inUse;
+        return id == other.id
+               && inUse == other.inUse
+               && requiresSecondaryUnit == other.requiresSecondaryUnit
+               && useFixedReferences == other.useFixedReferences;
     }
 
     /**
@@ -242,6 +245,6 @@ public abstract class AbstractBaseRecord
         {
             return "";
         }
-        return String.format( ",%ssecondaryUnitId=%d", requiresSecondaryUnit() ? "+" : "-", getSecondaryUnitId() );
+        return String.format( ",%ssecondaryUnitId=%d", requiresSecondaryUnit() ? (createdSecondaryUnit ? "+" : "") : "-", getSecondaryUnitId() );
     }
 }

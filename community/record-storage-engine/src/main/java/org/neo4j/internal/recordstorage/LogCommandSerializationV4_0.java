@@ -142,7 +142,7 @@ class LogCommandSerializationV4_0 extends LogCommandSerialization
         boolean hasSecondaryUnit = bitFlag( flags, Record.HAS_SECONDARY_UNIT );
         boolean usesFixedReferenceFormat = bitFlag( flags, Record.USES_FIXED_REFERENCE_FORMAT );
 
-        int type = unsignedShortToInt( channel.getShort() );
+        int type = read2ByteRelationshipType( inUse, channel );
         long next = channel.getLong();
         long firstOut = channel.getLong();
         long firstIn = channel.getLong();
@@ -178,8 +178,7 @@ class LogCommandSerializationV4_0 extends LogCommandSerialization
         boolean hasSecondaryUnit = bitFlag( flags, Record.HAS_SECONDARY_UNIT );
         boolean usesFixedReferenceFormat = bitFlag( flags, Record.USES_FIXED_REFERENCE_FORMAT );
 
-        int type = unsignedShortToInt( channel.getShort() );
-        type |= unsignedByteToInt( channel.get() ) << Short.SIZE;
+        int type = read3ByteRelationshipType( inUse, channel );
         long next = channel.getLong();
         long firstOut = channel.getLong();
         long firstIn = channel.getLong();
@@ -193,6 +192,29 @@ class LogCommandSerializationV4_0 extends LogCommandSerialization
         }
         record.setUseFixedReferences( usesFixedReferenceFormat );
         return record;
+    }
+
+    protected static int read2ByteRelationshipType( boolean inUse, ReadableChannel channel ) throws IOException
+    {
+        int type = unsignedShortToInt( channel.getShort() );
+        if ( !inUse && type == (1 << Short.SIZE) - 1 )
+        {
+            type = -1;
+        }
+        return type;
+    }
+
+    protected static int read3ByteRelationshipType( boolean inUse, ReadableChannel channel ) throws IOException
+    {
+        int type = unsignedShortToInt( channel.getShort() );
+        type |= unsignedByteToInt( channel.get() ) << Short.SIZE;
+        if ( !inUse && type == (1 << Short.SIZE + Byte.SIZE) - 1 )
+        {
+            // This serialization format cannot distinguish between -1 and 0xFFFFFF so therefor in this case
+            // infer that type is -1 if it's !inUse
+            type = -1;
+        }
+        return type;
     }
 
     @Override
@@ -631,7 +653,7 @@ class LogCommandSerializationV4_0 extends LogCommandSerialization
     {
         // id+type+in_use(byte)+nr_of_bytes(int)+next_block(long)
         long id = channel.getLong();
-        assert id >= 0 && id <= (1L << 36) - 1 : id + " is not a valid dynamic record id";
+        assert id >= 0 && id <= (1L << 50) - 1 : id + " is not a valid dynamic record id";
         int type = channel.getInt();
         byte inUseFlag = channel.get();
         boolean inUse = (inUseFlag & Record.IN_USE.byteValue()) != 0;
@@ -648,7 +670,7 @@ class LogCommandSerializationV4_0 extends LogCommandSerialization
             assert nrOfBytes >= 0 && nrOfBytes < ((1 << 24) - 1) : nrOfBytes
                     + " is not valid for a number of bytes field of " + "a dynamic record";
             long nextBlock = channel.getLong();
-            assert (nextBlock >= 0 && nextBlock <= (1L << 36 - 1))
+            assert (nextBlock >= 0 && nextBlock <= (1L << 50 - 1))
                     || (nextBlock == Record.NO_NEXT_BLOCK.intValue()) : nextBlock
                     + " is not valid for a next record field of " + "a dynamic record";
             record.setNextBlock( nextBlock );

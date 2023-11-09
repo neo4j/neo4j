@@ -28,8 +28,6 @@ import org.neo4j.kernel.impl.store.record.MetaDataRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 
-import static org.neo4j.internal.helpers.Numbers.unsignedByteToInt;
-import static org.neo4j.internal.helpers.Numbers.unsignedShortToInt;
 import static org.neo4j.internal.recordstorage.Command.GroupDegreeCommand.directionFromCombinedKey;
 import static org.neo4j.internal.recordstorage.Command.GroupDegreeCommand.groupIdFromCombinedKey;
 import static org.neo4j.util.Bits.bitFlag;
@@ -196,7 +194,7 @@ class LogCommandSerializationV4_3_D3 extends LogCommandSerializationV4_2
         boolean hasExternalDegreesIn = bitFlag( flags, Record.ADDITIONAL_FLAG_2 );
         boolean hasExternalDegreesLoop = bitFlag( flags, Record.ADDITIONAL_FLAG_3 );
 
-        int type = unsignedShortToInt( channel.getShort() );
+        int type = read2ByteRelationshipType( inUse, channel );
         long next = channel.getLong();
         long firstOut = channel.getLong();
         long firstIn = channel.getLong();
@@ -238,8 +236,7 @@ class LogCommandSerializationV4_3_D3 extends LogCommandSerializationV4_2
         boolean hasExternalDegreesIn = bitFlag( flags, Record.ADDITIONAL_FLAG_2 );
         boolean hasExternalDegreesLoop = bitFlag( flags, Record.ADDITIONAL_FLAG_3 );
 
-        int type = unsignedShortToInt( channel.getShort() );
-        type |= unsignedByteToInt( channel.get() ) << Short.SIZE;
+        int type = read3ByteRelationshipType( inUse, channel );
         long next = channel.getLong();
         long firstOut = channel.getLong();
         long firstIn = channel.getLong();
