@@ -267,28 +267,6 @@ trait UpdateGraph {
     }
   }
 
-  def writeOnlyHeadOverlaps(
-    qgWithInfo: QgWithLeafInfo,
-    leafPlansPredicatesResolver: LeafPlansPredicatesResolver
-  ): Seq[EagernessReason] = {
-    if (!containsUpdates) {
-      Seq.empty
-    } else {
-      val readQg =
-        qgWithInfo.queryGraph.mergeQueryGraph.map(mergeQg => qgWithInfo.copy(solvedQg = mergeQg)).getOrElse(qgWithInfo)
-
-      val overlap = deleteOverlap(readQg, leafPlansPredicatesResolver)
-
-      if (overlap.nonEmpty) {
-        overlap
-      } else if (deleteOverlapWithMergeIn(qgWithInfo.queryGraph)) {
-        Seq(EagernessReason.Unknown)
-      } else {
-        Seq.empty
-      }
-    }
-  }
-
   def createsNodes: Boolean = mutatingPatterns.exists {
     case c: CreatePattern if c.nodes.nonEmpty                => true
     case _: MergeNodePattern                                 => true
@@ -551,12 +529,12 @@ trait UpdateGraph {
       deleteLabelExpressionOverlap(qgWithInfo, leafPlansPredicatesResolver)
     } else {
       val identifiersToRead =
-        qgWithInfo.unstablePatternNodes ++ qgWithInfo.queryGraph.allPatternRelationshipsRead.map(
-          _.name
-        ) ++ qgWithInfo.queryGraph.argumentIds
+        qgWithInfo.unstablePatternNodes ++
+          qgWithInfo.queryGraph.allPatternRelationshipsRead.map(_.name) ++
+          qgWithInfo.queryGraph.argumentIds
       val overlaps = (identifiersToDelete intersect identifiersToRead).toSeq
       if (overlaps.nonEmpty) {
-        overlaps.map(EagernessReason.ReadDeleteConflict(_))
+        overlaps.map(EagernessReason.ReadDeleteConflict)
       } else {
         deleteLabelExpressionOverlap(qgWithInfo, leafPlansPredicatesResolver)
       }
@@ -588,7 +566,7 @@ trait UpdateGraph {
       .flatMap { case (unstableNode, _) => Set(unstableNode) }
 
     if (nodesWithLabelOverlap.nonEmpty) {
-      nodesWithLabelOverlap.map(EagernessReason.ReadDeleteConflict(_)).toSeq
+      nodesWithLabelOverlap.map(EagernessReason.ReadDeleteConflict).toSeq
     } else {
       Seq.empty
     }
@@ -672,7 +650,7 @@ trait UpdateGraph {
     }.flatten
 
     if (overlappingLabels.nonEmpty) {
-      overlappingLabels.map(EagernessReason.LabelReadRemoveConflict(_))
+      overlappingLabels.map(EagernessReason.LabelReadRemoveConflict)
     } else {
       Seq.empty
     }
