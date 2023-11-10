@@ -37,8 +37,6 @@ import org.neo4j.cypher.internal.logical.plans.ProcedureCall
 import org.neo4j.cypher.internal.logical.plans.RelationshipLogicalLeafPlan
 import org.neo4j.cypher.internal.options.CypherEagerAnalyzerOption
 import org.neo4j.cypher.internal.util.NonEmptyList
-import org.neo4j.cypher.internal.util.symbols.CTNode
-import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.exceptions.InternalException
 
 import scala.annotation.tailrec
@@ -413,36 +411,15 @@ class EagerAnalyzerImpl private (context: LogicalPlanningContext) extends EagerA
 
     val conflicts = {
       val qgS = head.queryGraph.allQGsWithLeafInfo.map(_.queryGraph)
-      (qgS.flatMap(overlapsWithReadQg) ++
-        qgS.flatMap(_.overlapsHorizon(tail.horizon, leafPlansPredicatesResolver)) ++
-        qgS.flatMap(deleteReadOverlap(_, tail.queryGraph))).to(ListSet)
-    }
+      qgS.flatMap(overlapsWithReadQg) ++
+        qgS.flatMap(_.overlapsHorizon(tail.horizon, leafPlansPredicatesResolver))
+    }.to(ListSet)
     if (conflicts.nonEmpty)
       conflicts
     else if (tail.tail.isEmpty)
       ListSet.empty
     else
       writeReadConflict(head, tail.tail.get, leafPlansPredicatesResolver)
-  }
-
-  private def deleteReadOverlap(from: QueryGraph, to: QueryGraph): Seq[EagernessReason] = {
-    val deleted = from.identifiersToDelete
-    if (deletedRelationshipsOverlap(deleted, to) || deletedNodesOverlap(deleted, to))
-      Seq(EagernessReason.Unknown)
-    else
-      Seq.empty
-  }
-
-  private def deletedRelationshipsOverlap(deleted: Set[String], to: QueryGraph): Boolean = {
-    val relsToRead = to.allPatternRelationshipsRead
-    val relsDeleted = deleted.filter(id => semanticTable.typeFor(id).is(CTRelationship))
-    relsToRead.nonEmpty && relsDeleted.nonEmpty
-  }
-
-  private def deletedNodesOverlap(deleted: Set[String], to: QueryGraph): Boolean = {
-    val nodesToRead = to.allPatternNodesRead
-    val nodesDeleted = deleted.filter(id => semanticTable.typeFor(id).is(CTNode))
-    nodesToRead.nonEmpty && nodesDeleted.nonEmpty
   }
 
   private def writeAfterCallInTransactionsConflict(query: SinglePlannerQuery): Option[EagernessReason] = {

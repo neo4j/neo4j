@@ -812,8 +812,8 @@ class EagerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       .apply()
       .|.allNodeScan("start", "a")
       .eager(ListSet(
-        EagernessReason.ReadDeleteConflict("a"),
-        EagernessReason.Unknown // end is not found as an eagerness reason in IR-eagerness since `a` is found first.
+        EagernessReason.ReadDeleteConflict("a")
+        // end is not found as an eagerness reason in IR-eagerness since `a` is found first.
       ))
       .deleteNode("a")
       .nodeByLabelScan("a", "Label", IndexOrderNone)
@@ -1076,8 +1076,7 @@ class EagerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
           EagernessReason.ReadDeleteConflict("start"),
           EagernessReason.ReadDeleteConflict("end"),
           EagernessReason.ReadDeleteConflict("a"),
-          EagernessReason.ReadDeleteConflict("b"),
-          EagernessReason.Unknown
+          EagernessReason.ReadDeleteConflict("b")
         ))
         .deleteNode("x")
         .nodeByLabelScan("x", "Label", IndexOrderNone)
