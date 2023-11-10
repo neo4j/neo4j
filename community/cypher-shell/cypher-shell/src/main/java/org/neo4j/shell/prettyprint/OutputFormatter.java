@@ -21,7 +21,7 @@ package org.neo4j.shell.prettyprint;
 
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.neo4j.shell.prettyprint.CypherVariablesFormatter.escape;
+import static org.neo4j.internal.helpers.NameUtil.escapeName;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -55,7 +55,7 @@ public interface OutputFormatter {
 
     static String collectNodeLabels(Node node) {
         StringBuilder sb = new StringBuilder();
-        node.labels().forEach(label -> sb.append(COLON).append(escape(label)));
+        node.labels().forEach(label -> sb.append(COLON).append(escapeName(label)));
         return sb.toString();
     }
 
@@ -69,7 +69,7 @@ public interface OutputFormatter {
 
     static String mapAsString(Map<String, Object> map) {
         return map.entrySet().stream()
-                .map(e -> escape(e.getKey()) + COLON_SEPARATOR + e.getValue())
+                .map(e -> escapeName(e.getKey()) + COLON_SEPARATOR + e.getValue())
                 .collect(Collectors.joining(COMMA_SEPARATOR, "{", "}"));
     }
 
@@ -214,7 +214,7 @@ public interface OutputFormatter {
 
     default String relationshipAsString(Relationship relationship) {
         List<String> relationshipAsString = new ArrayList<>();
-        relationshipAsString.add(COLON + escape(relationship.type()));
+        relationshipAsString.add(COLON + escapeName(relationship.type()));
         relationshipAsString.add(mapAsStringWithEmpty(relationship.asMap(this::formatValue)));
 
         return "[" + joinWithSpace(relationshipAsString) + "]";

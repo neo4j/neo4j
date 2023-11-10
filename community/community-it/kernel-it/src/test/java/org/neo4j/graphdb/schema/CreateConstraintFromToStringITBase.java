@@ -29,14 +29,13 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterables;
-import org.neo4j.test.TestLabels;
 import org.neo4j.test.extension.Inject;
 
 @TestInstance(PER_CLASS)
 public class CreateConstraintFromToStringITBase {
-    protected static final Label LABEL = TestLabels.LABEL_ONE;
-    protected static final RelationshipType REL_TYPE = RelationshipType.withName("REL_TYPE");
-    protected static final String PROP_ONE = "propOne";
+    protected static final Label LABEL = Label.label("1LABEL");
+    protected static final RelationshipType REL_TYPE = RelationshipType.withName("REL$TYPE");
+    protected static final String PROP_ONE = "pro\\u0060p`one";
     protected static final String PROP_TWO = "propTwo";
 
     @Inject

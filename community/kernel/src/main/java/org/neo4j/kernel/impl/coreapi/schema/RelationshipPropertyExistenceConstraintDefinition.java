@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.coreapi.schema;
 
 import static java.lang.String.format;
+import static org.neo4j.internal.helpers.NameUtil.escapeName;
 
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.schema.ConstraintType;
@@ -42,10 +43,11 @@ public class RelationshipPropertyExistenceConstraintDefinition extends Relations
 
     @Override
     public String toString() {
+        final String relationshipTypeName = escapeName(relationshipType.name());
         return format(
                 "FOR ()-[%1$s:%2$s]-() REQUIRE %3$s IS NOT NULL",
-                relationshipType.name().toLowerCase(),
-                relationshipType.name(),
-                propertyText(relationshipType.name().toLowerCase()));
+                relationshipTypeName.toLowerCase(),
+                relationshipTypeName,
+                propertyText(relationshipTypeName.toLowerCase()));
     }
 }

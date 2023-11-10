@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.coreapi.schema;
 
 import static java.util.Arrays.asList;
 import static java.util.Objects.requireNonNull;
+import static org.neo4j.internal.helpers.NameUtil.escapeName;
 
 import java.util.Arrays;
 import java.util.stream.Collectors;
@@ -64,12 +65,13 @@ abstract class MultiPropertyConstraintDefinition extends PropertyConstraintDefin
 
     String propertyText(String entityVariable) {
         if (propertyKeys.length == 1) {
-            return entityVariable + "." + propertyKeys[0];
+            return entityVariable + "." + escapeName(propertyKeys[0]);
         } else {
             return "("
                     + Arrays.stream(propertyKeys)
-                            .map(p -> entityVariable + "." + p)
-                            .collect(Collectors.joining(",")) + ")";
+                            .map(p -> entityVariable + "." + escapeName(p))
+                            .collect(Collectors.joining(","))
+                    + ")";
         }
     }
 }

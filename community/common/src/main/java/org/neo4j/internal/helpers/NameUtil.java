@@ -17,27 +17,42 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.shell.prettyprint;
+package org.neo4j.internal.helpers;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public final class CypherVariablesFormatter {
+public class NameUtil {
+
+    private NameUtil() {}
+
     private static final String BACKTICK = "`";
+    private static final String BACKTICK_ESCAPED = BACKTICK + BACKTICK;
+    // Java allows for multiple 'u' in escaped unicodes
+    private static final Pattern BACKTICK_UNICODE_ESCAPED = Pattern.compile("\\\\u+0060");
     private static final Pattern ALPHA_NUMERIC = Pattern.compile("^[\\p{L}_][\\p{L}0-9_]*");
 
-    private CypherVariablesFormatter() {}
+    public static String escapeBackticks(String string) {
+        return BACKTICK_UNICODE_ESCAPED.matcher(string).replaceAll(BACKTICK).replaceAll(BACKTICK, BACKTICK_ESCAPED);
+    }
 
-    public static String escape(String string) {
+    public static String escapeSingleQuotes(String string) {
+        return string.replace("\\", "\\\\").replace("'", "\\'");
+    }
+
+    public static String forceEscapeName(String string) {
+        return BACKTICK + escapeBackticks(string) + BACKTICK;
+    }
+
+    public static String escapeName(String string) {
         Matcher alphaNumericMatcher = ALPHA_NUMERIC.matcher(string);
         if (!alphaNumericMatcher.matches()) {
-            String reEscapeBackTicks = string.replaceAll(BACKTICK, BACKTICK + BACKTICK);
-            return BACKTICK + reEscapeBackTicks + BACKTICK;
+            return forceEscapeName(string);
         }
         return string;
     }
 
-    public static String unescapedCypherVariable(String string) {
+    public static String unescapeName(String string) {
         Matcher alphaNumericMatcher = ALPHA_NUMERIC.matcher(string);
         if (!alphaNumericMatcher.matches()) {
             String substring = string.substring(1, string.length() - 1);

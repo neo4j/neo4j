@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.coreapi.schema;
 
 import static java.lang.String.format;
+import static org.neo4j.internal.helpers.NameUtil.escapeName;
 
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
@@ -39,10 +40,9 @@ public class NodeKeyConstraintDefinition extends NodeConstraintDefinition {
 
     @Override
     public String toString() {
+        final String labelName = escapeName(label.name());
         return format(
                 "FOR (%1$s:%2$s) REQUIRE %3$s IS NODE KEY",
-                label.name().toLowerCase(),
-                label.name(),
-                propertyText(label.name().toLowerCase()));
+                labelName.toLowerCase(), labelName, propertyText(labelName.toLowerCase()));
     }
 }

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.coreapi.schema;
 
 import static java.lang.String.format;
+import static org.neo4j.internal.helpers.NameUtil.escapeName;
 
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
@@ -39,10 +40,11 @@ public class RelationshipUniquenessConstraintDefinition extends RelationshipCons
 
     @Override
     public String toString() {
+        final String relationshipTypeName = escapeName(relationshipType.name());
         return format(
                 "FOR ()-[%s:%s]-() REQUIRE %s IS UNIQUE",
-                relationshipType.name().toLowerCase(),
-                relationshipType.name(),
-                propertyText(relationshipType.name().toLowerCase()));
+                relationshipTypeName.toLowerCase(),
+                relationshipTypeName,
+                propertyText(relationshipTypeName.toLowerCase()));
     }
 }
