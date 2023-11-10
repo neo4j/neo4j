@@ -253,6 +253,12 @@ object ConflictFinder {
 
   /**
    * The read variables for variable DELETE conflicts
+   * 
+   *  @return A map. For each variable, the possible read plans that can conflict with a given delete (`writePlan`).
+   *          Those are split into plansThatIntroduceVariable and plansThatReferenceVariable 
+   *          (see [[PossibleDeleteConflictPlans]]).
+   *          
+   *          Also return the conflict type for each variable.
    */
   private def deleteReadVariables(
     readsAndWrites: ReadsAndWrites,
@@ -263,13 +269,20 @@ object ConflictFinder {
       Ref[LogicalPlan]
     ) => Map[LogicalVariable, PossibleDeleteConflictPlans]
   ): Map[LogicalVariable, (PossibleDeleteConflictPlans, ConflictType)] = {
-    // If a variable exists in the snapshot, let's take it from there. This is when we have a read-write conflict.
-    // But we have to include other possibleDeleteConflictPlans that are not in the snapshot, to also cover write-read conflicts.
-    possibleDeleteConflictPlanSnapshots(readsAndWrites.writes.deletes, Ref(writePlan))
-      .view.mapValues[(PossibleDeleteConflictPlans, ConflictType)](x => (x, ReadWriteConflict)).toMap
-      .fuse(possibleDeleteConflictPlans(readsAndWrites.reads).view.mapValues(x => (x, WriteReadConflict)).toMap)(
-        (x, _) => x
-      )
+    // All plans that access the variable.
+    val all = possibleDeleteConflictPlans(readsAndWrites.reads)
+      .view.mapValues(x => (x, WriteReadConflict)).toMap
+    // In the snapshot, we will find only plans that access the variable that are upstream from the write plan.
+    val snapshot: Map[LogicalVariable, (PossibleDeleteConflictPlans, ConflictType)] =
+      possibleDeleteConflictPlanSnapshots(readsAndWrites.writes.deletes, Ref(writePlan))
+        .view.mapValues[(PossibleDeleteConflictPlans, ConflictType)](x => (x, ReadWriteConflict)).toMap
+
+    // If a variable only exists in `all` it is a WriteReadConflict, which we return unchanged here.
+    // A variable cannot _only_ exist in `snapshot`.
+    snapshot.fuse(all) {
+      // If a variable exists in `all` and `snapshot` it is a ReadWriteConflict. We return all plans.
+      case ((_, conflictType), (allPlans, _)) => (allPlans, conflictType)
+    }
   }
 
   private def deleteVariableConflicts(

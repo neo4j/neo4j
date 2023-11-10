@@ -4140,7 +4140,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   }
 
   test(
-    "Should be eager if deleted node is unstable, but not protect projection after DELETE that will crash regardless"
+    "Should be eager if deleted node is unstable, and also protect projection after DELETE that will crash"
   ) {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("count")
@@ -4159,6 +4159,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .produceResults("count")
         .aggregation(Seq.empty, Seq("count(*) AS count"))
         .projection("n.prop AS p")
+        // If this Eager was missing, the projection might accidentally succeed, changing the result of the query
+        .eager(ListSet(ReadDeleteConflict("n").withConflict(Conflict(Id(3), Id(2)))))
         .deleteNode("n")
         .eager(ListSet(ReadDeleteConflict("n").withConflict(Conflict(Id(3), Id(5)))))
         .apply()
@@ -7364,9 +7366,84 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       new LogicalPlanBuilder()
         .produceResults("e")
         .projection("endNode(r) AS e")
-        .eager(ListSet(ReadDeleteConflict("e").withConflict(Conflict(Id(2), Id(1)))))
+        .eager(ListSet(
+          ReadDeleteConflict("e").withConflict(Conflict(Id(2), Id(1))),
+          ReadDeleteConflict("r").withConflict(Conflict(Id(2), Id(1)))
+        ))
         .detachDeleteNode("a")
         .allRelationshipsScan("(a)-[r]->(b)")
+        .build()
+    )
+  }
+
+  test("Should be eager in Delete/Read conflict with read in Projection (property) after the delete (detach delete)") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("e")
+      // r was removed by the detach delete, this will not work
+      .projection("r.prop AS e").newVar("e", CTInteger)
+      .detachDeleteNode("a")
+      .allRelationshipsScan("(a)-[r]->(b)")
+    val plan = planBuilder.build()
+
+    val result = eagerizePlan(planBuilder, plan)
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("e")
+        .projection("r.prop AS e")
+        .eager(ListSet(ReadDeleteConflict("r").withConflict(Conflict(Id(2), Id(1)))))
+        .detachDeleteNode("a")
+        .allRelationshipsScan("(a)-[r]->(b)")
+        .build()
+    )
+  }
+
+  test("Should be eager in Delete/Read conflict with read in Projection (property) after the delete (delete rel)") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("e")
+      // r was removed by the delete, this will not work
+      .projection("r.prop AS e").newVar("e", CTInteger)
+      .deleteRelationship("r")
+      .expand("(a)-[r]->(b)")
+      .allNodeScan("a")
+    val plan = planBuilder.build()
+
+    val result = eagerizePlan(planBuilder, plan)
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("e")
+        .projection("r.prop AS e")
+        .eager(ListSet(ReadDeleteConflict("r").withConflict(Conflict(Id(2), Id(1)))))
+        .deleteRelationship("r")
+        .eager(ListSet(ReadDeleteConflict("r").withConflict(Conflict(Id(2), Id(3)))))
+        .expand("(a)-[r]->(b)")
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test("Should be eager in Delete/Read conflict with read in Projection (property) after the delete (delete node)") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("e")
+      // if a = b and a was removed by the delete, this will not work
+      .projection("a.prop AS e").newVar("e", CTInteger)
+      .deleteNode("b")
+      .expand("(a)-[r]->(b)")
+      .allNodeScan("a")
+    val plan = planBuilder.build()
+
+    val result = eagerizePlan(planBuilder, plan)
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("e")
+        .projection("a.prop AS e")
+        .eager(ListSet(ReadDeleteConflict("a").withConflict(Conflict(Id(2), Id(1)))))
+        .deleteNode("b")
+        .eager(ListSet(
+          ReadDeleteConflict("a").withConflict(Conflict(Id(2), Id(3))),
+          ReadDeleteConflict("b").withConflict(Conflict(Id(2), Id(3)))
+        ))
+        .expand("(a)-[r]->(b)")
+        .allNodeScan("a")
         .build()
     )
   }
