@@ -7448,6 +7448,64 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     )
   }
 
+  test("Should be eager in Delete/Read conflict with read in another delete after the delete (detach delete)") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults()
+      .emptyResult()
+      // r was removed by the detach delete a, this will be a node with id -1, nothing will be deleted here.
+      .detachDeleteNode("endNode(r)")
+      .detachDeleteNode("a")
+      .allRelationshipsScan("(a)-[r]->(b)")
+    val plan = planBuilder.build()
+
+    val result = eagerizePlan(planBuilder, plan)
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults()
+        .emptyResult()
+        .detachDeleteNode("endNode(r)")
+        .eager(ListSet(
+          ReadDeleteConflict("a").withConflict(Conflict(Id(2), Id(3))),
+          ReadDeleteConflict("r").withConflict(Conflict(Id(3), Id(2)))
+        ))
+        .detachDeleteNode("a")
+        .allRelationshipsScan("(a)-[r]->(b)")
+        .build()
+    )
+  }
+
+  test("Should be eager in Delete/Read conflict with read in another delete after the delete (delete node / rel)") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults()
+      .emptyResult()
+      // r2 could have been removed by the delete r, this will be a node with id -1, nothing will be deleted here.
+      .deleteNode("endNode(r2)")
+      .deleteRelationship("r")
+      .cartesianProduct()
+      .|.allRelationshipsScan("(c)-[r2]->(d)")
+      .allRelationshipsScan("(a)-[r]->(b)")
+    val plan = planBuilder.build()
+
+    val result = eagerizePlan(planBuilder, plan)
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults()
+        .emptyResult()
+        .deleteNode("endNode(r2)")
+        .eager(ListSet(ReadDeleteConflict("r2").withConflict(Conflict(Id(3), Id(2)))))
+        .deleteRelationship("r")
+        .eager(ListSet(
+          ReadDeleteConflict("c").withConflict(Conflict(Id(2), Id(5))),
+          ReadDeleteConflict("d").withConflict(Conflict(Id(2), Id(5))),
+          ReadDeleteConflict("r2").withConflict(Conflict(Id(3), Id(5)))
+        ))
+        .cartesianProduct()
+        .|.allRelationshipsScan("(c)-[r2]->(d)")
+        .allRelationshipsScan("(a)-[r]->(b)")
+        .build()
+    )
+  }
+
   test("Should be eager in Delete/Read conflict with node read in ProjectEndpoints") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("count")

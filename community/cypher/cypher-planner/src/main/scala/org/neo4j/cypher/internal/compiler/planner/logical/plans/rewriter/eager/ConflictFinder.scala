@@ -554,16 +554,28 @@ object ConflictFinder {
         !readPlan.isInstanceOf[StableLeafPlan] ||
         isInTransactionalApply(writePlan, wholePlan)
 
-    def deletingPlan(plan: LogicalPlan) =
-      plan.isInstanceOf[DeleteNode] || plan.isInstanceOf[DetachDeleteNode] ||
-        plan.isInstanceOf[DeleteRelationship]
+    /**
+     * Tests whether a plan is a simple deleting plan that does not evaluate any expressions,
+     * apart from the variable that it is supposed to delete. This variable read can never conflict
+     * with another delete, even when the entity has already been deleted.
+     * This is because deletes are idempotent.
+     */
+    def simpleDeletingPlan(plan: LogicalPlan) = plan match {
+      case DeleteNode(_, _: LogicalVariable)         => true
+      case DetachDeleteNode(_, _: LogicalVariable)   => true
+      case DeleteRelationship(_, _: LogicalVariable) => true
+      case _                                         => false
+    }
 
-    def deletingPlansConflict =
-      deletingPlan(writePlan) && deletingPlan(readPlan)
+    /**
+     * Deleting plans can conflict, if they evaluate expressions. Otherwise not. 
+     */
+    def simpleDeletingPlansConflict =
+      simpleDeletingPlan(writePlan) && simpleDeletingPlan(readPlan)
 
     def nonConflictingReadPlan(): Boolean = readPlan.isInstanceOf[Argument]
 
-    !deletingPlansConflict &&
+    !simpleDeletingPlansConflict &&
     !conflictsWithItself &&
     !mergeConflictWithChild &&
     conflictsWithUnstablePlan &&
