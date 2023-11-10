@@ -47,6 +47,7 @@ import org.scalatest.matchers.Matcher
 
 import java.util.Objects
 
+import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
@@ -177,7 +178,7 @@ abstract class EqualRowsMatcher(listInAnyOrder: Boolean) extends RowsMatcher {
       val gotRowCount = gotRows.size
       val conjunction = if (expRowCount == gotRowCount) "and" else "but"
       RowsDontMatch(
-        s"Expected ${expRowCount} rows, $conjunction got ${gotRowCount} rows\n${diffString.result}"
+        s"Expected $expRowCount rows, $conjunction got $gotRowCount rows\n${diffString.result}"
       )
     }
   }
@@ -265,6 +266,67 @@ case class EqualInPartialOrder(expecteds: IndexedSeq[IndexedSeq[Array[AnyValue]]
     Rows.pretty(rows.map(row => VirtualValues.list(row: _*)).sorted(Rows.ANY_VALUE_ORDERING).map(l => l.asArray()))
 }
 
+case class OneToOneSortedPathsMatcher(
+  pathVar: String,
+  expected: IndexedSeq[Array[AnyValue]],
+  listInAnyOrder: Boolean = false
+) extends EqualRowsMatcher(listInAnyOrder) {
+
+  override def toString: String =
+    formatRows(expected) + s" in order sorted on paths $pathVar"
+
+  override def matches(columns: IndexedSeq[String], rows: IndexedSeq[Array[AnyValue]]): RowMatchResult = {
+
+    assert(columns.contains(pathVar))
+
+    // First check match in any order
+    val sortedExpected = expected.map(row => VirtualValues.list(row: _*)).sorted(Rows.ANY_VALUE_ORDERING)
+    val sortedRows = rows.map(row => VirtualValues.list(row: _*)).sorted(Rows.ANY_VALUE_ORDERING)
+
+    matchSorted(sortedExpected, sortedRows) match {
+      case bad: RowsDontMatch => bad
+      case RowsMatch          => assertPathsInAscendingLengthPerPair(columns, rows)
+    }
+  }
+
+  def assertPathsInAscendingLengthPerPair(
+    columns: IndexedSeq[String],
+    rows: IndexedSeq[Array[AnyValue]]
+  ): RowMatchResult = {
+
+    val errorStrings = new mutable.StringBuilder()
+
+    val pathIndex = columns.indexOf(pathVar)
+
+    val longestSeenPathPerSourceTargetPair = new mutable.HashMap[(Long, Long), (Int, VirtualPathValue)]()
+
+    for (row <- rows) {
+      val path = row(pathIndex).asInstanceOf[VirtualPathValue]
+      val sourceNode = path.nodeIds().head
+      val targetNode = path.nodeIds().last
+      val pair = (sourceNode, targetNode)
+      val pathLength = path.size()
+
+      longestSeenPathPerSourceTargetPair.get(pair) match {
+        case None => longestSeenPathPerSourceTargetPair.put(pair, pathLength -> path)
+        case Some(previousLength -> _) if previousLength <= pathLength =>
+          longestSeenPathPerSourceTargetPair.put(pair, pathLength -> path)
+        case Some(previousLength -> previousPath) if previousLength > pathLength =>
+          errorStrings.append(
+            s"Path $previousPath came before path $path even though it's longer!\n"
+          )
+      }
+    }
+    if (errorStrings.isEmpty) {
+      RowsMatch
+    } else {
+      RowsDontMatch(errorStrings.result)
+    }
+  }
+
+  override def formatRows(rows: IndexedSeq[Array[AnyValue]]): String = Rows.pretty(rows)
+}
+
 case class EqualInOrder(expected: IndexedSeq[Array[AnyValue]], listInAnyOrder: Boolean = false)
     extends EqualRowsMatcher(listInAnyOrder) {
   override def toString: String = formatRows(expected) + " in order"
@@ -324,6 +386,7 @@ case class CustomRowsMatcher(inner: Matcher[Seq[Array[AnyValue]]]) extends RowsM
 trait RowOrderMatcher extends RowsMatcher {
   protected var inner: Option[RowOrderMatcher] = None
 
+  @tailrec
   private def append(x: RowOrderMatcher): Unit =
     inner match {
       case None       => inner = Some(x)

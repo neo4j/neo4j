@@ -104,6 +104,7 @@ import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
+import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
 import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.Top1WithTies
 import org.neo4j.cypher.internal.logical.plans.Trail
@@ -164,11 +165,13 @@ import org.neo4j.cypher.internal.runtime.QueryIndexRegistrator
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.GroupingExpression
 import org.neo4j.cypher.internal.runtime.interpreted.commands
+import org.neo4j.cypher.internal.runtime.interpreted.commands.CommandNFA
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.AggregationExpression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.DeleteOperation
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.SideEffect
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.EagerAggregationPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.EmptyResultPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.IndexSeekModeFactory
@@ -270,6 +273,7 @@ import org.neo4j.cypher.internal.runtime.slotted.pipes.SlottedSetRelationshipPro
 import org.neo4j.cypher.internal.runtime.slotted.pipes.SlottedSetRelationshipPropertyFromMapOperation
 import org.neo4j.cypher.internal.runtime.slotted.pipes.SlottedSetRelationshipPropertyOperation
 import org.neo4j.cypher.internal.runtime.slotted.pipes.SortSlottedPipe
+import org.neo4j.cypher.internal.runtime.slotted.pipes.StatefulShortestPathSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.TrailSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.TransactionApplySlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.TransactionForeachSlottedPipe
@@ -292,6 +296,7 @@ import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.exceptions.CantCompileQueryException
 import org.neo4j.exceptions.InternalException
 import org.neo4j.exceptions.ShortestPathCommonEndNodesForbiddenException
+import org.neo4j.internal.kernel.api.helpers.traversal.SlotOrName
 import org.neo4j.kernel.api.StatementConstants
 import org.neo4j.values.storable.Values.NO_VALUE
 
@@ -1054,6 +1059,60 @@ class SlottedPipeMapper(
           needOnlyOnePath = single && !withFallBack,
           slots = slots
         )(id)
+
+      case StatefulShortestPath(
+          _,
+          sourceNode,
+          _,
+          nfa,
+          nonInlinedPreFilters,
+          nodeVariableGroupings,
+          relationshipVariableGroupings,
+          singletonNodeVariables,
+          singletonRelationshipVariables,
+          selector,
+          _,
+          reverseGroupVariableProjections
+        ) =>
+        val groupMap = (nodeVariableGroupings ++ relationshipVariableGroupings)
+          .map(grouping => grouping.singletonName.name -> slots(grouping.groupName.name))
+          .toMap
+
+        val singletonMap = (singletonNodeVariables ++ singletonRelationshipVariables)
+          .map(mapping => mapping.nfaExprVar.name -> mapping.rowVar.name)
+          .toMap
+
+        def getSlot(variable: LogicalVariable): SlotOrName = {
+          groupMap.get(variable.name) match {
+            case Some(slot) =>
+              SlotOrName.Slotted(slot.offset, isGroup = true)
+            case None =>
+              val rowVar = singletonMap.getOrElse(variable.name, variable.name)
+              slots.get(rowVar).map { slot =>
+                SlotOrName.Slotted(slot.offset, isGroup = false)
+              }.getOrElse(SlotOrName.None)
+          }
+        }
+
+        val commandNFA = CommandNFA.fromLogicalNFA(
+          nfa,
+          vp => expressionConverters.toCommandPredicate(id, vp.predicate),
+          getSlot
+        )
+
+        val commandPreFilters: Option[Predicate] =
+          nonInlinedPreFilters.map(expressionConverters.toCommandExpression(id, _)).map(_.rewriteAsPredicate(identity))
+
+        StatefulShortestPathSlottedPipe(
+          source,
+          slots(sourceNode),
+          commandNFA,
+          commandPreFilters,
+          selector,
+          groupMap.values.map(_.offset).toList,
+          slots,
+          reverseGroupVariableProjections
+        )(id = id)
 
       case Optional(inner, symbols) =>
         val nullableSlots = symbolsToSlots(inner.availableSymbols.map(_.name) -- symbols.map(_.name), slots)

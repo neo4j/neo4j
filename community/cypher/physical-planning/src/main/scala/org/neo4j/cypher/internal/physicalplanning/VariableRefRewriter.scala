@@ -383,8 +383,6 @@ object VariableRefRewriter extends Rewriter {
           p.copy(variable = varRef(variable))(SameId(p.id))
         case p @ ForeachApply(_, _, variable, _) =>
           p.copy(variable = varRef(variable))(SameId(p.id))
-        case p @ StatefulShortestPath(_, source, target, _, _, _, _, _, _, _, _, _) =>
-          p.copy(sourceNode = varRef(source), targetNode = varRef(target))(SameId(p.id))
         case p @ Input(nodes, relationships, variables, nullable) =>
           Input(nodes.map(varRef), relationships.map(varRef), variables.map(varRef), nullable)(SameId(p.id))
         case p @ LeftOuterHashJoin(nodes, _, _) =>
@@ -439,6 +437,8 @@ object VariableRefRewriter extends Rewriter {
           p.copy(fromNode = varRef(from), relName = varRef(rel), toNode = varRef(to))(SameId(p.id))
         case p @ SimulatedNodeScan(node, _) =>
           p.copy(idName = varRef(node))(SameId(p.id))
+        case p @ StatefulShortestPath(_, source, target, _, _, _, _, _, _, _, _, _) =>
+          p.copy(sourceNode = varRef(source), targetNode = varRef(target))(SameId(p.id))
         case p @ Trail(_, _, _, start, end, iStart, iEnd, _, _, iRels, pRels, pRelGr, _) =>
           p.copy(
             start = varRef(start),
@@ -471,14 +471,16 @@ object VariableRefRewriter extends Rewriter {
         case other => other
       }
 
-    case p: SimpleMutatingPattern                    => rewrite(p)
-    case c: CreateEntity                             => rewrite(c)
-    case p @ ShortestRelationshipPattern(name, _, _) => p.copy(name = name.map(varRef))(p.expr)
-    case c: ColumnOrder                              => rewrite(c)
-    case g @ VariableGrouping(left, right)           => g.copy(varRef(left), varRef(right))
+    case p: SimpleMutatingPattern                      => rewrite(p)
+    case c: CreateEntity                               => rewrite(c)
+    case p @ ShortestRelationshipPattern(name, _, _)   => p.copy(name = name.map(varRef))(p.expr)
+    case c: ColumnOrder                                => rewrite(c)
+    case g @ VariableGrouping(left, right)             => g.copy(varRef(left), varRef(right))
+    case m @ StatefulShortestPath.Mapping(left, right) => m.copy(varRef(left), varRef(right))
     case p @ PatternRelationship(name, (left, right), _, _, _) =>
       p.copy(name = varRef(name), nodes = (varRef(left), varRef(right)))
-    case NFA.State(id, variable) => NFA.State(id, varRef(variable))
+    case NFA.State(id, variable)                => NFA.State(id, varRef(variable))
+    case re: NFA.RelationshipExpansionPredicate => re.copy(relationshipVariable = varRef(re.relationshipVariable))
   }
 
   private val instance = topDown(rewriter)

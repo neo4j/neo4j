@@ -95,6 +95,16 @@ public class HeapTrackingIntArrayList implements Resource {
         return elementData[index];
     }
 
+    public int last() {
+        return get(size - 1);
+    }
+
+    public int removeLast() {
+        int last = last();
+        size--;
+        return last;
+    }
+
     public int set(int index, int element) {
         Objects.checkIndex(index, size);
         int oldValue = elementData[index];

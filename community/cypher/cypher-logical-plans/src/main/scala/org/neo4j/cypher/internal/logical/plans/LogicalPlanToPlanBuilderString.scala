@@ -46,6 +46,7 @@ import org.neo4j.cypher.internal.logical.plans.NFA.NodeJuxtapositionPredicate
 import org.neo4j.cypher.internal.logical.plans.NFA.Predicate
 import org.neo4j.cypher.internal.logical.plans.NFA.RelationshipExpansionPredicate
 import org.neo4j.cypher.internal.logical.plans.NFA.State
+import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath.Mapping
 import org.neo4j.cypher.internal.logical.plans.Trail.VariableGrouping
 import org.neo4j.cypher.internal.logical.plans.create.CreateEntity
 import org.neo4j.cypher.internal.logical.plans.create.CreateNode
@@ -67,6 +68,7 @@ import org.neo4j.cypher.internal.logical.plans.shortest.PatternRelationship
 import org.neo4j.cypher.internal.logical.plans.shortest.ShortestRelationshipPattern
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.Repetition
+import org.neo4j.cypher.internal.util.helpers.NameDeduplicator.removeGeneratedNamesAndParamsOnTree
 import org.neo4j.graphdb.schema.IndexType
 
 import scala.collection.mutable
@@ -368,8 +370,8 @@ object LogicalPlanToPlanBuilderString {
           nonInlinablePreFilters.map(e => wrapInQuotations(expressionStringifier(e))),
           s"Set(${groupEntitiesString(nodeVariableGroupings)})",
           s"Set(${groupEntitiesString(relationshipVariableGroupings)})",
-          s"Set(${wrapVarsInQuotationsAndMkString(singletonNodeVariables)})",
-          s"Set(${wrapVarsInQuotationsAndMkString(singletonRelationshipVariables)})",
+          s"Set(${mappedEntitiesString(singletonNodeVariables)})",
+          s"Set(${mappedEntitiesString(singletonRelationshipVariables)})",
           objectName(StatefulShortestPath) + "." + objectName(StatefulShortestPath.Selector) + "." + selector.toString,
           nfaString(nfa),
           reverseGroupVariableProjections.toString
@@ -1177,6 +1179,11 @@ object LogicalPlanToPlanBuilderString {
       ", "
     )
 
+  private def mappedEntitiesString(mappedEntities: Set[Mapping]): String =
+    mappedEntities.map(g => s"(${wrapInQuotations(g.nfaExprVar)}, ${wrapInQuotations(g.rowVar)})").mkString(
+      ", "
+    )
+
   /**
    * NFAs cause stateful shortest path operators to spill over several lines. It is then confusing if the NFA is
    * rendered on the same indentation as the stateful shortest path operator.
@@ -1201,11 +1208,20 @@ object LogicalPlanToPlanBuilderString {
   private def transitionString(from: State, nfaPredicate: Predicate, to: State): String = {
     val patternString = nfaPredicate match {
       case NodeJuxtapositionPredicate(variablePredicate) =>
-        val whereString = variablePredicate.map(vp => s" WHERE ${expressionStringifier(vp.predicate)}").getOrElse("")
+        val whereString =
+          variablePredicate.map(vp =>
+            s" WHERE ${expressionStringifier(removeGeneratedNamesAndParamsOnTree(vp.predicate))}"
+          ).getOrElse("")
         s""" "(${from.variable.name}) (${to.variable.name}$whereString)" """.trim
       case RelationshipExpansionPredicate(relName, relPred, types, dir, nodePred) =>
-        val relWhereString = relPred.map(vp => s" WHERE ${expressionStringifier(vp.predicate)}").getOrElse("")
-        val nodeWhereString = nodePred.map(vp => s" WHERE ${expressionStringifier(vp.predicate)}").getOrElse("")
+        val relWhereString =
+          relPred.map(vp =>
+            s" WHERE ${expressionStringifier(removeGeneratedNamesAndParamsOnTree(vp.predicate))}"
+          ).getOrElse("")
+        val nodeWhereString =
+          nodePred.map(vp =>
+            s" WHERE ${expressionStringifier(removeGeneratedNamesAndParamsOnTree(vp.predicate))}"
+          ).getOrElse("")
         val (dirStrA, dirStrB) = arrows(dir)
         val typeStr = relTypeStr(types)
         s""" "(${from.variable.name})$dirStrA[${relName.name}$typeStr$relWhereString]$dirStrB(${to.variable.name}$nodeWhereString)" """.trim

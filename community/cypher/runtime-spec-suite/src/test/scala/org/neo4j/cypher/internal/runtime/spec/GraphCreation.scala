@@ -161,6 +161,20 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
     }
   }
 
+  def lineGraph(nNodes: Int, relationshipType: String, labels: String*): (Seq[Node], Seq[Relationship]) = {
+    val nodes = nodeGraph(nNodes, labels: _*)
+
+    val relationships = Seq.newBuilder[Relationship]
+    var prevNode = nodes.head
+    for (node <- nodes.tail) {
+      relationships.addOne(
+        prevNode.createRelationshipTo(node, RelationshipType.withName(relationshipType))
+      )
+      prevNode = node
+    }
+    (nodes, relationships.result())
+  }
+
   /**
    * Create n disjoint chain graphs, where one is a chain of nodes connected
    * by relationships of the given types. The initial node will have the label
@@ -293,7 +307,7 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
     } else if (cords2._2 - cords1._2 == 1 && cords2._1 == cords1._1) {
       "RIGHT"
     } else {
-      ""
+      throw new IllegalArgumentException("rightDownRelTypeName should only be called with adjacent coordinates")
     }
   }
 
@@ -331,7 +345,7 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
    * @param nCols the amount of columns of the grid graph
    * @param nodeCreationFunction a function which accepts coordinates and creates a node
    * @param relationshipTypeNameCreationFunction a function which accepts coordinates of two nodes and creates a relationship type name
-   * @return
+   * @return A tuple of nodes and relationships in the graph. The nodes are returned row wise, starting with the uppermost row
    */
   def gridGraph(
     nRows: Int = 5,

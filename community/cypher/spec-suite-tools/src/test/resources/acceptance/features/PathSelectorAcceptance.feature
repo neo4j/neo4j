@@ -43,25 +43,25 @@ Feature: PathSelectorAcceptance
       | <result> |
     Examples:
       | pathSelector       | result                                         |
-      | ANY SHORTEST       | [(:A), (:X), (:D)]                             |
-      | ANY SHORTEST PATH  | [(:A), (:X), (:D)]                             |
-      | ANY SHORTEST PATHS | [(:A), (:X), (:D)]                             |
-      | SHORTEST 1         | [(:A), (:X), (:D)]                             |
-      | SHORTEST 1 PATH    | [(:A), (:X), (:D)]                             |
-      | SHORTEST 1 PATHS   | [(:A), (:X), (:D)]                             |
+      | ANY SHORTEST       | [[(:A), (:X), (:D)]]                           |
+      | ANY SHORTEST PATH  | [[(:A), (:X), (:D)]]                           |
+      | ANY SHORTEST PATHS | [[(:A), (:X), (:D)]]                           |
+      | SHORTEST 1         | [[(:A), (:X), (:D)]]                           |
+      | SHORTEST 1 PATH    | [[(:A), (:X), (:D)]]                           |
+      | SHORTEST 1 PATHS   | [[(:A), (:X), (:D)]]                           |
       | SHORTEST 2         | [[(:A), (:X), (:D)], [(:A), (:B), (:C), (:D)]] |
       | SHORTEST 2 PATH    | [[(:A), (:X), (:D)], [(:A), (:B), (:C), (:D)]] |
       | SHORTEST 2 PATHS   | [[(:A), (:X), (:D)], [(:A), (:B), (:C), (:D)]] |
       | SHORTEST 3 PATH    | [[(:A), (:X), (:D)], [(:A), (:B), (:C), (:D)]] |
       | SHORTEST 3 PATHS   | [[(:A), (:X), (:D)], [(:A), (:B), (:C), (:D)]] |
       | SHORTEST 3         | [[(:A), (:X), (:D)], [(:A), (:B), (:C), (:D)]] |
-      | ALL SHORTEST       | [(:A), (:X), (:D)]                             |
-      | ALL SHORTEST PATH  | [(:A), (:X), (:D)]                             |
-      | ALL SHORTEST PATHS | [(:A), (:X), (:D)]                             |
-      | SHORTEST GROUP     | [(:A), (:X), (:D)]                             |
-      | SHORTEST GROUPS    | [(:A), (:X), (:D)]                             |
-      | SHORTEST 1 GROUP   | [(:A), (:X), (:D)]                             |
-      | SHORTEST 1 GROUPS  | [(:A), (:X), (:D)]                             |
+      | ALL SHORTEST       | [[(:A), (:X), (:D)]]                           |
+      | ALL SHORTEST PATH  | [[(:A), (:X), (:D)]]                           |
+      | ALL SHORTEST PATHS | [[(:A), (:X), (:D)]]                           |
+      | SHORTEST GROUP     | [[(:A), (:X), (:D)]]                           |
+      | SHORTEST GROUPS    | [[(:A), (:X), (:D)]]                           |
+      | SHORTEST 1 GROUP   | [[(:A), (:X), (:D)]]                           |
+      | SHORTEST 1 GROUPS  | [[(:A), (:X), (:D)]]                           |
       | SHORTEST 2 GROUP   | [[(:A), (:X), (:D)], [(:A), (:B), (:C), (:D)]] |
       | SHORTEST 2 GROUPS  | [[(:A), (:X), (:D)], [(:A), (:B), (:C), (:D)]] |
       | SHORTEST 3 GROUP   | [[(:A), (:X), (:D)], [(:A), (:B), (:C), (:D)]] |
@@ -187,7 +187,7 @@ Feature: PathSelectorAcceptance
       """
     When executing query:
       """
-      MATCH p = <pathSelector> (:A)-[r WHERE r:!X]->+(:D)
+      MATCH p = <pathSelector> (:A)-[r WHERE r:!X]->+(:B)
       RETURN count(*) AS result
       """
     Then the result should be, in any order:
@@ -303,7 +303,7 @@ Feature: PathSelectorAcceptance
     And having executed:
       """
       CREATE (s1:S {n: 's1'}), (s2:S {n: 's2'}), (t1:T {n: 't1'}), (x:X),
-        (s1)-[:R]->(s2)-[:R]->()-[:R]->(f)-[:R]->(t1),
+        (s1)-[:R]->(s2)-[:R]->(c)-[:R]->(f)-[:R]->(t1),
         (s1)-[:R]->(b)-[:R]->(e)-[:R]->(g)-[:R]->(t1),
         (s2)-[:R]->(x)-[:R]->(f),
         (b)-[:R]->(x)-[:R]->(g)
@@ -446,7 +446,7 @@ Feature: PathSelectorAcceptance
     When executing query:
       """
       MATCH p = <pathSelector> (:A)-->+(:B)
-      WITH nodes(p) AS n ORDER BY head(n).p, size(n)
+      WITH nodes(p) AS n ORDER BY head(n).p, size(n), head(reverse(n)).p
       RETURN collect([m IN n | m.p]) AS result
       """
     Then the result should be, in any order:

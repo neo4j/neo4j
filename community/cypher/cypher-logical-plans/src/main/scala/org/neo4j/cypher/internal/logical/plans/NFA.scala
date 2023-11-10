@@ -24,9 +24,12 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
+import org.neo4j.cypher.internal.logical.plans.NFA.NodeJuxtapositionPredicate
 import org.neo4j.cypher.internal.logical.plans.NFA.RelationshipExpansionPredicate
 import org.neo4j.cypher.internal.logical.plans.NFA.State
 import org.neo4j.cypher.internal.logical.plans.NFA.Transition
+import org.neo4j.cypher.internal.util.Foldable
+import org.neo4j.cypher.internal.util.Rewritable
 
 object NFA {
 
@@ -123,15 +126,33 @@ case class NFA(
   transitions: Map[State, Set[Transition]],
   startState: State,
   finalStates: Set[State]
-) {
+) extends Rewritable with Foldable {
 
-  def nodeNames: Set[LogicalVariable] = states.map(_.variable)
+  def predicateVariables: Seq[LogicalVariable] =
+    transitions.values.flatten.toSeq.flatMap(_.predicate.variablePredicates).map(_.variable)
+
+  def nodeNames: Set[LogicalVariable] =
+    states.map(_.variable) ++ transitionPredicates.flatMap {
+      case r: RelationshipExpansionPredicate => r.nodePred
+      case n: NodeJuxtapositionPredicate     => n.variablePredicate
+    }.map(_.variable)
 
   def relationshipNames: Set[LogicalVariable] =
-    transitions.flatMap(_._2).map(_.predicate).collect {
-      case RelationshipExpansionPredicate(relVar, _, _, _, _) =>
-        relVar
-    }.toSet
+    transitionPredicates
+      .collect { case r: RelationshipExpansionPredicate => r }
+      .flatMap(r => Iterator(Some(r.relationshipVariable), r.relPred.map(_.variable)).flatten)
+      .toSet
+
+  private def transitionPredicates = transitions.iterator.flatMap(_._2).map(_.predicate)
+
+  override def toString: String = {
+    val states = this.states.toList.sortBy(_.id)
+    val transitions = this.transitions.view.mapValues(
+      _.toList.sortBy(_.end.id).mkString("[\n  ", "\n  ", "\n]")
+    ).toList.sortBy(_._1.id).mkString("\n")
+    val finalStates = this.finalStates.toList.sortBy(_.id)
+    s"NFA($states,\n$transitions\n, $startState, $finalStates)"
+  }
 
   /**
    * @return a DOT String to generate a graphviz. For example use
@@ -158,4 +179,11 @@ case class NFA(
         .mkString("\n")
     s"digraph G {\n$nodes\n$edges\n}"
   }
+
+  def dup(children: Seq[AnyRef]): this.type = NFA(
+    children(0).asInstanceOf[Set[State]],
+    children(1).asInstanceOf[Map[State, Set[Transition]]],
+    children(2).asInstanceOf[State],
+    children(3).asInstanceOf[Set[State]]
+  ).asInstanceOf[this.type]
 }

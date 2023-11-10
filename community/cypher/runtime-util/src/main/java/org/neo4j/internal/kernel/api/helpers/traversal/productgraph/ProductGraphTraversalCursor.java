@@ -36,7 +36,7 @@ public class ProductGraphTraversalCursor implements AutoCloseable {
     private boolean initialized = false;
     private final DirectedTypes directedTypes;
     private RelationshipTraversalCursor traversalCursor;
-    private final SourceCursor<List<State>, RelationshipExpansion> nfaCursor;
+    private final ComposedSourceCursor<List<State>, State, RelationshipExpansion> nfaCursor;
 
     public ProductGraphTraversalCursor(RelationshipTraversalCursor relCursor, MemoryTracker memoryTracker) {
         this.traversalCursor = relCursor;
@@ -48,12 +48,20 @@ public class ProductGraphTraversalCursor implements AutoCloseable {
         return nfaCursor.current().targetState();
     }
 
-    public long otherNode() {
+    public State currentInputState() {
+        return nfaCursor.currentIntermediate();
+    }
+
+    public long otherNodeReference() {
         return traversalCursor.otherNodeReference();
     }
 
-    public long relationshipId() {
+    public long relationshipReference() {
         return traversalCursor.reference();
+    }
+
+    public RelationshipExpansion relationshipExpansion() {
+        return nfaCursor.current();
     }
 
     public boolean next() {
@@ -110,10 +118,7 @@ public class ProductGraphTraversalCursor implements AutoCloseable {
 
     @Override
     public void close() throws Exception {
-        if (traversalCursor != null) {
-            traversalCursor.close();
-            traversalCursor = null;
-        }
+        // this class does not own the traversalCursor, it should be closed by the consumer
         this.nfaCursor.close();
     }
 }

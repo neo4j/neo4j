@@ -153,6 +153,7 @@ import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
+import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath.Mapping
 import org.neo4j.cypher.internal.logical.plans.SubqueryForeach
 import org.neo4j.cypher.internal.logical.plans.TestOnlyPlan
 import org.neo4j.cypher.internal.logical.plans.Top
@@ -1036,8 +1037,8 @@ object ReadFinder {
     nfa: NFA,
     nodeVariableGroupings: Set[Trail.VariableGrouping],
     relationshipVariableGroupings: Set[Trail.VariableGrouping],
-    singletonNodeVariables: Set[LogicalVariable],
-    singletonRelationshipVariables: Set[LogicalVariable]
+    singletonNodeVariables: Set[Mapping],
+    singletonRelationshipVariables: Set[Mapping]
   ): PlanReads = {
 
     val (nodeExpr, relExpr) =
@@ -1046,6 +1047,7 @@ object ReadFinder {
         .flatten
         .foldLeft((Set[Expand.VariablePredicate](), Set[Expand.VariablePredicate]())) { (acc, transition) =>
           transition.predicate match {
+            // TODO: unmap back to rowVar name https://trello.com/c/eAu1SnhO/
             case RelationshipExpansionPredicate(_, relPred, _, _, nodePred) =>
               (acc._1 ++ nodePred, acc._2 ++ relPred)
             case NodeJuxtapositionPredicate(variablePredicate) =>
@@ -1061,11 +1063,11 @@ object ReadFinder {
       nodeVariableGroupings.foldLeft(_) { (acc, pathNode) =>
         acc.withIntroducedNodeVariable(pathNode.singletonName)
       },
-      singletonNodeVariables.foldLeft(_) { (acc, singletonVariable) =>
-        acc.withIntroducedNodeVariable(singletonVariable)
+      singletonNodeVariables.foldLeft(_) { (acc, mapping) =>
+        acc.withIntroducedNodeVariable(mapping.rowVar)
       },
-      singletonRelationshipVariables.foldLeft(_) { (acc, singletonVariable) =>
-        acc.withIntroducedRelationshipVariable(singletonVariable)
+      singletonRelationshipVariables.foldLeft(_) { (acc, mapping) =>
+        acc.withIntroducedRelationshipVariable(mapping.rowVar)
       },
       relationshipVariableGroupings.foldLeft(_) { (acc, pathRel) =>
         acc.withIntroducedRelationshipVariable(pathRel.singletonName)

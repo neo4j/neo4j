@@ -50,6 +50,7 @@ import org.neo4j.cypher.internal.expressions.FilterScope
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.GreaterThan
 import org.neo4j.cypher.internal.expressions.GreaterThanOrEqual
+import org.neo4j.cypher.internal.expressions.HasAnyLabel
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.HasLabelsOrTypes
 import org.neo4j.cypher.internal.expressions.HasTypes
@@ -257,6 +258,10 @@ private class DefaultExpressionStringifier(
 
       case HasLabels(arg, labels) =>
         val l = labels.map(apply).mkString(":", ":", "")
+        s"${inner(ast)(arg)}$l"
+
+      case HasAnyLabel(arg, labels) =>
+        val l = labels.map(apply).mkString(":", "|", "")
         s"${inner(ast)(arg)}$l"
 
       case HasTypes(arg, types) =>

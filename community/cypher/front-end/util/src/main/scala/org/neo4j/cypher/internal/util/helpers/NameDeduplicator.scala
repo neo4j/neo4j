@@ -38,7 +38,8 @@ object NameDeduplicator {
     case s: String => transformation(s)
   })
 
-  private val deduplicateVariableNames: String => String = fixedPoint { DEDUP_PATTERN.replaceAllIn(_, "$1") }
+  private val deduplicateVariableNames: String => String =
+    fixedPoint { DEDUP_PATTERN.replaceAllIn(_, "$1") }
 
   /**
    * Removes planner-generated uniquely identifying elements from Strings.

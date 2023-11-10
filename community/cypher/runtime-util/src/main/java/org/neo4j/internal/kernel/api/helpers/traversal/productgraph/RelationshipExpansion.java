@@ -25,12 +25,14 @@ import java.util.function.LongPredicate;
 import java.util.function.Predicate;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
+import org.neo4j.internal.kernel.api.helpers.traversal.SlotOrName;
+import org.neo4j.util.Preconditions;
 
 public final class RelationshipExpansion implements Transition {
     private final Predicate<RelationshipTraversalCursor> relPredicate;
     private final int[] types;
     private final Direction direction;
-    private final State.VarName relName;
+    private final SlotOrName slotOrName;
     private final LongPredicate nodePredicate;
     private State targetState;
 
@@ -38,13 +40,13 @@ public final class RelationshipExpansion implements Transition {
             Predicate<RelationshipTraversalCursor> relPredicate,
             int[] types,
             Direction direction,
-            State.VarName relName,
+            SlotOrName slotOrName,
             LongPredicate nodePredicate,
             State targetState) {
         this.relPredicate = relPredicate;
         this.types = types;
         this.direction = direction;
-        this.relName = relName;
+        this.slotOrName = slotOrName;
         this.nodePredicate = nodePredicate;
         this.targetState = targetState;
     }
@@ -65,8 +67,8 @@ public final class RelationshipExpansion implements Transition {
         return direction;
     }
 
-    public State.VarName relName() {
-        return relName;
+    public SlotOrName slotOrName() {
+        return slotOrName;
     }
 
     @Override
@@ -76,8 +78,9 @@ public final class RelationshipExpansion implements Transition {
 
     @Override
     public void setTargetState(State state) {
-        assert targetState == null
-                : "Shouldn't set target state more than once. The targetState field is only mutable to support delayed initialization which is require when there are cycles in the NFA";
+        Preconditions.checkState(
+                targetState == null,
+                "Shouldn't set target state more than once. The targetState field is only mutable to support delayed initialization which is require when there are cycles in the NFA");
         this.targetState = state;
     }
 
@@ -89,14 +92,14 @@ public final class RelationshipExpansion implements Transition {
         return Objects.equals(this.relPredicate, that.relPredicate)
                 && Arrays.equals(this.types, that.types)
                 && Objects.equals(this.direction, that.direction)
-                && Objects.equals(this.relName, that.relName)
+                && Objects.equals(this.slotOrName, that.slotOrName)
                 && Objects.equals(this.nodePredicate, that.nodePredicate)
                 && Objects.equals(this.targetState, that.targetState);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(relPredicate, Arrays.hashCode(types), direction, relName, nodePredicate, targetState);
+        return Objects.hash(relPredicate, Arrays.hashCode(types), direction, slotOrName, nodePredicate, targetState);
     }
 
     @Override
@@ -104,8 +107,8 @@ public final class RelationshipExpansion implements Transition {
         return "RelationshipExpansion[" + "relPredicate="
                 + relPredicate + ", " + "types="
                 + Arrays.toString(types) + ", " + "direction="
-                + direction + ", " + "relName="
-                + relName + ", " + "nodePredicate="
+                + direction + ", " + "slotOrName="
+                + slotOrName + ", " + "nodePredicate="
                 + nodePredicate + ", " + "targetState="
                 + targetState + ']';
     }

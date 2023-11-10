@@ -43,6 +43,7 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.inSequence
 
 import scala.collection.immutable.ListSet
+import scala.util.control.NonFatal
 
 object TestNFABuilder {
 
@@ -92,7 +93,14 @@ class TestNFABuilder(startStateId: Int, startStateName: String)
       }
     }
 
-    val parsedPattern = Parser.parsePatternElement(pattern)
+    val parsedPattern =
+      try {
+        Parser.parsePatternElement(pattern)
+      } catch {
+        case NonFatal(e) =>
+          println("Error parsing pattern: " + pattern)
+          throw e
+      }
     parsedPattern match {
       case RelationshipChain(
           NodePattern(Some(from: LogicalVariable), None, None, None),

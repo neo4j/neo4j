@@ -36,6 +36,14 @@ public abstract class PrefetchingIterator<T> implements Iterator<T> {
     private T nextObject;
 
     /**
+     * Enables reuse the iterator object by clearing state
+     */
+    protected void reset() {
+        hasFetchedNext = false;
+        nextObject = null;
+    }
+
+    /**
      * @return {@code true} if there is a next item to be returned from the next
      * call to {@link #next()}.
      */

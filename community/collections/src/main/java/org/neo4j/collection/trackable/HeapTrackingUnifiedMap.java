@@ -42,8 +42,22 @@ public class HeapTrackingUnifiedMap<K, V> extends UnifiedMap<K, V> implements Au
         return new HeapTrackingUnifiedMap<>(memoryTracker, trackedHeap);
     }
 
+    public static <K, V> HeapTrackingUnifiedMap<K, V> createUnifiedMap(
+            int initialCapacity, MemoryTracker memoryTracker) {
+        return new HeapTrackingUnifiedMap<>(initialCapacity, memoryTracker);
+    }
+
     private HeapTrackingUnifiedMap(MemoryTracker memoryTracker, long trackedHeap) {
         this.memoryTracker = requireNonNull(memoryTracker);
+        this.trackedHeap = trackedHeap;
+    }
+
+    // TODO: unit test
+    private HeapTrackingUnifiedMap(int initialCapacity, MemoryTracker memoryTracker) {
+        super(initialCapacity);
+        long trackedHeap = arrayHeapSize(initialCapacity);
+        memoryTracker.allocateHeap(SHALLOW_SIZE + trackedHeap);
+        this.memoryTracker = memoryTracker;
         this.trackedHeap = trackedHeap;
     }
 

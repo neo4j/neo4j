@@ -83,6 +83,10 @@ public final class HeapTrackingCollections {
         return HeapTrackingUnifiedMap.createUnifiedMap(memoryTracker);
     }
 
+    public static <K, V> HeapTrackingUnifiedMap<K, V> newMap(int initialCapacity, MemoryTracker memoryTracker) {
+        return HeapTrackingUnifiedMap.createUnifiedMap(initialCapacity, memoryTracker);
+    }
+
     public static HeapTrackingLongLongHashMap newLongLongMap(MemoryTracker memoryTracker) {
         return HeapTrackingLongLongHashMap.createLongLongHashMap(memoryTracker);
     }

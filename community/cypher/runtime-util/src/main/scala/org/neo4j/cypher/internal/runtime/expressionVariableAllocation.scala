@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.expressions.ScopeExpression
 import org.neo4j.cypher.internal.logical.plans.BFSPruningVarExpand
 import org.neo4j.cypher.internal.logical.plans.FindShortestPaths
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.NFA
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
 import org.neo4j.cypher.internal.logical.plans.PruningVarExpand
 import org.neo4j.cypher.internal.logical.plans.VarExpand
@@ -118,6 +119,16 @@ object expressionVariableAllocation {
         outerVars =>
           val innerVars =
             allocateVariables(outerVars, (x.perStepNodePredicates ++ x.perStepRelPredicates).map(_.variable))
+          TraverseChildrenNewAccForSiblings(innerVars, _ => outerVars)
+
+      case x: NFA =>
+        outerVars =>
+          // all of the predicates in the NFA use expression variables because they are not yet written to the row
+          // when evaluated during NFA traversal
+          val predicateVarNames = x.predicateVariables
+
+          val innerVars =
+            allocateVariables(outerVars, predicateVarNames)
           TraverseChildrenNewAccForSiblings(innerVars, _ => outerVars)
 
       case x: NestedPlanExpression =>

@@ -71,21 +71,30 @@ public class HeapTrackingArrayList<E> implements List<E>, AutoCloseable {
     }
 
     /**
-     * @return a new heap tracking array list with the specified initial size
+     * @return a new heap tracking array list with the specified initial capacity
      */
-    public static <T> HeapTrackingArrayList<T> newArrayList(int initialSize, MemoryTracker memoryTracker) {
-        return newArrayListWithInitialTrackedSize(initialSize, memoryTracker, 0L);
+    public static <T> HeapTrackingArrayList<T> newArrayList(int initialCapacity, MemoryTracker memoryTracker) {
+        return newArrayListWithInitialTrackedSize(initialCapacity, memoryTracker, 0L);
+    }
+
+    /**
+     * @return a new heap tracking array list with the specified exact size, filled with nulls
+     */
+    public static <T> HeapTrackingArrayList<T> newEmptyArrayList(int exactSize, MemoryTracker memoryTracker) {
+        HeapTrackingArrayList<T> list = newArrayListWithInitialTrackedSize(exactSize, memoryTracker, exactSize);
+        list.size = exactSize;
+        return list;
     }
 
     /**
      * @return a new heap tracking array list with the specified initial size and initial tracked memory size
      */
     public static <T> HeapTrackingArrayList<T> newArrayListWithInitialTrackedSize(
-            int initialSize, MemoryTracker memoryTracker, long initialTrackedSize) {
-        requireNonNegative(initialSize);
-        long trackedSize = shallowSizeOfObjectArray(initialSize) + initialTrackedSize;
+            int initialCapacity, MemoryTracker memoryTracker, long initialTrackedSize) {
+        requireNonNegative(initialCapacity);
+        long trackedSize = shallowSizeOfObjectArray(initialCapacity) + initialTrackedSize;
         memoryTracker.allocateHeap(SHALLOW_SIZE + trackedSize);
-        return new HeapTrackingArrayList<>(initialSize, memoryTracker, trackedSize);
+        return new HeapTrackingArrayList<>(initialCapacity, memoryTracker, trackedSize);
     }
 
     @SuppressWarnings("CopyConstructorMissesField")
@@ -189,6 +198,10 @@ public class HeapTrackingArrayList<E> implements List<E>, AutoCloseable {
         return elementData(index);
     }
 
+    public E last() {
+        return get(size - 1);
+    }
+
     @Override
     public E set(int index, E element) {
         Objects.checkIndex(index, size);
@@ -220,6 +233,10 @@ public class HeapTrackingArrayList<E> implements List<E>, AutoCloseable {
         fastRemove(es, index);
 
         return oldValue;
+    }
+
+    public E removeLast() {
+        return remove(size - 1);
     }
 
     @Override
@@ -363,6 +380,10 @@ public class HeapTrackingArrayList<E> implements List<E>, AutoCloseable {
     @Override
     public boolean isEmpty() {
         return size == 0;
+    }
+
+    public boolean notEmpty() {
+        return size != 0;
     }
 
     @Override

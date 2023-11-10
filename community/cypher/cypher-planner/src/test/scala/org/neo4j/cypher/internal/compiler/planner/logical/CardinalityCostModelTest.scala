@@ -948,7 +948,7 @@ class CardinalityCostModelTest extends CypherFunSuite with AstConstructionTestSu
         None,
         groupNodes = Set(("n", "n"), ("m", "m")),
         groupRelationships = Set(("r", "r")),
-        singletonNodeVariables = Set("v"),
+        singletonNodeVariables = Set("v" -> "v"),
         singletonRelationshipVariables = Set(),
         StatefulShortestPath.Selector.Shortest(1),
         nfa,

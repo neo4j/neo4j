@@ -127,6 +127,7 @@ import org.neo4j.cypher.internal.logical.plans.SimulatedExpand
 import org.neo4j.cypher.internal.logical.plans.SimulatedSelection
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
+import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
 import org.neo4j.cypher.internal.logical.plans.SubqueryForeach
 import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.Top1WithTies
@@ -867,6 +868,23 @@ class SingleQuerySlotAllocator private[physicalplanning] (
 
         slots.newReference(pathName, nullable, CTPath)
         slots.newReference(relsName, nullable, CTList(CTRelationship))
+
+      case p: StatefulShortestPath =>
+        val nodeStateVars = p.singletonNodeVariables.map(_.rowVar.name)
+        val relStateVars = p.singletonRelationshipVariables.map(_.rowVar.name)
+
+        p.nodeVariableGroupings.foreach { n =>
+          slots.newReference(n.groupName.name, nullable, CTList(CTNode))
+        }
+        p.relationshipVariableGroupings.foreach { n =>
+          slots.newReference(n.groupName.name, nullable, CTList(CTRelationship))
+        }
+        nodeStateVars.foreach {
+          slots.newLong(_, nullable, CTNode)
+        }
+        relStateVars.foreach {
+          slots.newLong(_, nullable, CTRelationship)
+        }
 
       case Foreach(_, variableName, listExpression, mutations) =>
         mutations.foreach {

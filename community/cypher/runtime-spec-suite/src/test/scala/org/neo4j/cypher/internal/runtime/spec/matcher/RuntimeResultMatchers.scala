@@ -104,6 +104,14 @@ trait RuntimeResultMatchers[CONTEXT <: RuntimeContext] {
   def tolerantEquals(expected: Double, x: Number): Boolean =
     doubleEquality.areEqual(expected, x.doubleValue())
 
+  def oneToOneSortedPaths(
+    pathVar: String,
+    rows: Seq[Array[Object]]
+  ): OneToOneSortedPathsMatcher = {
+    val anyValues = rows.map(row => row.map(ValueUtils.asAnyValue)).toIndexedSeq
+    OneToOneSortedPathsMatcher(pathVar, anyValues)
+  }
+
   class RuntimeResultMatcher(expectedColumns: Seq[String]) extends Matcher[RecordingRuntimeResult] {
 
     private var rowsMatcher: RowsMatcher = AnyRowsMatcher

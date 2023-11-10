@@ -231,6 +231,7 @@ import org.neo4j.cypher.internal.logical.plans.ShowTransactions
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
+import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath.Mapping
 import org.neo4j.cypher.internal.logical.plans.SubqueryForeach
 import org.neo4j.cypher.internal.logical.plans.TerminateTransactions
 import org.neo4j.cypher.internal.logical.plans.Top
@@ -2324,8 +2325,8 @@ case class LogicalPlanProducer(
     nonInlinablePreFilters: Option[Expression],
     nodeVariableGroupings: Set[Trail.VariableGrouping],
     relationshipVariableGroupings: Set[Trail.VariableGrouping],
-    singletonNodeVariables: Set[LogicalVariable],
-    singletonRelationshipVariables: Set[LogicalVariable],
+    singletonNodeVariables: Set[Mapping],
+    singletonRelationshipVariables: Set[Mapping],
     selector: StatefulShortestPath.Selector,
     maybeHiddenFilter: Option[Expression],
     solvedExpressionAsString: String,

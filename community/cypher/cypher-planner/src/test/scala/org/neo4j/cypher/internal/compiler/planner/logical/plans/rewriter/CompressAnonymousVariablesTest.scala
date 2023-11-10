@@ -98,7 +98,7 @@ class CompressAnonymousVariablesTest extends CypherFunSuite
           ("  UNNAMED12", "  UNNAMED16"),
           ("  UNNAMED14", "  UNNAMED18")
         ),
-        Set("t"),
+        Set("t" -> "t"),
         Set(),
         StatefulShortestPath.Selector.Shortest(1),
         new TestNFABuilder(0, "s")
@@ -139,7 +139,7 @@ class CompressAnonymousVariablesTest extends CypherFunSuite
             ("  UNNAMED2", "  UNNAMED6"),
             ("  UNNAMED4", "  UNNAMED8")
           ),
-          Set("t"),
+          Set("t" -> "t"),
           Set(),
           StatefulShortestPath.Selector.Shortest(1),
           new TestNFABuilder(0, "s")

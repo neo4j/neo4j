@@ -47,6 +47,7 @@ import org.neo4j.cypher.internal.logical.plans.Expand.ExpansionMode
 import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan.VERBOSE_TO_STRING
 import org.neo4j.cypher.internal.logical.plans.Prober.Probe
+import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath.Mapping
 import org.neo4j.cypher.internal.logical.plans.Trail.VariableGrouping
 import org.neo4j.cypher.internal.logical.plans.create.CreateNode
 import org.neo4j.cypher.internal.logical.plans.create.CreateRelationship
@@ -1891,7 +1892,10 @@ object StatefulShortestPath {
   /**
    * Defines the paths to find for each combination of start and end nodes.
    */
-  sealed trait Selector
+  sealed trait Selector {
+    def k: Long
+    def isGroup: Boolean
+  }
 
   object Selector {
 
@@ -1899,14 +1903,27 @@ object StatefulShortestPath {
      * Returns the shortest, second-shortest, etc. up to k paths.
      * If there are multiple paths of same length, picks arbitrarily.
      */
-    case class Shortest(k: Long) extends Selector
+    case class Shortest(k: Long) extends Selector {
+      def isGroup: Boolean = false
+    }
 
     /**
      * Finds all shortest paths, all second shortest paths, etc. up to all Kth shortest paths.
      * ALL SHORTEST is represented as SHORTEST 1 GROUPS.
      */
-    case class ShortestGroups(k: Long) extends Selector
+    case class ShortestGroups(k: Long) extends Selector {
+      def isGroup: Boolean = true
+    }
   }
+
+  /**
+   * Singleton node & relationship variables in the NFA are namespaced to avoid clashing with row variables.
+   * This class provides the mappings between those renames for the purposes of writing the singletons to the row.
+   * Group variables are also namespaced but those are already handled by [[VariableGrouping]].
+   *
+   * Note that the source node variable is _not_ mapped in this way because it already exists in the input row.
+   */
+  case class Mapping(nfaExprVar: LogicalVariable, rowVar: LogicalVariable)
 }
 
 /**
@@ -1917,7 +1934,8 @@ object StatefulShortestPath {
  * @param nonInlinedPreFilters          all filters that were not inlined into the NFA
  * @param nodeVariableGroupings         node variables to aggregate
  * @param relationshipVariableGroupings relationship variables to aggregate
- * @param singletonVariables            all singleton variables of the path pattern that should get projected into the outgoing row.
+ * @param singletonNodeVariables        all node singletons of the path pattern that should get projected into the outgoing row.
+ * @param singletonRelationshipVariables    all relationship singletons of the path pattern that should get projected into the outgoing row.
  * @param selector                      the selector for the shortest path algorithm
  * @param solvedExpressionAsString      the string for EXPLAIN
  * @param reverseGroupVariableProjections   if `true` reverse the group variable lists
@@ -1930,8 +1948,8 @@ case class StatefulShortestPath(
   nonInlinedPreFilters: Option[Expression],
   override val nodeVariableGroupings: Set[VariableGrouping],
   override val relationshipVariableGroupings: Set[VariableGrouping],
-  singletonNodeVariables: Set[LogicalVariable],
-  singletonRelationshipVariables: Set[LogicalVariable],
+  singletonNodeVariables: Set[Mapping],
+  singletonRelationshipVariables: Set[Mapping],
   selector: StatefulShortestPath.Selector,
   solvedExpressionAsString: String,
   reverseGroupVariableProjections: Boolean
@@ -1948,8 +1966,8 @@ case class StatefulShortestPath(
   )(idGen)
 
   override val availableSymbols: Set[LogicalVariable] = source.availableSymbols ++
-    singletonNodeVariables ++
-    singletonRelationshipVariables ++
+    singletonNodeVariables.map(_.rowVar) ++
+    singletonRelationshipVariables.map(_.rowVar) ++
     nodeVariableGroupings.map(_.groupName) ++
     relationshipVariableGroupings.map(_.groupName)
 

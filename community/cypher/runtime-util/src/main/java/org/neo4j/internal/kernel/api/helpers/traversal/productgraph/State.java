@@ -19,23 +19,25 @@
  */
 package org.neo4j.internal.kernel.api.helpers.traversal.productgraph;
 
+import org.neo4j.internal.kernel.api.helpers.traversal.SlotOrName;
+
 public final class State {
     private final boolean isStartState;
     private final boolean isFinalState;
-    private final VarName varName;
     private final int id;
+    private final SlotOrName slotOrName;
     private NodeJuxtaposition[] nodeJuxtapositions;
     private RelationshipExpansion[] relationshipExpansions;
 
     public State(
             int id,
-            VarName varName,
+            SlotOrName slotOrName,
             NodeJuxtaposition[] nodeJuxtapositions,
             RelationshipExpansion[] relationshipExpansions,
             boolean isStartState,
             boolean isFinalState) {
         this.id = id;
-        this.varName = varName;
+        this.slotOrName = slotOrName;
         this.nodeJuxtapositions = nodeJuxtapositions;
         this.relationshipExpansions = relationshipExpansions;
         this.isStartState = isStartState;
@@ -56,12 +58,6 @@ public final class State {
 
     public RelationshipExpansion[] getRelationshipExpansions() {
         return relationshipExpansions;
-    }
-
-    public record VarName(String name, boolean isGroupVariable) {}
-
-    public VarName varName() {
-        return varName;
     }
 
     public boolean isStartState() {
@@ -88,6 +84,10 @@ public final class State {
 
     @Override
     public String toString() {
-        return "State(id=" + id + ", varName=" + varName + ")";
+        return "State(id=" + id + ", slotOrName=" + slotOrName + ")";
+    }
+
+    public SlotOrName slotOrName() {
+        return slotOrName;
     }
 }

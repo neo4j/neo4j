@@ -192,6 +192,7 @@ import org.neo4j.cypher.internal.logical.plans.SimulatedSelection
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
+import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath.Mapping
 import org.neo4j.cypher.internal.logical.plans.SubqueryForeach
 import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.Top1WithTies
@@ -544,14 +545,16 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     nonInlinablePreFilters: Option[Expression],
     groupNodes: Set[(String, String)],
     groupRelationships: Set[(String, String)],
-    singletonNodeVariables: Set[String],
-    singletonRelationshipVariables: Set[String],
+    singletonNodeVariables: Set[(String, String)],
+    singletonRelationshipVariables: Set[(String, String)],
     selector: StatefulShortestPath.Selector,
     nfa: NFA,
     reverseGroupVariableProjections: Boolean
   ): IMPL = {
     val nodeVariableGroupings = groupNodes.map { case (x, y) => VariableGrouping(varFor(x), varFor(y)) }
     val relationshipVariableGroupings = groupRelationships.map { case (x, y) => VariableGrouping(varFor(x), varFor(y)) }
+    val singletonNodeMappings = singletonNodeVariables.map { case (x, y) => Mapping(varFor(x), varFor(y)) }
+    val singletonRelMappings = singletonRelationshipVariables.map { case (x, y) => Mapping(varFor(x), varFor(y)) }
 
     newNodes(nfa.nodeNames.map(_.name) + targetNode)
     newRelationships(nfa.relationshipNames.map(_.name))
@@ -565,8 +568,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         nonInlinablePreFilters,
         nodeVariableGroupings,
         relationshipVariableGroupings,
-        singletonNodeVariables.map(varFor),
-        singletonRelationshipVariables.map(varFor),
+        singletonNodeMappings,
+        singletonRelMappings,
         selector,
         solvedExpressionString,
         reverseGroupVariableProjections
@@ -582,11 +585,11 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     nonInlinablePreFilters: Option[String],
     groupNodes: Set[(String, String)],
     groupRelationships: Set[(String, String)],
-    singletonNodeVariables: Set[String],
-    singletonRelationshipVariables: Set[String],
+    singletonNodeVariables: Set[(String, String)],
+    singletonRelationshipVariables: Set[(String, String)],
     selector: StatefulShortestPath.Selector,
     nfa: NFA,
-    reverseGroupVariableProjections: Boolean
+    reverseGroupVariableProjections: Boolean = false
   ): IMPL = {
     val predicates = nonInlinablePreFilters.map(parseExpression)
     statefulShortestPathExpr(

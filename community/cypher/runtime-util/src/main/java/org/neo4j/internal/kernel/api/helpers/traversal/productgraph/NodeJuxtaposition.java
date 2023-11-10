@@ -21,6 +21,7 @@ package org.neo4j.internal.kernel.api.helpers.traversal.productgraph;
 
 import java.util.Objects;
 import java.util.function.LongPredicate;
+import org.neo4j.util.Preconditions;
 
 public final class NodeJuxtaposition implements Transition {
     private final LongPredicate nodePredicate;
@@ -42,8 +43,9 @@ public final class NodeJuxtaposition implements Transition {
 
     @Override
     public void setTargetState(State state) {
-        assert targetState == null
-                : "Shouldn't set target state more than once. The targetState field is only mutable to support delayed initialization which is require when there are cycles in the NFA";
+        Preconditions.checkState(
+                targetState == null,
+                "Shouldn't set target state more than once. The targetState field is only mutable to support delayed initialization which is require when there are cycles in the NFA");
         this.targetState = state;
     }
 

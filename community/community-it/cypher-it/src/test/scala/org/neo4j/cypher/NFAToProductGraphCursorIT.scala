@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher
 
-import org.eclipse.collections.impl.block.factory.primitive.IntPredicates
 import org.neo4j.configuration.GraphDatabaseInternalSettings
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.False
@@ -41,8 +41,9 @@ import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration
 import org.neo4j.cypher.internal.runtime.SelectivityTrackerRegistrator
 import org.neo4j.cypher.internal.runtime.ast.ConstantExpressionVariable
-import org.neo4j.cypher.internal.runtime.ast.TemporaryExpressionVariable
+import org.neo4j.cypher.internal.runtime.expressionVariableAllocation
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
+import org.neo4j.cypher.internal.runtime.interpreted.commands
 import org.neo4j.cypher.internal.runtime.interpreted.commands.CommandNFA
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.CommunityExpressionConverter
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
@@ -57,18 +58,14 @@ import org.neo4j.graphdb.config.Setting
 import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.internal.kernel.api.Read
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
-import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException
 import org.neo4j.internal.kernel.api.helpers.ProductGraphTraversalCursorTest
+import org.neo4j.internal.kernel.api.helpers.traversal.SlotOrName
 import org.neo4j.internal.kernel.api.helpers.traversal.productgraph
 import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.NodeJuxtaposition
 import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.ProductGraphTraversalCursor
 import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.RelationshipExpansion
 import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.State
-import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.State.VarName
-import org.neo4j.kernel.api.exceptions.PropertyKeyNotFoundException
-import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.memory.EmptyMemoryTracker
-import org.neo4j.token.api.TokenConstants
 import org.neo4j.values.AnyValue
 
 class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
@@ -85,16 +82,22 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
       CypherRuntimeConfiguration.defaultConfiguration
     ))
 
-  private val expressionVariables = Array.fill[AnyValue](10)(null)
+  private val expressionVariables = Array.fill[AnyValue](17)(null)
 
   private val truePred = Some(VariablePredicate(ConstantExpressionVariable(0, "not used"), True()(InputPosition.NONE)))
 
   private val falsePred =
     Some(VariablePredicate(ConstantExpressionVariable(0, "not used"), False()(InputPosition.NONE)))
 
+  private def convertPredicate(variablePredicate: VariablePredicate): commands.predicates.Predicate = {
+    converters.toCommandPredicate(Id.INVALID_ID, variablePredicate.predicate)
+  }
+
+  implicit private val semanticTable: SemanticTable = SemanticTable()
+
   test("should traverse two hops") {
 
-    withEverything { (readTokenContext, read, queryState, nodeCursor, _, pgCursor) =>
+    withEverything { (read, queryState, nodeCursor, _, pgCursor) =>
       // (start)-[r1:R1]->(a1)-[r2:R2]->(f1)
       val start = createNode()
       val a1 = createNode()
@@ -139,12 +142,7 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
       val nfa = nfaBuilder.build()
 
       val compiledS0 =
-        CommandNFA.fromLogicalNFA(Id.INVALID_ID)(
-          nfa,
-          IntPredicates.alwaysFalse(),
-          converters,
-          readTokenContext
-        ).compile(context, queryState)
+        CommandNFA.fromLogicalNFA(nfa, convertPredicate).compile(context, queryState)
 
       val actual = ProductGraphTraversalCursorTest.ProductGraph.fromCursors(
         start.getId,
@@ -169,7 +167,7 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
 
   test("should filter on type") {
 
-    withEverything { (readTokenContext, read, queryState, nodeCursor, _, pgCursor) =>
+    withEverything { (read, queryState, nodeCursor, _, pgCursor) =>
       // (start)-[r1:R1]->(a1)-[r2:R2]->(f1)
       val start = createNode()
       val a1 = createNode()
@@ -215,12 +213,7 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
       val nfa = nfaBuilder.build()
 
       val compiledS0 =
-        CommandNFA.fromLogicalNFA(Id.INVALID_ID)(
-          nfa,
-          IntPredicates.alwaysFalse(),
-          converters,
-          readTokenContext
-        ).compile(context, queryState)
+        CommandNFA.fromLogicalNFA(nfa, convertPredicate).compile(context, queryState)
 
       val actual = ProductGraphTraversalCursorTest.ProductGraph.fromCursors(
         start.getId,
@@ -243,7 +236,7 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
 
   test("should filter on direction") {
 
-    withEverything { (readTokenContext, read, queryState, nodeCursor, _, pgCursor) =>
+    withEverything { (read, queryState, nodeCursor, _, pgCursor) =>
       // (start)-[r1:R1]->(a1)-[r2:R2]->(f1)
       val start = createNode()
       val a1 = createNode()
@@ -286,15 +279,10 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
         )
       )
 
-      val nfa = nfaBuilder.build()
+      val nfa = expressionVariableAllocation.allocate(nfaBuilder.build()).rewritten
 
       val compiledS0 =
-        CommandNFA.fromLogicalNFA(Id.INVALID_ID)(
-          nfa,
-          IntPredicates.alwaysFalse(),
-          converters,
-          readTokenContext
-        ).compile(context, queryState)
+        CommandNFA.fromLogicalNFA(nfa, convertPredicate).compile(context, queryState)
 
       val actual = ProductGraphTraversalCursorTest.ProductGraph.fromCursors(
         start.getId,
@@ -317,7 +305,7 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
 
   test("should filter on rel predicate") {
 
-    withEverything { (readTokenContext, read, queryState, nodeCursor, _, pgCursor) =>
+    withEverything { (read, queryState, nodeCursor, _, pgCursor) =>
       // (start)-[r1:R1]->(a1)-[r2:R2]->(f1)
       val start = createNode()
       val a1 = createNode()
@@ -360,15 +348,10 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
         )
       )
 
-      val nfa = nfaBuilder.build()
+      val nfa = expressionVariableAllocation.allocate(nfaBuilder.build()).rewritten
 
       val compiledS0 =
-        CommandNFA.fromLogicalNFA(Id.INVALID_ID)(
-          nfa,
-          IntPredicates.alwaysFalse(),
-          converters,
-          readTokenContext
-        ).compile(context, queryState)
+        CommandNFA.fromLogicalNFA(nfa, convertPredicate).compile(context, queryState)
 
       val actual = ProductGraphTraversalCursorTest.ProductGraph.fromCursors(
         start.getId,
@@ -391,7 +374,7 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
 
   test("should filter on node predicate") {
 
-    withEverything { (readTokenContext, read, queryState, nodeCursor, _, pgCursor) =>
+    withEverything { (read, queryState, nodeCursor, _, pgCursor) =>
       // (start)-[r1:R1]->(a1)-[r2:R2]->(f1)
       val start = createNode()
       val a1 = createNode()
@@ -434,15 +417,10 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
         )
       )
 
-      val nfa = nfaBuilder.build()
+      val nfa = expressionVariableAllocation.allocate(nfaBuilder.build()).rewritten
 
       val compiledS0 =
-        CommandNFA.fromLogicalNFA(Id.INVALID_ID)(
-          nfa,
-          IntPredicates.alwaysFalse(),
-          converters,
-          readTokenContext
-        ).compile(context, queryState)
+        CommandNFA.fromLogicalNFA(nfa, convertPredicate).compile(context, queryState)
 
       val actual = ProductGraphTraversalCursorTest.ProductGraph.fromCursors(
         start.getId,
@@ -465,7 +443,7 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
 
   test("should handle multiple types in multiple directions") {
 
-    withEverything { (readTokenContext, read, queryState, nodeCursor, _, pgCursor) =>
+    withEverything { (read, queryState, nodeCursor, _, pgCursor) =>
       //                              -[o1:O1]->
       //       _________<________     -[o2:O3]->
       //     /                   \    -[o3:O2]->
@@ -566,15 +544,10 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
         )
       )
 
-      val nfa = nfaBuilder.build()
+      val nfa = expressionVariableAllocation.allocate(nfaBuilder.build()).rewritten
 
       val compiledS0 =
-        CommandNFA.fromLogicalNFA(Id.INVALID_ID)(
-          nfa,
-          IntPredicates.alwaysFalse(),
-          converters,
-          readTokenContext
-        ).compile(context, queryState)
+        CommandNFA.fromLogicalNFA(nfa, convertPredicate).compile(context, queryState)
 
       val actual = ProductGraphTraversalCursorTest.ProductGraph.fromCursors(
         start.getId,
@@ -608,7 +581,7 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
 
   test("node juxtaposition should filter on node predicate") {
 
-    withEverything { (readTokenContext, read, queryState, nodeCursor, _, pgCursor) =>
+    withEverything { (read, queryState, nodeCursor, _, pgCursor) =>
       val start = createNode()
 
       val slots = SlotConfiguration.empty
@@ -646,15 +619,10 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
         )
       )
 
-      val nfa = nfaBuilder.build()
+      val nfa = expressionVariableAllocation.allocate(nfaBuilder.build()).rewritten
 
       val compiledS0 =
-        CommandNFA.fromLogicalNFA(Id.INVALID_ID)(
-          nfa,
-          IntPredicates.alwaysFalse(),
-          converters,
-          readTokenContext
-        ).compile(context, queryState)
+        CommandNFA.fromLogicalNFA(nfa, convertPredicate).compile(context, queryState)
 
       val actual = ProductGraphTraversalCursorTest.ProductGraph.fromCursors(
         start.getId,
@@ -677,7 +645,7 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
 
   test("complicated graph and automata") {
 
-    withEverything { (readTokenContext, read, queryState, nodeCursor, _, pgCursor) =>
+    withEverything { (read, queryState, nodeCursor, _, pgCursor) =>
       //          _____________________________________
       //         |                                     |
       //      (start)<-[r2s:R2s]-(n2)                  |
@@ -734,14 +702,14 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
         nj0,
         nj1,
         NFA.NodeJuxtapositionPredicate(
-          Some(varPred(0, eq(idOfExprVar(0), idStatically(n1))))
+          Some(VariablePredicate(varFor("x"), eq(id(varFor("x")), idStatically(n1))))
         )
       )
       nfaBuilder.addTransition(
         nj0,
         nj2,
         NFA.NodeJuxtapositionPredicate(
-          Some(varPred(0, eq(idOfExprVar(0), idStatically(start))))
+          Some(VariablePredicate(varFor("x"), eq(id(varFor("x")), idStatically(start))))
         )
       )
       nfaBuilder.addTransition(
@@ -763,7 +731,10 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
         nj4,
         NFA.RelationshipExpansionPredicate(
           varFor("re0->nj4"),
-          Some(varPred(0, eq(function("startNode", exprVar(0)), function("endNode", exprVar(0))))),
+          Some(VariablePredicate(
+            varFor("rel"),
+            eq(function("startNode", varFor("rel")), function("endNode", varFor("rel")))
+          )),
           Seq(), // All types
           SemanticDirection.BOTH,
           truePred
@@ -774,24 +745,24 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
         nj3,
         NFA.RelationshipExpansionPredicate(
           varFor("re0->nj3"),
-          Some(varPred(
-            0,
+          Some(VariablePredicate(
+            varFor("rel"),
             ors(
-              eq(idOfExprVar(0), idStatically(rs5)),
-              eq(idOfExprVar(0), idStatically(r2s)),
-              eq(idOfExprVar(0), idStatically(rs1))
+              eq(id(varFor("rel")), idStatically(rs5)),
+              eq(id(varFor("rel")), idStatically(r2s)),
+              eq(id(varFor("rel")), idStatically(rs1))
             )
           )),
           Seq(), // All types
           SemanticDirection.BOTH,
-          Some(varPred(0, neq(idOfExprVar(0), idStatically(n5))))
+          Some(VariablePredicate(varFor("x"), neq(id(varFor("x")), idStatically(n5))))
         )
       )
       nfaBuilder.addTransition(
         nj3,
         re1,
         NFA.NodeJuxtapositionPredicate(
-          Some(varPred(0, neq(idOfExprVar(0), idStatically(start))))
+          Some(VariablePredicate(varFor("x"), neq(id(varFor("x")), idStatically(start))))
         )
       )
       nfaBuilder.addTransition(
@@ -821,22 +792,20 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
         nj5,
         NFA.RelationshipExpansionPredicate(
           varFor("re2->nj5"),
-          Some(varPred(0, eq(function("startNode", exprVar(0)), function("endNode", exprVar(0))))),
+          Some(VariablePredicate(
+            varFor("rel"),
+            eq(function("startNode", varFor("rel")), function("endNode", varFor("rel")))
+          )),
           Seq(), // All types
           SemanticDirection.OUTGOING,
           None // Another (preferred) way to specify always true
         )
       )
 
-      val nfa = nfaBuilder.build()
+      val nfa = expressionVariableAllocation.allocate(nfaBuilder.build()).rewritten
 
       val compiledS0 =
-        CommandNFA.fromLogicalNFA(Id.INVALID_ID)(
-          nfa,
-          IntPredicates.alwaysFalse(),
-          converters,
-          readTokenContext
-        ).compile(context, queryState)
+        CommandNFA.fromLogicalNFA(nfa, convertPredicate).compile(context, queryState)
 
       val actual = ProductGraphTraversalCursorTest.ProductGraph.fromCursors(
         start.getId,
@@ -892,7 +861,7 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
 
   test("complicated graph and automata mixed transition") {
 
-    withEverything { (readTokenContext, read, queryState, nodeCursor, _, pgCursor) =>
+    withEverything { (read, queryState, nodeCursor, _, pgCursor) =>
       //          _____________________________________
       //         |                                     |
       //      (start)<-[r2s:R2s]-(n2)                  |
@@ -949,14 +918,14 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
         s0,
         s1,
         NFA.NodeJuxtapositionPredicate(
-          Some(varPred(0, eq(idOfExprVar(0), idStatically(n1))))
+          Some(VariablePredicate(varFor("x"), eq(id(varFor("x")), idStatically(n1))))
         )
       )
       nfaBuilder.addTransition(
         s0,
         s2,
         NFA.NodeJuxtapositionPredicate(
-          Some(varPred(0, eq(idOfExprVar(0), idStatically(start))))
+          Some(VariablePredicate(varFor("x"), eq(id(varFor("x")), idStatically(start))))
         )
       )
       nfaBuilder.addTransition(
@@ -991,7 +960,7 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
         s4,
         s5,
         NFA.NodeJuxtapositionPredicate(
-          Some(varPred(0, eq(idOfExprVar(0), idStatically(n2))))
+          Some(VariablePredicate(varFor("x"), eq(id(varFor("x")), idStatically(n2))))
         )
       )
       nfaBuilder.addTransition(
@@ -1011,7 +980,10 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
         s4,
         NFA.RelationshipExpansionPredicate(
           varFor("s6->s4"),
-          Some(varPred(0, eq(function("startNode", exprVar(0)), function("endNode", exprVar(0))))),
+          Some(VariablePredicate(
+            varFor("rel"),
+            eq(function("startNode", varFor("rel")), function("endNode", varFor("rel")))
+          )),
           Seq(), // All types
           SemanticDirection.BOTH,
           truePred
@@ -1022,24 +994,24 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
         s3,
         NFA.RelationshipExpansionPredicate(
           varFor("s6->s3"),
-          Some(varPred(
-            0,
+          Some(VariablePredicate(
+            varFor("rel"),
             ors(
-              eq(idOfExprVar(0), idStatically(rs5)),
-              eq(idOfExprVar(0), idStatically(r2s)),
-              eq(idOfExprVar(0), idStatically(rs1))
+              eq(id(varFor("rel")), idStatically(rs5)),
+              eq(id(varFor("rel")), idStatically(r2s)),
+              eq(id(varFor("rel")), idStatically(rs1))
             )
           )),
           Seq(), // All types
           SemanticDirection.BOTH,
-          Some(varPred(0, neq(idOfExprVar(0), idStatically(n5))))
+          Some(VariablePredicate(varFor("x"), neq(id(varFor("x")), idStatically(n5))))
         )
       )
       nfaBuilder.addTransition(
         s3,
         s7,
         NFA.NodeJuxtapositionPredicate(
-          Some(varPred(0, neq(idOfExprVar(0), idStatically(start))))
+          Some(VariablePredicate(varFor("x"), neq(id(varFor("x")), idStatically(start))))
         )
       )
       nfaBuilder.addTransition(
@@ -1069,22 +1041,20 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
         s5,
         NFA.RelationshipExpansionPredicate(
           varFor("s8->s5"),
-          Some(varPred(0, eq(function("startNode", exprVar(0)), function("endNode", exprVar(0))))),
+          Some(VariablePredicate(
+            varFor("rel"),
+            eq(function("startNode", varFor("rel")), function("endNode", varFor("rel")))
+          )),
           Seq(), // All types
           SemanticDirection.OUTGOING,
           None // Another (preferred) way to specify always true
         )
       )
 
-      val nfa = nfaBuilder.build()
+      val nfa = expressionVariableAllocation.allocate(nfaBuilder.build()).rewritten
 
       val compiledS0 =
-        CommandNFA.fromLogicalNFA(Id.INVALID_ID)(
-          nfa,
-          IntPredicates.alwaysFalse(),
-          converters,
-          readTokenContext
-        ).compile(context, queryState)
+        CommandNFA.fromLogicalNFA(nfa, convertPredicate).compile(context, queryState)
 
       val actual = ProductGraphTraversalCursorTest.ProductGraph.fromCursors(
         start.getId,
@@ -1147,6 +1117,10 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
 
   private val pos = InputPosition.NONE
 
+  def id(expr: Expression): Expression = {
+    function("id", expr)
+  }
+
   def eq(l: Expression, r: Expression): Expression = {
     Equals(l, r)(pos)
   }
@@ -1167,35 +1141,21 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
     UnsignedDecimalIntegerLiteral(entity.getId.toString)(pos)
   }
 
-  def exprVar(offset: Int): TemporaryExpressionVariable = {
-    TemporaryExpressionVariable(offset, s"offset-$offset")
-  }
-
-  def varPred(offset: Int, p: Expression): VariablePredicate = {
-    VariablePredicate(exprVar(offset), p)
-  }
-
-  def idOfExprVar(offset: Int): Expression = {
-    function("id", exprVar(offset))
-  }
-
   def function(name: String, args: Expression*): FunctionInvocation =
     FunctionInvocation(FunctionName(name)(pos), distinct = false, args.toIndexedSeq)(pos)
 
   def conv(state: NFABuilder.State): productgraph.State = {
     new State(
       state.id,
-      new VarName(state.variable.name, false),
+      SlotOrName.None,
       new Array[NodeJuxtaposition](0),
       new Array[RelationshipExpansion](0),
       false,
       false
     )
-
   }
 
   def withEverything[T](f: (
-    ReadTokenContext,
     Read,
     QueryState,
     NodeCursor,
@@ -1218,7 +1178,6 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
           tx,
           f = qs => {
             f(
-              txToReadTokenContext(tx),
               tx.kernelTransaction().dataRead(),
               qs,
               nodeCursor,
@@ -1237,42 +1196,4 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
   }
 
   def relTypeName(name: String): RelTypeName = RelTypeName(name)(InputPosition.NONE)
-
-  def txToReadTokenContext(tx: InternalTransaction): ReadTokenContext = {
-    new ReadTokenContext {
-      private val tokenRead = tx.kernelTransaction().tokenRead()
-      override def getLabelName(id: Int): String = tokenRead.labelGetName(id)
-
-      override def getOptLabelId(labelName: String): Option[Int] =
-        try {
-          Some(tokenRead.nodeLabel(labelName))
-        } catch {
-          case _: LabelNotFoundKernelException => None
-        }
-
-      override def getLabelId(labelName: String): Int = tokenRead.nodeLabel(labelName)
-
-      override def getPropertyKeyName(id: Int): String = tokenRead.propertyKeyName(id)
-
-      override def getOptPropertyKeyId(propertyKeyName: String): Option[Int] =
-        try {
-          Some(tokenRead.propertyKey(propertyKeyName))
-        } catch {
-          case _: PropertyKeyNotFoundException => None
-        }
-
-      override def getPropertyKeyId(propertyKeyName: String): Int = tokenRead.propertyKey(propertyKeyName)
-
-      override def getRelTypeName(id: Int): String = tokenRead.relationshipTypeName(id)
-
-      override def getOptRelTypeId(relType: String): Option[Int] = {
-        tokenRead.relationshipType(relType) match {
-          case TokenConstants.NO_TOKEN => None
-          case t                       => Some(t)
-        }
-      }
-
-      override def getRelTypeId(relType: String): Int = tokenRead.relationshipType(relType)
-    }
-  }
 }

@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.expressions.UnPositionedVariable
 import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.Unique
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.frontend.phases.Namespacer
 import org.neo4j.cypher.internal.ir.ExhaustiveNodeConnection
 import org.neo4j.cypher.internal.ir.ExhaustivePathPattern
 import org.neo4j.cypher.internal.ir.NodeConnection
@@ -41,6 +42,7 @@ import org.neo4j.cypher.internal.ir.NodePathVariable
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
 import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.ir.RelationshipPathVariable
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SelectivePathPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
@@ -51,8 +53,11 @@ import org.neo4j.cypher.internal.logical.plans.Expand.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
+import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath.Mapping
 import org.neo4j.cypher.internal.logical.plans.Trail
 import org.neo4j.cypher.internal.util.NonEmptyList
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.exceptions.InternalException
 
 import scala.collection.immutable.ListSet
@@ -472,6 +477,23 @@ object expandSolverStep {
     reverseGroupVariableProjections: Boolean
   ): LogicalPlan = {
 
+    val rewriteLookup = mutable.Map.empty[LogicalVariable, LogicalVariable]
+    val nonSingletons =
+      spp.allQuantifiedPathPatterns.flatMap(_.variableGroupNames) ++ spp.varLengthRelationshipNames + startNode
+    val singletonNodeVariables = Set.newBuilder[Mapping]
+    val singletonRelVariables = Set.newBuilder[Mapping]
+    spp.pathVariables.iterator
+      .filterNot(pathVariable => nonSingletons.contains(pathVariable.variable))
+      .foreach { pathVar =>
+        val nfaName = Namespacer.genName(context.staticComponents.anonymousVariableNameGenerator, pathVar.variable)
+        val mapping = Mapping(varFor(nfaName), varFor(pathVar.variable))
+        rewriteLookup.addOne(mapping.rowVar -> mapping.nfaExprVar)
+        pathVar match {
+          case _: NodePathVariable         => singletonNodeVariables.addOne(mapping)
+          case _: RelationshipPathVariable => singletonRelVariables.addOne(mapping)
+        }
+      }
+
     val (nfa, nonInlinedSelections, syntheticVarLengthSingletons) =
       ConvertToNFA.convertToNfa(
         spp,
@@ -480,6 +502,10 @@ object expandSolverStep {
         unsolvedPredicatesOnTargetNode,
         context.staticComponents.anonymousVariableNameGenerator
       )
+
+    val rewrittenNfa = nfa.endoRewrite(bottomUp(Rewriter.lift {
+      case variable: LogicalVariable => rewriteLookup.getOrElse(variable, variable)
+    }))
 
     val solvedExpressionAsString =
       spp.copy(selections = spp.selections ++ unsolvedPredicatesOnTargetNode)
@@ -494,28 +520,16 @@ object expandSolverStep {
     val nonInlinablePreFilters =
       Option.when(nonInlinedSelections.nonEmpty)(Ands.create(nonInlinedSelections.flatPredicates.to(ListSet)))
 
-    val singletonVariableNames = spp.pathVariables.filterNot(pathVariable =>
-      (spp.allQuantifiedPathPatterns.flatMap(_.variableGroupNames) ++ spp.varLengthRelationshipNames + startNode)
-        .contains(pathVariable.variable)
-    )
-
-    val (singletonNodeVariableNames, singletonRelationshipVariableNames) =
-      singletonVariableNames.partition(_.isInstanceOf[NodePathVariable])
-
-    val singletonNodeVariables = singletonNodeVariableNames.map[LogicalVariable](x => varFor(x.variable)).toSet
-    val singletonRelationshipVariables =
-      singletonRelationshipVariableNames.map[LogicalVariable](x => varFor(x.variable)).toSet
-
     context.staticComponents.logicalPlanProducer.planStatefulShortest(
       sourcePlan,
       startNode,
       newEndNode,
-      nfa,
+      rewrittenNfa,
       nonInlinablePreFilters,
       nodeVariableGroupings,
       relationshipVariableGroupings,
-      singletonNodeVariables,
-      singletonRelationshipVariables,
+      singletonNodeVariables.result(),
+      singletonRelVariables.result(),
       selector,
       maybeHiddenFilter,
       solvedExpressionAsString,

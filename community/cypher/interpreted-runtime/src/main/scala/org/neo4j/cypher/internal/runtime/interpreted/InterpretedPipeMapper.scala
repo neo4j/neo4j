@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted
 import org.neo4j.cypher.internal
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
 import org.neo4j.cypher.internal.ir.VarPatternLength
@@ -133,6 +134,7 @@ import org.neo4j.cypher.internal.logical.plans.ShowSettings
 import org.neo4j.cypher.internal.logical.plans.ShowTransactions
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
+import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
 import org.neo4j.cypher.internal.logical.plans.SubqueryForeach
 import org.neo4j.cypher.internal.logical.plans.TerminateTransactions
 import org.neo4j.cypher.internal.logical.plans.Top
@@ -174,6 +176,7 @@ import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ProcedureCallMode
 import org.neo4j.cypher.internal.runtime.QueryIndexRegistrator
 import org.neo4j.cypher.internal.runtime.ast.ExpressionVariable
+import org.neo4j.cypher.internal.runtime.interpreted.commands.CommandNFA
 import org.neo4j.cypher.internal.runtime.interpreted.commands.KeyTokenResolver
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.InterpretedCommandProjection
@@ -291,6 +294,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.SetRelationshipProper
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ShortestPathPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.SkipPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.SortPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.StatefulShortestPathPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.SubqueryForeachPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TestPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Top1Pipe
@@ -322,6 +326,7 @@ import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Eagerly
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InternalException
+import org.neo4j.internal.kernel.api.helpers.traversal.SlotOrName
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
@@ -1241,6 +1246,55 @@ case class InterpretedPipeMapper(
           maxDepth,
           single && !withFallBack
         )(id)
+
+      case StatefulShortestPath(
+          _,
+          sourceNode,
+          _,
+          nfa,
+          nonInlinedPreFilters,
+          nodeVariableGroupings,
+          relationshipVariableGroupings,
+          singletonNodeVariables,
+          singletonRelationshipVariables,
+          selector,
+          _,
+          reverseGroupVariableProjections
+        ) =>
+        def convertPredicate(varPred: VariablePredicate) =
+          expressionConverters.toCommandPredicate(id, varPred.predicate)
+            .rewriteAsPredicate(KeyTokenResolver.resolveExpressions(_, tokenContext))
+
+        val groupMap = (nodeVariableGroupings ++ relationshipVariableGroupings)
+          .map(grouping => grouping.singletonName.name -> grouping.groupName.name)
+          .toMap
+
+        val singletonMap = (singletonNodeVariables ++ singletonRelationshipVariables)
+          .map(mapping => mapping.nfaExprVar.name -> mapping.rowVar.name)
+          .toMap
+
+        def getName(variable: LogicalVariable): SlotOrName = {
+          groupMap.get(variable.name) match {
+            case Some(name) =>
+              SlotOrName.VarName(name, isGroup = true)
+            case None =>
+              SlotOrName.VarName(singletonMap.getOrElse(variable.name, variable.name), isGroup = false)
+          }
+        }
+
+        val commandNFA = CommandNFA.fromLogicalNFA(nfa, convertPredicate, getName)
+
+        val commandPreFilters: Option[Predicate] = nonInlinedPreFilters.map(buildPredicate(id, _))
+
+        StatefulShortestPathPipe(
+          source,
+          sourceNode.name,
+          commandNFA,
+          commandPreFilters,
+          selector,
+          groupMap.values.toSet,
+          reverseGroupVariableProjections
+        )(id = id)
 
       case UnwindCollection(_, variable, collection) =>
         UnwindPipe(source, buildExpression(collection), variable.name)(id = id)

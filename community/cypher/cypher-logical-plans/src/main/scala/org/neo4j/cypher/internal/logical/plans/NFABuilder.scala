@@ -136,7 +136,8 @@ class NFABuilder protected (_startState: State) {
     val transitions = this.transitions.sets.map {
       case (stateImpl: StateImpl, transitions) =>
         stateToNFAState(stateImpl) -> transitions.map {
-          case Transition(nfaPredicate, end) => plans.NFA.Transition(nfaPredicate, stateToNFAState(end))
+          case Transition(nfaPredicate, end) =>
+            plans.NFA.Transition(nfaPredicate, stateToNFAState(end))
         }.toSet
     }.toMap
 
