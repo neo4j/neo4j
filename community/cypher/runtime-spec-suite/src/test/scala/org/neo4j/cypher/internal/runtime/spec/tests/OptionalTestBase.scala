@@ -349,6 +349,24 @@ abstract class OptionalTestBase[CONTEXT <: RuntimeContext](
     execute(query, runtime) should beColumns("n0").withRows(singleColumn(nodes))
   }
 
+  test("should work when nullable variable is aliased on RHS of Apply") {
+    val nodes = givenGraph {
+      nodeGraph(1)
+    }
+
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("n0")
+      .apply()
+      .|.optional("n0")
+      .|.filter("false")
+      .|.projection("n0 AS n2")
+      .|.allNodeScan("n1")
+      .allNodeScan("n0")
+      .build()
+
+    execute(query, runtime) should beColumns("n0").withRows(singleColumn(nodes))
+  }
+
   def createBatchedInputValues(): InputValues = {
     val (batchSize, numberOfWorkers) = runtime.name.toLowerCase match {
       case "pipelined" =>

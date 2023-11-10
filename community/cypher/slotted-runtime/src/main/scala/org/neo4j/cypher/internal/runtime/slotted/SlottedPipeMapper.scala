@@ -1115,7 +1115,9 @@ class SlottedPipeMapper(
         )(id = id)
 
       case Optional(inner, symbols) =>
-        val nullableSlots = symbolsToSlots(inner.availableSymbols.map(_.name) -- symbols.map(_.name), slots)
+        val nullableSlots = (inner.availableSymbols.map(_.name).map(k => slots.get(k).get) -- symbols.map(_.name).map(
+          k => slots.get(k).get
+        )).toArray
         OptionalSlottedPipe(source, nullableSlots)(id)
 
       case Projection(_, expressions) =>
