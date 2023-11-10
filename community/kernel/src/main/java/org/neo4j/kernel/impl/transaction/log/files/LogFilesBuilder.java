@@ -426,18 +426,24 @@ public class LogFilesBuilder {
 
     private AtomicLong getRotationThresholdAndRegisterForUpdates() {
         if (rotationThreshold != null) {
-            return new AtomicLong(roundUp(rotationThreshold, envelopeSegmentBlockSizeBytes));
+            return new AtomicLong(
+                    guaranteeAtLeastTwoSegments(roundUp(rotationThreshold, envelopeSegmentBlockSizeBytes)));
         }
         if (readOnlyStores) {
             return new AtomicLong(
                     roundUp(Long.MAX_VALUE - envelopeSegmentBlockSizeBytes, envelopeSegmentBlockSizeBytes));
         }
-        AtomicLong configThreshold =
-                new AtomicLong(roundUp(config.get(logical_log_rotation_threshold), envelopeSegmentBlockSizeBytes));
+        AtomicLong configThreshold = new AtomicLong(guaranteeAtLeastTwoSegments(
+                roundUp(config.get(logical_log_rotation_threshold), envelopeSegmentBlockSizeBytes)));
         config.addListener(
                 logical_log_rotation_threshold,
-                (prev, update) -> configThreshold.set(roundUp(update, envelopeSegmentBlockSizeBytes)));
+                (prev, update) -> configThreshold.set(
+                        guaranteeAtLeastTwoSegments(roundUp(update, envelopeSegmentBlockSizeBytes))));
         return configThreshold;
+    }
+
+    private long guaranteeAtLeastTwoSegments(long rotationThreshold) {
+        return Math.max(rotationThreshold, envelopeSegmentBlockSizeBytes * 2L);
     }
 
     private AtomicBoolean getTryToPreallocateTransactionLogs() {

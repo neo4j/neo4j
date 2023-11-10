@@ -29,16 +29,17 @@ import static org.neo4j.collection.Dependencies.dependenciesOf;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 import static org.neo4j.internal.helpers.MathUtil.roundUp;
+import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder.activeFilesBuilder;
 import static org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder.builder;
 import static org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder.logFilesBasedOnlyBuilder;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -82,7 +83,7 @@ class LogFilesBuilderTest {
     }
 
     @Test
-    void buildActiveFilesOnlyContext() throws IOException {
+    void buildActiveFilesOnlyContext() {
         TransactionLogFilesContext context = activeFilesBuilder(
                         databaseLayout, fileSystem, pageCache, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
                 .withCommandReaderFactory(CommandReaderFactory.NO_COMMANDS)
@@ -107,7 +108,7 @@ class LogFilesBuilderTest {
     }
 
     @Test
-    void buildFilesBasedContext() throws IOException {
+    void buildFilesBasedContext() {
         TransactionLogFilesContext context = logFilesBasedOnlyBuilder(storeDirectory, fileSystem)
                 .withCommandReaderFactory(CommandReaderFactory.NO_COMMANDS)
                 .buildContext();
@@ -115,7 +116,7 @@ class LogFilesBuilderTest {
     }
 
     @Test
-    void buildDefaultContext() throws IOException {
+    void buildDefaultContext() {
         TransactionLogFilesContext context = builder(
                         databaseLayout, fileSystem, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
                 .withLogVersionRepository(new SimpleLogVersionRepository(2))
@@ -136,7 +137,29 @@ class LogFilesBuilderTest {
     }
 
     @Test
-    void buildContextWithRotationThreshold() throws IOException {
+    void guaranteeMinimumTwoSegmentsForRotation() {
+        TransactionLogFilesContext context = builder(
+                        databaseLayout, fileSystem, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
+                .withLogVersionRepository(new SimpleLogVersionRepository(2))
+                .withTransactionIdStore(new SimpleTransactionIdStore())
+                .withCommandReaderFactory(CommandReaderFactory.NO_COMMANDS)
+                .withConfig(Config.defaults(GraphDatabaseSettings.logical_log_rotation_threshold, kibiBytes(128)))
+                .buildContext();
+        assertEquals(fileSystem, context.getFileSystem());
+        assertNotNull(context.getCommandReaderFactory());
+        assertEquals(
+                context.getEnvelopeSegmentBlockSizeBytes() * 2L,
+                context.getRotationThreshold().get());
+        assertEquals(1, context.getLastCommittedTransactionIdProvider().getLastCommittedTransactionId(null));
+        assertEquals(
+                2,
+                context.getLogVersionRepositoryProvider()
+                        .logVersionRepository(null)
+                        .getCurrentLogVersion());
+    }
+
+    @Test
+    void buildContextWithRotationThreshold() {
         TransactionLogFilesContext context = builder(
                         databaseLayout, fileSystem, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
                 .withLogVersionRepository(new SimpleLogVersionRepository(2))
@@ -157,7 +180,7 @@ class LogFilesBuilderTest {
     }
 
     @Test
-    void buildDefaultContextWithDependencies() throws IOException {
+    void buildDefaultContextWithDependencies() {
         SimpleLogVersionRepository logVersionRepository = new SimpleLogVersionRepository(2);
         SimpleTransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
         DatabaseHealth databaseHealth = new DatabaseHealth(HealthEventGenerator.NO_OP, NullLog.getInstance());

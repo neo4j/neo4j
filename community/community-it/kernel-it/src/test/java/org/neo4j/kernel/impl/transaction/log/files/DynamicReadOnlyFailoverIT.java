@@ -77,7 +77,7 @@ class DynamicReadOnlyFailoverIT {
 
     @Test
     void switchDatabaseToReadOnlyModeOnPreallocationFailure() {
-        long initialRotationThreshold = ByteUnit.kibiBytes(128);
+        long initialRotationThreshold = ByteUnit.kibiBytes(256);
         Label marker = Label.label("marker");
         try (Transaction transaction = database.beginTx()) {
             for (int i = 0; i < NUMBER_OF_NODES; i++) {

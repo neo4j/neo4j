@@ -86,7 +86,7 @@ import org.neo4j.test.extension.Inject;
 
 @DbmsExtension(configurationCallback = "configure")
 class TransactionLogServiceIT {
-    private static final long THRESHOLD = kibiBytes(128);
+    private static final long THRESHOLD = kibiBytes(256);
 
     @Inject
     private GraphDatabaseAPI databaseAPI;
