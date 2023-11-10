@@ -990,6 +990,19 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
     runtimeResult should beColumns("x").withRows(expected)
   }
+
+  test("should work when nullable variable is aliased on RHS") {
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("x", "y", "y2")
+      .conditionalApply("x")
+      .|.projection("y AS y2")
+      .|.argument()
+      .projection("null AS x", "1 AS y")
+      .argument()
+      .build()
+
+    execute(query, runtime) should beColumns("x", "y", "y2").withSingleRow(null, 1, null)
+  }
 }
 
 trait OrderedConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
