@@ -45,7 +45,7 @@ object BestPositionFinder {
    * @param minimum    the plan with the lowest cardinality in candidates
    * @param reasons    all reasons that contributed to this candidateSet
    */
-  private case class CandidateSetWithMinimum(
+  private[eager] case class CandidateSetWithMinimum(
     candidates: Set[Ref[LogicalPlan]],
     minimum: Ref[LogicalPlan],
     reasons: Set[EagernessReason]
@@ -68,69 +68,16 @@ object BestPositionFinder {
         cl.conflict.reasons
       )
     )
+    pickPlansToEagerize(csWithMinima)
+  }
 
-    /**
-     * Merge two candidate sets if they overlap.
-     */
-    def tryMerge(a: CandidateSetWithMinimum, b: CandidateSetWithMinimum): Option[CandidateSetWithMinimum] = {
-      val aSet = a.candidates
-      val bSet = b.candidates
-      val intersection = aSet intersect bSet
-
-      if (intersection.isEmpty) {
-        // We cannot merge non-intersecting sets
-        None
-      } else if (aSet subsetOf bSet) {
-        // If a is a subset of b, we can return that a, with merged reasons.
-        Some(a.copy(reasons = a.reasons ++ b.reasons))
-      } else if (bSet subsetOf aSet) {
-        // If b is a subset of a, we can return that b, with merged reasons.
-        Some(b.copy(reasons = a.reasons ++ b.reasons))
-      } else if (a.minimum == b.minimum || intersection.contains(a.minimum)) {
-        // If they have the same minimum, or a's minimum lies in the intersection,
-        // return the intersection of both sets with a's minimum and merged reasons.
-        Some(CandidateSetWithMinimum(intersection, a.minimum, a.reasons ++ b.reasons))
-      } else if (intersection.contains(b.minimum)) {
-        // If b's minimum lies in the intersection,
-        // return the intersection of both sets with b's minimum and merged reasons.
-        Some(CandidateSetWithMinimum(intersection, b.minimum, a.reasons ++ b.reasons))
-      } else {
-        // Both sets have their own minima, and neither lies in the intersection.
-        None
-      }
-    }
-
+  private[eager] def pickPlansToEagerize(
+    csWithMinima: Seq[CandidateSetWithMinimum]
+  ): Map[Id, ListSet[EagernessReason]] = {
     val results = if (csWithMinima.size > SIZE_LIMIT) {
       csWithMinima
     } else {
-      // Try to find the best overall location by looking at all candidate sets.
-      // If there are situations where sets more than pairwise overlap, this algorithm will not necessarily find the global optimum,
-      // since it only tries pairwise merging of sequences. But, it "only" has quadratic complexity.
-      val buffer = mutable.ArrayBuffer[CandidateSetWithMinimum]()
-      csWithMinima.foreach { listA =>
-        if (buffer.isEmpty) {
-          buffer += listA
-        } else {
-          var merged = false
-          val it = buffer.zipWithIndex.iterator
-
-          // Go through all lists already in results and see if the current one can get merged with any other list.
-          while (!merged && it.hasNext) {
-            val (listB, i) = it.next()
-            tryMerge(listA, listB) match {
-              case Some(mergedList) =>
-                // If so, only keep the merged list
-                merged = true
-                buffer.remove(i)
-                buffer += mergedList
-              case None =>
-                // Otherwise keep both
-                buffer += listA
-            }
-          }
-        }
-      }
-      buffer
+      mergeCandidateSets(csWithMinima)
     }
 
     results
@@ -139,6 +86,76 @@ object BestPositionFinder {
       .view
       .mapValues(_.view.flatMap(_._2).to(ListSet))
       .toMap
+  }
+
+  /**
+   * Try to find the best overall location by looking at all candidate sets.
+   * If there are situations where sets more than pairwise overlap, this algorithm will not necessarily find the global optimum,
+   * since it only tries pairwise merging of sequences. But, it "only" has quadratic complexity.
+   *
+   * @param csWithMinima a sequence of candidate sets
+   * @return the same sequence, but with merged candidate sets, if possible
+   */
+  private[eager] def mergeCandidateSets(csWithMinima: Seq[CandidateSetWithMinimum]): Seq[CandidateSetWithMinimum] = {
+    val buffer = mutable.ArrayBuffer[CandidateSetWithMinimum]()
+    csWithMinima.foreach { listA =>
+      if (buffer.isEmpty) {
+        buffer += listA
+      } else {
+        var merged = false
+        val it = buffer.zipWithIndex.iterator
+
+        // Go through all lists already in results and see if the current one can get merged with any other list.
+        while (!merged && it.hasNext) {
+          val (listB, i) = it.next()
+          tryMerge(listA, listB) match {
+            case Some(mergedList) =>
+              // If so, only keep the merged list
+              merged = true
+              buffer.remove(i)
+              buffer += mergedList
+            case None =>
+              // Otherwise keep both
+              buffer += listA
+          }
+        }
+      }
+    }
+    buffer.toSeq
+  }
+
+  /**
+   * Merge two candidate sets if they overlap.
+   */
+  private[eager] def tryMerge(
+    a: CandidateSetWithMinimum,
+    b: CandidateSetWithMinimum
+  ): Option[CandidateSetWithMinimum] = {
+    val aSet = a.candidates
+    val bSet = b.candidates
+    val intersection = aSet intersect bSet
+
+    if (intersection.isEmpty) {
+      // We cannot merge non-intersecting sets
+      None
+    } else if (aSet subsetOf bSet) {
+      // If a is a subset of b, we can return that a, with merged reasons.
+      Some(a.copy(reasons = a.reasons ++ b.reasons))
+    } else if (bSet subsetOf aSet) {
+      // If b is a subset of a, we can return that b, with merged reasons.
+      Some(b.copy(reasons = a.reasons ++ b.reasons))
+    } else if (a.minimum == b.minimum || intersection.contains(a.minimum)) {
+      // If they have the same minimum, or a's minimum lies in the intersection,
+      // return the intersection of both sets with a's minimum and merged reasons.
+      Some(CandidateSetWithMinimum(intersection, a.minimum, a.reasons ++ b.reasons))
+    } else if (intersection.contains(b.minimum)) {
+      // If b's minimum lies in the intersection,
+      // return the intersection of both sets with b's minimum and merged reasons.
+      Some(CandidateSetWithMinimum(intersection, b.minimum, a.reasons ++ b.reasons))
+    } else {
+      // Both sets have their own minima, and neither lies in the intersection.
+      None
+    }
   }
 
 }
