@@ -108,16 +108,16 @@ object BestPositionFinder {
         // Go through all lists already in results and see if the current one can get merged with any other list.
         while (!merged && it.hasNext) {
           val (listB, i) = it.next()
-          tryMerge(listA, listB) match {
-            case Some(mergedList) =>
-              // If so, only keep the merged list
-              merged = true
-              buffer.remove(i)
-              buffer += mergedList
-            case None =>
-              // Otherwise keep both
-              buffer += listA
+          tryMerge(listA, listB).foreach { mergedList =>
+            // If so, only keep the merged list
+            merged = true
+            buffer.remove(i)
+            buffer += mergedList
           }
+        }
+        if (!merged) {
+          // Otherwise keep all lists and add the new one.
+          buffer += listA
         }
       }
     }
