@@ -4461,7 +4461,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           lhsLP,
           varFor("i"),
           parameter("p", CTList(CTInteger)),
-          Seq(org.neo4j.cypher.internal.logical.plans.set.DeleteExpression(varFor("x"), forced = true))
+          Seq(org.neo4j.cypher.internal.logical.plans.set.DeleteExpression(varFor("x"), detachDelete = true))
         ),
         32.2
       ),
@@ -4473,7 +4473,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           lhsLP,
           varFor("i"),
           parameter("p", CTList(CTInteger)),
-          Seq(org.neo4j.cypher.internal.logical.plans.set.DeleteExpression(varFor("x"), forced = false))
+          Seq(org.neo4j.cypher.internal.logical.plans.set.DeleteExpression(varFor("x"), detachDelete = false))
         ),
         32.2
       ),

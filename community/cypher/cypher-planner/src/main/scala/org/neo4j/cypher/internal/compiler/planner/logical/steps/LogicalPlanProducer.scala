@@ -2742,7 +2742,7 @@ case class LogicalPlanProducer(
       solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addMutatingPatterns(delete)))
     val (rewrittenDelete, rewrittenInner) = SubqueryExpressionSolver.ForMappable().solve(inner, delete, context)
     val plan =
-      if (delete.forced) {
+      if (delete.detachDelete) {
         DetachDeleteNode(rewrittenInner, rewrittenDelete.expression)
       } else {
         DeleteNode(rewrittenInner, rewrittenDelete.expression)
@@ -2770,7 +2770,7 @@ case class LogicalPlanProducer(
       solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addMutatingPatterns(delete)))
 
     val plan =
-      if (delete.forced) {
+      if (delete.detachDelete) {
         DetachDeletePath(inner, delete.expression)
       } else {
         DeletePath(inner, delete.expression)
@@ -2788,7 +2788,7 @@ case class LogicalPlanProducer(
       solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addMutatingPatterns(delete)))
     val (rewrittenDelete, rewrittenInner) = SubqueryExpressionSolver.ForMappable().solve(inner, delete, context)
     val plan =
-      if (delete.forced) {
+      if (delete.detachDelete) {
         DetachDeleteExpression(rewrittenInner, rewrittenDelete.expression)
       } else {
         plans.DeleteExpression(rewrittenInner, rewrittenDelete.expression)

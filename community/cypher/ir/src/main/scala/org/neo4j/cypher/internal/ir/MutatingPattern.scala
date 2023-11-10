@@ -185,7 +185,7 @@ case class CreatePattern(commands: Seq[CreateCommand]) extends SimpleMutatingPat
   }
 }
 
-case class DeleteExpression(expression: Expression, forced: Boolean) extends DeleteMutatingPattern with NoSymbols
+case class DeleteExpression(expression: Expression, detachDelete: Boolean) extends DeleteMutatingPattern with NoSymbols
     with HasMappableExpressions[DeleteExpression] {
   override def dependencies: Set[String] = expression.dependencies.map(_.name)
 

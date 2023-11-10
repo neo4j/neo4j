@@ -304,7 +304,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
     val qg = QueryGraph(patternNodes = Set("a"), selections = selections)
     val ug = QueryGraph(mutatingPatterns =
       IndexedSeq(
-        DeleteExpression(Variable("a")(pos), forced = false),
+        DeleteExpression(Variable("a")(pos), detachDelete = false),
         MergeNodePattern(
           CreateNode("b", Set(LabelName("L3")(pos), LabelName("L3")(pos)), None),
           QueryGraph.empty,
@@ -324,7 +324,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
     val qg = QueryGraph(argumentIds = Set("col"))
     val ug = QueryGraph(mutatingPatterns =
       IndexedSeq(
-        DeleteExpression(Variable("col")(pos), forced = false)
+        DeleteExpression(Variable("col")(pos), detachDelete = false)
       )
     )
 

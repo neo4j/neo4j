@@ -87,7 +87,7 @@ sealed trait DeleteMutatingPattern extends SimpleMutatingPattern
 object DeleteMutatingPattern {
 
   def from(pattern: ir.DeleteMutatingPattern): DeleteMutatingPattern = pattern match {
-    case ir.DeleteExpression(expression, forced) => DeleteExpression(expression, forced)
+    case ir.DeleteExpression(expression, detachDelete) => DeleteExpression(expression, detachDelete)
   }
 }
 
@@ -199,7 +199,7 @@ object CreatePattern {
 
 case class DeleteExpression(
   expression: Expression,
-  forced: Boolean
+  detachDelete: Boolean
 ) extends DeleteMutatingPattern {
   override def dependencies: Set[LogicalVariable] = expression.dependencies
 }
