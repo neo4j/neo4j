@@ -37,7 +37,7 @@ abstract class OrderingLaws[A : Ordering : Arbitrary] extends CypherFunSuite wit
   }
 
   test("reflexivity") {
-    forAll { x: A =>
+    forAll { (x: A) =>
       ordering.lteq(x, x) shouldBe true
     }
   }

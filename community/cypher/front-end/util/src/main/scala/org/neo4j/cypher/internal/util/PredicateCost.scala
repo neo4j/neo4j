@@ -16,6 +16,8 @@
  */
 package org.neo4j.cypher.internal.util
 
+import org.neo4j.cypher.internal.util.PredicateCost.Tolerance
+
 /**
  * Predicates should be ordered such that the overall cost per row is minimized.
  * A predicate here is represented by the cost per row to evaluate the predicate
@@ -92,7 +94,17 @@ package org.neo4j.cypher.internal.util
  *   (s0 - 1) / c0 <= (s1 - 1) / c1
  * For a predicate p, we have a unique factor f = (s - 1) / c that we can use to base our ordering on.
  */
-sealed trait PredicateCost extends Ordered[PredicateCost]
+sealed trait PredicateCost extends Ordered[PredicateCost] {
+
+  /**
+  * Checks for cost equality with a given tolerance.
+  * NoOp and Free are considered equal, and any two SelectivityAdjusted costs are equal if the difference between their
+  * respective factors is less than or equal to the given tolerance.
+  *
+  * Note that this function is not transitive: x ~ y & y ~ z does not imply x ~ z.
+  */
+  def equalsWithTolerance(other: PredicateCost, tolerance: Tolerance = Tolerance.default): Boolean
+}
 
 object PredicateCost {
 
@@ -104,6 +116,13 @@ object PredicateCost {
         case Free                   => -1
         case SelectivityAdjusted(_) => -1
       }
+
+    override def equalsWithTolerance(other: PredicateCost, tolerance: Tolerance): Boolean =
+      other match {
+        case NoOp                   => true
+        case Free                   => true
+        case SelectivityAdjusted(_) => false
+      }
   }
 
   private case object Free extends PredicateCost {
@@ -113,6 +132,13 @@ object PredicateCost {
         case NoOp                   => 1
         case Free                   => 0
         case SelectivityAdjusted(_) => -1
+      }
+
+    override def equalsWithTolerance(other: PredicateCost, tolerance: Tolerance): Boolean =
+      other match {
+        case NoOp                   => true
+        case Free                   => true
+        case SelectivityAdjusted(_) => false
       }
   }
 
@@ -124,6 +150,25 @@ object PredicateCost {
         case Free                             => 1
         case SelectivityAdjusted(otherFactor) => factor.compare(otherFactor)
       }
+
+    override def equalsWithTolerance(other: PredicateCost, tolerance: Tolerance): Boolean =
+      other match {
+        case NoOp                             => false
+        case Free                             => false
+        case SelectivityAdjusted(otherFactor) => math.abs(factor - otherFactor) <= tolerance.value
+      }
+  }
+
+  class Tolerance private (val value: Double) extends AnyVal
+
+  object Tolerance {
+    val zero: Tolerance = new Tolerance(0.0)
+    val default: Tolerance = new Tolerance(0.000001)
+
+    def apply(value: Double): Tolerance = {
+      assert(value >= 0.0, "tolerance must not be negative")
+      new Tolerance(value)
+    }
   }
 
   def apply(costPerRow: CostPerRow, selectivity: Selectivity): PredicateCost =

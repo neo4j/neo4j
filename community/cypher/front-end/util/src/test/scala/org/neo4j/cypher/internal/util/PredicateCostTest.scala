@@ -16,7 +16,9 @@
  */
 package org.neo4j.cypher.internal.util
 
+import org.neo4j.cypher.internal.util.PredicateCost.Tolerance
 import org.neo4j.cypher.internal.util.PredicateCostTest.arbitraryPredicateCost
+import org.neo4j.cypher.internal.util.PredicateCostTest.arbitraryTolerance
 import org.neo4j.cypher.internal.util.test_helpers.OrderingLaws
 import org.scalacheck.Arbitrary
 import org.scalacheck.Gen
@@ -36,10 +38,42 @@ class PredicateCostTest extends OrderingLaws[PredicateCost] {
     (b > c) shouldBe true
     (a > c) shouldBe true
   }
+
+  test("two predicates with the same cost should be equal with a tolerance of 0") {
+    val a = PredicateCost(CostPerRow(2.0), Selectivity(0.5))
+    val b = PredicateCost(CostPerRow(2.4), Selectivity(0.4))
+
+    a shouldEqual b
+    a.equalsWithTolerance(b, Tolerance.zero) shouldBe true
+  }
+
+  test("any two predicates with the same cost should be equal with any tolerance") {
+    forAll { (a: PredicateCost, b: PredicateCost, tolerance: Tolerance) =>
+      (!(a == b) || a.equalsWithTolerance(b, tolerance)) shouldBe true
+    }
+  }
+
+  test("the no-op predicate should be equal to a free predicate with a tolerance of 0") {
+    val a = PredicateCost(CostPerRow(0.0), Selectivity.ONE)
+    val b = PredicateCost(CostPerRow(0.0), Selectivity(0.5))
+
+    (a == b) shouldBe false
+    a.equalsWithTolerance(b, Tolerance.zero) shouldBe true
+  }
+
+  test("two predicates with almost the same cost should be equal with a big enough tolerance") {
+    val a = PredicateCost(CostPerRow(2.0), Selectivity(0.52))
+    val b = PredicateCost(CostPerRow(2.4), Selectivity(0.4))
+
+    (a == b) shouldBe false
+    a.equalsWithTolerance(b, Tolerance(0.01)) shouldBe false
+    a.equalsWithTolerance(b, Tolerance(0.1)) shouldBe true
+  }
 }
 
 object PredicateCostTest {
   implicit val arbitraryPredicateCost: Arbitrary[PredicateCost] = Arbitrary(genPredicateCost)
+  implicit val arbitraryTolerance: Arbitrary[Tolerance] = Arbitrary(genTolerance)
 
   private def genPredicateCost: Gen[PredicateCost] =
     for {
@@ -48,13 +82,17 @@ object PredicateCostTest {
     } yield PredicateCost(costPerRow, selectivity)
 
   private def genCostPerRow: Gen[CostPerRow] =
-    for {
-      size <- Gen.size
-      cost <- Gen.chooseNum[Double](0, size, 0.000001)
-    } yield CostPerRow(cost)
+    genSizedNonNegativeDouble.map(CostPerRow.apply)
 
   private def genSelectivity: Gen[Selectivity] =
-    for {
-      factor <- Gen.chooseNum[Double](0, 1, 0.000001)
-    } yield Selectivity(factor)
+    genNonNegativeDouble(1.0).map(Selectivity.apply)
+
+  private def genTolerance: Gen[Tolerance] =
+    genSizedNonNegativeDouble.map(Tolerance.apply)
+
+  private def genSizedNonNegativeDouble: Gen[Double] =
+    Gen.sized(size => genNonNegativeDouble(size.toDouble))
+
+  private def genNonNegativeDouble(max: Double): Gen[Double] =
+    Gen.chooseNum[Double](0, max, Tolerance.default.value)
 }

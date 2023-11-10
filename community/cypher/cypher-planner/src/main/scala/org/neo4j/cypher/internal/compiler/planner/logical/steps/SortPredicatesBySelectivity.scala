@@ -133,7 +133,7 @@ case object SortPredicatesBySelectivity extends Phase[PlannerContext, LogicalPla
         sortedPredicates.foldLeft(List.empty[(PredicateCost, Seq[Expression])]) {
           case (groups, (expr, exprCost)) =>
             groups match {
-              case (groupCost, exprs) :: groupsTail if groupCost == exprCost =>
+              case (groupCost, exprs) :: groupsTail if groupCost.equalsWithTolerance(exprCost) =>
                 (groupCost, (exprs :+ expr)) :: groupsTail
               case _ =>
                 (exprCost, Seq(expr)) :: groups

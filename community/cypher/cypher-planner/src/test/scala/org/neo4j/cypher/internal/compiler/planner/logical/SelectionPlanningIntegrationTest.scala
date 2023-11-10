@@ -274,4 +274,42 @@ class SelectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
         .build()
     )
   }
+
+  test("Should group predicates when their respective costs are almost equal") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(10)
+      .setLabelCardinality("Transaction", 10)
+      .addNodeIndex("Transaction", List("date"), 0.000001, 1)
+      .addNodeIndex("Transaction", List("amount"), 0.000002, 1)
+      .addNodeIndex("Transaction", List("code"), 0.04999, 1)
+      .build()
+
+    val query =
+      """MATCH (txn:Transaction)
+        |WITH txn SKIP 0
+        |  WHERE txn.date >= $from
+        |  AND txn.date <= $to
+        |  AND txn.amount >= $min
+        |  AND txn.amount <= $max
+        |  AND txn.currency = $currency
+        |  AND txn.code IS NOT NULL
+        |RETURN txn""".stripMargin
+
+    planner.plan(query).stripProduceResults should equal(
+      planner.subPlanBuilder()
+        .filterExpressionOrString(
+          andsReorderable(
+            "cacheNFromStore[txn.date] >= $from",
+            "cacheNFromStore[txn.date] <= $to",
+            "cacheNFromStore[txn.amount] >= $min",
+            "cacheNFromStore[txn.amount] <= $max"
+          ),
+          "txn.code IS NOT NULL",
+          "txn.currency = $currency"
+        )
+        .skip(0)
+        .nodeByLabelScan("txn", "Transaction", IndexOrderNone)
+        .build()
+    )
+  }
 }
