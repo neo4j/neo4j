@@ -199,11 +199,11 @@ import org.neo4j.cypher.internal.runtime.slotted
 import org.neo4j.cypher.internal.runtime.slotted.SlottedPipeMapper.DistinctAllPrimitive
 import org.neo4j.cypher.internal.runtime.slotted.SlottedPipeMapper.DistinctWithReferences
 import org.neo4j.cypher.internal.runtime.slotted.SlottedPipeMapper.computeSlotMappings
+import org.neo4j.cypher.internal.runtime.slotted.SlottedPipeMapper.computeSlotsDifference
 import org.neo4j.cypher.internal.runtime.slotted.SlottedPipeMapper.createProjectionForVariable
 import org.neo4j.cypher.internal.runtime.slotted.SlottedPipeMapper.createProjectionsForResult
 import org.neo4j.cypher.internal.runtime.slotted.SlottedPipeMapper.findDistinctPhysicalOp
 import org.neo4j.cypher.internal.runtime.slotted.SlottedPipeMapper.partitionGroupingExpressions
-import org.neo4j.cypher.internal.runtime.slotted.SlottedPipeMapper.symbolsToSlots
 import org.neo4j.cypher.internal.runtime.slotted.SlottedPipeMapper.translateColumnOrder
 import org.neo4j.cypher.internal.runtime.slotted.aggregation.SlottedGroupingAggTable
 import org.neo4j.cypher.internal.runtime.slotted.aggregation.SlottedNonGroupingAggTable
@@ -1115,9 +1115,7 @@ class SlottedPipeMapper(
         )(id = id)
 
       case Optional(inner, symbols) =>
-        val nullableSlots = (inner.availableSymbols.map(_.name).map(k => slots.get(k).get) -- symbols.map(_.name).map(
-          k => slots.get(k).get
-        )).toArray
+        val nullableSlots = computeSlotsDifference(inner.availableSymbols, symbols, slots)
         OptionalSlottedPipe(source, nullableSlots)(id)
 
       case Projection(_, expressions) =>
@@ -1549,8 +1547,7 @@ class SlottedPipeMapper(
         )
         val longOffsets = longIds.map(e => slots.getLongOffsetFor(e))
         val refOffsets = refIds.map(e => slots.getReferenceOffsetFor(e))
-        val nullableSlots =
-          symbolsToSlots(right.availableSymbols.map(_.name) -- left.availableSymbols.map(_.name), slots)
+        val nullableSlots = computeSlotsDifference(right.availableSymbols, left.availableSymbols, slots)
         ConditionalApplySlottedPipe(lhs, rhs, longOffsets.toArray, refOffsets.toArray, slots, nullableSlots)(id)
 
       case AntiConditionalApply(left, right, items) =>
@@ -1563,8 +1560,7 @@ class SlottedPipeMapper(
         )
         val longOffsets = longIds.map(e => slots.getLongOffsetFor(e))
         val refOffsets = refIds.map(e => slots.getReferenceOffsetFor(e))
-        val nullableSlots =
-          symbolsToSlots(right.availableSymbols.map(_.name) -- left.availableSymbols.map(_.name), slots)
+        val nullableSlots = computeSlotsDifference(right.availableSymbols, left.availableSymbols, slots)
         AntiConditionalApplySlottedPipe(lhs, rhs, longOffsets.toArray, refOffsets.toArray, slots, nullableSlots)(id)
 
       case ForeachApply(_, _, variable, expression) =>
@@ -2194,6 +2190,14 @@ object SlottedPipeMapper {
     (orderedGroupingColumns, unorderedGroupingColumns)
   }
 
-  def symbolsToSlots(symbols: Set[String], slotConfiguration: SlotConfiguration): Array[Slot] =
-    symbols.map(k => slotConfiguration.get(k).get).toArray
+
+  def computeSlotsDifference(
+    left: Set[LogicalVariable],
+    right: Set[LogicalVariable],
+    slotConfiguration: SlotConfiguration
+  ): Array[Slot] = {
+    val leftSlots = left.map(_.name).map(k => slotConfiguration.get(k).get)
+    val rightSlots = right.map(_.name).map(k => slotConfiguration.get(k).get)
+    (leftSlots -- rightSlots).toArray
+  }
 }

@@ -200,8 +200,16 @@ object SlotAllocation {
    * @param slotConfiguration the slot configuration of the argument. Might contain more slot than the argument.
    * @param argumentSize the prefix size of `slotConfiguration` that holds the argument.
    * @param argumentPlan the plan which introduced this argument
+   * @param trailPlanId the nearest outer Trail plan
    */
-  case class SlotsAndArgument(slotConfiguration: SlotConfiguration, argumentSize: Size, argumentPlan: Id, trailPlan: Id)
+  case class SlotsAndArgument(
+    slotConfiguration: SlotConfiguration,
+    argumentSize: Size,
+    argumentPlan: LogicalPlan,
+    trailPlanId: Id
+  ) {
+    def argumentPlanId: Id = if (argumentPlan == null) Id.INVALID_ID else argumentPlan.id
+  }
 
   case class SlotMetaData(
     slotConfigurations: SlotConfigurations,
@@ -216,7 +224,7 @@ object SlotAllocation {
     if (allocateArgumentSlots) {
       slots.newArgument(Id.INVALID_ID)
     }
-    SlotsAndArgument(slots, Size.zero, Id.INVALID_ID, Id.INVALID_ID)
+    SlotsAndArgument(slots, Size.zero, null, Id.INVALID_ID)
   }
 
   final val INITIAL_SLOT_CONFIGURATION: SlotConfiguration = NO_ARGUMENT(true).slotConfiguration
@@ -323,7 +331,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
       val (nullable, current) = planStack.pop()
 
       val (outerApplyPlan, outerTrailPlan) = if (argumentStack.isEmpty) (Id.INVALID_ID, Id.INVALID_ID)
-      else (argumentStack.getFirst.argumentPlan, argumentStack.getFirst.trailPlan)
+      else (argumentStack.getFirst.argumentPlanId, argumentStack.getFirst.trailPlanId)
 
       applyPlans.set(current.id, outerApplyPlan)
       trailPlans.set(current.id, outerTrailPlan)
@@ -351,7 +359,15 @@ class SingleQuerySlotAllocator private[physicalplanning] (
           allocateExpressionsOneChildOnInput(current, nullable, sourceSlots, semanticTable)
 
           val slots = breakingPolicy.invoke(current, sourceSlots, argument.slotConfiguration, applyPlans(current.id))
-          allocateOneChild(current, nullable, sourceSlots, slots, recordArgument(_, argument), semanticTable)
+          allocateOneChild(
+            argument.argumentPlan,
+            current,
+            nullable,
+            sourceSlots,
+            slots,
+            recordArgument(_, argument),
+            semanticTable
+          )
           allocateExpressionsOneChildOnOutput(current, nullable, slots, semanticTable)
           allocations.set(current.id, slots)
           resultStack.push(slots)
@@ -360,7 +376,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
           planStack.push((nullable, current))
           val argumentSlots = resultStack.getFirst
           val argument = getArgument()
-          val trailPlanId = if (current.isInstanceOf[Trail]) current.id else argument.trailPlan
+          val trailPlanId = if (current.isInstanceOf[Trail]) current.id else argument.trailPlanId
           if (allocateArgumentSlots) {
             current match {
               case _: Trail =>
@@ -374,7 +390,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
           allocateLhsOfApply(current, nullable, argumentSlots, semanticTable)
           val lhsSlots = allocations.get(left.id)
           allocateExpressionsTwoChild(current, lhsSlots, semanticTable, comingFromLeft = true)
-          argumentStack.push(SlotsAndArgument(argumentSlots, argumentSlots.size(), current.id, trailPlanId))
+          argumentStack.push(SlotsAndArgument(argumentSlots, argumentSlots.size(), current, trailPlanId))
           populate(right, nullable)
 
         case (Some(left), Some(right)) if comingFrom eq left =>
@@ -388,8 +404,8 @@ class SingleQuerySlotAllocator private[physicalplanning] (
             argumentStack.push(SlotsAndArgument(
               newArgument,
               newArgument.size(),
-              current.id,
-              previousArgument.trailPlan
+              current,
+              previousArgument.trailPlanId
             ))
           }
           allocateExpressionsTwoChild(current, lhsSlots, semanticTable, comingFromLeft = true)
@@ -537,7 +553,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
              * during slot allocation within PipelinedPipelineBreakingPolicy.
              *
              */
-            val argumentPlanId = Id.INVALID_ID
+            val argumentPlan = null.asInstanceOf[LogicalPlan]
             /*
              * We don't think we need to propagate the Trail plan id since
              * nested plans are only ever run with slotted pipes.
@@ -547,7 +563,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
               SlotsAndArgument(
                 argumentSlotConfiguration.copy(),
                 argumentSlotConfiguration.size(),
-                argumentPlanId,
+                argumentPlan,
                 trailPlanId
               )
 
@@ -686,6 +702,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
    * @param recordArgument function which records the argument size for the given operator
    */
   private def allocateOneChild(
+    argumentPlan: LogicalPlan,
     lp: LogicalPlan,
     nullable: Boolean,
     source: SlotConfiguration,
@@ -751,11 +768,15 @@ class SingleQuerySlotAllocator private[physicalplanning] (
         _: ArgumentTracker =>
 
       case p: ProjectingPlan =>
+        def isUnderConditionalApply: Boolean = argumentPlan match {
+          case _: ConditionalApply | _: AbstractSelectOrSemiApply => true
+          case _                                                  => false
+        }
         p.projectExpressions foreach {
           case (key, internal.expressions.Variable(ident)) if key.name == ident =>
           // it's already there. no need to add a new slot for it
 
-          case (newKey, internal.expressions.Variable(ident)) if newKey.name != ident =>
+          case (newKey, internal.expressions.Variable(ident)) if newKey.name != ident && !isUnderConditionalApply =>
             slots.addAlias(newKey, ident)
 
           case (key, _: PathExpression) =>
