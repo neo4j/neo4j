@@ -290,12 +290,12 @@ object ReadsAndWritesFinder {
    *
    * The variable itself is not tracked here, but is the key in [[Reads.possibleNodeDeleteConflictPlans]].
    *
-   * @param plansThatIntroduceVariable  a list of plans that introduce the variable
-   *                                     or have a filter on the variable. The plan is bundled with
-   *                                     a list of predicates that all depend on the variable.
+   * @param plansThatIntroduceVariable a list of plans that introduce the variable
+   *                                   or have a filter on the variable. The plan is bundled with
+   *                                   a list of predicates that all depend on the variable.
    * @param plansThatReferenceVariable the plans that reference the variable. These are the read plans that must be used to define
-   *                                     the Conflict on. We cannot only use an earlier plan (e.g. where the variable was introduced), like in
-   *                                     CREATE/MATCH conflicts, because evaluating any expression on a deleted node might crash.
+   *                                   the Conflict on. We cannot only use an earlier plan (e.g. where the variable was introduced), like in
+   *                                   CREATE/MATCH conflicts, because evaluating any expression on a deleted node might crash.
    */
   case class PossibleDeleteConflictPlans(
     plansThatIntroduceVariable: Seq[PlanThatIntroducesVariable],
