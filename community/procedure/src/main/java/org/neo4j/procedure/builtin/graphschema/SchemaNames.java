@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.neo4j.cypher.internal.util.UnicodeHelper;
 
 /**
  * This utility class is more or less copy&pasted from Cypher-DSL. Find the original here:
@@ -138,12 +139,12 @@ final class SchemaNames {
 
         String id = name.toString();
         int cp = id.codePointAt(0);
-        if (!Character.isJavaIdentifierStart(cp)) {
+        if (!UnicodeHelper.isIdentifierStart(cp)) {
             return false;
         }
         for (int i = Character.charCount(cp); i < id.length(); i += Character.charCount(cp)) {
             cp = id.codePointAt(i);
-            if (!Character.isJavaIdentifierPart(cp)) {
+            if (!UnicodeHelper.isIdentifierPart(cp)) {
                 return false;
             }
         }

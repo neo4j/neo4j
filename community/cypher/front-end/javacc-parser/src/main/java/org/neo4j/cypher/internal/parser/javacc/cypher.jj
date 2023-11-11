@@ -674,7 +674,7 @@ TOKEN :
 {
     < IDENTIFIER: <LETTER> (<PART_LETTER>)* >
     | < #LETTER:
-        [  // all chars for which Character.isJavaIdentifierStart(c) && Character.getType(c) != Character.CURRENCY_SYMBOL is true
+        [  // all chars for which Character.isJavaIdentifierStart(c) && Character.getType(c) != Character.CURRENCY_SYMBOL is true (in Java 17)
             "\u0041"-"\u005a",
             "\u005f",
             "\u0061"-"\u007a",
@@ -1064,7 +1064,7 @@ TOKEN :
             "\uffda"-"\uffdc"
         ] >
     | < #PART_LETTER:
-        [  // all chars for which Character.isIdentifierPart is true
+        [  // all chars for which Character.isIdentifierPart is true (in Java 17)
             "\u0000"-"\u0008",
             "\u000e"-"\u001b",
             "\u0024",
