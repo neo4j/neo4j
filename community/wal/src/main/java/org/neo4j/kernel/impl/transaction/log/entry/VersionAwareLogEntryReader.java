@@ -19,17 +19,22 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.kernel.KernelVersion.VERSION_ENVELOPED_TRANSACTION_LOGS_INTRODUCED;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 
 import java.io.IOException;
+import java.util.Arrays;
 import org.neo4j.io.fs.ReadPastEndException;
+import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.kernel.BinarySupportedKernelVersions;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogPositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.v57.LogEntryRollback;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.util.FeatureToggles;
 
@@ -63,6 +68,7 @@ public class VersionAwareLogEntryReader implements LogEntryReader {
 
     @Override
     public LogEntry readLogEntry(ReadableLogPositionAwareChannel channel) throws IOException {
+        var entryStartPosition = channel.position();
         try {
             byte versionCode = channel.markAndGetVersion(positionMarker);
             if (versionCode == 0) {
@@ -70,10 +76,10 @@ public class VersionAwareLogEntryReader implements LogEntryReader {
                 // we reset channel position to restore last read byte in case someone would like to re-read or check it
                 // again if possible
                 // and we report that we reach end of record stream from our point of view
-                rewindOneByte(channel);
+                rewindToEntryStartPosition(channel, positionMarker, entryStartPosition);
                 return null;
             }
-            updateParserSet(channel, versionCode);
+            updateParserSet(channel, versionCode, entryStartPosition);
 
             byte typeCode = channel.get();
             LogEntry entry = readEntry(channel, versionCode, typeCode);
@@ -81,10 +87,45 @@ public class VersionAwareLogEntryReader implements LogEntryReader {
             return entry;
         } catch (ReadPastEndException e) {
             return null;
+        } catch (UnsupportedLogVersionException lve) {
+            throw lve;
+        } catch (IOException | RuntimeException e) {
+            LogPosition currentLogPosition = channel.getCurrentLogPosition();
+            // check if error was in the last command or is there anything else after that
+            checkTail(channel, currentLogPosition, e);
+
+            rewindToEntryStartPosition(channel, positionMarker, entryStartPosition);
+            return null;
         }
     }
 
-    private void updateParserSet(ReadableLogPositionAwareChannel channel, byte versionCode) throws IOException {
+    private static void checkTail(ReadableLogPositionAwareChannel channel, LogPosition currentLogPosition, Exception e)
+            throws IOException {
+        var zeroArray = new byte[(int) kibiBytes(16)];
+        try (var scopedBuffer = new HeapScopedBuffer((int) kibiBytes(16), LITTLE_ENDIAN, EmptyMemoryTracker.INSTANCE)) {
+            var buffer = scopedBuffer.getBuffer();
+            boolean endReached = false;
+            while (!endReached) {
+                try {
+                    channel.read(buffer);
+                } catch (ReadPastEndException ee) {
+                    // end of the file is encountered while checking ahead we ignore that and checking as much data as
+                    // we got
+                    endReached = true;
+                }
+                buffer.flip();
+                if (Arrays.mismatch(buffer.array(), 0, buffer.limit(), zeroArray, 0, buffer.limit()) != -1) {
+                    throw new IllegalStateException(
+                            "Failure to read transaction log file number " + currentLogPosition.getLogVersion()
+                                    + ". Unreadable bytes are encountered after last readable position.",
+                            e);
+                }
+            }
+        }
+    }
+
+    private void updateParserSet(ReadableLogPositionAwareChannel channel, byte versionCode, long entryStartPosition)
+            throws IOException {
         if (parserSet != null && parserSet.getIntroductionVersion().version() == versionCode) {
             return; // We already have the correct parser set
         }
@@ -102,6 +143,11 @@ public class VersionAwareLogEntryReader implements LogEntryReader {
         } catch (IllegalArgumentException e) {
             throw UnsupportedLogVersionException.unsupported(binarySupportedKernelVersions, versionCode);
         }
+    }
+
+    private void rewindOneByte(ReadableLogPositionAwareChannel channel) throws IOException {
+        channel.position(channel.position() - 1);
+        channel.getCurrentLogPosition(positionMarker);
     }
 
     private LogEntry readEntry(ReadableLogPositionAwareChannel channel, byte versionCode, byte typeCode)
@@ -143,9 +189,11 @@ public class VersionAwareLogEntryReader implements LogEntryReader {
         }
     }
 
-    private void rewindOneByte(ReadableLogPositionAwareChannel channel) throws IOException {
+    private void rewindToEntryStartPosition(
+            ReadableLogPositionAwareChannel channel, LogPositionMarker positionMarker, long position)
+            throws IOException {
         // take current position
-        channel.position(channel.position() - 1);
+        channel.position(position);
         // refresh with reset position
         channel.getCurrentLogPosition(positionMarker);
     }

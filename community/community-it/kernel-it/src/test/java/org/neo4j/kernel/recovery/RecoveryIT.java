@@ -84,6 +84,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.common.DependencyResolver;
@@ -163,9 +164,11 @@ import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.LatestVersions;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
@@ -174,6 +177,7 @@ import org.neo4j.values.storable.Values;
 
 @PageCacheExtension
 @Neo4jLayoutExtension
+@ExtendWith(RandomExtension.class)
 class RecoveryIT {
     private static final int TEN_KB = (int) ByteUnit.kibiBytes(10);
     private static final CursorContextFactory CONTEXT_FACTORY = NULL_CONTEXT_FACTORY;
@@ -198,6 +202,9 @@ class RecoveryIT {
 
     @Inject
     private Neo4jLayout neo4jLayout;
+
+    @Inject
+    private RandomSupport random;
 
     private DatabaseLayout databaseLayout;
 
@@ -497,6 +504,127 @@ class RecoveryIT {
         } finally {
             managementService.shutdown();
         }
+    }
+
+    @Test
+    void recoveryWithLastBrokenRecord() throws Exception {
+        var database = createDatabase();
+        generateSomeData(database);
+
+        var logFiles = database.getDependencyResolver().resolveDependency(LogFiles.class);
+        var logFile = logFiles.getLogFile();
+        var currentPosition = logFile.getTransactionLogWriter().getCurrentPosition();
+        var logFileToMutate = logFile.getLogFileForVersion(currentPosition.getLogVersion());
+
+        managementService.shutdown();
+
+        // remove shutdown checkpoint
+        removeLastCheckpointRecordFromLastLogFile(databaseLayout, fileSystem);
+        // append data that will cause broken next entry
+        appendBytesToLastLogFile(logFileToMutate, currentPosition, new byte[] {1, 0, 0});
+
+        recoverDatabase();
+    }
+
+    @Test
+    void recoveryWithDataAfterLastBrokenRecord() throws Exception {
+        var database = createDatabase();
+        generateSomeData(database);
+
+        var logFiles = database.getDependencyResolver().resolveDependency(LogFiles.class);
+        var logFile = logFiles.getLogFile();
+        var currentPosition = logFile.getTransactionLogWriter().getCurrentPosition();
+        var logFileToMutate = logFile.getLogFileForVersion(currentPosition.getLogVersion());
+
+        managementService.shutdown();
+
+        // remove shutdown checkpoint
+        removeLastCheckpointRecordFromLastLogFile(databaseLayout, fileSystem);
+        // append data that will cause broken next entry
+        appendBytesToLastLogFile(logFileToMutate, currentPosition, new byte[] {1, 0, 0, 1});
+
+        assertThatThrownBy(this::recoverDatabase)
+                .hasStackTraceContaining(
+                        "Failure to read transaction log file number 0. Unreadable bytes are encountered after last readable position.");
+    }
+
+    @Test
+    void recoveryWithLastBrokenRecordTruncateFile() throws Exception {
+        var database = createDatabase();
+        generateSomeData(database);
+
+        var logFiles = database.getDependencyResolver().resolveDependency(LogFiles.class);
+        var logFile = logFiles.getLogFile();
+        var currentPosition = logFile.getTransactionLogWriter().getCurrentPosition();
+        long fileSizeBeforeMutation = currentPosition.getByteOffset();
+        var logFileToMutate = logFile.getLogFileForVersion(currentPosition.getLogVersion());
+
+        managementService.shutdown();
+
+        // remove shutdown checkpoint
+        removeLastCheckpointRecordFromLastLogFile(databaseLayout, fileSystem);
+        // append data that will cause broken next entry
+        appendBytesToLastLogFile(logFileToMutate, currentPosition, new byte[] {1, 2, 0, 0});
+
+        assertNotEquals(fileSizeBeforeMutation, fileSystem.getFileSize(logFileToMutate));
+
+        recoverDatabase();
+
+        assertEquals(fileSizeBeforeMutation, fileSystem.getFileSize(logFileToMutate));
+    }
+
+    @Test
+    void recoveryWithLastBrokenRecordTruncateBigFile() throws Exception {
+        var database = createDatabase();
+        generateSomeData(database);
+
+        var logFiles = database.getDependencyResolver().resolveDependency(LogFiles.class);
+        var logFile = logFiles.getLogFile();
+        var currentPosition = logFile.getTransactionLogWriter().getCurrentPosition();
+        long fileSizeBeforeMutation = currentPosition.getByteOffset();
+        var logFileToMutate = logFile.getLogFileForVersion(currentPosition.getLogVersion());
+
+        managementService.shutdown();
+
+        // remove shutdown checkpoint
+        removeLastCheckpointRecordFromLastLogFile(databaseLayout, fileSystem);
+        // append data that will cause broken next entry
+
+        var data = new byte[(int) ByteUnit.kibiBytes(random.nextInt(120, 484))];
+        data[0] = 1;
+        data[1] = 2;
+        appendBytesToLastLogFile(logFileToMutate, currentPosition, data);
+
+        assertNotEquals(fileSizeBeforeMutation, fileSystem.getFileSize(logFileToMutate));
+
+        recoverDatabase();
+
+        assertEquals(fileSizeBeforeMutation, fileSystem.getFileSize(logFileToMutate));
+    }
+
+    @Test
+    void recoveryWithDataLongAfterLastBrokenRecord() throws Exception {
+        var database = createDatabase();
+        generateSomeData(database);
+
+        var logFiles = database.getDependencyResolver().resolveDependency(LogFiles.class);
+        var logFile = logFiles.getLogFile();
+        var currentPosition = logFile.getTransactionLogWriter().getCurrentPosition();
+        var logFileToMutate = logFile.getLogFileForVersion(currentPosition.getLogVersion());
+
+        managementService.shutdown();
+
+        // remove shutdown checkpoint
+        removeLastCheckpointRecordFromLastLogFile(databaseLayout, fileSystem);
+        var data = new byte[(int) ByteUnit.kibiBytes(random.nextInt(20, 789))];
+        data[0] = 1;
+        data[data.length - random.nextInt(2, 15)] = 2;
+        // append data that will cause broken next entry
+        appendBytesToLastLogFile(logFileToMutate, currentPosition, data);
+
+        assertThatThrownBy(this::recoverDatabase)
+                .hasStackTraceContaining(
+                        "Failure to read transaction log file number 0. Unreadable bytes are encountered after last readable position.");
     }
 
     @Test
@@ -2279,6 +2407,14 @@ class RecoveryIT {
             assertThat(checkpointInfo.reason()).contains("missing logs");
         } finally {
             managementService.shutdown();
+        }
+    }
+
+    private void appendBytesToLastLogFile(Path logFilePath, LogPosition logPosition, byte[] bytesToWrite)
+            throws IOException {
+        try (StoreChannel storeChannel = fileSystem.write(logFilePath)) {
+            storeChannel.position(logPosition.getByteOffset());
+            storeChannel.writeAll(ByteBuffer.wrap(bytesToWrite));
         }
     }
 

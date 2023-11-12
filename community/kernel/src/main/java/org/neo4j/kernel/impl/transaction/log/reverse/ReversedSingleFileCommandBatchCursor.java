@@ -111,7 +111,7 @@ public class ReversedSingleFileCommandBatchCursor implements CommandBatchCursor 
                 offsets[offsetCursor++] = startOffset;
                 startOffset = channel.position();
             }
-        } catch (IOException | UnsupportedLogVersionException e) {
+        } catch (IllegalStateException | IOException | UnsupportedLogVersionException e) {
             monitor.transactionalLogRecordReadFailure(offsets, offsetCursor, logVersion);
             if (failOnCorruptedLogFiles) {
                 throw e;

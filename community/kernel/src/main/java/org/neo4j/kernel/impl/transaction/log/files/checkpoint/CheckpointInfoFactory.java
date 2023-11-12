@@ -133,7 +133,7 @@ public class CheckpointInfoFactory {
             }
             throw new IllegalStateException("Checkpoint record pointed to " + transactionPosition
                     + ", but log commit entry not found at that position. Last checked position: " + checkedPosition);
-        } catch (IOException e) {
+        } catch (IllegalStateException e) {
             Throwable cause = e;
             // We were not able to read last transaction log file one of the reason can be inability to read full logs
             // because of transactions

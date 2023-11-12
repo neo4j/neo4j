@@ -21,8 +21,8 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 
 import static org.apache.commons.lang3.RandomStringUtils.randomAlphabetic;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntrySerializationSets.serializationSet;
@@ -135,7 +135,9 @@ class DetachedCheckpointLogEntrySerializerTest {
                             fs.read(path), 1, LogFormat.V7, path, EMPTY_ACCESSOR, DatabaseTracer.NULL),
                     NO_MORE_CHANNELS,
                     INSTANCE)) {
-                assertThrows(IOException.class, () -> readCheckpoint(entryReader, readChannel));
+                assertThatThrownBy(() -> readCheckpoint(entryReader, readChannel))
+                        .rootCause()
+                        .isInstanceOf(IllegalArgumentException.class);
             }
         }
     }

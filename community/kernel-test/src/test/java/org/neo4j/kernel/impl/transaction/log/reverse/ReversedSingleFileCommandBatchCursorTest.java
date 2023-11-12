@@ -195,7 +195,7 @@ class ReversedSingleFileCommandBatchCursorTest {
         appendCorruptedTransaction();
         writeTransactions(readableTransactions, 1, 1);
 
-        assertThrows(IOException.class, this::readAllFromReversedCursorFailOnCorrupted);
+        assertThrows(IllegalStateException.class, this::readAllFromReversedCursorFailOnCorrupted);
     }
 
     private CommittedCommandBatch[] readAllFromReversedCursor() throws IOException {
