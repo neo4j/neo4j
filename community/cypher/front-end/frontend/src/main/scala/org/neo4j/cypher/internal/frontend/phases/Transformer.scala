@@ -85,7 +85,7 @@ class PipeLine[-C <: BaseContext, FROM, MID, TO](first: Transformer[C, FROM, MID
   override def toString: String = name
 }
 
-case class If[-C <: BaseContext, FROM, STATE <: FROM](f: STATE => Boolean)(thenT: Transformer[C, FROM, STATE])
+case class If[-C <: BaseContext, FROM, STATE <: FROM](f: STATE => Boolean)(thenT: => Transformer[C, FROM, STATE])
     extends Transformer[C, STATE, STATE] {
 
   override def transform(from: STATE, context: C): STATE = {

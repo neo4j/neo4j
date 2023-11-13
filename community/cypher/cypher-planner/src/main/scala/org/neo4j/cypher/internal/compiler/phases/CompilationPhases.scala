@@ -179,13 +179,22 @@ object CompilationPhases {
       SemanticTypeCheck andThen
       SyntaxDeprecationWarningsAndReplacements(Deprecations.semanticallyDeprecatedFeatures) andThen
       IsolateSubqueriesInMutatingPatterns andThen
-      SemanticAnalysis(warn = false, config.semanticFeatures: _*) andThen
-      ObfuscationMetadataCollection
+      SemanticAnalysis(warn = false, config.semanticFeatures: _*)
   }
 
   // Phase 1
-  def parsing(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] = {
+  def parsing(
+    config: ParsingConfig,
+    resolver: Option[ProcedureSignatureResolver] = None
+  ): Transformer[BaseContext, BaseState, BaseState] = {
     parsingBase(config) andThen
+      /*
+       * With query router we log the query early and therefore need to resolve
+       * procedure calls early in order to obfuscate sensitive procedure params
+       * in the query log.
+       */
+      If((_: BaseState) => resolver.isDefined)(TryRewriteProcedureCalls(resolver.orNull)) andThen
+      ObfuscationMetadataCollection andThen
       AstRewriting(parameterTypeMapping = config.parameterTypeMapping) andThen
       LiteralExtraction(config.literalExtractionStrategy)
   }
@@ -198,6 +207,7 @@ object CompilationPhases {
     parsingBase(config) andThen
       ExpandStarRewriter andThen
       TryRewriteProcedureCalls(resolver) andThen
+      ObfuscationMetadataCollection andThen
       SemanticAnalysis(warn = true, config.semanticFeatures: _*)
   }
 

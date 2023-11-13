@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.ast.Statement;
 import org.neo4j.cypher.internal.compiler.CypherParsing;
 import org.neo4j.cypher.internal.compiler.helpers.SignatureResolver;
 import org.neo4j.cypher.internal.frontend.phases.BaseState;
+import org.neo4j.cypher.internal.planner.spi.ProcedureSignatureResolver;
 import org.neo4j.cypher.internal.tracing.CompilationTracer;
 import org.neo4j.cypher.internal.util.CancellationChecker;
 import org.neo4j.cypher.internal.util.RecordingNotificationLogger;
@@ -43,6 +44,7 @@ import org.neo4j.router.query.Query;
 import org.neo4j.router.query.QueryProcessor;
 import org.neo4j.router.query.TargetService;
 import scala.Option;
+import scala.Some$;
 import scala.collection.immutable.Seq;
 import scala.jdk.javaapi.CollectionConverters;
 import scala.jdk.javaapi.OptionConverters;
@@ -115,12 +117,12 @@ public class QueryProcessorImpl implements QueryProcessor {
         var queryTracer = tracer.compileQuery(query.text());
         var notificationLogger = new RecordingNotificationLogger();
         var preParsedQuery = preParser.preParse(query.text(), notificationLogger);
-        var parsedQuery = parse(query, queryTracer, preParsedQuery);
+        var resolver = SignatureResolver.from(globalProcedures.getCurrentView());
+        var parsedQuery = parse(query, queryTracer, preParsedQuery, resolver);
         var catalogInfo = resolveCatalogInfo(parsedQuery.statement());
         var databaseReference = targetService.target(catalogInfo);
         var rewrittenQuery = maybeRewriteQuery(query, parsedQuery, databaseReference);
         var obfuscationMetadata = toJava(parsedQuery.maybeObfuscationMetadata());
-        var resolver = SignatureResolver.from(globalProcedures.getCurrentView());
         var statementType = StatementType.of(parsedQuery.statement(), resolver);
         var cypherExecutionMode = preParsedQuery.options().queryOptions().executionMode();
 
@@ -148,7 +150,10 @@ public class QueryProcessorImpl implements QueryProcessor {
     }
 
     private BaseState parse(
-            Query query, CompilationTracer.QueryCompilationEvent queryTracer, PreParsedQuery preParsedQuery) {
+            Query query,
+            CompilationTracer.QueryCompilationEvent queryTracer,
+            PreParsedQuery preParsedQuery,
+            ProcedureSignatureResolver resolver) {
         return parsing.parseQuery(
                 preParsedQuery.statement(),
                 preParsedQuery.rawStatement(),
@@ -157,7 +162,8 @@ public class QueryProcessorImpl implements QueryProcessor {
                 Option.apply(preParsedQuery.options().offset()),
                 queryTracer,
                 query.parameters(),
-                cancellationChecker);
+                cancellationChecker,
+                Some$.MODULE$.apply(resolver));
     }
 
     private TargetService.CatalogInfo toCatalogInfo(Seq<Option<CatalogName>> graphSelections) {

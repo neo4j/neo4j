@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.spi.PlannerNameFor
+import org.neo4j.cypher.internal.planner.spi.ProcedureSignatureResolver
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.InputPosition
@@ -51,18 +52,22 @@ class CypherParsing(
     offset: Option[InputPosition],
     tracer: CompilationPhaseTracer,
     params: MapValue,
-    cancellationChecker: CancellationChecker
+    cancellationChecker: CancellationChecker,
+    resolver: Option[ProcedureSignatureResolver] = None
   ): BaseState = {
     val plannerName = PlannerNameFor(plannerNameText)
     val startState = InitialState(queryText, offset, plannerName, new AnonymousVariableNameGenerator)
     val context = BaseContextImpl(tracer, notificationLogger, rawQueryText, offset, monitors, cancellationChecker)
     val paramTypes = ParameterValueTypeHelper.asCypherTypeMap(params, config.useParameterSizeHint())
-    CompilationPhases.parsing(ParsingConfig(
-      extractLiterals = config.extractLiterals(),
-      parameterTypeMapping = paramTypes,
-      semanticFeatures = config.semanticFeatures(),
-      obfuscateLiterals = config.obfuscateLiterals()
-    )).transform(startState, context)
+    CompilationPhases.parsing(
+      ParsingConfig(
+        extractLiterals = config.extractLiterals(),
+        parameterTypeMapping = paramTypes,
+        semanticFeatures = config.semanticFeatures(),
+        obfuscateLiterals = config.obfuscateLiterals()
+      ),
+      resolver = resolver
+    ).transform(startState, context)
   }
 
 }
