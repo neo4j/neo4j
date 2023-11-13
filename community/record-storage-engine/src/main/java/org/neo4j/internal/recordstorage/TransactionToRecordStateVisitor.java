@@ -23,6 +23,7 @@ import java.util.OptionalLong;
 import org.eclipse.collections.api.IntIterable;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.Upgrade;
 import org.neo4j.internal.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
@@ -164,6 +165,11 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter {
             }
             default -> throw new IllegalStateException(constraint.type().toString());
         }
+    }
+
+    @Override
+    public void visitKernelUpgrade(Upgrade.KernelUpgrade kernelUpgrade) {
+        recordState.upgrade(kernelUpgrade);
     }
 
     private void visitAddedUniquenessConstraint(UniquenessConstraintDescriptor uniqueConstraint, long constraintId)

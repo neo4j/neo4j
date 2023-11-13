@@ -27,10 +27,9 @@ import static org.neo4j.configuration.GraphDatabaseInternalSettings.automatic_up
 import static org.neo4j.dbms.database.ComponentVersion.DBMS_RUNTIME_COMPONENT;
 import static org.neo4j.dbms.database.SystemGraphComponent.VERSION_LABEL;
 import static org.neo4j.test.Race.throwing;
+import static org.neo4j.test.UpgradeTestUtil.assertUpgradeTransactionInOrder;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Future;
@@ -65,15 +64,10 @@ import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.ZippedStore;
 import org.neo4j.kernel.ZippedStoreCommunity;
 import org.neo4j.kernel.impl.locking.forseti.ForsetiClient;
-import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
-import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
-import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.event.InternalTransactionEventListener;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogAssertions;
-import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.LatestVersions;
 import org.neo4j.test.OtherThreadExecutor;
@@ -150,7 +144,7 @@ public class DatabaseUpgradeTransactionIT {
 
         // Then
         assertThat(kernelVersion()).isEqualTo(LatestVersions.LATEST_KERNEL_VERSION);
-        assertUpgradeTransactionInOrder(oldKernelVersion, LatestVersions.LATEST_KERNEL_VERSION, startTransaction);
+        assertUpgradeTransactionInOrder(oldKernelVersion, LatestVersions.LATEST_KERNEL_VERSION, startTransaction, db);
     }
 
     @ParameterizedTest
@@ -180,7 +174,7 @@ public class DatabaseUpgradeTransactionIT {
 
         // Then
         assertThat(kernelVersion()).isEqualTo(dbmsRuntimeVersion.kernelVersion());
-        assertUpgradeTransactionInOrder(oldKernelVersion, dbmsRuntimeVersion.kernelVersion(), startTransaction);
+        assertUpgradeTransactionInOrder(oldKernelVersion, dbmsRuntimeVersion.kernelVersion(), startTransaction, db);
     }
 
     @Test
@@ -206,7 +200,7 @@ public class DatabaseUpgradeTransactionIT {
         // Then
         assertThat(kernelVersion()).isEqualTo(LatestVersions.LATEST_KERNEL_VERSION);
         assertThat(dbmsRuntimeVersion()).isEqualTo(LatestVersions.LATEST_RUNTIME_VERSION);
-        assertUpgradeTransactionInOrder(oldKernelVersion, LatestVersions.LATEST_KERNEL_VERSION, startTransaction);
+        assertUpgradeTransactionInOrder(oldKernelVersion, LatestVersions.LATEST_KERNEL_VERSION, startTransaction, db);
     }
 
     @Test
@@ -266,7 +260,7 @@ public class DatabaseUpgradeTransactionIT {
         // Then
         assertThat(kernelVersion()).isEqualTo(LatestVersions.LATEST_KERNEL_VERSION);
         assertThat(dbmsRuntimeVersion()).isEqualTo(LatestVersions.LATEST_RUNTIME_VERSION);
-        assertUpgradeTransactionInOrder(oldKernelVersion, LatestVersions.LATEST_KERNEL_VERSION, startTransaction);
+        assertUpgradeTransactionInOrder(oldKernelVersion, LatestVersions.LATEST_KERNEL_VERSION, startTransaction, db);
         assertDegrees(nodeId);
     }
 
@@ -412,33 +406,6 @@ public class DatabaseUpgradeTransactionIT {
             nodes.forEach(dbmsRuntimeNode ->
                     dbmsRuntimeNode.setProperty(DBMS_RUNTIME_COMPONENT.name(), runtimeVersion.getVersion()));
             tx.commit();
-        }
-    }
-
-    private void assertUpgradeTransactionInOrder(KernelVersion from, KernelVersion to, long fromTxId) throws Exception {
-        LogicalTransactionStore lts = get(db, LogicalTransactionStore.class);
-        ArrayList<KernelVersion> transactionVersions = new ArrayList<>();
-        ArrayList<CommittedCommandBatch> transactions = new ArrayList<>();
-        try (CommandBatchCursor commandBatchCursor = lts.getCommandBatches(fromTxId + 1)) {
-            while (commandBatchCursor.next()) {
-                CommittedTransactionRepresentation representation =
-                        (CommittedTransactionRepresentation) commandBatchCursor.get();
-                transactions.add(representation);
-                transactionVersions.add(representation.startEntry().kernelVersion());
-            }
-        }
-        assertThat(transactionVersions)
-                .hasSizeGreaterThanOrEqualTo(2); // at least upgrade transaction and the triggering transaction
-        assertThat(transactionVersions)
-                .isSortedAccordingTo(
-                        Comparator.comparingInt(KernelVersion::version)); // Sorted means everything is in order
-        assertThat(transactionVersions.get(0)).isEqualTo(from); // First should be "from" version
-        assertThat(transactionVersions.get(transactionVersions.size() - 1)).isEqualTo(to); // And last the "to" version
-
-        CommittedCommandBatch upgradeTransaction = transactions.get(transactionVersions.indexOf(to));
-        var commands = upgradeTransaction.commandBatch();
-        for (StorageCommand command : commands) {
-            assertThat(command).isInstanceOf(StorageCommand.VersionUpgradeCommand.class);
         }
     }
 

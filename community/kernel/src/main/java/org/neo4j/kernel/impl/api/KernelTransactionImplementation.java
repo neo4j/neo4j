@@ -74,6 +74,7 @@ import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
+import org.neo4j.internal.kernel.api.Upgrade;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
@@ -1205,6 +1206,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         accessCapability.assertCanWrite();
         upgradeToSchemaWrites();
         return new RestrictedSchemaWrite(operations, securityContext(), securityAuthorizationHandler);
+    }
+
+    @Override
+    public Upgrade upgrade() {
+        accessCapability.assertCanWrite();
+        return operations;
     }
 
     @Override

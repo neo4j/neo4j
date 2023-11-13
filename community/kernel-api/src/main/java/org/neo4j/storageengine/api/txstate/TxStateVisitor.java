@@ -23,6 +23,7 @@ import java.util.function.Function;
 import org.eclipse.collections.api.IntIterable;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.Upgrade;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -71,6 +72,8 @@ public interface TxStateVisitor extends AutoCloseable {
     void visitCreatedPropertyKeyToken(long id, String name, boolean internal);
 
     void visitCreatedRelationshipTypeToken(long id, String name, boolean internal);
+
+    void visitKernelUpgrade(Upgrade.KernelUpgrade kernelUpgrade);
 
     @Override
     void close() throws KernelException;
@@ -122,6 +125,9 @@ public interface TxStateVisitor extends AutoCloseable {
 
         @Override
         public void visitCreatedRelationshipTypeToken(long id, String name, boolean internal) {}
+
+        @Override
+        public void visitKernelUpgrade(Upgrade.KernelUpgrade kernelUpgrade) {}
 
         @Override
         public void close() {}
@@ -212,6 +218,11 @@ public interface TxStateVisitor extends AutoCloseable {
         @Override
         public void visitCreatedRelationshipTypeToken(long id, String name, boolean internal) {
             actual.visitCreatedRelationshipTypeToken(id, name, internal);
+        }
+
+        @Override
+        public void visitKernelUpgrade(Upgrade.KernelUpgrade kernelUpgrade) {
+            actual.visitKernelUpgrade(kernelUpgrade);
         }
 
         @Override

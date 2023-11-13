@@ -90,7 +90,6 @@ import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.kernel.impl.store.record.MetaDataRecord;
 import org.neo4j.kernel.impl.store.stats.RecordDatabaseEntityCounters;
 import org.neo4j.kernel.impl.store.stats.StoreEntityCounters;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
@@ -492,30 +491,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
         unallocateIds(
                 txState.addedAndRemovedRelationships().getRemovedFromAdded(), RecordIdType.RELATIONSHIP, cursorContext);
         return commands;
-    }
-
-    @Override
-    public List<StorageCommand> createUpgradeCommands(
-            KernelVersion versionToUpgradeFrom, KernelVersion versionToUpgradeTo) {
-        checkState(
-                versionToUpgradeTo.isGreaterThan(versionToUpgradeFrom),
-                "Can not downgrade from %s to %s",
-                versionToUpgradeFrom,
-                versionToUpgradeTo);
-
-        MetaDataStore metaDataStore = metadataProvider();
-
-        MetaDataRecord before = metaDataStore.newRecord();
-        before.initialize(true, versionToUpgradeFrom.version());
-
-        MetaDataRecord after = metaDataStore.newRecord();
-        after.initialize(true, versionToUpgradeTo.version());
-
-        // This command will be the first one in the "new" version, indicating the switch and writing it to the
-        // KernelVersionRepository
-        LogCommandSerialization serialization = RecordStorageCommandReaderFactory.INSTANCE.get(versionToUpgradeTo);
-
-        return List.of(new Command.MetaDataCommand(serialization, before, after));
     }
 
     @Override

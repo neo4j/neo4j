@@ -33,7 +33,6 @@ import static org.neo4j.kernel.recovery.Recovery.context;
 import static org.neo4j.kernel.recovery.Recovery.validateStoreId;
 import static org.neo4j.scheduler.Group.INDEX_CLEANUP;
 import static org.neo4j.scheduler.Group.INDEX_CLEANUP_WORK;
-import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -48,7 +47,6 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.EntityType;
-import org.neo4j.common.Subject;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.DatabaseConfig;
@@ -67,6 +65,7 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.kernel.api.IndexMonitor;
+import org.neo4j.internal.kernel.api.Upgrade;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -79,7 +78,6 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.OldestTransactionIdFactory;
 import org.neo4j.io.pagecache.context.TransactionIdSnapshot;
@@ -105,12 +103,10 @@ import org.neo4j.kernel.impl.api.DatabaseSchemaState;
 import org.neo4j.kernel.impl.api.ExternalIdReuseConditionProvider;
 import org.neo4j.kernel.impl.api.KernelImpl;
 import org.neo4j.kernel.impl.api.KernelTransactions;
-import org.neo4j.kernel.impl.api.LeaseClient;
 import org.neo4j.kernel.impl.api.LeaseService;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionIdSequence;
 import org.neo4j.kernel.impl.api.TransactionRegistry;
-import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.TransactionVisibilityProvider;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -137,7 +133,6 @@ import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
 import org.neo4j.kernel.impl.store.StoreFileListing;
 import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.storemigration.UnableToMigrateException;
-import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.LoggingLogFileMonitor;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
@@ -162,7 +157,6 @@ import org.neo4j.kernel.impl.transaction.state.StaticIndexProviderMapFactory;
 import org.neo4j.kernel.impl.transaction.state.storeview.FullScanStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.IndexStoreViewFactory;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
-import org.neo4j.kernel.impl.transaction.tracing.TransactionWriteEvent;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
@@ -189,13 +183,11 @@ import org.neo4j.resources.CpuClock;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.MetadataProvider;
-import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.StoreId;
-import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.enrichment.ApplyEnrichmentStrategy;
 import org.neo4j.time.SystemNanoClock;
@@ -672,36 +664,11 @@ public class Database extends AbstractDatabase {
                 databaseTransactionEventListeners,
                 UpgradeLocker.DEFAULT,
                 internalLogProvider,
-                databaseConfig);
+                databaseConfig,
+                kernelModule.kernelAPI());
 
-        handler.registerUpgradeListener((fromKernelVersion, toKernelVersion) -> {
-            long time = clock.millis();
-            LeaseClient leaseClient = leaseService.newClient();
-            leaseClient.ensureValid();
-            TransactionIdStore transactionIdStore = storageEngine.metadataProvider();
-            List<StorageCommand> upgradeCommands =
-                    storageEngine.createUpgradeCommands(fromKernelVersion, toKernelVersion);
-            CompleteTransaction transactionRepresentation = new CompleteTransaction(
-                    upgradeCommands,
-                    UNKNOWN_CONSENSUS_INDEX,
-                    time,
-                    transactionIdStore.getLastClosedTransactionId(),
-                    time,
-                    leaseClient.leaseId(),
-                    toKernelVersion,
-                    Subject.AUTH_DISABLED);
-            try (var storeCursors = storageEngine.createStorageCursors(CursorContext.NULL_CONTEXT)) {
-                TransactionToApply toApply = new TransactionToApply(
-                        transactionRepresentation,
-                        CursorContext.NULL_CONTEXT,
-                        storeCursors,
-                        commitmentFactory.newCommitment(),
-                        kernelModule.transactionIdGenerator());
-                TransactionCommitProcess commitProcess =
-                        databaseDependencies.resolveDependency(TransactionCommitProcess.class);
-                commitProcess.commit(toApply, TransactionWriteEvent.NULL, TransactionApplicationMode.INTERNAL);
-            }
-        });
+        handler.registerUpgradeListener((fromKernelVersion, toKernelVersion, tx) ->
+                tx.upgrade().upgradeKernel(new Upgrade.KernelUpgrade(fromKernelVersion, toKernelVersion)));
     }
 
     private void validateStoreAndTxLogs(

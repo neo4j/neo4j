@@ -24,6 +24,7 @@ import static org.neo4j.internal.recordstorage.Command.GroupDegreeCommand.combin
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.store.PropertyStore.encodeString;
 import static org.neo4j.lock.ResourceType.RELATIONSHIP_GROUP;
+import static org.neo4j.util.Preconditions.checkState;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -39,6 +40,7 @@ import org.eclipse.collections.impl.factory.primitive.LongObjectMaps;
 import org.neo4j.internal.counts.DegreeUpdater;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.IdSequence;
+import org.neo4j.internal.kernel.api.Upgrade;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.recordstorage.Command.Mode;
 import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;
@@ -59,6 +61,7 @@ import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
+import org.neo4j.kernel.impl.store.record.MetaDataRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
@@ -117,6 +120,7 @@ public class TransactionRecordState implements RecordState {
 
     private boolean prepared;
     private final RelationshipGroupGetter.DirectGroupLookup directGroupLookup;
+    private Upgrade.KernelUpgrade upgrade;
 
     TransactionRecordState(
             KernelVersionProvider kernelVersionProvider,
@@ -317,6 +321,18 @@ public class TransactionRecordState implements RecordState {
                 }
             });
         }
+
+        if (upgrade != null) {
+            MetaDataRecord before = new MetaDataRecord();
+            before.initialize(true, upgrade.from().version());
+            MetaDataRecord after = new MetaDataRecord();
+            after.initialize(true, upgrade.to().version());
+            // This command will be the last one in the "old" version, indicating the switch and writing it to the
+            // KernelVersionRepository. The KernelVersionRepository update will make the transaction that triggered
+            // upgrade be written in the "new" version
+            commands.add(new Command.MetaDataCommand(commandSerialization, before, after));
+        }
+
         prepared = true;
     }
 
@@ -574,6 +590,16 @@ public class TransactionRecordState implements RecordState {
                 store.allocateNameRecords(encodeString(name), nameStoreRecordAllocator, cursorContext, memoryTracker);
         record.setNameId((int) Iterables.first(nameRecords).getId());
         record.addNameRecords(nameRecords);
+    }
+
+    void upgrade(Upgrade.KernelUpgrade kernelUpgrade) {
+        checkState(
+                kernelUpgrade.to().isGreaterThan(kernelUpgrade.from()),
+                "Can not downgrade from %s to %s",
+                kernelUpgrade.from(),
+                kernelUpgrade.to());
+
+        this.upgrade = kernelUpgrade;
     }
 
     private static class CommandComparator implements Comparator<Command> {

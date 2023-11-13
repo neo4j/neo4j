@@ -86,6 +86,7 @@ import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.kernel.api.TokenSet;
+import org.neo4j.internal.kernel.api.Upgrade;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
@@ -160,7 +161,7 @@ import org.neo4j.values.storable.Values;
  * Many methods assume cursors to be initialized before use in private methods, even if they're not passed in explicitly.
  * Keep that in mind: e.g. nodeCursor, propertyCursor and relationshipCursor
  */
-public class Operations implements Write, SchemaWrite {
+public class Operations implements Write, SchemaWrite, Upgrade {
 
     private final KernelTransactionImplementation ktx;
     private final AllStoreHolder allStoreHolder;
@@ -2288,6 +2289,11 @@ public class Operations implements Write, SchemaWrite {
         String[] propertyNames = resolveTokenNames(token::propertyKeyName, propertyIds);
 
         return SchemaNameUtil.generateName(schemaDescriptorSupplier, entityTokenNames, propertyNames);
+    }
+
+    @Override
+    public void upgradeKernel(KernelUpgrade kernelUpgrade) {
+        ktx.txState().kernelDoUpgrade(kernelUpgrade);
     }
 
     @FunctionalInterface

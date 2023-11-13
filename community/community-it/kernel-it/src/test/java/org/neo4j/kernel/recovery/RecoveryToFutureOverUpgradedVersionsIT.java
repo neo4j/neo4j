@@ -20,6 +20,7 @@
 package org.neo4j.kernel.recovery;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.automatic_upgrade_enabled;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -32,6 +33,7 @@ import static org.neo4j.test.UpgradeTestUtil.assertKernelVersion;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,16 +44,23 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DbmsRuntimeVersion;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.event.TransactionData;
+import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.kernel.internal.event.InternalTransactionEventListener;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.test.LatestVersions;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -229,6 +238,128 @@ class RecoveryToFutureOverUpgradedVersionsIT {
         // For a regular database where we have no logs at all we should pick the version that
         // dbmsRuntimeVersionComponent tells us that we are on.
         assertKernelVersion(testDb, LatestVersions.LATEST_KERNEL_VERSION);
+    }
+
+    @Test
+    void shouldHandleLastTransactionToRecoverIsUpgrade() throws Exception {
+        shutdownDbms();
+        startDbms(this::configureGloriousFutureAsLatest, false);
+
+        String dbName = DEFAULT_DATABASE_NAME;
+        GraphDatabaseAPI testDb = (GraphDatabaseAPI) managementService.database(dbName);
+        DatabaseLayout dbLayout = testDb.databaseLayout();
+
+        long numNodesBefore = getNodeCount(testDb);
+
+        // Register a handler that will make the transaction triggering the upgrade fail
+        managementService.registerTransactionEventListener(dbName, new InternalTransactionEventListener.Adapter<>() {
+            @Override
+            public Object beforeCommit(
+                    TransactionData data, Transaction transaction, GraphDatabaseService databaseService) {
+                if (data.metaData().containsKey("triggerTx")) {
+                    throw new TransactionFailureException(
+                            "Failed because you asked for it", Status.Transaction.TransactionHookFailed);
+                }
+                return null;
+            }
+        });
+
+        // then upgrade dbms runtime to trigger db upgrade on next write
+        systemDb.executeTransactionally("CALL dbms.upgrade()");
+
+        assertThatThrownBy(() -> {
+                    try (TransactionImpl tx = (TransactionImpl) testDb.beginTx()) {
+                        // metadata indicating we want it to fail
+                        tx.setMetaData(Map.of("triggerTx", "something"));
+                        tx.createNode(); // and make sure it is a write to trigger upgrade
+                        tx.commit();
+                    }
+                })
+                .isInstanceOf(TransactionFailureException.class);
+
+        assertThat(getNodeCount(testDb))
+                .as("Triggering transaction succeeded when it should fail")
+                .isEqualTo(numNodesBefore);
+        assertKernelVersion(testDb, KernelVersion.GLORIOUS_FUTURE);
+
+        // Now the upgrade transaction is our latest transaction in the log, and it is on the 'old' version
+        shutdownDbms();
+
+        var config = Config.newBuilder()
+                .set(GraphDatabaseInternalSettings.latest_kernel_version, KernelVersion.GLORIOUS_FUTURE.version())
+                .build();
+        removeLastCheckpointRecordFromLastLogFile(dbLayout, fileSystem, config);
+        assertThat(getLatestCheckpoint(dbLayout, fileSystem, config).kernelVersion())
+                .isEqualTo(LatestVersions.LATEST_KERNEL_VERSION);
+
+        // Recovery should handle that the last transaction is the upgrade transaction which is written
+        // with the 'old' version, and should still have updated to 'future'
+        startDbms(this::configureGloriousFutureAsLatest, true);
+        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database(dbName);
+        assertKernelVersion(db, KernelVersion.GLORIOUS_FUTURE);
+    }
+
+    @Test
+    void checkpointWithUpgradeAsLastTxShouldBeOnUpgradedVersion() throws Exception {
+        shutdownDbms();
+        startDbms(this::configureGloriousFutureAsLatest, false);
+
+        String dbName = DEFAULT_DATABASE_NAME;
+        GraphDatabaseAPI testDb = (GraphDatabaseAPI) managementService.database(dbName);
+        DatabaseLayout dbLayout = testDb.databaseLayout();
+
+        long numNodesBefore = getNodeCount(testDb);
+
+        // Register a handler that will make the transaction triggering the upgrade fail
+        managementService.registerTransactionEventListener(dbName, new InternalTransactionEventListener.Adapter<>() {
+            @Override
+            public Object beforeCommit(
+                    TransactionData data, Transaction transaction, GraphDatabaseService databaseService) {
+                if (data.metaData().containsKey("triggerTx")) {
+                    throw new TransactionFailureException(
+                            "Failed because you asked for it", Status.Transaction.TransactionHookFailed);
+                }
+                return null;
+            }
+        });
+
+        // then upgrade dbms runtime to trigger db upgrade on next write
+        systemDb.executeTransactionally("CALL dbms.upgrade()");
+
+        assertThatThrownBy(() -> {
+                    try (TransactionImpl tx = (TransactionImpl) testDb.beginTx()) {
+                        // metadata indicating we want it to fail
+                        tx.setMetaData(Map.of("triggerTx", "something"));
+                        tx.createNode(); // and make sure it is a write to trigger upgrade
+                        tx.commit();
+                    }
+                })
+                .isInstanceOf(TransactionFailureException.class);
+
+        assertThat(getNodeCount(testDb))
+                .as("Triggering transaction succeeded when it should fail")
+                .isEqualTo(numNodesBefore);
+        assertKernelVersion(testDb, KernelVersion.GLORIOUS_FUTURE);
+
+        // Now the upgrade transaction is our latest transaction in the log, and it is on the 'old' version
+        shutdownDbms();
+
+        var config = Config.newBuilder()
+                .set(GraphDatabaseInternalSettings.latest_kernel_version, KernelVersion.GLORIOUS_FUTURE.version())
+                .build();
+        assertThat(getLatestCheckpoint(dbLayout, fileSystem, config).kernelVersion())
+                .isEqualTo(KernelVersion.GLORIOUS_FUTURE);
+
+        // No recovery should have been needed and it should still be on 'future'
+        startDbms(this::configureGloriousFutureAsLatest, true);
+        GraphDatabaseAPI db = (GraphDatabaseAPI) managementService.database(dbName);
+        assertKernelVersion(db, KernelVersion.GLORIOUS_FUTURE);
+    }
+
+    private long getNodeCount(GraphDatabaseAPI db) {
+        try (Transaction tx = db.beginTx()) {
+            return Iterables.count(tx.getAllNodes());
+        }
     }
 
     private void removeTransactionLogs(DatabaseLayout dbLayout) throws IOException {

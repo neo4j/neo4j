@@ -39,6 +39,7 @@ import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
+import org.neo4j.internal.kernel.api.Upgrade;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
@@ -122,6 +123,11 @@ public class StubKernelTransaction implements KernelTransaction {
 
     @Override
     public SchemaWrite schemaWrite() {
+        throw new UnsupportedOperationException("not implemented");
+    }
+
+    @Override
+    public Upgrade upgrade() {
         throw new UnsupportedOperationException("not implemented");
     }
 

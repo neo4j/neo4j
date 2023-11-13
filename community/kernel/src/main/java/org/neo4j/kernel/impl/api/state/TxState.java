@@ -49,6 +49,7 @@ import org.neo4j.collection.factory.OnHeapCollectionsFactory;
 import org.neo4j.collection.trackable.HeapTrackingArrayList;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.Iterables;
+import org.neo4j.internal.kernel.api.Upgrade;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -114,7 +115,7 @@ public class TxState implements TransactionState {
     private MutableMap<IndexBackedConstraintDescriptor, IndexDescriptor> createdConstraintIndexesByConstraint;
 
     private MutableMap<SchemaDescriptor, Map<ValueTuple, MutableLongDiffSets>> indexUpdates;
-
+    private Upgrade.KernelUpgrade upgrade;
     private final ScopedMemoryTracker stateMemoryTracker;
     private final TransactionStateBehaviour behaviour;
     private final ApplyEnrichmentStrategy enrichmentStrategy;
@@ -254,6 +255,10 @@ public class TxState implements TransactionState {
         if (createdRelationshipTypeTokens != null) {
             createdRelationshipTypeTokens.forEachKeyValue(
                     (id, token) -> visitor.visitCreatedRelationshipTypeToken(id, token.name, token.internal));
+        }
+
+        if (upgrade != null) {
+            visitor.visitKernelUpgrade(upgrade);
         }
     }
 
@@ -788,6 +793,13 @@ public class TxState implements TransactionState {
             MutableLongDiffSets after = getOrCreateIndexUpdatesForSeek(updates, propertiesAfter);
             after.add(entityIdId);
         }
+    }
+
+    @Override
+    public void kernelDoUpgrade(Upgrade.KernelUpgrade kernelUpgrade) {
+        assert upgrade == null;
+        upgrade = kernelUpgrade;
+        changed();
     }
 
     @Override

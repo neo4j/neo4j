@@ -19,16 +19,22 @@
  */
 package org.neo4j.kernel.database;
 
+import static org.neo4j.configuration.GraphDatabaseSettings.max_concurrent_transactions;
+import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
+
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.event.TransactionData;
+import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.impl.api.KernelImpl;
+import org.neo4j.kernel.impl.api.MaximumTransactionLimitExceededException;
 import org.neo4j.kernel.impl.locking.LockAcquisitionTimeoutException;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
 import org.neo4j.kernel.internal.event.InternalTransactionEventListener;
@@ -61,6 +67,7 @@ class DatabaseUpgradeTransactionHandler {
     private final UpgradeLocker locker;
     private final InternalLog log;
     private final Config config;
+    private final KernelImpl kernelApi;
 
     DatabaseUpgradeTransactionHandler(
             DbmsRuntimeRepository dbmsRuntimeRepository,
@@ -68,17 +75,19 @@ class DatabaseUpgradeTransactionHandler {
             DatabaseTransactionEventListeners transactionEventListeners,
             UpgradeLocker locker,
             InternalLogProvider logProvider,
-            Config config) {
+            Config config,
+            KernelImpl kernelApi) {
         this.dbmsRuntimeRepository = dbmsRuntimeRepository;
         this.kernelVersionProvider = kernelVersionProvider;
         this.transactionEventListeners = transactionEventListeners;
         this.locker = locker;
         this.log = logProvider.getLog(this.getClass());
         this.config = config;
+        this.kernelApi = kernelApi;
     }
 
     interface InternalUpgradeTransactionHandler {
-        void upgrade(KernelVersion from, KernelVersion to) throws TransactionFailureException;
+        void upgrade(KernelVersion from, KernelVersion to, KernelTransaction tx) throws TransactionFailureException;
     }
 
     /**
@@ -100,6 +109,7 @@ class DatabaseUpgradeTransactionHandler {
 
     private class DatabaseUpgradeListener extends InternalTransactionEventListener.Adapter<Lock> {
         private final InternalUpgradeTransactionHandler internalUpgradeTransactionHandler;
+        private volatile long upgradeTxSeqNbr = Read.NO_ID;
 
         DatabaseUpgradeListener(InternalUpgradeTransactionHandler internalUpgradeTransactionHandler) {
             this.internalUpgradeTransactionHandler = internalUpgradeTransactionHandler;
@@ -111,8 +121,11 @@ class DatabaseUpgradeTransactionHandler {
             KernelVersion checkKernelVersion = kernelVersionProvider.kernelVersion();
             if (dbmsRuntimeRepository.getVersion().kernelVersion().isGreaterThan(checkKernelVersion)) {
                 try {
+                    if (tx.getTransactionSequenceNumber() == upgradeTxSeqNbr) {
+                        // Don't block the transaction we created to do the upgrade
+                        return null;
+                    }
                     try (Lock lock = locker.acquireWriteLock(tx)) {
-
                         KernelVersion kernelVersionToUpgradeTo =
                                 dbmsRuntimeRepository.getVersion().kernelVersion();
                         KernelVersion currentKernelVersion = kernelVersionProvider.kernelVersion();
@@ -120,7 +133,16 @@ class DatabaseUpgradeTransactionHandler {
                             log.info(
                                     "Upgrade transaction from %s to %s started",
                                     currentKernelVersion, kernelVersionToUpgradeTo);
-                            internalUpgradeTransactionHandler.upgrade(currentKernelVersion, kernelVersionToUpgradeTo);
+                            try (KernelTransaction upgradeTx =
+                                    kernelApi.beginTransaction(KernelTransaction.Type.IMPLICIT, AUTH_DISABLED)) {
+                                // Save a reference to this tx and let it through beforeCommit
+                                upgradeTxSeqNbr = upgradeTx.getTransactionSequenceNumber();
+                                internalUpgradeTransactionHandler.upgrade(
+                                        currentKernelVersion, kernelVersionToUpgradeTo, upgradeTx);
+                                upgradeTx.commit();
+                            } finally {
+                                upgradeTxSeqNbr = Read.NO_ID;
+                            }
                             log.info(
                                     "Upgrade transaction from %s to %s completed",
                                     currentKernelVersion, kernelVersionToUpgradeTo);
@@ -133,6 +155,16 @@ class DatabaseUpgradeTransactionHandler {
                             "Upgrade transaction from %s to %s not possible right now due to conflicting transaction, will retry on next write",
                             checkKernelVersion,
                             dbmsRuntimeRepository.getVersion().kernelVersion());
+                } catch (MaximumTransactionLimitExceededException e) {
+                    // This can happen even though we drain transactions because we do not drain reads.
+                    // Let the "trigger tx" continue and try the upgrade again on the next write.
+                    log.error(
+                            "Upgrade transaction from %s to %s not possible right now because maximum concurrently "
+                                    + "executed transactions was reached, will retry on next write."
+                                    + " If this persists see setting %s.",
+                            checkKernelVersion,
+                            dbmsRuntimeRepository.getVersion().kernelVersion(),
+                            max_concurrent_transactions.name());
                 }
             }
             return locker.acquireReadLock(tx); // This read lock will be released in afterCommit or afterRollback

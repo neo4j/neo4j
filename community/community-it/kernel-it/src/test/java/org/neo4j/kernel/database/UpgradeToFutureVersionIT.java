@@ -25,8 +25,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.automatic_upgrade_enabled;
 
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -49,20 +47,16 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.locking.forseti.ForsetiClient;
-import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
-import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
-import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.event.InternalTransactionEventListener;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogAssertions;
-import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.LatestVersions;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.Race;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.UpgradeTestUtil;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
@@ -355,33 +349,8 @@ class UpgradeToFutureVersionIT {
     }
 
     private void assertUpgradeTransactionInOrder(long fromTxId) throws Exception {
-        LogicalTransactionStore lts = get(db, LogicalTransactionStore.class);
-        ArrayList<KernelVersion> transactionVersions = new ArrayList<>();
-        ArrayList<CommittedCommandBatch> transactions = new ArrayList<>();
-        try (CommandBatchCursor commandBatchCursor = lts.getCommandBatches(fromTxId + 1)) {
-            while (commandBatchCursor.next()) {
-                CommittedTransactionRepresentation representation =
-                        (CommittedTransactionRepresentation) commandBatchCursor.get();
-                transactions.add(representation);
-                transactionVersions.add(representation.startEntry().kernelVersion());
-            }
-        }
-        assertThat(transactionVersions)
-                .hasSizeGreaterThanOrEqualTo(2); // at least upgrade transaction and the triggering transaction
-        assertThat(transactionVersions)
-                .isSortedAccordingTo(
-                        Comparator.comparingInt(KernelVersion::version)); // Sorted means everything is in order
-        assertThat(transactionVersions.get(0))
-                .isEqualTo(LatestVersions.LATEST_KERNEL_VERSION); // First should be "from" version
-        assertThat(transactionVersions.get(transactionVersions.size() - 1))
-                .isEqualTo(KernelVersion.GLORIOUS_FUTURE); // And last the "to" version
-
-        CommittedCommandBatch upgradeTransaction =
-                transactions.get(transactionVersions.indexOf(KernelVersion.GLORIOUS_FUTURE));
-        var commands = upgradeTransaction.commandBatch();
-        for (StorageCommand command : commands) {
-            assertThat(command).isInstanceOf(StorageCommand.VersionUpgradeCommand.class);
-        }
+        UpgradeTestUtil.assertUpgradeTransactionInOrder(
+                LatestVersions.LATEST_KERNEL_VERSION, KernelVersion.GLORIOUS_FUTURE, fromTxId, db);
     }
 
     @FunctionalInterface

@@ -39,6 +39,7 @@ import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
+import org.neo4j.internal.kernel.api.Upgrade;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
@@ -175,6 +176,11 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable {
      * @return The schema index write operations of the graph, used for creating and dropping indexes and constraints.
      */
     SchemaWrite schemaWrite() throws InvalidTransactionTypeKernelException;
+
+    /**
+     * @return Upgrade write operation.
+     */
+    Upgrade upgrade();
 
     /**
      * @return The lock operations of the graph.

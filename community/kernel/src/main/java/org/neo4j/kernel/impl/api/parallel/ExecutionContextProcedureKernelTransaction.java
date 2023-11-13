@@ -37,6 +37,7 @@ import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
+import org.neo4j.internal.kernel.api.Upgrade;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
@@ -122,6 +123,11 @@ public class ExecutionContextProcedureKernelTransaction implements KernelTransac
     @Override
     public SchemaWrite schemaWrite() throws InvalidTransactionTypeKernelException {
         throw failure("schemaWrite");
+    }
+
+    @Override
+    public Upgrade upgrade() {
+        throw failure("upgrade");
     }
 
     @Override

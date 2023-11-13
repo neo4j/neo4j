@@ -111,16 +111,6 @@ public interface StorageEngine extends ReadableStorageEngine, Lifecycle {
             throws KernelException;
 
     /**
-     * Generates a list of {@link StorageCommand commands} representing the upgrade of the {@link KernelVersion} for this
-     * store to the desired version.
-     *
-     * @param versionToUpgradeFrom the {@link KernelVersion} that the returned commands will represent an upgrade from.
-     * @param versionToUpgradeTo the {@link KernelVersion} that the returned commands will represent an upgrade to.
-     * @return commands for making an upgrade to the desired {@link KernelVersion}.
-     */
-    List<StorageCommand> createUpgradeCommands(KernelVersion versionToUpgradeFrom, KernelVersion versionToUpgradeTo);
-
-    /**
      * The storage-engine specific mechanism for creating {@link EnrichmentCommand}s.
      * NB The created command will have no interactions with the stores.
      * @param kernelVersion the transaction's {@link KernelVersion}
