@@ -214,7 +214,6 @@ object LogicalPlanStringTest {
       classOf[MultiNodeIndexSeek] -> "copyWithoutGettingValues",
       classOf[AssertingMultiNodeIndexSeek] -> "copyWithoutGettingValues",
       classOf[ProjectingPlan] -> "projectExpressions",
-      classOf[ProjectingPlan] -> "aliases",
       classOf[AggregatingPlan] -> "groupingExpressions",
       classOf[AggregatingPlan] -> "aggregationExpressions",
       classOf[FilteringExpression] -> "name",
