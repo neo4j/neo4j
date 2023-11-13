@@ -181,6 +181,8 @@ import org.neo4j.exceptions.InternalException
 
 import java.util
 
+import scala.annotation.tailrec
+
 /**
  * This object knows how to configure slots for a logical plan tree.
  *
@@ -205,6 +207,7 @@ object SlotAllocation {
   case class SlotsAndArgument(
     slotConfiguration: SlotConfiguration,
     argumentSize: Size,
+    parentArgument: Option[SlotsAndArgument],
     argumentPlan: Option[LogicalPlan],
     trailPlanId: Id
   ) {
@@ -224,7 +227,7 @@ object SlotAllocation {
     if (allocateArgumentSlots) {
       slots.newArgument(Id.INVALID_ID)
     }
-    SlotsAndArgument(slots, Size.zero, None, Id.INVALID_ID)
+    SlotsAndArgument(slots, Size.zero, None, None, Id.INVALID_ID)
   }
 
   final val INITIAL_SLOT_CONFIGURATION: SlotConfiguration = NO_ARGUMENT(true).slotConfiguration
@@ -360,7 +363,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
 
           val slots = breakingPolicy.invoke(current, sourceSlots, argument.slotConfiguration, applyPlans(current.id))
           allocateOneChild(
-            argument.argumentPlan,
+            argument,
             current,
             nullable,
             sourceSlots,
@@ -390,7 +393,13 @@ class SingleQuerySlotAllocator private[physicalplanning] (
           allocateLhsOfApply(current, nullable, argumentSlots, semanticTable)
           val lhsSlots = allocations.get(left.id)
           allocateExpressionsTwoChild(current, lhsSlots, semanticTable, comingFromLeft = true)
-          argumentStack.push(SlotsAndArgument(argumentSlots, argumentSlots.size(), Some(current), trailPlanId))
+          argumentStack.push(SlotsAndArgument(
+            argumentSlots,
+            argumentSlots.size(),
+            Some(argument),
+            Some(current),
+            trailPlanId
+          ))
           populate(right, nullable)
 
         case (Some(left), Some(right)) if comingFrom eq left =>
@@ -404,6 +413,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
             argumentStack.push(SlotsAndArgument(
               newArgument,
               newArgument.size(),
+              Some(previousArgument),
               Some(current),
               previousArgument.trailPlanId
             ))
@@ -553,6 +563,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
              * during slot allocation within PipelinedPipelineBreakingPolicy.
              *
              */
+            val parentArgument = None
             val argumentPlan = None
             /*
              * We don't think we need to propagate the Trail plan id since
@@ -563,6 +574,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
               SlotsAndArgument(
                 argumentSlotConfiguration.copy(),
                 argumentSlotConfiguration.size(),
+                parentArgument,
                 argumentPlan,
                 trailPlanId
               )
@@ -702,7 +714,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
    * @param recordArgument function which records the argument size for the given operator
    */
   private def allocateOneChild(
-    argumentPlan: Option[LogicalPlan],
+    argument: SlotsAndArgument,
     lp: LogicalPlan,
     nullable: Boolean,
     source: SlotConfiguration,
@@ -768,15 +780,30 @@ class SingleQuerySlotAllocator private[physicalplanning] (
         _: ArgumentTracker =>
 
       case p: ProjectingPlan =>
-        def isUnderConditionalApply: Boolean = argumentPlan match {
+        /**
+         * This check is necessary to avoid variables on RHS of ConditionalApply from aliasing variables that were
+         * introduced on the LHS. Doing so is incorrect because the RHS may never be executed, in which case all RHS
+         * variables should be set to null.
+         *
+         * Note that this is conservative, it means that variables on RHS of ConditionalApply will _always_ introduce
+         * a new slot. In theory we could create an alias if all aliased variables were introduced in the same scope,
+         * but scopes where variables are introduced are not tracked at this time.
+         */
+        @tailrec
+        def isUnderConditionalApply(arg: SlotsAndArgument): Boolean = arg.argumentPlan match {
           case None                                                           => false
           case Some(_: ConditionalApply) | Some(_: AbstractSelectOrSemiApply) => true
+          case _ => arg.parentArgument match {
+              case None            => false
+              case Some(parentArg) => isUnderConditionalApply(parentArg)
+            }
         }
         p.projectExpressions foreach {
           case (key, internal.expressions.Variable(ident)) if key.name == ident =>
           // it's already there. no need to add a new slot for it
 
-          case (newKey, internal.expressions.Variable(ident)) if newKey.name != ident && !isUnderConditionalApply =>
+          case (newKey, internal.expressions.Variable(ident))
+            if newKey.name != ident && !isUnderConditionalApply(argument) =>
             slots.addAlias(newKey, ident)
 
           case (key, _: PathExpression) =>
