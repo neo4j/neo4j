@@ -523,9 +523,6 @@ sealed trait ProjectingPlan extends LogicalUnaryPlan {
    * override def withLhs(newLHS: LogicalPlan): LogicalUnaryPlan = copy(source = newLHS)
    */
   def projectExpressions: Map[LogicalVariable, Expression]
-
-  def aliases: Map[LogicalVariable, Expression] =
-    projectExpressions.filter { case (_, expr) => expr.isInstanceOf[LogicalVariable] }
 }
 
 sealed abstract class AbstractVarExpand(
