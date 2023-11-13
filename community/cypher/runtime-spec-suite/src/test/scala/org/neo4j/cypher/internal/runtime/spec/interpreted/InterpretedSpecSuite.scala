@@ -110,6 +110,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.OptionalExpandIntoTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.OptionalFailureTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.OptionalTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.OrderedAggregationTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.OrderedConditionalApplyTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.OrderedDistinctTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.OrderedTrailTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.OrderedUnionTestBase
@@ -402,7 +403,10 @@ class InterpretedSemiApplyTest extends SemiApplyTestBase(COMMUNITY.EDITION, Inte
 class InterpretedAntiSemiApplyTest extends AntiSemiApplyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedLetAntiSemiApplyTest extends LetAntiSemiApplyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedLetSemiApplyTest extends LetSemiApplyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
-class InterpretedConditionalApplyTest extends ConditionalApplyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+
+class InterpretedConditionalApplyTest
+    extends ConditionalApplyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
+    with OrderedConditionalApplyTestBase[CommunityRuntimeContext]
 
 class InterpretedAntiConditionalApplyTest
     extends AntiConditionalApplyTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)
