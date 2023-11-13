@@ -2190,7 +2190,6 @@ object SlottedPipeMapper {
     (orderedGroupingColumns, unorderedGroupingColumns)
   }
 
-
   def computeSlotsDifference(
     left: Set[LogicalVariable],
     right: Set[LogicalVariable],
