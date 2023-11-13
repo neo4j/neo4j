@@ -253,4 +253,6 @@ class CypherPlannerConfiguration(config: CypherConfiguration, cfg: Config, val p
     )
     () => config.eagerAnalyzer
   }
+
+  val allowCompositeQueries = config.allowCompositeQueries;
 }

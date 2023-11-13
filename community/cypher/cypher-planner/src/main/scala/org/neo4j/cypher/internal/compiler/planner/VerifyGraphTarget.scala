@@ -67,7 +67,7 @@ case object VerifyGraphTarget extends VisitorPhase[PlannerContext, BaseState] wi
   override def phase: CompilationPhaseTracer.CompilationPhase = CompilationPhase.LOGICAL_PLANNING
 
   override def visit(value: BaseState, context: PlannerContext): Unit = {
-    verifyGraphTarget(context.databaseReferenceRepository, value.statement(), context.databaseId)
+    verifyGraphTarget(context.databaseReferenceRepository, value.statement(), context.databaseId, context.config.allowCompositeQueries)
   }
 
   override def preConditions: Set[StepSequencer.Condition] =
@@ -86,7 +86,8 @@ case object VerifyGraphTarget extends VisitorPhase[PlannerContext, BaseState] wi
   private def verifyGraphTarget(
     databaseReferenceRepository: DatabaseReferenceRepository,
     statement: Statement,
-    databaseId: NamedDatabaseId
+    databaseId: NamedDatabaseId,
+    allowCompositeQueries: Boolean
   ): Unit = {
     evaluateGraphSelection(statement) match {
       case Some(graphNameWithContext) =>
@@ -96,7 +97,7 @@ case object VerifyGraphTarget extends VisitorPhase[PlannerContext, BaseState] wi
             normalizedDatabaseName
           )
         ) match {
-          case None if !isConstituent(databaseReferenceRepository, normalizedDatabaseName) =>
+          case None if !allowCompositeQueries || !isConstituent(databaseReferenceRepository, normalizedDatabaseName) =>
             throw new DatabaseNotFoundException(
               s"Database ${graphNameWithContext.graphName.qualifiedNameString} not found"
             )

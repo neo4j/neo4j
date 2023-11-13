@@ -24,6 +24,7 @@ import org.mockito.Mockito
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
+import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
@@ -32,12 +33,16 @@ import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.dbms.api.DatabaseNotFoundException
 import org.neo4j.exceptions.InvalidSemanticsException
+import org.neo4j.kernel.database.DatabaseReference
 import org.neo4j.kernel.database.DatabaseReferenceImpl
 import org.neo4j.kernel.database.DatabaseReferenceRepository
 import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.database.NormalizedDatabaseName
 
+import java.util
 import java.util.Optional
+
+import scala.jdk.CollectionConverters.SeqHasAsJava
 
 class VerifyGraphTargetTest extends CypherFunSuite {
 
@@ -148,8 +153,61 @@ class VerifyGraphTargetTest extends CypherFunSuite {
     the[InvalidSemanticsException] thrownBy verifyGraphTarget(query) should have message "Using multiple graphs in the same query is not supported on standard databases. This capability is supported on composite databases only."
   }
 
+  test("should not accept constituent if allowCompositeQueries not set to true") {
+    val query =
+      """
+        |USE composite.shard0
+        |RETURN 1
+        |""".stripMargin
+
+    mockReferenceRepository(compositeGraphReference(sessionDb, Seq(databaseReference("composite.shard0"))))
+    the[DatabaseNotFoundException] thrownBy verifyGraphTarget(query) should have message "Database composite.shard0 not found"
+  }
+
+  test("should accept constituent if allowCompositeQueries set to true") {
+    val query =
+      """
+        |USE composite.shard0
+        |RETURN 1
+        |""".stripMargin
+
+    mockReferenceRepository(compositeGraphReference(sessionDb, Seq(databaseReference("composite.shard0"))))
+    verifyGraphTarget(query, true)
+  }
+
+  test("should only accept existent constituent if allowCompsiteQueries set to true") {
+    val query =
+      """
+        |USE composite.other
+        |RETURN 1
+        |""".stripMargin
+
+
+    mockReferenceRepository(compositeGraphReference(sessionDb, Seq(databaseReference("composite.shard0"))))
+    the[DatabaseNotFoundException] thrownBy verifyGraphTarget(query, true) should have message "Database composite.other not found"
+  }
+
+  test("should not accept composite if allowCompsiteQueries set to true") {
+    val query =
+      """
+        |USE composite
+        |RETURN 1
+        |""".stripMargin
+
+    mockReferenceRepository(compositeGraphReference(sessionDb, Seq(databaseReference("composite.shard0"))))
+    the[DatabaseNotFoundException] thrownBy verifyGraphTarget(query, true) should have message "Database composite not found"
+  }
+
   private def mockReferenceRepository(reference: DatabaseReferenceImpl.Internal) = {
     when(databaseReferenceRepository.getInternalByAlias(any[NormalizedDatabaseName])).thenReturn(Optional.of(reference))
+  }
+
+  private def mockReferenceRepository(reference: DatabaseReferenceImpl.Composite) = {
+    val compositeDatabases = new util.HashSet[DatabaseReferenceImpl.Composite]()
+    compositeDatabases.add(reference)
+
+    when(databaseReferenceRepository.getInternalByAlias(any[NormalizedDatabaseName])).thenReturn(Optional.empty())
+    when(databaseReferenceRepository.getCompositeDatabaseReferences()).thenReturn(compositeDatabases)
   }
 
   private def graphReference(databaseId: NamedDatabaseId): DatabaseReferenceImpl.Internal = {
@@ -158,7 +216,17 @@ class VerifyGraphTargetTest extends CypherFunSuite {
     graphReference
   }
 
-  private def verifyGraphTarget(query: String): Unit = {
+  private def compositeGraphReference(
+    databaseId: NamedDatabaseId,
+    constituents: Seq[DatabaseReference]
+  ): DatabaseReferenceImpl.Composite = {
+    val graphReference = mock[DatabaseReferenceImpl.Composite]
+    when(graphReference.databaseId()).thenReturn(databaseId)
+    when(graphReference.constituents()).thenReturn(constituents.asJava)
+    graphReference
+  }
+
+  private def verifyGraphTarget(query: String, allowCompositeQueries: Boolean = false): Unit = {
     val parsedQuery = parse(query)
     val state = mock[BaseState]
     when(state.statement()).thenReturn(parsedQuery)
@@ -170,7 +238,19 @@ class VerifyGraphTargetTest extends CypherFunSuite {
     val phaseTracer = mock[CompilationPhaseTracer]
     when(phaseTracer.beginPhase(any())).thenReturn(mock[CompilationPhaseTracer.CompilationPhaseEvent])
     when(plannerContext.tracer).thenReturn(phaseTracer)
+
+    val conf = mock[CypherPlannerConfiguration]
+    when(plannerContext.config).thenReturn(conf)
+    when(conf.allowCompositeQueries).thenReturn(allowCompositeQueries)
+
     VerifyGraphTarget.transform(state, plannerContext)
+  }
+
+  private def databaseReference(fullName: String): DatabaseReference = {
+    val dbRef = mock[DatabaseReference]
+    when(dbRef.fullName()).thenReturn(new NormalizedDatabaseName(fullName))
+
+    dbRef
   }
 
   private def parse(query: String): Query =
