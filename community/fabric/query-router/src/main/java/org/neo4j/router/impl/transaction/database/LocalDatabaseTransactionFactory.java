@@ -30,6 +30,7 @@ import org.neo4j.fabric.executor.Location;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.availability.UnavailableException;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.KernelTransactionFactory;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
@@ -62,6 +63,12 @@ public class LocalDatabaseTransactionFactory implements DatabaseTransactionFacto
 
         var databaseApi = databaseContext.databaseFacade();
         var resolver = databaseContext.dependencies();
+
+        try {
+            databaseContext.database().getDatabaseAvailabilityGuard().assertDatabaseAvailable();
+        } catch (UnavailableException e) {
+            throw new QueryRouterException(e.status(), e);
+        }
 
         var queryExecutionEngine = resolver.resolveDependency(QueryExecutionEngine.class);
 
