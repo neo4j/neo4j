@@ -67,7 +67,12 @@ case object VerifyGraphTarget extends VisitorPhase[PlannerContext, BaseState] wi
   override def phase: CompilationPhaseTracer.CompilationPhase = CompilationPhase.LOGICAL_PLANNING
 
   override def visit(value: BaseState, context: PlannerContext): Unit = {
-    verifyGraphTarget(context.databaseReferenceRepository, value.statement(), context.databaseId, context.config.allowCompositeQueries)
+    verifyGraphTarget(
+      context.databaseReferenceRepository,
+      value.statement(),
+      context.databaseId,
+      context.config.allowCompositeQueries
+    )
   }
 
   override def preConditions: Set[StepSequencer.Condition] =

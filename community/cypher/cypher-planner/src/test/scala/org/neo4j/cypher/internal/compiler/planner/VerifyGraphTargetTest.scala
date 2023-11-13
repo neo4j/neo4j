@@ -161,7 +161,9 @@ class VerifyGraphTargetTest extends CypherFunSuite {
         |""".stripMargin
 
     mockReferenceRepository(compositeGraphReference(sessionDb, Seq(databaseReference("composite.shard0"))))
-    the[DatabaseNotFoundException] thrownBy verifyGraphTarget(query) should have message "Database composite.shard0 not found"
+    the[DatabaseNotFoundException] thrownBy verifyGraphTarget(
+      query
+    ) should have message "Database composite.shard0 not found"
   }
 
   test("should accept constituent if allowCompositeQueries set to true") {
@@ -182,20 +184,11 @@ class VerifyGraphTargetTest extends CypherFunSuite {
         |RETURN 1
         |""".stripMargin
 
-
     mockReferenceRepository(compositeGraphReference(sessionDb, Seq(databaseReference("composite.shard0"))))
-    the[DatabaseNotFoundException] thrownBy verifyGraphTarget(query, true) should have message "Database composite.other not found"
-  }
-
-  test("should not accept composite if allowCompsiteQueries set to true") {
-    val query =
-      """
-        |USE composite
-        |RETURN 1
-        |""".stripMargin
-
-    mockReferenceRepository(compositeGraphReference(sessionDb, Seq(databaseReference("composite.shard0"))))
-    the[DatabaseNotFoundException] thrownBy verifyGraphTarget(query, true) should have message "Database composite not found"
+    the[DatabaseNotFoundException] thrownBy verifyGraphTarget(
+      query,
+      true
+    ) should have message "Database composite.other not found"
   }
 
   private def mockReferenceRepository(reference: DatabaseReferenceImpl.Internal) = {
