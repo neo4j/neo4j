@@ -134,7 +134,7 @@ public enum NotificationCodeWithDescription {
             Status.Statement.NoApplicableIndex,
             "Using LOAD CSV followed by a MATCH or MERGE that matches a non-indexed label will most likely "
                     + "not perform well on large data sets. Please consider using a schema index.",
-            "`LOAD CSV` in combination with `MATCH` or `MERGE` on a property that does not have an index may "
+            "`LOAD CSV` in combination with `MATCH` or `MERGE` on a label that does not have an index may "
                     + "result in long execution times. Consider adding an index for label `%s`."),
     MISSING_LABEL(
             Status.Statement.UnknownLabelWarning,
