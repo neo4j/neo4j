@@ -39,13 +39,10 @@ import org.neo4j.cypher.internal.logical.plans.NodeIndexEndsWithScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexLeafPlan
 import org.neo4j.cypher.internal.logical.plans.RelationshipIndexLeafPlan
 import org.neo4j.cypher.internal.logical.plans.RelationshipTypeScan
-import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexEndsWithScan
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
-
-import scala.annotation.tailrec
 
 object leafPlanOptions extends LeafPlanFinder {
 
@@ -97,48 +94,49 @@ object leafPlanOptions extends LeafPlanFinder {
       .toMap
   }
 
-  def leafPlanHeuristic(context: LogicalPlanningContext): SelectorHeuristic = new SelectorHeuristic {
+  def leafPlanHeuristic(context: LogicalPlanningContext): SelectorHeuristic = new LeafPlanSelectorHeuristic(context)
 
-    @tailrec
-    override def tieBreaker(plan: LogicalPlan): Int = plan match {
-      case s: Selection => tieBreaker(s.source)
-      case p: NodeIndexLeafPlan if hasAggregatingProperties(p.idName.name, p.properties, context) =>
-        30 + indexTypeModifier(p, p.indexType)
-      case p: RelationshipIndexLeafPlan if hasAggregatingProperties(p.idName.name, p.properties, context) =>
-        30 + indexTypeModifier(p, p.indexType)
-      case p: NodeIndexLeafPlan if hasAccessedProperties(p.idName.name, p.properties, context) =>
-        20 + indexTypeModifier(p, p.indexType)
-      case p: RelationshipIndexLeafPlan if hasAccessedProperties(p.idName.name, p.properties, context) =>
-        20 + indexTypeModifier(p, p.indexType)
-      case _: NodeByLabelScan      => 10
-      case _: RelationshipTypeScan => 10
-      case _                       => 0
-    }
+}
 
-    private def indexTypeModifier(plan: LogicalPlan, indexType: org.neo4j.graphdb.schema.IndexType): Int = {
-      plan match {
-        // Prefer TEXT index for ENDS WITH and CONTAINS
-        case _: NodeIndexEndsWithScan |
-          _: DirectedRelationshipIndexEndsWithScan |
-          _: UndirectedRelationshipIndexEndsWithScan |
-          _: NodeIndexContainsScan |
-          _: DirectedRelationshipIndexContainsScan |
-          _: UndirectedRelationshipIndexContainsScan =>
-          IndexDescriptor.IndexType.fromPublicApi(indexType).fold(0) {
-            case IndexType.Point => 0
-            case IndexType.Range => 0
-            case IndexType.Text  => 2
-          }
+class LeafPlanSelectorHeuristic(context: LogicalPlanningContext) extends SelectorHeuristic {
 
-        // Prefer POINT index for all compatible queries
-        // Prefer Range index for other queries
-        case _ =>
-          IndexDescriptor.IndexType.fromPublicApi(indexType).fold(0) {
-            case IndexType.Point => 3
-            case IndexType.Range => 2
-            case IndexType.Text  => 0
-          }
-      }
+  final override def tieBreaker(plan: LogicalPlan): Int = plan.leftmostLeaf match {
+    case p: NodeIndexLeafPlan if hasAggregatingProperties(p.idName.name, p.properties, context) =>
+      30 + indexTypeModifier(p, p.indexType)
+    case p: RelationshipIndexLeafPlan if hasAggregatingProperties(p.idName.name, p.properties, context) =>
+      30 + indexTypeModifier(p, p.indexType)
+    case p: NodeIndexLeafPlan if hasAccessedProperties(p.idName.name, p.properties, context) =>
+      20 + indexTypeModifier(p, p.indexType)
+    case p: RelationshipIndexLeafPlan if hasAccessedProperties(p.idName.name, p.properties, context) =>
+      20 + indexTypeModifier(p, p.indexType)
+    case _: NodeByLabelScan      => 10
+    case _: RelationshipTypeScan => 10
+    case _                       => 0
+  }
+
+  private def indexTypeModifier(plan: LogicalPlan, indexType: org.neo4j.graphdb.schema.IndexType): Int = {
+    plan match {
+      // Prefer TEXT index for ENDS WITH and CONTAINS
+      case _: NodeIndexEndsWithScan |
+        _: DirectedRelationshipIndexEndsWithScan |
+        _: UndirectedRelationshipIndexEndsWithScan |
+        _: NodeIndexContainsScan |
+        _: DirectedRelationshipIndexContainsScan |
+        _: UndirectedRelationshipIndexContainsScan =>
+        IndexDescriptor.IndexType.fromPublicApi(indexType).fold(0) {
+          case IndexType.Point => 0
+          case IndexType.Range => 0
+          case IndexType.Text  => 2
+        }
+
+      // Prefer POINT index for all compatible queries
+      // Prefer Range index for other queries
+      case _ =>
+        IndexDescriptor.IndexType.fromPublicApi(indexType).fold(0) {
+          case IndexType.Point => 3
+          case IndexType.Range => 2
+          case IndexType.Text  => 0
+        }
     }
   }
 
@@ -162,5 +160,4 @@ object leafPlanOptions extends LeafPlanFinder {
     properties.exists(prop =>
       context.plannerState.accessedProperties.contains(PropertyAccess(varName, prop.propertyKeyToken.name))
     )
-
 }

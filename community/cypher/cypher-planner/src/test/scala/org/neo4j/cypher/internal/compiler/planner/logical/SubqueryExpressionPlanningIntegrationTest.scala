@@ -3848,6 +3848,40 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       .build()
   }
 
+  test("should prefer label scan with EXISTS predicate, given existence constraints, but no property access") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("A", 500)
+      .setLabelCardinality("B", 500)
+      .addNodeExistenceConstraint("A", "prop")
+      .addNodeExistenceConstraint("A", "otherProp")
+      .addNodeIndex("A", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 0.1)
+      .addNodeIndex("A", Seq("otherProp"), existsSelectivity = 1.0, uniqueSelectivity = 0.1)
+      .setRelationshipCardinality("()-[:REL]->()", 300)
+      .setRelationshipCardinality("(:A)-[:REL]->()", 300)
+      .setRelationshipCardinality("(:A)-[:REL]->(:B)", 300)
+      .setRelationshipCardinality("()-[:REL]->(:B)", 300)
+      .build()
+
+    val query =
+      """MATCH (a:A)
+        |WHERE NOT EXISTS {
+        |  (a)-[r:REL]->(b:B)
+        |}
+        |RETURN count(*) AS result
+        |""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .aggregation(Seq(), Seq("count(*) AS result"))
+      .antiSemiApply()
+      .|.filter("b:B")
+      .|.expandAll("(a)-[r:REL]->(b)")
+      .|.argument("a")
+      .nodeByLabelScan("a", "A")
+      .build()
+  }
+
   object VariableSet {
 
     def unapplySeq(s: Set[LogicalVariable]): Option[Seq[String]] = {
