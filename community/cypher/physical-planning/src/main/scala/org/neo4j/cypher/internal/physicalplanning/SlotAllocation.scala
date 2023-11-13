@@ -168,6 +168,7 @@ import org.neo4j.cypher.internal.runtime.expressionVariableAllocation.AvailableE
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
+import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
@@ -208,10 +209,10 @@ object SlotAllocation {
     slotConfiguration: SlotConfiguration,
     argumentSize: Size,
     parentArgument: Option[SlotsAndArgument],
-    argumentPlan: Option[LogicalPlan],
+    argumentPlan: Option[Ref[LogicalPlan]],
     trailPlanId: Id
   ) {
-    def argumentPlanId: Id = argumentPlan.map(_.id).getOrElse(Id.INVALID_ID)
+    def argumentPlanId: Id = argumentPlan.map(_.value.id).getOrElse(Id.INVALID_ID)
   }
 
   case class SlotMetaData(
@@ -397,7 +398,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
             argumentSlots,
             argumentSlots.size(),
             Some(argument),
-            Some(current),
+            Some(Ref(current)),
             trailPlanId
           ))
           populate(right, nullable)
@@ -414,7 +415,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
               newArgument,
               newArgument.size(),
               Some(previousArgument),
-              Some(current),
+              Some(Ref(current)),
               previousArgument.trailPlanId
             ))
           }
@@ -791,8 +792,8 @@ class SingleQuerySlotAllocator private[physicalplanning] (
          */
         @tailrec
         def isUnderConditionalApply(arg: SlotsAndArgument): Boolean = arg.argumentPlan match {
-          case None                                                           => false
-          case Some(_: ConditionalApply) | Some(_: AbstractSelectOrSemiApply) => true
+          case None                                                                     => false
+          case Some(Ref(_: ConditionalApply)) | Some(Ref(_: AbstractSelectOrSemiApply)) => true
           case _ => arg.parentArgument match {
               case None            => false
               case Some(parentArg) => isUnderConditionalApply(parentArg)
