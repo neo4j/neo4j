@@ -1004,11 +1004,11 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
     execute(query, runtime) should beColumns("x", "y", "y2").withSingleRow(null, 1, null)
   }
 
-  test("should work when nullable variable is aliased on RHS on Apply under ConditionalApply") {
+  test("should work when nullable variable is aliased on RHS of Apply under ConditionalApply") {
     val query = new LogicalQueryBuilder(this)
       .produceResults("x", "y", "y2")
       .conditionalApply("x")
-      .|.apply
+      .|.apply()
       .|.|.projection("y AS y2")
       .|.|.argument()
       .|.argument()
@@ -1018,7 +1018,25 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
 
     execute(query, runtime) should beColumns("x", "y", "y2").withSingleRow(null, 1, null)
   }
+
+  test("should work when nullable variable is aliased on RHS of ConditionalApply under Apply") {
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("x", "y", "y2")
+      .apply()
+      .|.conditionalApply("x")
+      .|.|.projection("y AS y2")
+      .|.|.argument()
+      .|.argument()
+      .projection("null AS x", "1 AS y")
+      .argument()
+      .build()
+
+    execute(query, runtime) should beColumns("x", "y", "y2").withSingleRow(null, 1, null)
+  }
+
 }
+
+// TODO add equivalent tests for SelectOrSemiApply, SelectOrAntiSemiApply, LetSelectOrSemiApply, LetSelectOrAntiSemiApply, etc.
 
 trait OrderedConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
   self: ConditionalApplyTestBase[CONTEXT] =>
