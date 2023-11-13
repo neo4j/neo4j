@@ -81,6 +81,7 @@ import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryPools;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.time.Clocks;
 
@@ -586,7 +587,7 @@ public class ConsistencyCheckService {
             }
             return Result.success(reportFile, summary);
 
-        } catch (Exception e) {
+        } catch (IOException | RuntimeException e) {
             throw new ConsistencyCheckIncompleteException(e);
         }
     }
@@ -644,8 +645,8 @@ public class ConsistencyCheckService {
      * Starts a tiny page cache just to ask the store about rough number of entities in it. Based on that the storage can then decide
      * what the optimal amount of available off-heap memory should be when running the consistency check.
      */
-    private long calculateOptimalOffHeapMemoryForChecker() throws Exception {
-        try (var jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
+    private long calculateOptimalOffHeapMemoryForChecker() {
+        try (JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
                 var tempPageCache = new ConfiguringPageCacheFactory(
                                 fileSystem,
                                 Config.defaults(GraphDatabaseSettings.pagecache_memory, mebiBytes(8)),

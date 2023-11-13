@@ -138,4 +138,7 @@ public interface JobScheduler extends Lifecycle, AutoCloseable {
     List<MonitoredJobInfo> getMonitoredJobs();
 
     List<FailedJobRun> getFailedJobRuns();
+
+    @Override
+    void close();
 }

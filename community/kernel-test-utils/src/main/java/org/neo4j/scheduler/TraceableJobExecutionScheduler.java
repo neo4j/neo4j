@@ -169,7 +169,7 @@ class TraceableJobExecutionScheduler extends JobSchedulerExtension {
         }
 
         @Override
-        public void close() throws Exception {
+        public void close() {
             originalScheduler.close();
             throw new RuntimeException("Shutdown called.");
         }
