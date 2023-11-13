@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.frontend.phases
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.Literal
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.SensitiveAutoParameter
 import org.neo4j.cypher.internal.expressions.SensitiveLiteral
@@ -62,8 +63,18 @@ case object ObfuscationMetadataCollection extends Phase[BaseContext, BaseState, 
       case literal: SensitiveLiteral =>
         (acc: Vector[LiteralOffset]) =>
           SkipChildren(acc :+ LiteralOffset(preParserOffset + literal.position.offset, literal.literalLength))
-      case p: SensitiveAutoParameter =>
-        (acc: Vector[LiteralOffset]) => SkipChildren(acc :+ LiteralOffset(preParserOffset + p.position.offset, None))
+      case p: AutoExtractedParameter with SensitiveAutoParameter =>
+        (acc: Vector[LiteralOffset]) =>
+          extractedParameters.get(p) match {
+            case Some(originalExp) =>
+              val literalOffsets = originalExp.folder.findAllByClass[Literal]
+                .map(_.asSensitiveLiteral)
+                .map(l => LiteralOffset(preParserOffset + l.position.offset, l.literalLength))
+              SkipChildren(acc ++ literalOffsets)
+            case None =>
+              // Note, this can lead to query obfuscator failing and the query not being logged
+              SkipChildren(acc :+ LiteralOffset(preParserOffset + p.position.offset, None))
+          }
     }
 
     val fromStatement = statement.folder.treeFold(Vector.empty[LiteralOffset])(partial)

@@ -33,15 +33,16 @@ import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Expression.SemanticContext
 import org.neo4j.cypher.internal.expressions.ImplicitProcedureArgument
+import org.neo4j.cypher.internal.expressions.Literal
 import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.ProcedureName
 import org.neo4j.cypher.internal.expressions.SensitiveAutoParameter
-import org.neo4j.cypher.internal.expressions.SensitiveLiteral
 import org.neo4j.cypher.internal.expressions.SensitiveParameter
-import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.ZippableUtil.Zippable
+import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.symbols
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.exceptions.SyntaxException
@@ -60,14 +61,14 @@ object ResolvedCall {
     val callArguments = declaredArguments.getOrElse(implicitArguments)
     val sensitiveArguments = signature.inputSignature.take(callArguments.length).map(_.sensitive)
     val callArgumentsWithSensitivityMarkers = callArguments.zipAll(sensitiveArguments, null, false).map {
-      case (p: ExplicitParameter, true) =>
-        new ExplicitParameter(p.name, p.parameterType, p.sizeHint)(p.position) with SensitiveParameter
-      case (p: AutoExtractedParameter, true) =>
-        new AutoExtractedParameter(p.name, p.parameterType, p.sizeHint)(p.position)
-          with SensitiveAutoParameter
-      case (p: StringLiteral, true) => new StringLiteral(p.value)(p.position) with SensitiveLiteral {
-          override def literalLength: Option[Int] = None
-        }
+      case (e: Expression, true) => e.endoRewrite(bottomUp(Rewriter.lift {
+          case p: ExplicitParameter =>
+            new ExplicitParameter(p.name, p.parameterType, p.sizeHint)(p.position) with SensitiveParameter
+          case p: AutoExtractedParameter =>
+            new AutoExtractedParameter(p.name, p.parameterType, p.sizeHint)(p.position) with SensitiveAutoParameter
+          case l: Literal =>
+            l.asSensitiveLiteral
+        }))
       case (p, _) => p
     }
 
