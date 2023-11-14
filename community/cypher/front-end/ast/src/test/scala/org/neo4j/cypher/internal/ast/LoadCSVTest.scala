@@ -16,7 +16,6 @@
  */
 package org.neo4j.cypher.internal.ast
 
-import SemanticCheckInTest.SemanticCheckWithDefaultContext
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.StringLiteral
@@ -34,13 +33,13 @@ class LoadCSVTest extends CypherFunSuite {
 
   test("cannot overwrite existing variable") {
     val loadCSV = LoadCSV(withHeaders = true, literalURL, variable, None)(DummyPosition(6))
-    val result = loadCSV.semanticCheck.run(SemanticState.clean)
+    val result = loadCSV.semanticCheck(SemanticState.clean)
     assert(result.errors === Seq())
   }
 
   test("when expecting headers, the variable has a map type") {
     val loadCSV = LoadCSV(withHeaders = true, literalURL, variable, None)(DummyPosition(6))
-    val result = loadCSV.semanticCheck.run(SemanticState.clean)
+    val result = loadCSV.semanticCheck(SemanticState.clean)
     val expressionType = result.state.expressionType(variable).actual
 
     assert(expressionType === CTMap.invariant)
@@ -48,7 +47,7 @@ class LoadCSVTest extends CypherFunSuite {
 
   test("when not expecting headers, the variable has a list type") {
     val loadCSV = LoadCSV(withHeaders = false, literalURL, variable, None)(DummyPosition(6))
-    val result = loadCSV.semanticCheck.run(SemanticState.clean)
+    val result = loadCSV.semanticCheck(SemanticState.clean)
     val expressionType = result.state.expressionType(variable).actual
 
     assert(expressionType === CTList(CTString).invariant)
@@ -58,7 +57,7 @@ class LoadCSVTest extends CypherFunSuite {
     val literal = StringLiteral("http://example.com/foo.csv")(DummyPosition(4))
     val loadCSV =
       LoadCSV(withHeaders = false, literal, variable, Some(StringLiteral("\t")(DummyPosition(0))))(DummyPosition(6))
-    val result = loadCSV.semanticCheck.run(SemanticState.clean)
+    val result = loadCSV.semanticCheck(SemanticState.clean)
     assert(result.errors === Vector.empty)
   }
 
@@ -66,7 +65,7 @@ class LoadCSVTest extends CypherFunSuite {
     val literal = StringLiteral("http://example.com/foo.csv")(DummyPosition(4))
     val loadCSV =
       LoadCSV(withHeaders = false, literal, variable, Some(StringLiteral("  ")(DummyPosition(0))))(DummyPosition(6))
-    val result = loadCSV.semanticCheck.run(SemanticState.clean)
+    val result = loadCSV.semanticCheck(SemanticState.clean)
     assert(result.errors === Vector(SemanticError(
       "CSV field terminator can only be one character wide",
       DummyPosition(0)

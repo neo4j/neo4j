@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.ProcedureResult
 import org.neo4j.cypher.internal.ast.ProcedureResultItem
 import org.neo4j.cypher.internal.ast.UnresolvedCall
-import org.neo4j.cypher.internal.ast.semantics.SemanticCheckContext
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.Namespace
@@ -260,8 +259,7 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
     val unresolved = UnresolvedCall(ns, name, Some(callArguments), Some(ProcedureResult(callResults)(pos)))(pos)
     val resolved = ResolvedCall(_ => signature)(unresolved)
 
-    val toList: List[String] =
-      errorTexts(resolved.semanticCheck.run(SemanticState.clean, SemanticCheckContext.default)).toList
+    val toList: List[String] = errorTexts(resolved.semanticCheck(SemanticState.clean)).toList
     toList should equal(List(
       """Procedure call does not provide the required number of arguments: got 0 expected at least 1 (total: 1, 0 of which have default values).
         |
@@ -284,7 +282,7 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
     val unresolved = UnresolvedCall(ns, name, Some(callArguments), Some(ProcedureResult(callResults)(pos)))(pos)
     val resolved = ResolvedCall(_ => signature)(unresolved)
 
-    errorTexts(resolved.semanticCheck.run(SemanticState.clean, SemanticCheckContext.default)) should equal(Seq(
+    errorTexts(resolved.semanticCheck(SemanticState.clean)) should equal(Seq(
       "Variable `x` already declared (line 0, column 0 (offset: 0))"
     ))
   }
@@ -302,7 +300,7 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
     val unresolved = UnresolvedCall(ns, name, Some(callArguments), Some(ProcedureResult(callResults)(pos)))(pos)
     val resolved = ResolvedCall(_ => signature)(unresolved)
 
-    errorTexts(resolved.semanticCheck.run(SemanticState.clean, SemanticCheckContext.default)) should equal(Seq(
+    errorTexts(resolved.semanticCheck(SemanticState.clean)) should equal(Seq(
       "Unknown procedure output: `p` (line 0, column 0 (offset: 0))"
     ))
   }
@@ -320,7 +318,7 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
     val unresolved = UnresolvedCall(ns, name, Some(callArguments), Some(ProcedureResult(callResults)(pos)))(pos)
     val resolved = ResolvedCall(_ => signature)(unresolved)
 
-    errorTexts(resolved.semanticCheck.run(SemanticState.clean, SemanticCheckContext.default)) should equal(Seq(
+    errorTexts(resolved.semanticCheck(SemanticState.clean)) should equal(Seq(
       "Type mismatch: expected Integer but was String (line 0, column 0 (offset: 0))"
     ))
   }

@@ -16,7 +16,6 @@
  */
 package org.neo4j.cypher.internal.ast.semantics
 
-import org.neo4j.cypher.internal.ast.SemanticCheckInTest.SemanticCheckWithDefaultContext
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.DummyPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
@@ -27,7 +26,7 @@ class VariableTest extends SemanticFunSuite {
     val position = DummyPosition(0)
     val variable = Variable("x")(position)
 
-    val result = SemanticExpressionCheck.simple(variable).run(SemanticState.clean)
+    val result = SemanticExpressionCheck.simple(variable)(SemanticState.clean)
     result.errors should have size 1
     result.errors.head.position should equal(position)
     result.state.symbol("x").isDefined should equal(true)

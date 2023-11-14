@@ -18,7 +18,6 @@ package org.neo4j.cypher.internal.ast.semantics
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.when
 import org.neo4j.cypher.internal.expressions.Expression.SemanticContext
-import org.neo4j.cypher.internal.util.EmptyErrorMessageProvider
 import org.neo4j.cypher.internal.util.ErrorMessageProvider
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotification
@@ -36,6 +35,11 @@ sealed trait SemanticCheck {
    */
   def run(state: SemanticState, context: SemanticCheckContext): SemanticCheckResult = {
     SemanticCheckInterpreter.runCheck(this, state, context)
+  }
+
+  @deprecated(message = "Use `run` instead", since = "5.0")
+  def apply(state: SemanticState): SemanticCheckResult = {
+    run(state, SemanticCheckContext.default)
   }
 
   /** Creates a new combined check which runs `this` followed by `next`.
@@ -187,12 +191,8 @@ trait SemanticCheckContext {
 
 object SemanticCheckContext {
 
-  def default: SemanticCheckContext = new SemanticCheckContext {
+  object default extends SemanticCheckContext {
     override def errorMessageProvider: ErrorMessageProvider = NotImplementedErrorMessageProvider
-  }
-
-  def empty: SemanticCheckContext = new SemanticCheckContext {
-    override def errorMessageProvider: ErrorMessageProvider = EmptyErrorMessageProvider
   }
 }
 

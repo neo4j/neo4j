@@ -16,7 +16,6 @@
  */
 package org.neo4j.cypher.internal.ast.semantics
 
-import org.neo4j.cypher.internal.ast.SemanticCheckInTest.SemanticCheckWithDefaultContext
 import org.neo4j.cypher.internal.expressions.DummyExpression
 import org.neo4j.cypher.internal.expressions.ListComprehension
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
@@ -38,7 +37,7 @@ class FilteringExpressionTest extends SemanticFunSuite {
     )
 
     val filter = ListComprehension(variable("x"), expression, Some(predicate), None)(pos)
-    val result = SemanticExpressionCheck.simple(filter).run(SemanticState.clean)
+    val result = SemanticExpressionCheck.simple(filter)(SemanticState.clean)
     result.errors should equal(Seq(error))
     result.state.symbol("x") should equal(None)
   }

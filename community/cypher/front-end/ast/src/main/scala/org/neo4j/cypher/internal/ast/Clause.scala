@@ -27,10 +27,9 @@ import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.ast.semantics.Scope
 import org.neo4j.cypher.internal.ast.semantics.SemanticAnalysisTooling
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
-import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.fromFunctionWithContext
+import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.fromFunction
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.success
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.when
-import org.neo4j.cypher.internal.ast.semantics.SemanticCheckContext
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckable
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
@@ -132,7 +131,7 @@ sealed trait Clause extends ASTNode with SemanticCheckable with SemanticAnalysis
 
   final override def semanticCheck: SemanticCheck =
     clauseSpecificSemanticCheck chain
-      fromFunctionWithContext(checkIfMixingLabelExpressionWithOldSyntax) chain
+      fromFunction(checkIfMixingLabelExpressionWithOldSyntax) chain
       when(shouldRunQPPChecks) {
         checkIfMixingLegacyVarLengthWithQPPs
       }
@@ -145,10 +144,7 @@ sealed trait Clause extends ASTNode with SemanticCheckable with SemanticAnalysis
     def unapplySeq[T](s: Set[T]): Option[Seq[T]] = Some(s.toSeq)
   }
 
-  private def checkIfMixingLabelExpressionWithOldSyntax(
-    state: SemanticState,
-    context: SemanticCheckContext
-  ): SemanticCheckResult = {
+  private def checkIfMixingLabelExpressionWithOldSyntax(state: SemanticState): SemanticCheckResult = {
     val partition = this.folder.treeFold(LabelExpressionsPartition()) {
       case NodePattern(_, Some(le), _, _) => acc =>
           TraverseChildren(sortLabelExpressionIntoPartition(
@@ -196,7 +192,7 @@ sealed trait Clause extends ASTNode with SemanticCheckable with SemanticAnalysis
           )
         case None => SemanticCheck.success
       }
-    }.run(state, context)
+    }(state)
   }
 
   private def sortLabelExpressionIntoPartition(

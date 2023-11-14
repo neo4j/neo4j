@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.fromState
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.success
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.when
-import org.neo4j.cypher.internal.ast.semantics.SemanticCheckContext
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckable
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
@@ -237,8 +236,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
     def checkLimit: SemanticCheck = wth.limit.foldSemanticCheck(_ => err("LIMIT is not allowed"))
 
     fromState { state =>
-      val resultState = wth.returnItems.items.foldSemanticCheck(_.semanticCheck)
-        .run(state, SemanticCheckContext.empty)
+      val resultState = wth.returnItems.items.foldSemanticCheck(_.semanticCheck)(state)
 
       // [[ExpressionWithComputedDependencies]] do not carry their dependencies directly. Instead the dependencies are stored in the recorded scopes in the semantic state.
       // See also: [[computeDependenciesForExpressions]]

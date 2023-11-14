@@ -16,7 +16,6 @@
  */
 package org.neo4j.cypher.internal.ast.semantics
 
-import org.neo4j.cypher.internal.ast.SemanticCheckInTest.SemanticCheckWithDefaultContext
 import org.neo4j.cypher.internal.expressions.DummyExpression
 import org.neo4j.cypher.internal.expressions.ListComprehension
 import org.neo4j.cypher.internal.expressions.Variable
@@ -36,7 +35,7 @@ class ListComprehensionTest extends SemanticFunSuite {
 
   test("withoutExtractExpressionShouldHaveCollectionTypesOfInnerExpression") {
     val filter = ListComprehension(Variable("x")(DummyPosition(5)), dummyExpression, None, None)(DummyPosition(0))
-    val result = SemanticExpressionCheck.simple(filter).run(SemanticState.clean)
+    val result = SemanticExpressionCheck.simple(filter)(SemanticState.clean)
     result.errors shouldBe empty
     types(filter)(result.state) should equal(CTList(CTNode) | CTList(CTString))
   }
@@ -47,7 +46,7 @@ class ListComprehensionTest extends SemanticFunSuite {
     val filter = ListComprehension(Variable("x")(DummyPosition(5)), dummyExpression, None, Some(extractExpression))(
       DummyPosition(0)
     )
-    val result = SemanticExpressionCheck.simple(filter).run(SemanticState.clean)
+    val result = SemanticExpressionCheck.simple(filter)(SemanticState.clean)
     result.errors shouldBe empty
     types(filter)(result.state) should equal(CTList(CTNode) | CTList(CTNumber))
   }
@@ -58,7 +57,7 @@ class ListComprehensionTest extends SemanticFunSuite {
 
     val filter =
       ListComprehension(Variable("x")(DummyPosition(2)), dummyExpression, Some(predicate), None)(DummyPosition(0))
-    val result = SemanticExpressionCheck.simple(filter).run(SemanticState.clean)
+    val result = SemanticExpressionCheck.simple(filter)(SemanticState.clean)
     result.errors should equal(Seq(error))
     result.state.symbol("x") should equal(None)
   }
@@ -66,7 +65,7 @@ class ListComprehensionTest extends SemanticFunSuite {
   test("should declare variables in list comprehension without predicate") {
     val listComprehension =
       ListComprehension(Variable("x")(DummyPosition(2)), dummyExpression, None, None)(DummyPosition(0))
-    val result = SemanticExpressionCheck.simple(listComprehension).run(SemanticState.clean)
+    val result = SemanticExpressionCheck.simple(listComprehension)(SemanticState.clean)
     result.errors shouldBe empty
     // x should not be in the outer scope
     result.state.symbol("x") should equal(None)

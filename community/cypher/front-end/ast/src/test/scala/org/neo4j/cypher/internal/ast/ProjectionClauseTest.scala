@@ -16,7 +16,6 @@
  */
 package org.neo4j.cypher.internal.ast
 
-import SemanticCheckInTest.SemanticCheckWithDefaultContext
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.CountStar
@@ -37,8 +36,8 @@ class ProjectionClauseTest extends CypherFunSuite with AstConstructionTestSuppor
 
     // WHEN
     val beforeState = SemanticState.clean.newChildScope
-    val middleState = withObj.semanticCheck.run(beforeState).state
-    val result = withObj.semanticCheckContinuation(middleState.currentScope.scope).run(middleState)
+    val middleState = withObj.semanticCheck(beforeState).state
+    val result = withObj.semanticCheckContinuation(middleState.currentScope.scope)(middleState)
 
     // THEN
     result.errors shouldBe empty
@@ -52,8 +51,8 @@ class ProjectionClauseTest extends CypherFunSuite with AstConstructionTestSuppor
     val withObj = With(distinct = false, listedReturnItems, None, None, None, None) _
 
     val beforeState = SemanticState.clean.newChildScope.declareVariable(varFor("n"), CTNode).right.get
-    val middleState = withObj.semanticCheck.run(beforeState).state
-    val result = withObj.semanticCheckContinuation(middleState.currentScope.scope).run(middleState)
+    val middleState = withObj.semanticCheck(beforeState).state
+    val result = withObj.semanticCheckContinuation(middleState.currentScope.scope)(middleState)
 
     // WHEN
     result.state.scopeTree
@@ -76,8 +75,8 @@ class ProjectionClauseTest extends CypherFunSuite with AstConstructionTestSuppor
 
     // WHEN
     val beforeState = SemanticState.clean.newChildScope.declareVariable(varFor("n"), CTNode).right.get
-    val middleState = withObj.semanticCheck.run(beforeState).state
-    val result = withObj.semanticCheckContinuation(middleState.currentScope.scope).run(middleState)
+    val middleState = withObj.semanticCheck(beforeState).state
+    val result = withObj.semanticCheckContinuation(middleState.currentScope.scope)(middleState)
 
     // THEN the n variable is no longer accessible
     result.errors shouldBe empty
@@ -97,8 +96,8 @@ class ProjectionClauseTest extends CypherFunSuite with AstConstructionTestSuppor
 
     // WHEN
     val beforeState = SemanticState.clean.newChildScope.declareVariable(varFor("n"), CTNode).right.get
-    val middleState = withObj.semanticCheck.run(beforeState).state
-    val result = withObj.semanticCheckContinuation(middleState.currentScope.scope).run(middleState)
+    val middleState = withObj.semanticCheck(beforeState).state
+    val result = withObj.semanticCheckContinuation(middleState.currentScope.scope)(middleState)
 
     // THEN the n variable should be an integer
     result.errors shouldBe empty
@@ -126,8 +125,8 @@ class ProjectionClauseTest extends CypherFunSuite with AstConstructionTestSuppor
       varFor("m"),
       CTNode
     ).right.get
-    val middleState = withObj.semanticCheck.run(beforeState).state
-    val result = withObj.semanticCheckContinuation(middleState.currentScope.scope).run(middleState)
+    val middleState = withObj.semanticCheck(beforeState).state
+    val result = withObj.semanticCheckContinuation(middleState.currentScope.scope)(middleState)
 
     // THEN the n and m variable is no longer accessible
     result.errors shouldBe empty
@@ -148,8 +147,8 @@ class ProjectionClauseTest extends CypherFunSuite with AstConstructionTestSuppor
 
     // WHEN
     val beforeState = SemanticState.clean.newChildScope.declareVariable(varFor("n"), CTNode).right.get
-    val middleState = withObj.semanticCheck.run(beforeState).state
-    val result = withObj.semanticCheckContinuation(middleState.currentScope.scope).run(middleState)
+    val middleState = withObj.semanticCheck(beforeState).state
+    val result = withObj.semanticCheckContinuation(middleState.currentScope.scope)(middleState)
 
     // THEN the n variable should be an integer
     result.errors shouldNot be(empty)
@@ -161,8 +160,8 @@ class ProjectionClauseTest extends CypherFunSuite with AstConstructionTestSuppor
 
     // WHEN
     val beforeState = SemanticState.clean.newChildScope
-    val middleState = withObj.semanticCheck.run(beforeState).state
-    val result = withObj.semanticCheckContinuation(middleState.currentScope.scope).run(middleState)
+    val middleState = withObj.semanticCheck(beforeState).state
+    val result = withObj.semanticCheckContinuation(middleState.currentScope.scope)(middleState)
 
     // THEN the n variable should be an integer
     result.errors should be(empty)
@@ -174,7 +173,7 @@ class ProjectionClauseTest extends CypherFunSuite with AstConstructionTestSuppor
 
     // WHEN
     val beforeState = SemanticState.clean.newChildScope
-    val result = withObj.semanticCheck.run(beforeState)
+    val result = withObj.semanticCheck(beforeState)
 
     // THEN
     result.errors shouldNot be(empty)
@@ -195,8 +194,8 @@ class ProjectionClauseTest extends CypherFunSuite with AstConstructionTestSuppor
 
     // WHEN
     val beforeState = SemanticState.clean.newChildScope.declareVariable(varFor("n"), CTNode).right.get
-    val middleState = withObj.semanticCheck.run(beforeState).state
-    val result = withObj.semanticCheckContinuation(middleState.currentScope.scope).run(middleState)
+    val middleState = withObj.semanticCheck(beforeState).state
+    val result = withObj.semanticCheckContinuation(middleState.currentScope.scope)(middleState)
 
     // THEN
     result.errors shouldNot be(empty)
@@ -216,8 +215,8 @@ class ProjectionClauseTest extends CypherFunSuite with AstConstructionTestSuppor
 
     // WHEN
     val beforeState = SemanticState.clean.newChildScope.declareVariable(varFor("n"), CTNode).right.get
-    val middleState = withObj.semanticCheck.run(beforeState).state
-    val result = withObj.semanticCheckContinuation(middleState.currentScope.scope).run(middleState)
+    val middleState = withObj.semanticCheck(beforeState).state
+    val result = withObj.semanticCheckContinuation(middleState.currentScope.scope)(middleState)
 
     // THEN
     result.errors shouldNot be(empty)
@@ -237,8 +236,8 @@ class ProjectionClauseTest extends CypherFunSuite with AstConstructionTestSuppor
 
     // WHEN
     val beforeState = SemanticState.clean.newChildScope.declareVariable(varFor("n"), CTNode).right.get
-    val middleState = withObj.semanticCheck.run(beforeState).state
-    val result = withObj.semanticCheckContinuation(middleState.currentScope.scope).run(middleState)
+    val middleState = withObj.semanticCheck(beforeState).state
+    val result = withObj.semanticCheckContinuation(middleState.currentScope.scope)(middleState)
 
     // THEN
     result.errors should be(empty)
@@ -255,8 +254,8 @@ class ProjectionClauseTest extends CypherFunSuite with AstConstructionTestSuppor
     val outerState = SemanticState.clean.newChildScope.declareVariable(varFor("x"), CTNode).right.get
     val outerScope = outerState.currentScope.scope
     val beforeState = SemanticState.clean.newChildScope
-    val middleState = withObj.semanticCheck.run(beforeState).state
-    val result = withObj.semanticCheckContinuation(middleState.currentScope.scope, Some(outerScope)).run(middleState)
+    val middleState = withObj.semanticCheck(beforeState).state
+    val result = withObj.semanticCheckContinuation(middleState.currentScope.scope, Some(outerScope))(middleState)
 
     // THEN
     result.errors should be(empty)
@@ -274,8 +273,8 @@ class ProjectionClauseTest extends CypherFunSuite with AstConstructionTestSuppor
     val outerState = SemanticState.clean.newChildScope.declareVariable(varFor("x"), CTNode).right.get
     val outerScope = outerState.currentScope.scope
     val beforeState = SemanticState.clean.newChildScope
-    val middleState = returnObj.semanticCheck.run(beforeState).state
-    val result = returnObj.semanticCheckContinuation(middleState.currentScope.scope, Some(outerScope)).run(middleState)
+    val middleState = returnObj.semanticCheck(beforeState).state
+    val result = returnObj.semanticCheckContinuation(middleState.currentScope.scope, Some(outerScope))(middleState)
 
     // THEN
     result.errors shouldEqual Seq(

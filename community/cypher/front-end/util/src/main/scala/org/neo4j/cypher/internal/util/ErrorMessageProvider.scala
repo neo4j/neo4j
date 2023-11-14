@@ -64,26 +64,3 @@ object NotImplementedErrorMessageProvider extends ErrorMessageProvider {
 
   override def createMultipleGraphReferencesError(): String = ???
 }
-
-object EmptyErrorMessageProvider extends ErrorMessageProvider {
-
-  override def createMissingPropertyLabelHintError(
-    operatorDescription: String,
-    hintStringification: String,
-    missingThingDescription: String,
-    foundThingsDescription: String,
-    entityDescription: String,
-    entityName: String,
-    additionalInfo: String
-  ): String = ""
-
-  override def createSelfReferenceError(name: String): String = ""
-
-  override def createSelfReferenceError(name: String, variableType: String): String = ""
-
-  override def createUseClauseUnsupportedError(): String = ""
-
-  override def createDynamicGraphReferenceUnsupportedError(): String = ""
-
-  override def createMultipleGraphReferencesError(): String = ""
-}

@@ -17,7 +17,6 @@
 package org.neo4j.cypher.internal.ast
 
 import org.neo4j.cypher.internal.ast.Order.notProjectedAggregations
-import org.neo4j.cypher.internal.ast.semantics.SemanticCheckContext
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.CountStar
@@ -158,9 +157,9 @@ class OrderTest extends CypherFunSuite with AstConstructionTestSupport {
 
     tests.foreach { test =>
       val orderBy = OrderBy(test.sortItems)(InputPosition.NONE)
-      val result =
-        orderBy.checkIllegalOrdering(ReturnItems(includeExisting = false, test.returnItems)(InputPosition.NONE))
-          .run(SemanticState.clean, SemanticCheckContext.default)
+      val result = orderBy.checkIllegalOrdering(
+        ReturnItems(includeExisting = false, test.returnItems)(InputPosition.NONE)
+      )(SemanticState.clean)
 
       result.errors should have size 0
     }
@@ -180,8 +179,9 @@ class OrderTest extends CypherFunSuite with AstConstructionTestSupport {
       autoAliasedReturnItem(add(countStar(), literalInt(1)))
     )
     val orderBy = OrderBy(sortItems)(InputPosition.NONE)
-    val result = orderBy.checkIllegalOrdering(ReturnItems(includeExisting = false, returnItems)(InputPosition.NONE))
-      .run(SemanticState.clean, SemanticCheckContext.default)
+    val result = orderBy.checkIllegalOrdering(ReturnItems(includeExisting = false, returnItems)(InputPosition.NONE))(
+      SemanticState.clean
+    )
     result.errors should equal(Seq(
       // Reports all offending sort items.
       // Uses position of the first offending sort item.
@@ -200,8 +200,9 @@ class OrderTest extends CypherFunSuite with AstConstructionTestSupport {
       autoAliasedReturnItem(add(countStar(), literalInt(1)))
     )
     val orderBy = OrderBy(sortItems)(InputPosition.NONE)
-    val result = orderBy.checkIllegalOrdering(ReturnItems(includeExisting = false, returnItems)(InputPosition.NONE)).get
-      .run(SemanticState.clean, SemanticCheckContext.default)
+    val result = orderBy.checkIllegalOrdering(ReturnItems(includeExisting = false, returnItems)(InputPosition.NONE))(
+      SemanticState.clean
+    )
     val expectedErrorMessage = notProjectedAggregations(Seq("count(*)"))
 
     withClue(s"orderBy expressions [${sortItems.map(_.asCanonicalStringVal).mkString(",")}] " +

@@ -16,7 +16,6 @@
  */
 package org.neo4j.cypher.internal.ast.semantics.functions
 
-import org.neo4j.cypher.internal.ast.SemanticCheckInTest.SemanticCheckWithDefaultContext
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
 import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticFunSuite
@@ -53,8 +52,8 @@ abstract class FunctionTestBase(funcName: String) extends SemanticFunSuite {
       arguments
     )(DummyPosition(5))
 
-    val state = SemanticExpressionCheck.check(context, arguments).run(SemanticState.clean).state
-    (SemanticExpressionCheck.check(context, invocation).run(state), invocation)
+    val state = SemanticExpressionCheck.check(context, arguments)(SemanticState.clean).state
+    (SemanticExpressionCheck.check(context, invocation)(state), invocation)
   }
 }
 
