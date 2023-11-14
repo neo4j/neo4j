@@ -86,7 +86,10 @@ case object PlanUpdates extends UpdatesPlanner {
             mutatingPatterns = IndexedSeq(nextPatternToPlan)
           ),
           tail = Some(RegularSinglePlannerQuery(
-            queryGraph = QueryGraph(mutatingPatterns = remainingPatternToPlan)
+            queryGraph = QueryGraph(
+              argumentIds = remainingPatternToPlan.flatMap(_.dependencies).toSet,
+              mutatingPatterns = remainingPatternToPlan
+            )
           ))
         )
 

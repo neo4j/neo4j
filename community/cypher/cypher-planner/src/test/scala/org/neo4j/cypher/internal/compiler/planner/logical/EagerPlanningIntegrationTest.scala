@@ -254,6 +254,7 @@ class EagerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
         .eager(ListSet(EagernessReason.ReadDeleteConflict("n")))
         .apply()
         .|.allNodeScan("n", "x", "dummy")
+        .eager(ListSet(EagernessReason.ReadDeleteConflict("x")))
         .projection("1 AS dummy")
         .eager(ListSet(EagernessReason.ReadDeleteConflict("x")))
         .allNodeScan("x")
@@ -283,6 +284,7 @@ class EagerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
         .eager(ListSet(EagernessReason.ReadDeleteConflict("n")))
         .apply()
         .|.nodeByLabelScan("n", "N", IndexOrderNone, "x", "dummy")
+        .eager(ListSet(EagernessReason.ReadDeleteConflict("x")))
         .projection("1 AS dummy")
         .eager(ListSet(EagernessReason.ReadDeleteConflict("x")))
         .allNodeScan("x")
@@ -313,6 +315,7 @@ class EagerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
         .filter("n.prop = 42")
         .apply()
         .|.nodeByLabelScan("n", "N", IndexOrderNone, "x", "dummy")
+        .eager(ListSet(EagernessReason.ReadDeleteConflict("x")))
         .projection("1 AS dummy")
         .eager(ListSet(EagernessReason.ReadDeleteConflict("x")))
         .allNodeScan("x")
@@ -344,6 +347,7 @@ class EagerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
         .filter("n.prop > 23")
         .apply()
         .|.nodeByLabelScan("n", "N", IndexOrderNone, "x", "dummy")
+        .eager(ListSet(EagernessReason.ReadDeleteConflict("x")))
         .projection("1 AS dummy")
         .eager(ListSet(EagernessReason.ReadDeleteConflict("x")))
         .allNodeScan("x")
@@ -374,6 +378,7 @@ class EagerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
         .eager(ListSet(EagernessReason.ReadDeleteConflict("n")))
         .apply()
         .|.allNodeScan("n", "x", "dummy")
+        .eager(ListSet(EagernessReason.ReadDeleteConflict("x")))
         .projection("1 AS dummy")
         .eager(ListSet(EagernessReason.ReadDeleteConflict("x")))
         .allNodeScan("x")
@@ -404,6 +409,7 @@ class EagerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
         .eager(ListSet(EagernessReason.ReadDeleteConflict("n")))
         .apply()
         .|.nodeByLabelScan("n", "N", IndexOrderNone, "x", "dummy")
+        .eager(ListSet(EagernessReason.ReadDeleteConflict("x")))
         .projection("1 AS dummy")
         .eager(ListSet(EagernessReason.ReadDeleteConflict("x")))
         .allNodeScan("x")
@@ -436,6 +442,7 @@ class EagerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
         .eager(ListSet(EagernessReason.ReadDeleteConflict("n")))
         .apply()
         .|.nodeIndexOperator("n:N(prop = 42)", argumentIds = Set("x", "dummy"))
+        .eager(ListSet(EagernessReason.ReadDeleteConflict("x")))
         .projection("1 AS dummy")
         .eager(ListSet(EagernessReason.ReadDeleteConflict("x")))
         .allNodeScan("x")
@@ -469,6 +476,7 @@ class EagerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
         .eager(ListSet(EagernessReason.ReadDeleteConflict("n")))
         .apply()
         .|.nodeIndexOperator("n:N(prop > 23)", argumentIds = Set("x", "dummy"))
+        .eager(ListSet(EagernessReason.ReadDeleteConflict("x")))
         .projection("1 AS dummy")
         .eager(ListSet(EagernessReason.ReadDeleteConflict("x")))
         .allNodeScan("x")
@@ -812,8 +820,8 @@ class EagerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       .apply()
       .|.allNodeScan("start", "a")
       .eager(ListSet(
-        EagernessReason.ReadDeleteConflict("a")
-        // end is not found as an eagerness reason in IR-eagerness since `a` is found first.
+        EagernessReason.ReadDeleteConflict("a"),
+        EagernessReason.ReadDeleteConflict("end")
       ))
       .deleteNode("a")
       .nodeByLabelScan("a", "Label", IndexOrderNone)
@@ -841,6 +849,7 @@ class EagerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
     plan should equal(
       planner.planBuilder()
         .produceResults("end")
+        .eager(ListSet(EagernessReason.ReadDeleteConflict("end")))
         .deleteRelationship("s")
         .eager(ListSet(EagernessReason.ReadDeleteConflict("s")))
         .statefulShortestPath(
@@ -921,7 +930,7 @@ class EagerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
       .produceResults("1")
       .projection("1 AS 1")
       .detachDeleteNode("end")
-      .eager(ListSet(ReadDeleteConflict("end"))) // This eager is unnecessary since we are limited to one shortest
+      .eager(ListSet(EagernessReason.Unknown)) // This eager is unnecessary since we are limited to one shortest
     val expected = statefulShortestPath(topPlan, `(start)-[r:R]->(end)`)
       .allNodeScan("start")
       .build()

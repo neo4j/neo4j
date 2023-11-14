@@ -1907,13 +1907,8 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     plan should equal(planner.subPlanBuilder()
       .emptyResult()
       .deleteNode(expr)
-      .eager(ListSet(
-        EagernessReason.ReadDeleteConflict("nodes"),
-        EagernessReason.ReadDeleteConflict("a"),
-        EagernessReason.ReadDeleteConflict("b")
-      ))
+      .eager(ListSet(EagernessReason.Unknown))
       .projection("[n] AS nodes")
-      .eager(ListSet(EagernessReason.ReadDeleteConflict("n")))
       .allNodeScan("n")
       .build())
   }
@@ -1954,16 +1949,9 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     plan should equal(planner.subPlanBuilder()
       .emptyResult()
       .deleteRelationship(expr)
-      .eager(ListSet(
-        EagernessReason.ReadDeleteConflict("rels"),
-        EagernessReason.ReadDeleteConflict("a"),
-        EagernessReason.ReadDeleteConflict("b")
-      ))
+      .eager(ListSet(EagernessReason.Unknown))
       .projection("[r] AS rels")
-      .eager(ListSet(
-        EagernessReason.ReadDeleteConflict("anon_1"),
-        EagernessReason.ReadDeleteConflict("anon_2")
-      ))
+      .eager(ListSet(EagernessReason.Unknown))
       .allRelationshipsScan("(anon_1)-[r]->(anon_2)")
       .build())
   }
@@ -2005,16 +1993,9 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     plan should equal(planner.subPlanBuilder()
       .emptyResult()
       .deleteExpression(expr)
-      .eager(ListSet(
-        EagernessReason.ReadDeleteConflict("rels"),
-        EagernessReason.ReadDeleteConflict("a"),
-        EagernessReason.ReadDeleteConflict("b")
-      ))
+      .eager(ListSet(EagernessReason.Unknown))
       .projection("{rel: r} AS rels")
-      .eager(ListSet(
-        EagernessReason.ReadDeleteConflict("anon_1"),
-        EagernessReason.ReadDeleteConflict("anon_2")
-      ))
+      .eager(ListSet(EagernessReason.Unknown))
       .allRelationshipsScan("(anon_1)-[r]->(anon_2)")
       .build())
   }

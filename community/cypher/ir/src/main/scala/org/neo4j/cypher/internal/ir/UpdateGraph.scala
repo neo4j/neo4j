@@ -32,6 +32,8 @@ import org.neo4j.cypher.internal.expressions.HasDegreeGreaterThanOrEqual
 import org.neo4j.cypher.internal.expressions.HasDegreeLessThan
 import org.neo4j.cypher.internal.expressions.HasDegreeLessThanOrEqual
 import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
@@ -143,11 +145,12 @@ trait UpdateGraph {
   /*
    * Finds all identifiers being deleted.
    */
-  def identifiersToDelete: Set[String] = (deleteExpressions flatMap {
+  def identifiersToDelete: Set[String] = (deletes flatMap {
     // DELETE n
+    case DeleteExpression(expr: LogicalVariable, _) => Set(expr.name)
     // DELETE (n)-[r]-()
-    // DELETE expr
-    case DeleteExpression(expr, _) => expr.dependencies.map(_.name)
+    case DeleteExpression(expr: PathExpression, _) => expr.dependencies.map(_.name)
+    case _                                         => Set()
   }).toSet
 
   /*
@@ -362,7 +365,7 @@ trait UpdateGraph {
 
   // if we do match delete and merge we always need to be eager
   def deleteOverlapWithMergeIn(other: UpdateGraph): Boolean =
-    hasDeleteExpressions && (other.hasMergeNodePatterns || other.hasMergeRelationshipPatterns)
+    hasDeletes && (other.hasMergeNodePatterns || other.hasMergeRelationshipPatterns)
   // NOTE: As long as we have the conservative eagerness rule for FOREACH we do not need this recursive check
   // || other.foreachPatterns.exists(_.innerUpdates.allQueryGraphs.exists(deleteOverlapWithMergeIn)))
 
@@ -524,14 +527,27 @@ trait UpdateGraph {
   def deleteOverlap(
     qgWithInfo: QgWithLeafInfo,
     leafPlansPredicatesResolver: LeafPlansPredicatesResolver
-  ): Seq[EagernessReason] = {
-    if (identifiersToDelete.isEmpty) {
-      deleteLabelExpressionOverlap(qgWithInfo, leafPlansPredicatesResolver)
+  )(implicit semanticTable: SemanticTable): Seq[EagernessReason] = {
+    if (!hasDeletes) {
+      return Seq.empty
+    }
+
+    val nodesToRead =
+      qgWithInfo.unstablePatternNodes ++
+        qgWithInfo.queryGraph.argumentIds.filter(semanticTable.typeFor(_).couldBe(CTNode))
+
+    val relsToRead =
+      qgWithInfo.queryGraph.allPatternRelationshipsRead.map(_.name) ++
+        qgWithInfo.queryGraph.argumentIds.filter(semanticTable.typeFor(_).couldBe(CTRelationship))
+
+    val identifiersToRead = nodesToRead ++ relsToRead
+
+    if (
+      (deletesExpressions && identifiersToRead.nonEmpty) ||
+      (hasDetachDelete && relsToRead.nonEmpty)
+    ) {
+      Seq(EagernessReason.Unknown)
     } else {
-      val identifiersToRead =
-        qgWithInfo.unstablePatternNodes ++
-          qgWithInfo.queryGraph.allPatternRelationshipsRead.map(_.name) ++
-          qgWithInfo.queryGraph.argumentIds
       val overlaps = (identifiersToDelete intersect identifiersToRead).toSeq
       if (overlaps.nonEmpty) {
         overlaps.map(EagernessReason.ReadDeleteConflict)
@@ -549,9 +565,13 @@ trait UpdateGraph {
   private def deleteLabelExpressionOverlap(
     qgWithInfo: QgWithLeafInfo,
     leafPlansPredicatesResolver: LeafPlansPredicatesResolver
-  ): Seq[EagernessReason] = {
+  )(implicit semanticTable: SemanticTable): Seq[EagernessReason] = {
     val relevantNodes =
-      qgWithInfo.queryGraph.allPatternNodesRead
+      qgWithInfo.queryGraph.allPatternNodesRead ++
+        // Using qgWithInfo.queryGraph.argumentIds here would give many false positives, where a node is an
+        // argument, but not further used. Using selections (only), because QueryHorizon.allQueryGraphs
+        // puts any expressions into there.
+        qgWithInfo.queryGraph.selections.variableDependencies.filter(semanticTable.typeFor(_).couldBe(CTNode))
     val nodesWithLabelOverlap = relevantNodes
       .flatMap(unstableNode => identifiersToDelete.map((unstableNode, _)))
       .filter { case (readNode, deletedNode) =>
@@ -771,13 +791,25 @@ trait UpdateGraph {
     propertiesToRead.exists(propertiesToSet.overlaps)
   }
 
-  private def deleteExpressions = mutatingPatterns.collect {
+  private def deletes = mutatingPatterns.collect {
     case p: DeleteExpression => p
   }
 
-  private def hasDeleteExpressions = mutatingPatterns.exists {
+  private def hasDeletes = mutatingPatterns.exists {
     case _: DeleteExpression => true
     case _                   => false
+  }
+
+  def deletesExpressions: Boolean = deletes.exists {
+    // `DELETE expression` deletes something without the variable name
+    case DeleteExpression(expr, _) if !expr.isInstanceOf[LogicalVariable] && !expr.isInstanceOf[PathExpression] => true
+    case _                                                                                                      => false
+  }
+
+  def hasDetachDelete: Boolean = deletes.exists {
+    // DETACH DELETE deletes relationships without their variable name
+    case DeleteExpression(_, true) => true
+    case _                         => false
   }
 
   private def removeLabelPatterns = mutatingPatterns.collect {
