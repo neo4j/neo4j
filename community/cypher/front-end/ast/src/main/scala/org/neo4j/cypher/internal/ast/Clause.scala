@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.ast.semantics.Scope
 import org.neo4j.cypher.internal.ast.semantics.SemanticAnalysisTooling
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
-import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.fromFunction
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.fromFunctionWithContext
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.fromState
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.success
