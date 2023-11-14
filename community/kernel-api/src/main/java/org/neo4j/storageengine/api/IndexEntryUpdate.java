@@ -19,6 +19,8 @@
  */
 package org.neo4j.storageengine.api;
 
+import static org.neo4j.internal.schema.SchemaUserDescription.TOKEN_ID_NAME_LOOKUP;
+
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.values.storable.Value;
@@ -117,6 +119,11 @@ public abstract class IndexEntryUpdate<INDEX_KEY extends SchemaDescriptorSupplie
      * Return string representation of value state.
      */
     protected abstract String valueToString();
+
+    @Override
+    public String toString() {
+        return describe(TOKEN_ID_NAME_LOOKUP);
+    }
 
     public static <INDEX_KEY extends SchemaDescriptorSupplier> ValueIndexEntryUpdate<INDEX_KEY> add(
             long entityId, INDEX_KEY indexKey, Value... values) {
