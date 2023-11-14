@@ -112,7 +112,7 @@ public class MigrateStoreCommand extends AbstractAdminCommand {
 
     @Option(
             names = "--to-format",
-            paramLabel = "standard|high_limit|aligned",
+            paramLabel = "standard|high_limit|aligned|block",
             description =
                     "Name of the format to migrate the store to. "
                             + "If the format is specified, the target database is migrated to the latest known combination of MAJOR and MINOR versions of the specified format. "

@@ -180,10 +180,10 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             newBuilder("server.config.strict_validation.enabled", BOOL, true).build();
 
     @Description(
-            "Database format. This is the format that will be used for new databases. Valid values are `standard`, `aligned`, or `high_limit`."
+            "Database format. This is the format that will be used for new databases. Valid values are `standard`, `aligned`, `high_limit` or `block`."
                     + "The `aligned` format is essentially the `standard` format with some minimal padding at the end of pages such that a single "
-                    + "record will never cross a page boundary. The `high_limit` format is available for Enterprise Edition only. "
-                    + "It is required if you have a graph that is larger than 34 billion nodes, 34 billion relationships, or 68 billion properties.")
+                    + "record will never cross a page boundary. The `high_limit` and `block` formats are available for Enterprise Edition only. "
+                    + "Either `high_limit` or `block` is required if you have a graph that is larger than 34 billion nodes, 34 billion relationships, or 68 billion properties.")
     public static final Setting<String> db_format =
             newBuilder("db.format", STRING, "aligned").dynamic().build();
 

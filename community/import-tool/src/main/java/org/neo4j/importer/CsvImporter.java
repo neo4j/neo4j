@@ -69,7 +69,6 @@ import org.neo4j.internal.batchimport.input.csv.DataFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.locker.FileLockException;
 import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -96,7 +95,7 @@ import org.neo4j.util.Preconditions;
 class CsvImporter implements Importer {
     static final String DEFAULT_REPORT_FILE_NAME = "import.report";
 
-    private final RecordDatabaseLayout databaseLayout;
+    private final DatabaseLayout databaseLayout;
     private final Config databaseConfig;
     private final org.neo4j.csv.reader.Configuration csvConfig;
     private final org.neo4j.internal.batchimport.Configuration importConfig;
@@ -456,7 +455,7 @@ class CsvImporter implements Importer {
     }
 
     static class Builder {
-        private RecordDatabaseLayout databaseLayout;
+        private DatabaseLayout databaseLayout;
         private Config databaseConfig;
         private org.neo4j.csv.reader.Configuration csvConfig = org.neo4j.csv.reader.Configuration.COMMAS;
         private Configuration importConfig = Configuration.DEFAULT;
@@ -485,7 +484,7 @@ class CsvImporter implements Importer {
         private IncrementalStage incrementalStage = null;
 
         Builder withDatabaseLayout(DatabaseLayout databaseLayout) {
-            this.databaseLayout = RecordDatabaseLayout.convert(databaseLayout);
+            this.databaseLayout = databaseLayout;
             return this;
         }
 

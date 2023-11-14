@@ -67,7 +67,6 @@ import org.neo4j.internal.batchimport.input.IdType;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
-import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.locker.FileLockException;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -396,9 +395,7 @@ public class ImportCommand {
                 Base.MaybeLocker maybeLockChecker) {
             try {
                 final var databaseConfig = loadNeo4jConfig(format);
-                Neo4jLayout neo4jLayout = Neo4jLayout.of(databaseConfig);
-                final var databaseLayout = RecordDatabaseLayout.of(
-                        neo4jLayout, database.name()); // Right now we only support Record storage for import command
+                DatabaseLayout databaseLayout = Neo4jLayout.of(databaseConfig).databaseLayout(database.name());
 
                 try (Closeable maybeLock = maybeLockChecker.maybeCheckLock(databaseLayout)) {
                     final var csvConfig = csvConfiguration();
@@ -460,8 +457,7 @@ public class ImportCommand {
             }
         }
 
-        private LogTailMetadata getLogTail(RecordDatabaseLayout databaseLayout, Config databaseConfig)
-                throws IOException {
+        private LogTailMetadata getLogTail(DatabaseLayout databaseLayout, Config databaseConfig) throws IOException {
             try (var fs = ctx.fs();
                     var jobScheduler = createInitialisedScheduler();
                     var pageCache =

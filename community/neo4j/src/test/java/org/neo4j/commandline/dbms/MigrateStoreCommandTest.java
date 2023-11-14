@@ -45,7 +45,7 @@ class MigrateStoreCommandTest {
 
                          migrate [-h] [--expand-commands] [--force-btree-indexes-to-range] [--verbose]
                                  [--additional-config=<file>] [--pagecache=<size>]
-                                 [--to-format=standard|high_limit|aligned] <database>
+                                 [--to-format=standard|high_limit|aligned|block] <database>
 
                          DESCRIPTION
 
@@ -81,7 +81,7 @@ class MigrateStoreCommandTest {
                                                       process. The general rule is that values up to the
                                                       size of the database proportionally increase
                                                       performance.
-                               --to-format=standard|high_limit|aligned
+                               --to-format=standard|high_limit|aligned|block
                                                     Name of the format to migrate the store to. If the
                                                       format is specified, the target database is
                                                       migrated to the latest known combination of MAJOR
