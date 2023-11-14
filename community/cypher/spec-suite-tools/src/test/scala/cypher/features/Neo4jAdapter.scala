@@ -61,7 +61,7 @@ object Neo4jAdapter {
   )
 
   def featureDependentSettings(featureName: String): collection.Map[Setting[_], Object] = featureName match {
-    case "PathSelectorAcceptance" =>
+    case "PathSelectorAcceptance" | "GpmSyntaxMixingAcceptance" =>
       enableSemanticFeature(SemanticFeature.GpmShortestPath)
     case _ => Map.empty
   }

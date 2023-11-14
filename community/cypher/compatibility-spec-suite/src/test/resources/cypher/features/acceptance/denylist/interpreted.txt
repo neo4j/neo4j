@@ -28,3 +28,31 @@ Feature "RemoveAcceptance": Scenario "Does not observe item-by-item visibility"
 Feature "RemoveAcceptance": Scenario "Does not observe row-by-row visibility"
 Feature "DeleteAcceptance": Scenario "Does not observe item-by-item visibility"
 Feature "DeleteAcceptance": Scenario "Does not observe row-by-row visibility"
+
+// Var-length relationship with inline predicate not currently supported, will be solved by https://trello.com/c/oYWxieEi
+Feature "GpmSyntaxMixingAcceptance": Scenario "Var-length relationship with inline predicate - OK"
+
+// Var-length relationship with GPM relationship type expression not currently supported, will be solved by https://trello.com/c/rNUq8FF3
+Feature "GpmSyntaxMixingAcceptance": Scenario "Var-length relationship with GPM relationship type expression - OK"
+
+// Explicit match modes are not currently supported
+Feature "GpmSyntaxMixingAcceptance": Scenario "REPEATABLE ELEMENTS with QPP - OK"
+Feature "GpmSyntaxMixingAcceptance": Scenario "REPEATABLE ELEMENTS with shortestPath in different statements - OK"
+Feature "GpmSyntaxMixingAcceptance": Scenario "REPEATABLE ELEMENTS with var-length relationship - OK"
+Feature "GpmSyntaxMixingAcceptance": Scenario "DIFFERENT NODES with var-length relationship - OK"
+Feature "GpmSyntaxMixingAcceptance": Scenario "Mixing GPM and non-GPM of unrelated features within a subquery - OK": Example "4"
+Feature "GpmSyntaxMixingAcceptance": Scenario "Mixing GPM and non-GPM of unrelated features within a subquery - OK": Example "10"
+Feature "GpmSyntaxMixingAcceptance": Scenario "Mixing GPM and non-GPM of unrelated features within a subquery - OK": Example "16"
+
+// GQL INSERT as a synonym of CREATE is not currently supported, will be solved by https://trello.com/c/XlmtDSpL
+Feature "GpmSyntaxMixingAcceptance": Scenario "INSERT with only & conjunction - OK"
+
+// Some syntax mixing rules are not correct for sub-queries. May be fixed in https://trello.com/c/xUa45JlE
+Feature "GpmSyntaxMixingAcceptance": Scenario "Mixing GPM and non-GPM of unrelated features within a subquery - OK": Example "0"
+Feature "GpmSyntaxMixingAcceptance": Scenario "Mixing GPM and non-GPM of unrelated features within a subquery - OK": Example "1"
+Feature "GpmSyntaxMixingAcceptance": Scenario "Conflicting syntax in separate statements in same EXISTS sub-query - syntax error": Example "4"
+Feature "GpmSyntaxMixingAcceptance": Scenario "Conflicting syntax in separate statements in same EXISTS sub-query - syntax error": Example "5"
+Feature "GpmSyntaxMixingAcceptance": Scenario "Conflicting syntax in separate statements in same COUNT sub-query - syntax error": Example "4"
+Feature "GpmSyntaxMixingAcceptance": Scenario "Conflicting syntax in separate statements in same COUNT sub-query - syntax error": Example "5"
+Feature "GpmSyntaxMixingAcceptance": Scenario "Conflicting syntax in separate statements within a CALL subquery - syntax error": Example "6"
+Feature "GpmSyntaxMixingAcceptance": Scenario "Conflicting syntax in separate statements within a CALL subquery - syntax error": Example "7"

@@ -90,7 +90,21 @@ class PrettifierTCKTest extends FeatureTest with FeatureQueryTest with Matchers 
     """Feature "LabelExpressionAcceptance": Scenario "Relationship type expression in RETURN clause"""",
     """Feature "LabelExpressionAcceptance": Scenario "Relationship type expression in CASE expression"""",
     """Feature "QuantifiedPathPatternAcceptance": Scenario "Leaving out the nodes adjacent to a QPP"""",
-    """Feature "QuantifiedPathPatternAcceptance": Scenario "Quantifier lower bound must be less than or equal to upper bound, upper bound needs to be positive": Example "1""""
+    """Feature "QuantifiedPathPatternAcceptance": Scenario "Quantifier lower bound must be less than or equal to upper bound, upper bound needs to be positive": Example "1"""",
+
+    // Support for IS in CREATE, MERGE, REMOVE and SET is not yet implemented
+    """Feature "GpmSyntaxMixingAcceptance": Scenario "Mixing : conjunction and IS in same label specification of same SET or REMOVE - syntax error"""",
+    """Feature "GpmSyntaxMixingAcceptance": Scenario "REMOVE with IS and : introducers - OK"""",
+    """Feature "GpmSyntaxMixingAcceptance": Scenario "SET with IS and : introducers - OK"""",
+    """Feature "GpmSyntaxMixingAcceptance": Scenario "Mixing QPP and var-length relationship quantifiers in pattern expressions in same statement - syntax error"""",
+    """Feature "GpmSyntaxMixingAcceptance": Scenario "Mixing IS in SET with colon conjunction in MATCH and REMOVE - OK"""",
+
+    // INSERT synonym to CREATE is not yet implemented
+    """Feature "GpmSyntaxMixingAcceptance": Scenario "INSERT with only & conjunction - OK"""",
+
+    // DIFFERENT NODES is not yet implemented
+    """Feature "GpmSyntaxMixingAcceptance": Scenario "DIFFERENT NODES with var-length relationship - OK"""",
+    """Feature "GpmSyntaxMixingAcceptance": Scenario "Explicit match mode with shortestPath - syntax error""""
   ).map(DenylistEntry(_))
 
   // We don't execute tests that are expected to fail
