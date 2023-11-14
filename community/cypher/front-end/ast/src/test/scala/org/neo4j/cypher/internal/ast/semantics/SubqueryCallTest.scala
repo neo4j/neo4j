@@ -20,11 +20,13 @@ import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItems
+import org.neo4j.cypher.internal.ast.SemanticCheckInTest.SemanticCheckWithDefaultContext
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.scalatest.LoneElement.convertToCollectionLoneElementWrapper
 
 //noinspection ZeroIndexToHead
 class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
@@ -53,7 +55,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
         varFor("c").as("c")
       )
     )
-      .semanticCheck(clean)
+      .semanticCheck.run(clean)
       .errors.size.shouldEqual(0)
 
   }
@@ -71,9 +73,8 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
       ),
       return_(varFor("a").as("a"))
     )
-      .semanticCheck(clean)
-      .tap(_.errors.size.shouldEqual(1))
-      .tap(_.errors.head.msg.should(include("Variable `a` not defined")))
+      .semanticCheck.run(clean)
+      .errors.loneElement.msg should include("Variable `a` not defined")
   }
 
   test("subquery scoping works with order by") {
@@ -100,7 +101,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
         varFor("b").as("c")
       )
     )
-      .semanticCheck(clean)
+      .semanticCheck.run(clean)
       .errors.size.shouldEqual(0)
   }
 
@@ -111,17 +112,18 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     // }
     // RETURN 1 AS y
     val varPos = InputPosition(1, 2, 3)
-    singleQuery(
+    val error = singleQuery(
       with_(literal(1).as("x")),
       subqueryCall(
         return_(AliasedReturnItem(literal(2), Variable("x")(varPos))(pos))
       ),
       return_(literal(1).as("y"))
     )
-      .semanticCheck(clean)
-      .tap(_.errors.size.shouldEqual(1))
-      .tap(_.errors.head.msg.shouldEqual("Variable `x` already declared in outer scope"))
-      .tap(_.errors.head.position.shouldEqual(varPos))
+      .semanticCheck.run(clean)
+      .errors.loneElement
+
+    error.msg.shouldEqual("Variable `x` already declared in outer scope")
+    error.position.shouldEqual(varPos)
   }
 
   test("subquery can't implicitly return variable that already exists outside") {
@@ -132,7 +134,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     // }
     // RETURN 1 AS y
     val itemsPos = InputPosition(1, 2, 3)
-    singleQuery(
+    val error = singleQuery(
       with_(literal(1).as("x")),
       subqueryCall(
         with_(literal(1).as("x")),
@@ -140,10 +142,11 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
       ),
       return_(literal(1).as("y"))
     )
-      .semanticCheck(clean)
-      .tap(_.errors.size.shouldEqual(1))
-      .tap(_.errors.head.msg.shouldEqual("Variable `x` already declared in outer scope"))
-      .tap(_.errors.head.position.shouldEqual(itemsPos))
+      .semanticCheck.run(clean)
+      .errors.loneElement
+
+    error.msg.shouldEqual("Variable `x` already declared in outer scope")
+    error.position.shouldEqual(itemsPos)
   }
 
   test("subquery can't implicitly return variable that already exists outside, from a union") {
@@ -172,12 +175,12 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
       )),
       return_(literal(1).as("y"))
     )
-      .semanticCheck(clean)
-      .tap(_.errors.size.shouldEqual(2))
-      .tap(_.errors.map(e => e.msg -> e.position).toSet.shouldEqual(Set(
+      .semanticCheck.run(clean)
+      .errors
+      .map(e => e.msg -> e.position).shouldEqual(Seq(
         "Variable `x` already declared in outer scope" -> itemsPos1,
         "Variable `x` already declared in outer scope" -> itemsPos2
-      )))
+      ))
   }
 
   test("subquery without return does not export variables to enclosing query") {
@@ -191,9 +194,10 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
       ),
       return_(varFor("a").as("a"))
     )
-      .semanticCheck(clean)
-      .tap(_.errors.size.shouldEqual(1))
-      .tap(_.errors.head.msg.shouldEqual("Variable `a` not defined"))
+      .semanticCheck.run(clean)
+      .errors
+      .loneElement
+      .msg.shouldEqual("Variable `a` not defined")
   }
 
   test("subquery with union without return does not export variables to enclosing query") {
@@ -212,9 +216,9 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
       ),
       return_(varFor("a").as("a"))
     )
-      .semanticCheck(clean)
-      .tap(_.errors.size.shouldEqual(1))
-      .tap(_.errors.head.msg.shouldEqual("Variable `a` not defined"))
+      .semanticCheck.run(clean)
+      .errors.loneElement
+      .msg.shouldEqual("Variable `a` not defined")
   }
 
   test("subquery allows union with valid return statements at the end") {
@@ -233,7 +237,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
       ),
       return_(varFor("x").as("x"))
     )
-      .semanticCheck(clean)
+      .semanticCheck.run(clean)
       .errors.size.shouldEqual(0)
   }
 
@@ -253,7 +257,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
       ),
       return_(varFor("x").as("x"), varFor("y").as("y"))
     )
-      .semanticCheck(clean)
+      .semanticCheck.run(clean)
       .errors.size.shouldEqual(0)
   }
 
@@ -273,8 +277,8 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
       ),
       return_(countStar().as("count"))
     )
-      .semanticCheck(clean)
-      .tap(_.errors.size.shouldEqual(0))
+      .semanticCheck.run(clean)
+      .errors shouldBe empty
   }
 
   test("subquery allows union with create and return statement at the end") {
@@ -293,7 +297,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
       ),
       return_(countStar().as("count"))
     )
-      .semanticCheck(clean)
+      .semanticCheck.run(clean)
       .errors.size.shouldEqual(0)
   }
 
@@ -308,8 +312,8 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
       ),
       return_(countStar().as("count"))
     )
-      .semanticCheck(clean)
-      .tap(_.errors.size.shouldEqual(0))
+      .semanticCheck.run(clean)
+      .errors shouldBe empty
   }
 
   test("query allows unit subquery at the end") {
@@ -323,8 +327,8 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
         singleQuery(merge(nodePat(Some("a"))))
       )
     )
-      .semanticCheck(clean)
-      .tap(_.errors.size.shouldEqual(0))
+      .semanticCheck.run(clean)
+      .errors shouldBe empty
   }
 
   test("query allows nested unit subquery at the end") {
@@ -342,8 +346,8 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
         ))
       )
     )
-      .semanticCheck(clean)
-      .tap(_.errors.size.shouldEqual(0))
+      .semanticCheck.run(clean)
+      .errors shouldBe empty
   }
 
   test("query allows nested union unit subquery at the end") {
@@ -366,8 +370,8 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
         ))
       )
     )
-      .semanticCheck(clean)
-      .tap(_.errors.size.shouldEqual(0))
+      .semanticCheck.run(clean)
+      .errors shouldBe empty
   }
 
   test("subquery disallows single query ending in clause that is neither update nor return") {
@@ -378,7 +382,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     // }
     // RETURN count(*) AS count
     val unwindPos = InputPosition(1, 2, 3)
-    singleQuery(
+    val error = singleQuery(
       subqueryCall(
         singleQuery(
           merge(
@@ -390,10 +394,11 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
       ),
       return_(countStar().as("count"))
     )
-      .semanticCheck(clean)
-      .tap(_.errors.size.shouldEqual(1))
-      .tap(_.errors.head.msg.should(include("Query cannot conclude with UNWIND")))
-      .tap(_.errors.head.position.shouldEqual(unwindPos))
+      .semanticCheck.run(clean)
+      .errors.loneElement
+
+    error.msg.should(include("Query cannot conclude with UNWIND"))
+    error.position.shouldEqual(unwindPos)
   }
 
   test("subquery allows single query with create and return statement at the end") {
@@ -407,7 +412,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
       ),
       return_(countStar().as("count"))
     )
-      .semanticCheck(clean)
+      .semanticCheck.run(clean)
       .errors.size.shouldEqual(0)
   }
 
@@ -427,9 +432,9 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
       ),
       return_(varFor("x").as("x"), varFor("y").as("y"))
     )
-      .semanticCheck(clean)
-      .tap(_.errors.size.shouldEqual(1))
-      .tap(_.errors.head.msg.should(include("All sub queries in an UNION must have the same return column names")))
+      .semanticCheck.run(clean)
+      .errors.loneElement
+      .msg.should(include("All sub queries in an UNION must have the same return column names"))
   }
 
   test("correlated subquery importing variables using leading WITH") {
@@ -447,7 +452,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
       ),
       return_(varFor("x").aliased, varFor("y").aliased)
     )
-      .semanticCheck(clean)
+      .semanticCheck.run(clean)
       .errors.size.shouldEqual(0)
   }
 
@@ -466,9 +471,9 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
       ),
       return_(varFor("x").aliased)
     )
-      .semanticCheck(clean)
-      .tap(_.errors.size.shouldEqual(1))
-      .tap(_.errors.head.msg.should(include("Variable `y` not defined")))
+      .semanticCheck.run(clean)
+      .errors.loneElement
+      .msg.should(include("Variable `y` not defined"))
   }
 
   test("correlated subquery with union") {
@@ -495,8 +500,8 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
       )),
       return_(varFor("a").aliased, varFor("b").aliased)
     )
-      .semanticCheck(clean)
-      .tap(_.errors.size.shouldEqual(0))
+      .semanticCheck.run(clean)
+      .errors shouldBe empty
   }
 
   test("correlated subquery with union with different imports") {
@@ -530,8 +535,8 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
       )),
       return_(varFor("a").aliased, varFor("b").aliased, varFor("c").aliased, varFor("x").aliased)
     )
-      .semanticCheck(clean)
-      .tap(_.errors.size.shouldEqual(0))
+      .semanticCheck.run(clean)
+      .errors shouldBe empty
   }
 
   test("union without subquery") {
@@ -557,8 +562,8 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
         return_(varFor("c").as("x"))
       )
     )
-      .semanticCheck(clean)
-      .tap(_.errors.size.shouldEqual(0))
+      .semanticCheck.run(clean)
+      .errors shouldBe empty
   }
 
   test("importing WITH without FROM must be first clause") {
@@ -578,9 +583,9 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
       ),
       return_(varFor("x").aliased, varFor("y").aliased)
     )
-      .semanticCheck(clean)
-      .tap(_.errors.size.shouldEqual(1))
-      .tap(_.errors.head.msg.should(include("Variable `x` not defined")))
+      .semanticCheck.run(clean)
+      .errors.loneElement
+      .msg.should(include("Variable `x` not defined"))
   }
 
   test("importing WITH may appear after USE") {
@@ -600,8 +605,8 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
       ),
       return_(varFor("x").aliased, varFor("y").aliased)
     )
-      .semanticCheck(clean)
-      .tap(_.errors.size.shouldEqual(0))
+      .semanticCheck.run(clean)
+      .errors shouldBe empty
   }
 
   test("importing WITH must be clean pass-through") {
@@ -611,7 +616,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     //   RETURN x AS z
     // }
     // RETURN x, z
-    singleQuery(
+    val errors = singleQuery(
       with_(literal(1).as("x")),
       subqueryCall(
         with_(varFor("x").aliased, literal(2).as("y")),
@@ -619,12 +624,14 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
       ),
       return_(varFor("x").aliased, varFor("z").aliased)
     )
-      .semanticCheck(clean)
-      .tap(_.errors.size.shouldEqual(2))
-      .tap(_.errors(0).msg.should(include(
-        "Importing WITH should consist only of simple references to outside variables. Aliasing or expressions are not supported."
-      )))
-      .tap(_.errors(1).msg.should(include("Variable `x` not defined")))
+      .semanticCheck.run(clean)
+      .errors
+    errors should have size 2
+
+    errors(0).msg.should(include(
+      "Importing WITH should consist only of simple references to outside variables. Aliasing or expressions are not supported."
+    ))
+    errors(1).msg.should(include("Variable `x` not defined"))
   }
 
   test("importing variables using pass-through WITH and then introducing more") {
@@ -644,7 +651,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
       ),
       return_(varFor("x").aliased, varFor("y").aliased)
     )
-      .semanticCheck(clean)
+      .semanticCheck.run(clean)
       .errors.size.shouldEqual(0)
   }
 
@@ -665,8 +672,8 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
       ),
       return_(varFor("x").aliased, varFor("y").aliased)
     )
-      .semanticCheck(clean)
-      .tap(_.errors.size.shouldEqual(0))
+      .semanticCheck.run(clean)
+      .errors shouldBe empty
   }
 
   test("subquery USE after imports may only reference imported variables") {
@@ -686,9 +693,9 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
       ),
       return_(varFor("x").aliased, varFor("y").aliased)
     )
-      .semanticCheck(clean)
-      .tap(_.errors.size.shouldEqual(1))
-      .tap(_.errors.head.msg.should(include("Variable `y` not defined")))
+      .semanticCheck.run(clean)
+      .errors.loneElement
+      .msg.should(include("Variable `y` not defined"))
   }
 
   test("nested uncorrelated subquery") {
@@ -714,7 +721,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
       ),
       return_(varFor("x").aliased, varFor("y").aliased, varFor("z").aliased)
     )
-      .semanticCheck(clean)
+      .semanticCheck.run(clean)
       .errors.size.shouldEqual(0)
   }
 
@@ -730,7 +737,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     //   RETURN y, z
     // }
     // RETURN x, y, z
-    singleQuery(
+    val errors = singleQuery(
       with_(literal(1).as("x")),
       subqueryCall(
         with_(literal(1).as("y")),
@@ -743,10 +750,11 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
       ),
       return_(varFor("x").aliased, varFor("y").aliased, varFor("z").aliased)
     )
-      .semanticCheck(clean)
-      .tap(_.errors.size.shouldEqual(2))
-      .tap(_.errors(0).msg.should(include("Variable `x` not defined")))
-      .tap(_.errors(1).msg.should(include("Variable `y` not defined")))
+      .semanticCheck.run(clean)
+      .errors
+    errors should have size 2
+    errors(0).msg.should(include("Variable `x` not defined"))
+    errors(1).msg.should(include("Variable `y` not defined"))
   }
 
   test("nested correlated subquery") {
@@ -776,7 +784,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
       ),
       return_(varFor("x").aliased, varFor("y").aliased, varFor("z").aliased)
     )
-      .semanticCheck(clean)
+      .semanticCheck.run(clean)
       .errors.size.shouldEqual(0)
   }
 
@@ -804,9 +812,9 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
       ),
       return_(varFor("x").aliased, varFor("y").aliased, varFor("z").aliased)
     )
-      .semanticCheck(clean)
-      .tap(_.errors.size.shouldEqual(1))
-      .tap(_.errors(0).msg.should(include("Variable `y` not defined")))
+      .semanticCheck.run(clean)
+      .errors.loneElement
+      .msg.should(include("Variable `y` not defined"))
   }
 
   test("extracting imported variables from leading WITH") {
@@ -856,9 +864,8 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
       ),
       return_(literalInt(1).as("x"))
     )
-      .semanticCheck(clean)
-      .tap(_.errors.size.shouldEqual(1))
-      .tap(_.errors(0).msg.should(include("Expression in CALL { RETURN ... } must be aliased (use AS)")))
+      .semanticCheck.run(clean)
+      .errors.loneElement.msg should include("Expression in CALL { RETURN ... } must be aliased (use AS)")
   }
 
   test("subquery should allow multiple import WITH clauses") {
@@ -883,18 +890,8 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
       ),
       return_(varFor("n").aliased)
     )
-      .semanticCheck(clean)
+      .semanticCheck.run(clean)
 
-    x.tap(_.errors.size.shouldEqual(0))
+    x.errors.size.shouldEqual(0)
   }
-
-  /** https://github.com/scala/scala/blob/v2.13.0/src/library/scala/util/ChainingOps.scala#L37 */
-  implicit class AnyOps[A](a: A) {
-
-    def tap[X](e: A => X): A = {
-      e(a)
-      a
-    }
-  }
-
 }

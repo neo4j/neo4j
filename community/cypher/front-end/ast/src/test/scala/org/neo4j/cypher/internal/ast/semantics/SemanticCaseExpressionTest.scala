@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast.semantics
 
+import org.neo4j.cypher.internal.ast.SemanticCheckInTest.SemanticCheckWithDefaultContext
 import org.neo4j.cypher.internal.expressions.CaseExpression
 import org.neo4j.cypher.internal.expressions.DummyExpression
 import org.neo4j.cypher.internal.util.DummyPosition
@@ -43,7 +44,7 @@ class SemanticCaseExpressionTest extends SemanticFunSuite {
       default = Some(literal(1.0))
     )(DummyPosition(2))
 
-    val result = SemanticExpressionCheck.simple(caseExpression)(SemanticState.clean)
+    val result = SemanticExpressionCheck.simple(caseExpression).run(SemanticState.clean)
     result.errors shouldBe empty
     types(caseExpression)(result.state) should equal(CTInteger | CTFloat)
   }
@@ -64,7 +65,7 @@ class SemanticCaseExpressionTest extends SemanticFunSuite {
       Some(DummyExpression(CTFloat | CTNode))
     )(DummyPosition(2))
 
-    val result = SemanticExpressionCheck.simple(caseExpression)(SemanticState.clean)
+    val result = SemanticExpressionCheck.simple(caseExpression).run(SemanticState.clean)
     result.errors shouldBe empty
     types(caseExpression)(result.state) should equal(CTInteger | CTFloat | CTString | CTNode)
   }
@@ -85,7 +86,7 @@ class SemanticCaseExpressionTest extends SemanticFunSuite {
       Some(DummyExpression(CTFloat))
     )(DummyPosition(2))
 
-    val result = SemanticExpressionCheck.simple(caseExpression)(SemanticState.clean)
+    val result = SemanticExpressionCheck.simple(caseExpression).run(SemanticState.clean)
     result.errors should have size 1
     result.errors.head.msg should equal("Type mismatch: expected Boolean but was String")
     result.errors.head.position should equal(DummyPosition(12))

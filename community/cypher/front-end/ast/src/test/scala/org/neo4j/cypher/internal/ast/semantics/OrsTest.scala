@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast.semantics
 
+import org.neo4j.cypher.internal.ast.SemanticCheckInTest.SemanticCheckWithDefaultContext
 import org.neo4j.cypher.internal.expressions.DummyExpression
 import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.util.DummyPosition
@@ -28,7 +29,7 @@ class OrsTest extends SemanticFunSuite {
     val dummyExpr2 = DummyExpression(CTBoolean, DummyPosition(2))
     val dummyExpr3 = DummyExpression(CTBoolean, DummyPosition(3))
     val ors = Ors(Seq(dummyExpr1, dummyExpr2, dummyExpr3))(pos)
-    val result = SemanticExpressionCheck.simple(ors)(SemanticState.clean)
+    val result = SemanticExpressionCheck.simple(ors).run(SemanticState.clean)
 
     result.errors shouldBe empty
     (result.state.typeTable.keySet.map(_.node) should contain).allOf(dummyExpr1, dummyExpr2, dummyExpr3, ors)

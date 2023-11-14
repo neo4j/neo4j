@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.frontend.phases.rewriting.cnf
 import org.neo4j.cypher.internal.ast.IsTyped
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
+import org.neo4j.cypher.internal.ast.semantics.SemanticCheckContext
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.Ands
@@ -244,7 +245,7 @@ class SimplifyPredicatesTest extends CypherFunSuite {
 
   private def assertRewrittenMatches(originalQuery: String, matcher: PartialFunction[Any, Unit]): Unit = {
     val original = JavaCCParser.parse("RETURN " + originalQuery, exceptionFactory)
-    val checkResult = original.semanticCheck(SemanticState.clean)
+    val checkResult = original.semanticCheck.run(SemanticState.clean, SemanticCheckContext.default)
     val rewriter = flattenBooleanOperators andThen simplifyPredicates(checkResult.state)
     val result = original.endoRewrite(rewriter)
     val maybeReturnExp = result.folder.treeFind({

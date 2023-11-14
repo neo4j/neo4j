@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast.semantics
 
+import org.neo4j.cypher.internal.ast.SemanticCheckInTest.SemanticCheckWithDefaultContext
 import org.neo4j.cypher.internal.expressions.Expression.SemanticContext
 import org.neo4j.cypher.internal.expressions.SignedHexIntegerLiteral
 import org.neo4j.cypher.internal.util.DummyPosition
@@ -47,7 +48,7 @@ class HexIntegerLiteralTest extends SemanticFunSuite {
 
   private def assertSemanticError(stringValue: String, errorMessage: String): Unit = {
     val literal = SignedHexIntegerLiteral(stringValue)(DummyPosition(4))
-    val result = SemanticExpressionCheck.check(SemanticContext.Simple, literal)(SemanticState.clean)
+    val result = SemanticExpressionCheck.check(SemanticContext.Simple, literal).run(SemanticState.clean)
     assert(result.errors === Vector(SemanticError(errorMessage, DummyPosition(4))))
   }
 }

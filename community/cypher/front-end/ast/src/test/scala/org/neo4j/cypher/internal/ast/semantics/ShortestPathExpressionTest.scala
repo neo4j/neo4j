@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast.semantics
 
+import org.neo4j.cypher.internal.ast.SemanticCheckInTest.SemanticCheckWithDefaultContext
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.RelationshipChain
@@ -37,7 +38,7 @@ class ShortestPathExpressionTest extends SemanticFunSuite {
     val (exp, state) = makeShortestPathExpression(true)
 
     // When
-    val result = SemanticExpressionCheck.simple(exp)(state)
+    val result = SemanticExpressionCheck.simple(exp).run(state)
 
     // Then
     result.errors shouldBe empty
@@ -49,7 +50,7 @@ class ShortestPathExpressionTest extends SemanticFunSuite {
     val (exp, state) = makeShortestPathExpression(false)
 
     // When
-    val result = SemanticExpressionCheck.simple(exp)(state)
+    val result = SemanticExpressionCheck.simple(exp).run(state)
 
     // Then
     result.errors shouldBe empty

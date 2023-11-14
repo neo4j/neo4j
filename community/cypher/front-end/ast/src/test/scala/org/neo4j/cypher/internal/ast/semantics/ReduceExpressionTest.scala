@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast.semantics
 
+import org.neo4j.cypher.internal.ast.SemanticCheckInTest.SemanticCheckWithDefaultContext
 import org.neo4j.cypher.internal.expressions.DummyExpression
 import org.neo4j.cypher.internal.expressions.ReduceExpression
 import org.neo4j.cypher.internal.expressions.Variable
@@ -37,7 +38,7 @@ class ReduceExpressionTest extends SemanticFunSuite {
       (s: SemanticState) => {
         s.symbolTypes("x") should equal(CTString.invariant)
         s.symbolTypes("y") should equal(CTInteger.invariant)
-        (specifyType(CTString, self) chain error)(s)
+        (specifyType(CTString, self) chain error).run(s)
       }
     )
 
@@ -49,7 +50,7 @@ class ReduceExpressionTest extends SemanticFunSuite {
       expression = reduceExpression
     )(DummyPosition(0))
 
-    val result = SemanticExpressionCheck.simple(filter)(SemanticState.clean)
+    val result = SemanticExpressionCheck.simple(filter).run(SemanticState.clean)
     result.errors should equal(Seq(error))
     result.state.symbol("x") shouldBe empty
     result.state.symbol("y") shouldBe empty
@@ -63,7 +64,7 @@ class ReduceExpressionTest extends SemanticFunSuite {
       (s: SemanticState) => {
         s.symbolTypes("x") should equal(CTString | CTFloat)
         s.symbolTypes("y") should equal(listType.innerType.invariant)
-        (specifyType(CTFloat, self) chain SemanticCheck.success)(s)
+        (specifyType(CTFloat, self) chain SemanticCheck.success).run(s)
       }
     )
 
@@ -75,7 +76,7 @@ class ReduceExpressionTest extends SemanticFunSuite {
       expression = reduceExpression
     )(DummyPosition(0))
 
-    val result = SemanticExpressionCheck.simple(filter)(SemanticState.clean)
+    val result = SemanticExpressionCheck.simple(filter).run(SemanticState.clean)
     result.errors shouldBe empty
     types(filter)(result.state) should equal(CTAny | CTFloat)
   }
@@ -88,7 +89,7 @@ class ReduceExpressionTest extends SemanticFunSuite {
       (s: SemanticState) => {
         s.symbolTypes("x") should equal(accumulatorType)
         s.symbolTypes("y") should equal(listType.innerType.invariant)
-        (specifyType(CTNode, self) chain SemanticCheck.success)(s)
+        (specifyType(CTNode, self) chain SemanticCheck.success).run(s)
       }
     )
 
@@ -100,7 +101,7 @@ class ReduceExpressionTest extends SemanticFunSuite {
       expression = reduceExpression
     )(DummyPosition(0))
 
-    val result = SemanticExpressionCheck.simple(filter)(SemanticState.clean)
+    val result = SemanticExpressionCheck.simple(filter).run(SemanticState.clean)
     result.errors should have size 1
     result.errors.head.msg should equal("Type mismatch: accumulator is Number or String but expression has type Node")
     result.errors.head.position should equal(reduceExpression.position)

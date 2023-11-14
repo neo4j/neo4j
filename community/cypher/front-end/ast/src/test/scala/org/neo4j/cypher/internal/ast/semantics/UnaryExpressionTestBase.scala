@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast.semantics
 
+import org.neo4j.cypher.internal.ast.SemanticCheckInTest.SemanticCheckWithDefaultContext
 import org.neo4j.cypher.internal.expressions.DummyExpression
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.util.symbols.TypeSpec
@@ -42,7 +43,7 @@ abstract class UnaryExpressionTestBase(ctr: Expression => Expression) extends Se
 
     val initialState = SemanticState.clean
 
-    val state = SemanticExpressionCheck.simple(lhs)(initialState).state
-    (SemanticExpressionCheck.simple(expression)(state), expression)
+    val state = SemanticExpressionCheck.simple(lhs).run(initialState).state
+    (SemanticExpressionCheck.simple(expression).run(state), expression)
   }
 }

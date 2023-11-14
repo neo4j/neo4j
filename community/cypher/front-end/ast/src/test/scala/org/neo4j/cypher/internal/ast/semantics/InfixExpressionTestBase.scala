@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast.semantics
 
+import org.neo4j.cypher.internal.ast.SemanticCheckInTest.SemanticCheckWithDefaultContext
 import org.neo4j.cypher.internal.expressions.DummyExpression
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.util.symbols.CTAny
@@ -28,7 +29,7 @@ abstract class InfixExpressionTestBase(ctr: (Expression, Expression) => Expressi
     val exp1 = index(parameter("p", CTAny), 0)
     val exp2 = index(parameter("p", CTAny), 1)
 
-    val result = SemanticExpressionCheck.simple(ctr(exp1, exp2))(SemanticState.clean)
+    val result = SemanticExpressionCheck.simple(ctr(exp1, exp2)).run(SemanticState.clean)
     result.errors should be(empty)
     val astNodes = result.state.typeTable.keys.map(_.node)
     astNodes should contain(exp1)
@@ -53,7 +54,7 @@ abstract class InfixExpressionTestBase(ctr: (Expression, Expression) => Expressi
 
     val expression = ctr(lhs, rhs)
 
-    val state = SemanticExpressionCheck.simple(Seq(lhs, rhs))(SemanticState.clean).state
-    (SemanticExpressionCheck.simple(expression)(state), expression)
+    val state = SemanticExpressionCheck.simple(Seq(lhs, rhs)).run(SemanticState.clean).state
+    (SemanticExpressionCheck.simple(expression).run(state), expression)
   }
 }

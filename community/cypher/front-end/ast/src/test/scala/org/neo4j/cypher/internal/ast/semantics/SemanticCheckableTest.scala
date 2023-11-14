@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.ast.semantics
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.SemanticCheckInTest.SemanticCheckWithDefaultContext
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.when
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.DummyPosition
@@ -40,7 +41,7 @@ class SemanticCheckableTest extends CypherFunSuite with SemanticAnalysisTooling 
     }
 
     val chain: SemanticCheck = func1 chain func2
-    val result = chain(SemanticState.clean)
+    val result = chain.run(SemanticState.clean)
     result.state should equal(state2)
     result.errors should equal(Seq(error1, error2))
   }
@@ -54,17 +55,17 @@ class SemanticCheckableTest extends CypherFunSuite with SemanticAnalysisTooling 
     val func2: SemanticState => Either[SemanticError, SemanticState] = _ => Right(state2)
 
     val chain: SemanticCheck = func1 chain func2
-    val result = chain(SemanticState.clean)
+    val result = chain.run(SemanticState.clean)
     result.state should equal(state2)
     result.errors should equal(Seq(error1))
 
     val chain2: SemanticCheck = func2 chain func1
-    val result2 = chain2(SemanticState.clean)
+    val result2 = chain2.run(SemanticState.clean)
     result2.state should equal(state2)
     result2.errors should equal(Seq(error1))
 
     val chain3: SemanticCheck = func2 chain func2
-    val result3 = chain3(SemanticState.clean)
+    val result3 = chain3.run(SemanticState.clean)
     result3.state should equal(state2)
     result3.errors shouldBe empty
   }
@@ -78,18 +79,18 @@ class SemanticCheckableTest extends CypherFunSuite with SemanticAnalysisTooling 
     val func2: SemanticState => Either[SemanticError, SemanticState] = _ => Left(error2)
 
     val chain1: SemanticCheck = func1 chain func2
-    val result = chain1(SemanticState.clean)
+    val result = chain1.run(SemanticState.clean)
     result.state should equal(state1)
     result.errors should equal(Seq(error1, error2))
 
     val chain2: SemanticCheck = func2 chain func1
-    val result2 = chain2(SemanticState.clean)
+    val result2 = chain2.run(SemanticState.clean)
     result2.state should equal(state1)
     result2.errors should equal(Seq(error2, error1))
 
     val chain3: SemanticCheck = func2 chain func2
     val state3 = SemanticState.clean
-    val result3 = chain3(state3)
+    val result3 = chain3.run(state3)
     result3.state should equal(state3)
     result3.errors should equal(Seq(error2, error2))
   }
@@ -102,18 +103,18 @@ class SemanticCheckableTest extends CypherFunSuite with SemanticAnalysisTooling 
     val func2: SemanticState => Option[SemanticError] = _ => None
 
     val chain1: SemanticCheck = func1 chain func2
-    val result = chain1(SemanticState.clean)
+    val result = chain1.run(SemanticState.clean)
     result.state should equal(state1)
     result.errors should equal(Seq(error1))
 
     val chain2: SemanticCheck = func2 chain func1
-    val result2 = chain2(SemanticState.clean)
+    val result2 = chain2.run(SemanticState.clean)
     result2.state should equal(state1)
     result2.errors should equal(Seq(error1))
 
     val chain3: SemanticCheck = func2 chain func2
     val state3 = SemanticState.clean
-    val result3 = chain3(state3)
+    val result3 = chain3.run(state3)
     result3.state should equal(state3)
     result3.errors shouldBe empty
   }
@@ -127,18 +128,18 @@ class SemanticCheckableTest extends CypherFunSuite with SemanticAnalysisTooling 
     val func2: SemanticState => Option[SemanticError] = _ => Some(error2)
 
     val chain1: SemanticCheck = func1 chain func2
-    val result = chain1(SemanticState.clean)
+    val result = chain1.run(SemanticState.clean)
     result.state should equal(state1)
     result.errors should equal(Seq(error1, error2))
 
     val chain2: SemanticCheck = func2 chain func1
-    val result2 = chain2(SemanticState.clean)
+    val result2 = chain2.run(SemanticState.clean)
     result2.state should equal(state1)
     result2.errors should equal(Seq(error2, error1))
 
     val chain3: SemanticCheck = func2 chain func2
     val state3 = SemanticState.clean
-    val result3 = chain3(state3)
+    val result3 = chain3.run(state3)
     result3.state should equal(state3)
     result3.errors should equal(Seq(error2, error2))
   }
@@ -151,7 +152,7 @@ class SemanticCheckableTest extends CypherFunSuite with SemanticAnalysisTooling 
     val func2: SemanticState => Option[SemanticError] = _ => Some(error2)
 
     val chain: SemanticCheck = func1 chain func2
-    val result = chain(SemanticState.clean)
+    val result = chain.run(SemanticState.clean)
     result.state should equal(state1)
     result.errors should equal(Seq(error2))
   }
@@ -163,7 +164,7 @@ class SemanticCheckableTest extends CypherFunSuite with SemanticAnalysisTooling 
     val func2: SemanticCheck = SemanticCheck.fromFunction(_ => fail("Second check was incorrectly run"))
 
     val chain: SemanticCheck = func1 ifOkChain func2
-    val result = chain(SemanticState.clean)
+    val result = chain.run(SemanticState.clean)
     result.state should equal(state1)
     result.errors should equal(Seq(error1))
   }
@@ -177,7 +178,7 @@ class SemanticCheckableTest extends CypherFunSuite with SemanticAnalysisTooling 
     val func2: SemanticState => Option[SemanticError] = _ => Some(error2)
 
     val chain: SemanticCheck = func1 chain when(condition = true) { func2 }
-    val result = chain(SemanticState.clean)
+    val result = chain.run(SemanticState.clean)
     result.state should equal(state1)
     result.errors should equal(Seq(error1, error2))
   }
@@ -189,7 +190,7 @@ class SemanticCheckableTest extends CypherFunSuite with SemanticAnalysisTooling 
     val func2: SemanticCheck = SemanticCheck.fromFunction(_ => fail("Second check was incorrectly run"))
 
     val chain: SemanticCheck = func1 chain when(condition = false) { func2 }
-    val result = chain(SemanticState.clean)
+    val result = chain.run(SemanticState.clean)
     result.state should equal(state1)
     result.errors should equal(Seq(error))
   }
@@ -210,7 +211,7 @@ class SemanticCheckableTest extends CypherFunSuite with SemanticAnalysisTooling 
 
     val chain: SemanticCheck = withScopedState { func1 chain func2 }
     val state = SemanticState.clean
-    val result = chain(state)
+    val result = chain.run(state)
     result.state.currentScope.symbolNames shouldBe empty
     result.errors should equal(Seq(error))
   }
@@ -219,15 +220,15 @@ class SemanticCheckableTest extends CypherFunSuite with SemanticAnalysisTooling 
     val state1 = SemanticState.clean
     val state2 = SemanticState.clean.declareVariable(varFor("x"), CTInteger.invariant).getOrElse(fail())
 
-    SemanticCheck.success(state1) shouldBe SemanticCheckResult(state1, Seq.empty)
-    SemanticCheck.success(state2) shouldBe SemanticCheckResult(state2, Seq.empty)
+    SemanticCheck.success.run(state1) shouldBe SemanticCheckResult(state1, Seq.empty)
+    SemanticCheck.success.run(state2) shouldBe SemanticCheckResult(state2, Seq.empty)
   }
 
   test("SemanticCheck.error should produce error") {
     val state = SemanticState.clean
     val error = SemanticError("first error", pos)
 
-    SemanticCheck.error(error)(state) shouldBe SemanticCheckResult(state, Vector(error))
+    SemanticCheck.error(error).run(state) shouldBe SemanticCheckResult(state, Vector(error))
   }
 
   test("map should work") {
@@ -235,7 +236,7 @@ class SemanticCheckableTest extends CypherFunSuite with SemanticAnalysisTooling 
     val state2 = SemanticState.clean.declareVariable(varFor("x"), CTInteger.invariant).getOrElse(fail())
 
     val check = SemanticCheck.success.map(res => res.copy(state = state2))
-    check(state1) shouldBe SemanticCheckResult(state2, Seq.empty)
+    check.run(state1) shouldBe SemanticCheckResult(state2, Seq.empty)
   }
 
   test("flatMap should work") {
@@ -244,7 +245,7 @@ class SemanticCheckableTest extends CypherFunSuite with SemanticAnalysisTooling 
 
     val leafCheck = SemanticCheck.fromFunction(_ => SemanticCheckResult(state2, Seq.empty))
     val check = SemanticCheck.success.flatMap(_ => leafCheck)
-    check(state1) shouldBe SemanticCheckResult(state2, Seq.empty)
+    check.run(state1) shouldBe SemanticCheckResult(state2, Seq.empty)
   }
 
   test("for-comprehension should thread state between checks and keep errors separate") {
@@ -281,7 +282,7 @@ class SemanticCheckableTest extends CypherFunSuite with SemanticAnalysisTooling 
       SemanticCheckResult(res3.state, res1.errors ++ res2.errors ++ res3.errors)
     }
 
-    check(state0) shouldBe SemanticCheckResult(state3, Vector(error1, error3))
+    check.run(state0) shouldBe SemanticCheckResult(state3, Vector(error1, error3))
   }
 
   test("SemanticCheck.nestedCheck should work") {

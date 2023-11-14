@@ -18,6 +18,7 @@ package org.neo4j.cypher.internal.frontend.phases.rewriting
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
+import org.neo4j.cypher.internal.ast.semantics.SemanticCheckContext
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.simplifyPredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.computeDependenciesForExpressions
@@ -154,7 +155,7 @@ class normalizeExistsPatternExpressionsTest extends CypherFunSuite with AstConst
     val expected =
       JavaCCParser.parse(expectedQuery, OpenCypherExceptionFactory(None))
 
-    val checkResult = original.semanticCheck(SemanticState.clean)
+    val checkResult = original.semanticCheck.run(SemanticState.clean, SemanticCheckContext.default)
     val rewriter =
       inSequence(
         computeDependenciesForExpressions(checkResult.state),

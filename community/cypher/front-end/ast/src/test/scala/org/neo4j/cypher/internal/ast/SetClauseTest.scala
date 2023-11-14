@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast
 
+import SemanticCheckInTest.SemanticCheckWithDefaultContext
 import org.neo4j.cypher.internal.ast.semantics.SemanticFunSuite
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.DummyExpression
@@ -34,7 +35,7 @@ class SetClauseTest extends SemanticFunSuite {
     val setItem = SetPropertyItem(property, DummyExpression(CTAny))(DummyPosition(42))
     val setClause = SetClause(Seq(setItem))(DummyPosition(6))
 
-    val result = setClause.semanticCheck(SemanticState.clean)
+    val result = setClause.semanticCheck.run(SemanticState.clean)
 
     result.errors should have size 1
     result.errors.head.msg should startWith("Type mismatch: expected Node or Relationship but was Map")

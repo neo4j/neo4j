@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast.semantics
 
+import org.neo4j.cypher.internal.ast.SemanticCheckInTest.SemanticCheckWithDefaultContext
 import org.neo4j.cypher.internal.expressions.Literal
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.UnsignedDecimalIntegerLiteral
@@ -25,7 +26,7 @@ class LiteralTest extends SemanticFunSuite {
 
   test("has type CTString") {
     val literal = StringLiteral("foo")(pos)
-    val result = SemanticExpressionCheck.simple(literal)(SemanticState.clean)
+    val result = SemanticExpressionCheck.simple(literal).run(SemanticState.clean)
     val expressionType = result.state.expressionType(literal).actual
 
     assert(expressionType === CTString.invariant)
@@ -161,7 +162,7 @@ class LiteralTest extends SemanticFunSuite {
   }
 
   private def assertSemanticError(literal: Literal, errorMessage: String): Unit = {
-    val result = SemanticExpressionCheck.simple(literal)(SemanticState.clean)
+    val result = SemanticExpressionCheck.simple(literal).run(SemanticState.clean)
     assert(result.errors === Vector(SemanticError(errorMessage, pos)))
   }
 }
