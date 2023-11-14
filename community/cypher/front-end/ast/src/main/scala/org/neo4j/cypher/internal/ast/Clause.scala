@@ -27,7 +27,9 @@ import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.ast.semantics.Scope
 import org.neo4j.cypher.internal.ast.semantics.SemanticAnalysisTooling
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
+import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.fromFunction
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.fromFunctionWithContext
+import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.fromState
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.success
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.when
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckContext
@@ -954,12 +956,12 @@ case class SetClause(items: Seq[SetItem])(val position: InputPosition) extends U
   override def name = "SET"
 
   override def clauseSpecificSemanticCheck: SemanticCheck =
-    items.semanticCheck chain fromFunction(checkIfMixingIsWithMultipleLabels)
+    items.semanticCheck chain fromState(checkIfMixingIsWithMultipleLabels)
 
   override def mapExpressions(f: Expression => Expression): UpdateClause =
     copy(items.map(_.mapExpressions(f)))(this.position)
 
-  private def checkIfMixingIsWithMultipleLabels(state: SemanticState): SemanticCheckResult = {
+  private def checkIfMixingIsWithMultipleLabels(state: SemanticState): SemanticCheck = {
     // Check for the IS keyword
     val containsIs = this.folder.treeExists {
       case _ @SetLabelItem(_, _, true) => true
@@ -980,7 +982,7 @@ case class SetClause(items: Seq[SetItem])(val position: InputPosition) extends U
       }
       val replacement = prettifier.prettifySetItems(setItems)
       SemanticError(mixingIsWithMultipleLabelsMessage(name, replacement), position)
-    }(state)
+    }
   }
 }
 
@@ -1004,12 +1006,12 @@ case class Remove(items: Seq[RemoveItem])(val position: InputPosition) extends U
   override def name = "REMOVE"
 
   override def clauseSpecificSemanticCheck: SemanticCheck =
-    items.semanticCheck chain fromFunction(checkIfMixingIsWithMultipleLabels)
+    items.semanticCheck chain checkIfMixingIsWithMultipleLabels
 
   override def mapExpressions(f: Expression => Expression): UpdateClause =
     copy(items.map(_.mapExpressions(f)))(this.position)
 
-  private def checkIfMixingIsWithMultipleLabels(state: SemanticState): SemanticCheckResult = {
+  private def checkIfMixingIsWithMultipleLabels(): SemanticCheck = {
     // Check for the IS keyword
     val containsIs = this.folder.treeExists {
       case _ @RemoveLabelItem(_, _, true) => true
@@ -1030,7 +1032,7 @@ case class Remove(items: Seq[RemoveItem])(val position: InputPosition) extends U
       }
       val replacement = prettifier.prettifyRemoveItems(removeItems)
       SemanticError(mixingIsWithMultipleLabelsMessage(name, replacement), position)
-    }(state)
+    }
   }
 }
 
