@@ -216,7 +216,7 @@ class BestPositionFinderTest extends CypherFunSuite {
       CandidateSetWithMinimum(Set(plans(3), plans(4)), plans(3), Set(EagernessReason.Unknown))
     ))
 
-    // An alternative would have been two merge the 2nd and 3rd.
+    // An alternative would have been to merge the 2nd and 3rd.
     // And, depending on cardinalities, that alternative could be better.
     // Since we don't do an exhaustive search, the algorithm always tries to merge
     // a candidateSet with the "earliest" in the buffer that works (lowest index).
