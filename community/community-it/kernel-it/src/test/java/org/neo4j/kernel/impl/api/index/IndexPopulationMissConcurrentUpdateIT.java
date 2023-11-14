@@ -58,6 +58,7 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.index.MinimalIndexAccessor;
 import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionType;
@@ -180,7 +181,13 @@ public class IndexPopulationMissConcurrentUpdateIT {
 
         @Override
         public Lifecycle newInstance(ExtensionContext context, Supplier noDependencies) {
-            return new IndexProvider.Adaptor(INDEX_PROVIDER, directoriesByProvider(Path.of("not-even-persistent"))) {
+            return new BaseTestingIndexProvider(INDEX_PROVIDER, directoriesByProvider(Path.of("not-even-persistent"))) {
+                @Override
+                public MinimalIndexAccessor getMinimalIndexAccessor(
+                        IndexDescriptor descriptor, boolean forRebuildDuringRecovery) {
+                    return null;
+                }
+
                 @Override
                 public IndexPopulator getPopulator(
                         IndexDescriptor descriptor,

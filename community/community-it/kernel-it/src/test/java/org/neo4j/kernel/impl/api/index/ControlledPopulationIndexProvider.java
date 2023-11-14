@@ -40,15 +40,13 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.MinimalIndexAccessor;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.test.Barrier;
 
-public class ControlledPopulationIndexProvider extends IndexProvider.Adaptor {
+public class ControlledPopulationIndexProvider extends BaseTestingIndexProvider {
     private IndexPopulator mockedPopulator = new IndexPopulator.Adapter();
     private final IndexAccessor mockedWriter = mock(IndexAccessor.class);
     private final CountDownLatch writerLatch = new CountDownLatch(1);
@@ -82,11 +80,6 @@ public class ControlledPopulationIndexProvider extends IndexProvider.Adaptor {
                     barrier.reached();
                 }
                 super.add(updates, cursorContext);
-            }
-
-            @Override
-            public IndexSample sample(CursorContext cursorContext) {
-                return new IndexSample();
             }
         };
         return barrier;
@@ -139,6 +132,6 @@ public class ControlledPopulationIndexProvider extends IndexProvider.Adaptor {
 
     public enum PopulationLatchMethod {
         ADD_BATCH,
-        CREATE;
+        CREATE
     }
 }
