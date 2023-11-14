@@ -122,11 +122,6 @@ class InvalidState implements MethodWriter {
     }
 
     @Override
-    public <T> void tryCatchBlock(Consumer<T> body, Consumer<T> handler, LocalVariable exception, T block) {
-        throw new IllegalStateException(reason);
-    }
-
-    @Override
     public void throwException(Expression exception) {
         throw new IllegalStateException(reason);
     }
@@ -138,6 +133,16 @@ class InvalidState implements MethodWriter {
 
     @Override
     public void assignVariableInScope(LocalVariable local, Expression value) {
+        throw new IllegalStateException(reason);
+    }
+
+    @Override
+    public void beginTry(Parameter exception) {
+        throw new IllegalStateException(reason);
+    }
+
+    @Override
+    public void beginCatch(LocalVariable exception) {
         throw new IllegalStateException(reason);
     }
 }

@@ -32,14 +32,14 @@ import java.util.function.Consumer;
  */
 public class CodeBlock implements AutoCloseable {
     final ClassGenerator clazz;
-    private MethodWriter writer;
+    protected MethodWriter writer;
     private final CodeBlock parent;
     private boolean done;
-    private boolean continuableBlock;
+    private final boolean continuableBlock;
 
-    private LocalVariables localVariables = new LocalVariables();
+    protected LocalVariables localVariables = new LocalVariables();
 
-    private CodeBlock(CodeBlock parent) {
+    protected CodeBlock(CodeBlock parent) {
         this(parent, parent.continuableBlock);
     }
 
@@ -85,7 +85,7 @@ public class CodeBlock implements AutoCloseable {
         this.writer = InvalidState.BLOCK_CLOSED;
     }
 
-    private void endBlock() {
+    protected void endBlock() {
         if (!done) {
             writer.endBlock();
             done = true;
@@ -183,8 +183,9 @@ public class CodeBlock implements AutoCloseable {
         return new CodeBlock(this);
     }
 
-    public void tryCatch(Consumer<CodeBlock> body, Consumer<CodeBlock> onError, Parameter exception) {
-        writer.tryCatchBlock(body, onError, localVariables.createNew(exception.type(), exception.name()), this);
+    public TryCatchCodeBlock tryCatch(Consumer<CodeBlock> onError, Parameter exception) {
+        writer.beginTry(exception);
+        return new TryCatchCodeBlock(this, onError, exception);
     }
 
     public void returns() {

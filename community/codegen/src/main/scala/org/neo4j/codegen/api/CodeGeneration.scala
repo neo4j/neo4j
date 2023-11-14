@@ -383,10 +383,11 @@ class CodeGeneration(methodLimit: Int, val codeGenerationMode: CodeGenerationMod
 
       // try {ops} catch(exception name)(onError)
       case TryCatch(ops, onError, exception, name) =>
-        block.tryCatch(
-          (mainBlock: codegen.CodeBlock) => compileExpression(ops, mainBlock),
+        beginBlock(block.tryCatch(
           (errorBlock: codegen.CodeBlock) => compileExpression(onError, errorBlock),
           param(exception, name)
+        ))(
+          compileExpression(ops, _)
         )
         codegen.Expression.EMPTY
 

@@ -71,8 +71,11 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
         override def createReducer(ctx: Context): UserAggregationReducer =
           new UserAggregationReducer with UserAggregationUpdater {
             override def newUpdater(): UserAggregationUpdater = this
+
             override def result(): AnyValue = Values.stringValue(ctx.procedureCallContext().cypherRuntimeName())
+
             override def update(input: Array[AnyValue]): Unit = {}
+
             override def applyUpdates(): Unit = {}
           }
 
@@ -160,7 +163,9 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
 
   test("hasLabel is false on non-existing node") {
     // given
-    givenGraph { tx.createNode(label("Label")) }
+    givenGraph {
+      tx.createNode(label("Label"))
+    }
     val node = mock[Node]
     when(node.getElementId).thenReturn("dummy")
     when(node.getId).thenReturn(1337L)
@@ -258,7 +263,9 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
   test("hasALabelOrType on null") {
     // given
     val size = 100
-    val unfilteredNodes = givenGraph { nodeGraph(size) }
+    val unfilteredNodes = givenGraph {
+      nodeGraph(size)
+    }
     val nodes = select(unfilteredNodes, nullProbability = 0.5)
     val input = inputValues(nodes.map(n => Array[Any](n)): _*)
 
@@ -279,7 +286,9 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
   test("hasALabel on null") {
     // given
     val size = 100
-    val unfilteredNodes = givenGraph { nodeGraph(size) }
+    val unfilteredNodes = givenGraph {
+      nodeGraph(size)
+    }
     val nodes = select(unfilteredNodes, nullProbability = 0.5)
     val input = inputValues(nodes.map(n => Array[Any](n)): _*)
 
@@ -540,7 +549,9 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
 
   test("should ignore if trying to get node property from node that isn't there") {
     // given
-    givenGraph { nodePropertyGraph(1, { case i: Int => Map("prop" -> i) }, "Label") }
+    givenGraph {
+      nodePropertyGraph(1, { case i: Int => Map("prop" -> i) }, "Label")
+    }
     val node = mock[Node]
     when(node.getId).thenReturn(1337L)
     when(node.getElementId).thenReturn("dummy")
@@ -604,7 +615,9 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
 
   test("should ignore if trying to get relationship property from relationship that isn't there") {
     // given
-    givenGraph { nodePropertyGraph(1, { case i: Int => Map("prop" -> i) }, "Label") }
+    givenGraph {
+      nodePropertyGraph(1, { case i: Int => Map("prop" -> i) }, "Label")
+    }
     val relationship = mock[Relationship]
     when(relationship.getId).thenReturn(1337L)
 
@@ -959,7 +972,9 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
 
   test("should handle non-existing node with has any label expression") {
     // given
-    givenGraph { tx.createNode(label("Label")) }
+    givenGraph {
+      tx.createNode(label("Label"))
+    }
     val node = mock[Node]
     when(node.getId).thenReturn(1337L)
     when(node.getElementId).thenReturn("dummy")
@@ -980,7 +995,9 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
   test("should get type of relationship") {
     // given
     val size = 11
-    givenGraph { chainGraphs(size, "TO") }
+    givenGraph {
+      chainGraphs(size, "TO")
+    }
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -1076,6 +1093,17 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
         )
       )
     )
+  }
+
+  test("nested OR and AND with potential type failure") {
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("var1")
+      .projection("(false OR (1.sqN < 1 AND false)) AS var1")
+      .unwind("[1] AS var0")
+      .argument()
+      .build()
+
+    execute(query, runtime) should beColumns("var1").withSingleRow(false)
   }
 }
 

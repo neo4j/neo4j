@@ -29,6 +29,7 @@ import org.neo4j.codegen.FieldReference;
 import org.neo4j.codegen.LocalVariable;
 import org.neo4j.codegen.MethodReference;
 import org.neo4j.codegen.MethodWriter;
+import org.neo4j.codegen.Parameter;
 import org.neo4j.codegen.TypeReference;
 
 class JavaSourceMethodWriter implements MethodWriter, ExpressionVisitor {
@@ -194,14 +195,16 @@ class JavaSourceMethodWriter implements MethodWriter, ExpressionVisitor {
     }
 
     @Override
-    public <T> void tryCatchBlock(Consumer<T> body, Consumer<T> handler, LocalVariable exception, T block) {
-
+    public void beginTry(Parameter exception) {
         indent().append("try\n");
         indent().append("{\n");
         levels.push(LEVEL);
-        body.accept(block);
-        levels.pop();
-        indent().append("}\n");
+    }
+
+    public void catchIt() {}
+
+    @Override
+    public void beginCatch(LocalVariable exception) {
         indent().append("catch ( ")
                 .append(exception.type().fullName())
                 .append(' ')
@@ -209,9 +212,6 @@ class JavaSourceMethodWriter implements MethodWriter, ExpressionVisitor {
                 .append(" )\n");
         indent().append("{\n");
         levels.push(LEVEL);
-        handler.accept(block);
-        levels.pop();
-        indent().append("}\n");
     }
 
     @Override

@@ -20,6 +20,7 @@
 package org.neo4j.codegen;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -1105,26 +1106,24 @@ public abstract class CodeGenerationTest {
                     param(TypeReference.parameterizedType(Iterator.class, Runnable.class), "targets"),
                     param(boolean.class, "test"),
                     param(Runnable.class, "runner"))) {
-                callEach.tryCatch(
-                        tryBlock -> {
-                            try (CodeBlock loop = tryBlock.whileLoop(invoke(
-                                    callEach.load("targets"),
-                                    methodReference(Iterator.class, boolean.class, "hasNext")))) {
-
-                                try (CodeBlock doStuff = loop.ifStatement(not(callEach.load("test")))) {
-                                    doStuff.expression(invoke(doStuff.load("runner"), RUN));
-                                }
-                                loop.expression(invoke(
-                                        Expression.cast(
-                                                Runnable.class,
-                                                invoke(
-                                                        callEach.load("targets"),
-                                                        methodReference(Iterator.class, Object.class, "next"))),
-                                        methodReference(Runnable.class, void.class, "run")));
-                            }
-                        },
+                try (var tryBlock = callEach.tryCatch(
                         catchBlock -> catchBlock.expression(invoke(catchBlock.load("runner"), RUN)),
-                        param(RuntimeException.class, "e"));
+                        param(RuntimeException.class, "e"))) {
+                    try (CodeBlock loop = tryBlock.whileLoop(invoke(
+                            callEach.load("targets"), methodReference(Iterator.class, boolean.class, "hasNext")))) {
+
+                        try (CodeBlock doStuff = loop.ifStatement(not(callEach.load("test")))) {
+                            doStuff.expression(invoke(doStuff.load("runner"), RUN));
+                        }
+                        loop.expression(invoke(
+                                Expression.cast(
+                                        Runnable.class,
+                                        invoke(
+                                                callEach.load("targets"),
+                                                methodReference(Iterator.class, Object.class, "next"))),
+                                methodReference(Runnable.class, void.class, "run")));
+                    }
+                }
             }
 
             handle = simple.handle();
@@ -1966,13 +1965,15 @@ public abstract class CodeGenerationTest {
     void shouldGenerateTryCatch() throws Throwable {
         // given
         ClassHandle handle;
+
         try (ClassGenerator simple = generateClass("SimpleClass")) {
             try (CodeBlock run = simple.generateMethod(
                     void.class, "run", param(Runnable.class, "body"), param(Runnable.class, "catcher"))) {
-                run.tryCatch(
-                        body -> body.expression(invoke(run.load("body"), RUN)),
-                        handler -> handler.expression(invoke(run.load("catcher"), RUN)),
-                        param(RuntimeException.class, "E"));
+                try (var body = run.tryCatch(
+                        handler -> handler.expression(invoke(handler.load("catcher"), RUN)),
+                        param(RuntimeException.class, "E"))) {
+                    body.expression(invoke(body.load("body"), RUN));
+                }
             }
             handle = simple.handle();
         }
@@ -1999,6 +2000,179 @@ public abstract class CodeGenerationTest {
     }
 
     @Test
+    void shouldGenerateTryCatch2() throws Throwable {
+        // given
+        int success = -1;
+        int fail = 1;
+        ClassHandle handle;
+        try (ClassGenerator simple = generateClass("SimpleClass")) {
+            try (CodeBlock outer = simple.generateMethod(int.class, "run", param(Runnable.class, "body"))) {
+                try (var body = outer.tryCatch(
+                        onError -> onError.returns(constant(fail)), param(RuntimeException.class, "E1"))) {
+                    body.expression(invoke(body.load("body"), RUN));
+                }
+                outer.returns(constant(success));
+            }
+            handle = simple.handle();
+        }
+
+        // when
+        Runnable successBody = mock(Runnable.class);
+        Runnable failBody = mock(Runnable.class);
+        RuntimeException theFailure = new RuntimeException();
+        doThrow(theFailure).when(failBody).run();
+        MethodHandle run = instanceMethod(handle.newInstance(), "run", Runnable.class);
+
+        assertThat(run.invoke(successBody)).isEqualTo(success);
+        assertThat(run.invoke(failBody)).isEqualTo(fail);
+    }
+
+    @Test
+    void shouldGenerateNestedTryCatch() throws Throwable {
+        // given
+        int success = -1;
+        int failOuter = 1;
+        int failInner = 2;
+        ClassHandle handle;
+        try (ClassGenerator simple = generateClass("SimpleClass")) {
+            try (CodeBlock outer = simple.generateMethod(int.class, "run", param(Runnable.class, "body"))) {
+                try (var body = outer.tryCatch(
+                        handler -> handler.returns(constant(failOuter)), param(MyFirstException.class, "E1"))) {
+                    try (var inner = body.tryCatch(
+                            handler -> handler.returns(constant(failInner)), param(MySecondException.class, "E2"))) {
+                        inner.expression(invoke(outer.load("body"), RUN));
+                    }
+                }
+                outer.returns(constant(success));
+            }
+            handle = simple.handle();
+        }
+
+        // when
+        Runnable successBody = mock(Runnable.class);
+        Runnable fail1 = mock(Runnable.class);
+        MyFirstException failure1 = new MyFirstException();
+        doThrow(failure1).when(fail1).run();
+        Runnable fail2 = mock(Runnable.class);
+        MySecondException failure2 = new MySecondException();
+        doThrow(failure2).when(fail2).run();
+        MethodHandle run = instanceMethod(handle.newInstance(), "run", Runnable.class);
+
+        assertThat(run.invoke(successBody)).isEqualTo(success);
+        assertThat(run.invoke(fail1)).isEqualTo(failOuter);
+        assertThat(run.invoke(fail2)).isEqualTo(failInner);
+    }
+
+    @Test
+    void shouldGenerateNestedTryCatchWithRethrow() throws Throwable {
+        // given
+        int success = -1;
+        ClassHandle handle;
+        try (ClassGenerator simple = generateClass("SimpleClass")) {
+            try (CodeBlock outer = simple.generateMethod(
+                    int.class,
+                    "run",
+                    param(Runnable.class, "beforeAll"),
+                    param(Runnable.class, "beforeInner"),
+                    param(Runnable.class, "inner"),
+                    param(Runnable.class, "afterInner"),
+                    param(Runnable.class, "afterAll"))) {
+                outer.expression(invoke(outer.load("beforeAll"), RUN));
+                try (var firstBlock = outer.tryCatch(
+                        onError -> onError.throwException(newRuntimeException("outer")),
+                        param(MyFirstException.class, "E1"))) {
+                    firstBlock.expression(invoke(firstBlock.load("beforeInner"), RUN));
+                    try (var secondBlock = firstBlock.tryCatch(
+                            onError -> onError.throwException(newRuntimeException("inner")),
+                            param(MyFirstException.class, "E2"))) {
+                        secondBlock.expression(invoke(secondBlock.load("inner"), RUN));
+                    }
+                    firstBlock.expression(invoke(firstBlock.load("afterInner"), RUN));
+                }
+                outer.expression(invoke(outer.load("afterAll"), RUN));
+                outer.returns(constant(success));
+            }
+            handle = simple.handle();
+        }
+
+        // when
+        Runnable successBody = mock(Runnable.class);
+        Runnable failBody = mock(Runnable.class);
+        MyFirstException theFailure = new MyFirstException();
+        doThrow(theFailure).when(failBody).run();
+        MethodHandle run = instanceMethod(
+                handle.newInstance(),
+                "run",
+                Runnable.class,
+                Runnable.class,
+                Runnable.class,
+                Runnable.class,
+                Runnable.class);
+
+        // success
+        assertThat(run.invoke(successBody, successBody, successBody, successBody, successBody))
+                .isEqualTo(success);
+        assertThatThrownBy(() -> run.invoke(failBody, successBody, successBody, successBody, successBody))
+                .isEqualTo(theFailure);
+        assertThatThrownBy(() -> run.invoke(successBody, successBody, successBody, successBody, failBody))
+                .isEqualTo(theFailure);
+        assertThatThrownBy(() -> run.invoke(successBody, failBody, successBody, successBody, successBody))
+                .hasMessage("outer");
+        assertThatThrownBy(() -> run.invoke(successBody, failBody, failBody, successBody, successBody))
+                .hasMessage("outer");
+        assertThatThrownBy(() -> run.invoke(successBody, successBody, failBody, failBody, failBody))
+                .hasMessage("inner");
+        assertThatThrownBy(() -> run.invoke(successBody, successBody, successBody, failBody, failBody))
+                .hasMessage("outer");
+        assertThatThrownBy(() -> run.invoke(successBody, successBody, successBody, failBody, successBody))
+                .hasMessage("outer");
+    }
+
+    @Test
+    void shouldGenerateDeeplyNestedTryCatch() throws Throwable {
+        // given
+        int success = -1;
+        int level1 = 1;
+        int level2 = 2;
+        int level3 = 3;
+        ClassHandle handle;
+        try (ClassGenerator simple = generateClass("SimpleClass")) {
+            try (CodeBlock outer = simple.generateMethod(int.class, "run", param(Runnable.class, "body"))) {
+                try (var firstBlock = outer.tryCatch(
+                        onError -> onError.returns(constant(level1)), param(MyFirstException.class, "E1"))) {
+                    try (var secondBlock = firstBlock.tryCatch(
+                            onError -> onError.returns(constant(level2)), param(MySecondException.class, "E2"))) {
+                        try (var thirdBlock = secondBlock.tryCatch(
+                                onError -> onError.returns(constant(level3)), param(MyThirdException.class, "E3"))) {
+                            thirdBlock.expression(invoke(secondBlock.load("body"), RUN));
+                        }
+                    }
+                }
+                outer.returns(constant(success));
+            }
+            handle = simple.handle();
+        }
+
+        // when
+        Runnable successBody = mock(Runnable.class);
+        Runnable fail1 = mock(Runnable.class);
+        Runnable fail2 = mock(Runnable.class);
+        Runnable fail3 = mock(Runnable.class);
+        MyFirstException failAtLevel1 = new MyFirstException();
+        MySecondException failAtLevel2 = new MySecondException();
+        MyThirdException failAtLevel3 = new MyThirdException();
+        doThrow(failAtLevel1).when(fail1).run();
+        doThrow(failAtLevel2).when(fail2).run();
+        doThrow(failAtLevel3).when(fail3).run();
+        MethodHandle run = instanceMethod(handle.newInstance(), "run", Runnable.class);
+
+        assertThat(run.invoke(successBody)).isEqualTo(success);
+        assertThat(run.invoke(fail1)).isEqualTo(level1);
+        assertThat(run.invoke(fail2)).isEqualTo(level2);
+        assertThat(run.invoke(fail3)).isEqualTo(level3);
+    }
+
+    @Test
     void shouldGenerateTryCatchWithNestedBlock() throws Throwable {
         // given
         ClassHandle handle;
@@ -2010,14 +2184,13 @@ public abstract class CodeGenerationTest {
                     param(Runnable.class, "catcher"),
                     param(boolean.class, "test"))) {
 
-                run.tryCatch(
-                        tryBlock -> {
-                            try (CodeBlock ifBlock = tryBlock.ifStatement(run.load("test"))) {
-                                ifBlock.expression(invoke(run.load("body"), RUN));
-                            }
-                        },
+                try (var tryBlock = run.tryCatch(
                         catchBlock -> catchBlock.expression(invoke(run.load("catcher"), RUN)),
-                        param(RuntimeException.class, "E"));
+                        param(RuntimeException.class, "E"))) {
+                    try (CodeBlock ifBlock = tryBlock.ifStatement(run.load("test"))) {
+                        ifBlock.expression(invoke(run.load("body"), RUN));
+                    }
+                }
             }
             handle = simple.handle();
         }
@@ -2045,13 +2218,15 @@ public abstract class CodeGenerationTest {
                     param(Runnable.class, "catcher1"),
                     param(Runnable.class, "catcher2"))) {
 
-                run.tryCatch(
-                        tryBlock -> tryBlock.tryCatch(
-                                innerTry -> innerTry.expression(invoke(run.load("body"), RUN)),
-                                catchBlock1 -> catchBlock1.expression(invoke(run.load("catcher1"), RUN)),
-                                param(MyFirstException.class, "E1")),
+                try (var tryBlock = run.tryCatch(
                         catchBlock2 -> catchBlock2.expression(invoke(run.load("catcher2"), RUN)),
-                        param(MySecondException.class, "E2"));
+                        param(MySecondException.class, "E2"))) {
+                    try (var innerTry = tryBlock.tryCatch(
+                            catchBlock1 -> catchBlock1.expression(invoke(run.load("catcher1"), RUN)),
+                            param(MyFirstException.class, "E1"))) {
+                        innerTry.expression(invoke(run.load("body"), RUN));
+                    }
+                }
             }
             handle = simple.handle();
         }
@@ -2511,6 +2686,15 @@ public abstract class CodeGenerationTest {
     public static class MyFirstException extends RuntimeException {}
 
     public static class MySecondException extends RuntimeException {}
+
+    public static class MyThirdException extends RuntimeException {}
+
+    private Expression newRuntimeException(String msg) {
+        return invoke(
+                newInstance(RuntimeException.class),
+                constructorReference(RuntimeException.class, String.class),
+                constant(msg));
+    }
 }
 
 class ByteCodeCodeGenerationTest extends CodeGenerationTest {

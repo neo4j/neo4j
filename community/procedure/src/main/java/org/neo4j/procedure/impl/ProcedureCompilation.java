@@ -252,10 +252,11 @@ public final class ProcedureCompilation {
 
                 // CallableUserFunction::apply
                 try (CodeBlock method = generator.generate(USER_FUNCTION)) {
-                    method.tryCatch(
-                            body -> functionBody(body, fieldSetters, fieldsToSet, methodToCall),
+                    try (var body = method.tryCatch(
                             onError -> onError(onError, format("function `%s`", signature.name())),
-                            param(Throwable.class, "T"));
+                            param(Throwable.class, "T"))) {
+                        functionBody(body, fieldSetters, fieldsToSet, methodToCall);
+                    }
                 }
 
                 // CallableUserFunction::signature
@@ -351,11 +352,11 @@ public final class ProcedureCompilation {
 
                 // CallableProcedure::apply
                 try (CodeBlock method = generator.generate(USER_PROCEDURE)) {
-                    method.tryCatch(
-                            body -> procedureBody(
-                                    body, fieldSetters, fieldsToSet, signatureField, methodToCall, iterator),
+                    try (var body = method.tryCatch(
                             onError -> onError(onError, format("procedure `%s`", signature.name())),
-                            param(Throwable.class, "T"));
+                            param(Throwable.class, "T"))) {
+                        procedureBody(body, fieldSetters, fieldsToSet, signatureField, methodToCall, iterator);
+                    }
                 }
 
                 // CallableUserFunction::signature
@@ -488,10 +489,11 @@ public final class ProcedureCompilation {
 
                 // CallableUserAggregationFunction::create
                 try (CodeBlock method = generator.generate(AGGREGATION_CREATE)) {
-                    method.tryCatch(
-                            body -> createAggregationBody(body, fieldSetters, fieldsToSet, create, aggregator),
+                    try (var body = method.tryCatch(
                             onError -> onError(onError, format("function `%s`", signature.name())),
-                            param(Throwable.class, "T"));
+                            param(Throwable.class, "T"))) {
+                        createAggregationBody(body, fieldSetters, fieldsToSet, create, aggregator);
+                    }
                 }
 
                 handle = generator.handle();
@@ -656,27 +658,28 @@ public final class ProcedureCompilation {
 
             // update
             try (CodeBlock block = generator.generate(AGGREGATION_UPDATE)) {
-                block.tryCatch(
-                        onSuccess -> onSuccess.expression(invoke(
-                                get(onSuccess.self(), aggregator),
-                                methodReference(update),
-                                parameters(onSuccess, update, get(onSuccess.self(), context)))),
+                try (var body = block.tryCatch(
                         onError -> onError(onError, format("function `%s`", signature.name())),
-                        param(Throwable.class, "T"));
+                        param(Throwable.class, "T"))) {
+                    body.expression(invoke(
+                            get(body.self(), aggregator),
+                            methodReference(update),
+                            parameters(body, update, get(body.self(), context))));
+                }
             }
 
             // result
             try (CodeBlock block = generator.generate(AGGREGATION_RESULT)) {
-
-                block.tryCatch(
-                        onSuccess -> onSuccess.returns(toAnyValue(
-                                block,
-                                "result",
-                                invoke(get(onSuccess.self(), aggregator), methodReference(result)),
-                                result.getReturnType(),
-                                get(onSuccess.self(), context))),
+                try (var body = block.tryCatch(
                         onError -> onError(onError, format("function `%s`", signature.name())),
-                        param(Throwable.class, "T"));
+                        param(Throwable.class, "T"))) {
+                    body.returns(toAnyValue(
+                            body,
+                            "result",
+                            invoke(get(body.self(), aggregator), methodReference(result)),
+                            result.getReturnType(),
+                            get(body.self(), context)));
+                }
             }
 
             handle = generator.handle();

@@ -51,11 +51,13 @@ public interface MethodWriter {
 
     void beginBlock();
 
+    void beginTry(Parameter exception);
+
+    void beginCatch(LocalVariable exception);
+
     void endBlock();
 
     <T> void ifElseStatement(Expression test, Consumer<T> onTrue, Consumer<T> onFalse, T block);
-
-    <T> void tryCatchBlock(Consumer<T> body, Consumer<T> handler, LocalVariable exception, T block);
 
     void throwException(Expression exception);
 

@@ -62,7 +62,7 @@ class ByteCodeMethodWriter implements MethodWriter {
     private final MethodVisitor methodVisitor;
     private final MethodDeclaration declaration;
     private final ExpressionVisitor expressionVisitor;
-    private Deque<Block> stateStack = new LinkedList<>();
+    private final Deque<Block> stateStack = new LinkedList<>();
 
     ByteCodeMethodWriter(ClassVisitor classVisitor, MethodDeclaration declaration, TypeReference ignore) {
         this.declaration = declaration;
@@ -242,22 +242,23 @@ class ByteCodeMethodWriter implements MethodWriter {
     }
 
     @Override
-    public <T> void tryCatchBlock(Consumer<T> body, Consumer<T> handler, LocalVariable exception, T block) {
+    public void beginTry(Parameter exception) {
         Label start = new Label();
-        Label end = new Label();
-        Label handle = new Label();
+        Label tryBody = new Label();
+        Label failBody = new Label();
         Label after = new Label();
-        methodVisitor.visitTryCatchBlock(start, end, handle, byteCodeName(exception.type()));
         methodVisitor.visitLabel(start);
-        body.accept(block);
-        methodVisitor.visitLabel(end);
-        methodVisitor.visitJumpInsn(GOTO, after);
-        // handle catch
-        methodVisitor.visitLabel(handle);
-        methodVisitor.visitVarInsn(ASTORE, exception.index());
+        stateStack.push(new Catch(methodVisitor, failBody, after));
+        stateStack.push(new Try(methodVisitor, start, tryBody, failBody, after, exception));
+    }
 
-        handler.accept(block);
-        methodVisitor.visitLabel(after);
+    @Override
+    public void beginCatch(LocalVariable exception) {
+        if (stateStack.peek() instanceof Catch c) {
+            c.beginCatch(exception);
+        } else {
+            throw new IllegalStateException("Mismatched try-catch statement");
+        }
     }
 
     @Override
