@@ -20,7 +20,6 @@
 package org.neo4j.cypher
 
 import org.neo4j.configuration.Config
-import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseInternalSettings.query_router_new_stack
 import org.neo4j.configuration.connectors.BoltConnector
 import org.neo4j.configuration.helpers.SocketAddress
@@ -33,8 +32,7 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder
 
 import scala.jdk.CollectionConverters.MapHasAsJava
 
-class DefaultDeprecationBoltAcceptanceTest()
-    extends DeprecationBoltAcceptanceTest(GraphDatabaseInternalSettings.query_router_new_stack.defaultValue())
+class OlStackDeprecationBoltAcceptanceTest() extends DeprecationBoltAcceptanceTest(false)
 class QueryRouterDeprecationBoltAcceptanceTest() extends DeprecationBoltAcceptanceTest(true)
 
 abstract class DeprecationBoltAcceptanceTest(queryRouter: Boolean) extends DeprecationAcceptanceTestBase {
