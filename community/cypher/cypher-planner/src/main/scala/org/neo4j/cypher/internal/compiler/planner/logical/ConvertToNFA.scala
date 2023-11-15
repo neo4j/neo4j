@@ -122,7 +122,6 @@ object ConvertToNFA {
       case ((builder, inlinedSelections), nodeConnection) =>
         def addRelationshipBetweenStates(
           relationshipName: String,
-          targetName: String,
           dir: SemanticDirection,
           types: Seq[RelTypeName],
           sourceState: NFABuilder.State,
@@ -131,7 +130,7 @@ object ConvertToNFA {
           val directionToPlan = if (fromLeft) dir else dir.reversed
 
           val (relPredicates, relVariablePredicates) = getVariablePredicates(relationshipName)
-          val (nodePredicates, nodeVariablePredicates) = getVariablePredicates(targetName)
+          val (nodePredicates, nodeVariablePredicates) = getVariablePredicates(targetState.variable.name)
           builder.addTransition(
             sourceState,
             targetState,
@@ -154,7 +153,7 @@ object ConvertToNFA {
         ) = {
           val sourceState = builder.getLastState
           val targetState = builder.addAndGetState(varFor(targetName))
-          addRelationshipBetweenStates(relationshipName, targetName, dir, types, sourceState, targetState)
+          addRelationshipBetweenStates(relationshipName, dir, types, sourceState, targetState)
         }
 
         val newlyInlinedSelections = nodeConnection match {
@@ -216,7 +215,6 @@ object ConvertToNFA {
                 val targetState = exitableState
                 addRelationshipBetweenStates(
                   singletonRelationshipName,
-                  anonymousVariableNameGenerator.nextName,
                   dir,
                   types,
                   exitableState,
