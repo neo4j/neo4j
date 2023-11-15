@@ -98,7 +98,7 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
             initSecurityPropertyProvision((propertyCursor, propertySelection) ->
                     propertyCursor.initNodeProperties(nodeCursor.storeCursor, propertySelection));
         } else {
-            storeCursor.initNodeProperties(NULL_REFERENCE, ALL_PROPERTIES);
+            storeCursor.reset();
             securityPropertyProvider = null;
         }
     }
@@ -172,7 +172,7 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
             storeCursor.initRelationshipProperties(
                     relationshipCursor.storeCursor, filterSelectionForTxState(selection));
         } else {
-            storeCursor.initRelationshipProperties(NULL_REFERENCE, selection);
+            storeCursor.reset();
         }
     }
 

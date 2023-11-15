@@ -71,7 +71,7 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
     private final CursorContext cursorContext;
     private final StoreCursors storeCursors;
     private final MemoryTracker memoryTracker;
-    private long next;
+    private long next = NO_ID;
     private int block;
     private ScopedBuffer scopedBuffer;
     private ByteBuffer buffer;
