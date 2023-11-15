@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.frontend.phases.ResolvedCall
 import org.neo4j.cypher.internal.ir.HasHeaders
 import org.neo4j.cypher.internal.ir.NoHeaders
+import org.neo4j.cypher.internal.logical.plans.AbstractLetSelectOrSemiApply
 import org.neo4j.cypher.internal.logical.plans.AbstractSelectOrSemiApply
 import org.neo4j.cypher.internal.logical.plans.AbstractSemiApply
 import org.neo4j.cypher.internal.logical.plans.Aggregation
@@ -792,8 +793,10 @@ class SingleQuerySlotAllocator private[physicalplanning] (
          */
         @tailrec
         def isUnderConditionalApply(arg: SlotsAndArgument): Boolean = arg.argumentPlan match {
-          case None                                                                     => false
-          case Some(Ref(_: ConditionalApply)) | Some(Ref(_: AbstractSelectOrSemiApply)) => true
+          case None => false
+          case Some(Ref(_: ConditionalApply)) |
+            Some(Ref(_: AbstractSelectOrSemiApply)) |
+            Some(Ref(_: AbstractLetSelectOrSemiApply)) => true
           case _ => arg.parentArgument match {
               case None            => false
               case Some(parentArg) => isUnderConditionalApply(parentArg)

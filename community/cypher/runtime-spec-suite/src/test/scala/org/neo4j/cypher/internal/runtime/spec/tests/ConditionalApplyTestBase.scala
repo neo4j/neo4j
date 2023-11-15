@@ -1036,8 +1036,6 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
 
 }
 
-// TODO add equivalent tests for SelectOrSemiApply, SelectOrAntiSemiApply, LetSelectOrSemiApply, LetSelectOrAntiSemiApply, etc.
-
 trait OrderedConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
   self: ConditionalApplyTestBase[CONTEXT] =>
 
