@@ -23,11 +23,13 @@ import org.neo4j.cypher.internal.QueryCache.CacheKey
 import org.neo4j.cypher.internal.cache.CypherQueryCaches
 import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.expressions.FunctionTypeSignature
+import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.options.CypherReplanOption
 import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.NoInput
 import org.neo4j.cypher.internal.tracing.CompilationTracer
 import org.neo4j.cypher.internal.tracing.CompilationTracer.QueryCompilationEvent
+import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.RecordingNotificationLogger
 import org.neo4j.exceptions.ParameterNotFoundException
@@ -359,6 +361,17 @@ abstract class ExecutionEngine(
 
   def clearQueryCaches(): Long =
     List(masterCompiler.clearCaches(), queryCache.clear(), preParser.clearCache()).max
+
+  def insertIntoCache(
+    queryText: String,
+    preParsedQuery: PreParsedQuery,
+    params: MapValue,
+    parsedQuery: BaseState,
+    parsingNotifications: Set[InternalNotification]
+  ): Unit = {
+    preParser.insertIntoCache(queryText, preParsedQuery)
+    masterCompiler.insertIntoCache(preParsedQuery, params, parsedQuery, parsingNotifications)
+  }
 
   def getCypherFunctions: java.util.List[FunctionInformation] = {
     val informations: Seq[FunctionInformation] =

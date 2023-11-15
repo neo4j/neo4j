@@ -23,6 +23,7 @@ import static org.neo4j.kernel.database.NamedDatabaseId.SYSTEM_DATABASE_NAME;
 import static scala.jdk.javaapi.OptionConverters.toJava;
 
 import java.util.Optional;
+import java.util.function.Supplier;
 import org.neo4j.cypher.internal.PreParsedQuery;
 import org.neo4j.cypher.internal.PreParser;
 import org.neo4j.cypher.internal.ast.AdministrationCommand;
@@ -31,15 +32,19 @@ import org.neo4j.cypher.internal.ast.Statement;
 import org.neo4j.cypher.internal.compiler.CypherParsing;
 import org.neo4j.cypher.internal.compiler.helpers.SignatureResolver;
 import org.neo4j.cypher.internal.frontend.phases.BaseState;
+import org.neo4j.cypher.internal.javacompat.ExecutionEngine;
 import org.neo4j.cypher.internal.planner.spi.ProcedureSignatureResolver;
 import org.neo4j.cypher.internal.tracing.CompilationTracer;
 import org.neo4j.cypher.internal.util.CancellationChecker;
 import org.neo4j.cypher.internal.util.RecordingNotificationLogger;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
+import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.fabric.eval.StaticUseEvaluation;
+import org.neo4j.fabric.executor.Location;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.kernel.database.DatabaseReferenceImpl;
+import org.neo4j.router.location.LocationService;
 import org.neo4j.router.query.Query;
 import org.neo4j.router.query.QueryProcessor;
 import org.neo4j.router.query.TargetService;
@@ -58,6 +63,7 @@ public class QueryProcessorImpl implements QueryProcessor {
     private final CompilationTracer tracer;
     private final CancellationChecker cancellationChecker;
     private final GlobalProcedures globalProcedures;
+    private final DatabaseContextProvider<?> databaseContextProvider;
     private final StaticUseEvaluation staticUseEvaluation = new StaticUseEvaluation();
 
     public QueryProcessorImpl(
@@ -66,23 +72,25 @@ public class QueryProcessorImpl implements QueryProcessor {
             CypherParsing parsing,
             CompilationTracer tracer,
             CancellationChecker cancellationChecker,
-            GlobalProcedures globalProcedures) {
+            GlobalProcedures globalProcedures,
+            DatabaseContextProvider<?> databaseContextProvider) {
         this.cache = cache;
         this.preParser = preParser;
         this.parsing = parsing;
         this.tracer = tracer;
         this.cancellationChecker = cancellationChecker;
         this.globalProcedures = globalProcedures;
+        this.databaseContextProvider = databaseContextProvider;
     }
 
     @Override
-    public ProcessedQueryInfo processQuery(Query query, TargetService targetService) {
+    public ProcessedQueryInfo processQuery(Query query, TargetService targetService, LocationService locationService) {
         var cachedValue = maybeGetFromCache(query, targetService);
         if (cachedValue != null) {
             return cachedValue;
         }
 
-        return doProcessQuery(query, targetService);
+        return doProcessQuery(query, targetService, locationService);
     }
 
     @Override
@@ -113,12 +121,13 @@ public class QueryProcessorImpl implements QueryProcessor {
         return cachedValue.processedQueryInfo();
     }
 
-    private ProcessedQueryInfo doProcessQuery(Query query, TargetService targetService) {
+    private ProcessedQueryInfo doProcessQuery(
+            Query query, TargetService targetService, LocationService locationService) {
         var queryTracer = tracer.compileQuery(query.text());
         var notificationLogger = new RecordingNotificationLogger();
         var preParsedQuery = preParser.preParse(query.text(), notificationLogger);
         var resolver = SignatureResolver.from(globalProcedures.getCurrentView());
-        var parsedQuery = parse(query, queryTracer, preParsedQuery, resolver);
+        var parsedQuery = parse(query, queryTracer, preParsedQuery, resolver, notificationLogger);
         var catalogInfo = resolveCatalogInfo(parsedQuery.statement());
         var databaseReference = targetService.target(catalogInfo);
         var rewrittenQuery = maybeRewriteQuery(query, parsedQuery, databaseReference);
@@ -126,6 +135,8 @@ public class QueryProcessorImpl implements QueryProcessor {
         var statementType = StatementType.of(parsedQuery.statement(), resolver);
         var cypherExecutionMode = preParsedQuery.options().queryOptions().executionMode();
 
+        maybePutInTargetDatabaseCache(
+                locationService, databaseReference, query, preParsedQuery, parsedQuery, notificationLogger);
         var processedQueryInfo = new ProcessedQueryInfo(
                 databaseReference, rewrittenQuery, obfuscationMetadata, statementType, cypherExecutionMode);
         cache.put(query.text(), new ProcessedQueryInfoCache.Value(catalogInfo, processedQueryInfo));
@@ -149,15 +160,42 @@ public class QueryProcessorImpl implements QueryProcessor {
         return query;
     }
 
+    private void maybePutInTargetDatabaseCache(
+            LocationService locationService,
+            DatabaseReference databaseReference,
+            Query query,
+            PreParsedQuery preParsedQuery,
+            BaseState parsedQuery,
+            RecordingNotificationLogger parsingNotificationLogger) {
+        if (locationService.locationOf(databaseReference) instanceof Location.Local localLocation
+                // System DB queries are hassle, because they might contain sensitive information
+                // and AST cache is not used for them anyway.
+                && !localLocation.getDatabaseName().equals(SYSTEM_DATABASE_NAME)) {
+            var databaseContext = databaseContextProvider
+                    .getDatabaseContext(localLocation.databaseReference().databaseId())
+                    .orElseThrow(databaseNotFound(localLocation.getDatabaseName()));
+
+            var resolver = databaseContext.dependencies();
+            var queryExecutionEngine = resolver.resolveDependency(ExecutionEngine.class);
+            queryExecutionEngine.insertIntoCache(
+                    query.text(),
+                    preParsedQuery,
+                    query.parameters(),
+                    parsedQuery,
+                    CollectionConverters.asJava(parsingNotificationLogger.notifications()));
+        }
+    }
+
     private BaseState parse(
             Query query,
             CompilationTracer.QueryCompilationEvent queryTracer,
             PreParsedQuery preParsedQuery,
-            ProcedureSignatureResolver resolver) {
+            ProcedureSignatureResolver resolver,
+            RecordingNotificationLogger notificationLogger) {
         return parsing.parseQuery(
                 preParsedQuery.statement(),
                 preParsedQuery.rawStatement(),
-                new RecordingNotificationLogger(),
+                notificationLogger,
                 preParsedQuery.options().queryOptions().planner().name(),
                 Option.apply(preParsedQuery.options().offset()),
                 queryTracer,
@@ -175,5 +213,9 @@ public class QueryProcessorImpl implements QueryProcessor {
                 .map(OptionConverters::toJava)
                 .toList();
         return new TargetService.UnionQueryCatalogInfo(catalogNames);
+    }
+
+    private static Supplier<DatabaseNotFoundException> databaseNotFound(String databaseNameRaw) {
+        return () -> new DatabaseNotFoundException("Database " + databaseNameRaw + " not found");
     }
 }

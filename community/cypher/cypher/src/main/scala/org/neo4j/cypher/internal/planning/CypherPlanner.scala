@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.SchemaCommandRuntime
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.cache.CypherQueryCaches
 import org.neo4j.cypher.internal.cache.CypherQueryCaches.AstCache
+import org.neo4j.cypher.internal.cache.CypherQueryCaches.AstCache.AstCacheValue
 import org.neo4j.cypher.internal.cache.CypherQueryCaches.LogicalPlanCache.CacheableLogicalPlan
 import org.neo4j.cypher.internal.compiler
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
@@ -238,6 +239,19 @@ case class CypherPlanner(
     }
     value.notifications.foreach(notificationLogger.log)
     value.parsedQuery
+  }
+
+  def insertIntoCache(
+    preParsedQuery: PreParsedQuery,
+    params: MapValue,
+    parsedQuery: BaseState,
+    parsingNotifications: Set[InternalNotification]
+  ): Unit = {
+    if (config.planSystemCommands) {
+      return
+    }
+    val key = AstCache.key(preParsedQuery, params, config.useParameterSizeHint())
+    caches.astCache.put(key, AstCacheValue(parsedQuery, parsingNotifications))
   }
 
   /**

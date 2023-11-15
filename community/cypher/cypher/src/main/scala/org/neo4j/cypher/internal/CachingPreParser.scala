@@ -69,6 +69,10 @@ class CachingPreParser(
     preParserCache.clear()
   }
 
+  def insertIntoCache(queryText: String, preParsedQuery: PreParsedQuery): Unit = {
+    preParserCache.put(queryText, preParsedQuery)
+  }
+
   /**
    * Pre-parse a user-specified cypher query.
    *

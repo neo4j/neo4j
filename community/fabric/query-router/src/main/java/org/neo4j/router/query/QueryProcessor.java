@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.options.CypherExecutionMode;
 import org.neo4j.cypher.internal.util.ObfuscationMetadata;
 import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.router.impl.query.StatementType;
+import org.neo4j.router.location.LocationService;
 
 /**
  * Parse a query and extract all information interesting for Query Router from it.
@@ -39,7 +40,7 @@ public interface QueryProcessor {
             StatementType statementType,
             CypherExecutionMode cypherExecutionMode) {}
 
-    ProcessedQueryInfo processQuery(Query query, TargetService targetService);
+    ProcessedQueryInfo processQuery(Query query, TargetService targetService, LocationService locationService);
 
     long clearQueryCachesForDatabase(String databaseName);
 }

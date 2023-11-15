@@ -19,10 +19,13 @@
  */
 package org.neo4j.cypher.internal
 
+import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.options.CypherPlannerOption
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.options.CypherUpdateStrategy
 import org.neo4j.cypher.internal.planning.CypherPlanner
+import org.neo4j.cypher.internal.util.InternalNotification
+import org.neo4j.values.virtual.MapValue
 
 import java.util.concurrent.ConcurrentHashMap
 
@@ -71,6 +74,18 @@ class CompilerLibrary(factory: CompilerFactory, executionEngineProvider: () => E
   def clearExecutionPlanCaches(): Unit = {
     compilers.values().asScala.collect {
       case c: CypherCurrentCompiler[_] => c.clearExecutionPlanCache()
+    }
+  }
+
+  def insertIntoCache(
+    preParsedQuery: PreParsedQuery,
+    params: MapValue,
+    parsedQuery: BaseState,
+    parsingNotifications: Set[InternalNotification]
+  ): Unit = {
+    compilers.values().asScala.collect {
+      case c: CypherPlanner            => c.insertIntoCache(preParsedQuery, params, parsedQuery, parsingNotifications)
+      case c: CypherCurrentCompiler[_] => c.insertIntoCache(preParsedQuery, params, parsedQuery, parsingNotifications)
     }
   }
 

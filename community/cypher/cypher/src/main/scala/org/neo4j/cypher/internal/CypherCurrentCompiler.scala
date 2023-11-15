@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.cache.CypherQueryCaches.CachedExecutionPlan
 import org.neo4j.cypher.internal.cache.CypherQueryCaches.ExecutionPlanCacheKey
 import org.neo4j.cypher.internal.compiler.phases.CachableLogicalPlanState
 import org.neo4j.cypher.internal.frontend.PlannerName
+import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlanToPlanBuilderString
@@ -526,6 +527,14 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
   }
 
   def clearExecutionPlanCache(): Unit = queryCaches.executionPlanCache.clear()
+
+  def insertIntoCache(
+    preParsedQuery: PreParsedQuery,
+    params: MapValue,
+    parsedQuery: BaseState,
+    parsingNotifications: Set[InternalNotification]
+  ): Unit =
+    planner.insertIntoCache(preParsedQuery, params, parsedQuery, parsingNotifications)
 }
 
 object CypherCurrentCompiler {

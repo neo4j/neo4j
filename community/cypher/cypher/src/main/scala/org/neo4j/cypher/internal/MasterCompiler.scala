@@ -19,7 +19,9 @@
  */
 package org.neo4j.cypher.internal
 
+import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
+import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.virtual.MapValue
@@ -40,6 +42,13 @@ trait MasterCompiler {
   def clearCaches(): Long
 
   def clearExecutionPlanCaches(): Unit
+
+  def insertIntoCache(
+    preParsedQuery: PreParsedQuery,
+    params: MapValue,
+    parsedQuery: BaseState,
+    parsingNotifications: Set[InternalNotification]
+  ): Unit
 
   /**
    * Compile submitted query into executable query.
@@ -75,6 +84,16 @@ class SingleMasterCompiler(compiler: Compiler) extends MasterCompiler {
     case _                           => ()
   }
 
+  def insertIntoCache(
+    preParsedQuery: PreParsedQuery,
+    params: MapValue,
+    parsedQuery: BaseState,
+    parsingNotifications: Set[InternalNotification]
+  ): Unit = compiler match {
+    case c: CypherCurrentCompiler[_] => c.insertIntoCache(preParsedQuery, params, parsedQuery, parsingNotifications)
+    case _                           => ()
+  }
+
   override def compile(
     query: InputQuery,
     tracer: CompilationPhaseTracer,
@@ -98,6 +117,15 @@ class LibraryMasterCompiler(compilerLibrary: CompilerLibrary) extends MasterComp
 
   def clearExecutionPlanCaches(): Unit = {
     compilerLibrary.clearExecutionPlanCaches()
+  }
+
+  override def insertIntoCache(
+    preParsedQuery: PreParsedQuery,
+    params: MapValue,
+    parsedQuery: BaseState,
+    parsingNotifications: Set[InternalNotification]
+  ): Unit = {
+    compilerLibrary.insertIntoCache(preParsedQuery, params, parsedQuery, parsingNotifications)
   }
 
   def compile(

@@ -178,7 +178,8 @@ public class QueryRouterImpl implements QueryRouter {
                 context.transactionInfo().statementLifecycleTransactionInfo(), query.text(), query.parameters(), null);
         statementLifecycle.startProcessing();
         try {
-            var processedQueryInfo = queryProcessor.processQuery(query, context.targetService());
+            var processedQueryInfo =
+                    queryProcessor.processQuery(query, context.targetService(), context.locationService());
             StatementType statementType = processedQueryInfo.statementType();
             CypherExecutionMode executionMode = processedQueryInfo.cypherExecutionMode();
             AccessMode accessMode = context.transactionInfo().accessMode();

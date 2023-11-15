@@ -21,16 +21,20 @@ package org.neo4j.cypher.internal.javacompat;
 
 import java.time.Clock;
 import java.util.List;
+import java.util.Set;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.cypher.internal.CompilerFactory;
 import org.neo4j.cypher.internal.CompilerLibrary;
 import org.neo4j.cypher.internal.FullyParsedQuery;
+import org.neo4j.cypher.internal.PreParsedQuery;
 import org.neo4j.cypher.internal.cache.CypherQueryCaches;
 import org.neo4j.cypher.internal.config.CypherConfiguration;
+import org.neo4j.cypher.internal.frontend.phases.BaseState;
 import org.neo4j.cypher.internal.runtime.InputDataStream;
 import org.neo4j.cypher.internal.tracing.CompilationTracer;
 import org.neo4j.cypher.internal.tracing.TimingCompilationTracer;
+import org.neo4j.cypher.internal.util.InternalNotification;
 import org.neo4j.exceptions.Neo4jException;
 import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.GraphDatabaseQueryService;
@@ -45,6 +49,7 @@ import org.neo4j.kernel.impl.util.WrappingEntity;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.values.virtual.MapValue;
+import scala.jdk.javaapi.CollectionConverters;
 
 /**
  * To run a Cypher query, use this class.
@@ -182,5 +187,19 @@ public class ExecutionEngine implements QueryExecutionEngine {
     @Override
     public List<FunctionInformation> getProvidedLanguageFunctions() {
         return cypherExecutionEngine.getCypherFunctions();
+    }
+
+    public void insertIntoCache(
+            String queryText,
+            PreParsedQuery preParsedQuery,
+            MapValue params,
+            BaseState parsedQuery,
+            Set<InternalNotification> parsingNotifications) {
+        cypherExecutionEngine.insertIntoCache(
+                queryText,
+                preParsedQuery,
+                params,
+                parsedQuery,
+                CollectionConverters.asScala(parsingNotifications).toSet());
     }
 }
