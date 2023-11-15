@@ -241,7 +241,8 @@ public final class SettingMigrators {
                 "unsupported.cypher.planning_range_indexes_enabled",
                 "unsupported.cypher.planning_text_indexes_enabled",
                 "unsupported.cypher.splitting_top_behavior",
-                "internal.cypher.number_of_workers");
+                "internal.cypher.number_of_workers",
+                "internal.dbms.cluster.info_service_deallocated_enabled");
 
         private static final Collection<Mapping> LEGACY_UNSUPPORTED_SETTINGS_MAPPING = List.of(
                 new Mapping("dbms.capabilities.blocked", "internal.dbms.capabilities.blocked"),
