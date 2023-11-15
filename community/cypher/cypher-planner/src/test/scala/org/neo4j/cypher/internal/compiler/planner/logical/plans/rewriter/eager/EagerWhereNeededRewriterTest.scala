@@ -7615,8 +7615,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     )
   }
 
-  // see https://trello.com/c/eAu1SnhO/
-  ignore("Insert eager between shortest path pattern and delete") {
+  test("Insert eager between shortest path pattern and delete") {
     val nfa = new TestNFABuilder(0, "u")
       .addTransition(0, 1, "(u) (a_inner)")
       .addTransition(1, 2, "(a_inner)-[r_inner]->(b_inner)")
@@ -7637,7 +7636,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         "w",
         "SHORTEST 1 ((u) ((a)-[r]->(b)){1, } (v) ((c)-[s]->(d)){1, } (w) WHERE v.prop IN [42] AND disjoint(`r`, `s`) AND unique(`r`) AND unique(`s`) AND w:N)",
         None,
-        Set(("a", "a"), ("b_inner", "b"), ("c_inner", "c"), ("d_inner", "d")),
+        Set(("a_inner", "a"), ("b_inner", "b"), ("c_inner", "c"), ("d_inner", "d")),
         Set(("r_inner", "r"), ("s_inner", "s")),
         singletonNodeVariables = Set("v_inner" -> "v", "w_inner" -> "w"),
         singletonRelationshipVariables = Set.empty,
@@ -7655,13 +7654,13 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .produceResults("o")
         .deleteNode("w")
         .eager(ListSet(
-          ReadDeleteConflict("d").withConflict(Conflict(Id(1), Id(2))),
-          ReadDeleteConflict("b").withConflict(Conflict(Id(1), Id(2))),
-          ReadDeleteConflict("w").withConflict(Conflict(Id(1), Id(2))),
           ReadDeleteConflict("u").withConflict(Conflict(Id(1), Id(2))),
-          ReadDeleteConflict("a").withConflict(Conflict(Id(1), Id(2))),
+          ReadDeleteConflict("a_inner").withConflict(Conflict(Id(1), Id(2))),
+          ReadDeleteConflict("b_inner").withConflict(Conflict(Id(1), Id(2))),
           ReadDeleteConflict("v").withConflict(Conflict(Id(1), Id(2))),
-          ReadDeleteConflict("c").withConflict(Conflict(Id(1), Id(2)))
+          ReadDeleteConflict("c_inner").withConflict(Conflict(Id(1), Id(2))),
+          ReadDeleteConflict("d_inner").withConflict(Conflict(Id(1), Id(2))),
+          ReadDeleteConflict("w").withConflict(Conflict(Id(1), Id(2)))
         ))
         .statefulShortestPath(
           "u",
@@ -7681,8 +7680,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     )
   }
 
-  // see https://trello.com/c/eAu1SnhO/
-  ignore("Insert eager between shortest path pattern and detach delete") {
+  test("Insert eager between shortest path pattern and detach delete") {
     val nfa = new TestNFABuilder(0, "u")
       .addTransition(0, 1, "(u) (a_inner)")
       .addTransition(1, 2, "(a_inner)-[r_inner]->(b_inner)")
@@ -7721,15 +7719,15 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .produceResults("o")
         .detachDeleteNode("w")
         .eager(ListSet(
-          ReadDeleteConflict("s").withConflict(Conflict(Id(1), Id(2))),
-          ReadDeleteConflict("d").withConflict(Conflict(Id(1), Id(2))),
-          ReadDeleteConflict("w").withConflict(Conflict(Id(1), Id(2))),
           ReadDeleteConflict("u").withConflict(Conflict(Id(1), Id(2))),
-          ReadDeleteConflict("a").withConflict(Conflict(Id(1), Id(2))),
-          ReadDeleteConflict("b").withConflict(Conflict(Id(1), Id(2))),
-          ReadDeleteConflict("r").withConflict(Conflict(Id(1), Id(2))),
+          ReadDeleteConflict("a_inner").withConflict(Conflict(Id(1), Id(2))),
+          ReadDeleteConflict("r_inner").withConflict(Conflict(Id(1), Id(2))),
+          ReadDeleteConflict("b_inner").withConflict(Conflict(Id(1), Id(2))),
           ReadDeleteConflict("v").withConflict(Conflict(Id(1), Id(2))),
-          ReadDeleteConflict("c").withConflict(Conflict(Id(1), Id(2)))
+          ReadDeleteConflict("c_inner").withConflict(Conflict(Id(1), Id(2))),
+          ReadDeleteConflict("s_inner").withConflict(Conflict(Id(1), Id(2))),
+          ReadDeleteConflict("d_inner").withConflict(Conflict(Id(1), Id(2))),
+          ReadDeleteConflict("w").withConflict(Conflict(Id(1), Id(2)))
         ))
         .statefulShortestPath(
           "u",
@@ -7807,8 +7805,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     )
   }
 
-  // see https://trello.com/c/eAu1SnhO/
-  ignore("Do not insert eager between shortest path pattern and create when there is no overlap") {
+  test("Do not insert eager between shortest path pattern and create when there is no overlap") {
     val nfa = new TestNFABuilder(0, "u")
       .addTransition(0, 1, "(u) (a_inner)")
       .addTransition(1, 2, "(a_inner)-[r_inner WHERE r_inner:A]->(b_inner WHERE b_inner:A)")
@@ -7823,7 +7820,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
 
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("o")
-      .create(createNodeWithProperties("q", Seq.empty, "prop1"))
+      .create(createNodeWithProperties("q", Seq.empty, "{prop1: 5}"))
       .statefulShortestPath(
         "u",
         "w",
@@ -7843,27 +7840,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     val plan = planBuilder.build()
     val result = eagerizePlan(planBuilder, plan)
 
-    result should equal(
-      new LogicalPlanBuilder()
-        .produceResults("o")
-        .create(createNodeWithProperties("q", Seq.empty, "prop1"))
-        .statefulShortestPath(
-          "u",
-          "w",
-          "SHORTEST 1 ((u) ((a)-[r]->(b)){1, } (v) ((c)-[s]->(d)){1, } (w) WHERE disjoint(`r`, `s`) AND unique(`r`) AND unique(`s`) " +
-            "AND a:A AND b:A AND c:A AND d:A AND r:A AND s:A AND v:A AND w:A)",
-          None,
-          Set(("a_inner", "a"), ("b_inner", "b"), ("c_inner", "c"), ("d_inner", "d")),
-          Set(("r_inner", "r"), ("s_inner", "s")),
-          singletonNodeVariables = Set("v_inner" -> "v", "w_inner" -> "w"),
-          singletonRelationshipVariables = Set.empty,
-          StatefulShortestPath.Selector.Shortest(1),
-          nfa,
-          false
-        )
-        .nodeByLabelScan("u", "User")
-        .build()
-    )
+    result should equal(plan)
   }
 
   // Ignored tests

@@ -251,6 +251,7 @@ import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.symbols.CypherType
@@ -558,6 +559,10 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
     newNodes(nfa.nodeNames.map(_.name) + targetNode)
     newRelationships(nfa.relationshipNames.map(_.name))
+    nodeVariableGroupings.map(_.groupName.asInstanceOf[Variable])
+      .foreach(newVariable(_, CTList(CTNode)))
+    relationshipVariableGroupings.map(_.groupName.asInstanceOf[Variable])
+      .foreach(newVariable(_, CTList(CTRelationship)))
 
     appendAtCurrentIndent(UnaryOperator(lp =>
       StatefulShortestPath(

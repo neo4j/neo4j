@@ -86,6 +86,7 @@ import org.neo4j.cypher.internal.logical.plans.EmptyResult
 import org.neo4j.cypher.internal.logical.plans.ErrorPlan
 import org.neo4j.cypher.internal.logical.plans.ExhaustiveLimit
 import org.neo4j.cypher.internal.logical.plans.Expand
+import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
 import org.neo4j.cypher.internal.logical.plans.FindShortestPaths
 import org.neo4j.cypher.internal.logical.plans.Foreach
 import org.neo4j.cypher.internal.logical.plans.ForeachApply
@@ -103,9 +104,6 @@ import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlanExtension
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlanExtension
 import org.neo4j.cypher.internal.logical.plans.Merge
-import org.neo4j.cypher.internal.logical.plans.NFA
-import org.neo4j.cypher.internal.logical.plans.NFA.NodeJuxtapositionPredicate
-import org.neo4j.cypher.internal.logical.plans.NFA.RelationshipExpansionPredicate
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
 import org.neo4j.cypher.internal.logical.plans.NodeByElementIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
@@ -186,6 +184,8 @@ import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTMap
 import org.neo4j.cypher.internal.util.symbols.CTNode
@@ -652,7 +652,7 @@ object ReadFinder {
           _,
           sourceNode,
           targetNode,
-          nfa,
+          _,
           _,
           nodeVariableGroupings,
           relationshipVariableGroupings,
@@ -665,7 +665,6 @@ object ReadFinder {
         processStatefulShortest(
           sourceNode,
           targetNode,
-          nfa,
           nodeVariableGroupings,
           relationshipVariableGroupings,
           singletonNodeVariables,
@@ -864,20 +863,24 @@ object ReadFinder {
         throw new IllegalStateException(s"Unsupported plan in eagerness analysis: $plan")
     }
 
-    def processDegreeRead(relTypeNames: Option[RelTypeName], planReads: PlanReads): PlanReads = {
-      val newRelVariable = Variable(anonymousVariableNameGenerator.nextName)(InputPosition.NONE)
-      val varRead = planReads.withIntroducedRelationshipVariable(newRelVariable)
-      relTypeNames match {
-        case Some(relTypeName) => varRead.withAddedRelationshipFilterExpression(
-            newRelVariable,
-            HasTypes(newRelVariable, Seq(relTypeName))(InputPosition.NONE)
-          )
-        case None => varRead
-      }
+    val rewrittenPlan = plan match {
+      case ssp: StatefulShortestPath =>
+        // Predicates on singleton entities have been rewritten to use new variable name in the NFA,
+        // because they use expressions variables. For Eagerness purposes, however, we map all variable
+        // names back to the original. We would otherwise interpret this as distinct entities and that can
+        // lead to unnecessary Eagers.
+        val rewriteLookup = (ssp.singletonNodeVariables ++ ssp.singletonRelationshipVariables)
+          .map(mapping => mapping.nfaExprVar -> mapping.rowVar)
+          .toMap
+
+        plan.endoRewrite(bottomUp(Rewriter.lift {
+          case variable: LogicalVariable => rewriteLookup.getOrElse(variable, variable)
+        }))
+      case _ => plan
     }
 
     // Match on expressions
-    plan.folder.treeFold(planReads) {
+    rewrittenPlan.folder.treeFold(planReads) {
       case otherPlan: LogicalPlan if otherPlan.id != plan.id =>
         // Do not traverse the logical plan tree! We are only looking at expressions of the given plan
         acc => SkipChildren(acc)
@@ -914,22 +917,22 @@ object ReadFinder {
           TraverseChildren(result)
 
       case GetDegree(_, relType, _) => acc =>
-          TraverseChildren(processDegreeRead(relType, acc))
+          TraverseChildren(processDegreeRead(relType, acc, anonymousVariableNameGenerator))
 
       case HasDegree(_, relType, _, _) => acc =>
-          TraverseChildren(processDegreeRead(relType, acc))
+          TraverseChildren(processDegreeRead(relType, acc, anonymousVariableNameGenerator))
 
       case HasDegreeGreaterThan(_, relType, _, _) => acc =>
-          TraverseChildren(processDegreeRead(relType, acc))
+          TraverseChildren(processDegreeRead(relType, acc, anonymousVariableNameGenerator))
 
       case HasDegreeGreaterThanOrEqual(_, relType, _, _) => acc =>
-          TraverseChildren(processDegreeRead(relType, acc))
+          TraverseChildren(processDegreeRead(relType, acc, anonymousVariableNameGenerator))
 
       case HasDegreeLessThan(_, relType, _, _) => acc =>
-          TraverseChildren(processDegreeRead(relType, acc))
+          TraverseChildren(processDegreeRead(relType, acc, anonymousVariableNameGenerator))
 
       case HasDegreeLessThanOrEqual(_, relType, _, _) => acc =>
-          TraverseChildren(processDegreeRead(relType, acc))
+          TraverseChildren(processDegreeRead(relType, acc, anonymousVariableNameGenerator))
 
       case f: FunctionInvocation if f.function == Labels =>
         acc =>
@@ -968,6 +971,18 @@ object ReadFinder {
         // are not accessing a property
         acc =>
           SkipChildren(acc.withUnknownNodePropertiesRead(asMaybeVar(expr)))
+
+      case VariablePredicate(v, pred) => acc =>
+          val canBeNode = semanticTable.typeFor(v).couldBe(CTNode)
+          val canBeRel = semanticTable.typeFor(v).couldBe(CTRelationship)
+          var nextAcc = acc
+          if (canBeNode) {
+            nextAcc = nextAcc.withAddedNodeFilterExpression(v, pred)
+          }
+          if (canBeRel) {
+            nextAcc = nextAcc.withAddedRelationshipFilterExpression(v, pred)
+          }
+          TraverseChildren(nextAcc)
 
       case npe: NestedPlanExpression =>
         // A nested plan expression cannot have writes
@@ -1031,29 +1046,30 @@ object ReadFinder {
     }
   }
 
+  def processDegreeRead(
+    relTypeNames: Option[RelTypeName],
+    planReads: PlanReads,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+  ): PlanReads = {
+    val newRelVariable = Variable(anonymousVariableNameGenerator.nextName)(InputPosition.NONE)
+    val varRead = planReads.withIntroducedRelationshipVariable(newRelVariable)
+    relTypeNames match {
+      case Some(relTypeName) => varRead.withAddedRelationshipFilterExpression(
+          newRelVariable,
+          HasTypes(newRelVariable, Seq(relTypeName))(InputPosition.NONE)
+        )
+      case None => varRead
+    }
+  }
+
   private def processStatefulShortest(
     sourceNode: LogicalVariable,
     targetNode: LogicalVariable,
-    nfa: NFA,
     nodeVariableGroupings: Set[Trail.VariableGrouping],
     relationshipVariableGroupings: Set[Trail.VariableGrouping],
     singletonNodeVariables: Set[Mapping],
     singletonRelationshipVariables: Set[Mapping]
   ): PlanReads = {
-
-    val (nodeExpr, relExpr) =
-      nfa.transitions
-        .values
-        .flatten
-        .foldLeft((Set[Expand.VariablePredicate](), Set[Expand.VariablePredicate]())) { (acc, transition) =>
-          transition.predicate match {
-            // TODO: unmap back to rowVar name https://trello.com/c/eAu1SnhO/
-            case RelationshipExpansionPredicate(_, relPred, _, _, nodePred) =>
-              (acc._1 ++ nodePred, acc._2 ++ relPred)
-            case NodeJuxtapositionPredicate(variablePredicate) =>
-              (acc._1 ++ variablePredicate, acc._2)
-          }
-        }
 
     val initialRead = PlanReads()
       .withReferencedNodeVariable(sourceNode)
@@ -1071,13 +1087,7 @@ object ReadFinder {
       },
       relationshipVariableGroupings.foldLeft(_) { (acc, pathRel) =>
         acc.withIntroducedRelationshipVariable(pathRel.singletonName)
-      },
-      nodeExpr.foldLeft(_)((acc, pred) =>
-        acc.withAddedNodeFilterExpression(pred.variable, pred.predicate)
-      ),
-      relExpr.foldLeft(_)((acc, pred) =>
-        acc.withAddedRelationshipFilterExpression(pred.variable, pred.predicate)
-      )
+      }
     ))(initialRead)
   }
 
