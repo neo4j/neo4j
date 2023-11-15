@@ -1052,6 +1052,31 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
       )
     )
   }
+
+  test("should respect that toInteger of invalid string returns null") {
+    // given, an empty db
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("result")
+      .projection("1 % toInteger(i) AS result")
+      .unwind("[1, '2', 'three', null] AS i")
+      .argument()
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("result").withRows(
+      singleColumn(
+        Seq(
+          0,
+          1,
+          null,
+          null
+        )
+      )
+    )
+  }
 }
 
 // Supported by all runtimes that can deal with changes in the tx-state
