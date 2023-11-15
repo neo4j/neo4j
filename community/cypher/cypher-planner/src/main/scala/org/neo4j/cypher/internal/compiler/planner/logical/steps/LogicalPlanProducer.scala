@@ -2322,7 +2322,7 @@ case class LogicalPlanProducer(
     startNode: String,
     endNode: String,
     nfa: NFA,
-    nonInlinablePreFilters: Option[Expression],
+    nonInlinedPreFilters: Option[Expression],
     nodeVariableGroupings: Set[Trail.VariableGrouping],
     relationshipVariableGroupings: Set[Trail.VariableGrouping],
     singletonNodeVariables: Set[Mapping],
@@ -2344,7 +2344,7 @@ case class LogicalPlanProducer(
       // must be planned with NestedPlanExpressions.
       val rewriter = irExpressionRewriter(inner, context)
       val rewrittenNFA = nfa.endoRewrite(rewriter)
-      val rewrittenNonInlinablePreFilters = nonInlinablePreFilters.endoRewrite(rewriter)
+      val rewrittenNonInlinablePreFilters = nonInlinedPreFilters.endoRewrite(rewriter)
       (rewrittenNFA, rewrittenNonInlinablePreFilters)
     }
 

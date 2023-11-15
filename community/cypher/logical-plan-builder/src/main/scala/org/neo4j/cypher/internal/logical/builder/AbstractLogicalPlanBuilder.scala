@@ -543,7 +543,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     sourceNode: String,
     targetNode: String,
     solvedExpressionString: String,
-    nonInlinablePreFilters: Option[Expression],
+    nonInlinedPreFilters: Option[Expression],
     groupNodes: Set[(String, String)],
     groupRelationships: Set[(String, String)],
     singletonNodeVariables: Set[(String, String)],
@@ -570,7 +570,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         varFor(sourceNode),
         varFor(targetNode),
         nfa.endoRewrite(expressionRewriter),
-        nonInlinablePreFilters,
+        nonInlinedPreFilters,
         nodeVariableGroupings,
         relationshipVariableGroupings,
         singletonNodeMappings,
@@ -587,7 +587,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     sourceNode: String,
     targetNode: String,
     solvedExpressionString: String,
-    nonInlinablePreFilters: Option[String],
+    nonInlinedPreFilters: Option[String],
     groupNodes: Set[(String, String)],
     groupRelationships: Set[(String, String)],
     singletonNodeVariables: Set[(String, String)],
@@ -596,7 +596,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     nfa: NFA,
     reverseGroupVariableProjections: Boolean = false
   ): IMPL = {
-    val predicates = nonInlinablePreFilters.map(parseExpression)
+    val predicates = nonInlinedPreFilters.map(parseExpression)
     statefulShortestPathExpr(
       sourceNode,
       targetNode,

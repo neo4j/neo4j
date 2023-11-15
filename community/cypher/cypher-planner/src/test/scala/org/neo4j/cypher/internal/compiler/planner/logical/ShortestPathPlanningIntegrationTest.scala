@@ -783,7 +783,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           targetNode = "w",
           solvedExpressionString =
             "SHORTEST 1 ((u) ((a)-[r]->(b)){1, } (v) ((c)-[s]->(d)){1, } (w) WHERE disjoint(`r`, `s`) AND unique(`r`) AND unique(`s`))",
-          nonInlinablePreFilters = None,
+          nonInlinedPreFilters = None,
           groupNodes = Set(("a", "a"), ("b", "b"), ("c", "c"), ("d", "d")),
           groupRelationships = Set(("r", "r"), ("s", "s")),
           singletonNodeVariables = Set("v" -> "v", "w" -> "w"),
@@ -934,7 +934,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           targetNode = "x",
           solvedExpressionString =
             "SHORTEST 1 ((u) ((a)-[r]->(b)){1, } (v) ((c)-[s]->(d)){1, } (w)-[t]->(x) WHERE NOT t IN `r` AND NOT t IN `s` AND disjoint(`r`, `s`) AND unique(`r`) AND unique(`s`))",
-          nonInlinablePreFilters = None,
+          nonInlinedPreFilters = None,
           groupNodes = Set(("a", "a"), ("b", "b"), ("c", "c"), ("d", "d")),
           groupRelationships = Set(("r", "r"), ("s", "s")),
           singletonNodeVariables = Set("v" -> "v", "w" -> "w", "x" -> "x"),

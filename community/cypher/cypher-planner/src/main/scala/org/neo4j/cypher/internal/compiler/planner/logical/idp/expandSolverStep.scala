@@ -517,7 +517,7 @@ object expandSolverStep {
     val relationshipVariableGroupings =
       spp.allQuantifiedPathPatterns.flatMap(_.relationshipVariableGroupings.map(convertGroupingFromIr)) ++
         syntheticVarLengthSingletons.map(entry => Trail.VariableGrouping(varFor(entry._2), varFor(entry._1)))
-    val nonInlinablePreFilters =
+    val nonInlinedPreFilters =
       Option.when(nonInlinedSelections.nonEmpty)(Ands.create(nonInlinedSelections.flatPredicates.to(ListSet)))
 
     context.staticComponents.logicalPlanProducer.planStatefulShortest(
@@ -525,7 +525,7 @@ object expandSolverStep {
       startNode,
       newEndNode,
       rewrittenNfa,
-      nonInlinablePreFilters,
+      nonInlinedPreFilters,
       nodeVariableGroupings,
       relationshipVariableGroupings,
       singletonNodeVariables.result(),
