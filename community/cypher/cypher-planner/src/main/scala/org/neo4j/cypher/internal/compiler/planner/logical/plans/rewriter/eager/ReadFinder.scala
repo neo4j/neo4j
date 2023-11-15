@@ -598,22 +598,8 @@ object ReadFinder {
       case DirectedUnionRelationshipTypesScan(relationship, leftNode, relTypes, rightNode, _, _) =>
         processUnionRelTypeScan(relationship, leftNode, relTypes, rightNode)
 
-      case Selection(Ands(expressions), _) =>
-        expressions.foldLeft(PlanReads()) {
-          case (acc, expression) =>
-            // Using `.is(CTNode) we can get unnecessary Eagers if we lack type information for a node
-            // and adding the predicate would have allowed to disqualify a conflict.
-            // But if we were to use `.couldBe(CTNode)`, we would get unnecessary Eagers for many
-            // cases where type information is missing from the selection, but not from the actual introduction of a variable,
-            // e.g. AssertIsNode(var)
-            val nodeExpr = expression.dependencies.filter(semanticTable.typeFor(_).is(CTNode))
-            val relExpr = expression.dependencies.filter(semanticTable.typeFor(_).is(CTRelationship))
-
-            Function.chain[PlanReads](Seq(
-              nodeExpr.foldLeft(_)(_.withAddedNodeFilterExpression(_, expression)),
-              relExpr.foldLeft(_)(_.withAddedRelationshipFilterExpression(_, expression))
-            ))(acc)
-        }
+      case Selection(predicate, _) =>
+        processFilterExpression(PlanReads(), predicate, semanticTable)
 
       case Expand(_, _, _, relTypes, to, relName, _) =>
         processExpand(relTypes, to, relName)
@@ -653,7 +639,7 @@ object ReadFinder {
           sourceNode,
           targetNode,
           _,
-          _,
+          nonInlinedPreFilters,
           nodeVariableGroupings,
           relationshipVariableGroupings,
           singletonNodeVariables,
@@ -665,10 +651,12 @@ object ReadFinder {
         processStatefulShortest(
           sourceNode,
           targetNode,
+          nonInlinedPreFilters,
           nodeVariableGroupings,
           relationshipVariableGroupings,
           singletonNodeVariables,
-          singletonRelationshipVariables
+          singletonRelationshipVariables,
+          semanticTable
         )
 
       case ProduceResult(_, columns) =>
@@ -1062,13 +1050,33 @@ object ReadFinder {
     }
   }
 
+  def processFilterExpression(acc: PlanReads, expression: Expression, semanticTable: SemanticTable): PlanReads =
+    expression match {
+      case Ands(expressions) => expressions.foldLeft(acc)(processFilterExpression(_, _, semanticTable))
+      case _                 =>
+        // Using `.is(CTNode) we can get unnecessary Eagers if we lack type information for a node
+        // and adding the predicate would have allowed to disqualify a conflict.
+        // But if we were to use `.couldBe(CTNode)`, we would get unnecessary Eagers for many
+        // cases where type information is missing from the selection, but not from the actual introduction of a variable,
+        // e.g. AssertIsNode(var)
+        val nodeExpr = expression.dependencies.filter(semanticTable.typeFor(_).is(CTNode))
+        val relExpr = expression.dependencies.filter(semanticTable.typeFor(_).is(CTRelationship))
+
+        Function.chain[PlanReads](Seq(
+          nodeExpr.foldLeft(_)(_.withAddedNodeFilterExpression(_, expression)),
+          relExpr.foldLeft(_)(_.withAddedRelationshipFilterExpression(_, expression))
+        ))(acc)
+    }
+
   private def processStatefulShortest(
     sourceNode: LogicalVariable,
     targetNode: LogicalVariable,
+    nonInlinedPreFilters: Option[Expression],
     nodeVariableGroupings: Set[Trail.VariableGrouping],
     relationshipVariableGroupings: Set[Trail.VariableGrouping],
     singletonNodeVariables: Set[Mapping],
-    singletonRelationshipVariables: Set[Mapping]
+    singletonRelationshipVariables: Set[Mapping],
+    semanticTable: SemanticTable
   ): PlanReads = {
 
     val initialRead = PlanReads()
@@ -1087,7 +1095,8 @@ object ReadFinder {
       },
       relationshipVariableGroupings.foldLeft(_) { (acc, pathRel) =>
         acc.withIntroducedRelationshipVariable(pathRel.singletonName)
-      }
+      },
+      nonInlinedPreFilters.foldLeft(_)(processFilterExpression(_, _, semanticTable))
     ))(initialRead)
   }
 

@@ -563,6 +563,10 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       .foreach(newVariable(_, CTList(CTNode)))
     relationshipVariableGroupings.map(_.groupName.asInstanceOf[Variable])
       .foreach(newVariable(_, CTList(CTRelationship)))
+    singletonNodeMappings.map(_.rowVar.asInstanceOf[Variable])
+      .foreach(newVariable(_, CTNode))
+    singletonRelMappings.map(_.rowVar.asInstanceOf[Variable])
+      .foreach(newVariable(_, CTRelationship))
 
     appendAtCurrentIndent(UnaryOperator(lp =>
       StatefulShortestPath(
@@ -570,7 +574,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         varFor(sourceNode),
         varFor(targetNode),
         nfa.endoRewrite(expressionRewriter),
-        nonInlinedPreFilters,
+        nonInlinedPreFilters.endoRewrite(expressionRewriter),
         nodeVariableGroupings,
         relationshipVariableGroupings,
         singletonNodeMappings,

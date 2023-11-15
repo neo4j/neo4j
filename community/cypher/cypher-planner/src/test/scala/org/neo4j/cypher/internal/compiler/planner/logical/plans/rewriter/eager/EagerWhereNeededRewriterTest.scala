@@ -7843,6 +7843,46 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(plan)
   }
 
+  test(
+    "Do not insert eager between shortest path pattern and create when there is no overlap (nonInlinedPreFilters)"
+  ) {
+    val nfa = new TestNFABuilder(0, "u")
+      .addTransition(0, 1, "(u) (a_inner)")
+      .addTransition(1, 2, "(a_inner)-[r_inner WHERE r_inner:A]->(b_inner WHERE b_inner:A)")
+      .addTransition(2, 1, "(b_inner) (a_inner WHERE a_inner:A)")
+      .addTransition(2, 3, "(b_inner) (v_inner)")
+      .addTransition(3, 4, "(v_inner) (c_inner WHERE c_inner:A)")
+      .addTransition(4, 5, "(c_inner)-[s_inner WHERE s_inner:A]->(d_inner WHERE d_inner:A)")
+      .addTransition(5, 4, "(d_inner) (c_inner WHERE c_inner:A)")
+      .addTransition(5, 6, "(d_inner) (w_inner WHERE w_inner:A)")
+      .addFinalState(6)
+      .build()
+
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("o")
+      .create(createNodeWithProperties("q", Seq.empty, "{prop1: 5}"))
+      .statefulShortestPath(
+        "u",
+        "w",
+        "SHORTEST 1 ((u) ((a)-[r]->(b)){1, } (v) ((c)-[s]->(d)){1, } (w) WHERE disjoint(`r`, `s`) AND unique(`r`) AND unique(`s`) " +
+          "AND a:A AND b:A AND c:A AND d:A AND r:A AND s:A AND v:A AND w:A)",
+        Some("v:A"),
+        Set(("a_inner", "a"), ("b_inner", "b"), ("c_inner", "c"), ("d_inner", "d")),
+        Set(("r_inner", "r"), ("s_inner", "s")),
+        singletonNodeVariables = Set("v_inner" -> "v", "w_inner" -> "w"),
+        singletonRelationshipVariables = Set.empty,
+        StatefulShortestPath.Selector.Shortest(1),
+        nfa,
+        false
+      )
+      .nodeByLabelScan("u", "User")
+
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(plan)
+  }
+
   // Ignored tests
 
   // Update LabelExpressionEvaluator to return a boolean or a set of the conflicting Labels
