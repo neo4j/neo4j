@@ -19,8 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
 import org.neo4j.cypher.internal.expressions.Ands
+import org.neo4j.cypher.internal.expressions.DesugaredMapProjection
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipUniquenessPredicate
 import org.neo4j.cypher.internal.expressions.SemanticDirection
@@ -28,6 +31,8 @@ import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.VarLengthLowerBound
 import org.neo4j.cypher.internal.expressions.VarLengthUpperBound
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.expressions.functions.EndNode
+import org.neo4j.cypher.internal.expressions.functions.StartNode
 import org.neo4j.cypher.internal.frontend.phases.Namespacer
 import org.neo4j.cypher.internal.ir.ExhaustiveNodeConnection
 import org.neo4j.cypher.internal.ir.PatternRelationship
@@ -36,12 +41,16 @@ import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SelectivePathPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
+import org.neo4j.cypher.internal.ir.ast.IRExpression
 import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
 import org.neo4j.cypher.internal.logical.plans.NFA
 import org.neo4j.cypher.internal.logical.plans.NFABuilder
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.NonEmptyList
+import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.UpperBound
+import org.neo4j.cypher.internal.util.topDown
 import org.neo4j.exceptions.InternalException
 
 import scala.collection.immutable.ListSet
@@ -111,10 +120,65 @@ object ConvertToNFA {
       case _                                  => true
     })
 
+    def getPredicates(entityNames: Set[String]) = {
+      selectionsWithoutUniquenessPredicates.predicatesGiven(availableSymbols ++ entityNames).to(ListSet)
+    }
+
     def getVariablePredicates(entityName: String) = {
-      val entityPredicates = selectionsWithoutUniquenessPredicates.predicatesGiven(availableSymbols + entityName)
+      val entityPredicates = getPredicates(Set(entityName))
       val entityVariablePredicates = toVariablePredicates(entityName, entityPredicates)
       (entityPredicates, entityVariablePredicates)
+    }
+
+    /**
+     * Get predicates that only depend on the relationship, its start and end node.
+     * Rewrite these predicates to use `startNode` and `endNode`, so that they only
+     * depend on the relationship.
+     * 
+     * @param dir the direction of the relationship.
+     *            We cannot inline extra predicates for relationships with direction BOTH
+     * @param sourceVariable the variable of the source NFA state
+     * @param relationshipVariable the relationship variable
+     * @param targetVariable the variable of the target NFA state
+     * @param alreadySolvedPredicates predicates that are already solved otherwise.
+     * @return a set of all extra predicates, in tuples: (original predicate, rewritten predicate)
+     */
+    def getExtraRelationshipPredicates(
+      dir: SemanticDirection,
+      sourceVariable: LogicalVariable,
+      relationshipVariable: LogicalVariable,
+      targetVariable: LogicalVariable,
+      alreadySolvedPredicates: ListSet[Expression]
+    ): ListSet[(Expression, Expression)] = {
+      val (startNode, endNode) = (dir, fromLeft) match {
+        case (SemanticDirection.BOTH, _) =>
+          // We cannot inline extra predicates for relationships with direction BOTH
+          return ListSet.empty
+        case (SemanticDirection.OUTGOING, true)  => (sourceVariable, targetVariable)
+        case (SemanticDirection.OUTGOING, false) => (targetVariable, sourceVariable)
+        case (SemanticDirection.INCOMING, true)  => (targetVariable, sourceVariable)
+        case (SemanticDirection.INCOMING, false) => (sourceVariable, targetVariable)
+      }
+
+      def rewrite(expression: Expression): Expression = expression.endoRewrite(topDown(Rewriter.lift {
+        case `startNode` => StartNode(relationshipVariable)(InputPosition.NONE)
+        case `endNode`   => EndNode(relationshipVariable)(InputPosition.NONE)
+        case AndedPropertyInequalities(v, _, inequalities) if v == startNode || v == endNode =>
+          Ands.create(inequalities.map(rewrite).toListSet)
+      }))
+
+      val allPredicatesGiven = getPredicates(Set(
+        sourceVariable.name,
+        relationshipVariable.name,
+        targetVariable.name
+      ))
+        // We cannot rewrite IRExpressions, since they contain Variables as strings
+        .filter(_.folder.treeFindByClass[IRExpression].isEmpty)
+        // DesugaredMapProjection cannot ge rewritten. They must have a variable as the first child, not an expression.
+        .filter(_.folder.treeFindByClass[DesugaredMapProjection].isEmpty)
+
+      val allApplicablePredicates = allPredicatesGiven -- alreadySolvedPredicates
+      allApplicablePredicates.map(p => p -> rewrite(p))
     }
 
     // go over the node connections and keep track of selections we could inline
@@ -129,20 +193,36 @@ object ConvertToNFA {
         ) = {
           val directionToPlan = if (fromLeft) dir else dir.reversed
 
-          val (relPredicates, relVariablePredicates) = getVariablePredicates(relationshipName)
-          val (nodePredicates, nodeVariablePredicates) = getVariablePredicates(targetState.variable.name)
+          val relationshipVariable = varFor(relationshipName)
+          val targetName = targetState.variable.name
+
+          val relPredicates = getPredicates(Set(relationshipName))
+          val nodePredicates = getPredicates(Set(targetName))
+
+          val extraRelPredicates = getExtraRelationshipPredicates(
+            dir,
+            sourceState.variable,
+            relationshipVariable,
+            targetState.variable,
+            inlinedSelections.flatPredicates.to(ListSet) ++ relPredicates ++ nodePredicates
+          )
+
+          val relVariablePredicates =
+            toVariablePredicates(relationshipName, relPredicates ++ extraRelPredicates.map(_._2))
+          val nodeVariablePredicates = toVariablePredicates(targetName, nodePredicates)
+
           builder.addTransition(
             sourceState,
             targetState,
             NFA.RelationshipExpansionPredicate(
-              relationshipVariable = varFor(relationshipName),
+              relationshipVariable = relationshipVariable,
               relPred = relVariablePredicates,
               types = types,
               dir = directionToPlan,
               nodePred = nodeVariablePredicates
             )
           )
-          Selections.from(relPredicates ++ nodePredicates)
+          Selections.from(relPredicates ++ nodePredicates ++ extraRelPredicates.map(_._1))
         }
 
         def addRelationship(
@@ -289,7 +369,8 @@ object ConvertToNFA {
             // var because it will get overwritten if the lower bound is > 1
             var lastSourceInnerState = builder.addAndGetState(varFor(sourceInnerName))
             val predicatesOnSourceInner = qppSelections.predicatesGiven(availableSymbols + sourceInnerName)
-            val variablePredicateOnSourceInner = toVariablePredicates(sourceInnerName, predicatesOnSourceInner)
+            val variablePredicateOnSourceInner =
+              toVariablePredicates(sourceInnerName, predicatesOnSourceInner.to(ListSet))
             builder.addTransition(
               sourceOuterState,
               lastSourceInnerState,
@@ -357,10 +438,10 @@ object ConvertToNFA {
             val targetBinding = if (fromLeft) rightBinding else leftBinding
             val targetOuterName = targetBinding.outer
             val targetOuterState = builder.addAndGetState(varFor(targetOuterName))
-            val predicatesOnTargetOuter =
-              selectionsWithoutUniquenessPredicates.predicatesGiven(availableSymbols + targetOuterName)
-                .filter(_.dependencies.exists(_.name == targetOuterName))
-            val variablePredicateOnTargetOuter = toVariablePredicates(targetOuterName, predicatesOnTargetOuter)
+            val predicatesOnTargetOuter = getPredicates(Set(targetOuterName))
+              .filter(_.dependencies.exists(_.name == targetOuterName))
+            val variablePredicateOnTargetOuter =
+              toVariablePredicates(targetOuterName, predicatesOnTargetOuter.to(ListSet))
             exitableTargetInnerStates.foreach { targetInnerState =>
               builder.addTransition(
                 targetInnerState,
@@ -384,7 +465,7 @@ object ConvertToNFA {
     selectionsWithoutUniquenessPredicates -- inlinedSelections
   }
 
-  private def toVariablePredicates(variableName: String, predicates: Seq[Expression]): Option[VariablePredicate] = {
-    Option.when(predicates.nonEmpty)(VariablePredicate(varFor(variableName), Ands.create(predicates.to(ListSet))))
+  private def toVariablePredicates(variableName: String, predicates: ListSet[Expression]): Option[VariablePredicate] = {
+    Option.when(predicates.nonEmpty)(VariablePredicate(varFor(variableName), Ands.create(predicates)))
   }
 }

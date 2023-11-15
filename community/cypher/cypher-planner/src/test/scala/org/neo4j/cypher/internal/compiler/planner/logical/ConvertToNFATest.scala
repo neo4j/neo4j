@@ -57,6 +57,32 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
     relationshipVariableGroupings = Set(VariableGrouping("r", "r"))
   )
 
+  private val `(start) ((a)-[r]->(b)-[r2]->(c))+ (end)` = QuantifiedPathPattern(
+    leftBinding = NodeBinding("a", "start"),
+    rightBinding = NodeBinding("c", "end"),
+    patternRelationships = NonEmptyList(
+      PatternRelationship(
+        name = "r",
+        boundaryNodes = ("a", "b"),
+        dir = SemanticDirection.OUTGOING,
+        types = Nil,
+        length = SimplePatternLength
+      ),
+      PatternRelationship(
+        name = "r2",
+        boundaryNodes = ("b", "c"),
+        dir = SemanticDirection.OUTGOING,
+        types = Nil,
+        length = SimplePatternLength
+      )
+    ),
+    argumentIds = Set.empty,
+    selections = Selections.empty,
+    repetition = Repetition(1, UpperBound.Unlimited),
+    nodeVariableGroupings = Set("a", "b", "c").map(name => VariableGrouping(name, name)),
+    relationshipVariableGroupings = Set("r", "r2").map(name => VariableGrouping(name, name))
+  )
+
   // QPP with internal predicates
   private val `(start) ((a)-[r]->(b))+ (end) [with predicates]` =
     QuantifiedPathPattern(
@@ -168,9 +194,9 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("does not support predicates that depends on multiple singleton variables in QPP") {
-    val failingPredicate = equals(prop("a", "prop"), prop("b", "prop"))
+    val failingPredicate = equals(prop("a", "prop"), prop("c", "prop"))
 
-    val qpp = `(start) ((a)-[r]->(b))+ (end)`.copy(selections = Selections.from(failingPredicate))
+    val qpp = `(start) ((a)-[r]->(b)-[r2]->(c))+ (end)`.copy(selections = Selections.from(failingPredicate))
 
     val spp =
       SelectivePathPattern(

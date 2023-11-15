@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.util
 import org.neo4j.cypher.internal.util.NonEmptyList.IteratorConverter
 
 import scala.annotation.tailrec
+import scala.collection.immutable.ListSet
 import scala.collection.mutable
 
 object NonEmptyList {
@@ -285,6 +286,7 @@ sealed trait NonEmptyList[+T] extends IterableOnce[T] {
   def size: Int
 
   final def toSet[X >: T]: Set[X] = foldLeft(Set.empty[X])(_ + _)
+  final def toListSet[X >: T]: ListSet[X] = foldLeft(ListSet.empty[X])(_ + _)
   final def toIndexedSeq: Seq[T] = foldLeft(IndexedSeq.empty[T])(_ :+ _)
 
   @tailrec

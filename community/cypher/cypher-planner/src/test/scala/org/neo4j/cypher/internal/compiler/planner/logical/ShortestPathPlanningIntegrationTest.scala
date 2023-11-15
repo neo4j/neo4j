@@ -871,7 +871,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
 
   test("should plan non inlined predicates") {
     val query =
-      """MATCH ANY SHORTEST ((u:User) ((a)-[r]->(b))+ (v)-[s]->(w) WHERE v.prop = w.prop AND size(a) <> 5)
+      """MATCH ANY SHORTEST ((u:User) ((a)-[r]->(b))+ (v)-[s]-(w) WHERE v.prop = w.prop AND size(a) <> 5)
         |RETURN *""".stripMargin
     val plan =
       planner.plan(query).stripProduceResults
@@ -881,7 +881,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .addTransition(1, 2, "(a)-[r]->(b)")
       .addTransition(2, 1, "(b) (a)")
       .addTransition(2, 3, "(b) (v)")
-      .addTransition(3, 4, "(v)-[s]->(w)")
+      .addTransition(3, 4, "(v)-[s]-(w)")
       .addFinalState(4)
       .build()
 
@@ -890,7 +890,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "u",
           "w",
-          "SHORTEST 1 ((u) ((a)-[r]->(b)){1, } (v)-[s]->(w) WHERE NOT s IN `r` AND NOT size(`a`) IN [5] AND unique(`r`) AND v.prop = w.prop)",
+          "SHORTEST 1 ((u) ((a)-[r]->(b)){1, } (v)-[s]-(w) WHERE NOT s IN `r` AND NOT size(`a`) IN [5] AND unique(`r`) AND v.prop = w.prop)",
           Some("v.prop = w.prop AND NOT size(a) = 5"),
           Set(("a", "a"), ("b", "b")),
           Set(("r", "r")),
@@ -1608,4 +1608,230 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .build()
   }
 
+  test("Should inline relationship local (start and end node) predicate into NFA: outside QPP") {
+    val query = "MATCH ANY SHORTEST ((u:User)((n)-[r]->(m))+(v)-[r2]->(w) WHERE v.prop > w.prop) RETURN *"
+
+    val nfa = new TestNFABuilder(0, "u")
+      .addTransition(0, 1, "(u) (n)")
+      .addTransition(1, 2, "(n)-[r]->(m)")
+      .addTransition(2, 1, "(m) (n)")
+      .addTransition(2, 3, "(m) (v)")
+      .addTransition(3, 4, "(v)-[r2 WHERE startNode(r2).prop > endNode(r2).prop]->(w)")
+      .addFinalState(4)
+      .build()
+
+    val plan = planner.plan(query).stripProduceResults
+    plan should equal(
+      planner.subPlanBuilder()
+        .statefulShortestPath(
+          "u",
+          "w",
+          "SHORTEST 1 ((u) ((n)-[r]->(m)){1, } (v)-[r2]->(w) WHERE NOT r2 IN `r` AND unique(`r`) AND v.prop > w.prop)",
+          None,
+          groupNodes = Set(("n", "n"), ("m", "m")),
+          groupRelationships = Set(("r", "r")),
+          singletonNodeVariables = Set("v" -> "v", "w" -> "w"),
+          singletonRelationshipVariables = Set("r2" -> "r2"),
+          StatefulShortestPath.Selector.Shortest(1),
+          nfa
+        )
+        .nodeByLabelScan("u", "User")
+        .build()
+    )
+  }
+
+  test("Should inline relationship local (start and end node) predicate into NFA: inside QPP") {
+    val query = "MATCH ANY SHORTEST ((u:User)((n)-[r]->(m) WHERE n.prop > m.prop)+(v)-[r2]->(w)) RETURN *"
+
+    val nfa = new TestNFABuilder(0, "u")
+      .addTransition(0, 1, "(u) (n)")
+      .addTransition(1, 2, "(n)-[r WHERE startNode(r).prop > endNode(r).prop]->(m)")
+      .addTransition(2, 1, "(m) (n)")
+      .addTransition(2, 3, "(m) (v)")
+      .addTransition(3, 4, "(v)-[r2]->(w)")
+      .addFinalState(4)
+      .build()
+
+    val plan = planner.plan(query).stripProduceResults
+    plan should equal(
+      planner.subPlanBuilder()
+        .statefulShortestPath(
+          "u",
+          "w",
+          "SHORTEST 1 ((u) ((n)-[r]->(m) WHERE `n`.prop > `m`.prop){1, } (v)-[r2]->(w) WHERE NOT r2 IN `r` AND unique(`r`))",
+          None,
+          groupNodes = Set(("n", "n"), ("m", "m")),
+          groupRelationships = Set(("r", "r")),
+          singletonNodeVariables = Set("v" -> "v", "w" -> "w"),
+          singletonRelationshipVariables = Set("r2" -> "r2"),
+          StatefulShortestPath.Selector.Shortest(1),
+          nfa
+        )
+        .nodeByLabelScan("u", "User")
+        .build()
+    )
+  }
+
+  test("Should inline relationship local (start and end node) predicate into NFA: direction INCOMING") {
+    val query = "MATCH ANY SHORTEST ((u:User)((n)-[r]->(m))+(v)<-[r2]-(w) WHERE v.prop > w.prop) RETURN *"
+
+    val nfa = new TestNFABuilder(0, "u")
+      .addTransition(0, 1, "(u) (n)")
+      .addTransition(1, 2, "(n)-[r]->(m)")
+      .addTransition(2, 1, "(m) (n)")
+      .addTransition(2, 3, "(m) (v)")
+      .addTransition(3, 4, "(v)<-[r2 WHERE endNode(r2).prop > startNode(r2).prop]-(w)")
+      .addFinalState(4)
+      .build()
+
+    val plan = planner.plan(query).stripProduceResults
+    plan should equal(
+      planner.subPlanBuilder()
+        .statefulShortestPath(
+          "u",
+          "w",
+          "SHORTEST 1 ((u) ((n)-[r]->(m)){1, } (v)<-[r2]-(w) WHERE NOT r2 IN `r` AND unique(`r`) AND v.prop > w.prop)",
+          None,
+          groupNodes = Set(("n", "n"), ("m", "m")),
+          groupRelationships = Set(("r", "r")),
+          singletonNodeVariables = Set("v" -> "v", "w" -> "w"),
+          singletonRelationshipVariables = Set("r2" -> "r2"),
+          StatefulShortestPath.Selector.Shortest(1),
+          nfa
+        )
+        .nodeByLabelScan("u", "User")
+        .build()
+    )
+  }
+
+  test("Should inline relationship local (start and end node) predicate into NFA: from left") {
+    val query = "MATCH ANY SHORTEST ((u)((n)-[r]->(m))+(v)<-[r2]-(w:User) WHERE v.prop > r2.prop + w.prop) RETURN *"
+
+    val nfa = new TestNFABuilder(0, "w")
+      .addTransition(0, 1, "(w)-[r2 WHERE endNode(r2).prop > r2.prop + startNode(r2).prop]->(v)")
+      .addTransition(1, 2, "(v) (m)")
+      .addTransition(2, 3, "(m)<-[r]-(n)")
+      .addTransition(3, 2, "(n) (m)")
+      .addTransition(3, 4, "(n) (u)")
+      .addFinalState(4)
+      .build()
+
+    val plan = planner.plan(query).stripProduceResults
+    plan should equal(
+      planner.subPlanBuilder()
+        .statefulShortestPath(
+          "w",
+          "u",
+          "SHORTEST 1 ((u) ((n)-[r]->(m)){1, } (v)<-[r2]-(w) WHERE NOT r2 IN `r` AND unique(`r`) AND v.prop > r2.prop + w.prop)",
+          None,
+          groupNodes = Set(("n", "n"), ("m", "m")),
+          groupRelationships = Set(("r", "r")),
+          singletonNodeVariables = Set("u" -> "u", "v" -> "v"),
+          singletonRelationshipVariables = Set("r2" -> "r2"),
+          StatefulShortestPath.Selector.Shortest(1),
+          nfa,
+          reverseGroupVariableProjections = true
+        )
+        .nodeByLabelScan("w", "User")
+        .build()
+    )
+  }
+
+  test("Should inline relationship local (start and end node) predicate into NFA: from left, direction INCOMING") {
+    val query = "MATCH ANY SHORTEST ((u)((n)-[r]->(m))+(v)-[r2]->(w:User) WHERE v.prop > r2.prop + w.prop) RETURN *"
+
+    val nfa = new TestNFABuilder(0, "w")
+      .addTransition(0, 1, "(w)<-[r2 WHERE startNode(r2).prop > r2.prop + endNode(r2).prop]-(v)")
+      .addTransition(1, 2, "(v) (m)")
+      .addTransition(2, 3, "(m)<-[r]-(n)")
+      .addTransition(3, 2, "(n) (m)")
+      .addTransition(3, 4, "(n) (u)")
+      .addFinalState(4)
+      .build()
+
+    val plan = planner.plan(query).stripProduceResults
+    plan should equal(
+      planner.subPlanBuilder()
+        .statefulShortestPath(
+          "w",
+          "u",
+          "SHORTEST 1 ((u) ((n)-[r]->(m)){1, } (v)-[r2]->(w) WHERE NOT r2 IN `r` AND unique(`r`) AND v.prop > r2.prop + w.prop)",
+          None,
+          groupNodes = Set(("n", "n"), ("m", "m")),
+          groupRelationships = Set(("r", "r")),
+          singletonNodeVariables = Set("u" -> "u", "v" -> "v"),
+          singletonRelationshipVariables = Set("r2" -> "r2"),
+          StatefulShortestPath.Selector.Shortest(1),
+          nfa,
+          reverseGroupVariableProjections = true
+        )
+        .nodeByLabelScan("w", "User")
+        .build()
+    )
+  }
+
+  test("Should not inline relationship local (start and end node) predicate into NFA: direction BOTH") {
+    val query = "MATCH ANY SHORTEST ((u:User)((n)-[r]->(m))+(v)-[r2]-(w) WHERE v.prop > w.prop) RETURN *"
+
+    val nfa = new TestNFABuilder(0, "u")
+      .addTransition(0, 1, "(u) (n)")
+      .addTransition(1, 2, "(n)-[r]->(m)")
+      .addTransition(2, 1, "(m) (n)")
+      .addTransition(2, 3, "(m) (v)")
+      .addTransition(3, 4, "(v)-[r2]-(w)")
+      .addFinalState(4)
+      .build()
+
+    val plan = planner.plan(query).stripProduceResults
+    plan should equal(
+      planner.subPlanBuilder()
+        .statefulShortestPath(
+          "u",
+          "w",
+          "SHORTEST 1 ((u) ((n)-[r]->(m)){1, } (v)-[r2]-(w) WHERE NOT r2 IN `r` AND unique(`r`) AND v.prop > w.prop)",
+          Some("v.prop > w.prop"),
+          groupNodes = Set(("n", "n"), ("m", "m")),
+          groupRelationships = Set(("r", "r")),
+          singletonNodeVariables = Set("v" -> "v", "w" -> "w"),
+          singletonRelationshipVariables = Set("r2" -> "r2"),
+          StatefulShortestPath.Selector.Shortest(1),
+          nfa
+        )
+        .nodeByLabelScan("u", "User")
+        .build()
+    )
+  }
+
+  // Our AST does not allow rewriting DesugaredMapProjections to use an expression instead of a variable.
+  test("Should not inline relationship local (start and end node) predicate into NFA: DesugaredMapProjection") {
+    val query = "MATCH ANY SHORTEST ((u:User)((n)-[r]->(m))+(v)-[r2]->(w) WHERE v{.foo,.bar} = w{.foo,.bar}) RETURN *"
+
+    val nfa = new TestNFABuilder(0, "u")
+      .addTransition(0, 1, "(u) (n)")
+      .addTransition(1, 2, "(n)-[r]->(m)")
+      .addTransition(2, 1, "(m) (n)")
+      .addTransition(2, 3, "(m) (v)")
+      .addTransition(3, 4, "(v)-[r2]->(w)")
+      .addFinalState(4)
+      .build()
+
+    val plan = planner.plan(query).stripProduceResults
+    plan should equal(
+      planner.subPlanBuilder()
+        .statefulShortestPath(
+          "u",
+          "w",
+          "SHORTEST 1 ((u) ((n)-[r]->(m)){1, } (v)-[r2]->(w) WHERE NOT r2 IN `r` AND unique(`r`) AND v{foo: v.foo, bar: v.bar} = w{foo: w.foo, bar: w.bar})",
+          Some("v{foo: v.foo, bar: v.bar} = w{foo: w.foo, bar: w.bar}"),
+          groupNodes = Set(("n", "n"), ("m", "m")),
+          groupRelationships = Set(("r", "r")),
+          singletonNodeVariables = Set("v" -> "v", "w" -> "w"),
+          singletonRelationshipVariables = Set("r2" -> "r2"),
+          StatefulShortestPath.Selector.Shortest(1),
+          nfa
+        )
+        .nodeByLabelScan("u", "User")
+        .build()
+    )
+  }
 }
