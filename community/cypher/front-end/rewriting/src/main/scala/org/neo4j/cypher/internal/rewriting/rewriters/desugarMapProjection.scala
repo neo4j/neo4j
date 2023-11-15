@@ -46,10 +46,19 @@ so the runtime only has two cases to handle - literal entries and the special al
 We can't rewrite all the way to literal maps, since map projections yield a null map when the map_variable is null,
 and the same behaviour can't be mimicked with literal maps.
  */
-case class desugarMapProjection(state: SemanticState) extends Rewriter {
-  override def apply(that: AnyRef): AnyRef = topDown(instance).apply(that)
+case object desugarMapProjection extends StepSequencer.Step with DefaultPostCondition with ASTRewriterFactory {
+  override def preConditions: Set[StepSequencer.Condition] = Set.empty
 
-  private val instance: Rewriter = Rewriter.lift {
+  override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
+
+  override def getRewriter(
+    semanticState: SemanticState,
+    parameterTypeMapping: Map[String, ParameterTypeInfo],
+    cypherExceptionFactory: CypherExceptionFactory,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+  ): Rewriter = instance
+
+  val instance: Rewriter = topDown(Rewriter.lift {
     case e @ MapProjection(id, items) =>
       def propertySelect(propertyPosition: InputPosition, name: String): LiteralEntry = {
         val key = PropertyKeyName(name)(propertyPosition)
@@ -70,18 +79,5 @@ case class desugarMapProjection(state: SemanticState) extends Rewriter {
       }
 
       DesugaredMapProjection(id, mapExpressionItems, includeAllProps)(e.position)
-  }
-}
-
-case object desugarMapProjection extends StepSequencer.Step with DefaultPostCondition with ASTRewriterFactory {
-  override def preConditions: Set[StepSequencer.Condition] = Set.empty
-
-  override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
-
-  override def getRewriter(
-    semanticState: SemanticState,
-    parameterTypeMapping: Map[String, ParameterTypeInfo],
-    cypherExceptionFactory: CypherExceptionFactory,
-    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
-  ): Rewriter = desugarMapProjection(semanticState)
+  })
 }

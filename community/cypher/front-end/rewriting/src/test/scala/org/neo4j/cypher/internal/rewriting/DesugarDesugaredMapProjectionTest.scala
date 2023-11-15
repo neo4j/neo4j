@@ -88,7 +88,7 @@ class DesugarDesugaredMapProjectionTest extends CypherFunSuite {
         val semanticCheckResult = originalAst.semanticCheck.run(SemanticState.clean, SemanticCheckContext.default)
         val withScopes = originalAst.endoRewrite(computeDependenciesForExpressions(semanticCheckResult.state))
 
-        withScopes.endoRewrite(desugarMapProjection(semanticCheckResult.state))
+        withScopes.endoRewrite(desugarMapProjection.instance)
       }
 
       val rewrittenOriginal = rewrite(originalQuery)
