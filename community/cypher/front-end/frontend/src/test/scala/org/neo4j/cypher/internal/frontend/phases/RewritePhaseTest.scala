@@ -72,11 +72,20 @@ trait RewritePhaseTest {
     semanticTableExpressions: List[Expression],
     features: SemanticFeature*
   ): Unit = {
+
+    /**
+     * To be able to just read Cypher when looking at a failure in a `RewritePhaseTest`,
+     */
+    case class StatementPrettifier(statement: Statement) {
+      override def toString: String = {
+        prettifier.asString(statement)
+      }
+    }
     val fromOutState: BaseState = prepareFrom(from, rewriterPhaseUnderTest, features: _*)
 
     val toOutState = prepareFrom(to, rewriterPhaseForExpected, features: _*)
 
-    fromOutState.statement() should equal(toOutState.statement())
+    StatementPrettifier(fromOutState.statement()) should equal(StatementPrettifier(toOutState.statement()))
     if (astRewriteAndAnalyze) {
       semanticTableExpressions.foreach { e =>
         fromOutState.semanticTable().types.keys.map(_.node) should contain(e)
