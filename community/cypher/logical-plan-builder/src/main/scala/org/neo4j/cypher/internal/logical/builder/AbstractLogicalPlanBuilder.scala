@@ -236,6 +236,7 @@ import org.neo4j.cypher.internal.logical.plans.shortest.PatternRelationship
 import org.neo4j.cypher.internal.logical.plans.shortest.ShortestRelationshipPattern
 import org.neo4j.cypher.internal.rewriting.rewriters.HasLabelsAndHasTypeNormalizer
 import org.neo4j.cypher.internal.rewriting.rewriters.combineHasLabels
+import org.neo4j.cypher.internal.rewriting.rewriters.desugarMapProjection
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InputPosition.NONE
 import org.neo4j.cypher.internal.util.LabelId
@@ -2482,7 +2483,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   }
 
   protected def expressionRewriter: Rewriter =
-    inSequence(hasLabelsAndHasTypeNormalizer, combineHasLabels)
+    inSequence(hasLabelsAndHasTypeNormalizer, combineHasLabels, desugarMapProjection.instance)
 
   /**
    * Returns the finalized output of the builder.
