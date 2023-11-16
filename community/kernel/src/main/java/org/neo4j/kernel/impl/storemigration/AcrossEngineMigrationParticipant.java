@@ -148,7 +148,7 @@ public class AcrossEngineMigrationParticipant extends AbstractStoreMigrationPart
                 false,
                 additionalInitialIds,
                 localConfig,
-                Monitor.NO_MONITOR,
+                progressTrackingMonitor(progressListener),
                 jobScheduler,
                 Collector.EMPTY,
                 TransactionLogInitializer.getLogFilesInitializer(),
@@ -184,6 +184,21 @@ public class AcrossEngineMigrationParticipant extends AbstractStoreMigrationPart
                 contextFactory,
                 tailMetadata,
                 forceBtreeIndexesToRange);
+    }
+
+    private Monitor progressTrackingMonitor(ProgressListener progressReporter) {
+        return new Monitor() {
+            private int lastReportedPercentage;
+
+            @Override
+            public void percentageCompleted(int percentage) {
+                int diff = percentage - lastReportedPercentage;
+                if (diff > 0) {
+                    progressReporter.add(diff);
+                    lastReportedPercentage = percentage;
+                }
+            }
+        };
     }
 
     @Override
