@@ -65,7 +65,6 @@
     <module>neo4j-slf4j-provider</module>
     <module>dbms</module>
     <module>command-line</module>
-    <module>random-values</module>
     <module>values</module>
     <module>ssl</module>
     <module>spatial-index</module>

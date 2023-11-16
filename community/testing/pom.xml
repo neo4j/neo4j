@@ -28,5 +28,6 @@
         <module>wal-utils</module>
         <module>layout-test-utils</module>
         <module>test-proxy</module>
+        <module>random-values</module>
     </modules>
 </project>

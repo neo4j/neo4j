@@ -3,9 +3,9 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <parent>
         <groupId>org.neo4j</groupId>
-        <artifactId>parent</artifactId>
+        <artifactId>testing-parent</artifactId>
         <version>5.15.0-SNAPSHOT</version>
-        <relativePath>../../pom.xml</relativePath>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
     <properties>
@@ -17,8 +17,8 @@
     <artifactId>neo4j-random-values</artifactId>
 
     <packaging>jar</packaging>
-    <name>Neo4j - Random Value</name>
-    <description>Utility for generating random values</description>
+    <name>Neo4j - Random Value Test Utils</name>
+    <description>Utility for generating random values for tests</description>
     <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
     <scm>
