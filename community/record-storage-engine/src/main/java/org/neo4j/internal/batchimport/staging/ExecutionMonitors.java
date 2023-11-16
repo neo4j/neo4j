@@ -19,9 +19,10 @@
  */
 package org.neo4j.internal.batchimport.staging;
 
-import static org.neo4j.internal.batchimport.staging.HumanUnderstandableExecutionMonitor.NO_MONITOR;
+import static org.neo4j.internal.batchimport.Monitor.NO_MONITOR;
 
 import java.io.PrintStream;
+import org.neo4j.internal.batchimport.Monitor;
 
 /**
  * Common {@link ExecutionMonitor} implementations.
@@ -32,10 +33,10 @@ public class ExecutionMonitors {
     }
 
     public static ExecutionMonitor defaultVisible() {
-        return defaultVisible(System.out, System.err);
+        return defaultVisible(NO_MONITOR, System.out, System.err);
     }
 
-    public static ExecutionMonitor defaultVisible(PrintStream out, PrintStream err) {
-        return new HumanUnderstandableExecutionMonitor(NO_MONITOR, out, err);
+    public static ExecutionMonitor defaultVisible(Monitor monitor, PrintStream out, PrintStream err) {
+        return new HumanUnderstandableExecutionMonitor(monitor, out, err);
     }
 }

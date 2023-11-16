@@ -316,7 +316,7 @@ public abstract class ProgressMonitorFactory {
             int percentage = Math.toIntExact((long) (progress * 100D / total));
             while (lastReportedPercentage < percentage) {
                 lastReportedPercentage++;
-                if (lastReportedPercentage % percentageStride == 0 || percentage == 100) {
+                if (lastReportedPercentage % percentageStride == 0 || lastReportedPercentage == 100) {
                     percentage(lastReportedPercentage);
                 }
             }

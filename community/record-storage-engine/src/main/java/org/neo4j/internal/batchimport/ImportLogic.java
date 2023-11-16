@@ -90,7 +90,6 @@ import org.neo4j.storageengine.migration.MigrationProgressMonitor;
  * to allow external implementors have greater control over the flow.
  */
 public class ImportLogic implements Closeable {
-    private static final String IMPORT_COUNT_STORE_REBUILD_TAG = "importCountStoreRebuild";
     private static final String ID_MAPPER_PREPARATION_TAG = "Id mapper preparation.";
     public static final Supplier<SchemaMonitor> NO_SCHEMA_MONITORING = () -> SchemaMonitor.NO_MONITOR;
     private static final RelationshipLinkingMonitor NO_LINKING_MONITOR = new RelationshipLinkingMonitor() {};

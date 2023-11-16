@@ -19,8 +19,8 @@
  */
 package org.neo4j.internal.batchimport.staging;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
@@ -36,9 +36,6 @@ import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.util.EnumMap;
-import java.util.concurrent.atomic.AtomicInteger;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.collection.Dependencies;
@@ -57,7 +54,6 @@ import org.neo4j.internal.batchimport.input.Group;
 import org.neo4j.internal.batchimport.input.Groups;
 import org.neo4j.internal.batchimport.input.IdType;
 import org.neo4j.internal.batchimport.input.Input;
-import org.neo4j.internal.batchimport.staging.HumanUnderstandableExecutionMonitor.ImportStage;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -141,8 +137,8 @@ class HumanUnderstandableExecutionMonitorIT {
     void shouldStartFromNonFirstStage() {
         // given
         PrintStream nullStream = new PrintStream(OutputStream.nullOutputStream());
-        HumanUnderstandableExecutionMonitor monitor = new HumanUnderstandableExecutionMonitor(
-                HumanUnderstandableExecutionMonitor.NO_MONITOR, nullStream, nullStream);
+        HumanUnderstandableExecutionMonitor monitor =
+                new HumanUnderstandableExecutionMonitor(Monitor.NO_MONITOR, nullStream, nullStream);
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependency(Input.knownEstimates(10, 10, 10, 10, 10, 10, 10));
         BatchingNeoStores neoStores = mock(BatchingNeoStores.class);
@@ -162,25 +158,24 @@ class HumanUnderstandableExecutionMonitorIT {
         assertThatCode(() -> monitor.start(execution)).doesNotThrowAnyException();
     }
 
-    private static class CapturingMonitor implements HumanUnderstandableExecutionMonitor.Monitor {
-        final EnumMap<ImportStage, AtomicInteger> progress = new EnumMap<>(ImportStage.class);
+    private static class CapturingMonitor implements Monitor {
+        private volatile int previousPercentageCompleted;
 
         @Override
-        public void progress(ImportStage stage, int percent) {
-            if (percent > 100) {
-                fail("Expected percentage to be 0..100% but was " + percent);
+        public void percentageCompleted(int percentage) {
+            if (percentage < 0 || percentage > 100) {
+                fail("Expected percentage to be 0..100% but was " + percentage);
             }
 
-            AtomicInteger stageProgress = progress.computeIfAbsent(stage, s -> new AtomicInteger());
-            int previous = stageProgress.getAndSet(percent);
-            if (previous > percent) {
-                fail("Progress should go forwards only, but went from " + previous + " to " + percent);
+            if (percentage < previousPercentageCompleted) {
+                fail("Progress should go forwards only, but went from " + previousPercentageCompleted + " to "
+                        + percentage);
             }
+            previousPercentageCompleted = percentage;
         }
 
         void assertAllProgressReachedEnd() {
-            Assertions.assertEquals(ImportStage.values().length, progress.size());
-            progress.values().forEach(p -> assertEquals(100, p.get()));
+            assertThat(previousPercentageCompleted).isEqualTo(100);
         }
     }
 }

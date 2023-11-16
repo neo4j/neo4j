@@ -19,8 +19,6 @@
  */
 package org.neo4j.internal.batchimport.staging;
 
-import static java.lang.Integer.min;
-import static java.lang.Long.max;
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
 import static org.neo4j.internal.batchimport.ImportMemoryCalculator.defensivelyPadMemoryEstimate;
@@ -38,6 +36,7 @@ import org.neo4j.internal.batchimport.CountGroupsStage;
 import org.neo4j.internal.batchimport.DataImporter;
 import org.neo4j.internal.batchimport.DataStatistics;
 import org.neo4j.internal.batchimport.IdMapperPreparationStage;
+import org.neo4j.internal.batchimport.Monitor;
 import org.neo4j.internal.batchimport.NodeDegreeCountStage;
 import org.neo4j.internal.batchimport.RelationshipGroupStage;
 import org.neo4j.internal.batchimport.ScanAndCacheGroupsStage;
@@ -49,18 +48,14 @@ import org.neo4j.internal.batchimport.input.Input;
 import org.neo4j.internal.batchimport.stats.Keys;
 import org.neo4j.internal.batchimport.stats.Stat;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
+import org.neo4j.internal.helpers.progress.ProgressListener;
+import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 
 /**
  * Prints progress you can actually understand, with capabilities to on demand print completely incomprehensible
  * details only understandable to a select few.
  */
 public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor {
-    public interface Monitor {
-        void progress(ImportStage stage, int percent);
-    }
-
-    public static final Monitor NO_MONITOR = (stage, percent) -> {};
-
     public enum ImportStage {
         nodeImport("Node import"),
         relationshipImport("Relationship import"),
@@ -89,29 +84,29 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor {
     private static final String ESTIMATED_NUMBER_OF_RELATIONSHIPS = "Estimated number of relationships";
     private static final String ESTIMATED_NUMBER_OF_NODE_PROPERTIES = "Estimated number of node properties";
     private static final String ESTIMATED_NUMBER_OF_NODES = "Estimated number of nodes";
-    private static final int DOT_GROUP_SIZE = 10;
-    private static final int DOT_GROUPS_PER_LINE = 5;
-    private static final int PERCENTAGES_PER_LINE = 5;
 
     private final Monitor monitor;
     private final PrintStream out;
     private final PrintStream err;
+    private final ProgressMonitorFactory progressMonitorFactory;
+    private final WeightedExternalProgressReporter externalProgressIndicator;
     private DependencyResolver dependencyResolver;
-    private boolean newInternalStage;
     private PageCacheArrayFactoryMonitor pageCacheArrayFactoryMonitor;
 
     // progress of current stage
-    private long goal;
-    private long stashedProgress;
-    private long progress;
+    private double externalProgressNodeWeight;
+    private double externalProgressRelationshipWeight;
+    private ProgressListener progressListener;
+    private long lastReportedProgress;
     private ImportStage currentStage;
-    private long lastReportTime;
     private long stageStartTime;
 
     public HumanUnderstandableExecutionMonitor(Monitor monitor, PrintStream out, PrintStream err) {
         this.monitor = monitor;
         this.out = out;
         this.err = err;
+        this.progressMonitorFactory = ProgressMonitorFactory.textual(out, true, 10, 5, 20);
+        this.externalProgressIndicator = new WeightedExternalProgressReporter(monitor);
     }
 
     @Override
@@ -127,7 +122,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor {
                 NodeRelationshipCache.memoryEstimation(estimates.numberOfNodes()),
                 idMapper.memoryEstimation(estimates.numberOfNodes()));
         out.println();
-        printStageHeader(
+        out.println(stageHeader(
                 "Import starting",
                 ESTIMATED_NUMBER_OF_NODES,
                 count(estimates.numberOfNodes()),
@@ -143,8 +138,14 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor {
                         + estimates.sizeOfNodeProperties()
                         + estimates.sizeOfRelationshipProperties()),
                 ESTIMATED_REQUIRED_MEMORY_USAGE,
-                bytesToString(biggestCacheMemory));
+                bytesToString(biggestCacheMemory)));
         out.println();
+
+        long numNodes = Math.max(1, estimates.numberOfNodes());
+        long numRelationships = Math.max(1, estimates.numberOfRelationships());
+        long totalEntities = numNodes + numRelationships * 2;
+        externalProgressNodeWeight = (((double) numNodes / totalEntities)) * 0.8D;
+        externalProgressRelationshipWeight = (((double) numRelationships / totalEntities)) * 0.8D;
     }
 
     private static long baselineMemoryRequirement(BatchingNeoStores neoStores) {
@@ -169,8 +170,6 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor {
     public void start(StageExecution execution) {
         // Divide into 4 progress stages:
         if (execution.getStageName().equals(DataImporter.NODE_IMPORT_NAME)) {
-            // Initialize lastReportTime since we are on the first stage
-            lastReportTime = currentTimeMillis();
             // Import nodes:
             // - import nodes
             // - prepare id mapper
@@ -208,14 +207,15 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor {
                     dependencyResolver.resolveDependency(BatchingNeoStores.class),
                     dependencyResolver.resolveDependency(DataStatistics.class));
         } else if (includeStage(execution)) {
-            stashedProgress += progress;
-            progress = 0;
-            newInternalStage = true;
+            lastReportedProgress = 0;
+            progressListener.mark('-');
         }
     }
 
     private void endPrevious() {
-        updateProgress(goal);
+        if (progressListener != null) {
+            progressListener.close();
+        }
         if (currentStage != null) {
             out.printf(
                     "%s COMPLETED in %s%n%n",
@@ -225,8 +225,18 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor {
 
     private void initializeNodeImport(Input.Estimates estimates, IdMapper idMapper, BatchingNeoStores neoStores) {
         long numberOfNodes = estimates.numberOfNodes();
+        // A difficulty with the goal here is that we don't know how much work there is to be done in id mapper
+        // preparation stage.
+        // In addition to nodes themselves and SPLIT,SORT,DETECT there may be RESOLVE,SORT,DEDUPLICATE too, if there are
+        // collisions
+        long goal = idMapper.needsPreparation()
+                ? numberOfNodes + weighted(IdMapperPreparationStage.NAME, numberOfNodes * 4)
+                : numberOfNodes;
+
         startStage(
                 ImportStage.nodeImport,
+                goal,
+                externalProgressNodeWeight,
                 ESTIMATED_NUMBER_OF_NODES,
                 count(numberOfNodes),
                 ESTIMATED_DISK_SPACE_USAGE,
@@ -239,15 +249,6 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor {
                 ESTIMATED_REQUIRED_MEMORY_USAGE,
                 bytesToString(baselineMemoryRequirement(neoStores)
                         + defensivelyPadMemoryEstimate(idMapper.memoryEstimation(numberOfNodes))));
-
-        // A difficulty with the goal here is that we don't know how much work there is to be done in id mapper
-        // preparation stage.
-        // In addition to nodes themselves and SPLIT,SORT,DETECT there may be RESOLVE,SORT,DEDUPLICATE too, if there are
-        // collisions
-        long goal = idMapper.needsPreparation()
-                ? numberOfNodes + weighted(IdMapperPreparationStage.NAME, numberOfNodes * 4)
-                : numberOfNodes;
-        initializeProgress(goal, ImportStage.nodeImport);
     }
 
     private void initializeRelationshipImport(
@@ -255,22 +256,17 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor {
         long numberOfRelationships = estimates.numberOfRelationships();
         startStage(
                 ImportStage.relationshipImport,
+                numberOfRelationships,
+                externalProgressRelationshipWeight,
                 ESTIMATED_NUMBER_OF_RELATIONSHIPS,
                 count(numberOfRelationships),
                 ESTIMATED_DISK_SPACE_USAGE,
                 bytesToString(relationshipsDiskUsage(estimates, neoStores) + estimates.sizeOfRelationshipProperties()),
                 ESTIMATED_REQUIRED_MEMORY_USAGE,
                 bytesToString(baselineMemoryRequirement(neoStores) + totalMemoryUsageOf(idMapper)));
-        initializeProgress(numberOfRelationships, ImportStage.relationshipImport);
     }
 
     private void initializeLinking(BatchingNeoStores neoStores, DataStatistics distribution) {
-        startStage(
-                ImportStage.linking,
-                ESTIMATED_REQUIRED_MEMORY_USAGE,
-                bytesToString(baselineMemoryRequirement(neoStores)
-                        + defensivelyPadMemoryEstimate(
-                                NodeRelationshipCache.memoryEstimation(distribution.getNodeCount()))));
         // The reason the highId of the relationship store is used, as opposed to actual number of imported
         // relationships
         // is that the stages underneath operate on id ranges, not knowing which records are actually in use.
@@ -279,20 +275,22 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor {
         // The progress counting of linking stages is special anyway, in that it uses the "progress" stats key,
         // which is based on actual number of relationships, not relationship ids.
         long actualRelationshipCount = distribution.getRelationshipCount();
-        initializeProgress(
-                relationshipRecordIdCount
-                        + // node degrees
-                        actualRelationshipCount * 2
-                        + // start/end forwards, see RelationshipLinkingProgress
-                        actualRelationshipCount * 2, // start/end backwards, see RelationshipLinkingProgress
-                ImportStage.linking);
+
+        // node degrees
+        // start/end forwards, see RelationshipLinkingProgress
+        // start/end backwards, see RelationshipLinkingProgress
+        long goal = relationshipRecordIdCount + actualRelationshipCount * 2 + actualRelationshipCount * 2;
+        startStage(
+                ImportStage.linking,
+                goal,
+                externalProgressRelationshipWeight,
+                ESTIMATED_REQUIRED_MEMORY_USAGE,
+                bytesToString(baselineMemoryRequirement(neoStores)
+                        + defensivelyPadMemoryEstimate(
+                                NodeRelationshipCache.memoryEstimation(distribution.getNodeCount()))));
     }
 
     private void initializeMisc(BatchingNeoStores neoStores, DataStatistics distribution) {
-        startStage(
-                ImportStage.postProcessing,
-                ESTIMATED_REQUIRED_MEMORY_USAGE,
-                bytesToString(baselineMemoryRequirement(neoStores)));
         long actualNodeCount = distribution.getNodeCount();
         // The reason the highId of the relationship store is used, as opposed to actual number of imported
         // relationships
@@ -301,87 +299,27 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor {
         long relationshipRecordIdCount = relStore.getIdGenerator().getHighId();
         long groupCount =
                 neoStores.getTemporaryRelationshipGroupStore().getIdGenerator().getHighId();
-        initializeProgress(
-                groupCount
-                        + // Count groups
-                        groupCount
-                        + // Write groups
-                        groupCount
-                        + // Node --> Group
-                        actualNodeCount
-                        + // Node counts
-                        relationshipRecordIdCount, // Relationship counts
-                ImportStage.postProcessing);
-    }
-
-    private void initializeProgress(long goal, ImportStage stage) {
-        this.goal = goal;
-        this.stashedProgress = 0;
-        this.progress = 0;
-        this.currentStage = stage;
-        this.newInternalStage = false;
+        // Count groups
+        // Write groups
+        // Node --> Group
+        // Node counts
+        // Relationship counts
+        long goal = groupCount + groupCount + groupCount + actualNodeCount + relationshipRecordIdCount;
+        startStage(
+                ImportStage.postProcessing,
+                goal,
+                0.2,
+                ESTIMATED_REQUIRED_MEMORY_USAGE,
+                bytesToString(baselineMemoryRequirement(neoStores)));
     }
 
     private void updateProgress(long progress) {
         // OK so format goes something like 5 groups of 10 dots per line, which is 5%, i.e. 50 dots for 5%, i.e. 1000
         // dots for 100%,
         // i.e. granularity is 1/1000
-
-        int maxDot = dotOf(goal);
-        int currentProgressDot = dotOf(stashedProgress + this.progress);
-        int currentLine = currentProgressDot / dotsPerLine();
-        int currentDotOnLine = currentProgressDot % dotsPerLine();
-
-        int progressDot = min(maxDot, dotOf(stashedProgress + progress));
-        int line = progressDot / dotsPerLine();
-        int dotOnLine = progressDot % dotsPerLine();
-
-        while (currentLine < line || (currentLine == line && currentDotOnLine < dotOnLine)) {
-            int target = currentLine < line ? dotsPerLine() : dotOnLine;
-            printDots(currentDotOnLine, target);
-            currentDotOnLine = target;
-
-            if (currentLine < line || currentDotOnLine == dotsPerLine()) {
-                int percentage = percentage(currentLine);
-                out.printf("%4d%% ∆%s%n", percentage, durationSinceLastReport());
-                monitor.progress(currentStage, percentage);
-                currentLine++;
-                if (currentLine == lines()) {
-                    out.println();
-                }
-                currentDotOnLine = 0;
-            }
-        }
-
-        this.progress = max(this.progress, progress);
-    }
-
-    private String durationSinceLastReport() {
-        long diff = currentTimeMillis() - lastReportTime;
-        lastReportTime = currentTimeMillis();
-        return duration(diff);
-    }
-
-    private static int percentage(int line) {
-        return (line + 1) * PERCENTAGES_PER_LINE;
-    }
-
-    private void printDots(int from, int target) {
-        int current = from;
-        while (current < target) {
-            if (current > 0 && current % DOT_GROUP_SIZE == 0) {
-                out.print(' ');
-            }
-            char dotChar = '.';
-            if (newInternalStage) {
-                newInternalStage = false;
-                dotChar = '-';
-            }
-            out.print(dotChar);
-            current++;
-
-            printPageCacheAllocationWarningIfUsed();
-        }
+        long diff = progress - lastReportedProgress;
+        progressListener.add(diff);
+        lastReportedProgress = progress;
     }
 
     private void printPageCacheAllocationWarningIfUsed() {
@@ -393,37 +331,24 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor {
         }
     }
 
-    private int dotOf(long progress) {
-        // calculated here just to reduce amount of state kept in this instance
-        int dots = dotsPerLine() * lines();
-        if (progress == goal) {
-            return dots;
-        }
-        double dotSize = goal / (double) dots;
-        return (int) (progress / dotSize);
-    }
-
-    private static int lines() {
-        return 100 / PERCENTAGES_PER_LINE;
-    }
-
-    private static int dotsPerLine() {
-        return DOT_GROUPS_PER_LINE * DOT_GROUP_SIZE;
-    }
-
-    private void startStage(ImportStage stage, Object... data) {
-        printStageHeader(stage.descriptionWithOrdinal(), data);
+    private void startStage(ImportStage stage, long goal, double externalProgressWeight, Object... data) {
         stageStartTime = currentTimeMillis();
+        currentStage = stage;
+        progressListener = progressMonitorFactory.singlePart(
+                stageHeader(stage.descriptionWithOrdinal(), data),
+                goal,
+                externalProgressIndicator.next(externalProgressWeight));
         currentStage = stage;
     }
 
-    private void printStageHeader(String description, Object... data) {
-        out.println(description + " " + localDate());
+    private String stageHeader(String description, Object... data) {
+        var header = new StringBuilder(description).append(" ").append(localDate());
         if (data.length > 0) {
             for (int i = 0; i < data.length; ) {
-                out.println("  " + data[i++] + ": " + data[i++]);
+                header.append(format("%n  %s: %s", data[i++], data[i++]));
             }
         }
+        return header.toString();
     }
 
     @Override
@@ -432,6 +357,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor {
     @Override
     public void done(boolean successful, long totalTimeMillis, String additionalInformation) {
         endPrevious();
+        externalProgressIndicator.close();
 
         out.println();
         out.printf(

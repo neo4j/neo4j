@@ -20,42 +20,24 @@
 package org.neo4j.internal.batchimport;
 
 public interface Monitor {
-    Monitor NO_MONITOR = new Monitor() {
-        @Override
-        public void mayExceedRelationshipIdCapacity(long capacity, long estimatedCount) { // no-op
-        }
+    Monitor NO_MONITOR = new Monitor() {};
 
-        @Override
-        public void mayExceedNodeIdCapacity(long capacity, long estimatedCount) { // no-op
-        }
+    default void doubleRelationshipRecordUnitsEnabled() {}
 
-        @Override
-        public void doubleRelationshipRecordUnitsEnabled() { // no-op
-        }
+    default void mayExceedNodeIdCapacity(long capacity, long estimatedCount) {}
 
-        @Override
-        public void insufficientHeapSize(long optimalMinimalHeapSize, long heapSize) { // no-op
-        }
+    default void mayExceedRelationshipIdCapacity(long capacity, long estimatedCount) {}
 
-        @Override
-        public void abundantHeapSize(long optimalMinimalHeapSize, long heapSize) { // no-op
-        }
+    default void insufficientHeapSize(long optimalMinimalHeapSize, long heapSize) {}
 
-        @Override
-        public void insufficientAvailableMemory(
-                long estimatedCacheSize, long optimalMinimalHeapSize, long availableMemory) { // no-op
-        }
-    };
+    default void abundantHeapSize(long optimalMinimalHeapSize, long heapSize) {}
 
-    void doubleRelationshipRecordUnitsEnabled();
+    default void insufficientAvailableMemory(
+            long estimatedCacheSize, long optimalMinimalHeapSize, long availableMemory) {}
 
-    void mayExceedNodeIdCapacity(long capacity, long estimatedCount);
-
-    void mayExceedRelationshipIdCapacity(long capacity, long estimatedCount);
-
-    void insufficientHeapSize(long optimalMinimalHeapSize, long heapSize);
-
-    void abundantHeapSize(long optimalMinimalHeapSize, long heapSize);
-
-    void insufficientAvailableMemory(long estimatedCacheSize, long optimalMinimalHeapSize, long availableMemory);
+    /**
+     * Gets updated with a percentage of the overall import progress.
+     * @param percentage overall import progress between 0..100.
+     */
+    default void percentageCompleted(int percentage) {}
 }
