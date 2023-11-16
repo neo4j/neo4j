@@ -26,16 +26,15 @@ import org.neo4j.storageengine.api.AllNodeScan;
 
 final class PartitionedNodeCursorScan extends PartitionedEntityCursorScan<NodeCursor, AllNodeScan> {
 
-    PartitionedNodeCursorScan(AllNodeScan storageScan, Read read, int desiredNumberOfPartitions, long totalCount) {
-        super(storageScan, read, desiredNumberOfPartitions, totalCount);
+    PartitionedNodeCursorScan(AllNodeScan storageScan, int desiredNumberOfPartitions, long totalCount) {
+        super(storageScan, desiredNumberOfPartitions, totalCount);
     }
 
     @Override
     public boolean reservePartition(NodeCursor cursor, ExecutionContext executionContext) {
-
         return ((DefaultNodeCursor) cursor)
                 .scanBatch(
-                        (org.neo4j.kernel.impl.newapi.Read) executionContext.dataRead(),
+                        (Read) executionContext.dataRead(),
                         storageScan,
                         computeBatchSize(),
                         ImmutableEmptyLongIterator.INSTANCE,

@@ -28,21 +28,10 @@ import org.neo4j.kernel.impl.index.schema.PartitionedTokenScan;
 
 public class PartitionedTokenIndexCursorScan<Cursor extends org.neo4j.internal.kernel.api.Cursor>
         implements PartitionedScan<Cursor> {
-    // Read is generally not a thread-safe object.
-    // This one belongs to the thread that initialised the partitioned scan.
-    // Even thought the operations performed by the partitioned scan on the Read should be OK, we prefer the threads
-    // working with the partition to use their own Reads.
-    // In other words, using this "global" Read makes thread-safety of the scan a bit questionable.
-    private final Read fallbackRead;
     private final TokenPredicate query;
     private final PartitionedTokenScan tokenScan;
 
-    PartitionedTokenIndexCursorScan(Read read, TokenPredicate query, PartitionedTokenScan tokenScan) {
-        if (read.hasTxStateWithChanges()) {
-            throw new IllegalStateException(
-                    "Transaction contains changes; PartitionScan is only valid in Read-Only transactions.");
-        }
-        this.fallbackRead = read;
+    PartitionedTokenIndexCursorScan(TokenPredicate query, PartitionedTokenScan tokenScan) {
         this.query = query;
         this.tokenScan = tokenScan;
     }

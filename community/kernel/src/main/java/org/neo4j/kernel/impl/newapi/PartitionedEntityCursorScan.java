@@ -27,21 +27,13 @@ import org.neo4j.util.Preconditions;
 
 abstract class PartitionedEntityCursorScan<C extends Cursor, S> implements PartitionedScan<C> {
     final S storageScan;
-    // Read is generally not a thread-safe object.
-    // This one belongs to the thread that initialised the partitioned scan.
-    // Even thought the operations performed by the partitioned scan on the Read should be OK, we prefer the threads
-    // working with the partition to use their own Reads.
-    // In other words, using this "global" Read makes thread-safety of the scan a bit questionable.
-    final Read fallbackRead;
     private final int numberOfPartitions;
     private final long batchSize;
-
     private final AtomicInteger emittedPartitions;
 
-    PartitionedEntityCursorScan(S storageScan, Read read, int desiredNumberOfPartitions, long totalCount) {
+    PartitionedEntityCursorScan(S storageScan, int desiredNumberOfPartitions, long totalCount) {
         Preconditions.requirePositive(desiredNumberOfPartitions);
         this.storageScan = storageScan;
-        this.fallbackRead = read;
         if (desiredNumberOfPartitions < totalCount) {
             this.numberOfPartitions = desiredNumberOfPartitions;
         } else {

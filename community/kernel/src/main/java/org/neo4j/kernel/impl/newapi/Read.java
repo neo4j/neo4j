@@ -383,7 +383,7 @@ abstract class Read
     public PartitionedScan<NodeCursor> allNodesScan(int desiredNumberOfPartitions, CursorContext cursorContext) {
         performCheckBeforeOperation();
         long totalCount = storageReader.nodesGetCount(cursorContext);
-        return new PartitionedNodeCursorScan(storageReader.allNodeScan(), this, desiredNumberOfPartitions, totalCount);
+        return new PartitionedNodeCursorScan(storageReader.allNodeScan(), desiredNumberOfPartitions, totalCount);
     }
 
     @Override
@@ -392,7 +392,7 @@ abstract class Read
         performCheckBeforeOperation();
         long totalCount = storageReader.relationshipsGetCount(cursorContext);
         return new PartitionedRelationshipCursorScan(
-                storageReader.allRelationshipScan(), this, desiredNumberOfPartitions, totalCount);
+                storageReader.allRelationshipScan(), desiredNumberOfPartitions, totalCount);
     }
 
     @Override
@@ -527,10 +527,14 @@ abstract class Read
             throw new IndexNotApplicableKernelException("This index does not support partitioned scan for this query: "
                     + descriptor.userDescription(tokenRead));
         }
+        if (hasTxStateWithChanges()) {
+            throw new IllegalStateException(
+                    "Transaction contains changes; PartitionScan is only valid in Read-Only transactions.");
+        }
 
         final var session = (DefaultIndexReadSession) index;
         final var valueSeek = session.reader.valueSeek(desiredNumberOfPartitions, queryContext, query);
-        return new PartitionedValueIndexCursorSeek<>(this, descriptor, valueSeek, query);
+        return new PartitionedValueIndexCursorSeek<>(descriptor, valueSeek, query);
     }
 
     private <C extends Cursor> PartitionedScan<C> tokenIndexScan(
@@ -542,10 +546,14 @@ abstract class Read
             throw new IndexNotApplicableKernelException("This index does not support partitioned scan for this query: "
                     + descriptor.userDescription(tokenRead));
         }
+        if (hasTxStateWithChanges()) {
+            throw new IllegalStateException(
+                    "Transaction contains changes; PartitionScan is only valid in Read-Only transactions.");
+        }
 
         final var defaultSession = (DefaultTokenReadSession) session;
         final var tokenScan = defaultSession.reader.entityTokenScan(desiredNumberOfPartitions, cursorContext, query);
-        return new PartitionedTokenIndexCursorScan<>(this, query, tokenScan);
+        return new PartitionedTokenIndexCursorScan<>(query, tokenScan);
     }
 
     private <C extends Cursor> PartitionedScan<C> tokenIndexScan(
@@ -557,11 +565,15 @@ abstract class Read
             throw new IndexNotApplicableKernelException("This index does not support partitioned scan for this query: "
                     + descriptor.userDescription(tokenRead));
         }
+        if (hasTxStateWithChanges()) {
+            throw new IllegalStateException(
+                    "Transaction contains changes; PartitionScan is only valid in Read-Only transactions.");
+        }
 
         final var defaultSession = (DefaultTokenReadSession) session;
         final var leadingTokenIndexCursorScan = (PartitionedTokenIndexCursorScan<C>) leadingPartitionScan;
         final var tokenScan = defaultSession.reader.entityTokenScan(leadingTokenIndexCursorScan.getTokenScan(), query);
-        return new PartitionedTokenIndexCursorScan<>(this, query, tokenScan);
+        return new PartitionedTokenIndexCursorScan<>(query, tokenScan);
     }
 
     private <C extends Cursor> List<PartitionedScan<C>> tokenIndexScan(

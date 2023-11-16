@@ -58,7 +58,7 @@ class PartitionedEntityCursorScanTest {
 
     private static class TestEntityCursorScan extends PartitionedEntityCursorScan<Cursor, Object> {
         TestEntityCursorScan(int desiredNumberOfPartitions, long totalCount) {
-            super(null, null, desiredNumberOfPartitions, totalCount);
+            super(null, desiredNumberOfPartitions, totalCount);
         }
 
         @Override

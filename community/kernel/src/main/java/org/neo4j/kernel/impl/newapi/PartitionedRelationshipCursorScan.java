@@ -28,13 +28,13 @@ final class PartitionedRelationshipCursorScan
         extends PartitionedEntityCursorScan<RelationshipScanCursor, AllRelationshipsScan> {
 
     PartitionedRelationshipCursorScan(
-            AllRelationshipsScan storageScan, Read read, int desiredNumberOfPartitions, long totalCount) {
-        super(storageScan, read, desiredNumberOfPartitions, totalCount);
+            AllRelationshipsScan storageScan, int desiredNumberOfPartitions, long totalCount) {
+        super(storageScan, desiredNumberOfPartitions, totalCount);
     }
 
     @Override
     public boolean reservePartition(RelationshipScanCursor cursor, ExecutionContext executionContext) {
-        return reservePartition(cursor, (org.neo4j.kernel.impl.newapi.Read) executionContext.dataRead());
+        return reservePartition(cursor, (Read) executionContext.dataRead());
     }
 
     private boolean reservePartition(RelationshipScanCursor cursor, Read read) {
