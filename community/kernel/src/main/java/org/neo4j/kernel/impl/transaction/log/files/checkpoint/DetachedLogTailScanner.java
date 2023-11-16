@@ -204,6 +204,9 @@ public class DetachedLogTailScanner {
             return false;
         }
         LogHeader logHeader = logFile.extractHeader(logVersion);
+        if (logHeader == null) {
+            return false;
+        }
         StoreId headerStoreId = logHeader.getStoreId();
         return headerStoreId == null
                 || headerStoreId.isSameOrUpgradeSuccessor(checkpointInfo.storeId())

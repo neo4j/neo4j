@@ -22,7 +22,9 @@ package org.neo4j.kernel.impl.transaction.log.files;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -77,6 +79,29 @@ class TransactionLogFileInformationTest {
         long firstCommittedTxId = info.getFirstEntryId(version);
         assertEquals(expected, firstCommittedTxId);
         verify(logHeaderCache).putHeader(version, expectedHeader);
+    }
+
+    @Test
+    void fileWithoutHeaderDoesNotHaveFirstEntry() throws IOException {
+        TransactionLogFileInformation info = new TransactionLogFileInformation(logFiles, logHeaderCache, context);
+
+        int version = 42;
+        when(logFiles.getLogFile().versionExists(version)).thenReturn(true);
+        when(logFiles.getLogFile().extractHeader(version)).thenReturn(null);
+
+        assertEquals(-1, info.getFirstEntryId(version));
+        verify(logHeaderCache, never()).putHeader(eq(version), any());
+    }
+
+    @Test
+    void firstStartRecordTimestampForFileWithoutHeader() throws IOException {
+        TransactionLogFileInformation info = new TransactionLogFileInformation(logFiles, logHeaderCache, context);
+
+        int version = 42;
+        when(logFiles.getLogFile().versionExists(version)).thenReturn(true);
+        when(logFiles.getLogFile().extractHeader(version)).thenReturn(null);
+
+        assertEquals(-1, info.getFirstStartRecordTimestamp(42));
     }
 
     @Test

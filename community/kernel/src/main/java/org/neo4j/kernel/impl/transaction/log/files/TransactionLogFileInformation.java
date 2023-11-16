@@ -89,8 +89,10 @@ public class TransactionLogFileInformation implements LogFileInformation {
         var logFile = logFiles.getLogFile();
         if (logFile.versionExists(version)) {
             logHeader = logFile.extractHeader(version);
-            logHeaderCache.putHeader(version, logHeader);
-            return logHeader.getLastCommittedTxId() + 1;
+            if (logHeader != null) {
+                logHeaderCache.putHeader(version, logHeader);
+                return logHeader.getLastCommittedTxId() + 1;
+            }
         }
         return -1;
     }
@@ -128,15 +130,18 @@ public class TransactionLogFileInformation implements LogFileInformation {
             }
             var logFile = logFiles.getLogFile();
             if (logFile.versionExists(version)) {
-                LogPosition position = logFile.extractHeader(version).getStartPosition();
-                try (ReadableLogChannel channel = logFile.getRawReader(position)) {
-                    var logEntryReader = logEntryReaderFactory.get();
-                    LogEntry entry;
-                    while ((entry = logEntryReader.readLogEntry(channel)) != null) {
-                        if (entry instanceof LogEntryStart logEntryStart) {
-                            return cacheTimeWritten(version, logEntryStart.getTimeWritten());
-                        } else if (entry instanceof LogEntryChunkStart chunkStart) {
-                            return cacheTimeWritten(version, chunkStart.getTimeWritten());
+                LogHeader logHeader = logFile.extractHeader(version);
+                if (logHeader != null) {
+                    LogPosition position = logHeader.getStartPosition();
+                    try (ReadableLogChannel channel = logFile.getRawReader(position)) {
+                        var logEntryReader = logEntryReaderFactory.get();
+                        LogEntry entry;
+                        while ((entry = logEntryReader.readLogEntry(channel)) != null) {
+                            if (entry instanceof LogEntryStart logEntryStart) {
+                                return cacheTimeWritten(version, logEntryStart.getTimeWritten());
+                            } else if (entry instanceof LogEntryChunkStart chunkStart) {
+                                return cacheTimeWritten(version, chunkStart.getTimeWritten());
+                            }
                         }
                     }
                 }

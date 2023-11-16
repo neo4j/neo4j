@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.database.transaction;
 
+import static java.util.Objects.requireNonNull;
 import static org.neo4j.util.Preconditions.checkState;
 import static org.neo4j.util.Preconditions.requirePositive;
 
@@ -118,9 +119,9 @@ public class TransactionLogServiceImpl implements TransactionLogService {
     public void appendCheckpoint(TransactionId transactionId, String reason) throws IOException {
         checkState(!availabilityGuard.isAvailable(), "Database should not be available.");
         long txId = transactionId.transactionId() + 1;
-        var lastHeaderPosition =
-                logFile.extractHeader(logFile.getHighestLogVersion()).getStartPosition();
+        var logHeader = requireNonNull(logFile.extractHeader(logFile.getHighestLogVersion()));
 
+        var lastHeaderPosition = logHeader.getStartPosition();
         var versionLocator = new TransactionLogVersionLocator(txId);
         logFile.accept(versionLocator);
 
