@@ -71,7 +71,6 @@ import org.neo4j.cypher.internal.logical.plans.shortest.PatternRelationship
 import org.neo4j.cypher.internal.logical.plans.shortest.ShortestRelationshipPattern
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.Repetition
-import org.neo4j.cypher.internal.util.helpers.NameDeduplicator.removeGeneratedNamesAndParamsOnTree
 import org.neo4j.graphdb.schema.IndexType
 
 import scala.collection.mutable
@@ -1215,17 +1214,17 @@ object LogicalPlanToPlanBuilderString {
       case NodeJuxtapositionPredicate(variablePredicate) =>
         val whereString =
           variablePredicate.map(vp =>
-            s" WHERE ${expressionStringifier(removeGeneratedNamesAndParamsOnTree(vp.predicate))}"
+            s" WHERE ${expressionStringifier(vp.predicate)}"
           ).getOrElse("")
         s""" "(${from.variable.name}) (${to.variable.name}$whereString)" """.trim
       case RelationshipExpansionPredicate(relName, relPred, types, dir, nodePred) =>
         val relWhereString =
           relPred.map(vp =>
-            s" WHERE ${expressionStringifier(removeGeneratedNamesAndParamsOnTree(vp.predicate))}"
+            s" WHERE ${expressionStringifier(vp.predicate)}"
           ).getOrElse("")
         val nodeWhereString =
           nodePred.map(vp =>
-            s" WHERE ${expressionStringifier(removeGeneratedNamesAndParamsOnTree(vp.predicate))}"
+            s" WHERE ${expressionStringifier(vp.predicate)}"
           ).getOrElse("")
         val (dirStrA, dirStrB) = arrows(dir)
         val typeStr = relTypeStr(types)
