@@ -379,8 +379,12 @@ class SingleQuerySlotAllocator private[physicalplanning] (
           planStack.push((nullable, current))
           val argumentSlots = resultStack.getFirst
           val argument = getArgument()
-          val conditionalApplyPlan =
-            if (current.isInstanceOf[ConditionalApply]) current.id else argument.conditionalApplyPlan
+
+          def isConditionalApplyPlan: Boolean = current match {
+            case _: ConditionalApply | _: AntiConditionalApply => true
+            case _                                             => false
+          }
+          val conditionalApplyPlan = if (isConditionalApplyPlan) current.id else argument.conditionalApplyPlan
           val trailPlan = if (current.isInstanceOf[Trail]) current.id else argument.trailPlan
           if (allocateArgumentSlots) {
             current match {

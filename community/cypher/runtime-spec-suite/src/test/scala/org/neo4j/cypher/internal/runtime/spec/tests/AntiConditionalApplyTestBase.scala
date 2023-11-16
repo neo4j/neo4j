@@ -353,6 +353,49 @@ abstract class AntiConditionalApplyTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
     runtimeResult should beColumns("x").withRows(singleColumn(inputRows.map(_(0))))
   }
+
+  test("should work when nullable variable is aliased on RHS") {
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("x", "y", "y2")
+      .antiConditionalApply("x")
+      .|.projection("y AS y2")
+      .|.argument()
+      .projection("1 AS x", "1 AS y")
+      .argument()
+      .build()
+
+    execute(query, runtime) should beColumns("x", "y", "y2").withSingleRow(1, 1, null)
+  }
+
+  test("should work when nullable variable is aliased on RHS of Apply under AntiConditionalApply") {
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("x", "y", "y2")
+      .antiConditionalApply("x")
+      .|.apply()
+      .|.|.projection("y AS y2")
+      .|.|.argument()
+      .|.argument()
+      .projection("1 AS x", "1 AS y")
+      .argument()
+      .build()
+
+    execute(query, runtime) should beColumns("x", "y", "y2").withSingleRow(1, 1, null)
+  }
+
+  test("should work when nullable variable is aliased on RHS of AntiConditionalApply under Apply") {
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("x", "y", "y2")
+      .apply()
+      .|.antiConditionalApply("x")
+      .|.|.projection("y AS y2")
+      .|.|.argument()
+      .|.argument()
+      .projection("1 AS x", "1 AS y")
+      .argument()
+      .build()
+
+    execute(query, runtime) should beColumns("x", "y", "y2").withSingleRow(1, 1, null)
+  }
 }
 
 trait OrderedAntiConditionalApplyTestBase[CONTEXT <: RuntimeContext] {
