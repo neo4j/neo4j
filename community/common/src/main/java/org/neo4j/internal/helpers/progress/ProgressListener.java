@@ -116,8 +116,9 @@ public interface ProgressListener extends AutoCloseable {
     class SinglePartProgressListener extends Adapter {
         private final Aggregator aggregator;
 
-        SinglePartProgressListener(Indicator indicator, long totalCount) {
-            this.aggregator = new Aggregator(indicator);
+        SinglePartProgressListener(
+                Indicator indicator, long totalCount, ProgressMonitorFactory.IndicatorListener listener) {
+            this.aggregator = new Aggregator(indicator, listener);
             aggregator.add(new Adapter() {}, totalCount);
             aggregator.initialize();
         }

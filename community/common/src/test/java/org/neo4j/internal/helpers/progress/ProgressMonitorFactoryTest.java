@@ -21,6 +21,7 @@ package org.neo4j.internal.helpers.progress;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.OutputStream;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.jupiter.api.Test;
@@ -52,5 +53,67 @@ class ProgressMonitorFactoryTest {
 
         // then
         assertThat(targetProgression.longValue()).isEqualTo(mappedResolution);
+    }
+
+    @Test
+    void shouldCallIndicatorListenerSinglePart() {
+        // given
+        var factory = ProgressMonitorFactory.textual(OutputStream.nullOutputStream(), false, 10, 1, 10); // 100 "dots"
+        var total = 10_000;
+        var listener = new ExternalListener(total);
+
+        // when
+        try (var progress = factory.singlePart("Test indicator listener", total, listener)) {
+            for (int i = 0; i < total; i++) {
+                progress.add(1);
+            }
+        }
+
+        // then
+        assertThat(listener.seenProgress).isEqualTo(total);
+    }
+
+    @Test
+    void shouldCallIndicatorListenerMultiPart() {
+        // given
+        var factory = ProgressMonitorFactory.textual(OutputStream.nullOutputStream(), false, 10, 1, 10); // 100 "dots"
+        var total = 10_000;
+        var listener = new ExternalListener(total);
+
+        // when
+        var builder = factory.multipleParts("Test indicator listener", listener);
+        var part1Total = total / 4;
+        var part2Total = total - part1Total;
+        var part1 = builder.progressForPart("Part 1", part1Total);
+        var part2 = builder.progressForPart("Part 2", part2Total);
+        try (var completor = builder.build();
+                part2;
+                part1) {
+            for (int i = 0; i < part1Total; i++) {
+                part1.add(1);
+            }
+            for (int i = 0; i < part2Total; i++) {
+                part2.add(1);
+            }
+        }
+
+        // then
+        assertThat(listener.seenProgress).isEqualTo(total);
+    }
+
+    private static class ExternalListener implements ProgressMonitorFactory.IndicatorListener {
+        private final long total;
+        private long seenProgress;
+
+        ExternalListener(long total) {
+            this.total = total;
+        }
+
+        @Override
+        public void update(long progress, long total) {
+            assertThat(progress).isGreaterThanOrEqualTo(seenProgress);
+            assertThat(total).isEqualTo(this.total);
+            seenProgress = progress;
+        }
     }
 }

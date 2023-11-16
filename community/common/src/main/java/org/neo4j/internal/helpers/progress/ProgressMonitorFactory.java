@@ -213,12 +213,34 @@ public abstract class ProgressMonitorFactory {
         };
     }
 
-    public MultiPartBuilder multipleParts(String process) {
-        return new MultiPartBuilder(newIndicator(process));
+    /**
+     * Creates a {@link ProgressListener} that can create multiple parts which together constitutes the entire progress,
+     * with a known total to progress towards.
+     * @param process description of the operation to track progress for.
+     * @param listener "external" listener of this progress, getting updates basically when "dots" gets printed.
+     * @return the created progress listener.
+     */
+    public MultiPartBuilder multipleParts(String process, IndicatorListener listener) {
+        return new MultiPartBuilder(newIndicator(process), listener);
+    }
+
+    public final MultiPartBuilder multipleParts(String process) {
+        return multipleParts(process, NO_INDICATOR_LISTENER);
+    }
+
+    /**
+     * Creates a {@link ProgressListener} that constitutes the entire progress, with a known total to progress towards.
+     * @param process description of the operation to track progress for.
+     * @param totalCount total to progress towards.
+     * @param listener "external" listener of this progress, getting updates basically when "dots" gets printed.
+     * @return the created progress listener.
+     */
+    public final ProgressListener singlePart(String process, long totalCount, IndicatorListener listener) {
+        return new ProgressListener.SinglePartProgressListener(newIndicator(process), totalCount, listener);
     }
 
     public ProgressListener singlePart(String process, long totalCount) {
-        return new ProgressListener.SinglePartProgressListener(newIndicator(process), totalCount);
+        return singlePart(process, totalCount, NO_INDICATOR_LISTENER);
     }
 
     protected abstract Indicator newIndicator(String process);
@@ -227,8 +249,8 @@ public abstract class ProgressMonitorFactory {
         private Aggregator aggregator;
         private Set<String> parts = new HashSet<>();
 
-        private MultiPartBuilder(Indicator indicator) {
-            this.aggregator = new Aggregator(indicator);
+        private MultiPartBuilder(Indicator indicator, IndicatorListener listener) {
+            this.aggregator = new Aggregator(indicator, listener);
         }
 
         public ProgressListener progressForPart(String part, long totalCount) {
@@ -276,4 +298,32 @@ public abstract class ProgressMonitorFactory {
         @Override
         void close();
     }
+
+    public interface IndicatorListener {
+        void update(long progress, long total);
+    }
+
+    public abstract static class PercentageIndicatorListener implements IndicatorListener {
+        private final int percentageStride;
+        private int lastReportedPercentage;
+
+        public PercentageIndicatorListener(int percentageStride) {
+            this.percentageStride = percentageStride;
+        }
+
+        @Override
+        public void update(long progress, long total) {
+            int percentage = Math.toIntExact((long) (progress * 100D / total));
+            while (lastReportedPercentage < percentage) {
+                lastReportedPercentage++;
+                if (lastReportedPercentage % percentageStride == 0 || percentage == 100) {
+                    percentage(lastReportedPercentage);
+                }
+            }
+        }
+
+        public abstract void percentage(int percentage);
+    }
+
+    private static final IndicatorListener NO_INDICATOR_LISTENER = (progress, total) -> {};
 }
