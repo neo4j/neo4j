@@ -40,6 +40,7 @@ import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.impl.muninn.VersionStorage;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.database.MetadataCache;
@@ -92,7 +93,8 @@ public class RecordStorageEngineTestUtils {
                 new MetadataCache(emptyLogTailMetadata),
                 LockVerificationFactory.NONE,
                 new CursorContextFactory(cacheTracer, EMPTY_CONTEXT_SUPPLIER),
-                cacheTracer);
+                cacheTracer,
+                VersionStorage.EMPTY_STORAGE);
     }
 
     public static void applyLogicalChanges(

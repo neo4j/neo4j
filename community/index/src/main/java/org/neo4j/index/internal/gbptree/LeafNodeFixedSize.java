@@ -27,7 +27,6 @@ import static org.neo4j.index.internal.gbptree.TreeNodeUtil.NO_KEY_VALUE_SIZE_CA
 import static org.neo4j.index.internal.gbptree.TreeNodeUtil.NO_OFFLOAD_ID;
 import static org.neo4j.index.internal.gbptree.TreeNodeUtil.insertSlotsAt;
 import static org.neo4j.index.internal.gbptree.TreeNodeUtil.removeSlotAt;
-import static org.neo4j.index.internal.gbptree.TreeNodeUtil.removeSlotsAt;
 import static org.neo4j.index.internal.gbptree.TreeNodeUtil.setKeyCount;
 
 import java.io.IOException;
@@ -147,21 +146,6 @@ class LeafNodeFixedSize<KEY, VALUE> implements LeafNodeBehaviour<KEY, VALUE> {
         removeKeyAt(cursor, pos, keyCount);
         removeValueAt(cursor, pos, keyCount);
         return keyCount - 1;
-    }
-
-    @Override
-    public int removeKeyValues(
-            PageCursor cursor,
-            int fromPosInclusive,
-            int toPosExclusive,
-            int keyCount,
-            long stableGeneration,
-            long unstableGeneration,
-            CursorContext cursorContext)
-            throws IOException {
-        removeSlotsAt(cursor, fromPosInclusive, toPosExclusive, keyCount, keyOffset(0), keySize);
-        removeSlotsAt(cursor, fromPosInclusive, toPosExclusive, keyCount, valueOffset(0), valueSize);
-        return keyCount - toPosExclusive + fromPosInclusive;
     }
 
     @Override

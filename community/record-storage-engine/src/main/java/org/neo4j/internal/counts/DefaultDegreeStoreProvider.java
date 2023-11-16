@@ -32,6 +32,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.impl.muninn.VersionStorage;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.logging.InternalLogProvider;
 
@@ -50,7 +51,8 @@ public class DefaultDegreeStoreProvider implements DegreeStoreProvider {
             PageCacheTracer pageCacheTracer,
             DegreesRebuilder rebuilder,
             ImmutableSet<OpenOption> openOptions,
-            boolean readOnly) {
+            boolean readOnly,
+            VersionStorage versionStorage) {
         try {
             return new GBPTreeRelationshipGroupDegreesStore(
                     pageCache,

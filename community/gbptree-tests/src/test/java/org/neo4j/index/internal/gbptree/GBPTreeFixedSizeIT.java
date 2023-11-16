@@ -34,14 +34,4 @@ public class GBPTreeFixedSizeIT extends GBPTreeITBase<MutableLong, MutableLong> 
     Class<MutableLong> getKeyClass() {
         return MutableLong.class;
     }
-
-    @Override
-    protected ValueAggregator<MutableLong> getAddingAggregator() {
-        return (value, aggregation) -> aggregation.add(value);
-    }
-
-    @Override
-    protected MutableLong sumValues(MutableLong value1, MutableLong value2) {
-        return new MutableLong(value1.longValue() + value2.longValue());
-    }
 }

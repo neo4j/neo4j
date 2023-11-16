@@ -27,7 +27,7 @@ import org.neo4j.io.pagecache.PageCursor;
  * to finally perform a leaf operation. They have a veto where returning {@code false} will let {@link InternalTreeLogic} unwind the traversal back up
  * to the root, go into {@link #flipToPessimisticMode() pessimistic} mode and traverse down again, with the pessimistic mode.
  */
-interface TreeWriterCoordination extends AutoCloseable {
+public interface TreeWriterCoordination extends AutoCloseable {
     void initialize(PageCursor cursor);
 
     /**

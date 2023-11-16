@@ -40,4 +40,9 @@ public final class ValueHolder<VALUE> {
         this.value = value;
         this.defined = defined;
     }
+
+    @Override
+    public String toString() {
+        return "(" + value + ", defined=" + defined + ")";
+    }
 }

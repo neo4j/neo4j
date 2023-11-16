@@ -40,8 +40,6 @@ import static org.neo4j.index.internal.gbptree.TreeNodeUtil.keyCount;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.OptionalInt;
-import java.util.function.Function;
 import org.neo4j.index.internal.gbptree.MultiRootGBPTree.Monitor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -89,7 +87,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
  * @param <KEY> type of internal/leaf keys
  * @param <VALUE> type of leaf values
  */
-class InternalTreeLogic<KEY, VALUE> {
+class InternalTreeLogic<KEY, VALUE> implements InternalAccess<KEY, VALUE> {
     static final double DEFAULT_SPLIT_RATIO = 0.5;
 
     private final IdProvider idProvider;
@@ -185,6 +183,16 @@ class InternalTreeLogic<KEY, VALUE> {
         // an arbitrary depth slightly bigger than an unimaginably big tree
         levels = new Level[10];
         levels[0] = new Level<>(layout);
+    }
+
+    @Override
+    public TreeWriterCoordination coordination() {
+        return coordination;
+    }
+
+    @Override
+    public LeafNodeBehaviour<KEY, VALUE> leafNode() {
+        return leafNode;
     }
 
     /**
@@ -285,7 +293,8 @@ class InternalTreeLogic<KEY, VALUE> {
      * @throws IOException on {@link PageCursor} error.
      * @throws TreeInconsistencyException on seeing tree nodes of unexpected type
      */
-    private boolean moveToCorrectLeaf(
+    @Override
+    public boolean moveToCorrectLeaf(
             PageCursor cursor, KEY key, long stableGeneration, long unstableGeneration, CursorContext cursorContext)
             throws IOException {
         int previousLevel = currentLevel;
@@ -448,7 +457,8 @@ class InternalTreeLogic<KEY, VALUE> {
      * @param cursor {@link PageCursor} to check.
      * @return {@code true} so that it can be called in an {@code assert} statement.
      */
-    private boolean cursorIsAtExpectedLocation(PageCursor cursor) {
+    @Override
+    public boolean cursorIsAtExpectedLocation(PageCursor cursor) {
         assert currentLevel >= 0 : "Uninitialized tree logic, currentLevel:" + currentLevel;
         long currentPageId = cursor.getCurrentPageId();
         long expectedPageId = levels[currentLevel].treeNodeId;
@@ -849,23 +859,28 @@ class InternalTreeLogic<KEY, VALUE> {
             return InsertResult.SPLIT;
         }
 
+        InsertResult result = InsertResult.NO_SPLIT;
         if (overflow == NO_NEED_DEFRAG) {
             int keyCountAfterDeframent = leafNode.defragment(cursor, keyCount, cursorContext);
             if (keyCountAfterDeframent != keyCount) {
                 keyCount = keyCountAfterDeframent;
                 // need to find new insert position
                 pos = positionOf(KeySearch.search(cursor, leafNode, key, readKey, keyCount, cursorContext));
+                // tell caller to skip underflow after this defragment.
+                // we can't check with coordination before defragment if it will trigger underflow to switch to
+                // pessimistic mode, because we don't know how much keys will be removed by it
+                result = InsertResult.SPLIT_SKIP_UNDERFLOW;
             }
         }
 
         // No overflow, insert key and value
         leafNode.insertKeyValueAt(
                 cursor, key, value, pos, keyCount, stableGeneration, unstableGeneration, cursorContext);
-        var newKeyCount = keyCount + 1;
+        int newKeyCount = keyCount + 1;
         TreeNodeUtil.setKeyCount(cursor, newKeyCount);
         // This update will cover both the defrag and insert
         coordination.updateChildInformation(leafNode.availableSpace(cursor, newKeyCount), newKeyCount);
-        return InsertResult.NO_SPLIT;
+        return result;
     }
 
     /**
@@ -1048,14 +1063,13 @@ class InternalTreeLogic<KEY, VALUE> {
                 cursor, structurePropagation, key, into, stableGeneration, unstableGeneration, cursorContext);
         if (result == RemoveResult.REMOVED) {
             handleStructureChanges(cursor, structurePropagation, stableGeneration, unstableGeneration, cursorContext);
-            if (currentLevel <= 0) {
-                tryShrinkTree(cursor, structurePropagation, stableGeneration, unstableGeneration);
-            }
+            tryShrinkTree(cursor, structurePropagation, stableGeneration, unstableGeneration);
         }
         return result;
     }
 
-    private void handleStructureChanges(
+    @Override
+    public void handleStructureChanges(
             PageCursor cursor,
             StructurePropagation<KEY> structurePropagation,
             long stableGeneration,
@@ -1187,12 +1201,16 @@ class InternalTreeLogic<KEY, VALUE> {
         }
     }
 
-    private void tryShrinkTree(
+    @Override
+    public void tryShrinkTree(
             PageCursor cursor,
             StructurePropagation<KEY> structurePropagation,
             long stableGeneration,
             long unstableGeneration)
             throws IOException {
+        if (currentLevel > 0) {
+            return;
+        }
         // New root will be propagated out. If rootKeyCount is 0 we can shrink the tree.
         int rootKeyCount = keyCount(cursor);
 
@@ -1265,9 +1283,7 @@ class InternalTreeLogic<KEY, VALUE> {
             int keyCount = keyCount(cursor);
             simplyRemoveFromInternal(
                     cursor, keyCount, subtreePosition, true, stableGeneration, unstableGeneration, cursorContext);
-            if (currentLevel <= 0) {
-                tryShrinkTree(cursor, structurePropagation, stableGeneration, unstableGeneration);
-            }
+            tryShrinkTree(cursor, structurePropagation, stableGeneration, unstableGeneration);
         }
     }
 
@@ -1409,7 +1425,7 @@ class InternalTreeLogic<KEY, VALUE> {
         }
 
         leafNode.valueAt(cursor, into, pos, cursorContext);
-        if (!coordination.beforeRemovalFromLeaf(leafNode.totalSpaceOfKeyValue(key, into.value))) {
+        if (!coordination.beforeRemovalFromLeaf(leafNode.totalSpaceRemovedOfKeyValue(key, into.value))) {
             return RemoveResult.FAIL;
         }
         createSuccessorIfNeeded(cursor, structurePropagation, UPDATE_MID_CHILD, stableGeneration, unstableGeneration);
@@ -1440,7 +1456,8 @@ class InternalTreeLogic<KEY, VALUE> {
      * @param cursorContext underlying page cursor context.
      * @throws IOException on page access I/O error.
      */
-    private void underflowInLeaf(
+    @Override
+    public void underflowInLeaf(
             PageCursor cursor,
             StructurePropagation<KEY> structurePropagation,
             int keyCount,
@@ -1709,7 +1726,8 @@ class InternalTreeLogic<KEY, VALUE> {
      * @param unstableGeneration unstable generation, i.e. generation which is under development right now.
      * @throws IOException on cursor failure
      */
-    private void createSuccessorIfNeeded(
+    @Override
+    public void createSuccessorIfNeeded(
             PageCursor cursor,
             StructurePropagation<KEY> structurePropagation,
             StructurePropagation.StructureUpdate structureUpdate,
@@ -1776,278 +1794,6 @@ class InternalTreeLogic<KEY, VALUE> {
         idProvider.releaseId(stableGeneration, unstableGeneration, oldId, bind(cursor));
     }
 
-    /**
-     * Returns {@link OptionalInt#empty()} if failed due to lock coordination.
-     */
-    OptionalInt aggregate(
-            PageCursor cursor,
-            StructurePropagation<KEY> structurePropagation,
-            KEY fromInclusive,
-            KEY toExclusive,
-            ValueAggregator<VALUE> aggregator,
-            long stableGeneration,
-            long unstableGeneration,
-            CursorContext cursorContext)
-            throws IOException {
-        assert cursorIsAtExpectedLocation(cursor);
-        if (!moveToCorrectLeaf(cursor, fromInclusive, stableGeneration, unstableGeneration, cursorContext)) {
-            return OptionalInt.empty();
-        }
-
-        var result = aggregateInLeaf(
-                cursor,
-                structurePropagation,
-                fromInclusive,
-                toExclusive,
-                aggregator,
-                stableGeneration,
-                unstableGeneration,
-                cursorContext);
-        if (result.isPresent()) {
-            handleStructureChanges(cursor, structurePropagation, stableGeneration, unstableGeneration, cursorContext);
-            if (currentLevel <= 0) {
-                tryShrinkTree(cursor, structurePropagation, stableGeneration, unstableGeneration);
-            }
-        }
-        return result;
-    }
-
-    private OptionalInt aggregateInLeaf(
-            PageCursor cursor,
-            StructurePropagation<KEY> structurePropagation,
-            KEY fromInclusive,
-            KEY toExclusive,
-            ValueAggregator<VALUE> aggregator,
-            long stableGeneration,
-            long unstableGeneration,
-            CursorContext cursorContext)
-            throws IOException {
-        int keyCount = keyCount(cursor);
-        int search = KeySearch.search(cursor, leafNode, fromInclusive, readKey, keyCount, cursorContext);
-        int fromPos = positionOf(search);
-        int pos = fromPos;
-        // collect all matching values
-        var aggregatedValue = layout.newValue();
-        var key = layout.newKey();
-        var value = new ValueHolder<>(layout.newValue());
-        int totalSpaceBefore = 0;
-        while (pos < keyCount) {
-            leafNode.keyValueAt(cursor, key, value, pos, cursorContext);
-            if (layout.compare(key, toExclusive) < 0) {
-                totalSpaceBefore += leafNode.totalSpaceOfKeyValue(key, value.value);
-                aggregator.aggregate(value.value, aggregatedValue);
-            } else {
-                break;
-            }
-            pos++;
-        }
-        var itemsToAggregate = pos - fromPos;
-        if (itemsToAggregate <= 1) {
-            // found one or fewer values to aggregate, do nothing
-            return OptionalInt.of(0);
-        }
-
-        int totalSpaceAfter =
-                leafNode.totalSpaceOfKeyValue(leafNode.keyAt(cursor, key, pos - 1, cursorContext), aggregatedValue);
-        int shrinkSize = totalSpaceBefore - totalSpaceAfter;
-        if (!coordination.beforeRemovalFromLeaf(shrinkSize)) {
-            return OptionalInt.empty();
-        }
-
-        createSuccessorIfNeeded(cursor, structurePropagation, UPDATE_MID_CHILD, stableGeneration, unstableGeneration);
-        // set aggregated value at the last used element
-        int newKeyCount = keyCount;
-        if (!leafNode.setValueAt(
-                cursor, aggregatedValue, pos - 1, cursorContext, stableGeneration, unstableGeneration)) {
-            // unsuccesfull, remove everything then insert new key-value
-            newKeyCount = leafNode.removeKeyValues(
-                    cursor, fromPos, pos, newKeyCount, stableGeneration, unstableGeneration, cursorContext);
-            // set keycount otherwise possible defragmentation will not be pleased
-            TreeNodeUtil.setKeyCount(cursor, newKeyCount);
-            InsertResult result = doInsertInLeaf(
-                    cursor,
-                    structurePropagation,
-                    key,
-                    aggregatedValue,
-                    fromPos,
-                    newKeyCount,
-                    stableGeneration,
-                    unstableGeneration,
-                    cursorContext);
-            if (result == InsertResult.SPLIT_FAIL) {
-                return OptionalInt.empty();
-            }
-            newKeyCount++;
-        } else {
-            // remove everything else
-            newKeyCount = leafNode.removeKeyValues(
-                    cursor, fromPos, pos - 1, newKeyCount, stableGeneration, unstableGeneration, cursorContext);
-        }
-        TreeNodeUtil.setKeyCount(cursor, newKeyCount);
-        if (leafNode.underflow(cursor, newKeyCount)) {
-            underflowInLeaf(
-                    cursor, structurePropagation, newKeyCount, stableGeneration, unstableGeneration, cursorContext);
-        } else {
-            coordination.updateChildInformation(leafNode.availableSpace(cursor, newKeyCount), newKeyCount);
-        }
-        return OptionalInt.of(itemsToAggregate);
-    }
-
-    /**
-     * There is the corner case when looking for the ceiling key: arrived to the leaf and searchKey would be inserted in the right corner.
-     * This means that our target ceiling key could be the first key in the right sibling.
-     * To handle this situation we do:
-     * 0. check if right sibling exist
-     * 1. switch to pessimistic mode
-     * 2. read the first key from the sibling, at this point we know that if key will be updated it will be exactly this one
-     * 3. traverse to the new leaf covering new key, without releasing lock on the root node
-     * 4. do update
-     */
-    boolean updateCeilingValue(
-            PageCursor cursor,
-            StructurePropagation<KEY> structurePropagation,
-            KEY searchKey,
-            KEY upperBoundary,
-            Function<VALUE, VALUE> updateFunction,
-            long stableGeneration,
-            long unstableGeneration,
-            CursorContext cursorContext)
-            throws IOException {
-        assert cursorIsAtExpectedLocation(cursor);
-        if (!moveToCorrectLeaf(cursor, searchKey, stableGeneration, unstableGeneration, cursorContext)) {
-            return false;
-        }
-
-        var updateResult = updateCeilingValueInLeaf(
-                cursor,
-                structurePropagation,
-                searchKey,
-                upperBoundary,
-                updateFunction,
-                stableGeneration,
-                unstableGeneration,
-                cursorContext);
-
-        if (updateResult == UpdateCeilingValueResult.RETRY_IN_SIBLING) {
-            long rightSibling = TreeNodeUtil.rightSibling(cursor, stableGeneration, unstableGeneration);
-            if (!TreeNodeUtil.isNode(rightSibling)) {
-                // no right sibling, nothing to update, success!
-                return true;
-            }
-            // need to have write lock on the sibling before reading from it
-            if (!coordination.beforeAccessingRightSiblingLeaf(rightSibling)) {
-                return false;
-            }
-
-            int rightSiblingKeyCount;
-            KEY firstInRightSibling;
-            try (PageCursor rightSiblingCursor = cursor.openLinkedCursor(rightSibling)) {
-                TreeNodeUtil.goTo(rightSiblingCursor, "right sibling", rightSibling);
-                rightSiblingKeyCount = keyCount(rightSiblingCursor);
-                assert rightSiblingKeyCount > 0;
-                firstInRightSibling = leafNode.keyAt(rightSiblingCursor, layout.newKey(), 0, cursorContext);
-            }
-
-            if (leafNode.keyComparator().compare(firstInRightSibling, upperBoundary) >= 0) {
-                return true;
-            }
-            // firstInRightSibling is our ceiling and within range, need to update it
-            // reposition to the right sibling, keeping levels and coordination up-to-date
-            if (!moveToCorrectLeaf(cursor, firstInRightSibling, stableGeneration, unstableGeneration, cursorContext)) {
-                return false;
-            }
-            if (updateValueAt(
-                    cursor,
-                    0,
-                    firstInRightSibling,
-                    updateFunction,
-                    rightSiblingKeyCount,
-                    structurePropagation,
-                    stableGeneration,
-                    unstableGeneration,
-                    cursorContext)) {
-                updateResult = UpdateCeilingValueResult.SUCCESS;
-            }
-        }
-        // it could fail after successor is created
-        handleStructureChanges(cursor, structurePropagation, stableGeneration, unstableGeneration, cursorContext);
-        return updateResult == UpdateCeilingValueResult.SUCCESS;
-    }
-
-    private UpdateCeilingValueResult updateCeilingValueInLeaf(
-            PageCursor cursor,
-            StructurePropagation<KEY> structurePropagation,
-            KEY searchKey,
-            KEY upperBoundary,
-            Function<VALUE, VALUE> updateFunction,
-            long stableGeneration,
-            long unstableGeneration,
-            CursorContext cursorContext)
-            throws IOException {
-        int keyCount = keyCount(cursor);
-        int search = KeySearch.search(cursor, leafNode, searchKey, readKey, keyCount, cursorContext);
-        int pos = positionOf(search);
-        if (pos < keyCount) {
-            // ceiling entry within leaf
-            var foundKey = leafNode.keyAt(cursor, layout.newKey(), pos, cursorContext);
-            if (leafNode.keyComparator().compare(foundKey, upperBoundary) < 0) {
-                // ceiling entry within range
-                return updateValueAt(
-                                cursor,
-                                pos,
-                                foundKey,
-                                updateFunction,
-                                keyCount,
-                                structurePropagation,
-                                stableGeneration,
-                                unstableGeneration,
-                                cursorContext)
-                        ? UpdateCeilingValueResult.SUCCESS
-                        : UpdateCeilingValueResult.FAIL;
-            }
-            // when not in range, nothing to do, success!
-            return UpdateCeilingValueResult.SUCCESS;
-        }
-        return UpdateCeilingValueResult.RETRY_IN_SIBLING;
-    }
-
-    private boolean updateValueAt(
-            PageCursor cursor,
-            int pos,
-            KEY key,
-            Function<VALUE, VALUE> updateFunction,
-            int keyCount,
-            StructurePropagation<KEY> structurePropagation,
-            long stableGeneration,
-            long unstableGeneration,
-            CursorContext cursorContext)
-            throws IOException {
-        var value = leafNode.valueAt(cursor, new ValueHolder<>(layout.newValue()), pos, cursorContext).value;
-        var updatedValue = updateFunction.apply(value);
-        int valueShrinkSize =
-                leafNode.totalSpaceOfKeyValue(key, value) - leafNode.totalSpaceOfKeyValue(key, updatedValue);
-        if (!coordination.beforeRemovalFromLeaf(valueShrinkSize)) {
-            return false;
-        }
-        createSuccessorIfNeeded(cursor, structurePropagation, UPDATE_MID_CHILD, stableGeneration, unstableGeneration);
-        return setValueAtWithFallback(
-                cursor,
-                pos,
-                key,
-                updatedValue,
-                keyCount,
-                structurePropagation,
-                stableGeneration,
-                unstableGeneration,
-                cursorContext);
-    }
-
-    private enum UpdateCeilingValueResult {
-        SUCCESS,
-        FAIL,
-        RETRY_IN_SIBLING
-    }
-
     private static <KEY> void checkChildPointer(
             long childPointer,
             PageCursor cursor,
@@ -2103,6 +1849,7 @@ class InternalTreeLogic<KEY, VALUE> {
     private enum InsertResult {
         NO_SPLIT,
         SPLIT,
+        SPLIT_SKIP_UNDERFLOW,
         SPLIT_FAIL
     }
 

@@ -42,6 +42,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.impl.muninn.VersionStorage;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.database.MetadataCache;
 import org.neo4j.kernel.impl.transaction.log.EmptyLogTailMetadata;
@@ -267,7 +268,8 @@ public class RecordStorageEngineSupport {
                     new MetadataCache(emptyLogTailMetadata),
                     LockVerificationFactory.NONE,
                     new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER),
-                    PageCacheTracer.NULL);
+                    PageCacheTracer.NULL,
+                    VersionStorage.EMPTY_STORAGE);
             this.transactionApplierTransformer = transactionApplierTransformer;
         }
 

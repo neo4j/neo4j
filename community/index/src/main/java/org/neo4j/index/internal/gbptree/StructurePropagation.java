@@ -83,7 +83,7 @@ package org.neo4j.index.internal.gbptree;
  * </pre>
  * @param <KEY> type of key.
  */
-class StructurePropagation<KEY> {
+public class StructurePropagation<KEY> {
     /* <CONTENT> */
     // Below are the "content" of structure propagation
     /**
@@ -179,21 +179,21 @@ class StructurePropagation<KEY> {
                 && !hasRightKeyReplace;
     }
 
-    interface StructureUpdate {
+    public interface StructureUpdate {
         void update(StructurePropagation structurePropagation, long childId);
     }
 
-    static final StructureUpdate UPDATE_LEFT_CHILD = (sp, childId) -> {
+    public static final StructureUpdate UPDATE_LEFT_CHILD = (sp, childId) -> {
         sp.hasLeftChildUpdate = true;
         sp.leftChild = childId;
     };
 
-    static final StructureUpdate UPDATE_MID_CHILD = (sp, childId) -> {
+    public static final StructureUpdate UPDATE_MID_CHILD = (sp, childId) -> {
         sp.hasMidChildUpdate = true;
         sp.midChild = childId;
     };
 
-    static final StructureUpdate UPDATE_RIGHT_CHILD = (sp, childId) -> {
+    public static final StructureUpdate UPDATE_RIGHT_CHILD = (sp, childId) -> {
         sp.hasRightChildUpdate = true;
         sp.rightChild = childId;
     };

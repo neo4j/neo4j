@@ -29,6 +29,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.impl.muninn.VersionStorage;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.service.PrioritizedService;
@@ -48,7 +49,8 @@ public interface CountsStoreProvider extends PrioritizedService {
             PageCacheTracer pageCacheTracer,
             ImmutableSet<OpenOption> openOptions,
             CountsBuilder initialCountsBuilder,
-            boolean readOnly);
+            boolean readOnly,
+            VersionStorage versionStorage);
 
     static CountsStoreProvider getInstance() {
         return CountsStoreProviderHolder.COUNTS_STORE_PROVIDER;

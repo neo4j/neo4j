@@ -77,6 +77,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.impl.muninn.VersionStorage;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersion;
@@ -193,7 +194,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
             KernelVersionRepository kernelVersionRepository,
             LockVerificationFactory lockVerificationFactory,
             CursorContextFactory contextFactory,
-            PageCacheTracer pageCacheTracer) {
+            PageCacheTracer pageCacheTracer,
+            VersionStorage versionStorage) {
         this.databaseLayout = databaseLayout;
         this.config = config;
         this.internalLogProvider = internalLogProvider;
@@ -245,7 +247,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
                     recoveryCleanupWorkCollector,
                     config,
                     contextFactory,
-                    pageCacheTracer);
+                    pageCacheTracer,
+                    versionStorage);
 
             groupDegreesStore = openDegreesStore(
                     pageCache,
@@ -256,7 +259,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
                     recoveryCleanupWorkCollector,
                     config,
                     contextFactory,
-                    pageCacheTracer);
+                    pageCacheTracer,
+                    versionStorage);
 
             consistencyCheckApply = config.get(GraphDatabaseInternalSettings.consistency_check_on_apply);
             storeEntityCounters = new RecordDatabaseEntityCounters(idGeneratorFactory, countsStore);
@@ -322,7 +326,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             Config config,
             CursorContextFactory contextFactory,
-            PageCacheTracer pageCacheTracer) {
+            PageCacheTracer pageCacheTracer,
+            VersionStorage versionStorage) {
         return CountsStoreProvider.getInstance()
                 .openCountsStore(
                         pageCache,
@@ -335,7 +340,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
                         pageCacheTracer,
                         getOpenOptions(),
                         new RecordCountsBuilder(internalLogProvider, pageCache, contextFactory, layout),
-                        false);
+                        false,
+                        versionStorage);
     }
 
     private RelationshipGroupDegreesStore openDegreesStore(
@@ -347,7 +353,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             Config config,
             CursorContextFactory contextFactory,
-            PageCacheTracer pageCacheTracer) {
+            PageCacheTracer pageCacheTracer,
+            VersionStorage versionStorage) {
         return DegreeStoreProvider.getInstance()
                 .openDegreesStore(
                         pageCache,
@@ -366,7 +373,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
                                 internalLogProvider,
                                 Configuration.DEFAULT),
                         getOpenOptions(),
-                        false);
+                        false,
+                        versionStorage);
     }
 
     @Override

@@ -49,6 +49,7 @@ import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.impl.muninn.VersionStorage;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersionRepository;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -122,7 +123,8 @@ class PreAllocationOfStoreFilesTest {
                 mock(KernelVersionRepository.class),
                 LockVerificationFactory.NONE,
                 CursorContextFactory.NULL_CONTEXT_FACTORY,
-                PageCacheTracer.NULL);
+                PageCacheTracer.NULL,
+                VersionStorage.EMPTY_STORAGE);
     }
 
     @AfterEach

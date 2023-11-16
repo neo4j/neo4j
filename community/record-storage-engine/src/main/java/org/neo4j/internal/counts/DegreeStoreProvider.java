@@ -28,6 +28,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.impl.muninn.VersionStorage;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.service.PrioritizedService;
@@ -51,7 +52,8 @@ public interface DegreeStoreProvider extends PrioritizedService {
             PageCacheTracer pageCacheTracer,
             DegreesRebuilder rebuilder,
             ImmutableSet<OpenOption> openOptions,
-            boolean readOnly);
+            boolean readOnly,
+            VersionStorage versionStorage);
 
     final class DegreeStoreProviderHolder {
         private static final DegreeStoreProvider DEGREE_STORE_PROVIDER = loadProvider();

@@ -21,7 +21,6 @@ package org.neo4j.index.internal.gbptree;
 
 import java.io.Closeable;
 import java.io.UncheckedIOException;
-import java.util.function.Function;
 
 /**
  * Able to {@link #merge(Object, Object, ValueMerger)} and {@link #remove(Object)} key/value pairs
@@ -77,23 +76,13 @@ public interface Writer<KEY, VALUE> extends Closeable {
     VALUE remove(KEY key);
 
     /**
-     * Aggregates multiple values within specified range into one using provided function.
-     * Resulting value is placed as a value associated with the rightmost key in the range.
-     * All other keys whose values were aggregated are removed.
-     * @param fromInclusive lower bound of the range to aggregate (inclusive).
-     * @param toExclusive higher bound of the range to aggregate (exclusive).
-     * @param aggregator function to aggregate values
-     * @return number of modified entries:
-     *          if 0 - no changes done to the tree
-     *          positive number N means N-1 entries were removed and 1 entry has its value updated
+     * Executes custom write operation on tree.
+     * When parallel writes enabled, operation could be executed up to two times: first in optimistic mode, then in
+     * pessimistic, with full lock on the tree.
+     * Care should be taken when creating custom write operation. It should work well together with other operations
+     * and adhere structure and concurrency coordination practices. See {@link TreeWriteOperation}
+     *
+     * @param operation operation to execute
      */
-    int aggregate(KEY fromInclusive, KEY toExclusive, ValueAggregator<VALUE> aggregator);
-
-    /**
-     * Updates value associated with the least key greater than or equal to the given key and strictly less than provided upper boundary.
-     * @param searchKey - key to search
-     * @param upperBound - upper bound
-     * @param updateFunction - update function
-     */
-    void updateCeilingValue(KEY searchKey, KEY upperBound, Function<VALUE, VALUE> updateFunction);
+    void execute(TreeWriteOperation<KEY, VALUE> operation);
 }

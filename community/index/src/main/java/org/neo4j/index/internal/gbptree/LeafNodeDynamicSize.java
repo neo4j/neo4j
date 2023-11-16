@@ -42,7 +42,6 @@ import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.validateInlineCap
 import static org.neo4j.index.internal.gbptree.TreeNodeUtil.isUnreliableKeyValueSize;
 import static org.neo4j.index.internal.gbptree.TreeNodeUtil.readDynamicKey;
 import static org.neo4j.index.internal.gbptree.TreeNodeUtil.readUnreliableKeyValueSize;
-import static org.neo4j.index.internal.gbptree.TreeNodeUtil.removeSlotsAt;
 import static org.neo4j.io.pagecache.PageCursorUtil.getUnsignedShort;
 import static org.neo4j.io.pagecache.PageCursorUtil.putUnsignedShort;
 
@@ -242,44 +241,6 @@ class LeafNodeDynamicSize<KEY, VALUE> implements LeafNodeBehaviour<KEY, VALUE> {
         // Remove from offset array
         TreeNodeUtil.removeSlotAt(cursor, pos, keyCount, keyPosOffsetLeaf(0), DynamicSizeUtil.OFFSET_SIZE);
         return keyCount - 1;
-    }
-
-    @Override
-    public int removeKeyValues(
-            PageCursor cursor,
-            int fromPosInclusive,
-            int toPosExclusive,
-            int keyCount,
-            long stableGeneration,
-            long unstableGeneration,
-            CursorContext cursorContext)
-            throws IOException {
-        int addedDeadSpace = 0;
-        for (int i = fromPosInclusive; i < toPosExclusive; i++) {
-            placeCursorAtActualKey(cursor, i);
-            int keyOffset = cursor.getOffset();
-            long keyValueSize = readKeyValueSize(cursor);
-            boolean offload = DynamicSizeUtil.extractOffload(keyValueSize);
-            // Free from offload
-            if (offload) {
-                long offloadId = readOffloadId(cursor);
-                offloadStore.free(offloadId, stableGeneration, unstableGeneration, cursorContext);
-            }
-
-            // Kill actual key
-            cursor.setOffset(keyOffset);
-            putTombstone(cursor);
-
-            int keySize = extractKeySize(keyValueSize);
-            int valueSize = extractValueSize(keyValueSize);
-            addedDeadSpace += keySize + valueSize + getOverhead(keySize, valueSize, offload);
-        }
-        // Update dead space
-        setDeadSpace(cursor, getDeadSpace(cursor) + addedDeadSpace);
-        // Remove from offset array
-        removeSlotsAt(
-                cursor, fromPosInclusive, toPosExclusive, keyCount, keyPosOffsetLeaf(0), DynamicSizeUtil.OFFSET_SIZE);
-        return keyCount - toPosExclusive + fromPosInclusive;
     }
 
     @Override

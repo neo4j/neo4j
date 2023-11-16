@@ -49,16 +49,6 @@ public interface LeafNodeBehaviour<KEY, VALUE> extends SharedNodeBehaviour<KEY> 
             CursorContext cursorContext)
             throws IOException;
 
-    int removeKeyValues(
-            PageCursor cursor,
-            int fromPosInclusive,
-            int toPosExclusive,
-            int keyCount,
-            long stableGeneration,
-            long unstableGeneration,
-            CursorContext cursorContext)
-            throws IOException;
-
     ValueHolder<VALUE> valueAt(PageCursor cursor, ValueHolder<VALUE> into, int pos, CursorContext cursorContext)
             throws IOException;
 
@@ -141,6 +131,13 @@ public interface LeafNodeBehaviour<KEY, VALUE> extends SharedNodeBehaviour<KEY> 
             throws IOException;
 
     int totalSpaceOfKeyValue(KEY key, VALUE value);
+
+    /**
+     * Total space that will be freed in the leaf if that pair is removed
+     */
+    default int totalSpaceRemovedOfKeyValue(KEY key, VALUE value) {
+        return totalSpaceOfKeyValue(key, value);
+    }
 
     void printNode(
             PageCursor cursor,

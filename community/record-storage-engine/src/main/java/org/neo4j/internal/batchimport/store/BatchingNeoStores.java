@@ -73,6 +73,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
+import org.neo4j.io.pagecache.impl.muninn.VersionStorage;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
@@ -523,7 +524,8 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
                                 new GBPTreeRelationshipGroupDegreesStore.EmptyDegreesRebuilder(
                                         neoStores.getMetaDataStore().getLastCommittedTransactionId()),
                                 openOptions,
-                                false);
+                                false,
+                                VersionStorage.EMPTY_STORAGE);
                 var cursorContext = contextFactory.create("buildRelationshipDegreesStore")) {
             groupDegreesStore.start(cursorContext, memoryTracker);
             try (var flushEvent = pageCacheTracer.beginFileFlush()) {
@@ -556,7 +558,8 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
                         pageCacheTracer,
                         getOpenOptions(),
                         builder,
-                        false);
+                        false,
+                        VersionStorage.EMPTY_STORAGE);
     }
 
     @Override

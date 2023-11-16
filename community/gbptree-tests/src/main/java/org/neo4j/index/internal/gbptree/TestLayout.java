@@ -24,5 +24,5 @@ public abstract class TestLayout<KEY, VALUE> extends Layout.Adapter<KEY, VALUE> 
         super(fixedSize, identifier, majorVersion, minorVersion);
     }
 
-    abstract int compareValue(VALUE v1, VALUE v2);
+    protected abstract int compareValue(VALUE v1, VALUE v2);
 }

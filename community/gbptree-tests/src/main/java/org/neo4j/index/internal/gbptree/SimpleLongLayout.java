@@ -77,7 +77,7 @@ public class SimpleLongLayout extends TestLayout<MutableLong, MutableLong> {
     }
 
     @Override
-    int compareValue(MutableLong v1, MutableLong v2) {
+    protected int compareValue(MutableLong v1, MutableLong v2) {
         return compare(v1, v2);
     }
 

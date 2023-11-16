@@ -33,7 +33,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageCursorUtil;
 import org.neo4j.io.pagecache.context.CursorContext;
 
-final class TreeNodeUtil {
+public final class TreeNodeUtil {
     // Shared between all node types: TreeNode and FreelistNode
     static final int BYTE_POS_NODE_TYPE = 0;
 
@@ -140,11 +140,11 @@ final class TreeNodeUtil {
         return cursor.getInt(BYTE_POS_GENERATION) & GenerationSafePointer.GENERATION_MASK;
     }
 
-    static int keyCount(PageCursor cursor) {
+    public static int keyCount(PageCursor cursor) {
         return cursor.getInt(BYTE_POS_KEYCOUNT);
     }
 
-    static long rightSibling(PageCursor cursor, long stableGeneration, long unstableGeneration) {
+    public static long rightSibling(PageCursor cursor, long stableGeneration, long unstableGeneration) {
         return rightSibling(cursor, stableGeneration, unstableGeneration, NO_GENERATION_TARGET);
     }
 
@@ -188,7 +188,7 @@ final class TreeNodeUtil {
         cursor.putInt(BYTE_POS_GENERATION, (int) generation);
     }
 
-    static void setKeyCount(PageCursor cursor, int count) {
+    public static void setKeyCount(PageCursor cursor, int count) {
         if (count < 0) {
             throw new IllegalArgumentException(
                     "Invalid key count, " + count + ". On tree node " + cursor.getCurrentPageId() + ".");
@@ -308,11 +308,11 @@ final class TreeNodeUtil {
                 childOffset);
     }
 
-    static boolean isNode(long node) {
+    public static boolean isNode(long node) {
         return GenerationSafePointerPair.pointer(node) != NO_NODE_FLAG;
     }
 
-    static void goTo(PageCursor cursor, String messageOnError, long nodeId) throws IOException {
+    public static void goTo(PageCursor cursor, String messageOnError, long nodeId) throws IOException {
         PageCursorUtil.goTo(cursor, messageOnError, GenerationSafePointerPair.pointer(nodeId));
     }
 

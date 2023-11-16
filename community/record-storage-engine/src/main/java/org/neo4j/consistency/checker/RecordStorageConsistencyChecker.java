@@ -71,6 +71,7 @@ import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.impl.muninn.VersionStorage;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
@@ -423,7 +424,8 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
                                         return neoStores.getMetaDataStore().getLastCommittedTransactionId();
                                     }
                                 },
-                                true);
+                                true,
+                                VersionStorage.EMPTY_STORAGE);
                 var checker = observedCounts.checker(reporter)) {
             if (consistencyFlags.checkStructure()) {
                 consistencyCheckSingleCheckable(report, ProgressListener.NONE, countsStore, RecordType.COUNTS);
@@ -466,7 +468,8 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
                             }
                         },
                         neoStores.getOpenOptions(),
-                        true)) {
+                        true,
+                        VersionStorage.EMPTY_STORAGE)) {
             consistencyCheckSingleCheckable(
                     report, ProgressListener.NONE, relationshipGroupDegrees, RecordType.RELATIONSHIP_GROUP);
         } catch (Exception e) {

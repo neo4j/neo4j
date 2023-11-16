@@ -191,7 +191,7 @@ public class SimpleByteArrayLayout extends TestLayout<RawBytes, RawBytes> {
     }
 
     @Override
-    int compareValue(RawBytes v1, RawBytes v2) {
+    protected int compareValue(RawBytes v1, RawBytes v2) {
         return compare(v1, v2);
     }
 

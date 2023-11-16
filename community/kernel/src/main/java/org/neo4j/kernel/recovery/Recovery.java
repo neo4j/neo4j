@@ -595,7 +595,8 @@ public final class Recovery {
                 recoveryMetaDataCache,
                 memoryTracker,
                 cursorContextFactory,
-                tracers.getPageCacheTracer());
+                tracers.getPageCacheTracer(),
+                recoveryVersionStorage);
 
         // Schema indexes
         FullScanStoreView fullScanStoreView = new FullScanStoreView(NO_LOCK_SERVICE, storageEngine, config, scheduler);

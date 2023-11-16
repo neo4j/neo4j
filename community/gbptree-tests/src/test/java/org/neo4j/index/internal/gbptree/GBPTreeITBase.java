@@ -21,7 +21,6 @@ package org.neo4j.index.internal.gbptree;
 
 import static java.lang.Integer.max;
 import static java.lang.String.format;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -75,7 +74,6 @@ abstract class GBPTreeITBase<KEY, VALUE> {
 
     private int flags;
     protected TestLayout<KEY, VALUE> layout;
-    private ValueAggregator<VALUE> addingAggregator;
     private GBPTree<KEY, VALUE> index;
     private PageCache pageCache;
 
@@ -87,7 +85,6 @@ abstract class GBPTreeITBase<KEY, VALUE> {
                 fileSystem, config().withPageSize(pageSize).withAccessChecks(true));
         var openOptions = getOpenOptions();
         layout = getLayout(random, GBPTreeTestUtil.calculatePayloadSize(pageCache, openOptions));
-        addingAggregator = getAddingAggregator();
         index = new GBPTreeBuilder<>(pageCache, fileSystem, testDirectory.file("index"), layout)
                 .with(openOptions)
                 .build();
@@ -110,10 +107,6 @@ abstract class GBPTreeITBase<KEY, VALUE> {
     abstract TestLayout<KEY, VALUE> getLayout(RandomSupport random, int pageSize);
 
     abstract Class<KEY> getKeyClass();
-
-    protected abstract ValueAggregator<VALUE> getAddingAggregator();
-
-    protected abstract VALUE sumValues(VALUE value1, VALUE value2);
 
     @EnumSource(WriterFactory.class)
     @ParameterizedTest
@@ -251,30 +244,11 @@ abstract class GBPTreeITBase<KEY, VALUE> {
         try (Writer<KEY, VALUE> writer = createWriter(index, writerFactory)) {
             for (int i = 0; i < changeCount; i++) {
                 if (!data.isEmpty() && random.nextDouble() < removeProbability) {
-                    if (random.nextBoolean()) {
-                        // remove
-                        KEY key = randomKey(data, random);
-                        VALUE value = data.remove(key);
-                        VALUE removedValue = writer.remove(key);
-                        assertEqualsValue(value, removedValue);
-                    } else {
-                        // aggregate, removes one value
-                        KEY key = randomKey(data, random);
-                        var entry0Value = data.get(key);
-                        var entry1 = data.ceilingEntry(key);
-                        if (entry1 != null) {
-                            var keyTo = data.ceilingKey(entry1.getKey());
-                            if (keyTo == null) {
-                                keyTo = layout.key(Long.MAX_VALUE);
-                            }
-                            var modified = writer.aggregate(key, keyTo, addingAggregator);
-                            if (modified == 2) {
-                                data.remove(key);
-                                data.put(entry1.getKey(), sumValues(entry0Value, entry1.getValue()));
-                            }
-                            assertThat(modified).isIn(0, 2);
-                        }
-                    }
+                    // remove
+                    KEY key = randomKey(data, random);
+                    VALUE value = data.remove(key);
+                    VALUE removedValue = writer.remove(key);
+                    assertEqualsValue(value, removedValue);
                 } else { // put
                     KEY key = randomKey(random);
                     VALUE value = randomValue(random);

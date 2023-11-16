@@ -25,7 +25,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 /**
  * Methods for (binary-)searching keys in a tree node.
  */
-class KeySearch {
+public class KeySearch {
 
     private KeySearch() {}
 
@@ -53,7 +53,7 @@ class KeySearch {
      * To extract position from the returned search result, then use {@link #positionOf(int)}.
      * To extract whether the exact key was found, then use {@link #isHit(int)}.
      */
-    static <KEY> int search(
+    public static <KEY> int search(
             PageCursor cursor,
             SharedNodeBehaviour<KEY> node,
             KEY key,
@@ -113,7 +113,7 @@ class KeySearch {
      * @param searchResult search result
      * @return position of the search result.
      */
-    static int positionOf(int searchResult) {
+    public static int positionOf(int searchResult) {
         if (searchResult >= 0) {
             return searchResult;
         }

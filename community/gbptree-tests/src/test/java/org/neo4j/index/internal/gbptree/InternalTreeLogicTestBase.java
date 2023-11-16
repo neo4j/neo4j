@@ -43,7 +43,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.function.Function;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -77,8 +76,6 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
     private SimpleIdProvider id;
 
     private ValueMerger<KEY, VALUE> adder;
-    private ValueAggregator<VALUE> addingAggregator;
-    private Function<VALUE, VALUE> incrementingValueUpdater;
     private InternalTreeLogic<KEY, VALUE> treeLogic;
     private VALUE dontCare;
     private StructurePropagation<KEY> structurePropagation;
@@ -118,8 +115,6 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
         leaf = getLeaf(PAGE_SIZE, layout, offloadStore);
         internal = getInternal(PAGE_SIZE, layout, offloadStore);
         adder = getAdder();
-        addingAggregator = getAddingAggregator();
-        incrementingValueUpdater = getIncrementingValueUpdater();
         treeLogic = new InternalTreeLogic<>(
                 id, leaf, internal, layout, NO_MONITOR, TreeWriterCoordination.NO_COORDINATION, DATA_LAYER_FLAG);
         dontCare = layout.newValue();
@@ -135,10 +130,6 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
             int pageSize, Layout<KEY, VALUE> layout, OffloadStore<KEY, VALUE> offloadStore);
 
     protected abstract TestLayout<KEY, VALUE> getLayout();
-
-    protected abstract ValueAggregator<VALUE> getAddingAggregator();
-
-    protected abstract Function<VALUE, VALUE> getIncrementingValueUpdater();
 
     @ParameterizedTest
     @MethodSource("generators")
@@ -1723,316 +1714,6 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
                                 + ". This is most likely caused by an inconsistency " + "in the index.");
     }
 
-    /* AGGREGATE */
-    @ParameterizedTest
-    @MethodSource("generators")
-    void writerCanAggregateAllInEmptyLeaf(String name, GenerationManager generationManager, boolean isCheckpointing)
-            throws Exception {
-        // given
-        initialize();
-        var key = key(1L);
-        var value1 = 1L;
-        var value = value(value1);
-        insert(key, value);
-        var value2 = 2;
-        var key2 = key(2);
-        insert(key2, value(value2));
-
-        // when
-        generationManager.checkpoint();
-        // aggregate is allowed to not succeed, i.e. dynamic tree with values of different sizes can have some troubles
-        aggregate(key, key(Long.MAX_VALUE));
-
-        // then
-        root.goTo(readCursor);
-        assertThat(keyCount()).isEqualTo(1);
-        assertEqualsKey(key2, keyAt(0, false));
-        assertEqualsValue(value(value1 + value2), valueAt(0));
-    }
-
-    @ParameterizedTest
-    @MethodSource("generators")
-    void writerCanAggregateAllInFullLeaf(String name, GenerationManager generationManager, boolean isCheckpointing)
-            throws Exception {
-        // given
-        initialize();
-        int keyCount = 0;
-        KEY key = key(keyCount);
-        VALUE value = value(keyCount);
-        while (leaf.overflow(cursor, keyCount, key, value, NULL_CONTEXT) == NO) {
-            insert(key, value);
-
-            keyCount++;
-            key = key(keyCount);
-            value = value(keyCount);
-        }
-
-        // when
-        generationManager.checkpoint();
-        aggregate(key(0), key(Long.MAX_VALUE));
-
-        // then
-        root.goTo(readCursor);
-        assertThat(keyCount()).isEqualTo(1);
-        assertEqualsKey(key(keyCount - 1), keyAt(0, false));
-        assertEqualsValue(value((long) (keyCount - 1) * (keyCount) / 2), valueAt(0));
-    }
-
-    @ParameterizedTest
-    @MethodSource("generators")
-    void writerCanAggregateInMiddleInFullLeaf(String name, GenerationManager generationManager, boolean isCheckpointing)
-            throws Exception {
-        initialize();
-        int maxKeyCount = 0;
-        KEY key = key(maxKeyCount);
-        VALUE value = value(maxKeyCount);
-        while (leaf.overflow(cursor, maxKeyCount, key, value, NULL_CONTEXT) == NO) {
-            insert(key, value);
-
-            maxKeyCount++;
-            key = key(maxKeyCount);
-            value = value(maxKeyCount);
-        }
-        int middle = maxKeyCount / 2;
-
-        // when
-        generationManager.checkpoint();
-        aggregate(key(middle - 1), key(middle + 2));
-
-        // then
-        root.goTo(readCursor);
-        assertThat(keyCount()).isEqualTo(maxKeyCount - 2);
-        assertEqualsKey(key(middle + 1L), keyAt(middle - 1, false));
-        assertEqualsValue(value(3L * middle), valueAt(middle - 1));
-    }
-
-    @ParameterizedTest
-    @MethodSource("generators")
-    void writerCanAggregateLastInFullLeaf(String name, GenerationManager generationManager, boolean isCheckpointing)
-            throws Exception {
-        initialize();
-        int maxKeyCount = 0;
-        KEY key = key(maxKeyCount);
-        VALUE value = value(maxKeyCount);
-        while (leaf.overflow(cursor, maxKeyCount, key, value, NULL_CONTEXT) == NO) {
-            insert(key, value);
-
-            maxKeyCount++;
-            key = key(maxKeyCount);
-            value = value(maxKeyCount);
-        }
-
-        // when
-        generationManager.checkpoint();
-        aggregate(key(maxKeyCount - 3), key(maxKeyCount));
-
-        // then
-        root.goTo(readCursor);
-        assertThat(keyCount()).isEqualTo(maxKeyCount - 2);
-        assertEqualsKey(key(maxKeyCount - 1), keyAt(maxKeyCount - 3, false));
-        assertEqualsValue(value(3L * maxKeyCount - 6), valueAt(maxKeyCount - 3));
-    }
-
-    @ParameterizedTest
-    @MethodSource("generators")
-    void writerMustNotAggregateWhenRangeCoversNothing(
-            String name, GenerationManager generationManager, boolean isCheckpointing) throws Exception {
-        initialize();
-        int maxKeyCount = 0;
-        KEY key = key(maxKeyCount);
-        VALUE value = value(maxKeyCount);
-        while (leaf.overflow(cursor, maxKeyCount, key, value, NULL_CONTEXT) == NO) {
-            insert(key, value);
-
-            maxKeyCount++;
-            key = key(maxKeyCount);
-            value = value(maxKeyCount);
-        }
-
-        // when
-        generationManager.checkpoint();
-        aggregate(key(maxKeyCount), key(Long.MAX_VALUE));
-
-        // then
-        root.goTo(readCursor);
-        assertThat(keyCount()).isEqualTo(maxKeyCount);
-        for (int i = 0; i < maxKeyCount; i++) {
-            assertEqualsKey(keyAt(i, false), key(i));
-        }
-    }
-
-    /* UPDATE CEILING VALUE */
-    @ParameterizedTest
-    @MethodSource("generators")
-    void writerCanUpdateCeilingFirstInNotFullLeaf(
-            String name, GenerationManager generationManager, boolean isCheckpointing) throws Exception {
-        // given
-        initialize();
-        var key = key(1L);
-        var value1 = 1L;
-        var value = value(value1);
-        insert(key, value);
-
-        // when
-        generationManager.checkpoint();
-        // aggregate is allowed to not succeed, i.e. dynamic tree with values of different sizes can have some troubles
-        updateCeilingValue(key(0), key(Long.MAX_VALUE));
-
-        // then
-        root.goTo(readCursor);
-        assertThat(keyCount()).isEqualTo(1);
-        assertEqualsKey(key, keyAt(0, false));
-        assertEqualsValue(value(value1 + 1), valueAt(0));
-    }
-
-    @ParameterizedTest
-    @MethodSource("generators")
-    void writerCanUpdateCeilingFirstInFullLeaf(
-            String name, GenerationManager generationManager, boolean isCheckpointing) throws Exception {
-        // given
-        initialize();
-        int keyCount = 0;
-        KEY key = key(keyCount);
-        VALUE value = value(keyCount);
-        while (leaf.overflow(cursor, keyCount, key, value, NULL_CONTEXT) == NO) {
-            insert(key, value);
-
-            keyCount++;
-            key = key(keyCount);
-            value = value(keyCount);
-        }
-
-        // when
-        generationManager.checkpoint();
-        updateCeilingValue(key(-1), key(Long.MAX_VALUE));
-
-        // then
-        root.goTo(readCursor);
-        assertThat(keyCount()).isEqualTo(keyCount);
-        assertEqualsKey(key(0), keyAt(0, false));
-        assertEqualsValue(value(1), valueAt(0));
-    }
-
-    @ParameterizedTest
-    @MethodSource("generators")
-    void writerCanUpdateCeilingInMiddleInFullLeaf(
-            String name, GenerationManager generationManager, boolean isCheckpointing) throws Exception {
-        initialize();
-        int maxKeyCount = 0;
-        KEY key = key(maxKeyCount);
-        VALUE value = value(maxKeyCount);
-        while (leaf.overflow(cursor, maxKeyCount, key, value, NULL_CONTEXT) == NO) {
-            insert(key, value);
-
-            maxKeyCount++;
-            key = key(maxKeyCount * 10L);
-            value = value(maxKeyCount);
-        }
-        int middlePos = maxKeyCount / 2;
-        key = keyAt(middlePos, false);
-        var searchKey = key(getSeed(key) - 5);
-
-        // when
-        generationManager.checkpoint();
-        updateCeilingValue(searchKey, key(Long.MAX_VALUE));
-
-        // then
-        root.goTo(readCursor);
-        assertThat(keyCount()).isEqualTo(maxKeyCount);
-        assertEqualsKey(key, keyAt(middlePos, false));
-        assertEqualsValue(value(middlePos + 1), valueAt(middlePos));
-    }
-
-    @ParameterizedTest
-    @MethodSource("generators")
-    void writerCanUpdateCeilingLastInFullLeaf(String name, GenerationManager generationManager, boolean isCheckpointing)
-            throws Exception {
-        initialize();
-        int maxKeyCount = 0;
-        KEY key = key(maxKeyCount);
-        VALUE value = value(maxKeyCount);
-        while (leaf.overflow(cursor, maxKeyCount, key, value, NULL_CONTEXT) == NO) {
-            insert(key, value);
-
-            maxKeyCount++;
-            key = key(maxKeyCount * 10L);
-            value = value(maxKeyCount);
-        }
-
-        // when
-        generationManager.checkpoint();
-        updateCeilingValue(key((maxKeyCount - 1) * 10L - 5), key(Long.MAX_VALUE));
-
-        // then
-        root.goTo(readCursor);
-        assertThat(keyCount()).isEqualTo(maxKeyCount);
-        assertEqualsKey(key((maxKeyCount - 1) * 10L), keyAt(maxKeyCount - 1, false));
-        assertEqualsValue(value(maxKeyCount), valueAt(maxKeyCount - 1));
-    }
-
-    @ParameterizedTest
-    @MethodSource("generators")
-    void writerCanUpdateCeilingValueWhenCeilingIsInRightSibling(
-            String name, GenerationManager generationManager, boolean isCheckpointing) throws Exception {
-        // given
-        initialize();
-        int keyCount = 0;
-        KEY key = key(keyCount);
-        VALUE value = value(keyCount);
-        while (leaf.overflow(cursor, keyCount, key, value, NULL_CONTEXT) == NO) {
-            insert(key, value);
-
-            keyCount++;
-            key = key(keyCount * 100L);
-            value = value(keyCount);
-        }
-
-        generationManager.checkpoint();
-        insert(key, value);
-
-        root.goTo(readCursor);
-        long rightChild = childAt(readCursor, 1, stableGeneration, unstableGeneration);
-        goTo(readCursor, rightChild);
-
-        var firstInRightChildSeed = getSeed(keyAt(0, false));
-        var searchKey = key(firstInRightChildSeed - 5);
-        updateCeilingValue(searchKey, key(Long.MAX_VALUE));
-
-        // then
-        goTo(readCursor, rightChild);
-        assertEqualsKey(key(firstInRightChildSeed), keyAt(0, false));
-        assertEqualsValue(value((firstInRightChildSeed / 100) + 1), valueAt(0));
-    }
-
-    @ParameterizedTest
-    @MethodSource("generators")
-    void writerMustNotUpdateCeilingWhenRangeCoversNothing(
-            String name, GenerationManager generationManager, boolean isCheckpointing) throws Exception {
-        initialize();
-        int maxKeyCount = 0;
-        KEY key = key(maxKeyCount);
-        VALUE value = value(maxKeyCount);
-        while (leaf.overflow(cursor, maxKeyCount, key, value, NULL_CONTEXT) == NO) {
-            insert(key, value);
-
-            maxKeyCount++;
-            key = key(maxKeyCount * 10L);
-            value = value(maxKeyCount);
-        }
-
-        // when
-        generationManager.checkpoint();
-        updateCeilingValue(key(1), key(9));
-
-        // then
-        root.goTo(readCursor);
-        assertThat(keyCount()).isEqualTo(maxKeyCount);
-        for (int i = 0; i < maxKeyCount; i++) {
-            assertEqualsKey(key(i * 10L), keyAt(i, false));
-            assertEqualsValue(value(i), valueAt(i));
-        }
-    }
-
     private long setTypeInvalidOnLeftChildOfRoot(PageCursor cursor) throws IOException {
         root.goTo(cursor);
         long leftChild = childAt(cursor, 0, stableGeneration, unstableGeneration);
@@ -2381,32 +2062,6 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
                 structurePropagation,
                 key,
                 new ValueHolder<>(into),
-                stableGeneration,
-                unstableGeneration,
-                NULL_CONTEXT);
-        handleAfterChange();
-    }
-
-    private void aggregate(KEY from, KEY to) throws IOException {
-        treeLogic.aggregate(
-                cursor,
-                structurePropagation,
-                from,
-                to,
-                addingAggregator,
-                stableGeneration,
-                unstableGeneration,
-                NULL_CONTEXT);
-        handleAfterChange();
-    }
-
-    private void updateCeilingValue(KEY from, KEY to) throws IOException {
-        treeLogic.updateCeilingValue(
-                cursor,
-                structurePropagation,
-                from,
-                to,
-                incrementingValueUpdater,
                 stableGeneration,
                 unstableGeneration,
                 NULL_CONTEXT);

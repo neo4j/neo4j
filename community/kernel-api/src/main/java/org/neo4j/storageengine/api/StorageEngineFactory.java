@@ -63,6 +63,7 @@ import org.neo4j.io.layout.block.BlockDatabaseExistMarker;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.impl.muninn.VersionStorage;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersionRepository;
 import org.neo4j.kernel.api.index.IndexProvidersAccess;
@@ -170,7 +171,8 @@ public interface StorageEngineFactory {
             KernelVersionRepository kernelVersionRepository,
             MemoryTracker memoryTracker,
             CursorContextFactory contextFactory,
-            PageCacheTracer pageCacheTracer)
+            PageCacheTracer pageCacheTracer,
+            VersionStorage versionStorage)
             throws IOException;
 
     /**

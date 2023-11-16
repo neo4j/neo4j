@@ -82,6 +82,7 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.OldestTransactionIdFactory;
 import org.neo4j.io.pagecache.context.TransactionIdSnapshot;
 import org.neo4j.io.pagecache.context.TransactionIdSnapshotFactory;
+import org.neo4j.io.pagecache.impl.muninn.VersionStorage;
 import org.neo4j.kernel.BinarySupportedKernelVersions;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.DefaultElementIdMapper;
@@ -255,6 +256,7 @@ public class Database extends AbstractDatabase {
     private ElementIdMapper elementIdMapper;
     private boolean storageExists;
     private TransactionCommitmentFactory commitmentFactory;
+    private VersionStorage versionStorage;
 
     public Database(DatabaseCreationContext context) {
         super(
@@ -322,7 +324,7 @@ public class Database extends AbstractDatabase {
         new DatabaseDirectoriesCreator(fs, databaseLayout).createDirectories();
         ioController = ioControllerService.createIOController(databaseConfig, clock);
         transactionIdSequence = new TransactionIdSequence();
-        var versionStorage = versionStorageFactory.createVersionStorage(
+        this.versionStorage = versionStorageFactory.createVersionStorage(
                 globalPageCache,
                 ioController,
                 scheduler,
@@ -468,7 +470,8 @@ public class Database extends AbstractDatabase {
                 metadataCache,
                 otherDatabaseMemoryTracker,
                 cursorContextFactory,
-                tracers.getPageCacheTracer());
+                tracers.getPageCacheTracer(),
+                versionStorage);
 
         var metadataProvider = databaseDependencies.satisfyDependency(storageEngine.metadataProvider());
 

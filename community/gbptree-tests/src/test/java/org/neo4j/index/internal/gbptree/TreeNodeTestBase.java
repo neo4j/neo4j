@@ -19,7 +19,6 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -229,37 +228,6 @@ public abstract class TreeNodeTestBase<KEY, VALUE> {
         assertValueEquals(overwriteValue, leaf.valueAt(cursor, new ValueHolder<>(readValue), 0, NULL_CONTEXT).value);
         assertKeyEquals(secondKey, leaf.keyAt(cursor, readKey, 1, NULL_CONTEXT));
         assertValueEquals(secondValue, leaf.valueAt(cursor, new ValueHolder<>(readValue), 1, NULL_CONTEXT).value);
-    }
-
-    @Test
-    void bulkKeyValueRemoveInLeaf() throws IOException {
-        initializeLeaf();
-        int initialKeyCount = 10;
-        var from = 2;
-        var to = initialKeyCount - 2;
-        for (int i = 0; i < initialKeyCount; i++) {
-            KEY key = key(i);
-            VALUE value = value(10 + i);
-            leaf.insertKeyValueAt(cursor, key, value, i, i, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
-        }
-        TreeNodeUtil.setKeyCount(cursor, initialKeyCount);
-
-        var newKeyCount = leaf.removeKeyValues(
-                cursor, from, to, initialKeyCount, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
-        assertThat(newKeyCount).isEqualTo(initialKeyCount - to + from);
-        TreeNodeUtil.setKeyCount(cursor, newKeyCount);
-
-        KEY readKey = layout.newKey();
-        VALUE readValue = layout.newValue();
-        for (int i = 0; i < newKeyCount; i++) {
-            var seed = i;
-            if (i >= from) {
-                seed += to - from;
-            }
-            assertKeyEquals(key(seed), leaf.keyAt(cursor, readKey, i, NULL_CONTEXT));
-            assertValueEquals(
-                    value(10 + seed), leaf.valueAt(cursor, new ValueHolder<>(readValue), i, NULL_CONTEXT).value);
-        }
     }
 
     @Test

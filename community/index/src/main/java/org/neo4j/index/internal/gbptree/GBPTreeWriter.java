@@ -30,11 +30,9 @@ import static org.neo4j.index.internal.gbptree.TreeNodeUtil.keyCount;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.OptionalInt;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.LongSupplier;
 import org.neo4j.index.internal.gbptree.MultiRootGBPTree.Monitor;
 import org.neo4j.io.pagecache.PageCursor;
@@ -255,6 +253,9 @@ class GBPTreeWriter<K, V> implements Writer<K, V> {
         checkOutOfBounds(cursor);
     }
 
+    /**
+     * @return true if operation is permitted
+     */
     private boolean goToRoot() throws IOException {
         if (treeLogic.depth() >= 0) {
             return true;
@@ -342,40 +343,9 @@ class GBPTreeWriter<K, V> implements Writer<K, V> {
     }
 
     @Override
-    public int aggregate(K fromInclusive, K toExclusive, ValueAggregator<V> aggregator) {
-        OptionalInt result;
+    public void execute(TreeWriteOperation<K, V> operation) {
         try {
-            coordination.beginOperation();
-            if (!goToRoot()
-                    || (result = treeLogic.aggregate(
-                                    cursor,
-                                    structurePropagation,
-                                    fromInclusive,
-                                    toExclusive,
-                                    aggregator,
-                                    stableGeneration,
-                                    unstableGeneration,
-                                    cursorContext))
-                            .isEmpty()) {
-                coordination.flipToPessimisticMode();
-                assert structurePropagation.isEmpty();
-                treeLogic.reset();
-                if (!goToRoot()
-                        || (result = treeLogic.aggregate(
-                                        cursor,
-                                        structurePropagation,
-                                        fromInclusive,
-                                        toExclusive,
-                                        aggregator,
-                                        stableGeneration,
-                                        unstableGeneration,
-                                        cursorContext))
-                                .isEmpty()) {
-                    throw appendTreeInformation(new TreeInconsistencyException(
-                            "Unable to aggregate keys from:%s to:%s in pessimistic mode", fromInclusive, toExclusive));
-                }
-            }
-
+            executeWithRetryInPessimisticMode(operation);
             handleStructureChanges(cursorContext);
         } catch (IOException e) {
             exceptionMessageAppender.accept(e);
@@ -387,55 +357,39 @@ class GBPTreeWriter<K, V> implements Writer<K, V> {
             checkForceReset();
         }
         checkOutOfBounds(cursor);
-        return result.orElse(0);
     }
 
-    @Override
-    public void updateCeilingValue(K searchKey, K upperBound, Function<V, V> updateFunction) {
-        try {
-            // Try optimistic mode first
-            coordination.beginOperation();
-            if (!goToRoot()
-                    || !treeLogic.updateCeilingValue(
-                            cursor,
-                            structurePropagation,
-                            searchKey,
-                            upperBound,
-                            updateFunction,
-                            stableGeneration,
-                            unstableGeneration,
-                            cursorContext)) {
-                // OK, didn't work. Flip to pessimistic mode and try again.
-                coordination.flipToPessimisticMode();
-                assert structurePropagation.isEmpty();
-                treeLogic.reset();
-                if (!goToRoot()
-                        || !treeLogic.updateCeilingValue(
-                                cursor,
-                                structurePropagation,
-                                searchKey,
-                                upperBound,
-                                updateFunction,
-                                stableGeneration,
-                                unstableGeneration,
-                                cursorContext)) {
-                    throw appendTreeInformation(new TreeInconsistencyException(
-                            "Unable to bla blah key:%s value:%s in pessimistic mode", searchKey, upperBound));
-                }
-            }
-
-            handleStructureChanges(cursorContext);
-        } catch (IOException e) {
-            exceptionMessageAppender.accept(e);
-            throw new UncheckedIOException(e);
-        } catch (Throwable t) {
-            exceptionMessageAppender.accept(t);
-            throw t;
-        } finally {
-            checkForceReset();
+    private void executeWithRetryInPessimisticMode(TreeWriteOperation<K, V> operation) throws IOException {
+        coordination.beginOperation();
+        if (goToRoot()
+                && operation.run(
+                        layout,
+                        treeLogic,
+                        cursor,
+                        structurePropagation,
+                        stableGeneration,
+                        unstableGeneration,
+                        cursorContext)) {
+            return;
         }
 
-        checkOutOfBounds(cursor);
+        // operation wasn't permitted by goToRoot or failed, retry in pessimistic mode
+        coordination.flipToPessimisticMode();
+        assert structurePropagation.isEmpty();
+        treeLogic.reset();
+        if (goToRoot()
+                && operation.run(
+                        layout,
+                        treeLogic,
+                        cursor,
+                        structurePropagation,
+                        stableGeneration,
+                        unstableGeneration,
+                        cursorContext)) {
+            return;
+        }
+        throw appendTreeInformation(
+                new TreeInconsistencyException("Unable to perform operation " + operation + " in pessimistic mode"));
     }
 
     private void checkForceReset() {

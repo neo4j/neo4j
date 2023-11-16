@@ -90,6 +90,7 @@ import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.impl.muninn.VersionStorage;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
@@ -790,7 +791,8 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
                                 pageCacheTracer,
                                 degreesBuilder,
                                 openOptions,
-                                false);
+                                false,
+                                VersionStorage.EMPTY_STORAGE);
                 var context = contextFactory.create("update group degrees store");
                 var flushEvent = pageCacheTracer.beginFileFlush()) {
             degreesStore.start(context, EmptyMemoryTracker.INSTANCE);
@@ -830,7 +832,8 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
                         pageCacheTracer,
                         openOptions,
                         builder,
-                        false);
+                        false,
+                        VersionStorage.EMPTY_STORAGE);
     }
 
     @Override
