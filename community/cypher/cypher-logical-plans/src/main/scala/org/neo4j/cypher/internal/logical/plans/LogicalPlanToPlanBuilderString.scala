@@ -1216,7 +1216,7 @@ object LogicalPlanToPlanBuilderString {
           variablePredicate.map(vp =>
             s" WHERE ${expressionStringifier(vp.predicate)}"
           ).getOrElse("")
-        s""" "(${from.variable.name}) (${to.variable.name}$whereString)" """.trim
+        s""" "(${escapeIdentifier(from.variable.name)}) (${escapeIdentifier(to.variable.name)}$whereString)" """.trim
       case RelationshipExpansionPredicate(relName, relPred, types, dir, nodePred) =>
         val relWhereString =
           relPred.map(vp =>
@@ -1228,7 +1228,9 @@ object LogicalPlanToPlanBuilderString {
           ).getOrElse("")
         val (dirStrA, dirStrB) = arrows(dir)
         val typeStr = relTypeStr(types)
-        s""" "(${from.variable.name})$dirStrA[${relName.name}$typeStr$relWhereString]$dirStrB(${to.variable.name}$nodeWhereString)" """.trim
+        s""" "(${escapeIdentifier(from.variable.name)})$dirStrA[${escapeIdentifier(
+            relName.name
+          )}$typeStr$relWhereString]$dirStrB(${escapeIdentifier(to.variable.name)}$nodeWhereString)" """.trim
     }
     s"${indent}${indent}.addTransition(${from.id}, ${to.id}, $patternString)"
   }
