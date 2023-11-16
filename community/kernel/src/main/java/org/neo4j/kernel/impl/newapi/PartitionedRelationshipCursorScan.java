@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.ExecutionContext;
 import org.neo4j.storageengine.api.AllRelationshipsScan;
 
@@ -31,11 +30,6 @@ final class PartitionedRelationshipCursorScan
     PartitionedRelationshipCursorScan(
             AllRelationshipsScan storageScan, Read read, int desiredNumberOfPartitions, long totalCount) {
         super(storageScan, read, desiredNumberOfPartitions, totalCount);
-    }
-
-    @Override
-    public boolean reservePartition(RelationshipScanCursor cursor, CursorContext cursorContext) {
-        return reservePartition(cursor, fallbackRead);
     }
 
     @Override

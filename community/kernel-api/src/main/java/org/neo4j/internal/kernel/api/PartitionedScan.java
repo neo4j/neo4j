@@ -20,7 +20,6 @@
 package org.neo4j.internal.kernel.api;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.ExecutionContext;
 
 /**
@@ -40,25 +39,6 @@ public interface PartitionedScan<Cursor extends org.neo4j.internal.kernel.api.Cu
      * @return the total number of partitions in this scan object
      */
     int getNumberOfPartitions();
-
-    /**
-     * See description of {@link #reservePartition(org.neo4j.internal.kernel.api.Cursor, ExecutionContext)}
-     * as the general concepts ar the same.
-     * <p>
-     * This method is considered a legacy one and should be used only by GDS until they migrate to something else.
-     *
-     * @deprecated replaced by {@link #reservePartition(org.neo4j.internal.kernel.api.Cursor, ExecutionContext)} for
-     * thread safety.
-     *
-     * @param cursor The cursor to be used for reading.
-     * @param cursorContext The underlying page cursor context for the thread doing the seek.
-     * @throws IllegalStateException if transaction contains changed state.
-     * @return <code>true</code> if there are more data to read, otherwise <code>false</code>
-     *
-     * @see #reservePartition(org.neo4j.internal.kernel.api.Cursor, ExecutionContext)
-     */
-    @Deprecated(since = "5.7", forRemoval = false)
-    boolean reservePartition(Cursor cursor, CursorContext cursorContext);
 
     /**
      * Will attempt to reserve a partition to scan.

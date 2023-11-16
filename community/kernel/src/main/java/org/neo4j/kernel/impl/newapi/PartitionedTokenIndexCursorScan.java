@@ -53,11 +53,6 @@ public class PartitionedTokenIndexCursorScan<Cursor extends org.neo4j.internal.k
     }
 
     @Override
-    public boolean reservePartition(Cursor cursor, CursorContext cursorContext) {
-        return reservePartition(cursor, fallbackRead, cursorContext);
-    }
-
-    @Override
     public boolean reservePartition(Cursor cursor, ExecutionContext executionContext) {
         return reservePartition(
                 cursor,
