@@ -135,7 +135,7 @@ class FromPathsIT {
 
     @Test
     void shouldNotValidatePathAsDatabaseName() {
-        assertValid(concatenateSubPath("a", "b->"));
+        assertValid(concatenateSubPath("a", "--abc--"));
     }
 
     @Test
