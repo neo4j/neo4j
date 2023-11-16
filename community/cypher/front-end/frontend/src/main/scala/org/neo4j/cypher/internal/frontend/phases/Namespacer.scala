@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
 import org.neo4j.cypher.internal.util.bottomUp
+import org.neo4j.cypher.internal.util.helpers.NameDeduplicator.NamedVariable
 import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.topDown
 
@@ -132,10 +133,11 @@ case object Namespacer extends Phase[BaseContext, BaseState, BaseState]
    */
   def genName(anonymousVariableNameGenerator: AnonymousVariableNameGenerator, variableName: String): String = {
     val nextName = anonymousVariableNameGenerator.nextName
-    if (AnonymousVariableNameGenerator.isNamed(variableName)) {
-      nextName.replace(AnonymousVariableNameGenerator.generatorName, variableName + "@")
-    } else {
-      nextName
+    variableName match {
+      case NamedVariable(name) =>
+        nextName.replace(AnonymousVariableNameGenerator.generatorName, name + "@")
+      case _ =>
+        nextName
     }
   }
 

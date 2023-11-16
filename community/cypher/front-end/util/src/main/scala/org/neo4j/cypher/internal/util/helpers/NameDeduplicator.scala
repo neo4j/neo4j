@@ -24,7 +24,17 @@ import scala.util.matching.Regex
 
 object NameDeduplicator {
 
-  def nameGeneratorRegex(generatorName: String): Regex =
+  object NamedVariable {
+
+    def unapply(variableName: String): Option[String] =
+      variableName match {
+        case DEDUP_PATTERN(variableName)                                          => Some(variableName)
+        case variableName if AnonymousVariableNameGenerator.isNamed(variableName) => Some(variableName)
+        case _                                                                    => None
+      }
+  }
+
+  private def nameGeneratorRegex(generatorName: String): Regex =
     s""" {2}($generatorName)(-?\\d+)""".r
 
   val UNNAMED_PATTERN: Regex = {
@@ -32,7 +42,7 @@ object NameDeduplicator {
   }
 
   private val UNNAMED_PARAMS_PATTERN = """ {2}(AUTOINT|AUTODOUBLE|AUTOSTRING|AUTOLIST)(\d+)""".r
-  private val DEDUP_PATTERN = """ {2}((?:(?! {2}).)+?)@\d+""".r
+  val DEDUP_PATTERN: Regex = """ {2}((?:(?! {2}).)+?)@\d+""".r
 
   private def transformGeneratedNamesRewriter(transformation: String => String): Rewriter = topDown(Rewriter.lift {
     case s: String => transformation(s)

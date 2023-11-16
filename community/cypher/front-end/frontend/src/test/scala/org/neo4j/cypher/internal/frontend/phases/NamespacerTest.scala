@@ -419,4 +419,16 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
         )
       }
   }
+
+  test("genName") {
+    Seq(
+      ("  UNNAMED1", "  UNNAMED0"),
+      ("  d@0", "  d@0"),
+      ("  d@42", "  d@0"),
+      ("d", "  d@0"),
+      ("some weird propy38259dsyfj name", "  some weird propy38259dsyfj name@0")
+    ).foreach { case (input, expected) =>
+      Namespacer.genName(new AnonymousVariableNameGenerator, input) should equal(expected)
+    }
+  }
 }
