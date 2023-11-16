@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.internal.kernel.api.PartitionedScan;
 import org.neo4j.internal.kernel.api.TokenPredicate;
-import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.ExecutionContext;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.impl.index.schema.PartitionedTokenScan;
@@ -43,16 +42,9 @@ public class PartitionedTokenIndexCursorScan<Cursor extends org.neo4j.internal.k
 
     @Override
     public boolean reservePartition(Cursor cursor, ExecutionContext executionContext) {
-        return reservePartition(
-                cursor,
-                (org.neo4j.kernel.impl.newapi.Read) executionContext.dataRead(),
-                executionContext.cursorContext());
-    }
-
-    private boolean reservePartition(Cursor cursor, Read read, CursorContext cursorContext) {
         final var indexCursor = (InternalTokenIndexCursor) cursor;
-        indexCursor.setRead(read);
-        final var indexProgressor = tokenScan.reservePartition(indexCursor, cursorContext);
+        indexCursor.setRead((Read) executionContext.dataRead());
+        final var indexProgressor = tokenScan.reservePartition(indexCursor, executionContext.cursorContext());
         if (indexProgressor == IndexProgressor.EMPTY) {
             return false;
         }
