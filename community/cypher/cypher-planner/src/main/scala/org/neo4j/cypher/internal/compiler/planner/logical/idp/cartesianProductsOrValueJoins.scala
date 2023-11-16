@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.SortPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.SortPlanner.SatisfiedForPlan
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.BestPlans
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.QuerySolvableByGetDegree.SetExtractor
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.In
@@ -495,7 +496,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
         lhsQG,
         rhsQG,
         interestingOrderConfig,
-        predicate,
+        Seq(predicate),
         context,
         kit,
         singleComponentPlanner
@@ -525,7 +526,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
     lhsQG: QueryGraph,
     rhsQG: QueryGraph,
     interestingOrderConfig: InterestingOrderConfig,
-    predicate: Expression,
+    predicates: Seq[Expression],
     context: LogicalPlanningContext,
     kit: QueryPlannerKit,
     singleComponentPlanner: SingleComponentPlannerTrait
@@ -535,13 +536,18 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
     val rhsQgWithLhsArguments =
       context.staticComponents.planningAttributes.solveds.get(rhsInputPlan.id).asSinglePlannerQuery.lastQueryGraph
         .addArgumentIds(lhsQG.idsWithoutOptionalMatchesOrUpdates.toIndexedSeq)
-        .addPredicates(predicate)
+        .addPredicates(predicates: _*)
         .addHints(rhsQG.hints)
 
-    val (leftSymbols, rightSymbols) =
-      predicate.dependencies.map(_.name).partition(lhsQG.idsWithoutOptionalMatchesOrUpdates.contains)
-    rightSymbols.toSeq match {
-      case Seq(rightSymbol) =>
+    val (leftSymbols, rightSymbols) = predicates
+      .view
+      .flatMap(_.dependencies)
+      .map(_.name)
+      .to(Set)
+      .partition(lhsQG.idsWithoutOptionalMatchesOrUpdates.contains)
+
+    rightSymbols match {
+      case SetExtractor(rightSymbol) =>
         val contextForRhs = context.withModifiedPlannerState(_
           .withUpdatedLabelInfo(lhsPlan, context.staticComponents.planningAttributes.solveds))
         val leafPlanCandidates = {

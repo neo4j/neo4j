@@ -1528,4 +1528,34 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
       .nodeByLabelScan("a", "A")
       .build()
   }
+
+  test("Should plan nested index join using composite index with two predicates joining both sides") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(200)
+      .setLabelCardinality("A", 100)
+      .setLabelCardinality("B", 100)
+      .addNodeIndex("A", Seq("id"), existsSelectivity = 1.0, uniqueSelectivity = 1 / 100.0, isUnique = true)
+      .addNodeIndex("B", Seq("x", "y"), existsSelectivity = 1.0, uniqueSelectivity = 1 / 100.0, isUnique = true)
+      .build()
+
+    val query =
+      """
+        |MATCH (a:A {id: 15})
+        |MATCH (b:B {x: a.prop, y: a.otherProp})
+        |RETURN count(*)
+        |""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .aggregation(Seq(), Seq("count(*) AS `count(*)`"))
+      .apply()
+      .|.nodeIndexOperator(
+        "b:B(x = ???, y = ???)",
+        paramExpr = Seq(prop("a", "prop"), prop("a", "otherProp")),
+        argumentIds = Set("a"),
+        unique = true
+      )
+      .nodeIndexOperator("a:A(id = 15)", unique = true)
+      .build()
+  }
 }

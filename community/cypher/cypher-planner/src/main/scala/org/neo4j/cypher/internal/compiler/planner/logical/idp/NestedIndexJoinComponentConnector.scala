@@ -58,9 +58,9 @@ case class NestedIndexJoinComponentConnector(singleComponentPlanner: SingleCompo
             rightGoal <- componentsGoal.subGoals(1)
             rightPlan <- table(rightGoal).iterator
 
-            containsOptionals = context.staticComponents.planningAttributes.solveds.get(
-              rightPlan.id
-            ).asSinglePlannerQuery.lastQueryGraph.optionalMatches.nonEmpty
+            containsOptionals = context.staticComponents.planningAttributes.solveds
+              .get(rightPlan.id).asSinglePlannerQuery
+              .lastQueryGraph.optionalMatches.nonEmpty
             if !containsOptionals
 
             rightQg = registry.explode(rightGoal.bitSet).reduce(_ ++ _)
@@ -72,14 +72,19 @@ case class NestedIndexJoinComponentConnector(singleComponentPlanner: SingleCompo
             leftQg = registry.explode(leftGoal.bitSet).reduce(_ ++ _)
             leftCovered = leftQg.allCoveredIds
 
-            predicate <- predicatesDependendingOnBothSides(predicatesWithDependencies, leftCovered, rightCovered)
+            allPredicates = predicatesDependendingOnBothSides(predicatesWithDependencies, leftCovered, rightCovered)
+
+            // Group predicates that have the same dependencies on the RHS, and try to solve them together.
+            // This can make it possible to use composite indexes.
+            predicates <- allPredicates.groupBy(_.dependencies.map(_.name).intersect(rightCovered)).values
+
             plan <- planNIJ(
               leftPlan,
               rightPlan,
               leftQg,
               rightQg,
               interestingOrderConfig,
-              predicate,
+              predicates,
               context,
               kit,
               singleComponentPlanner
