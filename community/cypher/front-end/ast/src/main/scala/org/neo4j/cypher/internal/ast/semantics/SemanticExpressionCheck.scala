@@ -791,11 +791,13 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
       val lhsScalarTypes = lhsTypes without CTList(CTAny)
       val rhsScalarTypes = rhsTypes without CTList(CTAny)
 
-      val bothListMergedTypes = (lhsListInnerTypes coerceOrLeastUpperBound rhsListInnerTypes).wrapInList
+      val bothListMergedLhTypes = (lhsListInnerTypes coerceOrLeastUpperBound rhsListInnerTypes).wrapInList
+      val bothListMergedRhTypes = (rhsListInnerTypes coerceOrLeastUpperBound lhsListInnerTypes).wrapInList
+
       val lhListMergedTypes = (rhsScalarTypes coerceOrLeastUpperBound lhsListInnerTypes).wrapInList
       val rhListMergedTypes = (lhsScalarTypes coerceOrLeastUpperBound rhsListInnerTypes).wrapInList
 
-      bothListMergedTypes | lhListMergedTypes | rhListMergedTypes
+      bothListMergedLhTypes | bothListMergedRhTypes | lhListMergedTypes | rhListMergedTypes
     }
 
     stringTypes | numberTypes | listTypes | temporalTypes

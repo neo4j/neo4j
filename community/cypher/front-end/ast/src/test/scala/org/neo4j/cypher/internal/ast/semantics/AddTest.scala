@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTLocalDateTime
 import org.neo4j.cypher.internal.util.symbols.CTLocalTime
 import org.neo4j.cypher.internal.util.symbols.CTNode
+import org.neo4j.cypher.internal.util.symbols.CTNumber
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.CTTime
 
@@ -107,6 +108,7 @@ class AddTest extends InfixExpressionTestBase(Add(_, _)(DummyPosition(0))) {
 
   test("shouldHandleCoercions") {
     testValidTypes(CTList(CTFloat), CTInteger)(CTList(CTFloat))
+    testValidTypes(CTInteger, CTList(CTFloat))(CTList(CTFloat))
     testValidTypes(CTFloat | CTList(CTFloat), CTInteger)(CTFloat | CTList(CTFloat))
   }
 
@@ -121,6 +123,17 @@ class AddTest extends InfixExpressionTestBase(Add(_, _)(DummyPosition(0))) {
 
   test("should concatenate different typed lists") {
     testValidTypes(CTList(CTInteger), CTList(CTString))(CTList(CTAny))
+  }
+
+  test("should concatenate lists with coercible types independent of order") {
+    testValidTypes(CTList(CTInteger), CTList(CTFloat))(CTList(CTFloat) | CTList(CTNumber))
+    testValidTypes(CTList(CTFloat), CTList(CTInteger))(CTList(CTFloat) | CTList(CTNumber))
+  }
+
+  test("should concatenate lists with empty lists") {
+    val expected = CTList(CTAny) | CTList(CTInteger) | CTList(CTFloat) | CTList(CTNumber)
+    testValidTypes(CTList(CTInteger), CTList(CTAny).covariant)(expected)
+    testValidTypes(CTList(CTAny).covariant, CTList(CTInteger))(expected)
   }
 
   test("should concatenate vector element of other type after list") {
