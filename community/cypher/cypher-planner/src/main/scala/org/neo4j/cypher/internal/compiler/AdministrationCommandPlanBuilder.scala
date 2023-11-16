@@ -149,6 +149,7 @@ import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
 import org.neo4j.cypher.internal.frontend.phases.Phase
+import org.neo4j.cypher.internal.frontend.phases.ResolvedCall
 import org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.logical.plans.DatabaseTypeFilter.Alias
 import org.neo4j.cypher.internal.logical.plans.DatabaseTypeFilter.CompositeDatabase
@@ -213,7 +214,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       case _      => plans.WaitForCompletion(logicalPlan, databaseName, waitUntilComplete)
     }
 
-    def planSystemProcedureCall(resolved: plans.ResolvedCall, returns: Option[Return]): plans.LogicalPlan = {
+    def planSystemProcedureCall(resolved: ResolvedCall, returns: Option[Return]): plans.LogicalPlan = {
       val SemanticCheckResult(_, errors) = resolved.semanticCheck.run(SemanticState.clean, SemanticCheckContext.default)
       errors.foreach { error => throw context.cypherExceptionFactory.syntaxException(error.msg, error.position) }
       val signature = resolved.signature
@@ -1259,23 +1260,23 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
 
       // Global call: CALL foo.bar.baz("arg1", 2) // only if system procedure is allowed!
       case SingleQuery(Seq(
-          resolved @ plans.ResolvedCall(signature, _, _, _, _, _),
+          resolved @ ResolvedCall(signature, _, _, _, _, _),
           returns @ Return(_, _, _, _, _, _, _)
         )) if signature.systemProcedure =>
         Some(planSystemProcedureCall(resolved, Some(returns)))
 
       case SingleQuery(Seq(
           UseGraph(Variable(SYSTEM_DATABASE_NAME)),
-          resolved @ plans.ResolvedCall(signature, _, _, _, _, _),
+          resolved @ ResolvedCall(signature, _, _, _, _, _),
           returns @ Return(_, _, _, _, _, _, _)
         )) if signature.systemProcedure =>
         Some(planSystemProcedureCall(resolved, Some(returns)))
 
-      case SingleQuery(Seq(resolved @ plans.ResolvedCall(signature, _, _, _, _, _))) if signature.systemProcedure =>
+      case SingleQuery(Seq(resolved @ ResolvedCall(signature, _, _, _, _, _))) if signature.systemProcedure =>
         Some(planSystemProcedureCall(resolved, None))
 
       case SingleQuery(
-          Seq(UseGraph(Variable(SYSTEM_DATABASE_NAME)), resolved @ plans.ResolvedCall(signature, _, _, _, _, _))
+          Seq(UseGraph(Variable(SYSTEM_DATABASE_NAME)), resolved @ ResolvedCall(signature, _, _, _, _, _))
         ) if signature.systemProcedure =>
         Some(planSystemProcedureCall(resolved, None))
 

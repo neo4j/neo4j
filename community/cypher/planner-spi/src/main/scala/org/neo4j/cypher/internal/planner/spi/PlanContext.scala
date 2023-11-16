@@ -19,9 +19,7 @@
  */
 package org.neo4j.cypher.internal.planner.spi
 
-import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
-import org.neo4j.cypher.internal.logical.plans.QualifiedName
-import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
+import org.neo4j.cypher.internal.frontend.phases.ProcedureSignatureResolver
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.internal.schema.constraints.SchemaValueType
 
@@ -188,11 +186,4 @@ trait PlanContext extends ReadTokenContext with ProcedureSignatureResolver {
    * Checks if there are uncommitted changes in the transaction state.
    */
   def txStateHasChanges(): Boolean
-}
-
-trait ProcedureSignatureResolver {
-  def procedureSignature(name: QualifiedName): ProcedureSignature
-  def functionSignature(name: QualifiedName): Option[UserFunctionSignature]
-
-  def procedureSignatureVersion: Long
 }

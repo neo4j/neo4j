@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.runtime.spec.resolver
 
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.frontend.phases.ProcedureSignature
+import org.neo4j.cypher.internal.frontend.phases.QualifiedName
+import org.neo4j.cypher.internal.frontend.phases.UserFunctionSignature
 import org.neo4j.cypher.internal.logical.builder.Resolver
-import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
-import org.neo4j.cypher.internal.logical.plans.QualifiedName
-import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSupport
 import org.neo4j.cypher.internal.spi.TransactionBoundPlanContext
 

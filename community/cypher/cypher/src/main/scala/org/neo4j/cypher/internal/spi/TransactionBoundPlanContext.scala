@@ -21,12 +21,12 @@ package org.neo4j.cypher.internal.spi
 
 import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.LastCommittedTxIdProvider
+import org.neo4j.cypher.internal.frontend.phases.FieldSignature
+import org.neo4j.cypher.internal.frontend.phases.ProcedureSignature
+import org.neo4j.cypher.internal.frontend.phases.QualifiedName
+import org.neo4j.cypher.internal.frontend.phases.UserFunctionSignature
 import org.neo4j.cypher.internal.logical.plans.CanGetValue
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
-import org.neo4j.cypher.internal.logical.plans.FieldSignature
-import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
-import org.neo4j.cypher.internal.logical.plans.QualifiedName
-import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
 import org.neo4j.cypher.internal.planner.spi.EventuallyConsistent
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability

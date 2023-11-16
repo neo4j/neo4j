@@ -21,8 +21,13 @@ Third-party licenses
 Apache Software License, Version 2.0
   Apache Commons Lang
   Apache Commons Text
+  Apache Log4j API
+  Apache Log4j Core
+  Apache Log4j Layout for JSON template
   Caffeine cache
+  IPAddress
   Java Native Access
+  Jettison
   Scala Reflect
 
 BSD - Scala License

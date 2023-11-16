@@ -24,8 +24,8 @@ import org.neo4j.cypher.internal.ast.UnresolvedCall
 import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.NodePattern
-import org.neo4j.cypher.internal.logical.plans.ResolvedCall
-import org.neo4j.cypher.internal.logical.plans.ResolvedFunctionInvocation
+import org.neo4j.cypher.internal.frontend.phases.ResolvedCall
+import org.neo4j.cypher.internal.frontend.phases.ResolvedFunctionInvocation
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.exceptions.SyntaxException
 import org.neo4j.fabric.FabricTest

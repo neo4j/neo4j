@@ -40,6 +40,10 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
+import org.neo4j.cypher.internal.frontend.phases.FieldSignature
+import org.neo4j.cypher.internal.frontend.phases.ProcedureReadOnlyAccess
+import org.neo4j.cypher.internal.frontend.phases.ProcedureSignature
+import org.neo4j.cypher.internal.frontend.phases.QualifiedName
 import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
 import org.neo4j.cypher.internal.ir.CallSubqueryHorizon
 import org.neo4j.cypher.internal.ir.CreatePattern
@@ -68,10 +72,6 @@ import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeIr
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createPatternIr
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationshipIr
-import org.neo4j.cypher.internal.logical.plans.FieldSignature
-import org.neo4j.cypher.internal.logical.plans.ProcedureReadOnlyAccess
-import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
-import org.neo4j.cypher.internal.logical.plans.QualifiedName
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.NonEmptyList

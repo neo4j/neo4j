@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.helpers
 
+import org.neo4j.cypher.internal.frontend.phases.ProcedureSignature
 import org.neo4j.cypher.internal.logical.builder.SimpleResolver
-import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 
 import scala.collection.mutable.ArrayBuffer

@@ -54,9 +54,22 @@
             <version>${project.version}</version>
         </dependency>
 
+
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-cypher-ast-factory</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-rewriting</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-configuration</artifactId>
             <version>${project.version}</version>
         </dependency>
 
@@ -106,14 +119,12 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- scala -->
         <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-cypher-ast-factory</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-library</artifactId>
         </dependency>
 
-        <!-- scala -->
         <dependency>
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-reflect</artifactId>

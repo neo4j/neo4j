@@ -30,7 +30,7 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.cypher.internal.compiler.helpers.SignatureResolver;
-import org.neo4j.cypher.internal.planner.spi.ProcedureSignatureResolver;
+import org.neo4j.cypher.internal.frontend.phases.ProcedureSignatureResolver;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.fabric.eval.Catalog;
 import org.neo4j.fabric.planning.FabricPlanner;

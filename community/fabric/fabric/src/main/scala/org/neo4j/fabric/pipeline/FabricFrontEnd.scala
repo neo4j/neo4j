@@ -41,10 +41,10 @@ import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.InitialState
+import org.neo4j.cypher.internal.frontend.phases.ProcedureSignatureResolver
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.options.CypherExecutionMode
 import org.neo4j.cypher.internal.planner.spi.PlannerNameFor
-import org.neo4j.cypher.internal.planner.spi.ProcedureSignatureResolver
 import org.neo4j.cypher.internal.planning.WrappedMonitors
 import org.neo4j.cypher.internal.tracing.CompilationTracer
 import org.neo4j.cypher.internal.tracing.TimingCompilationTracer
@@ -141,7 +141,8 @@ case class FabricFrontEnd(
       private val anonymousVariableNameGenerator = new AnonymousVariableNameGenerator(negativeNumbers = true)
 
       private val transformer =
-        CompilationPhases.fabricParsing(parsingConfig, signatures)
+        CompilationPhases
+          .fabricParsing(parsingConfig, signatures)
 
       def process(): BaseState =
         transformer.transform(

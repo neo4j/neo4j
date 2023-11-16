@@ -19,10 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.phases
 
-import org.neo4j.configuration.GraphDatabaseInternalSettings.ExtractLiteral
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
-import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.MultipleDatabases
 import org.neo4j.cypher.internal.compiler.AdministrationCommandPlanBuilder
 import org.neo4j.cypher.internal.compiler.SchemaCommandPlanBuilder
 import org.neo4j.cypher.internal.compiler.UnsupportedSystemCommand
@@ -46,49 +44,29 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.SortPredicatesBy
 import org.neo4j.cypher.internal.frontend.phases.AmbiguousAggregationAnalysis
 import org.neo4j.cypher.internal.frontend.phases.AstRewriting
 import org.neo4j.cypher.internal.frontend.phases.BaseContains
-import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CopyQuantifiedPathPatternPredicatesToJuxtaposedNodes
-import org.neo4j.cypher.internal.frontend.phases.ExpandStarRewriter
+import org.neo4j.cypher.internal.frontend.phases.FrontEndCompilationPhases
 import org.neo4j.cypher.internal.frontend.phases.If
-import org.neo4j.cypher.internal.frontend.phases.IsolateSubqueriesInMutatingPatterns
-import org.neo4j.cypher.internal.frontend.phases.LiteralExtraction
 import org.neo4j.cypher.internal.frontend.phases.MoveBoundaryNodePredicates
 import org.neo4j.cypher.internal.frontend.phases.Namespacer
 import org.neo4j.cypher.internal.frontend.phases.ObfuscationMetadataCollection
 import org.neo4j.cypher.internal.frontend.phases.PreparatoryRewriting
 import org.neo4j.cypher.internal.frontend.phases.ProjectNamedPathsRewriter
 import org.neo4j.cypher.internal.frontend.phases.SemanticAnalysis
-import org.neo4j.cypher.internal.frontend.phases.SemanticTypeCheck
-import org.neo4j.cypher.internal.frontend.phases.SyntaxDeprecationWarningsAndReplacements
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.collapseMultipleInPredicates
-import org.neo4j.cypher.internal.frontend.phases.extractSensitiveLiterals
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
 import org.neo4j.cypher.internal.frontend.phases.isolateAggregation
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.CNFNormalizer
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.rewriteEqualityToInPredicate
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.simplifyPredicates
 import org.neo4j.cypher.internal.frontend.phases.transitiveEqualities
-import org.neo4j.cypher.internal.planner.spi.ProcedureSignatureResolver
-import org.neo4j.cypher.internal.rewriting.Deprecations
-import org.neo4j.cypher.internal.rewriting.rewriters.Forced
-import org.neo4j.cypher.internal.rewriting.rewriters.IfNoParameter
-import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtractionStrategy
-import org.neo4j.cypher.internal.rewriting.rewriters.Never
 import org.neo4j.cypher.internal.rewriting.rewriters.computeDependenciesForExpressions.ExpressionsHaveComputedDependencies
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.AccumulatedSteps
-import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 
-object CompilationPhases {
-
-  val defaultSemanticFeatures: Seq[SemanticFeature.MultipleDatabases.type] = Seq(
-    MultipleDatabases
-  )
-
-  def enabledSemanticFeatures(extra: Set[String]): Seq[SemanticFeature] =
-    defaultSemanticFeatures ++ extra.map(SemanticFeature.fromString)
+object CompilationPhases extends FrontEndCompilationPhases {
 
   // these steps work on LogicalPlanState.maybeStatement, up until LogicalPlanState.maybeQuery is created
   private val AccumulatedSteps(astPlanPipelineSteps, astPlanPipelinePostConditions) =
@@ -151,73 +129,6 @@ object CompilationPhases {
       )
 
   private val orderedPlanPipelineSteps = astPlanPipelineSteps ++ irPlanPipelineSteps ++ lpPlanPipelineSteps
-
-  case class ParsingConfig(
-    extractLiterals: ExtractLiteral = ExtractLiteral.ALWAYS,
-    /* TODO: This is not part of configuration - Move to BaseState */
-    parameterTypeMapping: Map[String, ParameterTypeInfo] = Map.empty,
-    semanticFeatures: Seq[SemanticFeature] = defaultSemanticFeatures,
-    obfuscateLiterals: Boolean = false
-  ) {
-
-    def literalExtractionStrategy: LiteralExtractionStrategy = extractLiterals match {
-      case ExtractLiteral.ALWAYS          => Forced
-      case ExtractLiteral.NEVER           => Never
-      case ExtractLiteral.IF_NO_PARAMETER => IfNoParameter
-      case _ => throw new IllegalStateException(s"$extractLiterals is not a known strategy")
-    }
-  }
-
-  private def parsingBase(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] = {
-    Parse andThen
-      SyntaxDeprecationWarningsAndReplacements(Deprecations.syntacticallyDeprecatedFeatures) andThen
-      PreparatoryRewriting andThen
-      If((_: BaseState) => config.obfuscateLiterals)(
-        extractSensitiveLiterals
-      ) andThen
-      SemanticAnalysis(warn = true, config.semanticFeatures: _*) andThen
-      SemanticTypeCheck andThen
-      SyntaxDeprecationWarningsAndReplacements(Deprecations.semanticallyDeprecatedFeatures) andThen
-      IsolateSubqueriesInMutatingPatterns andThen
-      SemanticAnalysis(warn = false, config.semanticFeatures: _*)
-  }
-
-  // Phase 1
-  def parsing(
-    config: ParsingConfig,
-    resolver: Option[ProcedureSignatureResolver] = None
-  ): Transformer[BaseContext, BaseState, BaseState] = {
-    parsingBase(config) andThen
-      /*
-       * With query router we log the query early and therefore need to resolve
-       * procedure calls early in order to obfuscate sensitive procedure params
-       * in the query log.
-       */
-      If((_: BaseState) => resolver.isDefined)(TryRewriteProcedureCalls(resolver.orNull)) andThen
-      ObfuscationMetadataCollection andThen
-      AstRewriting(parameterTypeMapping = config.parameterTypeMapping) andThen
-      LiteralExtraction(config.literalExtractionStrategy)
-  }
-
-  // Phase 1 (Fabric)
-  def fabricParsing(
-    config: ParsingConfig,
-    resolver: ProcedureSignatureResolver
-  ): Transformer[BaseContext, BaseState, BaseState] = {
-    parsingBase(config) andThen
-      ExpandStarRewriter andThen
-      TryRewriteProcedureCalls(resolver) andThen
-      ObfuscationMetadataCollection andThen
-      SemanticAnalysis(warn = true, config.semanticFeatures: _*)
-  }
-
-  // Phase 1.1 (Fabric)
-  def fabricFinalize(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] = {
-    SemanticAnalysis(warn = true, config.semanticFeatures: _*) andThen
-      AstRewriting(parameterTypeMapping = config.parameterTypeMapping) andThen
-      LiteralExtraction(config.literalExtractionStrategy) andThen
-      SemanticAnalysis(warn = false, config.semanticFeatures: _*)
-  }
 
   // Phase 2
   val prepareForCaching: Transformer[PlannerContext, BaseState, BaseState] =
