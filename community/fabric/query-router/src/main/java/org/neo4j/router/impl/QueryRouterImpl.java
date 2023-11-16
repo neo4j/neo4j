@@ -185,8 +185,8 @@ public class QueryRouterImpl implements QueryRouter {
             AccessMode accessMode = context.transactionInfo().accessMode();
             context.verifyStatementType(statementType);
             var target = processedQueryInfo.target();
+            verifyAccessModeWithStatementType(executionMode, accessMode, statementType, target);
             var location = context.locationService().locationOf(target);
-            verifyAccessModeWithStatementType(executionMode, accessMode, statementType, location);
             updateQueryRouterMetric(location);
             var databaseTransaction =
                     context.transactionFor(location, transactionMode(accessMode, statementType, executionMode));
@@ -212,12 +212,15 @@ public class QueryRouterImpl implements QueryRouter {
     }
 
     private void verifyAccessModeWithStatementType(
-            CypherExecutionMode executionMode, AccessMode accessMode, StatementType statementType, Location location) {
+            CypherExecutionMode executionMode,
+            AccessMode accessMode,
+            StatementType statementType,
+            DatabaseReference databaseReference) {
         if (!(executionMode.isExplain()) && accessMode == AccessMode.READ && statementType.isWrite()) {
             throw new QueryRouterException(
                     Status.Statement.AccessMode,
                     WRITING_IN_READ_NOT_ALLOWED_MSG + ". Attempted write to %s",
-                    location.getDatabaseName());
+                    databaseReference.alias().name());
         }
     }
 
