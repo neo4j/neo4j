@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlannerKit
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.cartesianProductsOrValueJoins.planNIJ
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.cartesianProductsOrValueJoins.predicatesDependendingOnBothSides
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.QuerySolvableByGetDegree.SetExtractor
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -55,7 +56,7 @@ case class NestedIndexJoinComponentConnector(singleComponentPlanner: SingleCompo
           for {
             // We cannot plan NIJ if the RHS is more than one component or optional matches because that would require us to recurse into
             // JoinDisconnectedQueryGraphComponents instead of SingleComponentPlannerTrait.
-            rightGoal <- componentsGoal.subGoals(1)
+            rightGoal @ Goal(SetExtractor(rightBit)) <- componentsGoal.subGoals(1)
             rightPlan <- table(rightGoal).iterator
 
             containsOptionals = context.staticComponents.planningAttributes.solveds
@@ -63,7 +64,7 @@ case class NestedIndexJoinComponentConnector(singleComponentPlanner: SingleCompo
               .lastQueryGraph.optionalMatches.nonEmpty
             if !containsOptionals
 
-            rightQg = registry.explode(rightGoal.bitSet).reduce(_ ++ _)
+            rightQg = registry.lookup(rightBit).get
             rightCovered = rightQg.allCoveredIds
 
             leftGoal = goal.diff(rightGoal)
