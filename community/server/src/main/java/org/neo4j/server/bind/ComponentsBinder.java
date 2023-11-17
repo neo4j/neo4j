@@ -35,7 +35,6 @@ public class ComponentsBinder extends AbstractBinder {
     private final List<SingletonBinding> singletonBindings = new ArrayList<>();
     private final List<LazyBinding> lazyBindings = new ArrayList<>();
     private final List<LazyFactoryBinding<?>> lazyFactoryBindings = new ArrayList<>();
-
     private boolean configured;
 
     /**

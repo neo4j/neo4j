@@ -20,7 +20,7 @@
 package org.neo4j.server.http.cypher;
 
 import java.net.URI;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Context;

@@ -19,15 +19,15 @@
  */
 package org.neo4j.server.rest.dbms;
 
-import static javax.servlet.http.HttpServletRequest.BASIC_AUTH;
+import static jakarta.servlet.http.HttpServletRequest.BASIC_AUTH;
 
 import java.io.IOException;
-import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.HttpHeaders;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;

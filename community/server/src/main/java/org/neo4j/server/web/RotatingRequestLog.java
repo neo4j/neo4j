@@ -23,7 +23,7 @@ import static org.apache.commons.lang3.StringUtils.defaultString;
 import static org.neo4j.logging.log4j.LoggerTarget.HTTP_LOGGER;
 
 import java.util.function.Function;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Response;

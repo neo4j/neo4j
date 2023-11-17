@@ -20,8 +20,8 @@
 package org.neo4j.server.rest.dbms;
 
 import java.security.Principal;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequestWrapper;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.internal.kernel.api.security.AccessMode;

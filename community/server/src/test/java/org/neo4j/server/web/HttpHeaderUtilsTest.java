@@ -29,7 +29,7 @@ import static org.neo4j.server.web.HttpHeaderUtils.MAX_EXECUTION_TIME_HEADER;
 import static org.neo4j.server.web.HttpHeaderUtils.getTransactionTimeout;
 import static org.neo4j.server.web.HttpHeaderUtils.isValidHttpHeaderName;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.http.HttpHeader;
 import org.junit.jupiter.api.Test;
 import org.neo4j.logging.AssertableLogProvider;

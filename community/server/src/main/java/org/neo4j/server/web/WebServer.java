@@ -22,7 +22,7 @@ package org.neo4j.server.web;
 import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.List;
-import javax.servlet.Filter;
+import jakarta.servlet.Filter;
 import org.eclipse.jetty.server.RequestLog;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.server.bind.ComponentsBinder;

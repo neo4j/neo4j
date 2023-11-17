@@ -28,6 +28,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
+
+import jakarta.servlet.Servlet;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
@@ -88,6 +90,7 @@ public class JaxRsServletHolderFactory {
                 .packages(packages.toArray(new String[0]))
                 .registerClasses(classes)
                 .property(WADL_FEATURE_DISABLE, String.valueOf(!wadlEnabled));
+
 
         ServletContainer container = new ServletContainer(resourceConfig);
         return new ServletHolder(container);

@@ -22,7 +22,7 @@ package org.neo4j.server.modules;
 import java.util.List;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
-import javax.servlet.Filter;
+import jakarta.servlet.Filter;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.kernel.api.security.AuthManager;

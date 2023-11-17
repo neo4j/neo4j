@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import org.neo4j.bolt.protocol.common.message.AccessMode;

@@ -23,7 +23,7 @@ import static java.util.Collections.singletonList;
 import static org.neo4j.internal.helpers.collection.MapUtil.map;
 
 import java.io.IOException;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.server.rest.web.AbstractFilter;

@@ -20,7 +20,7 @@
 package org.neo4j.server.web;
 
 import java.io.Writer;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 
 public class NeoJettyErrorHandler extends ErrorHandler {

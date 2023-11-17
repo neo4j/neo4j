@@ -29,7 +29,7 @@ import static org.neo4j.server.web.HttpHeaderUtils.getTransactionTimeout;
 import java.net.URI;
 import java.util.Map;
 import java.util.Optional;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
