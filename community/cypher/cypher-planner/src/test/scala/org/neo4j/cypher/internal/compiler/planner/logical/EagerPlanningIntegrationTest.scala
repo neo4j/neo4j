@@ -35,7 +35,6 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.ir.EagernessReason.Conflict
 import org.neo4j.cypher.internal.ir.EagernessReason.LabelReadSetConflict
-import org.neo4j.cypher.internal.ir.EagernessReason.ReadDeleteConflict
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.logical.builder.TestNFABuilder
