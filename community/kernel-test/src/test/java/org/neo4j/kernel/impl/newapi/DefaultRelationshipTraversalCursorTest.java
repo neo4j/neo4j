@@ -28,7 +28,9 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.storageengine.api.RelationshipSelection.ALL_RELATIONSHIPS;
 import static org.neo4j.storageengine.api.RelationshipSelection.selection;
 
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.LongStream;
@@ -550,6 +552,11 @@ class DefaultRelationshipTraversalCursorTest {
         @Override
         public long estimateCountsForNode(int labelId) {
             return 0;
+        }
+
+        @Override
+        public List<Integer> mostCommonLabelGivenRelationshipType(int type) {
+            return Collections.emptyList();
         }
 
         @Override

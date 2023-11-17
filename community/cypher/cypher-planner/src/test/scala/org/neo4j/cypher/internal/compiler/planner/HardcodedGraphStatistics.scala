@@ -51,4 +51,6 @@ case object HardcodedGraphStatistics extends GraphStatistics {
     PATTERN_STEP_CARDINALITY
 
   override def nodesAllCardinality(): Cardinality = NODES_CARDINALITY
+
+  override def mostCommonLabelGivenRelationshipType(typ: Int): Seq[Int] = Seq.empty
 }

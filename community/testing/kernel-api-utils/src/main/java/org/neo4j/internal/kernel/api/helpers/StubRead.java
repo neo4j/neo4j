@@ -207,6 +207,11 @@ public class StubRead implements Read {
     }
 
     @Override
+    public List<Integer> mostCommonLabelGivenRelationshipType(int type) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public long countsForRelationship(int startLabelId, int typeId, int endLabelId) {
         throw new UnsupportedOperationException();
     }

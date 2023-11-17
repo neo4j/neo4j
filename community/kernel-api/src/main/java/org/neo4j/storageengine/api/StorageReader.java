@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.function.Function;
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.counts.CountsVisitor;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -100,6 +101,8 @@ public interface StorageReader extends AutoCloseable, StorageSchemaReader {
     long countsForNode(int labelId, CursorContext cursorContext);
 
     long estimateCountsForNode(int labelId, CursorContext cursorContext);
+
+    void visitAllCounts(CountsVisitor visitor, CursorContext cursorContext);
 
     /**
      * Returns number of stored relationships of a certain {@code typeId} whose start/end nodes are labeled

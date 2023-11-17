@@ -314,6 +314,8 @@ public interface Read {
      */
     long countsForNodeWithoutTxState(int labelId);
 
+    List<Integer> mostCommonLabelGivenRelationshipType(int type);
+
     /**
      * Estimate number of nodes in the graph, without taking into account anything in the transaction state.
      * This is a fast but possibly not precise method to get number of nodes.

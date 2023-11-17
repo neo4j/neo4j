@@ -31,6 +31,8 @@ trait GraphStatistics {
    */
   def nodesAllCardinality(): Cardinality
 
+  def mostCommonLabelGivenRelationshipType(typ: Int): Seq[Int] = Seq.empty
+
   /**
    * Gets the Cardinality for given LabelId
    *
@@ -89,4 +91,7 @@ class DelegatingGraphStatistics(delegate: GraphStatistics) extends GraphStatisti
     delegate.indexPropertyIsNotNullSelectivity(index)
 
   override def nodesAllCardinality(): Cardinality = delegate.nodesAllCardinality()
+
+  override def mostCommonLabelGivenRelationshipType(typ: Int): Seq[Int] =
+    delegate.mostCommonLabelGivenRelationshipType(typ)
 }

@@ -24,8 +24,10 @@ import static org.neo4j.internal.helpers.collection.Iterators.singleOrNull;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.storageengine.api.txstate.TxStateVisitor.EMPTY;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
@@ -36,6 +38,7 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.collection.diffset.DiffSets;
 import org.neo4j.common.EntityType;
+import org.neo4j.counts.CountsVisitor;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.IndexMonitor;
@@ -96,6 +99,7 @@ import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageSchemaReader;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.txstate.TransactionCountingStateVisitor;
+import org.neo4j.token.api.TokenConstants;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.Value;
 
@@ -201,6 +205,41 @@ public abstract class AllStoreHolder extends Read {
     @Override
     public long countsForNode(int labelId) {
         return countsForNodeWithoutTxState(labelId) + countsForNodeInTxState(labelId);
+    }
+
+    private static class MostCommonLabelGivenRelTypeVisitor implements CountsVisitor {
+        private final int relationshipType;
+        private long labelCount = -1;
+        public ArrayList<Integer> highest = new ArrayList<>();
+
+        public MostCommonLabelGivenRelTypeVisitor(int relationshipType) {
+            this.relationshipType = relationshipType;
+        }
+
+        @Override
+        public void visitNodeCount(int labelId, long count) {}
+
+        @Override
+        public void visitRelationshipCount(int startLabelId, int typeId, int endLabelId, long count) {
+            if (typeId == relationshipType
+                    && (startLabelId > TokenConstants.ANY_LABEL ^ endLabelId > TokenConstants.ANY_LABEL)) {
+                int labelId = startLabelId > TokenConstants.ANY_LABEL ? startLabelId : endLabelId;
+
+                if (count > labelCount) {
+                    labelCount = count;
+                    highest = new ArrayList<>(List.of(labelId));
+                } else if (count == labelCount) {
+                    highest.add(labelId);
+                }
+            }
+        }
+    }
+
+    public List<Integer> mostCommonLabelGivenRelationshipType(int type) {
+        MostCommonLabelGivenRelTypeVisitor myVisitor = new MostCommonLabelGivenRelTypeVisitor(type);
+        storageReader.visitAllCounts(myVisitor, cursorContext());
+
+        return myVisitor.highest;
     }
 
     @Override

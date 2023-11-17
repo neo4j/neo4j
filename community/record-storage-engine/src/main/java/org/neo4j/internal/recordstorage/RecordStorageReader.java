@@ -30,6 +30,7 @@ import org.eclipse.collections.api.set.primitive.IntSet;
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.counts.CountsStore;
+import org.neo4j.counts.CountsVisitor;
 import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -237,6 +238,11 @@ public class RecordStorageReader implements StorageReader {
     @Override
     public long estimateCountsForNode(int labelId, CursorContext cursorContext) {
         return counts.estimateNodeCount(labelId, cursorContext);
+    }
+
+    @Override
+    public void visitAllCounts(CountsVisitor visitor, CursorContext cursorContext) {
+        counts.accept(visitor, cursorContext);
     }
 
     @Override

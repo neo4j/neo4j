@@ -113,4 +113,9 @@ case class InstrumentedGraphStatistics(inner: GraphStatistics, snapshot: Mutable
 
   override def nodesAllCardinality(): Cardinality =
     snapshot.map.getOrElseUpdate(NodesAllCardinality, inner.nodesAllCardinality().amount)
+
+  override def mostCommonLabelGivenRelationshipType(typ: Int): Seq[Int] = {
+    // This value is not part of the snapshot since it's using the same underlying statistics as patternStepCardinality
+    inner.mostCommonLabelGivenRelationshipType(typ)
+  }
 }

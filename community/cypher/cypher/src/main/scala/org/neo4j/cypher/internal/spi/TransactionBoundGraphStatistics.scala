@@ -36,6 +36,8 @@ import org.neo4j.logging.InternalLog
 
 import java.lang.Math.min
 
+import scala.jdk.CollectionConverters.ListHasAsScala
+
 object TransactionBoundGraphStatistics {
 
   def apply(transactionalContext: TransactionalContext, log: InternalLog): MinimumGraphStatistics =
@@ -111,6 +113,10 @@ object TransactionBoundGraphStatistics {
 
     override def nodesAllCardinality(): Cardinality =
       Cardinality(read.estimateCountsForNode(TokenRead.ANY_LABEL))
+
+    override def mostCommonLabelGivenRelationshipType(typ: Int): Seq[Int] = {
+      read.mostCommonLabelGivenRelationshipType(typ).asScala.toSeq.map(_.toInt)
+    }
 
     override def nodesWithLabelCardinality(maybeLabelId: Option[LabelId]): Cardinality = {
       val count: Long = maybeLabelId.map(labelId => read.estimateCountsForNode(labelId.id)).getOrElse(0L)

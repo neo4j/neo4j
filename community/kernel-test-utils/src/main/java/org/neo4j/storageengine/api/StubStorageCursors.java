@@ -42,6 +42,7 @@ import java.util.function.Function;
 import org.eclipse.collections.api.set.primitive.IntSet;
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.counts.CountsVisitor;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.Read;
@@ -265,6 +266,11 @@ public class StubStorageCursors implements StorageReader {
 
     @Override
     public long countsForNode(int labelId, CursorContext cursorContext) {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    @Override
+    public void visitAllCounts(CountsVisitor visitor, CursorContext cursorContext) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
