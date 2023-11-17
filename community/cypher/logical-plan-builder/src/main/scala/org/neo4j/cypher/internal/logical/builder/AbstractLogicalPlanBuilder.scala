@@ -385,6 +385,11 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     self
   }
 
+  def resetIndent(): IMPL = {
+    indent = 0
+    self
+  }
+
   // OPERATORS
 
   def produceResults(vars: String*): IMPL = {
