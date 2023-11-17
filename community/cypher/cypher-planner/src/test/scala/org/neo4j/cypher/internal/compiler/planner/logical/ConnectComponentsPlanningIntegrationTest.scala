@@ -1558,4 +1558,43 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
       .nodeIndexOperator("a:A(id = 15)", unique = true)
       .build()
   }
+
+  test(
+    "Should plan nested index join using composite index with two predicates joining both sides, 2 different LHS dependencies"
+  ) {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(200)
+      .setAllRelationshipsCardinality(100)
+      .setLabelCardinality("A", 100)
+      .setLabelCardinality("B", 100)
+      .setRelationshipCardinality("(:A)-[]->(:A)", 100)
+      .setRelationshipCardinality("()-[]->(:A)", 100)
+      .setRelationshipCardinality("(:A)-[]->()", 100)
+      .addNodeIndex("A", Seq("id"), existsSelectivity = 1.0, uniqueSelectivity = 1 / 100.0, isUnique = true)
+      .addNodeIndex("B", Seq("x", "y"), existsSelectivity = 1.0, uniqueSelectivity = 1 / 100.0, isUnique = true)
+      .build()
+
+    val query =
+      """
+        |MATCH (a:A {id: 15})-->(anotherA:A)
+        |  WHERE anotherA.id > 123
+        |MATCH (b:B {x: a.prop, y: anotherA.otherProp})
+        |RETURN count(*)
+        |""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .aggregation(Seq(), Seq("count(*) AS `count(*)`"))
+      .apply()
+      .|.nodeIndexOperator(
+        "b:B(x = ???, y = ???)",
+        paramExpr = Seq(prop("a", "prop"), prop("anotherA", "otherProp")),
+        argumentIds = Set("a", "anotherA", "anon_0"),
+        unique = true
+      )
+      .filter("anotherA.id > 123", "anotherA:A")
+      .expandAll("(a)-[anon_0]->(anotherA)")
+      .nodeIndexOperator("a:A(id = 15)", unique = true)
+      .build()
+  }
 }

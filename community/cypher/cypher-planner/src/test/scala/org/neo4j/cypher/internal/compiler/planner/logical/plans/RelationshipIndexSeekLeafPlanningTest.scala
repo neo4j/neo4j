@@ -339,14 +339,14 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
   }
 
   test("plans only index plans that match the dependencies of the restriction for composite index") {
-    val x = "x"
-    val xProp = prop(x, prop)
+    val xProp = prop("x", prop)
+    val yProp = prop("y", prop)
 
     val rPropEqualsXProp = equals(rProp, xProp)
     val rPropEquals = equals(lit42, rProp)
 
     val rFoo = prop(relName, foo)
-    val rFooEqualsXProp = Equals(rFoo, xProp)(pos)
+    val rFooEqualsYProp = Equals(rFoo, yProp)(pos)
     val rFooEquals = equals(lit42, rFoo)
 
     new givenConfig {
@@ -358,7 +358,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
         rPropEquals,
         rPropEqualsXProp,
         rFooEquals,
-        rFooEqualsXProp
+        rFooEqualsYProp
       )
 
       qg = QueryGraph(
@@ -370,32 +370,25 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
             BOTH,
             Seq(relTypeName(relTypeName)),
             SimplePatternLength
-          ),
-          PatternRelationship(
-            x,
-            (startNodeName, endNodeName),
-            BOTH,
-            Seq(relTypeName(relTypeName)),
-            SimplePatternLength
           )
         ),
-        argumentIds = Set(x)
+        argumentIds = Set("x", "y")
       )
 
       relationshipIndexOn(relTypeName, prop, foo)
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val restriction = LeafPlanRestrictions.OnlyIndexSeekPlansFor(relName, Set("x"))
-      val resultPlans = indexSeekLeafPlanner(restriction)(cfg.qg, InterestingOrderConfig.empty, ctx).toSet
+      val restriction = LeafPlanRestrictions.OnlyIndexSeekPlansFor(relName, Set("x", "y"))
+      val resultPlans = indexSeekLeafPlanner(restriction)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
-      // This contains all combinations except r.prop = 42 AND r.foo = 42, because it does not depend on x
+      // This contains all combinations except r.prop = 42 AND r.foo = 42, because it does not depend on x or y
       resultPlans should equal(Set(
         new LogicalPlanBuilder(wholePlan = false)
           .relationshipIndexOperator(
             s"($startNodeName)-[$relName:$relTypeName($prop = 42, foo = ???)]-($endNodeName)",
-            paramExpr = Some(xProp),
-            argumentIds = Set(x),
+            paramExpr = Some(yProp),
+            argumentIds = Set("x", "y"),
             getValue = _ => CanGetValue,
             indexType = IndexType.RANGE
           )
@@ -404,7 +397,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
           .relationshipIndexOperator(
             s"($startNodeName)-[$relName:$relTypeName($prop = ???, foo = 42)]-($endNodeName)",
             paramExpr = Some(xProp),
-            argumentIds = Set(x),
+            argumentIds = Set("x", "y"),
             getValue = _ => CanGetValue,
             indexType = IndexType.RANGE
           )
@@ -412,8 +405,8 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
         new LogicalPlanBuilder(wholePlan = false)
           .relationshipIndexOperator(
             s"($startNodeName)-[$relName:$relTypeName($prop = ???, foo = ???)]-($endNodeName)",
-            paramExpr = Seq(xProp, xProp),
-            argumentIds = Set(x),
+            paramExpr = Seq(xProp, yProp),
+            argumentIds = Set("x", "y"),
             getValue = _ => CanGetValue,
             indexType = IndexType.RANGE
           )

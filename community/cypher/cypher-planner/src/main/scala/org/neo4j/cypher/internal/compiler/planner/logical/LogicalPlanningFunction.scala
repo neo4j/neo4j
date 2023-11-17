@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.BestPlans
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.macros.AssertMacros
 
 trait PlanSelector {
 
@@ -85,6 +86,7 @@ object LeafPlanRestrictions {
    * For `variable`, only plan IndexSeek, IndexContainsScan and IndexEndsWithScan.
    */
   case class OnlyIndexSeekPlansFor(variable: String, dependencies: Set[String]) extends LeafPlanRestrictions {
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(dependencies.nonEmpty, "Dependencies must not be empty")
     override def symbolsThatShouldOnlyUseIndexSeekLeafPlanners: Set[String] = Set(variable)
   }
 

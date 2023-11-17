@@ -679,7 +679,9 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
   test("plans only index plans that match the dependencies of the restriction for composite index") {
     val xProp = prop("x", "prop")
+    val yProp = prop("y", "prop")
     val xPropExpr: QueryExpression[Expression] = SingleQueryExpression(xProp)
+    val yPropExpr: QueryExpression[Expression] = SingleQueryExpression(yProp)
     val lit42Expr: QueryExpression[Expression] = SingleQueryExpression(lit42)
 
     val nProp = prop("n", "prop")
@@ -687,7 +689,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
     val nPropEquals = equals(nProp, lit42)
 
     val nFoo = prop("n", "foo")
-    val nFooEqualsXProp = Equals(nFoo, xProp)(pos)
+    val nFooEqualsYProp = Equals(nFoo, yProp)(pos)
     val nFooEquals = equals(nFoo, lit42)
 
     new givenConfig {
@@ -701,19 +703,19 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
         nPropEquals,
         nPropEqualsXProp,
         nFooEquals,
-        nFooEqualsXProp
+        nFooEqualsYProp
       )
 
       qg = QueryGraph(
         selections = Selections(predicates.flatMap(_.asPredicates)),
-        patternNodes = Set("n", "x"),
-        argumentIds = Set("x")
+        patternNodes = Set("n", "x", "y"),
+        argumentIds = Set("x", "y")
       )
 
       indexOn("Awesome", "prop", "foo")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val restriction = LeafPlanRestrictions.OnlyIndexSeekPlansFor("n", Set("x"))
+      val restriction = LeafPlanRestrictions.OnlyIndexSeekPlansFor("n", Set("x", "y"))
       val resultPlans = indexSeekLeafPlanner(restriction)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
@@ -723,14 +725,14 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       val indexedProperties =
         Seq(IndexedProperty(nPropToken, CanGetValue, NODE_TYPE), IndexedProperty(nFooToken, CanGetValue, NODE_TYPE))
 
-      // This contains all combinations except n.prop = 42 AND n.foo = 42, because it does not depend on x
+      // This contains all combinations except n.prop = 42 AND n.foo = 42, because it does not depend on x or y
       val expected = Set(
         NodeIndexSeek(
           varFor(idName),
           labelToken,
           indexedProperties,
           CompositeQueryExpression(Seq(xPropExpr, lit42Expr)),
-          Set(varFor("x")),
+          Set(varFor("x"), varFor("y")),
           IndexOrderNone,
           IndexType.RANGE
         ),
@@ -738,8 +740,8 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           varFor(idName),
           labelToken,
           indexedProperties,
-          CompositeQueryExpression(Seq(xPropExpr, xPropExpr)),
-          Set(varFor("x")),
+          CompositeQueryExpression(Seq(xPropExpr, yPropExpr)),
+          Set(varFor("x"), varFor("y")),
           IndexOrderNone,
           IndexType.RANGE
         ),
@@ -747,8 +749,8 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           varFor(idName),
           labelToken,
           indexedProperties,
-          CompositeQueryExpression(Seq(lit42Expr, xPropExpr)),
-          Set(varFor("x")),
+          CompositeQueryExpression(Seq(lit42Expr, yPropExpr)),
+          Set(varFor("x"), varFor("y")),
           IndexOrderNone,
           IndexType.RANGE
         )
