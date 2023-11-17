@@ -153,7 +153,7 @@
     <eclipse-collections.version>11.1.0</eclipse-collections.version>
     <picocli.version>4.7.4</picocli.version>
     <jakarta.activation-api.version>1.2.2</jakarta.activation-api.version>
-    <jakarta.ws.rs-api.version>2.1.6</jakarta.ws.rs-api.version>
+    <jakarta.ws.rs-api.version>3.1.0</jakarta.ws.rs-api.version>
     <antlr.version>4.13.0</antlr.version>
   </properties>
 
