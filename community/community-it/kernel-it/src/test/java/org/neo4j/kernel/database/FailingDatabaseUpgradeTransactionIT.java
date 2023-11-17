@@ -25,6 +25,7 @@ import static org.neo4j.dbms.database.ComponentVersion.DBMS_RUNTIME_COMPONENT;
 import static org.neo4j.dbms.database.SystemGraphComponent.VERSION_LABEL;
 
 import java.io.IOException;
+import java.util.concurrent.Future;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -97,22 +98,27 @@ public class FailingDatabaseUpgradeTransactionIT {
     void shouldHandleMaxTransactionReachedInUpgrade() throws Exception {
         Barrier.Control barrier = new Barrier.Control();
         try (OtherThreadExecutor executor = new OtherThreadExecutor("Executor")) {
-            executor.executeDontWait(() -> {
+            Future<Object> readTx = null;
+            try {
+                readTx = executor.executeDontWait(() -> {
+                    try (Transaction tx = db.beginTx()) {
+                        barrier.reached();
+                    }
+                    return null;
+                });
+
+                set(LatestVersions.LATEST_RUNTIME_VERSION);
+
+                barrier.await();
                 try (Transaction tx = db.beginTx()) {
-                    barrier.reached();
+                    tx.createNode(); // Write tx to trigger upgrade
+                    tx.commit();
                 }
-                return null;
-            });
-
-            set(LatestVersions.LATEST_RUNTIME_VERSION);
-
-            barrier.await();
-            try (Transaction tx = db.beginTx()) {
-                tx.createNode(); // Write tx to trigger upgrade
-                tx.commit();
+            } finally {
+                barrier.release();
+                assertThat(readTx).isNotNull();
+                readTx.get();
             }
-        } finally {
-            barrier.release();
         }
 
         LogAssertions.assertThat(logProvider)
@@ -139,11 +145,11 @@ public class FailingDatabaseUpgradeTransactionIT {
             tx.commit();
         }
         assertThat(getNodeCount()).as("tx triggering upgrade succeeded").isEqualTo(2);
-        assertThat(kernelVersion()).isEqualTo(LatestVersions.LATEST_KERNEL_VERSION);
         LogAssertions.assertThat(logProvider)
                 .containsMessageWithArguments(
                         "Upgrade transaction from %s to %s completed",
                         oldKernelVersion, LatestVersions.LATEST_KERNEL_VERSION);
+        assertThat(kernelVersion()).isEqualTo(LatestVersions.LATEST_KERNEL_VERSION);
     }
 
     private long getNodeCount() {
