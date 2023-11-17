@@ -712,21 +712,24 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
     nfa: NFA
   )
 
-  def statefulShortestPath(planBuilder: LogicalPlanBuilder, parameters: ShortestPathParameters): LogicalPlanBuilder =
-    planBuilder
-      .statefulShortestPath(
-        parameters.start,
-        parameters.end,
-        parameters.query,
-        None,
-        Set.empty,
-        Set.empty,
-        parameters.singletonNodeVariables,
-        parameters.singletonRelationshipVariables,
-        StatefulShortestPath.Selector.Shortest(1),
-        parameters.nfa,
-        false
-      )
+  implicit class SSPLogicalPlanBuilder(builder: LogicalPlanBuilder) {
+
+    def statefulShortestPath(parameters: ShortestPathParameters): LogicalPlanBuilder =
+      builder
+        .statefulShortestPath(
+          parameters.start,
+          parameters.end,
+          parameters.query,
+          None,
+          Set.empty,
+          Set.empty,
+          parameters.singletonNodeVariables,
+          parameters.singletonRelationshipVariables,
+          StatefulShortestPath.Selector.Shortest(1),
+          parameters.nfa,
+          false
+        )
+  }
 
   val `(start)-[r]->(end)` : ShortestPathParameters =
     ShortestPathParameters(
@@ -793,12 +796,11 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
     val query = "MATCH ANY SHORTEST (start)-[r]->(end) CREATE (end)-[s:S]->() RETURN end"
     val plan = planner.plan(query)
 
-    val topPlan = planner.planBuilder()
+    val expectedPlan = planner.planBuilder()
       .produceResults("end")
       .create(createNode("anon_0"), createRelationship("s", "end", "S", "anon_0", OUTGOING))
       .eager(reason)
-
-    val expectedPlan = statefulShortestPath(topPlan, `(start)-[r]->(end)`)
+      .statefulShortestPath(`(start)-[r]->(end)`)
       .allNodeScan("start")
       .build()
 
@@ -816,15 +818,14 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
     val query = "MATCH ANY SHORTEST (start)-[r:R]->(end) CREATE (end)-[s:S]->() RETURN end"
     val plan = planner.plan(query)
 
-    val topPlan = planner.planBuilder()
+    val expectedPlan = planner.planBuilder()
       .produceResults("end")
       .create(createNode("anon_0"), createRelationship("s", "end", "S", "anon_0", OUTGOING))
       .lpEager(ListSet(
         ReadCreateConflict.withConflict(Conflict(Id(1), Id(3))),
         TypeReadSetConflict(relTypeName("S")).withConflict(Conflict(Id(1), Id(3)))
       ))
-
-    val expectedPlan = statefulShortestPath(topPlan, `(start)-[r:R]->(end)`)
+      .statefulShortestPath(`(start)-[r:R]->(end)`)
       .allNodeScan("start")
       .build()
 
@@ -899,9 +900,9 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
         )
     }
 
-    val topPlan = planner.planBuilder()
+    val expected = planner.planBuilder()
       .produceResults("end")
-    val expected = statefulShortestPath(topPlan, `(start)-[r]->(end)`)
+      .statefulShortestPath(`(start)-[r]->(end)`)
       .apply()
       .|.allNodeScan("start", "b")
       .eager(reason)
@@ -937,9 +938,9 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
         )
     }
 
-    val topPlan = planner.planBuilder()
+    val expected = planner.planBuilder()
       .produceResults("end")
-    val expected = statefulShortestPath(topPlan, `(start)-[r]->(end)`)
+      .statefulShortestPath(`(start)-[r]->(end)`)
       .apply()
       .|.allNodeScan("start", "a")
       .eager(reason)
@@ -1074,12 +1075,12 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
         )
     }
 
-    val topPlan = planner.planBuilder()
+    val expected = planner.planBuilder()
       .produceResults("1")
       .projection("1 AS 1")
       .detachDeleteNode("end")
       .eager(reason) // This eager is unnecessary since we are limited to one shortest
-    val expected = statefulShortestPath(topPlan, `(start)-[r:R]->(end)`)
+      .statefulShortestPath(`(start)-[r:R]->(end)`)
       .allNodeScan("start")
       .build()
 
@@ -1098,13 +1099,13 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
     val query =
       "MATCH ANY SHORTEST ((start)((a)-[r:R]->(b))+(end)) MERGE (start)-[t:T]-(end) RETURN end"
 
-    val topPlan = planner.planBuilder()
+    val expected = planner.planBuilder()
       .produceResults("end")
       .apply()
       .|.merge(Seq(), Seq(createRelationship("t", "start", "T", "end", BOTH)), Seq(), Seq(), Set("start", "end"))
       .|.expandInto("(start)-[t:T]-(end)")
       .|.argument("start", "end")
-    val expected = statefulShortestPath(topPlan, `((start)((a)-[r:R]->(b))+(end))`)
+      .statefulShortestPath(`((start)((a)-[r:R]->(b))+(end))`)
       .allNodeScan("start")
       .build()
 
@@ -1123,14 +1124,14 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
     val query =
       "MATCH ANY SHORTEST ((start)((a)-[r:R]->(b))+(end)) MERGE (start)-[t:R]-(end) RETURN end"
 
-    val topPlan = planner.planBuilder()
+    val expected = planner.planBuilder()
       .produceResults("end")
       .apply()
       .|.merge(Seq(), Seq(createRelationship("t", "start", "R", "end", BOTH)), Seq(), Seq(), Set("start", "end"))
       .|.expandInto("(start)-[t:R]-(end)")
       .|.argument("start", "end")
       .irEager(ListSet(Unknown)) // TODO LP should find Eager here too
-    val expected = statefulShortestPath(topPlan, `((start)((a)-[r:R]->(b))+(end))`)
+      .statefulShortestPath(`((start)((a)-[r:R]->(b))+(end))`)
       .allNodeScan("start")
       .build()
 
