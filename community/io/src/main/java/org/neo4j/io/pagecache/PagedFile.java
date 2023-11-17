@@ -90,6 +90,11 @@ public interface PagedFile extends AutoCloseable {
     int PF_NO_CHAIN_FOLLOW = 1 << 7;
 
     /**
+     * Do not load page from storage on fault, keeping page backing memory non initialized
+     */
+    int PF_NO_LOAD = 1 << 8;
+
+    /**
      * Initiate an IO interaction with the contents of the paged file.
      * <p>
      * The basic structure of an interaction looks like this:

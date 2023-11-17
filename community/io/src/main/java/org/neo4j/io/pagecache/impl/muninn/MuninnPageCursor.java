@@ -22,9 +22,11 @@ package org.neo4j.io.pagecache.impl.muninn;
 import static org.neo4j.io.pagecache.PagedFile.PF_EAGER_FLUSH;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_CHAIN_FOLLOW;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_FAULT;
+import static org.neo4j.io.pagecache.PagedFile.PF_NO_LOAD;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_TRANSIENT;
 import static org.neo4j.io.pagecache.impl.muninn.MuninnPagedFile.UNMAPPED_TTE;
+import static org.neo4j.io.pagecache.impl.muninn.PageList.setSwapperId;
 import static org.neo4j.io.pagecache.impl.muninn.PageList.validatePageRefAndSetFilePageId;
 import static org.neo4j.util.FeatureToggles.flag;
 
@@ -82,6 +84,7 @@ public abstract class MuninnPageCursor extends PageCursor {
     protected final boolean eagerFlush;
     private final boolean noFault;
     protected final boolean chainFollow;
+    protected final boolean noLoad;
     protected final boolean noGrow;
     private final boolean updateUsage;
     protected final boolean multiVersioned;
@@ -138,6 +141,7 @@ public abstract class MuninnPageCursor extends PageCursor {
         this.updateUsage = !isFlagRaised(pf_flags, PF_TRANSIENT);
         this.noFault = isFlagRaised(pf_flags, PF_NO_FAULT);
         this.chainFollow = !isFlagRaised(pf_flags, PF_NO_CHAIN_FOLLOW);
+        this.noLoad = isFlagRaised(pf_flags, PF_NO_LOAD);
         this.noGrow = noFault || isFlagRaised(pf_flags, PagedFile.PF_NO_GROW);
         this.victimPage = victimPage;
         this.tracer = cursorContext.getCursorTracer();
@@ -420,7 +424,11 @@ public abstract class MuninnPageCursor extends PageCursor {
                 // the file channel.
                 assertCursorOpenFileMappedAndGetIdOfLastPage();
                 pagedFile.initBuffer(pageRef);
-                PageList.fault(pageRef, swapper, pagedFile.swapperId, filePageId, faultEvent);
+                if (noLoad) {
+                    setSwapperId(pageRef, swapperId); // Page now considered isBoundTo( swapper, filePageId )
+                } else {
+                    PageList.fault(pageRef, swapper, pagedFile.swapperId, filePageId, faultEvent);
+                }
             } catch (Throwable throwable) {
                 try {
                     // Make sure to unlock the page, so the eviction thread can pick up our trash.

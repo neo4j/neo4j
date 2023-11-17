@@ -40,6 +40,7 @@ import static org.neo4j.io.pagecache.PageCache.PAGE_SIZE;
 import static org.neo4j.io.pagecache.PageCacheOpenOptions.MULTI_VERSIONED;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_FAULT;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
+import static org.neo4j.io.pagecache.PagedFile.PF_NO_LOAD;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_TRANSIENT;
@@ -2063,6 +2064,68 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
 
             try (var reader = (MuninnPageCursor) pagedFile.io(0, PF_SHARED_READ_LOCK, NULL_CONTEXT)) {
                 assertEquals(reader.getPayloadSize(), 0);
+            }
+        }
+    }
+
+    @Test
+    void fileGrowOnWritePageWithNoLoadOption() throws IOException {
+        try (var pageCache = getPageCache(fs, 1024, new DefaultPageCacheTracer());
+                var pagedFile = map(file("a"), pageCache.pageSize())) {
+            int pagesToPin = 100;
+            for (int i = 0; i <= pagesToPin; i++) {
+                try (var writer = (MuninnPageCursor) pagedFile.io(i, PF_SHARED_WRITE_LOCK | PF_NO_LOAD, NULL_CONTEXT)) {
+                    assertTrue(writer.next());
+                }
+            }
+
+            assertEquals(pagesToPin, pagedFile.getLastPageId());
+            assertEquals((pagesToPin + 1) * PAGE_SIZE, pagedFile.fileSize());
+        }
+    }
+
+    @Test
+    void writeDataWithWriteCursorWithNoLoadOption() throws IOException {
+        try (var pageCache = getPageCache(fs, 10, new DefaultPageCacheTracer());
+                var pagedFile = map(file("a"), pageCache.pageSize())) {
+            int pagesToPin = 100;
+            for (int i = 0; i <= pagesToPin; i++) {
+                try (var writer = (MuninnPageCursor) pagedFile.io(i, PF_SHARED_WRITE_LOCK | PF_NO_LOAD, NULL_CONTEXT)) {
+                    assertTrue(writer.next());
+                    writer.putInt(i);
+                }
+            }
+
+            for (int i = 0; i <= pagesToPin; i++) {
+                try (var reader = (MuninnPageCursor) pagedFile.io(i, PF_SHARED_READ_LOCK, NULL_CONTEXT)) {
+                    assertTrue(reader.next());
+                    int result;
+                    do {
+                        reader.setOffset(0);
+                        result = reader.getInt();
+                    } while (reader.shouldRetry());
+                    assertEquals(i, result);
+                }
+            }
+        }
+    }
+
+    @Test
+    void eventsOnWriteCursorWithNoLoadOption() throws IOException {
+        DefaultPageCacheTracer defaultPageCacheTracer = new DefaultPageCacheTracer();
+        var contextFactory = new CursorContextFactory(defaultPageCacheTracer, EMPTY_CONTEXT_SUPPLIER);
+        try (var pageCache = getPageCache(fs, 10, defaultPageCacheTracer);
+                var pagedFile = map(file("a"), pageCache.pageSize())) {
+            int pagesToPin = 100;
+            for (int i = 0; i <= pagesToPin; i++) {
+                try (var context = contextFactory.create("eventsOnWriteCursorWithNoLoadOption");
+                        var writer = (MuninnPageCursor) pagedFile.io(i, PF_SHARED_WRITE_LOCK | PF_NO_LOAD, context)) {
+                    assertTrue(writer.next());
+                    var cursorTracer = context.getCursorTracer();
+                    assertEquals(1, cursorTracer.pins());
+                    assertEquals(0, cursorTracer.bytesRead());
+                    assertEquals(1, cursorTracer.faults());
+                }
             }
         }
     }
