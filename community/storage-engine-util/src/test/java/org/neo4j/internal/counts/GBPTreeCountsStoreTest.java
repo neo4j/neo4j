@@ -153,6 +153,27 @@ class GBPTreeCountsStoreTest {
     }
 
     @Test
+    void shouldEstimateSomeCounts() throws IOException {
+        // GBPTreeCountsStore estimations are exact
+        long txId = BASE_TX_ID;
+        try (CountsUpdater updater = countsStore.updater(++txId, true, NULL_CONTEXT)) {
+            updater.incrementNodeCount(LABEL_ID_1, 10);
+            updater.incrementRelationshipCount(LABEL_ID_1, RELATIONSHIP_TYPE_ID_1, LABEL_ID_2, 3);
+            updater.incrementRelationshipCount(LABEL_ID_1, RELATIONSHIP_TYPE_ID_2, LABEL_ID_2, 7);
+        }
+        try (CountsUpdater updater = countsStore.updater(++txId, true, NULL_CONTEXT)) {
+            updater.incrementNodeCount(LABEL_ID_1, 5); // now at 15
+            updater.incrementRelationshipCount(LABEL_ID_1, RELATIONSHIP_TYPE_ID_1, LABEL_ID_2, 2); // now at 5
+        }
+
+        assertEquals(15, countsStore.estimateNodeCount(LABEL_ID_1, NULL_CONTEXT));
+        assertEquals(
+                5, countsStore.estimateRelationshipCount(LABEL_ID_1, RELATIONSHIP_TYPE_ID_1, LABEL_ID_2, NULL_CONTEXT));
+        assertEquals(
+                7, countsStore.estimateRelationshipCount(LABEL_ID_1, RELATIONSHIP_TYPE_ID_2, LABEL_ID_2, NULL_CONTEXT));
+    }
+
+    @Test
     void shouldUseCountsBuilderOnCreation() throws Exception {
         // given
         long rebuiltAtTransactionId = 5;

@@ -232,6 +232,11 @@ public abstract class AllStoreHolder extends Read {
         }
     }
 
+    @Override
+    public long estimateCountsForNode(int labelId) {
+        return storageReader.estimateCountsForNode(labelId, cursorContext());
+    }
+
     private long countsForNodeInTxState(int labelId) {
         long count = 0;
         if (hasTxStateWithChanges()) {
@@ -315,6 +320,11 @@ public abstract class AllStoreHolder extends Read {
             count = countRelationshipsWithEndLabels(filteredCursor, sourceNode, targetNode, startLabelId, endLabelId);
         }
         return count - countsForRelationshipInTxState(startLabelId, typeId, endLabelId);
+    }
+
+    @Override
+    public long estimateCountsForRelationships(int startLabelId, int typeId, int endLabelId) {
+        return storageReader.estimateCountsForRelationship(startLabelId, typeId, endLabelId, cursorContext());
     }
 
     private static long countRelationshipsWithEndLabels(

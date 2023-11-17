@@ -54,7 +54,7 @@ class TransactionBoundGraphStatisticsTest extends CypherFunSuite {
 
   test("indexPropertyExistsSelectivity should compute selectivity") {
     // given
-    when(read.countsForNodeWithoutTxState(labelId)).thenReturn(1000L)
+    when(read.estimateCountsForNode(labelId)).thenReturn(1000L)
     when(schemaRead.indexSize(descriptor)).thenReturn(500L)
 
     // when
@@ -66,7 +66,7 @@ class TransactionBoundGraphStatisticsTest extends CypherFunSuite {
 
   test("indexPropertyExistsSelectivity should handle indexSize being out-of-sync with counts") {
     // given
-    when(read.countsForNodeWithoutTxState(labelId)).thenReturn(1000L)
+    when(read.estimateCountsForNode(labelId)).thenReturn(1000L)
     when(schemaRead.indexSize(descriptor)).thenReturn(2000L)
 
     // when
@@ -78,7 +78,7 @@ class TransactionBoundGraphStatisticsTest extends CypherFunSuite {
 
   test("indexPropertyExistsSelectivity should handle label count zero") {
     // given
-    when(read.countsForNodeWithoutTxState(labelId)).thenReturn(0L)
+    when(read.estimateCountsForNode(labelId)).thenReturn(0L)
     when(schemaRead.indexSize(descriptor)).thenReturn(2000L)
 
     // when
@@ -92,7 +92,7 @@ class TransactionBoundGraphStatisticsTest extends CypherFunSuite {
 
   test("indexPropertyExistsSelectivity should log if index returned from schema read but size cannot get computed") {
     // given
-    when(read.countsForNodeWithoutTxState(labelId)).thenReturn(20L)
+    when(read.estimateCountsForNode(labelId)).thenReturn(20L)
     val exception = new IndexNotFoundKernelException("wut")
     when(schemaRead.indexSize(any[org.neo4j.internal.schema.IndexDescriptor])).thenThrow(exception)
     val theLog = mock[InternalLog]
@@ -107,7 +107,7 @@ class TransactionBoundGraphStatisticsTest extends CypherFunSuite {
 
   test("indexPropertyExistsSelectivity should not log if index was not found") {
     when(schemaRead.index(any[SchemaDescriptor], any[schema.IndexType])).thenReturn(schema.IndexDescriptor.NO_INDEX)
-    when(read.countsForNodeWithoutTxState(labelId)).thenReturn(20L)
+    when(read.estimateCountsForNode(labelId)).thenReturn(20L)
     val exception = new IndexNotFoundKernelException("wut")
     when(schemaRead.indexSize(any[org.neo4j.internal.schema.IndexDescriptor])).thenThrow(exception)
     val theLog = mock[InternalLog]

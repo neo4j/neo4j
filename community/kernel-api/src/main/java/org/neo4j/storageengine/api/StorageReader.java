@@ -99,6 +99,8 @@ public interface StorageReader extends AutoCloseable, StorageSchemaReader {
      */
     long countsForNode(int labelId, CursorContext cursorContext);
 
+    long estimateCountsForNode(int labelId, CursorContext cursorContext);
+
     /**
      * Returns number of stored relationships of a certain {@code typeId} whose start/end nodes are labeled
      * with the {@code startLabelId} and {@code endLabelId} respectively.
@@ -110,6 +112,8 @@ public interface StorageReader extends AutoCloseable, StorageSchemaReader {
      * @return number of stored relationships matching these criteria.
      */
     long countsForRelationship(int startLabelId, int typeId, int endLabelId, CursorContext cursorContext);
+
+    long estimateCountsForRelationship(int startLabelId, int typeId, int endLabelId, CursorContext cursorContext);
 
     long nodesGetCount(CursorContext cursorContext);
 

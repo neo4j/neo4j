@@ -315,6 +315,16 @@ public interface Read {
     long countsForNodeWithoutTxState(int labelId);
 
     /**
+     * Estimate number of nodes in the graph, without taking into account anything in the transaction state.
+     * This is a fast but possibly not precise method to get number of nodes.
+     * Accuracy of this estimation is enough for cardinality estimation purposes.
+     *
+     * @param labelId the label to get the count for, or {@link TokenRead#ANY_LABEL} to get the total number of nodes.
+     * @return estimate number of matching nodes in the graph
+     */
+    long estimateCountsForNode(int labelId);
+
+    /**
      * The number of relationships in the graph, including anything changed in the transaction state.
      *
      * Returns the number of relationships in the graph that matches the specified pattern,
@@ -405,6 +415,18 @@ public interface Read {
      * @return the number of matching relationships in the graph.
      */
     long countsForRelationshipWithoutTxState(int startLabelId, int typeId, int endLabelId);
+
+    /**
+     * Estimate number of relationships in the graph, without taking into account anything in the transaction state.
+     * This is a fast but possibly not precise method to get number of relationships.
+     * Accuracy of this estimation is enough for cardinality estimation purposes.
+     *
+     * @param startLabelId the label of the start node of relationships to get the count for, or {@link TokenRead#ANY_LABEL}.
+     * @param typeId       the type of relationships to get a count for, or {@link TokenRead#ANY_RELATIONSHIP_TYPE}.
+     * @param endLabelId   the label of the end node of relationships to get the count for, or {@link TokenRead#ANY_LABEL}.
+     * @return the estimate number of matching relationships in the graph.
+     */
+    long estimateCountsForRelationships(int startLabelId, int typeId, int endLabelId);
 
     /**
      * Count of the total number of nodes in the database including changes in the current transaction.

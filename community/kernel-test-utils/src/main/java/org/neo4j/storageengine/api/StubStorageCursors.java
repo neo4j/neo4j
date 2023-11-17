@@ -268,7 +268,18 @@ public class StubStorageCursors implements StorageReader {
     }
 
     @Override
+    public long estimateCountsForNode(int labelId, CursorContext cursorContext) {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    @Override
     public long countsForRelationship(int startLabelId, int typeId, int endLabelId, CursorContext cursorContext) {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    @Override
+    public long estimateCountsForRelationship(
+            int startLabelId, int typeId, int endLabelId, CursorContext cursorContext) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 

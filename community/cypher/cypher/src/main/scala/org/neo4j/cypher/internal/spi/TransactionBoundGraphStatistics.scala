@@ -84,9 +84,9 @@ object TransactionBoundGraphStatistics {
       try {
         val entitiesCount = index.entityType match {
           case IndexDescriptor.EntityType.Node(label) =>
-            read.countsForNodeWithoutTxState(label).toDouble
+            read.estimateCountsForNode(label).toDouble
           case IndexDescriptor.EntityType.Relationship(relType) =>
-            read.countsForRelationshipWithoutTxState(TokenRead.ANY_LABEL, relType, TokenRead.ANY_LABEL).toDouble
+            read.estimateCountsForRelationships(TokenRead.ANY_LABEL, relType, TokenRead.ANY_LABEL).toDouble
         }
 
         if (entitiesCount == 0)
@@ -110,10 +110,10 @@ object TransactionBoundGraphStatistics {
       }
 
     override def nodesAllCardinality(): Cardinality =
-      Cardinality(read.countsForNodeWithoutTxState(TokenRead.ANY_LABEL))
+      Cardinality(read.estimateCountsForNode(TokenRead.ANY_LABEL))
 
     override def nodesWithLabelCardinality(maybeLabelId: Option[LabelId]): Cardinality = {
-      val count: Long = maybeLabelId.map(labelId => read.countsForNodeWithoutTxState(labelId.id)).getOrElse(0L)
+      val count: Long = maybeLabelId.map(labelId => read.estimateCountsForNode(labelId.id)).getOrElse(0L)
       Cardinality(count)
     }
 
@@ -122,7 +122,7 @@ object TransactionBoundGraphStatistics {
       relTypeId: Option[RelTypeId],
       toLabel: Option[LabelId]
     ): Cardinality =
-      Cardinality(read.countsForRelationshipWithoutTxState(fromLabel, relTypeId, toLabel))
+      Cardinality(read.estimateCountsForRelationships(fromLabel, relTypeId, toLabel))
 
     private def maybeKernelIndexDescriptor(indexDescriptor: IndexDescriptor): Option[schema.IndexDescriptor] = {
       Option(schemaRead.index(cypherToKernelSchema(indexDescriptor), cypherToKernel(indexDescriptor.indexType)))

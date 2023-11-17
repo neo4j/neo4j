@@ -143,8 +143,18 @@ public class GBPTreeCountsStore extends GBPTreeGenericCountsStore implements Cou
     }
 
     @Override
+    public long estimateNodeCount(int labelId, CursorContext cursorContext) {
+        return nodeCount(labelId, cursorContext);
+    }
+
+    @Override
     public long relationshipCount(int startLabelId, int typeId, int endLabelId, CursorContext cursorContext) {
         return read(relationshipKey(startLabelId, typeId, endLabelId), cursorContext);
+    }
+
+    @Override
+    public long estimateRelationshipCount(int startLabelId, int typeId, int endLabelId, CursorContext cursorContext) {
+        return relationshipCount(startLabelId, typeId, endLabelId, cursorContext);
     }
 
     @Override

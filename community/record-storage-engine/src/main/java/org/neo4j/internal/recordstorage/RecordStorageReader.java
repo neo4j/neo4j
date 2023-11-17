@@ -235,11 +235,25 @@ public class RecordStorageReader implements StorageReader {
     }
 
     @Override
+    public long estimateCountsForNode(int labelId, CursorContext cursorContext) {
+        return counts.estimateNodeCount(labelId, cursorContext);
+    }
+
+    @Override
     public long countsForRelationship(int startLabelId, int typeId, int endLabelId, CursorContext cursorContext) {
         if (!(startLabelId == ANY_LABEL || endLabelId == ANY_LABEL)) {
             throw new UnsupportedOperationException("not implemented");
         }
         return counts.relationshipCount(startLabelId, typeId, endLabelId, cursorContext);
+    }
+
+    @Override
+    public long estimateCountsForRelationship(
+            int startLabelId, int typeId, int endLabelId, CursorContext cursorContext) {
+        if (!(startLabelId == ANY_LABEL || endLabelId == ANY_LABEL)) {
+            throw new UnsupportedOperationException("not implemented");
+        }
+        return counts.estimateRelationshipCount(startLabelId, typeId, endLabelId, cursorContext);
     }
 
     @Override

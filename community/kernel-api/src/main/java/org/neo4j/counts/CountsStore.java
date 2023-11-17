@@ -64,6 +64,15 @@ public interface CountsStore extends AutoCloseable, ConsistencyCheckable {
     long nodeCount(int labelId, CursorContext cursorContext);
 
     /**
+     * Return estimate node count. Should be accurate enough for cardinality estimation.
+     *
+     * @param labelId node label token id to get count for.
+     * @param cursorContext underlying page cursor context
+     * @return the count for the label token id, i.e. number of nodes with that label.
+     */
+    long estimateNodeCount(int labelId, CursorContext cursorContext);
+
+    /**
      * @param startLabelId node label token id of start node.
      * @param typeId relationship type token id of relationship.
      * @param endLabelId node label token id of end node.
@@ -71,6 +80,17 @@ public interface CountsStore extends AutoCloseable, ConsistencyCheckable {
      * @return the count for the start/end node label and relationship type combination.
      */
     long relationshipCount(int startLabelId, int typeId, int endLabelId, CursorContext cursorContext);
+
+    /**
+     * Return estimate relationship count. Should be accurate enough for cardinality estimation.
+     *
+     * @param startLabelId node label token id of start node.
+     * @param typeId relationship type token id of relationship.
+     * @param endLabelId node label token id of end node.
+     * @param cursorContext underlying page cursor context
+     * @return the count for the start/end node label and relationship type combination.
+     */
+    long estimateRelationshipCount(int startLabelId, int typeId, int endLabelId, CursorContext cursorContext);
 
     /**
      * Puts the counts store in started state, i.e. after potentially recovery has been made. Any changes
