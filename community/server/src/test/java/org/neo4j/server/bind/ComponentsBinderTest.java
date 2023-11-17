@@ -19,14 +19,14 @@
  */
 package org.neo4j.server.bind;
 
-import static javax.ws.rs.HttpMethod.GET;
-import static javax.ws.rs.core.Response.Status;
+import static jakarta.ws.rs.HttpMethod.GET;
+import static jakarta.ws.rs.core.Response.Status;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 
 import java.net.URI;
-import javax.ws.rs.core.SecurityContext;
+import jakarta.ws.rs.core.SecurityContext;
 import org.glassfish.jersey.internal.PropertiesDelegate;
 import org.glassfish.jersey.server.ApplicationHandler;
 import org.glassfish.jersey.server.ContainerRequest;

@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.rest.repr;
 
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MediaType;
 import org.neo4j.annotations.service.Service;
 
 /**

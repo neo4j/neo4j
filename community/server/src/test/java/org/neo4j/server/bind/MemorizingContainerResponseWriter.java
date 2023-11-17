@@ -20,7 +20,7 @@
 package org.neo4j.server.bind;
 
 import static java.io.OutputStream.nullOutputStream;
-import static javax.ws.rs.core.Response.Status;
+import static jakarta.ws.rs.core.Response.Status;
 
 import java.io.OutputStream;
 import java.util.concurrent.TimeUnit;

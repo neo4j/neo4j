@@ -22,7 +22,7 @@ package org.neo4j.server.web;
 import static java.util.Objects.requireNonNullElse;
 
 import java.net.URI;
-import javax.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.core.UriBuilder;
 
 public class XForwardUtil {
     public static final String X_FORWARD_HOST_HEADER_KEY = "X-Forwarded-Host";

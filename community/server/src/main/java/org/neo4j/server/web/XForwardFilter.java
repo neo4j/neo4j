@@ -23,10 +23,10 @@ import static org.neo4j.server.web.XForwardUtil.X_FORWARD_HOST_HEADER_KEY;
 import static org.neo4j.server.web.XForwardUtil.X_FORWARD_PROTO_HEADER_KEY;
 
 import java.net.URI;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.container.ContainerRequestFilter;
-import javax.ws.rs.container.PreMatching;
-import javax.ws.rs.core.UriInfo;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.container.ContainerRequestFilter;
+import jakarta.ws.rs.container.PreMatching;
+import jakarta.ws.rs.core.UriInfo;
 
 /**
  * Changes the value of the base and request URIs to match the provided

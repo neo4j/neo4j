@@ -20,9 +20,9 @@
 package org.neo4j.server.http.error;
 
 import java.util.Collections;
-import javax.ws.rs.InternalServerErrorException;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.ExceptionMapper;
+import jakarta.ws.rs.InternalServerErrorException;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.ext.ExceptionMapper;
 import org.glassfish.jersey.message.internal.MessageBodyProviderNotFoundException;
 
 public class MediaTypeExceptionMapper implements ExceptionMapper<InternalServerErrorException> {

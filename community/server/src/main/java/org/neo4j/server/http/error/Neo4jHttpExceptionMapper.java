@@ -21,9 +21,9 @@ package org.neo4j.server.http.error;
 
 import java.util.List;
 import java.util.stream.Collectors;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.ExceptionMapper;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.ext.ExceptionMapper;
 
 public class Neo4jHttpExceptionMapper implements ExceptionMapper<Neo4jHttpException> {
     @Override

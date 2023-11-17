@@ -19,8 +19,8 @@
  */
 package org.neo4j.server.rest.security;
 
-import static javax.ws.rs.core.Response.Status.OK;
-import static javax.ws.rs.core.Response.Status.UNAUTHORIZED;
+import static jakarta.ws.rs.core.Response.Status.OK;
+import static jakarta.ws.rs.core.Response.Status.UNAUTHORIZED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.server.rest.web.CorsFilter.ACCESS_CONTROL_ALLOW_HEADERS;

@@ -21,9 +21,9 @@ package org.neo4j.server;
 
 import static java.net.http.HttpClient.Redirect.NEVER;
 import static java.net.http.HttpResponse.BodyHandlers.discarding;
-import static javax.ws.rs.core.HttpHeaders.ACCEPT;
-import static javax.ws.rs.core.HttpHeaders.LOCATION;
-import static javax.ws.rs.core.MediaType.TEXT_HTML;
+import static jakarta.ws.rs.core.HttpHeaders.ACCEPT;
+import static jakarta.ws.rs.core.HttpHeaders.LOCATION;
+import static jakarta.ws.rs.core.MediaType.TEXT_HTML;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.net.http.HttpClient;

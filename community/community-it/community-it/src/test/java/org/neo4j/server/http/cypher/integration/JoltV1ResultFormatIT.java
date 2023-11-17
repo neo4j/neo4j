@@ -25,7 +25,7 @@ import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Stream;
-import javax.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.HttpHeaders;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;

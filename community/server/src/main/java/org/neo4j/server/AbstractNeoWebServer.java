@@ -32,7 +32,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
-import javax.ws.rs.ext.MessageBodyWriter;
+import jakarta.ws.rs.ext.MessageBodyWriter;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.neo4j.bolt.tx.TransactionManager;

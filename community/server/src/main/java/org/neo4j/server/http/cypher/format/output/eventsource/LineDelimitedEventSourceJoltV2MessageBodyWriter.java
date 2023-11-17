@@ -22,9 +22,9 @@ package org.neo4j.server.http.cypher.format.output.eventsource;
 import com.fasterxml.jackson.core.JsonFactory;
 import java.io.OutputStream;
 import java.util.Map;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.ext.Provider;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.ext.Provider;
 import org.neo4j.server.http.cypher.format.jolt.v2.JoltV2Codec;
 
 @Provider

@@ -20,9 +20,9 @@
 package org.neo4j.server.rest.repr;
 
 import java.util.Collection;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 
 public class MediaTypeNotSupportedException extends WebApplicationException {
     private static final long serialVersionUID = 5159216782240337940L;

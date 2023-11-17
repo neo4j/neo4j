@@ -22,8 +22,8 @@ package org.neo4j.server.bind;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.util.function.Supplier;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.UriInfo;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.UriInfo;
 
 public class DummyComponentSupplier implements Supplier<DummyComponent> {
     @Context

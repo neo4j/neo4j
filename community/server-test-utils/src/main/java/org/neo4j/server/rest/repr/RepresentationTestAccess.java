@@ -24,7 +24,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MediaType;
 import org.neo4j.server.rest.repr.formats.ListWrappingWriter;
 import org.neo4j.server.rest.repr.formats.MapWrappingWriter;
 

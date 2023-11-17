@@ -21,7 +21,7 @@ package org.neo4j.server.rest.repr.formats;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MediaType;
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.repr.ListWriter;
