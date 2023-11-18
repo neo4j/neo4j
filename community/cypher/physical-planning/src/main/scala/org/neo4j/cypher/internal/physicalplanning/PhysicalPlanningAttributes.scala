@@ -28,7 +28,18 @@ object PhysicalPlanningAttributes {
   class SlotConfigurations extends Attribute[LogicalPlan, SlotConfiguration]
   class ArgumentSizes extends Attribute[LogicalPlan, Size]
 
-  class ApplyPlans extends Attribute[LogicalPlan, Id]
+  class ApplyPlans extends Attribute[LogicalPlan, Id] {
+
+    def isInOutermostScope(plan: LogicalPlan): Boolean = {
+      val applyPlanId = apply(plan.id)
+      if (applyPlanId == Id.INVALID_ID)
+        true
+      else if (applyPlanId == plan.id)
+        apply(plan.leftmostLeaf.id) == Id.INVALID_ID
+      else
+        false
+    }
+  }
 
   class TrailPlans extends Attribute[LogicalPlan, Id]
 
