@@ -99,7 +99,7 @@ object JavaccRule {
   val cypherJavaccParserFactory = ParserFactory { (queryText: String) =>
     val charStream = new CypherCharStream(queryText)
     val astExceptionFactory = new Neo4jASTExceptionFactory(exceptionFactory)
-    val astFactory = new Neo4jASTFactory(queryText, astExceptionFactory)
+    val astFactory = new Neo4jASTFactory(queryText, astExceptionFactory, null)
     new Cypher(astFactory, astExceptionFactory, charStream)
   }
 }

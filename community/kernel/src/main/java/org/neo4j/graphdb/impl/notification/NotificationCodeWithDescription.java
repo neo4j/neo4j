@@ -118,6 +118,13 @@ public enum NotificationCodeWithDescription {
                     + "` provider for text indexes is deprecated and will be removed in a future version. "
                     + "Please use `" + TrigramIndexProvider.DESCRIPTOR.name() + "` instead.",
             NotificationCodeWithDescription.DEPRECATION_MESSAGE_1),
+
+    DEPRECATED_IDENTIFIER_WHITESPACE_UNICODE(
+            Status.Statement.FeatureDeprecationWarning,
+            "The Unicode character `%s` is deprecated for unescaped identifiers and will be considered as a whitespace character in the future. "
+                    + "To continue using it, escape the identifier by adding backticks around the identifier `%s`.",
+            "The Unicode character `%s` is deprecated for unescaped identifiers and will be considered as a whitespace character in the future. "
+                    + "To continue using it, escape the identifier by adding backticks around the identifier `%s`."),
     EAGER_LOAD_CSV(
             Status.Statement.EagerOperator,
             "Using LOAD CSV with a large data set in a query where the execution plan contains the "
@@ -390,6 +397,13 @@ public enum NotificationCodeWithDescription {
         return DEPRECATED_TEXT_INDEX_PROVIDER.notificationWithMessage(position, new String[] {}, new String[] {
             TextIndexProvider.DESCRIPTOR.name(), TrigramIndexProvider.DESCRIPTOR.name()
         });
+    }
+
+    public static NotificationImplementation deprecatedIdentifierWhitespaceUnicode(
+            InputPosition position, Character unicode, String identifier) {
+        String formattedUnicode = String.format("\\u%04x", (int) unicode);
+        return DEPRECATED_IDENTIFIER_WHITESPACE_UNICODE.notificationWithMessage(
+                position, new String[] {formattedUnicode, identifier}, new String[] {formattedUnicode, identifier});
     }
 
     public static NotificationImplementation eagerLoadCsv(InputPosition position) {

@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedConnectComponentsPlannerPreParserOption
 import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedFunctionWithReplacement
 import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedFunctionWithoutReplacement
+import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedIdentifierWhitespaceUnicode
 import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedNodeOrRelationshipOnRhsSetClause
 import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedProcedureReturnField
 import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedProcedureWithReplacement
@@ -432,6 +433,28 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       shouldContainNotification = true,
       "a",
       deprecatedPropertyReferenceInCreate
+    )
+
+    assertNoDeprecations(notDeprecated)
+  }
+
+  test("Deprecate unicode '\\u0085' if used in identifiers") {
+    val deprecated = Seq(
+      "CREATE (a {f\\u0085oo:1})",
+      "CREATE (f\\u0085oo {a:1})",
+      "WITH 1 as f\\u0085oo return *"
+    )
+
+    val notDeprecated = Seq(
+      "CREATE (a {`f\\u0085oo`:1})",
+      "CREATE (`f\\u0085oo` {a:1})",
+      "WITH 1 as `f\\u0085oo` return *"
+    )
+
+    assertNotification(
+      deprecated,
+      shouldContainNotification = true,
+      deprecatedIdentifierWhitespaceUnicode(_, '\u0085', "f\u0085oo")
     )
 
     assertNoDeprecations(notDeprecated)

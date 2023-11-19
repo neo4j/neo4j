@@ -21,6 +21,7 @@ import org.neo4j.cypher.internal.parser.javacc.Cypher
 import org.neo4j.cypher.internal.parser.javacc.CypherCharStream
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.InternalNotificationLogger
 
 case object JavaCCParser {
 
@@ -31,11 +32,12 @@ case object JavaCCParser {
    */
   def parse(
     queryText: String,
-    cypherExceptionFactory: CypherExceptionFactory
+    cypherExceptionFactory: CypherExceptionFactory,
+    logger: InternalNotificationLogger = null
   ): Statement = {
     val charStream = new CypherCharStream(queryText)
     val astExceptionFactory = new Neo4jASTExceptionFactory(cypherExceptionFactory)
-    val astFactory = new Neo4jASTFactory(queryText, astExceptionFactory)
+    val astFactory = new Neo4jASTFactory(queryText, astExceptionFactory, logger)
 
     val statements = new Cypher(astFactory, astExceptionFactory, charStream).Statements()
     if (statements.size() == 1) {

@@ -82,7 +82,16 @@ Feature: LiteralAcceptance
       """
     Then a SyntaxError should be raised at compile time: InvalidNumberLiteral
 
-  Scenario: [7] Return a positive float with underscore
+  @skipGrammarCheck
+  Scenario: [7] Fail on an integer number ending in u0085
+    Given any graph
+    When executing query:
+      """
+      RETURN 0\u0085 AS literal
+      """
+    Then a SyntaxError should be raised at compile time: InvalidNumberLiteral
+
+  Scenario: [8] Return a positive float with underscore
     Given any graph
     When executing query:
       """
@@ -93,7 +102,7 @@ Feature: LiteralAcceptance
       | 1000.0001 |
     And no side effects
 
-  Scenario: [8] Return a negative float with underscore
+  Scenario: [9] Return a negative float with underscore
     Given any graph
     When executing query:
       """
@@ -104,7 +113,7 @@ Feature: LiteralAcceptance
       | -10.01  |
     And no side effects
 
-  Scenario: [9] Return a positive float with multiple underscores
+  Scenario: [10] Return a positive float with multiple underscores
     Given any graph
     When executing query:
       """
@@ -115,7 +124,7 @@ Feature: LiteralAcceptance
       | 1000.0001 |
     And no side effects
 
-  Scenario: [10] Return a positive float with underscore in the exponent
+  Scenario: [11] Return a positive float with underscore in the exponent
     Given any graph
     When executing query:
       """
@@ -127,7 +136,7 @@ Feature: LiteralAcceptance
     And no side effects
 
   @skipGrammarCheck
-  Scenario: [11] Fail on a float containing consecutive underscores
+  Scenario: [12] Fail on a float containing consecutive underscores
     Given any graph
     When executing query:
       """
@@ -136,7 +145,7 @@ Feature: LiteralAcceptance
     Then a SyntaxError should be raised at compile time: InvalidNumberLiteral
 
   @skipGrammarCheck
-  Scenario: [12] Fail on a float with underscore before decimal separator
+  Scenario: [13] Fail on a float with underscore before decimal separator
     Given any graph
     When executing query:
       """
@@ -145,7 +154,7 @@ Feature: LiteralAcceptance
     Then a SyntaxError should be raised at compile time: InvalidNumberLiteral
 
   @skipGrammarCheck
-  Scenario: [13] Fail on a float with underscore following decimal separator
+  Scenario: [14] Fail on a float with underscore following decimal separator
     Given any graph
     When executing query:
       """
@@ -154,7 +163,7 @@ Feature: LiteralAcceptance
     Then a SyntaxError should be raised at compile time: InvalidNumberLiteral
 
   @skipGrammarCheck
-  Scenario: [14] Fail on a float with underscore before first number in exponent
+  Scenario: [15] Fail on a float with underscore before first number in exponent
     Given any graph
     When executing query:
       """
@@ -162,7 +171,16 @@ Feature: LiteralAcceptance
       """
     Then a SyntaxError should be raised at compile time: InvalidNumberLiteral
 
-  Scenario: [15] Return a positive hexadecimal number with underscore
+  @skipGrammarCheck
+  Scenario: [16] Fail on a float ending in u0085
+    Given any graph
+    When executing query:
+      """
+      RETURN 1.0a\u0085 AS literal
+      """
+    Then a SyntaxError should be raised at compile time: InvalidNumberLiteral
+
+  Scenario: [17] Return a positive hexadecimal number with underscore
     Given any graph
     When executing query:
       """
@@ -173,7 +191,7 @@ Feature: LiteralAcceptance
       | 2769023 |
     And no side effects
 
-  Scenario: [16] Return a negative hexadecimal number with underscore
+  Scenario: [18] Return a negative hexadecimal number with underscore
     Given any graph
     When executing query:
       """
@@ -185,7 +203,7 @@ Feature: LiteralAcceptance
     And no side effects
 
   @skipGrammarCheck
-  Scenario: [17] Fail on a hexadecimal number with underscore in prefix
+  Scenario: [19] Fail on a hexadecimal number with underscore in prefix
     Given any graph
     When executing query:
       """
@@ -194,7 +212,7 @@ Feature: LiteralAcceptance
     Then a SyntaxError should be raised at compile time: InvalidNumberLiteral
 
   @skipGrammarCheck
-  Scenario: [18] Fail on a hexadecimal number starting with underscore
+  Scenario: [20] Fail on a hexadecimal number starting with underscore
     Given any graph
     When executing query:
       """
@@ -203,7 +221,7 @@ Feature: LiteralAcceptance
     Then a SyntaxError should be raised at compile time: UndefinedVariable
 
   @skipGrammarCheck
-  Scenario: [19] Fail on a hexadecimal number ending with underscore
+  Scenario: [21] Fail on a hexadecimal number ending with underscore
     Given any graph
     When executing query:
       """
@@ -212,7 +230,7 @@ Feature: LiteralAcceptance
     Then a SyntaxError should be raised at compile time: InvalidNumberLiteral
 
   @skipGrammarCheck
-  Scenario: [20] Fail on a hexadecimal number containing consecutive underscores
+  Scenario: [22] Fail on a hexadecimal number containing consecutive underscores
     Given any graph
     When executing query:
       """
@@ -220,7 +238,7 @@ Feature: LiteralAcceptance
       """
     Then a SyntaxError should be raised at compile time: InvalidNumberLiteral
 
-  Scenario: [21] Return a positive octal number with underscore
+  Scenario: [23] Return a positive octal number with underscore
     Given any graph
     When executing query:
       """
@@ -231,7 +249,7 @@ Feature: LiteralAcceptance
       | 223506  |
     And no side effects
 
-  Scenario: [22] Return a negative octal number with underscore
+  Scenario: [24] Return a negative octal number with underscore
     Given any graph
     When executing query:
       """
@@ -243,7 +261,7 @@ Feature: LiteralAcceptance
     And no side effects
 
   @skipGrammarCheck
-  Scenario: [23] Fail on an deprecated octal number syntax with underscore
+  Scenario: [25] Fail on an deprecated octal number syntax with underscore
     Given any graph
     When executing query:
       """
@@ -252,7 +270,7 @@ Feature: LiteralAcceptance
     Then a SyntaxError should be raised at compile time: InvalidNumberLiteral
 
   @skipGrammarCheck
-  Scenario: [24] Fail on an octal number with underscore in prefix
+  Scenario: [26] Fail on an octal number with underscore in prefix
     Given any graph
     When executing query:
       """
@@ -261,7 +279,7 @@ Feature: LiteralAcceptance
     Then a SyntaxError should be raised at compile time: InvalidNumberLiteral
 
   @skipGrammarCheck
-  Scenario: [25] Fail on an octal number starting with underscore
+  Scenario: [27] Fail on an octal number starting with underscore
     Given any graph
     When executing query:
       """
@@ -270,7 +288,7 @@ Feature: LiteralAcceptance
     Then a SyntaxError should be raised at compile time: UndefinedVariable
 
   @skipGrammarCheck
-  Scenario: [26] Fail on an octal number ending with underscore
+  Scenario: [28] Fail on an octal number ending with underscore
     Given any graph
     When executing query:
       """
@@ -279,10 +297,19 @@ Feature: LiteralAcceptance
     Then a SyntaxError should be raised at compile time: InvalidNumberLiteral
 
   @skipGrammarCheck
-  Scenario: [27] Fail on an octal number containing consecutive underscores
+  Scenario: [29] Fail on an octal number containing consecutive underscores
     Given any graph
     When executing query:
       """
       RETURN 0o7__7 AS literal
+      """
+    Then a SyntaxError should be raised at compile time: InvalidNumberLiteral
+
+  @skipGrammarCheck
+  Scenario: [30] Fail on an octal number ending in u0085
+    Given any graph
+    When executing query:
+      """
+      RETURN 0o\u0085 AS literal
       """
     Then a SyntaxError should be raised at compile time: InvalidNumberLiteral

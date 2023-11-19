@@ -33,6 +33,7 @@ import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescriptio
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedFormat;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedFunctionWithReplacement;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedFunctionWithoutReplacement;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedIdentifierWhitespaceUnicode;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedNodeOrRelationshipOnRhsSetClause;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedProcedureReturnField;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedProcedureWithReplacement;
@@ -450,6 +451,21 @@ class NotificationCodeWithDescriptionTest {
                 "The requested format has been deprecated. (u627)",
                 NotificationCategory.DEPRECATION,
                 "`deprecatedFormat` is deprecated. It is replaced by `newFormat`.");
+    }
+
+    @Test
+    void shouldConstructNotificationsFor_DEPRECATED_IDENTIFIER_WHITESPACE_UNICODE() {
+        NotificationImplementation notification =
+                deprecatedIdentifierWhitespaceUnicode(InputPosition.empty, 'a', "ana");
+
+        verifyNotification(
+                notification,
+                "This feature is deprecated and will be removed in future versions.",
+                SeverityLevel.WARNING,
+                "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
+                "The Unicode character `\\u0061` is deprecated for unescaped identifiers and will be considered as a whitespace character in the future. To continue using it, escape the identifier by adding backticks around the identifier `ana`.",
+                NotificationCategory.DEPRECATION,
+                "The Unicode character `\\u0061` is deprecated for unescaped identifiers and will be considered as a whitespace character in the future. To continue using it, escape the identifier by adding backticks around the identifier `ana`.");
     }
 
     @Test
@@ -953,8 +969,8 @@ class NotificationCodeWithDescriptionTest {
         byte[] notificationHash = DigestUtils.sha256(notificationBuilder.toString());
 
         byte[] expectedHash = new byte[] {
-            41, 68, 126, 49, -10, 91, 32, 95, -93, -34, -91, 77, -53, 70, -93, -41, 54, 52, 64, 63, 75, -82, 119, 80,
-            -54, 44, 27, 102, -65, -17, -24, -68
+            94, -51, 35, -1, 88, -13, 94, 81, -85, 47, 9, -101, 30, 2, -88, -51, -84, -13, -8, 93, 84, -10, -67, 10, 22,
+            110, 33, 109, -48, 83, 72, 20
         };
 
         if (!Arrays.equals(notificationHash, expectedHash)) {

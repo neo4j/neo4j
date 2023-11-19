@@ -1436,6 +1436,11 @@ public class NullAstFactory
     }
 
     @Override
+    public void addDeprecatedIdentifierUnicodeNotification(NULL p, Character character, String identifier) {
+        // nop
+    }
+
+    @Override
     public NULL nodeType() {
         return null;
     }

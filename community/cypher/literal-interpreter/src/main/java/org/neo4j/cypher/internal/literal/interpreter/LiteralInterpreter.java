@@ -1096,6 +1096,11 @@ public class LiteralInterpreter
     }
 
     @Override
+    public void addDeprecatedIdentifierUnicodeNotification(NULL p, Character character, String identifier) {
+        throw new UnsupportedOperationException("This deprecation shouldn't occur in a literal.");
+    }
+
+    @Override
     public Object newVariable(NULL p, String name) {
         throw new UnsupportedOperationException("newVariable is not a literal");
     }

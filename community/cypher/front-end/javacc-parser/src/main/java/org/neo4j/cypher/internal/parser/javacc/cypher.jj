@@ -7147,6 +7147,9 @@ Token UnescapedLabelSymbolicNameString() :
         | t=<ZONED>
     )
     {
+        if (t.image.contains("\u0085")) {
+            astFactory.addDeprecatedIdentifierUnicodeNotification(pos(t), '\u0085', t.image);
+        }
         return t;
     }
 }

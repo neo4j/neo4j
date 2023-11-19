@@ -463,7 +463,9 @@ import org.neo4j.cypher.internal.label_expressions.LabelExpression
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.Leaf
 import org.neo4j.cypher.internal.label_expressions.LabelExpressionPredicate
 import org.neo4j.cypher.internal.parser.javacc.EntityType
+import org.neo4j.cypher.internal.util.DeprecatedIdentifierWhitespaceUnicode
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.symbols.AnyType
 import org.neo4j.cypher.internal.util.symbols.BooleanType
 import org.neo4j.cypher.internal.util.symbols.CTAny
@@ -523,7 +525,7 @@ object TupleConverter extends DecorateTuple
 
 import org.neo4j.cypher.internal.ast.factory.neo4j.TupleConverter.asScalaEither
 
-class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory)
+class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, logger: InternalNotificationLogger)
     extends ASTFactory[
       Statement,
       Query,
@@ -2986,4 +2988,14 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory)
   override def relationshipType(): EntityType = EntityType.RELATIONSHIP
 
   override def nodeOrRelationshipType(): EntityType = EntityType.NODE_OR_RELATIONSHIP
+
+  override def addDeprecatedIdentifierUnicodeNotification(
+    p: InputPosition,
+    char: Character,
+    identifier: String
+  ): Unit = {
+    if (logger != null) {
+      logger.log(DeprecatedIdentifierWhitespaceUnicode(p, char, identifier))
+    }
+  }
 }

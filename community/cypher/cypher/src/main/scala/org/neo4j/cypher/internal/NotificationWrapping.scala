@@ -45,6 +45,7 @@ import org.neo4j.cypher.internal.util.CordonedServersExistedDuringAllocation
 import org.neo4j.cypher.internal.util.DeprecatedConnectComponentsPlannerPreParserOption
 import org.neo4j.cypher.internal.util.DeprecatedDatabaseNameNotification
 import org.neo4j.cypher.internal.util.DeprecatedFunctionNotification
+import org.neo4j.cypher.internal.util.DeprecatedIdentifierWhitespaceUnicode
 import org.neo4j.cypher.internal.util.DeprecatedNodesOrRelationshipsInSetClauseNotification
 import org.neo4j.cypher.internal.util.DeprecatedPropertyReferenceInCreate
 import org.neo4j.cypher.internal.util.DeprecatedRelTypeSeparatorNotification
@@ -291,6 +292,13 @@ object NotificationWrapping {
       NotificationCodeWithDescription.repeatedVarLengthRelationshipReference(
         position.withOffset(offset).asInputPosition,
         NotificationDetail.repeatedVarLengthRel(relName)
+      )
+
+    case DeprecatedIdentifierWhitespaceUnicode(position, unicode, identifier) =>
+      NotificationCodeWithDescription.deprecatedIdentifierWhitespaceUnicode(
+        position.asInputPosition,
+        unicode,
+        identifier
       )
 
     case DeprecatedConnectComponentsPlannerPreParserOption(position) =>

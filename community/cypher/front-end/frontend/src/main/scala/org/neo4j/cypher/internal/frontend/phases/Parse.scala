@@ -34,7 +34,8 @@ case object Parse extends Phase[BaseContext, BaseState, BaseState] with StepSequ
   override def process(in: BaseState, context: BaseContext): BaseState = {
     in.withStatement(JavaCCParser.parse(
       in.queryText,
-      context.cypherExceptionFactory
+      context.cypherExceptionFactory,
+      context.notificationLogger
     ))
   }
 

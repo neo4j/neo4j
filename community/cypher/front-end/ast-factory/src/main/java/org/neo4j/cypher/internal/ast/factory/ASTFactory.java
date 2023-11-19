@@ -705,4 +705,6 @@ public interface ASTFactory<
 
     ADMINISTRATION_COMMAND showAliases(
             POS p, DATABASE_NAME aliasName, YIELD yieldExpr, RETURN_CLAUSE returnWithoutGraph, WHERE where);
+
+    void addDeprecatedIdentifierUnicodeNotification(POS p, Character character, String identifier);
 }

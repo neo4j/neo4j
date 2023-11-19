@@ -60,6 +60,9 @@ case class DeprecatedRuntimeNotification(msg: String, oldOption: String, newOpti
 
 case class DeprecatedTextIndexProvider(position: InputPosition) extends InternalNotification
 
+case class DeprecatedIdentifierWhitespaceUnicode(position: InputPosition, unicode: Char, identifier: String)
+    extends InternalNotification
+
 case class UnsatisfiableRelationshipTypeExpression(position: InputPosition, labelExpression: String)
     extends InternalNotification
 
