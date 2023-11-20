@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.LongAdder;
 import org.neo4j.graphdb.TransientFailureException;
 import org.neo4j.internal.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.locking.LockClientStoppedException;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 
@@ -89,7 +90,11 @@ public interface InternalErrorTracer {
         }
 
         private static boolean isUnexpected(Throwable throwable) {
-            return !isTransient(throwable) && !isConstraintViolation(throwable);
+            return !isTransient(throwable) && !isConstraintViolation(throwable) && !isLockClientTermination(throwable);
+        }
+
+        private static boolean isLockClientTermination(Throwable throwable) {
+            return throwable instanceof LockClientStoppedException;
         }
 
         private static boolean isConstraintViolation(Throwable throwable) {
