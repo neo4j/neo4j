@@ -28,17 +28,66 @@ import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.RelTypeInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.SelectivityCalculator
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.SelectivityCombiner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProviderContext
+import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.ir.NodeConnection
+import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Cardinality.NumericCardinality
+import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.Multiplier.NumericMultiplier
+import org.neo4j.cypher.internal.util.RelTypeId
+
+import scala.util.Try
 
 final class AssumeIndependenceQueryGraphCardinalityModel(
   planContext: PlanContext,
   selectivityCalculator: SelectivityCalculator,
   combiner: SelectivityCombiner
 ) extends QueryGraphCardinalityModel with NodeConnectionCardinalityModel {
+
+  private case class SimpleRelationship(startNode: String, endNode: String, relationshipType: RelTypeId) {
+
+    def nodesWithSameCardinalityWhenAddingLabel(labelId: LabelId): List[String] = {
+      val relationshipCardinality = planContext.statistics.patternStepCardinality(None, Some(relationshipType), None)
+
+      def hasSameCardinalityWhenAddingLabel(fromLabel: Option[LabelId], toLabel: Option[LabelId]): Boolean =
+        Try(planContext.statistics.patternStepCardinality(fromLabel, Some(relationshipType), toLabel))
+          .toOption // throws an exception in tests when cardinality isn't set
+          .filter(_ > 0) // returns 0 in production when not set
+          .contains(relationshipCardinality)
+
+      List(
+        Option.when(hasSameCardinalityWhenAddingLabel(Some(labelId), None))(startNode),
+        Option.when(hasSameCardinalityWhenAddingLabel(None, Some(labelId)))(endNode)
+      ).flatten
+    }
+
+    def inferLabels(): Seq[SimpleRelationship.InferredLabel] = {
+      for {
+        mostCommonLabelId <- planContext.statistics.mostCommonLabelGivenRelationshipType(this.relationshipType.id)
+        nodeName <- this.nodesWithSameCardinalityWhenAddingLabel(LabelId(mostCommonLabelId))
+        labelName = planContext.getLabelName(mostCommonLabelId)
+      } yield SimpleRelationship.InferredLabel(nodeName, labelName, LabelId(mostCommonLabelId))
+    }
+  }
+
+  private object SimpleRelationship {
+    case class InferredLabel(nodeName: String, labelName: String, labelId: LabelId)
+
+    def fromNodeConnection(nodeConnection: NodeConnection, semanticTable: SemanticTable): Option[SimpleRelationship] =
+      nodeConnection match {
+        case relationship @ PatternRelationship(_, _, dir, Seq(relationshipTypeName), SimplePatternLength)
+          if dir == SemanticDirection.OUTGOING || dir == SemanticDirection.INCOMING =>
+          val (startNode, endNode) = relationship.inOrder
+          semanticTable.id(relationshipTypeName).map(SimpleRelationship(startNode, endNode, _))
+        case _ => None
+      }
+  }
 
   override def apply(
     queryGraph: QueryGraph,
@@ -82,7 +131,37 @@ final class AssumeIndependenceQueryGraphCardinalityModel(
     labelInfo: LabelInfo,
     queryGraph: QueryGraph
   ): (LabelInfo, Cardinality) = {
-    val predicates = QueryGraphPredicates.partitionSelections(labelInfo, queryGraph.selections)
+    val initialPredicates = QueryGraphPredicates.partitionSelections(labelInfo, queryGraph.selections)
+
+    val allInferredLabels = for {
+      nodeConnection <- queryGraph.nodeConnections.toSeq
+      simpleRelationship <- SimpleRelationship.fromNodeConnection(nodeConnection, context.semanticTable).iterator
+      inferredLabel <- simpleRelationship.inferLabels()
+    } yield inferredLabel
+
+    val inferredLabels = allInferredLabels
+      .sequentiallyGroupBy(_.nodeName)
+      .map { case (key, value) =>
+        key -> value.minBy(x => planContext.statistics.nodesWithLabelCardinality(Some(x.labelId)))
+      }.toMap
+
+    inferredLabels.values.foreach { il => context.semanticTable.resolvedLabelNames(il.labelName) = il.labelId }
+
+    val allLabelInfo = initialPredicates.allLabelInfo.map {
+      case (nodeName, labelNames) if labelNames.isEmpty => // only infer if node has no labels
+        nodeName -> Set(inferredLabels.get(nodeName).map(x => LabelName(x.labelName)(InputPosition.NONE))).flatten
+      case (nodeName, labelNames) =>
+        nodeName -> labelNames
+    }
+
+    val localLabelInfo = initialPredicates.localLabelInfo.map {
+      case (nodeName, labelNames) if labelNames.isEmpty => // only infer if node has no labels
+        nodeName -> Set(inferredLabels.get(nodeName).map(x => LabelName(x.labelName)(InputPosition.NONE))).flatten
+      case (nodeName, labelNames) =>
+        nodeName -> labelNames
+    }
+
+    val predicates = initialPredicates.copy(allLabelInfo = allLabelInfo, localLabelInfo = localLabelInfo)
 
     // Calculate the multiplier for each node connection, accumulating bound nodes and arguments and threading them through
     val (boundNodesAndArguments, nodeConnectionMultipliers) =

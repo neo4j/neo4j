@@ -118,7 +118,7 @@ object StatisticsBackedLogicalPlanningConfigurationBuilder {
     allNodes: Option[Double] = None,
     labels: Map[String, Double] = Map[String, Double](),
     relationships: Map[RelDef, Double] = Map[RelDef, Double](),
-    defaultRelationshipCardinalityTo0: Boolean = false
+    defaultRelationshipCardinalityTo0: Boolean = true
   ) {
 
     def getRelCount(relDef: RelDef): Double = {
@@ -720,6 +720,21 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
         case IndexDescriptor.EntityType.Relationship(relType) =>
           IndexDefinition.EntityType.Relationship(resolver.getRelTypeName(relType.id))
       }
+
+      override def mostCommonLabelGivenRelationshipType(typ: Int): Seq[Int] = {
+        val labelRelTypeCardinalities = cardinalities.labels.keys.flatMap { label =>
+          val labelId = resolver.getLabelId(label)
+          Seq(
+            (labelId, patternStepCardinality(Some(LabelId(labelId)), Some(RelTypeId(typ)), None)),
+            (labelId, patternStepCardinality(None, Some(RelTypeId(typ)), Some(LabelId(labelId))))
+          )
+        }.groupBy(_._2)
+        if (labelRelTypeCardinalities.nonEmpty) {
+          labelRelTypeCardinalities.maxBy(_._1.amount)._2.map(_._1).toSeq
+        } else {
+          Seq.empty
+        }
+      }
     }
 
     val graphStatistics =
@@ -959,6 +974,8 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
         resolver.getOptRelTypeId(relType)
 
       override def txStateHasChanges(): Boolean = options.txStateHasChanges
+
+      override def getLabelName(id: Int): String = resolver.getLabelName(id)
 
       private def newIndexDescriptor(indexDef: IndexDefinition): Option[IndexDescriptor] = {
         val canGetValue = if (indexDef.withValues) CanGetValue else DoNotGetValue
