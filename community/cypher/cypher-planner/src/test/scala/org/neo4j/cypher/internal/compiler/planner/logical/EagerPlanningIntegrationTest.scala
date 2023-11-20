@@ -1155,7 +1155,10 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
       case EagerAnalysisImplementation.IR =>
         ListSet(Unknown)
       case EagerAnalysisImplementation.LP =>
-        ListSet(EagernessReason.TypeReadSetConflict(relTypeName("R")).withConflict(EagernessReason.Conflict(Id(2), Id(6))))
+        ListSet(EagernessReason.TypeReadSetConflict(relTypeName("R")).withConflict(EagernessReason.Conflict(
+          Id(2),
+          Id(6)
+        )))
     }
 
     val plan = planner.plan(query)
