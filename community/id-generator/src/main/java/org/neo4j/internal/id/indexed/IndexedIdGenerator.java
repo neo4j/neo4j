@@ -527,10 +527,6 @@ public class IndexedIdGenerator implements IdGenerator {
 
     @Override
     public long nextConsecutiveIdRange(int numberOfIds, boolean favorSamePage, CursorContext cursorContext) {
-        if (numberOfIds == 1) {
-            return nextId(cursorContext);
-        }
-
         if (numberOfIds <= biggestSlotSize) {
             // TODO to fill cache in a do-while would be preferrable here too, but slightly harder since the scanner
             //  may say that there are more free IDs, but there may not actually be more free IDs of the given
