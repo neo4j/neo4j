@@ -34,7 +34,7 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.api.index.StoreScan;
-import org.neo4j.lock.AcquireLockTimeoutException;
+import org.neo4j.kernel.impl.locking.LockAcquisitionTimeoutException;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 public class ReadEntityIdsStep extends PullingProducerStep<ReadEntityIdsStep.ReadEntityProcessContext> {
@@ -113,7 +113,7 @@ public class ReadEntityIdsStep extends PullingProducerStep<ReadEntityIdsStep.Rea
         }
     }
 
-    private static void incrementalBackoff(long iteration) throws AcquireLockTimeoutException {
+    private static void incrementalBackoff(long iteration) {
         if (iteration < 1000) {
             Thread.onSpinWait();
             return;
@@ -123,7 +123,7 @@ public class ReadEntityIdsStep extends PullingProducerStep<ReadEntityIdsStep.Rea
             Thread.sleep(1);
         } catch (InterruptedException e) {
             Thread.interrupted();
-            throw new AcquireLockTimeoutException("Interrupted while waiting.", e, Interrupted);
+            throw new LockAcquisitionTimeoutException(Interrupted, "Interrupted while waiting.");
         }
     }
 

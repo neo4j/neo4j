@@ -22,6 +22,7 @@ package org.neo4j.lock;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import org.neo4j.kernel.impl.locking.LockAcquisitionTimeoutException;
 
 /**
  * A {@link ResourceLocker} can acquire and release both exclusive and shared locks.
@@ -44,7 +45,7 @@ public interface ResourceLocker {
      * @param resourceType type or resource(s) to lock.
      * @param resourceIds id(s) of resources to lock. Multiple ids should be ordered consistently by all callers
      *
-     * @throws AcquireLockTimeoutException in case of timeout
+     * @throws LockAcquisitionTimeoutException in case of timeout
      */
     void acquireExclusive(LockTracer tracer, ResourceType resourceType, long... resourceIds);
 

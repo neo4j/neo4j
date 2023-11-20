@@ -49,7 +49,6 @@ import org.neo4j.kernel.impl.locking.LockAcquisitionTimeoutException;
 import org.neo4j.kernel.impl.locking.LockClientStateHolder;
 import org.neo4j.kernel.impl.locking.LockClientStoppedException;
 import org.neo4j.kernel.impl.locking.LockManager;
-import org.neo4j.lock.AcquireLockTimeoutException;
 import org.neo4j.lock.ActiveLock;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.LockType;
@@ -173,8 +172,7 @@ public class ForsetiClient implements LockManager.Client {
     }
 
     @Override
-    public void acquireShared(LockTracer tracer, ResourceType resourceType, long... resourceIds)
-            throws AcquireLockTimeoutException {
+    public void acquireShared(LockTracer tracer, ResourceType resourceType, long... resourceIds) {
         hasLocks = true;
         stateHolder.incrementActiveClients(this);
         LockWaitEvent waitEvent = null;
@@ -302,8 +300,7 @@ public class ForsetiClient implements LockManager.Client {
     }
 
     @Override
-    public void acquireExclusive(LockTracer tracer, ResourceType resourceType, long... resourceIds)
-            throws AcquireLockTimeoutException {
+    public void acquireExclusive(LockTracer tracer, ResourceType resourceType, long... resourceIds) {
         hasLocks = true;
         stateHolder.incrementActiveClients(this);
         LockWaitEvent waitEvent = null;
@@ -728,8 +725,7 @@ public class ForsetiClient implements LockManager.Client {
             ConcurrentMap<Long, ForsetiLockManager.Lock> lockMap,
             long resourceId,
             SharedLock sharedLock,
-            long waitStartNano)
-            throws AcquireLockTimeoutException {
+            long waitStartNano) {
         int tries = 0;
         boolean holdsSharedLock = getSharedLockCount(resourceType).containsKey(resourceId);
         if (!holdsSharedLock) {
@@ -768,8 +764,7 @@ public class ForsetiClient implements LockManager.Client {
             long resourceId,
             SharedLock sharedLock,
             int tries,
-            long waitStartNano)
-            throws AcquireLockTimeoutException {
+            long waitStartNano) {
         if (sharedLock.tryAcquireUpdateLock()) {
             LockWaitEvent waitEvent = null;
             try {
@@ -852,7 +847,7 @@ public class ForsetiClient implements LockManager.Client {
     }
 
     @VisibleForTesting
-    public static void incrementalBackoffWait(long iteration) throws AcquireLockTimeoutException {
+    public static void incrementalBackoffWait(long iteration) {
         if (iteration < MAX_SPINS) {
             Thread.onSpinWait();
             return;
@@ -866,7 +861,7 @@ public class ForsetiClient implements LockManager.Client {
             }
         } catch (InterruptedException e) {
             Thread.interrupted();
-            throw new AcquireLockTimeoutException("Interrupted while waiting.", e, Interrupted);
+            throw new LockAcquisitionTimeoutException(Interrupted, "Interrupted while waiting.");
         }
     }
 

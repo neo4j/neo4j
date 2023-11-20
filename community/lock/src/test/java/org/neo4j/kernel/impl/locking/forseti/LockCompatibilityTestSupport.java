@@ -33,7 +33,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.api.LeaseService.NoLeaseClient;
 import org.neo4j.kernel.impl.locking.LockManager;
-import org.neo4j.lock.AcquireLockTimeoutException;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.memory.EmptyMemoryTracker;
@@ -127,7 +126,7 @@ public abstract class LockCompatibilityTestSupport {
             doWork(client);
         }
 
-        abstract void doWork(LockManager.Client client) throws AcquireLockTimeoutException;
+        abstract void doWork(LockManager.Client client);
 
         public LockManager.Client client() {
             return client;
@@ -138,7 +137,7 @@ public abstract class LockCompatibilityTestSupport {
             final LockManager.Client client, final LockTracer tracer, final ResourceType resourceType, final long key) {
         return new LockCommand(clientToThreadMap.get(client), client) {
             @Override
-            public void doWork(LockManager.Client client) throws AcquireLockTimeoutException {
+            public void doWork(LockManager.Client client) {
                 client.acquireExclusive(tracer, resourceType, key);
             }
         };
@@ -148,7 +147,7 @@ public abstract class LockCompatibilityTestSupport {
             LockManager.Client client, final LockTracer tracer, final ResourceType resourceType, final long key) {
         return new LockCommand(clientToThreadMap.get(client), client) {
             @Override
-            public void doWork(LockManager.Client client) throws AcquireLockTimeoutException {
+            public void doWork(LockManager.Client client) {
                 client.acquireShared(tracer, resourceType, key);
             }
         };

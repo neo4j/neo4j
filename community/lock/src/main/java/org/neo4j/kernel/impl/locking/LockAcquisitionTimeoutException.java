@@ -40,4 +40,8 @@ public class LockAcquisitionTimeoutException extends TransactionTerminatedExcept
                         "Unable to acquire lock for resource: %s with id: %d within %d millis.",
                         resourceType, resourceId, TimeUnit.NANOSECONDS.toMillis(timeoutNano)));
     }
+
+    public LockAcquisitionTimeoutException(Status status, String message) {
+        super(status, message);
+    }
 }
