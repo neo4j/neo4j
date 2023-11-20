@@ -837,6 +837,7 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     @Description("Chunk size for heap memory reservation from the memory pool")
     public static final Setting<Long> initial_transaction_heap_grab_size = newBuilder(
                     "internal.dbms.initial_transaction_heap_grab_size", BYTES, mebiBytes(2))
+            .immutable()
             .build();
 
     @Internal
