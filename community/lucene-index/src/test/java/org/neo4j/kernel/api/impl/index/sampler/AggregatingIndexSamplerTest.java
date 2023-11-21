@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.index.sampler;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
@@ -39,7 +40,7 @@ class AggregatingIndexSamplerTest
         List<IndexSampler> samplers = Arrays.asList( createSampler( 1 ), createSampler( 2 ) );
         AggregatingIndexSampler partitionedSampler = new AggregatingIndexSampler( samplers );
 
-        IndexSample sample = partitionedSampler.sampleIndex( NULL );
+        IndexSample sample = partitionedSampler.sampleIndex( NULL, new AtomicBoolean() );
 
         assertEquals( new IndexSample( 3, 3, 6 ), sample );
     }
@@ -59,7 +60,7 @@ class AggregatingIndexSamplerTest
         }
 
         @Override
-        public IndexSample sampleIndex( CursorContext cursorContext )
+        public IndexSample sampleIndex( CursorContext cursorContext, AtomicBoolean stopped )
         {
             return new IndexSample( value, value, value * 2 );
         }

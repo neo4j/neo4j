@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.schema.populator;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.kernel.api.index.IndexSample;
@@ -137,7 +138,7 @@ class DefaultNonUniqueIndexSamplerTest
     private static void assertSampledValues( NonUniqueIndexSampler sampler, long expectedIndexSize, long expectedUniqueValues,
             long expectedSampledSize )
     {
-        IndexSample sample = sampler.sample( NULL );
+        IndexSample sample = sampler.sample( NULL, new AtomicBoolean() );
         assertEquals( expectedIndexSize, sample.indexSize() );
         assertEquals( expectedUniqueValues, sample.uniqueValues() );
         assertEquals( expectedSampledSize, sample.sampleSize() );

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.schema.sampler;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -101,7 +102,7 @@ class LuceneIndexSamplerReleaseTaskControlUnderFusionTest
      * <p>
      * A fusion index has multiple {@link IndexSampler index samplers} that are called sequentially. If one fails, then the other will never be invoked.
      * This was a problem for {@link LuceneIndexSampler}. It owns a {@link TaskCoordinator.Task} that it will try to release in try-finally
-     * in {@link LuceneIndexSampler#sampleIndex(CursorContext)}. But it never gets here because a prior {@link IndexSampler} fails.
+     * in {@link IndexSampler#sampleIndex(CursorContext, AtomicBoolean)}. But it never gets here because a prior {@link IndexSampler} fails.
      * <p>
      * Because the {@link TaskCoordinator.Task} was never released the lucene accessor would block forever, waiting for
      * {@link TaskCoordinator#awaitCompletion()}.
@@ -124,7 +125,7 @@ class LuceneIndexSamplerReleaseTaskControlUnderFusionTest
             // Call run from other thread
             try
             {
-                indexSamplingJob.run();
+                indexSamplingJob.run( new AtomicBoolean() );
             }
             catch ( RuntimeException e )
             {
@@ -218,7 +219,7 @@ class LuceneIndexSamplerReleaseTaskControlUnderFusionTest
                     @Override
                     public IndexSampler createSampler()
                     {
-                        return cursorContext ->
+                        return ( cursorContext, stopped ) ->
                         {
                             throw sampleException;
                         };

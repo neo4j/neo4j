@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -81,13 +82,34 @@ public class FullScanNonUniqueIndexSamplerTest extends IndexTestUtil<BtreeKey,Nu
         try ( GBPTree<BtreeKey,NullValue> gbpTree = getTree() )
         {
             FullScanNonUniqueIndexSampler<BtreeKey> sampler = new FullScanNonUniqueIndexSampler<>( gbpTree, layout );
-            sample = sampler.sample( NULL );
+            sample = sampler.sample( NULL, new AtomicBoolean() );
         }
 
         // THEN
         assertEquals( values.length, sample.sampleSize() );
         assertEquals( countUniqueValues( values ), sample.uniqueValues() );
         assertEquals( values.length, sample.indexSize() );
+    }
+
+    @Test
+    void shouldStopIfFlagged() throws Exception
+    {
+        // GIVEN
+        Value[] values = generateNumberValues();
+        buildTree( values );
+
+        // WHEN
+        IndexSample sample;
+        try ( GBPTree<BtreeKey,NullValue> gbpTree = getTree() )
+        {
+            FullScanNonUniqueIndexSampler<BtreeKey> sampler = new FullScanNonUniqueIndexSampler<>( gbpTree, layout );
+            sample = sampler.sample( NULL, new AtomicBoolean( true ) );
+        }
+
+        // THEN
+        assertEquals( 0, sample.sampleSize() );
+        assertEquals( 0, sample.uniqueValues() );
+        assertEquals( 0, sample.indexSize() );
     }
 
     @Test
@@ -104,7 +126,7 @@ public class FullScanNonUniqueIndexSamplerTest extends IndexTestUtil<BtreeKey,Nu
         try ( GBPTree<BtreeKey,NullValue> gbpTree = getTree() )
         {
             FullScanNonUniqueIndexSampler<BtreeKey> sampler = new FullScanNonUniqueIndexSampler<>( gbpTree, layout );
-            sampler.sample( cursorContext );
+            sampler.sample( cursorContext, new AtomicBoolean() );
         }
 
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();

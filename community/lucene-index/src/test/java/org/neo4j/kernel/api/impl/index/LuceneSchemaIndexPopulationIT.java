@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -112,7 +113,7 @@ class LuceneSchemaIndexPopulationIT
                     long[] nodes = PrimitiveLongCollections.asArray( results );
                     assertEquals( affectedNodes, nodes.length );
 
-                    IndexSample sample = indexSampler.sampleIndex( NULL );
+                    IndexSample sample = indexSampler.sampleIndex( NULL, new AtomicBoolean() );
                     assertEquals( affectedNodes, sample.indexSize() );
                     assertEquals( affectedNodes, sample.uniqueValues() );
                     assertEquals( affectedNodes, sample.sampleSize() );

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -408,7 +409,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>>
               IndexSampler sampler = reader.createSampler() )
         {
             // when
-            IndexSample sample = sampler.sampleIndex( NULL );
+            IndexSample sample = sampler.sampleIndex( NULL, new AtomicBoolean() );
 
             // then
             assertEquals( updates.length, sample.indexSize() );

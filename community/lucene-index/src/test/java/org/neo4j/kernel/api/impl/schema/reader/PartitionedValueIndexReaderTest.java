@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.schema.reader;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.junit.jupiter.api.Test;
 
@@ -172,7 +173,7 @@ class PartitionedValueIndexReaderTest
         when( indexReader3.createSampler() ).thenReturn( new SimpleSampler( 3 ) );
 
         IndexSampler sampler = indexReader.createSampler();
-        assertEquals( new IndexSample( 6, 6, 6 ), sampler.sampleIndex( NULL ) );
+        assertEquals( new IndexSample( 6, 6, 6 ), sampler.sampleIndex( NULL, new AtomicBoolean() ) );
     }
 
     private static LongSet queryResultAsSet( PartitionedValueIndexReader indexReader, PropertyIndexQuery query ) throws IndexNotApplicableKernelException
@@ -222,7 +223,7 @@ class PartitionedValueIndexReaderTest
         }
 
         @Override
-        public IndexSample sampleIndex( CursorContext cursorContext )
+        public IndexSample sampleIndex( CursorContext cursorContext, AtomicBoolean stopped )
         {
             return new IndexSample( sampleValue, sampleValue, sampleValue );
         }

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.schema.sampler;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.lucene.search.IndexSearcher;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -44,7 +45,7 @@ class UniqueDatabaseIndexSamplerTest
         when( indexSearcher.getIndexReader().numDocs() ).thenReturn( 17 );
 
         UniqueLuceneIndexSampler sampler = new UniqueLuceneIndexSampler( indexSearcher, taskControl );
-        IndexSample sample = sampler.sampleIndex( NULL );
+        IndexSample sample = sampler.sampleIndex( NULL, new AtomicBoolean() );
         assertEquals( 17, sample.indexSize() );
     }
 
@@ -58,7 +59,8 @@ class UniqueDatabaseIndexSamplerTest
         } );
 
         UniqueLuceneIndexSampler sampler = new UniqueLuceneIndexSampler( indexSearcher, taskControl );
-        IndexNotFoundKernelException notFoundKernelException = assertThrows( IndexNotFoundKernelException.class, () -> sampler.sampleIndex( NULL ) );
+        IndexNotFoundKernelException notFoundKernelException = assertThrows( IndexNotFoundKernelException.class,
+                                                                             () -> sampler.sampleIndex( NULL, new AtomicBoolean() ) );
         assertEquals( "Index dropped while sampling.", notFoundKernelException.getMessage() );
     }
 

@@ -200,7 +200,7 @@ class IndexingServiceTest
         when( storeView.newPropertyAccessor( any( CursorContext.class ), any() ) ).thenReturn( propertyAccessor );
         ValueIndexReader indexReader = mock( ValueIndexReader.class );
         IndexSampler indexSampler = mock( IndexSampler.class );
-        when( indexSampler.sampleIndex( any() ) ).thenReturn( new IndexSample() );
+        when( indexSampler.sampleIndex( any(), any() ) ).thenReturn( new IndexSample() );
         when( indexReader.createSampler() ).thenReturn( indexSampler );
         when( accessor.newValueReader() ).thenReturn( indexReader );
     }

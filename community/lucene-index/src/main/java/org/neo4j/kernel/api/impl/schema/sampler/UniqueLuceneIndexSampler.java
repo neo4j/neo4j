@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.schema.sampler;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.lucene.search.IndexSearcher;
 
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
@@ -42,7 +43,7 @@ public class UniqueLuceneIndexSampler extends LuceneIndexSampler
     }
 
     @Override
-    public IndexSample sampleIndex( CursorContext cursorContext ) throws IndexNotFoundKernelException
+    public IndexSample sampleIndex( CursorContext cursorContext, AtomicBoolean stopped ) throws IndexNotFoundKernelException
     {
         try ( TaskCoordinator.Task task = newTask() )
         {

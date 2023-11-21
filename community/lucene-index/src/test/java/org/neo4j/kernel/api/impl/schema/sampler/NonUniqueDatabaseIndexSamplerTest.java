@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.schema.sampler;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -61,7 +62,8 @@ class NonUniqueDatabaseIndexSamplerTest
 
         NonUniqueLuceneIndexSampler luceneIndexSampler = createSampler();
         taskControl.cancel();
-        IndexNotFoundKernelException notFoundKernelException = assertThrows( IndexNotFoundKernelException.class, () -> luceneIndexSampler.sampleIndex( NULL ) );
+        IndexNotFoundKernelException notFoundKernelException = assertThrows( IndexNotFoundKernelException.class,
+                                                                             () -> luceneIndexSampler.sampleIndex( NULL, new AtomicBoolean() ) );
         assertEquals( "Index dropped while sampling.", notFoundKernelException.getMessage() );
     }
 
@@ -76,7 +78,7 @@ class NonUniqueDatabaseIndexSamplerTest
         indexReader.setElements( new String[4] );
         when( indexSearcher.getIndexReader() ).thenReturn( indexReader );
 
-        assertEquals( new IndexSample( 4, 2, 4 ), createSampler().sampleIndex( NULL ) );
+        assertEquals( new IndexSample( 4, 2, 4 ), createSampler().sampleIndex( NULL, new AtomicBoolean() ) );
     }
 
     private NonUniqueLuceneIndexSampler createSampler()

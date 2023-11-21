@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index.sampling;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -68,7 +69,7 @@ class IndexSamplingJobTrackerTest
         IndexSamplingJob job = new IndexSamplingJob()
         {
             @Override
-            public void run()
+            public void run( AtomicBoolean stopped )
             {
                 count.incrementAndGet();
 
@@ -172,7 +173,7 @@ class IndexSamplingJobTrackerTest
         }
 
         @Override
-        public void run()
+        public void run( AtomicBoolean stopped )
         {
             try
             {

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.schema.sampler;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -399,7 +400,7 @@ public class DatabaseIndexAccessorTest
             {
                 try
                 {
-                    indexSampler.sampleIndex( NULL );
+                    indexSampler.sampleIndex( NULL, new AtomicBoolean() );
                     fail( "expected exception" );
                 }
                 catch ( IndexNotFoundKernelException e )

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index.sampling;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -67,7 +68,7 @@ class OnlineIndexSamplingJobTest
         when( indexProxy.getDescriptor() ).thenReturn( indexDescriptor );
         when( indexProxy.newValueReader() ).thenReturn( indexReader );
         when( indexReader.createSampler() ).thenReturn( indexSampler );
-        when( indexSampler.sampleIndex( any() ) ).thenReturn( sample );
+        when( indexSampler.sampleIndex( any(), any() ) ).thenReturn( sample );
     }
 
     @Test
@@ -78,7 +79,7 @@ class OnlineIndexSamplingJobTest
         when( indexProxy.getState() ).thenReturn( ONLINE );
 
         // when
-        job.run();
+        job.run( new AtomicBoolean() );
 
         // then
         verify( indexStatisticsStore ).replaceStats( indexId, sample );
@@ -93,7 +94,7 @@ class OnlineIndexSamplingJobTest
         when( indexProxy.getState() ).thenReturn( FAILED );
 
         // when
-        job.run();
+        job.run( new AtomicBoolean() );
 
         // then
         verifyNoMoreInteractions( indexStatisticsStore );
@@ -110,8 +111,8 @@ class OnlineIndexSamplingJobTest
         when( indexProxy.getState() ).thenReturn( ONLINE );
 
         // when
-        job.run();
+        job.run( new AtomicBoolean() );
 
-        verify( indexSampler ).sampleIndex( argThat( context -> context.getCursorTracer().equals( pageCursorTracer ) ) );
+        verify( indexSampler ).sampleIndex( argThat( context -> context.getCursorTracer().equals( pageCursorTracer ) ), any() );
     }
 }

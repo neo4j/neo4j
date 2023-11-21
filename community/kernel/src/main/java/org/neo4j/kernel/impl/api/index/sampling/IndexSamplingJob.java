@@ -19,9 +19,13 @@
  */
 package org.neo4j.kernel.impl.api.index.sampling;
 
-public interface IndexSamplingJob extends Runnable
+import java.util.concurrent.atomic.AtomicBoolean;
+
+public interface IndexSamplingJob
 {
     long indexId();
 
     String indexName();
+
+    void run( AtomicBoolean stopped );
 }

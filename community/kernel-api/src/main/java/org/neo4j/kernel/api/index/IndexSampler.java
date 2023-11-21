@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.index;
 
 import java.io.Closeable;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.io.pagecache.context.CursorContext;
 
@@ -29,7 +30,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
  */
 public interface IndexSampler extends Closeable
 {
-    IndexSampler EMPTY = cursorContext -> new IndexSample();
+    IndexSampler EMPTY = ( cursorContext, stopped ) -> new IndexSample();
 
     /**
      * Sample this index (on the current thread)
@@ -37,7 +38,7 @@ public interface IndexSampler extends Closeable
      * @return the index sampling result
      * @throws IndexNotFoundKernelException if the index is dropped while sampling
      */
-    IndexSample sampleIndex( CursorContext cursorContext ) throws IndexNotFoundKernelException;
+    IndexSample sampleIndex( CursorContext cursorContext, AtomicBoolean stopped ) throws IndexNotFoundKernelException;
 
     @Override
     default void close()

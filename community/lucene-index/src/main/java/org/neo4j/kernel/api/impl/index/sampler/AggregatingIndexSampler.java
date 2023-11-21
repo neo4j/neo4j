@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.impl.index.sampler;
 
 import java.util.List;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -41,18 +42,18 @@ public class AggregatingIndexSampler implements IndexSampler
     }
 
     @Override
-    public IndexSample sampleIndex( CursorContext cursorContext )
+    public IndexSample sampleIndex( CursorContext cursorContext, AtomicBoolean stopped )
     {
-        return indexSamplers.parallelStream().map( sampler -> sampleIndex( sampler, cursorContext ) )
+        return indexSamplers.parallelStream().map( sampler -> sampleIndex( sampler, cursorContext, stopped ) )
                 .reduce( AggregatingIndexSampler::combine )
                 .get();
     }
 
-    private static IndexSample sampleIndex( IndexSampler sampler, CursorContext cursorContext )
+    private static IndexSample sampleIndex( IndexSampler sampler, CursorContext cursorContext, AtomicBoolean stopped )
     {
         try
         {
-            return sampler.sampleIndex( cursorContext );
+            return sampler.sampleIndex( cursorContext, stopped );
         }
         catch ( IndexNotFoundKernelException e )
         {

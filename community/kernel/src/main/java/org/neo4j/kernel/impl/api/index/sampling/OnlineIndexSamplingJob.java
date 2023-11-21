@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index.sampling;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -69,7 +70,7 @@ class OnlineIndexSamplingJob implements IndexSamplingJob
     }
 
     @Override
-    public void run()
+    public void run( AtomicBoolean stopped )
     {
         try ( DurationLogger durationLogger = new DurationLogger( log, "Sampling index " + indexUserDescription ) )
         {
@@ -79,7 +80,7 @@ class OnlineIndexSamplingJob implements IndexSamplingJob
                       var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( INDEX_SAMPLER_TAG ) );
                       IndexSampler sampler = reader.createSampler() )
                 {
-                    IndexSample sample = sampler.sampleIndex( cursorContext );
+                    IndexSample sample = sampler.sampleIndex( cursorContext, stopped );
 
                     // check again if the index is online before saving the counts in the store
                     if ( indexProxy.getState() == ONLINE )

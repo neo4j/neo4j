@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.schema.populator;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.eclipse.collections.api.map.primitive.MutableObjectLongMap;
 import org.eclipse.collections.impl.map.mutable.primitive.ObjectLongHashMap;
 
@@ -84,7 +85,7 @@ public class DefaultNonUniqueIndexSampler implements NonUniqueIndexSampler
     }
 
     @Override
-    public IndexSample sample( CursorContext cursorContext )
+    public IndexSample sample( CursorContext cursorContext, AtomicBoolean stopped )
     {
         return sample( -1, cursorContext );
     }

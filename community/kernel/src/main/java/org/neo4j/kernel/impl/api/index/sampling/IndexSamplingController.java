@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index.sampling;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.eclipse.collections.api.LongIterable;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.list.MutableList;
@@ -248,7 +249,7 @@ public class IndexSamplingController
         IndexSamplingJob job = createSamplingJob( indexMap, indexId );
         if ( job != null )
         {
-            job.run();
+            job.run( new AtomicBoolean( false ) );
         }
     }
 

@@ -302,7 +302,7 @@ public class DatabaseCompositeIndexAccessorTest
                         {
                             LockSupport.parkNanos( MILLISECONDS.toNanos( 10 ) );
                         }
-                        sampler.sampleIndex( NULL );
+                        sampler.sampleIndex( NULL, new AtomicBoolean() );
                     }
                     finally
                     {

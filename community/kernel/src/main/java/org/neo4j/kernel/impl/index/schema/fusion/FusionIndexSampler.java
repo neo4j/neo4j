@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.index.schema.fusion;
 import java.util.ArrayList;
 import java.util.List;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -43,7 +44,7 @@ public class FusionIndexSampler implements IndexSampler
     }
 
     @Override
-    public IndexSample sampleIndex( CursorContext cursorContext ) throws IndexNotFoundKernelException
+    public IndexSample sampleIndex( CursorContext cursorContext, AtomicBoolean stopped ) throws IndexNotFoundKernelException
     {
         List<IndexSample> samples = new ArrayList<>();
         Exception exception = null;
@@ -51,7 +52,7 @@ public class FusionIndexSampler implements IndexSampler
         {
             try
             {
-                samples.add( sampler.sampleIndex( cursorContext ) );
+                samples.add( sampler.sampleIndex( cursorContext, stopped ) );
             }
             catch ( IndexNotFoundKernelException | RuntimeException e )
             {

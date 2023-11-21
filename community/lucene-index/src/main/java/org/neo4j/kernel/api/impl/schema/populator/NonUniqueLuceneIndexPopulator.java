@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.impl.schema.populator;
 
 import java.io.IOException;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
@@ -68,7 +69,7 @@ public class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator<SchemaIn
             try ( var reader = luceneIndex.getIndexReader();
                   var sampler = reader.createSampler() )
             {
-                return sampler.sampleIndex( cursorContext );
+                return sampler.sampleIndex( cursorContext, new AtomicBoolean() );
             }
         }
         catch ( IOException | IndexNotFoundKernelException e )

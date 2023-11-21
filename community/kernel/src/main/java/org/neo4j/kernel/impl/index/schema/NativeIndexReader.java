@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Iterator;
 import java.util.Optional;
-
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
@@ -73,11 +72,11 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>> implements Val
         // be none in a unique index).
 
         FullScanNonUniqueIndexSampler<KEY> sampler = new FullScanNonUniqueIndexSampler<>( tree, layout );
-        return tracer ->
+        return ( cursorContext, stopped ) ->
         {
             try
             {
-                return sampler.sample( tracer );
+                return sampler.sample( cursorContext, stopped );
             }
             catch ( UncheckedIOException e )
             {
