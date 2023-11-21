@@ -19,10 +19,14 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
+import org.eclipse.collections.api.factory.primitive.IntLists;
+import org.neo4j.graphdb.Direction;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.storageengine.util.EagerDegrees;
 
 /**
  * Used by {@link NodeRelationshipTypesStoreScan} to yield each node's relationship types.
@@ -41,6 +45,14 @@ public class NodeRelationshipTypesCursorBehaviour implements EntityScanCursorBeh
 
     @Override
     public int[] readTokens(StorageNodeCursor cursor) {
-        return cursor.relationshipTypes();
+        var degrees = new EagerDegrees();
+        cursor.degrees(RelationshipSelection.selection(Direction.OUTGOING), degrees);
+        var types = IntLists.mutable.empty();
+        for (int type : degrees.types()) {
+            if (degrees.outgoingDegree(type) > 0) {
+                types.add(type);
+            }
+        }
+        return types.toSortedArray();
     }
 }
