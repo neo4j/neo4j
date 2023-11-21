@@ -151,25 +151,22 @@ sealed trait Clause extends ASTNode with SemanticCheckable with SemanticAnalysis
     context: SemanticCheckContext
   ): SemanticCheckResult = {
     val partition = this.folder.treeFold(LabelExpressionsPartition()) {
+
       case NodePattern(_, Some(le), _, _) => acc =>
-          TraverseChildren(sortLabelExpressionIntoPartition(
-            le,
-            isNode = true,
-            acc
-          ))
+          val partition =
+            sortLabelExpressionIntoPartition(le, isNode = true, acc)
+          TraverseChildren(partition)
+
       case LabelExpressionPredicate(entity, le) => acc =>
-          SkipChildren(sortLabelExpressionIntoPartition(
-            le,
-            isNode = state.expressionType(entity).specified == CTNode.invariant,
-            acc
-          ))
+          val isNode = state.expressionType(entity).specified == CTNode.invariant
+          val partition =
+            sortLabelExpressionIntoPartition(le, isNode = isNode, acc)
+          SkipChildren(partition)
+
       case RelationshipPattern(_, Some(le), _, _, _, _) => acc =>
-          TraverseChildren(sortLabelExpressionIntoPartition(
-            le,
-            isNode = false,
-            acc
-          ))
-      case LabelExpression => throw new IllegalStateException("Missing a case for label expression location")
+          val partition =
+            sortLabelExpressionIntoPartition(le, isNode = false, acc)
+          TraverseChildren(partition)
     }
 
     val containsIs = (partition.gpm ++ partition.legacy ++ partition.leaf).exists(le => le.containsIs)
@@ -183,8 +180,9 @@ sealed trait Clause extends ASTNode with SemanticCheckable with SemanticAnalysis
         case SetExtractor((singleExpression, containsIs, pos)) =>
           val isOrColon = if (containsIs) "IS " else ":"
           Some((s"This expression could be expressed as $isOrColon$singleExpression.", pos))
-        // we report all error on the first position as we will later on throw away everything but the first error.
+
         case set: Set[(String, Boolean, InputPosition)] =>
+          // we report all errors on the first position as we will later on throw away everything but the first error.
           val replacement = set.map(x => (if (x._2) "IS " else ":") + x._1)
           Some((s"These expressions could be expressed as ${replacement.mkString(", ")}.", set.head._3))
       }
