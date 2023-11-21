@@ -753,7 +753,7 @@ abstract class CardinalityIntegrationTest extends CypherFunSuite with Cardinalit
     queryShouldHaveCardinality(config, query, labelCardinality * propSelectivity * DEFAULT_RANGE_SEEK_FACTOR)
   }
 
-  test("Infer label of intermediate node") {
+  test("Infer label of intermediate node with outgoing relationships") {
     val allNodes: Double = 300
     val personNodes: Double = 20
     val knowsRelationships: Double = 30
@@ -775,7 +775,59 @@ abstract class CardinalityIntegrationTest extends CypherFunSuite with Cardinalit
     queryShouldHaveCardinality(
       config,
       "MATCH (person)<-[friendship:KNOWS]-(friend)-[membership:HAS_MEMBER]->(forum)",
-      knowsRelationships * hasMemberRelationships / personNodes // since we can infer that friend:Forum
+      knowsRelationships * hasMemberRelationships / personNodes // since we can infer that friend:Person
+    )
+  }
+
+  test("Infer label of intermediate node with one incoming relationships") {
+    val allNodes: Double = 300
+    val personNodes: Double = 20
+    val knowsRelationships: Double = 30
+    val hasMemberRelationships: Double = 25
+
+    val config = plannerBuilder()
+      .withSetting(GraphDatabaseInternalSettings.label_inference, TRUE)
+      .enableMinimumGraphStatistics()
+      .setAllNodesCardinality(allNodes)
+      .setLabelCardinality("Person", personNodes)
+      .setRelationshipCardinality("()-[:KNOWS]->()", knowsRelationships)
+      .setRelationshipCardinality("(:Person)-[:KNOWS]->()", knowsRelationships)
+      .setRelationshipCardinality("()-[:KNOWS]->(:Person)", knowsRelationships)
+      .setRelationshipCardinality("()-[:HAS_MEMBER]->()", hasMemberRelationships)
+      .setRelationshipCardinality("(:Person)-[:HAS_MEMBER]->()", hasMemberRelationships)
+      .setRelationshipCardinality("()-[:HAS_MEMBER]->(:Person)", hasMemberRelationships)
+      .build()
+
+    queryShouldHaveCardinality(
+      config,
+      "MATCH (person)-[friendship:KNOWS]->(friend)<-[membership:HAS_MEMBER]-(forum)",
+      knowsRelationships * hasMemberRelationships / personNodes // since we can infer that friend:Person
+    )
+  }
+
+  test("Infer label of intermediate node with one incoming and one outgoing relationships") {
+    val allNodes: Double = 300
+    val personNodes: Double = 20
+    val knowsRelationships: Double = 30
+    val hasMemberRelationships: Double = 25
+
+    val config = plannerBuilder()
+      .withSetting(GraphDatabaseInternalSettings.label_inference, TRUE)
+      .enableMinimumGraphStatistics()
+      .setAllNodesCardinality(allNodes)
+      .setLabelCardinality("Person", personNodes)
+      .setRelationshipCardinality("()-[:KNOWS]->()", knowsRelationships)
+      .setRelationshipCardinality("(:Person)-[:KNOWS]->()", knowsRelationships)
+      .setRelationshipCardinality("()-[:KNOWS]->(:Person)", knowsRelationships)
+      .setRelationshipCardinality("()-[:HAS_MEMBER]->()", hasMemberRelationships)
+      .setRelationshipCardinality("(:Person)-[:HAS_MEMBER]->()", hasMemberRelationships)
+      .setRelationshipCardinality("()-[:HAS_MEMBER]->(:Person)", hasMemberRelationships)
+      .build()
+
+    queryShouldHaveCardinality(
+      config,
+      "MATCH (person)-[friendship:KNOWS]->(friend)-[membership:HAS_MEMBER]->(forum)",
+      knowsRelationships * hasMemberRelationships / personNodes // since we can infer that friend:Person
     )
   }
 
