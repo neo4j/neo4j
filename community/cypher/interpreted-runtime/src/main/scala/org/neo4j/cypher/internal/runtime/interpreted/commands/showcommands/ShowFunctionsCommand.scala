@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands
 
 import org.neo4j.cypher.internal.ast.AllFunctions
 import org.neo4j.cypher.internal.ast.BuiltInFunctions
+import org.neo4j.cypher.internal.ast.CommandResultItem
 import org.neo4j.cypher.internal.ast.ExecutableBy
 import org.neo4j.cypher.internal.ast.ShowColumn
 import org.neo4j.cypher.internal.ast.ShowFunctionType
@@ -48,8 +49,9 @@ case class ShowFunctionsCommand(
   executableBy: Option[ExecutableBy],
   verbose: Boolean,
   columns: List[ShowColumn],
+  yieldColumns: List[CommandResultItem],
   isCommunity: Boolean
-) extends Command(columns) {
+) extends Command(columns, yieldColumns) {
 
   override def originalNameRows(state: QueryState, baseRow: CypherRow): ClosingIterator[Map[String, AnyValue]] = {
     lazy val systemGraph = state.query.systemGraph
@@ -136,7 +138,8 @@ case class ShowFunctionsCommand(
       }
     }.filter(m => m.nonEmpty)
 
-    ClosingIterator.apply(rows.iterator)
+    val updatedRows = updateRowsWithPotentiallyRenamedColumns(rows)
+    ClosingIterator.apply(updatedRows.iterator)
   }
 
   private def getResultMap(

@@ -23,7 +23,9 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.SettingImpl
+import org.neo4j.cypher.internal.ast.CommandResultItem
 import org.neo4j.cypher.internal.ast.ShowSettingsClause
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ParameterFromSlot
 import org.neo4j.cypher.internal.util.InputPosition
@@ -42,12 +44,12 @@ import scala.util.Try
 class ShowSettingsCommandTest extends ShowCommandTestBase {
 
   private val defaultColumns =
-    ShowSettingsClause(Left(List.empty), None, hasYield = false)(InputPosition.NONE)
+    ShowSettingsClause(Left(List.empty), None, List.empty, yieldAll = false)(InputPosition.NONE)
       .unfilteredColumns
       .columns
 
   private val allColumns =
-    ShowSettingsClause(Left(List.empty), None, hasYield = true)(InputPosition.NONE)
+    ShowSettingsClause(Left(List.empty), None, List.empty, yieldAll = true)(InputPosition.NONE)
       .unfilteredColumns
       .columns
 
@@ -113,7 +115,7 @@ class ShowSettingsCommandTest extends ShowCommandTestBase {
 
   test("show settings should give back correct default values") {
     // When
-    val showSettings = ShowSettingsCommand(Left(List.empty), verbose = false, defaultColumns)
+    val showSettings = ShowSettingsCommand(Left(List.empty), verbose = false, defaultColumns, List.empty)
     val result = showSettings.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -142,7 +144,7 @@ class ShowSettingsCommandTest extends ShowCommandTestBase {
 
   test("show settings should give back correct full values") {
     // When
-    val showSettings = ShowSettingsCommand(Left(List.empty), verbose = true, allColumns)
+    val showSettings = ShowSettingsCommand(Left(List.empty), verbose = true, allColumns, List.empty)
     val result = showSettings.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -180,7 +182,7 @@ class ShowSettingsCommandTest extends ShowCommandTestBase {
     when(mockConfig.getDeclaredSettings).thenReturn(mixedSettings.asJava)
 
     // When
-    val showSettings = ShowSettingsCommand(Left(List.empty), verbose = false, defaultColumns)
+    val showSettings = ShowSettingsCommand(Left(List.empty), verbose = false, defaultColumns, List.empty)
     val result = showSettings.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -203,7 +205,7 @@ class ShowSettingsCommandTest extends ShowCommandTestBase {
     when(ctx.getConfig).thenReturn(mockConfig)
 
     // When
-    val showSettings = ShowSettingsCommand(Left(List.empty), verbose = false, defaultColumns)
+    val showSettings = ShowSettingsCommand(Left(List.empty), verbose = false, defaultColumns, List.empty)
     val result = showSettings.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -228,7 +230,7 @@ class ShowSettingsCommandTest extends ShowCommandTestBase {
     when(ctx.getConfig).thenReturn(mockConfig)
 
     // When
-    val showSettings = ShowSettingsCommand(Left(List.empty), verbose = true, allColumns)
+    val showSettings = ShowSettingsCommand(Left(List.empty), verbose = true, allColumns, List.empty)
     val result = showSettings.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -245,7 +247,7 @@ class ShowSettingsCommandTest extends ShowCommandTestBase {
     val wantedSettingNames = wantedSettings.map(setting => setting("name").asInstanceOf[String])
 
     // When
-    val showSettings = ShowSettingsCommand(Left(wantedSettingNames), verbose = false, defaultColumns)
+    val showSettings = ShowSettingsCommand(Left(wantedSettingNames), verbose = false, defaultColumns, List.empty)
     val result = showSettings.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -265,7 +267,7 @@ class ShowSettingsCommandTest extends ShowCommandTestBase {
       QueryStateHelper.emptyWith(query = ctx, params = Array(Values.stringValue(wantedSetting)))
 
     // When
-    val showSettings = ShowSettingsCommand(Right(wantedSettingExpression), verbose = false, defaultColumns)
+    val showSettings = ShowSettingsCommand(Right(wantedSettingExpression), verbose = false, defaultColumns, List.empty)
     val result = showSettings.originalNameRows(queryStateWithParams, initialCypherRow).toList
 
     // Then
@@ -286,7 +288,7 @@ class ShowSettingsCommandTest extends ShowCommandTestBase {
     when(securityContext.mode()).thenReturn(accessMode)
 
     // When
-    val showSettings = ShowSettingsCommand(Left(List.empty), verbose = false, defaultColumns)
+    val showSettings = ShowSettingsCommand(Left(List.empty), verbose = false, defaultColumns, List.empty)
     val result = showSettings.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -296,6 +298,33 @@ class ShowSettingsCommandTest extends ShowCommandTestBase {
     result should have size expectedSettings.size
     result.zipWithIndex.foreach { case (res, index) =>
       checkResult(res, name = expectedSettings(index))
+    }
+  }
+
+  test("show settings should rename columns renamed in YIELD") {
+    // Given: YIELD name AS setting, defaultValue AS defaultVal, value, description
+    val yieldColumns: List[CommandResultItem] = List(
+      CommandResultItem("name", Variable("setting")(InputPosition.NONE))(InputPosition.NONE),
+      CommandResultItem("defaultValue", Variable("defaultVal")(InputPosition.NONE))(InputPosition.NONE),
+      CommandResultItem("value", Variable("value")(InputPosition.NONE))(InputPosition.NONE),
+      CommandResultItem("description", Variable("description")(InputPosition.NONE))(InputPosition.NONE)
+    )
+
+    // When
+    val showSettings = ShowSettingsCommand(Left(List.empty), verbose = false, defaultColumns, yieldColumns)
+    val result = showSettings.originalNameRows(queryState, initialCypherRow).toList
+
+    // Then: unyielded columns are left as is (to be filtered out at a later stage)
+    result should have size allNonInternalSettings.size
+    result.zipWithIndex.foreach { case (res, index) =>
+      val expectedSetting = allNonInternalSettings(index)
+      res should be(Map(
+        "setting" -> Values.stringValue(expectedSetting("name").asInstanceOf[String]),
+        "value" -> Values.stringOrNoValue(expectedSetting("value").asInstanceOf[String]),
+        "isDynamic" -> Values.booleanValue(expectedSetting("isDynamic").asInstanceOf[Boolean]),
+        "defaultVal" -> Values.stringOrNoValue(expectedSetting("defaultValue").asInstanceOf[String]),
+        "description" -> Values.stringValue(expectedSetting("description").asInstanceOf[String])
+      ))
     }
   }
 }

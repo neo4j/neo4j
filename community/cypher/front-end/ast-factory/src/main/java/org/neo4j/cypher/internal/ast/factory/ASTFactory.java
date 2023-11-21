@@ -321,7 +321,7 @@ public interface ASTFactory<
             WHERE where);
 
     CLAUSE showIndexClause(
-            POS p, ShowCommandFilterTypes indexType, boolean brief, boolean verbose, WHERE where, boolean hasYield);
+            POS p, ShowCommandFilterTypes indexType, boolean brief, boolean verbose, WHERE where, YIELD yieldClause);
 
     CLAUSE showConstraintClause(
             POS p,
@@ -329,9 +329,9 @@ public interface ASTFactory<
             boolean brief,
             boolean verbose,
             WHERE where,
-            boolean hasYield);
+            YIELD yieldClause);
 
-    CLAUSE showProcedureClause(POS p, boolean currentUser, String user, WHERE where, boolean hasYield);
+    CLAUSE showProcedureClause(POS p, boolean currentUser, String user, WHERE where, YIELD yieldClause);
 
     CLAUSE showFunctionClause(
             POS p,
@@ -339,16 +339,16 @@ public interface ASTFactory<
             boolean currentUser,
             String user,
             WHERE where,
-            boolean hasYield);
+            YIELD yieldClause);
 
     CLAUSE showTransactionsClause(POS p, SimpleEither<List<String>, EXPRESSION> ids, WHERE where, YIELD yieldClause);
 
     CLAUSE terminateTransactionsClause(
             POS p, SimpleEither<List<String>, EXPRESSION> ids, WHERE where, YIELD yieldClause);
 
-    CLAUSE turnYieldToWith(YIELD yieldClause);
+    CLAUSE showSettingsClause(POS p, SimpleEither<List<String>, EXPRESSION> names, WHERE where, YIELD yieldClause);
 
-    CLAUSE showSettingsClause(POS p, SimpleEither<List<String>, EXPRESSION> names, WHERE where, boolean hasYield);
+    CLAUSE turnYieldToWith(YIELD yieldClause);
 
     // Schema Commands
     // Constraint Commands

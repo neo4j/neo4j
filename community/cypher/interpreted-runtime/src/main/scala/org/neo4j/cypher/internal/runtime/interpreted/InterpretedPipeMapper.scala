@@ -735,16 +735,17 @@ case class InterpretedPipeMapper(
           indexOrder
         )(id = id)
 
-      case ShowIndexes(indexType, verbose, columns) => CommandPipe(ShowIndexesCommand(indexType, verbose, columns))(id)
+      case ShowIndexes(indexType, verbose, columns, yields, _) =>
+        CommandPipe(ShowIndexesCommand(indexType, verbose, columns, yields))(id)
 
-      case ShowConstraints(constraintType, verbose, columns) =>
-        CommandPipe(ShowConstraintsCommand(constraintType, verbose, columns))(id)
+      case ShowConstraints(constraintType, verbose, columns, yields, _) =>
+        CommandPipe(ShowConstraintsCommand(constraintType, verbose, columns, yields))(id)
 
-      case ShowProcedures(executableBy, verbose, columns) =>
-        CommandPipe(ShowProceduresCommand(executableBy, verbose, columns, isCommunity))(id)
+      case ShowProcedures(executableBy, verbose, columns, yields, _) =>
+        CommandPipe(ShowProceduresCommand(executableBy, verbose, columns, yields, isCommunity))(id)
 
-      case ShowFunctions(functionType, executableBy, verbose, columns) =>
-        CommandPipe(ShowFunctionsCommand(functionType, executableBy, verbose, columns, isCommunity))(id)
+      case ShowFunctions(functionType, executableBy, verbose, columns, yields, _) =>
+        CommandPipe(ShowFunctionsCommand(functionType, executableBy, verbose, columns, yields, isCommunity))(id)
 
       case ShowTransactions(ids, verbose, columns, yields, _) =>
         val newIds = ids match {
@@ -760,12 +761,12 @@ case class InterpretedPipeMapper(
         }
         CommandPipe(TerminateTransactionsCommand(newIds, columns, yields))(id)
 
-      case ShowSettings(names, verbose, columns) =>
+      case ShowSettings(names, verbose, columns, yields, _) =>
         val newNames = names match {
           case Right(e) => Right(buildExpression(e))
           case Left(l)  => Left(l)
         }
-        CommandPipe(ShowSettingsCommand(newNames, verbose, columns))(id)
+        CommandPipe(ShowSettingsCommand(newNames, verbose, columns, yields))(id)
 
       // Currently used for testing only
       case MultiNodeIndexSeek(indexLeafPlans) =>

@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands
 import org.mockito.Mockito.when
 import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.ast.AllConstraints
+import org.neo4j.cypher.internal.ast.CommandResultItem
 import org.neo4j.cypher.internal.ast.ExistsConstraints
 import org.neo4j.cypher.internal.ast.KeyConstraints
 import org.neo4j.cypher.internal.ast.NodeExistsConstraints
@@ -36,6 +37,7 @@ import org.neo4j.cypher.internal.ast.RelUniqueConstraints
 import org.neo4j.cypher.internal.ast.ShowConstraintsClause
 import org.neo4j.cypher.internal.ast.UniqueConstraints
 import org.neo4j.cypher.internal.ast.ValidSyntax
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.runtime.ConstraintInfo
 import org.neo4j.cypher.internal.runtime.IndexInfo
 import org.neo4j.cypher.internal.runtime.IndexStatus
@@ -53,12 +55,26 @@ import org.neo4j.values.virtual.VirtualValues
 class ShowConstraintsCommandTest extends ShowCommandTestBase {
 
   private val defaultColumns =
-    ShowConstraintsClause(AllConstraints, brief = false, verbose = false, None, hasYield = false)(InputPosition.NONE)
+    ShowConstraintsClause(
+      AllConstraints,
+      brief = false,
+      verbose = false,
+      None,
+      List.empty,
+      yieldAll = false
+    )(InputPosition.NONE)
       .unfilteredColumns
       .columns
 
   private val allColumns =
-    ShowConstraintsClause(AllConstraints, brief = false, verbose = false, None, hasYield = true)(InputPosition.NONE)
+    ShowConstraintsClause(
+      AllConstraints,
+      brief = false,
+      verbose = false,
+      None,
+      List.empty,
+      yieldAll = true
+    )(InputPosition.NONE)
       .unfilteredColumns
       .columns
 
@@ -241,7 +257,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
     ))
 
     // When
-    val showConstraints = ShowConstraintsCommand(AllConstraints, verbose = false, defaultColumns)
+    val showConstraints = ShowConstraintsCommand(AllConstraints, verbose = false, defaultColumns, List.empty)
     val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -282,7 +298,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
     ))
 
     // When
-    val showConstraints = ShowConstraintsCommand(AllConstraints, verbose = true, allColumns)
+    val showConstraints = ShowConstraintsCommand(AllConstraints, verbose = true, allColumns, List.empty)
     val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -323,7 +339,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
     ))
 
     // When
-    val showConstraints = ShowConstraintsCommand(AllConstraints, verbose = false, defaultColumns)
+    val showConstraints = ShowConstraintsCommand(AllConstraints, verbose = false, defaultColumns, List.empty)
     val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -337,7 +353,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
     setupAllConstraints()
 
     // When
-    val showConstraints = ShowConstraintsCommand(AllConstraints, verbose = true, allColumns)
+    val showConstraints = ShowConstraintsCommand(AllConstraints, verbose = true, allColumns, List.empty)
     val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -441,7 +457,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
     setupAllConstraints()
 
     // When
-    val showConstraints = ShowConstraintsCommand(UniqueConstraints, verbose = true, allColumns)
+    val showConstraints = ShowConstraintsCommand(UniqueConstraints, verbose = true, allColumns, List.empty)
     val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -475,7 +491,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
     setupAllConstraints()
 
     // When
-    val showConstraints = ShowConstraintsCommand(NodeUniqueConstraints, verbose = true, allColumns)
+    val showConstraints = ShowConstraintsCommand(NodeUniqueConstraints, verbose = true, allColumns, List.empty)
     val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -500,7 +516,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
     setupAllConstraints()
 
     // When
-    val showConstraints = ShowConstraintsCommand(RelUniqueConstraints, verbose = true, allColumns)
+    val showConstraints = ShowConstraintsCommand(RelUniqueConstraints, verbose = true, allColumns, List.empty)
     val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -523,7 +539,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
     setupAllConstraints()
 
     // When
-    val showConstraints = ShowConstraintsCommand(KeyConstraints, verbose = true, allColumns)
+    val showConstraints = ShowConstraintsCommand(KeyConstraints, verbose = true, allColumns, List.empty)
     val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -557,7 +573,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
     setupAllConstraints()
 
     // When
-    val showConstraints = ShowConstraintsCommand(NodeKeyConstraints, verbose = true, allColumns)
+    val showConstraints = ShowConstraintsCommand(NodeKeyConstraints, verbose = true, allColumns, List.empty)
     val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -580,7 +596,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
     setupAllConstraints()
 
     // When
-    val showConstraints = ShowConstraintsCommand(RelKeyConstraints, verbose = true, allColumns)
+    val showConstraints = ShowConstraintsCommand(RelKeyConstraints, verbose = true, allColumns, List.empty)
     val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -603,7 +619,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
     setupAllConstraints()
 
     // When
-    val showConstraints = ShowConstraintsCommand(ExistsConstraints(ValidSyntax), verbose = true, allColumns)
+    val showConstraints = ShowConstraintsCommand(ExistsConstraints(ValidSyntax), verbose = true, allColumns, List.empty)
     val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -637,7 +653,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
     setupAllConstraints()
 
     // When
-    val showConstraints = ShowConstraintsCommand(NodeExistsConstraints(), verbose = true, allColumns)
+    val showConstraints = ShowConstraintsCommand(NodeExistsConstraints(), verbose = true, allColumns, List.empty)
     val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -662,7 +678,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
     setupAllConstraints()
 
     // When
-    val showConstraints = ShowConstraintsCommand(RelExistsConstraints(), verbose = true, allColumns)
+    val showConstraints = ShowConstraintsCommand(RelExistsConstraints(), verbose = true, allColumns, List.empty)
     val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -685,7 +701,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
     setupAllConstraints()
 
     // When
-    val showConstraints = ShowConstraintsCommand(PropTypeConstraints, verbose = true, allColumns)
+    val showConstraints = ShowConstraintsCommand(PropTypeConstraints, verbose = true, allColumns, List.empty)
     val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -719,7 +735,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
     setupAllConstraints()
 
     // When
-    val showConstraints = ShowConstraintsCommand(NodePropTypeConstraints, verbose = true, allColumns)
+    val showConstraints = ShowConstraintsCommand(NodePropTypeConstraints, verbose = true, allColumns, List.empty)
     val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -744,7 +760,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
     setupAllConstraints()
 
     // When
-    val showConstraints = ShowConstraintsCommand(RelPropTypeConstraints, verbose = true, allColumns)
+    val showConstraints = ShowConstraintsCommand(RelPropTypeConstraints, verbose = true, allColumns, List.empty)
     val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -804,7 +820,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
       ))
 
       // When
-      val showConstraints = ShowConstraintsCommand(PropTypeConstraints, verbose = true, allColumns)
+      val showConstraints = ShowConstraintsCommand(PropTypeConstraints, verbose = true, allColumns, List.empty)
       val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
 
       // Then
@@ -845,7 +861,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
         ))
 
         // When
-        val showConstraints = ShowConstraintsCommand(PropTypeConstraints, verbose = true, allColumns)
+        val showConstraints = ShowConstraintsCommand(PropTypeConstraints, verbose = true, allColumns, List.empty)
         val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
 
         // Then
@@ -904,7 +920,7 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
     ))
 
     // When
-    val showConstraints = ShowConstraintsCommand(PropTypeConstraints, verbose = true, allColumns)
+    val showConstraints = ShowConstraintsCommand(PropTypeConstraints, verbose = true, allColumns, List.empty)
     val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -925,5 +941,39 @@ class ShowConstraintsCommandTest extends ShowCommandTestBase {
         s"CREATE CONSTRAINT `constraint1` FOR ()-[r:`$relType`]-() " +
           s"REQUIRE (r.`$prop`) IS :: BOOLEAN | STRING | FLOAT | LIST<BOOLEAN NOT NULL> | LIST<INTEGER NOT NULL>"
     )
+  }
+
+  test("show constraints should rename columns renamed in YIELD") {
+    // Given: YIELD name AS constraint, labelsOrTypes, createStatement AS create, type
+    val yieldColumns: List[CommandResultItem] = List(
+      CommandResultItem("name", Variable("constraint")(InputPosition.NONE))(InputPosition.NONE),
+      CommandResultItem("labelsOrTypes", Variable("labelsOrTypes")(InputPosition.NONE))(InputPosition.NONE),
+      CommandResultItem("createStatement", Variable("create")(InputPosition.NONE))(InputPosition.NONE),
+      CommandResultItem("type", Variable("type")(InputPosition.NONE))(InputPosition.NONE)
+    )
+
+    // Set-up which constraints to return:
+    when(ctx.getAllConstraints()).thenReturn(Map(nodeUniquenessConstraintDescriptor -> nodeUniquenessConstraintInfo))
+
+    // When
+    val showConstraints = ShowConstraintsCommand(AllConstraints, verbose = true, allColumns, yieldColumns)
+    val result = showConstraints.originalNameRows(queryState, initialCypherRow).toList
+
+    // Then: unyielded columns are left as is (to be filtered out at a later stage)
+    result should have size 1
+    result.head should be(Map(
+      "constraint" -> Values.stringValue("constraint0"),
+      "labelsOrTypes" -> VirtualValues.list(Values.stringValue(label)),
+      "create" -> Values.stringValue(
+        s"CREATE CONSTRAINT `constraint0` FOR (n:`$label`) REQUIRE (n.`$prop`) IS UNIQUE $optionsString"
+      ),
+      "type" -> Values.stringValue("UNIQUENESS"),
+      "id" -> Values.longValue(1),
+      "entityType" -> Values.stringValue("NODE"),
+      "properties" -> VirtualValues.list(Values.stringValue(prop)),
+      "ownedIndex" -> Values.stringValue("constraint0"),
+      "propertyType" -> Values.NO_VALUE,
+      "options" -> optionsMap
+    ))
   }
 }

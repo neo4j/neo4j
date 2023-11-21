@@ -2067,25 +2067,50 @@ case class LogicalPlanProducer(
 
     val plan = clause match {
       case s: ShowIndexesClause =>
-        ShowIndexes(s.indexType, s.unfilteredColumns.useAllColumns, s.unfilteredColumns.columns)
+        ShowIndexes(
+          s.indexType,
+          s.unfilteredColumns.useAllColumns,
+          s.unfilteredColumns.columns,
+          s.yieldItems,
+          s.yieldAll
+        )
       case s: ShowConstraintsClause =>
-        ShowConstraints(s.constraintType, s.unfilteredColumns.useAllColumns, s.unfilteredColumns.columns)
+        ShowConstraints(
+          s.constraintType,
+          s.unfilteredColumns.useAllColumns,
+          s.unfilteredColumns.columns,
+          s.yieldItems,
+          s.yieldAll
+        )
       case s: ShowProceduresClause =>
-        ShowProcedures(s.executable, s.unfilteredColumns.useAllColumns, s.unfilteredColumns.columns)
+        ShowProcedures(
+          s.executable,
+          s.unfilteredColumns.useAllColumns,
+          s.unfilteredColumns.columns,
+          s.yieldItems,
+          s.yieldAll
+        )
       case s: ShowFunctionsClause =>
-        ShowFunctions(s.functionType, s.executable, s.unfilteredColumns.useAllColumns, s.unfilteredColumns.columns)
+        ShowFunctions(
+          s.functionType,
+          s.executable,
+          s.unfilteredColumns.useAllColumns,
+          s.unfilteredColumns.columns,
+          s.yieldItems,
+          s.yieldAll
+        )
       case s: ShowTransactionsClause =>
         ShowTransactions(
-          s.ids,
+          s.names,
           s.unfilteredColumns.useAllColumns,
           s.unfilteredColumns.columns,
           s.yieldItems,
           s.yieldAll
         )
       case s: TerminateTransactionsClause =>
-        TerminateTransactions(s.ids, s.unfilteredColumns.columns, s.yieldItems, s.yieldAll)
+        TerminateTransactions(s.names, s.unfilteredColumns.columns, s.yieldItems, s.yieldAll)
       case s: ShowSettingsClause =>
-        ShowSettings(s.names, s.unfilteredColumns.useAllColumns, s.unfilteredColumns.columns)
+        ShowSettings(s.names, s.unfilteredColumns.useAllColumns, s.unfilteredColumns.columns, s.yieldItems, s.yieldAll)
     }
     val annotatedPlan = annotate(plan, solved, ProvidedOrder.empty, context)
 

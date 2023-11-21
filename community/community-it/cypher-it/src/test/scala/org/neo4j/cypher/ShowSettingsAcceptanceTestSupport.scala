@@ -41,26 +41,26 @@ trait ShowSettingsAcceptanceTestSupport extends GraphDatabaseTestSupport {
   private def setting(
     name: String,
     description: String,
-    value: Any,
+    value: AnyRef,
     isDynamic: Boolean,
     defaultValue: String,
     startupValue: String,
     validValues: String,
     isExplicitlySet: Boolean,
     deprecated: Boolean
-  ): Map[String, Any] = Map(
+  ): Map[String, AnyRef] = Map(
     "name" -> name,
     "description" -> description,
     "value" -> value,
-    "isDynamic" -> isDynamic,
+    "isDynamic" -> isDynamic.asInstanceOf[AnyRef],
     "defaultValue" -> defaultValue,
     "startupValue" -> startupValue,
     "validValues" -> validValues,
-    "isExplicitlySet" -> isExplicitlySet,
-    "isDeprecated" -> deprecated
+    "isExplicitlySet" -> isExplicitlySet.asInstanceOf[AnyRef],
+    "isDeprecated" -> deprecated.asInstanceOf[AnyRef]
   )
 
-  protected def allSettings(graph: GraphDatabaseCypherService): Seq[Map[String, Any]] = {
+  protected def allSettings(graph: GraphDatabaseCypherService): Seq[Map[String, AnyRef]] = {
     val config = graph.config
     config
       .getDeclaredSettings.asScala

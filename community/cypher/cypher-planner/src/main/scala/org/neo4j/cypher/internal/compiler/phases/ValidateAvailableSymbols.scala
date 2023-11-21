@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.phases
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.ScopeExpression
+import org.neo4j.cypher.internal.logical.plans.CommandLogicalPlan
 import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
 import org.neo4j.cypher.internal.logical.plans.FindShortestPaths
 import org.neo4j.cypher.internal.logical.plans.Foreach
@@ -29,7 +30,6 @@ import org.neo4j.cypher.internal.logical.plans.ForeachApply
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
-import org.neo4j.cypher.internal.logical.plans.TransactionCommandLogicalPlan
 import org.neo4j.cypher.internal.logical.plans.set.CreatePattern
 import org.neo4j.cypher.internal.rewriting.ValidatingCondition
 import org.neo4j.cypher.internal.runtime.ast.RuntimeConstant
@@ -115,7 +115,7 @@ object ValidateAvailableSymbols extends ValidatingCondition {
           SkipChildren(acc)
       case _: NestedPlanExpression => acc =>
           SkipChildren(acc)
-      case _: TransactionCommandLogicalPlan => acc =>
+      case _: CommandLogicalPlan => acc =>
           SkipChildren(acc)
     }
   }

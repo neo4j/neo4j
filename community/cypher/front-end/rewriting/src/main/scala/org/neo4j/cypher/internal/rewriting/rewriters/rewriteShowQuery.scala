@@ -23,10 +23,8 @@ import org.neo4j.cypher.internal.ast.ProjectionClause
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.SingleQuery
-import org.neo4j.cypher.internal.ast.TransactionsCommandClause
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.With
-import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.rewriting.conditions.containsNoReturnAll
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.PreparatoryRewritingRewriterFactory
 import org.neo4j.cypher.internal.util.ASTNode
@@ -42,7 +40,7 @@ import org.neo4j.cypher.internal.util.bottomUp
 import scala.annotation.tailrec
 
 // We would want this to be part of a later phase, e.g. ASTRewriter.
-// That is problematic because it needs to run expandStar, but the YIELD and RETURN clauses need scoping information.
+// That is problematic because it needs to run expandStar, but the YIELD/WITH and RETURN clauses need scoping information.
 // A solution would be to introduce another pass of SemanticAnalysis between this rewriter and expandStar.
 // However, we really don't need more passes of SemanticAnalysis.
 // It is not possible to modify or create scope at this point, to do so we would need to be a phase.
@@ -53,9 +51,9 @@ case object rewriteShowQuery extends Step with DefaultPostCondition with Prepara
   override def preConditions: Set[StepSequencer.Condition] = Set.empty
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
-    // Introduces YIELD * and RETURN *
+    // Introduces WITH * and RETURN *
     containsNoReturnAll,
-    // It can invalidate this condition by introducing YIELD and RETURN clauses
+    // It can invalidate this condition by introducing WITH and RETURN clauses
     ProjectionClausesHaveSemanticInfo
   )
 
@@ -65,51 +63,29 @@ case object rewriteShowQuery extends Step with DefaultPostCondition with Prepara
 
   @tailrec
   private def rewriteClauses(clauses: List[Clause], rewrittenClause: List[Clause]): List[Clause] = clauses match {
-    // Just a single transaction command clause (with or without WHERE)
-    case (commandClause: TransactionsCommandClause) :: Nil =>
-      rewrittenClause ++ rewriteToWithAndReturn(commandClause, commandClause.where)
     // Just a single command clause (with or without WHERE)
     case (commandClause: CommandClause) :: Nil =>
-      rewrittenClause ++ rewriteWithYieldAndReturn(commandClause, commandClause.where)
-    // Transaction command clause with only a YIELD/WITH
-    case (commandClause: TransactionsCommandClause) :: (withClause: With) :: Nil =>
-      rewrittenClause :+ commandClause :+ updateDefaultOrderOnYield(withClause, commandClause) :+ returnClause(
-        lastPosition(withClause),
-        getDefaultOrderFromYieldOrCommand(withClause, commandClause)
-      )
-    // Command clause with only a YIELD
-    case (commandClause: CommandClause) :: (yieldClause: Yield) :: Nil =>
-      rewrittenClause :+ commandClause :+ updateDefaultOrderOnYield(yieldClause, commandClause) :+ returnClause(
-        lastPosition(yieldClause),
-        getDefaultOrderFromYieldOrCommand(yieldClause, commandClause)
-      )
-    // Transaction command clause with YIELD/WITH and RETURN * (to fix column order)
-    case (commandClause: TransactionsCommandClause) :: (withClause: With) :: (returnClause: Return) :: Nil
+      rewrittenClause ++ rewriteToWithAndReturn(commandClause, commandClause.where)
+    // Command clause with only a WITH (parsed as YIELD)
+    case (commandClause: CommandClause) :: (withClause: With) :: Nil =>
+      rewrittenClause :+ commandClause :+ updateDefaultOrderOnProjection(withClause, commandClause) :+
+        returnClause(lastPosition(withClause), getDefaultOrderFromProjectionOrCommand(withClause, commandClause))
+    // Command clause with WITH (parsed as YIELD) and RETURN * (to fix column order)
+    case (commandClause: CommandClause) :: (withClause: With) :: (returnClause: Return) :: Nil
       if returnClause.returnItems.includeExisting =>
-      rewrittenClause :+ commandClause :+ updateDefaultOrderOnYield(
+      rewrittenClause :+ commandClause :+ updateDefaultOrderOnProjection(
         withClause,
         commandClause
       ) :+ updateDefaultOrderOnReturn(
         returnClause,
         withClause,
-        commandClause
-      )
-    // Command clause with YIELD and RETURN * (to fix column order)
-    case (commandClause: CommandClause) :: (yieldClause: Yield) :: (returnClause: Return) :: Nil
-      if returnClause.returnItems.includeExisting =>
-      rewrittenClause :+ commandClause :+ updateDefaultOrderOnYield(
-        yieldClause,
-        commandClause
-      ) :+ updateDefaultOrderOnReturn(
-        returnClause,
-        yieldClause,
         commandClause
       )
     case c :: cs => rewriteClauses(cs, rewrittenClause :+ c)
     case Nil     => rewrittenClause
   }
 
-  private def getDefaultOrderFromYieldOrCommand(projClause: ProjectionClause, commandClause: CommandClause) =
+  private def getDefaultOrderFromProjectionOrCommand(projClause: ProjectionClause, commandClause: CommandClause) =
     if (projClause.returnItems.includeExisting)
       projClause.returnItems.defaultOrderOnColumns.getOrElse(commandClause.unfilteredColumns.columns.map(_.name))
     else projClause.returnItems.items.map(_.name).toList
@@ -119,38 +95,21 @@ case object rewriteShowQuery extends Step with DefaultPostCondition with Prepara
     projClause: ProjectionClause,
     commandClause: CommandClause
   ) = {
-    val defaultOrderOnColumns =
-      returnClause.returnItems.defaultOrderOnColumns.getOrElse(getDefaultOrderFromYieldOrCommand(
-        projClause,
-        commandClause
-      ))
+    val defaultOrderOnColumns = returnClause.returnItems.defaultOrderOnColumns.getOrElse(
+      getDefaultOrderFromProjectionOrCommand(projClause, commandClause)
+    )
     returnClause.withReturnItems(returnClause.returnItems.withDefaultOrderOnColumns(defaultOrderOnColumns))
   }
 
-  private def updateDefaultOrderOnYield(projClause: ProjectionClause, commandClause: CommandClause) = {
-    val defaultOrderOnColumns = getDefaultOrderFromYieldOrCommand(projClause, commandClause)
+  private def updateDefaultOrderOnProjection(projClause: ProjectionClause, commandClause: CommandClause) = {
+    val defaultOrderOnColumns = getDefaultOrderFromProjectionOrCommand(projClause, commandClause)
     projClause.copyProjection(returnItems = projClause.returnItems.withDefaultOrderOnColumns(defaultOrderOnColumns))
-  }
-
-  private def rewriteWithYieldAndReturn(commandClause: CommandClause, where: Option[Where]): List[Clause] = {
-    val defaultColumnOrder = commandClause.unfilteredColumns.columns.map(_.name)
-    List(
-      commandClause.moveWhereToYield,
-      Yield(
-        ReturnItems(includeExisting = true, Seq(), Some(defaultColumnOrder))(commandClause.position),
-        None,
-        None,
-        None,
-        where
-      )(commandClause.position),
-      returnClause(commandClause.position, defaultColumnOrder)
-    )
   }
 
   private def rewriteToWithAndReturn(commandClause: CommandClause, where: Option[Where]): List[Clause] = {
     val defaultColumnOrder = commandClause.unfilteredColumns.columns.map(_.name)
     List(
-      commandClause.moveWhereToYield,
+      commandClause.moveWhereToProjection,
       With(
         distinct = false,
         ReturnItems(includeExisting = true, Seq(), Some(defaultColumnOrder))(commandClause.position),

@@ -26,34 +26,40 @@ import org.neo4j.cypher.internal.ast.ShowConstraintType
 import org.neo4j.cypher.internal.ast.ShowFunctionType
 import org.neo4j.cypher.internal.ast.ShowIndexType
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.util.attribution.IdGen
 
-case class ShowIndexes(indexType: ShowIndexType, verbose: Boolean, defaultColumns: List[ShowColumn])(implicit
-idGen: IdGen) extends CommandLogicalPlan(idGen)
+case class ShowIndexes(
+  indexType: ShowIndexType,
+  verbose: Boolean,
+  defaultColumns: List[ShowColumn],
+  yieldColumns: List[CommandResultItem],
+  yieldAll: Boolean
+)(implicit idGen: IdGen) extends CommandLogicalPlan(idGen)
 
-case class ShowConstraints(constraintType: ShowConstraintType, verbose: Boolean, defaultColumns: List[ShowColumn])(
-  implicit idGen: IdGen
-) extends CommandLogicalPlan(idGen)
+case class ShowConstraints(
+  constraintType: ShowConstraintType,
+  verbose: Boolean,
+  defaultColumns: List[ShowColumn],
+  yieldColumns: List[CommandResultItem],
+  yieldAll: Boolean
+)(implicit idGen: IdGen) extends CommandLogicalPlan(idGen)
 
-case class ShowProcedures(executableBy: Option[ExecutableBy], verbose: Boolean, defaultColumns: List[ShowColumn])(
-  implicit idGen: IdGen
-) extends CommandLogicalPlan(idGen)
+case class ShowProcedures(
+  executableBy: Option[ExecutableBy],
+  verbose: Boolean,
+  defaultColumns: List[ShowColumn],
+  yieldColumns: List[CommandResultItem],
+  yieldAll: Boolean
+)(implicit idGen: IdGen) extends CommandLogicalPlan(idGen)
 
 case class ShowFunctions(
   functionType: ShowFunctionType,
   executableBy: Option[ExecutableBy],
   verbose: Boolean,
-  defaultColumns: List[ShowColumn]
+  defaultColumns: List[ShowColumn],
+  yieldColumns: List[CommandResultItem],
+  yieldAll: Boolean
 )(implicit idGen: IdGen) extends CommandLogicalPlan(idGen)
-
-abstract class TransactionCommandLogicalPlan(idGen: IdGen) extends CommandLogicalPlan(idGen) {
-  def yieldColumns: List[CommandResultItem]
-
-  override def availableSymbols: Set[LogicalVariable] =
-    if (yieldColumns.nonEmpty) yieldColumns.map(_.aliasedVariable).toSet
-    else super.availableSymbols
-}
 
 case class ShowTransactions(
   ids: Either[List[String], Expression],
@@ -61,17 +67,19 @@ case class ShowTransactions(
   defaultColumns: List[ShowColumn],
   yieldColumns: List[CommandResultItem],
   yieldAll: Boolean
-)(implicit idGen: IdGen) extends TransactionCommandLogicalPlan(idGen)
+)(implicit idGen: IdGen) extends CommandLogicalPlan(idGen)
 
 case class TerminateTransactions(
   ids: Either[List[String], Expression],
   defaultColumns: List[ShowColumn],
   yieldColumns: List[CommandResultItem],
   yieldAll: Boolean
-)(implicit idGen: IdGen) extends TransactionCommandLogicalPlan(idGen)
+)(implicit idGen: IdGen) extends CommandLogicalPlan(idGen)
 
 case class ShowSettings(
   names: Either[List[String], Expression],
   verbose: Boolean,
-  defaultColumns: List[ShowColumn]
+  defaultColumns: List[ShowColumn],
+  yieldColumns: List[CommandResultItem],
+  yieldAll: Boolean
 )(implicit idGen: IdGen) extends CommandLogicalPlan(idGen)

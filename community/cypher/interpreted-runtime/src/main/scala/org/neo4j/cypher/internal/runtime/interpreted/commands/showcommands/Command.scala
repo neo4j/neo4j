@@ -38,9 +38,13 @@ import java.time.ZoneId
 
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 
-abstract class Command(columns: List[ShowColumn]) {
+abstract class Command(
+  private val defaultColumns: List[ShowColumn],
+  private val yieldColumns: List[CommandResultItem]
+) {
+  private val columns: List[ShowColumn] = getColumns(defaultColumns, yieldColumns)
 
-  def originalNameRows(state: QueryState, baseRow: CypherRow): ClosingIterator[Map[String, AnyValue]]
+  protected def originalNameRows(state: QueryState, baseRow: CypherRow): ClosingIterator[Map[String, AnyValue]]
 
   final def rows(state: QueryState, baseRow: CypherRow): ClosingIterator[Map[String, AnyValue]] = {
     originalNameRows(state, baseRow).map { map =>
@@ -55,12 +59,39 @@ abstract class Command(columns: List[ShowColumn]) {
 
   protected def formatTime(startTime: Long, zoneId: ZoneId): OffsetDateTime =
     OffsetDateTime.ofInstant(Instant.ofEpochMilli(startTime), zoneId)
+
+  // Update to rename columns which have been renamed in YIELD
+  protected def updateRowsWithPotentiallyRenamedColumns(
+    rows: List[Map[String, AnyValue]]
+  ): List[Map[String, AnyValue]] =
+    rows.map(row =>
+      row.map { case (key, value) =>
+        val newKey =
+          yieldColumns.find(c => c.originalName.equals(key)).map(_.aliasedVariable.name).getOrElse(key)
+        (newKey, value)
+      }
+    )
+
+  // Make sure to get the yielded columns (and their potential renames) if YIELD was specified
+  // otherwise get the default columns
+  private def getColumns(defaultColumns: List[ShowColumn], yieldColumns: List[CommandResultItem]): List[ShowColumn] = {
+    if (yieldColumns.nonEmpty) yieldColumns.map(c => {
+      val column = defaultColumns.find(s => s.variable.name.equals(c.originalName)).get
+      ShowColumn(c.aliasedVariable, column.cypherType, c.aliasedVariable.name)
+    })
+    else defaultColumns
+  }
 }
 
 object Command {
 
-  def extractNames(names: Either[List[String], Expression], state: QueryState, baseRow: CypherRow): List[String] = {
-    // Get the string values and make sure we don't have duplicates
+  // Get the string values from `names`, removing possible duplicates
+  // names could for example be the id lists for `SHOW TRANSACTIONS ['id1', 'id2']`
+  protected[showcommands] def extractNames(
+    names: Either[List[String], Expression],
+    state: QueryState,
+    baseRow: CypherRow
+  ): List[String] =
     names match {
       case Left(ls) => ls.toSet.toList
       case Right(e) =>
@@ -76,32 +107,4 @@ object Command {
             throw new ParameterWrongTypeException(s"Expected a string or a list of strings, but got: ${x.toString}")
         }
     }
-  }
-}
-
-abstract class TransactionCommand(defaultColumns: List[ShowColumn], yieldColumns: List[CommandResultItem])
-    extends Command(TransactionCommand.getColumns(defaultColumns, yieldColumns)) {
-
-  // Update to rename columns which have been renamed in YIELD
-  def updateRowsWithPotentiallyRenamedColumns(rows: List[Map[String, AnyValue]]): List[Map[String, AnyValue]] =
-    rows.map(row =>
-      row.map { case (key, value) =>
-        val newKey =
-          yieldColumns.find(c => c.originalName.equals(key)).map(_.aliasedVariable.name).getOrElse(key)
-        (newKey, value)
-      }
-    )
-}
-
-object TransactionCommand {
-
-  // Make sure to get the yielded columns (and their potential renames) if YIELD was specified
-  // otherwise get the default columns
-  private def getColumns(defaultColumns: List[ShowColumn], yieldColumns: List[CommandResultItem]): List[ShowColumn] = {
-    if (yieldColumns.nonEmpty) yieldColumns.map(c => {
-      val column = defaultColumns.find(s => s.variable.name.equals(c.originalName)).get
-      ShowColumn(c.aliasedVariable, column.cypherType, c.aliasedVariable.name)
-    })
-    else defaultColumns
-  }
 }

@@ -843,7 +843,7 @@ public class NullAstFactory
 
     @Override
     public NULL showIndexClause(
-            NULL p, ShowCommandFilterTypes indexType, boolean brief, boolean verbose, NULL aNull, boolean hasYield) {
+            NULL p, ShowCommandFilterTypes indexType, boolean brief, boolean verbose, NULL aNull, NULL yieldClause) {
         return null;
     }
 
@@ -854,12 +854,12 @@ public class NullAstFactory
             boolean brief,
             boolean verbose,
             NULL aNull,
-            boolean hasYield) {
+            NULL yieldClause) {
         return null;
     }
 
     @Override
-    public NULL showProcedureClause(NULL p, boolean currentUser, String user, NULL aNull, boolean hasYield) {
+    public NULL showProcedureClause(NULL p, boolean currentUser, String user, NULL aNull, NULL yieldClause) {
         return null;
     }
 
@@ -870,7 +870,7 @@ public class NullAstFactory
             boolean currentUser,
             String user,
             NULL aNull,
-            boolean hasYield) {
+            NULL yieldClause) {
         return null;
     }
 
@@ -886,12 +886,12 @@ public class NullAstFactory
     }
 
     @Override
-    public NULL turnYieldToWith(NULL yieldClause) {
+    public NULL showSettingsClause(NULL p, SimpleEither<List<String>, NULL> ids, NULL where, NULL yieldClause) {
         return null;
     }
 
     @Override
-    public NULL showSettingsClause(NULL p, SimpleEither<List<String>, NULL> ids, NULL where, boolean hasYield) {
+    public NULL turnYieldToWith(NULL yieldClause) {
         return null;
     }
 

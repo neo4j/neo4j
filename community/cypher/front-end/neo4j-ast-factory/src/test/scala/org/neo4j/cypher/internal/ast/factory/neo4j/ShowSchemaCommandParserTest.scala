@@ -53,52 +53,108 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
 
     test(s"SHOW $indexKeyword") {
       assertAst(
-        singleQuery(ShowIndexesClause(AllIndexes, brief = false, verbose = false, None, hasYield = false)(defaultPos))
+        singleQuery(ShowIndexesClause(
+          AllIndexes,
+          brief = false,
+          verbose = false,
+          None,
+          List.empty,
+          yieldAll = false
+        )(defaultPos))
       )
     }
 
     test(s"SHOW ALL $indexKeyword") {
       assertAst(
-        singleQuery(ShowIndexesClause(AllIndexes, brief = false, verbose = false, None, hasYield = false)(defaultPos))
+        singleQuery(ShowIndexesClause(
+          AllIndexes,
+          brief = false,
+          verbose = false,
+          None,
+          List.empty,
+          yieldAll = false
+        )(defaultPos))
       )
     }
 
     test(s"SHOW BTREE $indexKeyword") {
       assertAst(
-        singleQuery(ShowIndexesClause(BtreeIndexes, brief = false, verbose = false, None, hasYield = false)(defaultPos))
+        singleQuery(ShowIndexesClause(
+          BtreeIndexes,
+          brief = false,
+          verbose = false,
+          None,
+          List.empty,
+          yieldAll = false
+        )(defaultPos))
       )
     }
 
     test(s"SHOW RANGE $indexKeyword") {
       assertAst(
-        singleQuery(ShowIndexesClause(RangeIndexes, brief = false, verbose = false, None, hasYield = false)(defaultPos))
+        singleQuery(ShowIndexesClause(
+          RangeIndexes,
+          brief = false,
+          verbose = false,
+          None,
+          List.empty,
+          yieldAll = false
+        )(defaultPos))
       )
     }
 
     test(s"SHOW FULLTEXT $indexKeyword") {
       assertAst(
         singleQuery(
-          ShowIndexesClause(FulltextIndexes, brief = false, verbose = false, None, hasYield = false)(defaultPos)
+          ShowIndexesClause(
+            FulltextIndexes,
+            brief = false,
+            verbose = false,
+            None,
+            List.empty,
+            yieldAll = false
+          )(defaultPos)
         )
       )
     }
 
     test(s"SHOW TEXT $indexKeyword") {
       assertAst(
-        singleQuery(ShowIndexesClause(TextIndexes, brief = false, verbose = false, None, hasYield = false)(defaultPos))
+        singleQuery(ShowIndexesClause(
+          TextIndexes,
+          brief = false,
+          verbose = false,
+          None,
+          List.empty,
+          yieldAll = false
+        )(defaultPos))
       )
     }
 
     test(s"SHOW POINT $indexKeyword") {
       assertAst(
-        singleQuery(ShowIndexesClause(PointIndexes, brief = false, verbose = false, None, hasYield = false)(defaultPos))
+        singleQuery(ShowIndexesClause(
+          PointIndexes,
+          brief = false,
+          verbose = false,
+          None,
+          List.empty,
+          yieldAll = false
+        )(defaultPos))
       )
     }
 
     test(s"SHOW LOOKUP $indexKeyword") {
       assertAst(
         singleQuery(
-          ShowIndexesClause(LookupIndexes, brief = false, verbose = false, None, hasYield = false)(defaultPos)
+          ShowIndexesClause(
+            LookupIndexes,
+            brief = false,
+            verbose = false,
+            None,
+            List.empty,
+            yieldAll = false
+          )(defaultPos)
         )
       )
     }
@@ -107,7 +163,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
       assertAst(
         singleQuery(
           use(varFor("db")),
-          ShowIndexesClause(AllIndexes, brief = false, verbose = false, None, hasYield = false)(pos)
+          ShowIndexesClause(AllIndexes, brief = false, verbose = false, None, List.empty, yieldAll = false)(pos)
         ),
         comparePosition = false
       )
@@ -117,31 +173,66 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
 
     test(s"SHOW $indexKeyword BRIEF") {
       assertAst(
-        singleQuery(ShowIndexesClause(AllIndexes, brief = true, verbose = false, None, hasYield = false)(defaultPos))
+        singleQuery(ShowIndexesClause(
+          AllIndexes,
+          brief = true,
+          verbose = false,
+          None,
+          List.empty,
+          yieldAll = false
+        )(defaultPos))
       )
     }
 
     test(s"SHOW $indexKeyword BRIEF OUTPUT") {
       assertAst(
-        singleQuery(ShowIndexesClause(AllIndexes, brief = true, verbose = false, None, hasYield = false)(defaultPos))
+        singleQuery(ShowIndexesClause(
+          AllIndexes,
+          brief = true,
+          verbose = false,
+          None,
+          List.empty,
+          yieldAll = false
+        )(defaultPos))
       )
     }
 
     test(s"SHOW ALL $indexKeyword BRIEF") {
       assertAst(
-        singleQuery(ShowIndexesClause(AllIndexes, brief = true, verbose = false, None, hasYield = false)(defaultPos))
+        singleQuery(ShowIndexesClause(
+          AllIndexes,
+          brief = true,
+          verbose = false,
+          None,
+          List.empty,
+          yieldAll = false
+        )(defaultPos))
       )
     }
 
     test(s"SHOW  ALL $indexKeyword BRIEF OUTPUT") {
       assertAst(
-        singleQuery(ShowIndexesClause(AllIndexes, brief = true, verbose = false, None, hasYield = false)(defaultPos))
+        singleQuery(ShowIndexesClause(
+          AllIndexes,
+          brief = true,
+          verbose = false,
+          None,
+          List.empty,
+          yieldAll = false
+        )(defaultPos))
       )
     }
 
     test(s"SHOW BTREE $indexKeyword BRIEF") {
       assertAst(
-        singleQuery(ShowIndexesClause(BtreeIndexes, brief = true, verbose = false, None, hasYield = false)(defaultPos))
+        singleQuery(ShowIndexesClause(
+          BtreeIndexes,
+          brief = true,
+          verbose = false,
+          None,
+          List.empty,
+          yieldAll = false
+        )(defaultPos))
       )
     }
 
@@ -149,19 +240,40 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
 
     test(s"SHOW $indexKeyword VERBOSE") {
       assertAst(
-        singleQuery(ShowIndexesClause(AllIndexes, brief = false, verbose = true, None, hasYield = false)(defaultPos))
+        singleQuery(ShowIndexesClause(
+          AllIndexes,
+          brief = false,
+          verbose = true,
+          None,
+          List.empty,
+          yieldAll = false
+        )(defaultPos))
       )
     }
 
     test(s"SHOW ALL $indexKeyword VERBOSE") {
       assertAst(
-        singleQuery(ShowIndexesClause(AllIndexes, brief = false, verbose = true, None, hasYield = false)(defaultPos))
+        singleQuery(ShowIndexesClause(
+          AllIndexes,
+          brief = false,
+          verbose = true,
+          None,
+          List.empty,
+          yieldAll = false
+        )(defaultPos))
       )
     }
 
     test(s"SHOW BTREE $indexKeyword VERBOSE OUTPUT") {
       assertAst(
-        singleQuery(ShowIndexesClause(BtreeIndexes, brief = false, verbose = true, None, hasYield = false)(defaultPos))
+        singleQuery(ShowIndexesClause(
+          BtreeIndexes,
+          brief = false,
+          verbose = true,
+          None,
+          List.empty,
+          yieldAll = false
+        )(defaultPos))
       )
     }
   }
@@ -175,7 +287,8 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
         brief = false,
         verbose = false,
         Some(where(equals(varFor("uniqueness"), literalString("UNIQUE")))),
-        hasYield = false
+        List.empty,
+        yieldAll = false
       )(pos)),
       comparePosition = false
     )
@@ -184,8 +297,15 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
   test("SHOW INDEXES YIELD populationPercent") {
     assertAst(
       singleQuery(
-        ShowIndexesClause(AllIndexes, brief = false, verbose = false, None, hasYield = true)(pos),
-        yieldClause(returnItems(variableReturnItem("populationPercent")))
+        ShowIndexesClause(
+          AllIndexes,
+          brief = false,
+          verbose = false,
+          None,
+          List(commandResultItem("populationPercent")),
+          yieldAll = false
+        )(pos),
+        withFromYield(returnAllItems.withDefaultOrderOnColumns(List("populationPercent")))
       ),
       comparePosition = false
     )
@@ -194,8 +314,15 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
   test("SHOW POINT INDEXES YIELD populationPercent") {
     assertAst(
       singleQuery(
-        ShowIndexesClause(PointIndexes, brief = false, verbose = false, None, hasYield = true)(pos),
-        yieldClause(returnItems(variableReturnItem("populationPercent")))
+        ShowIndexesClause(
+          PointIndexes,
+          brief = false,
+          verbose = false,
+          None,
+          List(commandResultItem("populationPercent")),
+          yieldAll = false
+        )(pos),
+        withFromYield(returnAllItems.withDefaultOrderOnColumns(List("populationPercent")))
       ),
       comparePosition = false
     )
@@ -204,8 +331,8 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
   test("SHOW BTREE INDEXES YIELD *") {
     assertAst(
       singleQuery(
-        ShowIndexesClause(BtreeIndexes, brief = false, verbose = false, None, hasYield = true)(pos),
-        yieldClause(returnAllItems)
+        ShowIndexesClause(BtreeIndexes, brief = false, verbose = false, None, List.empty, yieldAll = true)(pos),
+        withFromYield(returnAllItems)
       ),
       comparePosition = false
     )
@@ -214,8 +341,8 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
   test("SHOW INDEXES YIELD * ORDER BY name SKIP 2 LIMIT 5") {
     assertAst(
       singleQuery(
-        ShowIndexesClause(AllIndexes, brief = false, verbose = false, None, hasYield = true)(pos),
-        yieldClause(returnAllItems, Some(orderBy(sortItem(varFor("name")))), Some(skip(2)), Some(limit(5)))
+        ShowIndexesClause(AllIndexes, brief = false, verbose = false, None, List.empty, yieldAll = true)(pos),
+        withFromYield(returnAllItems, Some(orderBy(sortItem(varFor("name")))), Some(skip(2)), Some(limit(5)))
       ),
       comparePosition = false
     )
@@ -224,8 +351,8 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
   test("SHOW RANGE INDEXES YIELD * ORDER BY name SKIP 2 LIMIT 5") {
     assertAst(
       singleQuery(
-        ShowIndexesClause(RangeIndexes, brief = false, verbose = false, None, hasYield = true)(pos),
-        yieldClause(returnAllItems, Some(orderBy(sortItem(varFor("name")))), Some(skip(2)), Some(limit(5)))
+        ShowIndexesClause(RangeIndexes, brief = false, verbose = false, None, List.empty, yieldAll = true)(pos),
+        withFromYield(returnAllItems, Some(orderBy(sortItem(varFor("name")))), Some(skip(2)), Some(limit(5)))
       ),
       comparePosition = false
     )
@@ -235,9 +362,16 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
     assertAst(
       singleQuery(
         use(varFor("db")),
-        ShowIndexesClause(FulltextIndexes, brief = false, verbose = false, None, hasYield = true)(pos),
-        yieldClause(
-          returnItems(variableReturnItem("name"), aliasedReturnItem("populationPercent", "pp")),
+        ShowIndexesClause(
+          FulltextIndexes,
+          brief = false,
+          verbose = false,
+          None,
+          List(commandResultItem("name"), commandResultItem("populationPercent", Some("pp"))),
+          yieldAll = false
+        )(pos),
+        withFromYield(
+          returnAllItems.withDefaultOrderOnColumns(List("name", "pp")),
           where = Some(where(lessThan(varFor("pp"), literalFloat(50.0))))
         ),
         return_(variableReturnItem("name"))
@@ -252,9 +386,16 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
     assertAst(
       singleQuery(
         use(varFor("db")),
-        ShowIndexesClause(BtreeIndexes, brief = false, verbose = false, None, hasYield = true)(pos),
-        yieldClause(
-          returnItems(variableReturnItem("name"), aliasedReturnItem("populationPercent", "pp")),
+        ShowIndexesClause(
+          BtreeIndexes,
+          brief = false,
+          verbose = false,
+          None,
+          List(commandResultItem("name"), commandResultItem("populationPercent", Some("pp"))),
+          yieldAll = false
+        )(pos),
+        withFromYield(
+          returnAllItems.withDefaultOrderOnColumns(List("name", "pp")),
           Some(orderBy(sortItem(varFor("pp")))),
           Some(skip(2)),
           Some(limit(5)),
@@ -269,8 +410,15 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
   test("SHOW INDEXES YIELD name AS INDEX, type AS OUTPUT") {
     assertAst(
       singleQuery(
-        ShowIndexesClause(AllIndexes, brief = false, verbose = false, None, hasYield = true)(pos),
-        yieldClause(returnItems(aliasedReturnItem("name", "INDEX"), aliasedReturnItem("type", "OUTPUT")))
+        ShowIndexesClause(
+          AllIndexes,
+          brief = false,
+          verbose = false,
+          None,
+          List(commandResultItem("name", Some("INDEX")), commandResultItem("type", Some("OUTPUT"))),
+          yieldAll = false
+        )(pos),
+        withFromYield(returnAllItems.withDefaultOrderOnColumns(List("INDEX", "OUTPUT")))
       ),
       comparePosition = false
     )
@@ -279,8 +427,15 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
   test("SHOW TEXT INDEXES YIELD name AS INDEX, type AS OUTPUT") {
     assertAst(
       singleQuery(
-        ShowIndexesClause(TextIndexes, brief = false, verbose = false, None, hasYield = true)(pos),
-        yieldClause(returnItems(aliasedReturnItem("name", "INDEX"), aliasedReturnItem("type", "OUTPUT")))
+        ShowIndexesClause(
+          TextIndexes,
+          brief = false,
+          verbose = false,
+          None,
+          List(commandResultItem("name", Some("INDEX")), commandResultItem("type", Some("OUTPUT"))),
+          yieldAll = false
+        )(pos),
+        withFromYield(returnAllItems.withDefaultOrderOnColumns(List("INDEX", "OUTPUT")))
       ),
       comparePosition = false
     )
@@ -293,7 +448,8 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
         brief = false,
         verbose = false,
         Some(where(equals(varFor("name"), literalString("GRANT")))),
-        hasYield = false
+        List.empty,
+        yieldAll = false
       )(pos)),
       comparePosition = false
     )
@@ -306,10 +462,11 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
         brief = false,
         verbose = false,
         None,
-        hasYield = true
+        List(commandResultItem("a")),
+        yieldAll = false
       )(pos),
-      yieldClause(
-        returnItems(variableReturnItem("a")),
+      withFromYield(
+        returnAllItems.withDefaultOrderOnColumns(List("a")),
         Some(orderBy(sortItem(varFor("a")))),
         where = Some(where(equals(varFor("a"), literalInt(1))))
       )
@@ -323,10 +480,11 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
         brief = false,
         verbose = false,
         None,
-        hasYield = true
+        List(commandResultItem("a", Some("b"))),
+        yieldAll = false
       )(pos),
-      yieldClause(
-        returnItems(aliasedReturnItem("a", "b")),
+      withFromYield(
+        returnAllItems.withDefaultOrderOnColumns(List("b")),
         Some(orderBy(sortItem(varFor("b")))),
         where = Some(where(equals(varFor("b"), literalInt(1))))
       )
@@ -340,12 +498,13 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
         brief = false,
         verbose = false,
         None,
-        hasYield = true
+        List(commandResultItem("a", Some("b"))),
+        yieldAll = false
       )(pos),
-      yieldClause(
-        returnItems(aliasedReturnItem("a", "b")),
-        Some(orderBy(sortItem(varFor("a")))),
-        where = Some(where(equals(varFor("a"), literalInt(1))))
+      withFromYield(
+        returnAllItems.withDefaultOrderOnColumns(List("b")),
+        Some(orderBy(sortItem(varFor("b")))),
+        where = Some(where(equals(varFor("b"), literalInt(1))))
       )
     ))
   }
@@ -357,10 +516,11 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
         brief = false,
         verbose = false,
         None,
-        hasYield = true
+        List(commandResultItem("a")),
+        yieldAll = false
       )(pos),
-      yieldClause(
-        returnItems(variableReturnItem("a")),
+      withFromYield(
+        returnAllItems.withDefaultOrderOnColumns(List("a")),
         Some(orderBy(sortItem(simpleExistsExpression(patternForMatch(nodePat(Some("a"))), None)))),
         where = Some(where(simpleExistsExpression(patternForMatch(nodePat(Some("a"))), None)))
       )
@@ -374,10 +534,11 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
         brief = false,
         verbose = false,
         None,
-        hasYield = true
+        List(commandResultItem("a")),
+        yieldAll = false
       )(pos),
-      yieldClause(
-        returnItems(variableReturnItem("a")),
+      withFromYield(
+        returnAllItems.withDefaultOrderOnColumns(List("a")),
         Some(orderBy(sortItem(simpleExistsExpression(patternForMatch(nodePat(Some("b"))), None)))),
         where = Some(where(simpleExistsExpression(patternForMatch(nodePat(Some("b"))), None)))
       )
@@ -391,10 +552,11 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
         brief = false,
         verbose = false,
         None,
-        hasYield = true
+        List(commandResultItem("a", Some("b"))),
+        yieldAll = false
       )(pos),
-      yieldClause(
-        returnItems(aliasedReturnItem("a", "b")),
+      withFromYield(
+        returnAllItems.withDefaultOrderOnColumns(List("b")),
         Some(orderBy(sortItem(simpleCountExpression(patternForMatch(nodePat(Some("b"))), None)))),
         where = Some(where(simpleExistsExpression(patternForMatch(nodePat(Some("b"))), None)))
       )
@@ -408,13 +570,14 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
         brief = false,
         verbose = false,
         None,
-        hasYield = true
+        List(commandResultItem("a", Some("b"))),
+        yieldAll = false
       )(pos),
-      yieldClause(
-        returnItems(aliasedReturnItem("a", "b")),
-        Some(orderBy(sortItem(simpleExistsExpression(patternForMatch(nodePat(Some("a"))), None)))),
+      withFromYield(
+        returnAllItems.withDefaultOrderOnColumns(List("b")),
+        Some(orderBy(sortItem(simpleExistsExpression(patternForMatch(nodePat(Some("b"))), None)))),
         where = Some(where(notEquals(
-          simpleCollectExpression(patternForMatch(nodePat(Some("a"))), None, return_(returnItem(varFor("a"), "a"))),
+          simpleCollectExpression(patternForMatch(nodePat(Some("b"))), None, return_(returnItem(varFor("b"), "a"))),
           listOf()
         )))
       )
@@ -428,10 +591,11 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
         brief = false,
         verbose = false,
         None,
-        hasYield = true
+        List(commandResultItem("a", Some("b"))),
+        yieldAll = false
       )(pos),
-      yieldClause(
-        returnItems(aliasedReturnItem("a", "b")),
+      withFromYield(
+        returnAllItems.withDefaultOrderOnColumns(List("b")),
         Some(orderBy(sortItem(add(varFor("b"), simpleCountExpression(patternForMatch(nodePat()), None))))),
         where = Some(where(or(varFor("b"), simpleExistsExpression(patternForMatch(nodePat()), None))))
       )
@@ -445,13 +609,14 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
         brief = false,
         verbose = false,
         None,
-        hasYield = true
+        List(commandResultItem("a", Some("b"))),
+        yieldAll = false
       )(pos),
-      yieldClause(
-        returnItems(aliasedReturnItem("a", "b")),
-        Some(orderBy(sortItem(add(varFor("a"), simpleExistsExpression(patternForMatch(nodePat()), None))))),
+      withFromYield(
+        returnAllItems.withDefaultOrderOnColumns(List("b")),
+        Some(orderBy(sortItem(add(varFor("b"), simpleExistsExpression(patternForMatch(nodePat()), None))))),
         where = Some(where(or(
-          varFor("a"),
+          varFor("b"),
           AllIterablePredicate(
             varFor("x"),
             listOfInt(1, 2),
@@ -459,6 +624,29 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
           )(pos)
         )))
       )
+    ))
+  }
+
+  test("SHOW INDEXES YIELD name as options, options as name where size(options) > 0 RETURN options as name") {
+    assertAst(singleQuery(
+      ShowIndexesClause(
+        AllIndexes,
+        brief = false,
+        verbose = false,
+        None,
+        List(
+          commandResultItem("name", Some("options")),
+          commandResultItem("options", Some("name"))
+        ),
+        yieldAll = false
+      )(pos),
+      withFromYield(
+        returnAllItems.withDefaultOrderOnColumns(List("options", "name")),
+        where = Some(where(
+          greaterThan(size(varFor("options")), literalInt(0))
+        ))
+      ),
+      return_(aliasedReturnItem("options", "name"))
     ))
   }
 
@@ -652,7 +840,8 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
               brief = false,
               verbose = false,
               None,
-              hasYield = false
+              List.empty,
+              yieldAll = false
             )(defaultPos)))
           }
 
@@ -660,7 +849,14 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
             assertAst(
               singleQuery(
                 use(varFor("db")),
-                ShowConstraintsClause(constraintType, brief = false, verbose = false, None, hasYield = false)(pos)
+                ShowConstraintsClause(
+                  constraintType,
+                  brief = false,
+                  verbose = false,
+                  None,
+                  List.empty,
+                  yieldAll = false
+                )(pos)
               ),
               comparePosition = false
             )
@@ -678,7 +874,8 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
               brief = true,
               verbose = false,
               None,
-              hasYield = false
+              List.empty,
+              yieldAll = false
             )(defaultPos)))
           }
 
@@ -688,7 +885,8 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
               brief = true,
               verbose = false,
               None,
-              hasYield = false
+              List.empty,
+              yieldAll = false
             )(defaultPos)))
           }
 
@@ -698,7 +896,8 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
               brief = false,
               verbose = true,
               None,
-              hasYield = false
+              List.empty,
+              yieldAll = false
             )(defaultPos)))
           }
 
@@ -708,7 +907,8 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
               brief = false,
               verbose = true,
               None,
-              hasYield = false
+              List.empty,
+              yieldAll = false
             )(defaultPos)))
           }
       }
@@ -723,7 +923,8 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
         brief = false,
         verbose = false,
         Some(where(equals(varFor("entityType"), literalString("RELATIONSHIP")))),
-        hasYield = false
+        List.empty,
+        yieldAll = false
       )(pos)),
       comparePosition = false
     )
@@ -732,10 +933,15 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
   test("SHOW REL PROPERTY EXISTENCE CONSTRAINTS YIELD labelsOrTypes") {
     assertAst(
       singleQuery(
-        ShowConstraintsClause(RelExistsConstraints(ValidSyntax), brief = false, verbose = false, None, hasYield = true)(
-          pos
-        ),
-        yieldClause(returnItems(variableReturnItem("labelsOrTypes")))
+        ShowConstraintsClause(
+          RelExistsConstraints(ValidSyntax),
+          brief = false,
+          verbose = false,
+          None,
+          List(commandResultItem("labelsOrTypes")),
+          yieldAll = false
+        )(pos),
+        withFromYield(returnAllItems.withDefaultOrderOnColumns(List("labelsOrTypes")))
       ),
       comparePosition = false
     )
@@ -744,8 +950,15 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
   test("SHOW UNIQUE CONSTRAINTS YIELD *") {
     assertAst(
       singleQuery(
-        ShowConstraintsClause(UniqueConstraints, brief = false, verbose = false, None, hasYield = true)(pos),
-        yieldClause(returnAllItems)
+        ShowConstraintsClause(
+          UniqueConstraints,
+          brief = false,
+          verbose = false,
+          None,
+          List.empty,
+          yieldAll = true
+        )(pos),
+        withFromYield(returnAllItems)
       ),
       comparePosition = false
     )
@@ -754,8 +967,15 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
   test("SHOW CONSTRAINTS YIELD * ORDER BY name SKIP 2 LIMIT 5") {
     assertAst(
       singleQuery(
-        ShowConstraintsClause(AllConstraints, brief = false, verbose = false, None, hasYield = true)(pos),
-        yieldClause(returnAllItems, Some(orderBy(sortItem(varFor("name")))), Some(skip(2)), Some(limit(5)))
+        ShowConstraintsClause(
+          AllConstraints,
+          brief = false,
+          verbose = false,
+          None,
+          List.empty,
+          yieldAll = true
+        )(pos),
+        withFromYield(returnAllItems, Some(orderBy(sortItem(varFor("name")))), Some(skip(2)), Some(limit(5)))
       ),
       comparePosition = false
     )
@@ -765,9 +985,19 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
     assertAst(
       singleQuery(
         use(varFor("db")),
-        ShowConstraintsClause(NodeKeyConstraints, brief = false, verbose = false, None, hasYield = true)(pos),
-        yieldClause(
-          returnItems(variableReturnItem("name"), aliasedReturnItem("properties", "pp")),
+        ShowConstraintsClause(
+          NodeKeyConstraints,
+          brief = false,
+          verbose = false,
+          None,
+          List(
+            commandResultItem("name"),
+            commandResultItem("properties", Some("pp"))
+          ),
+          yieldAll = false
+        )(pos),
+        withFromYield(
+          returnAllItems.withDefaultOrderOnColumns(List("name", "pp")),
           where = Some(where(greaterThan(function("size", varFor("pp")), literalInt(1))))
         ),
         return_(variableReturnItem("name"))
@@ -782,9 +1012,19 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
     assertAst(
       singleQuery(
         use(varFor("db")),
-        ShowConstraintsClause(AllConstraints, brief = false, verbose = false, None, hasYield = true)(pos),
-        yieldClause(
-          returnItems(variableReturnItem("name"), aliasedReturnItem("populationPercent", "pp")),
+        ShowConstraintsClause(
+          AllConstraints,
+          brief = false,
+          verbose = false,
+          None,
+          List(
+            commandResultItem("name"),
+            commandResultItem("populationPercent", Some("pp"))
+          ),
+          yieldAll = false
+        )(pos),
+        withFromYield(
+          returnAllItems.withDefaultOrderOnColumns(List("name", "pp")),
           Some(orderBy(sortItem(varFor("pp")))),
           Some(skip(2)),
           Some(limit(5)),
@@ -799,10 +1039,18 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
   test("SHOW EXISTENCE CONSTRAINTS YIELD name AS CONSTRAINT, type AS OUTPUT") {
     assertAst(
       singleQuery(
-        ShowConstraintsClause(ExistsConstraints(ValidSyntax), brief = false, verbose = false, None, hasYield = true)(
-          pos
-        ),
-        yieldClause(returnItems(aliasedReturnItem("name", "CONSTRAINT"), aliasedReturnItem("type", "OUTPUT")))
+        ShowConstraintsClause(
+          ExistsConstraints(ValidSyntax),
+          brief = false,
+          verbose = false,
+          None,
+          List(
+            commandResultItem("name", Some("CONSTRAINT")),
+            commandResultItem("type", Some("OUTPUT"))
+          ),
+          yieldAll = false
+        )(pos),
+        withFromYield(returnAllItems.withDefaultOrderOnColumns(List("CONSTRAINT", "OUTPUT")))
       ),
       comparePosition = false
     )
@@ -815,7 +1063,8 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
         brief = false,
         verbose = false,
         Some(where(equals(varFor("name"), literalString("GRANT")))),
-        hasYield = false
+        List.empty,
+        yieldAll = false
       )(pos)),
       comparePosition = false
     )
@@ -828,10 +1077,11 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
         brief = false,
         verbose = false,
         None,
-        hasYield = true
+        List(commandResultItem("a")),
+        yieldAll = false
       )(pos),
-      yieldClause(
-        returnItems(variableReturnItem("a")),
+      withFromYield(
+        returnAllItems.withDefaultOrderOnColumns(List("a")),
         Some(orderBy(sortItem(varFor("a")))),
         where = Some(where(equals(varFor("a"), literalInt(1))))
       )
@@ -845,10 +1095,11 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
         brief = false,
         verbose = false,
         None,
-        hasYield = true
+        List(commandResultItem("a", Some("b"))),
+        yieldAll = false
       )(pos),
-      yieldClause(
-        returnItems(aliasedReturnItem("a", "b")),
+      withFromYield(
+        returnAllItems.withDefaultOrderOnColumns(List("b")),
         Some(orderBy(sortItem(varFor("b")))),
         where = Some(where(equals(varFor("b"), literalInt(1))))
       )
@@ -862,12 +1113,13 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
         brief = false,
         verbose = false,
         None,
-        hasYield = true
+        List(commandResultItem("a", Some("b"))),
+        yieldAll = false
       )(pos),
-      yieldClause(
-        returnItems(aliasedReturnItem("a", "b")),
-        Some(orderBy(sortItem(varFor("a")))),
-        where = Some(where(equals(varFor("a"), literalInt(1))))
+      withFromYield(
+        returnAllItems.withDefaultOrderOnColumns(List("b")),
+        Some(orderBy(sortItem(varFor("b")))),
+        where = Some(where(equals(varFor("b"), literalInt(1))))
       )
     ))
   }
@@ -879,10 +1131,11 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
         brief = false,
         verbose = false,
         None,
-        hasYield = true
+        List(commandResultItem("a")),
+        yieldAll = false
       )(pos),
-      yieldClause(
-        returnItems(variableReturnItem("a")),
+      withFromYield(
+        returnAllItems.withDefaultOrderOnColumns(List("a")),
         Some(orderBy(sortItem(simpleExistsExpression(patternForMatch(nodePat(Some("a"))), None)))),
         where = Some(where(simpleExistsExpression(patternForMatch(nodePat(Some("a"))), None)))
       )
@@ -896,10 +1149,11 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
         brief = false,
         verbose = false,
         None,
-        hasYield = true
+        List(commandResultItem("a")),
+        yieldAll = false
       )(pos),
-      yieldClause(
-        returnItems(variableReturnItem("a")),
+      withFromYield(
+        returnAllItems.withDefaultOrderOnColumns(List("a")),
         Some(orderBy(sortItem(simpleExistsExpression(patternForMatch(nodePat(Some("b"))), None)))),
         where = Some(where(simpleExistsExpression(patternForMatch(nodePat(Some("b"))), None)))
       )
@@ -913,10 +1167,11 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
         brief = false,
         verbose = false,
         None,
-        hasYield = true
+        List(commandResultItem("a", Some("b"))),
+        yieldAll = false
       )(pos),
-      yieldClause(
-        returnItems(aliasedReturnItem("a", "b")),
+      withFromYield(
+        returnAllItems.withDefaultOrderOnColumns(List("b")),
         Some(orderBy(sortItem(simpleCountExpression(patternForMatch(nodePat(Some("b"))), None)))),
         where = Some(where(simpleExistsExpression(patternForMatch(nodePat(Some("b"))), None)))
       )
@@ -930,13 +1185,14 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
         brief = false,
         verbose = false,
         None,
-        hasYield = true
+        List(commandResultItem("a", Some("b"))),
+        yieldAll = false
       )(pos),
-      yieldClause(
-        returnItems(aliasedReturnItem("a", "b")),
-        Some(orderBy(sortItem(simpleExistsExpression(patternForMatch(nodePat(Some("a"))), None)))),
+      withFromYield(
+        returnAllItems.withDefaultOrderOnColumns(List("b")),
+        Some(orderBy(sortItem(simpleExistsExpression(patternForMatch(nodePat(Some("b"))), None)))),
         where = Some(where(notEquals(
-          simpleCollectExpression(patternForMatch(nodePat(Some("a"))), None, return_(returnItem(varFor("a"), "a"))),
+          simpleCollectExpression(patternForMatch(nodePat(Some("b"))), None, return_(returnItem(varFor("b"), "a"))),
           listOf()
         )))
       )
@@ -950,10 +1206,11 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
         brief = false,
         verbose = false,
         None,
-        hasYield = true
+        List(commandResultItem("a", Some("b"))),
+        yieldAll = false
       )(pos),
-      yieldClause(
-        returnItems(aliasedReturnItem("a", "b")),
+      withFromYield(
+        returnAllItems.withDefaultOrderOnColumns(List("b")),
         Some(orderBy(sortItem(add(varFor("b"), simpleCountExpression(patternForMatch(nodePat()), None))))),
         where = Some(where(or(varFor("b"), simpleExistsExpression(patternForMatch(nodePat()), None))))
       )
@@ -967,13 +1224,14 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
         brief = false,
         verbose = false,
         None,
-        hasYield = true
+        List(commandResultItem("a", Some("b"))),
+        yieldAll = false
       )(pos),
-      yieldClause(
-        returnItems(aliasedReturnItem("a", "b")),
-        Some(orderBy(sortItem(add(varFor("a"), simpleExistsExpression(patternForMatch(nodePat()), None))))),
+      withFromYield(
+        returnAllItems.withDefaultOrderOnColumns(List("b")),
+        Some(orderBy(sortItem(add(varFor("b"), simpleExistsExpression(patternForMatch(nodePat()), None))))),
         where = Some(where(or(
-          varFor("a"),
+          varFor("b"),
           AllIterablePredicate(
             varFor("x"),
             listOfInt(1, 2),
@@ -981,6 +1239,29 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
           )(pos)
         )))
       )
+    ))
+  }
+
+  test("SHOW CONSTRAINTS YIELD name as options, properties as name where size(name) > 0 RETURN options as name") {
+    assertAst(singleQuery(
+      ShowConstraintsClause(
+        AllConstraints,
+        brief = false,
+        verbose = false,
+        None,
+        List(
+          commandResultItem("name", Some("options")),
+          commandResultItem("properties", Some("name"))
+        ),
+        yieldAll = false
+      )(pos),
+      withFromYield(
+        returnAllItems.withDefaultOrderOnColumns(List("options", "name")),
+        where = Some(where(
+          greaterThan(size(varFor("name")), literalInt(0))
+        ))
+      ),
+      return_(aliasedReturnItem("options", "name"))
     ))
   }
 
@@ -1309,10 +1590,6 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
 
     test(s"$prefix SHOW $entity YIELD as UNWIND as as a RETURN a") {
       assertFailsWithMessageStart(testName, "Invalid input 'UNWIND': expected")
-    }
-
-    test(s"$prefix SHOW $entity YIELD name SHOW $entity YIELD name2 RETURN name2") {
-      assertFailsWithMessageStart(testName, "Invalid input 'SHOW': expected")
     }
 
     test(s"$prefix SHOW $entity RETURN name2 YIELD name2") {

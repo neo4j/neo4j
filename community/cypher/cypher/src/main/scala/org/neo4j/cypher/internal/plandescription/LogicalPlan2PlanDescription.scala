@@ -1128,9 +1128,9 @@ case class LogicalPlan2PlanDescription(
           withDistinctness
         )
 
-      case ShowIndexes(indexType, verbose, _) =>
-        val typeDescription = asPrettyString.raw(indexType.description)
-        val colsDescription = if (verbose) pretty"allColumns" else pretty"defaultColumns"
+      case s: ShowIndexes =>
+        val typeDescription = asPrettyString.raw(s.indexType.description)
+        val colsDescription = commandColumnInfo(s.yieldColumns, s.yieldAll)
         PlanDescriptionImpl(
           id,
           "ShowIndexes",
@@ -1192,9 +1192,9 @@ case class LogicalPlan2PlanDescription(
           withDistinctness
         )
 
-      case ShowConstraints(constraintType, verbose, _) =>
-        val typeDescription = asPrettyString.raw(constraintType.description)
-        val colsDescription = if (verbose) pretty"allColumns" else pretty"defaultColumns"
+      case s: ShowConstraints =>
+        val typeDescription = asPrettyString.raw(s.constraintType.description)
+        val colsDescription = commandColumnInfo(s.yieldColumns, s.yieldAll)
         PlanDescriptionImpl(
           id,
           "ShowConstraints",
@@ -1209,7 +1209,7 @@ case class LogicalPlan2PlanDescription(
         val executableDescription = s.executableBy.map(e => asPrettyString.raw(e.description("procedures"))).getOrElse(
           asPrettyString.raw(ExecutableBy.defaultDescription("procedures"))
         )
-        val colsDescription = if (s.verbose) pretty"allColumns" else pretty"defaultColumns"
+        val colsDescription = commandColumnInfo(s.yieldColumns, s.yieldAll)
         PlanDescriptionImpl(
           id,
           "ShowProcedures",
@@ -1225,7 +1225,7 @@ case class LogicalPlan2PlanDescription(
         val executableDescription = s.executableBy.map(e => asPrettyString.raw(e.description("functions"))).getOrElse(
           pretty"functionsForUser(all)"
         )
-        val colsDescription = if (s.verbose) pretty"allColumns" else pretty"defaultColumns"
+        val colsDescription = commandColumnInfo(s.yieldColumns, s.yieldAll)
         PlanDescriptionImpl(
           id,
           "ShowFunctions",
@@ -1242,7 +1242,7 @@ case class LogicalPlan2PlanDescription(
             asPrettyString.raw(if (ls.isEmpty) "allTransactions" else s"transactions(${ls.mkString(", ")})")
           case Right(e) => asPrettyString.raw(s"transactions(${e.asCanonicalStringVal})")
         }
-        val colsDescription = transactionColumnInfo(s.yieldColumns, s.yieldAll)
+        val colsDescription = commandColumnInfo(s.yieldColumns, s.yieldAll)
         PlanDescriptionImpl(
           id,
           "ShowTransactions",
@@ -1258,7 +1258,7 @@ case class LogicalPlan2PlanDescription(
           case Left(ls) => asPrettyString.raw(ls.mkString(", "))
           case Right(e) => asPrettyString.raw(s"${e.asCanonicalStringVal}")
         }
-        val colsDescription = transactionColumnInfo(t.yieldColumns, t.yieldAll)
+        val colsDescription = commandColumnInfo(t.yieldColumns, t.yieldAll)
         PlanDescriptionImpl(
           id,
           "TerminateTransactions",
@@ -1275,7 +1275,7 @@ case class LogicalPlan2PlanDescription(
           case Left(names) => asPrettyString.raw(s"settings(${names.mkString(", ")})")
           case Right(e)    => asPrettyString.raw(s"settings(${e.asCanonicalStringVal})")
         }
-        val colsDescription = if (s.verbose) pretty"allColumns" else pretty"defaultColumns"
+        val colsDescription = commandColumnInfo(s.yieldColumns, s.yieldAll)
         PlanDescriptionImpl(
           id,
           "ShowSettings",
@@ -3326,7 +3326,7 @@ case class LogicalPlan2PlanDescription(
       pretty"SET $setOps"
   }
 
-  private def transactionColumnInfo(yieldColumns: List[CommandResultItem], yieldAll: Boolean): PrettyString =
+  private def commandColumnInfo(yieldColumns: List[CommandResultItem], yieldAll: Boolean): PrettyString =
     if (yieldColumns.nonEmpty)
       asPrettyString.raw(yieldColumns.map(y => {
         val variableName = y.originalName

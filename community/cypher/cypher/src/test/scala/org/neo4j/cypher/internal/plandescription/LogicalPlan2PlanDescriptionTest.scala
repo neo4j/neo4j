@@ -2658,33 +2658,52 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
   test("ShowIndexes") {
     assertGood(
-      attach(ShowIndexes(AllIndexes, verbose = true, List.empty), 1.0),
+      attach(ShowIndexes(AllIndexes, verbose = true, List.empty, List.empty, yieldAll = true), 1.0),
       planDescription(id, "ShowIndexes", NoChildren, Seq(details("allIndexes, allColumns")), Set.empty)
     )
 
     assertGood(
-      attach(ShowIndexes(RangeIndexes, verbose = false, List.empty), 1.0),
+      attach(ShowIndexes(RangeIndexes, verbose = false, List.empty, List.empty, yieldAll = false), 1.0),
       planDescription(id, "ShowIndexes", NoChildren, Seq(details("rangeIndexes, defaultColumns")), Set.empty)
     )
 
     assertGood(
-      attach(ShowIndexes(FulltextIndexes, verbose = true, List.empty), 1.0),
+      attach(ShowIndexes(FulltextIndexes, verbose = true, List.empty, List.empty, yieldAll = true), 1.0),
       planDescription(id, "ShowIndexes", NoChildren, Seq(details("fulltextIndexes, allColumns")), Set.empty)
     )
 
     assertGood(
-      attach(ShowIndexes(TextIndexes, verbose = true, List.empty), 1.0),
+      attach(ShowIndexes(TextIndexes, verbose = true, List.empty, List.empty, yieldAll = true), 1.0),
       planDescription(id, "ShowIndexes", NoChildren, Seq(details("textIndexes, allColumns")), Set.empty)
     )
 
     assertGood(
-      attach(ShowIndexes(PointIndexes, verbose = true, List.empty), 1.0),
+      attach(ShowIndexes(PointIndexes, verbose = true, List.empty, List.empty, yieldAll = true), 1.0),
       planDescription(id, "ShowIndexes", NoChildren, Seq(details("pointIndexes, allColumns")), Set.empty)
     )
 
     assertGood(
-      attach(ShowIndexes(LookupIndexes, verbose = false, List.empty), 1.0),
-      planDescription(id, "ShowIndexes", NoChildren, Seq(details("lookupIndexes, defaultColumns")), Set.empty)
+      attach(
+        ShowIndexes(
+          LookupIndexes,
+          verbose = false,
+          List("xxx", "yyy", "vvv").map(s => ShowColumn(s)(pos)),
+          List(
+            CommandResultItem("xxx", varFor("xxx"))(pos),
+            CommandResultItem("yyy", varFor("zzz"))(pos),
+            CommandResultItem("vvv", varFor("vvv"))(pos)
+          ),
+          yieldAll = false
+        ),
+        1.0
+      ),
+      planDescription(
+        id,
+        "ShowIndexes",
+        NoChildren,
+        Seq(details("lookupIndexes, columns(xxx, yyy AS zzz, vvv)")),
+        Set("xxx", "zzz", "vvv")
+      )
     )
   }
 
@@ -3522,17 +3541,32 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
   test("ShowConstraints") {
     assertGood(
-      attach(ShowConstraints(constraintType = AllConstraints, verbose = false, List.empty), 1.0),
+      attach(
+        ShowConstraints(constraintType = AllConstraints, verbose = false, List.empty, List.empty, yieldAll = false),
+        1.0
+      ),
       planDescription(id, "ShowConstraints", NoChildren, Seq(details("allConstraints, defaultColumns")), Set.empty)
     )
 
     assertGood(
-      attach(ShowConstraints(constraintType = UniqueConstraints, verbose = true, List.empty), 1.0),
+      attach(
+        ShowConstraints(constraintType = UniqueConstraints, verbose = true, List.empty, List.empty, yieldAll = true),
+        1.0
+      ),
       planDescription(id, "ShowConstraints", NoChildren, Seq(details("uniquenessConstraints, allColumns")), Set.empty)
     )
 
     assertGood(
-      attach(ShowConstraints(constraintType = NodeUniqueConstraints, verbose = true, List.empty), 1.0),
+      attach(
+        ShowConstraints(
+          constraintType = NodeUniqueConstraints,
+          verbose = true,
+          List.empty,
+          List.empty,
+          yieldAll = true
+        ),
+        1.0
+      ),
       planDescription(
         id,
         "ShowConstraints",
@@ -3543,7 +3577,16 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
 
     assertGood(
-      attach(ShowConstraints(constraintType = RelUniqueConstraints, verbose = true, List.empty), 1.0),
+      attach(
+        ShowConstraints(
+          constraintType = RelUniqueConstraints,
+          verbose = true,
+          List.empty,
+          List.empty,
+          yieldAll = true
+        ),
+        1.0
+      ),
       planDescription(
         id,
         "ShowConstraints",
@@ -3554,17 +3597,32 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
 
     assertGood(
-      attach(ShowConstraints(constraintType = KeyConstraints, verbose = false, List.empty), 1.0),
+      attach(
+        ShowConstraints(constraintType = KeyConstraints, verbose = false, List.empty, List.empty, yieldAll = false),
+        1.0
+      ),
       planDescription(id, "ShowConstraints", NoChildren, Seq(details("keyConstraints, defaultColumns")), Set.empty)
     )
 
     assertGood(
-      attach(ShowConstraints(constraintType = NodeKeyConstraints, verbose = false, List.empty), 1.0),
+      attach(
+        ShowConstraints(
+          constraintType = NodeKeyConstraints,
+          verbose = false,
+          List.empty,
+          List.empty,
+          yieldAll = false
+        ),
+        1.0
+      ),
       planDescription(id, "ShowConstraints", NoChildren, Seq(details("nodeKeyConstraints, defaultColumns")), Set.empty)
     )
 
     assertGood(
-      attach(ShowConstraints(constraintType = RelKeyConstraints, verbose = false, List.empty), 1.0),
+      attach(
+        ShowConstraints(constraintType = RelKeyConstraints, verbose = false, List.empty, List.empty, yieldAll = false),
+        1.0
+      ),
       planDescription(
         id,
         "ShowConstraints",
@@ -3575,12 +3633,30 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
 
     assertGood(
-      attach(ShowConstraints(constraintType = ExistsConstraints(ValidSyntax), verbose = true, List.empty), 1.0),
+      attach(
+        ShowConstraints(
+          constraintType = ExistsConstraints(ValidSyntax),
+          verbose = true,
+          List.empty,
+          List.empty,
+          yieldAll = true
+        ),
+        1.0
+      ),
       planDescription(id, "ShowConstraints", NoChildren, Seq(details("existenceConstraints, allColumns")), Set.empty)
     )
 
     assertGood(
-      attach(ShowConstraints(constraintType = NodeExistsConstraints(), verbose = false, List.empty), 1.0),
+      attach(
+        ShowConstraints(
+          constraintType = NodeExistsConstraints(),
+          verbose = false,
+          List.empty,
+          List.empty,
+          yieldAll = false
+        ),
+        1.0
+      ),
       planDescription(
         id,
         "ShowConstraints",
@@ -3591,7 +3667,16 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
 
     assertGood(
-      attach(ShowConstraints(constraintType = RelExistsConstraints(), verbose = true, List.empty), 1.0),
+      attach(
+        ShowConstraints(
+          constraintType = RelExistsConstraints(),
+          verbose = true,
+          List.empty,
+          List.empty,
+          yieldAll = true
+        ),
+        1.0
+      ),
       planDescription(
         id,
         "ShowConstraints",
@@ -3602,7 +3687,16 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
 
     assertGood(
-      attach(ShowConstraints(constraintType = PropTypeConstraints, verbose = false, List.empty), 1.0),
+      attach(
+        ShowConstraints(
+          constraintType = PropTypeConstraints,
+          verbose = false,
+          List.empty,
+          List.empty,
+          yieldAll = false
+        ),
+        1.0
+      ),
       planDescription(
         id,
         "ShowConstraints",
@@ -3613,7 +3707,16 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
 
     assertGood(
-      attach(ShowConstraints(constraintType = NodePropTypeConstraints, verbose = true, List.empty), 1.0),
+      attach(
+        ShowConstraints(
+          constraintType = NodePropTypeConstraints,
+          verbose = true,
+          List.empty,
+          List.empty,
+          yieldAll = true
+        ),
+        1.0
+      ),
       planDescription(
         id,
         "ShowConstraints",
@@ -3624,20 +3727,33 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
 
     assertGood(
-      attach(ShowConstraints(constraintType = RelPropTypeConstraints, verbose = true, List.empty), 1.0),
+      attach(
+        ShowConstraints(
+          constraintType = RelPropTypeConstraints,
+          verbose = false,
+          List("xxx", "yyy", "vvv").map(s => ShowColumn(s)(pos)),
+          List(
+            CommandResultItem("xxx", varFor("xxx"))(pos),
+            CommandResultItem("yyy", varFor("zzz"))(pos),
+            CommandResultItem("vvv", varFor("vvv"))(pos)
+          ),
+          yieldAll = false
+        ),
+        1.0
+      ),
       planDescription(
         id,
         "ShowConstraints",
         NoChildren,
-        Seq(details("relationshipPropertyTypeConstraints, allColumns")),
-        Set.empty
+        Seq(details("relationshipPropertyTypeConstraints, columns(xxx, yyy AS zzz, vvv)")),
+        Set("xxx", "zzz", "vvv")
       )
     )
   }
 
   test("ShowProcedures") {
     assertGood(
-      attach(ShowProcedures(None, verbose = false, List.empty), 1.0),
+      attach(ShowProcedures(None, verbose = false, List.empty, List.empty, yieldAll = false), 1.0),
       planDescription(
         id,
         "ShowProcedures",
@@ -3648,7 +3764,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
 
     assertGood(
-      attach(ShowProcedures(Some(CurrentUser), verbose = true, List.empty), 1.0),
+      attach(ShowProcedures(Some(CurrentUser), verbose = true, List.empty, List.empty, yieldAll = true), 1.0),
       planDescription(
         id,
         "ShowProcedures",
@@ -3659,20 +3775,33 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
 
     assertGood(
-      attach(ShowProcedures(Some(User("foo")), verbose = false, List.empty), 1.0),
+      attach(
+        ShowProcedures(
+          Some(User("foo")),
+          verbose = false,
+          List("xxx", "yyy", "vvv").map(s => ShowColumn(s)(pos)),
+          List(
+            CommandResultItem("xxx", varFor("xxx"))(pos),
+            CommandResultItem("yyy", varFor("zzz"))(pos),
+            CommandResultItem("vvv", varFor("vvv"))(pos)
+          ),
+          yieldAll = false
+        ),
+        1.0
+      ),
       planDescription(
         id,
         "ShowProcedures",
         NoChildren,
-        Seq(details("proceduresForUser(foo), defaultColumns")),
-        Set.empty
+        Seq(details("proceduresForUser(foo), columns(xxx, yyy AS zzz, vvv)")),
+        Set("xxx", "zzz", "vvv")
       )
     )
   }
 
   test("ShowFunctions") {
     assertGood(
-      attach(ShowFunctions(AllFunctions, None, verbose = false, List.empty), 1.0),
+      attach(ShowFunctions(AllFunctions, None, verbose = false, List.empty, List.empty, yieldAll = false), 1.0),
       planDescription(
         id,
         "ShowFunctions",
@@ -3683,7 +3812,10 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
 
     assertGood(
-      attach(ShowFunctions(BuiltInFunctions, Some(CurrentUser), verbose = true, List.empty), 1.0),
+      attach(
+        ShowFunctions(BuiltInFunctions, Some(CurrentUser), verbose = true, List.empty, List.empty, yieldAll = true),
+        1.0
+      ),
       planDescription(
         id,
         "ShowFunctions",
@@ -3694,13 +3826,27 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
 
     assertGood(
-      attach(ShowFunctions(UserDefinedFunctions, Some(User("foo")), verbose = false, List.empty), 1.0),
+      attach(
+        ShowFunctions(
+          UserDefinedFunctions,
+          Some(User("foo")),
+          verbose = false,
+          List("xxx", "yyy", "vvv").map(s => ShowColumn(s)(pos)),
+          List(
+            CommandResultItem("xxx", varFor("xxx"))(pos),
+            CommandResultItem("yyy", varFor("zzz"))(pos),
+            CommandResultItem("vvv", varFor("vvv"))(pos)
+          ),
+          yieldAll = false
+        ),
+        1.0
+      ),
       planDescription(
         id,
         "ShowFunctions",
         NoChildren,
-        Seq(details("userDefinedFunctions, functionsForUser(foo), defaultColumns")),
-        Set.empty
+        Seq(details("userDefinedFunctions, functionsForUser(foo), columns(xxx, yyy AS zzz, vvv)")),
+        Set("xxx", "zzz", "vvv")
       )
     )
   }
@@ -3708,7 +3854,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   test("ShowSettings") {
     val defaultColumns = List("xxx", "yyy").map(s => ShowColumn(s)(pos))
     assertGood(
-      attach(ShowSettings(Left(List.empty[String]), verbose = true, defaultColumns), 1.0),
+      attach(ShowSettings(Left(List.empty[String]), verbose = true, defaultColumns, List.empty, yieldAll = true), 1.0),
       planDescription(
         id,
         "ShowSettings",
@@ -3719,7 +3865,10 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
 
     assertGood(
-      attach(ShowSettings(Left(List("Foo", "Bar")), verbose = false, defaultColumns), 1.0),
+      attach(
+        ShowSettings(Left(List("Foo", "Bar")), verbose = false, defaultColumns, List.empty, yieldAll = false),
+        1.0
+      ),
       planDescription(
         id,
         "ShowSettings",
@@ -3730,13 +3879,26 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
 
     assertGood(
-      attach(ShowSettings(Right(stringLiteral("foo.*")), verbose = true, defaultColumns), 1.0),
+      attach(
+        ShowSettings(
+          Right(stringLiteral("foo.*")),
+          verbose = true,
+          List("xxx", "yyy", "vvv").map(s => ShowColumn(s)(pos)),
+          List(
+            CommandResultItem("xxx", varFor("xxx"))(pos),
+            CommandResultItem("yyy", varFor("zzz"))(pos),
+            CommandResultItem("vvv", varFor("vvv"))(pos)
+          ),
+          yieldAll = false
+        ),
+        1.0
+      ),
       planDescription(
         id,
         "ShowSettings",
         NoChildren,
-        Seq(details("settings(foo.*), allColumns")),
-        Set("xxx", "yyy")
+        Seq(details("settings(foo.*), columns(xxx, yyy AS zzz, vvv)")),
+        Set("xxx", "zzz", "vvv")
       )
     )
   }
@@ -5805,7 +5967,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(
       attach(
         AllowedNonAdministrationCommands(
-          SingleQuery(Seq(ShowProceduresClause(None, None, hasYield = false)(pos)))(pos)
+          SingleQuery(Seq(ShowProceduresClause(None, None, List.empty, yieldAll = false)(pos)))(pos)
         ),
         1.0
       ),

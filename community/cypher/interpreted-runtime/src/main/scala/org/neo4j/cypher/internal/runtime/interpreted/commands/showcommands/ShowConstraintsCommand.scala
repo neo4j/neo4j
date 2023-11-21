@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands
 
 import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.ast.AllConstraints
+import org.neo4j.cypher.internal.ast.CommandResultItem
 import org.neo4j.cypher.internal.ast.ExistsConstraints
 import org.neo4j.cypher.internal.ast.KeyConstraints
 import org.neo4j.cypher.internal.ast.NodeExistsConstraints
@@ -68,8 +69,12 @@ import scala.jdk.CollectionConverters.SeqHasAsJava
 //   | NODE KEY | RELATIONSHIP KEY | KEY
 //   | NODE PROPERTY TYPE | RELATIONSHIP PROPERTY TYPE | PROPERTY TYPE
 // ] CONSTRAINT[S] [BRIEF | VERBOSE | WHERE clause | YIELD clause]
-case class ShowConstraintsCommand(constraintType: ShowConstraintType, verbose: Boolean, columns: List[ShowColumn])
-    extends Command(columns) {
+case class ShowConstraintsCommand(
+  constraintType: ShowConstraintType,
+  verbose: Boolean,
+  columns: List[ShowColumn],
+  yieldColumns: List[CommandResultItem]
+) extends Command(columns, yieldColumns) {
 
   override def originalNameRows(state: QueryState, baseRow: CypherRow): ClosingIterator[Map[String, AnyValue]] = {
     val ctx = state.query
@@ -186,7 +191,8 @@ case class ShowConstraintsCommand(constraintType: ShowConstraintType, verbose: B
           briefResult
         }
     }
-    ClosingIterator.apply(rows.iterator)
+    val updatedRows = updateRowsWithPotentiallyRenamedColumns(rows.toList)
+    ClosingIterator.apply(updatedRows.iterator)
   }
 }
 

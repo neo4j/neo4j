@@ -41,7 +41,7 @@ case class TerminateTransactionsCommand(
   givenIds: Either[List[String], Expression],
   columns: List[ShowColumn],
   yieldColumns: List[CommandResultItem]
-) extends TransactionCommand(columns, yieldColumns) {
+) extends Command(columns, yieldColumns) {
 
   override def originalNameRows(state: QueryState, baseRow: CypherRow): ClosingIterator[Map[String, AnyValue]] = {
     val ids = Command.extractNames(givenIds, state, baseRow)

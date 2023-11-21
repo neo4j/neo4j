@@ -23,10 +23,12 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.ast.AllFunctions
 import org.neo4j.cypher.internal.ast.BuiltInFunctions
+import org.neo4j.cypher.internal.ast.CommandResultItem
 import org.neo4j.cypher.internal.ast.CurrentUser
 import org.neo4j.cypher.internal.ast.ShowFunctionsClause
 import org.neo4j.cypher.internal.ast.User
 import org.neo4j.cypher.internal.ast.UserDefinedFunctions
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions.Category
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.graphdb.Result
@@ -56,12 +58,12 @@ import scala.jdk.CollectionConverters.SetHasAsJava
 class ShowFunctionsCommandTest extends ShowCommandTestBase {
 
   private val defaultColumns =
-    ShowFunctionsClause(AllFunctions, None, None, hasYield = false)(InputPosition.NONE)
+    ShowFunctionsClause(AllFunctions, None, None, List.empty, yieldAll = false)(InputPosition.NONE)
       .unfilteredColumns
       .columns
 
   private val allColumns =
-    ShowFunctionsClause(AllFunctions, None, None, hasYield = true)(InputPosition.NONE)
+    ShowFunctionsClause(AllFunctions, None, None, List.empty, yieldAll = true)(InputPosition.NONE)
       .unfilteredColumns
       .columns
 
@@ -264,7 +266,8 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
     returnDefaultFunctions()
 
     // When
-    val showFunctions = ShowFunctionsCommand(AllFunctions, None, verbose = false, defaultColumns, isCommunity = true)
+    val showFunctions =
+      ShowFunctionsCommand(AllFunctions, None, verbose = false, defaultColumns, List.empty, isCommunity = true)
     val result = showFunctions.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -325,7 +328,8 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
     returnDefaultFunctions()
 
     // When
-    val showFunctions = ShowFunctionsCommand(AllFunctions, None, verbose = false, defaultColumns, isCommunity = false)
+    val showFunctions =
+      ShowFunctionsCommand(AllFunctions, None, verbose = false, defaultColumns, List.empty, isCommunity = false)
     val result = showFunctions.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -386,7 +390,8 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
     returnDefaultFunctions()
 
     // When
-    val showFunctions = ShowFunctionsCommand(AllFunctions, None, verbose = true, allColumns, isCommunity = true)
+    val showFunctions =
+      ShowFunctionsCommand(AllFunctions, None, verbose = true, allColumns, List.empty, isCommunity = true)
     val result = showFunctions.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -485,7 +490,8 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
     returnDefaultFunctions()
 
     // When
-    val showFunctions = ShowFunctionsCommand(AllFunctions, None, verbose = true, allColumns, isCommunity = false)
+    val showFunctions =
+      ShowFunctionsCommand(AllFunctions, None, verbose = true, allColumns, List.empty, isCommunity = false)
     val result = showFunctions.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -586,7 +592,8 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
     when(ctx.providedLanguageFunctions).thenReturn(List(func6, func5))
 
     // When
-    val showFunctions = ShowFunctionsCommand(AllFunctions, None, verbose = false, defaultColumns, isCommunity = true)
+    val showFunctions =
+      ShowFunctionsCommand(AllFunctions, None, verbose = false, defaultColumns, List.empty, isCommunity = true)
     val result = showFunctions.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -630,7 +637,8 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
     when(ctx.providedLanguageFunctions).thenReturn(List.empty)
 
     // When
-    val showFunctions = ShowFunctionsCommand(AllFunctions, None, verbose = false, defaultColumns, isCommunity = true)
+    val showFunctions =
+      ShowFunctionsCommand(AllFunctions, None, verbose = false, defaultColumns, List.empty, isCommunity = true)
     val result = showFunctions.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -680,7 +688,8 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
     when(ctx.providedLanguageFunctions).thenReturn(List(deprecatedLanguageFunction))
 
     // When
-    val showFunctions = ShowFunctionsCommand(AllFunctions, None, verbose = true, allColumns, isCommunity = true)
+    val showFunctions =
+      ShowFunctionsCommand(AllFunctions, None, verbose = true, allColumns, List.empty, isCommunity = true)
     val result = showFunctions.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -718,7 +727,8 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
     })
 
     // When
-    val showFunctions = ShowFunctionsCommand(AllFunctions, None, verbose = true, allColumns, isCommunity = false)
+    val showFunctions =
+      ShowFunctionsCommand(AllFunctions, None, verbose = true, allColumns, List.empty, isCommunity = false)
     val result = showFunctions.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -739,7 +749,8 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
     })
 
     // When
-    val showFunctions = ShowFunctionsCommand(AllFunctions, None, verbose = true, allColumns, isCommunity = false)
+    val showFunctions =
+      ShowFunctionsCommand(AllFunctions, None, verbose = true, allColumns, List.empty, isCommunity = false)
     val result = showFunctions.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -757,7 +768,8 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
       .thenAnswer(invocation => morePrivileges(invocation.getArgument(0)))
 
     // When
-    val showFunctions = ShowFunctionsCommand(AllFunctions, None, verbose = true, allColumns, isCommunity = false)
+    val showFunctions =
+      ShowFunctionsCommand(AllFunctions, None, verbose = true, allColumns, List.empty, isCommunity = false)
     val result = showFunctions.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -827,7 +839,14 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
 
     // When
     val showFunctions =
-      ShowFunctionsCommand(AllFunctions, Some(CurrentUser), verbose = false, defaultColumns, isCommunity = false)
+      ShowFunctionsCommand(
+        AllFunctions,
+        Some(CurrentUser),
+        verbose = false,
+        defaultColumns,
+        List.empty,
+        isCommunity = false
+      )
     val result = showFunctions.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -857,7 +876,14 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
 
     // When: EXECUTABLE BY CURRENT USER
     val showFunctionsCurrent =
-      ShowFunctionsCommand(AllFunctions, Some(CurrentUser), verbose = false, defaultColumns, isCommunity = false)
+      ShowFunctionsCommand(
+        AllFunctions,
+        Some(CurrentUser),
+        verbose = false,
+        defaultColumns,
+        List.empty,
+        isCommunity = false
+      )
     val resultCurrent = showFunctionsCurrent.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -873,7 +899,14 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
 
     // When: EXECUTABLE BY <current user>
     val showFunctionsSame =
-      ShowFunctionsCommand(AllFunctions, Some(User(username)), verbose = false, defaultColumns, isCommunity = false)
+      ShowFunctionsCommand(
+        AllFunctions,
+        Some(User(username)),
+        verbose = false,
+        defaultColumns,
+        List.empty,
+        isCommunity = false
+      )
     val resultSame = showFunctionsSame.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -896,7 +929,14 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
 
     // When
     val showFunctionsCurrent =
-      ShowFunctionsCommand(AllFunctions, Some(User(otherUser)), verbose = false, defaultColumns, isCommunity = false)
+      ShowFunctionsCommand(
+        AllFunctions,
+        Some(User(otherUser)),
+        verbose = false,
+        defaultColumns,
+        List.empty,
+        isCommunity = false
+      )
     val resultCurrent = showFunctionsCurrent.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -931,7 +971,14 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
 
     // When
     val showFunctionsCurrent =
-      ShowFunctionsCommand(AllFunctions, Some(User(missingUser)), verbose = false, defaultColumns, isCommunity = false)
+      ShowFunctionsCommand(
+        AllFunctions,
+        Some(User(missingUser)),
+        verbose = false,
+        defaultColumns,
+        List.empty,
+        isCommunity = false
+      )
     val resultCurrent = showFunctionsCurrent.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -943,7 +990,8 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
     returnDefaultFunctions()
 
     // When
-    val showFunctions = ShowFunctionsCommand(AllFunctions, None, verbose = true, allColumns, isCommunity = false)
+    val showFunctions =
+      ShowFunctionsCommand(AllFunctions, None, verbose = true, allColumns, List.empty, isCommunity = false)
     val result = showFunctions.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -985,7 +1033,8 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
     returnDefaultFunctions()
 
     // When
-    val showFunctions = ShowFunctionsCommand(BuiltInFunctions, None, verbose = true, allColumns, isCommunity = false)
+    val showFunctions =
+      ShowFunctionsCommand(BuiltInFunctions, None, verbose = true, allColumns, List.empty, isCommunity = false)
     val result = showFunctions.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -1018,7 +1067,7 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
 
     // When
     val showFunctions =
-      ShowFunctionsCommand(UserDefinedFunctions, None, verbose = true, allColumns, isCommunity = false)
+      ShowFunctionsCommand(UserDefinedFunctions, None, verbose = true, allColumns, List.empty, isCommunity = false)
     val result = showFunctions.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -1033,6 +1082,124 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
       name = "zzz.zz.func4",
       isBuiltIn = false
     )
+  }
+
+  test("show functions should rename columns renamed in YIELD") {
+    // Given: YIELD name AS function, aggregating AS aggr, isBuiltIn, description
+    val yieldColumns: List[CommandResultItem] = List(
+      CommandResultItem("name", Variable("function")(InputPosition.NONE))(InputPosition.NONE),
+      CommandResultItem("aggregating", Variable("aggr")(InputPosition.NONE))(InputPosition.NONE),
+      CommandResultItem("isBuiltIn", Variable("isBuiltIn")(InputPosition.NONE))(InputPosition.NONE),
+      CommandResultItem("description", Variable("description")(InputPosition.NONE))(InputPosition.NONE)
+    )
+
+    // Set-up which functions to return:
+    returnDefaultFunctions()
+
+    // When
+    val showFunctions =
+      ShowFunctionsCommand(AllFunctions, None, verbose = true, allColumns, yieldColumns, isCommunity = false)
+    val result = showFunctions.originalNameRows(queryState, initialCypherRow).toList
+
+    // Then: unyielded columns are left as is (to be filtered out at a later stage)
+    result should have size 6
+    val allRoles = VirtualValues.list(List(
+      publicRole,
+      readerRole,
+      editorRole,
+      publisherRole,
+      architectRole,
+      adminRole
+    ).sorted.map(Values.stringValue): _*)
+    result should be(List(
+      Map(
+        "function" -> Values.stringValue("func1"),
+        "aggr" -> Values.FALSE,
+        "isBuiltIn" -> Values.TRUE,
+        "description" -> Values.stringValue("Built-in non-aggregating function"),
+        "category" -> Values.stringValue(Category.STRING),
+        "signature" -> Values.stringValue("func1() :: STRING"),
+        "argumentDescription" -> VirtualValues.EMPTY_LIST,
+        "returnDescription" -> Values.stringValue("STRING"),
+        "rolesExecution" -> allRoles,
+        "rolesBoostedExecution" -> VirtualValues.EMPTY_LIST,
+        "isDeprecated" -> Values.FALSE
+      ),
+      Map(
+        "function" -> Values.stringValue("func2"),
+        "aggr" -> Values.TRUE,
+        "isBuiltIn" -> Values.TRUE,
+        "description" -> Values.stringValue("Built-in aggregating function"),
+        "category" -> Values.stringValue(Category.AGGREGATING),
+        "signature" -> Values.stringValue("func2(input :: ANY) :: BOOLEAN"),
+        "argumentDescription" -> VirtualValues.list(
+          argumentAndReturnDescriptionMaps("input", "input :: ANY", "ANY")
+        ),
+        "returnDescription" -> Values.stringValue("BOOLEAN"),
+        "rolesExecution" -> allRoles,
+        "rolesBoostedExecution" -> VirtualValues.EMPTY_LIST,
+        "isDeprecated" -> Values.FALSE
+      ),
+      Map(
+        "function" -> Values.stringValue("language.aggregating.func"),
+        "aggr" -> Values.TRUE,
+        "isBuiltIn" -> Values.TRUE,
+        "description" -> Values.stringValue("Aggregating language function"),
+        "category" -> Values.stringValue(Category.AGGREGATING),
+        "signature" -> Values.stringValue("language.aggregating.func() :: INTEGER"),
+        "argumentDescription" -> VirtualValues.EMPTY_LIST,
+        "returnDescription" -> Values.stringValue("INTEGER"),
+        "rolesExecution" -> allRoles,
+        "rolesBoostedExecution" -> VirtualValues.EMPTY_LIST,
+        "isDeprecated" -> Values.FALSE
+      ),
+      Map(
+        "function" -> Values.stringValue("language.func"),
+        "aggr" -> Values.FALSE,
+        "isBuiltIn" -> Values.TRUE,
+        "description" -> Values.stringValue("Language function"),
+        "category" -> Values.stringValue(Category.STRING),
+        "signature" -> Values.stringValue("language.func(input :: FLOAT) :: STRING"),
+        "argumentDescription" -> VirtualValues.list(
+          argumentAndReturnDescriptionMaps("input", "input :: FLOAT", "FLOAT")
+        ),
+        "returnDescription" -> Values.stringValue("STRING"),
+        "rolesExecution" -> allRoles,
+        "rolesBoostedExecution" -> VirtualValues.EMPTY_LIST,
+        "isDeprecated" -> Values.FALSE
+      ),
+      Map(
+        "function" -> Values.stringValue("zzz.func3"),
+        "aggr" -> Values.FALSE,
+        "isBuiltIn" -> Values.FALSE,
+        "description" -> Values.stringValue("User-defined non-aggregating function"),
+        "category" -> Values.stringValue(Category.NUMERIC),
+        "signature" -> Values.stringValue("zzz.func3(intInput :: INTEGER, booleanInput :: BOOLEAN) :: MAP"),
+        "argumentDescription" -> VirtualValues.list(
+          argumentAndReturnDescriptionMaps("intInput", "intInput :: INTEGER", "INTEGER"),
+          argumentAndReturnDescriptionMaps("booleanInput", "booleanInput :: BOOLEAN", "BOOLEAN")
+        ),
+        "returnDescription" -> Values.stringValue("MAP"),
+        "rolesExecution" -> VirtualValues.list(List(publicRole, adminRole).sorted.map(Values.stringValue): _*),
+        "rolesBoostedExecution" -> VirtualValues.list(Values.stringValue(adminRole)),
+        "isDeprecated" -> Values.FALSE
+      ),
+      Map(
+        "function" -> Values.stringValue("zzz.zz.func4"),
+        "aggr" -> Values.TRUE,
+        "isBuiltIn" -> Values.FALSE,
+        "description" -> Values.stringValue("User-defined aggregating function"),
+        "category" -> Values.stringValue(Category.AGGREGATING),
+        "signature" -> Values.stringValue("zzz.zz.func4(input :: DURATION) :: INTEGER"),
+        "argumentDescription" -> VirtualValues.list(
+          argumentAndReturnDescriptionMaps("input", "input :: DURATION", "DURATION")
+        ),
+        "returnDescription" -> Values.stringValue("INTEGER"),
+        "rolesExecution" -> VirtualValues.list(List(publicRole, adminRole).sorted.map(Values.stringValue): _*),
+        "rolesBoostedExecution" -> VirtualValues.list(Values.stringValue(adminRole)),
+        "isDeprecated" -> Values.FALSE
+      )
+    ))
   }
 
   // Need a FunctionInformation for the language functions and can't reach the actual implementation

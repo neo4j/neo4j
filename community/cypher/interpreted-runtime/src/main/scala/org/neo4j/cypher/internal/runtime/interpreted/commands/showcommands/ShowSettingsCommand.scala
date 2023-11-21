@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands
 
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.SettingImpl
+import org.neo4j.cypher.internal.ast.CommandResultItem
 import org.neo4j.cypher.internal.ast.ShowColumn
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
@@ -36,8 +37,9 @@ import scala.util.Try
 case class ShowSettingsCommand(
   givenNames: Either[List[String], Expression],
   verbose: Boolean,
-  columns: List[ShowColumn]
-) extends Command(columns) {
+  columns: List[ShowColumn],
+  yieldColumns: List[CommandResultItem]
+) extends Command(columns, yieldColumns) {
 
   private def asMap[T](config: Config)(setting: SettingImpl[T]): Map[String, AnyValue] = {
     val defaultColumns = Map(
@@ -68,10 +70,11 @@ case class ShowSettingsCommand(
       .flatMap(setting => Try(setting.asInstanceOf[SettingImpl[_]]).toOption)
       .filterNot(_.internal())
       .filter(setting => accessMode.allowsShowSetting(setting.name()).allowsAccess())
-      .toSeq
+      .toList
       .sortBy(_.name())
       .map(asMap(config)(_))
 
-    ClosingIterator.apply(rows.iterator)
+    val updatedRows = updateRowsWithPotentiallyRenamedColumns(rows)
+    ClosingIterator.apply(updatedRows.iterator)
   }
 }

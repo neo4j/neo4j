@@ -670,6 +670,29 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
     ))
   }
 
+  test(
+    "TERMINATE TRANSACTIONS 'id', 'id' YIELD username as transactionId, transactionId as username WHERE size(transactionId) > 0 RETURN transactionId as username"
+  ) {
+    assertAst(singleQuery(
+      ast.TerminateTransactionsClause(
+        Left(List("id", "id")),
+        List(
+          commandResultItem("username", Some("transactionId")),
+          commandResultItem("transactionId", Some("username"))
+        ),
+        yieldAll = false,
+        None
+      )(pos),
+      withFromYield(
+        returnAllItems.withDefaultOrderOnColumns(List("transactionId", "username")),
+        where = Some(where(
+          greaterThan(size(varFor("transactionId")), literalInt(0))
+        ))
+      ),
+      return_(aliasedReturnItem("transactionId", "username"))
+    ))
+  }
+
   // Negative tests
 
   test("TERMINATE TRANSACTIONS 'db1-transaction-123' YIELD") {

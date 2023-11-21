@@ -181,6 +181,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
   ): SemanticCheck =
     checkStandaloneCall(clauses) chain
       withScopedState(clauseCheck(clauses)) chain
+      checkComposableNonTransactionCommandsAllowed(clauses) chain
       checkOrder(clauses, canOmitReturnClause) chain
       checkNoCallInTransactionsAfterWriteClause(clauses) chain
       checkInputDataStream(clauses) chain
@@ -287,6 +288,27 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
     }
   }
 
+  private def checkComposableNonTransactionCommandsAllowed(clauses: Seq[Clause]): SemanticCheck = {
+    // Combining commands other than show and terminate transactions are hidden behind a feature flag
+    val commandClauses = clauses.filter(c => c.isInstanceOf[CommandClause])
+    if (commandClauses.size > 1) {
+      val nonTransactionCommands =
+        commandClauses.filter(c => !c.isInstanceOf[TransactionsCommandClause])
+
+      if (nonTransactionCommands.nonEmpty) {
+        requireFeatureSupport(
+          "Composing commands other than `SHOW TRANSACTIONS` and `TERMINATE TRANSACTIONS`",
+          SemanticFeature.ComposableCommands,
+          position
+        )
+      } else {
+        success
+      }
+    } else {
+      success
+    }
+  }
+
   private def checkOrder(clauses: Seq[Clause], canOmitReturnClause: Boolean): SemanticCheck =
     (s: SemanticState) => {
       val sequenceErrors = clauses.sliding(2).foldLeft(Vector.empty[SemanticError]) {
@@ -318,7 +340,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
           val missingYield = clauses.sliding(2).foldLeft(Vector.empty[SemanticError]) {
             case (semanticErrors, pair) =>
               val optError = pair match {
-                case Seq(command: TransactionsCommandClause, clause: With) if command.yieldAll =>
+                case Seq(command: CommandClause, clause: With) if command.yieldAll =>
                   Some(SemanticError(
                     s"When combining `${command.name}` with other show and/or terminate commands, `YIELD *` isn't permitted.",
                     clause.position

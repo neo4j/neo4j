@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands
 
 import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.ast.AllIndexes
+import org.neo4j.cypher.internal.ast.CommandResultItem
 import org.neo4j.cypher.internal.ast.FulltextIndexes
 import org.neo4j.cypher.internal.ast.LookupIndexes
 import org.neo4j.cypher.internal.ast.PointIndexes
@@ -60,8 +61,12 @@ import scala.collection.immutable.ListMap
 import scala.jdk.CollectionConverters.SeqHasAsJava
 
 // SHOW [ALL|FULLTEXT|LOOKUP|POINT|RANGE|TEXT] INDEX[ES] [BRIEF|VERBOSE|WHERE clause|YIELD clause]
-case class ShowIndexesCommand(indexType: ShowIndexType, verbose: Boolean, columns: List[ShowColumn])
-    extends Command(columns) {
+case class ShowIndexesCommand(
+  indexType: ShowIndexType,
+  verbose: Boolean,
+  columns: List[ShowColumn],
+  yieldColumns: List[CommandResultItem]
+) extends Command(columns, yieldColumns) {
 
   override def originalNameRows(state: QueryState, baseRow: CypherRow): ClosingIterator[Map[String, AnyValue]] = {
     val ctx = state.query
@@ -198,7 +203,8 @@ case class ShowIndexesCommand(indexType: ShowIndexType, verbose: Boolean, column
           briefResult
         }
     }
-    ClosingIterator.apply(rows.iterator)
+    val updatedRows = updateRowsWithPotentiallyRenamedColumns(rows.toList)
+    ClosingIterator.apply(updatedRows.iterator)
   }
 
 }

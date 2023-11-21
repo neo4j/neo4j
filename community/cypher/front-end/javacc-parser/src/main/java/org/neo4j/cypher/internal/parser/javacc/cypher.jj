@@ -3989,30 +3989,30 @@ STATEMENT ShowCommand( USE_CLAUSE useClause ) throws Exception:
     (
         showCommandType=<ALL> statement=ShowAllCommand( start, useClause )
         | <POPULATED> (<ROLES> | <ROLE>) statement=ShowRoles( start, useClause, false )
-        | showCommandType=<BTREE> statement=ShowIndexesAllowBrief( start, useClause, ShowCommandFilterTypes.BTREE )
-        | showCommandType=<RANGE> statement=ShowIndexesNoBrief( start, useClause, ShowCommandFilterTypes.RANGE )
-        | showCommandType=<FULLTEXT> statement=ShowIndexesNoBrief( start, useClause, ShowCommandFilterTypes.FULLTEXT )
-        | showCommandType=<TEXT> statement=ShowIndexesNoBrief( start, useClause, ShowCommandFilterTypes.TEXT )
-        | showCommandType=<POINT> statement=ShowIndexesNoBrief( start, useClause, ShowCommandFilterTypes.POINT )
-        | showCommandType=<LOOKUP> statement=ShowIndexesNoBrief( start, useClause, ShowCommandFilterTypes.LOOKUP )
-        | showCommandType=<UNIQUE> statement=ShowConstraintsAllowBriefAndYield( start, useClause, ShowCommandFilterTypes.UNIQUE )
-        | showCommandType=<UNIQUENESS> statement=ShowConstraintsAllowYield( start, useClause, ShowCommandFilterTypes.UNIQUE )
-        | showCommandType=<KEY> statement=ShowConstraintsAllowYield( start, useClause, ShowCommandFilterTypes.KEY )
-        | showCommandType=<NODE> statement=ShowNodeCommand( start, useClause )
-        | showCommandType=<PROPERTY> statement=ShowPropertyCommand( start, useClause, ShowCommandFilterTypes.EXIST )
-        | showCommandType=<EXISTENCE> statement=ShowConstraintsAllowYield( start, useClause, ShowCommandFilterTypes.EXIST )
-        | showCommandType=<EXISTS> statement=ShowConstraintsAllowBrief( start, useClause, ShowCommandFilterTypes.OLD_EXISTS )
-        | showCommandType=<EXIST> statement=ShowConstraintsAllowBriefAndYield( start, useClause, ShowCommandFilterTypes.OLD_EXIST )
-        | showCommandType=<RELATIONSHIP> statement=ShowRelationshipCommand( start, useClause )
-        | showCommandType=<REL> statement=ShowRelCommand( start, useClause )
-        | showCommandType=<BUILT> <IN> statement=ShowFunctions( start, useClause, ShowCommandFilterTypes.BUILT_IN )
-        | statement=ShowIndexesAllowBrief( start, useClause, ShowCommandFilterTypes.ALL )
+        | showCommandType=<BTREE> clauses=ShowIndexesAllowBrief( start, ShowCommandFilterTypes.BTREE )
+        | showCommandType=<RANGE> clauses=ShowIndexesNoBrief( start, ShowCommandFilterTypes.RANGE )
+        | showCommandType=<FULLTEXT> clauses=ShowIndexesNoBrief( start, ShowCommandFilterTypes.FULLTEXT )
+        | showCommandType=<TEXT> clauses=ShowIndexesNoBrief( start, ShowCommandFilterTypes.TEXT )
+        | showCommandType=<POINT> clauses=ShowIndexesNoBrief( start, ShowCommandFilterTypes.POINT )
+        | showCommandType=<LOOKUP> clauses=ShowIndexesNoBrief( start, ShowCommandFilterTypes.LOOKUP )
+        | showCommandType=<UNIQUE> clauses=ShowConstraintsAllowBriefAndYield( start, ShowCommandFilterTypes.UNIQUE )
+        | showCommandType=<UNIQUENESS> clauses=ShowConstraintsAllowYield( start, ShowCommandFilterTypes.UNIQUE )
+        | showCommandType=<KEY> clauses=ShowConstraintsAllowYield( start, ShowCommandFilterTypes.KEY )
+        | showCommandType=<NODE> clauses=ShowNodeCommand( start )
+        | showCommandType=<PROPERTY> clauses=ShowPropertyCommand( start, ShowCommandFilterTypes.EXIST )
+        | showCommandType=<EXISTENCE> clauses=ShowConstraintsAllowYield( start, ShowCommandFilterTypes.EXIST )
+        | showCommandType=<EXISTS> clauses=ShowConstraintsAllowBrief( start, ShowCommandFilterTypes.OLD_EXISTS )
+        | showCommandType=<EXIST> clauses=ShowConstraintsAllowBriefAndYield( start, ShowCommandFilterTypes.OLD_EXIST )
+        | showCommandType=<RELATIONSHIP> clauses=ShowRelationshipCommand( start )
+        | showCommandType=<REL> clauses=ShowRelCommand( start )
+        | showCommandType=<BUILT> <IN> clauses=ShowFunctions( start, ShowCommandFilterTypes.BUILT_IN )
+        | clauses=ShowIndexesAllowBrief( start, ShowCommandFilterTypes.ALL )
         | statement=ShowDatabase( start, useClause )
         | statement=ShowCurrentUser( start, useClause )
-        | statement=ShowConstraintsAllowBriefAndYield( start, useClause, ShowCommandFilterTypes.ALL )
-        | statement=ShowProcedures( start, useClause )
-        | statement=ShowSettings( start, useClause )
-        | statement=ShowFunctions( start, useClause, ShowCommandFilterTypes.ALL )
+        | clauses=ShowConstraintsAllowBriefAndYield( start, ShowCommandFilterTypes.ALL )
+        | clauses=ShowProcedures( start )
+        | clauses=ShowSettings( start )
+        | clauses=ShowFunctions( start, ShowCommandFilterTypes.ALL )
         | clauses=ShowTransactions( start )
         | statement=ShowAliases( start, useClause )
         | statement=ShowServers( start, useClause )
@@ -4026,7 +4026,7 @@ STATEMENT ShowCommand( USE_CLAUSE useClause ) throws Exception:
                 | statement=ShowRolePrivileges( start, useClause )
             )
         // Need a lookahead to distinguish 'SHOW USER DEFINED FUNCTION[S]' from 'SHOW USER defined[, ...] PRIVILEGE[S]'
-        | LOOKAHEAD(<USER> <DEFINED> ( <FUNCTION> | <FUNCTIONS> )) showCommandType=<USER> <DEFINED> statement=ShowFunctions( start, useClause, ShowCommandFilterTypes.USER_DEFINED )
+        | LOOKAHEAD(<USER> <DEFINED> ( <FUNCTION> | <FUNCTIONS> )) showCommandType=<USER> <DEFINED> clauses=ShowFunctions( start, ShowCommandFilterTypes.USER_DEFINED )
         | (<USERS> | <USER>)
             (
                 // Need these lookaheads to distinguish e.g. 'SHOW USER[S] YIELD ...' from 'SHOW USER[S] yield[, ...] PRIVILEGE[S]'
@@ -4069,77 +4069,85 @@ STATEMENT TerminateCommand( USE_CLAUSE useClause ) throws Exception:
 STATEMENT ShowAllCommand( Token start, USE_CLAUSE useClause ) throws Exception:
 {
     STATEMENT statement = null;
+    List<CLAUSE> clauses = null;
 }
 {
     (
         (<ROLES> | <ROLE>) statement=ShowRoles( start, useClause, true )
-        | statement=ShowIndexesAllowBrief( start, useClause, ShowCommandFilterTypes.ALL )
-        | statement=ShowConstraintsAllowBriefAndYield( start, useClause, ShowCommandFilterTypes.ALL )
-        | statement=ShowFunctions( start, useClause, ShowCommandFilterTypes.ALL )
+        | clauses=ShowIndexesAllowBrief( start, ShowCommandFilterTypes.ALL )
+        | clauses=ShowConstraintsAllowBriefAndYield( start, ShowCommandFilterTypes.ALL )
+        | clauses=ShowFunctions( start, ShowCommandFilterTypes.ALL )
         | statement=ShowPrivileges( start, useClause )
     )
     {
+        if ( clauses != null ) {
+            if ( useClause != null )
+            {
+                clauses.add( 0, useClause );
+            }
+            statement = astFactory.newSingleQuery( pos( start ), clauses );
+        }
         return statement;
     }
 }
 
-STATEMENT ShowNodeCommand( Token start, USE_CLAUSE useClause ) throws Exception:
+List<CLAUSE> ShowNodeCommand( Token start ) throws Exception:
 {
-    STATEMENT statement = null;
+    List<CLAUSE> clauses = null;
 }
 {
     // Needs to add <NODE> to the type
     (
-        (<UNIQUE> | <UNIQUENESS>) statement=ShowConstraintsAllowYield( start, useClause, ShowCommandFilterTypes.NODE_UNIQUE )
-        | <KEY> statement=ShowConstraintsAllowBriefAndYield( start, useClause, ShowCommandFilterTypes.NODE_KEY )
-        | <PROPERTY> statement=ShowPropertyCommand( start, useClause, ShowCommandFilterTypes.NODE_EXIST )
-        | <EXISTENCE> statement=ShowConstraintsAllowYield( start, useClause, ShowCommandFilterTypes.NODE_EXIST )
-        | <EXISTS> statement=ShowConstraintsAllowBrief( start, useClause, ShowCommandFilterTypes.NODE_OLD_EXISTS )
-        | <EXIST> statement=ShowConstraintsAllowBriefAndYield( start, useClause, ShowCommandFilterTypes.NODE_OLD_EXIST )
+        (<UNIQUE> | <UNIQUENESS>) clauses=ShowConstraintsAllowYield( start, ShowCommandFilterTypes.NODE_UNIQUE )
+        | <KEY> clauses=ShowConstraintsAllowBriefAndYield( start, ShowCommandFilterTypes.NODE_KEY )
+        | <PROPERTY> clauses=ShowPropertyCommand( start, ShowCommandFilterTypes.NODE_EXIST )
+        | <EXISTENCE> clauses=ShowConstraintsAllowYield( start, ShowCommandFilterTypes.NODE_EXIST )
+        | <EXISTS> clauses=ShowConstraintsAllowBrief( start, ShowCommandFilterTypes.NODE_OLD_EXISTS )
+        | <EXIST> clauses=ShowConstraintsAllowBriefAndYield( start, ShowCommandFilterTypes.NODE_OLD_EXIST )
     )
     {
-        return statement;
+        return clauses;
     }
 }
 
-STATEMENT ShowRelationshipCommand( Token start, USE_CLAUSE useClause ) throws Exception:
+List<CLAUSE> ShowRelationshipCommand( Token start ) throws Exception:
 {
-    STATEMENT statement = null;
+    List<CLAUSE> clauses = null;
 }
 {
     (
-        (<UNIQUE> | <UNIQUENESS>) statement=ShowConstraintsAllowYield( start, useClause, ShowCommandFilterTypes.RELATIONSHIP_UNIQUE )
-        | <KEY> statement=ShowConstraintsAllowYield( start, useClause, ShowCommandFilterTypes.RELATIONSHIP_KEY )
-        | <PROPERTY> statement=ShowPropertyCommand( start, useClause, ShowCommandFilterTypes.RELATIONSHIP_EXIST )
-        | <EXISTENCE> statement=ShowConstraintsAllowYield( start, useClause, ShowCommandFilterTypes.RELATIONSHIP_EXIST )
-        | <EXISTS> statement=ShowConstraintsAllowBrief( start, useClause, ShowCommandFilterTypes.RELATIONSHIP_OLD_EXISTS )
-        | <EXIST> statement=ShowConstraintsAllowBriefAndYield( start, useClause, ShowCommandFilterTypes.RELATIONSHIP_OLD_EXIST )
+        (<UNIQUE> | <UNIQUENESS>) clauses=ShowConstraintsAllowYield( start, ShowCommandFilterTypes.RELATIONSHIP_UNIQUE )
+        | <KEY> clauses=ShowConstraintsAllowYield( start, ShowCommandFilterTypes.RELATIONSHIP_KEY )
+        | <PROPERTY> clauses=ShowPropertyCommand( start, ShowCommandFilterTypes.RELATIONSHIP_EXIST )
+        | <EXISTENCE> clauses=ShowConstraintsAllowYield( start, ShowCommandFilterTypes.RELATIONSHIP_EXIST )
+        | <EXISTS> clauses=ShowConstraintsAllowBrief( start, ShowCommandFilterTypes.RELATIONSHIP_OLD_EXISTS )
+        | <EXIST> clauses=ShowConstraintsAllowBriefAndYield( start, ShowCommandFilterTypes.RELATIONSHIP_OLD_EXIST )
     )
     {
-        return statement;
+        return clauses;
     }
 }
 
-STATEMENT ShowRelCommand( Token start, USE_CLAUSE useClause ) throws Exception:
+List<CLAUSE> ShowRelCommand( Token start ) throws Exception:
 {
-    STATEMENT statement = null;
+    List<CLAUSE> clauses = null;
 }
 {
     (
-        (<UNIQUE> | <UNIQUENESS>) statement=ShowConstraintsAllowYield( start, useClause, ShowCommandFilterTypes.RELATIONSHIP_UNIQUE )
-        | <KEY> statement=ShowConstraintsAllowYield( start, useClause, ShowCommandFilterTypes.RELATIONSHIP_KEY )
-        | <PROPERTY> statement=ShowPropertyCommand( start, useClause, ShowCommandFilterTypes.RELATIONSHIP_EXIST )
-        | <EXISTENCE> statement=ShowConstraintsAllowYield( start, useClause, ShowCommandFilterTypes.RELATIONSHIP_EXIST )
-        | <EXIST> statement=ShowConstraintsAllowYield( start, useClause, ShowCommandFilterTypes.RELATIONSHIP_EXIST )
+        (<UNIQUE> | <UNIQUENESS>) clauses=ShowConstraintsAllowYield( start, ShowCommandFilterTypes.RELATIONSHIP_UNIQUE )
+        | <KEY> clauses=ShowConstraintsAllowYield( start, ShowCommandFilterTypes.RELATIONSHIP_KEY )
+        | <PROPERTY> clauses=ShowPropertyCommand( start, ShowCommandFilterTypes.RELATIONSHIP_EXIST )
+        | <EXISTENCE> clauses=ShowConstraintsAllowYield( start, ShowCommandFilterTypes.RELATIONSHIP_EXIST )
+        | <EXIST> clauses=ShowConstraintsAllowYield( start, ShowCommandFilterTypes.RELATIONSHIP_EXIST )
     )
     {
-        return statement;
+        return clauses;
     }
 }
 
-STATEMENT ShowPropertyCommand( Token start, USE_CLAUSE useClause, ShowCommandFilterTypes existenceConstraintType ) throws Exception:
+List<CLAUSE> ShowPropertyCommand( Token start, ShowCommandFilterTypes existenceConstraintType ) throws Exception:
 {
-    STATEMENT statement = null;
+    List<CLAUSE> clauses = null;
     ShowCommandFilterTypes propertyTypeConstraintType;
     if (existenceConstraintType.description().startsWith("NODE")) {
         propertyTypeConstraintType = ShowCommandFilterTypes.NODE_PROP_TYPE;
@@ -4153,8 +4161,8 @@ STATEMENT ShowPropertyCommand( Token start, USE_CLAUSE useClause, ShowCommandFil
 {
     ( (<EXISTENCE> | <EXIST>) { constraintType = existenceConstraintType; }
       | <TYPE> { constraintType = propertyTypeConstraintType; }
-    ) statement=ShowConstraintsAllowYield( start, useClause, constraintType )
-     { return statement; }
+    ) clauses=ShowConstraintsAllowYield( start, constraintType )
+     { return clauses; }
 }
 
 RETURN_ITEM YieldItem() :
@@ -4207,19 +4215,16 @@ YIELD YieldClause() throws Exception:
     }
 }
 
-STATEMENT ShowIndexesAllowBrief( Token start, USE_CLAUSE useClause, ShowCommandFilterTypes indexType ) throws Exception:
+List<CLAUSE> ShowIndexesAllowBrief( Token start, ShowCommandFilterTypes indexType ) throws Exception:
 {
     // all and btree indexes
     List<CLAUSE> clauses = new ArrayList<>();
-    if ( useClause != null )
-    {
-      clauses.add( useClause );
-    }
     boolean brief = false;
     boolean verbose = false;
     WHERE where = null;
     YIELD yieldClause = null;
     RETURN_CLAUSE returnClause = null;
+    List<CLAUSE> tailClauses = null;
 }
 {
     ( <INDEX> | <INDEXES> )
@@ -4228,11 +4233,12 @@ STATEMENT ShowIndexesAllowBrief( Token start, USE_CLAUSE useClause, ShowCommandF
         | ( yieldClause=YieldClause() ( returnClause=ReturnClause() )? )
         | where=WhereClause()
     )?
+    ( tailClauses=composableCommandClauses() )?
     {
         if ( yieldClause != null )
         {
-            clauses.add( astFactory.showIndexClause( pos( start ), indexType, brief, verbose, where, true ) );
-            clauses.add( yieldClause );
+            clauses.add( astFactory.showIndexClause( pos( start ), indexType, brief, verbose, where, yieldClause ) );
+            clauses.add( astFactory.turnYieldToWith( yieldClause ) );
             if ( returnClause != null )
             {
                 clauses.add( returnClause );
@@ -4240,31 +4246,33 @@ STATEMENT ShowIndexesAllowBrief( Token start, USE_CLAUSE useClause, ShowCommandF
         }
         else
         {
-            clauses.add( astFactory.showIndexClause( pos( start ), indexType, brief, verbose, where, false ) );
+            clauses.add( astFactory.showIndexClause( pos( start ), indexType, brief, verbose, where, null ) );
         }
-        return astFactory.newSingleQuery( pos( start ), clauses );
+        if ( tailClauses != null ) {
+            clauses.addAll( tailClauses );
+        }
+        return clauses;
     }
 }
 
-STATEMENT ShowIndexesNoBrief(Token start, USE_CLAUSE useClause, ShowCommandFilterTypes indexType) throws Exception:
+List<CLAUSE> ShowIndexesNoBrief(Token start, ShowCommandFilterTypes indexType) throws Exception:
 {
-  // fulltext, text and lookup indexes
+  // remaining indexes
   List<CLAUSE> clauses = new ArrayList<>();
-  if (useClause != null) {
-      clauses.add( useClause );
-  }
   WHERE where = null;
   YIELD yieldClause = null;
   RETURN_CLAUSE returnClause = null;
+  List<CLAUSE> tailClauses = null;
 }
 {
     ( <INDEX> | <INDEXES> )
     ( (yieldClause=YieldClause() ( returnClause=ReturnClause() )?) | where=WhereClause() )?
+    ( tailClauses=composableCommandClauses() )?
     {
         if ( yieldClause != null )
         {
-            clauses.add( astFactory.showIndexClause( pos( start ), indexType, false, false, where, true ) );
-            clauses.add( yieldClause );
+            clauses.add( astFactory.showIndexClause( pos( start ), indexType, false, false, where, yieldClause ) );
+            clauses.add( astFactory.turnYieldToWith( yieldClause ) );
             if ( returnClause != null )
             {
                 clauses.add( returnClause );
@@ -4272,25 +4280,25 @@ STATEMENT ShowIndexesNoBrief(Token start, USE_CLAUSE useClause, ShowCommandFilte
         }
         else
         {
-            clauses.add( astFactory.showIndexClause( pos( start ), indexType, false, false, where, false ) );
+            clauses.add( astFactory.showIndexClause( pos( start ), indexType, false, false, where, null ) );
         }
-        return astFactory.newSingleQuery( pos( start ), clauses );
+        if ( tailClauses != null ) {
+            clauses.addAll( tailClauses );
+        }
+        return clauses;
     }
 }
 
-STATEMENT ShowConstraintsAllowBriefAndYield( Token start, USE_CLAUSE useClause, ShowCommandFilterTypes constraintType ) throws Exception:
+List<CLAUSE> ShowConstraintsAllowBriefAndYield( Token start, ShowCommandFilterTypes constraintType ) throws Exception:
 {
-    // all, node key, uniqueness and old valid existence constraints
+    // constraints that previously allowed brief/verbose
     List<CLAUSE> clauses = new ArrayList<>();
-    if ( useClause != null )
-    {
-        clauses.add( useClause );
-    }
     boolean brief = false;
     boolean verbose = false;
     WHERE where = null;
     YIELD yieldClause = null;
     RETURN_CLAUSE returnClause = null;
+    List<CLAUSE> tailClauses = null;
 }
 {
     ( <CONSTRAINT> | <CONSTRAINTS> )
@@ -4299,11 +4307,12 @@ STATEMENT ShowConstraintsAllowBriefAndYield( Token start, USE_CLAUSE useClause, 
         | ( yieldClause=YieldClause() ( returnClause=ReturnClause() )?)
         | where=WhereClause()
     )?
+    ( tailClauses=composableCommandClauses() )?
     {
         if ( yieldClause != null )
         {
-            clauses.add( astFactory.showConstraintClause( pos( start ), constraintType, brief, verbose, where, true ) );
-            clauses.add( yieldClause );
+            clauses.add( astFactory.showConstraintClause( pos( start ), constraintType, brief, verbose, where, yieldClause ) );
+            clauses.add( astFactory.turnYieldToWith( yieldClause ) );
             if ( returnClause != null )
             {
                 clauses.add( returnClause );
@@ -4311,43 +4320,45 @@ STATEMENT ShowConstraintsAllowBriefAndYield( Token start, USE_CLAUSE useClause, 
         }
         else
         {
-            clauses.add( astFactory.showConstraintClause( pos( start ), constraintType, brief, verbose, where, false ) );
+            clauses.add( astFactory.showConstraintClause( pos( start ), constraintType, brief, verbose, where, null ) );
         }
-        return astFactory.newSingleQuery( pos( start ), clauses );
+        if ( tailClauses != null ) {
+            clauses.addAll( tailClauses );
+        }
+        return clauses;
     }
 }
 
-STATEMENT ShowConstraintsAllowBrief( Token start, USE_CLAUSE useClause, ShowCommandFilterTypes constraintType ) throws Exception:
+List<CLAUSE> ShowConstraintsAllowBrief( Token start, ShowCommandFilterTypes constraintType ) throws Exception:
 {
-    // old deprecated existence constraints
+    // old removed existence constraints, parsing kept for nice error
     List<CLAUSE> clauses = new ArrayList<>();
-    if ( useClause != null )
-    {
-        clauses.add( useClause );
-    }
     boolean brief = false;
     boolean verbose = false;
+    List<CLAUSE> tailClauses = null;
 }
 {
     ( <CONSTRAINT> | <CONSTRAINTS> )
     ( ( <BRIEF> { brief = true; } | <VERBOSE> { verbose = true; }) (<OUTPUT>)? )?
+    ( tailClauses=composableCommandClauses() )?
     {
-        clauses.add( astFactory.showConstraintClause( pos( start ), constraintType, brief, verbose, null, false ) );
-        return astFactory.newSingleQuery( pos( start ), clauses );
+        clauses.add( astFactory.showConstraintClause( pos( start ), constraintType, brief, verbose, null, null ) );
+        if ( tailClauses != null ) {
+            clauses.addAll( tailClauses );
+        }
+        return clauses;
     }
 }
 
-STATEMENT ShowConstraintsAllowYield( Token start, USE_CLAUSE useClause, ShowCommandFilterTypes constraintType ) throws Exception:
+List<CLAUSE> ShowConstraintsAllowYield( Token start, ShowCommandFilterTypes constraintType ) throws Exception:
 {
-    // new existence constraints
+    // constraints only allowing yield and not brief/verbose
+    // this is the method that will be used for all constraints in 6.0
     List<CLAUSE> clauses = new ArrayList<>();
-    if (useClause != null)
-    {
-        clauses.add( useClause );
-    }
     WHERE where = null;
     YIELD yieldClause = null;
     RETURN_CLAUSE returnClause = null;
+    List<CLAUSE> tailClauses = null;
 }
 {
     ( <CONSTRAINT> | <CONSTRAINTS> )
@@ -4355,11 +4366,12 @@ STATEMENT ShowConstraintsAllowYield( Token start, USE_CLAUSE useClause, ShowComm
         ( yieldClause=YieldClause() ( returnClause=ReturnClause() ) ? )
         | where=WhereClause()
     )?
+    ( tailClauses=composableCommandClauses() )?
     {
         if ( yieldClause != null )
         {
-            clauses.add( astFactory.showConstraintClause( pos( start ), constraintType, false, false, where, true ) );
-            clauses.add( yieldClause );
+            clauses.add( astFactory.showConstraintClause( pos( start ), constraintType, false, false, where, yieldClause ) );
+            clauses.add( astFactory.turnYieldToWith( yieldClause ) );
             if ( returnClause != null )
             {
                 clauses.add( returnClause );
@@ -4367,19 +4379,18 @@ STATEMENT ShowConstraintsAllowYield( Token start, USE_CLAUSE useClause, ShowComm
         }
         else
         {
-            clauses.add( astFactory.showConstraintClause( pos( start ), constraintType, false, false, where, false ) );
+            clauses.add( astFactory.showConstraintClause( pos( start ), constraintType, false, false, where, null ) );
         }
-        return astFactory.newSingleQuery( pos( start ), clauses );
+        if ( tailClauses != null ) {
+            clauses.addAll( tailClauses );
+        }
+        return clauses;
     }
 }
 
-STATEMENT ShowProcedures( Token start, USE_CLAUSE useClause ) throws Exception:
+List<CLAUSE> ShowProcedures( Token start ) throws Exception:
 {
     List<CLAUSE> clauses = new ArrayList<>();
-    if (useClause != null)
-    {
-        clauses.add( useClause );
-    }
 
     boolean currentUser = false;
     Token userToken = null;
@@ -4388,6 +4399,8 @@ STATEMENT ShowProcedures( Token start, USE_CLAUSE useClause ) throws Exception:
     WHERE where = null;
     YIELD yieldClause = null;
     RETURN_CLAUSE returnClause = null;
+
+    List<CLAUSE> tailClauses = null;
 }
 {
     ( <PROCEDURE> | <PROCEDURES> )
@@ -4400,11 +4413,12 @@ STATEMENT ShowProcedures( Token start, USE_CLAUSE useClause ) throws Exception:
         ( yieldClause=YieldClause() ( returnClause=ReturnClause() ) ? )
         | where=WhereClause()
     )?
+    ( tailClauses=composableCommandClauses() )?
     {
         if ( yieldClause != null )
         {
-            clauses.add( astFactory.showProcedureClause( pos( start ), currentUser, user, where, true ) );
-            clauses.add( yieldClause );
+            clauses.add( astFactory.showProcedureClause( pos( start ), currentUser, user, where, yieldClause ) );
+            clauses.add( astFactory.turnYieldToWith( yieldClause ) );
             if ( returnClause != null )
             {
                 clauses.add( returnClause );
@@ -4412,19 +4426,18 @@ STATEMENT ShowProcedures( Token start, USE_CLAUSE useClause ) throws Exception:
         }
         else
         {
-            clauses.add( astFactory.showProcedureClause( pos( start ), currentUser, user, where, false ) );
+            clauses.add( astFactory.showProcedureClause( pos( start ), currentUser, user, where, null ) );
         }
-        return astFactory.newSingleQuery( pos( start ), clauses );
+        if ( tailClauses != null ) {
+            clauses.addAll( tailClauses );
+        }
+        return clauses;
     }
 }
 
-STATEMENT ShowFunctions( Token start, USE_CLAUSE useClause, ShowCommandFilterTypes functionType ) throws Exception:
+List<CLAUSE> ShowFunctions( Token start, ShowCommandFilterTypes functionType ) throws Exception:
 {
     List<CLAUSE> clauses = new ArrayList<>();
-    if (useClause != null)
-    {
-        clauses.add( useClause );
-    }
 
     boolean currentUser = false;
     Token userToken = null;
@@ -4433,6 +4446,8 @@ STATEMENT ShowFunctions( Token start, USE_CLAUSE useClause, ShowCommandFilterTyp
     WHERE where = null;
     YIELD yieldClause = null;
     RETURN_CLAUSE returnClause = null;
+
+    List<CLAUSE> tailClauses = null;
 }
 {
     ( <FUNCTION> | <FUNCTIONS> )
@@ -4445,11 +4460,12 @@ STATEMENT ShowFunctions( Token start, USE_CLAUSE useClause, ShowCommandFilterTyp
         ( yieldClause=YieldClause() ( returnClause=ReturnClause() ) ? )
         | where=WhereClause()
     )?
+    ( tailClauses=composableCommandClauses() )?
     {
         if ( yieldClause != null )
         {
-            clauses.add( astFactory.showFunctionClause( pos( start ), functionType, currentUser, user, where, true ) );
-            clauses.add( yieldClause );
+            clauses.add( astFactory.showFunctionClause( pos( start ), functionType, currentUser, user, where, yieldClause ) );
+            clauses.add( astFactory.turnYieldToWith( yieldClause ) );
             if ( returnClause != null )
             {
                 clauses.add( returnClause );
@@ -4457,9 +4473,12 @@ STATEMENT ShowFunctions( Token start, USE_CLAUSE useClause, ShowCommandFilterTyp
         }
         else
         {
-            clauses.add( astFactory.showFunctionClause( pos( start ), functionType, currentUser, user, where, false ) );
+            clauses.add( astFactory.showFunctionClause( pos( start ), functionType, currentUser, user, where, null ) );
         }
-        return astFactory.newSingleQuery( pos( start ), clauses );
+        if ( tailClauses != null ) {
+            clauses.addAll( tailClauses );
+        }
+        return clauses;
     }
 }
 
@@ -4477,7 +4496,7 @@ List<CLAUSE> ShowTransactions( Token start ) throws Exception:
 {
     ( <TRANSACTION> | <TRANSACTIONS> )
     (
-        LOOKAHEAD(showOrTerminateTransactions()) tailClauses=showOrTerminateTransactions()
+        LOOKAHEAD(composableCommandClauses()) tailClauses=composableCommandClauses()
         | ( LOOKAHEAD(stringsOrExpression() (WhereClause() | YieldClause()))
               idEither=stringsOrExpression() (
                   ( yieldClause=YieldClause() ( returnClause=ReturnClause() ) ? )
@@ -4486,7 +4505,7 @@ List<CLAUSE> ShowTransactions( Token start ) throws Exception:
           | LOOKAHEAD(YieldClause()) yieldClause=YieldClause() ( returnClause=ReturnClause() ) ?
           | LOOKAHEAD(WhereClause()) where=WhereClause()
           | idEither=stringsOrExpression()
-        ) ( tailClauses=showOrTerminateTransactions() )?
+        ) ( tailClauses=composableCommandClauses() )?
     )?
     {
         if ( yieldClause != null )
@@ -4523,7 +4542,7 @@ List<CLAUSE> TerminateTransactions( Token start ) throws Exception:
 {
     ( <TRANSACTION> | <TRANSACTIONS> )
     (
-        LOOKAHEAD(showOrTerminateTransactions()) tailClauses=showOrTerminateTransactions()
+        LOOKAHEAD(composableCommandClauses()) tailClauses=composableCommandClauses()
         | ( LOOKAHEAD(stringsOrExpression() (WhereClause() | YieldClause()))
               idEither=stringsOrExpression() (
                   ( yieldClause=YieldClause() ( returnClause=ReturnClause() ) ? )
@@ -4532,7 +4551,7 @@ List<CLAUSE> TerminateTransactions( Token start ) throws Exception:
           | LOOKAHEAD(YieldClause()) yieldClause=YieldClause() ( returnClause=ReturnClause() ) ?
           | LOOKAHEAD(WhereClause()) where=WhereClause()
           | idEither=stringsOrExpression()
-        ) ( tailClauses=showOrTerminateTransactions() )?
+        ) ( tailClauses=composableCommandClauses() )?
     )?
     {
         if ( yieldClause != null )
@@ -4555,7 +4574,53 @@ List<CLAUSE> TerminateTransactions( Token start ) throws Exception:
     }
 }
 
-List<CLAUSE> showOrTerminateTransactions() throws Exception:
+List<CLAUSE> ShowSettings( Token start ) throws Exception:
+{
+    List<CLAUSE> clauses = new ArrayList<>();
+    SimpleEither<List<String>, EXPRESSION> nameEither = SimpleEither.left(new ArrayList<>());
+
+    WHERE where = null;
+    YIELD yieldClause = null;
+    RETURN_CLAUSE returnClause = null;
+
+    List<CLAUSE> tailClauses = null;
+}
+{
+    ( <SETTING> | <SETTINGS> )
+    (
+        LOOKAHEAD(composableCommandClauses()) tailClauses=composableCommandClauses()
+        | ( LOOKAHEAD(stringsOrExpression() (WhereClause() | YieldClause()))
+              nameEither=stringsOrExpression() (
+                  ( yieldClause=YieldClause() ( returnClause=ReturnClause() ) ? )
+                  | where=WhereClause()
+              )
+          | LOOKAHEAD(YieldClause()) yieldClause=YieldClause() ( returnClause=ReturnClause() ) ?
+          | LOOKAHEAD(WhereClause()) where=WhereClause()
+          | nameEither=stringsOrExpression()
+        ) ( tailClauses=composableCommandClauses() )?
+    )?
+    {
+        if ( yieldClause != null )
+        {
+            clauses.add( astFactory.showSettingsClause( pos( start ), nameEither, where, yieldClause ) );
+            clauses.add( astFactory.turnYieldToWith( yieldClause ) );
+            if ( returnClause != null )
+            {
+                clauses.add( returnClause );
+            }
+        }
+        else
+        {
+            clauses.add( astFactory.showSettingsClause( pos( start ), nameEither, where, null ) );
+        }
+        if ( tailClauses != null ) {
+            clauses.addAll( tailClauses );
+        }
+        return clauses;
+    }
+}
+
+List<CLAUSE> composableCommandClauses() throws Exception:
 {
     Token start = null;
     List<CLAUSE> clauses = null;
@@ -4563,7 +4628,39 @@ List<CLAUSE> showOrTerminateTransactions() throws Exception:
 {
     (
         (start=<TERMINATE> clauses=TerminateTransactions(start))
-        | (start=<SHOW> clauses=ShowTransactions(start))
+        | start=<SHOW> (
+            // order: first the read tokens than lookaheads,
+            // each group is alphabetical but longer words first
+            <ALL> (
+                LOOKAHEAD( <CONSTRAINT> | <CONSTRAINTS> ) clauses=ShowConstraintsAllowBriefAndYield(start, ShowCommandFilterTypes.ALL)
+                | LOOKAHEAD( <INDEX> | <INDEXES> ) clauses=ShowIndexesAllowBrief(start, ShowCommandFilterTypes.ALL)
+                | clauses=ShowFunctions(start, ShowCommandFilterTypes.ALL)
+            )
+            | <BTREE> clauses=ShowIndexesAllowBrief(start, ShowCommandFilterTypes.BTREE)
+            | <BUILT> <IN> clauses=ShowFunctions(start, ShowCommandFilterTypes.BUILT_IN)
+            | <EXISTENCE> clauses=ShowConstraintsAllowYield(start, ShowCommandFilterTypes.EXIST)
+            | <EXISTS> clauses=ShowConstraintsAllowBrief(start, ShowCommandFilterTypes.OLD_EXISTS)
+            | <EXIST> clauses=ShowConstraintsAllowBriefAndYield(start, ShowCommandFilterTypes.OLD_EXIST)
+            | <FULLTEXT> clauses=ShowIndexesNoBrief(start, ShowCommandFilterTypes.FULLTEXT)
+            | <KEY> clauses=ShowConstraintsAllowYield(start, ShowCommandFilterTypes.KEY)
+            | <LOOKUP> clauses=ShowIndexesNoBrief(start, ShowCommandFilterTypes.LOOKUP)
+            | <NODE> clauses=ShowNodeCommand( start )
+            | <POINT> clauses=ShowIndexesNoBrief(start, ShowCommandFilterTypes.POINT)
+            | <PROPERTY> clauses=ShowPropertyCommand( start, ShowCommandFilterTypes.EXIST )
+            | <RANGE> clauses=ShowIndexesNoBrief(start, ShowCommandFilterTypes.RANGE)
+            | <RELATIONSHIP> clauses=ShowRelationshipCommand( start )
+            | <REL> clauses=ShowRelCommand( start )
+            | <TEXT> clauses=ShowIndexesNoBrief(start, ShowCommandFilterTypes.TEXT)
+            | <UNIQUENESS> clauses=ShowConstraintsAllowYield(start, ShowCommandFilterTypes.UNIQUE)
+            | <UNIQUE> clauses=ShowConstraintsAllowBriefAndYield(start, ShowCommandFilterTypes.UNIQUE)
+            | <USER> <DEFINED> clauses=ShowFunctions(start, ShowCommandFilterTypes.USER_DEFINED)
+            | LOOKAHEAD( <CONSTRAINT> | <CONSTRAINTS> ) clauses=ShowConstraintsAllowBriefAndYield(start, ShowCommandFilterTypes.ALL)
+            | LOOKAHEAD( <FUNCTION> | <FUNCTIONS> ) clauses=ShowFunctions(start, ShowCommandFilterTypes.ALL)
+            | LOOKAHEAD( <INDEX> | <INDEXES> ) clauses=ShowIndexesAllowBrief(start, ShowCommandFilterTypes.ALL)
+            | LOOKAHEAD( <PROCEDURE> | <PROCEDURES> ) clauses=ShowProcedures(start)
+            | LOOKAHEAD( <SETTING> | <SETTINGS> )  clauses=ShowSettings(start)
+            | clauses=ShowTransactions(start)
+        )
     )
     {
         return clauses;
@@ -4581,52 +4678,6 @@ SimpleEither<List<String>, EXPRESSION> stringsOrExpression() throws Exception:
     | (expr=Expression() { idEither=SimpleEither.right(expr); }) )
     {
         return idEither;
-    }
-}
-
-STATEMENT ShowSettings( Token start, USE_CLAUSE useClause ) throws Exception:
-{
-    List<CLAUSE> clauses = new ArrayList<>();
-    if (useClause != null)
-    {
-        clauses.add( useClause );
-    }
-
-    List<String> names = new ArrayList<>();
-    PARAMETER param = null;
-    SimpleEither<List<String>, EXPRESSION> nameEither = SimpleEither.left(names);
-
-    WHERE where = null;
-    YIELD yieldClause = null;
-    RETURN_CLAUSE returnClause = null;
-}
-{
-    ( <SETTING> | <SETTINGS> )
-    (
-        LOOKAHEAD(stringsOrExpression() (WhereClause() | YieldClause()))
-              nameEither=stringsOrExpression() (
-                  ( yieldClause=YieldClause() ( returnClause=ReturnClause() ) ? )
-                  | where=WhereClause()
-              )
-          | LOOKAHEAD(YieldClause()) yieldClause=YieldClause() ( returnClause=ReturnClause() ) ?
-          | LOOKAHEAD(WhereClause()) where=WhereClause()
-          | nameEither=stringsOrExpression()
-    )?
-    {
-        if ( yieldClause != null )
-        {
-            clauses.add( astFactory.showSettingsClause( pos( start ), nameEither, where, true ) );
-            clauses.add( yieldClause );
-            if ( returnClause != null )
-            {
-                clauses.add( returnClause );
-            }
-        }
-        else
-        {
-            clauses.add( astFactory.showSettingsClause( pos( start ), nameEither, where, false ) );
-        }
-        return astFactory.newSingleQuery( pos( start ), clauses );
     }
 }
 

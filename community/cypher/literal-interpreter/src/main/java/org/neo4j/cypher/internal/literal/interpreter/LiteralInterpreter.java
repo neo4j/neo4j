@@ -475,7 +475,7 @@ public class LiteralInterpreter
 
     @Override
     public NULL showIndexClause(
-            NULL p, ShowCommandFilterTypes indexType, boolean brief, boolean verbose, NULL where, boolean hasYield) {
+            NULL p, ShowCommandFilterTypes indexType, boolean brief, boolean verbose, NULL where, NULL yieldClause) {
         throw new UnsupportedOperationException("showIndexClause is not a literal");
     }
 
@@ -486,12 +486,12 @@ public class LiteralInterpreter
             boolean brief,
             boolean verbose,
             NULL where,
-            boolean hasYield) {
+            NULL yieldClause) {
         throw new UnsupportedOperationException("showConstraintClause is not a literal");
     }
 
     @Override
-    public NULL showProcedureClause(NULL p, boolean currentUser, String user, NULL where, boolean hasYield) {
+    public NULL showProcedureClause(NULL p, boolean currentUser, String user, NULL where, NULL yieldClause) {
         throw new UnsupportedOperationException("showProcedureClause is not a literal");
     }
 
@@ -502,7 +502,7 @@ public class LiteralInterpreter
             boolean currentUser,
             String user,
             NULL where,
-            boolean hasYield) {
+            NULL yieldClause) {
         throw new UnsupportedOperationException("showFunctionClause is not a literal");
     }
 
@@ -518,13 +518,13 @@ public class LiteralInterpreter
     }
 
     @Override
-    public NULL turnYieldToWith(NULL yieldClause) {
-        throw new UnsupportedOperationException("turnYieldToWith is not a literal");
+    public NULL showSettingsClause(NULL p, SimpleEither<List<String>, Object> ids, NULL where, NULL yieldClause) {
+        throw new UnsupportedOperationException("showSettingsClause is not a literal");
     }
 
     @Override
-    public NULL showSettingsClause(NULL p, SimpleEither<List<String>, Object> ids, NULL where, boolean hasYield) {
-        throw new UnsupportedOperationException("showSettingsClause is not a literal");
+    public NULL turnYieldToWith(NULL yieldClause) {
+        throw new UnsupportedOperationException("turnYieldToWith is not a literal");
     }
 
     // Schema commands

@@ -453,40 +453,40 @@ yieldClause:
    YIELD (TIMES | yieldItem (COMMA yieldItem)*) (ORDER BY orderItem (COMMA orderItem)*)? (SKIPROWS signedIntegerLiteral)? (LIMITROWS signedIntegerLiteral)? whereClause?;
 
 showIndexesAllowBrief:
-   (INDEX | INDEXES) ((BRIEF | VERBOSE) OUTPUT? | yieldClause returnClause? | whereClause)?;
+   (INDEX | INDEXES) ((BRIEF | VERBOSE) OUTPUT? | yieldClause returnClause? | whereClause)? composableCommandClauses?;
 
 showIndexesNoBrief:
-   (INDEX | INDEXES) (yieldClause returnClause? | whereClause)?;
+   (INDEX | INDEXES) (yieldClause returnClause? | whereClause)? composableCommandClauses?;
 
 showConstraintsAllowBriefAndYield:
-   (CONSTRAINT | CONSTRAINTS) ((BRIEF | VERBOSE) OUTPUT? | yieldClause returnClause? | whereClause)?;
+   (CONSTRAINT | CONSTRAINTS) ((BRIEF | VERBOSE) OUTPUT? | yieldClause returnClause? | whereClause)? composableCommandClauses?;
 
 showConstraintsAllowBrief:
-   (CONSTRAINT | CONSTRAINTS) ((BRIEF | VERBOSE) OUTPUT?)?;
+   (CONSTRAINT | CONSTRAINTS) ((BRIEF | VERBOSE) OUTPUT?)? composableCommandClauses?;
 
 showConstraintsAllowYield:
-   (CONSTRAINT | CONSTRAINTS) (yieldClause returnClause? | whereClause)?;
+   (CONSTRAINT | CONSTRAINTS) (yieldClause returnClause? | whereClause)? composableCommandClauses?;
 
 showProcedures:
-   (PROCEDURE | PROCEDURES) (EXECUTABLE (BY (CURRENT USER | symbolicNameString))?)? (yieldClause returnClause? | whereClause)?;
+   (PROCEDURE | PROCEDURES) (EXECUTABLE (BY (CURRENT USER | symbolicNameString))?)? (yieldClause returnClause? | whereClause)? composableCommandClauses?;
 
 showFunctions:
-   (FUNCTION | FUNCTIONS) (EXECUTABLE (BY (CURRENT USER | symbolicNameString))?)? (yieldClause returnClause? | whereClause)?;
+   (FUNCTION | FUNCTIONS) (EXECUTABLE (BY (CURRENT USER | symbolicNameString))?)? (yieldClause returnClause? | whereClause)? composableCommandClauses?;
 
 showTransactions:
-   (TRANSACTION | TRANSACTIONS) (showOrTerminateTransactions | (stringsOrExpression (yieldClause returnClause? | whereClause) | yieldClause returnClause? | whereClause | stringsOrExpression) showOrTerminateTransactions?)?;
+   (TRANSACTION | TRANSACTIONS) (composableCommandClauses | (stringsOrExpression (yieldClause returnClause? | whereClause) | yieldClause returnClause? | whereClause | stringsOrExpression)  composableCommandClauses?)?;
 
 terminateTransactions:
-   (TRANSACTION | TRANSACTIONS) (showOrTerminateTransactions | (stringsOrExpression (yieldClause returnClause? | whereClause) | yieldClause returnClause? | whereClause | stringsOrExpression) showOrTerminateTransactions?)?;
+   (TRANSACTION | TRANSACTIONS) (composableCommandClauses | (stringsOrExpression (yieldClause returnClause? | whereClause) | yieldClause returnClause? | whereClause | stringsOrExpression)  composableCommandClauses?)?;
 
-showOrTerminateTransactions:
-   (TERMINATE terminateTransactions | SHOW showTransactions);
+showSettings:
+   (SETTING | SETTINGS) (composableCommandClauses | (stringsOrExpression (yieldClause returnClause? | whereClause) | yieldClause returnClause? | whereClause | stringsOrExpression) composableCommandClauses?)?;
+
+composableCommandClauses:
+   (TERMINATE terminateTransactions | SHOW (ALL (showConstraintsAllowBriefAndYield | showIndexesAllowBrief | showFunctions) | BTREE showIndexesAllowBrief | BUILT IN showFunctions | EXISTENCE showConstraintsAllowYield | EXISTS showConstraintsAllowBrief | EXIST showConstraintsAllowBriefAndYield | FULLTEXT showIndexesNoBrief | KEY showConstraintsAllowYield | LOOKUP showIndexesNoBrief | NODE showNodeCommand | POINT showIndexesNoBrief | PROPERTY showPropertyCommand | RANGE showIndexesNoBrief | RELATIONSHIP showRelationshipCommand | REL showRelCommand | TEXT showIndexesNoBrief | UNIQUENESS showConstraintsAllowYield | UNIQUE showConstraintsAllowBriefAndYield | USER DEFINED showFunctions | showConstraintsAllowBriefAndYield | showFunctions | showIndexesAllowBrief | showProcedures | showSettings | showTransactions));
 
 stringsOrExpression:
    (stringList | expression);
-
-showSettings:
-   (SETTING | SETTINGS) (stringsOrExpression (yieldClause returnClause? | whereClause) | yieldClause returnClause? | whereClause | stringsOrExpression)?;
 
 createConstraint:
    CONSTRAINT (ON LPAREN | FOR LPAREN | IF NOT EXISTS (ON | FOR) LPAREN | symbolicNameString? (IF NOT EXISTS)? (ON | FOR) LPAREN) (

@@ -25,6 +25,7 @@ import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
 import org.neo4j.configuration.GraphDatabaseSettings.auth_enabled
+import org.neo4j.cypher.CommunityShowFuncProcAcceptanceTest.readAll
 import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo
@@ -388,8 +389,11 @@ class CommunityShowFuncProcAcceptanceTest extends ExecutionEngineFunSuite with G
       tx.close()
     }
   }
+}
 
-  private def readAll(resourceUrl: URL): List[Map[String, Any]] = {
+object CommunityShowFuncProcAcceptanceTest {
+
+  def readAll(resourceUrl: URL): List[Map[String, Any]] = {
     val jsonMapper = JsonMapper.builder().addModule(DefaultScalaModule).build()
     val reader = Files.newBufferedReader(Paths.get(resourceUrl.toURI), UTF_8)
     jsonMapper.readValue(reader, new TypeReference[List[Map[String, Any]]] {})

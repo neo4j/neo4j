@@ -56,7 +56,7 @@ case class ShowTransactionsCommand(
   verbose: Boolean,
   defaultColumns: List[ShowColumn],
   yieldColumns: List[CommandResultItem]
-) extends TransactionCommand(defaultColumns, yieldColumns) {
+) extends Command(defaultColumns, yieldColumns) {
 
   override def originalNameRows(state: QueryState, baseRow: CypherRow): ClosingIterator[Map[String, AnyValue]] = {
     val ids = Command.extractNames(givenIds, state, baseRow)

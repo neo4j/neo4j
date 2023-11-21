@@ -1500,7 +1500,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     brief: Boolean,
     verbose: Boolean,
     where: Where,
-    hasYield: Boolean
+    yieldClause: Yield
   ): Clause = {
     val indexType = initialIndexType match {
       case ShowCommandFilterTypes.ALL      => AllIndexes
@@ -1512,7 +1512,8 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
       case ShowCommandFilterTypes.LOOKUP   => LookupIndexes
       case t => throw new Neo4jASTConstructionException(ASTExceptionFactory.invalidShowFilterType("indexes", t))
     }
-    ShowIndexesClause(indexType, brief, verbose, Option(where), hasYield)(p)
+    val (yieldAll, yieldedItems) = getYieldAllAndYieldItems(yieldClause)
+    ShowIndexesClause(indexType, brief, verbose, Option(where), yieldedItems, yieldAll)(p)
   }
 
   override def showConstraintClause(
@@ -1521,7 +1522,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     brief: Boolean,
     verbose: Boolean,
     where: Where,
-    hasYield: Boolean
+    yieldClause: Yield
   ): Clause = {
     val constraintType: ShowConstraintType = initialConstraintType match {
       case ShowCommandFilterTypes.ALL                     => AllConstraints
@@ -1545,7 +1546,8 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
       case ShowCommandFilterTypes.RELATIONSHIP_PROP_TYPE  => RelPropTypeConstraints
       case t => throw new Neo4jASTConstructionException(ASTExceptionFactory.invalidShowFilterType("constraints", t))
     }
-    ShowConstraintsClause(constraintType, brief, verbose, Option(where), hasYield)(p)
+    val (yieldAll, yieldedItems) = getYieldAllAndYieldItems(yieldClause)
+    ShowConstraintsClause(constraintType, brief, verbose, Option(where), yieldedItems, yieldAll)(p)
   }
 
   override def showProcedureClause(
@@ -1553,11 +1555,12 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     currentUser: Boolean,
     user: String,
     where: Where,
-    hasYield: Boolean
+    yieldClause: Yield
   ): Clause = {
     // either we have 'EXECUTABLE BY user', 'EXECUTABLE [BY CURRENT USER]' or nothing
     val executableBy = if (user != null) Some(User(user)) else if (currentUser) Some(CurrentUser) else None
-    ShowProceduresClause(executableBy, Option(where), hasYield)(p)
+    val (yieldAll, yieldedItems) = getYieldAllAndYieldItems(yieldClause)
+    ShowProceduresClause(executableBy, Option(where), yieldedItems, yieldAll)(p)
   }
 
   override def showFunctionClause(
@@ -1566,7 +1569,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     currentUser: Boolean,
     user: String,
     where: Where,
-    hasYield: Boolean
+    yieldClause: Yield
   ): Clause = {
     val functionType = initialFunctionType match {
       case ShowCommandFilterTypes.ALL          => AllFunctions
@@ -1577,7 +1580,9 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
 
     // either we have 'EXECUTABLE BY user', 'EXECUTABLE [BY CURRENT USER]' or nothing
     val executableBy = if (user != null) Some(User(user)) else if (currentUser) Some(CurrentUser) else None
-    ShowFunctionsClause(functionType, executableBy, Option(where), hasYield)(p)
+
+    val (yieldAll, yieldedItems) = getYieldAllAndYieldItems(yieldClause)
+    ShowFunctionsClause(functionType, executableBy, Option(where), yieldedItems, yieldAll)(p)
   }
 
   override def showTransactionsClause(
@@ -1602,6 +1607,17 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
       ids.asScala.left.map(_.asScala.toList) // if left: map the string list to scala, if right: changes nothing
     val (yieldAll, yieldedItems) = getYieldAllAndYieldItems(yieldClause)
     TerminateTransactionsClause(scalaIds, yieldedItems, yieldAll, Option(where).map(_.position))(p)
+  }
+
+  override def showSettingsClause(
+    p: InputPosition,
+    names: SimpleEither[util.List[String], Expression],
+    where: Where,
+    yieldClause: Yield
+  ): Clause = {
+    val namesAsScala = names.asScala.left.map(_.asScala.toList)
+    val (yieldAll, yieldedItems) = getYieldAllAndYieldItems(yieldClause)
+    ShowSettingsClause(namesAsScala, Option(where), yieldedItems, yieldAll)(p)
   }
 
   private def getYieldAllAndYieldItems(yieldClause: Yield): (Boolean, List[CommandResultItem]) = {
@@ -1630,16 +1646,6 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
       where,
       withType = ParsedAsYield
     )(yieldClause.position)
-  }
-
-  override def showSettingsClause(
-    p: InputPosition,
-    names: SimpleEither[util.List[String], Expression],
-    where: Where,
-    hasYield: Boolean
-  ): Clause = {
-    val namesAsScala = names.asScala.left.map(_.asScala.toList)
-    ShowSettingsClause(namesAsScala, Option(where), hasYield)(p)
   }
 
   // Schema Commands

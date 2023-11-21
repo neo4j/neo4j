@@ -21,6 +21,11 @@ import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.Return
+import org.neo4j.cypher.internal.ast.ShowConstraintsClause
+import org.neo4j.cypher.internal.ast.ShowFunctionsClause
+import org.neo4j.cypher.internal.ast.ShowIndexesClause
+import org.neo4j.cypher.internal.ast.ShowProceduresClause
+import org.neo4j.cypher.internal.ast.ShowSettingsClause
 import org.neo4j.cypher.internal.ast.ShowTransactionsClause
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Statement
@@ -184,7 +189,8 @@ class ExpandStarTest extends CypherFunSuite with AstConstructionTestSupport {
         |YIELD name, category, description, signature, isBuiltIn, argumentDescription, returnDescription, aggregating, rolesExecution, rolesBoostedExecution, isDeprecated
         |RETURN name, category, description, signature, isBuiltIn, argumentDescription, returnDescription, aggregating, rolesExecution, rolesBoostedExecution, isDeprecated""".stripMargin,
       rewriteShowCommand = true,
-      showCommandReturnAddedInRewrite = true
+      showCommandReturnAddedInRewrite = true,
+      moveYieldToWith = true
     )
 
     assertRewrite(
@@ -192,7 +198,8 @@ class ExpandStarTest extends CypherFunSuite with AstConstructionTestSupport {
       """SHOW FUNCTIONS
         |YIELD name, category, description, signature, isBuiltIn, argumentDescription, returnDescription, aggregating, rolesExecution, rolesBoostedExecution, isDeprecated
         |RETURN name, category, description, signature, isBuiltIn, argumentDescription, returnDescription, aggregating, rolesExecution, rolesBoostedExecution, isDeprecated""".stripMargin,
-      rewriteShowCommand = true
+      rewriteShowCommand = true,
+      moveYieldToWith = true
     )
 
     assertRewrite(
@@ -281,13 +288,28 @@ class ExpandStarTest extends CypherFunSuite with AstConstructionTestSupport {
         updateClauses(
           expectedUpdatedReturn,
           clauses => {
-            // transaction commands parses YIELD as WITH *
+            // show and terminate commands parses YIELD as WITH *
             clauses.map {
               case s: ShowTransactionsClause =>
                 s.copy(yieldAll = true, yieldItems = List.empty)(s.position)
 
               case t: TerminateTransactionsClause =>
                 t.copy(yieldAll = true, yieldItems = List.empty)(t.position)
+
+              case s: ShowSettingsClause =>
+                s.copy(yieldAll = true, yieldItems = List.empty)(s.position)
+
+              case s: ShowFunctionsClause =>
+                s.copy(yieldAll = true, yieldItems = List.empty)(s.position)
+
+              case s: ShowProceduresClause =>
+                s.copy(yieldAll = true, yieldItems = List.empty)(s.position)
+
+              case s: ShowConstraintsClause =>
+                s.copy(yieldAll = true, yieldItems = List.empty)(s.position)
+
+              case s: ShowIndexesClause =>
+                s.copy(yieldAll = true, yieldItems = List.empty)(s.position)
 
               case w: With =>
                 val returnItems = w.returnItems.defaultOrderOnColumns.map(c =>

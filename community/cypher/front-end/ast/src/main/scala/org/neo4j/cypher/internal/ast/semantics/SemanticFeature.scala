@@ -65,6 +65,10 @@ object SemanticFeature {
     override def name: String = "Property value access rules"
   }
 
+  case object ComposableCommands extends SemanticFeature with FeatureToString {
+    override def name: String = "composable commands"
+  }
+
   private val allSemanticFeatures = Set(
     MultipleDatabases,
     MultipleGraphs,
@@ -73,7 +77,8 @@ object SemanticFeature {
     ShowSetting,
     GpmShortestPath,
     MatchModes,
-    PropertyValueAccessRules
+    PropertyValueAccessRules,
+    ComposableCommands
   )
 
   def fromString(str: String): SemanticFeature =

@@ -1432,9 +1432,8 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     types <- oneOrMore(_relTypeName)
   } yield types
 
-  def _constraintInfo: Gen[(ShowConstraintType, YieldOrWhere)] = for {
-    unfilteredYields <- _eitherYieldOrWhere
-    types <- oneOf(
+  def _constraintType: Gen[ShowConstraintType] = for {
+    constraintType <- oneOf(
       AllConstraints,
       UniqueConstraints,
       NodeUniqueConstraints,
@@ -1449,38 +1448,135 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
       NodePropTypeConstraints,
       RelPropTypeConstraints
     )
-  } yield (types, unfilteredYields)
+  } yield constraintType
 
   def _showIndexes: Gen[Query] = for {
     indexType <- _indexType
     use <- option(_use)
     yields <- _eitherYieldOrWhere
+    yieldAll <- boolean
   } yield {
     val showClauses = yields match {
       case Some(Right(w)) =>
-        Seq(ShowIndexesClause(indexType, brief = false, verbose = false, Some(w), hasYield = false)(pos))
+        Seq(
+          ShowIndexesClause(
+            indexType,
+            brief = false,
+            verbose = false,
+            Some(w),
+            List.empty,
+            yieldAll = false
+          )(pos)
+        )
       case Some(Left((y, Some(r)))) =>
-        Seq(ShowIndexesClause(indexType, brief = false, verbose = false, None, hasYield = true)(pos), y, r)
+        val (w, yi) = turnYieldToWith(y)
+        Seq(
+          ShowIndexesClause(
+            indexType,
+            brief = false,
+            verbose = false,
+            None,
+            yi,
+            yieldAll = false
+          )(pos),
+          w,
+          r
+        )
       case Some(Left((y, None))) =>
-        Seq(ShowIndexesClause(indexType, brief = false, verbose = false, None, hasYield = true)(pos), y)
-      case _ => Seq(ShowIndexesClause(indexType, brief = false, verbose = false, None, hasYield = false)(pos))
+        val (w, yi) = turnYieldToWith(y)
+        Seq(
+          ShowIndexesClause(
+            indexType,
+            brief = false,
+            verbose = false,
+            None,
+            yi,
+            yieldAll = false
+          )(pos),
+          w
+        )
+      case _ if yieldAll =>
+        Seq(
+          ShowIndexesClause(
+            indexType,
+            brief = false,
+            verbose = false,
+            None,
+            List.empty,
+            yieldAll = true
+          )(pos),
+          getFullWithStarFromYield
+        )
+      case _ =>
+        Seq(
+          ShowIndexesClause(
+            indexType,
+            brief = false,
+            verbose = false,
+            None,
+            List.empty,
+            yieldAll = false
+          )(pos)
+        )
     }
     val fullClauses = use.map(u => u +: showClauses).getOrElse(showClauses)
     SingleQuery(fullClauses)(pos)
   }
 
   def _showConstraints: Gen[Query] = for {
-    (constraintType, yields) <- _constraintInfo
+    constraintType <- _constraintType
     use <- option(_use)
+    yields <- _eitherYieldOrWhere
+    yieldAll <- boolean
   } yield {
     val showClauses = yields match {
       case Some(Right(w)) =>
-        Seq(ShowConstraintsClause(constraintType, brief = false, verbose = false, Some(w), hasYield = false)(pos))
+        Seq(
+          ShowConstraintsClause(
+            constraintType,
+            brief = false,
+            verbose = false,
+            Some(w),
+            List.empty,
+            yieldAll = false
+          )(pos)
+        )
       case Some(Left((y, Some(r)))) =>
-        Seq(ShowConstraintsClause(constraintType, brief = false, verbose = false, None, hasYield = true)(pos), y, r)
+        val (w, yi) = turnYieldToWith(y)
+        Seq(
+          ShowConstraintsClause(constraintType, brief = false, verbose = false, None, yi, yieldAll = false)(pos),
+          w,
+          r
+        )
       case Some(Left((y, None))) =>
-        Seq(ShowConstraintsClause(constraintType, brief = false, verbose = false, None, hasYield = true)(pos), y)
-      case _ => Seq(ShowConstraintsClause(constraintType, brief = false, verbose = false, None, hasYield = false)(pos))
+        val (w, yi) = turnYieldToWith(y)
+        Seq(
+          ShowConstraintsClause(constraintType, brief = false, verbose = false, None, yi, yieldAll = false)(pos),
+          w
+        )
+      case _ if yieldAll =>
+        Seq(
+          ShowConstraintsClause(
+            constraintType,
+            brief = false,
+            verbose = false,
+            None,
+            List.empty,
+            yieldAll = true
+          )(pos),
+          getFullWithStarFromYield
+        )
+      case _ =>
+        Seq(
+          ShowConstraintsClause(
+            constraintType,
+            brief = false,
+            verbose = false,
+            None,
+            List.empty,
+            yieldAll = false
+          )(pos)
+        )
     }
     val fullClauses = use.map(u => u +: showClauses).getOrElse(showClauses)
     SingleQuery(fullClauses)(pos)
@@ -1490,13 +1586,22 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     name <- _identifier
     exec <- option(oneOf(CurrentUser, User(name)))
     yields <- _eitherYieldOrWhere
+    yieldAll <- boolean
     use <- option(_use)
   } yield {
     val showClauses = yields match {
-      case Some(Right(w))           => Seq(ShowProceduresClause(exec, Some(w), hasYield = false)(pos))
-      case Some(Left((y, Some(r)))) => Seq(ShowProceduresClause(exec, None, hasYield = true)(pos), y, r)
-      case Some(Left((y, None)))    => Seq(ShowProceduresClause(exec, None, hasYield = true)(pos), y)
-      case _                        => Seq(ShowProceduresClause(exec, None, hasYield = false)(pos))
+      case Some(Right(w)) =>
+        Seq(ShowProceduresClause(exec, Some(w), List.empty, yieldAll = false)(pos))
+      case Some(Left((y, Some(r)))) =>
+        val (w, yi) = turnYieldToWith(y)
+        Seq(ShowProceduresClause(exec, None, yi, yieldAll = false)(pos), w, r)
+      case Some(Left((y, None))) =>
+        val (w, yi) = turnYieldToWith(y)
+        Seq(ShowProceduresClause(exec, None, yi, yieldAll = false)(pos), w)
+      case _ if yieldAll =>
+        Seq(ShowProceduresClause(exec, None, List.empty, yieldAll = true)(pos), getFullWithStarFromYield)
+      case _ =>
+        Seq(ShowProceduresClause(exec, None, List.empty, yieldAll = false)(pos))
     }
     val fullClauses = use.map(u => u +: showClauses).getOrElse(showClauses)
     SingleQuery(fullClauses)(pos)
@@ -1507,13 +1612,22 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     funcType <- oneOf(AllFunctions, BuiltInFunctions, UserDefinedFunctions)
     exec <- option(oneOf(CurrentUser, User(name)))
     yields <- _eitherYieldOrWhere
+    yieldAll <- boolean
     use <- option(_use)
   } yield {
     val showClauses = yields match {
-      case Some(Right(w))           => Seq(ShowFunctionsClause(funcType, exec, Some(w), hasYield = false)(pos))
-      case Some(Left((y, Some(r)))) => Seq(ShowFunctionsClause(funcType, exec, None, hasYield = true)(pos), y, r)
-      case Some(Left((y, None)))    => Seq(ShowFunctionsClause(funcType, exec, None, hasYield = true)(pos), y)
-      case _                        => Seq(ShowFunctionsClause(funcType, exec, None, hasYield = false)(pos))
+      case Some(Right(w)) =>
+        Seq(ShowFunctionsClause(funcType, exec, Some(w), List.empty, yieldAll = false)(pos))
+      case Some(Left((y, Some(r)))) =>
+        val (w, yi) = turnYieldToWith(y)
+        Seq(ShowFunctionsClause(funcType, exec, None, yi, yieldAll = false)(pos), w, r)
+      case Some(Left((y, None))) =>
+        val (w, yi) = turnYieldToWith(y)
+        Seq(ShowFunctionsClause(funcType, exec, None, yi, yieldAll = false)(pos), w)
+      case _ if yieldAll =>
+        Seq(ShowFunctionsClause(funcType, exec, None, List.empty, yieldAll = true)(pos), getFullWithStarFromYield)
+      case _ =>
+        Seq(ShowFunctionsClause(funcType, exec, None, List.empty, yieldAll = false)(pos))
     }
     val fullClauses = use.map(u => u +: showClauses).getOrElse(showClauses)
     SingleQuery(fullClauses)(pos)
@@ -1563,7 +1677,29 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     SingleQuery(fullClauses)(pos)
   }
 
-  def _combinedTransactionCommands: Gen[Query] = for {
+  def _showSettings: Gen[Query] = for {
+    names <- namesOrNameExpression
+    yields <- _eitherYieldOrWhere
+    yieldAll <- boolean
+    use <- option(_use)
+  } yield {
+    val showClauses = yields match {
+      case Some(Right(w)) => Seq(ShowSettingsClause(names, Some(w), List.empty, yieldAll = false)(pos))
+      case Some(Left((y, Some(r)))) =>
+        val (w, yi) = turnYieldToWith(y)
+        Seq(ShowSettingsClause(names, None, yi, yieldAll = false)(pos), w, r)
+      case Some(Left((y, None))) =>
+        val (w, yi) = turnYieldToWith(y)
+        Seq(ShowSettingsClause(names, None, yi, yieldAll = false)(pos), w)
+      case _ if yieldAll =>
+        Seq(ShowSettingsClause(names, None, List.empty, yieldAll = true)(pos), getFullWithStarFromYield)
+      case _ => Seq(ShowSettingsClause(names, None, List.empty, yieldAll = false)(pos))
+    }
+    val fullClauses = use.map(u => u +: showClauses).getOrElse(showClauses)
+    SingleQuery(fullClauses)(pos)
+  }
+
+  def _combinedCommands: Gen[Query] = for {
     show <- showAsPartOfCombined
     terminate <- terminateAsPartOfCombined
     additionalShow <- zeroOrMore(showAsPartOfCombined)
@@ -1580,6 +1716,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
       } else if (additionalTerminate.isEmpty) {
         // Only additional show, make show only command
         // add base show to ensure at least 2 clauses
+        // (can be a mix of different show commands)
         show ++ additionalShow.flatten
       } else if (additionalShow.isEmpty) {
         // Only additional terminate, make terminate only command
@@ -1600,12 +1737,27 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
 
   private def showAsPartOfCombined: Gen[Seq[Clause]] = for {
     ids <- namesOrNameExpression
+    constraintType <- _constraintType
+    indexType <- _indexType
+    funcType <- oneOf(AllFunctions, BuiltInFunctions, UserDefinedFunctions)
+    name <- _identifier
+    exec <- option(oneOf(CurrentUser, User(name)))
     yields <- _yield
     yieldAll <- boolean
+    clause <- oneOf(
+      (item: List[CommandResultItem], all: Boolean) => ShowTransactionsClause(ids, None, item, all)(pos),
+      (item: List[CommandResultItem], all: Boolean) => ShowFunctionsClause(funcType, exec, None, item, all)(pos),
+      (item: List[CommandResultItem], all: Boolean) => ShowProceduresClause(exec, None, item, all)(pos),
+      (item: List[CommandResultItem], all: Boolean) => ShowSettingsClause(ids, None, item, all)(pos),
+      (item: List[CommandResultItem], all: Boolean) =>
+        ShowConstraintsClause(constraintType, brief = false, verbose = false, None, item, all)(pos),
+      (item: List[CommandResultItem], all: Boolean) =>
+        ShowIndexesClause(indexType, brief = false, verbose = false, None, item, all)(pos)
+    )
   } yield {
     val (withClause, items) = turnYieldToWith(yields)
-    if (yieldAll) Seq(ShowTransactionsClause(ids, None, List.empty, yieldAll = true)(pos), getFullWithStarFromYield)
-    else Seq(ShowTransactionsClause(ids, None, items, yieldAll = false)(pos), withClause)
+    if (yieldAll) Seq(clause(List.empty, true), getFullWithStarFromYield)
+    else Seq(clause(items, false), withClause)
   }
 
   private def terminateAsPartOfCombined: Gen[Seq[Clause]] = for {
@@ -1668,21 +1820,6 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
       withType = ParsedAsYield
     )(pos)
 
-  private def _showSettings: Gen[Query] = for {
-    names <- namesOrNameExpression
-    yields <- _eitherYieldOrWhere
-    use <- option(_use)
-  } yield {
-    val showClauses = yields match {
-      case Some(Right(w))           => Seq(ShowSettingsClause(names, Some(w), hasYield = false)(pos))
-      case Some(Left((y, Some(r)))) => Seq(ShowSettingsClause(names, None, hasYield = true)(pos), y, r)
-      case Some(Left((y, None)))    => Seq(ShowSettingsClause(names, None, hasYield = true)(pos), y)
-      case _                        => Seq(ShowSettingsClause(names, None, hasYield = false)(pos))
-    }
-    val fullClauses = use.map(u => u +: showClauses).getOrElse(showClauses)
-    SingleQuery(fullClauses)(pos)
-  }
-
   def _showCommands: Gen[Query] = oneOf(
     _showIndexes,
     _showConstraints,
@@ -1690,8 +1827,8 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     _showFunctions,
     _showTransactions,
     _terminateTransactions,
-    _combinedTransactionCommands,
-    _showSettings
+    _showSettings,
+    _combinedCommands
   )
 
   // Schema commands

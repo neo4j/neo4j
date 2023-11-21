@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.common.EntityType
+import org.neo4j.cypher.internal.ast.CommandResultItem
 import org.neo4j.cypher.internal.ast.ShowColumn
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
@@ -588,6 +589,8 @@ abstract class CommandLogicalPlan(idGen: IdGen) extends LogicalLeafPlan(idGen = 
 
   def defaultColumns: List[ShowColumn]
 
+  def yieldColumns: List[CommandResultItem]
+
   override def usedVariables: Set[LogicalVariable] = Set.empty
 
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): CommandLogicalPlan = this
@@ -597,7 +600,9 @@ abstract class CommandLogicalPlan(idGen: IdGen) extends LogicalLeafPlan(idGen = 
   // Always the first leaf plan, so arguments is always empty
   override def argumentIds: Set[LogicalVariable] = Set.empty
 
-  override def availableSymbols: Set[LogicalVariable] = defaultColumns.map(_.variable).toSet
+  override def availableSymbols: Set[LogicalVariable] =
+    if (yieldColumns.nonEmpty) yieldColumns.map(_.aliasedVariable).toSet
+    else defaultColumns.map(_.variable).toSet
 
   final override val distinctness: Distinctness = NotDistinct
 }
