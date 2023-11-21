@@ -103,10 +103,11 @@ object CachedSimpleMetricsFactory extends MetricsFactory {
 
   override def newQueryGraphCardinalityModel(
     planContext: PlanContext,
-    selectivityCalculator: SelectivityCalculator
+    selectivityCalculator: SelectivityCalculator,
+    labelInference: Boolean
   ): QueryGraphCardinalityModel = {
     val wrapped: QueryGraphCardinalityModel =
-      SimpleMetricsFactory.newQueryGraphCardinalityModel(planContext, selectivityCalculator)
+      SimpleMetricsFactory.newQueryGraphCardinalityModel(planContext, selectivityCalculator, labelInference)
     new CachedQueryGraphCardinalityModel(wrapped)
   }
 }

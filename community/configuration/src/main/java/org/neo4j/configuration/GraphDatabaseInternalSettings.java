@@ -193,6 +193,15 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
 
     @Internal
     @Description(
+            "Allow label inference during cardinality estimation. During cardinality estimation, if the planner can"
+                    + "logically deduce that a node has a label that was not explicitly expressed in the query, the planner"
+                    + "will use this information during cardinality estimation. This is currently only applicable for intermediate"
+                    + "nodes in relationship patterns.")
+    public static final Setting<Boolean> label_inference =
+            newBuilder("internal.cypher.enable_label_inference", BOOL, false).build();
+
+    @Internal
+    @Description(
             "The threshold when a warning is generated if a label scan is done after a load csv where the label has no index")
     public static final Setting<Long> query_non_indexed_label_warning_threshold = newBuilder(
                     "internal.cypher.non_indexed_label_warning_threshold", LONG, 10000L)

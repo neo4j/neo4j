@@ -47,7 +47,8 @@ import scala.util.Try
 final class AssumeIndependenceQueryGraphCardinalityModel(
   planContext: PlanContext,
   selectivityCalculator: SelectivityCalculator,
-  combiner: SelectivityCombiner
+  combiner: SelectivityCombiner,
+  labelInference: Boolean
 ) extends QueryGraphCardinalityModel with NodeConnectionCardinalityModel {
 
   private case class SimpleRelationship(startNode: String, endNode: String, relationshipType: RelTypeId) {
@@ -133,35 +134,39 @@ final class AssumeIndependenceQueryGraphCardinalityModel(
   ): (LabelInfo, Cardinality) = {
     val initialPredicates = QueryGraphPredicates.partitionSelections(labelInfo, queryGraph.selections)
 
-    val allInferredLabels = for {
-      nodeConnection <- queryGraph.nodeConnections.toSeq
-      simpleRelationship <- SimpleRelationship.fromNodeConnection(nodeConnection, context.semanticTable).iterator
-      inferredLabel <- simpleRelationship.inferLabels()
-    } yield inferredLabel
+    val predicates = if (labelInference) {
+      val allInferredLabels = for {
+        nodeConnection <- queryGraph.nodeConnections.toSeq
+        simpleRelationship <- SimpleRelationship.fromNodeConnection(nodeConnection, context.semanticTable).iterator
+        inferredLabel <- simpleRelationship.inferLabels()
+      } yield inferredLabel
 
-    val inferredLabels = allInferredLabels
-      .sequentiallyGroupBy(_.nodeName)
-      .map { case (key, value) =>
-        key -> value.minBy(x => planContext.statistics.nodesWithLabelCardinality(Some(x.labelId)))
-      }.toMap
+      val inferredLabels = allInferredLabels
+        .sequentiallyGroupBy(_.nodeName)
+        .map { case (key, value) =>
+          key -> value.minBy(x => planContext.statistics.nodesWithLabelCardinality(Some(x.labelId)))
+        }.toMap
 
-    inferredLabels.values.foreach { il => context.semanticTable.resolvedLabelNames(il.labelName) = il.labelId }
+      inferredLabels.values.foreach { il => context.semanticTable.resolvedLabelNames(il.labelName) = il.labelId }
 
-    val allLabelInfo = initialPredicates.allLabelInfo.map {
-      case (nodeName, labelNames) if labelNames.isEmpty => // only infer if node has no labels
-        nodeName -> Set(inferredLabels.get(nodeName).map(x => LabelName(x.labelName)(InputPosition.NONE))).flatten
-      case (nodeName, labelNames) =>
-        nodeName -> labelNames
+      val allLabelInfo = initialPredicates.allLabelInfo.map {
+        case (nodeName, labelNames) if labelNames.isEmpty => // only infer if node has no labels
+          nodeName -> Set(inferredLabels.get(nodeName).map(x => LabelName(x.labelName)(InputPosition.NONE))).flatten
+        case (nodeName, labelNames) =>
+          nodeName -> labelNames
+      }
+
+      val localLabelInfo = initialPredicates.localLabelInfo.map {
+        case (nodeName, labelNames) if labelNames.isEmpty => // only infer if node has no labels
+          nodeName -> Set(inferredLabels.get(nodeName).map(x => LabelName(x.labelName)(InputPosition.NONE))).flatten
+        case (nodeName, labelNames) =>
+          nodeName -> labelNames
+      }
+
+      initialPredicates.copy(allLabelInfo = allLabelInfo, localLabelInfo = localLabelInfo)
+    } else {
+      initialPredicates
     }
-
-    val localLabelInfo = initialPredicates.localLabelInfo.map {
-      case (nodeName, labelNames) if labelNames.isEmpty => // only infer if node has no labels
-        nodeName -> Set(inferredLabels.get(nodeName).map(x => LabelName(x.labelName)(InputPosition.NONE))).flatten
-      case (nodeName, labelNames) =>
-        nodeName -> labelNames
-    }
-
-    val predicates = initialPredicates.copy(allLabelInfo = allLabelInfo, localLabelInfo = localLabelInfo)
 
     // Calculate the multiplier for each node connection, accumulating bound nodes and arguments and threading them through
     val (boundNodesAndArguments, nodeConnectionMultipliers) =

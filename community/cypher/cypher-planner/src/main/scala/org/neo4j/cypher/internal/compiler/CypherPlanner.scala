@@ -256,4 +256,11 @@ class CypherPlannerConfiguration(config: CypherConfiguration, cfg: Config, val p
   }
 
   val allowCompositeQueries = config.allowCompositeQueries;
+
+  val labelInference: () => Boolean = {
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+      !GraphDatabaseInternalSettings.label_inference.dynamic()
+    )
+    () => config.labelInference
+  }
 }

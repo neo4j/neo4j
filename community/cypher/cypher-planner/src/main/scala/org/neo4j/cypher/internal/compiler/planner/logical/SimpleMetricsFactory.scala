@@ -38,7 +38,8 @@ object SimpleMetricsFactory extends MetricsFactory {
 
   override def newQueryGraphCardinalityModel(
     planContext: PlanContext,
-    selectivityCalculator: SelectivityCalculator
+    selectivityCalculator: SelectivityCalculator,
+    labelInference: Boolean = false
   ): QueryGraphCardinalityModel =
-    QueryGraphCardinalityModel.default(planContext, selectivityCalculator)
+    QueryGraphCardinalityModel.default(planContext, selectivityCalculator, labelInference)
 }

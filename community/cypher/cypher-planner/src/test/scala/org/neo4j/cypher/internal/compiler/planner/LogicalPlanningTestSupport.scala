@@ -154,9 +154,10 @@ trait LogicalPlanningTestSupport extends AstConstructionTestSupport with Logical
 
     override def newQueryGraphCardinalityModel(
       planContext: PlanContext,
-      selectivityCalculator: SelectivityCalculator
+      selectivityCalculator: SelectivityCalculator,
+      labelInference: Boolean
     ): QueryGraphCardinalityModel = {
-      SimpleMetricsFactory.newQueryGraphCardinalityModel(planContext, selectivityCalculator)
+      SimpleMetricsFactory.newQueryGraphCardinalityModel(planContext, selectivityCalculator, labelInference)
     }
   }
 

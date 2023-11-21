@@ -259,7 +259,8 @@ trait MetricsFactory {
 
   def newQueryGraphCardinalityModel(
     planContext: PlanContext,
-    calculator: SelectivityCalculator
+    calculator: SelectivityCalculator,
+    labelInference: Boolean
   ): QueryGraphCardinalityModel
 
   def newSelectivityCalculator(planContext: PlanContext): SelectivityCalculator =
@@ -268,10 +269,11 @@ trait MetricsFactory {
   def newMetrics(
     planContext: PlanContext,
     expressionEvaluator: ExpressionEvaluator,
-    executionModel: ExecutionModel
+    executionModel: ExecutionModel,
+    labelInference: Boolean = false
   ): Metrics = {
     val selectivityCalculator = newSelectivityCalculator(planContext)
-    val queryGraphCardinalityModel = newQueryGraphCardinalityModel(planContext, selectivityCalculator)
+    val queryGraphCardinalityModel = newQueryGraphCardinalityModel(planContext, selectivityCalculator, labelInference)
     val cardinality = newCardinalityEstimator(queryGraphCardinalityModel, selectivityCalculator, expressionEvaluator)
     Metrics(newCostModel(executionModel), cardinality)
   }

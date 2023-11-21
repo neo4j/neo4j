@@ -267,9 +267,10 @@ trait LogicalPlanningTestSupport2 extends AstConstructionTestSupport with Logica
 
       override def newQueryGraphCardinalityModel(
         planContext: PlanContext,
-        selectivityCalculator: SelectivityCalculator
+        selectivityCalculator: SelectivityCalculator,
+        labelInference: Boolean
       ): QueryGraphCardinalityModel =
-        QueryGraphCardinalityModel.default(planContext, selectivityCalculator)
+        QueryGraphCardinalityModel.default(planContext, selectivityCalculator, labelInference)
     }
 
     def planContext: NotImplementedPlanContext = new NotImplementedPlanContext {
