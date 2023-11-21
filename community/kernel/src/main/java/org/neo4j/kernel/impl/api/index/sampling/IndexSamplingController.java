@@ -30,6 +30,7 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.LongPredicate;
@@ -213,7 +214,7 @@ public class IndexSamplingController {
     private void sampleIndexOnCurrentThread(IndexMap indexMap, long indexId) {
         IndexSamplingJob job = createSamplingJob(indexMap, indexId);
         if (job != null) {
-            job.run();
+            job.run(new AtomicBoolean(false));
         }
     }
 

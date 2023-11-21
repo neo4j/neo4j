@@ -44,6 +44,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -369,7 +370,7 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>>
         try (var reader = accessor.newValueReader(NO_USAGE_TRACKER);
                 IndexSampler sampler = reader.createSampler()) {
             // when
-            IndexSample sample = sampler.sampleIndex(NULL_CONTEXT);
+            IndexSample sample = sampler.sampleIndex(NULL_CONTEXT, new AtomicBoolean());
 
             // then
             assertEquals(updates.length, sample.indexSize());

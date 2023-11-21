@@ -26,6 +26,7 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.OpenOption;
 import java.util.Collection;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -194,7 +195,7 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>> exte
     }
 
     IndexSample buildNonUniqueIndexSample(CursorContext cursorContext) {
-        return new FullScanNonUniqueIndexSampler<>(tree, layout).sample(cursorContext);
+        return new FullScanNonUniqueIndexSampler<>(tree, layout).sample(cursorContext, new AtomicBoolean());
     }
 
     private void markTreeAsFailed(FileFlushEvent flushEvent, CursorContext cursorContext) {

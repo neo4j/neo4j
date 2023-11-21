@@ -30,6 +30,7 @@ import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -83,6 +84,7 @@ import static org.neo4j.values.storable.Values.stringValue;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -225,7 +227,7 @@ class IndexingServiceTest {
         when(storeViewFactory.createTokenIndexStoreView(any())).thenReturn(storeView);
         ValueIndexReader indexReader = mock(ValueIndexReader.class);
         IndexSampler indexSampler = mock(IndexSampler.class);
-        when(indexSampler.sampleIndex(any())).thenReturn(new IndexSample());
+        when(indexSampler.sampleIndex(any(), any())).thenReturn(new IndexSample());
         when(indexReader.createSampler()).thenReturn(indexSampler);
         when(accessor.newValueReader(any())).thenReturn(indexReader);
         when(storageEngine.getOpenOptions()).thenReturn(immutable.empty());
@@ -1641,7 +1643,7 @@ class IndexingServiceTest {
         // given
         var fakeClockScheduler = new FakeClockJobScheduler();
         var indexingService = newIndexingServiceWithMockedDependencies(
-                populator, accessor, withData(), IndexMonitor.NO_MONITOR, fakeClockScheduler);
+                populator, accessor, withData(), IndexMonitor.NO_MONITOR, fakeClockScheduler, life);
         life.start();
         indexingService.createIndexes(AUTH_DISABLED, index, tokenIndex);
         waitForIndexesToComeOnline(indexingService, tokenIndex);
@@ -1654,6 +1656,32 @@ class IndexingServiceTest {
         // then
         verify(indexStatisticsStore, times(1)).addUsageStats(eq(index.getId()), any());
         verify(indexStatisticsStore, times(1)).addUsageStats(eq(tokenIndex.getId()), any());
+    }
+
+    @Test
+    void shouldStopBackgroundSampling() throws Exception {
+        assertTimeoutPreemptively(Duration.ofSeconds(30), () -> {
+            var localLife = new LifeSupport();
+            var indexingService = newIndexingServiceWithMockedDependencies(
+                    populator, accessor, withData(), IndexMonitor.NO_MONITOR, localLife.add(scheduler), localLife);
+            localLife.start();
+            indexingService.createIndexes(AUTH_DISABLED, index);
+            waitForIndexesToComeOnline(indexingService, index);
+
+            IndexSampler neverEndingSampler = (cursorContext, stopped) -> {
+                while (!stopped.get()) {
+                    Thread.yield();
+                }
+                return new IndexSample();
+            };
+            ValueIndexReader indexReader = mock(ValueIndexReader.class);
+            when(indexReader.createSampler()).thenReturn(neverEndingSampler);
+            when(accessor.newValueReader(any())).thenReturn(indexReader);
+
+            indexingService.triggerIndexSampling(backgroundRebuildAll());
+            // shouldn't hang
+            localLife.stop();
+        });
     }
 
     private AtomicReference<BinaryLatch> latchedIndexPopulation() {
@@ -1746,7 +1774,8 @@ class IndexingServiceTest {
             IndexMonitor monitor,
             IndexDescriptor... rules)
             throws IOException {
-        return newIndexingServiceWithMockedDependencies(populator, accessor, data, monitor, life.add(scheduler), rules);
+        return newIndexingServiceWithMockedDependencies(
+                populator, accessor, data, monitor, life.add(scheduler), life, rules);
     }
 
     private static final IndexCapability MOCK_INDEX_CAPABILITY = mock(IndexCapability.class);
@@ -1757,6 +1786,7 @@ class IndexingServiceTest {
             DataUpdates data,
             IndexMonitor monitor,
             JobScheduler scheduler,
+            LifeSupport providedLife,
             IndexDescriptor... rules)
             throws IOException {
         when(indexProvider.getInitialState(any(IndexDescriptor.class), any(CursorContext.class), any()))
@@ -1791,12 +1821,12 @@ class IndexingServiceTest {
                             : descriptor;
                 });
 
-        MockIndexProviderMap providerMap = life.add(new MockIndexProviderMap(indexProvider));
+        MockIndexProviderMap providerMap = providedLife.add(new MockIndexProviderMap(indexProvider));
         var config = Config.defaults();
         var kernelVersionProvider = mock(KernelVersionProvider.class);
         when(kernelVersionProvider.kernelVersion()).thenReturn(KernelVersion.getLatestVersion(config));
 
-        return life.add(IndexingServiceFactory.createIndexingService(
+        return providedLife.add(IndexingServiceFactory.createIndexingService(
                 storageEngine,
                 config,
                 scheduler,

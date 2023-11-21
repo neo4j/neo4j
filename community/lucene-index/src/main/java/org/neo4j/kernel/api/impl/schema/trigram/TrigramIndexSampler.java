@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.schema.trigram;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
@@ -35,7 +36,8 @@ public class TrigramIndexSampler implements IndexSampler {
     }
 
     @Override
-    public IndexSample sampleIndex(CursorContext cursorContext) throws IndexNotFoundKernelException {
+    public IndexSample sampleIndex(CursorContext cursorContext, AtomicBoolean stopped)
+            throws IndexNotFoundKernelException {
         // This way of sampling will not provide a correct estimate for the number of unique value.
         // Getting the number of unique values in a trigram index is really difficult so instead of
         // for example getting an estimate by reading from the store or storing some extra information

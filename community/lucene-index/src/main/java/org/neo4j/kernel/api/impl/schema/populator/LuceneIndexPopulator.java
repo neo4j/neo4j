@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Collection;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 import org.apache.lucene.document.Document;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
@@ -121,7 +122,7 @@ public abstract class LuceneIndexPopulator<INDEX extends DatabaseIndex<?>> imple
             luceneIndex.maybeRefreshBlocking();
             try (var reader = luceneIndex.getIndexReader(NO_USAGE_TRACKER);
                     var sampler = reader.createSampler()) {
-                return sampler.sampleIndex(cursorContext);
+                return sampler.sampleIndex(cursorContext, new AtomicBoolean());
             }
         } catch (IOException | IndexNotFoundKernelException e) {
             throw new RuntimeException(e);

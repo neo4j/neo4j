@@ -24,6 +24,7 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.index.IndexSample;
@@ -35,7 +36,7 @@ class AggregatingIndexSamplerTest {
         List<IndexSampler> samplers = Arrays.asList(createSampler(1), createSampler(2));
         AggregatingIndexSampler partitionedSampler = new AggregatingIndexSampler(samplers);
 
-        IndexSample sample = partitionedSampler.sampleIndex(NULL_CONTEXT);
+        IndexSample sample = partitionedSampler.sampleIndex(NULL_CONTEXT, new AtomicBoolean());
 
         assertEquals(new IndexSample(3, 3, 6), sample);
     }
@@ -52,7 +53,7 @@ class AggregatingIndexSamplerTest {
         }
 
         @Override
-        public IndexSample sampleIndex(CursorContext cursorContext) {
+        public IndexSample sampleIndex(CursorContext cursorContext, AtomicBoolean stopped) {
             return new IndexSample(value, value, value * 2);
         }
     }

@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -28,7 +29,7 @@ import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.NonUniqueIndexSampler;
 
 /**
- * {@link NonUniqueIndexSampler} which performs a full scans of a {@link GBPTree} in {@link #sample(CursorContext)}.
+ * {@link NonUniqueIndexSampler} which performs a full scans of a {@link GBPTree} in {@link NonUniqueIndexSampler#sample(CursorContext, AtomicBoolean)}.
  *
  * @param <KEY> type of keys in tree.
  */
@@ -42,7 +43,7 @@ class FullScanNonUniqueIndexSampler<KEY extends NativeIndexKey<KEY>> extends Non
     }
 
     @Override
-    public IndexSample sample(CursorContext cursorContext) {
+    public IndexSample sample(CursorContext cursorContext, AtomicBoolean stopped) {
         KEY lowest = layout.newKey();
         lowest.initialize(Long.MIN_VALUE);
         lowest.initValuesAsLowest();
@@ -62,6 +63,10 @@ class FullScanNonUniqueIndexSampler<KEY extends NativeIndexKey<KEY>> extends Non
 
                 // Then do the rest
                 while (seek.next()) {
+                    if (stopped.get()) {
+                        return new IndexSample();
+                    }
+
                     if (layout.compareValue(prev, seek.key()) != 0) {
                         uniqueValues++;
                         layout.copyKey(seek.key(), prev);

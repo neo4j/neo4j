@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.impl.schema.sampler;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -68,7 +69,8 @@ public class LuceneIndexSampler implements IndexSampler {
     }
 
     @Override
-    public IndexSample sampleIndex(CursorContext cursorContext) throws IndexNotFoundKernelException {
+    public IndexSample sampleIndex(CursorContext cursorContext, AtomicBoolean stopped)
+            throws IndexNotFoundKernelException {
         try (TaskCoordinator.Task task = newTask()) {
             NonUniqueIndexSampler sampler = new DefaultNonUniqueIndexSampler(indexSamplingConfig.sampleSizeLimit());
             IndexReader indexReader = indexSearcher.getIndexReader();
@@ -89,6 +91,9 @@ public class LuceneIndexSampler implements IndexSampler {
                                 // merged."
                                 sampler.include(termsRef.utf8ToString(), termsEnum.docFreq());
                                 checkCancellation(task);
+                                if (stopped.get()) {
+                                    return new IndexSample();
+                                }
                             }
                         }
                     }

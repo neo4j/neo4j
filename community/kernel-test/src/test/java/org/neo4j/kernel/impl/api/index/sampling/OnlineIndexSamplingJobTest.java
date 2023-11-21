@@ -31,6 +31,7 @@ import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
@@ -69,7 +70,7 @@ class OnlineIndexSamplingJobTest {
         when(indexProxy.getDescriptor()).thenReturn(indexDescriptor);
         when(indexProxy.newValueReader()).thenReturn(indexReader);
         when(indexReader.createSampler()).thenReturn(indexSampler);
-        when(indexSampler.sampleIndex(any())).thenReturn(sample);
+        when(indexSampler.sampleIndex(any(), any())).thenReturn(sample);
     }
 
     @Test
@@ -80,7 +81,7 @@ class OnlineIndexSamplingJobTest {
         when(indexProxy.getState()).thenReturn(ONLINE);
 
         // when
-        job.run();
+        job.run(new AtomicBoolean());
 
         // then
         verify(indexStatisticsStore).setSampleStats(indexId, sample);
@@ -95,7 +96,7 @@ class OnlineIndexSamplingJobTest {
         when(indexProxy.getState()).thenReturn(FAILED);
 
         // when
-        job.run();
+        job.run(new AtomicBoolean());
 
         // then
         verifyNoMoreInteractions(indexStatisticsStore);
@@ -118,9 +119,9 @@ class OnlineIndexSamplingJobTest {
         when(indexProxy.getState()).thenReturn(ONLINE);
 
         // when
-        job.run();
+        job.run(new AtomicBoolean());
 
         verify(indexSampler)
-                .sampleIndex(argThat(context -> context.getCursorTracer().equals(pageCursorTracer)));
+                .sampleIndex(argThat(context -> context.getCursorTracer().equals(pageCursorTracer)), any());
     }
 }

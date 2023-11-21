@@ -32,6 +32,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -62,7 +63,7 @@ class IndexSamplingJobTrackerTest {
 
         IndexSamplingJob job = new IndexSamplingJob() {
             @Override
-            public void run() {
+            public void run(AtomicBoolean stopped) {
                 count.incrementAndGet();
 
                 latch.waitForAllToStart();
@@ -156,7 +157,7 @@ class IndexSamplingJobTrackerTest {
         }
 
         @Override
-        public void run() {
+        public void run(AtomicBoolean stopped) {
             try {
                 latch.await();
                 executed = true;

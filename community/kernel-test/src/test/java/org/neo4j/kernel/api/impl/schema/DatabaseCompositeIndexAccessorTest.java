@@ -304,7 +304,7 @@ public class DatabaseCompositeIndexAccessorTest {
                         while (!droppedLatch.get() && !awaitCompletion.test(dropper.get())) {
                             LockSupport.parkNanos(MILLISECONDS.toNanos(10));
                         }
-                        sampler.sampleIndex(CursorContext.NULL_CONTEXT);
+                        sampler.sampleIndex(CursorContext.NULL_CONTEXT, new AtomicBoolean());
                     } finally {
                         drop.get();
                     }

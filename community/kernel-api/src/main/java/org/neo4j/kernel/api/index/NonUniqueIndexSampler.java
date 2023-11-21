@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.index;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.io.pagecache.context.CursorContext;
 
 /**
@@ -36,7 +37,7 @@ public interface NonUniqueIndexSampler {
 
     void exclude(String value, long decrement);
 
-    IndexSample sample(CursorContext cursorContext);
+    IndexSample sample(CursorContext cursorContext, AtomicBoolean stopped);
 
     IndexSample sample(int numDocs, CursorContext cursorContext);
 

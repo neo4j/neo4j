@@ -49,6 +49,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -353,7 +354,7 @@ public class TextIndexAccessorTest {
             futures.add(threading.execute(
                     nothing -> {
                         try {
-                            indexSampler.sampleIndex(CursorContext.NULL_CONTEXT);
+                            indexSampler.sampleIndex(CursorContext.NULL_CONTEXT, new AtomicBoolean());
                             fail("expected exception");
                         } catch (IndexNotFoundKernelException e) {
                             assertEquals("Index dropped while sampling.", e.getMessage());

@@ -33,6 +33,7 @@ import static org.neo4j.values.storable.RandomValues.typesOfGroup;
 import static org.neo4j.values.storable.ValueGroup.NUMBER;
 
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.index.internal.gbptree.GBPTree;
@@ -72,13 +73,32 @@ public class FullScanNonUniqueIndexSamplerTest extends IndexTestUtil<RangeKey, N
         IndexSample sample;
         try (GBPTree<RangeKey, NullValue> gbpTree = getTree()) {
             FullScanNonUniqueIndexSampler<RangeKey> sampler = new FullScanNonUniqueIndexSampler<>(gbpTree, layout);
-            sample = sampler.sample(NULL_CONTEXT);
+            sample = sampler.sample(NULL_CONTEXT, new AtomicBoolean());
         }
 
         // THEN
         assertEquals(values.length, sample.sampleSize());
         assertEquals(countUniqueValues(values), sample.uniqueValues());
         assertEquals(values.length, sample.indexSize());
+    }
+
+    @Test
+    void shouldStopIfFlagged() throws Exception {
+        // GIVEN
+        Value[] values = generateNumberValues();
+        buildTree(values);
+
+        // WHEN
+        IndexSample sample;
+        try (var gbpTree = getTree()) {
+            var sampler = new FullScanNonUniqueIndexSampler<>(gbpTree, layout);
+            sample = sampler.sample(NULL_CONTEXT, new AtomicBoolean(true));
+        }
+
+        // THEN
+        assertEquals(0, sample.sampleSize());
+        assertEquals(0, sample.uniqueValues());
+        assertEquals(0, sample.indexSize());
     }
 
     @Test
@@ -94,7 +114,7 @@ public class FullScanNonUniqueIndexSamplerTest extends IndexTestUtil<RangeKey, N
 
         try (GBPTree<RangeKey, NullValue> gbpTree = getTree()) {
             FullScanNonUniqueIndexSampler<RangeKey> sampler = new FullScanNonUniqueIndexSampler<>(gbpTree, layout);
-            sampler.sample(cursorContext);
+            sampler.sample(cursorContext, new AtomicBoolean());
         }
 
         PageCursorTracer cursorTracer = cursorContext.getCursorTracer();

@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.index.sampling;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -37,7 +38,7 @@ class IndexSamplingJobTracker {
     private final Condition allJobsFinished = lock.newCondition();
     private final String databaseName;
 
-    private boolean stopped;
+    private AtomicBoolean stopped = new AtomicBoolean(false);
 
     IndexSamplingJobTracker(JobScheduler jobScheduler, String databaseName) {
         this.jobScheduler = jobScheduler;
@@ -48,7 +49,7 @@ class IndexSamplingJobTracker {
     JobHandle scheduleSamplingJob(final IndexSamplingJob samplingJob) {
         lock.lock();
         try {
-            if (stopped) {
+            if (stopped.get()) {
                 return JobHandle.EMPTY;
             }
 
@@ -62,7 +63,7 @@ class IndexSamplingJobTracker {
                     Subject.SYSTEM, databaseName, "Sampling of index '" + samplingJob.indexName() + "'");
             return jobScheduler.schedule(Group.INDEX_SAMPLING, monitoringParams, () -> {
                 try {
-                    samplingJob.run();
+                    samplingJob.run(stopped);
                 } finally {
                     samplingJobCompleted(samplingJob);
                 }
@@ -85,7 +86,7 @@ class IndexSamplingJobTracker {
     void stopAndAwaitAllJobs() {
         lock.lock();
         try {
-            stopped = true;
+            stopped.set(true);
 
             while (!executingJobs.isEmpty()) {
                 allJobsFinished.awaitUninterruptibly();

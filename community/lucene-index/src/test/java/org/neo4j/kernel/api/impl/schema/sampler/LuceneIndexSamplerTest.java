@@ -28,6 +28,7 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -57,8 +58,9 @@ class LuceneIndexSamplerTest {
 
         LuceneIndexSampler luceneIndexSampler = createSampler();
         taskControl.cancel();
-        IndexNotFoundKernelException notFoundKernelException =
-                assertThrows(IndexNotFoundKernelException.class, () -> luceneIndexSampler.sampleIndex(NULL_CONTEXT));
+        IndexNotFoundKernelException notFoundKernelException = assertThrows(
+                IndexNotFoundKernelException.class,
+                () -> luceneIndexSampler.sampleIndex(NULL_CONTEXT, new AtomicBoolean()));
         assertEquals("Index dropped while sampling.", notFoundKernelException.getMessage());
     }
 
@@ -72,7 +74,7 @@ class LuceneIndexSamplerTest {
         indexReader.setElements(new String[4]);
         when(indexSearcher.getIndexReader()).thenReturn(indexReader);
 
-        assertEquals(new IndexSample(4, 2, 4), createSampler().sampleIndex(NULL_CONTEXT));
+        assertEquals(new IndexSample(4, 2, 4), createSampler().sampleIndex(NULL_CONTEXT, new AtomicBoolean()));
     }
 
     private LuceneIndexSampler createSampler() {

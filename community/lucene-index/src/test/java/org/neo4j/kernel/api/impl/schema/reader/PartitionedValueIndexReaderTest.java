@@ -34,6 +34,7 @@ import static org.neo4j.values.storable.Values.stringValue;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 import org.eclipse.collections.api.list.primitive.BooleanList;
 import org.eclipse.collections.api.set.primitive.LongSet;
@@ -197,7 +198,7 @@ class PartitionedValueIndexReaderTest {
         when(indexReader3.createSampler()).thenReturn(new SimpleSampler(3));
 
         IndexSampler sampler = indexReader.createSampler();
-        assertEquals(new IndexSample(6, 6, 6), sampler.sampleIndex(CursorContext.NULL_CONTEXT));
+        assertEquals(new IndexSample(6, 6, 6), sampler.sampleIndex(CursorContext.NULL_CONTEXT, new AtomicBoolean()));
     }
 
     @ParameterizedTest
@@ -277,7 +278,7 @@ class PartitionedValueIndexReaderTest {
         }
 
         @Override
-        public IndexSample sampleIndex(CursorContext cursorContext) {
+        public IndexSample sampleIndex(CursorContext cursorContext, AtomicBoolean stopped) {
             return new IndexSample(sampleValue, sampleValue, sampleValue);
         }
     }

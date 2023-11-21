@@ -77,9 +77,9 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>> implements Val
         // be none in a unique index).
 
         FullScanNonUniqueIndexSampler<KEY> sampler = new FullScanNonUniqueIndexSampler<>(tree, layout);
-        return tracer -> {
+        return (cursorContext, stopped) -> {
             try {
-                return sampler.sample(tracer);
+                return sampler.sample(cursorContext, stopped);
             } catch (UncheckedIOException e) {
                 if (getRootCause(e) instanceof FileIsNotMappedException) {
                     IndexNotFoundKernelException exception =

@@ -29,6 +29,7 @@ import static org.neo4j.kernel.api.impl.schema.LuceneTestTokenNameLookup.SIMPLE_
 import static org.neo4j.kernel.impl.index.schema.IndexUsageTracker.NO_USAGE_TRACKER;
 
 import java.nio.file.Path;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.collection.PrimitiveLongCollections;
@@ -106,7 +107,7 @@ class TextIndexPopulationIT {
                     long[] nodes = PrimitiveLongCollections.asArray(results);
                     assertEquals(affectedNodes, nodes.length);
 
-                    IndexSample sample = indexSampler.sampleIndex(CursorContext.NULL_CONTEXT);
+                    IndexSample sample = indexSampler.sampleIndex(CursorContext.NULL_CONTEXT, new AtomicBoolean());
                     assertEquals(affectedNodes, sample.indexSize());
                     assertEquals(affectedNodes, sample.uniqueValues());
                     assertEquals(affectedNodes, sample.sampleSize());
