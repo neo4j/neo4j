@@ -42,7 +42,8 @@ Feature "GpmSyntaxMixingAcceptance": Scenario "REPEATABLE ELEMENTS with var-leng
 Feature "GpmSyntaxMixingAcceptance": Scenario "DIFFERENT NODES with var-length relationship - OK"
 Feature "GpmSyntaxMixingAcceptance": Scenario "Mixing GPM and non-GPM of unrelated features within a subquery - OK": Example "4"
 Feature "GpmSyntaxMixingAcceptance": Scenario "Mixing GPM and non-GPM of unrelated features within a subquery - OK": Example "10"
-Feature "GpmSyntaxMixingAcceptance": Scenario "Mixing GPM and non-GPM of unrelated features within a subquery - OK": Example "16"
+Feature "GpmSyntaxMixingAcceptance": Scenario "Mixing GPM and non-GPM of unrelated features within a subquery - OK": Example "17"
+Feature "GpmSyntaxMixingAcceptance": Scenario "Mixing GPM and non-GPM of unrelated features within a subquery - OK": Example "26"
 
 // GQL INSERT as a synonym of CREATE is not currently supported, will be solved by https://trello.com/c/XlmtDSpL
 Feature "GpmSyntaxMixingAcceptance": Scenario "INSERT with only & conjunction - OK"
@@ -56,3 +57,4 @@ Feature "GpmSyntaxMixingAcceptance": Scenario "Conflicting syntax in separate st
 Feature "GpmSyntaxMixingAcceptance": Scenario "Conflicting syntax in separate statements in same COUNT sub-query - syntax error": Example "5"
 Feature "GpmSyntaxMixingAcceptance": Scenario "Conflicting syntax in separate statements within a CALL subquery - syntax error": Example "6"
 Feature "GpmSyntaxMixingAcceptance": Scenario "Conflicting syntax in separate statements within a CALL subquery - syntax error": Example "7"
+Feature "GpmSyntaxMixingAcceptance": Scenario "Conflicting syntax in separate statements within a CALL subquery - syntax error": Example "9"

@@ -306,14 +306,19 @@ Feature: GpmSyntaxMixingAcceptance
       | MATCH (:A)-[*1..5]->(m:B)                   | WITH m:!A AS n                              |
       | MATCH (:A)-[*1..5]->(n:B)                   | MATCH (n)-[IS !R]->(:A)                     |
       | MATCH (:A)-[*1..5]->(n:B)                   | SET n IS D                                  |
+      | MATCH (:A)-[*1..5]->(n:B)                   | MERGE (m IS D)                              |
       | MATCH (:A)-[*1..5]->(n:B)                   | CREATE (n)-[:R]->(:A&B)                     |
       | MATCH (:A)-[*1..5]->(n:B)                   | MATCH ANY (n)-->(:B)-->(:C)                 |
       | MATCH (:A)-[*1..5]->(n:B)                   | MATCH REPEATABLE ELEMENTS (n)-->(:B)-->()   |
       | MATCH shortestPath((:A)-->(m:B))            | WITH m:!A AS n                              |
       | MATCH shortestPath((:A)-->(n:B))            | MATCH (n)-[IS !R]->(:A)                     |
       | MATCH shortestPath((:A)-->(n:B))            | SET n IS D                                  |
+      | MATCH shortestPath((:A)-->(n:B))            | MERGE (m IS D)                              |
       | MATCH shortestPath((:A)-->(n:B))            | CREATE (n)-[:R]->(:A&B)                     |
       | MATCH shortestPath((:A)-->(n:B))            | MATCH (n)-->+(:B)                           |
+      | MATCH (n)-->+(:B)                           | MERGE (m:B:C)                               |
+      | MATCH p = SHORTEST 1 (:A)-->+(n:B)          | MERGE (m:B:C)                               |
+      | MATCH REPEATABLE ELEMENTS (:A)-->(:B)-->(n) | MERGE (m:B:C)                               |
 
   Scenario: Mixing & and : in label predicates in same statement - syntax error
     When executing query:
@@ -383,6 +388,11 @@ Feature: GpmSyntaxMixingAcceptance
       | MATCH (n:A)--{,5}(:B)                       | MATCH (n)-[*0..5]-(:C)                      |
       | MATCH p = shortestPath((n:A)-[:R*]-(m:!A))  | MATCH q = SHORTEST 1 (n)-[:!S]-+(:C)        |
       | MATCH p = shortestPath((n:A)-[:R*]-(m:!A))  | MATCH REPEATABLE ELEMENTS (n)-[:!S]-+(m:C)  |
+      | CREATE (n:A&B)                              | SET n:C:D                                   |
+      | MERGE (n IS A&B)                            | CREATE (m:C:D)                              |
+      | MATCH (n:A&B)                               | MERGE (n:B:C)                               |
+      | MATCH (n IS A)                              | MERGE (n:B:C)                               |
+      | MATCH (:A)-[:!R]->(n)                       | MERGE (n:B:C)                               |
 
   Scenario: Mixing QPP and var-length relationship quantifiers in pattern expressions in same statement - syntax error
     When executing query:
