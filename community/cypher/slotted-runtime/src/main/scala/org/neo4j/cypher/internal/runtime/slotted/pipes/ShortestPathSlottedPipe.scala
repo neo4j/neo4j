@@ -87,7 +87,8 @@ case class ShortestPathSlottedPipe(
       nodeCursor,
       traversalCursor,
       memoryTracker,
-      needOnlyOnePath
+      needOnlyOnePath,
+      true // TODO
     )
     val pathPredicate = pathPredicates.foldLeft(True(): commands.predicates.Predicate)(_.andWith(_))
     val output = input.flatMap {

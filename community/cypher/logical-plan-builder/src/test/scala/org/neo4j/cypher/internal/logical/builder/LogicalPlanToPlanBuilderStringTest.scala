@@ -53,7 +53,6 @@ import org.neo4j.cypher.internal.logical.plans.Descending
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandInto
-import org.neo4j.cypher.internal.logical.plans.FindShortestPaths.DisallowSameNode
 import org.neo4j.cypher.internal.logical.plans.FindShortestPaths.SkipSameNode
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending

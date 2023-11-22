@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
+import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.frontend.phases.ResolvedCall
 import org.neo4j.cypher.internal.ir.CreatePattern
 import org.neo4j.cypher.internal.ir.RemoveLabelPattern
@@ -81,8 +82,7 @@ import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
 import org.neo4j.cypher.internal.logical.plans.FindShortestPaths
-import org.neo4j.cypher.internal.logical.plans.FindShortestPaths.DisallowSameNode
-import org.neo4j.cypher.internal.logical.plans.FindShortestPaths.SkipSameNode
+import org.neo4j.cypher.internal.logical.plans.FindShortestPaths.AllowSameNode
 import org.neo4j.cypher.internal.logical.plans.Foreach
 import org.neo4j.cypher.internal.logical.plans.ForeachApply
 import org.neo4j.cypher.internal.logical.plans.InjectCompilationError
@@ -1231,11 +1231,9 @@ case class InterpretedPipeMapper(
           case None => (false, Some(1)) // non-varlength case
           case _    => (false, None)
         }
-        // TODO
-        val disallowSameNode = sameNodeMode match {
-          case FindShortestPaths.DisallowSameNode => false
-          case FindShortestPaths.SkipSameNode     => true
-          case FindShortestPaths.AllowSameNode    => ???
+
+        if (!allowZeroLength && sameNodeMode == AllowSameNode && rel.direction == SemanticDirection.BOTH) {
+          throw new IllegalArgumentException("We don't allow -[*1..]- for AllowSameNode")
         }
 
         val pathName = shortestPathPattern.name.map(_.name).getOrElse(anonymousVariableNameGenerator.nextName)
@@ -1250,7 +1248,7 @@ case class InterpretedPipeMapper(
           filteringStep,
           commandPathPredicates,
           single,
-          disallowSameNode,
+          sameNodeMode,
           allowZeroLength,
           maxDepth,
           single && !withFallBack

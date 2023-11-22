@@ -70,6 +70,7 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.Identifiable
 import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.exceptions.InternalException
+import org.neo4j.exceptions.ShortestPathCommonEndNodesForbiddenException
 import org.neo4j.graphdb.QueryStatistics
 import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.util.Preconditions
@@ -1894,11 +1895,38 @@ case class FindShortestPaths(
 }
 
 object FindShortestPaths {
-  sealed trait SameNodeMode
 
-  case object DisallowSameNode extends SameNodeMode
-  case object SkipSameNode extends SameNodeMode
-  case object AllowSameNode extends SameNodeMode
+  sealed trait SameNodeMode {
+
+    /**
+     * Return `true`, if the algorithm should return an empty result.
+     * Return `false`, if the algorithm should attempt to find the shortest paths between source and target.
+     * Throw if it is forbidden to have same nodes and `sourceId == targetId`.
+     */
+    def shouldReturnEmptyResult(sourceId: Long, targetId: Long): Boolean
+  }
+
+  case object DisallowSameNode extends SameNodeMode {
+
+    override def shouldReturnEmptyResult(sourceId: Long, targetId: Long): Boolean =
+      if (sourceId == targetId) {
+        throw new ShortestPathCommonEndNodesForbiddenException
+      } else {
+        false
+      }
+  }
+
+  case object SkipSameNode extends SameNodeMode {
+
+    override def shouldReturnEmptyResult(sourceId: Long, targetId: Long): Boolean =
+      sourceId == targetId
+  }
+
+  case object AllowSameNode extends SameNodeMode {
+
+    override def shouldReturnEmptyResult(sourceId: Long, targetId: Long): Boolean =
+      false
+  }
 }
 
 object StatefulShortestPath {

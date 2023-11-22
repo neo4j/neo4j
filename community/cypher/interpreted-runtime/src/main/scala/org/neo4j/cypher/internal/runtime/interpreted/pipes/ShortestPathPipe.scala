@@ -20,6 +20,8 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.logical.plans.FindShortestPaths.DisallowSameNode
+import org.neo4j.cypher.internal.logical.plans.FindShortestPaths.SameNodeMode
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.IsNoValue
@@ -44,7 +46,7 @@ case class ShortestPathPipe(
   filteringStep: VarLengthPredicate,
   pathPredicates: Seq[commands.predicates.Predicate],
   returnOneShortestPathOnly: Boolean,
-  disallowSameNode: Boolean,
+  sameNodeMode: SameNodeMode,
   allowZeroLength: Boolean,
   maxDepth: Option[Int],
   needOnlyOnePath: Boolean
@@ -56,7 +58,7 @@ case class ShortestPathPipe(
     input: ClosingIterator[CypherRow],
     state: QueryState
   ): ClosingIterator[CypherRow] = {
-    if (disallowSameNode && sourceNodeName == targetNodeName) {
+    if (sameNodeMode == DisallowSameNode && sourceNodeName == targetNodeName) {
       throw new ShortestPathCommonEndNodesForbiddenException
     } else {
 
@@ -77,7 +79,8 @@ case class ShortestPathPipe(
         nodeCursor,
         traversalCursor,
         memoryTracker,
-        needOnlyOnePath
+        needOnlyOnePath,
+        allowZeroLength
       )
       val pathPredicate = pathPredicates.foldLeft(True(): commands.predicates.Predicate)(_.andWith(_))
       val output = input.flatMap {
@@ -89,12 +92,8 @@ case class ShortestPathPipe(
                 if (
                   filteringStep.filterNode(row, state)(sourceNode) && filteringStep.filterNode(row, state)(targetNode)
                 ) {
-                  if (sourceNode == targetNode && !allowZeroLength) {
-                    if (disallowSameNode) {
-                      throw new ShortestPathCommonEndNodesForbiddenException
-                    } else {
-                      ClosingIterator.empty
-                    }
+                  if (sameNodeMode.shouldReturnEmptyResult(sourceNode.id(), targetNode.id())) {
+                    ClosingIterator.empty
                   } else {
 
                     val (nodePredicate, relationshipPredicate) =

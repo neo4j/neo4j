@@ -91,7 +91,8 @@ case class ShortestPathExpression(
       memoryTracker,
       LongPredicates.alwaysTrue(),
       (_: RelationshipTraversalCursor) => true,
-      shortestPathPattern.single
+      shortestPathPattern.single,
+      true
     )
     val shortestPathIterator = biDirectionalBFS.shortestPathIterator()
 

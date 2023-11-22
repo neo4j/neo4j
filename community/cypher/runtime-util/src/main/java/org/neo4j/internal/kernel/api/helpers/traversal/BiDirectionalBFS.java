@@ -83,6 +83,8 @@ public class BiDirectionalBFS implements AutoCloseable {
     private final BFS targetBFS;
     private State algorithmState;
 
+    private final boolean allowZeroLength;
+
     private enum State {
         NOT_INITIALIZED_WITH_NODES,
         CAN_SEARCH_FOR_INTERSECTION,
@@ -124,8 +126,10 @@ public class BiDirectionalBFS implements AutoCloseable {
             MemoryTracker memoryTracker,
             LongPredicate nodeFilter,
             Predicate<RelationshipTraversalCursor> relFilter,
-            boolean needOnlyOnePath) {
+            boolean needOnlyOnePath,
+            boolean allowZeroLength) {
         this.maxDepth = maxDepth;
+        this.allowZeroLength = allowZeroLength;
 
         if (needOnlyOnePath) {
             this.sourceBFS = new SinglePathBFS(
@@ -212,7 +216,8 @@ public class BiDirectionalBFS implements AutoCloseable {
             NodeCursor nodeCursor,
             RelationshipTraversalCursor relCursor,
             MemoryTracker memoryTracker,
-            Boolean needOnlyOnePath) {
+            Boolean needOnlyOnePath,
+            boolean allowZeroLength) {
         this(
                 StatementConstants.NO_SUCH_NODE,
                 StatementConstants.NO_SUCH_NODE,
@@ -226,7 +231,8 @@ public class BiDirectionalBFS implements AutoCloseable {
                 memoryTracker,
                 null,
                 null,
-                needOnlyOnePath);
+                needOnlyOnePath,
+                allowZeroLength);
         algorithmState = State.NOT_INITIALIZED_WITH_NODES;
     }
 
@@ -255,7 +261,8 @@ public class BiDirectionalBFS implements AutoCloseable {
             NodeCursor nodeCursor,
             RelationshipTraversalCursor relCursor,
             MemoryTracker memoryTracker,
-            boolean needOnlyOnePath) {
+            boolean needOnlyOnePath,
+            boolean allowZeroLength) {
         return new BiDirectionalBFS(
                 types,
                 direction,
@@ -265,7 +272,8 @@ public class BiDirectionalBFS implements AutoCloseable {
                 nodeCursor,
                 relCursor,
                 memoryTracker,
-                needOnlyOnePath);
+                needOnlyOnePath,
+                allowZeroLength);
     }
 
     @CalledFromGeneratedCode
@@ -278,7 +286,16 @@ public class BiDirectionalBFS implements AutoCloseable {
             MemoryTracker memoryTracker,
             boolean needOnlyOnePath) {
         return new BiDirectionalBFS(
-                types, direction, maxDepth, stopAsapAtIntersect, read, null, null, memoryTracker, needOnlyOnePath);
+                types,
+                direction,
+                maxDepth,
+                stopAsapAtIntersect,
+                read,
+                null,
+                null,
+                memoryTracker,
+                needOnlyOnePath,
+                false /* TODO */);
     }
 
     /**
@@ -319,7 +336,7 @@ public class BiDirectionalBFS implements AutoCloseable {
     public Iterator<PathReference> shortestPathIterator() {
         assert (algorithmState == State.CAN_SEARCH_FOR_INTERSECTION);
 
-        if (sourceBFS.startNodeId == targetBFS.startNodeId) {
+        if (sourceBFS.startNodeId == targetBFS.startNodeId && allowZeroLength) {
             return new PathTracingIterator(
                     PrimitiveLongCollections.single(sourceBFS.startNodeId),
                     sourceBFS.currentDepth,
