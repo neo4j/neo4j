@@ -154,6 +154,7 @@ import org.neo4j.cypher.internal.expressions.functions.Id
 import org.neo4j.cypher.internal.expressions.functions.Length
 import org.neo4j.cypher.internal.expressions.functions.Max
 import org.neo4j.cypher.internal.expressions.functions.Min
+import org.neo4j.cypher.internal.expressions.functions.MultiPercentileDisc
 import org.neo4j.cypher.internal.expressions.functions.Nodes
 import org.neo4j.cypher.internal.expressions.functions.Relationships
 import org.neo4j.cypher.internal.expressions.functions.Size
@@ -304,6 +305,10 @@ trait AstConstructionTestSupport {
   def listOfInt(values: Long*): ListLiteral =
     ListLiteral(values.toSeq.map(literalInt(_)))(pos)
 
+  def listOfFloat(values: Double*): ListLiteral = {
+    ListLiteral(values.toSeq.map(literalFloat(_)))(pos)
+  }
+
   def listOfString(stringValues: String*): ListLiteral =
     ListLiteral(stringValues.toSeq.map(literalString))(pos)
 
@@ -387,6 +392,18 @@ trait AstConstructionTestSupport {
 
   def length(expression: Expression): FunctionInvocation =
     FunctionInvocation(expression, FunctionName(Length.name)(pos))
+
+  def multiPercentileDisc(
+    input: Expression,
+    percentiles: Seq[Double],
+    propertyKeys: Seq[String]
+  ): FunctionInvocation = {
+    FunctionInvocation(
+      FunctionName(MultiPercentileDisc.name)(InputPosition.NONE),
+      distinct = false,
+      IndexedSeq(input, listOfFloat(percentiles: _*), listOfString(propertyKeys: _*))
+    )(InputPosition.NONE)
+  }
 
   def varLengthPathExpression(
     start: LogicalVariable,
