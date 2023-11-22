@@ -494,7 +494,7 @@
   },
   {
     "name": "db.index.fulltext.queryNodes",
-    "description": "Query the given full-text index. Returns the matching nodes, and their Lucene query score, ordered by score. Valid keys for the options map are: 'skip' to skip the top N results; 'limit' to limit the number of results returned; 'analyzer' to use the specified analyzer as search analyzer for this query.",
+    "description": "Query the given full-text index. Returns the matching nodes, and their Lucene query score, ordered by score. Valid keys for the options map are: 'skip' to skip the top N results; 'limit' to limit the number of results returned; 'analyzer' to use the specified analyzer as a search analyzer for this query.",
     "mode": "READ",
     "worksOnSystem": true,
     "signature": "db.index.fulltext.queryNodes(indexName :: STRING, queryString :: STRING, options = {} :: MAP) :: (node :: NODE, score :: FLOAT)",
@@ -1649,7 +1649,7 @@
   },
   {
     "name": "dbms.cluster.routing.getRoutingTable",
-    "description": "Returns the advertised bolt capable endpoints for a given database, divided by each endpoint's capabilities. For example an endpoint may serve read queries, write queries and/or future getRoutingTable requests.",
+    "description": "Returns the advertised bolt capable endpoints for a given database, divided by each endpoint's capabilities. For example, an endpoint may serve read queries, write queries, and/or future `getRoutingTable` requests.",
     "mode": "DBMS",
     "worksOnSystem": true,
     "signature": "dbms.cluster.routing.getRoutingTable(context :: MAP, database = null :: STRING) :: (ttl :: INTEGER, servers :: LIST<MAP>)",
@@ -1716,7 +1716,7 @@
         "isDeprecated": false
       }
     ],
-    "description": "The toggle can pause or resume the secondary replication process",
+    "description": "The toggle can pause or resume the secondary replication process.",
     "rolesExecution": [
       "admin"
     ],
@@ -2021,7 +2021,7 @@
   },
   {
     "name": "dbms.listCapabilities",
-    "description": "List capabilities",
+    "description": "List capabilities.",
     "mode": "DBMS",
     "worksOnSystem": true,
     "signature": "dbms.listCapabilities() :: (name :: STRING, description :: STRING, value :: ANY)",
@@ -2062,7 +2062,7 @@
   },
   {
     "name": "dbms.listConfig",
-    "description": "List the currently active config of Neo4j.",
+    "description": "List the currently active configuration settings of Neo4j.",
     "mode": "DBMS",
     "worksOnSystem": true,
     "signature": "dbms.listConfig(searchString =  :: STRING) :: (name :: STRING, description :: STRING, value :: STRING, dynamic :: BOOLEAN, defaultValue :: STRING, startupValue :: STRING, explicitlySet :: BOOLEAN, validValues :: STRING)",
@@ -2288,7 +2288,7 @@
   },
   {
     "name": "dbms.quarantineDatabase",
-    "description": "Place a database into quarantine or remove from it.",
+    "description": "Place a database into quarantine or remove it from it.",
     "mode": "DBMS",
     "worksOnSystem": true,
     "signature": "dbms.quarantineDatabase(databaseName :: STRING, setStatus :: BOOLEAN, reason = No reason given :: STRING) :: (databaseName :: STRING, quarantined :: BOOLEAN, result :: STRING)",
@@ -2348,7 +2348,7 @@
   },
   {
     "name": "dbms.queryJmx",
-    "description": "Query JMX management data by domain and name. For instance, \"*:*\"",
+    "description": "Query JMX management data by domain and name. For instance, use `*:*` to find all JMX beans.",
     "mode": "DBMS",
     "worksOnSystem": true,
     "signature": "dbms.queryJmx(query :: STRING) :: (name :: STRING, description :: STRING, attributes :: MAP)",
@@ -2396,7 +2396,7 @@
   },
   {
     "name": "dbms.routing.getRoutingTable",
-    "description": "Returns the advertised bolt capable endpoints for a given database, divided by each endpoint's capabilities. For example an endpoint may serve read queries, write queries and/or future getRoutingTable requests.",
+    "description": "Returns the advertised bolt capable endpoints for a given database, divided by each endpoint's capabilities. For example, an endpoint may serve read queries, write queries, and/or future `getRoutingTable` requests.",
     "mode": "DBMS",
     "worksOnSystem": true,
     "signature": "dbms.routing.getRoutingTable(context :: MAP, database = null :: STRING) :: (ttl :: INTEGER, servers :: LIST<MAP>)",
@@ -2670,7 +2670,7 @@
   },
   {
     "name": "dbms.setConfigValue",
-    "description": "Updates a given setting value. Passing an empty value will result in removing the configured value and falling back to the default value. Changes will not persist and will be lost if the server is restarted.",
+    "description": "Update a given setting value. Passing an empty value results in removing the configured value and falling back to the default value. Changes do not persist and are lost if the server is restarted. In a clustered environment, `dbms.setConfigValue` affects only the cluster member it is run against.",
     "mode": "DBMS",
     "worksOnSystem": true,
     "signature": "dbms.setConfigValue(setting :: STRING, value :: STRING)",
@@ -2715,7 +2715,7 @@
     ],
     "worksOnSystem": true,
     "returnDescription": [],
-    "description": "With this method you can set the allocator, which is responsible to select servers for hosting databases.",
+    "description": "With this method you can set the allocator that is responsible for selecting servers for hosting databases.",
     "rolesExecution": [
       "admin"
     ],

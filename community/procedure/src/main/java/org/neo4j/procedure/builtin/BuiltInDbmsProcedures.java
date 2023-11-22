@@ -136,7 +136,7 @@ public class BuiltInDbmsProcedures {
 
     @Admin
     @SystemProcedure
-    @Description("List the currently active config of Neo4j.")
+    @Description("List the currently active configuration settings of Neo4j.")
     @Procedure(name = "dbms.listConfig", mode = DBMS)
     public Stream<ConfigResult> listConfig(@Name(value = "searchString", defaultValue = "") String searchString) {
         String lowerCasedSearchString = searchString.toLowerCase();
@@ -367,7 +367,7 @@ public class BuiltInDbmsProcedures {
     }
 
     @SystemProcedure
-    @Description("List capabilities")
+    @Description("List capabilities.")
     @Procedure(name = "dbms.listCapabilities", mode = DBMS)
     public Stream<CapabilityResult> listCapabilities() {
         var service = resolver.resolveDependency(CapabilitiesService.class);

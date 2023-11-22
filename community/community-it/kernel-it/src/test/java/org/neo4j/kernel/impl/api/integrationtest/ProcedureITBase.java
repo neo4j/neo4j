@@ -53,7 +53,7 @@ public interface ProcedureITBase {
                 proc(
                         "dbms.listConfig",
                         "(searchString =  :: STRING) :: (name :: STRING, description :: STRING, value :: STRING, dynamic :: BOOLEAN)",
-                        "List the currently active config of Neo4j.",
+                        "List the currently active configuration settings of Neo4j.",
                         stringArray("admin"),
                         "DBMS"),
                 proc(
@@ -132,8 +132,8 @@ public interface ProcedureITBase {
                         "DBMS"),
                 proc(
                         "dbms.queryJmx",
-                        "(query :: STRING) :: (name :: STRING, " + "description :: STRING, attributes :: MAP)",
-                        "Query JMX management data by domain and name." + " For instance, \"*:*\"",
+                        "(query :: STRING) :: (name :: STRING, description :: STRING, attributes :: MAP)",
+                        "Query JMX management data by domain and name. For instance, use `*:*` to find all JMX beans.",
                         stringArray("reader", "editor", "publisher", "architect", "admin"),
                         "DBMS"),
                 proc(
@@ -237,13 +237,17 @@ public interface ProcedureITBase {
                 proc(
                         "dbms.routing.getRoutingTable",
                         "(context :: MAP, database = null :: STRING) :: (ttl :: INTEGER, servers :: LIST<MAP>)",
-                        "Returns endpoints of this instance.",
+                        "Returns the advertised bolt capable endpoints for a given database, "
+                                + "divided by each endpoint's capabilities. "
+                                + "For example, an endpoint may serve read queries, write queries, and/or future `getRoutingTable` requests. ",
                         stringArray("reader", "editor", "publisher", "architect", "admin"),
                         "DBMS"),
                 proc(
                         "dbms.cluster.routing.getRoutingTable",
                         "(context :: MAP, database = null :: STRING) :: (ttl :: INTEGER, servers :: LIST<MAP>)",
-                        "Returns endpoints of this instance.",
+                        "Returns the advertised bolt capable endpoints for a given database, "
+                                + "divided by each endpoint's capabilities. "
+                                + "For example, an endpoint may serve read queries, write queries, and/or future `getRoutingTable` requests. ",
                         stringArray("reader", "editor", "publisher", "architect", "admin"),
                         "DBMS"),
                 proc(
@@ -302,7 +306,7 @@ public interface ProcedureITBase {
                 proc(
                         "dbms.listCapabilities",
                         "() :: (name :: STRING, description :: STRING, value :: ANY)",
-                        "List capabilities",
+                        "List capabilities.",
                         stringArray("reader", "editor", "publisher", "architect", "admin"),
                         "DBMS"));
     }
@@ -334,8 +338,9 @@ public interface ProcedureITBase {
                 proc(
                         "dbms.setConfigValue",
                         "(setting :: STRING, value :: STRING)",
-                        "Updates a given setting value. Passing an empty value will result in removing the configured value and falling back to the "
-                                + "default value. Changes will not persist and will be lost if the server is restarted.",
+                        "Update a given setting value. Passing an empty value results in removing the configured value and falling back to the "
+                                + "default value. Changes do not persist and are lost if the server is restarted. "
+                                + "In a clustered environment, `dbms.setConfigValue` affects only the cluster member it is run against.",
                         stringArray("admin"),
                         "DBMS"),
                 proc(
@@ -380,7 +385,7 @@ public interface ProcedureITBase {
                         "dbms.quarantineDatabase",
                         "(databaseName :: STRING, setStatus :: BOOLEAN, reason = No reason given :: STRING) :: "
                                 + "(databaseName :: STRING, quarantined :: BOOLEAN, result :: STRING)",
-                        "Place a database into quarantine or remove from it.",
+                        "Place a database into quarantine or remove it from it.",
                         stringArray("admin"),
                         "DBMS")));
         return result;

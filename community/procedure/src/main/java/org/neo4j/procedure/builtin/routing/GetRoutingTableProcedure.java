@@ -49,7 +49,7 @@ import org.neo4j.values.virtual.MapValue;
 public final class GetRoutingTableProcedure implements CallableProcedure {
     private static final String NAME = "getRoutingTable";
     private static final String DESCRIPTION =
-            "Returns the advertised bolt capable endpoints for a given database, divided by each endpoint's capabilities. For example an endpoint may serve read queries, write queries and/or future getRoutingTable requests.";
+            "Returns the advertised bolt capable endpoints for a given database, divided by each endpoint's capabilities. For example, an endpoint may serve read queries, write queries, and/or future `getRoutingTable` requests.";
 
     private final RoutingService routingService;
     private final ProcedureSignature signature;

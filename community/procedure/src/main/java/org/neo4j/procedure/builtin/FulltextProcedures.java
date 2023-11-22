@@ -108,7 +108,7 @@ public class FulltextProcedures {
     @Description(
             "Query the given full-text index. Returns the matching nodes, and their Lucene query score, ordered by score. "
                     + "Valid keys for the options map are: 'skip' to skip the top N results; 'limit' to limit the number of results returned; "
-                    + "'analyzer' to use the specified analyzer as search analyzer for this query.")
+                    + "'analyzer' to use the specified analyzer as a search analyzer for this query.")
     @Procedure(name = "db.index.fulltext.queryNodes", mode = READ)
     public Stream<NodeOutput> queryFulltextForNodes(
             @Name("indexName") String name,
