@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Asc
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Desc
 import org.neo4j.cypher.internal.ir.ordering.DefaultProvidedOrderFactory
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
+import org.neo4j.cypher.internal.ir.ordering.NoProvidedOrder
 import org.neo4j.cypher.internal.ir.ordering.OrderCandidate
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrderFactory
@@ -174,16 +175,20 @@ object ResultOrdering {
             x
         }
 
+      def toResult(providedOrder: ProvidedOrder, indexOrder: IndexOrder) = providedOrder match {
+        case NoProvidedOrder => (ProvidedOrder.empty, IndexOrderNone)
+        case providedOrder   => (providedOrder, indexOrder)
+      }
       val orderAccPerCandidate: Seq[Acc] = candidates.filter(_.nonEmpty).map(possibleOrdersForCandidate)
       val maybeResult = orderAccPerCandidate.collectFirst {
         case IndexOrderDecided(indexOrder, columns) if columns.nonEmpty =>
-          (providedOrderFactory.providedOrder(columns, ProvidedOrder.Self), indexOrder)
+          toResult(providedOrderFactory.providedOrder(columns, ProvidedOrder.Self), indexOrder)
         case OrderNotYetDecided(columns) if columns.nonEmpty =>
           val indexOrder = indexOrderCapability match {
             case IndexOrderCapability.NONE => IndexOrderNone
             case IndexOrderCapability.BOTH => IndexOrderAscending
           }
-          (providedOrderFactory.providedOrder(columns, ProvidedOrder.Self), indexOrder)
+          toResult(providedOrderFactory.providedOrder(columns, ProvidedOrder.Self), indexOrder)
       }
 
       // If the required order cannot be satisfied, return empty
