@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.expressions.functions.PercentileDisc
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandInto
@@ -74,6 +75,68 @@ class GroupPercentileFunctionsTest extends CypherFunSuite with LogicalPlanningTe
       .build()
 
     rewrite(before, names = Seq(mapName)) should equal(after)
+  }
+
+  test("should only rewrite percentiles that work on same variable") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .aggregation(
+        Seq.empty,
+        Seq("percentileDisc(n1, 0.5) AS p1", "percentileDisc(n1, 0.6) AS p2", "percentileDisc(n2, 0.7) AS p3")
+      )
+      .projection("from.n1 AS n1", "from.n2 AS n2")
+      .allNodeScan("from")
+      .build()
+
+    val mapName = "   map0"
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .projection(s"`$mapName`.p1 AS p1", s"`$mapName`.p2 AS p2")
+      .aggregation(
+        Map.empty[String, Expression],
+        Map(
+          mapName -> multiPercentileDisc(varFor("n1"), Seq(0.5, 0.6), Seq("p1", "p2")),
+          "p3" -> function(PercentileDisc.name, varFor("n2"), literalFloat(0.7))
+        )
+      )
+      .projection("from.n1 AS n1", "from.n2 AS n2")
+      .allNodeScan("from")
+      .build()
+
+    rewrite(before, names = Seq(mapName)) should equal(after)
+  }
+
+  test("should rewrite when there are multiple groups") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .aggregation(
+        Seq.empty,
+        Seq(
+          "percentileDisc(n1, 0.5) AS p1",
+          "percentileDisc(n1, 0.6) AS p2",
+          "percentileDisc(n2, 0.7) AS p3",
+          "percentileDisc(n2, 0.8) AS p4"
+        )
+      )
+      .projection("from.n1 AS n1", "from.n2 AS n2")
+      .allNodeScan("from")
+      .build()
+
+    val map0 = "   map0"
+    val map1 = "   map1"
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .projection(s"`$map0`.p1 AS p1", s"`$map0`.p2 AS p2", s"`$map1`.p3 AS p3", s"`$map1`.p4 AS p4")
+      .aggregation(
+        Map.empty[String, Expression],
+        Map(
+          map0 -> multiPercentileDisc(varFor("n1"), Seq(0.5, 0.6), Seq("p1", "p2")),
+          map1 -> multiPercentileDisc(varFor("n2"), Seq(0.7, 0.8), Seq("p3", "p4"))
+        )
+      )
+      .projection("from.n1 AS n1", "from.n2 AS n2")
+      .allNodeScan("from")
+      .build()
+
+    rewrite(before, names = Seq(map1, map0)) should equal(after)
   }
 
   private def assertNotRewritten(p: LogicalPlan): Unit = {
