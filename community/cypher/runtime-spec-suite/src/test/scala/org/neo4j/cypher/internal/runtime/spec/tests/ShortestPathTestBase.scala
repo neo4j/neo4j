@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
+import org.neo4j.cypher.internal.logical.plans.FindShortestPaths.SkipSameNode
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
@@ -485,7 +486,7 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
         "(a)-[rs*1..]-(b)",
         pathName = Some("p"),
         all = true,
-        disallowSameNode = false
+        sameNodeMode = SkipSameNode
       )
       .|.argument("a", "b")
       .filter("elementId(a) < elementId(b)")
@@ -545,7 +546,7 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
         all = true,
         nodePredicates = Seq(),
         relationshipPredicates = Seq(),
-        disallowSameNode = false
+        sameNodeMode = SkipSameNode
       )
       .|.argument("a", "b")
       .filter("elementId(a) < elementId(b)")
@@ -598,7 +599,7 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
         all = true,
         nodePredicates = Seq(Predicate("n", "NOT '0,0' IN labels(n)")),
         relationshipPredicates = Seq(),
-        disallowSameNode = false
+        sameNodeMode = SkipSameNode
       )
       .|.argument("a", "b")
       .filter("elementId(a) < elementId(b)")

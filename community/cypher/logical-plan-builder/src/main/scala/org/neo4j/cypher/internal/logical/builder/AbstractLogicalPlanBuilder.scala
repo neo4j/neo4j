@@ -129,6 +129,8 @@ import org.neo4j.cypher.internal.logical.plans.Expand.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpansionMode
 import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
 import org.neo4j.cypher.internal.logical.plans.FindShortestPaths
+import org.neo4j.cypher.internal.logical.plans.FindShortestPaths.DisallowSameNode
+import org.neo4j.cypher.internal.logical.plans.FindShortestPaths.SameNodeMode
 import org.neo4j.cypher.internal.logical.plans.Foreach
 import org.neo4j.cypher.internal.logical.plans.ForeachApply
 import org.neo4j.cypher.internal.logical.plans.GetValueFromIndexBehavior
@@ -511,7 +513,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     relationshipPredicates: Seq[Predicate] = Seq.empty,
     pathPredicates: Seq[String] = Seq.empty,
     withFallback: Boolean = false,
-    disallowSameNode: Boolean = true
+    sameNodeMode: SameNodeMode = DisallowSameNode
   ): IMPL =
     shortestPathSolver(
       pattern,
@@ -521,7 +523,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       relationshipPredicates.map(_.asVariablePredicate),
       pathPredicates.map(parseExpression),
       withFallback,
-      disallowSameNode
+      sameNodeMode
     )
 
   def shortestPathExpr(
@@ -532,7 +534,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     relationshipPredicates: Seq[VariablePredicate] = Seq.empty,
     pathPredicates: Seq[Expression] = Seq.empty,
     withFallback: Boolean = false,
-    disallowSameNode: Boolean = true
+    sameNodeMode: SameNodeMode = DisallowSameNode
   ): IMPL =
     shortestPathSolver(
       pattern,
@@ -542,7 +544,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       relationshipPredicates,
       pathPredicates,
       withFallback,
-      disallowSameNode
+      sameNodeMode
     )
 
   def statefulShortestPathExpr(
@@ -634,7 +636,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     relationshipPredicates: Seq[VariablePredicate],
     pathPredicates: Seq[Expression],
     withFallback: Boolean,
-    disallowSameNode: Boolean
+    sameNodeMode: SameNodeMode
   ): IMPL = {
     val p = patternParser.parse(pattern)
     newRelationship(varFor(p.relName))
@@ -677,7 +679,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         relationshipPredicates,
         pathPredicates,
         withFallback,
-        disallowSameNode
+        sameNodeMode
       )(_)
     ))
   }

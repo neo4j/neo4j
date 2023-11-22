@@ -81,6 +81,8 @@ import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
 import org.neo4j.cypher.internal.logical.plans.FindShortestPaths
+import org.neo4j.cypher.internal.logical.plans.FindShortestPaths.DisallowSameNode
+import org.neo4j.cypher.internal.logical.plans.FindShortestPaths.SkipSameNode
 import org.neo4j.cypher.internal.logical.plans.Foreach
 import org.neo4j.cypher.internal.logical.plans.ForeachApply
 import org.neo4j.cypher.internal.logical.plans.InjectCompilationError
@@ -1205,7 +1207,7 @@ case class InterpretedPipeMapper(
           perStepRelPredicates,
           pathPredicates,
           withFallBack,
-          disallowSameNode
+          sameNodeMode
         ) =>
         val single = shortestPathPattern.expr.single
 
@@ -1228,6 +1230,12 @@ case class InterpretedPipeMapper(
             (lower.exists(_.value == 0L), max.map(_.value.toInt))
           case None => (false, Some(1)) // non-varlength case
           case _    => (false, None)
+        }
+        // TODO
+        val disallowSameNode = sameNodeMode match {
+          case FindShortestPaths.DisallowSameNode => false
+          case FindShortestPaths.SkipSameNode     => true
+          case FindShortestPaths.AllowSameNode    => ???
         }
 
         val pathName = shortestPathPattern.name.map(_.name).getOrElse(anonymousVariableNameGenerator.nextName)

@@ -990,7 +990,7 @@ class SlottedPipeMapper(
           perStepRelPredicates,
           pathPredicates,
           withFallBack,
-          disallowSameNode
+          sameNodeMode
         ) =>
         val rel = shortestPathPattern.expr.element match {
           case internal.expressions.RelationshipChain(_, relationshipPattern, _) =>
@@ -1004,6 +1004,13 @@ class SlottedPipeMapper(
         val patternRelationship = shortestPathPattern.rel
 
         val (sourceNodeName, targetNodeName) = patternRelationship.nodes
+
+        // TODO
+        val disallowSameNode = sameNodeMode match {
+          case FindShortestPaths.DisallowSameNode => false
+          case FindShortestPaths.SkipSameNode     => true
+          case FindShortestPaths.AllowSameNode    => ???
+        }
 
         if (disallowSameNode && sourceNodeName == targetNodeName) {
           throw new ShortestPathCommonEndNodesForbiddenException

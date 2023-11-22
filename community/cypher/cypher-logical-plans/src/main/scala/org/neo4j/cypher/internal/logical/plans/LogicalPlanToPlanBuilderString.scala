@@ -324,10 +324,10 @@ object LogicalPlanToPlanBuilderString {
           relationshipPredicates,
           pathPredicates,
           withFallBack,
-          disallowSameNode
+          sameNodeMode
         ) =>
         val fbStr = if (withFallBack) ", withFallback = true" else ""
-        val dsnStr = if (!disallowSameNode) ", disallowSameNode = false" else ""
+        val sameNodeStr = ", sameNodeMode = " + objectName(sameNodeMode)
         shortestPath match {
           case ShortestRelationshipPattern(
               maybePathName,
@@ -349,7 +349,7 @@ object LogicalPlanToPlanBuilderString {
               else ", pathPredicates = Seq(" + wrapInQuotationsAndMkString(
                 pathPredicates.map(expressionStringifier(_))
               ) + ")"
-            s""" "(${from.name})$dirStrA[${relName.name}$typeStr$lenStr]$dirStrB(${to.name})"$pNameStr$allStr$nPredStr$rPredStr$pPredStr$fbStr$dsnStr """.trim
+            s""" "(${from.name})$dirStrA[${relName.name}$typeStr$lenStr]$dirStrB(${to.name})"$pNameStr$allStr$nPredStr$rPredStr$pPredStr$fbStr$sameNodeStr """.trim
         }
 
       case StatefulShortestPath(

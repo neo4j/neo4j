@@ -53,6 +53,8 @@ import org.neo4j.cypher.internal.logical.plans.Descending
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandInto
+import org.neo4j.cypher.internal.logical.plans.FindShortestPaths.DisallowSameNode
+import org.neo4j.cypher.internal.logical.plans.FindShortestPaths.SkipSameNode
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderDescending
@@ -389,7 +391,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName wi
         nodePredicates = Seq(Predicate("n", "id(n) <> 5")),
         relationshipPredicates = Seq(Predicate("rel", "id(rel) <> 7"))
       )
-      .shortestPath("(x)-[r*1..2]->(y)", disallowSameNode = false)
+      .shortestPath("(x)-[r*1..2]->(y)", sameNodeMode = SkipSameNode)
       .shortestPath("(x)-[r*1..3]->(y)", withFallback = true)
       .argument()
       .build()
@@ -2467,6 +2469,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName wi
             |import org.neo4j.cypher.internal.util.Repetition
             |import org.neo4j.cypher.internal.util.UpperBound.Unlimited
             |import org.neo4j.graphdb.schema.IndexType
+            |import org.neo4j.cypher.internal.logical.plans.FindShortestPaths._
             |""".stripMargin
         )
         interpreter.bind("result", "Array[AnyRef]", res)

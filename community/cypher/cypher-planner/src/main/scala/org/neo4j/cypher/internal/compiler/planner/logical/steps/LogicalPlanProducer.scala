@@ -161,6 +161,8 @@ import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpansionMode
 import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
 import org.neo4j.cypher.internal.logical.plans.FindShortestPaths
+import org.neo4j.cypher.internal.logical.plans.FindShortestPaths.DisallowSameNode
+import org.neo4j.cypher.internal.logical.plans.FindShortestPaths.SkipSameNode
 import org.neo4j.cypher.internal.logical.plans.Foreach
 import org.neo4j.cypher.internal.logical.plans.ForeachApply
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
@@ -2337,7 +2339,7 @@ case class LogicalPlanProducer(
         rewrittenRelationshipPredicates.toSeq,
         rewrittenPathPredicates.toSeq,
         withFallBack,
-        disallowSameNode
+        if (disallowSameNode) DisallowSameNode else SkipSameNode
       ),
       solved,
       providedOrders.get(rewrittenSource.id).fromLeft,

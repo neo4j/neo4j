@@ -52,6 +52,8 @@ import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpansionMode
 import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
+import org.neo4j.cypher.internal.logical.plans.FindShortestPaths.DisallowSameNode
+import org.neo4j.cypher.internal.logical.plans.FindShortestPaths.SameNodeMode
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan.VERBOSE_TO_STRING
 import org.neo4j.cypher.internal.logical.plans.Prober.Probe
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath.Mapping
@@ -1880,7 +1882,7 @@ case class FindShortestPaths(
   perStepRelPredicates: Seq[VariablePredicate] = Seq.empty,
   pathPredicates: Seq[Expression] = Seq.empty,
   withFallBack: Boolean = false,
-  disallowSameNode: Boolean = true
+  sameNodeMode: SameNodeMode = DisallowSameNode
 )(implicit idGen: IdGen)
     extends LogicalUnaryPlan(idGen) {
 
@@ -1889,6 +1891,14 @@ case class FindShortestPaths(
   override val availableSymbols: Set[LogicalVariable] = source.availableSymbols ++ pattern.availableSymbols
 
   override val distinctness: Distinctness = NotDistinct
+}
+
+object FindShortestPaths {
+  sealed trait SameNodeMode
+
+  case object DisallowSameNode extends SameNodeMode
+  case object SkipSameNode extends SameNodeMode
+  case object AllowSameNode extends SameNodeMode
 }
 
 object StatefulShortestPath {
