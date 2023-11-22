@@ -1704,22 +1704,22 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       patternNodes = Set("anon_0", "anon_4"),
       quantifiedPathPatterns = Set(
         QuantifiedPathPattern(
-          leftBinding = NodeBinding("anon_1", "anon_0"),
-          rightBinding = NodeBinding("anon_3", "anon_4"),
+          leftBinding = NodeBinding("anon_5", "anon_0"),
+          rightBinding = NodeBinding("anon_7", "anon_4"),
           patternRelationships =
             NonEmptyList(PatternRelationship(
-              "anon_5",
-              ("anon_1", "anon_3"),
+              "anon_6",
+              ("anon_5", "anon_7"),
               SemanticDirection.OUTGOING,
               Seq.empty,
               SimplePatternLength
             )),
           repetition = Repetition(min = 1, max = UpperBound.Unlimited),
-          nodeVariableGroupings = Set.empty,
-          relationshipVariableGroupings = Set(VariableGrouping("anon_5", "anon_6"))
+          nodeVariableGroupings = Set(VariableGrouping("anon_5", "anon_8"), VariableGrouping("anon_7", "anon_10")),
+          relationshipVariableGroupings = Set(VariableGrouping("anon_6", "anon_9"))
         )
       ),
-      selections = Selections.from(unique(varFor("anon_6")))
+      selections = Selections.from(unique(varFor("anon_9")))
     )
   }
 

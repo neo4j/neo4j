@@ -36,7 +36,7 @@ class SolvedStringTest extends CypherFunSuite with LogicalPlanningTestSupport wi
     "ANY SHORTEST (a)-[r]->(b)" -> "SHORTEST 1 ((a)-[r]->(b))",
     "SHORTEST 1 (a)-[r]->(b)" -> "SHORTEST 1 ((a)-[r]->(b))",
     "SHORTEST 2 (a)-[r]->(b)" -> "SHORTEST 2 ((a)-[r]->(b))",
-    "SHORTEST 1 GROUPS (a)-[r]->+(b)" -> "SHORTEST 1 GROUPS ((a) ((anon_0)-[r]->(anon_1)){1, } (b) WHERE unique(r))",
+    "SHORTEST 1 GROUPS (a)-[r]->+(b)" -> "SHORTEST 1 GROUPS ((a) ((anon_2)-[r]->(anon_4)){1, } (b) WHERE unique(r))",
     // Test different quantifiers
     "ANY SHORTEST (a) ((b)-[r]->(c))+ (d)" -> "SHORTEST 1 ((a) ((b)-[r]->(c)){1, } (d) WHERE unique(r))",
     "ANY SHORTEST (a) ((b)-[r]->(c))* (d)" -> "SHORTEST 1 ((a) ((b)-[r]->(c)){0, } (d) WHERE unique(r))",

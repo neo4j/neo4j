@@ -119,11 +119,11 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       varFor("s"),
       RepeatPathStep(
         List(
-          NodeRelPair(varFor("anon_17"), varFor("anon_10")),
-          NodeRelPair(varFor("anon_18"), varFor("anon_6")),
-          NodeRelPair(varFor("anon_20"), varFor("anon_7")),
-          NodeRelPair(varFor("anon_16"), varFor("anon_8")),
-          NodeRelPair(varFor("anon_19"), varFor("anon_9"))
+          NodeRelPair(varFor("anon_13"), varFor("anon_20")),
+          NodeRelPair(varFor("anon_14"), varFor("anon_12")),
+          NodeRelPair(varFor("anon_18"), varFor("anon_15")),
+          NodeRelPair(varFor("anon_11"), varFor("anon_16")),
+          NodeRelPair(varFor("anon_17"), varFor("anon_19"))
         ),
         varFor("t"),
         NilPathStep()(pos)
@@ -137,36 +137,34 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "s",
           "t",
-          "SHORTEST 1 ((s) ((anon_11)-[anon_1:R]->(anon_12)-[anon_2:T]-(anon_13)-[anon_3:T]-(anon_14)-[anon_4:T]-(anon_15)-[anon_5:R]->(anon_0) " +
-            "WHERE NOT `anon_5` = `anon_1` AND NOT `anon_4` = `anon_3` AND NOT `anon_4` = `anon_2` AND NOT `anon_3` = `anon_2`){1, } (t) " +
-            "WHERE unique((((`anon_10` + `anon_6`) + `anon_7`) + `anon_8`) + `anon_9`))",
+          "SHORTEST 1 ((s) ((anon_0)-[anon_1:R]->(anon_2)-[anon_3:T]-(anon_4)-[anon_5:T]-(anon_6)-[anon_7:T]-(anon_8)-[anon_9:R]->(anon_10) WHERE NOT `anon_9` = `anon_1` AND NOT `anon_7` = `anon_5` AND NOT `anon_7` = `anon_3` AND NOT `anon_5` = `anon_3`){1, } (t) WHERE unique((((`anon_20` + `anon_12`) + `anon_15`) + `anon_16`) + `anon_19`))",
           None,
           groupNodes = Set(
-            ("anon_11", "anon_17"),
-            ("anon_12", "anon_18"),
-            ("anon_13", "anon_20"),
-            ("anon_14", "anon_16"),
-            ("anon_15", "anon_19")
+            ("anon_0", "anon_13"),
+            ("anon_6", "anon_11"),
+            ("anon_4", "anon_18"),
+            ("anon_8", "anon_17"),
+            ("anon_2", "anon_14")
           ),
           groupRelationships = Set(
-            ("anon_1", "anon_10"),
-            ("anon_2", "anon_6"),
-            ("anon_3", "anon_7"),
-            ("anon_4", "anon_8"),
-            ("anon_5", "anon_9")
+            ("anon_7", "anon_16"),
+            ("anon_3", "anon_12"),
+            ("anon_5", "anon_15"),
+            ("anon_9", "anon_19"),
+            ("anon_1", "anon_20")
           ),
           singletonNodeVariables = Set("t" -> "t"),
           singletonRelationshipVariables = Set(),
           selector = StatefulShortestPath.Selector.Shortest(1),
           nfa = new TestNFABuilder(0, "s")
-            .addTransition(0, 1, "(s) (anon_11)")
-            .addTransition(1, 2, "(anon_11)-[anon_1:R]->(anon_12)")
-            .addTransition(2, 3, "(anon_12)-[anon_2:T]-(anon_13)")
-            .addTransition(3, 4, "(anon_13)-[anon_3:T]-(anon_14)")
-            .addTransition(4, 5, "(anon_14)-[anon_4:T]-(anon_15)")
-            .addTransition(5, 6, "(anon_15)-[anon_5:R]->(anon_0)")
-            .addTransition(6, 1, "(anon_0) (anon_11)")
-            .addTransition(6, 7, "(anon_0) (t)")
+            .addTransition(0, 1, "(s) (anon_0)")
+            .addTransition(1, 2, "(anon_0)-[anon_1:R]->(anon_2)")
+            .addTransition(2, 3, "(anon_2)-[anon_3:T]-(anon_4)")
+            .addTransition(3, 4, "(anon_4)-[anon_5:T]-(anon_6)")
+            .addTransition(4, 5, "(anon_6)-[anon_7:T]-(anon_8)")
+            .addTransition(5, 6, "(anon_8)-[anon_9:R]->(anon_10)")
+            .addTransition(6, 1, "(anon_10) (anon_0)")
+            .addTransition(6, 7, "(anon_10) (t)")
             .addFinalState(7)
             .build(),
           ExpandAll,

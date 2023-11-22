@@ -83,19 +83,7 @@ case object AddUniquenessPredicates extends AddRelationshipPredicates[NodeConnec
     case qpp @ QuantifiedPath(patternPart, _, where, _) =>
       val relationships = collectNodeConnections(patternPart)
       val newWhere = withPredicates(qpp, relationships, where.map(Where(_)(qpp.position))).map(_.expression)
-
-      // We will generate Unique predicates for every relationship in a QPP.
-      // If the relationship has an anonymous name, it is not yet included in the variableGroupings.
-      // Since the Unique predicate lives outside of the QPP and needs to see the group variable, we need to add those
-      // variables to the set of variableGroupings.
-      val allRelationshipVariables = qpp.part.folder.treeCollect {
-        case RelationshipPattern(Some(relVar), _, _, _, _, _) => relVar
-      }.toSet
-      val notYetExportedSingletonVars = allRelationshipVariables -- qpp.variableGroupings.map(_.singleton)
-      val newGroupings = notYetExportedSingletonVars.map(QuantifiedPath.getGrouping(_, qpp.position))
-      qpp.copy(optionalWhereExpression = newWhere, variableGroupings = qpp.variableGroupings ++ newGroupings)(
-        qpp.position
-      )
+      qpp.copy(optionalWhereExpression = newWhere)(qpp.position)
   })
 
   def canBeEmpty(range: Option[Range]): Boolean =

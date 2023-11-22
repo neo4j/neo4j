@@ -20,6 +20,7 @@ import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.rewriting.RewriterStep
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
+import org.neo4j.cypher.internal.rewriting.rewriters.AddQuantifiedPathAnonymousVariableGroupings
 import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.AddVarLengthPredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.CharLengthFunctionRewriter
@@ -88,7 +89,8 @@ object ASTRewriter {
         cypherTypeNormalizationRewriter,
         RewriteSizeOfCollectToCount,
         ReplacePatternComprehensionWithCollectSubquery,
-        CharLengthFunctionRewriter
+        CharLengthFunctionRewriter,
+        AddQuantifiedPathAnonymousVariableGroupings
       ),
       initialConditions = SemanticInfoAvailable ++ Set(
         ReturnItemsAreAliased,

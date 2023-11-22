@@ -108,19 +108,6 @@ case object projectNamedPaths extends Rewriter with StepSequencer.Step with ASTR
 
   def apply(input: AnyRef): AnyRef = instance(input)
 
-  private val addGroupVariablesToQPPs: Rewriter = topDown(Rewriter.lift {
-    case qpp @ QuantifiedPath(PathPatternPart(element), _, _, _) =>
-      val allSingletonVariables = collectVar(element).toSet
-      val notYetExportedSingletonVars = allSingletonVariables -- qpp.variableGroupings.map(_.singleton)
-      val newGroupings = notYetExportedSingletonVars.map(QuantifiedPath.getGrouping(_, qpp.position))
-      qpp.copy(variableGroupings = qpp.variableGroupings ++ newGroupings)(qpp.position)
-  })
-
-  private val addGroupVariablesToQPPsInNamedPaths: Rewriter = topDown(Rewriter.lift {
-    case npp @ NamedPatternPart(_, patternPart) =>
-      npp.copy(patternPart = patternPart.endoRewrite(addGroupVariablesToQPPs))(npp.position)
-  })
-
   private val projectNamedPathsRewriter: Rewriter = input => {
     val Projectibles(_, protectedVariables, variableRewrites, insertedWiths) = collectProjectibles(input)
     val applicator = Rewriter.lift {
@@ -144,10 +131,7 @@ case object projectNamedPaths extends Rewriter with StepSequencer.Step with ASTR
     topDown(applicator)(input)
   }
 
-  private val instance = inSequence(
-    addGroupVariablesToQPPsInNamedPaths,
-    projectNamedPathsRewriter
-  )
+  private val instance: Rewriter = projectNamedPathsRewriter
 
   private def collectProjectibles(input: AnyRef): Projectibles = input.folder.treeFold(Projectibles.empty) {
     case aliased: AliasedReturnItem =>
@@ -295,7 +279,8 @@ case object projectNamedPaths extends Rewriter with StepSequencer.Step with ASTR
     // RepeatPathStep assumes everything is named
     noUnnamedNodesAndRelationships,
     // We rely on padded nodes between QPPs
-    QuantifiedPathPatternNodeInsertRewriter.completed
+    QuantifiedPathPatternNodeInsertRewriter.completed,
+    AddQuantifiedPathAnonymousVariableGroupings.completed
   )
 
   override def postConditions: Set[StepSequencer.Condition] = Set(

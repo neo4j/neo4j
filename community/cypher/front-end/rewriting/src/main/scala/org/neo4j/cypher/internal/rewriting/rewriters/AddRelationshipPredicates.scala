@@ -39,7 +39,8 @@ import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 trait AddRelationshipPredicates[NC] extends Step with DefaultPostCondition with ASTRewriterFactory {
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
-    noUnnamedNodesAndRelationships
+    noUnnamedNodesAndRelationships,
+    AddQuantifiedPathAnonymousVariableGroupings.completed
   )
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
