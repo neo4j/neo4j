@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.ast.PointIndexes
 import org.neo4j.cypher.internal.ast.RangeIndexes
 import org.neo4j.cypher.internal.ast.ShowIndexesClause
 import org.neo4j.cypher.internal.ast.TextIndexes
+import org.neo4j.cypher.internal.ast.VectorIndexes
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.runtime.ConstraintInfo
 import org.neo4j.cypher.internal.runtime.IndexInfo
@@ -1085,6 +1086,42 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
       options = Map("indexProvider" -> Values.stringValue(fulltextProvider), "indexConfig" -> relFulltextConfigMap),
       createStatement = s"CREATE FULLTEXT INDEX `index09` FOR ()-[r:`$relType`]-() ON EACH [r.`$prop`] " +
         s"OPTIONS {indexConfig: $relFulltextConfigMapString, indexProvider: '$fulltextProvider'}"
+    )
+  }
+
+  test("show vector indexes should only show vector indexes") {
+    // Set-up which indexes the context returns:
+    when(ctx.getAllIndexes()).thenReturn(Map(
+      rangeNodeIndexDescriptor -> nodeIndexInfo,
+      rangeRelIndexDescriptor -> relIndexInfo,
+      lookupNodeIndexDescriptor -> nodeIndexInfo,
+      lookupRelIndexDescriptor -> relIndexInfo,
+      pointNodeIndexDescriptor -> nodeIndexInfo,
+      pointRelIndexDescriptor -> relIndexInfo,
+      textNodeIndexDescriptor -> nodeIndexInfo,
+      textRelIndexDescriptor -> relIndexInfo,
+      fulltextNodeIndexDescriptor -> nodeIndexInfo,
+      fulltextRelIndexDescriptor -> relIndexInfo,
+      vectorNodeIndexDescriptor -> nodeIndexInfo
+    ))
+
+    // When
+    val showIndexes = ShowIndexesCommand(VectorIndexes, verbose = true, allColumns, List.empty)
+    val result = showIndexes.originalNameRows(queryState, initialCypherRow).toList
+
+    // Then
+    result should have size 1
+    checkResult(
+      result.head,
+      name = "index10",
+      indexType = "VECTOR",
+      entityType = "NODE",
+      labelsOrTypes = List(label),
+      properties = List(prop),
+      provider = vectorProvider,
+      options = Map("indexProvider" -> Values.stringValue(vectorProvider), "indexConfig" -> nodeVectorConfigMap),
+      createStatement =
+        s"CALL db.index.vector.createNodeIndex('index10', '$label', '$prop', $vectorDimensions, '$vectorSimilarityFunction')"
     )
   }
 

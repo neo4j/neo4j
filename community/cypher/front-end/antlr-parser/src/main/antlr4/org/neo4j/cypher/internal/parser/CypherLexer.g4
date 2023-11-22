@@ -875,6 +875,9 @@ VALUE:
 VARCHAR:
    V A R C H A R;
 
+VECTOR:
+   V E C T O R;
+
 VERBOSE:
    V E R B O S E;
 

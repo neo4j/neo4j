@@ -655,6 +655,7 @@ TOKEN [IGNORE_CASE] :
     | < USING: "USING" >
     | < VALUE: "VALUE" >
     | < VARCHAR: "VARCHAR" >
+    | < VECTOR: "VECTOR" >
     | < VERBOSE: "VERBOSE" >
     | < VERTEX: "VERTEX" >
     | < WAIT: "WAIT">
@@ -3994,6 +3995,7 @@ STATEMENT ShowCommand( USE_CLAUSE useClause ) throws Exception:
         | showCommandType=<FULLTEXT> clauses=ShowIndexesNoBrief( start, ShowCommandFilterTypes.FULLTEXT )
         | showCommandType=<TEXT> clauses=ShowIndexesNoBrief( start, ShowCommandFilterTypes.TEXT )
         | showCommandType=<POINT> clauses=ShowIndexesNoBrief( start, ShowCommandFilterTypes.POINT )
+        | showCommandType=<VECTOR> clauses=ShowIndexesNoBrief( start, ShowCommandFilterTypes.VECTOR )
         | showCommandType=<LOOKUP> clauses=ShowIndexesNoBrief( start, ShowCommandFilterTypes.LOOKUP )
         | showCommandType=<UNIQUE> clauses=ShowConstraintsAllowBriefAndYield( start, ShowCommandFilterTypes.UNIQUE )
         | showCommandType=<UNIQUENESS> clauses=ShowConstraintsAllowYield( start, ShowCommandFilterTypes.UNIQUE )
@@ -4654,6 +4656,7 @@ List<CLAUSE> composableCommandClauses() throws Exception:
             | <UNIQUENESS> clauses=ShowConstraintsAllowYield(start, ShowCommandFilterTypes.UNIQUE)
             | <UNIQUE> clauses=ShowConstraintsAllowBriefAndYield(start, ShowCommandFilterTypes.UNIQUE)
             | <USER> <DEFINED> clauses=ShowFunctions(start, ShowCommandFilterTypes.USER_DEFINED)
+            | <VECTOR> clauses=ShowIndexesNoBrief(start, ShowCommandFilterTypes.VECTOR)
             | LOOKAHEAD( <CONSTRAINT> | <CONSTRAINTS> ) clauses=ShowConstraintsAllowBriefAndYield(start, ShowCommandFilterTypes.ALL)
             | LOOKAHEAD( <FUNCTION> | <FUNCTIONS> ) clauses=ShowFunctions(start, ShowCommandFilterTypes.ALL)
             | LOOKAHEAD( <INDEX> | <INDEXES> ) clauses=ShowIndexesAllowBrief(start, ShowCommandFilterTypes.ALL)
@@ -7185,6 +7188,7 @@ Token UnescapedLabelSymbolicNameString() :
         | t=<USING>
         | t=<VALUE>
         | t=<VARCHAR>
+        | t=<VECTOR>
         | t=<VERBOSE>
         | t=<VERTEX>
         | t=<WAIT>

@@ -23,6 +23,7 @@ public enum ShowCommandFilterTypes {
     FULLTEXT("FULLTEXT"),
     TEXT("TEXT"),
     POINT("POINT"),
+    VECTOR("VECTOR"),
     LOOKUP("LOOKUP"),
     // constraint specific
     UNIQUE("UNIQUE[NESS]"),

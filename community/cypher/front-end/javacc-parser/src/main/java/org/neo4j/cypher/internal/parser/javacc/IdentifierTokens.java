@@ -250,6 +250,7 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.USERS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.USING;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.VALUE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.VARCHAR;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.VECTOR;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.VERBOSE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.VERTEX;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.WAIT;
@@ -503,6 +504,7 @@ public class IdentifierTokens {
             USING,
             VARCHAR,
             VALUE,
+            VECTOR,
             VERBOSE,
             VERTEX,
             WAIT,

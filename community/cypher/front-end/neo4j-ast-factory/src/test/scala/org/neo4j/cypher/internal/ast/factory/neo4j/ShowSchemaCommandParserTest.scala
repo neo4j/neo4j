@@ -40,6 +40,7 @@ import org.neo4j.cypher.internal.ast.ShowIndexesClause
 import org.neo4j.cypher.internal.ast.TextIndexes
 import org.neo4j.cypher.internal.ast.UniqueConstraints
 import org.neo4j.cypher.internal.ast.ValidSyntax
+import org.neo4j.cypher.internal.ast.VectorIndexes
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.util.symbols.IntegerType
 
@@ -141,6 +142,21 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
           List.empty,
           yieldAll = false
         )(defaultPos))
+      )
+    }
+
+    test(s"SHOW VECTOR $indexKeyword") {
+      assertAst(
+        singleQuery(
+          ShowIndexesClause(
+            VectorIndexes,
+            brief = false,
+            verbose = false,
+            None,
+            List.empty,
+            yieldAll = false
+          )(defaultPos)
+        )
       )
     }
 
@@ -381,13 +397,13 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
   }
 
   test(
-    "USE db SHOW BTREE INDEXES YIELD name, populationPercent AS pp ORDER BY pp SKIP 2 LIMIT 5 WHERE pp < 50.0 RETURN name"
+    "USE db SHOW VECTOR INDEXES YIELD name, populationPercent AS pp ORDER BY pp SKIP 2 LIMIT 5 WHERE pp < 50.0 RETURN name"
   ) {
     assertAst(
       singleQuery(
         use(varFor("db")),
         ShowIndexesClause(
-          BtreeIndexes,
+          VectorIndexes,
           brief = false,
           verbose = false,
           None,
@@ -774,6 +790,14 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
   }
 
   test("SHOW POINT INDEXES VERBOSE") {
+    failsToParse
+  }
+
+  test("SHOW VECTOR INDEXES BRIEF") {
+    failsToParse
+  }
+
+  test("SHOW VECTOR INDEXES VERBOSE") {
     failsToParse
   }
 
@@ -1329,7 +1353,8 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
         |  "UNIQUE"
         |  "UNIQUENESS"
         |  "USER"
-        |  "USERS" (line 1, column 6 (offset: 5))""".stripMargin
+        |  "USERS"
+        |  "VECTOR" (line 1, column 6 (offset: 5))""".stripMargin
     )
   }
 
@@ -1391,7 +1416,8 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
         |  "UNIQUE"
         |  "UNIQUENESS"
         |  "USER"
-        |  "USERS" (line 1, column 6 (offset: 5))""".stripMargin
+        |  "USERS"
+        |  "VECTOR" (line 1, column 6 (offset: 5))""".stripMargin
     )
   }
 

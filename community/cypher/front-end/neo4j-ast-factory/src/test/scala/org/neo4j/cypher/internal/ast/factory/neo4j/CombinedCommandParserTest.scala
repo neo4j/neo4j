@@ -272,6 +272,12 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
         showIndex(ast.PointIndexes, _, _, _),
         "SHOW LOOKUP INDEXES",
         showIndex(ast.LookupIndexes, _, _, _)
+      ),
+      (
+        "SHOW INDEXES",
+        showIndex(ast.AllIndexes, _, _, _),
+        "SHOW VECTOR INDEXES",
+        showIndex(ast.VectorIndexes, _, _, _)
       )
     ) ++ Seq(
       // mixed show and terminate commands

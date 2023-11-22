@@ -91,6 +91,7 @@ import org.neo4j.cypher.internal.ast.UserAllQualifier
 import org.neo4j.cypher.internal.ast.UserDefinedFunctions
 import org.neo4j.cypher.internal.ast.UserQualifier
 import org.neo4j.cypher.internal.ast.ValidSyntax
+import org.neo4j.cypher.internal.ast.VectorIndexes
 import org.neo4j.cypher.internal.ast.WriteAction
 import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.And
@@ -2680,6 +2681,11 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(
       attach(ShowIndexes(PointIndexes, verbose = true, List.empty, List.empty, yieldAll = true), 1.0),
       planDescription(id, "ShowIndexes", NoChildren, Seq(details("pointIndexes, allColumns")), Set.empty)
+    )
+
+    assertGood(
+      attach(ShowIndexes(VectorIndexes, verbose = true, List.empty, List.empty, yieldAll = true), 1.0),
+      planDescription(id, "ShowIndexes", NoChildren, Seq(details("vectorIndexes, allColumns")), Set.empty)
     )
 
     assertGood(

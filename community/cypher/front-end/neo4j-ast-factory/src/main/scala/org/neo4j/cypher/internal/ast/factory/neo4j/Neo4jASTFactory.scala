@@ -330,6 +330,7 @@ import org.neo4j.cypher.internal.ast.UsingRangeIndexType
 import org.neo4j.cypher.internal.ast.UsingScanHint
 import org.neo4j.cypher.internal.ast.UsingTextIndexType
 import org.neo4j.cypher.internal.ast.ValidSyntax
+import org.neo4j.cypher.internal.ast.VectorIndexes
 import org.neo4j.cypher.internal.ast.WaitUntilComplete
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.With
@@ -1509,6 +1510,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
       case ShowCommandFilterTypes.FULLTEXT => FulltextIndexes
       case ShowCommandFilterTypes.TEXT     => TextIndexes
       case ShowCommandFilterTypes.POINT    => PointIndexes
+      case ShowCommandFilterTypes.VECTOR   => VectorIndexes
       case ShowCommandFilterTypes.LOOKUP   => LookupIndexes
       case t => throw new Neo4jASTConstructionException(ASTExceptionFactory.invalidShowFilterType("indexes", t))
     }

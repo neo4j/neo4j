@@ -456,7 +456,8 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
         |  "UNIQUE"
         |  "UNIQUENESS"
         |  "USER"
-        |  "USERS" (line 1, column 6 (offset: 5))""".stripMargin
+        |  "USERS"
+        |  "VECTOR" (line 1, column 6 (offset: 5))""".stripMargin
     )
   }
 

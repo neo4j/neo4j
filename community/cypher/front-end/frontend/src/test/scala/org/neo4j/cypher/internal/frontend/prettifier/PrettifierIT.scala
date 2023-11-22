@@ -842,6 +842,8 @@ class PrettifierIT extends CypherFunSuite {
       "SHOW TEXT INDEXES",
     "show pOInt index" ->
       "SHOW POINT INDEXES",
+    "show vecTOR index" ->
+      "SHOW VECTOR INDEXES",
     "show loOKup index" ->
       "SHOW LOOKUP INDEXES",
     "show \nindex\n" ->

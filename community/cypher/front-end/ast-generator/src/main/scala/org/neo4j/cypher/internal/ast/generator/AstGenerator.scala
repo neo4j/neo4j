@@ -328,6 +328,7 @@ import org.neo4j.cypher.internal.ast.UsingRangeIndexType
 import org.neo4j.cypher.internal.ast.UsingScanHint
 import org.neo4j.cypher.internal.ast.UsingTextIndexType
 import org.neo4j.cypher.internal.ast.ValidSyntax
+import org.neo4j.cypher.internal.ast.VectorIndexes
 import org.neo4j.cypher.internal.ast.WaitUntilComplete
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.With
@@ -1421,7 +1422,15 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   // ----------------------------------
 
   def _indexType: Gen[ShowIndexType] = for {
-    indexType <- oneOf(AllIndexes, RangeIndexes, FulltextIndexes, TextIndexes, PointIndexes, LookupIndexes)
+    indexType <- oneOf(
+      AllIndexes,
+      RangeIndexes,
+      FulltextIndexes,
+      TextIndexes,
+      PointIndexes,
+      VectorIndexes,
+      LookupIndexes
+    )
   } yield indexType
 
   def _listOfLabels: Gen[List[LabelName]] = for {

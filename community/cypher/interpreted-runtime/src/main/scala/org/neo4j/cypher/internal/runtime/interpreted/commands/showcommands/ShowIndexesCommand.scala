@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.ast.RangeIndexes
 import org.neo4j.cypher.internal.ast.ShowColumn
 import org.neo4j.cypher.internal.ast.ShowIndexType
 import org.neo4j.cypher.internal.ast.TextIndexes
+import org.neo4j.cypher.internal.ast.VectorIndexes
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.IndexInfo
@@ -60,7 +61,7 @@ import org.neo4j.values.virtual.VirtualValues
 import scala.collection.immutable.ListMap
 import scala.jdk.CollectionConverters.SeqHasAsJava
 
-// SHOW [ALL|FULLTEXT|LOOKUP|POINT|RANGE|TEXT] INDEX[ES] [BRIEF|VERBOSE|WHERE clause|YIELD clause]
+// SHOW [ALL|FULLTEXT|LOOKUP|POINT|RANGE|TEXT|VECTOR] INDEX[ES] [BRIEF|VERBOSE|WHERE clause|YIELD clause]
 case class ShowIndexesCommand(
   indexType: ShowIndexType,
   verbose: Boolean,
@@ -91,6 +92,10 @@ case class ShowIndexesCommand(
       case PointIndexes =>
         indexes.filter {
           case (indexDescriptor, _) => indexDescriptor.getIndexType.equals(IndexType.POINT)
+        }
+      case VectorIndexes =>
+        indexes.filter {
+          case (indexDescriptor, _) => indexDescriptor.getIndexType.equals(IndexType.VECTOR)
         }
       case LookupIndexes =>
         indexes.filter {
@@ -161,7 +166,7 @@ case class ShowIndexesCommand(
           "state" -> Values.stringValue(indexStatus.state),
           // % of index population, for example 0.0, 100.0, or 75.1
           "populationPercent" -> Values.doubleValue(indexStatus.populationProgress),
-          // The IndexType of this index, either "FULLTEXT", "TEXT", "RANGE", "POINT" or "LOOKUP"
+          // The IndexType of this index, either "FULLTEXT", "TEXT", "RANGE", "POINT", "VECTOR" or "LOOKUP"
           "type" -> Values.stringValue(indexType.name),
           // Type of entities this index represents, either "NODE" or "RELATIONSHIP"
           "entityType" -> Values.stringValue(entityType.name),
