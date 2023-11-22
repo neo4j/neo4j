@@ -63,6 +63,9 @@ case class DeprecatedTextIndexProvider(position: InputPosition) extends Internal
 case class DeprecatedIdentifierWhitespaceUnicode(position: InputPosition, unicode: Char, identifier: String)
     extends InternalNotification
 
+case class DeprecatedIdentifierUnicode(position: InputPosition, unicode: Char, identifier: String)
+    extends InternalNotification
+
 case class UnsatisfiableRelationshipTypeExpression(position: InputPosition, labelExpression: String)
     extends InternalNotification
 

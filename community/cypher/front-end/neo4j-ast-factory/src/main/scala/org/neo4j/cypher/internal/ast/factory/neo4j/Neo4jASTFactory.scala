@@ -464,6 +464,7 @@ import org.neo4j.cypher.internal.label_expressions.LabelExpression
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.Leaf
 import org.neo4j.cypher.internal.label_expressions.LabelExpressionPredicate
 import org.neo4j.cypher.internal.parser.javacc.EntityType
+import org.neo4j.cypher.internal.util.DeprecatedIdentifierUnicode
 import org.neo4j.cypher.internal.util.DeprecatedIdentifierWhitespaceUnicode
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
@@ -3003,7 +3004,11 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     identifier: String
   ): Unit = {
     if (logger != null) {
-      logger.log(DeprecatedIdentifierWhitespaceUnicode(p, char, identifier))
+      if (char == '\u0085') {
+        logger.log(DeprecatedIdentifierWhitespaceUnicode(p, char, identifier))
+      } else {
+        logger.log(DeprecatedIdentifierUnicode(p, char, identifier))
+      }
     }
   }
 }

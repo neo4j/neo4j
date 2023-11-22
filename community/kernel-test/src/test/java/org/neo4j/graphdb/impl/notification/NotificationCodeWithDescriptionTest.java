@@ -33,6 +33,7 @@ import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescriptio
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedFormat;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedFunctionWithReplacement;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedFunctionWithoutReplacement;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedIdentifierUnicode;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedIdentifierWhitespaceUnicode;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedNodeOrRelationshipOnRhsSetClause;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedProcedureReturnField;
@@ -466,6 +467,20 @@ class NotificationCodeWithDescriptionTest {
                 "The Unicode character `\\u0061` is deprecated for unescaped identifiers and will be considered as a whitespace character in the future. To continue using it, escape the identifier by adding backticks around the identifier `ana`.",
                 NotificationCategory.DEPRECATION,
                 "The Unicode character `\\u0061` is deprecated for unescaped identifiers and will be considered as a whitespace character in the future. To continue using it, escape the identifier by adding backticks around the identifier `ana`.");
+    }
+
+    @Test
+    void shouldConstructNotificationsFor_DEPRECATED_IDENTIFIER_UNICODE() {
+        NotificationImplementation notification = deprecatedIdentifierUnicode(InputPosition.empty, 'a', "ana");
+
+        verifyNotification(
+                notification,
+                "This feature is deprecated and will be removed in future versions.",
+                SeverityLevel.WARNING,
+                "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
+                "The character with the Unicode representation `\\u0061` is deprecated for unescaped identifiers and will not be supported in the future. To continue using it, escape the identifier by adding backticks around the identifier `ana`.",
+                NotificationCategory.DEPRECATION,
+                "The character with the Unicode representation `\\u0061` is deprecated for unescaped identifiers and will not be supported in the future. To continue using it, escape the identifier by adding backticks around the identifier `ana`.");
     }
 
     @Test
@@ -969,8 +984,8 @@ class NotificationCodeWithDescriptionTest {
         byte[] notificationHash = DigestUtils.sha256(notificationBuilder.toString());
 
         byte[] expectedHash = new byte[] {
-            94, -51, 35, -1, 88, -13, 94, 81, -85, 47, 9, -101, 30, 2, -88, -51, -84, -13, -8, 93, 84, -10, -67, 10, 22,
-            110, 33, 109, -48, 83, 72, 20
+            116, 27, -104, -47, 120, -11, 12, 78, 88, -127, -102, -76, -85, -104, -10, -110, 89, 111, -2, 32, 97, -93,
+            -41, -95, 43, -91, -55, 115, -21, -123, -31, -91
         };
 
         if (!Arrays.equals(notificationHash, expectedHash)) {

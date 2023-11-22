@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedConnectComponentsPlannerPreParserOption
 import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedFunctionWithReplacement
 import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedFunctionWithoutReplacement
+import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedIdentifierUnicode
 import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedIdentifierWhitespaceUnicode
 import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedNodeOrRelationshipOnRhsSetClause
 import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedProcedureReturnField
@@ -458,5 +459,107 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
     )
 
     assertNoDeprecations(notDeprecated)
+  }
+
+  // Parser Deprecations: See CIP-120
+  test("Deprecated Unicode Characters in Identifier Extend") {
+    val deprecatedExtendedUnicodeChars = Seq(
+      // Category Cc
+      '\u0000', '\u0001', '\u0002', '\u0003', '\u0004', '\u0005', '\u0006', '\u0007',
+      '\u0008', '\u000E', '\u000F', '\u0010', '\u0011', '\u0012', '\u0013', '\u0014',
+      '\u0015', '\u0016', '\u0017', '\u0018', '\u0019', '\u001A', '\u001B', '\u007F',
+      '\u0080', '\u0081', '\u0082', '\u0083', '\u0084', '\u0086', '\u0087', '\u0088',
+      '\u0089', '\u008A', '\u008B', '\u008C', '\u008D', '\u008E', '\u008F', '\u0090',
+      '\u0091', '\u0092', '\u0093', '\u0094', '\u0095', '\u0096', '\u0097', '\u0098',
+      '\u0099', '\u009A', '\u009B', '\u009C', '\u009D', '\u009E', '\u009F',
+      // Category Sc
+      '\u0024', '\u00A2', '\u00A3', '\u00A4', '\u00A5',
+      // Category Cf
+      '\u00AD', '\u0600', '\u0601', '\u0602', '\u0603', '\u0604', '\u0605', '\u061C',
+      '\u06DD', '\u070F', '\u08E2', '\u180E', '\u200B', '\u200C', '\u200D', '\u200E',
+      '\u200F', '\u202A', '\u202B', '\u202C', '\u202D', '\u202E', '\u2060', '\u2061',
+      '\u2062', '\u2063', '\u2064', '\u2066', '\u2067', '\u2068', '\u2069', '\u206A',
+      '\u206B', '\u206C', '\u206D', '\u206E', '\u206F', '\u2E2F', '\uFEFF', '\uFFF9',
+      '\uFFFA', '\uFFFB'
+    )
+
+    val deprecatedParamQueries: Seq[(Char, Seq[String])] = deprecatedExtendedUnicodeChars.map { deprecatedUnicodeChar =>
+      // Kernel already errors on the unicode char: \u0000 in tokens, so skip over for some queries
+      if (deprecatedUnicodeChar == '\u0000') {
+        deprecatedUnicodeChar -> Seq(
+          s"RETURN $$a${deprecatedUnicodeChar}bc",
+          s"RETURN { a${deprecatedUnicodeChar}bc : 1 }",
+          s"WITH 1 AS a${deprecatedUnicodeChar}bc RETURN 1"
+        )
+      } else {
+        deprecatedUnicodeChar -> Seq(
+          s"RETURN $$a${deprecatedUnicodeChar}bc",
+          s"RETURN { a${deprecatedUnicodeChar}bc : 1 }",
+          s"WITH 1 AS a${deprecatedUnicodeChar}bc RETURN 1",
+          s"MATCH (b:a${deprecatedUnicodeChar}bc) RETURN b",
+          s"MATCH ()-[r:a${deprecatedUnicodeChar}bc]->() RETURN r"
+        )
+      }
+
+    }
+
+    deprecatedParamQueries.foreach { deprecateQueries =>
+      assertNotification(
+        deprecateQueries._2,
+        shouldContainNotification = true,
+        deprecatedIdentifierUnicode(_, deprecateQueries._1, s"a${deprecateQueries._1}bc")
+      )
+    }
+  }
+
+  test("Multiple deprecated Unicode Characters in Identifier") {
+    val deprecatedStartUnicodeChar = '\u2e2f'
+    val deprecatedExtendedUnicodeChar = '\u206E'
+
+    val queriesWithDeprecatedStartChar = Seq(
+      s"RETURN $$${deprecatedStartUnicodeChar}b${deprecatedExtendedUnicodeChar}c",
+      s"RETURN { ${deprecatedStartUnicodeChar}b${deprecatedExtendedUnicodeChar}c : 1 }",
+      s"WITH 1 AS ${deprecatedStartUnicodeChar}b${deprecatedExtendedUnicodeChar}c RETURN 1",
+      s"MATCH (b:${deprecatedStartUnicodeChar}b${deprecatedExtendedUnicodeChar}c) RETURN b",
+      s"MATCH ()-[r:${deprecatedStartUnicodeChar}b${deprecatedExtendedUnicodeChar}c]->() RETURN r"
+    )
+
+    assertNotification(
+      queriesWithDeprecatedStartChar,
+      shouldContainNotification = true,
+      deprecatedIdentifierUnicode(
+        _,
+        deprecatedStartUnicodeChar,
+        s"${deprecatedStartUnicodeChar}b${deprecatedExtendedUnicodeChar}c"
+      )
+    )
+
+    assertNotification(
+      queriesWithDeprecatedStartChar,
+      shouldContainNotification = true,
+      deprecatedIdentifierUnicode(
+        _,
+        deprecatedExtendedUnicodeChar,
+        s"${deprecatedStartUnicodeChar}b${deprecatedExtendedUnicodeChar}c"
+      )
+    )
+  }
+
+  test("Deprecated Unicode Characters in Identifier Start") {
+    val deprecatedStartUnicodeChar = '\u2e2f'
+
+    val queriesWithDeprecatedStartChar = Seq(
+      s"RETURN $$${deprecatedStartUnicodeChar}bc",
+      s"RETURN { ${deprecatedStartUnicodeChar}bc : 1 }",
+      s"WITH 1 AS ${deprecatedStartUnicodeChar}bc RETURN 1",
+      s"MATCH (b:${deprecatedStartUnicodeChar}bc) RETURN b",
+      s"MATCH ()-[r:${deprecatedStartUnicodeChar}bc]->() RETURN r"
+    )
+
+    assertNotification(
+      queriesWithDeprecatedStartChar,
+      shouldContainNotification = true,
+      deprecatedIdentifierUnicode(_, deprecatedStartUnicodeChar, s"${deprecatedStartUnicodeChar}bc")
+    )
   }
 }

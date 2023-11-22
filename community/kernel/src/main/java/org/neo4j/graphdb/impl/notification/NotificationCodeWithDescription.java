@@ -125,6 +125,13 @@ public enum NotificationCodeWithDescription {
                     + "To continue using it, escape the identifier by adding backticks around the identifier `%s`.",
             "The Unicode character `%s` is deprecated for unescaped identifiers and will be considered as a whitespace character in the future. "
                     + "To continue using it, escape the identifier by adding backticks around the identifier `%s`."),
+
+    DEPRECATED_IDENTIFIER_UNICODE(
+            Status.Statement.FeatureDeprecationWarning,
+            "The character with the Unicode representation `%s` is deprecated for unescaped identifiers and will not be supported in the future. "
+                    + "To continue using it, escape the identifier by adding backticks around the identifier `%s`.",
+            "The character with the Unicode representation `%s` is deprecated for unescaped identifiers and will not be supported in the future. "
+                    + "To continue using it, escape the identifier by adding backticks around the identifier `%s`."),
     EAGER_LOAD_CSV(
             Status.Statement.EagerOperator,
             "Using LOAD CSV with a large data set in a query where the execution plan contains the "
@@ -403,6 +410,13 @@ public enum NotificationCodeWithDescription {
             InputPosition position, Character unicode, String identifier) {
         String formattedUnicode = String.format("\\u%04x", (int) unicode);
         return DEPRECATED_IDENTIFIER_WHITESPACE_UNICODE.notificationWithMessage(
+                position, new String[] {formattedUnicode, identifier}, new String[] {formattedUnicode, identifier});
+    }
+
+    public static NotificationImplementation deprecatedIdentifierUnicode(
+            InputPosition position, Character unicode, String identifier) {
+        String formattedUnicode = String.format("\\u%04x", (int) unicode);
+        return DEPRECATED_IDENTIFIER_UNICODE.notificationWithMessage(
                 position, new String[] {formattedUnicode, identifier}, new String[] {formattedUnicode, identifier});
     }
 

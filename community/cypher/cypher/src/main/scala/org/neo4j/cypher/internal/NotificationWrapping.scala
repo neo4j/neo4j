@@ -45,6 +45,7 @@ import org.neo4j.cypher.internal.util.CordonedServersExistedDuringAllocation
 import org.neo4j.cypher.internal.util.DeprecatedConnectComponentsPlannerPreParserOption
 import org.neo4j.cypher.internal.util.DeprecatedDatabaseNameNotification
 import org.neo4j.cypher.internal.util.DeprecatedFunctionNotification
+import org.neo4j.cypher.internal.util.DeprecatedIdentifierUnicode
 import org.neo4j.cypher.internal.util.DeprecatedIdentifierWhitespaceUnicode
 import org.neo4j.cypher.internal.util.DeprecatedNodesOrRelationshipsInSetClauseNotification
 import org.neo4j.cypher.internal.util.DeprecatedPropertyReferenceInCreate
@@ -296,6 +297,13 @@ object NotificationWrapping {
 
     case DeprecatedIdentifierWhitespaceUnicode(position, unicode, identifier) =>
       NotificationCodeWithDescription.deprecatedIdentifierWhitespaceUnicode(
+        position.asInputPosition,
+        unicode,
+        identifier
+      )
+
+    case DeprecatedIdentifierUnicode(position, unicode, identifier) =>
+      NotificationCodeWithDescription.deprecatedIdentifierUnicode(
         position.asInputPosition,
         unicode,
         identifier
