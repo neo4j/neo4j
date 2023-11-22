@@ -82,7 +82,7 @@ public class StorageSchemaReaderSnapshot implements StorageSchemaReader {
     }
 
     @Override
-    public IntSet constraintsGetPropertyTokensForLogicalKey(int token, EntityType entityType) {
+    public IntSet[] constraintsGetPropertyTokensForLogicalKey(int token, EntityType entityType) {
         return schema.constraintsGetPropertyTokensForLogicalKey(token, entityType);
     }
 }

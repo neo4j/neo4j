@@ -138,6 +138,13 @@ public abstract sealed class Enrichment {
         }
 
         /**
+         * @return the {@link KernelVersion} of the database when the enrichment was created
+         */
+        public KernelVersion kernelVersion() {
+            return kernelVersion;
+        }
+
+        /**
          * @return the number of entity changes described in this enrichment
          */
         public int numberOfEntities() {

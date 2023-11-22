@@ -101,7 +101,7 @@ public class FailingDatabaseUpgradeTransactionIT {
             Future<Object> readTx = null;
             try {
                 readTx = executor.executeDontWait(() -> {
-                    try (Transaction tx = db.beginTx()) {
+                    try (Transaction ignored = db.beginTx()) {
                         barrier.reached();
                     }
                     return null;
@@ -136,7 +136,8 @@ public class FailingDatabaseUpgradeTransactionIT {
                         "Upgrade transaction from %s to %s completed",
                         oldKernelVersion, LatestVersions.LATEST_KERNEL_VERSION);
 
-        assertThat(getNodeCount()).as("tx triggering upgrade succeeded").isEqualTo(1);
+        final var originalNodeCount = originalNodeCount();
+        assertThat(getNodeCount()).as("tx triggering upgrade succeeded").isEqualTo(originalNodeCount + 1);
         assertThat(kernelVersion()).isEqualTo(oldKernelVersion);
 
         // The read transaction has now finished so our 2 transactions should be able to start now.
@@ -144,7 +145,7 @@ public class FailingDatabaseUpgradeTransactionIT {
             tx.createNode(); // Write tx to trigger upgrade
             tx.commit();
         }
-        assertThat(getNodeCount()).as("tx triggering upgrade succeeded").isEqualTo(2);
+        assertThat(getNodeCount()).as("tx triggering upgrade succeeded").isEqualTo(originalNodeCount + 2);
         LogAssertions.assertThat(logProvider)
                 .containsMessageWithArguments(
                         "Upgrade transaction from %s to %s completed",
@@ -159,11 +160,19 @@ public class FailingDatabaseUpgradeTransactionIT {
     }
 
     protected void startDbms() {
-        dbms = configure(new TestDatabaseManagementServiceBuilder())
+        dbms = configure(createDbmsBuilder())
                 .setConfig(GraphDatabaseSettings.max_concurrent_transactions, 2)
                 .build();
         db = (GraphDatabaseAPI) dbms.database(GraphDatabaseSettings.DEFAULT_DATABASE_NAME);
         systemDb = (GraphDatabaseAPI) dbms.database(GraphDatabaseSettings.SYSTEM_DATABASE_NAME);
+    }
+
+    protected TestDatabaseManagementServiceBuilder createDbmsBuilder() {
+        return new TestDatabaseManagementServiceBuilder();
+    }
+
+    protected long originalNodeCount() {
+        return ZIPPED_STORE.statistics().nodes();
     }
 
     private KernelVersion kernelVersion() {

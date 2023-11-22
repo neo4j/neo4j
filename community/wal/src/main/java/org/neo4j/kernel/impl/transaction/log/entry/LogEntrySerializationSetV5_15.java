@@ -17,15 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.recordstorage;
+package org.neo4j.kernel.impl.transaction.log.entry;
 
 import org.neo4j.kernel.KernelVersion;
 
-class LogCommandSerializationVGloriousFuture extends LogCommandSerializationV5_15 {
-    static final LogCommandSerializationVGloriousFuture INSTANCE = new LogCommandSerializationVGloriousFuture();
+class LogEntrySerializationSetV5_15 extends LogEntrySerializationSetV5_14 {
+    LogEntrySerializationSetV5_15() {
+        super(KernelVersion.V5_15);
+    }
 
-    @Override
-    public KernelVersion kernelVersion() {
-        return KernelVersion.GLORIOUS_FUTURE;
+    LogEntrySerializationSetV5_15(KernelVersion kernelVersion) {
+        super(kernelVersion);
     }
 }

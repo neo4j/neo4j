@@ -26,6 +26,7 @@ import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -37,7 +38,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.StampedLock;
 import java.util.function.Function;
-import org.eclipse.collections.api.factory.primitive.IntObjectMaps;
+import org.eclipse.collections.api.factory.Lists;
+import org.eclipse.collections.api.factory.Maps;
 import org.eclipse.collections.api.factory.primitive.IntSets;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.api.set.primitive.IntSet;
@@ -55,6 +57,9 @@ import org.neo4j.storageengine.api.ConstraintRuleAccessor;
  * Will always reflect the committed state of the schema store.
  */
 public class SchemaCache {
+
+    public static final IntSet[] NO_LOGICAL_KEYS = new IntSet[0];
+
     private final Lock cacheUpdateLock;
     private volatile SchemaCacheState schemaCacheState;
 
@@ -204,7 +209,7 @@ public class SchemaCache {
         return schemaCacheState.hasRelatedSchema(token, entityType);
     }
 
-    public IntSet constraintsGetPropertyTokensForLogicalKey(int token, EntityType entityType) {
+    public IntSet[] constraintsGetPropertyTokensForLogicalKey(int token, EntityType entityType) {
         /* These values are required for Change-Data-Capture as the logical keys for a node/relationship must be
          * captured for every entity that participates in the change (e.g. the node keys are required even if unchanged
          * when they are part of a relationship that has changed)
@@ -554,9 +559,9 @@ public class SchemaCache {
             }
         }
 
-        IntSet constraintsGetPropertyTokensForLogicalKey(int token, EntityType entityType) {
+        IntSet[] constraintsGetPropertyTokensForLogicalKey(int token, EntityType entityType) {
             final var state = logicalKeyConstraints.get(new LogicalEntityKey(entityType, token));
-            return (state == null) ? IntSets.immutable.empty() : state.propertyIds();
+            return (state == null) ? NO_LOGICAL_KEYS : state.propertyIds();
         }
     }
 
@@ -580,14 +585,14 @@ public class SchemaCache {
 
         private final Set<ConstraintDescriptor> constraints = Sets.mutable.empty();
 
-        private final MutableIntSet propertyIds = IntSets.mutable.empty();
+        private IntSet[] logicalKeyProperties;
 
         public LogicalKeyState(ConstraintDescriptor descriptor) {
             addConstraint(descriptor);
         }
 
-        IntSet propertyIds() {
-            return propertyIds;
+        IntSet[] propertyIds() {
+            return logicalKeyProperties;
         }
 
         LogicalKeyState addConstraint(ConstraintDescriptor descriptor) {
@@ -605,36 +610,67 @@ public class SchemaCache {
         }
 
         private void rebuild() {
-            propertyIds.clear();
-            final var propToConstraintType = IntObjectMaps.mutable.<ConstraintType>empty();
-            for (ConstraintDescriptor descriptor : constraints) {
-                final var constraintType = descriptor.type();
+            logicalKeyProperties = null;
 
-                // We can only merge constraints that enforce either UNIQUE or IS NOT NULL
-                if (!constraintType.enforcesUniqueness() && !constraintType.enforcesPropertyExistence()) {
-                    continue;
-                }
+            final var logicalProps = Lists.mutable.<IntSet>empty();
+            final var logicalMatches = Maps.mutable.<int[], MutableIntSet>empty();
+            constraints.stream()
+                    // sort as UNIQUE must be seen before EXISTS as UNIQUEs propertyIDs form the logical key grouping
+                    .sorted(Comparator.comparing(descriptor -> order(descriptor.type())))
+                    .forEach(descriptor -> {
+                        final var constraintProperties = descriptor.schema().getPropertyIds();
+                        switch (descriptor.type()) {
+                            case UNIQUE_EXISTS -> logicalProps.add(IntSets.mutable.of(constraintProperties));
+                            case UNIQUE -> logicalMatches.computeIfAbsent(
+                                    constraintProperties, keyProperties -> IntSets.mutable.empty());
+                            case EXISTS -> logicalMatches.forEachKeyValue((keyProperties, matched) -> {
+                                // scan through the UNIQUE groups and look for any partial logical groupings that still
+                                // require matching properties to become full logical keys
+                                if (matched.size() < keyProperties.length) {
+                                    for (var keyProperty : keyProperties) {
+                                        for (var constraintProperty : constraintProperties) {
+                                            if (constraintProperty == keyProperty) {
+                                                matched.add(constraintProperty);
+                                            }
+                                        }
+                                    }
 
-                for (var property : descriptor.schema().getPropertyIds()) {
-                    final var mergedType = propToConstraintType.updateValue(
-                            property, descriptor::type, type -> merge(type, constraintType));
-                    if (mergedType == ConstraintType.UNIQUE_EXISTS) {
-                        propertyIds.add(property);
-                    }
-                }
-            }
+                                    if (matched.size() == keyProperties.length) {
+                                        // partially matched key  => full logical key
+                                        logicalProps.add(matched);
+                                    }
+                                }
+                            });
+                            default -> {}
+                        }
+                    });
+
+            logicalKeyProperties = logicalProps
+                    .sortThis((props1, props2) -> {
+                        // prefer larger keys
+                        var c = -Integer.compare(props1.size(), props2.size());
+                        if (c == 0) {
+                            // fallback to ordering on property IDs
+                            final var sorted1 = props1.toSortedArray();
+                            final var sorted2 = props2.toSortedArray();
+                            for (var i = 0; i < sorted1.length; i++) {
+                                c = Integer.compare(sorted1[i], sorted2[i]);
+                                if (c != 0) {
+                                    break;
+                                }
+                            }
+                        }
+                        return c;
+                    })
+                    .toArray(IntSet[]::new);
         }
 
-        private ConstraintType merge(ConstraintType currentType, ConstraintType additionalType) {
-            if (currentType == null) {
-                return additionalType;
-            }
-
-            return switch (currentType) {
-                case EXISTS -> additionalType == ConstraintType.EXISTS ? currentType : ConstraintType.UNIQUE_EXISTS;
-                case UNIQUE -> additionalType == ConstraintType.UNIQUE ? currentType : ConstraintType.UNIQUE_EXISTS;
-                case UNIQUE_EXISTS -> currentType;
-                default -> throw new IllegalStateException("Can not fuse %s".formatted(currentType));
+        private static int order(ConstraintType type) {
+            return switch (type) {
+                case UNIQUE_EXISTS -> 0;
+                case UNIQUE -> 1;
+                case EXISTS -> 2;
+                case PROPERTY_TYPE -> 3;
             };
         }
     }

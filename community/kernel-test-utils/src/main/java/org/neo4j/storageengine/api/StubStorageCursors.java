@@ -239,7 +239,7 @@ public class StubStorageCursors implements StorageReader {
     }
 
     @Override
-    public IntSet constraintsGetPropertyTokensForLogicalKey(int token, EntityType entityType) {
+    public IntSet[] constraintsGetPropertyTokensForLogicalKey(int token, EntityType entityType) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 

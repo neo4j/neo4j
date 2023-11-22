@@ -32,11 +32,12 @@ import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.helpers.collection.Iterators.single;
+import static org.neo4j.internal.schema.SchemaCache.NO_LOGICAL_KEYS;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.internal.schema.SchemaDescriptors.forRelType;
 import static org.neo4j.internal.schema.SchemaDescriptors.fulltext;
+import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.existsForLabel;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.keyForSchema;
-import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.nodeKeyForLabel;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.uniqueForLabel;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.uniqueForSchema;
 
@@ -49,6 +50,7 @@ import java.util.stream.Stream;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.eclipse.collections.api.factory.Lists;
 import org.eclipse.collections.api.factory.primitive.IntSets;
+import org.eclipse.collections.api.set.primitive.IntSet;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -63,6 +65,7 @@ import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.ValueCategory;
 
 class SchemaCacheTest {
+
     private final SchemaRule hans = newIndexRule(1, 0, 5);
     private final SchemaRule witch = nodePropertyExistenceConstraint(2, 3, 6);
     private final SchemaRule gretel = newIndexRule(3, 0, 7);
@@ -139,7 +142,7 @@ class SchemaCacheTest {
         ConstraintDescriptor unique1 = uniqueForLabel(1, 2);
         ConstraintDescriptor unique2 = uniqueForLabel(3, 4);
         ConstraintDescriptor existsRel = ConstraintDescriptorFactory.existsForRelType(5, 6);
-        ConstraintDescriptor existsNode = ConstraintDescriptorFactory.existsForLabel(7, 8);
+        ConstraintDescriptor existsNode = existsForLabel(7, 8);
 
         assertEquals(asSet(unique1, unique2, existsRel, existsNode), Iterables.asSet(cache.constraints()));
 
@@ -319,20 +322,21 @@ class SchemaCacheTest {
     @Test
     void shouldRemoveWhenMultipeIndexDescriptorsForSameSchema() {
         // Given
+        final var label = 2;
         SchemaCache cache = newSchemaCache();
 
         IndexDescriptor expected;
         IndexDescriptor expected2;
-        cache.addSchemaRule(newIndexRule(1L, 1, 2));
-        cache.addSchemaRule(expected = newIndexRule(2L, IndexType.RANGE, 1, 3));
-        cache.addSchemaRule(expected2 = newIndexRule(3L, IndexType.TEXT, 1, 3));
-        cache.addSchemaRule(newIndexRule(4L, 2, 2));
+        cache.addSchemaRule(newIndexRule(1L, label, 2));
+        cache.addSchemaRule(expected = newIndexRule(2L, IndexType.RANGE, label, 3));
+        cache.addSchemaRule(expected2 = newIndexRule(3L, IndexType.TEXT, label, 3));
+        cache.addSchemaRule(newIndexRule(4L, label + 1, 2));
 
         cache.removeSchemaRule(expected.getId());
         // When
 
         // Then
-        var schema = forLabel(1, 3);
+        var schema = forLabel(label, 3);
         assertThat(cache.indexesForSchema(schema)).toIterable().containsExactlyInAnyOrder(expected2);
         assertThat(cache.indexForSchemaAndType(schema, IndexType.TEXT)).isEqualTo(expected2);
     }
@@ -730,9 +734,9 @@ class SchemaCacheTest {
 
     @Test
     void hasConstraintRuleShouldNotMatchOnDifferentIndexType() {
-        ConstraintDescriptor existing = uniquenessConstraint(1, 2, 3, 4, IndexType.TEXT);
+        ConstraintDescriptor existing = uniquenessConstraint(1, 2, 4, 5, IndexType.TEXT);
         // Different index type.
-        ConstraintDescriptor checked = uniquenessConstraint(0, 2, 3, 4, IndexType.RANGE);
+        ConstraintDescriptor checked = uniquenessConstraint(0, 2, 4, 5, IndexType.RANGE);
         SchemaCache cache = newSchemaCache(existing);
         assertFalse(cache.hasConstraintRule(checked));
     }
@@ -794,20 +798,44 @@ class SchemaCacheTest {
         final var schemaName = "schema name";
         final var labelId = 2;
         final var propertyId = 3;
-        final var index = IndexPrototype.uniqueForSchema(forLabel(labelId, propertyId))
-                .withName(schemaName)
-                .materialise(1);
-        final var constraint = nodeKeyForLabel(labelId, propertyId)
-                .withId(42)
-                .withOwnedIndexId(index.getId())
-                .withName(schemaName);
+        final var schema = forLabel(labelId, propertyId);
+        final var index =
+                IndexPrototype.uniqueForSchema(schema).withName(schemaName).materialise(1);
+        final var constraint =
+                keyForSchema(schema).withId(42).withOwnedIndexId(index.getId()).withName(schemaName);
         final var cache = newSchemaCache(index, constraint);
         assertThat(cache.constraintsGetPropertyTokensForLogicalKey(labelId, NODE))
                 .as("should find the property that makes up the logical key for the node/label")
-                .isEqualTo(IntSets.immutable.of(propertyId));
+                .isEqualTo(logicalKeys(propertyId));
         assertThat(cache.constraintsGetPropertyTokensForLogicalKey(labelId + 1, NODE))
                 .as("should NOT find any logical key for the node/label")
-                .isEqualTo(IntSets.immutable.empty());
+                .isEqualTo(NO_LOGICAL_KEYS);
+    }
+
+    @Test
+    void logicalKeysWithMultipleConstraintsForNodeKey() {
+        final var labelId = 2;
+        final var propertyId1 = 3;
+        final var propertyId2 = 4;
+        final var propertyId3 = 5;
+        final var schema1 = forLabel(labelId, propertyId1);
+        final var schema2 = forLabel(labelId, propertyId2, propertyId3);
+
+        final var index1 =
+                IndexPrototype.uniqueForSchema(schema1).withName("i1").materialise(1);
+        final var index2 =
+                IndexPrototype.uniqueForSchema(schema2).withName("i2").materialise(2);
+
+        final var c1 = keyForSchema(schema1).withName("c1").withId(42).withOwnedIndexId(index1.getId());
+        final var c2 = keyForSchema(schema2).withName("c2").withId(43).withOwnedIndexId(index2.getId());
+
+        final var expected = new org.eclipse.collections.api.set.primitive.ImmutableIntSet[] {
+            IntSets.immutable.of(propertyId2, propertyId3), IntSets.immutable.of(propertyId1)
+        };
+
+        assertThat(newSchemaCache(index1, c1, c2).constraintsGetPropertyTokensForLogicalKey(labelId, NODE))
+                .as("should find the properties that makes up the logical keys for the node/label")
+                .isEqualTo(expected);
     }
 
     @Test
@@ -816,17 +844,15 @@ class SchemaCacheTest {
         final var labelId = 2;
         final var propertyId1 = 3;
         final var propertyId2 = 4;
-        final var index = IndexPrototype.uniqueForSchema(forLabel(labelId, propertyId1, propertyId2))
-                .withName(schemaName)
-                .materialise(1);
-        final var constraint = nodeKeyForLabel(labelId, propertyId1, propertyId2)
-                .withId(42)
-                .withOwnedIndexId(index.getId())
-                .withName(schemaName);
+        final var schema = forLabel(labelId, propertyId1, propertyId2);
+        final var index =
+                IndexPrototype.uniqueForSchema(schema).withName(schemaName).materialise(1);
+        final var constraint =
+                keyForSchema(schema).withId(42).withOwnedIndexId(index.getId()).withName(schemaName);
         final var cache = newSchemaCache(index, constraint);
         assertThat(cache.constraintsGetPropertyTokensForLogicalKey(labelId, NODE))
                 .as("should find the properties that makes up the logical key for the node/label")
-                .isEqualTo(IntSets.immutable.of(propertyId1, propertyId2));
+                .isEqualTo(logicalKeys(propertyId1, propertyId2));
     }
 
     @Test
@@ -834,21 +860,45 @@ class SchemaCacheTest {
         final var schemaName = "schema name";
         final var relType = 2;
         final var propertyId = 3;
-        final var index = IndexPrototype.uniqueForSchema(forRelType(relType, propertyId))
-                .withName(schemaName)
-                .materialise(1);
-        final var constraint = keyForSchema(SchemaDescriptors.forRelType(relType, propertyId))
-                .withId(42)
-                .withOwnedIndexId(index.getId())
-                .withName(schemaName);
+        final var schema = forRelType(relType, propertyId);
+        final var index =
+                IndexPrototype.uniqueForSchema(schema).withName(schemaName).materialise(1);
+        final var constraint =
+                keyForSchema(schema).withId(42).withOwnedIndexId(index.getId()).withName(schemaName);
 
         final var cache = newSchemaCache(index, constraint);
         assertThat(cache.constraintsGetPropertyTokensForLogicalKey(relType, RELATIONSHIP))
                 .as("should find the property that makes up the logical key for the relationship")
-                .isEqualTo(IntSets.immutable.of(propertyId));
+                .isEqualTo(logicalKeys(propertyId));
         assertThat(cache.constraintsGetPropertyTokensForLogicalKey(relType + 1, RELATIONSHIP))
                 .as("should NOT find any logical key for the relationship")
-                .isEqualTo(IntSets.immutable.empty());
+                .isEqualTo(NO_LOGICAL_KEYS);
+    }
+
+    @Test
+    void logicalKeysWithMultipleConstraintsForRelationshipKey() {
+        final var relType = 2;
+        final var propertyId1 = 3;
+        final var propertyId2 = 4;
+        final var propertyId3 = 5;
+        final var schema1 = forRelType(relType, propertyId1);
+        final var schema2 = forRelType(relType, propertyId2, propertyId3);
+
+        final var index1 =
+                IndexPrototype.uniqueForSchema(schema1).withName("i1").materialise(1);
+        final var index2 =
+                IndexPrototype.uniqueForSchema(schema2).withName("i2").materialise(2);
+
+        final var c1 = keyForSchema(schema1).withName("c1").withId(42).withOwnedIndexId(index1.getId());
+        final var c2 = keyForSchema(schema2).withName("c2").withId(43).withOwnedIndexId(index2.getId());
+
+        final var expected = new org.eclipse.collections.api.set.primitive.ImmutableIntSet[] {
+            IntSets.immutable.of(propertyId2, propertyId3), IntSets.immutable.of(propertyId1)
+        };
+
+        assertThat(newSchemaCache(index1, c1, c2).constraintsGetPropertyTokensForLogicalKey(relType, RELATIONSHIP))
+                .as("should find the properties that makes up the logical keys for the relationship")
+                .isEqualTo(expected);
     }
 
     @Test
@@ -857,18 +907,16 @@ class SchemaCacheTest {
         final var relType = 2;
         final var propertyId1 = 3;
         final var propertyId2 = 4;
-        final var index = IndexPrototype.uniqueForSchema(forRelType(relType, propertyId1, propertyId2))
-                .withName(schemaName)
-                .materialise(1);
-        final var constraint = keyForSchema(SchemaDescriptors.forRelType(relType, propertyId1, propertyId2))
-                .withId(42)
-                .withOwnedIndexId(index.getId())
-                .withName(schemaName);
+        final var schema = forRelType(relType, propertyId1, propertyId2);
+        final var index =
+                IndexPrototype.uniqueForSchema(schema).withName(schemaName).materialise(1);
+        final var constraint =
+                keyForSchema(schema).withId(42).withOwnedIndexId(index.getId()).withName(schemaName);
 
         final var cache = newSchemaCache(index, constraint);
         assertThat(cache.constraintsGetPropertyTokensForLogicalKey(relType, RELATIONSHIP))
                 .as("should find the property that makes up the logical key for the relationship")
-                .isEqualTo(IntSets.immutable.of(propertyId1, propertyId2));
+                .isEqualTo(logicalKeys(propertyId1, propertyId2));
     }
 
     @Test
@@ -878,31 +926,32 @@ class SchemaCacheTest {
         final var propertyId1 = 3;
         final var propertyId2 = 4;
 
-        final var index = IndexPrototype.uniqueForSchema(forLabel(labelId, propertyId1, propertyId2))
-                .withName(schemaName)
-                .materialise(1);
-        final var uniquenessConstraint = uniquenessConstraint(42, labelId, propertyId1, index.getId());
+        final var schema = forLabel(labelId, propertyId1, propertyId2);
+        final var index =
+                IndexPrototype.uniqueForSchema(schema).withName(schemaName).materialise(1);
+
+        final var uniquenessConstraint = uniqueForSchema(schema).withId(42).withOwnedIndexId(index.getId());
 
         final var cache = newSchemaCache(index, uniquenessConstraint);
         assertThat(cache.constraintsGetPropertyTokensForLogicalKey(labelId, NODE))
                 .as("should not find the logical key for the node/label yet")
-                .isEqualTo(IntSets.immutable.empty());
+                .isEqualTo(NO_LOGICAL_KEYS);
 
         final var existenceConstraint = nodePropertyExistenceConstraint(43, labelId, propertyId1);
         cache.addSchemaRule(existenceConstraint);
         assertThat(cache.constraintsGetPropertyTokensForLogicalKey(labelId, NODE))
-                .as("should now find the property that makes up the logical key for the node/label")
-                .isEqualTo(IntSets.immutable.of(propertyId1));
+                .as("not all properties exist to make up the logical key for the node/label")
+                .isEqualTo(NO_LOGICAL_KEYS);
 
-        cache.addSchemaRule(uniquenessConstraint(44, labelId, propertyId2, index.getId()));
+        cache.addSchemaRule(nodePropertyExistenceConstraint(44, labelId, propertyId2));
         assertThat(cache.constraintsGetPropertyTokensForLogicalKey(labelId, NODE))
-                .as("should still be the one property that makes up the logical key for the node/label")
-                .isEqualTo(IntSets.immutable.of(propertyId1));
+                .as("All properties exist that make up the logical key for the node/label")
+                .isEqualTo(logicalKeys(propertyId1, propertyId2));
 
         cache.removeSchemaRule(existenceConstraint.getId());
         assertThat(cache.constraintsGetPropertyTokensForLogicalKey(labelId, NODE))
                 .as("logical key requires both the uniqueness and existence constraints")
-                .isEqualTo(IntSets.immutable.empty());
+                .isEqualTo(NO_LOGICAL_KEYS);
     }
 
     @Test
@@ -915,7 +964,7 @@ class SchemaCacheTest {
         final var index = IndexPrototype.uniqueForSchema(forRelType(relType, propertyId1, propertyId2))
                 .withName(schemaName)
                 .materialise(1);
-        final var uniquenessConstraint = uniqueForSchema(SchemaDescriptors.forRelType(relType, propertyId1))
+        final var uniquenessConstraint = uniqueForSchema(forRelType(relType, propertyId1))
                 .withId(42)
                 .withOwnedIndexId(index.getId())
                 .withName(schemaName);
@@ -923,23 +972,23 @@ class SchemaCacheTest {
         final var cache = newSchemaCache(index, uniquenessConstraint);
         assertThat(cache.constraintsGetPropertyTokensForLogicalKey(relType, RELATIONSHIP))
                 .as("should not find the logical key for the relationship yet")
-                .isEqualTo(IntSets.immutable.empty());
+                .isEqualTo(NO_LOGICAL_KEYS);
 
         final var existenceConstraint = relPropertyExistenceConstraint(43, relType, propertyId1);
         cache.addSchemaRule(existenceConstraint);
         assertThat(cache.constraintsGetPropertyTokensForLogicalKey(relType, RELATIONSHIP))
                 .as("should now find the property that makes up the logical key for the relationship")
-                .isEqualTo(IntSets.immutable.of(propertyId1));
+                .isEqualTo(logicalKeys(propertyId1));
 
         cache.addSchemaRule(uniquenessConstraint(44, relType, propertyId2, index.getId()));
         assertThat(cache.constraintsGetPropertyTokensForLogicalKey(relType, RELATIONSHIP))
                 .as("should still be the one property that makes up the logical key for the relationship")
-                .isEqualTo(IntSets.immutable.of(propertyId1));
+                .isEqualTo(logicalKeys(propertyId1));
 
         cache.removeSchemaRule(existenceConstraint.getId());
         assertThat(cache.constraintsGetPropertyTokensForLogicalKey(relType, RELATIONSHIP))
                 .as("logical key requires both the uniqueness and existence constraints")
-                .isEqualTo(IntSets.immutable.empty());
+                .isEqualTo(NO_LOGICAL_KEYS);
     }
 
     @ParameterizedTest
@@ -951,15 +1000,12 @@ class SchemaCacheTest {
         final var propertyId1 = 3;
         final var propertyId2 = 4;
 
-        final var index = IndexPrototype.uniqueForSchema(forLabel(labelId, propertyId1, propertyId2))
-                .withName(schemaName)
-                .materialise(1);
+        final var schema = forLabel(labelId, propertyId1, propertyId2);
+        final var index =
+                IndexPrototype.uniqueForSchema(schema).withName(schemaName).materialise(1);
 
         final var descriptors = Lists.immutable.of(
-                nodeKeyForLabel(labelId, propertyId1, propertyId2)
-                        .withId(42)
-                        .withOwnedIndexId(index.getId())
-                        .withName(schemaName),
+                keyForSchema(schema).withId(42).withOwnedIndexId(index.getId()).withName(schemaName),
                 nodePropertyExistenceConstraint(43, labelId, propertyId1),
                 nodePropertyExistenceConstraint(44, labelId, propertyId2));
 
@@ -969,7 +1015,7 @@ class SchemaCacheTest {
 
         assertThat(cache.constraintsGetPropertyTokensForLogicalKey(labelId, NODE))
                 .as("should find the properties that makes up the logical key for the node/label")
-                .isEqualTo(IntSets.immutable.of(propertyId1, propertyId2));
+                .isEqualTo(logicalKeys(propertyId1, propertyId2));
     }
 
     @ParameterizedTest
@@ -981,15 +1027,12 @@ class SchemaCacheTest {
         final var propertyId1 = 3;
         final var propertyId2 = 4;
 
-        final var index = IndexPrototype.uniqueForSchema(forLabel(relType, propertyId1, propertyId2))
-                .withName(schemaName)
-                .materialise(1);
+        final var schema = forRelType(relType, propertyId1, propertyId2);
+        final var index =
+                IndexPrototype.uniqueForSchema(schema).withName(schemaName).materialise(1);
 
         final var descriptors = Lists.immutable.of(
-                keyForSchema(SchemaDescriptors.forRelType(relType, propertyId1, propertyId2))
-                        .withId(42)
-                        .withOwnedIndexId(index.getId())
-                        .withName(schemaName),
+                keyForSchema(schema).withId(42).withOwnedIndexId(index.getId()).withName(schemaName),
                 relPropertyExistenceConstraint(43, relType, propertyId1),
                 relPropertyExistenceConstraint(44, relType, propertyId2));
 
@@ -999,7 +1042,7 @@ class SchemaCacheTest {
 
         assertThat(cache.constraintsGetPropertyTokensForLogicalKey(relType, RELATIONSHIP))
                 .as("should find the properties that makes up the logical key for the rel/type")
-                .isEqualTo(IntSets.immutable.of(propertyId1, propertyId2));
+                .isEqualTo(logicalKeys(propertyId1, propertyId2));
     }
 
     // HELPERS
@@ -1038,7 +1081,7 @@ class SchemaCacheTest {
     }
 
     private static ConstraintDescriptor nodePropertyExistenceConstraint(long ruleId, int labelId, int propertyId) {
-        return ConstraintDescriptorFactory.existsForLabel(labelId, propertyId).withId(ruleId);
+        return existsForLabel(labelId, propertyId).withId(ruleId);
     }
 
     private static ConstraintDescriptor relPropertyExistenceConstraint(long ruleId, int relTypeId, int propertyId) {
@@ -1064,6 +1107,10 @@ class SchemaCacheTest {
 
     private SchemaCache newSchemaCacheWithRulesForRelatedToCalls() {
         return newSchemaCache(schema3_4, schema5_6_7, schema5_8, node35_8, rel35_8);
+    }
+
+    private static IntSet[] logicalKeys(int... props) {
+        return new IntSet[] {IntSets.immutable.of(props)};
     }
 
     private static class ConstraintSemantics extends StandardConstraintRuleAccessor {

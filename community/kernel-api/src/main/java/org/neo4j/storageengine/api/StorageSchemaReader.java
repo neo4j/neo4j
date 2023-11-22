@@ -106,7 +106,7 @@ public interface StorageSchemaReader {
      *
      * @param token the token ID (i.e. label or relationship type ID)
      * @param entityType the entity type
-     * @return the property token IDs that act as a logical key for the provided entity/token pairing
+     * @return the array of property token IDs that act as a logical key(s) for the provided entity/token pairing
      */
-    IntSet constraintsGetPropertyTokensForLogicalKey(int token, EntityType entityType);
+    IntSet[] constraintsGetPropertyTokensForLogicalKey(int token, EntityType entityType);
 }

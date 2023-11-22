@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+import org.eclipse.collections.api.multimap.Multimap;
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
@@ -96,6 +97,8 @@ public final class ValueUtils {
                     throw new IllegalArgumentException(
                             "Unknown entity + " + object.getClass().getName());
                 }
+            } else if (object instanceof Multimap<?, ?>) {
+                return asMultimapValue((Multimap<String, Object>) object, wrapEntities);
             } else if (object instanceof Map<?, ?>) {
                 return asMapValue((Map<String, Object>) object, wrapEntities);
             } else if (object instanceof Iterable<?>) {
@@ -231,6 +234,22 @@ public final class ValueUtils {
         for (Map.Entry<String, ?> entry : map.entrySet()) {
             builder.add(entry.getKey(), ValueUtils.of(entry.getValue(), wrapEntities));
         }
+        return builder.build();
+    }
+
+    public static MapValue asMultimapValue(Multimap<String, ?> map) {
+        return asMultimapValue(map, false);
+    }
+
+    public static MapValue asMultimapValue(Multimap<String, ?> map, boolean wrapEntities) {
+        if (map.isEmpty()) {
+            return VirtualValues.EMPTY_MAP;
+        }
+
+        MapValueBuilder builder = new MapValueBuilder(map.sizeDistinct());
+        map.forEachKeyMultiValues((key, values) -> {
+            builder.add(key, of(values, wrapEntities));
+        });
         return builder.build();
     }
 

@@ -210,7 +210,7 @@ public class RecordStorageReader implements StorageReader {
     }
 
     @Override
-    public IntSet constraintsGetPropertyTokensForLogicalKey(int token, EntityType entityType) {
+    public IntSet[] constraintsGetPropertyTokensForLogicalKey(int token, EntityType entityType) {
         return schemaCache.constraintsGetPropertyTokensForLogicalKey(token, entityType);
     }
 

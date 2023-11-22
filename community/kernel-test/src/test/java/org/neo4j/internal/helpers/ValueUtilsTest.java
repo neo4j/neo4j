@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import org.eclipse.collections.api.factory.Maps;
+import org.eclipse.collections.impl.factory.Multimaps;
 import org.junit.jupiter.api.Test;
 import org.neo4j.internal.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.util.ValueUtils;
@@ -116,5 +117,25 @@ class ValueUtilsTest {
         MapValue mapValue = (MapValue) anyValue;
         assertThat(mapValue.get("a")).isEqualTo(VirtualValues.list(stringValue("foo"), intValue(42)));
         assertThat(mapValue.size()).isEqualTo(1);
+    }
+
+    @Test
+    void shouldHandleMultimaps() {
+        // Given
+        final var multimap = Multimaps.mutable.list.<String, Object>empty();
+        multimap.put("a", "foo");
+        multimap.put("a", 42);
+        multimap.put("b", "bar");
+        multimap.put("b", 69);
+
+        // When
+        AnyValue anyValue = ValueUtils.of(multimap);
+
+        // Then
+        assertThat(anyValue).isInstanceOf(MapValue.class);
+        MapValue mapValue = (MapValue) anyValue;
+        assertThat(mapValue.get("a")).isEqualTo(VirtualValues.list(stringValue("foo"), intValue(42)));
+        assertThat(mapValue.get("b")).isEqualTo(VirtualValues.list(stringValue("bar"), intValue(69)));
+        assertThat(mapValue.size()).isEqualTo(2);
     }
 }

@@ -30,6 +30,7 @@ import org.eclipse.collections.api.factory.primitive.IntObjectMaps;
 import org.eclipse.collections.api.factory.primitive.IntSets;
 import org.eclipse.collections.api.set.primitive.IntSet;
 import org.eclipse.collections.api.set.primitive.LongSet;
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.neo4j.collection.trackable.HeapTrackingArrayList;
 import org.neo4j.collection.trackable.HeapTrackingCollections;
 import org.neo4j.collection.trackable.HeapTrackingLongIntHashMap;
@@ -122,7 +123,7 @@ public class TxEnrichmentVisitor extends TxStateVisitor.Delegator implements Enr
 
     private final CaptureMode captureMode;
     private final String serverId;
-    private final KernelVersionProvider kernelVersionProvider;
+    private final KernelVersion kernelVersion;
     private final EnrichmentCommandFactory enrichmentCommandFactory;
     private final ReadableTransactionState txState;
     private final long lastTransactionIdWhenStarted;
@@ -158,7 +159,7 @@ public class TxEnrichmentVisitor extends TxStateVisitor.Delegator implements Enr
         super(parent);
         this.captureMode = captureMode;
         this.serverId = serverId;
-        this.kernelVersionProvider = kernelVersionProvider;
+        this.kernelVersion = kernelVersionProvider.kernelVersion();
         this.enrichmentCommandFactory = enrichmentCommandFactory;
         this.txState = txState;
         this.lastTransactionIdWhenStarted = lastTransactionIdWhenStarted;
@@ -178,7 +179,7 @@ public class TxEnrichmentVisitor extends TxStateVisitor.Delegator implements Enr
         this.relCursor = store.allocateRelationshipScanCursor(cursorContext, storeCursors);
         this.propertiesCursor = store.allocatePropertyCursor(cursorContext, storeCursors, memoryTracker);
 
-        if (kernelVersionProvider.kernelVersion().isAtLeast(KernelVersion.VERSION_CDC_USER_METADATA_INTRODUCED)) {
+        if (kernelVersion.isAtLeast(KernelVersion.VERSION_CDC_USER_METADATA_INTRODUCED)) {
             this.metadataChannel = new ValuesChannel(memoryTracker);
             if (!userMetadata.isEmpty()) {
                 metadataChannel.writer.writeInteger(userMetadata.size());
@@ -339,7 +340,7 @@ public class TxEnrichmentVisitor extends TxStateVisitor.Delegator implements Enr
                         metadataChannel.channel);
             }
 
-            return enrichmentCommandFactory.create(kernelVersionProvider.kernelVersion(), enrichment);
+            return enrichmentCommandFactory.create(kernelVersion, enrichment);
         }
 
         return null;
@@ -491,27 +492,28 @@ public class TxEnrichmentVisitor extends TxStateVisitor.Delegator implements Enr
             return IntSets.immutable.empty();
         }
 
-        var constraintsAdded = 0;
+        var constraintGroupsAdded = 0;
         final var constraintProps = IntSets.mutable.empty();
         final var constraintsPosition = changesChannel.size();
         for (var label : labels) {
-            final var properties = store.constraintsGetPropertyTokensForLogicalKey(label, EntityType.NODE);
-            if (!properties.isEmpty()) {
-                constraintProps.addAll(properties);
-
-                if (constraintsAdded == 0) {
+            final var logicalPropsArray = store.constraintsGetPropertyTokensForLogicalKey(label, EntityType.NODE);
+            if (logicalPropsArray.length > 0) {
+                if (constraintGroupsAdded == 0) {
                     // write a dummy constraints count now - will be updated when all have been added
                     changesChannel.putInt(0);
                 }
 
-                changesChannel.putInt(label).putInt(properties.size());
-                properties.forEach(changesChannel::putInt);
-                constraintsAdded++;
+                changesChannel.putInt(label).putInt(logicalPropsArray.length);
+                for (var logicalProps : logicalPropsArray) {
+                    writeConstraints(constraintProps, logicalProps);
+                }
+
+                constraintGroupsAdded++;
             }
         }
 
-        if (!constraintProps.isEmpty()) {
-            changesChannel.putInt(constraintsPosition, constraintsAdded);
+        if (constraintGroupsAdded > 0) {
+            changesChannel.putInt(constraintsPosition, constraintGroupsAdded);
             setNodeChangeDelta(id, ChangeType.CONSTRAINTS, constraintsPosition);
         }
 
@@ -528,16 +530,20 @@ public class TxEnrichmentVisitor extends TxStateVisitor.Delegator implements Enr
     }
 
     private IntSet captureRelTypeConstraints(long id, int relType) {
-        final var properties = store.constraintsGetPropertyTokensForLogicalKey(relType, EntityType.RELATIONSHIP);
-        if (!properties.isEmpty()) {
+        final var constraintProps = IntSets.mutable.empty();
+        final var logicalPropsArrays =
+                store.constraintsGetPropertyTokensForLogicalKey(relType, EntityType.RELATIONSHIP);
+        if (logicalPropsArrays.length > 0) {
             final var constraintsPosition = changesChannel.size();
-            changesChannel.putInt(relType).putInt(properties.size());
-            properties.forEach(changesChannel::putInt);
+            changesChannel.putInt(relType).putInt(logicalPropsArrays.length);
+            for (var logicalProps : logicalPropsArrays) {
+                writeConstraints(constraintProps, logicalProps);
+            }
 
             setRelationshipChangeDelta(id, ChangeType.CONSTRAINTS, constraintsPosition);
         }
 
-        return properties;
+        return constraintProps;
     }
 
     private int captureRelationshipState(Iterable<StorageProperty> properties) {
@@ -555,6 +561,12 @@ public class TxEnrichmentVisitor extends TxStateVisitor.Delegator implements Enr
 
         changesChannel.putInt(NO_MORE_PROPERTIES);
         return position;
+    }
+
+    private void writeConstraints(MutableIntSet allConstraintProps, IntSet logicalProps) {
+        allConstraintProps.addAll(logicalProps);
+        changesChannel.putInt(logicalProps.size());
+        logicalProps.forEach(changesChannel::putInt);
     }
 
     private int addNewNodeProperties(Iterable<StorageProperty> properties) {
@@ -703,9 +715,9 @@ public class TxEnrichmentVisitor extends TxStateVisitor.Delegator implements Enr
         // i.e. rel first rather than node first
         var orderCode = (short) (deltaType.id() << Byte.SIZE);
         if (deltaType == DeltaType.DELETED) {
-            orderCode |= (entityType == EntityType.NODE) ? 1 : 0;
+            orderCode |= (short) ((entityType == EntityType.NODE) ? 1 : 0);
         } else {
-            orderCode |= (entityType == EntityType.NODE) ? 0 : 1;
+            orderCode |= (short) ((entityType == EntityType.NODE) ? 0 : 1);
         }
 
         memoryTracker.allocateHeap(Participant.SIZE);
