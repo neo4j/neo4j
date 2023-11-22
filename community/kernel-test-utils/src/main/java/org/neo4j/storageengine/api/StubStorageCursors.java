@@ -39,6 +39,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
+import org.eclipse.collections.api.factory.primitive.IntObjectMaps;
+import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.api.set.primitive.IntSet;
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
@@ -533,7 +535,18 @@ public class StubStorageCursors implements StorageReader {
 
         @Override
         public void degrees(RelationshipSelection selection, Degrees.Mutator mutator) {
-            throw new UnsupportedOperationException("Not implemented yet");
+            MutableIntObjectMap<int[]> degreesMap = IntObjectMaps.mutable.empty();
+            relationshipData.values().stream()
+                    .filter(rel -> rel.startNode == current.id || rel.endNode == current.id)
+                    .filter(rel -> selection.test(rel.type, rel.direction(current.id)))
+                    .forEach(rel -> degreesMap
+                            .getIfAbsentPut(rel.type, () -> new int[3])[
+                            rel.direction(current.id).ordinal()]++);
+            degreesMap.forEachKeyValue((type, degrees) -> mutator.add(
+                    type,
+                    degrees[RelationshipDirection.OUTGOING.ordinal()],
+                    degrees[RelationshipDirection.INCOMING.ordinal()],
+                    degrees[RelationshipDirection.LOOP.ordinal()]));
         }
 
         @Override

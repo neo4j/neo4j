@@ -23,14 +23,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
 import static org.neo4j.kernel.impl.api.index.StoreScan.NO_EXTERNAL_UPDATES;
 import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.storageengine.api.RelationshipSelection.selection;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.eclipse.collections.api.factory.primitive.IntLists;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.eclipse.collections.impl.factory.primitive.LongObjectMaps;
@@ -40,6 +43,8 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StorageNodeCursor;
+import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
 import org.neo4j.storageengine.api.StubStorageCursors;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.RandomSupport;
@@ -83,16 +88,30 @@ class FullScanStoreViewNodeIdsTest {
         // then
         MutableLongObjectMap<int[]> actual = LongObjectMaps.mutable.empty();
         consumer.batches.forEach(batch -> batch.forEach(record -> actual.put(record.entityId(), record.tokens())));
-        try (var nodeCursor = storageReader.allocateNodeCursor(NULL_CONTEXT, StoreCursors.NULL)) {
+        try (var nodeCursor = storageReader.allocateNodeCursor(NULL_CONTEXT, StoreCursors.NULL);
+                var relationshipCursor =
+                        storageReader.allocateRelationshipTraversalCursor(NULL_CONTEXT, StoreCursors.NULL)) {
             nodeCursor.scan();
             while (nodeCursor.next()) {
                 int[] actualRelationshipTypes = actual.remove(nodeCursor.entityReference());
-                int[] expectedRelationshipTypes = nodeCursor.relationshipTypes();
+                int[] expectedRelationshipTypes = outgoingTypes(nodeCursor, relationshipCursor);
                 assertThat(IntSets.immutable.of(actualRelationshipTypes))
                         .isEqualTo(IntSets.immutable.of(expectedRelationshipTypes));
             }
             assertThat(actual.isEmpty()).isTrue();
         }
+    }
+
+    private int[] outgoingTypes(StorageNodeCursor nodeCursor, StorageRelationshipTraversalCursor relationshipCursor) {
+        var allTypes = nodeCursor.relationshipTypes();
+        var outTypes = IntLists.mutable.empty();
+        for (int type : allTypes) {
+            nodeCursor.relationships(relationshipCursor, selection(type, OUTGOING));
+            if (relationshipCursor.next()) {
+                outTypes.add(type);
+            }
+        }
+        return outTypes.toSortedArray();
     }
 
     private void createData(StubStorageCursors storageReader, int[] relationshipTypes) {
