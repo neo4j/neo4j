@@ -1745,6 +1745,40 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
   }
 
   test(
+    "Should not plan VarExpand instead of Trail on quantified path pattern with pre-filter predicate that has only previously matched dependencies"
+  ) {
+    val query = "match (z) MATCH (a) ((n)-[r]->(m) WHERE z.prop = true)+ (b) RETURN r"
+    val plan = planner.plan(query).stripProduceResults
+    val `(a) ((n)-[r]-(m))+ (b)` =
+      TrailParameters(
+        min = 1,
+        max = UpperBound.Unlimited,
+        start = "a",
+        end = "b",
+        innerStart = "n",
+        innerEnd = "m",
+        groupNodes = Set.empty,
+        groupRelationships = Set(("r", "r")),
+        innerRelationships = Set("r"),
+        previouslyBoundRelationships = Set(),
+        previouslyBoundRelationshipGroups = Set(),
+        reverseGroupVariableProjections = false
+      )
+
+    plan shouldEqual planner.subPlanBuilder()
+      .apply()
+      .|.trail(`(a) ((n)-[r]-(m))+ (b)`)
+      .|.|.filterExpression(isRepeatTrailUnique("r"))
+      .|.|.expandAll("(n)-[r]->(m)")
+      .|.|.filter("cacheN[z.prop] = true")
+      .|.|.argument("n", "z")
+      .|.allNodeScan("a", "z")
+      .cacheProperties("cacheNFromStore[z.prop]")
+      .allNodeScan("z")
+      .build()
+  }
+
+  test(
     "Should not plan VarExpand instead of Trail on quantified path pattern with pre-filter predicate that has inner node variable dependency"
   ) {
     val query = "MATCH (a) ((n)-[r]->(m) WHERE n.p = 1)+ (b) RETURN r"

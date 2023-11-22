@@ -42,6 +42,7 @@ import org.neo4j.cypher.internal.expressions.VarLengthUpperBound
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.ir.VariableGrouping
+import org.neo4j.cypher.internal.ir.ast.ForAllRepetitions
 import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
 
 import scala.collection.immutable.ListSet
@@ -449,7 +450,7 @@ object extractQPPPredicates {
   }
 
   /**
-   * Extracted predicates are predicates that were previously normalized by normalizeQPPPredicates to their post-filter
+   * Extracted predicates are predicates that were previously normalized by MoveQuantifiedPathPatternPredicates to their post-filter
    * form and that we now want to convert back to their pre-filter form.
    *
    * @param predicates            Potentially extractable predicates
@@ -471,6 +472,9 @@ object extractQPPPredicates {
         val singletonVariable = availableLocalSymbolsMapping(groupVariable)
         val extracted = predicate.replaceAllOccurrencesBy(iterator, singletonVariable)
         ExtractedPredicate(original, extracted)
+
+      case far: ForAllRepetitions =>
+        ExtractedPredicate(far, far.originalInnerPredicate)
     }
   }
 

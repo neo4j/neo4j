@@ -74,6 +74,7 @@ case object PlanRewriter extends LogicalPlanRewriter with StepSequencer.Step wit
   ): Rewriter =
     fixedPoint(context.cancellationChecker)(
       inSequence(context.cancellationChecker)(
+        ForAllRepetitionsPredicateRewriter(anonymousVariableNameGenerator),
         RemoveUnusedGroupVariablesRewriter,
         TrailToVarExpandRewriter(
           labelAndRelTypeInfos,

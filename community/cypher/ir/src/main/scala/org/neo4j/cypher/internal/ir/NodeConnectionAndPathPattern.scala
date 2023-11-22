@@ -225,6 +225,15 @@ case class VariableGrouping(singletonName: String, groupName: String) {
   override def toString: String = s"(singletonName=$singletonName, groupName=$groupName)"
 }
 
+object VariableGrouping {
+
+  def singletonToGroup(groupings: Set[VariableGrouping], singletonName: String): Option[String] = {
+    groupings.collectFirst {
+      case VariableGrouping(`singletonName`, groupName) => groupName
+    }
+  }
+}
+
 final case class QuantifiedPathPattern(
   leftBinding: NodeBinding,
   rightBinding: NodeBinding,
@@ -260,11 +269,6 @@ final case class QuantifiedPathPattern(
     s"Not all singleton relationship variables ${relationshipVariableGroupings.map(_.singletonName)} were relationship names"
   )
 
-  private def singletonToGroup(groupings: Set[VariableGrouping], singletonName: String): Option[String] =
-    groupings.collectFirst {
-      case VariableGrouping(`singletonName`, groupName) => groupName
-    }
-
   override val left: String = leftBinding.outer
   override val right: String = rightBinding.outer
   override val nodes: Set[String] = Set(left, right) ++ nodeVariableGroupings.map(_.groupName)
@@ -282,12 +286,12 @@ final case class QuantifiedPathPattern(
 
   override def nonBoundaryPathVariables: Seq[PathVariable] = {
     val rightTail: Seq[PathVariable] =
-      singletonToGroup(nodeVariableGroupings, rightBinding.inner).map(NodePathVariable).toSeq
+      VariableGrouping.singletonToGroup(nodeVariableGroupings, rightBinding.inner).map(NodePathVariable).toSeq
 
     patternRelationships.foldRight(rightTail) {
       case (rel, acc) =>
-        (singletonToGroup(nodeVariableGroupings, rel.left).map(NodePathVariable) ++
-          singletonToGroup(relationshipVariableGroupings, rel.name).map(RelationshipPathVariable) ++
+        (VariableGrouping.singletonToGroup(nodeVariableGroupings, rel.left).map(NodePathVariable) ++
+          VariableGrouping.singletonToGroup(relationshipVariableGroupings, rel.name).map(RelationshipPathVariable) ++
           acc).toSeq
     }
   }

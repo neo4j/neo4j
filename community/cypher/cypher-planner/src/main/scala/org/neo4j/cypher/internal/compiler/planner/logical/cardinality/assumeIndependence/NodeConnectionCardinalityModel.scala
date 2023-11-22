@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence
 
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.extractQPPPredicates
+import org.neo4j.cypher.internal.expressions.UnPositionedVariable
 import org.neo4j.cypher.internal.ir.NodeConnection
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
@@ -60,11 +62,24 @@ trait NodeConnectionCardinalityModel
         }
 
       case quantifiedPathPattern: QuantifiedPathPattern =>
+        val qppWithExtractedPredicates = {
+          val extractedPredicates =
+            extractQPPPredicates(
+              predicates.otherPredicates.map(_.expr).toSeq,
+              quantifiedPathPattern.variableGroupings,
+              (boundNodesAndArguments.boundNodes ++ boundNodesAndArguments.argumentIds).map(UnPositionedVariable.varFor)
+            )
+
+          quantifiedPathPattern.copy(selections =
+            quantifiedPathPattern.selections ++ extractedPredicates.predicates.map(_.extracted)
+          )
+        }
+
         val cardinality =
           getQuantifiedPathPatternCardinality(
             context,
             predicates.allLabelInfo,
-            quantifiedPathPattern,
+            qppWithExtractedPredicates,
             predicates.uniqueRelationships
           )
         boundNodesAndArguments.bindEndpoints(context, predicates, quantifiedPathPattern, cardinality)

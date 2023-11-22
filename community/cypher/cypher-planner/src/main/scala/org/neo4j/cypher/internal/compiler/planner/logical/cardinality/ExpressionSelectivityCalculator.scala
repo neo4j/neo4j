@@ -87,6 +87,7 @@ import org.neo4j.cypher.internal.expressions.Unique
 import org.neo4j.cypher.internal.expressions.VarLengthBound
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.ast.ExistsIRExpression
+import org.neo4j.cypher.internal.ir.ast.ForAllRepetitions
 import org.neo4j.cypher.internal.logical.plans.PrefixRange
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
@@ -307,6 +308,10 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
 
     case _: VarLengthBound =>
       // These are inserted by AddVarLengthPredicates and taken care of in the cardinality estimation of the referenced var-length relationship.
+      Selectivity.ONE
+
+    case _: ForAllRepetitions =>
+      // These are currently always extracted in NodeConnectionCardinalityModel.
       Selectivity.ONE
 
     case Ors(expressions) =>

@@ -55,6 +55,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath.Mapping
 import org.neo4j.cypher.internal.logical.plans.Trail
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.bottomUp
@@ -189,11 +190,16 @@ object expandSolverStep {
           availableSymbols,
           context,
           qppInnerPlanner,
-          qg.selections.flatPredicates
+          unsolvedPredicates(context.staticComponents.planningAttributes.solveds, qg.selections, sourcePlan)
         )
       case spp: SelectivePathPattern =>
         produceStatefulShortestLogicalPlan(spp, sourcePlan, nodeId, availableSymbols, qg.selections, context)
     }
+  }
+
+  private def unsolvedPredicates(solveds: Solveds, s: Selections, l: LogicalPlan): Seq[Expression] = {
+    val alreadySolved = solveds.get(l.id).asSinglePlannerQuery.queryGraph.selections
+    (s -- alreadySolved).flatPredicates
   }
 
   /**
