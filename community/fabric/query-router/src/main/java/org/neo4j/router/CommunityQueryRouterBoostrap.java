@@ -35,6 +35,7 @@ import org.neo4j.bolt.protocol.common.message.request.connection.RoutingContext;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.cypher.internal.PreParser;
 import org.neo4j.cypher.internal.cache.CacheTracer;
 import org.neo4j.cypher.internal.cache.ExecutorBasedCaffeineCacheFactory;
@@ -59,6 +60,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.kernel.database.DatabaseReferenceRepository;
+import org.neo4j.kernel.impl.api.transaction.monitor.TransactionMonitorScheduler;
 import org.neo4j.kernel.impl.query.QueryExecutionConfiguration;
 import org.neo4j.kernel.impl.query.QueryRoutingMonitor;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -172,7 +174,11 @@ public class CommunityQueryRouterBoostrap extends CommonQueryRouterBoostrap {
 
         var transactionIdTracker = resolve(LocalGraphTransactionIdTracker.class);
         var txMonitor = new QueryRouterTransactionMonitor(config, systemNanoClock, this.logService);
+        var transactionCheckInterval = config.get(GraphDatabaseSettings.transaction_monitor_check_interval)
+                .toMillis();
+        registerWithLifecycle(new TransactionMonitorScheduler(txMonitor, jobScheduler, transactionCheckInterval, null));
         var routerTxManager = new RouterTransactionManager(txMonitor);
+        dependencies.satisfyDependency(routerTxManager);
         TransactionManager compositeTxManager = null;
         if (dependencies.containsDependency(TransactionManager.class)) {
             compositeTxManager = dependencies.resolveDependency(TransactionManager.class);

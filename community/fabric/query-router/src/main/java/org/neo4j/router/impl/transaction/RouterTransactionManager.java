@@ -19,11 +19,13 @@
  */
 package org.neo4j.router.impl.transaction;
 
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.router.transaction.RouterTransaction;
+import org.neo4j.util.VisibleForTesting;
 
 public class RouterTransactionManager {
 
@@ -50,5 +52,10 @@ public class RouterTransactionManager {
                         .anyMatch(itx -> itx.kernelTransaction() == transaction.kernelTransaction()))
                 .map(RouterTransaction.class::cast)
                 .findAny();
+    }
+
+    @VisibleForTesting
+    public Set<RouterTransaction> registeredTransactions() {
+        return new HashSet<>(transactions);
     }
 }

@@ -27,6 +27,7 @@ import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.fabric.bookmark.LocalGraphTransactionIdTracker;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.monitoring.Monitors;
@@ -68,6 +69,10 @@ public class CommonQueryRouterBoostrap {
 
     protected <T> T resolve(Class<T> type) {
         return dependencies.resolveDependency(type);
+    }
+
+    protected <T extends Lifecycle> void registerWithLifecycle(T instance) {
+        serviceBootstrapper.lifeSupport.add(instance);
     }
 
     private record ServiceBootstrapper(LifeSupport lifeSupport, Dependencies dependencies) {
