@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.NumericHelper
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.exceptions.InternalException
 import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.memory.HeapEstimator.shallowSizeOfInstance
@@ -32,7 +33,6 @@ import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.AnyValue
 import org.neo4j.values.SequenceValue
 import org.neo4j.values.storable.NumberValue
-import org.neo4j.values.storable.StringValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValueBuilder
 
@@ -172,11 +172,13 @@ class MultiPercentileDiscFunction(
         mapKeys = new Array[String](keysValue.length())
         var i = 0
         while (i < mapKeys.length) {
-          mapKeys(i) = keysValue.value(i).asInstanceOf[StringValue].stringValue()
+          mapKeys(i) = CypherFunctions.asTextValue(keysValue.value(i)).stringValue()
           i += 1
         }
         if (keysValue.length() != percs.length) {
-          throw new InternalException(s"$name expected 'percentiles' ${percs.mkString(",")} and 'keys' ${mapKeys.mkString(",")} to have the same length")
+          throw new InternalException(
+            s"$name expected 'percentiles' ${percs.mkString(",")} and 'keys' ${mapKeys.mkString(",")} to have the same length"
+          )
         }
     }
   }
