@@ -176,6 +176,7 @@
     <jakarta.ws.rs-api.version>2.1.6</jakarta.ws.rs-api.version>
     <antlr.version>4.13.1</antlr.version>
     <error_prone_annotations.version>2.23.0</error_prone_annotations.version>
+    <teavm.version>0.9.0</teavm.version>
   </properties>
 
   <modules>

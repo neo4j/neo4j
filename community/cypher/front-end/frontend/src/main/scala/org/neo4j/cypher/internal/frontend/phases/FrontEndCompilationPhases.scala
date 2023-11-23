@@ -51,7 +51,7 @@ trait FrontEndCompilationPhases {
     }
   }
 
-  private def parsingBase(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] = {
+  def parsingBase(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] = {
     Parse andThen
       SyntaxDeprecationWarningsAndReplacements(Deprecations.syntacticallyDeprecatedFeatures) andThen
       PreparatoryRewriting andThen

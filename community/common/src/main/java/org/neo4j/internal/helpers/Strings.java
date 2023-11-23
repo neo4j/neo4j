@@ -21,6 +21,9 @@ package org.neo4j.internal.helpers;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Iterator;
+import java.util.stream.IntStream;
+import java.util.stream.StreamSupport;
 
 /**
  * Helper functions for working with strings.
@@ -97,5 +100,39 @@ public final class Strings {
                 default -> output.append(ch);
             }
         }
+    }
+
+    private static class CodePointsIterator implements Iterator<Integer> {
+        private String s;
+        private int numCodePoints;
+        private int charIndex;
+        private int codePointIndex;
+
+        public CodePointsIterator(String s) {
+            this.s = s;
+            numCodePoints = s.codePointCount(0, s.length());
+            charIndex = 0;
+            codePointIndex = 0;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return codePointIndex < numCodePoints;
+        }
+
+        @Override
+        public Integer next() {
+            var result = s.codePointAt(charIndex);
+            charIndex = s.offsetByCodePoints(charIndex, 1);
+            ++codePointIndex;
+            return result;
+        }
+    }
+
+    // This is needed to cross-compile the semantic analysis to Java and Javascript,
+    // given String::codePoints cannot be transpiled directly with the library we are using
+    public static IntStream codePoints(String s) {
+        Iterable<Integer> iterable = () -> new CodePointsIterator(s);
+        return StreamSupport.stream(iterable.spliterator(), false).mapToInt(Integer::intValue);
     }
 }

@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalProperty
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.util.InputPosition
-import org.neo4j.cypher.internal.util.Rewritable
 import org.neo4j.cypher.internal.util.Rewritable.IteratorEq
+import org.neo4j.cypher.internal.util.RewritableJava
 
 abstract class RuntimeProperty(val prop: LogicalProperty) extends LogicalProperty with SemanticCheckableExpression {
   override def semanticCheck(ctx: Expression.SemanticContext): SemanticCheck = SemanticCheck.success
@@ -41,7 +41,7 @@ abstract class RuntimeProperty(val prop: LogicalProperty) extends LogicalPropert
     if (children.iterator eqElements this.treeChildren)
       this
     else {
-      val constructor = Rewritable.copyConstructor(this)
+      val constructor = RewritableJava.copyConstructor(this)
       val params = constructor.getParameterTypes
       val args = children.toVector
       val hasExtraParam = params.length == args.length + 1

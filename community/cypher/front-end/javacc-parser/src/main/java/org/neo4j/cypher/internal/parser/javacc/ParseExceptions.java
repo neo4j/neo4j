@@ -18,18 +18,21 @@ package org.neo4j.cypher.internal.parser.javacc;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class ParseExceptions extends RuntimeException {
     public static List<String> expected(int[][] expectedTokenSequences, String[] tokenImage) {
-        Map<Integer, Long> tokenCount = Arrays.stream(expectedTokenSequences)
+        HashMap<Integer, Long> tokenCount = new HashMap<>();
+        Arrays.stream(expectedTokenSequences)
                 .flatMapToInt(Arrays::stream)
                 .boxed()
-                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+                .forEach((token) -> {
+                    tokenCount.put(token, tokenCount.getOrDefault(token, 0L) + 1L);
+                });
         List<String> strings = processExpectedList(tokenCount, tokenImage);
         Collections.sort(strings);
         return strings;

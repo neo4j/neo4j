@@ -206,13 +206,11 @@ object Fragment {
       if (children.iterator eqElements this.treeChildren)
         this
       else {
-        val constructor = Rewritable.copyConstructor(this)
-        val params = constructor.getParameterTypes
-        val args = children.toVector
-        val hasExtraParam = params.length == args.length + 1
-        val lastParamIsPos = params.last.isAssignableFrom(classOf[InputPosition])
+        val args = children
+        val hasExtraParam = Rewritable.numParameters(this) == children.length + 1
+        val lastParamIsPos = Rewritable.includesPosition(this)
         val ctorArgs = if (hasExtraParam && lastParamIsPos) args :+ this.pos else args
-        val duped = constructor.invoke(this, ctorArgs: _*)
+        val duped = Rewritable.copyProduct(this, ctorArgs.toArray)
         duped.asInstanceOf[this.type]
       }
   }

@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.ASTNode
+import org.neo4j.cypher.internal.util.CrossCompilation
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.helpers.TreeElem
@@ -111,13 +112,17 @@ object ExpressionTypeInfo {
    * By caching ExpressionTypeInfo we can reuse instances that e.g. simply express that an Expression is a Boolean.
    * For large and complex queries this can significantly reduce memory consumption.
    */
-  private val cache: Cache[(TypeSpec, Option[TypeSpec]), ExpressionTypeInfo] =
+  private lazy val cache: Cache[(TypeSpec, Option[TypeSpec]), ExpressionTypeInfo] =
     Caffeine.newBuilder()
       .maximumSize(100)
       .build()
 
   def apply(specified: TypeSpec, expected: Option[TypeSpec] = None): ExpressionTypeInfo =
-    cache.get((specified, expected), _ => new ExpressionTypeInfo(specified, expected))
+    if (CrossCompilation.isTeaVM()) {
+      new ExpressionTypeInfo(specified, expected)
+    } else {
+      cache.get((specified, expected), _ => new ExpressionTypeInfo(specified, expected))
+    }
 }
 
 final case class ExpressionTypeInfo private (specified: TypeSpec, expected: Option[TypeSpec]) {

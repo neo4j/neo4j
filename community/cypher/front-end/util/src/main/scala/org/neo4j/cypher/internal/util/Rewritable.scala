@@ -19,8 +19,6 @@ package org.neo4j.cypher.internal.util
 import org.neo4j.cypher.internal.util.Foldable.TreeAny
 import org.neo4j.cypher.internal.util.Rewritable.RewritableAny
 
-import java.lang.reflect.Method
-
 import scala.annotation.tailrec
 import scala.collection.IterableFactory
 import scala.collection.immutable.ListSet
@@ -43,6 +41,30 @@ object RewriterWithParent {
 
 object Rewritable {
 
+  def copyProduct(product: Product, children: Array[AnyRef]): AnyRef = {
+    if (CrossCompilation.isTeaVM())
+      RewritableJavascript.copyProduct(product, children)
+    else {
+      RewritableJava.copyProduct(product, children)
+    }
+  }
+
+  def numParameters(product: Product): Int = {
+    if (CrossCompilation.isTeaVM())
+      RewritableJavascript.numParameters(product.getClass)
+    else {
+      RewritableJava.numParameters(product)
+    }
+  }
+
+  def includesPosition(product: Product): Boolean = {
+    if (CrossCompilation.isTeaVM())
+      RewritableJavascript.lastParamIsPosition(product.getClass)
+    else {
+      RewritableJava.includesPosition(product)
+    }
+  }
+
   implicit class IteratorEq[A <: AnyRef](val iterator: Iterator[A]) {
 
     def eqElements[B <: AnyRef](that: Iterator[B]): Boolean = {
@@ -52,28 +74,6 @@ object Rewritable {
       }
       !iterator.hasNext && !that.hasNext
     }
-  }
-
-  private val productCopyConstructors = new ThreadLocal[mutable.HashMap[Class[_], Method]]() {
-
-    override def initialValue: mutable.HashMap[Class[_], Method] =
-      new mutable.HashMap[Class[_], Method]
-  }
-
-  def copyConstructor(product: Product): Method = {
-    def getCopyMethod(productClass: Class[_ <: Product]): Method = {
-      try {
-        productClass.getMethods.find(_.getName == "copy").get
-      } catch {
-        case _: NoSuchElementException =>
-          throw new IllegalStateException(
-            s"Failed trying to rewrite $productClass - this class does not have a `copy` method"
-          )
-      }
-    }
-
-    val productClass = product.getClass
-    productCopyConstructors.get.getOrElseUpdate(productClass, getCopyMethod(productClass))
   }
 
   def dupAny(that: AnyRef, children: Seq[AnyRef]): AnyRef =
@@ -102,7 +102,7 @@ object Rewritable {
             }
             builder.result()
           case p: Product =>
-            copyConstructor(p).invoke(p, children: _*)
+            copyProduct(p, children.toArray)
           case t =>
             t
         }

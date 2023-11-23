@@ -125,6 +125,8 @@ import org.neo4j.cypher.internal.expressions.Xor
 import org.neo4j.cypher.internal.label_expressions.LabelExpression
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.ColonDisjunction
 import org.neo4j.cypher.internal.label_expressions.LabelExpressionPredicate
+import org.neo4j.cypher.internal.util.helpers.Math
+import org.neo4j.cypher.internal.util.helpers.Try
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
 import org.neo4j.cypher.internal.util.symbols.CTDate
@@ -145,8 +147,6 @@ import org.neo4j.cypher.internal.util.symbols.CTTime
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.symbols.StorableType.storableType
 import org.neo4j.cypher.internal.util.symbols.TypeSpec
-
-import scala.util.Try
 
 object SemanticExpressionCheck extends SemanticAnalysisTooling {
 

@@ -145,7 +145,7 @@ public class MessageUtil {
 
     // hints
     public static String createHintError(String operatorDescription, String hintSerialization, String details) {
-        return HINT_ERROR.formatted(operatorDescription, hintSerialization, details);
+        return String.format(HINT_ERROR, operatorDescription, hintSerialization, details);
     }
 
     public static String createTextIndexHintError(String hintSerialization, Numerus foundPredicates) {
@@ -169,7 +169,7 @@ public class MessageUtil {
         return createHintError(
                 "text index",
                 hintSerialization,
-                HINT_TEXT_INDEX_DETAIL.formatted(predicatesString + suggestion + documentation));
+                String.format(HINT_TEXT_INDEX_DETAIL, predicatesString + suggestion + documentation));
     }
 
     public static String createMissingPropertyLabelHintError(
@@ -183,7 +183,8 @@ public class MessageUtil {
         return createHintError(
                 operatorDescription,
                 hintSerialization,
-                HINT_MISSING_PROPERTY_LABEL_DETAIL.formatted(
+                String.format(
+                        HINT_MISSING_PROPERTY_LABEL_DETAIL,
                         missingThingDescription,
                         foundThingsDescription,
                         entityDescription,
@@ -200,10 +201,10 @@ public class MessageUtil {
                     + "Please only reference variables created in earlier clauses.";
 
     public static String createSelfReferenceError(String name) {
-        return SELF_REFERENCE_TO_VARIABLE_WITH_UNKNOWN_TYPE_IN_CREATE_PATTERN_ERROR.formatted(name);
+        return String.format(SELF_REFERENCE_TO_VARIABLE_WITH_UNKNOWN_TYPE_IN_CREATE_PATTERN_ERROR, name);
     }
 
     public static String createSelfReferenceError(String name, String variableType) {
-        return SELF_REFERENCE_TO_VARIABLE_IN_CREATE_PATTERN_ERROR.formatted(variableType, name);
+        return String.format(SELF_REFERENCE_TO_VARIABLE_IN_CREATE_PATTERN_ERROR, variableType, name);
     }
 }

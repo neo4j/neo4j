@@ -19,10 +19,13 @@
  */
 package org.neo4j.internal.helpers;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.internal.helpers.Strings.codePoints;
 import static org.neo4j.internal.helpers.Strings.prettyPrint;
 
 import java.net.URI;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class StringsTest {
@@ -67,5 +70,19 @@ class StringsTest {
     void testJoiningLines() {
         assertEquals(
                 "a" + System.lineSeparator() + "b" + System.lineSeparator() + "c", Strings.joinAsLines("a", "b", "c"));
+    }
+
+    @Test
+    void testCodePoints() {
+        var withEmoji = "a\uD83D\uDE05bc";
+        var startingWithEmoji = "\uD83D\uDE05abc";
+        var endingWithEmoji = "abc\uD83D\uDE05";
+        var justEmoji = "\uD83D\uDE05";
+        var normalString = "abc";
+        var emptyString = "";
+
+        for (String s : List.of(withEmoji, startingWithEmoji, endingWithEmoji, justEmoji, normalString, emptyString)) {
+            assertArrayEquals(codePoints(s).toArray(), s.codePoints().toArray());
+        }
     }
 }

@@ -119,6 +119,7 @@ import org.neo4j.cypher.internal.label_expressions.LabelExpressionPredicate
 import org.neo4j.cypher.internal.logical.plans.CoerceToPredicate
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.UnicodeHelper
+import org.neo4j.internal.helpers.Strings
 
 trait ExpressionStringifier {
   def apply(ast: Expression): String
@@ -616,10 +617,10 @@ object ExpressionStringifier {
       s"`$escaped`"
     else {
       val isJavaIdentifier =
-        txt.codePoints().limit(1).allMatch(p =>
+        Strings.codePoints(txt).limit(1).allMatch(p =>
           UnicodeHelper.isIdentifierStart(p) || orGlobbedCharacter(p)
         ) &&
-          txt.codePoints().skip(1).allMatch(p => UnicodeHelper.isIdentifierPart(p) || orGlobbedCharacter(p))
+          Strings.codePoints(txt).skip(1).allMatch(p => UnicodeHelper.isIdentifierPart(p) || orGlobbedCharacter(p))
       if (!isJavaIdentifier)
         s"`$escaped`"
       else
