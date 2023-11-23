@@ -35,8 +35,6 @@ abstract class NodeByElementIdSeekTestBase[CONTEXT <: RuntimeContext](
 
   private val random = new Random(77)
 
-  private def quote(s: String): String = s"'$s'"
-
   test("should find single node") {
     // given
     val nodes = givenGraph { nodeGraph(17) }
@@ -45,7 +43,7 @@ abstract class NodeByElementIdSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .nodeByElementIdSeek("x", Set.empty, quote(toFind.getElementId))
+      .nodeByElementIdSeek("x", Set.empty, toFind.getElementId)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -62,7 +60,7 @@ abstract class NodeByElementIdSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .nodeByElementIdSeek("x", Set.empty, quote(toNotFind))
+      .nodeByElementIdSeek("x", Set.empty, toNotFind)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -79,7 +77,7 @@ abstract class NodeByElementIdSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .nodeByElementIdSeek("x", Set.empty, toFind.map(_.getElementId).map(quote): _*)
+      .nodeByElementIdSeek("x", Set.empty, toFind.map(_.getElementId): _*)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -99,7 +97,7 @@ abstract class NodeByElementIdSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .nodeByElementIdSeek("x", Set.empty, nodesToLookFor.map(quote): _*)
+      .nodeByElementIdSeek("x", Set.empty, nodesToLookFor: _*)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -117,7 +115,7 @@ abstract class NodeByElementIdSeekTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .filter(s"elementId(x) = '${toFind.getElementId}'")
-      .nodeByElementIdSeek("x", Set.empty, toSeekFor.map(_.getElementId).map(quote): _*)
+      .nodeByElementIdSeek("x", Set.empty, toSeekFor.map(_.getElementId): _*)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -137,7 +135,7 @@ abstract class NodeByElementIdSeekTestBase[CONTEXT <: RuntimeContext](
       .produceResults("n", "x")
       .apply()
       .|.filter(s"elementId(x) = '${toFind.getElementId}'")
-      .|.nodeByElementIdSeek("x", Set.empty, toSeekFor.map(_.getElementId).map(quote): _*)
+      .|.nodeByElementIdSeek("x", Set.empty, toSeekFor.map(_.getElementId): _*)
       .allNodeScan("n")
       .build()
 

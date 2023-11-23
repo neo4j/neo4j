@@ -51,9 +51,6 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
   protected val sizeHint: Int
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
-  // TODO this should happen in the builder!
-  private def quote(s: String): String = s"'$s'"
-
   test("shortest path in a linked chain graph") {
     // given
     val chainCount = 4
@@ -149,8 +146,8 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
       .produceResults("path")
       .shortestPath("(x)-[r*1..]-(y)", pathName = Some("path"), all = true, sameNodeMode = AllowSameNode)
       .cartesianProduct()
-      .|.nodeByElementIdSeek("y", Set.empty, quote(start.getElementId))
-      .nodeByElementIdSeek("x", Set.empty, quote(start.getElementId))
+      .|.nodeByElementIdSeek("y", Set.empty, start.getElementId)
+      .nodeByElementIdSeek("x", Set.empty, start.getElementId)
       .build()
 
     // AllowSameNode + length >= 1 + Undirected is not supported
@@ -174,8 +171,8 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
       .produceResults("path")
       .shortestPath("(x)-[r*1..]->(y)", pathName = Some("path"), all = true, sameNodeMode = AllowSameNode)
       .cartesianProduct()
-      .|.nodeByElementIdSeek("y", Set.empty, quote(start.getElementId))
-      .nodeByElementIdSeek("x", Set.empty, quote(start.getElementId))
+      .|.nodeByElementIdSeek("y", Set.empty, start.getElementId)
+      .nodeByElementIdSeek("x", Set.empty, start.getElementId)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -282,8 +279,8 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
       .produceResults("path")
       .shortestPath("(x)-[r*1..]->(y)", pathName = Some("path"), sameNodeMode = AllowSameNode)
       .cartesianProduct()
-      .|.nodeByElementIdSeek("y", Set.empty, quote(start.getElementId))
-      .nodeByElementIdSeek("x", Set.empty, quote(start.getElementId))
+      .|.nodeByElementIdSeek("y", Set.empty, start.getElementId)
+      .nodeByElementIdSeek("x", Set.empty, start.getElementId)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -315,8 +312,8 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
       .produceResults("path")
       .shortestPath("(x)-[r*1..]->(y)", pathName = Some("path"), sameNodeMode = AllowSameNode)
       .cartesianProduct()
-      .|.nodeByElementIdSeek("y", Set.empty, quote(start.getElementId))
-      .nodeByElementIdSeek("x", Set.empty, quote(start.getElementId))
+      .|.nodeByElementIdSeek("y", Set.empty, start.getElementId)
+      .nodeByElementIdSeek("x", Set.empty, start.getElementId)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -366,8 +363,8 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
       .produceResults("path")
       .shortestPath("(x)-[r*1..]->(y)", pathName = Some("path"), all = false, sameNodeMode = AllowSameNode)
       .cartesianProduct()
-      .|.nodeByElementIdSeek("y", Set.empty, quote(start.getElementId))
-      .nodeByElementIdSeek("x", Set.empty, quote(start.getElementId))
+      .|.nodeByElementIdSeek("y", Set.empty, start.getElementId)
+      .nodeByElementIdSeek("x", Set.empty, start.getElementId)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -1179,8 +1176,8 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
       .produceResults("path")
       .shortestPath("(x)-[r*1..]->(y)", pathName = Some("path"), all = true, sameNodeMode = AllowSameNode)
       .cartesianProduct()
-      .|.nodeByElementIdSeek("y", Set.empty, quote(start.getElementId))
-      .nodeByElementIdSeek("x", Set.empty, quote(start.getElementId))
+      .|.nodeByElementIdSeek("y", Set.empty, start.getElementId)
+      .nodeByElementIdSeek("x", Set.empty, start.getElementId)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -1212,8 +1209,8 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
       .produceResults("path")
       .shortestPath("(x)-[r*1..]->(y)", pathName = Some("path"), all = true, sameNodeMode = AllowSameNode)
       .cartesianProduct()
-      .|.nodeByElementIdSeek("y", Set.empty, quote(start.getElementId))
-      .nodeByElementIdSeek("x", Set.empty, quote(start.getElementId))
+      .|.nodeByElementIdSeek("y", Set.empty, start.getElementId)
+      .nodeByElementIdSeek("x", Set.empty, start.getElementId)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)

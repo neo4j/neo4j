@@ -487,8 +487,8 @@ abstract class ExpandIntoTestBase[CONTEXT <: RuntimeContext](
       .|.nodeByElementIdSeek(
         "var4",
         Set("var0", "var1", "var2", "var3"),
-        s"'${nodes(1).getElementId}'",
-        s"'${nodes(2).getElementId}'"
+        nodes(1).getElementId,
+        nodes(2).getElementId
       )
       .expandInto("(var1)-[var3:R2|R]->(var2)")
       .sort("var0 ASC", "var1 ASC", "var2 ASC")

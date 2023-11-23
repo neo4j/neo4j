@@ -1318,8 +1318,16 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         ManySeekableArgs(expression)
       case _ =>
         val idExpressions = ids.map {
-          case x: Expression              => x
-          case x: String                  => Parser.parseExpression(x)
+          case x: Expression => x
+          // This is a bit hacky but we cannot separate passing in an expression string
+          // like "$param" and an actual id string "thisisanelementid". If we don't do this hack
+          // the caller would have to quote elementIds all the time.
+          case x: String =>
+            try {
+              Parser.parseExpression(x)
+            } catch {
+              case _: Exception => StringLiteral(x)(pos)
+            }
           case x @ (_: Long | _: Int)     => SignedDecimalIntegerLiteral(x.toString)(pos)
           case x @ (_: Float | _: Double) => DecimalDoubleLiteral(x.toString)(pos)
           case x                          => throw new IllegalArgumentException(s"$x is not a supported value for ID")
