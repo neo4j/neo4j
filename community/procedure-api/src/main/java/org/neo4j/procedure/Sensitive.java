@@ -17,17 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.procedure;
+package org.neo4j.procedure;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import org.neo4j.procedure.Procedure;
+import org.neo4j.annotations.api.PublicApi;
 
 /**
- * Used to mark sensitive (e.g. passwords) {@link Procedure} and {@link org.neo4j.procedure.UserFunction} input parameters.
+ * Used to mark sensitive (e.g. passwords) {@link Procedure} and {@link UserFunction} input parameters.
  */
+@PublicApi
 @Target(ElementType.PARAMETER)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Sensitive {}

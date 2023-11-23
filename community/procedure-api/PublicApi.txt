@@ -19,6 +19,7 @@ org.neo4j.procedure.Procedure::eager() boolean public abstract
 org.neo4j.procedure.Procedure::mode() org.neo4j.procedure.Mode public abstract
 org.neo4j.procedure.Procedure::name() java.lang.String public abstract
 org.neo4j.procedure.Procedure::value() java.lang.String public abstract
+org.neo4j.procedure.Sensitive public abstract annotation implements java.lang.annotation.Annotation
 org.neo4j.procedure.UserAggregationFunction public abstract annotation implements java.lang.annotation.Annotation
 org.neo4j.procedure.UserAggregationFunction::deprecatedBy() java.lang.String public abstract
 org.neo4j.procedure.UserAggregationFunction::name() java.lang.String public abstract

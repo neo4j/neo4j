@@ -32,8 +32,8 @@ import org.neo4j.internal.kernel.api.procs.DefaultParameterValue;
 import org.neo4j.internal.kernel.api.procs.FieldSignature;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.procedure.Sensitive;
 import org.neo4j.procedure.Name;
+import org.neo4j.procedure.Sensitive;
 import org.neo4j.procedure.impl.TypeCheckers.DefaultValueConverter;
 
 /**
