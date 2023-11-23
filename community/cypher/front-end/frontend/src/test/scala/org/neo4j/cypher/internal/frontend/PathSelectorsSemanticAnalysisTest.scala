@@ -227,4 +227,77 @@ class PathSelectorsSemanticAnalysisTest extends NameBasedSemanticAnalysisTestSui
       result.errorMessages shouldBe empty
     }
   }
+
+  // Mixing selective selectors with shortestPath/allShortestPaths is not allowed
+  allSelectiveSelectors.foreach { selector =>
+    test(s"MATCH $selector shortestPath((a)-->(b)) RETURN *") {
+      val result = runSemanticAnalysisWithSemanticFeatures(SemanticFeature.GpmShortestPath)
+      result.errorMessages shouldBe Seq(
+        "Mixing shortestPath/allShortestPaths with path selectors (e.g. 'ANY SHORTEST') or explicit match modes ('e.g. DIFFERENT RELATIONSHIPS') is not allowed."
+      )
+    }
+
+    test(s"MATCH $selector allShortestPaths((a)-->(b)) RETURN *") {
+      val result = runSemanticAnalysisWithSemanticFeatures(SemanticFeature.GpmShortestPath)
+      result.errorMessages shouldBe Seq(
+        "Mixing shortestPath/allShortestPaths with path selectors (e.g. 'ANY SHORTEST') or explicit match modes ('e.g. DIFFERENT RELATIONSHIPS') is not allowed."
+      )
+    }
+
+    test(s"MATCH $selector (a)-->(b) WHERE shortestPath((a)-->(b)) IS NOT NULL RETURN *") {
+      val result = runSemanticAnalysisWithSemanticFeatures(SemanticFeature.GpmShortestPath)
+      result.errorMessages shouldBe Seq(
+        "Mixing shortestPath/allShortestPaths with path selectors (e.g. 'ANY SHORTEST') or explicit match modes ('e.g. DIFFERENT RELATIONSHIPS') is not allowed."
+      )
+    }
+
+    test(s"MATCH $selector (a)-->(b) WHERE EXISTS { MATCH shortestPath((a)-->(b)) } RETURN *") {
+      val result = runSemanticAnalysisWithSemanticFeatures(SemanticFeature.GpmShortestPath)
+      result.errorMessages shouldBe Seq(
+        "Mixing shortestPath/allShortestPaths with path selectors (e.g. 'ANY SHORTEST') or explicit match modes ('e.g. DIFFERENT RELATIONSHIPS') is not allowed."
+      )
+    }
+
+    test(s"CALL { MATCH $selector (a)-->(b) MATCH shortestPath((c)-->(d)) RETURN * } RETURN *") {
+      val result = runSemanticAnalysisWithSemanticFeatures(SemanticFeature.GpmShortestPath)
+      result.errorMessages shouldBe Seq(
+        "Mixing shortestPath/allShortestPaths with path selectors (e.g. 'ANY SHORTEST') or explicit match modes ('e.g. DIFFERENT RELATIONSHIPS') is not allowed."
+      )
+    }
+
+    test(s"MATCH $selector (a)-->(b) MATCH shortestPath((c)-->(d)) RETURN *") {
+      val result = runSemanticAnalysisWithSemanticFeatures(SemanticFeature.GpmShortestPath)
+      result.errorMessages shouldBe empty
+    }
+  }
+
+  test(s"MATCH ALL shortestPath((a)-->(b)) RETURN *") {
+    val result = runSemanticAnalysisWithSemanticFeatures(SemanticFeature.GpmShortestPath)
+    result.errorMessages shouldBe empty
+  }
+
+  test(s"MATCH ALL allShortestPaths((a)-->(b)) RETURN *") {
+    val result = runSemanticAnalysisWithSemanticFeatures(SemanticFeature.GpmShortestPath)
+    result.errorMessages shouldBe empty
+  }
+
+  test(s"MATCH ALL (a)-->(b) WHERE shortestPath((a)-->(b)) IS NOT NULL RETURN *") {
+    val result = runSemanticAnalysisWithSemanticFeatures(SemanticFeature.GpmShortestPath)
+    result.errorMessages shouldBe empty
+  }
+
+  test(s"MATCH ALL (a)-->(b) WHERE EXISTS { MATCH shortestPath((a)-->(b)) } RETURN *") {
+    val result = runSemanticAnalysisWithSemanticFeatures(SemanticFeature.GpmShortestPath)
+    result.errorMessages shouldBe empty
+  }
+
+  test(s"CALL { MATCH ALL (a)-->(b) MATCH shortestPath((c)-->(d)) RETURN * } RETURN *") {
+    val result = runSemanticAnalysisWithSemanticFeatures(SemanticFeature.GpmShortestPath)
+    result.errorMessages shouldBe empty
+  }
+
+  test(s"MATCH ALL (a)-->(b) MATCH shortestPath((c)-->(d)) RETURN *") {
+    val result = runSemanticAnalysisWithSemanticFeatures(SemanticFeature.GpmShortestPath)
+    result.errorMessages shouldBe empty
+  }
 }

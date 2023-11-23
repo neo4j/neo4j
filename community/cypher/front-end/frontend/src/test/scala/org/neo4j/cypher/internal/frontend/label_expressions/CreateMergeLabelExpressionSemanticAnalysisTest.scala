@@ -101,7 +101,8 @@ abstract class LabelExpressionSemanticAnalysisTestSuiteWithUpdateStatement(state
 
   test("(n IS A:B)") {
     // should not allow mixing colon as label conjunction symbol with IS keyword in label expression
-    runSemanticAnalysis().errorMessages shouldEqual Seq(
+    // Just checking the first error, since MERGE (being ReadWrite) reports the error twice, but CREATE only once.
+    runSemanticAnalysis().errorMessages.headOption shouldEqual Some(
       "Mixing the IS keyword with colon (':') between labels is not allowed. This expression could be expressed as IS A&B."
     )
   }

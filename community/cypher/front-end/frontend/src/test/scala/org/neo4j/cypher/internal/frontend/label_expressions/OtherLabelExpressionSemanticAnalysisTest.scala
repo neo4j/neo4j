@@ -115,4 +115,133 @@ class OtherLabelExpressionSemanticAnalysisTest extends NameBasedSemanticAnalysis
       "Mixing label expression symbols ('|', '&', '!', and '%') with colon (':') is not allowed. Please only use one set of symbols. This expression could be expressed as :A&B."
     )
   }
+
+  // Ignored since changing this would break backwards compatibility.
+  // See the "GPM Sync Rolling Agenda" notes for Nov 23, 2023
+  // Mixed label specification in same statements
+  ignore(
+    """
+      |CALL {
+      |  CREATE (n:A&B)
+      |  SET n:C:D
+      |}
+      |""".stripMargin
+  ) {
+    runSemanticAnalysis().errorMessages shouldEqual Seq(
+      "Mixing label expression symbols ('|', '&', '!', and '%') with colon (':') is not allowed. Please only use one set of symbols. This expression could be expressed as multiple comma separated items which one Label each."
+    )
+  }
+
+  // Ignored since changing this would break backwards compatibility.
+  // See the "GPM Sync Rolling Agenda" notes for Nov 23, 2023
+  // Mixed label specification in same statements
+  ignore(
+    """
+      |CALL {
+      |  CREATE (n:A&B)
+      |  REMOVE n:C:D
+      |}
+      |""".stripMargin
+  ) {
+    runSemanticAnalysis().errorMessages shouldEqual Seq(
+      "Mixing label expression symbols ('|', '&', '!', and '%') with colon (':') is not allowed. Please only use one set of symbols. This expression could be expressed as multiple comma separated items which one Label each."
+    )
+  }
+
+  // Ignored since changing this would break backwards compatibility.
+  // See the "GPM Sync Rolling Agenda" notes for Nov 23, 2023
+  // Mixed quantifiers
+  ignore(
+    """
+      |RETURN COUNT {
+      |  MATCH (n:A)--{,5}(:B)
+      |  MATCH (n)-[*0..5]-(:C)  
+      |}
+      |""".stripMargin
+  ) {
+    runSemanticAnalysis().errorMessages shouldEqual Seq(
+      "Mixing variable-length relationships ('-[*]-') with quantified relationships ('()-->*()') or quantified path patterns ('(()-->())*') is not allowed."
+    )
+  }
+
+  test(
+    """
+      |MATCH (n)
+      |CALL {
+      | WITH n
+      |  SET n:A
+      |  REMOVE n:C:D
+      |}
+      |""".stripMargin
+  ) {
+    runSemanticAnalysis().errorMessages shouldBe empty
+  }
+
+  test(
+    """
+      |MATCH (n)
+      |CALL {
+      |  WITH n
+      |  SET n:A:B
+      |  REMOVE n:C:D
+      |}
+      |""".stripMargin
+  ) {
+    runSemanticAnalysis().errorMessages shouldBe empty
+  }
+
+  test(
+    """
+      |CALL {
+      |  CREATE (n:A)
+      |  REMOVE n:C:D
+      |}
+      |""".stripMargin
+  ) {
+    runSemanticAnalysis().errorMessages shouldBe empty
+  }
+
+  test(
+    """
+      |CALL {
+      |  MATCH (n:A&B)
+      |  REMOVE n:C:D
+      |}
+      |""".stripMargin
+  ) {
+    runSemanticAnalysis().errorMessages shouldBe empty
+  }
+
+  test(
+    """
+      |CALL {
+      |  MATCH (n:A&B)
+      |  SET n:C:D
+      |}
+      |""".stripMargin
+  ) {
+    runSemanticAnalysis().errorMessages shouldBe empty
+  }
+
+  test(
+    """
+      |CALL {
+      |  MATCH (n:A&B)
+      |  CREATE (m:A:B)
+      |}
+      |""".stripMargin
+  ) {
+    runSemanticAnalysis().errorMessages shouldBe empty
+  }
+
+  test(
+    """
+      |CALL {
+      |  MATCH (n:A:B)
+      |  CREATE (m:A&B)
+      |}
+      |""".stripMargin
+  ) {
+    runSemanticAnalysis().errorMessages shouldBe empty
+  }
 }

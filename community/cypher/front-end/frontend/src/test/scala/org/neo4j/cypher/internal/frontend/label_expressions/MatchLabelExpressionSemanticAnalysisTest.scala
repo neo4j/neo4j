@@ -158,6 +158,12 @@ class MatchLabelExpressionSemanticAnalysisTest extends NameBasedSemanticAnalysis
     )
   }
 
+  test("MATCH (n:A:B)-[r IS A|B]->(m) RETURN *") {
+    runSemanticAnalysis().errorMessages shouldEqual Seq(
+      "Mixing the IS keyword with colon (':') between labels is not allowed. This expression could be expressed as :A&B."
+    )
+  }
+
   test("MATCH (n:A)-[]-(m) WHERE (m:(A&B)|C)--() RETURN *") {
     runSemanticAnalysis().errors shouldBe empty
   }
@@ -620,6 +626,23 @@ class MatchLabelExpressionSemanticAnalysisTest extends NameBasedSemanticAnalysis
   }
 
   test("MATCH (n IS A WHERE n:B) RETURN *") {
+    runSemanticAnalysis().errors shouldBe empty
+  }
+
+  test(
+    """
+      |MATCH (n)-[r]->()
+      |WITH [n, r] AS x
+      |UNWIND x AS y
+      |RETURN
+      |  CASE
+      |    WHEN y:A|B THEN 1
+      |    WHEN y:A:B THEN 0
+      |  END AS z
+      |""".stripMargin
+  ) {
+    // We can only at runtime detect whether y:A|B is gpm-only (if applied to a node),
+    // or both gpm and legacy (if applied to a relationship).
     runSemanticAnalysis().errors shouldBe empty
   }
 }

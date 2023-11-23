@@ -118,10 +118,6 @@ class MatchModesSemanticAnalysisTest extends CypherFunSuite with SemanticAnalysi
     errorsFromSemanticAnalysis shouldBe empty
   }
 
-  test("REPEATABLE ELEMENTS p = shortestPath((a)-[:REL*]->(b))") {
-    errorsFromSemanticAnalysis shouldBe empty
-  }
-
   test("shortestPath((a)-[:REL*]->(b)), shortestPath((c)-[:REL*]->(d))") {
     errorsFromSemanticAnalysis shouldBe empty
   }
@@ -170,5 +166,57 @@ class MatchModesSemanticAnalysisTest extends CypherFunSuite with SemanticAnalysi
 
   test("REPEATABLE ELEMENTS (a)-[:REL]->(b), ALL PATHS (c)-[:REL]->(d)") {
     errorsFromSemanticAnalysis shouldBe empty
+  }
+
+  test(s"MATCH REPEATABLE ELEMENTS shortestPath((a)-->(b)) RETURN *") {
+    val result = runSemanticAnalysisWithSemanticFeatures(Seq(SemanticFeature.MatchModes), testName)
+    result.errorMessages shouldBe Seq(
+      "Mixing shortestPath/allShortestPaths with path selectors (e.g. 'ANY SHORTEST') or explicit match modes ('e.g. DIFFERENT RELATIONSHIPS') is not allowed."
+    )
+  }
+
+  test(s"MATCH DIFFERENT RELATIONSHIPS shortestPath((a)-->(b)) RETURN *") {
+    val result = runSemanticAnalysisWithSemanticFeatures(Seq(SemanticFeature.MatchModes), testName)
+    result.errorMessages shouldBe Seq(
+      "Mixing shortestPath/allShortestPaths with path selectors (e.g. 'ANY SHORTEST') or explicit match modes ('e.g. DIFFERENT RELATIONSHIPS') is not allowed."
+    )
+  }
+
+  test(s"MATCH REPEATABLE ELEMENTS allShortestPaths((a)-->(b)) RETURN *") {
+    val result = runSemanticAnalysisWithSemanticFeatures(Seq(SemanticFeature.MatchModes), testName)
+    result.errorMessages shouldBe Seq(
+      "Mixing shortestPath/allShortestPaths with path selectors (e.g. 'ANY SHORTEST') or explicit match modes ('e.g. DIFFERENT RELATIONSHIPS') is not allowed."
+    )
+  }
+
+  test(s"MATCH REPEATABLE ELEMENTS (a)-->(b) WHERE shortestPath((a)-->(b)) IS NOT NULL RETURN *") {
+    val result = runSemanticAnalysisWithSemanticFeatures(Seq(SemanticFeature.MatchModes), testName)
+    result.errorMessages shouldBe Seq(
+      "Mixing shortestPath/allShortestPaths with path selectors (e.g. 'ANY SHORTEST') or explicit match modes ('e.g. DIFFERENT RELATIONSHIPS') is not allowed."
+    )
+  }
+
+  test(s"MATCH REPEATABLE ELEMENTS (a)-->(b) WHERE EXISTS { MATCH shortestPath((a)-->(b)) } RETURN *") {
+    val result = runSemanticAnalysisWithSemanticFeatures(Seq(SemanticFeature.MatchModes), testName)
+    result.errorMessages shouldBe Seq(
+      "Mixing shortestPath/allShortestPaths with path selectors (e.g. 'ANY SHORTEST') or explicit match modes ('e.g. DIFFERENT RELATIONSHIPS') is not allowed."
+    )
+  }
+
+  test(s"CALL { MATCH REPEATABLE ELEMENTS (a)-->(b) MATCH shortestPath((c)-->(d)) RETURN * } RETURN *") {
+    val result = runSemanticAnalysisWithSemanticFeatures(Seq(SemanticFeature.MatchModes), testName)
+    result.errorMessages shouldBe Seq(
+      "Mixing shortestPath/allShortestPaths with path selectors (e.g. 'ANY SHORTEST') or explicit match modes ('e.g. DIFFERENT RELATIONSHIPS') is not allowed."
+    )
+  }
+
+  test(s"MATCH REPEATABLE ELEMENTS (a)-->(b) MATCH shortestPath((c)-->(d)) RETURN *") {
+    val result = runSemanticAnalysisWithSemanticFeatures(Seq(SemanticFeature.MatchModes), testName)
+    result.errorMessages shouldBe empty
+  }
+
+  test(s"MATCH DIFFERENT RELATIONSHIPS (a)-->(b) MATCH shortestPath((c)-->(d)) RETURN *") {
+    val result = runSemanticAnalysisWithSemanticFeatures(Seq(SemanticFeature.MatchModes), testName)
+    result.errorMessages shouldBe empty
   }
 }

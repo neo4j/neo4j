@@ -27,11 +27,9 @@ import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.ast.semantics.Scope
 import org.neo4j.cypher.internal.ast.semantics.SemanticAnalysisTooling
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
-import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.fromFunctionWithContext
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.fromState
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.success
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.when
-import org.neo4j.cypher.internal.ast.semantics.SemanticCheckContext
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckable
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
@@ -79,6 +77,7 @@ import org.neo4j.cypher.internal.expressions.PathPatternPart
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.expressions.PatternPart
+import org.neo4j.cypher.internal.expressions.PatternPart.Selector
 import org.neo4j.cypher.internal.expressions.ProcedureName
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
@@ -87,6 +86,7 @@ import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.ScopeExpression
+import org.neo4j.cypher.internal.expressions.ShortestPathsPatternPart
 import org.neo4j.cypher.internal.expressions.SimplePattern
 import org.neo4j.cypher.internal.expressions.StartsWith
 import org.neo4j.cypher.internal.expressions.StringLiteral
@@ -119,23 +119,19 @@ import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
 import scala.annotation.tailrec
+import scala.collection.immutable.ListSet
 
 sealed trait Clause extends ASTNode with SemanticCheckable with SemanticAnalysisTooling {
   def name: String
 
   def returnVariables: ReturnVariables = ReturnVariables.empty
 
-  case class LabelExpressionsPartition(
-    legacy: Set[LabelExpression] = Set.empty,
-    gpm: Set[LabelExpression] = Set.empty,
-    leaf: Set[LabelExpression] = Set.empty
-  )
-
   final override def semanticCheck: SemanticCheck =
     clauseSpecificSemanticCheck chain
-      fromFunctionWithContext(checkIfMixingLabelExpressionWithOldSyntax) chain
+      fromState(checkIfMixingLabelExpressionWithOldSyntax) chain
       when(shouldRunQPPChecks) {
-        checkIfMixingLegacyVarLengthWithQPPs
+        checkIfMixingLegacyVarLengthWithQPPs chain
+          checkIfMixingLegacyShortestWithPathSelectorOrMatchMode
       }
 
   protected def shouldRunQPPChecks: Boolean = true
@@ -147,78 +143,180 @@ sealed trait Clause extends ASTNode with SemanticCheckable with SemanticAnalysis
   }
 
   private def checkIfMixingLabelExpressionWithOldSyntax(
-    state: SemanticState,
-    context: SemanticCheckContext
-  ): SemanticCheckResult = {
-    val partition = this.folder.treeFold(LabelExpressionsPartition()) {
+    state: SemanticState
+  ): SemanticCheck = {
+
+    sealed trait UsageContext
+    case object Read extends UsageContext
+    case object Write extends UsageContext
+    case object ReadWrite extends UsageContext
+
+    case class LegacyLabelExpression(labelExpression: LabelExpression) {
+      def replacementString: String = {
+        val isOrColon = if (labelExpression.containsIs) "IS " else ":"
+        isOrColon + stringifier.stringifyLabelExpression(labelExpression.replaceColonSyntax)
+      }
+
+      def position: InputPosition = labelExpression.position
+    }
+
+    case class LabelExpressionsPartitions(
+      legacy: ListSet[LegacyLabelExpression] = ListSet.empty,
+      gpm: ListSet[LabelExpression] = ListSet.empty
+    ) {
+      def withLegacyExpression(labelExpression: LabelExpression): LabelExpressionsPartitions =
+        copy(legacy = legacy + LegacyLabelExpression(labelExpression))
+
+      def withGPMExpression(labelExpression: LabelExpression): LabelExpressionsPartitions =
+        copy(gpm = gpm + labelExpression)
+
+      def semanticCheck: SemanticCheck = when(legacy.nonEmpty && gpm.nonEmpty) {
+        // we prefer the new way, so we will only error on the "legacy" expressions
+        val maybeExplanation = legacy.map { ls =>
+          (ls.replacementString, ls.position)
+        } match {
+          case SetExtractor() => None
+          case SetExtractor((singleExpression, pos)) =>
+            Some((s"This expression could be expressed as $singleExpression.", pos))
+
+          case set: Set[(String, InputPosition)] =>
+            // we report all errors on the first position as we will later on throw away everything but the first error.
+            val replacement = set.map(_._1)
+            Some((s"These expressions could be expressed as ${replacement.mkString(", ")}.", set.head._2))
+        }
+        maybeExplanation match {
+          case Some((explanation, pos)) =>
+            // We may have multiple conflicts, both with IS and with label expression symbols.
+            // We just look at the first GPM label expression and decide what conflict we report
+            // based on whether it contains IS.
+            val conflictWithIS = gpm.head.containsIs
+            SemanticError(
+              if (conflictWithIS) s"Mixing the IS keyword with colon (':') between labels is not allowed. $explanation"
+              else
+                s"Mixing label expression symbols ('|', '&', '!', and '%') with colon (':') is not allowed. Please only use one set of symbols. $explanation", // TODO add "between labels"
+              pos
+            )
+          case None => SemanticCheck.success
+        }
+      }
+    }
+
+    case class Acc(
+      readPartitions: LabelExpressionsPartitions = LabelExpressionsPartitions(),
+      writePartitions: LabelExpressionsPartitions = LabelExpressionsPartitions(),
+      usage: UsageContext = Read
+    ) {
+
+      def inReadContext(): Acc = copy(usage = Read)
+      def inWriteContext(): Acc = copy(usage = Write)
+      def inReadWriteContext(): Acc = copy(usage = ReadWrite)
+
+      private def withLegacyExpression(labelExpression: LabelExpression): Acc = usage match {
+        case Read  => copy(readPartitions = readPartitions.withLegacyExpression(labelExpression))
+        case Write => copy(writePartitions = writePartitions.withLegacyExpression(labelExpression))
+        case ReadWrite => copy(
+            readPartitions = readPartitions.withLegacyExpression(labelExpression),
+            writePartitions = writePartitions.withLegacyExpression(labelExpression)
+          )
+      }
+
+      private def withGPMExpression(labelExpression: LabelExpression): Acc = usage match {
+        case Read  => copy(readPartitions = readPartitions.withGPMExpression(labelExpression))
+        case Write => copy(writePartitions = writePartitions.withGPMExpression(labelExpression))
+        case ReadWrite => copy(
+            readPartitions = readPartitions.withGPMExpression(labelExpression),
+            writePartitions = writePartitions.withGPMExpression(labelExpression)
+          )
+      }
+
+      def sortLabelExpressionIntoPartition(
+        labelExpression: LabelExpression,
+        isNode: Boolean
+      ): Acc = {
+        val acc = if (labelExpression.containsIs) {
+          // Only allowed in GPM
+          withGPMExpression(labelExpression)
+        } else this
+
+        acc.sortLabelExpressionIntoPartitionIgnoringIs(labelExpression, isNode)
+      }
+
+      private def sortLabelExpressionIntoPartitionIgnoringIs(
+        labelExpression: LabelExpression,
+        isNode: Boolean
+      ): Acc = {
+        labelExpression match {
+          case _: Leaf =>
+            // A leaf is both GPM and legacy syntax.
+            // Thus not adding to any partition.
+            this
+          case Disjunctions(children, _) if !isNode && children.forall(_.isInstanceOf[Leaf]) =>
+            // The disjunction for relationships is both GPM and legacy syntax.
+            // Thus not adding to any partition.
+            this
+          case x if isNode && x.containsGpmSpecificLabelExpression    => withGPMExpression(x)
+          case x if !isNode && x.containsGpmSpecificRelTypeExpression => withGPMExpression(x)
+          case x                                                      => withLegacyExpression(x)
+        }
+      }
+    }
+
+    val Acc(readPartitions, writePartitions, _) = this.folder.treeFold(Acc()) {
+
+      // Depending on the clause, update the usage context
+
+      case _: Merge => acc =>
+          val newAcc = acc.inReadWriteContext()
+          TraverseChildren(newAcc)
+
+      case _: UpdateClause => acc =>
+          val newAcc = acc.inWriteContext()
+          TraverseChildren(newAcc)
+
+      case _: Clause => acc =>
+          val newAcc = acc.inReadContext()
+          TraverseChildren(newAcc)
+
+      // Partition label expressions into legacy and gpm.
 
       case NodePattern(_, Some(le), _, _) => acc =>
           val partition =
-            sortLabelExpressionIntoPartition(le, isNode = true, acc)
+            acc.sortLabelExpressionIntoPartition(le, isNode = true)
           TraverseChildren(partition)
 
       case LabelExpressionPredicate(entity, le) => acc =>
           val isNode = state.expressionType(entity).specified == CTNode.invariant
-          val partition =
-            sortLabelExpressionIntoPartition(le, isNode = isNode, acc)
+          val partition = Function.chain[Acc](Seq(
+            _.inReadContext(),
+            _.sortLabelExpressionIntoPartition(le, isNode = isNode)
+          ))(acc)
           SkipChildren(partition)
 
       case RelationshipPattern(_, Some(le), _, _, _, _) => acc =>
           val partition =
-            sortLabelExpressionIntoPartition(le, isNode = false, acc)
+            acc.sortLabelExpressionIntoPartition(le, isNode = false)
           TraverseChildren(partition)
     }
 
-    val containsIs = (partition.gpm ++ partition.legacy ++ partition.leaf).exists(le => le.containsIs)
-
-    when(partition.gpm.nonEmpty || containsIs) {
-      // we prefer the new way, so we will only error on the "legacy" expressions
-      val maybeExplanation = partition.legacy.map { le =>
-        (stringifier.stringifyLabelExpression(le.replaceColonSyntax), le.containsIs, le.position)
-      } match {
-        case SetExtractor() => None
-        case SetExtractor((singleExpression, containsIs, pos)) =>
-          val isOrColon = if (containsIs) "IS " else ":"
-          Some((s"This expression could be expressed as $isOrColon$singleExpression.", pos))
-
-        case set: Set[(String, Boolean, InputPosition)] =>
-          // we report all errors on the first position as we will later on throw away everything but the first error.
-          val replacement = set.map(x => (if (x._2) "IS " else ":") + x._1)
-          Some((s"These expressions could be expressed as ${replacement.mkString(", ")}.", set.head._3))
-      }
-      maybeExplanation match {
-        case Some((explanation, pos)) => SemanticError(
-            if (partition.gpm.nonEmpty)
-              s"Mixing label expression symbols ('|', '&', '!', and '%') with colon (':') is not allowed. Please only use one set of symbols. $explanation"
-            else s"Mixing the IS keyword with colon (':') between labels is not allowed. $explanation",
-            pos
-          )
-        case None => SemanticCheck.success
-      }
-    }.run(state, context)
-  }
-
-  private def sortLabelExpressionIntoPartition(
-    labelExpression: LabelExpression,
-    isNode: Boolean,
-    partition: LabelExpressionsPartition
-  ): LabelExpressionsPartition = {
-    labelExpression match {
-      case x: Leaf => partition.copy(leaf = partition.leaf + x)
-      case Disjunctions(children, _) if !isNode && children.forall(_.isInstanceOf[Leaf]) => partition
-      case x if isNode && x.containsGpmSpecificLabelExpression    => partition.copy(gpm = partition.gpm + x)
-      case x if !isNode && x.containsGpmSpecificRelTypeExpression => partition.copy(gpm = partition.gpm + x)
-      case x                                                      => partition.copy(legacy = partition.legacy + x)
-    }
+    readPartitions.semanticCheck chain
+      writePartitions.semanticCheck
   }
 
   private def checkIfMixingLegacyVarLengthWithQPPs: SemanticCheck = {
     val legacyVarLengthRelationships = this.folder.treeFold(Seq.empty[RelationshipPattern]) {
-      case r @ RelationshipPattern(_, _, Some(_), _, _, _) => acc => TraverseChildren(acc :+ r)
-      case _: SubqueryCall | _: FullSubqueryExpression     => acc => SkipChildren(acc)
+      case r @ RelationshipPattern(_, _, Some(_), _, _, _) => acc =>
+          TraverseChildren(acc :+ r)
+        // We should traverse into subqeries to implement CIP-40 correctly.
+        // We don't, because changing this would break backwards compatibility.
+      // See the "GPM Sync Rolling Agenda" notes for Nov 23, 2023
+      case _: SubqueryCall | _: FullSubqueryExpression => acc => SkipChildren(acc)
     }
     val hasQPP = this.folder.treeFold(false) {
-      case _: QuantifiedPath                           => _ => SkipChildren(true)
+      case _: QuantifiedPath => _ =>
+          SkipChildren(true)
+        // We should traverse into subqeries to implement CIP-40 correctly.
+        // We don't, because changing this would break backwards compatibility.
+      // See the "GPM Sync Rolling Agenda" notes for Nov 23, 2023
       case _: SubqueryCall | _: FullSubqueryExpression => acc => SkipChildren(acc)
       case _                                           => acc => if (acc) SkipChildren(acc) else TraverseChildren(acc)
     }
@@ -227,6 +325,30 @@ sealed trait Clause extends ASTNode with SemanticCheckable with SemanticAnalysis
       legacyVarLengthRelationships.foldSemanticCheck { legacyVarLengthRelationship =>
         error(
           "Mixing variable-length relationships ('-[*]-') with quantified relationships ('()-->*()') or quantified path patterns ('(()-->())*') is not allowed.",
+          legacyVarLengthRelationship.position
+        )
+      }
+    }
+  }
+
+  private def checkIfMixingLegacyShortestWithPathSelectorOrMatchMode: SemanticCheck = {
+    val legacyShortest = this.folder.findAllByClass[ShortestPathsPatternPart]
+
+    val hasPathSelectorOrMatchMode = this.folder.treeFold(false) {
+      case s: Selector if s.isBounded   => _ => SkipChildren(true)
+      case DifferentRelationships(true) =>
+        // Allow implicit match mode
+        acc => if (acc) SkipChildren(acc) else TraverseChildren(acc)
+      case _: MatchMode =>
+        // Forbid explicit match mode
+        _ => SkipChildren(true)
+      case _ => acc => if (acc) SkipChildren(acc) else TraverseChildren(acc)
+    }
+
+    when(hasPathSelectorOrMatchMode) {
+      legacyShortest.foldSemanticCheck { legacyVarLengthRelationship =>
+        error(
+          "Mixing shortestPath/allShortestPaths with path selectors (e.g. 'ANY SHORTEST') or explicit match modes ('e.g. DIFFERENT RELATIONSHIPS') is not allowed.",
           legacyVarLengthRelationship.position
         )
       }
