@@ -34,6 +34,12 @@ import org.neo4j.token.api.TokenConstants;
  * Static methods to create different types of Schema Descriptors
  */
 public class SchemaDescriptors {
+
+    public static final AnyTokenSchemaDescriptor ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR =
+            new SchemaDescriptorImplementation(NODE, ENTITY_TOKENS, EMPTY_INT_ARRAY, EMPTY_INT_ARRAY);
+    public static final AnyTokenSchemaDescriptor ANY_TOKEN_RELATIONSHIP_SCHEMA_DESCRIPTOR =
+            new SchemaDescriptorImplementation(RELATIONSHIP, ENTITY_TOKENS, EMPTY_INT_ARRAY, EMPTY_INT_ARRAY);
+
     public static SchemaDescriptor noSchema() {
         return NoSchemaDescriptor.NO_SCHEMA;
     }
@@ -56,7 +62,10 @@ public class SchemaDescriptors {
     }
 
     public static AnyTokenSchemaDescriptor forAnyEntityTokens(EntityType entityType) {
-        return new SchemaDescriptorImplementation(entityType, ENTITY_TOKENS, EMPTY_INT_ARRAY, EMPTY_INT_ARRAY);
+        return switch (entityType) {
+            case NODE -> ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR;
+            case RELATIONSHIP -> ANY_TOKEN_RELATIONSHIP_SCHEMA_DESCRIPTOR;
+        };
     }
 
     /**

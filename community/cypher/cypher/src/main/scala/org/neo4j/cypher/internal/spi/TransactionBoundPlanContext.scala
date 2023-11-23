@@ -344,13 +344,13 @@ class TransactionBoundPlanContext(
 
   override def nodeTokenIndex: Option[TokenIndexDescriptor] = {
     getTokenIndexDescriptor(
-      tc.schemaRead.indexForSchemaNonTransactional(SchemaDescriptors.forAnyEntityTokens(EntityType.NODE))
+      tc.schemaRead.indexForSchemaNonTransactional(SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR)
     )
   }
 
   override def relationshipTokenIndex: Option[TokenIndexDescriptor] = {
     getTokenIndexDescriptor(
-      tc.schemaRead.indexForSchemaNonTransactional(SchemaDescriptors.forAnyEntityTokens(EntityType.RELATIONSHIP))
+      tc.schemaRead.indexForSchemaNonTransactional(SchemaDescriptors.ANY_TOKEN_RELATIONSHIP_SCHEMA_DESCRIPTOR)
     )
   }
 

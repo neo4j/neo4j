@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime
 
-import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.expressions.RelationshipTypeToken
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
@@ -109,7 +108,7 @@ class QueryIndexRegistrator(schemaRead: SchemaRead) {
       if (labelScan) {
         // We need to use firstOrNull because the indexes might have have been dropped while creating the plan
         Option(Iterators.firstOrNull(
-          schemaRead.indexForSchemaNonTransactional(SchemaDescriptors.forAnyEntityTokens(EntityType.NODE))
+          schemaRead.indexForSchemaNonTransactional(SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR)
         ))
       } else None
 
@@ -117,7 +116,7 @@ class QueryIndexRegistrator(schemaRead: SchemaRead) {
       if (typeScan) {
         // We need to use firstOrNull because the indexes might have have been dropped while creating the plan
         Option(Iterators.firstOrNull(
-          schemaRead.indexForSchemaNonTransactional(SchemaDescriptors.forAnyEntityTokens(EntityType.RELATIONSHIP))
+          schemaRead.indexForSchemaNonTransactional(SchemaDescriptors.ANY_TOKEN_RELATIONSHIP_SCHEMA_DESCRIPTOR)
         ))
       } else None
 

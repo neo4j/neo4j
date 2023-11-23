@@ -29,6 +29,7 @@ import static org.neo4j.internal.helpers.collection.Iterators.filter;
 import static org.neo4j.internal.helpers.collection.Iterators.firstOrDefault;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unorderedValues;
+import static org.neo4j.internal.schema.SchemaDescriptors.ANY_TOKEN_RELATIONSHIP_SCHEMA_DESCRIPTOR;
 import static org.neo4j.kernel.impl.newapi.CursorPredicates.nodeMatchProperties;
 import static org.neo4j.kernel.impl.newapi.CursorPredicates.relationshipMatchProperties;
 import static org.neo4j.util.Preconditions.checkArgument;
@@ -374,7 +375,7 @@ public abstract class DataLookup {
         }
 
         TokenPredicate query = new TokenPredicate(typeId);
-        var index = findUsableMatchingIndex(SchemaDescriptors.forAnyEntityTokens(EntityType.RELATIONSHIP), query);
+        var index = findUsableMatchingIndex(ANY_TOKEN_RELATIONSHIP_SCHEMA_DESCRIPTOR, query);
 
         if (index != IndexDescriptor.NO_INDEX) {
             try {
@@ -413,7 +414,7 @@ public abstract class DataLookup {
         }
 
         TokenPredicate query = new TokenPredicate(labelId);
-        var index = findUsableMatchingIndex(SchemaDescriptors.forAnyEntityTokens(EntityType.NODE), query);
+        var index = findUsableMatchingIndex(SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR, query);
 
         if (index != IndexDescriptor.NO_INDEX) {
             try {
@@ -486,7 +487,7 @@ public abstract class DataLookup {
     private ResourceIterator<Node> getNodesByLabelAndPropertyWithoutPropertyIndex(
             int labelId, PropertyIndexQuery... queries) {
         TokenPredicate tokenQuery = new TokenPredicate(labelId);
-        var index = findUsableMatchingIndex(SchemaDescriptors.forAnyEntityTokens(EntityType.NODE), tokenQuery);
+        var index = findUsableMatchingIndex(SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR, tokenQuery);
 
         if (index != IndexDescriptor.NO_INDEX) {
             try {
@@ -649,7 +650,7 @@ public abstract class DataLookup {
     private ResourceIterator<Relationship> getRelationshipsByTypeAndPropertyWithoutPropertyIndex(
             int typeId, PropertyIndexQuery... queries) {
         TokenPredicate tokenQuery = new TokenPredicate(typeId);
-        var index = findUsableMatchingIndex(SchemaDescriptors.forAnyEntityTokens(EntityType.RELATIONSHIP), tokenQuery);
+        var index = findUsableMatchingIndex(ANY_TOKEN_RELATIONSHIP_SCHEMA_DESCRIPTOR, tokenQuery);
 
         if (index != IndexDescriptor.NO_INDEX) {
             try {

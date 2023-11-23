@@ -24,7 +24,6 @@ import static org.neo4j.kernel.api.KernelTransaction.Type.IMPLICIT;
 import static org.neo4j.kernel.api.security.AnonymousContext.read;
 
 import org.junit.jupiter.api.Test;
-import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
@@ -53,7 +52,7 @@ class NodeScanIT {
             var label = tx.tokenRead().nodeLabel(testLabel.name());
 
             IndexDescriptor index = tx.schemaRead()
-                    .index(SchemaDescriptors.forAnyEntityTokens(EntityType.NODE))
+                    .index(SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR)
                     .next();
             TokenReadSession tokenReadSession = tx.dataRead().tokenReadSession(index);
             try (NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor(cursorContext)) {

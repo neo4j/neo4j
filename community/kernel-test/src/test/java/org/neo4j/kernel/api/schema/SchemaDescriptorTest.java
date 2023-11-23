@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.schema;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.internal.schema.SchemaDescriptors.ANY_TOKEN_RELATIONSHIP_SCHEMA_DESCRIPTOR;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.assertArray;
 
 import org.junit.jupiter.api.Test;
@@ -84,11 +85,10 @@ class SchemaDescriptorTest {
                 .isEqualTo("(:Label1 {property2})");
         assertThat(SchemaDescriptors.forRelType(1, 3).userDescription(SchemaTestUtil.SIMPLE_NAME_LOOKUP))
                 .isEqualTo("()-[:RelType1 {property3}]-()");
-        assertThat(SchemaDescriptors.forAnyEntityTokens(EntityType.NODE)
-                        .userDescription(SchemaTestUtil.SIMPLE_NAME_LOOKUP))
+        assertThat(SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR.userDescription(
+                        SchemaTestUtil.SIMPLE_NAME_LOOKUP))
                 .isEqualTo("(:<any-labels>)");
-        assertThat(SchemaDescriptors.forAnyEntityTokens(EntityType.RELATIONSHIP)
-                        .userDescription(SchemaTestUtil.SIMPLE_NAME_LOOKUP))
+        assertThat(ANY_TOKEN_RELATIONSHIP_SCHEMA_DESCRIPTOR.userDescription(SchemaTestUtil.SIMPLE_NAME_LOOKUP))
                 .isEqualTo("()-[:<any-types>]-()");
     }
 

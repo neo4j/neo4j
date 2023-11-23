@@ -26,7 +26,6 @@ import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
@@ -145,8 +144,7 @@ public class NodeLabelTokenIndexCursorTest extends KernelAPIWriteTestBase<WriteT
     }
 
     private static TokenReadSession getTokenReadSession(KernelTransaction tx) throws IndexNotFoundKernelException {
-        var descriptor = SchemaDescriptors.forAnyEntityTokens(EntityType.NODE);
-        var indexes = tx.schemaRead().index(descriptor);
+        var indexes = tx.schemaRead().index(SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR);
         return tx.dataRead().tokenReadSession(indexes.next());
     }
 

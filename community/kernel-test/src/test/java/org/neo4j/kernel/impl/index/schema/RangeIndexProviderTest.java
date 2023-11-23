@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.index.schema;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
-import static org.neo4j.internal.schema.SchemaDescriptors.forAnyEntityTokens;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.internal.schema.SchemaDescriptors.fulltext;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
@@ -38,6 +37,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexType;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -127,7 +127,7 @@ class RangeIndexProviderTest extends IndexProviderTests {
     @Override
     List<IndexPrototype> invalidPrototypes() {
         return List.of(
-                forSchema(forAnyEntityTokens(EntityType.NODE)).withName("unsupported"),
+                forSchema(SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR).withName("unsupported"),
                 forSchema(fulltext(EntityType.NODE, new int[] {labelId}, new int[] {propId}))
                         .withName("unsupported"),
                 forSchema(forLabel(labelId, propId))

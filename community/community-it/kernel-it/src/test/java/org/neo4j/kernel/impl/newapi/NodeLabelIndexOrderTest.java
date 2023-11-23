@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.IndexQueryConstraints;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
@@ -47,7 +46,7 @@ public class NodeLabelIndexOrderTest extends TokenIndexOrderTestBase<NodeLabelIn
     protected void tokenScan(IndexOrder indexOrder, KernelTransaction tx, int label, NodeLabelIndexCursor cursor)
             throws KernelException {
         IndexDescriptor index = tx.schemaRead()
-                .index(SchemaDescriptors.forAnyEntityTokens(EntityType.NODE))
+                .index(SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR)
                 .next();
         TokenReadSession tokenReadSession = tx.dataRead().tokenReadSession(index);
         tx.dataRead()

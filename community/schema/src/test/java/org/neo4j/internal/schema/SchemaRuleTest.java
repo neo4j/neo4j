@@ -29,6 +29,8 @@ import static org.neo4j.internal.schema.IndexType.LOOKUP;
 import static org.neo4j.internal.schema.IndexType.POINT;
 import static org.neo4j.internal.schema.IndexType.RANGE;
 import static org.neo4j.internal.schema.IndexType.TEXT;
+import static org.neo4j.internal.schema.SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR;
+import static org.neo4j.internal.schema.SchemaDescriptors.ANY_TOKEN_RELATIONSHIP_SCHEMA_DESCRIPTOR;
 
 import java.util.List;
 import java.util.Optional;
@@ -51,8 +53,8 @@ class SchemaRuleTest {
             SchemaDescriptors.fulltext(RELATIONSHIP, new int[] {1, 2}, new int[] {1, 2});
     private final FulltextSchemaDescriptor fulltextNodeSchema2 =
             SchemaDescriptors.fulltext(NODE, new int[] {0, 1}, new int[] {0, 1});
-    private final AnyTokenSchemaDescriptor allLabelsSchema = SchemaDescriptors.forAnyEntityTokens(NODE);
-    private final AnyTokenSchemaDescriptor allRelTypesSchema = SchemaDescriptors.forAnyEntityTokens(RELATIONSHIP);
+    private final AnyTokenSchemaDescriptor allLabelsSchema = ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR;
+    private final AnyTokenSchemaDescriptor allRelTypesSchema = ANY_TOKEN_RELATIONSHIP_SCHEMA_DESCRIPTOR;
     private final LabelSchemaDescriptor labelSinglePropSchema = SchemaDescriptors.forLabel(1, 2);
     private final RelationTypeSchemaDescriptor relTypeSinglePropSchema = SchemaDescriptors.forRelType(1, 2);
     private final IndexPrototype rangeLabelPrototype =

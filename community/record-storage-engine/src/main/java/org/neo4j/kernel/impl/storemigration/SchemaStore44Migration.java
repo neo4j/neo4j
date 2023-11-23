@@ -30,7 +30,6 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.StringJoiner;
-import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.Pair;
@@ -71,7 +70,7 @@ import org.neo4j.token.TokenHolders;
 public class SchemaStore44Migration {
 
     public static final IndexPrototype NLI_PROTOTYPE = IndexPrototype.forSchema(
-                    SchemaDescriptors.forAnyEntityTokens(EntityType.NODE),
+                    SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR,
                     new IndexProviderDescriptor("token-lookup", "1.0"))
             .withIndexType(IndexType.LOOKUP)
             .withName("__org_neo4j_schema_index_label_scan_store_converted_to_token_index");

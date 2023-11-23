@@ -52,7 +52,6 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
-import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.common.Subject.AUTH_DISABLED;
 import static org.neo4j.common.Subject.SYSTEM;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
@@ -66,6 +65,7 @@ import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
 import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
+import static org.neo4j.internal.schema.SchemaDescriptors.ANY_TOKEN_RELATIONSHIP_SCHEMA_DESCRIPTOR;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
@@ -104,7 +104,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.UnderlyingStorageException;
@@ -200,7 +199,7 @@ class IndexingServiceTest {
     private final IndexPrototype uniqueIndex = uniqueForSchema(forLabel(labelId, uniquePropertyKeyId))
             .withIndexProvider(PROVIDER_DESCRIPTOR)
             .withName("constraint");
-    private final IndexDescriptor tokenIndex = forSchema(SchemaDescriptors.forAnyEntityTokens(EntityType.NODE))
+    private final IndexDescriptor tokenIndex = forSchema(SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR)
             .withIndexProvider(PROVIDER_DESCRIPTOR)
             .withName("tokenIndex")
             .materialise(21);
@@ -1455,7 +1454,7 @@ class IndexingServiceTest {
                 .withName("rel value")
                 .withIndexProvider(PROVIDER_DESCRIPTOR)
                 .materialise(1);
-        var lookupIndex = IndexPrototype.forSchema(SchemaDescriptors.forAnyEntityTokens(RELATIONSHIP))
+        var lookupIndex = IndexPrototype.forSchema(ANY_TOKEN_RELATIONSHIP_SCHEMA_DESCRIPTOR)
                 .withName("rli")
                 .withIndexProvider(PROVIDER_DESCRIPTOR)
                 .withIndexType(IndexType.LOOKUP)

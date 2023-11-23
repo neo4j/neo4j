@@ -31,7 +31,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
-import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
@@ -448,7 +447,7 @@ class UnionNodeLabelIndexCursorTest {
         Read read = tx.dataRead();
         SchemaRead schemaRead = tx.schemaRead();
         IndexDescriptor index = schemaRead
-                .index(SchemaDescriptors.forAnyEntityTokens(EntityType.NODE))
+                .index(SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR)
                 .next();
         TokenReadSession tokenReadSession = read.tokenReadSession(index);
         return UnionNodeLabelIndexCursor.ascendingUnionNodeLabelIndexCursor(
@@ -460,7 +459,7 @@ class UnionNodeLabelIndexCursorTest {
         Read read = tx.dataRead();
         SchemaRead schemaRead = tx.schemaRead();
         IndexDescriptor index = schemaRead
-                .index(SchemaDescriptors.forAnyEntityTokens(EntityType.NODE))
+                .index(SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR)
                 .next();
         TokenReadSession tokenReadSession = read.tokenReadSession(index);
         return UnionNodeLabelIndexCursor.descendingUnionNodeLabelIndexCursor(

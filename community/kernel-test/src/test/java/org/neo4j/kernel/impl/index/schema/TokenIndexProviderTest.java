@@ -21,14 +21,14 @@ package org.neo4j.kernel.impl.index.schema;
 
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
 import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
-import static org.neo4j.internal.schema.SchemaDescriptors.forAnyEntityTokens;
+import static org.neo4j.internal.schema.SchemaDescriptors.ANY_TOKEN_RELATIONSHIP_SCHEMA_DESCRIPTOR;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 
 import java.util.List;
-import org.neo4j.common.EntityType;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexType;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.fs.FileSystemAbstraction;
 
 public class TokenIndexProviderTest extends IndexProviderTests {
@@ -61,21 +61,21 @@ public class TokenIndexProviderTest extends IndexProviderTests {
 
     @Override
     IndexDescriptor descriptor() {
-        return completeConfiguration(forSchema(forAnyEntityTokens(EntityType.NODE))
+        return completeConfiguration(forSchema(SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR)
                 .withName("labelIndex")
                 .materialise(indexId));
     }
 
     @Override
     IndexDescriptor otherDescriptor() {
-        return completeConfiguration(forSchema(forAnyEntityTokens(EntityType.RELATIONSHIP))
+        return completeConfiguration(forSchema(ANY_TOKEN_RELATIONSHIP_SCHEMA_DESCRIPTOR)
                 .withName("relTypeIndex")
                 .materialise(indexId + 1));
     }
 
     @Override
     IndexPrototype validPrototype() {
-        return forSchema(forAnyEntityTokens(EntityType.NODE), TokenIndexProvider.DESCRIPTOR)
+        return forSchema(SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR, TokenIndexProvider.DESCRIPTOR)
                 .withIndexType(IndexType.LOOKUP)
                 .withName("index");
     }
@@ -83,10 +83,10 @@ public class TokenIndexProviderTest extends IndexProviderTests {
     @Override
     List<IndexPrototype> invalidPrototypes() {
         return List.of(
-                forSchema(forAnyEntityTokens(EntityType.NODE), TokenIndexProvider.DESCRIPTOR)
+                forSchema(SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR, TokenIndexProvider.DESCRIPTOR)
                         .withIndexType(IndexType.RANGE)
                         .withName("unsupported"),
-                forSchema(forAnyEntityTokens(EntityType.NODE), RangeIndexProvider.DESCRIPTOR)
+                forSchema(SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR, RangeIndexProvider.DESCRIPTOR)
                         .withIndexType(IndexType.LOOKUP)
                         .withName("unsupported"),
                 forSchema(forLabel(labelId, propId), TokenIndexProvider.DESCRIPTOR)

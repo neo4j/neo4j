@@ -36,6 +36,7 @@ import static org.neo4j.internal.recordstorage.RecordCursorTypes.GROUP_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.RELATIONSHIP_CURSOR;
+import static org.neo4j.internal.schema.SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
@@ -54,7 +55,6 @@ import org.eclipse.collections.impl.factory.primitive.IntObjectMaps;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.neo4j.common.DependencyResolver;
-import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.checking.ConsistencyFlags;
@@ -86,7 +86,6 @@ import org.neo4j.internal.recordstorage.SchemaStorage;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.constraints.PropertyTypeSet;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -213,8 +212,8 @@ class CheckerTestBase {
 
     IndexUpdater labelIndexWriter() {
         IndexingService indexingService = db.getDependencyResolver().resolveDependency(IndexingService.class);
-        final IndexDescriptor[] indexDescriptors = schemaStorage.indexGetForSchema(
-                () -> SchemaDescriptors.forAnyEntityTokens(EntityType.NODE), storeCursors);
+        final IndexDescriptor[] indexDescriptors =
+                schemaStorage.indexGetForSchema(() -> ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR, storeCursors);
         // The Node Label Index should exist and be unique.
         assertThat(indexDescriptors.length).isEqualTo(1);
         IndexDescriptor nli = indexDescriptors[0];

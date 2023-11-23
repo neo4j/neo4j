@@ -24,7 +24,6 @@ import org.mockito.Mockito.RETURNS_DEEP_STUBS
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
 import org.mockito.Mockito.when
-import org.neo4j.common.EntityType
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
@@ -498,7 +497,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
 
   private def tokenReadSession(tx: InternalTransaction): TokenReadSession = {
     val index = tx.kernelTransaction().schemaRead.indexForSchemaNonTransactional(
-      SchemaDescriptors.forAnyEntityTokens(EntityType.NODE)
+      SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR
     ).next()
     tx.kernelTransaction().dataRead().tokenReadSession(index)
   }

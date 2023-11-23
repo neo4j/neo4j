@@ -26,7 +26,6 @@ import static org.neo4j.test.Race.throwing;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
@@ -70,7 +69,7 @@ class KernelAPIParallelLabelScanStressIT {
         IndexDescriptor nodeLabelIndex;
         try (KernelTransaction tx = kernel.beginTransaction(EXPLICIT, LoginContext.AUTH_DISABLED)) {
             nodeLabelIndex = tx.schemaRead()
-                    .index(SchemaDescriptors.forAnyEntityTokens(EntityType.NODE))
+                    .index(SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR)
                     .next();
             tx.commit();
         }

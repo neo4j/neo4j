@@ -33,7 +33,6 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 
 import org.junit.jupiter.api.Test;
-import org.neo4j.common.EntityType;
 import org.neo4j.common.Subject;
 import org.neo4j.internal.recordstorage.Command.NodeCommand;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -71,7 +70,7 @@ class IndexTransactionApplierFactoryTest {
         IndexTransactionApplierFactory applier = new IndexTransactionApplierFactory(INTERNAL, indexUpdateListener);
         final SchemaCache mock = mock(SchemaCache.class);
         IndexDescriptor nli = IndexPrototype.forSchema(
-                        SchemaDescriptors.forAnyEntityTokens(EntityType.NODE),
+                        SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR,
                         new IndexProviderDescriptor("token-lookup", "1.0"))
                 .withName("NLI")
                 .withIndexType(IndexType.LOOKUP)

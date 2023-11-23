@@ -73,7 +73,7 @@ import org.neo4j.values.storable.Value;
 
 public class SchemaStore44Reader implements AutoCloseable {
     public static final AnyTokenSchemaDescriptor FORMER_LABEL_SCAN_STORE_SCHEMA =
-            SchemaDescriptors.forAnyEntityTokens(EntityType.NODE);
+            SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR;
     public static final String FORMER_LABEL_SCAN_STORE_GENERATED_NAME =
             "__org_neo4j_schema_index_label_scan_store_converted_to_token_index";
 

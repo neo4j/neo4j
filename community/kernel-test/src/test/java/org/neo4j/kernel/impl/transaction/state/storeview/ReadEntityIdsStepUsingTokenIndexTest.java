@@ -25,6 +25,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.batchimport.Configuration.DEFAULT;
 import static org.neo4j.internal.batchimport.Configuration.withBatchSize;
+import static org.neo4j.internal.schema.SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR;
 import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
@@ -35,7 +36,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.eclipse.collections.api.factory.Sets;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.neo4j.common.EntityType;
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.staging.BatchSender;
 import org.neo4j.internal.batchimport.staging.ProcessorStep;
@@ -44,7 +44,6 @@ import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.internal.schema.AnyTokenSchemaDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -74,8 +73,7 @@ import org.neo4j.test.utils.TestDirectory;
 @Neo4jLayoutExtension
 class ReadEntityIdsStepUsingTokenIndexTest {
     private static final int TOKEN_ID = 0;
-    private static final AnyTokenSchemaDescriptor SCHEMA_DESCRIPTOR =
-            SchemaDescriptors.forAnyEntityTokens(EntityType.NODE);
+    private static final AnyTokenSchemaDescriptor SCHEMA_DESCRIPTOR = ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR;
     private static final IndexDescriptor INDEX_DESCRIPTOR =
             IndexPrototype.forSchema(SCHEMA_DESCRIPTOR).withName("index").materialise(1);
 

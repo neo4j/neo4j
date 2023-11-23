@@ -37,7 +37,6 @@ import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.impl.factory.primitive.IntObjectMaps;
 import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.junit.jupiter.api.Test;
-import org.neo4j.common.EntityType;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.DynamicConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.LabelTokenConsistencyReport;
@@ -151,7 +150,7 @@ class SchemaCheckerTest extends CheckerTestBase {
         try (AutoCloseable ignored = tx()) {
             var cursorContext = CursorContext.NULL_CONTEXT;
             IndexDescriptor index = IndexPrototype.uniqueForSchema(
-                            SchemaDescriptors.forAnyEntityTokens(EntityType.NODE), TokenIndexProvider.DESCRIPTOR)
+                            SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR, TokenIndexProvider.DESCRIPTOR)
                     .withName(NAME)
                     .withIndexType(IndexType.LOOKUP)
                     .materialise(schemaIdGenerator.nextId(cursorContext));

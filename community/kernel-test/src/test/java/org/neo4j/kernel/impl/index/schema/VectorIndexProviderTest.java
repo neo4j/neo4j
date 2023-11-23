@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.index.schema;
 
 import static org.neo4j.graphdb.schema.IndexSettingUtil.toIndexConfigFromIndexSettingObjectMap;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
-import static org.neo4j.internal.schema.SchemaDescriptors.forAnyEntityTokens;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.internal.schema.SchemaDescriptors.fulltext;
 import static org.neo4j.kernel.api.impl.index.storage.DirectoryFactory.directoryFactory;
@@ -38,6 +37,7 @@ import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexType;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.impl.schema.vector.VectorIndexProvider;
 import org.neo4j.kernel.api.impl.schema.vector.VectorSimilarityFunction;
@@ -119,7 +119,8 @@ class VectorIndexProviderTest {
                             .withName("unsupported"),
 
                     // Unsupported index types
-                    forSchema(forAnyEntityTokens(EntityType.NODE)).withName("unsupported"),
+                    forSchema(SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR)
+                            .withName("unsupported"),
                     forSchema(fulltext(EntityType.NODE, new int[] {labelId}, new int[] {propId}))
                             .withName("unsupported"),
                     forSchema(forLabel(labelId, propId))

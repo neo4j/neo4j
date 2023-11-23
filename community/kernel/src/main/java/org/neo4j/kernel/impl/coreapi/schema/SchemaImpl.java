@@ -31,7 +31,8 @@ import static org.neo4j.internal.helpers.collection.Iterables.single;
 import static org.neo4j.internal.helpers.collection.Iterators.addToCollection;
 import static org.neo4j.internal.helpers.collection.Iterators.map;
 import static org.neo4j.internal.schema.IndexType.fromPublicApi;
-import static org.neo4j.internal.schema.SchemaDescriptors.forAnyEntityTokens;
+import static org.neo4j.internal.schema.SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR;
+import static org.neo4j.internal.schema.SchemaDescriptors.ANY_TOKEN_RELATIONSHIP_SCHEMA_DESCRIPTOR;
 import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.internal.schema.SchemaDescriptors.forRelType;
 import static org.neo4j.internal.schema.SchemaDescriptors.fulltext;
@@ -446,7 +447,7 @@ public class SchemaImpl implements Schema {
             if (index.isMultiTokenIndex()) {
                 schema = fulltext(EntityType.NODE, labelIds, propertyKeyIds);
             } else if (index.getIndexType() == IndexType.LOOKUP) {
-                schema = forAnyEntityTokens(EntityType.NODE);
+                schema = ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR;
             } else {
                 schema = forLabel(labelIds[0], propertyKeyIds);
             }
@@ -460,7 +461,7 @@ public class SchemaImpl implements Schema {
             if (index.isMultiTokenIndex()) {
                 schema = fulltext(EntityType.RELATIONSHIP, relTypes, propertyKeyIds);
             } else if (index.getIndexType() == IndexType.LOOKUP) {
-                schema = forAnyEntityTokens(EntityType.RELATIONSHIP);
+                schema = ANY_TOKEN_RELATIONSHIP_SCHEMA_DESCRIPTOR;
             } else {
                 schema = forRelType(relTypes[0], propertyKeyIds);
             }

@@ -28,7 +28,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.Test;
-import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
@@ -381,7 +380,7 @@ class IntersectionNodeLabelIndexCursorTest {
         Read read = tx.dataRead();
         SchemaRead schemaRead = tx.schemaRead();
         IndexDescriptor index = schemaRead
-                .index(SchemaDescriptors.forAnyEntityTokens(EntityType.NODE))
+                .index(SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR)
                 .next();
         TokenReadSession tokenReadSession = read.tokenReadSession(index);
         return IntersectionNodeLabelIndexCursor.ascendingIntersectionNodeLabelIndexCursor(
@@ -393,7 +392,7 @@ class IntersectionNodeLabelIndexCursorTest {
         Read read = tx.dataRead();
         SchemaRead schemaRead = tx.schemaRead();
         IndexDescriptor index = schemaRead
-                .index(SchemaDescriptors.forAnyEntityTokens(EntityType.NODE))
+                .index(SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR)
                 .next();
         TokenReadSession tokenReadSession = read.tokenReadSession(index);
         return IntersectionNodeLabelIndexCursor.descendingIntersectionNodeLabelIndexCursor(

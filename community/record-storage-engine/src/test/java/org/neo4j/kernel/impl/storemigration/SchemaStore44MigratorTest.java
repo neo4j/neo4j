@@ -48,7 +48,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
-import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.recordstorage.SimpleTokenCreator;
 import org.neo4j.internal.schema.ConstraintDescriptor;
@@ -660,7 +659,7 @@ class SchemaStore44MigratorTest {
         // Given
         var existingNli = new SchemaRule44.Index(
                 15L,
-                SchemaDescriptors.forAnyEntityTokens(EntityType.NODE),
+                SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR,
                 false,
                 "My nli",
                 SchemaRule44.IndexType.LOOKUP,
@@ -691,7 +690,7 @@ class SchemaStore44MigratorTest {
         // Given
         var existingNli = new SchemaRule44.Index(
                 15L,
-                SchemaDescriptors.forAnyEntityTokens(EntityType.NODE),
+                SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR,
                 false,
                 "My nli",
                 SchemaRule44.IndexType.LOOKUP,

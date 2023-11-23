@@ -1148,7 +1148,7 @@ public class PlainOperationsTest extends OperationsTest {
     @Test
     void indexedBackedConstraintCreateMustThrowOnAnyTokenSchemas() throws Exception {
         // given
-        SchemaDescriptor schema = SchemaDescriptors.forAnyEntityTokens(NODE);
+        SchemaDescriptor schema = SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR;
         IndexPrototype prototype = IndexPrototype.uniqueForSchema(schema)
                 .withName("constraint name")
                 .withIndexProvider(RangeIndexProvider.DESCRIPTOR);

@@ -23,10 +23,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.common.EntityType.NODE;
-import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.internal.schema.IndexPrototype.forSchema;
-import static org.neo4j.internal.schema.SchemaDescriptors.forAnyEntityTokens;
+import static org.neo4j.internal.schema.SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR;
+import static org.neo4j.internal.schema.SchemaDescriptors.ANY_TOKEN_RELATIONSHIP_SCHEMA_DESCRIPTOR;
 import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
 import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.kernel.impl.index.schema.TokenIndexProvider.DESCRIPTOR;
@@ -92,7 +91,7 @@ class DynamicIndexStoreViewTest {
         IndexProxy indexProxy = mock(IndexProxy.class);
         IndexProxyProvider indexProxies = mock(IndexProxyProvider.class);
         StubTokenIndexReader tokenReader = new StubTokenIndexReader();
-        IndexDescriptor descriptor = forSchema(forAnyEntityTokens(NODE), DESCRIPTOR)
+        IndexDescriptor descriptor = forSchema(ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR, DESCRIPTOR)
                 .withName("index")
                 .materialise(0);
         when(indexProxy.getState()).thenReturn(InternalIndexState.ONLINE);
@@ -135,7 +134,7 @@ class DynamicIndexStoreViewTest {
         StorageEngine storageEngine = mockedStorageEngine(cursors, false);
         IndexProxy indexProxy = mock(IndexProxy.class);
         IndexProxyProvider indexProxies = mock(IndexProxyProvider.class);
-        IndexDescriptor descriptor = forSchema(forAnyEntityTokens(RELATIONSHIP), DESCRIPTOR)
+        IndexDescriptor descriptor = forSchema(ANY_TOKEN_RELATIONSHIP_SCHEMA_DESCRIPTOR, DESCRIPTOR)
                 .withName("index")
                 .materialise(0);
         when(indexProxy.getState()).thenReturn(InternalIndexState.ONLINE);
@@ -274,7 +273,7 @@ class DynamicIndexStoreViewTest {
         StorageEngine storageEngine = mockedStorageEngine(cursors, true);
         IndexProxy indexProxy = mock(IndexProxy.class);
         IndexProxyProvider indexProxies = mock(IndexProxyProvider.class);
-        IndexDescriptor descriptor = forSchema(forAnyEntityTokens(RELATIONSHIP), DESCRIPTOR)
+        IndexDescriptor descriptor = forSchema(ANY_TOKEN_RELATIONSHIP_SCHEMA_DESCRIPTOR, DESCRIPTOR)
                 .withName("index")
                 .materialise(0);
         when(indexProxy.getState()).thenReturn(InternalIndexState.ONLINE);

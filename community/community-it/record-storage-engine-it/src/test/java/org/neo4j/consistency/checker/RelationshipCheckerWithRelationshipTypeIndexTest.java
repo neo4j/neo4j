@@ -32,7 +32,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.neo4j.common.EntityType;
 import org.neo4j.consistency.checking.ConsistencyFlags;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.exceptions.KernelException;
@@ -73,7 +72,7 @@ class RelationshipCheckerWithRelationshipTypeIndexTest extends CheckerTestBase {
     void extractRelationshipTypeIndexProxy() {
         IndexingService indexingService = db.getDependencyResolver().resolveDependency(IndexingService.class);
         final IndexDescriptor[] indexDescriptors = schemaStorage.indexGetForSchema(
-                () -> SchemaDescriptors.forAnyEntityTokens(EntityType.RELATIONSHIP), storeCursors);
+                () -> SchemaDescriptors.ANY_TOKEN_RELATIONSHIP_SCHEMA_DESCRIPTOR, storeCursors);
         // The Relationship Type Index should exist and be unique.
         assertThat(indexDescriptors.length).isEqualTo(1);
         rtiDescriptor = indexDescriptors[0];

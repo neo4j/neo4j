@@ -207,14 +207,14 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
     IndexPrototype.forSchema(relTypeDescriptor, RangeIndexProvider.DESCRIPTOR).withName("index01").materialise(1)
 
   private val lookupNodeIndexDescriptor =
-    IndexPrototype.forSchema(SchemaDescriptors.forAnyEntityTokens(EntityType.NODE), TokenIndexProvider.DESCRIPTOR)
+    IndexPrototype.forSchema(SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR, TokenIndexProvider.DESCRIPTOR)
       .withIndexType(IndexType.LOOKUP)
       .withName("index02")
       .materialise(2)
 
   private val lookupRelIndexDescriptor =
     IndexPrototype.forSchema(
-      SchemaDescriptors.forAnyEntityTokens(EntityType.RELATIONSHIP),
+      SchemaDescriptors.ANY_TOKEN_RELATIONSHIP_SCHEMA_DESCRIPTOR,
       TokenIndexProvider.DESCRIPTOR
     )
       .withIndexType(IndexType.LOOKUP)

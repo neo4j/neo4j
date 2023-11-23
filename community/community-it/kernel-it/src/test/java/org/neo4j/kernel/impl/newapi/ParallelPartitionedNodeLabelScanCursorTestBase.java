@@ -45,7 +45,6 @@ import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.internal.kernel.api.CursorFactory;
@@ -107,7 +106,7 @@ public abstract class ParallelPartitionedNodeLabelScanCursorTestBase<G extends K
                 NodeLabelIndexCursor nodes = cursors.allocateNodeLabelIndexCursor(NULL_CONTEXT)) {
             // when
             var tokenReadSession = read.tokenReadSession(tx.schemaRead()
-                    .index(SchemaDescriptors.forAnyEntityTokens(EntityType.NODE))
+                    .index(SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR)
                     .next());
             PartitionedScan<NodeLabelIndexCursor> scan =
                     read.nodeLabelScan(tokenReadSession, 32, NULL_CONTEXT, new TokenPredicate(FOO_LABEL));
@@ -129,7 +128,7 @@ public abstract class ParallelPartitionedNodeLabelScanCursorTestBase<G extends K
                 NodeLabelIndexCursor nodes = cursors.allocateNodeLabelIndexCursor(NULL_CONTEXT)) {
             // when
             var tokenReadSession = read.tokenReadSession(tx.schemaRead()
-                    .index(SchemaDescriptors.forAnyEntityTokens(EntityType.NODE))
+                    .index(SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR)
                     .next());
             PartitionedScan<NodeLabelIndexCursor> scan =
                     read.nodeLabelScan(tokenReadSession, 1, NULL_CONTEXT, new TokenPredicate(FOO_LABEL));
@@ -154,7 +153,7 @@ public abstract class ParallelPartitionedNodeLabelScanCursorTestBase<G extends K
                 var executionContext = tx.createExecutionContext()) {
             // when
             var tokenReadSession = read.tokenReadSession(tx.schemaRead()
-                    .index(SchemaDescriptors.forAnyEntityTokens(EntityType.NODE))
+                    .index(SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR)
                     .next());
 
             assertThrows(
@@ -168,7 +167,7 @@ public abstract class ParallelPartitionedNodeLabelScanCursorTestBase<G extends K
     @EnumSource(PartitionedScanAPI.class)
     void shouldScanFooNodesInBatchesWithGetNumberOfPartitions(PartitionedScanAPI api) throws KernelException {
         var tokenReadSession = read.tokenReadSession(tx.schemaRead()
-                .index(SchemaDescriptors.forAnyEntityTokens(EntityType.NODE))
+                .index(SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR)
                 .next());
         PartitionedScan<NodeLabelIndexCursor> scan =
                 read.nodeLabelScan(tokenReadSession, 32, NULL_CONTEXT, new TokenPredicate(FOO_LABEL));
@@ -196,7 +195,7 @@ public abstract class ParallelPartitionedNodeLabelScanCursorTestBase<G extends K
     @EnumSource(PartitionedScanAPI.class)
     void shouldScanFooNodesInBatchesWithoutGetNumberOfPartitions(PartitionedScanAPI api) throws KernelException {
         var tokenReadSession = read.tokenReadSession(tx.schemaRead()
-                .index(SchemaDescriptors.forAnyEntityTokens(EntityType.NODE))
+                .index(SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR)
                 .next());
         PartitionedScan<NodeLabelIndexCursor> scan =
                 read.nodeLabelScan(tokenReadSession, 32, NULL_CONTEXT, new TokenPredicate(FOO_LABEL));
@@ -222,7 +221,7 @@ public abstract class ParallelPartitionedNodeLabelScanCursorTestBase<G extends K
     @EnumSource(PartitionedScanAPI.class)
     void shouldHandleMorePartitionsThanNodes(PartitionedScanAPI api) throws KernelException {
         var tokenReadSession = read.tokenReadSession(tx.schemaRead()
-                .index(SchemaDescriptors.forAnyEntityTokens(EntityType.NODE))
+                .index(SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR)
                 .next());
         PartitionedScan<NodeLabelIndexCursor> scan =
                 read.nodeLabelScan(tokenReadSession, 2 * NUMBER_OF_NODES, NULL_CONTEXT, new TokenPredicate(FOO_LABEL));
@@ -250,7 +249,7 @@ public abstract class ParallelPartitionedNodeLabelScanCursorTestBase<G extends K
     void shouldScanFooNodesFromMultipleThreads() throws InterruptedException, ExecutionException, KernelException {
         // given
         var tokenReadSession = read.tokenReadSession(tx.schemaRead()
-                .index(SchemaDescriptors.forAnyEntityTokens(EntityType.NODE))
+                .index(SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR)
                 .next());
         PartitionedScan<NodeLabelIndexCursor> scan =
                 read.nodeLabelScan(tokenReadSession, 32, NULL_CONTEXT, new TokenPredicate(FOO_LABEL));
@@ -280,7 +279,7 @@ public abstract class ParallelPartitionedNodeLabelScanCursorTestBase<G extends K
         // given
         MutableLongSet ids = new LongHashSet();
         var tokenReadSession = read.tokenReadSession(tx.schemaRead()
-                .index(SchemaDescriptors.forAnyEntityTokens(EntityType.NODE))
+                .index(SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR)
                 .next());
         PartitionedScan<NodeLabelIndexCursor> scan =
                 read.nodeLabelScan(tokenReadSession, 32, NULL_CONTEXT, new TokenPredicate(FOO_LABEL));

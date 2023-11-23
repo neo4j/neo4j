@@ -21,12 +21,12 @@ package org.neo4j.kernel.api.index;
 
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.internal.schema.SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR;
+import static org.neo4j.internal.schema.SchemaDescriptors.ANY_TOKEN_RELATIONSHIP_SCHEMA_DESCRIPTOR;
 
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.neo4j.common.EntityType;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
-import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 
@@ -92,13 +92,13 @@ class EntityTokenUpdatesTest {
         NODE {
             @Override
             SchemaDescriptorSupplier getTokenIndex() {
-                return () -> SchemaDescriptors.forAnyEntityTokens(EntityType.NODE);
+                return () -> ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR;
             }
         },
         RELATIONSHIP {
             @Override
             SchemaDescriptorSupplier getTokenIndex() {
-                return () -> SchemaDescriptors.forAnyEntityTokens(EntityType.RELATIONSHIP);
+                return () -> ANY_TOKEN_RELATIONSHIP_SCHEMA_DESCRIPTOR;
             }
         };
 

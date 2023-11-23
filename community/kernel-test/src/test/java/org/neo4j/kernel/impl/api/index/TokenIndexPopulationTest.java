@@ -87,7 +87,7 @@ class TokenIndexPopulationTest {
     @BeforeEach
     void beforeEach() {
         tokenIndex = IndexPrototype.forSchema(
-                        SchemaDescriptors.forAnyEntityTokens(EntityType.NODE), TokenIndexProvider.DESCRIPTOR)
+                        SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR, TokenIndexProvider.DESCRIPTOR)
                 .withName("label_index")
                 .withIndexType(IndexType.LOOKUP)
                 .materialise(123);

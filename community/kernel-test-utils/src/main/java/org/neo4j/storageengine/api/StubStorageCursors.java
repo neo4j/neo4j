@@ -26,6 +26,8 @@ import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
 import static org.apache.commons.lang3.ArrayUtils.contains;
 import static org.neo4j.internal.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.internal.schema.IndexType.LOOKUP;
+import static org.neo4j.internal.schema.SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR;
+import static org.neo4j.internal.schema.SchemaDescriptors.ANY_TOKEN_RELATIONSHIP_SCHEMA_DESCRIPTOR;
 import static org.neo4j.internal.schema.SchemaDescriptors.forAnyEntityTokens;
 import static org.neo4j.storageengine.api.LongReference.longReference;
 import static org.neo4j.token.api.TokenHolder.TYPE_PROPERTY_KEY;
@@ -85,9 +87,8 @@ public class StubStorageCursors implements StorageReader {
     }
 
     public StubStorageCursors withTokenIndexes() {
-        indexDescriptorMap.put(forAnyEntityTokens(EntityType.NODE), indexDescriptor(EntityType.NODE, 1));
-        indexDescriptorMap.put(
-                forAnyEntityTokens(EntityType.RELATIONSHIP), indexDescriptor(EntityType.RELATIONSHIP, 2));
+        indexDescriptorMap.put(ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR, indexDescriptor(EntityType.NODE, 1));
+        indexDescriptorMap.put(ANY_TOKEN_RELATIONSHIP_SCHEMA_DESCRIPTOR, indexDescriptor(EntityType.RELATIONSHIP, 2));
         return this;
     }
 
