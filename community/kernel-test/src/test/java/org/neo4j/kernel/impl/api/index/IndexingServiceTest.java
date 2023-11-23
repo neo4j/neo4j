@@ -92,6 +92,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -102,10 +103,13 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.UnderlyingStorageException;
@@ -1466,6 +1470,65 @@ class IndexingServiceTest {
         // then
         await().atMost(10, SECONDS).until(() -> populationJobDescriptors.size() == 2);
         assertThat(populationJobDescriptors).isEqualTo(Set.of(valueIndex, lookupIndex));
+    }
+
+    /**
+     * This was an issue where {@link StorageEngineIndexingBehaviour#useNodeIdsInRelationshipTokenIndex()} is {@code true},
+     * a single transaction creating both the relationship type LOOKUP index and a relationship value index.
+     * In a clustered scenario on an empty database and where the LOOKUP index ended up being created first,
+     * the value index would be run on the applier thread (due to db being empty) and try to acquire a shared lock
+     * on the lookup index, which would be exclusively locked by the transaction creating these indexes
+     * (remember, in clustering it's a dedicated, i.e. different thread applying transactions).
+     * <p>
+     * There's a lot of ways to solve this conundrum (because there are so many things that must align), but the
+     * solution of choice is to order the index population "groups" such that if there's both relationship lookup
+     * index and relationship value indexes, and they're in different population groups, then the lookup index
+     * will start its population after the value index.
+     */
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void shouldHandleCreatingBothNodeBasedRelationshipLookupAndValueIndexesInSameCallOrderedOnEmptyDb(
+            boolean lookupIndexFirst) throws IOException {
+        // given
+        when(accessor.newUpdater(any(IndexUpdateMode.class), any(CursorContext.class), anyBoolean()))
+                .thenReturn(updater);
+        when(storageEngine.indexingBehaviour()).thenReturn(new NodeIdsForRelationshipsBehaviour());
+        when(storeView.isEmpty(any())).thenReturn(true);
+        when(storeView.visitRelationships(any(), any(), any(), any(), anyBoolean(), anyBoolean(), any(), any()))
+                .thenReturn(IndexStoreView.EMPTY_SCAN);
+        List<IndexDescriptor> populationJobDescriptors = new CopyOnWriteArrayList<>();
+        var threadExecutingThisTest = Thread.currentThread();
+        var indexingMonitor = new IndexMonitor.MonitorAdapter() {
+            @Override
+            public void indexPopulationScanStarting(IndexDescriptor[] descriptors) {
+                // A little sanity check that populations are started/run on the same thread
+                assertThat(Thread.currentThread()).isEqualTo(threadExecutingThisTest);
+
+                assertThat(descriptors.length).isEqualTo(1);
+                populationJobDescriptors.add(descriptors[0]);
+            }
+        };
+        var indexingService =
+                newIndexingServiceWithMockedDependencies(populator, accessor, withData(), indexingMonitor);
+        life.start();
+
+        // when
+        var valueIndex = IndexPrototype.forSchema(SchemaDescriptors.forRelType(0, 0))
+                .withName("rel value")
+                .withIndexProvider(PROVIDER_DESCRIPTOR)
+                .materialise(1);
+        var lookupIndex = IndexPrototype.forSchema(SchemaDescriptors.forAnyEntityTokens(EntityType.RELATIONSHIP))
+                .withName("rli")
+                .withIndexProvider(PROVIDER_DESCRIPTOR)
+                .withIndexType(IndexType.LOOKUP)
+                .materialise(2);
+        var indexesToCreate = lookupIndexFirst
+                ? new IndexDescriptor[] {lookupIndex, valueIndex}
+                : new IndexDescriptor[] {valueIndex, lookupIndex};
+        indexingService.createIndexes(SYSTEM, indexesToCreate);
+
+        // then
+        assertThat(populationJobDescriptors).isEqualTo(List.of(valueIndex, lookupIndex));
     }
 
     /*

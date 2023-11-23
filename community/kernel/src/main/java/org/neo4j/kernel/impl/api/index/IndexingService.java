@@ -846,7 +846,12 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
 
         void startPopulation() {
             try (var cursorContext = contextFactory.create(START_TAG)) {
-                populationJobs.values().forEach(populationJob -> startIndexPopulation(populationJob, cursorContext));
+                populationJobs.keySet().stream()
+                        // Sort these categories so that relationship lookup index will be created last.
+                        // This avoids a locking issue when creating lookup indexes and other indexes in the same
+                        // transaction.
+                        .sorted((o1, o2) -> Boolean.compare(o1.lookupIndexDifferentiator, o2.lookupIndexDifferentiator))
+                        .forEach(category -> startIndexPopulation(populationJobs.get(category), cursorContext));
             }
         }
     }
@@ -861,6 +866,11 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     /**
      * Category key to use when splitting up indexes to be populated, so that multiple indexes of a particular category can be
      * populated using the same scan.
+     *
+     * @param entityType type of entity (node/relateionship) for indexes in this category.
+     * @param lookupIndexDifferentiator whether the category is for {@link IndexType#LOOKUP lookup index} and the
+     * database's {@link StorageEngineIndexingBehaviour} hints that such indexes needs to be populated by a specific scan,
+     * i.e. requiring its own category (which translates to its own population job).
      */
     private record IndexPopulationCategory(EntityType entityType, boolean lookupIndexDifferentiator) {
         IndexPopulationCategory(IndexDescriptor descriptor, StorageEngineIndexingBehaviour indexingBehaviour) {
