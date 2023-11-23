@@ -25,7 +25,6 @@ import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
-import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.memory.MemoryTracker;
@@ -372,7 +371,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
     }
 
     @Override
-    public RelationshipValueIndexCursor allocateRelationshipValueIndexCursor(
+    public DefaultRelationshipValueIndexCursor allocateRelationshipValueIndexCursor(
             CursorContext cursorContext, MemoryTracker memoryTracker) {
         if (relationshipValueIndexCursor == null) {
             var internalCursors = newInternalCursors(cursorContext, memoryTracker);

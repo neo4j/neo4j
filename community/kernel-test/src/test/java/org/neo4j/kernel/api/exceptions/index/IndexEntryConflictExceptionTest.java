@@ -64,6 +64,16 @@ class IndexEntryConflictExceptionTest {
     }
 
     @Test
+    void shouldMakeAnonymousEntryConflictsForOneNode() {
+        LabelSchemaDescriptor schema = SchemaDescriptors.forLabel(labelId, 2);
+        IndexEntryConflictException e = new IndexEntryConflictException(
+                NODE, StatementConstants.NO_SUCH_NODE, StatementConstants.NO_SUCH_NODE, value);
+
+        assertThat(e.evidenceMessage(tokens, schema))
+                .isEqualTo("A Node already exists with label `label1` and property `p2` = 'hi'");
+    }
+
+    @Test
     void shouldMakeCompositeEntryConflicts() {
         LabelSchemaDescriptor schema = SchemaDescriptors.forLabel(labelId, 2, 3, 4);
         ValueTuple values = ValueTuple.of(true, "hi", new long[] {6L, 4L});
@@ -87,10 +97,20 @@ class IndexEntryConflictExceptionTest {
     void shouldMakeEntryConflictsForOneRel() {
         SchemaDescriptor schema = SchemaDescriptors.forRelType(typeId, 2);
         IndexEntryConflictException e =
-                new IndexEntryConflictException(RELATIONSHIP, 0L, StatementConstants.NO_SUCH_NODE, value);
+                new IndexEntryConflictException(RELATIONSHIP, 0L, StatementConstants.NO_SUCH_RELATIONSHIP, value);
 
         assertThat(e.evidenceMessage(tokens, schema))
                 .isEqualTo("Relationship(0) already exists with type `type1` and property `p2` = 'hi'");
+    }
+
+    @Test
+    void shouldMakeAnonymousEntryConflictsForOneRel() {
+        SchemaDescriptor schema = SchemaDescriptors.forRelType(typeId, 2);
+        IndexEntryConflictException e = new IndexEntryConflictException(
+                RELATIONSHIP, StatementConstants.NO_SUCH_RELATIONSHIP, StatementConstants.NO_SUCH_RELATIONSHIP, value);
+
+        assertThat(e.evidenceMessage(tokens, schema))
+                .isEqualTo("A Relationship already exists with type `type1` and property `p2` = 'hi'");
     }
 
     @Test

@@ -86,9 +86,18 @@ public class IndexEntryConflictException extends KernelException {
         }
 
         if (addedEntityId == NO_SUCH_ENTITY) {
-            return format(
-                    "%s(%d) already exists with %s and %s",
-                    entityName, existingEntityId, tokenName, propertyString(tokenNameLookup, schema.getPropertyIds()));
+            if (existingEntityId == NO_SUCH_ENTITY) {
+                return format(
+                        "A %s already exists with %s and %s",
+                        entityName, tokenName, propertyString(tokenNameLookup, schema.getPropertyIds()));
+            } else {
+                return format(
+                        "%s(%d) already exists with %s and %s",
+                        entityName,
+                        existingEntityId,
+                        tokenName,
+                        propertyString(tokenNameLookup, schema.getPropertyIds()));
+            }
         } else {
             return format(
                     "Both %s(%d) and %s(%d) have the %s and %s",

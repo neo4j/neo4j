@@ -99,6 +99,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelE
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections;
+import org.neo4j.internal.kernel.api.security.AccessMode.Static;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -671,28 +672,65 @@ public class Operations implements Write, SchemaWrite, Upgrade {
         if (constraint == null || index == null) {
             return;
         }
-        try (FullAccessNodeValueIndexCursor valueCursor =
-                        cursors.allocateFullAccessNodeValueIndexCursor(ktx.cursorContext(), memoryTracker);
+
+        long existingNodeId = NO_SUCH_NODE;
+        try (var r = ktx.overrideWith(ktx.securityContext().withMode(Static.FULL));
+                var valueCursor = cursors.allocateNodeValueIndexCursor(ktx.cursorContext(), memoryTracker);
                 IndexReaders indexReaders = new IndexReaders(index, allStoreHolder)) {
             assertOnlineAndLock(constraint, index, propertyValues);
 
             allStoreHolder.nodeIndexSeekWithFreshIndexReader(valueCursor, indexReaders.createReader(), propertyValues);
             while (valueCursor.next()) {
                 if (valueCursor.nodeReference() != modifiedNode) {
-                    throw new UniquePropertyValueValidationException(
-                            constraint,
-                            VALIDATION,
-                            new IndexEntryConflictException(
-                                    NODE,
-                                    valueCursor.nodeReference(),
-                                    NO_SUCH_NODE,
-                                    PropertyIndexQuery.asValueTuple(propertyValues)),
-                            token);
+                    existingNodeId = valueCursor.nodeReference();
+                    break;
                 }
             }
+
         } catch (IndexNotFoundKernelException | IndexBrokenKernelException | IndexNotApplicableKernelException e) {
             throw new UnableToValidateConstraintException(constraint, e, token);
         }
+
+        if (existingNodeId != NO_SUCH_NODE) {
+            int[] propertyKeys = getPropertyIds(propertyValues);
+            // For nodes, we can grant read access based on property key AND values, so we need to check if we can read
+            // all the properties with security context aware cursors
+            var allowsReadAllProperties = false;
+            try (var nodeCursor = cursors.allocateNodeCursor(ktx.cursorContext(), memoryTracker);
+                    var propertyCursor = cursors.allocatePropertyCursor(ktx.cursorContext(), memoryTracker)) {
+                nodeCursor.single(existingNodeId, allStoreHolder);
+                // First check if the current access mode can read the node
+                if (nodeCursor.next()) {
+                    nodeCursor.properties(propertyCursor, PropertySelection.selection(propertyKeys));
+                    // can we read all properties that the index has from the node
+                    int nPropertiesRead = 0;
+                    while (propertyCursor.next()) {
+                        nPropertiesRead++;
+                    }
+                    if (nPropertiesRead == propertyKeys.length) {
+                        allowsReadAllProperties = true;
+                    }
+                }
+            }
+
+            throw new UniquePropertyValueValidationException(
+                    constraint,
+                    VALIDATION,
+                    new IndexEntryConflictException(
+                            NODE,
+                            allowsReadAllProperties ? existingNodeId : NO_SUCH_NODE,
+                            NO_SUCH_NODE,
+                            PropertyIndexQuery.asValueTuple(propertyValues)),
+                    token);
+        }
+    }
+
+    private static int[] getPropertyIds(PropertyIndexQuery[] queries) {
+        int[] propertyIds = new int[queries.length];
+        for (int i = 0; i < queries.length; i++) {
+            propertyIds[i] = queries[i].propertyKeyId();
+        }
+        return propertyIds;
     }
 
     private void assertOnlineAndLock(
@@ -731,8 +769,9 @@ public class Operations implements Write, SchemaWrite, Upgrade {
         if (constraint == null || index == null) {
             return;
         }
-        try (FullAccessRelationshipValueIndexCursor valueCursor =
-                        cursors.allocateFullAccessRelationshipValueIndexCursor(ktx.cursorContext(), memoryTracker);
+        long existingRelationshipId = NO_SUCH_RELATIONSHIP;
+        try (var r = ktx.overrideWith(ktx.securityContext().withMode(Static.FULL));
+                var valueCursor = cursors.allocateRelationshipValueIndexCursor(ktx.cursorContext(), memoryTracker);
                 IndexReaders indexReaders = new IndexReaders(index, allStoreHolder)) {
             assertOnlineAndLock(constraint, index, propertyValues);
 
@@ -740,19 +779,44 @@ public class Operations implements Write, SchemaWrite, Upgrade {
                     valueCursor, indexReaders.createReader(), propertyValues);
             while (valueCursor.next()) {
                 if (valueCursor.relationshipReference() != modifiedRel) {
-                    throw new UniquePropertyValueValidationException(
-                            constraint,
-                            VALIDATION,
-                            new IndexEntryConflictException(
-                                    RELATIONSHIP,
-                                    valueCursor.relationshipReference(),
-                                    NO_SUCH_RELATIONSHIP,
-                                    PropertyIndexQuery.asValueTuple(propertyValues)),
-                            token);
+                    existingRelationshipId = valueCursor.relationshipReference();
+                    break;
                 }
             }
+
         } catch (IndexNotFoundKernelException | IndexBrokenKernelException | IndexNotApplicableKernelException e) {
             throw new UnableToValidateConstraintException(constraint, e, token);
+        }
+
+        if (existingRelationshipId != NO_SUCH_RELATIONSHIP) {
+            int[] propertyKeys = getPropertyIds(propertyValues);
+            var allowsReadAllProperties = false;
+            try (var relCursor = cursors.allocateRelationshipScanCursor(ktx.cursorContext(), memoryTracker);
+                    var propertyCursor = cursors.allocatePropertyCursor(ktx.cursorContext(), memoryTracker)) {
+                relCursor.single(existingRelationshipId, allStoreHolder);
+                //  First check if the current access mode can read the relationship
+                if (relCursor.next()) {
+                    relCursor.properties(propertyCursor, PropertySelection.selection(propertyKeys));
+                    // can we read all properties that the index has from the relationship
+                    int nPropertiesRead = 0;
+                    while (propertyCursor.next()) {
+                        nPropertiesRead++;
+                    }
+                    if (nPropertiesRead == propertyKeys.length) {
+                        allowsReadAllProperties = true;
+                    }
+                }
+            }
+
+            throw new UniquePropertyValueValidationException(
+                    constraint,
+                    VALIDATION,
+                    new IndexEntryConflictException(
+                            RELATIONSHIP,
+                            allowsReadAllProperties ? existingRelationshipId : NO_SUCH_RELATIONSHIP,
+                            NO_SUCH_RELATIONSHIP,
+                            PropertyIndexQuery.asValueTuple(propertyValues)),
+                    token);
         }
     }
 
