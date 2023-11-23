@@ -1,4 +1,4 @@
-// path assignment is not supported yet, solved in https://trello.com/c/ufHPMj0x/
+// sub-path assignment is not supported yet, solved in https://trello.com/c/79yDFWJh
 Feature "QuantifiedPathPatternAcceptance": Scenario "Path and subpath variables"
 
 // Horizontal aggregations are currently not supported. Solved in https://trello.com/c/hO4INisk/
