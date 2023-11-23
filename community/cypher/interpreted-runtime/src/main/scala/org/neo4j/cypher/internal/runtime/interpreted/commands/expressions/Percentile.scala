@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.AggregationFunction
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.MultiPercentileDiscFunction
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.PercentileContFunction
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.PercentileDiscFunction
 import org.neo4j.cypher.internal.util.symbols.CTNumber
@@ -55,4 +56,20 @@ case class PercentileDisc(anInner: Expression, percentile: Expression) extends A
     f(PercentileDisc(anInner.rewrite(f), percentile.rewrite(f)))
 
   override def children: Seq[AstNode[_]] = Seq(anInner, percentile)
+}
+
+case class MultiPercentileDisc(anInner: Expression, percentiles: Expression, keys: Expression)
+    extends AggregationWithInnerExpression(anInner) {
+
+  override def createAggregationFunction(memoryTracker: MemoryTracker): AggregationFunction = {
+    memoryTracker.allocateHeap(MultiPercentileDiscFunction.SHALLOW_SIZE)
+    new MultiPercentileDiscFunction(anInner, percentiles, keys, memoryTracker)
+  }
+
+  def expectedInnerType: CypherType = CTNumber
+
+  override def rewrite(f: Expression => Expression): Expression =
+    f(MultiPercentileDisc(anInner.rewrite(f), percentiles.rewrite(f), keys.rewrite(f)))
+
+  override def children: Seq[AstNode[_]] = Seq(anInner, percentiles, keys)
 }

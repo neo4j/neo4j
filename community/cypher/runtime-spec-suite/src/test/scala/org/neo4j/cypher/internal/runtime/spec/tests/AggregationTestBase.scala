@@ -24,6 +24,7 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings.cypher_pipelined_ba
 import org.neo4j.configuration.GraphDatabaseInternalSettings.cypher_pipelined_batch_size_small
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
@@ -62,7 +63,6 @@ import java.time.temporal.ChronoUnit
 import java.util.Collections
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.LongAdder
-
 import scala.jdk.CollectionConverters.IterableHasAsScala
 import scala.util.Random
 
@@ -1183,6 +1183,37 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     val expected = aNodes.map(a => Array[Any](a.getProperty("name"), limit))
 
     runtimeResult should beColumns("name", "c").withRows(expected)
+  }
+
+  test("should handle multiPercentileDisc") {
+    givenGraph {
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int => Map("num" -> i % 10)
+        },
+        "Honey"
+      )
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p1", "p2")
+      .projection("m.p1 AS p1", "m.p2 AS p2")
+      .aggregation(
+        Map.empty[String, Expression],
+        Map(
+          "m" -> multiPercentileDisc(varFor("n"), Seq(0.5, 0.5), Seq("p1", "p2"))
+        )
+      )
+      .projection("x.num as n")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("p1", "p2").withRows(singleRow(4, 4))
   }
 
   test("should handle percentileDisc") {

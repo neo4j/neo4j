@@ -82,6 +82,7 @@ object Function {
     LTrim,
     Max,
     Min,
+    MultiPercentileDisc,
     Nodes,
     NullIf,
     Pi,

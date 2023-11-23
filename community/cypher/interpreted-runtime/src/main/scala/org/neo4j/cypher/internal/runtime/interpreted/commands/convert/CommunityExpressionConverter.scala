@@ -72,6 +72,7 @@ import org.neo4j.cypher.internal.expressions.functions.Log
 import org.neo4j.cypher.internal.expressions.functions.Log10
 import org.neo4j.cypher.internal.expressions.functions.Max
 import org.neo4j.cypher.internal.expressions.functions.Min
+import org.neo4j.cypher.internal.expressions.functions.MultiPercentileDisc
 import org.neo4j.cypher.internal.expressions.functions.Nodes
 import org.neo4j.cypher.internal.expressions.functions.PercentileCont
 import org.neo4j.cypher.internal.expressions.functions.PercentileDisc
@@ -579,6 +580,17 @@ case class CommunityExpressionConverter(
         if (invocation.distinct)
           commands.expressions.Distinct(command, firstArg)
         else
+          command
+      case MultiPercentileDisc =>
+        val inputArg = self.toCommandExpression(id, invocation.arguments.head)
+        val percentilesArg = self.toCommandExpression(id, invocation.arguments(1))
+        val keysArg = self.toCommandExpression(id, invocation.arguments(2))
+
+        val command = commands.expressions.MultiPercentileDisc(inputArg, percentilesArg, keysArg)
+        if (invocation.distinct) {
+          // TODO commands.expressions.Distinct(command, inputArg)
+          throw new UnsupportedOperationException("boom")
+        } else
           command
       case Pi => commands.expressions.PiFunction()
       case Distance =>

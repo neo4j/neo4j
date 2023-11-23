@@ -25,21 +25,25 @@ import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.NumericHelper
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.exceptions.InternalException
 import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.memory.HeapEstimator.shallowSizeOfInstance
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.AnyValue
+import org.neo4j.values.SequenceValue
 import org.neo4j.values.storable.NumberValue
+import org.neo4j.values.storable.StringValue
 import org.neo4j.values.storable.Values
+import org.neo4j.values.virtual.MapValueBuilder
 
-abstract class PercentileFunction(val value: Expression, val percentile: Expression, memoryTracker: MemoryTracker)
+abstract class PercentileFunction(val value: Expression, percentiles: Expression, memoryTracker: MemoryTracker)
     extends AggregationFunction
     with NumericExpressionOnly {
 
   protected var temp: HeapTrackingArrayList[NumberValue] =
     HeapTrackingCollections.newArrayList[NumberValue](memoryTracker)
   protected var count: Int = 0
-  protected var perc: Double = 0
+  protected var percs: Array[Double] = _
   protected var estimatedNumberValue: Long = -1
 
   override def apply(data: ReadableRow, state: QueryState): Unit = {
@@ -47,11 +51,7 @@ abstract class PercentileFunction(val value: Expression, val percentile: Express
       value(data, state),
       number => {
         if (count < 1) {
-          perc = NumericHelper.asDouble(percentile(data, state)).doubleValue()
-          if (perc < 0 || perc > 1.0)
-            throw new InvalidArgumentException(
-              s"Invalid input '$perc' is not a valid argument, must be a number in the range 0.0 to 1.0"
-            )
+          onFirstRow(data, state)
         }
         count += 1
         temp.add(number)
@@ -61,6 +61,29 @@ abstract class PercentileFunction(val value: Expression, val percentile: Express
         memoryTracker.allocateHeap(estimatedNumberValue)
       }
     )
+  }
+
+  protected def onFirstRow(data: ReadableRow, state: QueryState): Unit = {
+    percentiles(data, state) match {
+      case percentilesValue: SequenceValue =>
+        percs = new Array[Double](percentilesValue.length())
+        var i = 0
+        while (i < percentilesValue.length()) {
+          val perc = NumericHelper.asDouble(percentilesValue.value(i)).doubleValue()
+          percs(i) = perc
+          if (perc < 0 || perc > 1.0)
+            throw new InvalidArgumentException(
+              s"Invalid input '$perc' is not a valid argument, must be a number in the range 0.0 to 1.0"
+            )
+          i += 1
+        }
+      case value =>
+        percs = Array(NumericHelper.asDouble(value).doubleValue())
+        if (percs(0) < 0 || percs(0) > 1.0)
+          throw new InvalidArgumentException(
+            s"Invalid input '${percs(0)}' is not a valid argument, must be a number in the range 0.0 to 1.0"
+          )
+    }
   }
 }
 
@@ -72,6 +95,7 @@ class PercentileContFunction(value: Expression, percentile: Expression, memoryTr
   override def result(state: QueryState): AnyValue = {
     temp.sort((o1: NumberValue, o2: NumberValue) => java.lang.Double.compare(o1.doubleValue(), o2.doubleValue()))
 
+    val perc = percs(0)
     val result =
       if (perc == 1.0 || count == 1) {
         temp.get(count - 1)
@@ -105,6 +129,7 @@ class PercentileDiscFunction(value: Expression, percentile: Expression, memoryTr
   override def result(state: QueryState): AnyValue = {
     temp.sort((o1: NumberValue, o2: NumberValue) => java.lang.Double.compare(o1.doubleValue(), o2.doubleValue()))
 
+    val perc = percs(0)
     val result =
       if (perc == 1.0 || count == 1) {
         temp.get(count - 1)
@@ -128,4 +153,71 @@ class PercentileDiscFunction(value: Expression, percentile: Expression, memoryTr
 
 object PercentileDiscFunction {
   val SHALLOW_SIZE: Long = shallowSizeOfInstance(classOf[PercentileDiscFunction])
+}
+
+class MultiPercentileDiscFunction(
+  value: Expression,
+  percentiles: Expression,
+  keys: Expression,
+  memoryTracker: MemoryTracker
+) extends PercentileFunction(value, percentiles, memoryTracker) {
+
+  private var mapKeys: Array[String] = _
+  override val name = "MULTI_PERCENTILE_DISC"
+
+  override protected def onFirstRow(data: ReadableRow, state: QueryState): Unit = {
+    super.onFirstRow(data, state)
+    keys(data, state) match {
+      case keysValue: SequenceValue =>
+        mapKeys = new Array[String](keysValue.length())
+        var i = 0
+        while (i < mapKeys.length) {
+          mapKeys(i) = keysValue.value(i).asInstanceOf[StringValue].stringValue()
+          i += 1
+        }
+        if (keysValue.length() != percs.length) {
+          throw new InternalException(s"$name expected 'percentiles' ${percs.mkString(",")} and 'keys' ${mapKeys.mkString(",")} to have the same length")
+        }
+    }
+  }
+
+  override def result(state: QueryState): AnyValue = {
+    temp.sort((o1: NumberValue, o2: NumberValue) => java.lang.Double.compare(o1.doubleValue(), o2.doubleValue()))
+
+    val result = {
+      if (count == 0) {
+        Values.NO_VALUE
+      } else {
+        val mapBuilder = new MapValueBuilder(percs.length)
+        var i = 0
+        while (i < percs.length) {
+          val perc = percs(i)
+          val mapKey = mapKeys(i)
+          val percValue =
+            if (perc == 1.0 || count == 1) {
+              temp.get(count - 1)
+            } else {
+              val floatIdx = perc * count
+              var idx = floatIdx.toInt
+              idx =
+                if (floatIdx != idx || idx == 0) idx
+                else idx - 1
+              temp.get(idx)
+            }
+          mapBuilder.add(mapKey, percValue)
+          i += 1
+        }
+        mapBuilder.build()
+      }
+    }
+
+    temp.close()
+    temp = null
+    memoryTracker.releaseHeap(count * estimatedNumberValue)
+    result
+  }
+}
+
+object MultiPercentileDiscFunction {
+  val SHALLOW_SIZE: Long = shallowSizeOfInstance(classOf[MultiPercentileDiscFunction])
 }
