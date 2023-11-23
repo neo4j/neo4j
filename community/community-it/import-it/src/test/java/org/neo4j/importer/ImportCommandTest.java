@@ -108,6 +108,7 @@ import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.importer.CsvImporter.CsvImportException;
 import org.neo4j.internal.batchimport.cache.idmapping.string.DuplicateInputIdException;
 import org.neo4j.internal.batchimport.input.InputException;
 import org.neo4j.internal.batchimport.input.csv.Type;
@@ -219,7 +220,9 @@ class ImportCommandTest {
         Path dbConfig = defaultConfig();
 
         // When csv is imported
-        assertThatThrownBy(() -> runImport(
+        var e = assertThrows(
+                CommandFailedException.class,
+                () -> runImport(
                         "--additional-config", dbConfig.toAbsolutePath().toString(),
                         "--nodes",
                                 nodeData(true, config, nodeIds, TRUE)
@@ -229,8 +232,9 @@ class ImportCommandTest {
                         "--relationships",
                                 relationshipData(true, config, nodeIds, TRUE, true)
                                         .toAbsolutePath()
-                                        .toString()))
-                .hasCauseInstanceOf(DirectoryNotEmptyException.class);
+                                        .toString()));
+        assertThat(e).hasCauseInstanceOf(CsvImportException.class);
+        assertThat(e.getCause()).hasCauseInstanceOf(DirectoryNotEmptyException.class);
     }
 
     private void assertTokenIndexesCreated() {
@@ -645,7 +649,7 @@ class ImportCommandTest {
         int extraColumns = 3;
         var ctx = capturingCtx();
         var e = assertThrows(
-                InputException.class,
+                CommandFailedException.class,
                 () -> runImport(
                         ctx,
                         "--delimiter",
@@ -662,7 +666,7 @@ class ImportCommandTest {
                                         .toAbsolutePath()));
         assertTrue(ctx.outAsString().contains("IMPORT FAILED"));
         assertFalse(ctx.errAsString().contains(e.getClass().getName()));
-        assertTrue(e.getMessage().contains("Extra column not present in header on line"));
+        assertTrue(e.getCause().getMessage().contains("Extra column not present in header on line"));
     }
 
     @Test
@@ -1423,10 +1427,11 @@ class ImportCommandTest {
         Path data = data(":ID,name", "1,\"one\ntwo\nthree\"", "2,four");
 
         var ctx = capturingCtx();
-        assertThrows(
-                InputException.class,
+        var e = assertThrows(
+                CommandFailedException.class,
                 () -> runImport(ctx, "--nodes", data.toAbsolutePath().toString(), "--multiline-fields=false"));
         // THEN
+        assertThat(e.getCause()).isInstanceOf(CsvImportException.class).hasCauseInstanceOf(InputException.class);
         assertTrue(ctx.errAsString().contains("Detected field which spanned multiple lines"));
         assertTrue(ctx.errAsString().contains("multiline-fields"));
     }
@@ -1514,13 +1519,16 @@ class ImportCommandTest {
 
         // WHEN
         var e = assertThrows(
-                InputException.class,
+                CommandFailedException.class,
                 () -> runImport(
                         "--nodes",
                         nodeDataWithMissingQuote(2 * unbalancedStartLine, unbalancedStartLine)
                                 .toAbsolutePath()
                                 .toString()));
-        assertThat(e.getMessage()).contains("Multi-line fields are illegal");
+        assertThat(e).hasCauseInstanceOf(CsvImportException.class);
+        assertThat(e.getCause())
+                .hasCauseInstanceOf(InputException.class)
+                .hasMessageContaining("Multi-line fields are illegal");
     }
 
     @Test
@@ -1559,13 +1567,14 @@ class ImportCommandTest {
 
         // WHEN
         var e = assertThrows(
-                InputException.class,
+                CommandFailedException.class,
                 () -> runImport(
                         "--nodes",
                         nodeDataWithMissingQuote(unbalancedStartLine, unbalancedStartLine)
                                 .toAbsolutePath()
                                 .toString()));
-        assertThat(e).hasMessageContaining("Multi-line fields");
+        assertThat(e).hasCauseInstanceOf(CsvImportException.class);
+        assertThat(e.getCause()).hasCauseInstanceOf(InputException.class).hasMessageContaining("Multi-line fields");
     }
 
     @Test
@@ -1607,7 +1616,7 @@ class ImportCommandTest {
 
         // WHEN
         assertThrows(
-                InputException.class,
+                CommandFailedException.class,
                 () -> runImport(
                         "--multiline-fields",
                         "true",
@@ -1744,7 +1753,7 @@ class ImportCommandTest {
 
         // WHEN
         var e = assertThrows(
-                IllegalStateException.class,
+                CommandFailedException.class,
                 () -> runImport(
                         "--additional-config", dbConfig.toAbsolutePath().toString(),
                         "--nodes",
@@ -1752,7 +1761,8 @@ class ImportCommandTest {
                                         .toAbsolutePath()
                                         .toString(),
                         "--read-buffer-size", "1k"));
-        assertThat(e).hasMessageContaining("input data");
+        assertThat(e.getCause()).isInstanceOf(CsvImportException.class).hasCauseInstanceOf(IllegalStateException.class);
+        assertThat(e.getCause().getCause()).hasMessageContaining("input data");
     }
 
     @Test
@@ -1838,7 +1848,7 @@ class ImportCommandTest {
         int extraColumns = 3;
         var ctx = capturingCtx();
         assertThrows(
-                InputException.class,
+                CommandFailedException.class,
                 () -> runImport(
                         ctx,
                         "--additional-config=" + configFile.toAbsolutePath(),
@@ -2040,13 +2050,13 @@ class ImportCommandTest {
             writer.println("1,1,DC,9999999999,123456789");
         });
         var e = assertThrows(
-                InputException.class,
+                CommandFailedException.class,
                 () -> runImport(
                         "--additional-config", dbConfig.toAbsolutePath().toString(),
                         "--normalize-types", "false",
                         "--nodes", nodeData.toAbsolutePath().toString(),
                         "--relationships", relationshipData.toAbsolutePath().toString()));
-        String message = e.getMessage();
+        String message = e.getCause().getMessage();
         assertThat(message).contains("1000000");
         assertThat(message).contains("too big");
     }

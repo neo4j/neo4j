@@ -61,6 +61,7 @@ import org.neo4j.commandline.dbms.CannotWriteException;
 import org.neo4j.commandline.dbms.LockChecker;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.importer.CsvImporter.CsvImportException;
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.IndexConfig;
 import org.neo4j.internal.batchimport.input.IdType;
@@ -79,7 +80,6 @@ import org.neo4j.kernel.impl.util.Converters;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.recovery.LogTailExtractor;
 import org.neo4j.memory.EmptyMemoryTracker;
-import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.util.VisibleForTesting;
 import picocli.CommandLine;
@@ -89,7 +89,7 @@ import picocli.CommandLine.Parameters;
 
 @Command(
         name = "import",
-        description = "Import a collection of CSV files.",
+        description = "High-speed import of data from CSV files, optimized for fault-free data.",
         subcommands = {ImportCommand.Full.class, CommandLine.HelpCommand.class})
 @SuppressWarnings("FieldMayBeFinal")
 public class ImportCommand {
@@ -276,9 +276,9 @@ public class ImportCommand {
         @Option(
                 names = BAD_TOLERANCE_OPTION,
                 paramLabel = "<num>",
-                description =
-                        "Number of bad entries before the import is considered failed. This tolerance threshold is about relationships referring to "
-                                + "missing nodes. Format errors in input data are still treated as errors.")
+                description = "Number of bad entries before the import is aborted. Import is optimized for fault-free "
+                        + "data and we recommend cleaning data before importing. This setting can increase the "
+                        + "fault-tolerance, however a large number of faults will affect the tool's performance.")
         private long badTolerance = 1000;
 
         public static final String SKIP_BAD_ENTRIES_LOGGING = "--skip-bad-entries-logging";
@@ -289,7 +289,11 @@ public class ImportCommand {
                 showDefaultValue = ALWAYS,
                 paramLabel = "true|false",
                 fallbackValue = "true",
-                description = "Whether or not to skip logging bad entries detected during import.")
+                description =
+                        "When set to true the details of bad entries are not written to the log. Disabling logging "
+                                + "can improve performance when the data contains lots of faults. We recommend cleaning data "
+                                + "before importing because faults dramatically affect the tool’s performance even without "
+                                + "logging.")
         private boolean skipBadEntriesLogging;
 
         @Option(
@@ -451,6 +455,8 @@ public class ImportCommand {
                             ExitCode.FAIL);
                 } catch (CannotWriteException e) {
                     throw new CommandFailedException("You do not have permission to import.", e, ExitCode.NOPERM);
+                } catch (CsvImportException e) {
+                    throw new CommandFailedException("Error importing csv file.", e, ExitCode.SOFTWARE);
                 }
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
@@ -464,13 +470,7 @@ public class ImportCommand {
                             StandalonePageCacheFactory.createPageCache(fs, jobScheduler, PageCacheTracer.NULL)) {
                 Optional<StorageEngineFactory> storageEngineFactory =
                         SELECTOR.selectStorageEngine(ctx.fs(), databaseLayout);
-                return getLogTail(
-                        ctx.fs(),
-                        databaseLayout,
-                        pageCache,
-                        databaseConfig,
-                        EmptyMemoryTracker.INSTANCE,
-                        storageEngineFactory.get());
+                return getLogTail(ctx.fs(), databaseLayout, pageCache, databaseConfig, storageEngineFactory.get());
             } catch (Exception e) {
                 throw new RuntimeException("Fail to create temporary page cache.", e);
             }
@@ -481,12 +481,11 @@ public class ImportCommand {
                 DatabaseLayout databaseLayout,
                 PageCache pageCache,
                 Config config,
-                MemoryTracker memoryTracker,
                 StorageEngineFactory storageEngineFactory)
                 throws IOException {
             LogTailExtractor logTailExtractor =
                     new LogTailExtractor(fs, pageCache, config, storageEngineFactory, EMPTY);
-            return logTailExtractor.getTailMetadata(databaseLayout, memoryTracker);
+            return logTailExtractor.getTailMetadata(databaseLayout, EmptyMemoryTracker.INSTANCE);
         }
 
         @VisibleForTesting
@@ -583,7 +582,10 @@ public class ImportCommand {
         }
     }
 
-    @Command(name = "full", description = "Initial import into a non-existent empty database.")
+    @Command(
+            name = "full",
+            description = "High-speed initial import of fault-free data from CSV files into a non-existent or empty "
+                    + "database.")
     public static class Full extends Base {
         @Option(
                 names = "--format",

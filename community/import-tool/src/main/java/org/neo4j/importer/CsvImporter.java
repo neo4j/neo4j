@@ -33,7 +33,6 @@ import static org.neo4j.internal.batchimport.input.InputEntityDecorators.default
 import static org.neo4j.internal.batchimport.input.csv.DataFactories.data;
 import static org.neo4j.internal.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
 import static org.neo4j.internal.batchimport.input.csv.DataFactories.defaultFormatRelationshipFileHeader;
-import static org.neo4j.internal.helpers.Exceptions.throwIfUnchecked;
 import static org.neo4j.io.ByteUnit.bytesToString;
 import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
 import static org.neo4j.logging.log4j.LogConfig.createLoggerFromXmlConfig;
@@ -265,23 +264,33 @@ class CsvImporter implements Importer {
             }
             success = true;
         } catch (Exception ex) {
-            throw andPrintError(databaseLayout.getDatabaseName(), ex, verbose, incremental, stdErr);
+            throw andPrintError(databaseLayout.getDatabaseName(), ex, incremental, stdErr);
         } finally {
             long numberOfBadEntries = badCollector.badEntries();
-
-            if (reportFile != null) {
-                if (numberOfBadEntries > 0) {
+            if (numberOfBadEntries > badTolerance) {
+                stdOut.println("Neo4j-admin aborted the import because " + numberOfBadEntries + " bad entries were "
+                        + "found, which exceeds the set fault tolerance ("
+                        + badTolerance + "). Import is optimized to import fault-free data.");
+                stdOut.println();
+                if (skipBadEntriesLogging) {
                     stdOut.println(
-                            "There were bad entries which were skipped and logged into " + reportFile.toAbsolutePath());
+                            "Bad entry logging is disabled, enable it using --skip-bad-entries-logging=false" + ".");
+                } else {
+                    stdOut.println("Bad entries were logged to " + reportFile.toAbsolutePath() + ".");
                 }
+                stdOut.println();
+                stdOut.println("We recommend that data should be cleaned before importing. The fault-tolerance can be "
+                        + "increased using –fault-tolerance=<num>, however this will dramatically affect the tool’s"
+                        + " performance.");
+                stdOut.println();
             }
-
             if (!success) {
                 stdErr.println("WARNING Import failed. The store files in "
                         + databaseLayout.databaseDirectory().toAbsolutePath()
                         + " are left as they are, although they are likely in an unusable state. "
                         + "Starting a database on these store files will likely fail or observe inconsistent records so "
-                        + "start at your own risk or delete the store manually");
+                        + "start at your own risk or delete the store manually.");
+                stdOut.println();
             }
         }
     }
@@ -295,74 +304,47 @@ class CsvImporter implements Importer {
 
     /**
      * Method name looks strange, but look at how it's used and you'll see why it's named like that.
+     *
      * @param databaseName the name of the database to receive the import data
-     * @param e the error that occurred
-     * @param stackTrace whether to also print the stack trace of the error.
-     * @param incremental whether the import is incremental
-     * @param err the error output stream
+     * @param e            the error that occurred
+     * @param incremental  whether the import is incremental
+     * @param err          the error output stream
      */
     private static RuntimeException andPrintError(
-            String databaseName, Exception e, boolean stackTrace, boolean incremental, PrintStream err) {
+            String databaseName, Exception e, boolean incremental, PrintStream err) {
         // List of common errors that can be explained to the user
         if (DuplicateInputIdException.class.equals(e.getClass())) {
-            printErrorMessage(
-                    "Duplicate input ids that would otherwise clash can be put into separate id space.",
-                    e,
-                    stackTrace,
-                    err);
+            err.println("Duplicate input ids that would otherwise clash can be put into separate id space.");
         } else if (MissingRelationshipDataException.class.equals(e.getClass())) {
-            printErrorMessage("Relationship missing mandatory field", e, stackTrace, err);
+            err.println("Relationship missing mandatory field");
         } else if (DirectoryNotEmptyException.class.equals(e.getClass())) {
-            printErrorMessage(
-                    "Database already exist. Re-run with `--overwrite-destination` to remove the database prior to import",
-                    e,
-                    stackTrace,
-                    err);
+            err.println(
+                    "Database already exist. Re-run with `--overwrite-destination` to remove the database prior to import");
         } else if (FileLockException.class.equals(e.getClass())) {
-            printErrorMessage(
+            String string =
                     "%s can only be run against a database which is offline. The current state of database '%s' is online."
-                            .formatted(incremental ? "Incremental import" : "Import", databaseName),
-                    e,
-                    stackTrace,
-                    err);
+                            .formatted(incremental ? "Incremental import" : "Import", databaseName);
+            err.println(string);
         }
         // This type of exception is wrapped since our input code throws InputException consistently,
         // and so IllegalMultilineFieldException comes from the csv component, which has no access to InputException
         // therefore it's wrapped.
         else if (indexOfThrowable(e, IllegalMultilineFieldException.class) != -1) {
-            printErrorMessage(
-                    "Detected field which spanned multiple lines for an import where "
-                            + "--multiline-fields=false. If you know that your input data "
-                            + "include fields containing new-line characters then import with this option set to "
-                            + "true.",
-                    e,
-                    stackTrace,
-                    err);
+            err.println("Detected field which spanned multiple lines for an import where "
+                    + "--multiline-fields=false. If you know that your input data "
+                    + "include fields containing new-line characters then import with this option set to "
+                    + "true.");
         } else if (indexOfThrowable(e, InputException.class) != -1) {
-            printErrorMessage("Error in input data", e, stackTrace, err);
-        }
-        // Fallback to printing generic error and stack trace
-        else {
-            printErrorMessage("Import error: " + e.getMessage(), e, true, err);
+            err.println("Error in input data");
         }
         err.println();
 
-        // Mute the stack trace that the default exception handler would have liked to print.
-        // Calling System.exit( 1 ) or similar would be convenient on one hand since we can set
-        // a specific exit code. On the other hand It's very inconvenient to have any System.exit
-        // call in code that is tested.
-        Thread.currentThread().setUncaughtExceptionHandler((t, e1) -> {
-            /* Shhhh */
-        });
-        throwIfUnchecked(e);
-        return new RuntimeException(e); // throw in order to have process exit with !0
+        return new CsvImportException(e); // throw in order to have process exit with !0
     }
 
-    private static void printErrorMessage(String string, Exception e, boolean stackTrace, PrintStream err) {
-        err.println(string);
-        err.println("Caused by:" + e.getMessage());
-        if (stackTrace) {
-            e.printStackTrace(err);
+    static class CsvImportException extends RuntimeException {
+        CsvImportException(Throwable cause) {
+            super(cause);
         }
     }
 
