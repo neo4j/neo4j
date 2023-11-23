@@ -88,13 +88,13 @@ class OtherLabelExpressionSemanticAnalysisTest extends NameBasedSemanticAnalysis
 
   test("RETURN $param:A:B&C") {
     runSemanticAnalysis().errorMessages shouldEqual Seq(
-      "Mixing label expression symbols ('|', '&', '!', and '%') with colon (':') is not allowed. Please only use one set of symbols. This expression could be expressed as :A&B&C."
+      "Mixing label expression symbols ('|', '&', '!', and '%') with colon (':') between labels is not allowed. Please only use one set of symbols. This expression could be expressed as :A&B&C."
     )
   }
 
   test("RETURN $param:A|B:C") {
     runSemanticAnalysis().errorMessages shouldEqual Seq(
-      "Mixing label expression symbols ('|', '&', '!', and '%') with colon (':') is not allowed. Please only use one set of symbols. This expression could be expressed as :A|(B&C)."
+      "Mixing label expression symbols ('|', '&', '!', and '%') with colon (':') between labels is not allowed. Please only use one set of symbols. This expression could be expressed as :A|(B&C)."
     )
   }
 
@@ -112,7 +112,7 @@ class OtherLabelExpressionSemanticAnalysisTest extends NameBasedSemanticAnalysis
   // Mixed label expression in same statement
   test("MATCH ((n:A:B:C)-[]->()) RETURN n:A&B, n:A:B") {
     runSemanticAnalysis().errorMessages shouldEqual Seq(
-      "Mixing label expression symbols ('|', '&', '!', and '%') with colon (':') is not allowed. Please only use one set of symbols. This expression could be expressed as :A&B."
+      "Mixing label expression symbols ('|', '&', '!', and '%') with colon (':') between labels is not allowed. Please only use one set of symbols. This expression could be expressed as :A&B."
     )
   }
 
@@ -128,7 +128,7 @@ class OtherLabelExpressionSemanticAnalysisTest extends NameBasedSemanticAnalysis
       |""".stripMargin
   ) {
     runSemanticAnalysis().errorMessages shouldEqual Seq(
-      "Mixing label expression symbols ('|', '&', '!', and '%') with colon (':') is not allowed. Please only use one set of symbols. This expression could be expressed as multiple comma separated items which one Label each."
+      "Mixing label expression symbols ('|', '&', '!', and '%') with colon (':') between labels is not allowed. Please only use one set of symbols. This expression could be expressed as multiple comma separated items which one Label each."
     )
   }
 
@@ -144,7 +144,7 @@ class OtherLabelExpressionSemanticAnalysisTest extends NameBasedSemanticAnalysis
       |""".stripMargin
   ) {
     runSemanticAnalysis().errorMessages shouldEqual Seq(
-      "Mixing label expression symbols ('|', '&', '!', and '%') with colon (':') is not allowed. Please only use one set of symbols. This expression could be expressed as multiple comma separated items which one Label each."
+      "Mixing label expression symbols ('|', '&', '!', and '%') with colon (':') between labels is not allowed. Please only use one set of symbols. This expression could be expressed as multiple comma separated items which one Label each."
     )
   }
 

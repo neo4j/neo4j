@@ -819,7 +819,7 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
           if (labelExpression.containsIs)
             s"Mixing the IS keyword with colon (':') between labels is not allowed. This expression could be expressed as IS $sanitizedLabelExpression."
           else
-            s"Mixing label expression symbols ('|', '&', '!', and '%') with colon (':') is not allowed. Please only use one set of symbols. This expression could be expressed as :$sanitizedLabelExpression.",
+            s"Mixing label expression symbols ('|', '&', '!', and '%') with colon (':') between labels is not allowed. Please only use one set of symbols. This expression could be expressed as :$sanitizedLabelExpression.",
           legacySymbols.head.position
         )
       } chain

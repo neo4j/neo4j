@@ -193,7 +193,7 @@ sealed trait Clause extends ASTNode with SemanticCheckable with SemanticAnalysis
             SemanticError(
               if (conflictWithIS) s"Mixing the IS keyword with colon (':') between labels is not allowed. $explanation"
               else
-                s"Mixing label expression symbols ('|', '&', '!', and '%') with colon (':') is not allowed. Please only use one set of symbols. $explanation", // TODO add "between labels"
+                s"Mixing label expression symbols ('|', '&', '!', and '%') with colon (':') between labels is not allowed. Please only use one set of symbols. $explanation",
               pos
             )
           case None => SemanticCheck.success
