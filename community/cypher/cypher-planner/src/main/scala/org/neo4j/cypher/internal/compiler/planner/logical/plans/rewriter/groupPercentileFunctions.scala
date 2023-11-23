@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.expressions.functions.MultiPercentileDisc
 import org.neo4j.cypher.internal.expressions.functions.PercentileDisc
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.Projection
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
@@ -54,8 +55,11 @@ import org.neo4j.cypher.internal.util.bottomUp
  *   percentileDisc(b,0.7) AS p3
  * }}}
  */
-case class groupPercentileFunctions(anonymousVariableNameGenerator: AnonymousVariableNameGenerator, idGen: IdGen)
-    extends Rewriter {
+case class groupPercentileFunctions(
+  anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
+  idGen: IdGen,
+  cardinalities: Cardinalities
+) extends Rewriter {
 
   override def apply(input: AnyRef): AnyRef = instance.apply(input)
 
@@ -92,7 +96,9 @@ case class groupPercentileFunctions(anonymousVariableNameGenerator: AnonymousVar
             projectTo -> Property(map, PropertyKeyName(varToKey(projectTo))(pos))(pos)
         }
 
-        Projection(newAggregation, projectExpressions)(idGen)
+        val projection = Projection(newAggregation, projectExpressions)(idGen)
+        cardinalities.set(projection.id, cardinalities.get(newAggregation.id))
+        projection
       }
   })
 
@@ -114,12 +120,10 @@ case class groupPercentileFunctions(anonymousVariableNameGenerator: AnonymousVar
    * @return groups that contain at least two expressions.
    */
   private def groupPercentileFunctions(aggregationExpressions: Map[LogicalVariable, Expression])
-    : Map[LogicalVariable, Map[LogicalVariable, FunctionInvocation]] = {
+    : Map[Expression, Map[LogicalVariable, FunctionInvocation]] = {
     aggregationExpressions.collect {
       case (v, f @ FunctionInvocation(_, FunctionName(name), false, _)) if name == PercentileDisc.name => (v, f)
-    }.groupBy { case (_, f: FunctionInvocation) => f.args(0).asInstanceOf[LogicalVariable] }.filter { case (_, fs) =>
-      fs.size > 1
-    }
+    }.groupBy { case (_, f: FunctionInvocation) => f.args(0) }.filter { case (_, fs) => fs.size > 1 }
   }
 
   /**
@@ -142,10 +146,8 @@ case class groupPercentileFunctions(anonymousVariableNameGenerator: AnonymousVar
    *
    * @return mapping of multi percentile functions to the variables which eventually need to be projected.
    */
-  private def toMultiPercentileFunctions(groupedFunctions: Map[
-    LogicalVariable,
-    Map[LogicalVariable, FunctionInvocation]
-  ]): Map[FunctionInvocation, Seq[LogicalVariable]] = {
+  private def toMultiPercentileFunctions(groupedFunctions: Map[Expression, Map[LogicalVariable, FunctionInvocation]])
+    : Map[FunctionInvocation, Seq[LogicalVariable]] = {
     groupedFunctions.map { case (inputNumberVariable, percentileGroup: Map[LogicalVariable, FunctionInvocation]) =>
       val (variables, percentiles) = toVariablePercentilePairs(percentileGroup)
 

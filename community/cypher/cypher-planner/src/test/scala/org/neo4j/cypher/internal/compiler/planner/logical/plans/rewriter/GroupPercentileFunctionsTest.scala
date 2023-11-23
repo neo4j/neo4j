@@ -22,13 +22,9 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.functions.PercentileDisc
-import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
-import org.neo4j.cypher.internal.logical.plans.Argument
-import org.neo4j.cypher.internal.logical.plans.Expand.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.logical.plans.Selection
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -144,7 +140,11 @@ class GroupPercentileFunctionsTest extends CypherFunSuite with LogicalPlanningTe
   }
 
   private def rewrite(p: LogicalPlan, names: Seq[String] = Seq.empty): LogicalPlan =
-    p.endoRewrite(groupPercentileFunctions(new VariableNameGenerator(names), new SequentialIdGen(initialValue = 0)))
+    p.endoRewrite(groupPercentileFunctions(
+      new VariableNameGenerator(names),
+      new SequentialIdGen(initialValue = 0),
+      new Cardinalities
+    ))
 
   class VariableNameGenerator(names: Seq[String]) extends AnonymousVariableNameGenerator {
     private val namesIterator = names.iterator
