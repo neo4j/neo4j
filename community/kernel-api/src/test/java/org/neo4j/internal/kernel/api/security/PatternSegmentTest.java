@@ -20,8 +20,7 @@
 package org.neo4j.internal.kernel.api.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.params.provider.Arguments.of;
 
 import java.util.Set;
@@ -49,18 +48,20 @@ public class PatternSegmentTest {
     }
 
     @ParameterizedTest()
-    @MethodSource("patternSegmentStringRepresentations")
-    void testToString(PatternSegment lps, String stringRepresentation) {
-        assertEquals(stringRepresentation, lps.toString());
+    @MethodSource
+    void patternSegmentStringRepresentations(PatternSegment lps, String stringRepresentation) {
+        assertThat(lps.toString()).isEqualTo(stringRepresentation);
     }
 
     @Test
     void testConstructorDisallowsNullParameters() {
-        Throwable t1 =
-                assertThrows(NullPointerException.class, () -> new PatternSegment(null, Values.intValue(1), true));
-        assertThat(t1.getMessage()).startsWith("property must not be null");
-        Throwable t2 = assertThrows(NullPointerException.class, () -> new PatternSegment("p1", null, true));
-        assertThat(t2.getMessage()).startsWith("value must not be null");
+        assertThatThrownBy(() -> new PatternSegment(null, Values.intValue(1), true))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageStartingWith("property must not be null");
+
+        assertThatThrownBy(() -> new PatternSegment("p1", null, true))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageStartingWith("value must not be null");
     }
 
     @Test
@@ -69,7 +70,7 @@ public class PatternSegmentTest {
         var ps2 = new PatternSegment(Set.of("L1"), "p1", Values.intValue(1), true);
         var ps3 = new PatternSegment(Set.of("L1", "L2"), "p1", Values.intValue(1), true);
         assertThat(ps1.labels()).isEmpty();
-        assertEquals(ps2.labels(), Set.of("L1"));
-        assertEquals(ps3.labels(), Set.of("L1", "L2"));
+        assertThat(ps2.labels()).isEqualTo(Set.of("L1"));
+        assertThat(ps3.labels()).isEqualTo(Set.of("L1", "L2"));
     }
 }

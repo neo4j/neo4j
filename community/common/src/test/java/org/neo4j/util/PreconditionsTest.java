@@ -22,8 +22,10 @@ package org.neo4j.util;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.util.Preconditions.requireNoNullElements;
 import static org.neo4j.util.Preconditions.requireNonEmpty;
+import static org.neo4j.util.Preconditions.requireNonNull;
 import static org.neo4j.util.Preconditions.requirePositive;
 
 import org.junit.jupiter.api.Test;
@@ -84,6 +86,14 @@ class PreconditionsTest {
                 () -> Preconditions.requirePowerOfTwo(
                         0b10000000_00000000_00000000_00000000_00000000_00000000_00000000_00000000L),
                 "sign bit");
+    }
+
+    @Test
+    void requireNonNullObject() {
+        var throwable = assertThrows(IllegalArgumentException.class, () -> requireNonNull(null, "error message"));
+        assertTrue(throwable.getMessage().startsWith("error message"));
+        final String nonNullArg = "not null";
+        assertDoesNotThrow(() -> requireNonNull(nonNullArg, "error message"));
     }
 
     @Test

@@ -19,27 +19,117 @@
  */
 package org.neo4j.internal.kernel.api.security;
 
-import java.util.Objects;
+import static org.neo4j.values.storable.Values.NO_VALUE;
+import static org.neo4j.values.storable.Values.TRUE;
+
+import java.util.function.BiPredicate;
 import java.util.function.Predicate;
+import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.utils.ValueBooleanLogic;
 
 public interface PropertyRule extends Predicate<Value> {
 
-    static PropertyRule newRule(int propertyKey, Value value, boolean equals) {
-        return new PropertyRule.PropertyValueRule(propertyKey, value, equals);
+    static PropertyRule newRule(int propertyKey, Value value, ComparisonOperator operator) {
+        return new PropertyRule.PropertyValueRule(propertyKey, value, operator);
+    }
+
+    static PropertyRule newNullRule(int propertyKey, NullOperator operator) {
+        return new PropertyRule.NullPropertyRule(propertyKey, operator);
     }
 
     int property();
 
-    record PropertyValueRule(int property, Value value, boolean equals) implements PropertyRule {
+    enum ComparisonOperator implements BiPredicate<Value, Value> {
+        GREATER_THAN(">") {
+            @Override
+            public boolean test(Value lhs, Value rhs) {
+                return ValueBooleanLogic.greaterThan(lhs, rhs).equals(TRUE);
+            }
+        },
+        LESS_THAN("<") {
+            @Override
+            public boolean test(Value lhs, Value rhs) {
+                return ValueBooleanLogic.lessThan(lhs, rhs).equals(TRUE);
+            }
+        },
+        GREATER_THAN_OR_EQUAL(">=") {
+            @Override
+            public boolean test(Value lhs, Value rhs) {
+                return ValueBooleanLogic.greaterThanOrEqual(lhs, rhs).equals(TRUE);
+            }
+        },
+        LESS_THAN_OR_EQUAL("<=") {
+            @Override
+            public boolean test(Value lhs, Value rhs) {
+                return ValueBooleanLogic.lessThanOrEqual(lhs, rhs).equals(TRUE);
+            }
+        },
+        EQUAL("=") {
+            @Override
+            public boolean test(Value lhs, Value rhs) {
+                return ValueBooleanLogic.equals(lhs, rhs).equals(TRUE);
+            }
+        },
+        NOT_EQUAL("<>") {
+            @Override
+            public boolean test(Value lhs, Value rhs) {
+                return ValueBooleanLogic.notEquals(lhs, rhs).equals(TRUE);
+            }
+        };
+
+        private final String symbol;
+
+        ComparisonOperator(String symbol) {
+            this.symbol = symbol;
+        }
+
+        public String getSymbol() {
+            return symbol;
+        }
+    }
+
+    enum NullOperator implements Predicate<Value> {
+        IS_NULL("IS NULL") {
+            @Override
+            public boolean test(Value lhs) {
+                return lhs == NO_VALUE;
+            }
+        },
+        IS_NOT_NULL("IS NOT NULL") {
+            @Override
+            public boolean test(Value lhs) {
+                return lhs != NO_VALUE;
+            }
+        };
+
+        private final String symbol;
+
+        NullOperator(String symbol) {
+            this.symbol = symbol;
+        }
+
+        public String getSymbol() {
+            return symbol;
+        }
+    }
+
+    record PropertyValueRule(int property, Value value, ComparisonOperator operator) implements PropertyRule {
 
         public PropertyValueRule {
-            Objects.requireNonNull(value, "value must not be null");
+            Preconditions.requireNonNull(value, "value must not be null");
         }
 
         @Override
         public boolean test(Value value) {
-            return equals == this.value.equals(value);
+            return operator.test(value, this.value);
+        }
+    }
+
+    record NullPropertyRule(int property, NullOperator operator) implements PropertyRule {
+        @Override
+        public boolean test(Value value) {
+            return operator.test(value);
         }
     }
 }

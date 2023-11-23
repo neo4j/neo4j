@@ -19,13 +19,13 @@
  */
 package org.neo4j.internal.kernel.api.security;
 
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-public record PatternSegment(Set<String> labels, String property, Value value, boolean equals) implements Segment {
+public record PatternSegment(Set<String> labels, String property, Value value, boolean eq) implements Segment {
 
     private static final Set<String> EMPTY = Set.of();
 
@@ -34,9 +34,9 @@ public record PatternSegment(Set<String> labels, String property, Value value, b
     }
 
     public PatternSegment {
-        Objects.requireNonNull(labels, "labels must not be null");
-        Objects.requireNonNull(property, "property must not be null");
-        Objects.requireNonNull(value, "value must not be null");
+        Preconditions.requireNonNull(labels, "labels must not be null");
+        Preconditions.requireNonNull(property, "property must not be null");
+        Preconditions.requireNonNull(value, "value must not be null");
     }
 
     @Override
@@ -46,8 +46,8 @@ public record PatternSegment(Set<String> labels, String property, Value value, b
         String nodeString = String.format("(n%s)", labelsString);
         String propertyString = String.format("n.%s", property);
         String predicateString = (this.value == Values.NO_VALUE
-                ? (this.equals ? "IS NULL" : "IS NOT NULL")
-                : (this.equals ? "= " : "<> ") + this.value.prettyPrint());
+                ? (this.eq ? "IS NULL" : "IS NOT NULL")
+                : (this.eq ? "= " : "<> ") + this.value.prettyPrint());
 
         return String.format("FOR %s WHERE %s %s", nodeString, propertyString, predicateString);
     }

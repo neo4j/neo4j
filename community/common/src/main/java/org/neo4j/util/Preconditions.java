@@ -145,6 +145,21 @@ public final class Preconditions {
     }
 
     /**
+     * Ensures that {@code value} is not {@code null} or throws {@link IllegalArgumentException} otherwise.
+     *
+     * @param value a value for check
+     * @param message error message for the exception
+     * @return {@code value} if it's not {@code null}
+     * @throws IllegalArgumentException if {@code value} is {@code null}
+     */
+    public static <T> T requireNonNull(T value, String message) {
+        if (value == null) {
+            throw new IllegalArgumentException(message);
+        }
+        return value;
+    }
+
+    /**
      * Ensures that {@code array} is not empty
      * @param array array to check
      * @param <T> type of elements in the array
