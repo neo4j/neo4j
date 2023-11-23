@@ -284,7 +284,8 @@ public class BiDirectionalBFS implements AutoCloseable {
             boolean stopAsapAtIntersect,
             Read read,
             MemoryTracker memoryTracker,
-            boolean needOnlyOnePath) {
+            boolean needOnlyOnePath,
+            boolean allowZeroLength) {
         return new BiDirectionalBFS(
                 types,
                 direction,
@@ -295,7 +296,7 @@ public class BiDirectionalBFS implements AutoCloseable {
                 null,
                 memoryTracker,
                 needOnlyOnePath,
-                false /* TODO */);
+                allowZeroLength);
     }
 
     /**

@@ -1008,7 +1008,6 @@ class SlottedPipeMapper(
 
         val (sourceNodeName, targetNodeName) = patternRelationship.nodes
 
-
         if (sameNodeMode == DisallowSameNode && sourceNodeName == targetNodeName) {
           throw new ShortestPathCommonEndNodesForbiddenException
         }
