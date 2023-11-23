@@ -594,7 +594,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       .projection("cacheN[a.foo] AS `a.foo`")
       .nodeIndexOperator(
         "a:A(foo)",
-        indexOrder = IndexOrderAscending,
+        indexOrder = IndexOrderNone,
         getValue = _ => GetValue,
         indexType = IndexType.RANGE
       )
