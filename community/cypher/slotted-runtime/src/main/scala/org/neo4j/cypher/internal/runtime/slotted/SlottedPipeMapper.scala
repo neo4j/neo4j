@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.ir.CreateNode
 import org.neo4j.cypher.internal.ir.CreatePattern
@@ -75,6 +76,8 @@ import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.FindShortestPaths
+import org.neo4j.cypher.internal.logical.plans.FindShortestPaths.AllowSameNode
+import org.neo4j.cypher.internal.logical.plans.FindShortestPaths.DisallowSameNode
 import org.neo4j.cypher.internal.logical.plans.Foreach
 import org.neo4j.cypher.internal.logical.plans.ForeachApply
 import org.neo4j.cypher.internal.logical.plans.InjectCompilationError
@@ -1005,14 +1008,8 @@ class SlottedPipeMapper(
 
         val (sourceNodeName, targetNodeName) = patternRelationship.nodes
 
-        // TODO
-        val disallowSameNode = sameNodeMode match {
-          case FindShortestPaths.DisallowSameNode => false
-          case FindShortestPaths.SkipSameNode     => true
-          case FindShortestPaths.AllowSameNode    => ???
-        }
 
-        if (disallowSameNode && sourceNodeName == targetNodeName) {
+        if (sameNodeMode == DisallowSameNode && sourceNodeName == targetNodeName) {
           throw new ShortestPathCommonEndNodesForbiddenException
         }
 
@@ -1029,6 +1026,10 @@ class SlottedPipeMapper(
             (lower.exists(_.value == 0L), max.map(_.value.toInt))
           case None => (false, Some(1)) // non-varlength case
           case _    => (false, None)
+        }
+
+        if (!allowZeroLength && sameNodeMode == AllowSameNode && rel.direction == SemanticDirection.BOTH) {
+          throw new IllegalArgumentException("We don't allow -[*1..]- for AllowSameNode")
         }
 
         val perStepNodeSlottedPredicates = perStepNodePredicates.map(nodePred =>
@@ -1060,7 +1061,7 @@ class SlottedPipeMapper(
           perStepRelSlottedPredicates,
           pathCommandPredicates,
           returnOneShortestPathOnly = single,
-          disallowSameNode = disallowSameNode,
+          sameNodeMode = sameNodeMode,
           allowZeroLength = allowZeroLength,
           maxDepth = maxDepth,
           needOnlyOnePath = single && !withFallBack,

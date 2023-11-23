@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.slotted.pipes
 
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.logical.plans.FindShortestPaths.SameNodeMode
 import org.neo4j.cypher.internal.physicalplanning.Slot
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration
 import org.neo4j.cypher.internal.physicalplanning.SlotConfigurationUtils.makeGetPrimitiveNodeFromSlotFunctionFor
@@ -36,7 +37,6 @@ import org.neo4j.cypher.internal.runtime.slotted.SlottedRow
 import org.neo4j.cypher.internal.runtime.slotted.pipes.VarLengthExpandSlottedPipe.SlottedVariablePredicate
 import org.neo4j.cypher.internal.runtime.slotted.pipes.VarLengthExpandSlottedPipe.predicateIsTrue
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.exceptions.ShortestPathCommonEndNodesForbiddenException
 import org.neo4j.internal.kernel.api.helpers.traversal.BiDirectionalBFS
 import org.neo4j.kernel.api.StatementConstants
 import org.neo4j.values.virtual.VirtualValues
@@ -55,7 +55,7 @@ case class ShortestPathSlottedPipe(
   relationshipPredicates: Seq[SlottedVariablePredicate],
   pathPredicates: Seq[Predicate],
   returnOneShortestPathOnly: Boolean,
-  disallowSameNode: Boolean,
+  sameNodeMode: SameNodeMode,
   allowZeroLength: Boolean,
   maxDepth: Option[Int],
   needOnlyOnePath: Boolean,
@@ -88,7 +88,7 @@ case class ShortestPathSlottedPipe(
       traversalCursor,
       memoryTracker,
       needOnlyOnePath,
-      true // TODO
+      allowZeroLength
     )
     val pathPredicate = pathPredicates.foldLeft(True(): commands.predicates.Predicate)(_.andWith(_))
     val output = input.flatMap {
@@ -116,12 +116,8 @@ case class ShortestPathSlottedPipe(
                 )
             )
           ) {
-            if (sourceNode == targetNode && !allowZeroLength) {
-              if (disallowSameNode) {
-                throw new ShortestPathCommonEndNodesForbiddenException
-              } else {
-                ClosingIterator.empty
-              }
+            if (sameNodeMode.shouldReturnEmptyResult(sourceNode, targetNode)) {
+              ClosingIterator.empty
             } else {
               val (nodePredicate, relationshipPredicate) =
                 BFSPruningVarLengthExpandSlottedPipe.createPredicates(
