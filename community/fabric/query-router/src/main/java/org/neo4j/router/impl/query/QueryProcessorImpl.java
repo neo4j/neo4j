@@ -39,7 +39,6 @@ import org.neo4j.cypher.internal.util.CancellationChecker;
 import org.neo4j.cypher.internal.util.RecordingNotificationLogger;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.dbms.database.DatabaseContextProvider;
-import org.neo4j.fabric.eval.StaticUseEvaluation;
 import org.neo4j.fabric.executor.Location;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.database.DatabaseReference;
