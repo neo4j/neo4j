@@ -78,6 +78,9 @@ abstract class UnionRelationshipTypeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should do directed scan of all relationships of a label in ascending order") {
+    // parallel does not maintain order
+    assume(!isParallel)
+
     // given
     val rels = givenGraph {
       val (_, aRels) = circleGraph(sizeHint / 3, "A", 1)
@@ -99,6 +102,9 @@ abstract class UnionRelationshipTypeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should do undirected scan of all relationships of a label in ascending order") {
+    // parallel does not maintain order
+    assume(!isParallel)
+
     // given
     val rels = givenGraph {
       val (_, aRels) = circleGraph(sizeHint / 3, "A", 1)
@@ -120,6 +126,8 @@ abstract class UnionRelationshipTypeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should do directed scan of all relationships of a label in descending order") {
+    // parallel does not maintain order
+    assume(!isParallel)
     // given
     val rels = givenGraph {
       val (_, aRels) = circleGraph(sizeHint / 3, "A", 1)
@@ -141,6 +149,9 @@ abstract class UnionRelationshipTypeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should do undirected scan of all relationships of a label in descending order") {
+    // parallel does not maintain order
+    assume(!isParallel)
+
     // given
     val rels = givenGraph {
       val (_, aRels) = circleGraph(sizeHint / 3, "A", 1)

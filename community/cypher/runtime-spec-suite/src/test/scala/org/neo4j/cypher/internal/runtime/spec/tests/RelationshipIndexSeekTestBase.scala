@@ -1283,6 +1283,8 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     _.supportsOrderAsc(RANGE),
     "should directed seek relationships of an index with a property in ascending order"
   ) { index =>
+    // parallel does not maintain order
+    assume(!isParallel)
     val propertyType = randomAmong(index.orderAscSupport(RANGE))
     val relationships = givenGraph(indexedRandomCircleGraph(index.indexType, propertyType))
     val someProp = asValue(randomAmong(relationships).getProperty("prop"))
@@ -1313,6 +1315,8 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     _.supportsOrderAsc(RANGE),
     "should undirected seek relationships of an index with a property in ascending order"
   ) { index =>
+    // parallel does not maintain order
+    assume(!isParallel)
     val propertyType = randomAmong(index.orderAscSupport(RANGE))
     val relationships = givenGraph(indexedRandomCircleGraph(index.indexType, propertyType))
     val someProp = asValue(randomAmong(relationships).getProperty("prop"))
@@ -1344,6 +1348,9 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     _.supportsOrderDesc(RANGE),
     "should directed seek relationships of an index with a property in descending order"
   ) { index =>
+    // parallel does not maintain order
+    assume(!isParallel)
+
     val propertyType = randomAmong(index.orderDescSupport(RANGE))
     val relationships = givenGraph(indexedRandomCircleGraph(index.indexType, propertyType))
     val someProp = asValue(randomAmong(relationships).getProperty("prop"))
@@ -1374,6 +1381,8 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     _.supportsOrderDesc(RANGE),
     "should undirected seek relationships of an index with a property in descending order"
   ) { index =>
+    // parallel does not maintain order
+    assume(!isParallel)
     val propertyType = randomAmong(index.orderDescSupport(RANGE))
     val relationships = givenGraph(indexedRandomCircleGraph(index.indexType, propertyType))
     val someProp = asValue(randomAmong(relationships).getProperty("prop"))

@@ -75,6 +75,9 @@ abstract class UnionLabelScanTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should scan all nodes of a label in ascending order") {
+    // parallel does not maintain order
+    assume(!isParallel)
+
     // given
     val nodes = givenGraph {
       nodeGraph(sizeHint, "Butter") ++
@@ -95,6 +98,9 @@ abstract class UnionLabelScanTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should scan all nodes of a label in descending order") {
+    // parallel does not maintain order
+    assume(!isParallel)
+
     // given
     val nodes = givenGraph {
       nodeGraph(sizeHint, "Butter") ++

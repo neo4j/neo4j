@@ -1263,6 +1263,8 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     _.supportsOrderDesc(RANGE),
     "should seek nodes of an index with a property in ascending order"
   ) { index =>
+    // parallel does not maintain order
+    assume(!isParallel)
     val propertyType = randomAmong(index.orderAscSupport(RANGE))
     val nodes = givenGraph(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
     val someProp = asValue(randomAmong(nodes).getProperty("prop"))
@@ -1293,6 +1295,8 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     _.supportsOrderDesc(RANGE),
     "should seek nodes of an index with a property in descending order"
   ) { index =>
+    // parallel does not maintain order
+    assume(!isParallel)
     val propertyType = randomAmong(index.orderDescSupport(RANGE))
     val nodes = givenGraph(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
     val someProp = asValue(randomAmong(nodes).getProperty("prop"))

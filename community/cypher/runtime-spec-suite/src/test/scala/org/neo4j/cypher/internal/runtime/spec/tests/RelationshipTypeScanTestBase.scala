@@ -243,7 +243,7 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("directed relationship scan should use ascending index order when provided") {
-    assume(RelationshipTypeIndexIsOrdered)
+    assume(RelationshipTypeIndexIsOrdered && !isParallel)
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
     val (_, _, relationships, _) = givenGraph {
@@ -269,7 +269,8 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("directed relationship scan should use descending index order when provided") {
-    assume(RelationshipTypeIndexIsOrdered)
+    // parallel does not maintain order
+    assume(RelationshipTypeIndexIsOrdered && !isParallel)
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
     val (_, _, relationships, _) = givenGraph {
@@ -295,7 +296,7 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("undirected relationship scan should use ascending index order when provided") {
-    assume(RelationshipTypeIndexIsOrdered)
+    assume(RelationshipTypeIndexIsOrdered && !isParallel)
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
     val (_, _, relationships, _) = givenGraph {
@@ -321,7 +322,7 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("undirected relationship scan should use descending index order when provided") {
-    assume(RelationshipTypeIndexIsOrdered)
+    assume(RelationshipTypeIndexIsOrdered && !isParallel)
     // given
     val nNodes = Math.sqrt(sizeHint).ceil.toInt
     val (_, _, relationships, _) = givenGraph {
