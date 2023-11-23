@@ -70,9 +70,15 @@ class ProcedureClassLoaderTest {
         var result = ProcedureClassLoader.setup(
                 appClassloader, List.of(archive), NullLog.getInstance(), procedureReloadEnabled);
 
-        // If we do not have reloadProceduresFromDisk enabled, the app classloader should resolve the classes
-        // otherwise we expect the procedure classloader to perform the task.
-        var expectedClassLoader = procedureReloadEnabled ? result.loader() : appClassloader;
+        // If the feature is enabled, and the JAR does not contain extensions, then  we want the classloader
+        // to be the ProcedureClassLoader that makes procedures reloadable. In other cases, we expect that
+        // the application classloader takes over.
+        ClassLoader expectedClassLoader;
+        if (procedureReloadEnabled && !withExtension) {
+            expectedClassLoader = result.loader();
+        } else {
+            expectedClassLoader = appClassloader;
+        }
         assertClassloader(result.loadedClasses(), expectedClassLoader);
     }
 
