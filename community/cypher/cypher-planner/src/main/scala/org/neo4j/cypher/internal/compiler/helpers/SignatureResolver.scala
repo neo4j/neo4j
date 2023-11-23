@@ -137,7 +137,8 @@ object SignatureResolver {
         FieldSignature(
           name = s.name(),
           typ = asCypherType(s.neo4jType()),
-          default = s.defaultValue().asScala.map(asCypherValue)
+          default = s.defaultValue().asScala.map(asCypherValue),
+          sensitive = s.isSensitive
         )
       ),
       outputType = asCypherType(signature.outputType()),

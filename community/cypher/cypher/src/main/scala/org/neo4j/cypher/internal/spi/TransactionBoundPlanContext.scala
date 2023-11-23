@@ -97,7 +97,14 @@ object TransactionBoundPlanContext {
     else {
       val signature = fcn.signature()
       val input = signature.inputSignature().asScala
-        .map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()), asOption(s.defaultValue()).map(asCypherValue)))
+        .map(s =>
+          FieldSignature(
+            s.name(),
+            asCypherType(s.neo4jType()),
+            asOption(s.defaultValue()).map(asCypherValue),
+            sensitive = s.isSensitive
+          )
+        )
         .toIndexedSeq
       val output = asCypherType(signature.outputType())
       val deprecationInfo = asOption(signature.deprecated())

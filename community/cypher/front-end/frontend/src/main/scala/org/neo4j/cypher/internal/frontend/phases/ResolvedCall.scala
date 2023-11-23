@@ -58,15 +58,8 @@ object ResolvedCall {
     val callArguments = declaredArguments.getOrElse(implicitArguments)
     val sensitiveArguments = signature.inputSignature.take(callArguments.length).map(_.sensitive)
     val callArgumentsWithSensitivityMarkers = callArguments.zipAll(sensitiveArguments, null, false).map {
-      case (e: Expression, true) => e.endoRewrite(bottomUp(Rewriter.lift {
-          case p: ExplicitParameter =>
-            new ExplicitParameter(p.name, p.parameterType, p.sizeHint)(p.position) with SensitiveParameter
-          case p: AutoExtractedParameter =>
-            new AutoExtractedParameter(p.name, p.parameterType, p.sizeHint)(p.position) with SensitiveAutoParameter
-          case l: Literal =>
-            l.asSensitiveLiteral
-        }))
-      case (p, _) => p
+      case (e: Expression, true) => e.endoRewrite(SensitiveParameterRewriter)
+      case (p, _)                => p
     }
 
     def implicitCallResults = signatureResults(signature, position)
@@ -93,6 +86,20 @@ object ResolvedCall {
     signature.outputSignature.getOrElse(Seq.empty).map {
       field => ProcedureResultItem(Variable(field.name)(position))(position)
     }.toIndexedSeq
+}
+
+object SensitiveParameterRewriter extends Rewriter {
+
+  private val instance = bottomUp(Rewriter.lift {
+    case p: ExplicitParameter =>
+      new ExplicitParameter(p.name, p.parameterType, p.sizeHint)(p.position) with SensitiveParameter
+    case p: AutoExtractedParameter =>
+      new AutoExtractedParameter(p.name, p.parameterType, p.sizeHint)(p.position) with SensitiveAutoParameter
+    case l: Literal =>
+      l.asSensitiveLiteral
+  })
+
+  override def apply(v: AnyRef): AnyRef = instance.apply(v)
 }
 
 case class ResolvedCall(

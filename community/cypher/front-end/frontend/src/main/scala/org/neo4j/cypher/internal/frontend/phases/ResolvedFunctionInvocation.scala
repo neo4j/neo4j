@@ -40,7 +40,18 @@ object ResolvedFunctionInvocation {
     : ResolvedFunctionInvocation = {
     val position = unresolved.position
     val name = QualifiedName(unresolved)
-    ResolvedFunctionInvocation(name, signatureLookup(name), unresolved.args)(position)
+    val signature = signatureLookup(name)
+    val args = signature.map(obfuscateArgs(_, unresolved.args)).getOrElse(unresolved.args)
+
+    ResolvedFunctionInvocation(name, signature, args)(position)
+  }
+
+  def obfuscateArgs(signature: UserFunctionSignature, args: IndexedSeq[Expression]): IndexedSeq[Expression] = {
+    args.zipLeft(signature.inputSignature, null).map {
+      case (exp: Expression, fieldSignature: FieldSignature) if fieldSignature.sensitive =>
+        exp.endoRewrite(SensitiveParameterRewriter)
+      case (exp, _) => exp
+    }
   }
 }
 
