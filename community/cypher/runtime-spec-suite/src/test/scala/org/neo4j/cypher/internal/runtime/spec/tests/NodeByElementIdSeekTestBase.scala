@@ -55,7 +55,7 @@ abstract class NodeByElementIdSeekTestBase[CONTEXT <: RuntimeContext](
   test("should not find non-existing node") {
     // given
     givenGraph { nodeGraph(sizeHint) }
-    val toNotFind = "bad-id"
+    val toNotFind = "4:bad-id:16"
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)

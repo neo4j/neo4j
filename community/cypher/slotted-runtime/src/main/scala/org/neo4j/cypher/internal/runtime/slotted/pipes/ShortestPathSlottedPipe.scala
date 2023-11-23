@@ -116,7 +116,7 @@ case class ShortestPathSlottedPipe(
                 )
             )
           ) {
-            if (sameNodeMode.shouldReturnEmptyResult(sourceNode, targetNode)) {
+            if (sameNodeMode.shouldReturnEmptyResult(sourceNode, targetNode, allowZeroLength)) {
               ClosingIterator.empty
             } else {
               val (nodePredicate, relationshipPredicate) =

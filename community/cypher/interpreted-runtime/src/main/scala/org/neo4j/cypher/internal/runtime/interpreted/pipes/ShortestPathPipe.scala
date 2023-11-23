@@ -92,7 +92,7 @@ case class ShortestPathPipe(
                 if (
                   filteringStep.filterNode(row, state)(sourceNode) && filteringStep.filterNode(row, state)(targetNode)
                 ) {
-                  if (sameNodeMode.shouldReturnEmptyResult(sourceNode.id(), targetNode.id())) {
+                  if (sameNodeMode.shouldReturnEmptyResult(sourceNode.id(), targetNode.id(), allowZeroLength)) {
                     ClosingIterator.empty
                   } else {
 

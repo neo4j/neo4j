@@ -468,7 +468,12 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    a[ShortestPathCommonEndNodesForbiddenException] shouldBe thrownBy(consume(runtimeResult))
+    val expected = Seq(
+      Array[Object](
+        TestPath(start, Seq())
+      )
+    )
+    runtimeResult should beColumns("path").withRows(expected)
   }
 
   test("all shortest paths (length >= 0), DisallowSameNode, same variable") {
@@ -556,7 +561,12 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("path").withNoRows()
+    val expected = Seq(
+      Array[Object](
+        TestPath(start, Seq())
+      )
+    )
+    runtimeResult should beColumns("path").withRows(expected)
   }
 
   test("all shortest paths (length >= 0), SkipSameNode, same variable") {
@@ -578,7 +588,12 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("path").withNoRows()
+    val expected = Seq(
+      Array[Object](
+        TestPath(start, Seq())
+      )
+    )
+    runtimeResult should beColumns("path").withRows(expected)
   }
 
   test("shortest path in a sine graph") {

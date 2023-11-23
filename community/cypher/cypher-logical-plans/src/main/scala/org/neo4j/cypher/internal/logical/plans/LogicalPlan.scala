@@ -1903,13 +1903,13 @@ object FindShortestPaths {
      * Return `false`, if the algorithm should attempt to find the shortest paths between source and target.
      * Throw if it is forbidden to have same nodes and `sourceId == targetId`.
      */
-    def shouldReturnEmptyResult(sourceId: Long, targetId: Long): Boolean
+    def shouldReturnEmptyResult(sourceId: Long, targetId: Long, allowZeroLength: Boolean): Boolean
   }
 
   case object DisallowSameNode extends SameNodeMode {
 
-    override def shouldReturnEmptyResult(sourceId: Long, targetId: Long): Boolean =
-      if (sourceId == targetId) {
+    override def shouldReturnEmptyResult(sourceId: Long, targetId: Long, allowZeroLength: Boolean): Boolean =
+      if (!allowZeroLength && sourceId == targetId) {
         throw new ShortestPathCommonEndNodesForbiddenException
       } else {
         false
@@ -1918,13 +1918,13 @@ object FindShortestPaths {
 
   case object SkipSameNode extends SameNodeMode {
 
-    override def shouldReturnEmptyResult(sourceId: Long, targetId: Long): Boolean =
-      sourceId == targetId
+    override def shouldReturnEmptyResult(sourceId: Long, targetId: Long, allowZeroLength: Boolean): Boolean =
+      !allowZeroLength && sourceId == targetId
   }
 
   case object AllowSameNode extends SameNodeMode {
 
-    override def shouldReturnEmptyResult(sourceId: Long, targetId: Long): Boolean =
+    override def shouldReturnEmptyResult(sourceId: Long, targetId: Long, allowZeroLength: Boolean): Boolean =
       false
   }
 }
