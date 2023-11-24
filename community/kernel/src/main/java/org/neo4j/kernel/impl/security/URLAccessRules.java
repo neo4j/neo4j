@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.security;
 
 import java.net.URL;
+import java.util.HashMap;
 import java.util.Map;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.security.URLAccessRule;
@@ -33,20 +34,26 @@ public class URLAccessRules {
     private final SecurityAuthorizationHandler securityAuthorizationHandler;
     private final Map<String, URLAccessRule> rules;
 
-    public URLAccessRules(AbstractSecurityLog securityLog, Map<String, URLAccessRule> rules) {
+    private final WebURLAccessRule webAccess;
+
+    public URLAccessRules(AbstractSecurityLog securityLog, Configuration configuration) {
         this.securityAuthorizationHandler = new SecurityAuthorizationHandler(securityLog);
-        this.rules = rules;
+        this.webAccess = new WebURLAccessRule(configuration);
+        rules = new HashMap<>();
+        rules.put("http", webAccess);
+        rules.put("https", webAccess);
+        rules.put("ftp", webAccess);
+        rules.put("file", FILE_ACCESS);
     }
 
-    private static final URLAccessRule FILE_ACCESS = new FileURLAccessRule();
-    private static final URLAccessRule WEB_ACCESS = new WebURLAccessRule();
+    private static final FileURLAccessRule FILE_ACCESS = new FileURLAccessRule();
 
     public static URLAccessRule fileAccess() {
         return FILE_ACCESS;
     }
 
-    public static URLAccessRule webAccess() {
-        return WEB_ACCESS;
+    public WebURLAccessRule webAccess() {
+        return this.webAccess;
     }
 
     public URL validate(Configuration configuration, SecurityContext securityContext, URL url)

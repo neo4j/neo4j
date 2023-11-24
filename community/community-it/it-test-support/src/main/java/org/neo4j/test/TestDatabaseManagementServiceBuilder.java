@@ -39,7 +39,6 @@ import org.neo4j.dbms.api.DatabaseManagementServiceBuilderImplementation;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
-import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
@@ -261,11 +260,6 @@ public class TestDatabaseManagementServiceBuilder extends DatabaseManagementServ
     @Override
     public TestDatabaseManagementServiceBuilder setUserLogProvider(LogProvider logProvider) {
         return (TestDatabaseManagementServiceBuilder) super.setUserLogProvider(logProvider);
-    }
-
-    @Override
-    public TestDatabaseManagementServiceBuilder addURLAccessRule(String protocol, URLAccessRule rule) {
-        return (TestDatabaseManagementServiceBuilder) super.addURLAccessRule(protocol, rule);
     }
 
     @Override

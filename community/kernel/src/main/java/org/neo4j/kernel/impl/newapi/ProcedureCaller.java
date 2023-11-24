@@ -25,6 +25,7 @@ import static org.neo4j.kernel.api.procedure.BasicContext.buildContext;
 import java.util.function.Supplier;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.common.DependencyResolver;
+import org.neo4j.graphdb.security.URLAccessChecker;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.procs.UserAggregationReducer;
@@ -44,6 +45,7 @@ import org.neo4j.kernel.impl.api.parallel.ExecutionContextProcedureKernelTransac
 import org.neo4j.kernel.impl.api.parallel.ExecutionContextValueMapper;
 import org.neo4j.kernel.impl.api.security.OverriddenAccessMode;
 import org.neo4j.kernel.impl.api.security.RestrictedAccessMode;
+import org.neo4j.kernel.impl.security.URLAccessRules;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.values.AnyValue;
@@ -153,6 +155,7 @@ public abstract class ProcedureCaller {
                 .withSecurityContext(securityContext)
                 .withProcedureCallContext(procedureContext)
                 .withClock(clockContext())
+                .withUrlAccessChecker(urlAccessChecker())
                 .context();
     }
 
@@ -214,6 +217,10 @@ public abstract class ProcedureCaller {
     abstract SecurityAuthorizationHandler securityAuthorizationHandler();
 
     abstract ClockContext clockContext();
+
+    URLAccessChecker urlAccessChecker() {
+        return this.databaseDependencies.resolveDependency(URLAccessRules.class).webAccess();
+    }
 
     abstract ValueMapper<Object> createValueMapper();
 

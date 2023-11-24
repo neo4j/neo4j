@@ -60,8 +60,8 @@ class WebURLAccessRuleTest {
                     GraphDatabaseInternalSettings.cypher_ip_blocklist, List.of(blockedIpv4Range, blockedIpv6Range));
 
             // execute the query
-            final var error = assertThrows(URLAccessValidationError.class, () -> URLAccessRules.webAccess()
-                    .validate(config, url));
+            final var error = assertThrows(
+                    URLAccessValidationError.class, () -> new WebURLAccessRule(config).validate(config, url));
 
             // assert that the validation fails
             assertThat(error.getMessage())
@@ -84,7 +84,7 @@ class WebURLAccessRuleTest {
             final Config config = Config.defaults();
 
             // execute the query
-            final var result = URLAccessRules.webAccess().validate(config, url);
+            final var result = new WebURLAccessRule(config).validate(config, url);
 
             // assert that the validation passes
             assertThat(result).isSameAs(url);
@@ -101,8 +101,8 @@ class WebURLAccessRuleTest {
                 Config.defaults(GraphDatabaseInternalSettings.cypher_ip_blocklist, List.of(blockedIpv4Range));
 
         // execute the query
-        final var error = assertThrows(
-                URLAccessValidationError.class, () -> URLAccessRules.webAccess().validate(config, url));
+        final var error =
+                assertThrows(URLAccessValidationError.class, () -> new WebURLAccessRule(config).validate(config, url));
 
         // assert that the validation fails
         assertThat(error.getMessage())
@@ -120,8 +120,8 @@ class WebURLAccessRuleTest {
                 Config.defaults(GraphDatabaseInternalSettings.cypher_ip_blocklist, List.of(blockedIpv4Range));
 
         // execute the query
-        final var error = assertThrows(
-                URLAccessValidationError.class, () -> URLAccessRules.webAccess().validate(config, url));
+        final var error =
+                assertThrows(URLAccessValidationError.class, () -> new WebURLAccessRule(config).validate(config, url));
 
         // assert that the validation fails
         assertThat(error.getMessage()).contains("Unable to verify access to always.invalid");
@@ -150,8 +150,8 @@ class WebURLAccessRuleTest {
                 Config.defaults(GraphDatabaseInternalSettings.cypher_ip_blocklist, List.of(blockedIpv4Range));
 
         // execute the query
-        final var error = assertThrows(
-                URLAccessValidationError.class, () -> URLAccessRules.webAccess().validate(config, url));
+        final var error =
+                assertThrows(URLAccessValidationError.class, () -> new WebURLAccessRule(config).validate(config, url));
 
         // assert that the validation fails
         assertThat(error.getMessage())
@@ -182,7 +182,7 @@ class WebURLAccessRuleTest {
                 Config.defaults(GraphDatabaseInternalSettings.cypher_ip_blocklist, List.of(blockedIpv4Range));
 
         // execute the query
-        final var validatedURL = URLAccessRules.webAccess().validate(config, url);
+        final var validatedURL = new WebURLAccessRule(config).validate(config, url);
 
         // assert that the url is the same, as the redirect was a change in protocol and shouldn't be followed
         assertEquals(url, validatedURL);
@@ -219,7 +219,7 @@ class WebURLAccessRuleTest {
                 Config.defaults(GraphDatabaseInternalSettings.cypher_ip_blocklist, List.of(blockedIpv4Range));
 
         // assert that the validation fails
-        assertThatThrownBy(() -> URLAccessRules.webAccess().validate(config, urlA))
+        assertThatThrownBy(() -> new WebURLAccessRule(config).validate(config, urlA))
                 .isInstanceOf(URLAccessValidationError.class)
                 .hasMessageContaining("Redirect limit exceeded");
     }
@@ -237,6 +237,10 @@ class WebURLAccessRuleTest {
 
         class TestWebURLAccessRule extends WebURLAccessRule {
             public static boolean enteredIpPinning = false;
+
+            public TestWebURLAccessRule() {
+                super(config);
+            }
 
             @Override
             protected URL substituteHostByIP(URL u, String ip) {
@@ -261,7 +265,7 @@ class WebURLAccessRuleTest {
 
     @Test
     void shouldSubstituteIpCorrectly() throws Exception {
-        var accessRule = new WebURLAccessRule();
+        var accessRule = new WebURLAccessRule(Config.defaults());
         assertEquals(
                 "http://127.0.0.1/test.csv",
                 accessRule

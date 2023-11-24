@@ -23,7 +23,6 @@ import static org.neo4j.graphdb.facade.GraphDatabaseDependencies.newDependencies
 
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -40,7 +39,6 @@ import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
-import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.logging.ExternalLogProviderWrapper;
@@ -56,7 +54,6 @@ public class DatabaseManagementServiceBuilderImplementation implements Neo4jData
     protected Monitors monitors;
     private InternalLogProvider userLogProvider = NullLogProvider.getInstance();
     protected DependencyResolver dependencies = new Dependencies();
-    private final Map<String, URLAccessRule> urlAccessRules = new HashMap<>();
     protected Path homeDirectory;
     protected Config.Builder config = Config.newBuilder();
     protected boolean daemonMode;
@@ -107,11 +104,6 @@ public class DatabaseManagementServiceBuilderImplementation implements Neo4jData
         return this;
     }
 
-    public DatabaseManagementServiceBuilderImplementation addURLAccessRule(String protocol, URLAccessRule rule) {
-        urlAccessRules.put(protocol, rule);
-        return this;
-    }
-
     @Override
     public DatabaseManagementServiceBuilderImplementation setUserLogProvider(LogProvider userLogProvider) {
         if (userLogProvider instanceof InternalLogProvider internalLogProvider) {
@@ -141,7 +133,6 @@ public class DatabaseManagementServiceBuilderImplementation implements Neo4jData
                 .monitors(monitors)
                 .userLogProvider(userLogProvider)
                 .dependencies(dependencies)
-                .urlAccessRules(urlAccessRules)
                 .extensions(extensions)
                 .databaseEventListeners(databaseEventListeners);
     }

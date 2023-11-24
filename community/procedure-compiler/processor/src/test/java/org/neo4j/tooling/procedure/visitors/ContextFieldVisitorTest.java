@@ -33,6 +33,7 @@ import org.junit.Test;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.security.URLAccessChecker;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -56,6 +57,7 @@ public class ContextFieldVisitorTest {
                     + ">, <" + TerminationGuard.class.getName()
                     + ">, <" + SecurityContext.class.getName()
                     + ">, <" + Transaction.class.getName()
+                    + ">, <" + URLAccessChecker.class.getName()
                     + ">");
 
     @Rule

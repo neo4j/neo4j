@@ -31,12 +31,19 @@ import java.net.URLConnection;
 import java.util.List;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.graphdb.config.Configuration;
+import org.neo4j.graphdb.security.URLAccessChecker;
 import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.graphdb.security.URLAccessValidationError;
 
-public class WebURLAccessRule implements URLAccessRule {
+public class WebURLAccessRule implements URLAccessRule, URLAccessChecker {
     public static final String LOAD_CSV_USER_AGENT_PREFIX = "NeoLoadCSV_";
     private static final int REDIRECT_LIMIT = 10;
+    private final Configuration config;
+
+    public WebURLAccessRule(Configuration config) {
+
+        this.config = config;
+    }
 
     public static String userAgent() {
         var version = Runtime.version();
@@ -47,9 +54,19 @@ public class WebURLAccessRule implements URLAccessRule {
         return agent + " Java/" + version;
     }
 
-    @Deprecated(forRemoval = true)
-    public static void checkNotBlocked(URL url, List<IPAddressString> blockedIpRanges) throws Exception {
-        new WebURLAccessRule().checkNotBlockedAndPinToIP(url, blockedIpRanges);
+    @Override
+    public URL checkURL(URL url) throws URLAccessValidationError {
+        List<IPAddressString> blockedIpRanges = config.get(GraphDatabaseInternalSettings.cypher_ip_blocklist);
+        try {
+            return checkNotBlockedAndPinToIP(url, blockedIpRanges);
+        } catch (Exception e) {
+            if (e instanceof URLAccessValidationError) {
+                throw (URLAccessValidationError) e;
+            } else {
+                throw new URLAccessValidationError(
+                        "Unable to verify access to " + url.getHost() + ". Cause: " + e.getMessage());
+            }
+        }
     }
 
     // This is used by APOC and thus needs to be public

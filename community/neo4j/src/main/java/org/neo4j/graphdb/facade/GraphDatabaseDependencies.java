@@ -22,16 +22,12 @@ package org.neo4j.graphdb.facade;
 import static org.neo4j.internal.helpers.collection.Iterables.asList;
 import static org.neo4j.internal.helpers.collection.Iterables.empty;
 
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.graphdb.event.DatabaseEventListener;
-import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.kernel.extension.ExtensionFactory;
-import org.neo4j.kernel.impl.security.URLAccessRules;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.service.Services;
@@ -43,7 +39,6 @@ public class GraphDatabaseDependencies implements ExternalDependencies {
                 deps.userLogProvider(),
                 deps.dependencies(),
                 deps.extensions(),
-                deps.urlAccessRules(),
                 deps.databaseEventListeners());
     }
 
@@ -51,13 +46,7 @@ public class GraphDatabaseDependencies implements ExternalDependencies {
         Iterable<ExtensionFactory<?>> extensions =
                 getExtensions(Services.loadAll(ExtensionFactory.class).iterator());
 
-        Map<String, URLAccessRule> urlAccessRules = new HashMap<>();
-        urlAccessRules.put("http", URLAccessRules.webAccess());
-        urlAccessRules.put("https", URLAccessRules.webAccess());
-        urlAccessRules.put("ftp", URLAccessRules.webAccess());
-        urlAccessRules.put("file", URLAccessRules.fileAccess());
-
-        return new GraphDatabaseDependencies(null, null, null, extensions, urlAccessRules, empty());
+        return new GraphDatabaseDependencies(null, null, null, extensions, empty());
     }
 
     private Monitors monitors;
@@ -66,20 +55,17 @@ public class GraphDatabaseDependencies implements ExternalDependencies {
     private DependencyResolver dependencies;
     private List<ExtensionFactory<?>> extensions;
     private List<DatabaseEventListener> databaseEventListeners;
-    private final Map<String, URLAccessRule> urlAccessRules;
 
     private GraphDatabaseDependencies(
             Monitors monitors,
             InternalLogProvider userLogProvider,
             DependencyResolver dependencies,
             Iterable<ExtensionFactory<?>> extensions,
-            Map<String, URLAccessRule> urlAccessRules,
             Iterable<DatabaseEventListener> eventListeners) {
         this.monitors = monitors;
         this.userLogProvider = userLogProvider;
         this.dependencies = dependencies;
         this.extensions = asList(extensions);
-        this.urlAccessRules = urlAccessRules;
         this.databaseEventListeners = asList(eventListeners);
     }
 
@@ -114,11 +100,6 @@ public class GraphDatabaseDependencies implements ExternalDependencies {
         return this;
     }
 
-    public GraphDatabaseDependencies urlAccessRules(Map<String, URLAccessRule> urlAccessRules) {
-        this.urlAccessRules.putAll(urlAccessRules);
-        return this;
-    }
-
     // Dependencies implementation
     @Override
     public Monitors monitors() {
@@ -137,11 +118,6 @@ public class GraphDatabaseDependencies implements ExternalDependencies {
     @Override
     public Iterable<ExtensionFactory<?>> extensions() {
         return extensions;
-    }
-
-    @Override
-    public Map<String, URLAccessRule> urlAccessRules() {
-        return urlAccessRules;
     }
 
     @Override

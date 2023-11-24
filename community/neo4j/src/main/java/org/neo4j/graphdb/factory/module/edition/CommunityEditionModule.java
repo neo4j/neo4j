@@ -115,6 +115,8 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
     protected final ServerIdentity identityModule;
     private final MapCachingDatabaseReferenceRepository databaseReferenceRepo;
     private final DeviceMapper deviceMapper;
+    private final InternalLogProvider logProvider;
+    private final CommunitySecurityLog securityLog;
 
     protected DatabaseStateService databaseStateService;
     protected ReadOnlyDatabases globalReadOnlyChecker;
@@ -134,7 +136,10 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
         globalDependencies.satisfyDependency(new DatabaseStateMonitor.Counter()); // for global metrics
 
         globalDependencies.satisfyDependency(createAuthConfigProvider(globalModule));
-        globalDependencies.satisfyDependency(new URLAccessRules(null, globalModule.getUrlAccessRules())); // FIXME
+
+        logProvider = globalModule.getLogService().getInternalLogProvider();
+        securityLog = new CommunitySecurityLog(logProvider.getLog(CommunitySecurityModule.class));
+        globalDependencies.satisfyDependency(new URLAccessRules(securityLog, globalConfig));
 
         identityModule = tryResolveOrCreate(
                         ServerIdentityFactory.class,

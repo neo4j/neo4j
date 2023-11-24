@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted
 import org.apache.commons.lang3.SystemUtils
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.verify
+import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.runtime.CreateTempFileTestSupport
 import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.interpreted.CSVResources.DEFAULT_BUFFER_SIZE
@@ -56,7 +57,7 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
     // when
     val result: List[Array[String]] = resources.getCsvIterator(
       new URL(url),
-      List.empty,
+      Config.defaults(),
       None,
       legacyCsvQuoteEscaping = false,
       DEFAULT_BUFFER_SIZE
@@ -84,7 +85,13 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
 
     // when
     val result =
-      resources.getCsvIterator(new URL(url), List.empty, None, legacyCsvQuoteEscaping = false, DEFAULT_BUFFER_SIZE).map(
+      resources.getCsvIterator(
+        new URL(url),
+        Config.defaults(),
+        None,
+        legacyCsvQuoteEscaping = false,
+        DEFAULT_BUFFER_SIZE
+      ).map(
         _.map(_.asInstanceOf[TextValue].stringValue)
       ).toList
 
@@ -110,7 +117,13 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
 
     // when
     val result =
-      resources.getCsvIterator(new URL(url), List.empty, None, legacyCsvQuoteEscaping = false, DEFAULT_BUFFER_SIZE).map(
+      resources.getCsvIterator(
+        new URL(url),
+        Config.defaults(),
+        None,
+        legacyCsvQuoteEscaping = false,
+        DEFAULT_BUFFER_SIZE
+      ).map(
         _.map(_.asInstanceOf[TextValue].stringValue)
       ).toList
 
@@ -131,7 +144,13 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
 
     // when
     val result =
-      resources.getCsvIterator(new URL(url), List.empty, None, legacyCsvQuoteEscaping = false, DEFAULT_BUFFER_SIZE).map(
+      resources.getCsvIterator(
+        new URL(url),
+        Config.defaults(),
+        None,
+        legacyCsvQuoteEscaping = false,
+        DEFAULT_BUFFER_SIZE
+      ).map(
         _.map(_.asInstanceOf[TextValue].stringValue)
       ).toList
 
@@ -148,7 +167,7 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
     }
 
     // when
-    resources.getCsvIterator(new URL(url), List.empty, None, legacyCsvQuoteEscaping = false, DEFAULT_BUFFER_SIZE)
+    resources.getCsvIterator(new URL(url), Config.defaults(), None, legacyCsvQuoteEscaping = false, DEFAULT_BUFFER_SIZE)
 
     // then
     verify(cleaner).trace(any(classOf[AutoCloseablePlus]))
@@ -167,7 +186,7 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
     // when
     val result: List[Array[String]] = resources.getCsvIterator(
       new URL(url),
-      List.empty,
+      Config.defaults(),
       Some("\t"),
       legacyCsvQuoteEscaping = false,
       DEFAULT_BUFFER_SIZE
@@ -195,7 +214,7 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
     // when
     val result: List[Array[String]] = resources.getCsvIterator(
       new URL(url),
-      List.empty,
+      Config.defaults(),
       None,
       legacyCsvQuoteEscaping = false,
       DEFAULT_BUFFER_SIZE
@@ -223,7 +242,7 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
     // when
     val e = intercept[IllegalStateException](resources.getCsvIterator(
       new URL(url),
-      List.empty,
+      Config.defaults(),
       None,
       legacyCsvQuoteEscaping = false,
       DEFAULT_BUFFER_SIZE
@@ -242,14 +261,14 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
   test("should handle local missing file") {
     intercept[LoadExternalResourceException](resources.getCsvIterator(
       new URL("file:///this/file/url/probably/doesnt/exist"),
-      List.empty,
+      Config.defaults(),
       None,
       legacyCsvQuoteEscaping = false,
       DEFAULT_BUFFER_SIZE
     ).toList)
     intercept[LoadExternalResourceException](resources.getCsvIterator(
       new URL("http://127.0.0.1/url/probably/doesnt/exist"),
-      List.empty,
+      Config.defaults(),
       None,
       legacyCsvQuoteEscaping = false,
       DEFAULT_BUFFER_SIZE
@@ -269,7 +288,7 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
     // when
     val result: List[Array[String]] = resources.getCsvIterator(
       new URL(url),
-      List.empty,
+      Config.defaults(),
       Some("\t"),
       legacyCsvQuoteEscaping = false,
       DEFAULT_BUFFER_SIZE

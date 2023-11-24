@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.procedure;
 import java.time.Clock;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.security.URLAccessChecker;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -149,6 +150,16 @@ public interface Context {
      * @throws ProcedureException if no clock has been associated with the context
      */
     Clock transactionClock() throws ProcedureException;
+
+    /**
+     * Returns a url access checker to validate URLs against the current security rules
+     * <p>
+     * If no such checker has been associated with this context this method will throw a {@link ProcedureException}
+     *
+     * @return the url access checker of this context
+     * @throws ProcedureException if no clock has been associated with the context
+     */
+    URLAccessChecker urlAccessChecker() throws ProcedureException;
 
     /**
      * Returns the procedure call context of this context.

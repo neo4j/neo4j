@@ -19,10 +19,8 @@
  */
 package org.neo4j.graphdb.facade;
 
-import java.util.Map;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.graphdb.event.DatabaseEventListener;
-import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.monitoring.Monitors;
@@ -39,8 +37,6 @@ public interface ExternalDependencies {
     InternalLogProvider userLogProvider();
 
     Iterable<ExtensionFactory<?>> extensions();
-
-    Map<String, URLAccessRule> urlAccessRules();
 
     /**
      * Configured default database event listeners

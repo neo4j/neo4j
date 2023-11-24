@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
-import inet.ipaddr.IPAddressString
+import org.neo4j.configuration.Config
+import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.csv.reader.BufferOverflowException
 import org.neo4j.csv.reader.CharReadable
 import org.neo4j.csv.reader.CharSeekers
@@ -51,6 +52,7 @@ import java.util.zip.GZIPInputStream
 import java.util.zip.InflaterInputStream
 
 import scala.collection.mutable.ArrayBuffer
+import scala.jdk.CollectionConverters.IterableHasAsScala
 import scala.jdk.CollectionConverters.SeqHasAsJava
 
 object CSVResources {
@@ -81,14 +83,14 @@ class CSVResources(resourceManager: ResourceManager) extends ExternalCSVResource
 
   def getCsvIterator(
     url: URL,
-    ipBlocklist: List[IPAddressString],
+    config: Config,
     fieldTerminator: Option[String],
     legacyCsvQuoteEscaping: Boolean,
     bufferSize: Int,
     headers: Boolean = false
   ): LoadCsvIterator = {
 
-    val reader: CharReadable = getReader(url, ipBlocklist)
+    val reader: CharReadable = getReader(url, config)
     val delimiter: Char = fieldTerminator.map(_.charAt(0)).getOrElse(CSVResources.DEFAULT_FIELD_TERMINATOR)
     val seeker = CharSeekers.charSeeker(reader, CSVResources.config(legacyCsvQuoteEscaping, bufferSize), false)
     val extractor = new Extractors(delimiter).textValue()
@@ -144,13 +146,13 @@ class CSVResources(resourceManager: ResourceManager) extends ExternalCSVResource
     }
   }
 
-  private def getReader(url: URL, ipBlocklist: List[IPAddressString]) =
+  private def getReader(url: URL, config: Config) =
     try {
       val reader =
         if (url.getProtocol == "file") {
           Readables.files(StandardCharsets.UTF_8, Paths.get(url.toURI))
         } else {
-          val inputStream = openStream(url, ipBlocklist)
+          val inputStream = openStream(url, config)
           Readables.wrap(
             inputStream,
             url.toString,
@@ -166,16 +168,19 @@ class CSVResources(resourceManager: ResourceManager) extends ExternalCSVResource
 
   private def openStream(
     url: URL,
-    ipBlocklist: List[IPAddressString],
+    config: Config,
     connectionTimeout: Int = 2000,
     readTimeout: Int = 10 * 60 * 1000
   ): InputStream = {
     if (url.getProtocol.startsWith("http"))
       TheCookieManager.ensureEnabled()
 
+    val javaBlocklist = config.get(GraphDatabaseInternalSettings.cypher_ip_blocklist)
+    val ipBlocklist = if (javaBlocklist != null) javaBlocklist.asScala.toList else List.empty
+
     val con =
       if (ipBlocklist.nonEmpty) {
-        new WebURLAccessRule().checkUrlIncludingHops(url, ipBlocklist.asJava)
+        new WebURLAccessRule(config).checkUrlIncludingHops(url, ipBlocklist.asJava)
       } else {
         val newCon = url.openConnection()
         newCon.setRequestProperty(

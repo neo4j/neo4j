@@ -64,6 +64,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
+import org.neo4j.graphdb.security.URLAccessChecker;
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.internal.collector.DataCollector;
@@ -370,6 +371,7 @@ public class DatabaseManagementServiceFactory {
                         org.neo4j.procedure.TerminationGuard.class, new TerminationGuardProvider(), true);
                 registry.registerComponent(StatusDetailsAccessor.class, new TransactionStatusDetailsProvider(), true);
                 registry.registerComponent(SecurityContext.class, Context::securityContext, true);
+                registry.registerComponent(URLAccessChecker.class, Context::urlAccessChecker, true);
                 registry.registerComponent(ProcedureCallContext.class, Context::procedureCallContext, true);
                 registry.registerComponent(
                         FulltextAdapter.class,

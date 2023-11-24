@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import inet.ipaddr.IPAddressString
+import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.values.storable.Value
 
@@ -29,18 +29,12 @@ trait ExternalCSVResource {
 
   def getCsvIterator(
     url: URL,
-    ipBlocklist: List[IPAddressString],
+    config: Config,
     fieldTerminator: Option[String],
     legacyCsvQuoteEscaping: Boolean,
     bufferSize: Int,
     headers: Boolean = false
   ): LoadCsvIterator
-}
-
-object ExternalCSVResource {
-
-  def empty: ExternalCSVResource =
-    (_: URL, _: List[IPAddressString], _: Option[String], _: Boolean, _: Int, _: Boolean) => LoadCsvIterator.empty
 }
 
 trait LoadCsvIterator extends ClosingIterator[Array[Value]] {

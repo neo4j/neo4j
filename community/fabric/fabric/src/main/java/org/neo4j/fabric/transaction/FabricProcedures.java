@@ -25,6 +25,7 @@ import java.util.stream.Stream;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.security.URLAccessChecker;
 import org.neo4j.internal.kernel.api.Procedures;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
@@ -208,6 +209,11 @@ public class FabricProcedures implements Procedures {
 
         @Override
         public Clock transactionClock() throws ProcedureException {
+            return notAvailable();
+        }
+
+        @Override
+        public URLAccessChecker urlAccessChecker() throws ProcedureException {
             return notAvailable();
         }
 

@@ -26,6 +26,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.security.URLAccessChecker;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -46,6 +47,8 @@ public class BasicContext implements Context {
     private final Thread thread;
     private final ProcedureCallContext procedureCallContext;
 
+    private final URLAccessChecker urlAccessChecker;
+
     private final Supplier<GraphDatabaseAPI> graphDatabaseAPISupplier;
 
     private BasicContext(
@@ -56,6 +59,7 @@ public class BasicContext implements Context {
             ValueMapper<Object> valueMapper,
             Thread thread,
             ProcedureCallContext procedureCallContext,
+            URLAccessChecker urlAccessChecker,
             Supplier<GraphDatabaseAPI> graphDatabaseAPISupplier) {
         this.resolver = resolver;
         this.kernelTransaction = kernelTransaction;
@@ -64,6 +68,7 @@ public class BasicContext implements Context {
         this.valueMapper = valueMapper;
         this.thread = thread;
         this.procedureCallContext = procedureCallContext;
+        this.urlAccessChecker = urlAccessChecker;
         this.graphDatabaseAPISupplier = graphDatabaseAPISupplier;
     }
 
@@ -128,6 +133,11 @@ public class BasicContext implements Context {
     }
 
     @Override
+    public URLAccessChecker urlAccessChecker() throws ProcedureException {
+        return throwIfNull("URLAccessChecker", urlAccessChecker);
+    }
+
+    @Override
     public ProcedureCallContext procedureCallContext() {
         return procedureCallContext;
     }
@@ -159,7 +169,7 @@ public class BasicContext implements Context {
         private SecurityContext securityContext = SecurityContext.AUTH_DISABLED;
         private ClockContext clockContext;
         private ProcedureCallContext procedureCallContext;
-
+        private URLAccessChecker urlAccessChecker;
         private Supplier<GraphDatabaseAPI> graphDatabaseAPISupplier;
 
         private ContextBuilder(DependencyResolver resolver, ValueMapper<Object> valueMapper) {
@@ -192,6 +202,11 @@ public class BasicContext implements Context {
             return this;
         }
 
+        public ContextBuilder withUrlAccessChecker(URLAccessChecker urlAccessChecker) {
+            this.urlAccessChecker = urlAccessChecker;
+            return this;
+        }
+
         public Context context() {
             requireNonNull(resolver);
             requireNonNull(securityContext);
@@ -205,6 +220,7 @@ public class BasicContext implements Context {
                     valueMapper,
                     thread,
                     procedureCallContext,
+                    urlAccessChecker,
                     graphDatabaseAPISupplier);
         }
     }
