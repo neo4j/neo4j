@@ -1472,7 +1472,7 @@ object SubqueryCall {
     case object OnErrorFail extends InTransactionsOnErrorBehaviour
   }
 
-  final case class InTransactionsParameters private (
+  final case class InTransactionsParameters(
     batchParams: Option[InTransactionsBatchParameters],
     errorParams: Option[InTransactionsErrorParameters],
     reportParams: Option[InTransactionsReportParameters]

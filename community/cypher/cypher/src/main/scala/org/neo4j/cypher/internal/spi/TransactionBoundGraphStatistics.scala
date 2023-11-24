@@ -55,22 +55,22 @@ object TransactionBoundGraphStatistics {
     override def uniqueValueSelectivity(index: IndexDescriptor): Option[Selectivity] =
       try {
         val maybeIndexDescriptor = maybeKernelIndexDescriptor(index)
-        maybeIndexDescriptor.map { indexDescriptor =>
+        maybeIndexDescriptor.flatMap { indexDescriptor =>
           val indexSize = schemaRead.indexSize(indexDescriptor)
           if (indexSize == 0)
-            Selectivity.ZERO
+            Some(Selectivity.ZERO)
           else {
             // Probability of any entity in the index, to have a property with a given value
             val indexEntrySelectivity = schemaRead.indexUniqueValuesSelectivity(indexDescriptor)
             if (indexEntrySelectivity == 0.0) {
-              Selectivity.ZERO
+              Some(Selectivity.ZERO)
             } else {
               val frequencyOfEntitiesWithSameValue = 1.0 / indexEntrySelectivity
 
               // This is = 1 / number of unique values
               val indexSelectivity = frequencyOfEntitiesWithSameValue / indexSize
 
-              Selectivity(min(indexSelectivity, 1.0))
+              Selectivity.of(min(indexSelectivity, 1.0))
             }
           }
         }
@@ -94,13 +94,13 @@ object TransactionBoundGraphStatistics {
         else {
           // Probability of any entity with the given type, to have a given property
           val maybeIndexDescriptor = maybeKernelIndexDescriptor(index)
-          maybeIndexDescriptor.map { indexDescriptor =>
+          maybeIndexDescriptor.flatMap { indexDescriptor =>
             val indexSize = schemaRead.indexSize(indexDescriptor)
             val indexSelectivity = indexSize / entitiesCount
 
             // Even though semantically impossible the index can get into a state where
             // the indexSize > entitiesCount
-            Selectivity(min(indexSelectivity, 1.0))
+            Selectivity.of(min(indexSelectivity, 1.0))
           }
         }
       } catch {
