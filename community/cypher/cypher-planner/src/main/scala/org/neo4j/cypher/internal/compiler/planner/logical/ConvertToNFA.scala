@@ -121,7 +121,9 @@ object ConvertToNFA {
     })
 
     def getPredicates(entityNames: Set[String]) = {
-      selectionsWithoutUniquenessPredicates.predicatesGiven(availableSymbols ++ entityNames).to(ListSet)
+      selectionsWithoutUniquenessPredicates.predicatesGiven(availableSymbols ++ entityNames)
+        .filterNot(_.isInstanceOf[IRExpression])
+        .to(ListSet)
     }
 
     def getVariablePredicates(entityName: String) = {

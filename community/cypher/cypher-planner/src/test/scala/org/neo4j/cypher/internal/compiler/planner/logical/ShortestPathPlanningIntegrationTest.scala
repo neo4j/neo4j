@@ -35,10 +35,8 @@ import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.logical.builder.TestNFABuilder
-import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.logical.plans.NFA.NodeJuxtapositionPredicate
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -1174,32 +1172,27 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     val solvedNestedExpressionAsString =
       """EXISTS { MATCH (v)-[`anon_0`]->(`anon_1`)
         |  WHERE `anon_1`:N }""".stripMargin
-    val patternExpressionPredicate = NodeJuxtapositionPredicate(
-      Some(Expand.VariablePredicate(
-        varFor("v"),
-        NestedPlanExistsExpression(
-          plan = nestedPlan,
-          solvedExpressionAsString =
-            solvedNestedExpressionAsString
-        )(pos)
-      ))
-    )
+    val patternExpressionPredicate = NestedPlanExistsExpression(
+      plan = nestedPlan,
+      solvedExpressionAsString = solvedNestedExpressionAsString
+    )(pos)
+
     val expectedNfa = new TestNFABuilder(0, "u")
       .addTransition(0, 1, "(u) (a)")
       .addTransition(1, 2, "(a)-[r]->(b)")
       .addTransition(2, 1, "(b) (a)")
-      .addTransition((2, "b"), (3, "v"), patternExpressionPredicate)
+      .addTransition(2, 3, "(b) (v)")
       .addTransition(3, 4, "(v)-[s]->(w)")
       .addFinalState(4)
       .build()
 
     plan should equal(
       planner.subPlanBuilder()
-        .statefulShortestPath(
+        .statefulShortestPathExpr(
           "u",
           "w",
           s"SHORTEST 1 ((u) ((a)-[r]->(b)){1, } (v)-[s]->(w) WHERE $solvedNestedExpressionAsString AND NOT s IN `r` AND unique(`r`))",
-          None,
+          Some(patternExpressionPredicate),
           Set(("a", "a"), ("b", "b")),
           Set(("r", "r")),
           singletonNodeVariables = Set("v" -> "v", "w" -> "w"),

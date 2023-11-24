@@ -1094,3 +1094,30 @@ Feature: PathSelectorAcceptance
       | ANY               |
       | ANY 1             |
       | ANY 2             |
+
+  Scenario Outline: PathSelector should handle having nested predicates
+    And having executed:
+      """
+        CREATE (:User)-[:R]->(v:V)-[:S1]->(:W), (v)-[:S2]->(n:N)
+      """
+    When executing query:
+      """
+        MATCH p = <pathSelector> ((u:User) ((a)-[r]->(b))+ (v)-[s]->(w) WHERE (v)-->(:N))
+        RETURN p
+      """
+    Then the result should be, in any order:
+      | p                                      |
+      | <(:User)-[:R {}]->(:V)-[:S2 {}]->(:N)> |
+      | <(:User)-[:R {}]->(:V)-[:S1 {}]->(:W)> |
+    Examples:
+      | pathSelector      |
+      | ANY SHORTEST      |
+      | SHORTEST 1        |
+      | SHORTEST 2        |
+      | ALL SHORTEST      |
+      | SHORTEST GROUP    |
+      | SHORTEST 1 GROUP  |
+      | SHORTEST 2 GROUPS |
+      | ANY               |
+      | ANY 1             |
+      | ANY 2             |

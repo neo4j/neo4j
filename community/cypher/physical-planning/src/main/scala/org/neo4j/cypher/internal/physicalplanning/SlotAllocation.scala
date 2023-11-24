@@ -465,8 +465,8 @@ class SingleQuerySlotAllocator private[physicalplanning] (
     slots: SlotConfiguration,
     semanticTable: SemanticTable
   ): Unit = plan match {
-    case _: OptionalExpand | _: FindShortestPaths =>
-    case _                                        => allocateExpressionsOneChild(plan, nullable, slots, semanticTable)
+    case _: OptionalExpand | _: FindShortestPaths | _: StatefulShortestPath =>
+    case _ => allocateExpressionsOneChild(plan, nullable, slots, semanticTable)
   }
 
   private def allocateExpressionsOneChildOnOutput(
@@ -475,8 +475,9 @@ class SingleQuerySlotAllocator private[physicalplanning] (
     slots: SlotConfiguration,
     semanticTable: SemanticTable
   ): Unit = plan match {
-    case _: OptionalExpand | _: FindShortestPaths => allocateExpressionsOneChild(plan, nullable, slots, semanticTable)
-    case _                                        =>
+    case _: OptionalExpand | _: FindShortestPaths | _: StatefulShortestPath =>
+      allocateExpressionsOneChild(plan, nullable, slots, semanticTable)
+    case _ =>
   }
 
   private def allocateExpressionsOneChild(
