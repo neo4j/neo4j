@@ -61,7 +61,7 @@ class ProcedureClassLoaderTest {
         var appClassloader = makeClassloaderWithClasspath(archive);
 
         if (withExtension) {
-            CustomExtensionUtils.createExtensionJar(archive);
+            CustomExtensionUtils.createProcedureWithExtensionJar(archive);
         } else {
             CustomExtensionUtils.createProcedureJar(archive);
         }
@@ -89,7 +89,7 @@ class ProcedureClassLoaderTest {
         var appClassloader = makeClassloaderWithClasspath();
 
         if (withExtension) {
-            CustomExtensionUtils.createExtensionJar(archive);
+            CustomExtensionUtils.createProcedureWithExtensionJar(archive);
         } else {
             CustomExtensionUtils.createProcedureJar(archive);
         }
