@@ -227,7 +227,11 @@ trait LogicalPlanningTestSupport2 extends AstConstructionTestSupport with Logica
   def pipeLine(deduplicateNames: Boolean = deduplicateNames)
     : Transformer[PlannerContext, BaseState, LogicalPlanState] = {
     val parsingConfig = LogicalPlanningTestSupport2.defaultParsingConfig(cypherCompilerConfig)
-    LogicalPlanningTestSupport2.pipeLine(parsingConfig, pushdownPropertyReads, deduplicateNames)
+    LogicalPlanningTestSupport2.pipeLine(
+      parsingConfig,
+      pushdownPropertyReads = pushdownPropertyReads,
+      deduplicateNames = deduplicateNames
+    )
   }
 
   implicit class LogicalPlanningEnvironment[C <: LogicalPlanningConfiguration](config: C) {
