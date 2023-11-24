@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.physicalplanning.SlotConfigurationUtils.makeGet
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands
+import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.True
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
@@ -80,7 +81,7 @@ case class ShortestPathSlottedPipe(
     // Create empty BiDirectionalBFS here and (re)set with source/target nodes and predicates for each row below.
     val biDirectionalBFS = BiDirectionalBFS.newEmptyBiDirectionalBFS(
       types.types(state.query),
-      dir,
+      toGraphDb(dir),
       maxDepth.getOrElse(Int.MaxValue),
       returnOneShortestPathOnly,
       state.query.transactionalContext.dataRead,

@@ -31,11 +31,10 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands
 import org.neo4j.cypher.internal.runtime.interpreted.commands.CommandNFA.NodeJuxtapositionTransition
 import org.neo4j.cypher.internal.runtime.interpreted.commands.CommandNFA.RelationshipExpansionTransition
 import org.neo4j.cypher.internal.runtime.interpreted.commands.CommandNFA.State
-import org.neo4j.cypher.internal.runtime.interpreted.commands.CommandNFA.kernelDirection
+import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.RelationshipTypes
 import org.neo4j.function.Predicates
-import org.neo4j.graphdb.Direction
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
 import org.neo4j.internal.kernel.api.helpers.traversal.SlotOrName
 import org.neo4j.internal.kernel.api.helpers.traversal.productgraph
@@ -117,7 +116,7 @@ case class CommandNFA(
           new RelationshipExpansion(
             relPredicate(transition),
             if (transition.types == null) null else transition.types.types(queryState.query),
-            kernelDirection(transition.dir),
+            toGraphDb(transition.dir),
             transition.slotOrName,
             targetNodePredicate(transition),
             stateLookup(transition.targetState)
@@ -131,14 +130,6 @@ case class CommandNFA(
 }
 
 object CommandNFA {
-
-  def kernelDirection(dir: SemanticDirection): Direction = {
-    dir match {
-      case SemanticDirection.OUTGOING => Direction.OUTGOING
-      case SemanticDirection.INCOMING => Direction.INCOMING
-      case SemanticDirection.BOTH     => Direction.BOTH
-    }
-  }
 
   private type CommandPredicateFunction = (CypherRow, QueryState, AnyValue) => Boolean
 

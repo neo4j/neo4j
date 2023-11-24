@@ -43,8 +43,7 @@ import org.neo4j.memory.MemoryTracker;
 /**
  * Cursor that performs breadth-first search without ever revisiting the same node multiple times.
  * <p>
- * A BFSPruningVarExpandCursor will not find all paths but is guaranteed to find all distinct end-nodes given the provided start-node and max-depth. Only works
- * for directed searches when we don't need to keep track of relationship uniqueness along the path.
+ * A BFSPruningVarExpandCursor will not find all paths but is guaranteed to find all distinct end-nodes given the provided start-node and max-depth.
  * <p>
  * Usage:
  * <p>

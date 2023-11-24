@@ -28,12 +28,12 @@ import org.neo4j.cypher.internal.runtime.PrimitiveLongHelper
 import org.neo4j.cypher.internal.runtime.RelationshipIterator
 import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.RelationshipCursorIterator
+import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExpandIntoPipe.getRowNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExpandIntoPipe.relationshipSelectionCursorIterator
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExpandIntoPipe.traceRelationshipSelectionCursor
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.ParameterWrongTypeException
-import org.neo4j.graphdb.Direction
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
 import org.neo4j.internal.kernel.api.helpers.CachingExpandInto
 import org.neo4j.values.AnyValue
@@ -61,11 +61,7 @@ case class ExpandIntoPipe(
     extends PipeWithSource(source) {
   self =>
 
-  private val kernelDirection = dir match {
-    case SemanticDirection.OUTGOING => Direction.OUTGOING
-    case SemanticDirection.INCOMING => Direction.INCOMING
-    case SemanticDirection.BOTH     => Direction.BOTH
-  }
+  private val kernelDirection = toGraphDb(dir)
 
   protected def internalCreateResults(
     input: ClosingIterator[CypherRow],

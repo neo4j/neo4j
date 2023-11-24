@@ -24,12 +24,12 @@ import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.ClosingIterator.ScalaSeqAsClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.IsNoValue
+import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExpandIntoPipe.getRowNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExpandIntoPipe.relationshipSelectionCursorIterator
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExpandIntoPipe.traceRelationshipSelectionCursor
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.graphdb.Direction
 import org.neo4j.internal.kernel.api.helpers.CachingExpandInto
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualNodeValue
@@ -48,11 +48,7 @@ case class OptionalExpandIntoPipe(
 )(val id: Id = Id.INVALID_ID)
     extends PipeWithSource(source) {
 
-  private val kernelDirection = dir match {
-    case SemanticDirection.OUTGOING => Direction.OUTGOING
-    case SemanticDirection.INCOMING => Direction.INCOMING
-    case SemanticDirection.BOTH     => Direction.BOTH
-  }
+  private val kernelDirection = toGraphDb(dir)
 
   protected def internalCreateResults(
     input: ClosingIterator[CypherRow],

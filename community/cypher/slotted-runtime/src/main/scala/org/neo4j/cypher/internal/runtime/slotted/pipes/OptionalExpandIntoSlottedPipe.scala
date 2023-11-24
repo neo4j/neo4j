@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.runtime.ClosingLongIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.PrimitiveLongHelper
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.RelationshipCursorIterator
+import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExpandIntoPipe.traceRelationshipSelectionCursor
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
@@ -37,7 +38,6 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.RelationshipTypes
 import org.neo4j.cypher.internal.runtime.slotted.SlottedRow
 import org.neo4j.cypher.internal.runtime.slotted.helpers.NullChecker.entityIsNull
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.graphdb.Direction
 import org.neo4j.internal.kernel.api.helpers.CachingExpandInto
 import org.neo4j.values.storable.Values
 
@@ -55,11 +55,7 @@ abstract class OptionalExpandIntoSlottedPipe(
   // ===========================================================================
   // Compile-time initializations
   // ===========================================================================
-  private val kernelDirection = dir match {
-    case SemanticDirection.OUTGOING => Direction.OUTGOING
-    case SemanticDirection.INCOMING => Direction.INCOMING
-    case SemanticDirection.BOTH     => Direction.BOTH
-  }
+  private val kernelDirection = toGraphDb(dir)
   private val getFromNodeFunction = makeGetPrimitiveNodeFromSlotFunctionFor(fromSlot)
   private val getToNodeFunction = makeGetPrimitiveNodeFromSlotFunctionFor(toSlot)
 

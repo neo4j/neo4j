@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.ShortestPath
 import org.neo4j.cypher.internal.runtime.interpreted.commands.SingleNode
+import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.RelationshipTypes
 import org.neo4j.cypher.internal.util.attribution.Id
@@ -78,11 +79,11 @@ case class ShortestPathExpression(
     val nodeCursor = state.query.nodeCursor()
     val traversalCursor = state.query.traversalCursor()
 
-    val biDirectionalBFS = new BiDirectionalBFS(
+    val biDirectionalBFS = BiDirectionalBFS.newEmptyBiDirectionalBFS(
       sourceNodeId,
       targetNodeId,
       types.types(state.query),
-      shortestPathPattern.dir,
+      toGraphDb(shortestPathPattern.dir),
       shortestPathPattern.maxDepth.getOrElse(Int.MaxValue),
       shortestPathPattern.single,
       state.query.transactionalContext.dataRead,

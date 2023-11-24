@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.cypher.internal.runtime.interpreted.commands
+import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.True
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InternalException
@@ -72,7 +73,7 @@ case class ShortestPathPipe(
       // Create empty BiDirectionalBFS here and (re)set with source/target nodes and predicates for each row below.
       val biDirectionalBFS = BiDirectionalBFS.newEmptyBiDirectionalBFS(
         types.types(state.query),
-        direction,
+        toGraphDb(direction),
         maxDepth.getOrElse(Int.MaxValue),
         returnOneShortestPathOnly,
         state.query.transactionalContext.dataRead,
