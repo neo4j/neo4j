@@ -88,7 +88,7 @@ public final class BoltConnector implements SettingsDeclaration {
 
     @DocumentedDefaultValue("1m")
     @Description(
-            "The maximum time to wait before sending a NOOP on connections waiting for responses from active ongoing queries."
+            "The maximum time to wait before sending a NOOP on connections waiting for responses from active ongoing queries. "
                     + "The minimum value is 1 millisecond.")
     public static final Setting<Duration> connection_keep_alive = newBuilder(
                     "server.bolt.connection_keep_alive", DURATION, ofMinutes(1))
