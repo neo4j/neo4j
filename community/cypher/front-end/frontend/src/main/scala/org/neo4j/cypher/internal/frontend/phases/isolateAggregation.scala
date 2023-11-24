@@ -30,12 +30,14 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.IsAggregate
 import org.neo4j.cypher.internal.expressions.IterablePredicateExpression
 import org.neo4j.cypher.internal.expressions.ListComprehension
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.ReduceExpression
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.conditions.aggregationsAreIsolated
 import org.neo4j.cypher.internal.rewriting.conditions.hasAggregateButIsNotAggregate
+import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.bottomUp
@@ -95,13 +97,20 @@ case object isolateAggregation extends StatementRewriter with StepSequencer.Step
   }
 
   private def createRewriterFor(withReturnItems: Set[ReturnItem]): Rewriter = {
+    val aliasedExpressionRefs: Map[Ref[Expression], LogicalVariable] =
+      withReturnItems.map(ri => Ref(ri.expression) -> ri.alias.get).toMap
+    lazy val aliasedExpressions: Map[Expression, LogicalVariable] =
+      withReturnItems.map(ri => ri.expression -> ri.alias.get).toMap
+
     def inner = Rewriter.lift {
       case original: Expression =>
-        val rewrittenExpression = withReturnItems.collectFirst {
-          case item@AliasedReturnItem(expression, _) if original == expression =>
-            item.alias.get.copyId
-        }
-        rewrittenExpression getOrElse original
+        aliasedExpressionRefs.get(Ref(original)).orElse {
+          // Don't rewrite constant expressions, unless they were explicitly aliased.
+//          Option.when(isNotConstantExpression(original)) {
+            aliasedExpressions.get(original)
+//          }
+//            .flatten
+        }.map(_.copyId).getOrElse(original)
     }
     topDown(inner)
   }
