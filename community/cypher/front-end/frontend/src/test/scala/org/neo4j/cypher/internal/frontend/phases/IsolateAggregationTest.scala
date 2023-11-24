@@ -320,6 +320,16 @@ class IsolateAggregationTest extends CypherFunSuite with RewriteTest with AstCon
     )
   }
 
+  test("duplicate literal expression do not get mixed up") {
+    assertRewrite(
+      """WITH null AS a0, [ a1 IN collect(0) ] AS a2, null AS a3
+        |RETURN 0 AS a4""".stripMargin,
+      """WITH collect(0) AS `  UNNAMED0`, null AS a0, null AS a3 
+        |WITH a0 AS a0, [ a1 IN `  UNNAMED0` ] AS a2, a3 AS a3
+        |RETURN 0 AS a4""".stripMargin
+    )
+  }
+
   override protected def parseForRewriting(queryText: String): Statement = {
     val exceptionFactory = OpenCypherExceptionFactory(Some(pos))
     super.parseForRewriting(queryText).endoRewrite(inSequence(normalizeWithAndReturnClauses(
