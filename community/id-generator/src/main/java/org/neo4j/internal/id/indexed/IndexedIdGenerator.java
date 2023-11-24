@@ -447,7 +447,6 @@ public class IndexedIdGenerator implements IdGenerator {
 
     @Override
     public long nextId(CursorContext cursorContext) {
-        assert scanner.allocationEnabled();
         do {
             // If strictly prioritizing the freelist then the method below will block on the current scan,
             // if there's any ongoing, otherwise it will not block.
@@ -479,7 +478,6 @@ public class IndexedIdGenerator implements IdGenerator {
 
     @Override
     public PageIdRange nextPageRange(CursorContext cursorContext, int idsPerPage) {
-        assert scanner.allocationEnabled();
         checkRefillCache(cursorContext);
         long[] reusedIds = cache.drainRange(idsPerPage);
         if (reusedIds.length > 0) {

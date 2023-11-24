@@ -1521,6 +1521,22 @@ class IndexedIdGeneratorTest {
         }
     }
 
+    @Test
+    void shouldCompleteNextIdOnAllocationDisabled() throws IOException {
+        // given
+        open(Config.defaults(), NO_MONITOR, false, SINGLE_IDS);
+        idGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
+        // NOTE: this test relies on clearCache setting "at least one free ID available" to true
+        idGenerator.clearCache(false, NULL_CONTEXT);
+
+        // when
+        long id = idGenerator.nextId(NULL_CONTEXT);
+
+        // then
+        assertThat(id).isGreaterThanOrEqualTo(0);
+        // although the real point of this test is that it doesn't hang in nextId
+    }
+
     private void assertOperationThrowInReadOnlyMode(Function<IndexedIdGenerator, Executable> operation)
             throws IOException {
         Path file = directory.file("existing");
