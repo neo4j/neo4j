@@ -204,4 +204,23 @@ class CypherQueryCachesTest extends CypherFunSuite with GraphDatabaseTestSupport
     cacheCountsFor(CypherQueryCaches.ExecutableQueryCache).evicted shouldBe 1
   }
 
+  test("Preparser notifications should be cached") {
+
+    val ccpDescription =
+      "The Cypher query option `connectComponentsPlanner` is deprecated and will be removed without a replacement." +
+        " The product's default behavior of using a cost-based IDP search algorithm when combining sub-plans will be kept." +
+        " For more information, see Cypher Manual -> Cypher planner."
+
+    execute("CYPHER connectComponentsPlanner=greedy RETURN  1")
+
+    eengine.queryCaches.executableQueryCache.clear()
+    eengine.queryCaches.executionPlanCache.clear()
+    eengine.masterCompiler.clearCaches()
+
+    execute("CYPHER connectComponentsPlanner=greedy RETURN  1").notifications.map(_.getDescription) should contain(
+      ccpDescription
+    )
+
+  }
+
 }

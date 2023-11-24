@@ -67,7 +67,12 @@ object InputQuery {
 /**
  * Query execution input as a pre-parsed Cypher query.
  */
-case class PreParsedQuery(statement: String, rawStatement: String, options: QueryOptions) extends InputQuery {
+case class PreParsedQuery(
+  statement: String,
+  rawStatement: String,
+  options: QueryOptions,
+  additionalNotifications: Seq[InternalNotification] = Seq.empty
+) extends InputQuery {
 
   override def cacheKey: InputQuery.CacheKey = InputQuery.CacheKey(options.cacheKey, statement)
 
@@ -80,6 +85,8 @@ case class PreParsedQuery(statement: String, rawStatement: String, options: Quer
   override def withReplanOption(replanOption: CypherReplanOption): PreParsedQuery = copy(
     options = options.copy(queryOptions = options.queryOptions.copy(replan = replanOption))
   )
+
+  override def notifications: Seq[InternalNotification] = super.notifications ++ additionalNotifications
 }
 
 /**

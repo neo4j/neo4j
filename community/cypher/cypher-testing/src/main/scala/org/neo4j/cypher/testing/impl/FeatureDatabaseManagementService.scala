@@ -34,6 +34,7 @@ import org.neo4j.cypher.testing.impl.embedded.EmbeddedCypherExecutorFactory
 import org.neo4j.cypher.testing.impl.http.HttpCypherExecutorFactory
 import org.neo4j.dbms.api.DatabaseManagementService
 import org.neo4j.driver.NotificationConfig
+import org.neo4j.fabric.executor.FabricExecutor
 import org.neo4j.graphdb.schema.IndexDefinition
 import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.internal.kernel.api.procs.QualifiedName
@@ -124,6 +125,7 @@ case class FeatureDatabaseManagementService(
 
   private val cypherExecutor = createExecutor()
 
+  private lazy val fabricExecutor = database.getDependencyResolver.resolveDependency(classOf[FabricExecutor])
   private lazy val kernel = database.getDependencyResolver.resolveDependency(classOf[Kernel])
   private lazy val globalProcedures = database.getDependencyResolver.provideDependency(classOf[GlobalProcedures]).get()
   private lazy val executionEngine = database.getDependencyResolver.resolveDependency(classOf[QueryExecutionEngine])
@@ -144,7 +146,15 @@ case class FeatureDatabaseManagementService(
   def registerUserAggregation(function: CallableUserAggregationFunction): Unit =
     kernel.registerUserAggregationFunction(function)
 
+  def clearFabricQueryCache(dbName: String): Unit = fabricExecutor.clearQueryCachesForDatabase(dbName)
+
   def clearQueryCaches(): Unit = executionEngine.clearQueryCaches()
+
+  def clearPreParserCache(): Unit = executionEngine.clearPreParserCache()
+
+  def clearExecutableQueryCache(): Unit = executionEngine.clearExecutableQueryCache()
+
+  def clearCompilerCaches(): Unit = executionEngine.clearCompilerCache()
 
   def terminateAllTransactions(): Unit = {
     database.getDependencyResolver.resolveDependency(classOf[KernelTransactions]).terminateTransactions()

@@ -235,6 +235,16 @@ public class NotificationTestSupport {
             SeverityLevel.WARNING,
             NotificationCategory.DEPRECATION);
 
+    Condition<Notification> DeprecatedConnectComponentsPlannerPreParserOption = notification(
+            "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
+            Conditions.contains(
+                    "The Cypher query option `connectComponentsPlanner` is deprecated and will be removed without a replacement. "
+                            + "The product's default behavior of using a cost-based IDP search algorithm when combining sub-plans will be kept. "
+                            + "For more information, see Cypher Manual -> Cypher planner."),
+            instanceOf(InputPosition.class),
+            SeverityLevel.WARNING,
+            NotificationCategory.DEPRECATION);
+
     public static class ChangedResults {
         @Deprecated
         public final String oldField = "deprecated";

@@ -95,6 +95,7 @@ class CachingPreParser(
       } else {
         preParserCache.computeIfAbsent(queryText, preParse(queryText, notificationLogger))
       }
+    preParsedQuery.notifications.foreach(notificationLogger.log)
     if (profile) {
       preParsedQuery.copy(options = preParsedQuery.options.withExecutionMode(CypherExecutionMode.profile))
     } else {
@@ -127,10 +128,10 @@ class PreParser(
       preParserResult.position
     )
 
-    preParsedStatement.options.collect {
+    val notifications = preParsedStatement.options.collect {
       case PreParserOption(key, _, pos) if key.toLowerCase(Locale.ROOT) == CypherConnectComponentsPlannerOption.key =>
         DeprecatedConnectComponentsPlannerPreParserOption(pos)
-    }.foreach(notificationLogger.log)
+    }
 
     val options = PreParser.queryOptions(
       preParsedStatement.options,
@@ -138,7 +139,7 @@ class PreParser(
       configuration
     )
 
-    PreParsedQuery(preParsedStatement.statement, queryText, options)
+    PreParsedQuery(preParsedStatement.statement, queryText, options, notifications)
   }
 
 }

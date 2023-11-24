@@ -154,22 +154,28 @@ class PreParserTest extends CypherFunSuite {
 
   test("should issue a notification for connectComponentsPlanner") {
     val notificationLogger = new RecordingNotificationLogger()
-    preParser.preParseQuery(
+    val preParsedQuery = preParser.preParseQuery(
       "CYPHER connectComponentsPlanner=idp RETURN 42",
       notificationLogger
     )
     notificationLogger.notifications should equal(Set(
       DeprecatedConnectComponentsPlannerPreParserOption(InputPosition(7, 1, 8))
     ))
+    preParsedQuery.notifications should equal(Seq(
+      DeprecatedConnectComponentsPlannerPreParserOption(InputPosition(7, 1, 8))
+    ))
   }
 
   test("should issue a notification for cOnnectcomPONonentsPlanner") {
     val notificationLogger = new RecordingNotificationLogger()
-    preParser.preParseQuery(
+    val preParsedQuery = preParser.preParseQuery(
       "CYPHER cOnnectcomPONentsPlanner=idp RETURN 42",
       notificationLogger
     )
     notificationLogger.notifications should equal(Set(
+      DeprecatedConnectComponentsPlannerPreParserOption(InputPosition(7, 1, 8))
+    ))
+    preParsedQuery.notifications should equal(Seq(
       DeprecatedConnectComponentsPlannerPreParserOption(InputPosition(7, 1, 8))
     ))
   }

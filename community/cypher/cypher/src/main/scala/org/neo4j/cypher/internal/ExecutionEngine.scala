@@ -362,6 +362,15 @@ abstract class ExecutionEngine(
   def clearQueryCaches(): Long =
     List(masterCompiler.clearCaches(), queryCache.clear(), preParser.clearCache()).max
 
+  def clearPreParserCache(): Long =
+    preParser.clearCache()
+
+  def clearExecutableQueryCache(): Long =
+    queryCache.clear()
+
+  def clearCompilerCaches(): Long =
+    masterCompiler.clearCaches()
+
   def insertIntoCache(
     queryText: String,
     preParsedQuery: PreParsedQuery,

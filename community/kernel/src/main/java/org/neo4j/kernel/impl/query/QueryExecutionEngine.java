@@ -46,5 +46,11 @@ public interface QueryExecutionEngine {
 
     long clearQueryCaches();
 
+    long clearPreParserCache();
+
+    long clearExecutableQueryCache();
+
+    long clearCompilerCache();
+
     List<FunctionInformation> getProvidedLanguageFunctions();
 }

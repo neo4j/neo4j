@@ -185,6 +185,21 @@ public class ExecutionEngine implements QueryExecutionEngine {
     }
 
     @Override
+    public long clearPreParserCache() {
+        return cypherExecutionEngine.clearPreParserCache();
+    }
+
+    @Override
+    public long clearExecutableQueryCache() {
+        return cypherExecutionEngine.clearExecutableQueryCache();
+    }
+
+    @Override
+    public long clearCompilerCache() {
+        return cypherExecutionEngine.clearCompilerCaches();
+    }
+
+    @Override
     public List<FunctionInformation> getProvidedLanguageFunctions() {
         return cypherExecutionEngine.getCypherFunctions();
     }
