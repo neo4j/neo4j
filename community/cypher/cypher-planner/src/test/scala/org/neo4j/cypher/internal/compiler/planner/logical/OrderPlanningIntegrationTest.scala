@@ -174,21 +174,13 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       "MATCH (a:A) WITH a AS b, a.age AS age ORDER BY a.foo, a.age + 5 RETURN b.name, age"
     )._1
 
-    val labelScan = NodeByLabelScan(varFor("a"), labelName("A"), Set.empty, IndexOrderNone)
-    val ageProperty = prop("a", "age")
-    val nameProperty = prop("b", "name")
-    val fooProperty = prop("b", "foo")
-
-    val projection = Projection(labelScan, Map(varFor("b") -> varFor("a"), varFor("age") -> ageProperty))
-    val projection2 =
-      Projection(
-        projection,
-        Map(varFor("b.foo") -> fooProperty, varFor("age + 5") -> add(varFor("age"), literalInt(5)))
-      )
-    val sort = Sort(projection2, Seq(Ascending(varFor("b.foo")), Ascending(varFor("age + 5"))))
-    val result = Projection(sort, Map(varFor("b.name") -> nameProperty))
-
-    plan should equal(result)
+    plan should equal(new LogicalPlanBuilder(wholePlan = false)
+      .projection("b.name AS `b.name`")
+      .sort("`b.foo` ASC", "`age + 5` ASC")
+      .projection("b.foo AS `b.foo`", "age + 5 AS `age + 5`")
+      .projection("a AS b", "a.age AS age")
+      .nodeByLabelScan("a", "A")
+      .build())
   }
 
   test("ORDER BY renamed column expression with new name in WITH and project and return that column") {
@@ -213,7 +205,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       ))
       .cacheProperties(cachedProperties)
       .projection("a AS b")
-      .nodeByLabelScan("a", "A", IndexOrderNone)
+      .nodeByLabelScan("a", "A")
       .build())
   }
 
@@ -296,17 +288,21 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
   }
 
   test("ORDER BY previously unprojected column with expression in WITH") {
-    val plan = new givenConfig().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.age + 4 RETURN a.name")._1
+    val query = "MATCH (a:A) WITH a ORDER BY a.age + 4 RETURN a.name"
 
-    val labelScan = NodeByLabelScan(varFor("a"), labelName("A"), Set.empty, IndexOrderNone)
-    val ageProperty = prop("a", "age")
-    val nameProperty = prop("a", "name")
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setLabelCardinality("A", 10)
+      .build()
 
-    val projection = Projection(labelScan, Map(varFor("a.age + 4") -> add(ageProperty, literalInt(4))))
-    val sort = Sort(projection, Seq(Ascending(varFor("a.age + 4"))))
-    val result = Projection(sort, Map(varFor("a.name") -> nameProperty))
-
-    plan should equal(result)
+    planner.plan(query).stripProduceResults should equal(
+      planner.subPlanBuilder()
+        .projection("a.name AS `a.name`")
+        .sort("`a.age + 4` ASC")
+        .projection("a.age + 4 AS `a.age + 4`")
+        .nodeByLabelScan("a", "A")
+        .build()
+    )
   }
 
   test("ORDER BY previously unprojected DISTINCT column in WITH and project and return it") {

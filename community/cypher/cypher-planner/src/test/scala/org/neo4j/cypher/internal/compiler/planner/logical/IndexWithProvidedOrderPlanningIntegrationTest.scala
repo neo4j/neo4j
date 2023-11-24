@@ -45,6 +45,7 @@ import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.ColumnOrder
 import org.neo4j.cypher.internal.logical.plans.Descending
+import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
@@ -697,22 +698,12 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           indexOn("Awesome", "prop").providesOrder(orderCapability)
         } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 'foo' RETURN n.prop ORDER BY n.prop $cypherToken, n.foo + 1 ASC"
 
-      plan._1 should equal(
-        PartialSort(
-          Projection(
-            Projection(
-              nodeIndexSeek(
-                "n:Awesome(prop > 'foo')",
-                indexOrder = plannedOrder
-              ),
-              Map(varFor("n.prop") -> prop("n", "prop"))
-            ),
-            Map(varFor("n.foo + 1") -> add(prop("n", "foo"), literalInt(1)))
-          ),
-          Seq(sortOrder("n.prop")),
-          Seq(Ascending(varFor("n.foo + 1")))
-        )
-      )
+      plan._1 should equal(new LogicalPlanBuilder(wholePlan = false)
+        .partialSortColumns(Seq(sortOrder("n.prop")), Seq(Ascending(varFor("n.foo + 1"))))
+        .projection("n.foo + 1 AS `n.foo + 1`")
+        .projection("n.prop AS `n.prop`")
+        .nodeIndexOperator("n:Awesome(prop > 'foo')", indexOrder = plannedOrder, getValue = _ => DoNotGetValue)
+        .build())
     }
 
     test(s"$cypherToken-$orderCapability: Order by index backed property should plan multiple partial sorts") {
