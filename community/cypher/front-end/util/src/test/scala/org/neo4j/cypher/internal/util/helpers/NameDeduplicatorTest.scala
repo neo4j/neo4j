@@ -24,7 +24,7 @@ class NameDeduplicatorTest extends CypherFunSuite {
 
   private case class Foo(s: String)
 
-  test("should remove simple input position names") {
+  test("should remove simple numbered variable names") {
     removeGeneratedNamesAndParams("  var@33") should equal("var")
   }
 
@@ -40,21 +40,29 @@ class NameDeduplicatorTest extends CypherFunSuite {
     removeGeneratedNamesAndParams("  AUTOINT33") should equal("autoint_33")
   }
 
-  test("should remove nested input position names") {
+  test("should remove nested numbered variable names") {
     removeGeneratedNamesAndParams("    var@33@36") should equal("var")
-  }
-
-  test("should remove input position names with UUIDs") {
-    removeGeneratedNamesAndParams("  a@42(821c05a4-386f-40fe-a31e-3bd088122975).age") should equal("a.age")
   }
 
   test("should rewrite Strings in trees") {
     removeGeneratedNamesAndParamsOnTree(Foo("  var@33")) should equal(Foo("var"))
   }
 
-  test("does not greedily consume more than the UUID in input position names") {
+  test("should remove names with complex expressions before the @") {
+    removeGeneratedNamesAndParams("  n.prop@33") should equal("n.prop")
+    removeGeneratedNamesAndParams("  n.prop + 5@33") should equal("n.prop + 5")
+  }
+
+  test("should remove names multiple times in longer strings") {
     removeGeneratedNamesAndParams(
-      "  var@33(17debdfe-6233-42f6-be08-941b2163bddd)(this is not part of the uuid)"
-    ) should equal("var(this is not part of the uuid)")
+      "SHORTEST 1 ((u) ((  n@0)-[  r@1]->(  m@2)){1, } (v)-[r2]->(w) WHERE NOT r2 IN `  r@4` AND unique(`  r@4`) AND v{foo: v.foo, bar: v.bar} = w{foo: w.foo, bar: w.bar})"
+    ) should equal(
+      "SHORTEST 1 ((u) ((n)-[r]->(m)){1, } (v)-[r2]->(w) WHERE NOT r2 IN `r` AND unique(`r`) AND v{foo: v.foo, bar: v.bar} = w{foo: w.foo, bar: w.bar})"
+    )
+    removeGeneratedNamesAndParams(
+      "SHORTEST 1 ((u) ((  a@2)-[  r@3]->(  b@4)){1, } (v)-[s]->(w) WHERE EXISTS { MATCH (v)-[`  UNNAMED0`]->(`  UNNAMED1`)\n  WHERE `  UNNAMED1`:N } AND NOT s IN `  r@6` AND unique(`  r@6`))"
+    ) should equal(
+      "SHORTEST 1 ((u) ((a)-[r]->(b)){1, } (v)-[s]->(w) WHERE EXISTS { MATCH (v)-[`anon_0`]->(`anon_1`)\n  WHERE `anon_1`:N } AND NOT s IN `r` AND unique(`r`))"
+    )
   }
 }
