@@ -44,6 +44,8 @@ import java.util.function.Function;
 public final class Services {
     private static final boolean PRINT_SERVICE_LOADER_STACK_TRACES =
             flag(Services.class, "printServiceLoaderStackTraces", false);
+    private static final boolean THROW_SERVICE_LOADER_EXCEPTIONS =
+            flag(Services.class, "throwServiceLoaderExceptions", false);
 
     private Services() {
         // util class
@@ -151,6 +153,9 @@ public final class Services {
             try {
                 services.add(loader.next());
             } catch (ServiceConfigurationError e) {
+                if (THROW_SERVICE_LOADER_EXCEPTIONS) {
+                    throw e;
+                }
                 if (PRINT_SERVICE_LOADER_STACK_TRACES) {
                     e.printStackTrace();
                 }

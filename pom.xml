@@ -111,6 +111,7 @@
       -Dorg.neo4j.internal.batchimport.Configuration.DEFAULT_BATCH_SIZE=10
       -Dorg.neo4j.kernel.impl.scheduler.ThreadPool.shutdownTimeout=2
       -Dorg.neo4j.server.HeapDumpDiagnostics.ENABLED=false
+      -Dorg.neo4j.service.Services.throwServiceLoaderExceptions=true
       -Djunit.jupiter.extensions.autodetection.enabled=true
       -Djunit.jupiter.execution.parallel.enabled=${parallel.tests}
       -Djunit.jupiter.execution.timeout.default=${default.jupiter.test.timeout}
