@@ -42,8 +42,6 @@ import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.Multiplier.NumericMultiplier
 import org.neo4j.cypher.internal.util.RelTypeId
 
-import scala.util.Try
-
 final class AssumeIndependenceQueryGraphCardinalityModel(
   planContext: PlanContext,
   selectivityCalculator: SelectivityCalculator,
@@ -57,10 +55,8 @@ final class AssumeIndependenceQueryGraphCardinalityModel(
       val relationshipCardinality = planContext.statistics.patternStepCardinality(None, Some(relationshipType), None)
 
       def hasSameCardinalityWhenAddingLabel(fromLabel: Option[LabelId], toLabel: Option[LabelId]): Boolean =
-        Try(planContext.statistics.patternStepCardinality(fromLabel, Some(relationshipType), toLabel))
-          .toOption // throws an exception in tests when cardinality isn't set
-          .filter(_ > 0) // returns 0 in production when not set
-          .contains(relationshipCardinality)
+        planContext.statistics.patternStepCardinality(fromLabel, Some(relationshipType), toLabel).amount ==
+          relationshipCardinality.amount
 
       List(
         Option.when(hasSameCardinalityWhenAddingLabel(Some(labelId), None))(startNode),
@@ -68,7 +64,7 @@ final class AssumeIndependenceQueryGraphCardinalityModel(
       ).flatten
     }
 
-    def inferLabels(): Seq[SimpleRelationship.InferredLabel] = {
+    def inferLabels: Seq[SimpleRelationship.InferredLabel] = {
       for {
         mostCommonLabelId <- planContext.statistics.mostCommonLabelGivenRelationshipType(this.relationshipType.id)
         nodeName <- this.nodesWithSameCardinalityWhenAddingLabel(LabelId(mostCommonLabelId))
@@ -138,7 +134,7 @@ final class AssumeIndependenceQueryGraphCardinalityModel(
       val allInferredLabels = for {
         nodeConnection <- queryGraph.nodeConnections.toSeq
         simpleRelationship <- SimpleRelationship.fromNodeConnection(nodeConnection, context.semanticTable).iterator
-        inferredLabel <- simpleRelationship.inferLabels()
+        inferredLabel <- simpleRelationship.inferLabels
       } yield inferredLabel
 
       val inferredLabels = allInferredLabels
@@ -149,19 +145,17 @@ final class AssumeIndependenceQueryGraphCardinalityModel(
 
       inferredLabels.values.foreach { il => context.semanticTable.resolvedLabelNames(il.labelName) = il.labelId }
 
-      val allLabelInfo = initialPredicates.allLabelInfo.map {
-        case (nodeName, labelNames) if labelNames.isEmpty => // only infer if node has no labels
-          nodeName -> Set(inferredLabels.get(nodeName).map(x => LabelName(x.labelName)(InputPosition.NONE))).flatten
-        case (nodeName, labelNames) =>
-          nodeName -> labelNames
+      def addInferredLabelOnlyIfNoOtherLabel(labelInfo: LabelInfo): LabelInfo = {
+        labelInfo.map {
+          case (nodeName, labelNames) if labelNames.isEmpty => // only infer if node has no labels
+            nodeName -> Set(inferredLabels.get(nodeName).map(x => LabelName(x.labelName)(InputPosition.NONE))).flatten
+          case (nodeName, labelNames) =>
+            nodeName -> labelNames
+        }
       }
 
-      val localLabelInfo = initialPredicates.localLabelInfo.map {
-        case (nodeName, labelNames) if labelNames.isEmpty => // only infer if node has no labels
-          nodeName -> Set(inferredLabels.get(nodeName).map(x => LabelName(x.labelName)(InputPosition.NONE))).flatten
-        case (nodeName, labelNames) =>
-          nodeName -> labelNames
-      }
+      val allLabelInfo = addInferredLabelOnlyIfNoOtherLabel(initialPredicates.allLabelInfo)
+      val localLabelInfo = addInferredLabelOnlyIfNoOtherLabel(initialPredicates.localLabelInfo)
 
       initialPredicates.copy(allLabelInfo = allLabelInfo, localLabelInfo = localLabelInfo)
     } else {

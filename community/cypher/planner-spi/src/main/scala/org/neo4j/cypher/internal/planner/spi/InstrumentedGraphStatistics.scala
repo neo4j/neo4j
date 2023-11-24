@@ -114,8 +114,13 @@ case class InstrumentedGraphStatistics(inner: GraphStatistics, snapshot: Mutable
   override def nodesAllCardinality(): Cardinality =
     snapshot.map.getOrElseUpdate(NodesAllCardinality, inner.nodesAllCardinality().amount)
 
+  /**
+   * The return value of this method is not recorded in the snapshot. That's because the value returned by this method
+   * is not by it's own used for planning decisions. Instead, the value is used as the set of candidates that is later
+   * passed to `patternStepCardinality()` during label inference. As such, relevant statistics will be recorded in the
+   * snapshot at a later stage.
+   */
   override def mostCommonLabelGivenRelationshipType(typ: Int): Seq[Int] = {
-    // This value is not part of the snapshot since it's using the same underlying statistics as patternStepCardinality
     inner.mostCommonLabelGivenRelationshipType(typ)
   }
 }
