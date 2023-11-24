@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.AggregationFunction
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.MultiPercentileDiscFunction
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.PercentileContFunction
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.PercentileDiscFunction
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.PercentilesFunction
 import org.neo4j.cypher.internal.util.symbols.CTNumber
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.memory.MemoryTracker
@@ -58,18 +58,18 @@ case class PercentileDisc(anInner: Expression, percentile: Expression) extends A
   override def children: Seq[AstNode[_]] = Seq(anInner, percentile)
 }
 
-case class MultiPercentileDisc(anInner: Expression, percentiles: Expression, keys: Expression)
+case class Percentiles(anInner: Expression, percentiles: Expression, keys: Expression, isDiscretes: Expression)
     extends AggregationWithInnerExpression(anInner) {
 
   override def createAggregationFunction(memoryTracker: MemoryTracker): AggregationFunction = {
-    memoryTracker.allocateHeap(MultiPercentileDiscFunction.SHALLOW_SIZE)
-    new MultiPercentileDiscFunction(anInner, percentiles, keys, memoryTracker)
+    memoryTracker.allocateHeap(PercentilesFunction.SHALLOW_SIZE)
+    new PercentilesFunction(anInner, percentiles, keys, isDiscretes, memoryTracker)
   }
 
   def expectedInnerType: CypherType = CTNumber
 
   override def rewrite(f: Expression => Expression): Expression =
-    f(MultiPercentileDisc(anInner.rewrite(f), percentiles.rewrite(f), keys.rewrite(f)))
+    f(Percentiles(anInner.rewrite(f), percentiles.rewrite(f), keys.rewrite(f), isDiscretes.rewrite(f)))
 
-  override def children: Seq[AstNode[_]] = Seq(anInner, percentiles, keys)
+  override def children: Seq[AstNode[_]] = Seq(anInner, percentiles, keys, isDiscretes)
 }

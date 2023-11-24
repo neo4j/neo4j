@@ -32,6 +32,7 @@ import org.neo4j.memory.HeapEstimator.shallowSizeOfInstance
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.AnyValue
 import org.neo4j.values.SequenceValue
+import org.neo4j.values.storable.BooleanValue
 import org.neo4j.values.storable.NumberValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValueBuilder
@@ -164,29 +165,46 @@ object PercentileDiscFunction {
   }
 }
 
-class MultiPercentileDiscFunction(
+class PercentilesFunction(
   value: Expression,
   percentiles: Expression,
   keys: Expression,
+  isDiscreteRange: Expression,
   memoryTracker: MemoryTracker
 ) extends PercentileFunction(value, percentiles, memoryTracker) {
 
   private var mapKeys: Array[String] = _
-  override val name = "MULTI_PERCENTILE_DISC"
+  private var isDiscretes: Array[Boolean] = _
+  override val name = "PERCENTILES"
 
   override protected def onFirstRow(data: ReadableRow, state: QueryState): Unit = {
     super.onFirstRow(data, state)
     keys(data, state) match {
-      case keysValue: SequenceValue =>
-        mapKeys = new Array[String](keysValue.length())
+      case values: SequenceValue =>
+        mapKeys = new Array[String](values.length())
         var i = 0
         while (i < mapKeys.length) {
-          mapKeys(i) = CypherFunctions.asTextValue(keysValue.value(i)).stringValue()
+          mapKeys(i) = CypherFunctions.asTextValue(values.value(i)).stringValue()
           i += 1
         }
-        if (keysValue.length() != percs.length) {
+        if (values.length() != percs.length) {
           throw new InternalException(
             s"Expected 'percentiles' ${percs.mkString(",")} and 'keys' ${mapKeys.mkString(",")} to have the same length"
+          )
+        }
+    }
+    isDiscreteRange(data, state) match {
+      case values: SequenceValue =>
+        isDiscretes = new Array[Boolean](values.length())
+        var i = 0
+        while (i < isDiscretes.length) {
+          // TODO is there a better way than casting?
+          isDiscretes(i) = values.value(i).asInstanceOf[BooleanValue].booleanValue()
+          i += 1
+        }
+        if (values.length() != percs.length) {
+          throw new InternalException(
+            s"Expected 'percentiles' ${percs.mkString(",")} and 'isDiscreteRange' ${isDiscretes.mkString(",")} to have the same length"
           )
         }
     }
@@ -204,7 +222,12 @@ class MultiPercentileDiscFunction(
         while (i < percs.length) {
           val perc = percs(i)
           val mapKey = mapKeys(i)
-          val percValue = PercentileDiscFunction.computePercentileDisc(temp, count, perc)
+          val percValue =
+            if (isDiscretes(i)) {
+              PercentileDiscFunction.computePercentileDisc(temp, count, perc)
+            } else {
+              PercentileContFunction.computePercentileCont(temp, count, perc)
+            }
           mapBuilder.add(mapKey, percValue)
           i += 1
         }
@@ -219,6 +242,6 @@ class MultiPercentileDiscFunction(
   }
 }
 
-object MultiPercentileDiscFunction {
-  val SHALLOW_SIZE: Long = shallowSizeOfInstance(classOf[MultiPercentileDiscFunction])
+object PercentilesFunction {
+  val SHALLOW_SIZE: Long = shallowSizeOfInstance(classOf[PercentilesFunction])
 }

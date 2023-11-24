@@ -585,8 +585,9 @@ case class CommunityExpressionConverter(
         val inputArg = self.toCommandExpression(id, invocation.arguments.head)
         val percentilesArg = self.toCommandExpression(id, invocation.arguments(1))
         val keysArg = self.toCommandExpression(id, invocation.arguments(2))
+        val isDiscretesArg = self.toCommandExpression(id, invocation.arguments(3))
 
-        val command = commands.expressions.MultiPercentileDisc(inputArg, percentilesArg, keysArg)
+        val command = commands.expressions.Percentiles(inputArg, percentilesArg, keysArg, isDiscretesArg)
         if (invocation.distinct) {
           // TODO commands.expressions.Distinct(command, inputArg)
           throw new UnsupportedOperationException("boom")

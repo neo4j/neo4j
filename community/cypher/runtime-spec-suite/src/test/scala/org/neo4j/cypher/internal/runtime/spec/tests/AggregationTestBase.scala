@@ -1186,7 +1186,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("name", "c").withRows(expected)
   }
 
-  test("should handle percentiles with one percentile") {
+  test("should handle percentiles with one disc percentile") {
     givenGraph {
       nodePropertyGraph(
         sizeHint,
@@ -1217,7 +1217,38 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("p1").withRows(singleRow(4))
   }
 
-  test("should handle percentiles with two percentiles") {
+  test("should handle percentiles with one cont percentile") {
+    givenGraph {
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int => Map("num" -> i % 10)
+        },
+        "Honey"
+      )
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p1")
+      .projection("m.p1 AS p1")
+      .aggregation(
+        Map.empty[String, Expression],
+        Map(
+          "m" -> percentiles(varFor("n"), Seq(0.5), Seq("p1"), Seq(false))
+        )
+      )
+      .projection("x.num as n")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("p1").withRows(singleRow(4.5))
+  }
+
+  test("should handle percentiles with two disc percentiles") {
     givenGraph {
       nodePropertyGraph(
         sizeHint,
@@ -1248,6 +1279,68 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("p1", "p2").withRows(singleRow(4, 4))
   }
 
+  test("should handle percentiles with two cont percentiles") {
+    givenGraph {
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int => Map("num" -> i % 10)
+        },
+        "Honey"
+      )
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p1", "p2")
+      .projection("m.p1 AS p1", "m.p2 AS p2")
+      .aggregation(
+        Map.empty[String, Expression],
+        Map(
+          "m" -> percentiles(varFor("n"), Seq(0.5, 0.5), Seq("p1", "p2"), Seq(false, false))
+        )
+      )
+      .projection("x.num as n")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("p1", "p2").withRows(singleRow(4.5, 4.5))
+  }
+
+  test("should handle percentiles with two cont and disc percentiles") {
+    givenGraph {
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int => Map("num" -> i % 10)
+        },
+        "Honey"
+      )
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p1", "p2")
+      .projection("m.p1 AS p1", "m.p2 AS p2")
+      .aggregation(
+        Map.empty[String, Expression],
+        Map(
+          "m" -> percentiles(varFor("n"), Seq(0.5, 0.5), Seq("p1", "p2"), Seq(true, false))
+        )
+      )
+      .projection("x.num as n")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("p1", "p2").withRows(singleRow(4, 4.5))
+  }
+
   test("should handle percentiles with nulls") {
     givenGraph {
       nodePropertyGraph(
@@ -1266,7 +1359,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
       .aggregation(
         Map.empty[String, Expression],
         Map(
-          "m" -> percentiles(prop("n", "num"), Seq(0.5, 0.5), Seq("p1", "p2"), Seq(true, true))
+          "m" -> percentiles(prop("n", "num"), Seq(0.5, 0.5), Seq("p1", "p2"), Seq(true, false))
         )
       )
       .allNodeScan("n")
@@ -1288,7 +1381,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
       .aggregation(
         Map.empty[String, Expression],
         Map(
-          "m" -> percentiles(prop("n", "num"), Seq(0.5, 0.5), Seq("p1", "p2"), Seq(true, true))
+          "m" -> percentiles(prop("n", "num"), Seq(0.5, 0.5), Seq("p1", "p2"), Seq(true, false))
         )
       )
       .allNodeScan("n")
@@ -1318,7 +1411,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
       .aggregation(
         Map.empty[String, Expression],
         Map(
-          "m" -> percentiles(prop("n", "num"), Seq(0.5, 0.5), Seq("p1", "p2"), Seq(true, true))
+          "m" -> percentiles(prop("n", "num"), Seq(0.5, 0.5), Seq("p1", "p2"), Seq(true, false))
         )
       )
       .allNodeScan("n")
