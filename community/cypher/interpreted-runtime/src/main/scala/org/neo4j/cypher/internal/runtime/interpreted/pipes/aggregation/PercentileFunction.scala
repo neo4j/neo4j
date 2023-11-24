@@ -95,19 +95,21 @@ class PercentileContFunction(value: Expression, percentile: Expression, memoryTr
   override def result(state: QueryState): AnyValue = {
     temp.sort((o1: NumberValue, o2: NumberValue) => java.lang.Double.compare(o1.doubleValue(), o2.doubleValue()))
 
-    val perc = percs(0)
     val result =
-      if (perc == 1.0 || count == 1) {
-        temp.get(count - 1)
-      } else if (count > 1) {
-        val floatIdx = perc * (count - 1)
-        val floor = floatIdx.toInt
-        val ceil = math.ceil(floatIdx).toInt
-        if (ceil == floor || floor == count - 1) temp.get(floor)
-        else Values.doubleValue(NumericHelper.asDouble(temp.get(floor)).doubleValue() * (ceil - floatIdx) +
-          NumericHelper.asDouble(temp.get(ceil)).doubleValue() * (floatIdx - floor))
-      } else {
+      if (count == 0) {
         Values.NO_VALUE
+      } else {
+        val perc = percs(0)
+        if (perc == 1.0 || count == 1) {
+          temp.get(count - 1)
+        } else {
+          val floatIdx = perc * (count - 1)
+          val floor = floatIdx.toInt
+          val ceil = math.ceil(floatIdx).toInt
+          if (ceil == floor || floor == count - 1) temp.get(floor)
+          else Values.doubleValue(NumericHelper.asDouble(temp.get(floor)).doubleValue() * (ceil - floatIdx) +
+            NumericHelper.asDouble(temp.get(ceil)).doubleValue() * (floatIdx - floor))
+        }
       }
 
     temp.close()
@@ -129,19 +131,21 @@ class PercentileDiscFunction(value: Expression, percentile: Expression, memoryTr
   override def result(state: QueryState): AnyValue = {
     temp.sort((o1: NumberValue, o2: NumberValue) => java.lang.Double.compare(o1.doubleValue(), o2.doubleValue()))
 
-    val perc = percs(0)
     val result =
-      if (perc == 1.0 || count == 1) {
-        temp.get(count - 1)
-      } else if (count > 1) {
-        val floatIdx = perc * count
-        var idx = floatIdx.toInt
-        idx =
-          if (floatIdx != idx || idx == 0) idx
-          else idx - 1
-        temp.get(idx)
-      } else {
+      if (count == 0) {
         Values.NO_VALUE
+      } else {
+        val perc = percs(0)
+        if (perc == 1.0 || count == 1) {
+          temp.get(count - 1)
+        } else {
+          val floatIdx = perc * count
+          var idx = floatIdx.toInt
+          idx =
+            if (floatIdx != idx || idx == 0) idx
+            else idx - 1
+          temp.get(idx)
+        }
       }
 
     temp.close()
@@ -177,7 +181,7 @@ class MultiPercentileDiscFunction(
         }
         if (keysValue.length() != percs.length) {
           throw new InternalException(
-            s"$name expected 'percentiles' ${percs.mkString(",")} and 'keys' ${mapKeys.mkString(",")} to have the same length"
+            s"Expected 'percentiles' ${percs.mkString(",")} and 'keys' ${mapKeys.mkString(",")} to have the same length"
           )
         }
     }
