@@ -19,7 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
+import org.neo4j.cypher.internal.expressions.BooleanLiteral
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.False
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.ListLiteral
@@ -27,9 +29,11 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.StringLiteral
+import org.neo4j.cypher.internal.expressions.True
 import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
-import org.neo4j.cypher.internal.expressions.functions.MultiPercentileDisc
+import org.neo4j.cypher.internal.expressions.functions.PercentileCont
 import org.neo4j.cypher.internal.expressions.functions.PercentileDisc
+import org.neo4j.cypher.internal.expressions.functions.Percentiles
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
@@ -41,18 +45,21 @@ import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.bottomUp
 
 /**
- * If multiple [[PercentileDisc]] functions take the same input, rewrites them to [[MultiPercentileDisc]].
+ * If multiple percentile functions take the same input, rewrites them to [[Percentiles]].
  *
  * For example,
  * {{{
  *   percentileDisc(a,0.5) AS p1,
  *   percentileDisc(a,0.6) AS p2,
- *   percentileDisc(b,0.7) AS p3
+ *   percentileDisc(b,0.7) AS p3,
+ *   percentileCont(b,0.7) AS p4,
+ *   percentileDisc(c,0.8) AS p5
  * }}}
  * Would become,
  * {{{
- *   multiPercentileDisc(a,[0.5,0.6],['p1','p2']) AS map,
- *   percentileDisc(b,0.7) AS p3
+ *   percentiles(a,[0.5,0.6],['p1','p2'],[true,true]) AS map1,
+ *   percentiles(b,[0.7,0.7],['p3','p4'],[true,false]) AS map2,
+ *   percentileDisc(c,0.8) AS p5
  * }}}
  */
 case class groupPercentileFunctions(
@@ -73,26 +80,26 @@ case class groupPercentileFunctions(
         aggregation
       } else {
         val functionVariableMappings: Map[FunctionInvocation, Seq[LogicalVariable]] =
-          toMultiPercentileFunctions(groupedPercentileFunctions)
+          toPercentilesAndVariables(groupedPercentileFunctions)
 
-        val (multiPercentileExpressions, variableMappings) =
+        val (percentilesExpressions, variableMappings) =
           functionVariableMappings.foldLeft(
             (Map.empty[LogicalVariable, Expression], Map.empty[LogicalVariable, Expression])
           ) {
-            case ((accAggregations, accMappings), (multiPercentileFun, variables)) =>
+            case ((accAggregations, accMappings), (percentilesFun, variables)) =>
               val mapVar = varFor(anonymousVariableNameGenerator.nextName)
               (
-                accAggregations + (mapVar -> multiPercentileFun),
+                accAggregations + (mapVar -> percentilesFun),
                 accMappings ++ variables.map(v => (v, mapVar))
               )
           }
 
         val aggregationsToRemove = groupedPercentileFunctions.flatMap { case (_, fs) => fs.keys }.toSet
-        val newAggregations = (aggregations -- aggregationsToRemove) ++ multiPercentileExpressions
+        val newAggregations = (aggregations -- aggregationsToRemove) ++ percentilesExpressions
         val newAggregation = aggregation.copy(aggregationExpressions = newAggregations)(SameId(aggregation.id))
 
         val projectExpressions = variableMappings.map {
-          case (projectTo: LogicalVariable, map: LogicalVariable) =>
+          case (projectTo: LogicalVariable, map: Expression) =>
             projectTo -> Property(map, PropertyKeyName(varToKey(projectTo))(pos))(pos)
         }
 
@@ -111,10 +118,15 @@ case class groupPercentileFunctions(
    *   percentileDisc(a,0.5) AS p1,
    *   percentileDisc(a,0.6) AS p2,
    *   percentileDisc(b,0.7) AS p3
+   *   percentileCont(b,0.7) AS p4
+   *   percentileDisc(c,0.7) AS p5
    * }}}
    * Would become,
    * {{{
-   *   Map(a -> Map(p1 -> 'percentileDisc(a,0.5)', p2 -> 'percentileDisc(a,0.6)'))
+   *   Map(
+   *      a -> Map(p1 -> 'percentileDisc(a,0.5)', p2 -> 'percentileDisc(a,0.6)'),
+   *      b -> Map(p3 -> 'percentileDisc(b,0.7)', p4 -> 'percentileCont(b,0.7)'),
+   *   )
    * }}}
    *
    * @return groups that contain at least two expressions.
@@ -122,44 +134,46 @@ case class groupPercentileFunctions(
   private def groupPercentileFunctions(aggregationExpressions: Map[LogicalVariable, Expression])
     : Map[Expression, Map[LogicalVariable, FunctionInvocation]] = {
     aggregationExpressions.collect {
-      case (v, f @ FunctionInvocation(_, FunctionName(name), false, _)) if name == PercentileDisc.name => (v, f)
+      case (v, f @ FunctionInvocation(_, FunctionName(name), false, _))
+        if name == PercentileDisc.name || name == PercentileCont.name => (v, f)
     }.groupBy { case (_, f: FunctionInvocation) => f.args(0) }.filter { case (_, fs) => fs.size > 1 }
   }
 
   /**
-   * Given a map of grouped [[PercentileDisc]] expressions, create a [[MultiPercentileDisc]] expression for each group.
+   * Given a map of grouped percentile expressions, create a [[Percentiles]] expression for each group.
    *
    * For example,
    * {{{
    *   Map(
    *      a -> Map(p1 -> 'percentileDisc(a,0.5)', p2 -> 'percentileDisc(a,0.6)'),
-   *      b -> Map(p3 -> 'percentileDisc(b,0.7)', p4 -> 'percentileDisc(b,0.8)')
+   *      b -> Map(p3 -> 'percentileDisc(b,0.7)', p4 -> 'percentileCont(b,0.7)'),
    *   )
    * }}}
    * Would become,
    * {{{
    *   Map(
-   *      multiPercentileDisc(a,[0.5,0.6],['p1','p2']) -> [p1,p2],
-   *      multiPercentileDisc(b,[0.7,0.8],['p3','p4']) -> [p3,p4]
+   *      percentile(a,[0.5,0.6],['p1','p2'],[true,true]) -> [p1,p2],
+   *      percentile(b,[0.7,0.7],['p3','p4'],[true,false]) -> [p3,p4]
    *   )
    * }}}
    *
-   * @return mapping of multi percentile functions to the variables which eventually need to be projected.
+   * @return mapping of percentiles functions to the variables which eventually need to be projected.
    */
-  private def toMultiPercentileFunctions(groupedFunctions: Map[Expression, Map[LogicalVariable, FunctionInvocation]])
+  private def toPercentilesAndVariables(groupedFunctions: Map[Expression, Map[LogicalVariable, FunctionInvocation]])
     : Map[FunctionInvocation, Seq[LogicalVariable]] = {
     groupedFunctions.map { case (inputNumberVariable, percentileGroup: Map[LogicalVariable, FunctionInvocation]) =>
-      val (variables, percentiles) = toVariablePercentilePairs(percentileGroup)
+      val (variables, percentiles, isDiscretes) = toVariablePercentilePairs(percentileGroup)
 
       val percentilesLiteral = ListLiteral(percentiles)(pos)
       val propertyKeys = ListLiteral(variables.map(v => StringLiteral(varToKey(v))(pos)))(pos)
-      val multiPercentileFunctionInvocation = FunctionInvocation(
-        FunctionName(MultiPercentileDisc.name)(pos),
+      val isDiscretesLiteral = ListLiteral(isDiscretes)(pos)
+      val percentilesFunction = FunctionInvocation(
+        FunctionName(Percentiles.name)(pos),
         distinct = false,
-        IndexedSeq(inputNumberVariable, percentilesLiteral, propertyKeys)
+        IndexedSeq(inputNumberVariable, percentilesLiteral, propertyKeys, isDiscretesLiteral)
       )(pos)
 
-      (multiPercentileFunctionInvocation, variables)
+      (percentilesFunction, variables)
     }
   }
 
@@ -169,20 +183,28 @@ case class groupPercentileFunctions(
    *
    * For example,
    * {{{
-   *   Map(p1 -> 'percentileDisc(a,0.5)', p2 -> 'percentileDisc(a,0.6)')
+   *   Map(p3 -> 'percentileDisc(b,0.7)', p4 -> 'percentileCont(b,0.7)')
    * }}}
    * Would become,
    * {{{
-   *   [(p1,p2),(0.5,0.6)]
+   *   ([p3,p4],[0.7,0.7],[true,false])
    * }}}
    *
    * @return variable:percentile pairs
    */
   private def toVariablePercentilePairs(percentileGroup: Map[LogicalVariable, FunctionInvocation])
-    : (Seq[LogicalVariable], Seq[Expression]) = {
-    percentileGroup.foldLeft((Seq.empty[LogicalVariable], Seq.empty[Expression])) {
-      case ((accVars, accPercentiles), (v, FunctionInvocation(_, _, _, args))) =>
-        (accVars :+ v, accPercentiles :+ args(1))
+    : (Seq[LogicalVariable], Seq[Expression], Seq[BooleanLiteral]) = {
+    percentileGroup.foldLeft((Seq.empty[LogicalVariable], Seq.empty[Expression], Seq.empty[BooleanLiteral])) {
+      case ((accVars, accPercentiles, accIsDiscretes), (v, FunctionInvocation(_, FunctionName(name), _, args))) =>
+        val isDiscrete =
+          if (name == PercentileDisc.name) {
+            True()(pos)
+          } else if (name == PercentileCont.name) {
+            False()(pos)
+          } else {
+            throw new IllegalArgumentException(s"Unexpected function name: $name")
+          }
+        (accVars :+ v, accPercentiles :+ args(1), accIsDiscretes :+ isDiscrete)
     }
   }
 

@@ -72,10 +72,10 @@ import org.neo4j.cypher.internal.expressions.functions.Log
 import org.neo4j.cypher.internal.expressions.functions.Log10
 import org.neo4j.cypher.internal.expressions.functions.Max
 import org.neo4j.cypher.internal.expressions.functions.Min
-import org.neo4j.cypher.internal.expressions.functions.MultiPercentileDisc
 import org.neo4j.cypher.internal.expressions.functions.Nodes
 import org.neo4j.cypher.internal.expressions.functions.PercentileCont
 import org.neo4j.cypher.internal.expressions.functions.PercentileDisc
+import org.neo4j.cypher.internal.expressions.functions.Percentiles
 import org.neo4j.cypher.internal.expressions.functions.Pi
 import org.neo4j.cypher.internal.expressions.functions.Point
 import org.neo4j.cypher.internal.expressions.functions.Properties
@@ -581,7 +581,7 @@ case class CommunityExpressionConverter(
           commands.expressions.Distinct(command, firstArg)
         else
           command
-      case MultiPercentileDisc =>
+      case Percentiles =>
         val inputArg = self.toCommandExpression(id, invocation.arguments.head)
         val percentilesArg = self.toCommandExpression(id, invocation.arguments(1))
         val keysArg = self.toCommandExpression(id, invocation.arguments(2))

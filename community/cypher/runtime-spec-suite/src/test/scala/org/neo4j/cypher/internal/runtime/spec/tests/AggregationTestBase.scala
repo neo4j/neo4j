@@ -1186,7 +1186,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("name", "c").withRows(expected)
   }
 
-  test("should handle multiPercentileDisc with one percentile") {
+  test("should handle percentiles with one percentile") {
     givenGraph {
       nodePropertyGraph(
         sizeHint,
@@ -1204,7 +1204,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
       .aggregation(
         Map.empty[String, Expression],
         Map(
-          "m" -> multiPercentileDisc(varFor("n"), Seq(0.5), Seq("p1"))
+          "m" -> percentiles(varFor("n"), Seq(0.5), Seq("p1"), Seq(true))
         )
       )
       .projection("x.num as n")
@@ -1217,7 +1217,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("p1").withRows(singleRow(4))
   }
 
-  test("should handle multiPercentileDisc with two percentiles") {
+  test("should handle percentiles with two percentiles") {
     givenGraph {
       nodePropertyGraph(
         sizeHint,
@@ -1235,7 +1235,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
       .aggregation(
         Map.empty[String, Expression],
         Map(
-          "m" -> multiPercentileDisc(varFor("n"), Seq(0.5, 0.5), Seq("p1", "p2"))
+          "m" -> percentiles(varFor("n"), Seq(0.5, 0.5), Seq("p1", "p2"), Seq(true, true))
         )
       )
       .projection("x.num as n")
@@ -1248,7 +1248,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("p1", "p2").withRows(singleRow(4, 4))
   }
 
-  test("should handle multiPercentileDisc with nulls") {
+  test("should handle percentiles with nulls") {
     givenGraph {
       nodePropertyGraph(
         sizeHint,
@@ -1266,7 +1266,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
       .aggregation(
         Map.empty[String, Expression],
         Map(
-          "m" -> multiPercentileDisc(prop("n", "num"), Seq(0.5, 0.5), Seq("p1", "p2"))
+          "m" -> percentiles(prop("n", "num"), Seq(0.5, 0.5), Seq("p1", "p2"), Seq(true, true))
         )
       )
       .allNodeScan("n")
@@ -1278,7 +1278,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("p1", "p2").withRows(singleRow(4, 4))
   }
 
-  test("multiPercentileDisc should return null for empty input") {
+  test("percentiles should return null for empty input") {
     // given no data
 
     // when
@@ -1288,7 +1288,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
       .aggregation(
         Map.empty[String, Expression],
         Map(
-          "m" -> multiPercentileDisc(prop("n", "num"), Seq(0.5, 0.5), Seq("p1", "p2"))
+          "m" -> percentiles(prop("n", "num"), Seq(0.5, 0.5), Seq("p1", "p2"), Seq(true, true))
         )
       )
       .allNodeScan("n")
@@ -1300,7 +1300,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("p1", "p2").withRows(singleRow(null, null))
   }
 
-  test("multiPercentileDisc should return one row for one input row") {
+  test("percentiles should return one row for one input row") {
     givenGraph {
       nodePropertyGraph(
         1,
@@ -1318,7 +1318,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
       .aggregation(
         Map.empty[String, Expression],
         Map(
-          "m" -> multiPercentileDisc(prop("n", "num"), Seq(0.5, 0.5), Seq("p1", "p2"))
+          "m" -> percentiles(prop("n", "num"), Seq(0.5, 0.5), Seq("p1", "p2"), Seq(true, true))
         )
       )
       .allNodeScan("n")

@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.expressions.AndsReorderable
 import org.neo4j.cypher.internal.expressions.AnyIterablePredicate
 import org.neo4j.cypher.internal.expressions.AssertIsNode
 import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
+import org.neo4j.cypher.internal.expressions.BooleanLiteral
 import org.neo4j.cypher.internal.expressions.CachedHasProperty
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.CaseExpression
@@ -154,8 +155,8 @@ import org.neo4j.cypher.internal.expressions.functions.Id
 import org.neo4j.cypher.internal.expressions.functions.Length
 import org.neo4j.cypher.internal.expressions.functions.Max
 import org.neo4j.cypher.internal.expressions.functions.Min
-import org.neo4j.cypher.internal.expressions.functions.MultiPercentileDisc
 import org.neo4j.cypher.internal.expressions.functions.Nodes
+import org.neo4j.cypher.internal.expressions.functions.Percentiles
 import org.neo4j.cypher.internal.expressions.functions.Relationships
 import org.neo4j.cypher.internal.expressions.functions.Size
 import org.neo4j.cypher.internal.expressions.functions.Sum
@@ -287,6 +288,12 @@ trait AstConstructionTestSupport {
   def literalString(stringValue: String): StringLiteral =
     StringLiteral(stringValue)(pos)
 
+  def literalBoolean(booleanValue: Boolean): BooleanLiteral = if (booleanValue) {
+    True()(pos)
+  } else {
+    False()(pos)
+  }
+
   def literalInt(value: Long, position: InputPosition = pos): SignedDecimalIntegerLiteral =
     SignedDecimalIntegerLiteral(value.toString)(position)
 
@@ -311,6 +318,9 @@ trait AstConstructionTestSupport {
 
   def listOfString(stringValues: String*): ListLiteral =
     ListLiteral(stringValues.toSeq.map(literalString))(pos)
+
+  def listOfBoolean(booleanValues: Boolean*): ListLiteral =
+    ListLiteral(booleanValues.toSeq.map(literalBoolean))(pos)
 
   def index(expression: Expression, idx: Int): ContainerIndex =
     ContainerIndex(expression, literal(idx))(pos)
@@ -393,16 +403,17 @@ trait AstConstructionTestSupport {
   def length(expression: Expression): FunctionInvocation =
     FunctionInvocation(expression, FunctionName(Length.name)(pos))
 
-  def multiPercentileDisc(
+  def percentiles(
     input: Expression,
     percentiles: Seq[Double],
-    propertyKeys: Seq[String]
+    propertyKeys: Seq[String],
+    isDiscretes: Seq[Boolean]
   ): FunctionInvocation = {
     FunctionInvocation(
-      FunctionName(MultiPercentileDisc.name)(InputPosition.NONE),
+      FunctionName(Percentiles.name)(pos),
       distinct = false,
-      IndexedSeq(input, listOfFloat(percentiles: _*), listOfString(propertyKeys: _*))
-    )(InputPosition.NONE)
+      IndexedSeq(input, listOfFloat(percentiles: _*), listOfString(propertyKeys: _*), listOfBoolean(isDiscretes: _*))
+    )(pos)
   }
 
   def varLengthPathExpression(

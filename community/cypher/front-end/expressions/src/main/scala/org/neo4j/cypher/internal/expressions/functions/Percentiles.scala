@@ -18,6 +18,7 @@ package org.neo4j.cypher.internal.expressions.functions
 
 import org.neo4j.cypher.internal.expressions.FunctionTypeSignature
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.symbols.CTBoolean
 import org.neo4j.cypher.internal.util.symbols.CTFloat
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTList
@@ -25,21 +26,21 @@ import org.neo4j.cypher.internal.util.symbols.CTMap
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.ClosedDynamicUnionType
 
-case object MultiPercentileDisc extends AggregatingFunction {
-  def name = "multiPercentileDisc"
+case object Percentiles extends AggregatingFunction {
+  def name = "percentiles"
 
   override val signatures = Vector(
     FunctionTypeSignature(
       function = this,
-      names = Vector("input", "percentiles", "propertyKeys"),
+      names = Vector("input", "percentiles", "propertyKeys", "isDiscrete"),
       argumentTypes = Vector(
-        CTList(ClosedDynamicUnionType(Set(CTInteger, CTFloat))(InputPosition.NONE)),
+        ClosedDynamicUnionType(Set(CTInteger, CTFloat))(InputPosition.NONE),
         CTList(CTFloat),
-        CTList(CTString)
+        CTList(CTString),
+        CTList(CTBoolean)
       ),
       outputType = CTMap,
-      description =
-        "Returns the nearest `INTEGER` or `FLOAT` value for each of the given percentiles over a group using a rounding method.",
+      description = "Returns the nearest `INTEGER` or `FLOAT` value for each of the given percentiles.",
       category = Category.AGGREGATING
     )
   )
