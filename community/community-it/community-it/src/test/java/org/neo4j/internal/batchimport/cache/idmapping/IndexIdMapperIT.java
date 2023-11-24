@@ -79,7 +79,7 @@ import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.utils.TestDirectory;
-import org.neo4j.token.DelegatingTokenHolder;
+import org.neo4j.token.CreatingTokenHolder;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.NamedToken;
 import org.neo4j.token.api.TokenHolder;
@@ -340,7 +340,7 @@ class IndexIdMapperIT {
     }
 
     private TokenHolder tokenHolder(String typePropertyKey) {
-        var tokenHolder = new DelegatingTokenHolder(READ_ONLY, typePropertyKey);
+        var tokenHolder = new CreatingTokenHolder(READ_ONLY, typePropertyKey);
         var initialTokens = new ArrayList<NamedToken>();
         for (var i = 0; i < 10; i++) {
             initialTokens.add(new NamedToken("Token" + i, i));

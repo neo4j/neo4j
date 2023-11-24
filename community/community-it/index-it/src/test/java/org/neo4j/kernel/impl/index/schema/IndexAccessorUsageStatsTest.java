@@ -83,7 +83,7 @@ import org.neo4j.test.extension.LifeExtension;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
-import org.neo4j.token.DelegatingTokenHolder;
+import org.neo4j.token.CreatingTokenHolder;
 import org.neo4j.token.ReadOnlyTokenCreator;
 import org.neo4j.token.TokenHolders;
 
@@ -378,9 +378,9 @@ public class IndexAccessorUsageStatsTest {
     }
 
     private static TokenHolders getTokenHolders() {
-        var propTokenHolder = new DelegatingTokenHolder(ReadOnlyTokenCreator.READ_ONLY, TYPE_PROPERTY_KEY);
-        var labelTokenHolder = new DelegatingTokenHolder(ReadOnlyTokenCreator.READ_ONLY, TYPE_LABEL);
-        var relTypetokenHolder = new DelegatingTokenHolder(ReadOnlyTokenCreator.READ_ONLY, TYPE_RELATIONSHIP_TYPE);
+        var propTokenHolder = new CreatingTokenHolder(ReadOnlyTokenCreator.READ_ONLY, TYPE_PROPERTY_KEY);
+        var labelTokenHolder = new CreatingTokenHolder(ReadOnlyTokenCreator.READ_ONLY, TYPE_LABEL);
+        var relTypetokenHolder = new CreatingTokenHolder(ReadOnlyTokenCreator.READ_ONLY, TYPE_RELATIONSHIP_TYPE);
         return new TokenHolders(propTokenHolder, labelTokenHolder, relTypetokenHolder);
     }
 }

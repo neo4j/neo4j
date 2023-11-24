@@ -82,7 +82,7 @@ import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.token.DelegatingTokenHolder;
+import org.neo4j.token.CreatingTokenHolder;
 import org.neo4j.token.ReadOnlyTokenCreator;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
@@ -484,9 +484,9 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
 
     private static TokenHolders safeLoadTokens(NeoStores neoStores, CursorContextFactory contextFactory) {
         TokenHolders tokenHolders = new TokenHolders(
-                new DelegatingTokenHolder(new ReadOnlyTokenCreator(), TokenHolder.TYPE_PROPERTY_KEY),
-                new DelegatingTokenHolder(new ReadOnlyTokenCreator(), TokenHolder.TYPE_LABEL),
-                new DelegatingTokenHolder(new ReadOnlyTokenCreator(), TokenHolder.TYPE_RELATIONSHIP_TYPE));
+                new CreatingTokenHolder(new ReadOnlyTokenCreator(), TokenHolder.TYPE_PROPERTY_KEY),
+                new CreatingTokenHolder(new ReadOnlyTokenCreator(), TokenHolder.TYPE_LABEL),
+                new CreatingTokenHolder(new ReadOnlyTokenCreator(), TokenHolder.TYPE_RELATIONSHIP_TYPE));
         try (var cursorContext = contextFactory.create(CONSISTENCY_CHECKER_TOKEN_LOADER_TAG)) {
             tokenHolders
                     .relationshipTypeTokens()

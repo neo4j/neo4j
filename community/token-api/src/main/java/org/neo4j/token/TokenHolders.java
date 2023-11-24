@@ -112,9 +112,9 @@ public class TokenHolders implements TokenNameLookup {
 
     public static TokenHolders readOnlyTokenHolders(TokensLoader loader, StoreCursors storeCursors) {
         var tokenHolders = new TokenHolders(
-                new DelegatingTokenHolder(READ_ONLY, TokenHolder.TYPE_PROPERTY_KEY),
-                new DelegatingTokenHolder(READ_ONLY, TokenHolder.TYPE_LABEL),
-                new DelegatingTokenHolder(READ_ONLY, TokenHolder.TYPE_RELATIONSHIP_TYPE));
+                new CreatingTokenHolder(READ_ONLY, TokenHolder.TYPE_PROPERTY_KEY),
+                new CreatingTokenHolder(READ_ONLY, TokenHolder.TYPE_LABEL),
+                new CreatingTokenHolder(READ_ONLY, TokenHolder.TYPE_RELATIONSHIP_TYPE));
         tokenHolders.setInitialTokens(loader, storeCursors);
         return tokenHolders;
     }

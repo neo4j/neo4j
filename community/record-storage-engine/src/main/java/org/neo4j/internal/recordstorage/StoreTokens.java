@@ -35,8 +35,9 @@ import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
-import org.neo4j.token.DelegatingTokenHolder;
+import org.neo4j.token.CreatingTokenHolder;
 import org.neo4j.token.ReadOnlyTokenCreator;
+import org.neo4j.token.RegisteringCreatingTokenHolder;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.NamedToken;
 import org.neo4j.token.api.TokenHolder;
@@ -127,7 +128,7 @@ public class StoreTokens {
      * @return An empty read-only token holder.
      */
     public static TokenHolder createReadOnlyTokenHolder(String tokenType) {
-        return new DelegatingTokenHolder(new ReadOnlyTokenCreator(), tokenType);
+        return new CreatingTokenHolder(new ReadOnlyTokenCreator(), tokenType);
     }
 
     public static TokenHolders directTokenHolders(
@@ -136,13 +137,13 @@ public class StoreTokens {
             CursorContextFactory contextFactory,
             MemoryTracker memoryTracker) {
         TokenHolders tokenHolders = new TokenHolders(
-                new DelegatingTokenHolder(
+                new RegisteringCreatingTokenHolder(
                         directPropertyKeyTokenCreator(neoStores, allocatorProvider, contextFactory, memoryTracker),
                         TYPE_PROPERTY_KEY),
-                new DelegatingTokenHolder(
+                new RegisteringCreatingTokenHolder(
                         directLabelTokenCreator(neoStores, allocatorProvider, contextFactory, memoryTracker),
                         TYPE_LABEL),
-                new DelegatingTokenHolder(
+                new RegisteringCreatingTokenHolder(
                         directRelationshipTypeTokenCreator(neoStores, allocatorProvider, contextFactory, memoryTracker),
                         TYPE_RELATIONSHIP_TYPE));
         try (CursorContext cursorContext = contextFactory.create("load tokens");

@@ -25,6 +25,7 @@ import org.neo4j.lock.LockGroup;
 import org.neo4j.lock.LockService;
 import org.neo4j.lock.LockType;
 import org.neo4j.storageengine.api.CommandVersion;
+import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 /**
@@ -40,6 +41,7 @@ public class LockGuardedNeoStoreTransactionApplier extends NeoStoreTransactionAp
     private final LockService lockService;
 
     public LockGuardedNeoStoreTransactionApplier(
+            TransactionApplicationMode mode,
             CommandVersion version,
             NeoStores neoStores,
             CacheAccessBackDoor cacheAccess,
@@ -47,7 +49,7 @@ public class LockGuardedNeoStoreTransactionApplier extends NeoStoreTransactionAp
             BatchContext batchContext,
             CursorContext cursorContext,
             StoreCursors storeCursors) {
-        super(version, neoStores, cacheAccess, batchContext, cursorContext, storeCursors);
+        super(mode, version, neoStores, cacheAccess, batchContext, cursorContext, storeCursors);
         this.lockGroup = batchContext.getLockGroup();
         this.lockService = lockService;
     }

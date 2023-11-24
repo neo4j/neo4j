@@ -28,7 +28,7 @@ import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
-import org.neo4j.token.DelegatingTokenHolder;
+import org.neo4j.token.CreatingTokenHolder;
 import org.neo4j.token.ReadOnlyTokenCreator;
 import org.neo4j.token.api.TokenHolder;
 
@@ -37,7 +37,7 @@ class RecordLoadingTest {
     void shouldReturnsFalseOnMissingToken() {
         // given
         NodeRecord entity = new NodeRecord(0);
-        TokenHolder tokenHolder = new DelegatingTokenHolder(new ReadOnlyTokenCreator(), "Test");
+        TokenHolder tokenHolder = new CreatingTokenHolder(new ReadOnlyTokenCreator(), "Test");
         TokenStore<PropertyKeyTokenRecord> store = mock(TokenStore.class);
         BiConsumer noopReporter = mock(BiConsumer.class);
 

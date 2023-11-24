@@ -31,15 +31,21 @@ import static org.neo4j.internal.recordstorage.RecordCursorTypes.SCHEMA_CURSOR;
 import org.neo4j.internal.recordstorage.Command.BaseCommand;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.PropertyStore;
+import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.storageengine.api.CommandVersion;
+import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.cursor.CursorType;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.util.IdUpdateListener;
+import org.neo4j.token.api.NamedToken;
 
 public class NeoStoreTransactionApplier extends TransactionApplier.Adapter {
+    private final TransactionApplicationMode mode;
     private final CommandVersion version;
     private final NeoStores neoStores;
     private final CacheAccessBackDoor cacheAccess;
@@ -48,12 +54,14 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter {
     private final StoreCursors storeCursors;
 
     public NeoStoreTransactionApplier(
+            TransactionApplicationMode mode,
             CommandVersion version,
             NeoStores neoStores,
             CacheAccessBackDoor cacheAccess,
             BatchContext batchContext,
             CursorContext cursorContext,
             StoreCursors storeCursors) {
+        this.mode = mode;
         this.version = version;
         this.neoStores = neoStores;
         this.cacheAccess = cacheAccess;
@@ -90,19 +98,35 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter {
     @Override
     public boolean visitRelationshipTypeTokenCommand(Command.RelationshipTypeTokenCommand command) {
         updateStore(neoStores.getRelationshipTypeTokenStore(), command, REL_TYPE_TOKEN_CURSOR);
+        if (!mode.isReverseStep()) {
+            cacheAccess.addRelationshipTypeToken(getTokenFromTokenCommand(command));
+        }
         return false;
     }
 
     @Override
     public boolean visitLabelTokenCommand(Command.LabelTokenCommand command) {
         updateStore(neoStores.getLabelTokenStore(), command, LABEL_TOKEN_CURSOR);
+        if (!mode.isReverseStep()) {
+            cacheAccess.addLabelToken(getTokenFromTokenCommand(command));
+        }
         return false;
     }
 
     @Override
     public boolean visitPropertyKeyTokenCommand(Command.PropertyKeyTokenCommand command) {
         updateStore(neoStores.getPropertyKeyTokenStore(), command, PROPERTY_KEY_TOKEN_CURSOR);
+        if (!mode.isReverseStep()) {
+            cacheAccess.addPropertyKeyToken(getTokenFromTokenCommand(command));
+        }
         return false;
+    }
+
+    private NamedToken getTokenFromTokenCommand(Command.TokenCommand<?> command) {
+        var data = AbstractDynamicStore.getFullByteArrayFromHeavyRecords(
+                command.getAfter().getNameRecords(), PropertyType.STRING);
+        String name = PropertyStore.decodeString(data);
+        return new NamedToken(name, command.tokenId(), command.isInternal());
     }
 
     @Override

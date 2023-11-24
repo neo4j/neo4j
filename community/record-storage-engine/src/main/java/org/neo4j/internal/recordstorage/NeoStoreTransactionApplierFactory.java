@@ -26,12 +26,14 @@ import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 public class NeoStoreTransactionApplierFactory implements TransactionApplierFactory {
     private final CommandVersion version;
+    private final TransactionApplicationMode mode;
     private final NeoStores neoStores;
     private final CacheAccessBackDoor cacheAccess;
 
     NeoStoreTransactionApplierFactory(
             TransactionApplicationMode mode, NeoStores store, CacheAccessBackDoor cacheAccess) {
         this.version = mode.version();
+        this.mode = mode;
         this.neoStores = store;
         this.cacheAccess = cacheAccess;
     }
@@ -39,6 +41,12 @@ public class NeoStoreTransactionApplierFactory implements TransactionApplierFact
     @Override
     public TransactionApplier startTx(CommandBatchToApply transaction, BatchContext batchContext) {
         return new NeoStoreTransactionApplier(
-                version, neoStores, cacheAccess, batchContext, transaction.cursorContext(), transaction.storeCursors());
+                mode,
+                version,
+                neoStores,
+                cacheAccess,
+                batchContext,
+                transaction.cursorContext(),
+                transaction.storeCursors());
     }
 }

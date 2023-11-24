@@ -35,7 +35,6 @@ public enum TransactionApplicationMode {
      */
     INTERNAL(
             false, // id tracking not needed since that is done in the transaction before commit
-            false, // cache invalidation not needed since cache can be updated
             true, // include all stores
             false, AFTER),
 
@@ -46,7 +45,6 @@ public enum TransactionApplicationMode {
      */
     EXTERNAL(
             true, // id tracking needed since that hasn't been done prior to receiving this external transaction
-            true, // cache invalidation needed since not enough information available to update cache
             true, // include all stores
             false, AFTER),
 
@@ -57,11 +55,8 @@ public enum TransactionApplicationMode {
      */
     RECOVERY(
             true, // id tracking not needed because id generators will be rebuilt after recovery anyway
-            true, // we need cache invalidation during forward recovery, because we need our token holders to be updated
-            // with token create commands
             true, // include all stores
-            false,
-            AFTER),
+            false, AFTER),
 
     /**
      * Transaction that is recovered during a phase of reverse recovery in order to rewind neo store back
@@ -71,7 +66,6 @@ public enum TransactionApplicationMode {
      */
     REVERSE_RECOVERY(
             false, // id tracking not needed because this is for the initial reverse recovery
-            false, // cache invalidation not needed because this is for the initial reverse recovery
             false, // only apply to neo store
             false, BEFORE),
 
@@ -81,24 +75,20 @@ public enum TransactionApplicationMode {
      */
     MVCC_ROLLBACK(
             false, // id tracking not needed because this is for the initial reverse recovery
-            false, // cache invalidation not needed because this is for the initial reverse recovery
             true, // include indexes and counts
             true, BEFORE);
 
     private final boolean needsHighIdTracking;
-    private final boolean needsCacheInvalidation;
     private final boolean indexesAndCounts;
     private final boolean rollbackIdProcessing;
     private final CommandVersion version;
 
     TransactionApplicationMode(
             boolean needsHighIdTracking,
-            boolean needsCacheInvalidation,
             boolean indexesAndCounts,
             boolean rollbackIdProcessing,
             CommandVersion version) {
         this.needsHighIdTracking = needsHighIdTracking;
-        this.needsCacheInvalidation = needsCacheInvalidation;
         this.indexesAndCounts = indexesAndCounts;
         this.rollbackIdProcessing = rollbackIdProcessing;
         this.version = version;
@@ -109,13 +99,6 @@ public enum TransactionApplicationMode {
      */
     public boolean needsHighIdTracking() {
         return needsHighIdTracking;
-    }
-
-    /**
-     * @return whether or not applying a transaction need to do additional work of invalidating affected caches.
-     */
-    public boolean needsCacheInvalidationOnUpdates() {
-        return needsCacheInvalidation;
     }
 
     /**

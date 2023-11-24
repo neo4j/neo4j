@@ -43,14 +43,14 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.token.api.NamedToken;
 import org.neo4j.token.api.TokenHolder;
 
-class DelegatingTokenHolderTest {
+class RegisteringCreatingTokenHolderTest {
     private TokenCreator creator;
     private TokenHolder holder;
 
     @BeforeEach
     void setUp() {
         creator = mock(TokenCreator.class);
-        holder = new DelegatingTokenHolder(creator, "Dummy");
+        holder = new RegisteringCreatingTokenHolder(creator, "Dummy");
     }
 
     @Test

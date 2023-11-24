@@ -121,7 +121,7 @@ import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.utils.TestDirectory;
-import org.neo4j.token.DelegatingTokenHolder;
+import org.neo4j.token.CreatingTokenHolder;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
 import org.neo4j.values.storable.Value;
@@ -159,7 +159,7 @@ class NeoStoresTest {
         Config config = Config.defaults();
         StoreFactory sf = getStoreFactory(config, databaseLayout, fs, NullLogProvider.getInstance(), false);
         sf.openAllNeoStores().close();
-        propertyKeyTokenHolder = new DelegatingTokenHolder(this::createPropertyKeyToken, TokenHolder.TYPE_PROPERTY_KEY);
+        propertyKeyTokenHolder = new CreatingTokenHolder(this::createPropertyKeyToken, TokenHolder.TYPE_PROPERTY_KEY);
     }
 
     @AfterEach

@@ -115,7 +115,6 @@ abstract class RelationshipTypeIndexCursorTestBase<G extends KernelAPIWriteTestS
     @ParameterizedTest
     @EnumSource(value = IndexOrder.class)
     void shouldFindRelationshipsByTypeInTx(IndexOrder order) throws KernelException {
-        final var propertyKeyName = "prop";
         final var one = Values.intValue(1);
         final var two = Values.intValue(2);
 
@@ -127,7 +126,7 @@ abstract class RelationshipTypeIndexCursorTestBase<G extends KernelAPIWriteTestS
 
         int propKey;
         try (KernelTransaction tx = beginTransaction()) {
-            propKey = tx.tokenWrite().propertyKeyCreateForName(propertyKeyName, false);
+            propKey = tx.tokenWrite().propertyKeyGetOrCreateForName("prop");
 
             inStore = createRelationship(tx.dataWrite(), typeOne);
             createRelationship(tx.dataWrite(), typeTwo);
@@ -196,7 +195,7 @@ abstract class RelationshipTypeIndexCursorTestBase<G extends KernelAPIWriteTestS
         final var propValue = Values.intValue(42);
         try (var tx = beginTransaction()) {
             final var typeToken = tx.tokenWrite().relationshipTypeCreateForName("REL", false);
-            final var propToken = tx.tokenWrite().propertyKeyCreateForName("prop", false);
+            final var propToken = tx.tokenWrite().propertyKeyGetOrCreateForName("prop");
 
             final var write = tx.dataWrite();
             write.nodeCreate(); // do a nudge passed 0-ID
@@ -340,7 +339,7 @@ abstract class RelationshipTypeIndexCursorTestBase<G extends KernelAPIWriteTestS
         long sourceNode, targetNode;
         long rel1, rel2, rel3;
         try (var tx = beginTransaction()) {
-            final var prop = tx.tokenWrite().propertyKeyCreateForName("prop", false);
+            final var prop = tx.tokenWrite().propertyKeyGetOrCreateForName("prop");
             final var write = tx.dataWrite();
             sourceNode = write.nodeCreate();
             targetNode = write.nodeCreate();
@@ -445,7 +444,7 @@ abstract class RelationshipTypeIndexCursorTestBase<G extends KernelAPIWriteTestS
         long relInTx2;
         try (var tx = beginTransaction()) {
             final var tokenWrite = tx.tokenWrite();
-            prop = tokenWrite.propertyKeyCreateForName("prop", false);
+            prop = tokenWrite.propertyKeyGetOrCreateForName("prop");
 
             final var write = tx.dataWrite();
 

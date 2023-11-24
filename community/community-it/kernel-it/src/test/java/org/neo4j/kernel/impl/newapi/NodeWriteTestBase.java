@@ -648,7 +648,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
         // When
         int key;
         try (KernelTransaction tx = beginTransaction()) {
-            key = tx.tokenWrite().propertyKeyCreateForName(keyName, false);
+            key = tx.tokenWrite().propertyKeyGetOrCreateForName(keyName);
             tx.dataWrite()
                     .nodeApplyChanges(
                             node,

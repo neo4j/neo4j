@@ -39,7 +39,7 @@ import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
 import org.neo4j.kernel.impl.core.DefaultLabelIdCreator;
 import org.neo4j.kernel.impl.core.DefaultPropertyTokenCreator;
 import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
-import org.neo4j.token.DelegatingTokenHolder;
+import org.neo4j.token.CreatingTokenHolder;
 import org.neo4j.token.TokenCreator;
 import org.neo4j.token.TokenHolders;
 
@@ -55,9 +55,9 @@ public abstract class AbstractDatabaseContextFactory<CONTEXT, OPTIONS>
 
     public static TokenHolders createTokenHolderProvider(Supplier<Kernel> kernelSupplier) {
         return new TokenHolders(
-                new DelegatingTokenHolder(createPropertyKeyCreator(kernelSupplier), TYPE_PROPERTY_KEY),
-                new DelegatingTokenHolder(createLabelIdCreator(kernelSupplier), TYPE_LABEL),
-                new DelegatingTokenHolder(createRelationshipTypeCreator(kernelSupplier), TYPE_RELATIONSHIP_TYPE));
+                new CreatingTokenHolder(createPropertyKeyCreator(kernelSupplier), TYPE_PROPERTY_KEY),
+                new CreatingTokenHolder(createLabelIdCreator(kernelSupplier), TYPE_LABEL),
+                new CreatingTokenHolder(createRelationshipTypeCreator(kernelSupplier), TYPE_RELATIONSHIP_TYPE));
     }
 
     private static TokenCreator createRelationshipTypeCreator(Supplier<Kernel> kernelSupplier) {

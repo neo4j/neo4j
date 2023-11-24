@@ -79,7 +79,7 @@ class NodeStoreScanTest {
     private final JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
 
     @AfterEach
-    void tearDown() throws Exception {
+    void tearDown() {
         jobScheduler.close();
     }
 

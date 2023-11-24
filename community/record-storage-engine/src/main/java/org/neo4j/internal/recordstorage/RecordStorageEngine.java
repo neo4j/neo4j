@@ -298,9 +298,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
         if (mode.needsHighIdTracking()) {
             appliers.add(new HighIdTransactionApplierFactory(neoStores));
         }
-        if (mode.needsCacheInvalidationOnUpdates()) {
-            appliers.add(new CacheInvalidationTransactionApplierFactory(neoStores, cacheAccess));
-        }
         if (isMultiVersionedFormat()) {
             // in mvcc all modes apply count stores
             appliers.add(new MultiversionCountsStoreTransactionApplierFactory(mode, countsStore, groupDegreesStore));

@@ -150,6 +150,10 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
         } while (nextRecord != null);
     }
 
+    public static byte[] getFullByteArrayFromHeavyRecords(Iterable<DynamicRecord> records, PropertyType propertyType) {
+        return readFullByteArrayFromHeavyRecords(records, propertyType).data();
+    }
+
     /**
      * @return Pair&lt; header-in-first-record , all-other-bytes &gt;
      */

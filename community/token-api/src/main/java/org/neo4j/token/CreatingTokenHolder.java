@@ -21,8 +21,6 @@ package org.neo4j.token;
 
 import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.function.IntPredicate;
 import org.eclipse.collections.api.set.primitive.IntSet;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
@@ -30,30 +28,28 @@ import org.eclipse.collections.impl.map.mutable.primitive.IntIntHashMap;
 import org.eclipse.collections.impl.map.mutable.primitive.ObjectIntHashMap;
 import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.exceptions.UnspecifiedKernelException;
-import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.token.api.NamedToken;
-import org.neo4j.token.api.NonUniqueTokenException;
 
 /**
  * Keeps a registry of tokens using {@link TokenRegistry}.
- * When asked for a token that isn't in the registry, delegates to a {@link TokenCreator} to create the token,
- * then stores it in the registry.
+ * When asked for a token that isn't in the registry, delegates to a {@link TokenCreator} to create the token.
+ * The storing of a created token in the registry is the responsibility of the creator
+ * (in the regular transaction based flow it happens on transaction application).
  */
-public class DelegatingTokenHolder extends AbstractTokenHolderBase {
+public class CreatingTokenHolder extends AbstractTokenHolderBase {
     private final TokenCreator tokenCreator;
 
-    public DelegatingTokenHolder(TokenCreator tokenCreator, String tokenType) {
+    public CreatingTokenHolder(TokenCreator tokenCreator, String tokenType) {
         this(new TokenRegistry(tokenType), tokenCreator);
     }
 
-    private DelegatingTokenHolder(TokenRegistry registry, TokenCreator tokenCreator) {
-        super(registry);
-        this.tokenCreator = tokenCreator;
+    public CreatingTokenHolder(TokenCreatorFactory tokenCreator, String tokenType) {
+        super(new TokenRegistry(tokenType));
+        this.tokenCreator = tokenCreator.create(tokenRegistry);
     }
 
-    public DelegatingTokenHolder withTokenCreator(TokenCreator tokenCreator) {
-        return new DelegatingTokenHolder(tokenRegistry, tokenCreator);
+    public CreatingTokenHolder(TokenRegistry registry, TokenCreator tokenCreator) {
+        super(registry);
+        this.tokenCreator = tokenCreator;
     }
 
     /**
@@ -70,12 +66,6 @@ public class DelegatingTokenHolder extends AbstractTokenHolderBase {
         }
 
         id = tokenCreator.createToken(name, internal);
-        try {
-            tokenRegistry.put(new NamedToken(name, id, internal));
-        } catch (NonUniqueTokenException e) {
-            throw new UnspecifiedKernelException(
-                    Status.General.UnknownError, e, "Newly created token should be unique.");
-        }
         return id;
     }
 
@@ -112,17 +102,12 @@ public class DelegatingTokenHolder extends AbstractTokenHolderBase {
         resolveIds(names, ids, internal, i -> !unresolvedIndexes.add(i));
         if (!unresolvedIndexes.isEmpty()) {
             // We still have unresolved ids to create.
-            ObjectIntHashMap<String> createdTokens = createUnresolvedTokens(unresolvedIndexes, names, ids, internal);
-            List<NamedToken> createdTokensList = new ArrayList<>(createdTokens.size());
-            createdTokens.forEachKeyValue(
-                    (name, index) -> createdTokensList.add(new NamedToken(name, ids[index], internal)));
-
-            tokenRegistry.putAll(createdTokensList);
+            createUnresolvedTokens(unresolvedIndexes, names, ids, internal);
         }
     }
 
-    private ObjectIntHashMap<String> createUnresolvedTokens(
-            IntSet unresolvedIndexes, String[] names, int[] ids, boolean internal) throws KernelException {
+    private void createUnresolvedTokens(IntSet unresolvedIndexes, String[] names, int[] ids, boolean internal)
+            throws KernelException {
         // First, we need to filter out all of the tokens that are already resolved, so we only create tokens for
         // indexes that are in the unresolvedIndexes set.
         // However, we also need to deal with duplicate token names. For any token index we decide needs to have a
@@ -161,7 +146,5 @@ public class DelegatingTokenHolder extends AbstractTokenHolderBase {
         if (remappingIndexes.notEmpty()) {
             remappingIndexes.forEachKeyValue((index, creatingIndex) -> ids[index] = ids[creatingIndex]);
         }
-
-        return createdTokens;
     }
 }

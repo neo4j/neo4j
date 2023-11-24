@@ -17,22 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.recordstorage;
+package org.neo4j.token;
 
-import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.storageengine.api.CommandBatchToApply;
+/**
+ * Like {@link CreatingTokenHolder} but also takes responsibility for registering the token directly in the registry.
+ * To be used when creating tokens without transactions, for example in tools while db is offline.
+ */
+public class RegisteringCreatingTokenHolder extends CreatingTokenHolder {
 
-public class CacheInvalidationTransactionApplierFactory implements TransactionApplierFactory {
-    private final NeoStores neoStores;
-    private final CacheAccessBackDoor cacheAccess;
-
-    public CacheInvalidationTransactionApplierFactory(NeoStores neoStores, CacheAccessBackDoor cacheAccess) {
-        this.neoStores = neoStores;
-        this.cacheAccess = cacheAccess;
-    }
-
-    @Override
-    public TransactionApplier startTx(CommandBatchToApply transaction, BatchContext batchContext) {
-        return new CacheInvalidationTransactionApplier(neoStores, cacheAccess, transaction.storeCursors());
+    public RegisteringCreatingTokenHolder(TokenCreator tokenCreator, String tokenType) {
+        super((registry) -> new RegisteringTokenCreator(registry, tokenCreator), tokenType);
     }
 }

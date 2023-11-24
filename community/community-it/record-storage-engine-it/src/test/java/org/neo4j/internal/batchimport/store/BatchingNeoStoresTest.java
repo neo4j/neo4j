@@ -125,7 +125,7 @@ import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.time.Clocks;
-import org.neo4j.token.DelegatingTokenHolder;
+import org.neo4j.token.CreatingTokenHolder;
 import org.neo4j.token.TokenCreator;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
@@ -586,9 +586,9 @@ class BatchingNeoStoresTest {
                 }
             };
             TokenHolders tokenHolders = new TokenHolders(
-                    new DelegatingTokenHolder(propertyKeyTokenCreator, TokenHolder.TYPE_PROPERTY_KEY),
-                    new DelegatingTokenHolder(labelTokenCreator, TokenHolder.TYPE_LABEL),
-                    new DelegatingTokenHolder(relationshipTypeTokenCreator, TokenHolder.TYPE_RELATIONSHIP_TYPE));
+                    new CreatingTokenHolder(propertyKeyTokenCreator, TokenHolder.TYPE_PROPERTY_KEY),
+                    new CreatingTokenHolder(labelTokenCreator, TokenHolder.TYPE_LABEL),
+                    new CreatingTokenHolder(relationshipTypeTokenCreator, TokenHolder.TYPE_RELATIONSHIP_TYPE));
             IndexConfigCompleter indexConfigCompleter = (index, indexingBehaviour) -> index;
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = immediate();
             LogTailMetadata emptyLogTail = new EmptyLogTailMetadata(Config.defaults());

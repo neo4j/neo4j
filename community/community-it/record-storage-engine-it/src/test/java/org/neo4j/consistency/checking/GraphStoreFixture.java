@@ -100,7 +100,7 @@ import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.utils.TestDirectory;
-import org.neo4j.token.DelegatingTokenHolder;
+import org.neo4j.token.CreatingTokenHolder;
 import org.neo4j.token.TokenCreator;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.NamedToken;
@@ -296,21 +296,21 @@ public abstract class GraphStoreFixture implements AutoCloseable {
     }
 
     public TokenHolders writableTokenHolders() {
-        TokenHolder propertyKeyTokens = new DelegatingTokenHolder(
+        TokenHolder propertyKeyTokens = new CreatingTokenHolder(
                 buildTokenCreator((name, internal, tx, next) -> {
                     int id = next.propertyKey();
                     tx.propertyKey(id, name, internal);
                     return id;
                 }),
                 TokenHolder.TYPE_PROPERTY_KEY);
-        TokenHolder labelTokens = new DelegatingTokenHolder(
+        TokenHolder labelTokens = new CreatingTokenHolder(
                 buildTokenCreator((name, internal, tx, next) -> {
                     int id = next.label();
                     tx.nodeLabel(id, name, internal);
                     return id;
                 }),
                 TokenHolder.TYPE_LABEL);
-        TokenHolder relationshipTypeTokens = new DelegatingTokenHolder(
+        TokenHolder relationshipTypeTokens = new CreatingTokenHolder(
                 buildTokenCreator((name, internal, tx, next) -> {
                     int id = next.relationshipType();
                     tx.relationshipType(id, name, internal);
@@ -453,7 +453,7 @@ public abstract class GraphStoreFixture implements AutoCloseable {
             this.nodes = neoStores.getNodeStore();
             this.indexingService = indexingService;
 
-            TokenHolder propTokens = new DelegatingTokenHolder(
+            TokenHolder propTokens = new CreatingTokenHolder(
                     (name, internal) -> {
                         int id = next.propertyKey();
                         writer.propertyKey(id, name, internal, dynIds(0, propKeyDynIds, name));
@@ -461,7 +461,7 @@ public abstract class GraphStoreFixture implements AutoCloseable {
                     },
                     TokenHolder.TYPE_PROPERTY_KEY);
 
-            TokenHolder labelTokens = new DelegatingTokenHolder(
+            TokenHolder labelTokens = new CreatingTokenHolder(
                     (name, internal) -> {
                         int id = next.label();
                         writer.label(id, name, internal, dynIds(0, labelDynIds, name));
@@ -469,7 +469,7 @@ public abstract class GraphStoreFixture implements AutoCloseable {
                     },
                     TokenHolder.TYPE_LABEL);
 
-            TokenHolder relTypeTokens = new DelegatingTokenHolder(
+            TokenHolder relTypeTokens = new CreatingTokenHolder(
                     (name, internal) -> {
                         int id = next.relationshipType();
                         writer.relationshipType(id, name, internal, dynIds(0, relTypeDynIds, name));

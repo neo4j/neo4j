@@ -52,7 +52,7 @@ import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.utils.TestDirectory;
-import org.neo4j.token.DelegatingTokenHolder;
+import org.neo4j.token.RegisteringCreatingTokenHolder;
 import org.neo4j.token.TokenCreator;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
@@ -110,9 +110,9 @@ class SchemaStorageReadAndWriteTest {
         AtomicInteger tokenIdCounter = new AtomicInteger();
         TokenCreator tokenCreator = (name, internal) -> tokenIdCounter.incrementAndGet();
         TokenHolders tokens = new TokenHolders(
-                new DelegatingTokenHolder(tokenCreator, TokenHolder.TYPE_PROPERTY_KEY),
-                new DelegatingTokenHolder(tokenCreator, TokenHolder.TYPE_LABEL),
-                new DelegatingTokenHolder(tokenCreator, TokenHolder.TYPE_RELATIONSHIP_TYPE));
+                new RegisteringCreatingTokenHolder(tokenCreator, TokenHolder.TYPE_PROPERTY_KEY),
+                new RegisteringCreatingTokenHolder(tokenCreator, TokenHolder.TYPE_LABEL),
+                new RegisteringCreatingTokenHolder(tokenCreator, TokenHolder.TYPE_RELATIONSHIP_TYPE));
         storeCursors = new CachedStoreCursors(neoStores, NULL_CONTEXT);
         tokens.setInitialTokens(StoreTokens.allTokens(neoStores), storeCursors);
         tokenIdCounter.set(

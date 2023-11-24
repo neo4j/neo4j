@@ -144,7 +144,7 @@ import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.Stopwatch;
-import org.neo4j.token.DelegatingTokenHolder;
+import org.neo4j.token.CreatingTokenHolder;
 import org.neo4j.token.ReadOnlyTokenCreator;
 import org.neo4j.token.TokenHolders;
 
@@ -520,9 +520,9 @@ public final class Recovery {
         DatabaseHealth databaseHealth = new DatabaseHealth(HealthEventGenerator.NO_OP, recoveryLog);
 
         TokenHolders tokenHolders = new TokenHolders(
-                new DelegatingTokenHolder(new ReadOnlyTokenCreator(), TYPE_PROPERTY_KEY),
-                new DelegatingTokenHolder(new ReadOnlyTokenCreator(), TYPE_LABEL),
-                new DelegatingTokenHolder(new ReadOnlyTokenCreator(), TYPE_RELATIONSHIP_TYPE));
+                new CreatingTokenHolder(new ReadOnlyTokenCreator(), TYPE_PROPERTY_KEY),
+                new CreatingTokenHolder(new ReadOnlyTokenCreator(), TYPE_LABEL),
+                new CreatingTokenHolder(new ReadOnlyTokenCreator(), TYPE_RELATIONSHIP_TYPE));
 
         RecoveryCleanupWorkCollector recoveryCleanupCollector =
                 recoveryLife.add(new GroupingRecoveryCleanupWorkCollector(

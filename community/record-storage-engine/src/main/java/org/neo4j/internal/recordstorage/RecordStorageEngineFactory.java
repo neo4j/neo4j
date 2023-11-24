@@ -158,8 +158,9 @@ import org.neo4j.storageengine.migration.SchemaRuleMigrationAccess;
 import org.neo4j.storageengine.migration.SchemaRuleMigrationAccessExtended;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.time.SystemNanoClock;
-import org.neo4j.token.DelegatingTokenHolder;
+import org.neo4j.token.CreatingTokenHolder;
 import org.neo4j.token.ReadOnlyTokenCreator;
+import org.neo4j.token.RegisteringCreatingTokenHolder;
 import org.neo4j.token.TokenCreator;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.NamedToken;
@@ -573,15 +574,15 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
             SchemaStore dstSchema = dstStore.getSchemaStore();
             var allocatorProvider = DynamicAllocatorProviders.nonTransactionalAllocator(dstStore);
 
-            // Token holders that create the tokens asked for if they don't already have them
+            // Token holders that create (and add to cache) the tokens asked for if they don't already have them
             TokenHolders dstTokenHolders = new TokenHolders(
-                    new DelegatingTokenHolder(
+                    new RegisteringCreatingTokenHolder(
                             getPropertyTokenCreator(dstStore, contextFactory, memoryTracker, allocatorProvider),
                             TokenHolder.TYPE_PROPERTY_KEY),
-                    new DelegatingTokenHolder(
+                    new RegisteringCreatingTokenHolder(
                             getLabelTokenCreator(dstStore, contextFactory, memoryTracker, allocatorProvider),
                             TokenHolder.TYPE_LABEL),
-                    new DelegatingTokenHolder(
+                    new RegisteringCreatingTokenHolder(
                             getRelTypeTokenCreator(dstStore, contextFactory, memoryTracker, allocatorProvider),
                             TokenHolder.TYPE_RELATIONSHIP_TYPE));
             var storeCursors = new CachedStoreCursors(dstStore, cursorContext);
@@ -615,10 +616,10 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
             stores.start(cursorContext);
             TokensLoader loader = lenient ? StoreTokens.allReadableTokens(stores) : StoreTokens.allTokens(stores);
             TokenHolder propertyKeys =
-                    new DelegatingTokenHolder(ReadOnlyTokenCreator.READ_ONLY, TokenHolder.TYPE_PROPERTY_KEY);
-            TokenHolder labels = new DelegatingTokenHolder(ReadOnlyTokenCreator.READ_ONLY, TokenHolder.TYPE_LABEL);
+                    new CreatingTokenHolder(ReadOnlyTokenCreator.READ_ONLY, TokenHolder.TYPE_PROPERTY_KEY);
+            TokenHolder labels = new CreatingTokenHolder(ReadOnlyTokenCreator.READ_ONLY, TokenHolder.TYPE_LABEL);
             TokenHolder relationshipTypes =
-                    new DelegatingTokenHolder(ReadOnlyTokenCreator.READ_ONLY, TokenHolder.TYPE_RELATIONSHIP_TYPE);
+                    new CreatingTokenHolder(ReadOnlyTokenCreator.READ_ONLY, TokenHolder.TYPE_RELATIONSHIP_TYPE);
 
             propertyKeys.setInitialTokens(
                     lenient
@@ -1039,7 +1040,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
     private static TokenHolders loadTokenHolders(
             NeoStores stores, TokenCreator propertyKeyTokenCreator, StoreCursors storeCursors) {
         TokenHolder propertyKeyTokens =
-                new DelegatingTokenHolder(propertyKeyTokenCreator, TokenHolder.TYPE_PROPERTY_KEY);
+                new RegisteringCreatingTokenHolder(propertyKeyTokenCreator, TokenHolder.TYPE_PROPERTY_KEY);
         TokenHolders dstTokenHolders = new TokenHolders(
                 propertyKeyTokens,
                 StoreTokens.createReadOnlyTokenHolder(TokenHolder.TYPE_LABEL),

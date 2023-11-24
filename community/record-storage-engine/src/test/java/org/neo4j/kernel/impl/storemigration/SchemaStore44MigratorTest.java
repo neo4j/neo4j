@@ -61,7 +61,7 @@ import org.neo4j.kernel.impl.storemigration.legacy.SchemaStore44Reader;
 import org.neo4j.storageengine.api.SchemaRule44;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.migration.SchemaRuleMigrationAccess;
-import org.neo4j.token.DelegatingTokenHolder;
+import org.neo4j.token.RegisteringCreatingTokenHolder;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
 
@@ -84,9 +84,9 @@ class SchemaStore44MigratorTest {
     @BeforeEach
     void setup() throws KernelException {
         tokenHolders = new TokenHolders(
-                new DelegatingTokenHolder(new SimpleTokenCreator(), TokenHolder.TYPE_PROPERTY_KEY),
-                new DelegatingTokenHolder(new SimpleTokenCreator(), TokenHolder.TYPE_LABEL),
-                new DelegatingTokenHolder(new SimpleTokenCreator(), TokenHolder.TYPE_RELATIONSHIP_TYPE));
+                new RegisteringCreatingTokenHolder(new SimpleTokenCreator(), TokenHolder.TYPE_PROPERTY_KEY),
+                new RegisteringCreatingTokenHolder(new SimpleTokenCreator(), TokenHolder.TYPE_LABEL),
+                new RegisteringCreatingTokenHolder(new SimpleTokenCreator(), TokenHolder.TYPE_RELATIONSHIP_TYPE));
         var nbrOfTokens = 8;
         labels = new int[nbrOfTokens];
         props = new int[nbrOfTokens];

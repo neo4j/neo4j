@@ -121,7 +121,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
-import org.neo4j.token.DelegatingTokenHolder;
+import org.neo4j.token.CreatingTokenHolder;
 import org.neo4j.token.ReadOnlyTokenCreator;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.NamedToken;
@@ -1968,7 +1968,7 @@ class CsvInputTest {
     }
 
     private TokenHolder tokenHolder(Map<String, Integer> tokens) {
-        var tokenHolder = new DelegatingTokenHolder(ReadOnlyTokenCreator.READ_ONLY, "type");
+        var tokenHolder = new CreatingTokenHolder(ReadOnlyTokenCreator.READ_ONLY, "type");
         tokenHolder.setInitialTokens(tokens.entrySet().stream()
                 .map(e -> new NamedToken(e.getKey(), e.getValue()))
                 .toList());

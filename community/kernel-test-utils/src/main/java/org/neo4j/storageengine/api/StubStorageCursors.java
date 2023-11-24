@@ -59,7 +59,7 @@ import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
-import org.neo4j.token.DelegatingTokenHolder;
+import org.neo4j.token.RegisteringCreatingTokenHolder;
 import org.neo4j.token.api.TokenHolder;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
@@ -72,8 +72,8 @@ public class StubStorageCursors implements StorageReader {
 
     private final AtomicLong nextPropertyId = new AtomicLong();
     private final AtomicLong nextTokenId = new AtomicLong();
-    private final TokenHolder propertyKeyTokenHolder =
-            new DelegatingTokenHolder((name, internal) -> toIntExact(nextTokenId.getAndIncrement()), TYPE_PROPERTY_KEY);
+    private final TokenHolder propertyKeyTokenHolder = new RegisteringCreatingTokenHolder(
+            (name, internal) -> toIntExact(nextTokenId.getAndIncrement()), TYPE_PROPERTY_KEY);
 
     private final Map<Long, NodeData> nodeData = new HashMap<>();
     private final Map<Long, PropertyData> propertyData = new HashMap<>();

@@ -403,7 +403,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
         // When
         int key;
         try (KernelTransaction tx = beginTransaction()) {
-            key = tx.tokenWrite().propertyKeyCreateForName(keyName, false);
+            key = tx.tokenWrite().propertyKeyGetOrCreateForName(keyName);
             tx.dataWrite().relationshipApplyChanges(relationship, IntObjectMaps.immutable.of(key, value));
             tx.commit();
         }

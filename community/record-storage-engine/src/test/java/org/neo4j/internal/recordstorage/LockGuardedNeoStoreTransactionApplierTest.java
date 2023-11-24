@@ -59,6 +59,7 @@ import org.neo4j.internal.schema.SchemaCache;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
+import org.neo4j.kernel.impl.store.DynamicStringStore;
 import org.neo4j.kernel.impl.store.LabelTokenStore;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -113,6 +114,8 @@ class LockGuardedNeoStoreTransactionApplierTest {
             mockedStore(PropertyKeyTokenStore.class, SchemaIdType.PROPERTY_KEY_TOKEN);
     private final SchemaStore schemaStore = mockedStore(SchemaStore.class, SchemaIdType.SCHEMA);
     private final DynamicArrayStore dynamicLabelStore = mockedStore(DynamicArrayStore.class, RecordIdType.ARRAY_BLOCK);
+    private final DynamicStringStore dynamicStringStore =
+            mockedStore(DynamicStringStore.class, RecordIdType.STRING_BLOCK);
 
     private final long transactionId = 55555;
     private final DynamicRecord one = new DynamicRecord(1).initialize(true, true, Record.NO_NEXT_BLOCK.intValue(), -1);
@@ -141,6 +144,9 @@ class LockGuardedNeoStoreTransactionApplierTest {
         when(transactionToApply.cursorContext()).thenReturn(NULL_CONTEXT);
         when(transactionToApply.storeCursors()).thenReturn(StoreCursors.NULL);
         when(transactionToApply.subject()).thenReturn(AUTH_DISABLED);
+        when(labelTokenStore.getNameStore()).thenReturn(dynamicStringStore);
+        when(propertyKeyTokenStore.getNameStore()).thenReturn(dynamicStringStore);
+        when(relationshipTypeTokenStore.getNameStore()).thenReturn(dynamicStringStore);
     }
 
     private static <T extends CommonAbstractStore> T mockedStore(Class<T> cls, IdType idType) {
@@ -442,6 +448,9 @@ class LockGuardedNeoStoreTransactionApplierTest {
         RelationshipTypeTokenRecord after = new RelationshipTypeTokenRecord(42);
         after.setInUse(true);
         after.setNameId(323);
+        DynamicRecord dynamicRecord = new DynamicRecord(323);
+        dynamicRecord.initialize(true, true, -1, -1);
+        after.addNameRecord(dynamicRecord);
         Command command = new RelationshipTypeTokenCommand(LATEST_LOG_SERIALIZATION, before, after);
 
         // when
@@ -462,9 +471,13 @@ class LockGuardedNeoStoreTransactionApplierTest {
         RelationshipTypeTokenRecord after = new RelationshipTypeTokenRecord(42);
         after.setInUse(true);
         after.setNameId(323);
+        NamedToken token = new NamedToken("token", after.getIntId());
+        DynamicRecord dynamicRecord = new DynamicRecord(323);
+        dynamicRecord.initialize(true, true, -1, -1);
+        dynamicRecord.setData(token.name().getBytes());
+        after.addNameRecord(dynamicRecord);
         Command.RelationshipTypeTokenCommand command =
                 new Command.RelationshipTypeTokenCommand(LATEST_LOG_SERIALIZATION, before, after);
-        NamedToken token = new NamedToken("token", 21);
         when(relationshipTypeTokenStore.getToken(eq(command.tokenId()), any(StoreCursors.class)))
                 .thenReturn(token);
 
@@ -489,6 +502,9 @@ class LockGuardedNeoStoreTransactionApplierTest {
         LabelTokenRecord after = new LabelTokenRecord(42);
         after.setInUse(true);
         after.setNameId(323);
+        DynamicRecord dynamicRecord = new DynamicRecord(323);
+        dynamicRecord.initialize(true, true, -1, -1);
+        after.addNameRecord(dynamicRecord);
         Command command = new LabelTokenCommand(LATEST_LOG_SERIALIZATION, before, after);
 
         // when
@@ -508,10 +524,12 @@ class LockGuardedNeoStoreTransactionApplierTest {
         LabelTokenRecord after = new LabelTokenRecord(42);
         after.setInUse(true);
         after.setNameId(323);
+        NamedToken token = new NamedToken("token", after.getIntId());
+        DynamicRecord dynamicRecord = new DynamicRecord(323);
+        dynamicRecord.initialize(true, true, -1, -1);
+        dynamicRecord.setData(token.name().getBytes());
+        after.addNameRecord(dynamicRecord);
         Command.LabelTokenCommand command = new Command.LabelTokenCommand(LATEST_LOG_SERIALIZATION, before, after);
-        NamedToken token = new NamedToken("token", 21);
-        when(labelTokenStore.getToken(eq(command.tokenId()), any(StoreCursors.class)))
-                .thenReturn(token);
 
         // when
         boolean result = apply(applier, command::handle, transactionToApply);
@@ -534,6 +552,9 @@ class LockGuardedNeoStoreTransactionApplierTest {
         PropertyKeyTokenRecord after = new PropertyKeyTokenRecord(42);
         after.setInUse(true);
         after.setNameId(323);
+        DynamicRecord dynamicRecord = new DynamicRecord(323);
+        dynamicRecord.initialize(true, true, -1, -1);
+        after.addNameRecord(dynamicRecord);
         Command command = new PropertyKeyTokenCommand(LATEST_LOG_SERIALIZATION, before, after);
 
         // when
@@ -554,9 +575,13 @@ class LockGuardedNeoStoreTransactionApplierTest {
         PropertyKeyTokenRecord after = new PropertyKeyTokenRecord(42);
         after.setInUse(true);
         after.setNameId(323);
+        NamedToken token = new NamedToken("token", after.getIntId());
+        DynamicRecord dynamicRecord = new DynamicRecord(323);
+        dynamicRecord.initialize(true, true, -1, -1);
+        dynamicRecord.setData(token.name().getBytes());
+        after.addNameRecord(dynamicRecord);
         Command.PropertyKeyTokenCommand command =
                 new Command.PropertyKeyTokenCommand(LATEST_LOG_SERIALIZATION, before, after);
-        NamedToken token = new NamedToken("token", 21);
         when(propertyKeyTokenStore.getToken(eq(command.tokenId()), any(StoreCursors.class)))
                 .thenReturn(token);
 
@@ -938,10 +963,7 @@ class LockGuardedNeoStoreTransactionApplierTest {
         TransactionApplierFactory applier =
                 new LockGuardedNeoStoreTransactionApplierFactory(INTERNAL, neoStores, cacheAccess, lockService);
         if (recovery) {
-            applier = newApplierFacade(
-                    new HighIdTransactionApplierFactory(neoStores),
-                    applier,
-                    new CacheInvalidationTransactionApplierFactory(neoStores, cacheAccess));
+            applier = newApplierFacade(new HighIdTransactionApplierFactory(neoStores), applier);
         }
         return applier;
     }

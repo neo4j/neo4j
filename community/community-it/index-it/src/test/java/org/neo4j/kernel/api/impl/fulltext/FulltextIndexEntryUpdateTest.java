@@ -88,7 +88,7 @@ import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
-import org.neo4j.token.DelegatingTokenHolder;
+import org.neo4j.token.CreatingTokenHolder;
 import org.neo4j.token.ReadOnlyTokenCreator;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
@@ -104,9 +104,9 @@ class FulltextIndexEntryUpdateTest {
 
     private final LifeSupport life = new LifeSupport();
     private final TokenHolders tokenHolders = new TokenHolders(
-            new DelegatingTokenHolder(new ReadOnlyTokenCreator(), TokenHolder.TYPE_PROPERTY_KEY),
-            new DelegatingTokenHolder(new ReadOnlyTokenCreator(), TokenHolder.TYPE_LABEL),
-            new DelegatingTokenHolder(new ReadOnlyTokenCreator(), TokenHolder.TYPE_RELATIONSHIP_TYPE));
+            new CreatingTokenHolder(new ReadOnlyTokenCreator(), TokenHolder.TYPE_PROPERTY_KEY),
+            new CreatingTokenHolder(new ReadOnlyTokenCreator(), TokenHolder.TYPE_LABEL),
+            new CreatingTokenHolder(new ReadOnlyTokenCreator(), TokenHolder.TYPE_RELATIONSHIP_TYPE));
     private final IndexPopulator.PopulationWorkScheduler populationWorkScheduler =
             new IndexPopulator.PopulationWorkScheduler() {
                 @Override

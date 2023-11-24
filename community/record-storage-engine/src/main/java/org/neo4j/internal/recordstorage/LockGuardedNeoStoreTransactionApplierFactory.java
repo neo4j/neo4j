@@ -33,6 +33,7 @@ import org.neo4j.storageengine.api.TransactionApplicationMode;
  */
 public class LockGuardedNeoStoreTransactionApplierFactory implements TransactionApplierFactory {
     private final CommandVersion version;
+    private final TransactionApplicationMode mode;
     private final NeoStores neoStores;
     // Ideally we don't want any cache access in here, but it is how it is. At least we try to minimize use of it
     private final CacheAccessBackDoor cacheAccess;
@@ -44,6 +45,7 @@ public class LockGuardedNeoStoreTransactionApplierFactory implements Transaction
             CacheAccessBackDoor cacheAccess,
             LockService lockService) {
         this.version = mode.version();
+        this.mode = mode;
         this.neoStores = store;
         this.cacheAccess = cacheAccess;
         this.lockService = lockService;
@@ -52,6 +54,7 @@ public class LockGuardedNeoStoreTransactionApplierFactory implements Transaction
     @Override
     public TransactionApplier startTx(CommandBatchToApply transaction, BatchContext batchContext) {
         return new LockGuardedNeoStoreTransactionApplier(
+                mode,
                 version,
                 neoStores,
                 cacheAccess,

@@ -50,6 +50,7 @@ import org.neo4j.lock.LockGroup;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.CommandVersion;
+import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.test.LatestVersions;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
@@ -98,6 +99,7 @@ class ConsistencyCheckingApplierTest {
         BatchContext batchContext = mock(BatchContext.class);
         when(batchContext.getLockGroup()).thenReturn(new LockGroup());
         applier = new LockGuardedNeoStoreTransactionApplier(
+                TransactionApplicationMode.INTERNAL,
                 CommandVersion.AFTER,
                 neoStores,
                 mock(CacheAccessBackDoor.class),

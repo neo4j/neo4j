@@ -75,7 +75,7 @@ import org.neo4j.storageengine.util.IdUpdateListener;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
-import org.neo4j.token.DelegatingTokenHolder;
+import org.neo4j.token.RegisteringCreatingTokenHolder;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.TokenHolder;
 
@@ -131,9 +131,9 @@ class SchemaStorageTest {
         allocatorProvider = DynamicAllocatorProviders.nonTransactionalAllocator(neoStores);
 
         var tokenHolders = new TokenHolders(
-                new DelegatingTokenHolder(new SimpleTokenCreator(), TokenHolder.TYPE_PROPERTY_KEY),
-                new DelegatingTokenHolder(new SimpleTokenCreator(), TokenHolder.TYPE_LABEL),
-                new DelegatingTokenHolder(new SimpleTokenCreator(), TokenHolder.TYPE_RELATIONSHIP_TYPE));
+                new RegisteringCreatingTokenHolder(new SimpleTokenCreator(), TokenHolder.TYPE_PROPERTY_KEY),
+                new RegisteringCreatingTokenHolder(new SimpleTokenCreator(), TokenHolder.TYPE_LABEL),
+                new RegisteringCreatingTokenHolder(new SimpleTokenCreator(), TokenHolder.TYPE_RELATIONSHIP_TYPE));
         storage = new SchemaStorage(neoStores.getSchemaStore(), tokenHolders);
         storeCursors = new CachedStoreCursors(neoStores, NULL_CONTEXT);
     }
