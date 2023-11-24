@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.exceptions.ArithmeticException
 import org.neo4j.graphdb.Node
+import org.neo4j.values.storable.NoValue.NO_VALUE
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualNodeValue
 
@@ -365,6 +366,41 @@ abstract class OptionalTestBase[CONTEXT <: RuntimeContext](
       .build()
 
     execute(query, runtime) should beColumns("n0").withRows(singleColumn(nodes))
+  }
+
+  // https://trello.com/c/Tj00vVvE/
+  test("should treat projected argument as non-argument variable when empty") {
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("a", "b")
+      .apply()
+      .|.optional("a")
+      .|.filter("false")
+      .|.projection("a AS b")
+      .|.argument("a")
+      .unwind("['input'] as a")
+      .argument()
+      .build()
+
+    execute(query, runtime) should beColumns("a", "b")
+      .withRows(Seq(Array("input", NO_VALUE)))
+  }
+
+  // https://trello.com/c/nN53ne8o/
+  test("should permit cartesian product of argument under an optional") {
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("a")
+      .optional()
+      .apply()
+      .|.cartesianProduct()
+      .|.|.projection("a AS b")
+      .|.|.argument()
+      .|.argument()
+      .unwind("[1, 2] as a")
+      .argument()
+      .build()
+
+    execute(query, runtime) should beColumns("a")
+      .withRows(inAnyOrder(Seq(Array(1), Array(2))))
   }
 
   def createBatchedInputValues(): InputValues = {

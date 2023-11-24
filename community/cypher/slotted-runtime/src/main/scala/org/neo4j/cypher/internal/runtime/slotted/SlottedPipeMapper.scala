@@ -2195,8 +2195,8 @@ object SlottedPipeMapper {
     right: Set[LogicalVariable],
     slotConfiguration: SlotConfiguration
   ): Array[Slot] = {
-    val leftSlots = left.map(_.name).map(k => slotConfiguration.get(k).get)
-    val rightSlots = right.map(_.name).map(k => slotConfiguration.get(k).get)
+    val leftSlots = left.map(slotConfiguration(_))
+    val rightSlots = right.map(slotConfiguration(_))
     (leftSlots -- rightSlots).toArray
   }
 }

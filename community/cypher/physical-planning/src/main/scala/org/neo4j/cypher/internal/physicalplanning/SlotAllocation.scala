@@ -36,7 +36,6 @@ import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.frontend.phases.ResolvedCall
 import org.neo4j.cypher.internal.ir.HasHeaders
 import org.neo4j.cypher.internal.ir.NoHeaders
-import org.neo4j.cypher.internal.logical.plans.AbstractLetSelectOrSemiApply
 import org.neo4j.cypher.internal.logical.plans.AbstractSelectOrSemiApply
 import org.neo4j.cypher.internal.logical.plans.AbstractSemiApply
 import org.neo4j.cypher.internal.logical.plans.Aggregation
@@ -169,7 +168,6 @@ import org.neo4j.cypher.internal.runtime.expressionVariableAllocation.AvailableE
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
-import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
@@ -182,8 +180,6 @@ import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.exceptions.InternalException
 
 import java.util
-
-import scala.annotation.tailrec
 
 /**
  * This object knows how to configure slots for a logical plan tree.
@@ -204,7 +200,8 @@ object SlotAllocation {
    * @param slotConfiguration the slot configuration of the argument. Might contain more slot than the argument.
    * @param argumentSize the prefix size of `slotConfiguration` that holds the argument.
    * @param argumentPlan the plan which introduced this argument
-   * @param trailPlanId the nearest outer Trail plan
+   * @param conditionalApplyPlan the nearest outer [Anti]ConditionalApply plan
+   * @param trailPlan the nearest outer Trail plan
    */
   case class SlotsAndArgument(
     slotConfiguration: SlotConfiguration,
@@ -212,7 +209,17 @@ object SlotAllocation {
     argumentPlan: Id,
     conditionalApplyPlan: Id,
     trailPlan: Id
-  )
+  ) {
+
+    def isArgument(field: String): Boolean =
+      slotConfiguration.get(field).fold(false)(isArgument)
+
+    def isArgument(slot: Slot): Boolean =
+      slot match {
+        case s: LongSlot => s.offset < argumentSize.nLongs
+        case s: RefSlot  => s.offset < argumentSize.nReferences
+      }
+  }
 
   case class SlotMetaData(
     slotConfigurations: SlotConfigurations,
@@ -720,7 +727,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
    * @param recordArgument function which records the argument size for the given operator
    */
   private def allocateOneChild(
-    argument: SlotsAndArgument,
+    slotsAndArgument: SlotsAndArgument,
     lp: LogicalPlan,
     nullable: Boolean,
     source: SlotConfiguration,
@@ -794,13 +801,19 @@ class SingleQuerySlotAllocator private[physicalplanning] (
          * Note that this is conservative, it means that variables on RHS of ConditionalApply will _always_ introduce
          * a new slot. In theory we could create an alias if all aliased variables were introduced in the same scope,
          * but scopes where variables are introduced are not tracked at this time.
+         *
+         * It is also necessary to check if the alias would reference an argument under Optional ([[nullable]]),
+         * in which case it must be disallowed so that the empty-input case can correctly return different values.
          */
-        def isUnderConditionalApply: Boolean = argument.conditionalApplyPlan != Id.INVALID_ID
+        def mayAlias(ident: String): Boolean =
+          (!nullable || !slotsAndArgument.isArgument(ident)) &&
+            slotsAndArgument.conditionalApplyPlan == Id.INVALID_ID
+
         p.projectExpressions foreach {
           case (key, internal.expressions.Variable(ident)) if key.name == ident =>
           // it's already there. no need to add a new slot for it
 
-          case (newKey, internal.expressions.Variable(ident)) if newKey.name != ident && !isUnderConditionalApply =>
+          case (newKey, internal.expressions.Variable(ident)) if newKey.name != ident && mayAlias(ident) =>
             slots.addAlias(newKey, ident)
 
           case (key, _: PathExpression) =>
@@ -1195,20 +1208,16 @@ class SingleQuerySlotAllocator private[physicalplanning] (
         // Second, add aliases in order. Aliases get their own slots after a union.
         lhs.foreachSlotAndAliasesOrdered({
           case SlotWithKeyAndAliases(VariableSlotKey(key), slot, aliases) =>
-            slot match {
-              case LongSlot(offset, _, _) if offset >= argument.argumentSize.nLongs =>
-                aliases.foreach(addVariableToResult(_, slot))
-              case RefSlot(offset, _, _) if offset >= argument.argumentSize.nReferences =>
-                aliases.foreach(addVariableToResult(_, slot))
-              case _ =>
-                // Argument slot
-                aliases.foreach(alias =>
-                  if (rhs.get(alias).contains(slot)) {
-                    result.addAlias(alias, key)
-                  } else {
-                    addVariableToResult(alias, slot)
-                  }
-                )
+            if (argument.isArgument(slot)) {
+              aliases.foreach(alias =>
+                if (rhs.get(alias).contains(slot)) {
+                  result.addAlias(alias, key)
+                } else {
+                  addVariableToResult(alias, slot)
+                }
+              )
+            } else {
+              aliases.foreach(addVariableToResult(_, slot))
             }
           case _ =>
         })
