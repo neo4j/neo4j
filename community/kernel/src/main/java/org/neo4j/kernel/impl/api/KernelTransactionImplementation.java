@@ -1149,12 +1149,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                                     "Could not drop created constraint indexes");
                         }
                     };
-                    AutoCloseable storageRollback = () -> {
-                        try (var rollbackContext = contextFactory.create("transaction rollback")) {
-                            storageEngine.rollback(txState, rollbackContext);
-                        }
-                    };
 
+                    AutoCloseable storageRollback = () -> storageEngine.rollback(txState, cursorContext);
                     IOUtils.close((s, throwable) -> throwable, constraintDropper, storageRollback);
                 }
             }
