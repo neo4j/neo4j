@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.SortPlanner.SatisfiedForPlan
 import org.neo4j.cypher.internal.compiler.planner.logical.SortPlanner.planIfAsSortedAsPossible
@@ -33,7 +34,6 @@ import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.ir.ordering.RequiredOrderCandidate
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.PartialSort
-import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -105,10 +105,13 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
       )
 
       // Then
-      sortedPlan should equal(Some(Sort(
-        Projection(inputPlan, Map(varFor("x.foo") -> prop("x", "foo"))),
-        Seq(Ascending(varFor("x.foo")))
-      )))
+      val sorted = new LogicalPlanBuilder(wholePlan = false)
+        .sort("`  x.foo@0` ASC")
+        .projection("x.foo AS `  x.foo@0`")
+        .fakeLeafPlan("x")
+        .build()
+
+      sortedPlan should equal(Some(sorted))
       context.staticComponents.planningAttributes.solveds.get(sortedPlan.get.id) should equal(
         RegularSinglePlannerQuery(interestingOrder = io)
       )
@@ -212,11 +215,13 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
       )
 
       // Then
-      sortedPlan should equal(Some(PartialSort(
-        Projection(inputPlan, Map(varFor("x.foo") -> prop("x", "foo"), varFor("x.bar") -> prop("x", "bar"))),
-        Seq(Ascending(varFor("x.foo"))),
-        Seq(Ascending(varFor("x.bar")))
-      )))
+      val sorted = new LogicalPlanBuilder(wholePlan = false)
+        .partialSort(Seq("`  x.foo@0` ASC"), Seq("`  x.bar@1` ASC"))
+        .projection("x.foo AS `  x.foo@0`", "x.bar AS `  x.bar@1`")
+        .fakeLeafPlan("x")
+        .build()
+
+      sortedPlan should equal(Some(sorted))
       context.staticComponents.planningAttributes.solveds.get(sortedPlan.get.id) should equal(
         RegularSinglePlannerQuery(interestingOrder = io)
       )
@@ -239,10 +244,13 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
       )
 
       // Then
-      sortedPlan should equal(Some(Sort(
-        Projection(inputPlan, Map(varFor("a") -> prop("x", "foo"))),
-        Seq(Ascending(varFor("a")))
-      )))
+      val sorted = new LogicalPlanBuilder(wholePlan = false)
+        .sort("a ASC")
+        .projection("x.foo AS a")
+        .fakeLeafPlan("x")
+        .build()
+
+      sortedPlan should equal(Some(sorted))
       context.staticComponents.planningAttributes.solveds.get(sortedPlan.get.id) should equal(
         RegularSinglePlannerQuery(interestingOrder = io, horizon = RegularQueryProjection(Map("a" -> prop("x", "foo"))))
       )
@@ -266,10 +274,13 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
       )
 
       // Then
-      sortedPlan should equal(Some(Sort(
-        Projection(inputPlan, Map(varFor("2 * (42 + x.foo)") -> sortOn)),
-        Seq(Ascending(varFor("2 * (42 + x.foo)")))
-      )))
+      val sorted = new LogicalPlanBuilder(wholePlan = false)
+        .sort("`  2 * (42 + x.foo)@0` ASC")
+        .projection("2 * (42 + x.foo) AS `  2 * (42 + x.foo)@0`")
+        .fakeLeafPlan("x")
+        .build()
+
+      sortedPlan should equal(Some(sorted))
       context.staticComponents.planningAttributes.solveds.get(sortedPlan.get.id) should equal(
         RegularSinglePlannerQuery(interestingOrder = io)
       )
@@ -367,11 +378,12 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
       )
 
       // Then
-      // Then
-      sortedPlan should equal(Some(Sort(
-        Projection(inputPlan, Map(varFor("rand()") -> function(Rand.name))),
-        Seq(Ascending(varFor("rand()")))
-      )))
+      val sorted = new LogicalPlanBuilder(wholePlan = false)
+        .sort("`  rand()@0` ASC")
+        .projection("rand() AS `  rand()@0`")
+        .fakeLeafPlan("x")
+        .build()
+      sortedPlan should equal(Some(sorted))
       context.staticComponents.planningAttributes.solveds.get(sortedPlan.get.id) should equal(
         RegularSinglePlannerQuery(interestingOrder = io)
       )
@@ -603,14 +615,15 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
         SortPlanner.ensureSortedPlanWithSolved(inputPlan, InterestingOrderConfig(io), context, updateSolved = true)
 
       // Then
-      sortedPlan should equal(Sort(
-        Projection(inputPlan, Map(varFor("x.foo") -> prop("x", "foo"))),
-        Seq(Ascending(varFor("x.foo")))
-      ))
+      val sorted = new LogicalPlanBuilder(wholePlan = false)
+        .sort("`  x.foo@0` ASC")
+        .projection("x.foo AS `  x.foo@0`")
+        .fakeLeafPlan("x")
+        .build()
+
+      sortedPlan should equal(sorted)
       context.staticComponents.planningAttributes.solveds.get(sortedPlan.id) should equal(
-        RegularSinglePlannerQuery(interestingOrder =
-          io
-        )
+        RegularSinglePlannerQuery(interestingOrder = io)
       )
     }
   }
@@ -626,11 +639,13 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
         SortPlanner.ensureSortedPlanWithSolved(inputPlan, InterestingOrderConfig(io), context, updateSolved = true)
 
       // Then
-      sortedPlan should equal(Sort(inputPlan, Seq(Ascending(varFor("m")))))
+      val sorted = new LogicalPlanBuilder(wholePlan = false)
+        .sort("m ASC")
+        .fakeLeafPlan("m", "n")
+        .build()
+      sortedPlan should equal(sorted)
       context.staticComponents.planningAttributes.solveds.get(sortedPlan.id) should equal(
-        RegularSinglePlannerQuery(interestingOrder =
-          io
-        )
+        RegularSinglePlannerQuery(interestingOrder = io)
       )
     }
   }
@@ -647,16 +662,14 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
         SortPlanner.ensureSortedPlanWithSolved(inputPlan, InterestingOrderConfig(io), context, updateSolved = true)
 
       // Then
-      sortedPlan should equal(
-        Sort(
-          Projection(inputPlan, Map(varFor(sortOn.asCanonicalStringVal) -> sortOn)),
-          Seq(Ascending(varFor(sortOn.asCanonicalStringVal)))
-        )
-      )
+      val sorted = new LogicalPlanBuilder(wholePlan = false)
+        .sort("`  x.foo + 42@0` ASC")
+        .projection("x.foo + 42 AS `  x.foo + 42@0`")
+        .fakeLeafPlan("x")
+        .build()
+      sortedPlan should equal(sorted)
       context.staticComponents.planningAttributes.solveds.get(sortedPlan.id) should equal(
-        RegularSinglePlannerQuery(interestingOrder =
-          io
-        )
+        RegularSinglePlannerQuery(interestingOrder = io)
       )
     }
   }
@@ -673,10 +686,12 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
         SortPlanner.ensureSortedPlanWithSolved(inputPlan, InterestingOrderConfig(io), context, updateSolved = true)
 
       // Then
-      sortedPlan should equal(Sort(
-        Projection(inputPlan, Map(varFor("add") -> sortOn)),
-        Seq(Ascending(varFor("add")))
-      ))
+      val sorted = new LogicalPlanBuilder(wholePlan = false)
+        .sort("add ASC")
+        .projection("x.foo + 42 AS add")
+        .fakeLeafPlan("x")
+        .build()
+      sortedPlan should equal(sorted)
       context.staticComponents.planningAttributes.solveds.get(sortedPlan.id) should equal(
         RegularSinglePlannerQuery(interestingOrder = io, horizon = RegularQueryProjection(Map("add" -> sortOn)))
       )
@@ -697,9 +712,13 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
         SortPlanner.ensureSortedPlanWithSolved(inputPlan, InterestingOrderConfig(io), context, updateSolved = true)
 
       // Then
-      val projection1 = Projection(inputPlan, Map(varFor("m") -> mExpr))
-      val projection2 = Projection(projection1, Map(varFor("m + 5") -> sortExpression))
-      sortedPlan should equal(Sort(projection2, Seq(Ascending(varFor("m + 5")))))
+      val sorted = new LogicalPlanBuilder(wholePlan = false)
+        .sort("`  m + 5@0` ASC")
+        .projection("m + 5 AS `  m + 5@0`")
+        .projection("n + 10 AS m")
+        .fakeLeafPlan("n")
+        .build()
+      sortedPlan should equal(sorted)
       context.staticComponents.planningAttributes.solveds.get(sortedPlan.id) should equal(
         RegularSinglePlannerQuery(interestingOrder = io, horizon = RegularQueryProjection(Map("m" -> mExpr)))
       )
@@ -722,9 +741,12 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
         SortPlanner.ensureSortedPlanWithSolved(inputPlan, InterestingOrderConfig(io), context, updateSolved = true)
 
       // Then
-      val projection1 = Projection(inputPlan, Map(varFor("bday") -> bdayExp))
-      val projection2 = Projection(projection1, Map(varFor("p.name") -> prop("p", "name")))
-      val sorted = Sort(projection2, Seq(Ascending(varFor("p.name")), Ascending(varFor("bday"))))
+      val sorted = new LogicalPlanBuilder(wholePlan = false)
+        .sort("`  p.name@0` ASC", "bday ASC")
+        .projection("p.name AS `  p.name@0`")
+        .projection("p.born IS NOT NULL AS bday")
+        .fakeLeafPlan("p")
+        .build()
       sortedPlan should equal(sorted)
       context.staticComponents.planningAttributes.solveds.get(sortedPlan.id) should equal(
         RegularSinglePlannerQuery(interestingOrder = io, horizon = RegularQueryProjection(Map("bday" -> bdayExp)))
@@ -748,9 +770,13 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
         SortPlanner.ensureSortedPlanWithSolved(inputPlan, InterestingOrderConfig(io), context, updateSolved = true)
 
       // Then
-      val projection1 = Projection(inputPlan, Map(varFor("bday") -> bdayExp))
-      val projection2 = Projection(projection1, Map(varFor("p.name") -> prop("p", "name")))
-      val sorted = Sort(projection2, Seq(Ascending(varFor("bday")), Ascending(varFor("p.name"))))
+      val sorted = new LogicalPlanBuilder(wholePlan = false)
+        .sort("bday ASC", "`  p.name@0` ASC")
+        .projection("p.name AS `  p.name@0`")
+        .projection("p.born IS NOT NULL AS bday")
+        .fakeLeafPlan("p")
+        .build()
+
       sortedPlan should equal(sorted)
       context.staticComponents.planningAttributes.solveds.get(sortedPlan.id) should equal(
         RegularSinglePlannerQuery(interestingOrder = io, horizon = RegularQueryProjection(Map("bday" -> bdayExp)))

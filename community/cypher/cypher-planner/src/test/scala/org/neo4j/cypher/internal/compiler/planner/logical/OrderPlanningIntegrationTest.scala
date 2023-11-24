@@ -388,7 +388,11 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
     val plan = new givenConfig().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN a.foo, count(a.foo)")._1
 
     val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
-      .orderedAggregation(Seq("`a.foo` AS `a.foo`"), Seq("count(cache[a.foo]) AS `count(a.foo)`"), Seq("`a.foo`"))
+      .orderedAggregation(
+        Seq("cacheN[a.foo] AS `a.foo`"),
+        Seq("count(cacheN[a.foo]) AS `count(a.foo)`"),
+        Seq("cacheN[a.foo]")
+      )
       .sort("`a.foo` ASC")
       .projection("cacheFromStore[a.foo] AS `a.foo`")
       .nodeByLabelScan("a", "A")
@@ -404,7 +408,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       .getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN a.foo, count(a.foo)")._1
 
     val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
-      .aggregation(Seq("`a.foo` AS `a.foo`"), Seq("count(cache[a.foo]) AS `count(a.foo)`"))
+      .aggregation(Seq("cacheN[a.foo] AS `a.foo`"), Seq("count(cacheN[a.foo]) AS `count(a.foo)`"))
       .sort("`a.foo` ASC")
       .projection("cacheFromStore[a.foo] AS `a.foo`")
       .nodeByLabelScan("a", "A")
@@ -431,9 +435,9 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       new givenConfig().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN a.foo AS x, a.foo, count(a.foo)")._1
     val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
       .orderedAggregation(
-        Seq("`a.foo` AS x", "`a.foo` AS `a.foo`"),
-        Seq("count(cache[a.foo]) AS `count(a.foo)`"),
-        Seq("`a.foo`")
+        Seq("cacheN[a.foo] AS x", "cacheN[a.foo] AS `a.foo`"),
+        Seq("count(cacheN[a.foo]) AS `count(a.foo)`"),
+        Seq("cacheN[a.foo]")
       )
       .sort("`a.foo` ASC")
       .projection("cacheFromStore[a.foo] AS `a.foo`")
@@ -448,9 +452,9 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       new givenConfig().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN a.foo, a.foo AS y, count(a.foo)")._1
     val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
       .orderedAggregation(
-        Seq("`a.foo` AS `a.foo`", "`a.foo` AS y"),
-        Seq("count(cache[a.foo]) AS `count(a.foo)`"),
-        Seq("`a.foo`")
+        Seq("cacheN[a.foo] AS `a.foo`", "cacheN[a.foo] AS y"),
+        Seq("count(cacheN[a.foo]) AS `count(a.foo)`"),
+        Seq("cacheN[a.foo]")
       )
       .sort("`a.foo` ASC")
       .projection("cacheFromStore[a.foo] AS `a.foo`")
@@ -484,9 +488,9 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       new givenConfig().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN a.foo, a.bar, count(a.foo)")._1
     val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
       .orderedAggregation(
-        Seq("`a.foo` AS `a.foo`", "a.bar AS `a.bar`"),
-        Seq("count(cache[a.foo]) AS `count(a.foo)`"),
-        Seq("`a.foo`")
+        Seq("cacheN[a.foo] AS `a.foo`", "a.bar AS `a.bar`"),
+        Seq("count(cacheN[a.foo]) AS `count(a.foo)`"),
+        Seq("cacheN[a.foo]")
       )
       .sort("`a.foo` ASC")
       .projection("cacheFromStore[a.foo] AS `a.foo`")
@@ -503,9 +507,9 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       )._1
     val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
       .orderedAggregation(
-        Seq("`a.foo` AS `a.foo`", "`a.bar` AS `a.bar`"),
-        Seq("count(cache[a.foo]) AS `count(a.foo)`"),
-        Seq("`a.foo`", "`a.bar`")
+        Seq("cacheN[a.foo] AS `a.foo`", "cacheN[a.bar] AS `a.bar`"),
+        Seq("count(cacheN[a.foo]) AS `count(a.foo)`"),
+        Seq("cacheN[a.foo]", "cacheN[a.bar]")
       )
       .sort("`a.foo` ASC", "`a.bar` ASC")
       .projection("cache[a.foo] AS `a.foo`", "cache[a.bar] AS `a.bar`")
@@ -519,9 +523,9 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
   test("should use ordered distinct if there is one grouping column, ordered") {
     val plan = new givenConfig().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN DISTINCT a.foo")._1
     val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
-      .orderedDistinct(Seq("`a.foo`"), "`a.foo` AS `a.foo`")
+      .orderedDistinct(Seq("cacheN[a.foo]"), "cacheN[a.foo] AS `a.foo`")
       .sort("`a.foo` ASC")
-      .projection("a.foo AS `a.foo`")
+      .projection("cacheNFromStore[a.foo] AS `a.foo`")
       .nodeByLabelScan("a", "A")
       .build()
 
@@ -535,9 +539,9 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       "MATCH (a:A) WITH a ORDER BY a.foo RETURN DISTINCT a.foo"
     )._1
     val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
-      .distinct("`a.foo` AS `a.foo`")
+      .distinct("cacheN[a.foo] AS `a.foo`")
       .sort("`a.foo` ASC")
-      .projection("a.foo AS `a.foo`")
+      .projection("cacheNFromStore[a.foo] AS `a.foo`")
       .nodeByLabelScan("a", "A")
       .build()
 
@@ -603,9 +607,9 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
     val plan =
       new givenConfig().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN DISTINCT a.foo AS x, a.foo")._1
     val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
-      .orderedDistinct(Seq("`a.foo`"), "`a.foo` AS x", "`a.foo` AS `a.foo`")
+      .orderedDistinct(Seq("cacheN[a.foo]"), "cacheN[a.foo] AS x", "cacheN[a.foo] AS `a.foo`")
       .sort("`a.foo` ASC")
-      .projection("a.foo AS `a.foo`")
+      .projection("cacheNFromStore[a.foo] AS `a.foo`")
       .nodeByLabelScan("a", "A")
       .build()
 
@@ -616,9 +620,9 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
     val plan =
       new givenConfig().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN DISTINCT a.foo, a.foo AS y")._1
     val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
-      .orderedDistinct(Seq("`a.foo`"), "`a.foo` AS `a.foo`", "`a.foo` AS y")
+      .orderedDistinct(Seq("cacheN[a.foo]"), "cacheN[a.foo] AS `a.foo`", "cacheN[a.foo] AS y")
       .sort("`a.foo` ASC")
-      .projection("a.foo AS `a.foo`")
+      .projection("cacheNFromStore[a.foo] AS `a.foo`")
       .nodeByLabelScan("a", "A")
       .build()
 
@@ -641,9 +645,9 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
   test("should use ordered distinct if there are two grouping columns, one ordered") {
     val plan = new givenConfig().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN DISTINCT a.foo, a.bar")._1
     val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
-      .orderedDistinct(Seq("`a.foo`"), "`a.foo` AS `a.foo`", "a.bar AS `a.bar`")
+      .orderedDistinct(Seq("cacheN[a.foo]"), "cacheN[a.foo] AS `a.foo`", "a.bar AS `a.bar`")
       .sort("`a.foo` ASC")
-      .projection("a.foo AS `a.foo`")
+      .projection("cacheNFromStore[a.foo] AS `a.foo`")
       .nodeByLabelScan("a", "A")
       .build()
 
@@ -654,7 +658,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
     val plan =
       new givenConfig().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo, a.bar RETURN DISTINCT a.foo, a.bar")._1
     val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
-      .orderedDistinct(Seq("`a.foo`", "`a.bar`"), "`a.foo` AS `a.foo`", "`a.bar` AS `a.bar`")
+      .orderedDistinct(Seq("cacheN[a.foo]", "cacheN[a.bar]"), "cacheN[a.foo] AS `a.foo`", "cacheN[a.bar] AS `a.bar`")
       .sort("`a.foo` ASC", "`a.bar` ASC")
       .projection("cache[a.foo] AS `a.foo`", "cache[a.bar] AS `a.bar`")
       .cacheProperties("cacheFromStore[a.foo]", "cacheFromStore[a.bar]")
@@ -2681,6 +2685,38 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
         .filter("NOT a1 = a2", "a2:A")
         .expandAll("(a1)-[r]->(a2)")
         .nodeByLabelScan("a1", "A")
+        .build()
+    )
+  }
+
+  test("Order by expression should not use same variable name on 2 sides of CartesianProduct") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .enableDeduplicateNames(false)
+      .build()
+
+    val query =
+      """
+        |WITH 0 AS n0 ORDER BY null
+        |CALL {
+        |  RETURN 0 AS n1 ORDER BY null
+        |}
+        |UNWIND 0 AS x
+        |RETURN x
+        |""".stripMargin
+
+    planner.plan(query).stripProduceResults should equal(
+      planner.subPlanBuilder()
+        .unwind("0 AS x")
+        .cartesianProduct()
+        .|.projection("0 AS n1")
+        .|.sort("`  NULL@1` ASC")
+        .|.projection("NULL AS `  NULL@1`")
+        .|.argument()
+        .projection("0 AS n0")
+        .sort("`  NULL@0` ASC")
+        .projection("NULL AS `  NULL@0`")
+        .argument()
         .build()
     )
   }

@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.IsAggregate
 import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.frontend.phases.Namespacer
 import org.neo4j.cypher.internal.ir
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Asc
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Desc
@@ -172,9 +173,14 @@ object SortPlanner {
     def idFrom(expression: Expression, projection: Map[String, Expression]): String = {
       projection
         .collectFirst { case (key, e) if e == expression => key }
-        .getOrElse(ExpressionStringifier.pretty(_ =>
-          context.staticComponents.anonymousVariableNameGenerator.nextName
-        ).apply(expression))
+        .getOrElse(
+          Namespacer.genName(
+            context.staticComponents.anonymousVariableNameGenerator,
+            ExpressionStringifier.pretty(_ =>
+              context.staticComponents.anonymousVariableNameGenerator.nextName
+            ).apply(expression)
+          )
+        )
     }
 
     def projected(plan: LogicalPlan, projections: Map[String, Expression], updateSolved: Boolean): LogicalPlan = {
