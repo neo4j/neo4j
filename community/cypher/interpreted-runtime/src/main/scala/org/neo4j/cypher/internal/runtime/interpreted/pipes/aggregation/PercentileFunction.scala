@@ -23,8 +23,8 @@ import org.neo4j.collection.trackable.HeapTrackingArrayList
 import org.neo4j.collection.trackable.HeapTrackingCollections
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.NumericHelper
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.operations.CypherCoercions
 import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.exceptions.InternalException
 import org.neo4j.exceptions.InvalidArgumentException
@@ -69,7 +69,7 @@ abstract class PercentileFunction(val value: Expression, percentiles: Expression
         percs = new Array[Double](percentilesValue.length())
         var i = 0
         while (i < percentilesValue.length()) {
-          val perc = NumericHelper.asDouble(percentilesValue.value(i)).doubleValue()
+          val perc = CypherCoercions.asNumberValue(percentilesValue.value(i)).doubleValue()
           percs(i) = perc
           if (perc < 0 || perc > 1.0)
             throw new InvalidArgumentException(
@@ -78,7 +78,7 @@ abstract class PercentileFunction(val value: Expression, percentiles: Expression
           i += 1
         }
       case value =>
-        percs = Array(NumericHelper.asDouble(value).doubleValue())
+        percs = Array(CypherCoercions.asNumberValue(value).doubleValue())
         if (percs(0) < 0 || percs(0) > 1.0)
           throw new InvalidArgumentException(
             s"Invalid input '${percs(0)}' is not a valid argument, must be a number in the range 0.0 to 1.0"
@@ -100,16 +100,7 @@ class PercentileContFunction(value: Expression, percentile: Expression, memoryTr
         Values.NO_VALUE
       } else {
         val perc = percs(0)
-        if (perc == 1.0 || count == 1) {
-          temp.get(count - 1)
-        } else {
-          val floatIdx = perc * (count - 1)
-          val floor = floatIdx.toInt
-          val ceil = math.ceil(floatIdx).toInt
-          if (ceil == floor || floor == count - 1) temp.get(floor)
-          else Values.doubleValue(NumericHelper.asDouble(temp.get(floor)).doubleValue() * (ceil - floatIdx) +
-            NumericHelper.asDouble(temp.get(ceil)).doubleValue() * (floatIdx - floor))
-        }
+        PercentileContFunction.computePercentileCont(temp, count, perc)
       }
 
     temp.close()
@@ -121,6 +112,18 @@ class PercentileContFunction(value: Expression, percentile: Expression, memoryTr
 
 object PercentileContFunction {
   val SHALLOW_SIZE: Long = shallowSizeOfInstance(classOf[PercentileContFunction])
+
+  def computePercentileCont(data: HeapTrackingArrayList[NumberValue], count: Int, percentile: Double): NumberValue = {
+    if (percentile == 1.0 || count == 1) {
+      data.get(count - 1)
+    } else {
+      val floatIdx = percentile * (count - 1)
+      val floor = floatIdx.toInt
+      val ceil = math.ceil(floatIdx).toInt
+      if (ceil == floor || floor == count - 1) data.get(floor)
+      else data.get(floor).times(ceil - floatIdx).plus(data.get(ceil).times(floatIdx - floor))
+    }
+  }
 }
 
 class PercentileDiscFunction(value: Expression, percentile: Expression, memoryTracker: MemoryTracker)
@@ -136,16 +139,7 @@ class PercentileDiscFunction(value: Expression, percentile: Expression, memoryTr
         Values.NO_VALUE
       } else {
         val perc = percs(0)
-        if (perc == 1.0 || count == 1) {
-          temp.get(count - 1)
-        } else {
-          val floatIdx = perc * count
-          var idx = floatIdx.toInt
-          idx =
-            if (floatIdx != idx || idx == 0) idx
-            else idx - 1
-          temp.get(idx)
-        }
+        PercentileDiscFunction.computePercentileDisc(temp, count, perc)
       }
 
     temp.close()
@@ -157,6 +151,17 @@ class PercentileDiscFunction(value: Expression, percentile: Expression, memoryTr
 
 object PercentileDiscFunction {
   val SHALLOW_SIZE: Long = shallowSizeOfInstance(classOf[PercentileDiscFunction])
+
+  def computePercentileDisc(data: HeapTrackingArrayList[NumberValue], count: Int, percentile: Double): NumberValue = {
+    if (percentile == 1.0 || count == 1) {
+      data.get(count - 1)
+    } else {
+      val floatIdx = percentile * count
+      val toInt = floatIdx.toInt
+      val idx = if (floatIdx != toInt || toInt == 0) toInt else toInt - 1
+      data.get(idx)
+    }
+  }
 }
 
 class MultiPercentileDiscFunction(
@@ -199,17 +204,7 @@ class MultiPercentileDiscFunction(
         while (i < percs.length) {
           val perc = percs(i)
           val mapKey = mapKeys(i)
-          val percValue =
-            if (perc == 1.0 || count == 1) {
-              temp.get(count - 1)
-            } else {
-              val floatIdx = perc * count
-              var idx = floatIdx.toInt
-              idx =
-                if (floatIdx != idx || idx == 0) idx
-                else idx - 1
-              temp.get(idx)
-            }
+          val percValue = PercentileDiscFunction.computePercentileDisc(temp, count, perc)
           mapBuilder.add(mapKey, percValue)
           i += 1
         }

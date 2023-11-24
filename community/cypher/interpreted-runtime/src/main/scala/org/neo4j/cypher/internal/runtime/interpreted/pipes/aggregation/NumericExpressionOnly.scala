@@ -35,7 +35,8 @@ trait NumericExpressionOnly {
       case IsNoValue()         =>
       case number: NumberValue => f(number)
       case _ =>
-        throw new CypherTypeException("%s(%s) can only handle numerical values, or null.".format(name, value))
+        val objType = if (obj == null) "null" else obj.getClass.getName
+        throw new CypherTypeException(s"$name($value) can only handle numerical values or null, but received: $objType")
     }
   }
 }

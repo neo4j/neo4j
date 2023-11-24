@@ -1186,7 +1186,38 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("name", "c").withRows(expected)
   }
 
-  test("should handle multiPercentileDisc") {
+  test("should handle multiPercentileDisc with one percentile") {
+    givenGraph {
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int => Map("num" -> i % 10)
+        },
+        "Honey"
+      )
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p1")
+      .projection("m.p1 AS p1")
+      .aggregation(
+        Map.empty[String, Expression],
+        Map(
+          "m" -> multiPercentileDisc(varFor("n"), Seq(0.5), Seq("p1"))
+        )
+      )
+      .projection("x.num as n")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("p1").withRows(singleRow(4))
+  }
+
+  test("should handle multiPercentileDisc with two percentiles") {
     givenGraph {
       nodePropertyGraph(
         sizeHint,
@@ -1215,6 +1246,88 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("p1", "p2").withRows(singleRow(4, 4))
+  }
+
+  test("should handle multiPercentileDisc with nulls") {
+    givenGraph {
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int if i % 2 == 0 => Map("num" -> i % 10)
+        },
+        "Honey"
+      )
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p1", "p2")
+      .projection("m.p1 AS p1", "m.p2 AS p2")
+      .aggregation(
+        Map.empty[String, Expression],
+        Map(
+          "m" -> multiPercentileDisc(prop("n", "num"), Seq(0.5, 0.5), Seq("p1", "p2"))
+        )
+      )
+      .allNodeScan("n")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("p1", "p2").withRows(singleRow(4, 4))
+  }
+
+  test("multiPercentileDisc should return null for empty input") {
+    // given no data
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p1", "p2")
+      .projection("m.p1 AS p1", "m.p2 AS p2")
+      .aggregation(
+        Map.empty[String, Expression],
+        Map(
+          "m" -> multiPercentileDisc(prop("n", "num"), Seq(0.5, 0.5), Seq("p1", "p2"))
+        )
+      )
+      .allNodeScan("n")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("p1", "p2").withRows(singleRow(null, null))
+  }
+
+  test("multiPercentileDisc should return one row for one input row") {
+    givenGraph {
+      nodePropertyGraph(
+        1,
+        {
+          case i: Int => Map("num" -> 11)
+        },
+        "Honey"
+      )
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p1", "p2")
+      .projection("m.p1 AS p1", "m.p2 AS p2")
+      .aggregation(
+        Map.empty[String, Expression],
+        Map(
+          "m" -> multiPercentileDisc(prop("n", "num"), Seq(0.5, 0.5), Seq("p1", "p2"))
+        )
+      )
+      .allNodeScan("n")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("p1", "p2").withRows(singleRow(11, 11))
   }
 
   test("should handle percentileDisc") {
