@@ -23,6 +23,7 @@ import static org.neo4j.kernel.database.NamedDatabaseId.SYSTEM_DATABASE_NAME;
 import static scala.jdk.javaapi.OptionConverters.toJava;
 
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Supplier;
 import org.neo4j.cypher.internal.PreParsedQuery;
 import org.neo4j.cypher.internal.PreParser;
@@ -31,12 +32,17 @@ import org.neo4j.cypher.internal.ast.CatalogName;
 import org.neo4j.cypher.internal.ast.Statement;
 import org.neo4j.cypher.internal.compiler.CypherParsing;
 import org.neo4j.cypher.internal.compiler.helpers.SignatureResolver;
+import org.neo4j.cypher.internal.evaluator.SimpleInternalExpressionEvaluator;
 import org.neo4j.cypher.internal.frontend.phases.BaseState;
 import org.neo4j.cypher.internal.frontend.phases.ProcedureSignatureResolver;
 import org.neo4j.cypher.internal.javacompat.ExecutionEngine;
+import org.neo4j.cypher.internal.rewriting.rewriters.RemoveUseRewriter;
+import org.neo4j.cypher.internal.runtime.CypherRow;
 import org.neo4j.cypher.internal.tracing.CompilationTracer;
 import org.neo4j.cypher.internal.util.CancellationChecker;
+import org.neo4j.cypher.internal.util.InternalNotification;
 import org.neo4j.cypher.internal.util.RecordingNotificationLogger;
+import org.neo4j.cypher.rendering.QueryRenderer;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.fabric.executor.Location;
@@ -47,6 +53,8 @@ import org.neo4j.router.location.LocationService;
 import org.neo4j.router.query.Query;
 import org.neo4j.router.query.QueryProcessor;
 import org.neo4j.router.query.TargetService;
+import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.MapValueBuilder;
 import scala.Option;
 import scala.Some$;
 import scala.collection.immutable.Seq;
@@ -84,12 +92,32 @@ public class QueryProcessorImpl implements QueryProcessor {
 
     @Override
     public ProcessedQueryInfo processQuery(Query query, TargetService targetService, LocationService locationService) {
-        var cachedValue = maybeGetFromCache(query, targetService);
-        if (cachedValue != null) {
-            return cachedValue;
+
+        var cachedValue = getFromCache(query);
+
+        var databaseReference = targetService.target(cachedValue.catalogInfo());
+
+        maybePutInTargetDatabaseCache(
+                locationService,
+                databaseReference,
+                query,
+                cachedValue.preParsedQuery(),
+                cachedValue.parsedQuery(),
+                cachedValue.parsingNotifications());
+
+        var rewrittenQuery = query;
+        if (shouldRewriteQuery(databaseReference)) {
+            rewrittenQuery = Query.of(
+                    cachedValue.rewrittenQueryText(),
+                    query.parameters().updatedWith(cachedValue.maybeExtractedParams()));
         }
 
-        return doProcessQuery(query, targetService, locationService);
+        return new ProcessedQueryInfo(
+                databaseReference,
+                rewrittenQuery,
+                toJava(cachedValue.parsedQuery().maybeObfuscationMetadata()),
+                cachedValue.statementType(),
+                cachedValue.preParsedQuery().options().queryOptions().executionMode());
     }
 
     @Override
@@ -97,49 +125,37 @@ public class QueryProcessorImpl implements QueryProcessor {
         return cache.clearQueryCachesForDatabase(databaseName);
     }
 
-    private ProcessedQueryInfo maybeGetFromCache(Query query, TargetService targetService) {
+    private ProcessedQueryInfoCache.Value getFromCache(Query query) {
         var cachedValue = cache.get(query.text());
+
         if (cachedValue == null) {
-            return null;
+            var preparedForCacheQuery = prepareQueryForCache(query);
+            cache.put(query.text(), preparedForCacheQuery);
+            cachedValue = preparedForCacheQuery;
         }
-
-        try {
-            var databaseReference = targetService.target(cachedValue.catalogInfo());
-            // The database and alias info stored in System DB might have changed since
-            // the value got cached.
-            if (!databaseReference.equals(cachedValue.processedQueryInfo().target())) {
-                cache.remove(query.text());
-                return null;
-            }
-        } catch (DatabaseNotFoundException e) {
-            // Or the alias is no longer there at all.
-            cache.remove(query.text());
-            throw e;
-        }
-
-        return cachedValue.processedQueryInfo();
+        return cachedValue;
     }
 
-    private ProcessedQueryInfo doProcessQuery(
-            Query query, TargetService targetService, LocationService locationService) {
+    private ProcessedQueryInfoCache.Value prepareQueryForCache(Query query) {
         var queryTracer = tracer.compileQuery(query.text());
         var notificationLogger = new RecordingNotificationLogger();
         var preParsedQuery = preParser.preParse(query.text(), notificationLogger);
         var resolver = SignatureResolver.from(globalProcedures.getCurrentView());
         var parsedQuery = parse(query, queryTracer, preParsedQuery, resolver, notificationLogger);
         var catalogInfo = resolveCatalogInfo(parsedQuery.statement());
-        var databaseReference = targetService.target(catalogInfo);
-        var rewrittenQuery = maybeRewriteQuery(query, parsedQuery, databaseReference);
-        var obfuscationMetadata = toJava(parsedQuery.maybeObfuscationMetadata());
+        var rewrittenQueryText = rewriteQueryText(parsedQuery);
+        var maybeExtractedParams = formatMaybeExtractedParams(parsedQuery);
         var statementType = StatementType.of(parsedQuery.statement(), resolver);
-        var cypherExecutionMode = preParsedQuery.options().queryOptions().executionMode();
+        var parsingNotifications = CollectionConverters.asJava(notificationLogger.notifications());
 
-        maybePutInTargetDatabaseCache(
-                locationService, databaseReference, query, preParsedQuery, parsedQuery, notificationLogger);
-        var processedQueryInfo = new ProcessedQueryInfo(
-                databaseReference, rewrittenQuery, obfuscationMetadata, statementType, cypherExecutionMode);
-        cache.put(query.text(), new ProcessedQueryInfoCache.Value(catalogInfo, processedQueryInfo));
-        return processedQueryInfo;
+        return new ProcessedQueryInfoCache.Value(
+                catalogInfo,
+                rewrittenQueryText,
+                maybeExtractedParams,
+                preParsedQuery,
+                parsedQuery,
+                statementType,
+                parsingNotifications);
     }
 
     private TargetService.CatalogInfo resolveCatalogInfo(Statement statement) {
@@ -151,12 +167,24 @@ public class QueryProcessorImpl implements QueryProcessor {
         return toCatalogInfo(graphSelections);
     }
 
-    private Query maybeRewriteQuery(Query query, BaseState parsedQuery, DatabaseReference databaseReference) {
-        if (databaseReference instanceof DatabaseReferenceImpl.External externalReference) {
-            // TODO: this is where the magic for external references will happen
-        }
+    private static String rewriteQueryText(BaseState parsedQuery) {
+        var rewrittenStatement = RemoveUseRewriter.instance().apply(parsedQuery.statement());
+        return QueryRenderer.render((Statement) rewrittenStatement);
+    }
 
-        return query;
+    private static MapValue formatMaybeExtractedParams(BaseState parsedQuery) {
+        var mapValueBuilder = new MapValueBuilder();
+        var extractedParams = parsedQuery.maybeExtractedParams().get();
+        if (extractedParams.nonEmpty()) {
+            var evaluator = new SimpleInternalExpressionEvaluator();
+            extractedParams.foreach(param -> mapValueBuilder.add(
+                    param._1.name(), evaluator.evaluate(param._2, MapValue.EMPTY, CypherRow.empty())));
+        }
+        return mapValueBuilder.build();
+    }
+
+    private static Boolean shouldRewriteQuery(DatabaseReference databaseReference) {
+        return (databaseReference instanceof DatabaseReferenceImpl.External);
     }
 
     private void maybePutInTargetDatabaseCache(
@@ -165,7 +193,7 @@ public class QueryProcessorImpl implements QueryProcessor {
             Query query,
             PreParsedQuery preParsedQuery,
             BaseState parsedQuery,
-            RecordingNotificationLogger parsingNotificationLogger) {
+            Set<InternalNotification> parsingNotifications) {
         if (locationService.locationOf(databaseReference) instanceof Location.Local localLocation
                 // System DB queries are hassle, because they might contain sensitive information
                 // and AST cache is not used for them anyway.
@@ -177,11 +205,7 @@ public class QueryProcessorImpl implements QueryProcessor {
             var resolver = databaseContext.dependencies();
             var queryExecutionEngine = resolver.resolveDependency(ExecutionEngine.class);
             queryExecutionEngine.insertIntoCache(
-                    query.text(),
-                    preParsedQuery,
-                    query.parameters(),
-                    parsedQuery,
-                    CollectionConverters.asJava(parsingNotificationLogger.notifications()));
+                    query.text(), preParsedQuery, query.parameters(), parsedQuery, parsingNotifications);
         }
     }
 

@@ -19,14 +19,18 @@
  */
 package org.neo4j.router.impl.query;
 
+import java.util.Set;
+import org.neo4j.cypher.internal.PreParsedQuery;
 import org.neo4j.cypher.internal.cache.CacheSize;
 import org.neo4j.cypher.internal.cache.CacheTracer;
 import org.neo4j.cypher.internal.cache.CaffeineCacheFactory;
 import org.neo4j.cypher.internal.cache.LFUCache;
+import org.neo4j.cypher.internal.frontend.phases.BaseState;
+import org.neo4j.cypher.internal.util.InternalNotification;
 import org.neo4j.function.Observable;
-import org.neo4j.router.query.QueryProcessor;
 import org.neo4j.router.query.TargetService;
 import org.neo4j.util.VisibleForTesting;
+import org.neo4j.values.virtual.MapValue;
 
 public class ProcessedQueryInfoCache {
 
@@ -60,7 +64,14 @@ public class ProcessedQueryInfoCache {
         cache.invalidate(query);
     }
 
-    public record Value(TargetService.CatalogInfo catalogInfo, QueryProcessor.ProcessedQueryInfo processedQueryInfo) {}
+    public record Value(
+            TargetService.CatalogInfo catalogInfo,
+            String rewrittenQueryText,
+            MapValue maybeExtractedParams,
+            PreParsedQuery preParsedQuery,
+            BaseState parsedQuery,
+            StatementType statementType,
+            Set<InternalNotification> parsingNotifications) {}
 
     public long clearQueryCachesForDatabase(String databaseName) {
         // Currently, we just clear everything.

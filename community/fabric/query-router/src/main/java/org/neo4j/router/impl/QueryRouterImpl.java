@@ -192,7 +192,8 @@ public class QueryRouterImpl implements QueryRouter {
                     context.transactionFor(location, transactionMode(accessMode, statementType, executionMode));
             statementLifecycle.doneRouterProcessing(
                     processedQueryInfo.obfuscationMetadata().get(), target.isComposite());
-            return databaseTransaction.executeQuery(query, subscriber, statementLifecycle);
+            return databaseTransaction.executeQuery(
+                    processedQueryInfo.rewrittenQuery(), subscriber, statementLifecycle);
         } catch (RuntimeException e) {
             statementLifecycle.endFailure(e);
 
