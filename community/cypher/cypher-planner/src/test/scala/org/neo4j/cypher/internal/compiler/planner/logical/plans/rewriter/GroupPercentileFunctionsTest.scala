@@ -92,6 +92,28 @@ class GroupPercentileFunctionsTest extends CypherFunSuite with LogicalPlanningTe
     rewrite(before, names = Seq(mapName)) should equal(after)
   }
 
+  test("should rewrite two distinct percentileDisc on same variable") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .aggregation(Seq.empty, Seq("percentileDisc(DISTINCT n, 0.5) AS p1", "percentileDisc(DISTINCT n, 0.6) AS p2"))
+      .projection("from.number1 AS n")
+      .allNodeScan("from")
+      .build()
+
+    val mapName = "   map0"
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .projection(s"`$mapName`.p1 AS p1", s"`$mapName`.p2 AS p2")
+      .aggregation(
+        Map.empty[String, Expression],
+        Map(mapName -> percentiles(varFor("n"), Seq(0.5, 0.6), Seq("p1", "p2"), Seq(true, true), distinct = true))
+      )
+      .projection("from.number1 AS n")
+      .allNodeScan("from")
+      .build()
+
+    rewrite(before, names = Seq(mapName)) should equal(after)
+  }
+
   test("should rewrite two percentileDisc on same variable but not a third that is distinct") {
     val before = new LogicalPlanBuilder(wholePlan = false)
       .aggregation(
@@ -142,6 +164,28 @@ class GroupPercentileFunctionsTest extends CypherFunSuite with LogicalPlanningTe
     rewrite(before, names = Seq(mapName)) should equal(after)
   }
 
+  test("should rewrite one percentileDisc and one percentileCont on same variable when distinct") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .aggregation(Seq.empty, Seq("percentileCont(DISTINCT n, 0.5) AS p1", "percentileDisc(DISTINCT n, 0.6) AS p2"))
+      .projection("from.number1 AS n")
+      .allNodeScan("from")
+      .build()
+
+    val mapName = "   map0"
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .projection(s"`$mapName`.p1 AS p1", s"`$mapName`.p2 AS p2")
+      .aggregation(
+        Map.empty[String, Expression],
+        Map(mapName -> percentiles(varFor("n"), Seq(0.5, 0.6), Seq("p1", "p2"), Seq(false, true), distinct = true))
+      )
+      .projection("from.number1 AS n")
+      .allNodeScan("from")
+      .build()
+
+    rewrite(before, names = Seq(mapName)) should equal(after)
+  }
+
   test("should rewrite two percentileDisc on same property") {
     val before = new LogicalPlanBuilder(wholePlan = false)
       .aggregation(Seq.empty, Seq("percentileDisc(from.number1, 0.5) AS p1", "percentileDisc(from.number1, 0.6) AS p2"))
@@ -155,6 +199,35 @@ class GroupPercentileFunctionsTest extends CypherFunSuite with LogicalPlanningTe
       .aggregation(
         Map.empty[String, Expression],
         Map(mapName -> percentiles(prop("from", "number1"), Seq(0.5, 0.6), Seq("p1", "p2"), Seq(true, true)))
+      )
+      .allNodeScan("from")
+      .build()
+
+    rewrite(before, names = Seq(mapName)) should equal(after)
+  }
+
+  test("should rewrite two percentileDisc on same property when distinct") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .aggregation(
+        Seq.empty,
+        Seq("percentileDisc(DISTINCT from.number1, 0.5) AS p1", "percentileDisc(DISTINCT from.number1, 0.6) AS p2")
+      )
+      .allNodeScan("from")
+      .build()
+
+    val mapName = "   map0"
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .projection(s"`$mapName`.p1 AS p1", s"`$mapName`.p2 AS p2")
+      .aggregation(
+        Map.empty[String, Expression],
+        Map(mapName -> percentiles(
+          prop("from", "number1"),
+          Seq(0.5, 0.6),
+          Seq("p1", "p2"),
+          Seq(true, true),
+          distinct = true
+        ))
       )
       .allNodeScan("from")
       .build()
@@ -196,11 +269,13 @@ class GroupPercentileFunctionsTest extends CypherFunSuite with LogicalPlanningTe
         Seq.empty,
         Seq(
           "percentileDisc(DISTINCT n1, 0.5) AS p0",
-          "percentileDisc(n1, 0.5) AS p1",
-          "percentileDisc(n1, 0.6) AS p2",
-          "percentileDisc(n2, 0.7) AS p3",
-          "percentileDisc(n2, 0.8) AS p4",
-          "percentileCont(n2, 0.8) AS p5"
+          "percentileCont(DISTINCT n1, 0.6) AS p1",
+          "percentileDisc(n1, 0.5) AS p2",
+          "percentileDisc(n1, 0.6) AS p3",
+          "percentileDisc(DISTINCT n2, 0.7) AS p4",
+          "percentileDisc(n2, 0.7) AS p5",
+          "percentileDisc(n2, 0.8) AS p6",
+          "percentileCont(n2, 0.8) AS p7"
         )
       )
       .projection("from.n1 AS n1", "from.n2 AS n2")
@@ -209,28 +284,32 @@ class GroupPercentileFunctionsTest extends CypherFunSuite with LogicalPlanningTe
 
     val map0 = "   map0"
     val map1 = "   map1"
+    val map2 = "   map2"
 
     val after = new LogicalPlanBuilder(wholePlan = false)
       .projection(
-        s"`$map0`.p1 AS p1",
+        s"`$map1`.p0 AS p0",
+        s"`$map1`.p1 AS p1",
         s"`$map0`.p2 AS p2",
-        s"`$map1`.p3 AS p3",
-        s"`$map1`.p4 AS p4",
-        s"`$map1`.p5 AS p5"
+        s"`$map0`.p3 AS p3",
+        s"`$map2`.p5 AS p5",
+        s"`$map2`.p6 AS p6",
+        s"`$map2`.p7 AS p7"
       )
       .aggregation(
         Map.empty[String, Expression],
         Map(
-          "p0" -> distinctFunction(PercentileDisc.name, varFor("n1"), literalFloat(0.5)),
-          map0 -> percentiles(varFor("n1"), Seq(0.5, 0.6), Seq("p1", "p2"), Seq(true, true)),
-          map1 -> percentiles(varFor("n2"), Seq(0.7, 0.8, 0.8), Seq("p3", "p5", "p4"), Seq(true, false, true))
+          map1 -> percentiles(varFor("n1"), Seq(0.6, 0.5), Seq("p1", "p0"), Seq(false, true), distinct = true),
+          map0 -> percentiles(varFor("n1"), Seq(0.6, 0.5), Seq("p3", "p2"), Seq(true, true)),
+          "p4" -> distinctFunction(PercentileDisc.name, varFor("n2"), literalFloat(0.7)),
+          map2 -> percentiles(varFor("n2"), Seq(0.8, 0.7, 0.8), Seq("p6", "p5", "p7"), Seq(true, true, false))
         )
       )
       .projection("from.n1 AS n1", "from.n2 AS n2")
       .allNodeScan("from")
       .build()
 
-    rewrite(before, names = Seq(map1, map0)) should equal(after)
+    rewrite(before, names = Seq(map2, map1, map0)) should equal(after)
   }
 
   private def assertNotRewritten(p: LogicalPlan): Unit = {
