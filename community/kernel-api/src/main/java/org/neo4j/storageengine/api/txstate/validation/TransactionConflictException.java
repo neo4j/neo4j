@@ -20,32 +20,30 @@
 package org.neo4j.storageengine.api.txstate.validation;
 
 import java.util.Arrays;
+import org.neo4j.graphdb.TransientFailureException;
 import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseFile;
 import org.neo4j.io.pagecache.context.VersionContext;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class TransactionConflictException extends RuntimeException implements Status.HasStatus {
+public class TransactionConflictException extends TransientFailureException {
 
     private static final String GENERIC_MESSAGE = "Transaction conflict validation failed.";
     private DatabaseFile databaseFile;
     private long observedVersion;
     private long highestClosed;
     private long[] nonVisibleTransactions;
-    private final String message;
 
     public TransactionConflictException(DatabaseFile databaseFile, VersionContext versionContext, long pageId) {
+        super(createMessage(databaseFile.getName(), pageId, versionContext));
         this.databaseFile = databaseFile;
         this.observedVersion = versionContext.chainHeadVersion();
         this.highestClosed = versionContext.highestClosed();
         this.nonVisibleTransactions = versionContext.notVisibleTransactionIds();
-        this.message =
-                createMessage(databaseFile.getName(), pageId, observedVersion, highestClosed, nonVisibleTransactions);
     }
 
     public TransactionConflictException(String message, Exception cause) {
-        super(cause);
-        this.message = message;
+        super(message, cause);
     }
 
     public TransactionConflictException(Exception cause) {
@@ -53,18 +51,13 @@ public class TransactionConflictException extends RuntimeException implements St
     }
 
     public TransactionConflictException(RecordDatabaseFile databaseFile, long pageId) {
+        super(createPageIdPagedMessage(databaseFile.getName(), pageId));
         this.databaseFile = databaseFile;
-        this.message = createPageIdPagedMessage(databaseFile.getName(), pageId);
     }
 
     @Override
     public synchronized Throwable fillInStackTrace() {
         return this;
-    }
-
-    @Override
-    public String getMessage() {
-        return message;
     }
 
     public DatabaseFile getDatabaseFile() {
@@ -93,15 +86,12 @@ public class TransactionConflictException extends RuntimeException implements St
                 + "' store is already locked by other transaction validator.";
     }
 
-    private static String createMessage(
-            String databaseFileName,
-            long pageId,
-            long observedVersion,
-            long highestClosed,
-            long[] nonVisibleTransactions) {
+    private static String createMessage(String databaseFileName, long pageId, VersionContext versionContext) {
         return "Concurrent modification exception. Page " + pageId + " in '"
                 + databaseFileName + "' store is modified already by transaction "
-                + observedVersion + ", while ongoing transaction highest visible is: " + highestClosed
-                + ", with not yet visible transaction ids are: " + Arrays.toString(nonVisibleTransactions) + ".";
+                + versionContext.chainHeadVersion() + ", while ongoing transaction highest visible is: "
+                + versionContext.highestClosed()
+                + ", with not yet visible transaction ids are: "
+                + Arrays.toString(versionContext.notVisibleTransactionIds()) + ".";
     }
 }

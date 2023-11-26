@@ -36,13 +36,12 @@ public class DefaultTransactionExceptionMapper implements TransactionExceptionMa
 
     @Override
     public RuntimeException mapException(Exception e) {
-        if (e instanceof TransientFailureException) {
+        if (e instanceof TransientFailureException tfe) {
             // We let transient exceptions pass through unchanged since they aren't really transaction failures
             // in the same sense as unexpected failures are. Such exception signals that the transaction
             // can be retried and might be successful the next time.
-            return (TransientFailureException) e;
-        }
-        if (e instanceof ConstraintViolationTransactionFailureException) {
+            return tfe;
+        } else if (e instanceof ConstraintViolationTransactionFailureException) {
             return new ConstraintViolationException(e.getMessage(), e);
         } else if (e instanceof Status.HasStatus) {
             Status status = ((Status.HasStatus) e).status();
