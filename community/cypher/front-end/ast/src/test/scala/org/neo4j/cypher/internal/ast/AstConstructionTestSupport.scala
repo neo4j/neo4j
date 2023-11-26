@@ -407,11 +407,12 @@ trait AstConstructionTestSupport {
     input: Expression,
     percentiles: Seq[Double],
     propertyKeys: Seq[String],
-    isDiscretes: Seq[Boolean]
+    isDiscretes: Seq[Boolean],
+    distinct: Boolean = false
   ): FunctionInvocation = {
     FunctionInvocation(
       FunctionName(Percentiles.name)(pos),
-      distinct = false,
+      distinct,
       IndexedSeq(input, listOfFloat(percentiles: _*), listOfString(propertyKeys: _*), listOfBoolean(isDiscretes: _*))
     )(pos)
   }

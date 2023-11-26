@@ -589,8 +589,7 @@ case class CommunityExpressionConverter(
 
         val command = commands.expressions.Percentiles(inputArg, percentilesArg, keysArg, isDiscretesArg)
         if (invocation.distinct) {
-          // TODO commands.expressions.Distinct(command, inputArg)
-          throw new UnsupportedOperationException("boom")
+          commands.expressions.Distinct(command, inputArg)
         } else
           command
       case Pi => commands.expressions.PiFunction()

@@ -30,7 +30,6 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.spec.tests.AggregationLargeMorselTestBase.withLargeMorsels
-import org.neo4j.exceptions.CantCompileQueryException
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.RelationshipType
@@ -63,7 +62,6 @@ import java.time.temporal.ChronoUnit
 import java.util.Collections
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.LongAdder
-
 import scala.jdk.CollectionConverters.IterableHasAsScala
 import scala.util.Random
 
@@ -1186,241 +1184,243 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("name", "c").withRows(expected)
   }
 
-  test("should handle percentiles with one disc percentile") {
-    givenGraph {
-      nodePropertyGraph(
-        sizeHint,
-        {
-          case i: Int => Map("num" -> i % 10)
-        },
-        "Honey"
-      )
+  for (distinct <- Seq(false, true)) {
+    test(s"should handle percentiles with one disc percentile when distinct=$distinct") {
+      givenGraph {
+        nodePropertyGraph(
+          sizeHint,
+          {
+            case i: Int => Map("num" -> i % 10)
+          },
+          "Honey"
+        )
+      }
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("p1")
+        .projection("m.p1 AS p1")
+        .aggregation(
+          Map.empty[String, Expression],
+          Map(
+            "m" -> percentiles(varFor("n"), Seq(0.5), Seq("p1"), Seq(true), distinct)
+          )
+        )
+        .projection("x.num as n")
+        .allNodeScan("x")
+        .build()
+
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      runtimeResult should beColumns("p1").withRows(singleRow(4))
     }
 
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("p1")
-      .projection("m.p1 AS p1")
-      .aggregation(
-        Map.empty[String, Expression],
-        Map(
-          "m" -> percentiles(varFor("n"), Seq(0.5), Seq("p1"), Seq(true))
+    test(s"should handle percentiles with one cont percentile when distinct=$distinct") {
+      givenGraph {
+        nodePropertyGraph(
+          sizeHint,
+          {
+            case i: Int => Map("num" -> i % 10)
+          },
+          "Honey"
         )
-      )
-      .projection("x.num as n")
-      .allNodeScan("x")
-      .build()
+      }
 
-    val runtimeResult = execute(logicalQuery, runtime)
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("p1")
+        .projection("m.p1 AS p1")
+        .aggregation(
+          Map.empty[String, Expression],
+          Map(
+            "m" -> percentiles(varFor("n"), Seq(0.5), Seq("p1"), Seq(false), distinct)
+          )
+        )
+        .projection("x.num as n")
+        .allNodeScan("x")
+        .build()
 
-    // then
-    runtimeResult should beColumns("p1").withRows(singleRow(4))
-  }
+      val runtimeResult = execute(logicalQuery, runtime)
 
-  test("should handle percentiles with one cont percentile") {
-    givenGraph {
-      nodePropertyGraph(
-        sizeHint,
-        {
-          case i: Int => Map("num" -> i % 10)
-        },
-        "Honey"
-      )
+      // then
+      runtimeResult should beColumns("p1").withRows(singleRow(4.5))
     }
 
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("p1")
-      .projection("m.p1 AS p1")
-      .aggregation(
-        Map.empty[String, Expression],
-        Map(
-          "m" -> percentiles(varFor("n"), Seq(0.5), Seq("p1"), Seq(false))
+    test(s"should handle percentiles with two disc percentiles when distinct=$distinct") {
+      givenGraph {
+        nodePropertyGraph(
+          sizeHint,
+          {
+            case i: Int => Map("num" -> i % 10)
+          },
+          "Honey"
         )
-      )
-      .projection("x.num as n")
-      .allNodeScan("x")
-      .build()
+      }
 
-    val runtimeResult = execute(logicalQuery, runtime)
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("p1", "p2")
+        .projection("m.p1 AS p1", "m.p2 AS p2")
+        .aggregation(
+          Map.empty[String, Expression],
+          Map(
+            "m" -> percentiles(varFor("n"), Seq(0.5, 0.5), Seq("p1", "p2"), Seq(true, true), distinct)
+          )
+        )
+        .projection("x.num as n")
+        .allNodeScan("x")
+        .build()
 
-    // then
-    runtimeResult should beColumns("p1").withRows(singleRow(4.5))
-  }
+      val runtimeResult = execute(logicalQuery, runtime)
 
-  test("should handle percentiles with two disc percentiles") {
-    givenGraph {
-      nodePropertyGraph(
-        sizeHint,
-        {
-          case i: Int => Map("num" -> i % 10)
-        },
-        "Honey"
-      )
+      // then
+      runtimeResult should beColumns("p1", "p2").withRows(singleRow(4, 4))
     }
 
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("p1", "p2")
-      .projection("m.p1 AS p1", "m.p2 AS p2")
-      .aggregation(
-        Map.empty[String, Expression],
-        Map(
-          "m" -> percentiles(varFor("n"), Seq(0.5, 0.5), Seq("p1", "p2"), Seq(true, true))
+    test(s"should handle percentiles with two cont percentiles when distinct=$distinct") {
+      givenGraph {
+        nodePropertyGraph(
+          sizeHint,
+          {
+            case i: Int => Map("num" -> i % 10)
+          },
+          "Honey"
         )
-      )
-      .projection("x.num as n")
-      .allNodeScan("x")
-      .build()
+      }
 
-    val runtimeResult = execute(logicalQuery, runtime)
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("p1", "p2")
+        .projection("m.p1 AS p1", "m.p2 AS p2")
+        .aggregation(
+          Map.empty[String, Expression],
+          Map(
+            "m" -> percentiles(varFor("n"), Seq(0.5, 0.5), Seq("p1", "p2"), Seq(false, false), distinct)
+          )
+        )
+        .projection("x.num as n")
+        .allNodeScan("x")
+        .build()
 
-    // then
-    runtimeResult should beColumns("p1", "p2").withRows(singleRow(4, 4))
-  }
+      val runtimeResult = execute(logicalQuery, runtime)
 
-  test("should handle percentiles with two cont percentiles") {
-    givenGraph {
-      nodePropertyGraph(
-        sizeHint,
-        {
-          case i: Int => Map("num" -> i % 10)
-        },
-        "Honey"
-      )
+      // then
+      runtimeResult should beColumns("p1", "p2").withRows(singleRow(4.5, 4.5))
     }
 
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("p1", "p2")
-      .projection("m.p1 AS p1", "m.p2 AS p2")
-      .aggregation(
-        Map.empty[String, Expression],
-        Map(
-          "m" -> percentiles(varFor("n"), Seq(0.5, 0.5), Seq("p1", "p2"), Seq(false, false))
+    test(s"should handle percentiles with two cont and disc percentiles when distinct=$distinct") {
+      givenGraph {
+        nodePropertyGraph(
+          sizeHint,
+          {
+            case i: Int => Map("num" -> i % 10)
+          },
+          "Honey"
         )
-      )
-      .projection("x.num as n")
-      .allNodeScan("x")
-      .build()
+      }
 
-    val runtimeResult = execute(logicalQuery, runtime)
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("p1", "p2")
+        .projection("m.p1 AS p1", "m.p2 AS p2")
+        .aggregation(
+          Map.empty[String, Expression],
+          Map(
+            "m" -> percentiles(varFor("n"), Seq(0.5, 0.5), Seq("p1", "p2"), Seq(true, false), distinct)
+          )
+        )
+        .projection("x.num as n")
+        .allNodeScan("x")
+        .build()
 
-    // then
-    runtimeResult should beColumns("p1", "p2").withRows(singleRow(4.5, 4.5))
-  }
+      val runtimeResult = execute(logicalQuery, runtime)
 
-  test("should handle percentiles with two cont and disc percentiles") {
-    givenGraph {
-      nodePropertyGraph(
-        sizeHint,
-        {
-          case i: Int => Map("num" -> i % 10)
-        },
-        "Honey"
-      )
+      // then
+      runtimeResult should beColumns("p1", "p2").withRows(singleRow(4, 4.5))
     }
 
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("p1", "p2")
-      .projection("m.p1 AS p1", "m.p2 AS p2")
-      .aggregation(
-        Map.empty[String, Expression],
-        Map(
-          "m" -> percentiles(varFor("n"), Seq(0.5, 0.5), Seq("p1", "p2"), Seq(true, false))
+    test(s"should handle percentiles with nulls when distinct=$distinct") {
+      givenGraph {
+        nodePropertyGraph(
+          sizeHint,
+          {
+            case i: Int if i % 2 == 0 => Map("num" -> i % 10)
+          },
+          "Honey"
         )
-      )
-      .projection("x.num as n")
-      .allNodeScan("x")
-      .build()
+      }
 
-    val runtimeResult = execute(logicalQuery, runtime)
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("p1", "p2")
+        .projection("m.p1 AS p1", "m.p2 AS p2")
+        .aggregation(
+          Map.empty[String, Expression],
+          Map(
+            "m" -> percentiles(prop("n", "num"), Seq(0.5, 0.5), Seq("p1", "p2"), Seq(true, false), distinct)
+          )
+        )
+        .allNodeScan("n")
+        .build()
 
-    // then
-    runtimeResult should beColumns("p1", "p2").withRows(singleRow(4, 4.5))
-  }
+      val runtimeResult = execute(logicalQuery, runtime)
 
-  test("should handle percentiles with nulls") {
-    givenGraph {
-      nodePropertyGraph(
-        sizeHint,
-        {
-          case i: Int if i % 2 == 0 => Map("num" -> i % 10)
-        },
-        "Honey"
-      )
+      // then
+      runtimeResult should beColumns("p1", "p2").withRows(singleRow(4, 4))
     }
 
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("p1", "p2")
-      .projection("m.p1 AS p1", "m.p2 AS p2")
-      .aggregation(
-        Map.empty[String, Expression],
-        Map(
-          "m" -> percentiles(prop("n", "num"), Seq(0.5, 0.5), Seq("p1", "p2"), Seq(true, false))
+    test(s"percentiles should return null for empty input when distinct=$distinct") {
+      // given no data
+
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("p1", "p2")
+        .projection("m.p1 AS p1", "m.p2 AS p2")
+        .aggregation(
+          Map.empty[String, Expression],
+          Map(
+            "m" -> percentiles(prop("n", "num"), Seq(0.5, 0.5), Seq("p1", "p2"), Seq(true, false), distinct)
+          )
         )
-      )
-      .allNodeScan("n")
-      .build()
+        .allNodeScan("n")
+        .build()
 
-    val runtimeResult = execute(logicalQuery, runtime)
+      val runtimeResult = execute(logicalQuery, runtime)
 
-    // then
-    runtimeResult should beColumns("p1", "p2").withRows(singleRow(4, 4))
-  }
-
-  test("percentiles should return null for empty input") {
-    // given no data
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("p1", "p2")
-      .projection("m.p1 AS p1", "m.p2 AS p2")
-      .aggregation(
-        Map.empty[String, Expression],
-        Map(
-          "m" -> percentiles(prop("n", "num"), Seq(0.5, 0.5), Seq("p1", "p2"), Seq(true, false))
-        )
-      )
-      .allNodeScan("n")
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    runtimeResult should beColumns("p1", "p2").withRows(singleRow(null, null))
-  }
-
-  test("percentiles should return one row for one input row") {
-    givenGraph {
-      nodePropertyGraph(
-        1,
-        {
-          case i: Int => Map("num" -> 11)
-        },
-        "Honey"
-      )
+      // then
+      runtimeResult should beColumns("p1", "p2").withRows(singleRow(null, null))
     }
 
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("p1", "p2")
-      .projection("m.p1 AS p1", "m.p2 AS p2")
-      .aggregation(
-        Map.empty[String, Expression],
-        Map(
-          "m" -> percentiles(prop("n", "num"), Seq(0.5, 0.5), Seq("p1", "p2"), Seq(true, false))
+    test(s"percentiles should return one row for one input row when distinct=$distinct") {
+      givenGraph {
+        nodePropertyGraph(
+          1,
+          {
+            case i: Int => Map("num" -> 11)
+          },
+          "Honey"
         )
-      )
-      .allNodeScan("n")
-      .build()
+      }
 
-    val runtimeResult = execute(logicalQuery, runtime)
+      // when
+      val logicalQuery = new LogicalQueryBuilder(this)
+        .produceResults("p1", "p2")
+        .projection("m.p1 AS p1", "m.p2 AS p2")
+        .aggregation(
+          Map.empty[String, Expression],
+          Map(
+            "m" -> percentiles(prop("n", "num"), Seq(0.5, 0.5), Seq("p1", "p2"), Seq(true, false), distinct)
+          )
+        )
+        .allNodeScan("n")
+        .build()
 
-    // then
-    runtimeResult should beColumns("p1", "p2").withRows(singleRow(11, 11))
+      val runtimeResult = execute(logicalQuery, runtime)
+
+      // then
+      runtimeResult should beColumns("p1", "p2").withRows(singleRow(11, 11))
+    }
   }
 
   test("should handle percentileDisc") {
