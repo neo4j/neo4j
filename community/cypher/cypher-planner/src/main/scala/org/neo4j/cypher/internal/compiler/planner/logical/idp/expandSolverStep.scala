@@ -537,7 +537,6 @@ object expandSolverStep {
       singletonNodeVariables.result(),
       singletonRelVariables.result(),
       selector,
-      maybeHiddenFilter,
       solvedExpressionAsString,
       solvedSpp,
       unsolvedPredicatesOnTargetNode,

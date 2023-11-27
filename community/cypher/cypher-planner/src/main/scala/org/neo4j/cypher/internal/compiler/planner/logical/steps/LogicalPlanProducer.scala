@@ -2353,7 +2353,6 @@ case class LogicalPlanProducer(
     singletonNodeVariables: Set[Mapping],
     singletonRelationshipVariables: Set[Mapping],
     selector: StatefulShortestPath.Selector,
-    maybeHiddenFilter: Option[Expression],
     solvedExpressionAsString: String,
     solvedSpp: SelectivePathPattern,
     solvedPredicates: Seq[Expression],
@@ -2389,23 +2388,7 @@ case class LogicalPlanProducer(
       reverseGroupVariableProjections
     )
     val providedOrder = providedOrders.get(inner.id).fromLeft
-    val ssp = annotate(
-      plan,
-      solved,
-      providedOrder,
-      context
-    )
-
-    maybeHiddenFilter match {
-      case Some(hiddenFilter) =>
-        annotateSelection(
-          Selection(Seq(hiddenFilter), ssp),
-          solved,
-          providedOrder,
-          context
-        )
-      case None => ssp
-    }
+    annotate(plan, solved, providedOrder, context)
   }
 
   def planProjectEndpoints(
