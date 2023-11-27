@@ -2601,18 +2601,8 @@ object AbstractLogicalPlanBuilder {
     CreatePattern(nodes ++ relationships)
   }
 
-  def createPatternIr(
-    nodes: Seq[org.neo4j.cypher.internal.ir.CreateNode] = Seq.empty,
-    relationships: Seq[org.neo4j.cypher.internal.ir.CreateRelationship] = Seq.empty
-  ): org.neo4j.cypher.internal.ir.CreatePattern = {
-    org.neo4j.cypher.internal.ir.CreatePattern(nodes ++ relationships)
-  }
-
   def createNode(node: String, labels: String*): CreateNode =
     CreateNode(varFor(node), labels.map(LabelName(_)(pos)).toSet, None)
-
-  def createNodeIr(node: String, properties: Option[String] = None): org.neo4j.cypher.internal.ir.CreateNode =
-    org.neo4j.cypher.internal.ir.CreateNode(node, Set.empty, properties.map(Parser.parseExpression))
 
   def createNodeWithProperties(node: String, labels: Seq[String], properties: String): CreateNode =
     CreateNode(varFor(node), labels.map(LabelName(_)(pos)).toSet, Some(Parser.parseExpression(properties)))
@@ -2656,27 +2646,6 @@ object AbstractLogicalPlanBuilder {
       varFor(right),
       direction,
       properties
-    )
-  }
-
-  def createRelationshipIr(
-    relationship: String,
-    left: String,
-    typ: String,
-    right: String,
-    direction: SemanticDirection = OUTGOING,
-    properties: Option[String] = None
-  ): org.neo4j.cypher.internal.ir.CreateRelationship = {
-    val props = properties.map(Parser.parseExpression)
-    if (props.exists(!_.isInstanceOf[MapExpression]))
-      throw new IllegalArgumentException("Property must be a Map Expression")
-    org.neo4j.cypher.internal.ir.CreateRelationship(
-      relationship,
-      left,
-      RelTypeName(typ)(pos),
-      right,
-      direction,
-      properties.map(Parser.parseExpression)
     )
   }
 

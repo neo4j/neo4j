@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
-import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.ir
 import org.neo4j.cypher.internal.ir.CreateCommand
 
@@ -54,7 +53,7 @@ case class CreateNode(
 }
 
 object CreateNode {
-  def from(n: ir.CreateNode): CreateNode = CreateNode(varFor(n.idName), n.labels, n.properties)
+  def from(n: ir.CreateNode): CreateNode = CreateNode(n.variable, n.labels, n.properties)
 }
 
 // Note, this is a copy of org.neo4j.cypher.internal.ir.CreateRelationship
@@ -79,5 +78,12 @@ case class CreateRelationship(
 object CreateRelationship {
 
   def from(r: ir.CreateRelationship): CreateRelationship =
-    CreateRelationship(varFor(r.idName), varFor(r.leftNode), r.relType, varFor(r.rightNode), r.direction, r.properties)
+    CreateRelationship(
+      r.variable,
+      r.leftNode,
+      r.relType,
+      r.rightNode,
+      r.direction,
+      r.properties
+    )
 }

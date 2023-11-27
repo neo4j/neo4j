@@ -350,8 +350,8 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
         .empty
         .addSelectivePathPattern(shortestPathPattern)
         .addMutatingPatterns(CreatePattern(Seq(
-          CreateNode("x", Set.empty, None),
-          CreateRelationship("r3", "v", relTypeName("R"), "x", OUTGOING, None)
+          CreateNode(varFor("x"), Set.empty, None),
+          CreateRelationship(varFor("r3"), varFor("v"), relTypeName("R"), varFor("x"), OUTGOING, None)
         )))
 
     val projection = RegularQueryProjection(projections = Map("x" -> varFor("x")), isTerminating = true)
@@ -397,10 +397,17 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
   }
 
   private def nodes(names: String*) = {
-    names.map(name => CreateNode(name, Set.empty, None))
+    names.map(varFor).map(name => CreateNode(name, Set.empty, None))
   }
 
   private def relationship(name: String, startNode: String, relType: String, endNode: String) = {
-    List(CreateRelationship(name, startNode, RelTypeName(relType)(pos), endNode, OUTGOING, None))
+    List(CreateRelationship(
+      varFor(name),
+      varFor(startNode),
+      RelTypeName(relType)(pos),
+      varFor(endNode),
+      OUTGOING,
+      None
+    ))
   }
 }

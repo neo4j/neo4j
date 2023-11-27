@@ -169,14 +169,14 @@ case class CreatePattern(commands: Seq[CreateCommand]) extends SimpleMutatingPat
   override def coveredIds: Set[String] = {
     val builder = Set.newBuilder[String]
     for (command <- commands)
-      builder += command.idName
+      builder += command.variable.name
     builder.result()
   }
 
   override def dependencies: Set[String] = {
     val builder = Set.newBuilder[String]
     for (command <- commands)
-      builder ++= command.dependencies
+      builder ++= command.dependencies.map(_.name)
     builder.result()
   }
 
@@ -206,7 +206,7 @@ case class MergeNodePattern(
   override def coveredIds: Set[String] = matchGraph.allCoveredIds
 
   override def dependencies: Set[String] =
-    createNode.dependencies ++
+    createNode.dependencies.map(_.name) ++
       matchGraph.dependencies ++
       onCreate.flatMap(_.dependencies) ++
       onMatch.flatMap(_.dependencies)
@@ -222,8 +222,8 @@ case class MergeRelationshipPattern(
   override def coveredIds: Set[String] = matchGraph.allCoveredIds
 
   override def dependencies: Set[String] =
-    createNodes.flatMap(_.dependencies).toSet ++
-      createRelationships.flatMap(_.dependencies).toSet ++
+    createNodes.flatMap(_.dependencies.map(_.name)).toSet ++
+      createRelationships.flatMap(_.dependencies.map(_.name)).toSet ++
       matchGraph.dependencies ++
       onCreate.flatMap(_.dependencies) ++
       onMatch.flatMap(_.dependencies)

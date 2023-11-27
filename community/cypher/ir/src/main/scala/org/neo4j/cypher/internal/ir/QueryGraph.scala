@@ -358,10 +358,10 @@ final case class QueryGraph private (
       create <- createPatterns
       createNode <- create.nodes
     } {
-      f(createNode.idName)
+      f(createNode.variable.name)
     }
-    mergeNodePatterns.foreach(p => f(p.createNode.idName))
-    mergeRelationshipPatterns.foreach(p => p.createNodes.foreach(pp => f(pp.idName)))
+    mergeNodePatterns.foreach(p => f(p.createNode.variable.name))
+    mergeRelationshipPatterns.foreach(p => p.createNodes.foreach(pp => f(pp.variable.name)))
   }
 
   def allPatternRelationshipsRead: Set[PatternRelationship] =

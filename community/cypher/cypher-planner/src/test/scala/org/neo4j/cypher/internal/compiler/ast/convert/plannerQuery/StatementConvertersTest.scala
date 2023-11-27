@@ -30,11 +30,13 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.ProcedureCallProjection
 import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.NilPathStep
 import org.neo4j.cypher.internal.expressions.NodePathStep
 import org.neo4j.cypher.internal.expressions.NodeRelPair
 import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RepeatPathStep
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
@@ -69,9 +71,7 @@ import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.ir.VariableGrouping
 import org.neo4j.cypher.internal.ir.ast.ExistsIRExpression
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
-import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeIr
-import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createPatternIr
-import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationshipIr
+import org.neo4j.cypher.internal.logical.builder.Parser
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.NonEmptyList
@@ -233,7 +233,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val query = buildSinglePlannerQuery("CALL { CREATE (x) } IN TRANSACTIONS RETURN 2 as y")
     query.horizon shouldEqual CallSubqueryHorizon(
       RegularSinglePlannerQuery(queryGraph =
-        QueryGraph.empty.addMutatingPatterns(createPatternIr(Seq(createNodeIr("x"))))
+        QueryGraph.empty.addMutatingPatterns(CreatePattern(Seq(createNodeIr("x"))))
       ),
       correlated = false,
       yielding = false,
@@ -257,7 +257,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     subQuery.horizon shouldEqual CallSubqueryHorizon(
       RegularSinglePlannerQuery(queryGraph =
         QueryGraph.empty
-          .addMutatingPatterns(createPatternIr(Seq(createNodeIr("x"))))
+          .addMutatingPatterns(CreatePattern(Seq(createNodeIr("x"))))
           .addArgumentId("n")
       ),
       correlated = true,
@@ -275,7 +275,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val query = buildSinglePlannerQuery("CALL { CREATE (x) RETURN x } IN TRANSACTIONS RETURN 2 as y")
     query.horizon shouldEqual CallSubqueryHorizon(
       RegularSinglePlannerQuery(
-        queryGraph = QueryGraph.empty.addMutatingPatterns(createPatternIr(Seq(createNodeIr("x")))),
+        queryGraph = QueryGraph.empty.addMutatingPatterns(CreatePattern(Seq(createNodeIr("x")))),
         horizon = RegularQueryProjection(Map("x" -> varFor("x")))
       ),
       correlated = false,
@@ -301,7 +301,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       RegularSinglePlannerQuery(
         horizon = RegularQueryProjection(Map("x" -> varFor("x"))),
         queryGraph = QueryGraph.empty
-          .addMutatingPatterns(createPatternIr(Seq(createNodeIr("x"))))
+          .addMutatingPatterns(CreatePattern(Seq(createNodeIr("x"))))
           .addArgumentId("n")
       ),
       correlated = true,
@@ -2182,7 +2182,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         |CREATE (b)""".stripMargin
     )
     query.queryGraph shouldBe QueryGraph(
-      mutatingPatterns = IndexedSeq(createPatternIr(Seq(createNodeIr("a"), createNodeIr("b"))))
+      mutatingPatterns = IndexedSeq(CreatePattern(Seq(createNodeIr("a"), createNodeIr("b"))))
     )
 
     query.tail shouldBe empty
@@ -2650,5 +2650,29 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       count -= 1
       if (count <= 0) throw new RuntimeException(message)
     }
+  }
+
+  private def createNodeIr(node: String, properties: Option[String] = None): org.neo4j.cypher.internal.ir.CreateNode =
+    org.neo4j.cypher.internal.ir.CreateNode(varFor(node), Set.empty, properties.map(Parser.parseExpression))
+
+  private def createRelationshipIr(
+    relationship: String,
+    left: String,
+    typ: String,
+    right: String,
+    direction: SemanticDirection = OUTGOING,
+    properties: Option[String] = None
+  ): org.neo4j.cypher.internal.ir.CreateRelationship = {
+    val props = properties.map(Parser.parseExpression)
+    if (props.exists(!_.isInstanceOf[MapExpression]))
+      throw new IllegalArgumentException("Property must be a Map Expression")
+    org.neo4j.cypher.internal.ir.CreateRelationship(
+      varFor(relationship),
+      varFor(left),
+      RelTypeName(typ)(pos),
+      varFor(right),
+      direction,
+      properties.map(Parser.parseExpression)
+    )
   }
 }

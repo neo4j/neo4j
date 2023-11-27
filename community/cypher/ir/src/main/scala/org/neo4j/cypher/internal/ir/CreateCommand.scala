@@ -22,21 +22,22 @@ package org.neo4j.cypher.internal.ir
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasMappableExpressions
 import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 
 sealed trait CreateCommand extends HasMappableExpressions[CreateCommand] {
-  def idName: String
+  def variable: LogicalVariable
   def properties: Option[Expression]
-  def dependencies: Set[String]
+  def dependencies: Set[LogicalVariable]
 }
 
 /**
  * Create a new node with the provided labels and properties and assign it to the variable 'idName'.
  */
-case class CreateNode(idName: String, labels: Set[LabelName], properties: Option[Expression])
+case class CreateNode(variable: LogicalVariable, labels: Set[LabelName], properties: Option[Expression])
     extends CreateCommand {
-  def dependencies: Set[String] = properties.map(_.dependencies.map(_.name)).getOrElse(Set.empty)
+  def dependencies: Set[LogicalVariable] = properties.map(_.dependencies).getOrElse(Set.empty)
 
   override def mapExpressions(f: Expression => Expression): CreateNode = copy(properties = properties.map(f))
 }
@@ -45,10 +46,10 @@ case class CreateNode(idName: String, labels: Set[LabelName], properties: Option
 * Create a new relationship with the provided type and properties and assign it to the variable 'idName'.
 */
 case class CreateRelationship(
-  idName: String,
-  leftNode: String,
+  variable: LogicalVariable,
+  leftNode: LogicalVariable,
   relType: RelTypeName,
-  rightNode: String,
+  rightNode: LogicalVariable,
   direction: SemanticDirection,
   properties: Option[Expression]
 ) extends CreateCommand {
@@ -57,7 +58,8 @@ case class CreateRelationship(
     if (direction == SemanticDirection.OUTGOING || direction == SemanticDirection.BOTH) (leftNode, rightNode)
     else (rightNode, leftNode)
 
-  def dependencies: Set[String] = properties.map(_.dependencies.map(_.name)).getOrElse(Set.empty) + leftNode + rightNode
+  def dependencies: Set[LogicalVariable] =
+    properties.map(_.dependencies).getOrElse(Set.empty) + leftNode + rightNode
 
   override def mapExpressions(f: Expression => Expression): CreateRelationship = copy(properties = properties.map(f))
 }

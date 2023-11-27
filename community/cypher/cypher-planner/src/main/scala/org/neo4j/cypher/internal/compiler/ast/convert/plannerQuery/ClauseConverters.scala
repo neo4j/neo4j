@@ -368,7 +368,7 @@ object ClauseConverters {
       // CREATE (n :L1:L2 {prop: 42})
       case PathPatternPart(NodePattern(Some(id), labelExpression, props, None)) =>
         val labels = getLabelNameSet(labelExpression)
-        commands += CreateNode(id.name, labels, props)
+        commands += CreateNode(id, labels, props)
         seenPatternNodes += id.name
         ()
 
@@ -376,11 +376,11 @@ object ClauseConverters {
       case PathPatternPart(pattern: RelationshipChain) =>
         allCreatePatternsInOrderAndDeduped(pattern).foreach {
           case CreateNodeCommand(create, _) =>
-            if (seenPatternNodes.add(create.idName)) {
+            if (seenPatternNodes.add(create.variable.name)) {
               commands += create
             } else if (create.labels.nonEmpty || create.properties.nonEmpty) {
               throw new SyntaxException(
-                s"Can't create node `${create.idName}` with labels or properties here. The variable is already declared in this context"
+                s"Can't create node `${create.variable.name}` with labels or properties here. The variable is already declared in this context"
               )
             }
           case CreateRelCommand(create, _) =>
@@ -407,7 +407,7 @@ object ClauseConverters {
 
   private def createNodeCommand(pattern: NodePattern): CreateNodeCommand = pattern match {
     case NodePattern(Some(variable), labelExpression, props, None) =>
-      CreateNodeCommand(CreateNode(variable.name, getLabelNameSet(labelExpression), props), variable)
+      CreateNodeCommand(CreateNode(variable, getLabelNameSet(labelExpression), props), variable)
     case _ => throw new InternalException("All nodes must be named at this instance")
   }
 
@@ -418,11 +418,11 @@ object ClauseConverters {
   private def allCreatePatternsInOrderAndDeduped(
     element: PatternElement,
     acc: Vector[CreateEntityCommand],
-    seenNodes: Set[String]
-  ): (Vector[CreateEntityCommand], Set[String], String) = {
+    seenNodes: Set[LogicalVariable]
+  ): (Vector[CreateEntityCommand], Set[LogicalVariable], LogicalVariable) = {
     def addNode(node: NodePattern): Vector[CreateEntityCommand] = {
       // avoid loops such as CREATE (a)-[:R]->(a)
-      if (seenNodes.contains(node.variable.get.name)) {
+      if (seenNodes.contains(node.variable.get)) {
         if (node.labelExpression.nonEmpty || node.properties.nonEmpty) {
           // reused patterns must be pure variable
           throw new SyntaxException(
@@ -439,7 +439,7 @@ object ClauseConverters {
     element match {
       // CREATE ()
       case np @ NodePattern(Some(node), _, _, _) =>
-        (addNode(np), seenNodes + node.name, node.name)
+        (addNode(np), seenNodes + node, node)
 
       // CREATE ()->[:R]->()-[:R]->...->()
       case RelationshipChain(
@@ -451,10 +451,10 @@ object ClauseConverters {
         val (addRight, seenRight, _) = allCreatePatternsInOrderAndDeduped(rightNode, addLeft, seenLeft)
 
         val newR = CreateRelCommand(
-          CreateRelationship(relVar.name, leftNode, relType, rightVar.name, direction, properties),
+          CreateRelationship(relVar, leftNode, relType, rightVar, direction, properties),
           relVar
         )
-        (addRight :+ newR, seenRight, rightVar.name)
+        (addRight :+ newR, seenRight, rightVar)
 
       case x =>
         throw new IllegalArgumentException(s"The pattern element must be a NodePattern or a RelationshipChain. Got: $x")
@@ -687,14 +687,14 @@ object ClauseConverters {
         val labels = getLabelNameSet(labelExpression)
         val labelPredicates = labels.map(l => HasLabels(id, Seq(l))(id.position))
         val propertyPredicates = toPropertySelection(id, toPropertyMap(props))
-        val createNodePattern = CreateNode(id.name, labels, props)
+        val createNodePattern = CreateNode(id, labels, props)
 
         val selections = asSelections(clause.where) ++ Selections.from(labelPredicates ++ propertyPredicates)
 
         // Dependencies: Everything from the WHERE part plus everything from the MERGE pattern, excluding the merged node
         // itself, since it is provided by the MERGE.
         val dependencies = selections.variableDependencies ++
-          createNodePattern.dependencies ++
+          createNodePattern.dependencies.map(_.name) ++
           onCreate.flatMap(_.dependencies) ++
           onMatch.flatMap(_.dependencies) -
           id.name
@@ -735,13 +735,13 @@ object ClauseConverters {
         val seenPatternNodesAndArguments = builder.lastQGNodesAndArguments
 
         val (nodesCreatedBefore, nodesToCreate) = nodes.partition {
-          case CreateNodeCommand(c, _) => seenPatternNodesAndArguments(c.idName)
+          case CreateNodeCommand(c, _) => seenPatternNodesAndArguments(c.variable.name)
         }
 
         nodesCreatedBefore.collectFirst {
           case CreateNodeCommand(c, _) if c.labels.nonEmpty || c.properties.nonEmpty =>
             throw new SyntaxException(
-              s"Can't create node `${c.idName}` with labels or properties here. The variable is already declared in this context"
+              s"Can't create node `${c.variable.name}` with labels or properties here. The variable is already declared in this context"
             )
         }
 
@@ -761,20 +761,26 @@ object ClauseConverters {
         // Dependencies: Everything from the WHERE part plus everything from the MERGE pattern,
         // excluding nodes and rels to create, since they are provided by the MERGE.
         val dependencies = selections.variableDependencies ++
-          nodesCreatedBefore.map(_.create.idName) ++
-          nodesToCreate.map(_.create).flatMap(_.dependencies) ++
-          rels.map(_.create).flatMap(_.dependencies) ++
+          nodesCreatedBefore.map(_.create.variable.name) ++
+          nodesToCreate.map(_.create).flatMap(_.dependencies.map(_.name)) ++
+          rels.map(_.create).flatMap(_.dependencies.map(_.name)) ++
           onCreate.flatMap(_.dependencies) ++
           onMatch.flatMap(_.dependencies) --
-          nodesToCreate.map(_.create.idName) --
-          rels.map(_.create.idName)
+          nodesToCreate.map(_.create.variable.name) --
+          rels.map(_.create.variable.name)
         val arguments = builder.currentlyAvailableVariables.intersect(dependencies)
 
         val matchGraph = QueryGraph(
-          patternNodes = nodes.map(_.create.idName).toSet,
+          patternNodes = nodes.map(_.create.variable.name).toSet,
           patternRelationships = rels.map {
             case CreateRelCommand(r, _) =>
-              PatternRelationship(r.idName, (r.leftNode, r.rightNode), r.direction, Seq(r.relType), SimplePatternLength)
+              PatternRelationship(
+                r.variable.name,
+                (r.leftNode.name, r.rightNode.name),
+                r.direction,
+                Seq(r.relType),
+                SimplePatternLength
+              )
           }.toSet,
           selections = selections,
           argumentIds = arguments

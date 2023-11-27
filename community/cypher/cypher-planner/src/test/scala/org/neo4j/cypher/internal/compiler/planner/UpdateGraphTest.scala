@@ -278,10 +278,10 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
         CreatePattern(
           List(
             CreateRelationship(
-              "r2",
-              "a",
+              varFor("r2"),
+              varFor("a"),
               RelTypeName("T1")(pos),
-              "b",
+              varFor("b"),
               SemanticDirection.OUTGOING,
               Some(
                 MapExpression(Seq(
@@ -306,7 +306,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
       IndexedSeq(
         DeleteExpression(Variable("a")(pos), detachDelete = false),
         MergeNodePattern(
-          CreateNode("b", Set(LabelName("L3")(pos), LabelName("L3")(pos)), None),
+          CreateNode(varFor("b"), Set(LabelName("L3")(pos), LabelName("L3")(pos)), None),
           QueryGraph.empty,
           Seq.empty,
           Seq.empty
@@ -387,7 +387,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
     forAll(tests) {
       case (pattern, expected) =>
         val merge = MergeNodePattern(
-          CreateNode("b", Set.empty, None),
+          CreateNode(varFor("b"), Set.empty, None),
           QueryGraph.empty,
           Seq(pattern),
           Seq.empty
@@ -400,7 +400,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
     forAll(tests) {
       case (pattern, expected) =>
         val merge = MergeNodePattern(
-          CreateNode("b", Set.empty, None),
+          CreateNode(varFor("b"), Set.empty, None),
           QueryGraph.empty,
           Seq.empty,
           Seq(pattern)
@@ -467,7 +467,14 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
       case (pattern, expected) =>
         val merge = MergeRelationshipPattern(
           Seq.empty,
-          Seq(CreateRelationship("r", "a", RelTypeName("R")(pos), "b", SemanticDirection.OUTGOING, None)),
+          Seq(CreateRelationship(
+            varFor("r"),
+            varFor("a"),
+            RelTypeName("R")(pos),
+            varFor("b"),
+            SemanticDirection.OUTGOING,
+            None
+          )),
           QueryGraph.empty,
           Seq(pattern),
           Seq.empty
@@ -481,7 +488,14 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
       case (pattern, expected) =>
         val merge = MergeRelationshipPattern(
           Seq.empty,
-          Seq(CreateRelationship("r", "a", RelTypeName("R")(pos), "b", SemanticDirection.OUTGOING, None)),
+          Seq(CreateRelationship(
+            varFor("r"),
+            varFor("a"),
+            RelTypeName("R")(pos),
+            varFor("b"),
+            SemanticDirection.OUTGOING,
+            None
+          )),
           QueryGraph.empty,
           Seq.empty,
           Seq(pattern)
@@ -501,7 +515,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
     val ug = QueryGraph(mutatingPatterns =
       IndexedSeq(
         MergeNodePattern(
-          CreateNode("b", Set(labelName("Label")), Some(mapOfInt("prop" -> 123))),
+          CreateNode(varFor("b"), Set(labelName("Label")), Some(mapOfInt("prop" -> 123))),
           QueryGraph.empty,
           Seq.empty,
           Seq.empty
@@ -521,7 +535,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
     val ug = QueryGraph(mutatingPatterns =
       IndexedSeq(
         MergeNodePattern(
-          CreateNode("b", Set(labelName("Label")), Some(mapOfInt("prop" -> 123))),
+          CreateNode(varFor("b"), Set(labelName("Label")), Some(mapOfInt("prop" -> 123))),
           QueryGraph.empty,
           Seq.empty,
           Seq.empty
@@ -542,7 +556,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
     val ug = QueryGraph(mutatingPatterns =
       IndexedSeq(
         MergeNodePattern(
-          CreateNode("b", Set(labelName("OtherLabel")), Some(mapOfInt("prop" -> 123))),
+          CreateNode(varFor("b"), Set(labelName("OtherLabel")), Some(mapOfInt("prop" -> 123))),
           QueryGraph.empty,
           Seq.empty,
           Seq.empty
@@ -559,7 +573,11 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
     val qg = QueryGraph(
       selections = Selections.from(Seq(
         ExistsIRExpression(RegularSinglePlannerQuery(innerQg1), varFor(""), "")(pos, Some(Set.empty), Some(Set.empty)),
-        ListIRExpression(RegularSinglePlannerQuery(innerQg2), varFor(""), varFor(""), "")(pos, Some(Set.empty), Some(Set.empty))
+        ListIRExpression(RegularSinglePlannerQuery(innerQg2), varFor(""), varFor(""), "")(
+          pos,
+          Some(Set.empty),
+          Some(Set.empty)
+        )
       ))
     )
 
@@ -571,7 +589,11 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
     val innerQg2 = QueryGraph(patternNodes = Set("b"))
     val horizon = RegularQueryProjection(
       Map(
-        "a" -> ExistsIRExpression(RegularSinglePlannerQuery(innerQg1), varFor(""), "")(pos, Some(Set.empty), Some(Set.empty)),
+        "a" -> ExistsIRExpression(RegularSinglePlannerQuery(innerQg1), varFor(""), "")(
+          pos,
+          Some(Set.empty),
+          Some(Set.empty)
+        ),
         "b" -> ListIRExpression(RegularSinglePlannerQuery(innerQg2), varFor(""), varFor(""), "")(
           pos,
           Some(Set.empty),
@@ -626,7 +648,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
     val ug = QueryGraph(mutatingPatterns =
       IndexedSeq(
         MergeNodePattern(
-          CreateNode("q", Set(labelName("Label")), None),
+          CreateNode(varFor("q"), Set(labelName("Label")), None),
           QueryGraph.empty,
           Seq.empty,
           Seq.empty
@@ -640,10 +662,17 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
   }
 
   private def createNode(name: String, labels: String*) =
-    CreatePattern(List(CreateNode(name, labels.map(l => LabelName(l)(pos)).toSet, None)))
+    CreatePattern(List(CreateNode(varFor(name), labels.map(l => LabelName(l)(pos)).toSet, None)))
 
   private def createRelationship(name: String, start: String, relType: String, end: String) =
     CreatePattern(
-      List(CreateRelationship(name, start, RelTypeName(relType)(pos), end, SemanticDirection.OUTGOING, None))
+      List(CreateRelationship(
+        varFor(name),
+        varFor(start),
+        RelTypeName(relType)(pos),
+        varFor(end),
+        SemanticDirection.OUTGOING,
+        None
+      ))
     )
 }
