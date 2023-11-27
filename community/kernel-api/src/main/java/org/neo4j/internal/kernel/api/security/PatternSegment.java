@@ -25,35 +25,70 @@ import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-public record PatternSegment(Set<String> labels, String property, Value value, boolean eq) implements Segment {
+public interface PatternSegment extends Segment {
 
-    private static final Set<String> EMPTY = Set.of();
-
-    public PatternSegment(String property, Value value, boolean equals) {
-        this(EMPTY, property, value, equals);
+    default String labelsString() {
+        return labels().isEmpty() ? "" : labels().stream().sorted().collect(Collectors.joining("|", ":", ""));
     }
 
-    public PatternSegment {
-        Preconditions.requireNonNull(labels, "labels must not be null");
-        Preconditions.requireNonNull(property, "property must not be null");
-        Preconditions.requireNonNull(value, "value must not be null");
+    default String nodeString() {
+        return String.format("(n%s)", labelsString());
     }
+
+    default String propertyString() {
+        return String.format("n.%s", property());
+    }
+
+    Set<String> ALL_LABELS = Set.of();
+
+    Set<String> labels();
+
+    String property();
 
     @Override
-    public String toString() {
-        String labelsString =
-                labels.isEmpty() ? "" : labels.stream().sorted().collect(Collectors.joining("|", ":", ""));
-        String nodeString = String.format("(n%s)", labelsString);
-        String propertyString = String.format("n.%s", property);
-        String predicateString = (this.value == Values.NO_VALUE
-                ? (this.eq ? "IS NULL" : "IS NOT NULL")
-                : (this.eq ? "= " : "<> ") + this.value.prettyPrint());
-
-        return String.format("FOR %s WHERE %s %s", nodeString, propertyString, predicateString);
-    }
-
-    @Override
-    public boolean satisfies(Segment segment) {
+    default boolean satisfies(Segment segment) {
         throw new UnsupportedOperationException();
+    }
+
+    record ValuePatternSegment(
+            Set<String> labels, String property, Value value, PropertyRule.ComparisonOperator operator)
+            implements PatternSegment {
+
+        public ValuePatternSegment(String property, Value value, PropertyRule.ComparisonOperator operator) {
+            this(ALL_LABELS, property, value, operator);
+        }
+
+        public ValuePatternSegment {
+            Preconditions.requireNonNull(labels, "labels must not be null");
+            Preconditions.requireNonNull(property, "property must not be null");
+            Preconditions.requireNonNull(value, "value must not be null");
+            Preconditions.checkArgument(
+                    value != Values.NO_VALUE, "value must not be NO_VALUE. Use NullPatternSegment for this purpose.");
+        }
+
+        @Override
+        public String toString() {
+            return String.format(
+                    "FOR %s WHERE %s %s %s",
+                    nodeString(), propertyString(), this.operator.getSymbol(), this.value.prettyPrint());
+        }
+    }
+
+    record NullPatternSegment(Set<String> labels, String property, PropertyRule.NullOperator operator)
+            implements PatternSegment {
+
+        public NullPatternSegment(String property, PropertyRule.NullOperator operator) {
+            this(ALL_LABELS, property, operator);
+        }
+
+        public NullPatternSegment {
+            Preconditions.requireNonNull(labels, "labels must not be null");
+            Preconditions.requireNonNull(property, "property must not be null");
+        }
+
+        @Override
+        public String toString() {
+            return String.format("FOR %s WHERE %s %s", nodeString(), propertyString(), this.operator.getSymbol());
+        }
     }
 }

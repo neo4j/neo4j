@@ -100,7 +100,7 @@ public class PropertyRuleTest {
                 .hasMessageStartingWith("value must not be null");
     }
 
-    @ParameterizedTest()
+    @ParameterizedTest
     @MethodSource
     void propertyValueRules(
             Value nodePropertyValue, Value propertyRuleValue, ComparisonOperator operator, Boolean expectedResult) {
@@ -112,7 +112,7 @@ public class PropertyRuleTest {
         }
     }
 
-    @ParameterizedTest()
+    @ParameterizedTest
     @MethodSource
     void nullPropertyRules(Value nodePropertyValue, NullOperator operator, Boolean expectedResult) {
         final var assertRule = assertThat(PropertyRule.newNullRule(1, operator));
