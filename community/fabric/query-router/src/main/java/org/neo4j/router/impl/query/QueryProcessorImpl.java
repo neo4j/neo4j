@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 import org.neo4j.cypher.internal.PreParsedQuery;
 import org.neo4j.cypher.internal.PreParser;
+import org.neo4j.cypher.internal.QueryOptions;
 import org.neo4j.cypher.internal.ast.AdministrationCommand;
 import org.neo4j.cypher.internal.ast.CatalogName;
 import org.neo4j.cypher.internal.ast.Statement;
@@ -143,7 +144,7 @@ public class QueryProcessorImpl implements QueryProcessor {
         var resolver = SignatureResolver.from(globalProcedures.getCurrentView());
         var parsedQuery = parse(query, queryTracer, preParsedQuery, resolver, notificationLogger);
         var catalogInfo = resolveCatalogInfo(parsedQuery.statement());
-        var rewrittenQueryText = rewriteQueryText(parsedQuery);
+        var rewrittenQueryText = rewriteQueryText(parsedQuery, preParsedQuery.options());
         var maybeExtractedParams = formatMaybeExtractedParams(parsedQuery);
         var statementType = StatementType.of(parsedQuery.statement(), resolver);
         var parsingNotifications = CollectionConverters.asJava(notificationLogger.notifications());
@@ -167,9 +168,11 @@ public class QueryProcessorImpl implements QueryProcessor {
         return toCatalogInfo(graphSelections);
     }
 
-    private static String rewriteQueryText(BaseState parsedQuery) {
+    private static String rewriteQueryText(BaseState parsedQuery, QueryOptions queryOptions) {
         var rewrittenStatement = RemoveUseRewriter.instance().apply(parsedQuery.statement());
-        return QueryRenderer.render((Statement) rewrittenStatement);
+        var rewrittenStatementString = QueryRenderer.render((Statement) rewrittenStatement);
+
+        return QueryRenderer.addOptions(rewrittenStatementString, queryOptions);
     }
 
     private static MapValue formatMaybeExtractedParams(BaseState parsedQuery) {
