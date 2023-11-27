@@ -65,8 +65,8 @@ class MoveQuantifiedPathPatternPredicatesTest extends CypherFunSuite with Logica
     val q = buildSinglePlannerQueryAndRewrite("MATCH (start) ((a)-[r]->(b) WHERE b.prop > 123)+ (end) RETURN 1 AS one")
 
     val pred = ForAllRepetitions(
-      "b",
-      qpp.variableGroupings,
+      varFor("b"),
+      Set(variableGrouping("a", "a"), variableGrouping("b", "b"), variableGrouping("r", "r")),
       andedPropertyInequalities(greaterThan(prop("b", "prop"), literal(123)))
     )(pos)
 
@@ -79,8 +79,8 @@ class MoveQuantifiedPathPatternPredicatesTest extends CypherFunSuite with Logica
       buildSinglePlannerQueryAndRewrite("MATCH (start) ((a)-[r]->(b) WHERE b.prop > r.prop)+ (end) RETURN 1 AS one")
 
     val pred = ForAllRepetitions(
-      "b",
-      qpp.variableGroupings,
+      varFor("b"),
+      Set(variableGrouping("a", "a"), variableGrouping("b", "b"), variableGrouping("r", "r")),
       andedPropertyInequalities(greaterThan(prop("b", "prop"), prop("r", "prop")))
     )(pos)
 
@@ -92,8 +92,8 @@ class MoveQuantifiedPathPatternPredicatesTest extends CypherFunSuite with Logica
     val q = buildSinglePlannerQueryAndRewrite("MATCH (start) ((a)-[r]->(b) WHERE 123 > $param)+ (end) RETURN 1 AS one")
 
     val pred = ForAllRepetitions(
-      "a",
-      qpp.variableGroupings,
+      varFor("a"),
+      Set(variableGrouping("a", "a"), variableGrouping("b", "b"), variableGrouping("r", "r")),
       greaterThan(literal(123), parameter("param", CTAny))
     )(pos)
 

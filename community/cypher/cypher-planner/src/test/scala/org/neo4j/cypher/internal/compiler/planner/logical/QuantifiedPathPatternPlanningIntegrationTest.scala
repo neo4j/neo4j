@@ -642,6 +642,62 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
     )
   }
 
+  test("Should plan two quantified path pattern with some provably disjoint relationships in planner query tail") {
+    val query =
+      "MATCH (x) WITH * SKIP 0 MATCH ((n)-[r1:R]->(m)-[r2]->(o))+ ((a)-[r3:T]-(b)<-[r4]-(c))+ (:N) RETURN n, m"
+
+    val `((n)-[r1:R]->(m)-[r2]->(o))+` = TrailParameters(
+      min = 1,
+      max = Unlimited,
+      start = "anon_1",
+      end = "anon_0",
+      innerStart = "o",
+      innerEnd = "n",
+      groupNodes = Set(("n", "n"), ("m", "m")),
+      groupRelationships = Set.empty,
+      innerRelationships = Set("r1", "r2"),
+      previouslyBoundRelationships = Set.empty,
+      previouslyBoundRelationshipGroups = Set("r3", "r4"),
+      reverseGroupVariableProjections = true
+    )
+    val `((a)-[r3:T]-(b)<-[r4]-(c))+` = TrailParameters(
+      min = 1,
+      max = Unlimited,
+      start = "anon_2",
+      end = "anon_1",
+      innerStart = "c",
+      innerEnd = "a",
+      groupNodes = Set.empty,
+      groupRelationships = Set(("r3", "r3"), ("r4", "r4")),
+      innerRelationships = Set("r4", "r3"),
+      previouslyBoundRelationships = Set.empty,
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = true
+    )
+
+    val plan = planner.plan(query).stripProduceResults
+    plan should equal(
+      planner.subPlanBuilder()
+        .apply()
+        .|.trail(`((n)-[r1:R]->(m)-[r2]->(o))+`)
+        .|.|.filterExpressionOrString("not r2 = r1", isRepeatTrailUnique("r1"))
+        .|.|.expandAll("(m)<-[r1:R]-(n)")
+        .|.|.filterExpression(isRepeatTrailUnique("r2"))
+        .|.|.expandAll("(o)<-[r2]-(m)")
+        .|.|.argument("o", "x")
+        .|.trail(`((a)-[r3:T]-(b)<-[r4]-(c))+`)
+        .|.|.filterExpressionOrString("not r4 = r3", isRepeatTrailUnique("r3"))
+        .|.|.expandAll("(b)-[r3:T]-(a)")
+        .|.|.filterExpression(isRepeatTrailUnique("r4"))
+        .|.|.expandAll("(c)-[r4]->(b)")
+        .|.|.argument("c", "x")
+        .|.nodeByLabelScan("anon_2", "N", "x")
+        .skip(0)
+        .allNodeScan("x")
+        .build()
+    )
+  }
+
   test("Should plan two quantified path pattern with partial overlap in relationship types") {
     val query = "MATCH ((n)-[r1:R]->(m)-[r2:S]->(o))+ ((a)-[r3:T]-(b)<-[r4:R]-(c))+ (:N) RETURN n, m"
 

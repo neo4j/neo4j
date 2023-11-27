@@ -39,6 +39,8 @@ case object AddQuantifiedPathAnonymousVariableGroupings extends StepSequencer.St
   val instance: Rewriter = bottomUp(
     Rewriter.lift {
       case qpp: QuantifiedPath =>
+        // re-creating QuantifiedPath also re-builds variable groupings for
+        // named variables (which should be all of them, given noUnnamedNodesAndRelationships)
         QuantifiedPath(qpp.part, qpp.quantifier, qpp.optionalWhereExpression)(qpp.position)
     }
   )

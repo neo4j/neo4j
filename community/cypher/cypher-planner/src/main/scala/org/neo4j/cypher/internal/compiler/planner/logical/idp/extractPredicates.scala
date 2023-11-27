@@ -411,7 +411,7 @@ object extractShortestPathPredicates {
 }
 
 /**
- * During normalizeQPPPredicates we move inner QPP predicates from their pre-filter position to their post-filter
+ * During MoveQuantifiedPathPatternPredicates we move inner QPP predicates from their pre-filter position to their post-filter
  * position. [[extractQPPPredicates]] works for QPPs as [[extractPredicates]] works for var-length relationships.
  * For any of these post-filter predicates that could not be solved up to this point, the goal is to move as many of
  * these post-filter predicates back to their pre-filter positions and solve them during the planning of the inner QPP.

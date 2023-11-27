@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.ir.ast
 
+import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.BooleanExpression
 import org.neo4j.cypher.internal.expressions.ContainerIndex
@@ -27,6 +28,7 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Subtract
 import org.neo4j.cypher.internal.expressions.UnPositionedVariable
 import org.neo4j.cypher.internal.expressions.UnsignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.expressions.functions
 import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
 import org.neo4j.cypher.internal.ir.VariableGrouping
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -35,7 +37,7 @@ import org.neo4j.cypher.internal.util.InputPosition
 /**
  * A QPP predicate that was lifted into outer Selections.
  * Equivalent to:
- *   all(i IN range(0, size([[groupVariableAnchor]])) WHERE <rewrittenPredicate>)
+ *   all(i IN range(0, size([[groupVariableAnchor]]) - 1) WHERE <rewrittenPredicate>)
  * Where <rewrittenPredicate> is [[originalInnerPredicate]] with singleton variables replaced
  * by indexed group variables (i.e. `singletonVar` -> `groupVar[i]`.
  *
@@ -44,15 +46,15 @@ import org.neo4j.cypher.internal.util.InputPosition
  * @param originalInnerPredicate original predicate using singleton variables
  */
 case class ForAllRepetitions(
-  groupVariableAnchor: String,
-  variableGroupings: Set[VariableGrouping],
+  groupVariableAnchor: LogicalVariable,
+  variableGroupings: Set[expressions.VariableGrouping],
   originalInnerPredicate: Expression
 )(override val position: InputPosition) extends BooleanExpression {
 
   override def isConstantForQuery: Boolean = originalInnerPredicate.isConstantForQuery
 
   final override def dependencies: Set[LogicalVariable] = {
-    translatedSingletonDependencies + UnPositionedVariable.varFor(groupVariableAnchor)
+    translatedSingletonDependencies + groupVariableAnchor
   }
 
   def asAllIterablePredicate(anonymousVariableNameGenerator: AnonymousVariableNameGenerator): Expression = {
@@ -60,23 +62,24 @@ case class ForAllRepetitions(
 
     val iterVar = UnPositionedVariable.varFor(anonymousVariableNameGenerator.nextName)
 
-    val singletonReplacements: Set[(LogicalVariable, String)] = originalInnerPredicate.dependencies.flatMap { v =>
-      groupVariableFor(v.name).map(v -> _)
-    }
+    val singletonReplacements: Set[(LogicalVariable, LogicalVariable)] =
+      originalInnerPredicate.dependencies.flatMap { v =>
+        groupVariableFor(v).map(v -> _)
+      }
 
     val rewrittenPredicate = singletonReplacements.foldLeft(originalInnerPredicate) {
-      case (expr, (singletonVar, groupVarName)) =>
-        def indexedGroupVar: Expression = ContainerIndex(UnPositionedVariable.varFor(groupVarName), iterVar.copyId)(pos)
+      case (expr, (singletonVar, groupVar)) =>
+        def indexedGroupVar: Expression = ContainerIndex(groupVar.copyId, iterVar.copyId)(pos)
         // x -> xGroup[iterVar]
         expr.replaceAllOccurrencesBy(singletonVar, indexedGroupVar)
     }
 
     AllIterablePredicate(
       iterVar,
-      org.neo4j.cypher.internal.expressions.functions.Range.asInvocation(
+      functions.Range.asInvocation(
         UnsignedDecimalIntegerLiteral("0")(pos),
         Subtract(
-          org.neo4j.cypher.internal.expressions.functions.Size(UnPositionedVariable.varFor(groupVariableAnchor))(pos),
+          functions.Size(groupVariableAnchor.copyId)(pos),
           UnsignedDecimalIntegerLiteral("1")(pos)
         )(pos)
       )(pos),
@@ -84,12 +87,15 @@ case class ForAllRepetitions(
     )(originalInnerPredicate.position)
   }
 
-  private def groupVariableFor(singleton: String): Option[String] =
-    VariableGrouping.singletonToGroup(variableGroupings, singleton)
+  private def groupVariableFor(singleton: LogicalVariable): Option[LogicalVariable] = {
+    variableGroupings.collectFirst {
+      case expressions.VariableGrouping(`singleton`, group) => group
+    }
+  }
 
   private lazy val translatedSingletonDependencies: Set[LogicalVariable] = {
     originalInnerPredicate.dependencies.map { v =>
-      groupVariableFor(v.name).fold(v)(UnPositionedVariable.varFor)
+      groupVariableFor(v).getOrElse(v)
     }
   }
 }
@@ -103,6 +109,17 @@ object ForAllRepetitions {
         .minOption
         .getOrElse(qpp.variableGroupNames.min) // if the predicate doesn't use any QPP variables, just pick one
 
-    ForAllRepetitions(groupVariableAnchor, qpp.variableGroupings, predicate)(predicate.position)
+    val astVariableGroupings = qpp.variableGroupings.map { irGrouping =>
+      expressions.VariableGrouping(
+        singleton = UnPositionedVariable.varFor(irGrouping.singletonName),
+        group = UnPositionedVariable.varFor(irGrouping.groupName)
+      )(InputPosition.NONE)
+    }
+
+    ForAllRepetitions(
+      UnPositionedVariable.varFor(groupVariableAnchor),
+      astVariableGroupings,
+      predicate
+    )(predicate.position)
   }
 }
