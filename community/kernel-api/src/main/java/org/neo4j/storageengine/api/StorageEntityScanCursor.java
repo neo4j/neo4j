@@ -29,12 +29,12 @@ public interface StorageEntityScanCursor<S extends Scan> extends StorageEntityCu
     /**
      * Initializes this cursor to perform batched scan.
      *
-     * The upper bound of the number of found entities, is given by the provided size hint. The provided
-     * <code>SCAN</code> can be shared among worker-threads where each thread has a separate cursor. The role of
-     * <code>scan</code> is to make sure we don't get overlapping ranges.
+     * The provided <code>SCAN</code> can be shared among worker-threads where each thread has a separate cursor.
+     * The role of <code>scan</code> is to make sure we don't get overlapping ranges.
      *
      * @param scan scan maintains state across threads so that we get exclusive ranges for each batch.
      * @param sizeHint the batch will try to read this number of entities.
+     * Note: This is just a hint and the actual number of entities in a batch may be both greater or smaller than this number
      * @return <code>true</code> if there are entities to be found, otherwise <code>false</code>
      */
     boolean scanBatch(S scan, long sizeHint);
