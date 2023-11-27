@@ -43,6 +43,7 @@ import org.neo4j.cypher.internal.ir.EagernessReason.Unknown
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.logical.builder.TestNFABuilder
+import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.NFA
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
@@ -727,6 +728,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
           parameters.singletonRelationshipVariables,
           StatefulShortestPath.Selector.Shortest(1),
           parameters.nfa,
+          ExpandAll,
           false
         )
   }
@@ -868,6 +870,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
             .addTransition(0, 1, "(start)-[r]->(end)")
             .addFinalState(1)
             .build(),
+          ExpandAll,
           reverseGroupVariableProjections = false
         )
         .filter("start.prop = 1")
@@ -997,6 +1000,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
             .addTransition(3, 4, "(b) (end)")
             .addFinalState(4)
             .build(),
+          ExpandAll,
           false
         )
         .allNodeScan("start")
@@ -1047,6 +1051,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
             .addTransition(0, 1, "(start)-[r:R]->(end)")
             .addFinalState(1)
             .build(),
+          ExpandAll,
           reverseGroupVariableProjections = false
         )
         .filter("start.prop = 1")
@@ -1187,6 +1192,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
             .addTransition(2, 3, "(b) (end WHERE NOT end:Label)")
             .addFinalState(3)
             .build(),
+          ExpandAll,
           false
         )
         .filter("NOT start:Label")
@@ -1247,6 +1253,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
             .addTransition(2, 3, "(b) (end WHERE NOT end:Label)")
             .addFinalState(3)
             .build(),
+          ExpandAll,
           false
         )
         .filter("NOT start:Label")

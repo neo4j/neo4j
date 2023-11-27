@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningAttributesTestSupport
 import org.neo4j.cypher.internal.logical.builder.TestNFABuilder
+import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -112,6 +113,7 @@ class CompressAnonymousVariablesTest extends CypherFunSuite
           .addTransition(6, 7, "(`  UNNAMED10`) (t)")
           .addFinalState(7)
           .build(),
+        ExpandAll,
         reverseGroupVariableProjections = false
       )
       .nodeByLabelScan("s", "User")
@@ -153,6 +155,7 @@ class CompressAnonymousVariablesTest extends CypherFunSuite
             .addTransition(6, 7, "(`  UNNAMED0`) (t)")
             .addFinalState(7)
             .build(),
+          ExpandAll,
           reverseGroupVariableProjections = false
         )
         .nodeByLabelScan("s", "User")

@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
 import org.neo4j.cypher.internal.runtime.ClosingIterator
+import org.neo4j.cypher.internal.runtime.ClosingIterator.JavaIteratorAsClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.CommandNFA
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
@@ -35,13 +36,12 @@ import org.neo4j.values.virtual.ListValueBuilder
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualValues
 
-import scala.collection.convert.ImplicitConversions.`iterator asScala`
 import scala.collection.mutable
-import scala.jdk.CollectionConverters.IteratorHasAsScala
 
 case class StatefulShortestPathPipe(
   source: Pipe,
   sourceNodeName: String,
+  isTargetBound: Boolean,
   commandNFA: CommandNFA,
   preFilters: Option[Predicate],
   selector: StatefulShortestPath.Selector,
@@ -65,26 +65,32 @@ case class StatefulShortestPathPipe(
     val hooks = PPBFSHooks.getInstance()
 
     val pathTracer = new PathTracer(memoryTracker, hooks)
+    val pathPredicate =
+      preFilters.fold[java.util.function.Predicate[CypherRow]](_ => true)(pred => pred.isTrue(_, state))
 
     input.flatMap { inputRow =>
       inputRow.getByName(sourceNodeName) match {
 
         case sourceNode: VirtualNodeValue =>
-          hooks.newRow(sourceNode)
-
           val ppbfs = new PGPathPropagatingBFS(
             sourceNode.id(),
+            isTargetBound,
             commandNFA.compile(inputRow, state),
             state.query.transactionalContext.dataRead,
             nodeCursor,
             traversalCursor,
+            pathTracer,
             selector.k.toInt,
             commandNFA.states.size,
             memoryTracker,
             hooks
           )
 
-          new LegacyStatefulShortestRowIterator(ppbfs, inputRow, pathTracer, hooks, state)
+          ppbfs.iterate(
+            withPathVariables(inputRow, _),
+            pathPredicate,
+            selector.isGroup
+          ).asClosingIterator.closing(ppbfs)
 
         case value =>
           throw new InternalException(
@@ -94,114 +100,37 @@ case class StatefulShortestPathPipe(
     }.closing(nodeCursor).closing(traversalCursor)
   }
 
-  private class LegacyStatefulShortestRowIterator(
-    ppbfs: PGPathPropagatingBFS,
-    inputRow: CypherRow,
-    pathTracer: PathTracer,
-    hooks: PPBFSHooks,
-    state: QueryState
-  ) extends StatefulShortestRowIterator(preFilters, selector, ppbfs, inputRow, pathTracer, hooks, state) {
+  private def withPathVariables(original: CypherRow, path: TracedPath): CypherRow = {
+    val row = original.createClone()
 
-    override protected def withPathVariables(original: CypherRow, path: TracedPath): CypherRow = {
-      val row = original.createClone()
+    val groupMap = mutable.HashMap.empty[String, ListValueBuilder]
 
-      val groupMap = mutable.HashMap.empty[String, ListValueBuilder]
-
-      var i = 0
-      while (i < path.entities().length) {
-        val e = path.entities()(i)
-        e.slotOrName match {
-          case SlotOrName.VarName(varName, isGroup) =>
-            if (isGroup) {
-              groupMap.getOrElseUpdate(varName, ListValueBuilder.newListBuilder())
-                .add(e.idValue)
-            } else {
-              row.set(varName, e.idValue)
-            }
-          case _: SlotOrName.Slotted => throw new IllegalStateException("Slotted metadata in Legacy runtime")
-          case SlotOrName.None       => ()
-        }
-        i += 1
-      }
-
-      grouped.foreach { name =>
-        val value = groupMap.get(name) match {
-          case Some(list) => if (reverseGroupVariableProjections) list.build().reverse() else list.build()
-          case None       => VirtualValues.EMPTY_LIST
-        }
-        row.set(name, value)
-      }
-
-      row
-    }
-  }
-
-}
-
-abstract class StatefulShortestRowIterator(
-  preFilters: Option[Predicate],
-  selector: StatefulShortestPath.Selector,
-  ppbfs: PGPathPropagatingBFS,
-  inputRow: CypherRow,
-  pathTracer: PathTracer,
-  hooks: PPBFSHooks,
-  state: QueryState
-) extends ClosingIterator[CypherRow] {
-
-  private val innerIter =
-    Iterator.continually(iteratorForNextLevel())
-      .takeWhile(x => x.isDefined)
-      .flatMap(_.get)
-
-  private def iteratorForNextLevel(): Option[Iterator[CypherRow]] = {
-    val iter = ppbfs.pathTracersForNextLevel(pathTracer)
-    if (iter != null) {
-      hooks.foundTargets()
-      Some(iter.asScala
-        .flatMap { tree =>
-          hooks.tracingTarget(tree.targetNode())
-          val filteredTree = tree
-            .map(tracedPath => withPathVariables(inputRow, tracedPath))
-            .filter(row => preFilters.forall(_.isTrue(row, state)))
-          if (selector.isGroup) {
-            new Iterator[CypherRow] {
-              var groupHadPaths = false
-
-              override def hasNext: Boolean = {
-                val res = filteredTree.hasNext
-                if (!res && groupHadPaths) {
-                  tree.decrementTargetCount()
-                }
-
-                groupHadPaths ||= res
-                res
-              }
-
-              override def next(): CypherRow = filteredTree.next()
-            }
+    var i = 0
+    while (i < path.entities().length) {
+      val e = path.entities()(i)
+      e.slotOrName match {
+        case SlotOrName.VarName(varName, isGroup) =>
+          if (isGroup) {
+            groupMap.getOrElseUpdate(varName, ListValueBuilder.newListBuilder())
+              .add(e.idValue)
           } else {
-            filteredTree.map(row => {
-              tree.decrementTargetCount()
-              row
-            })
+            row.set(varName, e.idValue)
           }
-        })
-    } else {
-      None
+        case _: SlotOrName.Slotted => throw new IllegalStateException("Slotted metadata in Legacy runtime")
+        case SlotOrName.None       => ()
+      }
+      i += 1
     }
+
+    grouped.foreach { name =>
+      val value = groupMap.get(name) match {
+        case Some(list) => if (reverseGroupVariableProjections) list.build().reverse() else list.build()
+        case None       => VirtualValues.EMPTY_LIST
+      }
+      row.set(name, value)
+    }
+
+    row
   }
 
-  def next(): CypherRow = {
-    innerIter.next()
-  }
-
-  protected[this] def innerHasNext: Boolean = {
-    innerIter.hasNext
-  }
-
-  protected def withPathVariables(row: CypherRow, path: PathTracer.TracedPath): CypherRow
-
-  protected[this] def closeMore(): Unit = {
-    ppbfs.close()
-  }
 }

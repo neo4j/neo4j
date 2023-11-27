@@ -58,6 +58,7 @@ public final class NodeData implements AutoCloseable {
 
     // This is initialised to K when we run both SHORTEST K and SHORTEST K GROUPS.
     // It is then decremented whenever we return a path (or group) ending with this node.
+    // NB: this mechanism relies on the NFA having a single final state
     private int remainingTargetCount = 0;
 
     public NodeData(MemoryTracker mt, long id, State state, int distanceFromSource, DataManager dataManager) {
@@ -73,8 +74,6 @@ public final class NodeData implements AutoCloseable {
             this.remainingTargetCount = (int) dataManager.initialCountForTargetNodes;
             dataManager.incrementLiveTargetCount();
         }
-
-        dataManager.hooks.newNodeData(this);
     }
 
     public State state() {
@@ -135,7 +134,7 @@ public final class NodeData implements AutoCloseable {
         Preconditions.checkArgument(
                 sourceSignpost.forwardNode == this, "Source signpost must be added to correct node");
 
-        dataManager.hooks.addSourceSignpost(this, sourceSignpost, lengthFromSource);
+        dataManager.hooks.addSourceSignpost(sourceSignpost, lengthFromSource);
         if (!lengthsFromSource.get(lengthFromSource)) {
             // Never seen the node at this depth before
             lengthsFromSource.set(lengthFromSource);
@@ -180,8 +179,8 @@ public final class NodeData implements AutoCloseable {
     }
 
     public void addTargetSignpost(TwoWaySignpost targetSignpost, int lengthToTarget) {
+        this.dataManager.hooks.addTargetSignpost(targetSignpost, lengthToTarget);
         Preconditions.checkArgument(targetSignpost.prevNode == this, "Target signpost must be added to correct node");
-        //        dataManager.hooks.addTargetSignpost(this, targetSignpost, lengthToTarget);
 
         boolean firstTrace = false;
         if (targetSignposts == null) {

@@ -101,6 +101,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName wi
           .addTransition(0, 1, "(a)-[r_expr]->(b_expr)")
           .addFinalState(1)
           .build(),
+        ExpandAll,
         false
       )
       .allNodeScan("a")
@@ -132,6 +133,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName wi
           .addFinalState(4)
           .addFinalState(5)
           .build(),
+        ExpandAll,
         false
       )
       .allNodeScan("a")
@@ -169,6 +171,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName wi
           .addFinalState(4)
           .addFinalState(5)
           .build(),
+        ExpandAll,
         false
       )
       .allNodeScan("a")

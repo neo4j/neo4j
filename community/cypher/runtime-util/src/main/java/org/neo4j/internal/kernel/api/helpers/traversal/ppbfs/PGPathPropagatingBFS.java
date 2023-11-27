@@ -19,8 +19,11 @@
  */
 package org.neo4j.internal.kernel.api.helpers.traversal.ppbfs;
 
+import java.util.Collections;
 import java.util.Iterator;
-import org.neo4j.collection.trackable.HeapTrackingArrayList;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Read;
@@ -41,6 +44,8 @@ public final class PGPathPropagatingBFS implements AutoCloseable {
     private final DataManager dataManager;
     private final BFSExpander bfsExpander;
     private final NodeData sourceData;
+    private final boolean isBoundTarget;
+    private final PathTracer pathTracer;
     private final PPBFSHooks hooks;
     private int nextDepth = 0;
     private boolean isInitialLevel = true;
@@ -50,23 +55,30 @@ public final class PGPathPropagatingBFS implements AutoCloseable {
      *
      * @param source The id of the starting node.
      * @param startState The initial state of the NFA generated from the QPP
+     * @param pathTracer A PathTracer instance that will be reused for each new target node & length
      */
     public PGPathPropagatingBFS(
             long source,
+            boolean isBoundTarget,
             State startState,
             Read read,
             NodeCursor nodeCursor,
             RelationshipTraversalCursor relCursor,
+            PathTracer pathTracer,
             int initialCountForTargetNodes,
             int numberOfNfaStates,
             MemoryTracker mt,
             PPBFSHooks hooks) {
+        this.isBoundTarget = isBoundTarget;
+        this.pathTracer = pathTracer;
         this.hooks = hooks;
         this.dataManager = new DataManager(mt, hooks, this, initialCountForTargetNodes, numberOfNfaStates);
         this.bfsExpander = new BFSExpander(dataManager, read, nodeCursor, relCursor, mt, hooks);
         this.sourceData = new NodeData(mt, source, startState, 0, dataManager);
 
         dataManager.addToNextLevel(sourceData);
+
+        this.hooks.newRow(source);
     }
 
     public int nextDepth() {
@@ -74,35 +86,61 @@ public final class PGPathPropagatingBFS implements AutoCloseable {
     }
 
     /**
-     * Returns an iterator of PathTracer's for the next level. Each path tracer
-     * corresponds to the path set towards a specific target node. This allows the user to
-     * implement one-to-one semantics, by counting paths to each specific target node.
-     *
-     * @return Iterator of path trace trees for next level.
-     *         Note that due to performance concerns, the PathTracer is reused for each iteration, so it should be
-     *         fully consumed before calling next() on the iterator.
+     * @param toRow a function converting a traced path to a row in the relevant runtime
+     * @param nonInlinedPredicate the non inlined predicate, executed on the output row
+     * @param isGroupSelector a boolean indicating whether the K selector specifies GROUPS or not
+     * @return an iterator of new rows in ascending order of length
      */
-    public Iterator<PathTracer> pathTracersForNextLevel(PathTracer pathTracer) {
-        if (!nextLevelWithTargets()) {
-            return null;
-        }
+    public <Row> Iterator<Row> iterate(
+            Function<PathTracer.TracedPath, Row> toRow, Predicate<Row> nonInlinedPredicate, Boolean isGroupSelector) {
 
         pathTracer.setSourceNode(sourceData);
 
-        hooks.tracingPathsOfLength(nextDepth);
-
-        return new Iterator<>() {
-            private final Iterator<NodeData> targetIterator = targets().iterator();
-
-            @Override
-            public boolean hasNext() {
-                return targetIterator.hasNext();
-            }
+        return new PrefetchingIterator<>() {
+            private Iterator<NodeData> currentTargets = Collections.emptyIterator();
+            private boolean done = false;
 
             @Override
-            public PathTracer next() {
-                pathTracer.resetWithNewTargetNodeAndDGLength(targetIterator.next(), nextDepth);
-                return pathTracer;
+            protected Row fetchNextOrNull() {
+                if (done) {
+                    return null;
+                }
+
+                while (true) {
+                    if (pathTracer.ready()) {
+                        // exhaust the paths for the current target if there is one
+                        while (pathTracer.hasNext()) {
+                            var path = pathTracer.next();
+                            var row = toRow.apply(path);
+                            if (nonInlinedPredicate.test(row)) {
+                                if (!isGroupSelector) {
+                                    // if the selector is not grouped, we count each valid path
+                                    pathTracer.decrementTargetCount();
+                                } else if (!pathTracer.hasNext()) {
+                                    // if it is grouped, we wait until the last path of the group has been yielded
+                                    pathTracer.decrementTargetCount();
+                                }
+
+                                if (isBoundTarget && pathTracer.isSaturated()) {
+                                    done = true;
+                                }
+                                return row;
+                            }
+                        }
+                    }
+
+                    // if we exhausted the current target set, expand & propagate until we find the next target set
+                    if (!currentTargets.hasNext()) {
+                        if (nextLevelWithTargets()) {
+                            currentTargets = dataManager.targets().iterator();
+                        } else {
+                            done = true;
+                            return null;
+                        }
+                    }
+
+                    pathTracer.resetWithNewTargetNodeAndDGLength(currentTargets.next(), nextDepth);
+                }
             }
         };
     }
@@ -133,13 +171,6 @@ public final class PGPathPropagatingBFS implements AutoCloseable {
     }
 
     /**
-     * @return the set of targets for the current level
-     */
-    private HeapTrackingArrayList<NodeData> targets() {
-        return dataManager.targets();
-    }
-
-    /**
      * Expand nodes and propagate paths to nodes for the next level.
      *
      * @return true if we did any expansion/propagation, false if we've exhausted the component about the source node
@@ -160,7 +191,7 @@ public final class PGPathPropagatingBFS implements AutoCloseable {
             dataManager.allocateNextLevel();
         }
 
-        dataManager.propagateToLength(nextDepth);
+        dataManager.propagateAll(nextDepth);
 
         return true;
     }
@@ -178,7 +209,7 @@ public final class PGPathPropagatingBFS implements AutoCloseable {
         isInitialLevel = false;
 
         Preconditions.checkState(nextDepth == 0, "zeroHopLevel called for nonzero depth");
-        hooks.zeroHopLevel();
+        hooks.nextLevel(0);
         this.bfsExpander.floodInitialNodeJuxtapositions();
         dataManager.allocateNextLevel();
 

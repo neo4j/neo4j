@@ -318,15 +318,13 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
       .addFinalState(3)
       .build()
 
-    val result = ConvertToNFA.convertToNfa(
+    ConvertToNFA.convertToNfa(
       spp,
       fromLeft = true,
       Set.empty,
       Seq(hasLabels("end", "E")),
       new AnonymousVariableNameGenerator
-    )
-
-    result should equal((
+    ) should equal((
       expectedNfa,
       Selections.empty,
       Map.empty
@@ -842,17 +840,5 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
       Selections.from(Seq(startNodePredicate, relationshipPredicate)),
       Map("r" -> "  r@0")
     ))
-  }
-
-  class VariableNameGenerator(names: String*) extends AnonymousVariableNameGenerator {
-    private val namesIterator = names.iterator
-
-    override def nextName: String = {
-      if (namesIterator.hasNext) {
-        namesIterator.next()
-      } else {
-        super.nextName
-      }
-    }
   }
 }

@@ -1060,11 +1060,12 @@ class SlottedPipeMapper(
           slots = slots
         )(id)
 
-      case StatefulShortestPath(
+      case p @ StatefulShortestPath(
           _,
           sourceNode,
           _,
           nfa,
+          mode,
           nonInlinedPreFilters,
           nodeVariableGroupings,
           relationshipVariableGroupings,
@@ -1106,6 +1107,7 @@ class SlottedPipeMapper(
         StatefulShortestPathSlottedPipe(
           source,
           slots(sourceNode),
+          mode == ExpandInto,
           commandNFA,
           commandPreFilters,
           selector,

@@ -17,10 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks;
+package org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks
 
-public final class NullPPBFSHooks extends PPBFSHooks {
-    public static NullPPBFSHooks instance = new NullPPBFSHooks();
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-    private NullPPBFSHooks() {}
+class PPBFSHooksTest extends CypherFunSuite {
+
+  test("PPBFSHooks singleton should be set to the NULL instance in production") {
+    PPBFSHooks.getInstance shouldBe PPBFSHooks.NULL
+  }
 }

@@ -62,6 +62,7 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setR
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setRelationshipProperty
 import org.neo4j.cypher.internal.logical.builder.TestNFABuilder
+import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NestedPlanCollectExpression
@@ -7667,6 +7668,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         singletonRelationshipVariables = Set.empty,
         StatefulShortestPath.Selector.Shortest(1),
         nfa,
+        ExpandAll,
         false
       )
       .nodeByLabelScan("u", "User")
@@ -7693,6 +7695,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
           singletonRelationshipVariables = Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
+          ExpandAll,
           false
         )
         .nodeByLabelScan("u", "User")
@@ -7720,6 +7723,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         singletonRelationshipVariables = Set("r_inner" -> "r"),
         StatefulShortestPath.Selector.Shortest(1),
         nfa,
+        ExpandAll,
         false
       )
       .nodeByLabelScan("a", "A")
@@ -7743,6 +7747,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
           singletonRelationshipVariables = Set("r_inner" -> "r"),
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
+          ExpandAll,
           false
         )
         .nodeByLabelScan("a", "A")
@@ -7777,6 +7782,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         singletonRelationshipVariables = Set.empty,
         StatefulShortestPath.Selector.Shortest(1),
         nfa,
+        ExpandAll,
         false
       )
       .nodeByLabelScan("u", "User")
@@ -7808,6 +7814,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
           singletonRelationshipVariables = Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
+          ExpandAll,
           false
         )
         .nodeByLabelScan("u", "User")
@@ -7842,6 +7849,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         singletonRelationshipVariables = Set.empty,
         StatefulShortestPath.Selector.Shortest(1),
         nfa,
+        ExpandAll,
         false
       )
       .nodeByLabelScan("u", "User")
@@ -7875,6 +7883,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
           singletonRelationshipVariables = Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
+          ExpandAll,
           false
         )
         .nodeByLabelScan("u", "User")
@@ -7909,6 +7918,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         singletonRelationshipVariables = Set.empty,
         StatefulShortestPath.Selector.Shortest(1),
         nfa,
+        ExpandAll,
         false
       )
       .nodeByLabelScan("u", "User")
@@ -7933,6 +7943,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
           singletonRelationshipVariables = Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
+          ExpandAll,
           false
         )
         .nodeByLabelScan("u", "User")
@@ -7968,6 +7979,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         singletonRelationshipVariables = Set.empty,
         StatefulShortestPath.Selector.Shortest(1),
         nfa,
+        ExpandAll,
         false
       )
       .nodeByLabelScan("u", "User")
@@ -8008,6 +8020,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         singletonRelationshipVariables = Set.empty,
         StatefulShortestPath.Selector.Shortest(1),
         nfa,
+        ExpandAll,
         false
       )
       .nodeByLabelScan("u", "User")

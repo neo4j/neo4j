@@ -81,7 +81,6 @@ public abstract sealed class TwoWaySignpost {
      * See java doc comment for SourceSignpost.hasBeenTraced()
      */
     public void setMinDistToTarget(int dgDist) {
-        this.prevNode.dataManager.hooks.addTargetSignpost(this.prevNode, this, dgDist);
         Preconditions.checkState(
                 !hasBeenTraced(), "A signpost should only have setMinDistToTarget() called upon it on the first trace");
         this.minDistToTarget = dgDist;
@@ -136,12 +135,12 @@ public abstract sealed class TwoWaySignpost {
     }
 
     public void pruneSourceLength(int lengthFromSource) {
-        prevNode.dataManager.hooks.removeLengthFromSignpost(this, lengthFromSource);
+        prevNode.dataManager.hooks.pruneSourceLength(this, lengthFromSource);
         this.lengthsFromSource.set(lengthFromSource, false);
     }
 
-    public void addVerified(int lengthFromSource) {
-        prevNode.dataManager.hooks.addVerifiedToSourceSignpost(this, lengthFromSource);
+    public void setVerified(int lengthFromSource) {
+        prevNode.dataManager.hooks.setVerified(this, lengthFromSource);
         this.verifiedAtLengthFromSource.set(lengthFromSource, true);
     }
 

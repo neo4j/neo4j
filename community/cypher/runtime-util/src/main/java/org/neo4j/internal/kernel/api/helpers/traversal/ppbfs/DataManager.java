@@ -141,13 +141,10 @@ final class DataManager implements AutoCloseable {
      *
      * @param totalLength
      */
-    public void propagateToLength(int totalLength) {
-        hooks.beginPropagation(nodesToPropagate);
-
-        hooks.propagateToLength(totalLength);
+    public void propagateAll(int totalLength) {
+        hooks.propagateAll(this.nodesToPropagate, totalLength);
 
         var nodesToPropagateForLength = nodesToPropagate.get(totalLength);
-
         if (nodesToPropagateForLength == null) {
             return;
         }
@@ -155,14 +152,12 @@ final class DataManager implements AutoCloseable {
         int minLengthFromSourceToPropagate =
                 nodesToPropagateForLength.keysView().min();
 
-        hooks.propagateToLength(totalLength, minLengthFromSourceToPropagate);
-
         for (int lengthFromSource = minLengthFromSourceToPropagate;
                 lengthFromSource <= totalLength;
                 lengthFromSource++) {
             int lengthToTarget = totalLength - lengthFromSource;
 
-            hooks.propagateAtLengthPair(lengthFromSource, lengthToTarget);
+            hooks.propagateAllAtLengths(lengthFromSource, lengthToTarget);
 
             HeapTrackingUnifiedSet<NodeData> nodesToPropagateAtLengthPair =
                     nodesToPropagateForLength.get(lengthFromSource);
@@ -171,7 +166,6 @@ final class DataManager implements AutoCloseable {
                 while (nodesToPropagateAtLengthPair.notEmpty()) {
                     NodeData node = nodesToPropagateAtLengthPair.getLast();
                     nodesToPropagateAtLengthPair.remove(node);
-                    hooks.propagatingNode(node, nodesToPropagateAtLengthPair);
                     node.propagateLengthPair(lengthFromSource, lengthToTarget);
                 }
 
@@ -195,18 +189,23 @@ final class DataManager implements AutoCloseable {
 
     public void addTarget(NodeData nodeData) {
         Preconditions.checkArgument(nodeData.isTarget(), "Node must be a target");
-        assert !targets.contains(
-                nodeData); // Caller is responsible for adding any node as a target at most once per level
-        hooks.foundTargetAtNewLength(nodeData, ppbfs.nextDepth());
+        Preconditions.checkState(
+                !targets.contains(nodeData),
+                "Caller is responsible for adding any node as a target at most once per level");
         targets.add(nodeData);
     }
 
     public HeapTrackingArrayList<NodeData> targets() {
-        return targets.clone();
+        return targets;
     }
 
     public boolean hasTargetsWithRemainingCount() {
-        return targets.stream().anyMatch(n -> n.remainingTargetCount() > 0);
+        for (var t : targets) {
+            if (t.remainingTargetCount() > 0) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public boolean hasNodesToExpand() {

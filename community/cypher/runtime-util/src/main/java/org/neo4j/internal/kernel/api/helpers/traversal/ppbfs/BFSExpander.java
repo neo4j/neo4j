@@ -71,7 +71,6 @@ final class BFSExpander implements AutoCloseable {
             var state = currentNode.state();
             for (var nj : state.getNodeJuxtapositions()) {
                 if (nj.testNode(currentNode.id())) {
-                    hooks.traverseNodeJuxtaposition(nj);
                     NodeData nextNode = dataManager.getNodeData(
                             currentNode.id(), nj.targetState().id());
 
@@ -89,8 +88,6 @@ final class BFSExpander implements AutoCloseable {
     }
 
     public void expandLevel(int depthOfNextLevel) {
-        hooks.expandLevel(depthOfNextLevel);
-
         for (var pair : dataManager.nodeDatas().getCurrentLevelDGDatas().keyValuesView()) {
             var dgNodeId = pair.getOne();
             var pgNodeDatas = pair.getTwo();

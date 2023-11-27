@@ -1948,6 +1948,7 @@ case class StatefulShortestPath(
   sourceNode: LogicalVariable,
   targetNode: LogicalVariable,
   nfa: NFA,
+  mode: ExpansionMode,
   nonInlinedPreFilters: Option[Expression],
   override val nodeVariableGroupings: Set[VariableGrouping],
   override val relationshipVariableGroupings: Set[VariableGrouping],

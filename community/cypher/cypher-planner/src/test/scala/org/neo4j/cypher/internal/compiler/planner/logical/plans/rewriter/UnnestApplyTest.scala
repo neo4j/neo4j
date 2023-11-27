@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.logical.builder.TestNFABuilder
+import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
@@ -320,6 +321,7 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
         singletonRelationshipVariables = Set.empty,
         StatefulShortestPath.Selector.Shortest(1),
         nfa,
+        ExpandAll,
         false
       ).withCardinality(2)
       .|.argument("n").withCardinality(1)
@@ -339,6 +341,7 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
           singletonRelationshipVariables = Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
+          ExpandAll,
           false
         ).withCardinality(200).withProvidedOrder(po_n)
         .nodeByLabelScan("n", "N").withCardinality(100).withProvidedOrder(po_n)

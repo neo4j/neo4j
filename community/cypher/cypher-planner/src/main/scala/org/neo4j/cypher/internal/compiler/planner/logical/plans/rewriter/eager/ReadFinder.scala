@@ -639,6 +639,7 @@ object ReadFinder {
           sourceNode,
           targetNode,
           _,
+          _,
           nonInlinedPreFilters,
           nodeVariableGroupings,
           relationshipVariableGroupings,

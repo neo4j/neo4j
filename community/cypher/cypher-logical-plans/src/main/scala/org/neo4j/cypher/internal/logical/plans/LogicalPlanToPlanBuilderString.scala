@@ -357,6 +357,7 @@ object LogicalPlanToPlanBuilderString {
           from,
           to,
           nfa,
+          mode,
           nonInlinedPreFilters,
           nodeVariableGroupings,
           relationshipVariableGroupings,
@@ -377,6 +378,7 @@ object LogicalPlanToPlanBuilderString {
           s"Set(${mappedEntitiesString(singletonRelationshipVariables)})",
           objectName(StatefulShortestPath) + "." + objectName(StatefulShortestPath.Selector) + "." + selector.toString,
           nfaString(nfa),
+          mode.toString,
           reverseGroupVariableProjections.toString
         ).mkString(s"\n${indent}", s",\n${indent}", "")
       case PruningVarExpand(_, from, dir, types, to, minLength, maxLength, nodePredicates, relationshipPredicates) =>

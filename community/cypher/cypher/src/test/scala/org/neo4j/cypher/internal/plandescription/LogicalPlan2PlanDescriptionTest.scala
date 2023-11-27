@@ -5344,6 +5344,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           varFor("a"),
           varFor("b"),
           new NFABuilder(varFor("a")).build(),
+          ExpandAll,
           None,
           Set.empty,
           Set.empty,

@@ -57,12 +57,23 @@ public final class PathTracer extends PrefetchingIterator<PathTracer.TracedPath>
     private int currentDgLengthToTarget;
 
     /**
-     * Because path tracing performs much of the bookkeeping of PPBFS, we may need to trace paths, even if we've
-     * returned all of the paths that was requested to the current target. The {saturated}
+     * Because path tracing performs much of the bookkeeping of PPBFS, we may need to continue to trace paths to a
+     * target node, even if we have already yielded the K paths necessary for that target node.
+     * This flag tracks whether we should continue to yield paths when tracing.
      */
     private boolean saturated;
 
+    public boolean isSaturated() {
+        return this.saturated;
+    }
+
     private boolean shouldReturnSingleNodePath;
+
+    /**
+     *  The PathTracer is designed to be reused, but its state is reset in two places ({@link #setSourceNode} and
+     *  {@link #resetWithNewTargetNodeAndDGLength}); this variable tracks whether we are in a valid state to iterate.
+     */
+    private boolean ready = false;
 
     public PathTracer(MemoryTracker memoryTracker, PPBFSHooks hooks) {
         this.activeSignposts = HeapTrackingArrayList.newArrayList(memoryTracker);
@@ -72,11 +83,21 @@ public final class PathTracer extends PrefetchingIterator<PathTracer.TracedPath>
         this.hooks = hooks;
     }
 
+    /**
+     * Prepares the PathTracer for reuse with a new source node; {@link #resetWithNewTargetNodeAndDGLength} must be
+     * called after this to correctly set up the PathTracer.
+     */
     public void setSourceNode(NodeData sourceNode) {
+        this.ready = false; // until resetWithNewTargetNodeAndDGLength, consider the iterator invalid
         this.sourceNode = sourceNode;
     }
 
+    /**
+     * Finish setting up the PathTracer; this method should be called every time a target node is to be traced at
+     * a given length.
+     */
     public void resetWithNewTargetNodeAndDGLength(NodeData targetNode, int dgLength) {
+        this.ready = true;
         this.targetNode = targetNode;
 
         Preconditions.checkArgument(
@@ -99,6 +120,14 @@ public final class PathTracer extends PrefetchingIterator<PathTracer.TracedPath>
         super.reset();
     }
 
+    /**
+     * The PathTracer is designed to be reused, but its state is reset in two places ({@link #setSourceNode} and
+     * {@link #resetWithNewTargetNodeAndDGLength}); this function returns true if the tracer has been correctly set up/reset
+     */
+    public boolean ready() {
+        return this.ready;
+    }
+
     private NodeData current() {
         return activeSignposts.isEmpty() ? targetNode : this.activeSignposts.last().prevNode;
     }
@@ -107,7 +136,7 @@ public final class PathTracer extends PrefetchingIterator<PathTracer.TracedPath>
         return this.nodeSourceSignpostIndices.last();
     }
 
-    public void deactivateCurrent() {
+    private void deactivateCurrent() {
         this.nodeSourceSignpostIndices.removeLast();
         if (this.activeSignposts.notEmpty()) {
             TwoWaySignpost currentSignpost = activeSignposts.removeLast();
@@ -115,7 +144,7 @@ public final class PathTracer extends PrefetchingIterator<PathTracer.TracedPath>
             this.currentDgLengthToTarget -= currentSignpost.dataGraphLength();
             int dgLengthFromSource = this.dgLength - currentDgLengthToTarget;
 
-            hooks.deactivatingSignpost(dgLengthFromSource, currentSignpost);
+            hooks.deactivateSignpost(dgLengthFromSource, currentSignpost);
             currentSignpost.deActivate();
             if (!currentSignpost.isVerifiedAtLength(dgLengthFromSource)
                     && !this.betweenDuplicateRels.get(this.activeSignposts.size())) {
@@ -128,12 +157,12 @@ public final class PathTracer extends PrefetchingIterator<PathTracer.TracedPath>
         }
     }
 
-    void activate(NodeData current, int nextIndex) {
+    private void activateSignpost(NodeData current, int nextIndex) {
         var sourceSignpost = current.getSourceSignpost(nextIndex);
         this.activeSignposts.add(sourceSignpost);
         this.betweenDuplicateRels.set(this.activeSignposts.size() - 1, false);
 
-        hooks.activatingSignpost(dgLength - currentDgLengthToTarget, sourceSignpost);
+        hooks.activateSignpost(dgLength - currentDgLengthToTarget, sourceSignpost);
 
         this.currentDgLengthToTarget += sourceSignpost.dataGraphLength();
         this.nodeSourceSignpostIndices.set(this.nodeSourceSignpostIndices.size() - 1, nextIndex);
@@ -143,13 +172,16 @@ public final class PathTracer extends PrefetchingIterator<PathTracer.TracedPath>
         pgTrailToTarget.set(this.activeSignposts.size(), isTargetPGTrail);
 
         if (isTargetPGTrail && !sourceSignpost.hasBeenTraced()) {
-
             sourceSignpost.setMinDistToTarget(currentDgLengthToTarget);
         }
     }
 
     @Override
     protected TracedPath fetchNextOrNull() {
+        if (!ready) {
+            throw new IllegalStateException("PathTracer attempted to iterate without fully configuring.");
+        }
+
         if (shouldReturnSingleNodePath && !saturated) {
             shouldReturnSingleNodePath = false;
             return currentPath();
@@ -162,7 +194,7 @@ public final class PathTracer extends PrefetchingIterator<PathTracer.TracedPath>
             if (nextIndex == -1) {
                 deactivateCurrent();
             } else {
-                this.activate(current, nextIndex);
+                this.activateSignpost(current, nextIndex);
                 TwoWaySignpost sourceSignpost = activeSignposts.last();
 
                 // Possible optimisation:
@@ -171,15 +203,15 @@ public final class PathTracer extends PrefetchingIterator<PathTracer.TracedPath>
                 // (would also need to update that method)
                 if (sourceSignpost.isActive() && allNodesAreValidatedBetweenDuplicates()) {
                     hooks.skippingDuplicateRelationship(this.targetNode, this.activeSignposts);
-                    hooks.deactivatingSignpost(dgLength - currentDgLengthToTarget, sourceSignpost);
+                    hooks.deactivateSignpost(dgLength - currentDgLengthToTarget, sourceSignpost);
                     this.activeSignposts.removeLast();
                     this.nodeSourceSignpostIndices.removeLast();
                     this.currentDgLengthToTarget -= sourceSignpost.dataGraphLength();
                 } else {
                     sourceSignpost.activate();
 
-                    // the order of these predicates is important since validTrail has side effects:
-                    if (sourceSignpost.prevNode == sourceNode && validTrail() && !saturated) {
+                    // the order of these predicates is important since validateTrail has side effects:
+                    if (sourceSignpost.prevNode == sourceNode && validateTrail() && !saturated) {
                         TracedPath path = currentPath();
                         hooks.returnPath(path);
                         return path;
@@ -237,7 +269,7 @@ public final class PathTracer extends PrefetchingIterator<PathTracer.TracedPath>
         return new TracedPath(entities);
     }
 
-    private boolean validTrail() {
+    private boolean validateTrail() {
         int dgLengthFromSource = 0;
         for (int i = activeSignposts.size() - 1; i >= 0; i--) {
             TwoWaySignpost signpost = activeSignposts.get(i);
@@ -249,7 +281,7 @@ public final class PathTracer extends PrefetchingIterator<PathTracer.TracedPath>
                 }
             }
             if (!signpost.isVerifiedAtLength(dgLengthFromSource)) {
-                signpost.addVerified(dgLengthFromSource);
+                signpost.setVerified(dgLengthFromSource);
                 NodeData node = i == 0 ? targetNode : activeSignposts.get(i - 1).prevNode;
                 if (!node.validatedAtLength(dgLengthFromSource)) {
                     node.validateLengthState(dgLengthFromSource, dgLength - dgLengthFromSource);
@@ -284,22 +316,25 @@ public final class PathTracer extends PrefetchingIterator<PathTracer.TracedPath>
                 case RELATIONSHIP -> VirtualValues.relationship(id);
             };
         }
-
-        @Override
-        public String toString() {
-            return id + " | " + slotOrName;
-        }
     }
 
     public record TracedPath(PathEntity[] entities) {
         @Override
         public String toString() {
             StringBuilder sb = new StringBuilder("(");
+            PathEntity last = null;
             for (var e : entities) {
                 switch (e.entityType) {
-                    case NODE -> sb.append(e);
-                    case RELATIONSHIP -> sb.append(")-[").append(e).append("]-(");
+                    case NODE -> {
+                        if (last == null || last.entityType == EntityType.RELATIONSHIP) {
+                            sb.append(e.id).append("@").append(e.slotOrName);
+                        } else if (last.slotOrName != e.slotOrName) {
+                            sb.append(",").append(e.slotOrName);
+                        }
+                    }
+                    case RELATIONSHIP -> sb.append(")-[").append(e.id).append("]-(");
                 }
+                last = e;
             }
             sb.append(")");
 

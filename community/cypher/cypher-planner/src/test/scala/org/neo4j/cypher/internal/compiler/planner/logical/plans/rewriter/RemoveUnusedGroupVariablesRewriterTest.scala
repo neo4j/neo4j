@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Trai
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodeProperty
 import org.neo4j.cypher.internal.logical.builder.TestNFABuilder
+import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NFA
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
@@ -73,6 +74,7 @@ class RemoveUnusedGroupVariablesRewriterTest extends CypherFunSuite with Logical
           singletonRelationshipVariables = Set.empty,
           selector = StatefulShortestPath.Selector.Shortest(1),
           `(a) ((n)-[r]-(m))+ (b)`.nfa,
+          ExpandAll,
           false
         )
         .allNodeScan("a")
@@ -116,6 +118,7 @@ class RemoveUnusedGroupVariablesRewriterTest extends CypherFunSuite with Logical
           singletonRelationshipVariables = Set.empty,
           selector = StatefulShortestPath.Selector.Shortest(1),
           `(a) ((n)-[r]-(m))+ (b)`.nfa,
+          ExpandAll,
           false
         )
         .allNodeScan("a")
@@ -158,6 +161,7 @@ class RemoveUnusedGroupVariablesRewriterTest extends CypherFunSuite with Logical
           singletonRelationshipVariables = Set.empty,
           selector = StatefulShortestPath.Selector.Shortest(1),
           `(a) ((n)-[r]-(m))+ (b)`.nfa,
+          ExpandAll,
           false
         )
         .allNodeScan("a")
@@ -363,6 +367,7 @@ class RemoveUnusedGroupVariablesRewriterTest extends CypherFunSuite with Logical
           singletonRelationshipVariables = Set.empty,
           selector = StatefulShortestPath.Selector.Shortest(1),
           `(a) ((n)-[r]-(m))+ (b)`.nfa,
+          ExpandAll,
           false
         )
         .allNodeScan("a")

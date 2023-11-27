@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.LogicalQuery
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.logical.builder.TestNFABuilder
+import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
 import org.neo4j.cypher.internal.runtime.spec.Edition
@@ -31,6 +32,8 @@ import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.RelationshipType
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.LoggingPPBFSHooks
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.PPBFSHooks
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.NodeValue
@@ -49,6 +52,22 @@ abstract class PGShortestPathPropagationTestBase[CONTEXT <: RuntimeContext](
   runtime: CypherRuntime[CONTEXT],
   protected val sizeHint: Int
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+
+  private val ENABLE_LOGS = false
+
+  override protected def beforeEach(): Unit = {
+    super.beforeEach()
+    PPBFSHooks.setInstance(if (ENABLE_LOGS) LoggingPPBFSHooks else PPBFSHooks.NULL)
+  }
+
+  override protected def afterEach(): Unit = {
+    super.afterEach()
+    PPBFSHooks.setInstance(PPBFSHooks.NULL)
+  }
+
+  test("test logging is disabled in production") {
+    ENABLE_LOGS shouldBe false
+  }
 
   test("Infinity Fork") {
 
@@ -1328,6 +1347,7 @@ abstract class PGShortestPathPropagationTestBase[CONTEXT <: RuntimeContext](
         Set(),
         selector,
         nfa,
+        ExpandAll,
         false
       )
     }

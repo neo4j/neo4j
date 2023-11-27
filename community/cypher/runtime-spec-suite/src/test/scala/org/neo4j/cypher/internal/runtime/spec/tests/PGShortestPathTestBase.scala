@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.builder.TestNFABuilder
+import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath.Selector
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
@@ -29,6 +30,8 @@ import org.neo4j.cypher.internal.runtime.spec.RowCount
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.RelationshipType
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.LoggingPPBFSHooks
+import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.PPBFSHooks
 import org.neo4j.values.virtual.VirtualValues.pathReference
 
 abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
@@ -36,6 +39,22 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
   runtime: CypherRuntime[CONTEXT],
   protected val sizeHint: Int
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+
+  private val ENABLE_LOGS = false
+
+  override protected def beforeEach(): Unit = {
+    super.beforeEach()
+    PPBFSHooks.setInstance(if (ENABLE_LOGS) LoggingPPBFSHooks else PPBFSHooks.NULL)
+  }
+
+  override protected def afterEach(): Unit = {
+    super.afterEach()
+    PPBFSHooks.setInstance(PPBFSHooks.NULL)
+  }
+
+  test("test logging is disabled in production") {
+    ENABLE_LOGS shouldBe false
+  }
 
   test("single node pattern") {
 
@@ -63,7 +82,8 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
         Set.empty,
         Set.empty,
         Selector.Shortest(Int.MaxValue),
-        nfa
+        nfa,
+        ExpandAll
       )
       .allNodeScan("s")
       .build()
@@ -105,7 +125,8 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
         Set("t_inner" -> "t"),
         Set.empty,
         Selector.Shortest(Int.MaxValue),
-        nfa
+        nfa,
+        ExpandAll
       )
       .allNodeScan("s")
       .build()
@@ -149,7 +170,8 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
         Set("t_inner" -> "t"),
         Set.empty,
         Selector.Shortest(Int.MaxValue),
-        nfa
+        nfa,
+        ExpandAll
       )
       .allNodeScan("s")
       .build()
@@ -205,7 +227,8 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
         Set("t_inner" -> "t"),
         Set.empty,
         Selector.Shortest(Int.MaxValue),
-        nfa
+        nfa,
+        ExpandAll
       )
       .allNodeScan("s")
       .build()
@@ -268,7 +291,8 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
         Set("n1_inner" -> "n1", "n2_inner" -> "n2", "n3_inner" -> "n3", "t_inner" -> "t"),
         Set.empty,
         Selector.Shortest(Int.MaxValue),
-        nfa
+        nfa,
+        ExpandAll
       )
       .allNodeScan("s")
       .build()
@@ -315,7 +339,8 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
         Set("n1_inner" -> "n1", "n2_inner" -> "n2", "t_inner" -> "t"),
         Set("r_inner" -> "r"),
         Selector.Shortest(Int.MaxValue),
-        nfa
+        nfa,
+        ExpandAll
       )
       .allNodeScan("s")
       .build()
@@ -364,7 +389,8 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
         Set("n1_inner" -> "n1", "n2_inner" -> "n2", "t_inner" -> "t"),
         Set("r_inner" -> "r"),
         Selector.Shortest(Int.MaxValue),
-        nfa
+        nfa,
+        ExpandAll
       )
       .allNodeScan("s")
       .build()
@@ -413,7 +439,8 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
         Set("n1_inner" -> "n1", "n2_inner" -> "n2", "t_inner" -> "t"),
         Set("r_inner" -> "r"),
         Selector.Shortest(Int.MaxValue),
-        nfa
+        nfa,
+        ExpandAll
       )
       .allNodeScan("s")
       .build()
@@ -461,7 +488,8 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
         Set("n1_inner" -> "n1", "n2_inner" -> "n2", "t_inner" -> "t"),
         Set("r_inner" -> "r"),
         Selector.Shortest(Int.MaxValue),
-        nfa
+        nfa,
+        ExpandAll
       )
       .allNodeScan("s")
       .build()
@@ -505,7 +533,8 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
         Set("n1_inner" -> "n1", "n2_inner" -> "n2", "t_inner" -> "t"),
         Set("r_inner" -> "r"),
         Selector.Shortest(Int.MaxValue),
-        nfa
+        nfa,
+        ExpandAll
       )
       .allNodeScan("s")
       .build()
@@ -549,7 +578,8 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
         Set("n1_inner" -> "n1", "n2_inner" -> "n2", "t_inner" -> "t"),
         Set("r_inner" -> "r"),
         Selector.Shortest(Int.MaxValue),
-        nfa
+        nfa,
+        ExpandAll
       )
       .allNodeScan("s")
       .build()
@@ -593,7 +623,8 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
         Set("n1_inner" -> "n1", "n2_inner" -> "n2", "t_inner" -> "t"),
         Set("r_inner" -> "r"),
         Selector.Shortest(Int.MaxValue),
-        nfa
+        nfa,
+        ExpandAll
       )
       .allNodeScan("s")
       .build()
@@ -637,7 +668,8 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
         Set("n1_inner" -> "n1", "n2_inner" -> "n2", "t_inner" -> "t"),
         Set("r_inner" -> "r"),
         Selector.Shortest(Int.MaxValue),
-        nfa
+        nfa,
+        ExpandAll
       )
       .allNodeScan("s")
       .build()
@@ -681,7 +713,8 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
         Set("n1_inner" -> "n1", "n2_inner" -> "n2", "t_inner" -> "t"),
         Set("r_inner" -> "r"),
         Selector.Shortest(Int.MaxValue),
-        nfa
+        nfa,
+        ExpandAll
       )
       .allNodeScan("s")
       .build()
@@ -725,7 +758,8 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
         Set("n1_inner" -> "n1", "n2_inner" -> "n2", "t_inner" -> "t"),
         Set("r_inner" -> "r"),
         Selector.Shortest(Int.MaxValue),
-        nfa
+        nfa,
+        ExpandAll
       )
       .allNodeScan("s")
       .build()
@@ -770,7 +804,8 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
         Set("n1_inner" -> "n1", "n2_inner" -> "n2", "t_inner" -> "t"),
         Set("r_inner" -> "r"),
         Selector.Shortest(Int.MaxValue),
-        nfa
+        nfa,
+        ExpandAll
       )
       .allNodeScan("s")
       .build()
@@ -815,7 +850,8 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
         Set("n1_inner" -> "n1", "n2_inner" -> "n2", "t_inner" -> "t"),
         Set("r_inner" -> "r"),
         Selector.Shortest(Int.MaxValue),
-        nfa
+        nfa,
+        ExpandAll
       )
       .allNodeScan("s")
       .build()
@@ -861,7 +897,8 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
         Set("n1_inner" -> "n1", "n2_inner" -> "n2", "t_inner" -> "t"),
         Set("r_inner" -> "r"),
         Selector.Shortest(Int.MaxValue),
-        nfa
+        nfa,
+        ExpandAll
       )
       .allNodeScan("s")
       .build()
@@ -912,7 +949,8 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
         Set("n1_inner" -> "n1", "n2_inner" -> "n2", "t_inner" -> "t"),
         Set("r_inner" -> "r"),
         Selector.Shortest(Int.MaxValue),
-        nfa
+        nfa,
+        ExpandAll
       )
       .allNodeScan("s")
       .build()
@@ -963,7 +1001,8 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
         Set("n1_inner" -> "n1", "n2_inner" -> "n2", "n3_inner" -> "n3", "t_inner" -> "t"),
         Set("r1_inner" -> "r1", "r2_inner" -> "r2"),
         Selector.Shortest(Int.MaxValue),
-        nfa
+        nfa,
+        ExpandAll
       )
       .allNodeScan("s")
       .build()
@@ -1013,7 +1052,8 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
         Set("n1_inner" -> "n1", "n2_inner" -> "n2", "n3_inner" -> "n3", "t_inner" -> "t"),
         Set("r1_inner" -> "r1", "r2_inner" -> "r2"),
         Selector.Shortest(Int.MaxValue),
-        nfa
+        nfa,
+        ExpandAll
       )
       .allNodeScan("s")
       .build()
@@ -1058,7 +1098,8 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
         Set("n1_inner" -> "n1", "n2_inner" -> "n2", "n3_inner" -> "n3", "t_inner" -> "t"),
         Set("r1_inner" -> "r1", "r2_inner" -> "r2"),
         Selector.Shortest(Int.MaxValue),
-        nfa
+        nfa,
+        ExpandAll
       )
       .allNodeScan("s")
       .build()
@@ -1103,7 +1144,8 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
         Set("n1_inner" -> "n1", "n2_inner" -> "n2", "n3_inner" -> "n3", "t_inner" -> "t"),
         Set("r1_inner" -> "r1", "r2_inner" -> "r2"),
         Selector.Shortest(Int.MaxValue),
-        nfa
+        nfa,
+        ExpandAll
       )
       .allNodeScan("s")
       .build()
@@ -1152,7 +1194,8 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
         Set("t_inner" -> "t"),
         Set.empty,
         Selector.Shortest(Int.MaxValue),
-        nfa
+        nfa,
+        ExpandAll
       )
       .allNodeScan("s")
       .build()
@@ -1254,7 +1297,8 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
         Set("t_inner" -> "t"),
         Set.empty,
         Selector.Shortest(Int.MaxValue),
-        nfa
+        nfa,
+        ExpandAll
       )
       .allNodeScan("s")
       .build()
@@ -1338,7 +1382,7 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
       .projection("t as u")
       .statefulShortestPath(
         "s",
-        "t_inner",
+        "t",
         "(s) ((n1)-[r]->(n2))+ (t: T)",
         None,
         Set("n1_inner" -> "n1", "n2_inner" -> "n2"),
@@ -1346,7 +1390,8 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
         Set("t_inner" -> "t"),
         Set.empty,
         Selector.Shortest(Int.MaxValue),
-        nfa
+        nfa,
+        ExpandAll
       )
       .nodeByLabelScan("s", "S")
       .build()
@@ -1402,7 +1447,8 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
         Set("t_inner" -> "t"),
         Set.empty,
         Selector.Shortest(Int.MaxValue),
-        nfa
+        nfa,
+        ExpandAll
       )
       .allNodeScan("s")
       .build()
@@ -1489,7 +1535,6 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("{2, 3} quantified path pattern") {
-
     val (x1, y1, x2, y2, x3, y3, x4, y4, x5) = givenGraph {
       // GRAPH: (4 hops, one longer than pattern)
       // (x1)-[y1:R]->(x2)-[y2:R]->(x3)-[y3:R]->(x4)-[y4:R]->(x5)
@@ -1547,7 +1592,8 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
         Set("t_inner" -> "t"),
         Set.empty,
         Selector.Shortest(Int.MaxValue),
-        nfa
+        nfa,
+        ExpandAll
       )
       .allNodeScan("s")
       .build()
@@ -1678,7 +1724,8 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
         Set("t_inner" -> "t"),
         Set.empty,
         Selector.ShortestGroups(Int.MaxValue),
-        nfa
+        nfa,
+        ExpandAll
       )
       .nodeByLabelScan("s", "S")
       .build()
@@ -1741,7 +1788,8 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
         Set("t_inner" -> "t"),
         Set.empty,
         Selector.ShortestGroups(Int.MaxValue),
-        nfa
+        nfa,
+        ExpandAll
       )
       .allNodeScan("s")
       .build()
@@ -1828,7 +1876,8 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
         Set("t_inner" -> "t"),
         Set.empty,
         Selector.ShortestGroups(Int.MaxValue),
-        nfa
+        nfa,
+        ExpandAll
       )
       .nodeByLabelScan("s", topLeftLabel)
       .build()
@@ -1901,7 +1950,8 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
         Set("t_inner" -> "t"),
         Set.empty,
         Selector.ShortestGroups(Int.MaxValue),
-        nfa
+        nfa,
+        ExpandAll
       )
       .allNodeScan("s")
       .build()
@@ -2005,7 +2055,8 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
         Set("t_inner" -> "t"),
         Set.empty,
         Selector.Shortest(2),
-        nfa
+        nfa,
+        ExpandAll
       )
       .nodeByLabelScan("s", "S")
       .build()
@@ -2057,7 +2108,8 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
         Set("t_inner" -> "t"),
         Set.empty,
         Selector.ShortestGroups(2),
-        nfa
+        nfa,
+        ExpandAll
       )
       .nodeByLabelScan("s", "0,0")
       .build()
@@ -2213,7 +2265,8 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
         ),
         Set("r2_inner" -> "r2"),
         Selector.ShortestGroups(3),
-        nfa
+        nfa,
+        ExpandAll
       )
       .nodeByLabelScan("s", "S")
       .build()
@@ -2312,7 +2365,8 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
         Set("t_inner" -> "t"),
         Set.empty,
         Selector.Shortest(2),
-        nfa
+        nfa,
+        ExpandAll
       )
       .nodeByLabelScan("s", "S")
       .build()
@@ -2413,7 +2467,8 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
         Set("t_inner" -> "t"),
         Set.empty,
         Selector.Shortest(3),
-        nfa
+        nfa,
+        ExpandAll
       )
       .nodeByLabelScan("s", "S")
       .build()
@@ -2642,7 +2697,8 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
         ),
         Set("r2_inner" -> "r2"),
         Selector.Shortest(2),
-        nfa
+        nfa,
+        ExpandAll
       )
       .nodeByLabelScan("s", "S")
       .build()

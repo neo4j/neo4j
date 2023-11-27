@@ -1248,11 +1248,12 @@ case class InterpretedPipeMapper(
           single && !withFallBack
         )(id)
 
-      case StatefulShortestPath(
+      case p @ StatefulShortestPath(
           _,
           sourceNode,
           _,
           nfa,
+          mode,
           nonInlinedPreFilters,
           nodeVariableGroupings,
           relationshipVariableGroupings,
@@ -1290,6 +1291,7 @@ case class InterpretedPipeMapper(
         StatefulShortestPathPipe(
           source,
           sourceNode.name,
+          mode == ExpandInto,
           commandNFA,
           commandPreFilters,
           selector,

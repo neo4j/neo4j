@@ -24,13 +24,13 @@ import org.neo4j.cypher.internal.physicalplanning.Slot
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration
 import org.neo4j.cypher.internal.physicalplanning.SlotConfigurationUtils.makeGetPrimitiveNodeFromSlotFunctionFor
 import org.neo4j.cypher.internal.runtime.ClosingIterator
+import org.neo4j.cypher.internal.runtime.ClosingIterator.JavaIteratorAsClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.CommandNFA
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.PipeWithSource
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.StatefulShortestRowIterator
 import org.neo4j.cypher.internal.runtime.slotted.SlottedRow
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.internal.kernel.api.helpers.traversal.SlotOrName
@@ -46,6 +46,7 @@ import scala.collection.mutable
 case class StatefulShortestPathSlottedPipe(
   source: Pipe,
   sourceSlot: Slot,
+  isTargetBound: Boolean,
   commandNFA: CommandNFA,
   preFilters: Option[Predicate],
   selector: StatefulShortestPath.Selector,
@@ -70,67 +71,64 @@ case class StatefulShortestPathSlottedPipe(
 
     val hooks = PPBFSHooks.getInstance()
     val pathTracer = new PathTracer(memoryTracker, hooks)
+    val pathPredicate =
+      preFilters.fold[java.util.function.Predicate[CypherRow]](_ => true)(pred => pred.isTrue(_, state))
 
     input.flatMap { inputRow =>
       val sourceNode = getSourceNodeFunction.applyAsLong(inputRow)
-      hooks.newRow(VirtualValues.node(sourceNode))
 
       val ppbfs = new PGPathPropagatingBFS(
         sourceNode,
+        isTargetBound,
         commandNFA.compile(inputRow, state),
         state.query.transactionalContext.dataRead,
         nodeCursor,
         traversalCursor,
+        pathTracer,
         selector.k.toInt,
         commandNFA.states.size,
         memoryTracker,
         hooks
       )
 
-      new SlottedStatefulShortestRowIterator(ppbfs, inputRow, pathTracer, hooks, state)
+      ppbfs.iterate(
+        withPathVariables(inputRow, _),
+        pathPredicate,
+        selector.isGroup
+      ).asClosingIterator.closing(ppbfs)
 
     }.closing(nodeCursor).closing(traversalCursor)
   }
 
-  private class SlottedStatefulShortestRowIterator(
-    ppbfs: PGPathPropagatingBFS,
-    inputRow: CypherRow,
-    pathTracer: PathTracer,
-    hooks: PPBFSHooks,
-    state: QueryState
-  ) extends StatefulShortestRowIterator(preFilters, selector, ppbfs, inputRow, pathTracer, hooks, state) {
+  private def withPathVariables(original: CypherRow, path: TracedPath): CypherRow = {
+    val row = new SlottedRow(slots)
+    row.copyAllFrom(original)
+    val groupMap = mutable.HashMap.empty[Int, ListValueBuilder]
 
-    override protected def withPathVariables(original: CypherRow, path: TracedPath): CypherRow = {
-      val row = new SlottedRow(slots)
-      row.copyAllFrom(original)
-      val groupMap = mutable.HashMap.empty[Int, ListValueBuilder]
-
-      var i = 0
-      while (i < path.entities().length) {
-        val e = path.entities()(i)
-        e.slotOrName match {
-          case SlotOrName.Slotted(slotOffset, isGroup) =>
-            if (isGroup) {
-              groupMap.getOrElseUpdate(slotOffset, ListValueBuilder.newListBuilder()).add(e.idValue)
-            } else {
-              row.setLongAt(slotOffset, e.id)
-            }
-          case _: SlotOrName.VarName => throw new IllegalStateException("Legacy metadata in Slotted runtime")
-          case SlotOrName.None       => ()
-        }
-        i += 1
+    var i = 0
+    while (i < path.entities().length) {
+      val e = path.entities()(i)
+      e.slotOrName match {
+        case SlotOrName.Slotted(slotOffset, isGroup) =>
+          if (isGroup) {
+            groupMap.getOrElseUpdate(slotOffset, ListValueBuilder.newListBuilder()).add(e.idValue)
+          } else {
+            row.setLongAt(slotOffset, e.id)
+          }
+        case _: SlotOrName.VarName => throw new IllegalStateException("Legacy metadata in Slotted runtime")
+        case SlotOrName.None       => ()
       }
-
-      groupSlots.foreach { offset =>
-        val value = groupMap.get(offset) match {
-          case Some(list) => if (reverseGroupVariableProjections) list.build().reverse() else list.build()
-          case None       => VirtualValues.EMPTY_LIST
-        }
-        row.setRefAt(offset, value)
-      }
-
-      row
+      i += 1
     }
-  }
 
+    groupSlots.foreach { offset =>
+      val value = groupMap.get(offset) match {
+        case Some(list) => if (reverseGroupVariableProjections) list.build().reverse() else list.build()
+        case None       => VirtualValues.EMPTY_LIST
+      }
+      row.setRefAt(offset, value)
+    }
+
+    row
+  }
 }
