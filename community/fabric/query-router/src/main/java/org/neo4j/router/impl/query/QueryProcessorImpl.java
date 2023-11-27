@@ -45,11 +45,14 @@ import org.neo4j.cypher.internal.util.InternalNotification;
 import org.neo4j.cypher.internal.util.RecordingNotificationLogger;
 import org.neo4j.cypher.rendering.QueryRenderer;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
+import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.fabric.executor.Location;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
+import org.neo4j.kernel.availability.UnavailableException;
 import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.kernel.database.DatabaseReferenceImpl;
+import org.neo4j.router.QueryRouterException;
 import org.neo4j.router.location.LocationService;
 import org.neo4j.router.query.Query;
 import org.neo4j.router.query.QueryProcessor;
@@ -204,11 +207,20 @@ public class QueryProcessorImpl implements QueryProcessor {
             var databaseContext = databaseContextProvider
                     .getDatabaseContext(localLocation.databaseReference().databaseId())
                     .orElseThrow(databaseNotFound(localLocation.getDatabaseName()));
+            checkDatabaseAvailable(databaseContext);
 
             var resolver = databaseContext.dependencies();
             var queryExecutionEngine = resolver.resolveDependency(ExecutionEngine.class);
             queryExecutionEngine.insertIntoCache(
                     query.text(), preParsedQuery, query.parameters(), parsedQuery, parsingNotifications);
+        }
+    }
+
+    private void checkDatabaseAvailable(DatabaseContext databaseContext) {
+        try {
+            databaseContext.database().getDatabaseAvailabilityGuard().assertDatabaseAvailable();
+        } catch (UnavailableException e) {
+            throw new QueryRouterException(e.status(), e);
         }
     }
 
