@@ -128,7 +128,7 @@ public class StoreTokens {
      * @return An empty read-only token holder.
      */
     public static TokenHolder createReadOnlyTokenHolder(String tokenType) {
-        return new CreatingTokenHolder(new ReadOnlyTokenCreator(), tokenType);
+        return new CreatingTokenHolder(ReadOnlyTokenCreator.READ_ONLY, tokenType);
     }
 
     public static TokenHolders directTokenHolders(

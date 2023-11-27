@@ -104,9 +104,9 @@ class FulltextIndexEntryUpdateTest {
 
     private final LifeSupport life = new LifeSupport();
     private final TokenHolders tokenHolders = new TokenHolders(
-            new CreatingTokenHolder(new ReadOnlyTokenCreator(), TokenHolder.TYPE_PROPERTY_KEY),
-            new CreatingTokenHolder(new ReadOnlyTokenCreator(), TokenHolder.TYPE_LABEL),
-            new CreatingTokenHolder(new ReadOnlyTokenCreator(), TokenHolder.TYPE_RELATIONSHIP_TYPE));
+            new CreatingTokenHolder(ReadOnlyTokenCreator.READ_ONLY, TokenHolder.TYPE_PROPERTY_KEY),
+            new CreatingTokenHolder(ReadOnlyTokenCreator.READ_ONLY, TokenHolder.TYPE_LABEL),
+            new CreatingTokenHolder(ReadOnlyTokenCreator.READ_ONLY, TokenHolder.TYPE_RELATIONSHIP_TYPE));
     private final IndexPopulator.PopulationWorkScheduler populationWorkScheduler =
             new IndexPopulator.PopulationWorkScheduler() {
                 @Override

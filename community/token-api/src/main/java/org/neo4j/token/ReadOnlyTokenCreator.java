@@ -28,6 +28,8 @@ import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
 public class ReadOnlyTokenCreator implements TokenCreator {
     public static final TokenCreator READ_ONLY = new ReadOnlyTokenCreator();
 
+    private ReadOnlyTokenCreator() {}
+
     @Override
     public int createToken(String name, boolean internal) throws ReadOnlyDbException {
         throw new ReadOnlyDbException();

@@ -520,9 +520,9 @@ public final class Recovery {
         DatabaseHealth databaseHealth = new DatabaseHealth(HealthEventGenerator.NO_OP, recoveryLog);
 
         TokenHolders tokenHolders = new TokenHolders(
-                new CreatingTokenHolder(new ReadOnlyTokenCreator(), TYPE_PROPERTY_KEY),
-                new CreatingTokenHolder(new ReadOnlyTokenCreator(), TYPE_LABEL),
-                new CreatingTokenHolder(new ReadOnlyTokenCreator(), TYPE_RELATIONSHIP_TYPE));
+                new CreatingTokenHolder(ReadOnlyTokenCreator.READ_ONLY, TYPE_PROPERTY_KEY),
+                new CreatingTokenHolder(ReadOnlyTokenCreator.READ_ONLY, TYPE_LABEL),
+                new CreatingTokenHolder(ReadOnlyTokenCreator.READ_ONLY, TYPE_RELATIONSHIP_TYPE));
 
         RecoveryCleanupWorkCollector recoveryCleanupCollector =
                 recoveryLife.add(new GroupingRecoveryCleanupWorkCollector(

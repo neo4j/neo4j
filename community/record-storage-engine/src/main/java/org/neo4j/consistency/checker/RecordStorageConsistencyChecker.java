@@ -484,9 +484,9 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
 
     private static TokenHolders safeLoadTokens(NeoStores neoStores, CursorContextFactory contextFactory) {
         TokenHolders tokenHolders = new TokenHolders(
-                new CreatingTokenHolder(new ReadOnlyTokenCreator(), TokenHolder.TYPE_PROPERTY_KEY),
-                new CreatingTokenHolder(new ReadOnlyTokenCreator(), TokenHolder.TYPE_LABEL),
-                new CreatingTokenHolder(new ReadOnlyTokenCreator(), TokenHolder.TYPE_RELATIONSHIP_TYPE));
+                new CreatingTokenHolder(ReadOnlyTokenCreator.READ_ONLY, TokenHolder.TYPE_PROPERTY_KEY),
+                new CreatingTokenHolder(ReadOnlyTokenCreator.READ_ONLY, TokenHolder.TYPE_LABEL),
+                new CreatingTokenHolder(ReadOnlyTokenCreator.READ_ONLY, TokenHolder.TYPE_RELATIONSHIP_TYPE));
         try (var cursorContext = contextFactory.create(CONSISTENCY_CHECKER_TOKEN_LOADER_TAG)) {
             tokenHolders
                     .relationshipTypeTokens()

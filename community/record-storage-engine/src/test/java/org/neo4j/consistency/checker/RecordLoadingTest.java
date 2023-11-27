@@ -37,7 +37,7 @@ class RecordLoadingTest {
     void shouldReturnsFalseOnMissingToken() {
         // given
         NodeRecord entity = new NodeRecord(0);
-        TokenHolder tokenHolder = new CreatingTokenHolder(new ReadOnlyTokenCreator(), "Test");
+        TokenHolder tokenHolder = new CreatingTokenHolder(ReadOnlyTokenCreator.READ_ONLY, "Test");
         TokenStore<PropertyKeyTokenRecord> store = mock(TokenStore.class);
         BiConsumer noopReporter = mock(BiConsumer.class);
 
