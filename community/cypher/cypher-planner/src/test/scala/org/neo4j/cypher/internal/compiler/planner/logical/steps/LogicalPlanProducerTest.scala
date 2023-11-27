@@ -921,4 +921,21 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       context.planningAttributes.providedOrders.get(p3.id) shouldBe(ProvidedOrder.empty)
     }
   }
+
+  test("Planning OrderedDistinct should not assume that leveraged order attributes are 'unseen'") {
+    new given().withLogicalPlanningContext { (_, context) =>
+      val lpp = LogicalPlanProducer(context.cardinality, context.planningAttributes, idGen)
+
+      val varX = varFor("x")
+      val fooToX = Map("foo" -> varX)
+      val initialOrder = ProvidedOrder.asc(varX)
+
+      val leaf = fakeLogicalPlanFor(context.planningAttributes, "x")
+
+      val p = lpp.planSort(leaf, Seq(Ascending("x")), initialOrder.columns, InterestingOrder.empty, context)
+      val p1 = lpp.planOrderedDistinct(p, fooToX, Seq(varX), fooToX, context)
+      context.planningAttributes.leveragedOrders.get(p1.id) // observe leveraged order
+      lpp.planOrderedDistinct(p1, fooToX, Seq(varX), fooToX, context) // should not crash
+    }
+  }
 }
