@@ -145,7 +145,7 @@ class SelectorTest extends CypherFunSuite with LogicalPlanningTestSupport {
             ))
         )
       ),
-      "",
+      varFor(""),
       ""
     )(pos, None, Some(Set(varFor("a"))))
 

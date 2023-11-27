@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Ors
+import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
@@ -337,7 +338,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
 
     ExistsIRExpression(
       query,
-      anonymousVariableNameGenerator.nextName,
+      varFor(anonymousVariableNameGenerator.nextName),
       s"EXISTS { MATCH $pattern$whereString }"
     )(
       InputPosition.NONE,

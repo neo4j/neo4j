@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.util.InputPosition
  */
 case class CountIRExpression(
   override val query: PlannerQuery,
-  countVariableName: String,
+  countVariable: LogicalVariable,
   solvedExpressionAsString: String
 )(
   val position: InputPosition,
@@ -49,11 +49,11 @@ case class CountIRExpression(
     : ExpressionWithComputedDependencies =
     copy()(position, computedIntroducedVariables, computedScopeDependencies = Some(computedScopeDependencies))
 
-  def renameCountVariable(newName: String): CountIRExpression = {
+  def renameCountVariable(newVariable: LogicalVariable): CountIRExpression = {
     copy(
-      countVariableName = newName,
+      countVariable = newVariable,
       query = query.asSinglePlannerQuery.updateTailOrSelf(_.withHorizon(
-        AggregatingQueryProjection(aggregationExpressions = Map(newName -> CountStar()(position)))
+        AggregatingQueryProjection(aggregationExpressions = Map(newVariable.name -> CountStar()(position)))
       ))
     )(position, computedIntroducedVariables, computedScopeDependencies)
   }
@@ -61,7 +61,7 @@ case class CountIRExpression(
   override def dup(children: Seq[AnyRef]): this.type = {
     CountIRExpression(
       children.head.asInstanceOf[PlannerQuery],
-      children(1).asInstanceOf[String],
+      children(1).asInstanceOf[LogicalVariable],
       children(2).asInstanceOf[String]
     )(position, computedIntroducedVariables, computedScopeDependencies).asInstanceOf[this.type]
   }
@@ -73,7 +73,7 @@ case class CountIRExpression(
   override def equals(countIRExpression: Any): Boolean = countIRExpression match {
     case ce: CountIRExpression =>
       this.query.equals(ce.query) &&
-      this.countVariableName.equals(ce.countVariableName) &&
+      this.countVariable.equals(ce.countVariable) &&
       this.solvedExpressionAsString.replaceAll("\r\n", "\n")
         .equals(ce.solvedExpressionAsString.replaceAll("\r\n", "\n"))
     case _ => false

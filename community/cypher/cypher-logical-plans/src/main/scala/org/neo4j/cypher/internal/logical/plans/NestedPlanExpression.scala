@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticCheckableExpression
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Expression.SemanticContext
 import org.neo4j.cypher.internal.expressions.LogicalVariable
-import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.InputPosition
 
 case class NestedPlanCollectExpression(
@@ -83,12 +82,12 @@ object NestedPlanExpression {
 
   def count(
     plan: LogicalPlan,
-    countVariableName: String,
+    countVariable: LogicalVariable,
     solvedExpression: Expression
   )(position: InputPosition): NestedPlanGetByNameExpression =
     NestedPlanGetByNameExpression(
       plan,
-      Variable(countVariableName)(InputPosition.NONE),
+      countVariable,
       stringifier(solvedExpression)
     )(position)
 }

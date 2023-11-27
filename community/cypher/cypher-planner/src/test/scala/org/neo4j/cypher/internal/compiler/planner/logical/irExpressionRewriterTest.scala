@@ -47,7 +47,7 @@ class irExpressionRewriterTest extends CypherFunSuite with LogicalPlanningTestSu
       expr,
       NestedPlanExpression.collect(
         plan,
-        varFor(expr.variableToCollectName),
+        expr.variableToCollect,
         varFor(expr.solvedExpressionAsString)
       )(pos)
     )
@@ -64,7 +64,7 @@ class irExpressionRewriterTest extends CypherFunSuite with LogicalPlanningTestSu
       expr,
       NestedPlanExpression.collect(
         plan,
-        varFor(expr.variableToCollectName),
+        expr.variableToCollect,
         varFor(expr.solvedExpressionAsString)
       )(pos)
     )
@@ -171,8 +171,8 @@ class irExpressionRewriterTest extends CypherFunSuite with LogicalPlanningTestSu
           patternNodes = patternNodes
         )
       ),
-      "anon_0",
-      "anon_1",
+      varFor("anon_0"),
+      varFor("anon_1"),
       "ListIRExpression"
     )(pos, None, Some(argumentIds.map(name => varFor(name))))
   }
@@ -185,7 +185,7 @@ class irExpressionRewriterTest extends CypherFunSuite with LogicalPlanningTestSu
           patternNodes = patternNodes
         )
       ),
-      "anon_0",
+      varFor("anon_0"),
       "ExistsIRExpression"
     )(pos, None, Some(argumentIds.map(name => varFor(name))))
   }

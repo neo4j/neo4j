@@ -1128,7 +1128,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
             argumentIds = Set("a")
           )
         ),
-        "anon_0",
+        varFor("anon_0"),
         "EXISTS { MATCH (a), (x) }"
       )(pos, Some(Set(varFor("x"))), Some(Set(varFor("a"))))
 
@@ -1163,7 +1163,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
             argumentIds = Set("a")
           )
         ),
-        "anon_0",
+        varFor("anon_0"),
         "EXISTS { MATCH (a), (x) }"
       )(pos, Some(Set(varFor("x"))), Some(Set(varFor("a"))))
 

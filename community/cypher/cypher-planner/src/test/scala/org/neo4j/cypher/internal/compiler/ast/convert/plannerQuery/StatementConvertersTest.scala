@@ -799,7 +799,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     // Then inner pattern query graph
     val relName = "anon_0"
     val nodeName = "anon_1"
-    val existsVariableName = "anon_2"
+    val existsVariable = varFor("anon_2")
     val exp = ExistsIRExpression(
       RegularSinglePlannerQuery(
         QueryGraph(
@@ -809,7 +809,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
             Set(PatternRelationship(relName, ("a", nodeName), OUTGOING, Seq(), SimplePatternLength))
         )
       ),
-      existsVariableName,
+      existsVariable,
       s"EXISTS { MATCH (a)-[`$relName`]->(`$nodeName`) }"
     )(pos, None, None)
     val predicate = Predicate(Set("a"), exp)
@@ -859,7 +859,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     // Then inner pattern query graph
     val relName = "anon_0"
     val nodeName = "anon_1"
-    val existsVariableName = "anon_2"
+    val existsVariable = varFor("anon_2")
 
     val exp1 = ExistsIRExpression(
       RegularSinglePlannerQuery(
@@ -870,7 +870,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
             Set(PatternRelationship(relName, ("a", nodeName), OUTGOING, Seq(), SimplePatternLength))
         )
       ),
-      existsVariableName,
+      existsVariable,
       s"EXISTS { MATCH (a)-[`$relName`]->(`$nodeName`) }"
     )(pos, None, None)
 
@@ -889,7 +889,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     // Then inner pattern query graph
     val relName = "anon_0"
     val nodeName = "anon_1"
-    val existsVariableName = "anon_2"
+    val existsVariable = varFor("anon_2")
 
     val exp1 = ExistsIRExpression(
       RegularSinglePlannerQuery(
@@ -900,7 +900,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
             Set(PatternRelationship(relName, ("a", nodeName), OUTGOING, Seq(), SimplePatternLength))
         )
       ),
-      existsVariableName,
+      existsVariable,
       s"EXISTS { MATCH (a)-[`$relName`]->(`$nodeName`) }"
     )(pos, None, None)
 
@@ -919,7 +919,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     // Then inner pattern query graph
     val relName = "anon_0"
     val nodeName = "anon_1"
-    val existsVariableName = "anon_2"
+    val existsVariable = varFor("anon_2")
 
     val exp1 = ExistsIRExpression(
       RegularSinglePlannerQuery(
@@ -930,7 +930,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
             Set(PatternRelationship(relName, ("a", nodeName), OUTGOING, Seq(), SimplePatternLength))
         )
       ),
-      existsVariableName,
+      existsVariable,
       s"EXISTS { MATCH (a)-[`$relName`]->(`$nodeName`) }"
     )(pos, None, None)
 
@@ -1290,7 +1290,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
 
     val relName = "anon_0"
     val nodeName = "anon_1"
-    val existsVariableName = "anon_2"
+    val existsVariable = varFor("anon_2")
 
     // (owner)-[relName]-(nodeName)
     val subqueryExpression = ExistsIRExpression(
@@ -1302,7 +1302,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
             Set(PatternRelationship(relName, ("owner", nodeName), BOTH, Seq(), SimplePatternLength))
         )
       ),
-      existsVariableName,
+      existsVariable,
       s"EXISTS { MATCH (owner)-[`$relName`]-(`$nodeName`) }"
     )(pos, Some(Set(varFor(nodeName), varFor(relName))), Some(Set(varFor("owner"))))
 

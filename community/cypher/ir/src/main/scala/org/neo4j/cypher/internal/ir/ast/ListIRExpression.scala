@@ -29,8 +29,8 @@ import org.neo4j.cypher.internal.util.InputPosition
  */
 case class ListIRExpression(
   override val query: PlannerQuery,
-  variableToCollectName: String,
-  collectionName: String,
+  variableToCollect: LogicalVariable,
+  collection: LogicalVariable,
   solvedExpressionAsString: String
 )(
   val position: InputPosition,
@@ -51,8 +51,8 @@ case class ListIRExpression(
   override def dup(children: Seq[AnyRef]): this.type = {
     ListIRExpression(
       children.head.asInstanceOf[PlannerQuery],
-      children(1).asInstanceOf[String],
-      children(2).asInstanceOf[String],
+      children(1).asInstanceOf[LogicalVariable],
+      children(2).asInstanceOf[LogicalVariable],
       children(3).asInstanceOf[String]
     )(position, computedIntroducedVariables, computedScopeDependencies).asInstanceOf[this.type]
   }

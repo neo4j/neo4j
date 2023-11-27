@@ -75,7 +75,7 @@ class SelectSubQueryPredicatesTest extends CypherFunSuite with LogicalPlanningTe
 
     val existsPredicate = ExistsIRExpression(
       query = subQuery,
-      existsVariableName = "",
+      existsVariable = varFor(""),
       solvedExpressionAsString = "exists((a)-[r]->(b))"
     )(
       position = pos,
@@ -210,8 +210,8 @@ class SelectSubQueryPredicatesTest extends CypherFunSuite with LogicalPlanningTe
 
     val listIRExpression = ListIRExpression(
       query = subQuery,
-      variableToCollectName = "item",
-      collectionName = "items",
+      variableToCollect = varFor("item"),
+      collection = varFor("items"),
       solvedExpressionAsString = s"[($argumentName)-[$relationshipName]->($otherNodeName) | 1]"
     )(
       position = pos,

@@ -64,7 +64,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
           Set(patternRel)
       )
     ),
-    "",
+    varFor(""),
     s"exists((a)-[`$relName`]->(`$nodeName`))"
   )(pos, Some(Set(varFor(nodeName))), Some(Set(varFor(argName))))
 
@@ -77,7 +77,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
           Set(PatternRelationship(relName2, (argName, nodeName2), dir, types, SimplePatternLength))
       )
     ),
-    "",
+    varFor(""),
     s"exists((a)-[`$relName2`]->(`$nodeName2`))"
   )(pos, Some(Set(varFor(relName2), varFor(nodeName2))), Some(Set(varFor(argName))))
 

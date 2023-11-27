@@ -37,8 +37,8 @@ class IRExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
           selections = Selections.from(varFor("b"))
         )
       ),
-      "anon_0",
-      "anon_1",
+      varFor("anon_0"),
+      varFor("anon_1"),
       "ListIRExpression"
     )(pos, Some(Set(varFor("b"))), Some(Set(varFor("a"))))
 
@@ -55,7 +55,7 @@ class IRExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
           selections = Selections.from(varFor("b"))
         )
       ),
-      "anon_0",
+      varFor("anon_0"),
       "ExistsIRExpression"
     )(pos, Some(Set(varFor("b"))), Some(Set(varFor("a"))))
 
@@ -72,8 +72,8 @@ class IRExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
           selections = Selections.from(varFor("b"))
         )
       ),
-      "anon_0",
-      "anon_1",
+      varFor("anon_0"),
+      varFor("anon_1"),
       "ListIRExpression"
     )(pos, Some(Set(varFor("b"))), Some(Set(varFor("a")))))
 

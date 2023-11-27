@@ -397,7 +397,7 @@ class QgWithLeafInfoTest extends CypherFunSuite with AstConstructionTestSupport 
           "x" -> MapExpression(Seq(propName("prop") -> literalInt(5)))(pos)
         ))
       ),
-      "",
+      varFor(""),
       ""
     )(pos, Some(Set.empty), Some(Set.empty))
 
@@ -431,8 +431,8 @@ class QgWithLeafInfoTest extends CypherFunSuite with AstConstructionTestSupport 
           "x" -> MapExpression(Seq(propName("prop") -> literalInt(5)))(pos)
         ))
       ),
-      "",
-      "",
+      varFor(""),
+      varFor(""),
       ""
     )(pos, Some(Set.empty), Some(Set.empty))
 

@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.util.InputPosition
  */
 case class ExistsIRExpression(
   override val query: PlannerQuery,
-  existsVariableName: String,
+  existsVariable: LogicalVariable,
   solvedExpressionAsString: String
 )(
   val position: InputPosition,
@@ -50,7 +50,7 @@ case class ExistsIRExpression(
   override def dup(children: Seq[AnyRef]): this.type = {
     ExistsIRExpression(
       children.head.asInstanceOf[PlannerQuery],
-      children(1).asInstanceOf[String],
+      children(1).asInstanceOf[LogicalVariable],
       children(2).asInstanceOf[String]
     )(position, computedIntroducedVariables, computedScopeDependencies).asInstanceOf[this.type]
   }
@@ -62,7 +62,7 @@ case class ExistsIRExpression(
   override def equals(existsIRExpression: Any): Boolean = existsIRExpression match {
     case ee: ExistsIRExpression =>
       this.query.equals(ee.query) &&
-      this.existsVariableName.equals(ee.existsVariableName) &&
+      this.existsVariable.equals(ee.existsVariable) &&
       this.solvedExpressionAsString.replaceAll("\r\n", "\n")
         .equals(ee.solvedExpressionAsString.replaceAll("\r\n", "\n"))
     case _ => false
