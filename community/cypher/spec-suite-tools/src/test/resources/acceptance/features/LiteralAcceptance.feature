@@ -145,24 +145,6 @@ Feature: LiteralAcceptance
     Then a SyntaxError should be raised at compile time: InvalidNumberLiteral
 
   @skipGrammarCheck
-  Scenario: [13] Fail on a float with underscore before decimal separator
-    Given any graph
-    When executing query:
-      """
-      RETURN 1_.0001 AS literal
-      """
-    Then a SyntaxError should be raised at compile time: InvalidNumberLiteral
-
-  @skipGrammarCheck
-  Scenario: [14] Fail on a float with underscore following decimal separator
-    Given any graph
-    When executing query:
-      """
-      RETURN 1._0001 AS literal
-      """
-    Then a SyntaxError should be raised at compile time: InvalidNumberLiteral
-
-  @skipGrammarCheck
   Scenario: [15] Fail on a float with underscore before first number in exponent
     Given any graph
     When executing query:

@@ -344,8 +344,8 @@ MORE :
 
 TOKEN :
 {
-    < DECIMAL_DOUBLE: ["0"-"9"] ( <INTEGER_PART> )* ("_")? "." ( <INTEGER_PART> )+ ( <DECIMAL_EXPONENT> )? ( <IDENTIFIER> )?
-                      | "." ( <INTEGER_PART> )+ ( <DECIMAL_EXPONENT> )? ( <IDENTIFIER> )?
+    < DECIMAL_DOUBLE: ["0"-"9"] ( <INTEGER_PART> )* "." ["0"-"9"] ( <INTEGER_PART> )* ( <DECIMAL_EXPONENT> )? ( <IDENTIFIER> )?
+                      | "." ["0"-"9"] ( <INTEGER_PART> )* ( <DECIMAL_EXPONENT> )? ( <IDENTIFIER> )?
                       | ["0"-"9"] ( <INTEGER_PART> )* <DECIMAL_EXPONENT> ( <IDENTIFIER> )? >
     | < UNSIGNED_DECIMAL_INTEGER: ( ( ["1"-"9"] ( <INTEGER_PART> )* ( <PART_LETTER> )* ) | "0" ) > //0 with part letter -> Octal integer?
     | < #DECIMAL_EXPONENT: ["e","E"] ( ["+","-"] )? ( <INTEGER_PART> )+ ( <PART_LETTER> )* >

@@ -106,7 +106,7 @@ class LiteralsParserTest extends ParserTestBase[Any with ParserRuleContext, Any,
     }
     parsing("- 1.4") shouldGive DecimalDoubleLiteral("-1.4")(t)
 
-    val invalid = Seq("NaN", "Infinity", "Ox")
+    val invalid = Seq("NaN", "Infinity", "Ox", "0_.0", "1_._1", "._2", "1_.0001", "1._0001")
     for (i <- invalid) withClue(i) {
       assertFails(i)
     }

@@ -88,6 +88,16 @@ class SetParserTest extends CypherFunSuite with ParserSyntaxTreeBase[Cst.Clause,
     )
   }
 
+  test("SET n._1 = 1") {
+    gives(
+      set_(
+        Seq(
+          setPropertyItem("n", "_1", literalInt(1))
+        )
+      )
+    )
+  }
+
   // Invalid mix of colon conjunction and IS, this will be disallowed in semantic checking
 
   test("SET n IS A:B") {
