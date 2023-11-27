@@ -2688,13 +2688,6 @@ object AbstractLogicalPlanBuilder {
       Parser.parseExpression(value)
     )
 
-  def setPropertyIr(entity: String, key: String, value: String): org.neo4j.cypher.internal.ir.SetMutatingPattern =
-    org.neo4j.cypher.internal.ir.SetPropertyPattern(
-      Parser.parseExpression(entity),
-      PropertyKeyName(key)(InputPosition.NONE),
-      Parser.parseExpression(value)
-    )
-
   def setProperties(entity: String, items: (String, String)*): SetMutatingPattern =
     SetPropertiesPattern(
       Parser.parseExpression(entity),
@@ -2709,9 +2702,6 @@ object AbstractLogicalPlanBuilder {
 
   def removeLabel(node: String, labels: String*): RemoveLabelPattern =
     RemoveLabelPattern(varFor(node), labels.map(l => LabelName(l)(InputPosition.NONE)))
-
-  def removeLabelIr(node: String, labels: String*): org.neo4j.cypher.internal.ir.RemoveLabelPattern =
-    org.neo4j.cypher.internal.ir.RemoveLabelPattern(node, labels.map(l => LabelName(l)(InputPosition.NONE)))
 
   def delete(entity: String, forced: Boolean = false): org.neo4j.cypher.internal.logical.plans.set.DeleteExpression =
     org.neo4j.cypher.internal.logical.plans.set.DeleteExpression(Parser.parseExpression(entity), forced)

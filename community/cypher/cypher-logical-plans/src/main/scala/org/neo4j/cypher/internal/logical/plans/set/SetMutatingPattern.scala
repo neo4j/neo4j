@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
-import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.ir
 import org.neo4j.cypher.internal.ir.CreateCommand
 import org.neo4j.cypher.internal.ir.CreateNode
@@ -60,23 +59,23 @@ object SetMutatingPattern {
     case ir.SetPropertiesPattern(entityExpression, items) =>
       SetPropertiesPattern(entityExpression, items)
     case ir.SetRelationshipPropertyPattern(idName, propertyKey, expression) =>
-      SetRelationshipPropertyPattern(varFor(idName), propertyKey, expression)
+      SetRelationshipPropertyPattern(idName, propertyKey, expression)
     case ir.SetRelationshipPropertiesPattern(idName, items) =>
-      SetRelationshipPropertiesPattern(varFor(idName), items)
+      SetRelationshipPropertiesPattern(idName, items)
     case ir.SetNodePropertiesFromMapPattern(idName, expression, removeOtherProps) =>
-      SetNodePropertiesFromMapPattern(varFor(idName), expression, removeOtherProps)
+      SetNodePropertiesFromMapPattern(idName, expression, removeOtherProps)
     case ir.SetRelationshipPropertiesFromMapPattern(idName, expression, removeOtherProps) =>
-      SetRelationshipPropertiesFromMapPattern(varFor(idName), expression, removeOtherProps)
+      SetRelationshipPropertiesFromMapPattern(idName, expression, removeOtherProps)
     case ir.SetPropertiesFromMapPattern(entityExpression, expression, removeOtherProps) =>
       SetPropertiesFromMapPattern(entityExpression, expression, removeOtherProps)
     case ir.SetNodePropertyPattern(idName, propertyKey, expression) =>
-      SetNodePropertyPattern(varFor(idName), propertyKey, expression)
+      SetNodePropertyPattern(idName, propertyKey, expression)
     case ir.SetNodePropertiesPattern(idName, items) =>
-      SetNodePropertiesPattern(varFor(idName), items)
+      SetNodePropertiesPattern(idName, items)
     case ir.SetLabelPattern(idName, labels) =>
-      SetLabelPattern(varFor(idName), labels)
+      SetLabelPattern(idName, labels)
     case ir.RemoveLabelPattern(idName, labels) =>
-      RemoveLabelPattern(varFor(idName), labels)
+      RemoveLabelPattern(idName, labels)
   }
 }
 

@@ -471,7 +471,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
         ctx.lhs,
         Seq(CreateNode(varFor("n"), Set(), None)),
         Seq.empty,
-        Seq(SetNodePropertyPattern("x", PropertyKeyName("p")(pos), literalInt(1))),
+        Seq(SetNodePropertyPattern(varFor("x"), PropertyKeyName("p")(pos), literalInt(1))),
         Seq.empty,
         Set.empty,
         ctx.context
@@ -519,13 +519,13 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
 
   test("Setlabel should eliminate provided order") {
     shouldEliminateProvidedOrder(ctx =>
-      ctx.producer.planSetLabel(ctx.lhs, SetLabelPattern("n", Seq(labelName("N"))), ctx.context)
+      ctx.producer.planSetLabel(ctx.lhs, SetLabelPattern(varFor("n"), Seq(labelName("N"))), ctx.context)
     )
   }
 
   test("RemoveLabel should eliminate provided order") {
     shouldEliminateProvidedOrder(ctx =>
-      ctx.producer.planRemoveLabel(ctx.lhs, RemoveLabelPattern("n", Seq(labelName("N"))), ctx.context)
+      ctx.producer.planRemoveLabel(ctx.lhs, RemoveLabelPattern(varFor("n"), Seq(labelName("N"))), ctx.context)
     )
   }
 
@@ -553,7 +553,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
     shouldEliminateProvidedOrder(ctx =>
       ctx.producer.planSetNodeProperty(
         ctx.lhs,
-        SetNodePropertyPattern("x", PropertyKeyName("p")(pos), literalInt(1)),
+        SetNodePropertyPattern(varFor("x"), PropertyKeyName("p")(pos), literalInt(1)),
         ctx.context
       )
     )
@@ -563,7 +563,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
     shouldEliminateProvidedOrder(ctx =>
       ctx.producer.planSetNodePropertiesFromMap(
         ctx.lhs,
-        SetNodePropertiesFromMapPattern("x", mapOfInt("p" -> 1), false),
+        SetNodePropertiesFromMapPattern(varFor("x"), mapOfInt("p" -> 1), false),
         ctx.context
       )
     )
@@ -573,7 +573,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
     shouldEliminateProvidedOrder(ctx =>
       ctx.producer.planSetRelationshipProperty(
         ctx.lhs,
-        SetRelationshipPropertyPattern("x", PropertyKeyName("p")(pos), literalInt(1)),
+        SetRelationshipPropertyPattern(varFor("x"), PropertyKeyName("p")(pos), literalInt(1)),
         ctx.context
       )
     )
@@ -583,7 +583,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
     shouldEliminateProvidedOrder(ctx =>
       ctx.producer.planSetRelationshipPropertiesFromMap(
         ctx.lhs,
-        SetRelationshipPropertiesFromMapPattern("r", mapOfInt("p" -> 1), false),
+        SetRelationshipPropertiesFromMapPattern(varFor("r"), mapOfInt("p" -> 1), false),
         ctx.context
       )
     )
@@ -853,7 +853,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       ctx.producer.planForeachApply(
         ctx.lhs,
         ctx.rhsWithUpdate,
-        ForeachPattern("x", varFor("x"), SinglePlannerQuery.empty),
+        ForeachPattern(varFor("x"), varFor("x"), SinglePlannerQuery.empty),
         ctx.context,
         varFor("x")
       )
@@ -865,7 +865,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       ctx.producer.planForeachApply(
         ctx.lhs,
         ctx.rhsWithoutUpdate,
-        ForeachPattern("x", varFor("x"), SinglePlannerQuery.empty),
+        ForeachPattern(varFor("x"), varFor("x"), SinglePlannerQuery.empty),
         ctx.context,
         varFor("x")
       )
@@ -1064,7 +1064,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
     context.staticComponents.planningAttributes.providedOrders.set(lhs.id, providedOrder)
 
     val rhs = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "a")
-    val rhsWithUpdate = lpp.planSetLabel(rhs, SetLabelPattern("n", Seq(labelName("N"))), context)
+    val rhsWithUpdate = lpp.planSetLabel(rhs, SetLabelPattern(varFor("n"), Seq(labelName("N"))), context)
     createPlan(PlanCreationContext(lpp, context, lhs, rhsWithUpdate, rhs))
   }
 

@@ -342,7 +342,7 @@ class LimitSelectivityTest extends CypherFunSuite with LogicalPlanningTestSuppor
       val query = RegularSinglePlannerQuery(
         queryGraph = QueryGraph(
           patternNodes = Set("n", "m"),
-          mutatingPatterns = IndexedSeq(SetNodePropertyPattern("n", PropertyKeyName("foo")(pos), literalInt(1)))
+          mutatingPatterns = IndexedSeq(SetNodePropertyPattern(varFor("n"), PropertyKeyName("foo")(pos), literalInt(1)))
         ),
         horizon = RegularQueryProjection(queryPagination = QueryPagination(limit = Some(literalInt(limit))))
       )
@@ -482,7 +482,7 @@ class LimitSelectivityTest extends CypherFunSuite with LogicalPlanningTestSuppor
         tail = Some(RegularSinglePlannerQuery(
           queryGraph = QueryGraph(
             argumentIds = Set("n", "m"),
-            mutatingPatterns = IndexedSeq(SetNodePropertyPattern("n", PropertyKeyName("foo")(pos), literalInt(1)))
+            mutatingPatterns = IndexedSeq(SetNodePropertyPattern(varFor("n"), PropertyKeyName("foo")(pos), literalInt(1)))
           )
         ))
       )

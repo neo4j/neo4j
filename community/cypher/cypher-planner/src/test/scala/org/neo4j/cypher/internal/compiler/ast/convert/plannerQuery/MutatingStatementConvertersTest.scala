@@ -69,7 +69,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
 
     query.queryGraph.patternNodes should equal(Set("n"))
     query.queryGraph.mutatingPatterns should equal(List(
-      SetNodePropertyPattern("n", PropertyKeyName("prop")(pos), literalInt(42))
+      SetNodePropertyPattern(varFor("n"), PropertyKeyName("prop")(pos), literalInt(42))
     ))
   }
 
@@ -82,7 +82,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
 
     query.queryGraph.patternNodes should equal(Set("n"))
     query.queryGraph.mutatingPatterns should equal(List(
-      SetNodePropertyPattern("n", PropertyKeyName("prop")(pos), nullLiteral)
+      SetNodePropertyPattern(varFor("n"), PropertyKeyName("prop")(pos), nullLiteral)
     ))
   }
 
@@ -97,7 +97,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
       PatternRelationship("r", ("a", "b"), OUTGOING, List(), SimplePatternLength)
     ))
     query.queryGraph.mutatingPatterns should equal(List(
-      SetRelationshipPropertyPattern("r", PropertyKeyName("prop")(pos), literalInt(42))
+      SetRelationshipPropertyPattern(varFor("r"), PropertyKeyName("prop")(pos), literalInt(42))
     ))
   }
 
@@ -112,7 +112,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
       PatternRelationship("r", ("a", "b"), OUTGOING, List(), SimplePatternLength)
     ))
     query.queryGraph.mutatingPatterns should equal(List(
-      SetRelationshipPropertyPattern("r", PropertyKeyName("prop")(pos), nullLiteral)
+      SetRelationshipPropertyPattern(varFor("r"), PropertyKeyName("prop")(pos), nullLiteral)
     ))
   }
 
@@ -169,7 +169,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
     val second = query.tail.get
     second.queryGraph.mutatingPatterns should equal(
       Seq(ForeachPattern(
-        "i",
+        varFor("i"),
         listOfInt(1),
         RegularSinglePlannerQuery(
           QueryGraph(

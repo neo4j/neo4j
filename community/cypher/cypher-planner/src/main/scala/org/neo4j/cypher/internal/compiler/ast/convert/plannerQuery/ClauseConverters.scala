@@ -631,21 +631,21 @@ object ClauseConverters {
     }.toIndexedSeq
 
   private def toSetPattern(semanticTable: SemanticTable)(setItem: SetItem): SetMutatingPattern = setItem match {
-    case SetLabelItem(id, labels, _) => SetLabelPattern(id.name, labels)
+    case SetLabelItem(id, labels, _) => SetLabelPattern(id, labels)
 
     case SetPropertyItem(LogicalProperty(node: Variable, propertyKey), expr)
       if semanticTable.typeFor(node).is(CTNode) =>
-      SetNodePropertyPattern(node.name, propertyKey, expr)
+      SetNodePropertyPattern(node, propertyKey, expr)
 
     case SetPropertyItems(node: Variable, items) if semanticTable.typeFor(node).is(CTNode) =>
-      SetNodePropertiesPattern(node.name, items)
+      SetNodePropertiesPattern(node, items)
 
     case SetPropertyItem(LogicalProperty(rel: Variable, propertyKey), expr)
       if semanticTable.typeFor(rel).is(CTRelationship) =>
-      SetRelationshipPropertyPattern(rel.name, propertyKey, expr)
+      SetRelationshipPropertyPattern(rel, propertyKey, expr)
 
     case SetPropertyItems(rel: Variable, items) if semanticTable.typeFor(rel).is(CTRelationship) =>
-      SetRelationshipPropertiesPattern(rel.name, items)
+      SetRelationshipPropertiesPattern(rel, items)
 
     case SetPropertyItem(LogicalProperty(entityExpr, propertyKey), expr) =>
       SetPropertyPattern(entityExpr, propertyKey, expr)
@@ -654,19 +654,19 @@ object ClauseConverters {
       SetPropertiesPattern(entityExpr, items)
 
     case SetExactPropertiesFromMapItem(node, expression) if semanticTable.typeFor(node).is(CTNode) =>
-      SetNodePropertiesFromMapPattern(node.name, expression, removeOtherProps = true)
+      SetNodePropertiesFromMapPattern(node, expression, removeOtherProps = true)
 
     case SetExactPropertiesFromMapItem(rel, expression) if semanticTable.typeFor(rel).is(CTRelationship) =>
-      SetRelationshipPropertiesFromMapPattern(rel.name, expression, removeOtherProps = true)
+      SetRelationshipPropertiesFromMapPattern(rel, expression, removeOtherProps = true)
 
     case SetExactPropertiesFromMapItem(vr, expression) =>
       SetPropertiesFromMapPattern(vr, expression, removeOtherProps = true)
 
     case SetIncludingPropertiesFromMapItem(node, expression) if semanticTable.typeFor(node).is(CTNode) =>
-      SetNodePropertiesFromMapPattern(node.name, expression, removeOtherProps = false)
+      SetNodePropertiesFromMapPattern(node, expression, removeOtherProps = false)
 
     case SetIncludingPropertiesFromMapItem(rel, expression) if semanticTable.typeFor(rel).is(CTRelationship) =>
-      SetRelationshipPropertiesFromMapPattern(rel.name, expression, removeOtherProps = false)
+      SetRelationshipPropertiesFromMapPattern(rel, expression, removeOtherProps = false)
 
     case SetIncludingPropertiesFromMapItem(vr, expression) =>
       SetPropertiesFromMapPattern(vr, expression, removeOtherProps = false)
@@ -695,8 +695,8 @@ object ClauseConverters {
         // itself, since it is provided by the MERGE.
         val dependencies = selections.variableDependencies ++
           createNodePattern.dependencies.map(_.name) ++
-          onCreate.flatMap(_.dependencies) ++
-          onMatch.flatMap(_.dependencies) -
+          onCreate.flatMap(_.dependencies.map(_.name)) ++
+          onMatch.flatMap(_.dependencies.map(_.name)) -
           id.name
         val arguments = builder.currentlyAvailableVariables.intersect(dependencies)
 
@@ -764,8 +764,8 @@ object ClauseConverters {
           nodesCreatedBefore.map(_.create.variable.name) ++
           nodesToCreate.map(_.create).flatMap(_.dependencies.map(_.name)) ++
           rels.map(_.create).flatMap(_.dependencies.map(_.name)) ++
-          onCreate.flatMap(_.dependencies) ++
-          onMatch.flatMap(_.dependencies) --
+          onCreate.flatMap(_.dependencies.map(_.name)) ++
+          onMatch.flatMap(_.dependencies.map(_.name)) --
           nodesToCreate.map(_.create.variable.name) --
           rels.map(_.create.variable.name)
         val arguments = builder.currentlyAvailableVariables.intersect(dependencies)
@@ -923,7 +923,7 @@ object ClauseConverters {
     )
 
     val dependencies = innerBuilder.q.allPlannerQueries.view
-      .flatMap(_.queryGraph.mutatingPatterns.flatMap(_.dependencies)).to(Set)
+      .flatMap(_.queryGraph.mutatingPatterns.flatMap(_.dependencies.map(_.name))).to(Set)
     val arguments = availableToInnerClauses.intersect(dependencies)
     // This fixes the arguments of the first planner query inside the foreach.
     // All subsequent planner queries will get their arguments fixed by `.build()`.
@@ -932,7 +932,7 @@ object ClauseConverters {
     val innerPlannerQuery = innerBuilderWithFixedArguments.build()
 
     val foreachPattern = ForeachPattern(
-      variable = clause.variable.name,
+      variable = clause.variable,
       expression = clause.expression,
       innerUpdates = innerPlannerQuery
     )
@@ -955,20 +955,20 @@ object ClauseConverters {
     clause.items.foldLeft(acc) {
       // REMOVE n:Foo
       case (builder, RemoveLabelItem(variable, labelNames, _)) =>
-        builder.amendQueryGraph(_.addMutatingPatterns(RemoveLabelPattern(variable.name, labelNames)))
+        builder.amendQueryGraph(_.addMutatingPatterns(RemoveLabelPattern(variable, labelNames)))
 
       // REMOVE n.prop
       case (builder, RemovePropertyItem(Property(variable: Variable, propertyKey)))
         if acc.semanticTable.typeFor(variable).is(CTNode) =>
         builder.amendQueryGraph(_.addMutatingPatterns(
-          SetNodePropertyPattern(variable.name, propertyKey, Null()(propertyKey.position))
+          SetNodePropertyPattern(variable, propertyKey, Null()(propertyKey.position))
         ))
 
       // REMOVE rel.prop
       case (builder, RemovePropertyItem(Property(variable: Variable, propertyKey)))
         if acc.semanticTable.typeFor(variable).is(CTRelationship) =>
         builder.amendQueryGraph(_.addMutatingPatterns(
-          SetRelationshipPropertyPattern(variable.name, propertyKey, Null()(propertyKey.position))
+          SetRelationshipPropertyPattern(variable, propertyKey, Null()(propertyKey.position))
         ))
 
       // REMOVE rel.prop when unknown whether node or rel

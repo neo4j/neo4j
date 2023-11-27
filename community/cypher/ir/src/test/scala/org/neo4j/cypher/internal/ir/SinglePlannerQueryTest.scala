@@ -29,7 +29,7 @@ class SinglePlannerQueryTest extends CypherFunSuite with AstConstructionTestSupp
     val query = RegularSinglePlannerQuery(
       QueryGraph(
         mutatingPatterns = IndexedSeq(
-          SetLabelPattern("a", Seq(LabelName("A")(pos)))
+          SetLabelPattern(varFor("a"), Seq(LabelName("A")(pos)))
         )
       )
     )
@@ -42,17 +42,17 @@ class SinglePlannerQueryTest extends CypherFunSuite with AstConstructionTestSupp
       QueryGraph(
         mutatingPatterns = IndexedSeq(
           ForeachPattern(
-            "x",
+            varFor("x"),
             listOfInt(1, 2),
             RegularSinglePlannerQuery(
               QueryGraph(
                 mutatingPatterns = IndexedSeq(
-                  SetLabelPattern("a", Seq(LabelName("A")(pos)))
+                  SetLabelPattern(varFor("a"), Seq(LabelName("A")(pos)))
                 )
               )
             )
           ),
-          SetLabelPattern("a", Seq(LabelName("B")(pos)))
+          SetLabelPattern(varFor("a"), Seq(LabelName("B")(pos)))
         )
       )
     )
@@ -61,8 +61,8 @@ class SinglePlannerQueryTest extends CypherFunSuite with AstConstructionTestSupp
       RegularSinglePlannerQuery(
         QueryGraph(
           mutatingPatterns = IndexedSeq(
-            SetLabelPattern("a", Seq(LabelName("A")(pos))),
-            SetLabelPattern("a", Seq(LabelName("B")(pos)))
+            SetLabelPattern(varFor("a"), Seq(LabelName("A")(pos))),
+            SetLabelPattern(varFor("a"), Seq(LabelName("B")(pos)))
           )
         )
       )
@@ -75,17 +75,17 @@ class SinglePlannerQueryTest extends CypherFunSuite with AstConstructionTestSupp
         QueryGraph(
           mutatingPatterns = IndexedSeq(
             ForeachPattern(
-              "x",
+              varFor("x"),
               listOfInt(1, 2),
               RegularSinglePlannerQuery(
                 QueryGraph(
                   mutatingPatterns = IndexedSeq(
-                    SetLabelPattern("a", Seq(LabelName("A")(pos)))
+                    SetLabelPattern(varFor("a"), Seq(LabelName("A")(pos)))
                   )
                 )
               )
             ),
-            SetLabelPattern("a", Seq(LabelName("B")(pos)))
+            SetLabelPattern(varFor("a"), Seq(LabelName("B")(pos)))
           )
         )
       ))
@@ -96,8 +96,8 @@ class SinglePlannerQueryTest extends CypherFunSuite with AstConstructionTestSupp
         tail = Some(RegularSinglePlannerQuery(
           QueryGraph(
             mutatingPatterns = IndexedSeq(
-              SetLabelPattern("a", Seq(LabelName("A")(pos))),
-              SetLabelPattern("a", Seq(LabelName("B")(pos)))
+              SetLabelPattern(varFor("a"), Seq(LabelName("A")(pos))),
+              SetLabelPattern(varFor("a"), Seq(LabelName("B")(pos)))
             )
           )
         ))
@@ -110,18 +110,18 @@ class SinglePlannerQueryTest extends CypherFunSuite with AstConstructionTestSupp
       QueryGraph(
         mutatingPatterns = IndexedSeq(
           ForeachPattern(
-            "x",
+            varFor("x"),
             listOfInt(1, 2),
             RegularSinglePlannerQuery(
               QueryGraph(
                 mutatingPatterns = IndexedSeq(
                   ForeachPattern(
-                    "y",
+                    varFor("y"),
                     listOfInt(3, 4),
                     RegularSinglePlannerQuery(
                       QueryGraph(
                         mutatingPatterns = IndexedSeq(
-                          SetLabelPattern("a", Seq(LabelName("A")(pos)))
+                          SetLabelPattern(varFor("a"), Seq(LabelName("A")(pos)))
                         )
                       )
                     )
@@ -130,7 +130,7 @@ class SinglePlannerQueryTest extends CypherFunSuite with AstConstructionTestSupp
               )
             )
           ),
-          SetLabelPattern("a", Seq(LabelName("B")(pos)))
+          SetLabelPattern(varFor("a"), Seq(LabelName("B")(pos)))
         )
       )
     )
@@ -139,8 +139,8 @@ class SinglePlannerQueryTest extends CypherFunSuite with AstConstructionTestSupp
       RegularSinglePlannerQuery(
         QueryGraph(
           mutatingPatterns = IndexedSeq(
-            SetLabelPattern("a", Seq(LabelName("A")(pos))),
-            SetLabelPattern("a", Seq(LabelName("B")(pos)))
+            SetLabelPattern(varFor("a"), Seq(LabelName("A")(pos))),
+            SetLabelPattern(varFor("a"), Seq(LabelName("B")(pos)))
           )
         )
       )
@@ -154,17 +154,17 @@ class SinglePlannerQueryTest extends CypherFunSuite with AstConstructionTestSupp
           QueryGraph(
             mutatingPatterns = IndexedSeq(
               ForeachPattern(
-                "x",
+                varFor("x"),
                 listOfInt(1, 2),
                 RegularSinglePlannerQuery(
                   QueryGraph(
                     mutatingPatterns = IndexedSeq(
-                      SetLabelPattern("a", Seq(LabelName("A")(pos)))
+                      SetLabelPattern(varFor("a"), Seq(LabelName("A")(pos)))
                     )
                   )
                 )
               ),
-              SetLabelPattern("a", Seq(LabelName("B")(pos)))
+              SetLabelPattern(varFor("a"), Seq(LabelName("B")(pos)))
             )
           )
         ),
@@ -180,8 +180,8 @@ class SinglePlannerQueryTest extends CypherFunSuite with AstConstructionTestSupp
           RegularSinglePlannerQuery(
             QueryGraph(
               mutatingPatterns = IndexedSeq(
-                SetLabelPattern("a", Seq(LabelName("A")(pos))),
-                SetLabelPattern("a", Seq(LabelName("B")(pos)))
+                SetLabelPattern(varFor("a"), Seq(LabelName("A")(pos))),
+                SetLabelPattern(varFor("a"), Seq(LabelName("B")(pos)))
               )
             )
           ),

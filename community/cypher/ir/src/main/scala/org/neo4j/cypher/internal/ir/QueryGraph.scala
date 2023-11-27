@@ -318,7 +318,7 @@ final case class QueryGraph private (
   def dependencies: Set[String] =
     optionalMatches.flatMap(_.dependencies).toSet ++
       selections.predicates.flatMap(_.dependencies) ++
-      mutatingPatterns.flatMap(_.dependencies) ++
+      mutatingPatterns.flatMap(_.dependencies.map(_.name)) ++
       quantifiedPathPatterns.flatMap(_.dependencies) ++
       selectivePathPatterns.flatMap(_.dependencies) ++
       argumentIds
@@ -445,7 +445,7 @@ final case class QueryGraph private (
    * All variables that are bound after this QG has been matched
    */
   def allCoveredIds: Set[String] = {
-    val otherSymbols = optionalMatches.flatMap(_.allCoveredIds) ++ mutatingPatterns.flatMap(_.coveredIds)
+    val otherSymbols = optionalMatches.flatMap(_.allCoveredIds) ++ mutatingPatterns.flatMap(_.coveredIds.map(_.name))
     idsWithoutOptionalMatchesOrUpdates ++ otherSymbols
   }
 

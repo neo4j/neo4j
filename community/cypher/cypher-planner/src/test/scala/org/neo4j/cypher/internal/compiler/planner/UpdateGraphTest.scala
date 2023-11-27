@@ -73,8 +73,8 @@ import org.neo4j.cypher.internal.ir.UpdateGraph.LeafPlansPredicatesResolver
 import org.neo4j.cypher.internal.ir.VariableGrouping
 import org.neo4j.cypher.internal.ir.ast.ExistsIRExpression
 import org.neo4j.cypher.internal.ir.ast.ListIRExpression
-import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.removeLabelIr
-import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setPropertyIr
+import org.neo4j.cypher.internal.logical.builder.Parser
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.Repetition
 import org.neo4j.cypher.internal.util.UpperBound
@@ -90,7 +90,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
 
   test("should not be empty after adding label to set") {
     val original = QueryGraph()
-    val setLabel = SetLabelPattern("name", Seq.empty)
+    val setLabel = SetLabelPattern(varFor("name"), Seq.empty)
 
     original.addMutatingPatterns(setLabel).containsUpdates should be(true)
   }
@@ -349,16 +349,16 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
       SetPropertiesPattern(varFor("b_no_type"), Seq(pKey -> literalInt(123))) -> ListSet(EagernessReason.Unknown),
 
       // SET r.prop = 123
-      SetRelationshipPropertyPattern("r", pKey, literalInt(123)) -> ListSet(),
+      SetRelationshipPropertyPattern(varFor("r"), pKey, literalInt(123)) -> ListSet(),
 
       // SET r.prop = 123, ...
-      SetRelationshipPropertiesPattern("r", Seq(pKey -> literalInt(123))) -> ListSet(),
+      SetRelationshipPropertiesPattern(varFor("r"), Seq(pKey -> literalInt(123))) -> ListSet(),
 
       // SET b = {prop: 123}
-      SetNodePropertiesFromMapPattern("b", mapOfInt(propName -> 123), true) -> ListSet(EagernessReason.Unknown),
+      SetNodePropertiesFromMapPattern(varFor("b"), mapOfInt(propName -> 123), true) -> ListSet(EagernessReason.Unknown),
 
       // SET r = {prop: 123}
-      SetRelationshipPropertiesFromMapPattern("r", mapOfInt(propName -> 123), true) -> ListSet(),
+      SetRelationshipPropertiesFromMapPattern(varFor("r"), mapOfInt(propName -> 123), true) -> ListSet(),
 
       // SET b_no_type = {prop: 123}
       SetPropertiesFromMapPattern(varFor("b_no_type"), mapOfInt(propName -> 123), true) -> ListSet(
@@ -366,10 +366,10 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
       ),
 
       // SET b.prop = 123
-      SetNodePropertyPattern("b", pKey, literalInt(123)) -> ListSet(EagernessReason.Unknown),
+      SetNodePropertyPattern(varFor("b"), pKey, literalInt(123)) -> ListSet(EagernessReason.Unknown),
 
       // SET b.prop = 123, ...
-      SetNodePropertiesPattern("b", Seq(pKey -> literalInt(123))) -> ListSet(EagernessReason.Unknown)
+      SetNodePropertiesPattern(varFor("b"), Seq(pKey -> literalInt(123))) -> ListSet(EagernessReason.Unknown)
     )
 
     val selections = Selections.from(Seq(
@@ -426,16 +426,16 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
       SetPropertiesPattern(varFor("r_no_type"), Seq(pKey -> literalInt(123))) -> ListSet(EagernessReason.Unknown),
 
       // SET r.prop = 123
-      SetRelationshipPropertyPattern("r", pKey, literalInt(123)) -> ListSet(EagernessReason.Unknown),
+      SetRelationshipPropertyPattern(varFor("r"), pKey, literalInt(123)) -> ListSet(EagernessReason.Unknown),
 
       // SET r.prop = 123, ...
-      SetRelationshipPropertiesPattern("r", Seq(pKey -> literalInt(123))) -> ListSet(EagernessReason.Unknown),
+      SetRelationshipPropertiesPattern(varFor("r"), Seq(pKey -> literalInt(123))) -> ListSet(EagernessReason.Unknown),
 
       // SET b = {prop: 123}
-      SetNodePropertiesFromMapPattern("b", mapOfInt(propName -> 123), true) -> ListSet(),
+      SetNodePropertiesFromMapPattern(varFor("b"), mapOfInt(propName -> 123), true) -> ListSet(),
 
       // SET r = {prop: 123}
-      SetRelationshipPropertiesFromMapPattern("r", mapOfInt(propName -> 123), true) -> ListSet(EagernessReason.Unknown),
+      SetRelationshipPropertiesFromMapPattern(varFor("r"), mapOfInt(propName -> 123), true) -> ListSet(EagernessReason.Unknown),
 
       // SET r_no_type = {prop: 123}
       SetPropertiesFromMapPattern(varFor("r_no_type"), mapOfInt(propName -> 123), true) -> ListSet(
@@ -443,10 +443,10 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
       ),
 
       // SET b.prop = 123
-      SetNodePropertyPattern("b", pKey, literalInt(123)) -> ListSet(),
+      SetNodePropertyPattern(varFor("b"), pKey, literalInt(123)) -> ListSet(),
 
       // SET b.prop = 123, ...
-      SetNodePropertiesPattern("b", Seq(pKey -> literalInt(123))) -> ListSet()
+      SetNodePropertiesPattern(varFor("b"), Seq(pKey -> literalInt(123))) -> ListSet()
     )
 
     val selections = Selections.from(Seq(
@@ -675,4 +675,14 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
         None
       ))
     )
+
+  private def setPropertyIr(entity: String, key: String, value: String): org.neo4j.cypher.internal.ir.SetMutatingPattern =
+    org.neo4j.cypher.internal.ir.SetPropertyPattern(
+      Parser.parseExpression(entity),
+      PropertyKeyName(key)(InputPosition.NONE),
+      Parser.parseExpression(value)
+    )
+
+  private def removeLabelIr(node: String, labels: String*): org.neo4j.cypher.internal.ir.RemoveLabelPattern =
+    org.neo4j.cypher.internal.ir.RemoveLabelPattern(varFor(node), labels.map(l => LabelName(l)(InputPosition.NONE)))
 }

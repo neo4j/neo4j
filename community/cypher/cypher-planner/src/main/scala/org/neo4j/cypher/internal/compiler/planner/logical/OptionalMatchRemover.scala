@@ -121,7 +121,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
     queryInput: Option[Seq[Variable]],
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): RegularSinglePlannerQuery = {
-    val updateDeps = graph.mutatingPatterns.flatMap(_.dependencies)
+    val updateDeps = graph.mutatingPatterns.flatMap(_.dependencies.map(_.name))
     val dependencies: Set[String] = projectionDeps.map(_.name).toSet ++ updateDeps
 
     val optionalMatches = graph.optionalMatches.flatMapWithTail {

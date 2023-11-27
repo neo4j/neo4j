@@ -181,7 +181,7 @@ trait UpdateGraph {
    * finds all label names being removed on given node, REMOVE a:L
    */
   def labelsToRemoveFromOtherNodes(idName: String): Set[LabelName] = removeLabelPatterns.collect {
-    case RemoveLabelPattern(n, labels) if n != idName => labels
+    case RemoveLabelPattern(n, labels) if n.name != idName => labels
   }.flatten.toSet
 
   /*
