@@ -65,21 +65,21 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
               None,
               Set(
                 VariableGrouping(varFor("  x@0"), varFor("  x@3"))(pos),
-                VariableGrouping(varFor("  y@2"), varFor("  y@4"))(pos),
-                variableGrouping("  UNNAMED1", "  UNNAMED5")
+                VariableGrouping(varFor("  y@2"), varFor("  y@5"))(pos),
+                variableGrouping("  UNNAMED1", "  UNNAMED4")
               )
             )(pos),
             nodePat(Some("  UNNAMED1"))
           ),
           MatchMode.default(pos),
-          Some(where(and(equals(varFor("  x@3"), literalInt(0)), unique(varFor("  UNNAMED5")))))
+          Some(where(and(equals(varFor("  x@3"), literalInt(0)), unique(varFor("  UNNAMED4")))))
         ),
         with_(aliasedReturnItem(literalString("1"), "  x@6")).copy(
-          where = Some(where(isNotNull(varFor("  y@4"))))
+          where = Some(where(isNotNull(varFor("  y@5"))))
         )(pos),
         return_(aliasedReturnItem(varFor("  x@6")))
       ),
-      List(varFor("  x@0"), varFor("  x@3"), varFor("  x@6"), varFor("  y@2"), varFor("  y@4"))
+      List(varFor("  x@0"), varFor("  x@3"), varFor("  x@6"), varFor("  y@2"), varFor("  y@5"))
     ),
     TestCaseWithStatement(
       "MATCH ( (a)-->(b) WHERE all(a IN a.prop WHERE a > 0) )+ RETURN a",
@@ -97,20 +97,20 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
               Some(allInList(varFor("  a@3"), prop("  a@0", "prop"), greaterThan(varFor("  a@3"), literalInt(0)))),
               Set(
                 VariableGrouping(varFor("  a@0"), varFor("  a@4"))(pos),
-                VariableGrouping(varFor("  b@2"), varFor("  b@5"))(pos),
-                VariableGrouping(varFor("  UNNAMED1"), varFor("  UNNAMED6"))(pos)
+                VariableGrouping(varFor("  b@2"), varFor("  b@6"))(pos),
+                VariableGrouping(varFor("  UNNAMED1"), varFor("  UNNAMED5"))(pos)
               )
             )(pos),
             nodePat(Some("  UNNAMED2"))
           ),
           MatchMode.default(pos),
           Some(
-            where(unique(varFor("  UNNAMED6")))
+            where(unique(varFor("  UNNAMED5")))
           )
         ),
         return_(aliasedReturnItem(varFor("  a@4")))
       ),
-      List(varFor("  a@0"), varFor("  a@4"), varFor("  a@3"), varFor("  b@2"), varFor("  b@5"))
+      List(varFor("  a@0"), varFor("  a@4"), varFor("  a@3"), varFor("  b@2"), varFor("  b@6"))
     ),
     TestCase(
       "MATCH (n), (x) WHERE [x in n.prop WHERE x = 2] RETURN x AS x",

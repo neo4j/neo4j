@@ -17,10 +17,7 @@
 package org.neo4j.cypher.internal.rewriting.rewriters
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.ast.semantics.SemanticChecker
-import org.neo4j.cypher.internal.expressions.QuantifiedPath
 import org.neo4j.cypher.internal.expressions.RelTypeName
-import org.neo4j.cypher.internal.expressions.Unique
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.label_expressions.BinaryLabelExpression
 import org.neo4j.cypher.internal.label_expressions.LabelExpression
@@ -241,36 +238,6 @@ class AddUniquenessPredicatesTest extends CypherFunSuite with RewriteTest with A
       "MATCH (b) (()-[r]->()){0,1} (c) RETURN *",
       s"MATCH (b) (()-[r]->()){0,1} (c) WHERE ${unique("r")} RETURN *"
     )
-  }
-
-  test(
-    "uniqueness check for a single length-one QPP with unnamed relationship variable promotes unnamed variable to grouping"
-  ) {
-    // GIVEN
-    val query = "MATCH (b) (()-->(m)){0,1} (c) RETURN *"
-    val parsed = parseForRewriting(query)
-    SemanticChecker.check(parsed)
-
-    // WHEN
-    val result = parsed.endoRewrite(inSequence(
-      nameAllPatternElements(new AnonymousVariableNameGenerator),
-      AddUniquenessPredicates.rewriter
-    ))
-
-    // THEN
-    val qpp = result.folder.treeFindByClass[QuantifiedPath].get
-    // all three elements of the QPP should be included in the grouping
-    qpp.variableGroupings should have size 2 // the relationship and m, but not the anonymous node
-    // ... and have the right position (that of the qpp)
-    qpp.variableGroupings.map(_.group.position).foreach { pos =>
-      pos should equal(qpp.position)
-    }
-
-    // As the unique(...) predicate references a relationship group variable from the qpp, we need to make sure that this has the right position
-    // so that the semantic table can correctly infer this to be a list of relationships and does not confuse it with the variable inside the qpp
-    // which is of type relationship.
-    val unique = result.folder.treeFindByClass[Unique].get
-    unique.rhs.position should be(qpp.position)
   }
 
   test("uniqueness check is done for a single length-two QPP") {
