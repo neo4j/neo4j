@@ -28,11 +28,26 @@ import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.CreateNode
+import org.neo4j.cypher.internal.ir.CreatePattern
 import org.neo4j.cypher.internal.ir.CreateRelationship
 import org.neo4j.cypher.internal.ir.CreatesKnownPropertyKeys
 import org.neo4j.cypher.internal.ir.CreatesNoPropertyKeys
 import org.neo4j.cypher.internal.ir.CreatesPropertyKeys
 import org.neo4j.cypher.internal.ir.CreatesUnknownPropertyKeys
+import org.neo4j.cypher.internal.ir.DeleteMutatingPattern
+import org.neo4j.cypher.internal.ir.RemoveLabelPattern
+import org.neo4j.cypher.internal.ir.SetLabelPattern
+import org.neo4j.cypher.internal.ir.SetMutatingPattern
+import org.neo4j.cypher.internal.ir.SetNodePropertiesFromMapPattern
+import org.neo4j.cypher.internal.ir.SetNodePropertiesPattern
+import org.neo4j.cypher.internal.ir.SetNodePropertyPattern
+import org.neo4j.cypher.internal.ir.SetPropertiesFromMapPattern
+import org.neo4j.cypher.internal.ir.SetPropertiesPattern
+import org.neo4j.cypher.internal.ir.SetPropertyPattern
+import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesFromMapPattern
+import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesPattern
+import org.neo4j.cypher.internal.ir.SetRelationshipPropertyPattern
+import org.neo4j.cypher.internal.ir.SimpleMutatingPattern
 import org.neo4j.cypher.internal.logical.plans.Create
 import org.neo4j.cypher.internal.logical.plans.DeleteExpression
 import org.neo4j.cypher.internal.logical.plans.DeleteNode
@@ -56,21 +71,6 @@ import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperties
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
 import org.neo4j.cypher.internal.logical.plans.UpdatingPlan
-import org.neo4j.cypher.internal.logical.plans.set.CreatePattern
-import org.neo4j.cypher.internal.logical.plans.set.DeleteMutatingPattern
-import org.neo4j.cypher.internal.logical.plans.set.RemoveLabelPattern
-import org.neo4j.cypher.internal.logical.plans.set.SetLabelPattern
-import org.neo4j.cypher.internal.logical.plans.set.SetMutatingPattern
-import org.neo4j.cypher.internal.logical.plans.set.SetNodePropertiesFromMapPattern
-import org.neo4j.cypher.internal.logical.plans.set.SetNodePropertiesPattern
-import org.neo4j.cypher.internal.logical.plans.set.SetNodePropertyPattern
-import org.neo4j.cypher.internal.logical.plans.set.SetPropertiesFromMapPattern
-import org.neo4j.cypher.internal.logical.plans.set.SetPropertiesPattern
-import org.neo4j.cypher.internal.logical.plans.set.SetPropertyPattern
-import org.neo4j.cypher.internal.logical.plans.set.SetRelationshipPropertiesFromMapPattern
-import org.neo4j.cypher.internal.logical.plans.set.SetRelationshipPropertiesPattern
-import org.neo4j.cypher.internal.logical.plans.set.SetRelationshipPropertyPattern
-import org.neo4j.cypher.internal.logical.plans.set.SimpleMutatingPattern
 
 /**
  * Finds all writes for a single plan.

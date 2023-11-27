@@ -2732,8 +2732,8 @@ case class LogicalPlanProducer(
         inner,
         rewrittenNodePatterns,
         rewrittenRelPatterns,
-        onMatchPatterns.map(org.neo4j.cypher.internal.logical.plans.set.SetMutatingPattern.from),
-        onCreatePatterns.map(org.neo4j.cypher.internal.logical.plans.set.SetMutatingPattern.from),
+        onMatchPatterns,
+        onCreatePatterns,
         nodesToLock.map(varFor)
       )
     val providedOrder = providedOrderOfUpdate(merge, inner, context.settings.executionModel)
@@ -3012,7 +3012,7 @@ case class LogicalPlanProducer(
       rewrittenLeft,
       pattern.variable,
       rewrittenExpression,
-      mutations.map(org.neo4j.cypher.internal.logical.plans.set.SimpleMutatingPattern.from)
+      mutations
     )
     val providedOrder = providedOrderOfUpdate(plan, inner, context.settings.executionModel)
     annotate(plan, solved, providedOrder, context)

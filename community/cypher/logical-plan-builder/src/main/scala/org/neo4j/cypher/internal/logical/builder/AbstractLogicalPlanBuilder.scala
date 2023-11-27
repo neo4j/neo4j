@@ -65,8 +65,22 @@ import org.neo4j.cypher.internal.frontend.phases.UserFunctionSignature
 import org.neo4j.cypher.internal.ir.CSVFormat
 import org.neo4j.cypher.internal.ir.CreateCommand
 import org.neo4j.cypher.internal.ir.CreateNode
+import org.neo4j.cypher.internal.ir.CreatePattern
 import org.neo4j.cypher.internal.ir.CreateRelationship
 import org.neo4j.cypher.internal.ir.EagernessReason
+import org.neo4j.cypher.internal.ir.RemoveLabelPattern
+import org.neo4j.cypher.internal.ir.SetLabelPattern
+import org.neo4j.cypher.internal.ir.SetMutatingPattern
+import org.neo4j.cypher.internal.ir.SetNodePropertiesFromMapPattern
+import org.neo4j.cypher.internal.ir.SetNodePropertiesPattern
+import org.neo4j.cypher.internal.ir.SetNodePropertyPattern
+import org.neo4j.cypher.internal.ir.SetPropertiesFromMapPattern
+import org.neo4j.cypher.internal.ir.SetPropertiesPattern
+import org.neo4j.cypher.internal.ir.SetPropertyPattern
+import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesFromMapPattern
+import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesPattern
+import org.neo4j.cypher.internal.ir.SetRelationshipPropertyPattern
+import org.neo4j.cypher.internal.ir.SimpleMutatingPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.disjoinRelTypesToLabelExpression
@@ -218,20 +232,6 @@ import org.neo4j.cypher.internal.logical.plans.UnionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.logical.plans.VarExpand
-import org.neo4j.cypher.internal.logical.plans.set.CreatePattern
-import org.neo4j.cypher.internal.logical.plans.set.RemoveLabelPattern
-import org.neo4j.cypher.internal.logical.plans.set.SetLabelPattern
-import org.neo4j.cypher.internal.logical.plans.set.SetMutatingPattern
-import org.neo4j.cypher.internal.logical.plans.set.SetNodePropertiesFromMapPattern
-import org.neo4j.cypher.internal.logical.plans.set.SetNodePropertiesPattern
-import org.neo4j.cypher.internal.logical.plans.set.SetNodePropertyPattern
-import org.neo4j.cypher.internal.logical.plans.set.SetPropertiesFromMapPattern
-import org.neo4j.cypher.internal.logical.plans.set.SetPropertiesPattern
-import org.neo4j.cypher.internal.logical.plans.set.SetPropertyPattern
-import org.neo4j.cypher.internal.logical.plans.set.SetRelationshipPropertiesFromMapPattern
-import org.neo4j.cypher.internal.logical.plans.set.SetRelationshipPropertiesPattern
-import org.neo4j.cypher.internal.logical.plans.set.SetRelationshipPropertyPattern
-import org.neo4j.cypher.internal.logical.plans.set.SimpleMutatingPattern
 import org.neo4j.cypher.internal.logical.plans.shortest.PatternRelationship
 import org.neo4j.cypher.internal.logical.plans.shortest.ShortestRelationshipPattern
 import org.neo4j.cypher.internal.rewriting.rewriters.HasLabelsAndHasTypeNormalizer
@@ -2703,8 +2703,8 @@ object AbstractLogicalPlanBuilder {
   def removeLabel(node: String, labels: String*): RemoveLabelPattern =
     RemoveLabelPattern(varFor(node), labels.map(l => LabelName(l)(InputPosition.NONE)))
 
-  def delete(entity: String, forced: Boolean = false): org.neo4j.cypher.internal.logical.plans.set.DeleteExpression =
-    org.neo4j.cypher.internal.logical.plans.set.DeleteExpression(Parser.parseExpression(entity), forced)
+  def delete(entity: String, forced: Boolean = false): org.neo4j.cypher.internal.ir.DeleteExpression =
+    org.neo4j.cypher.internal.ir.DeleteExpression(Parser.parseExpression(entity), forced)
 
   def andsReorderable(predicateExpressionsOrStrings: AnyRef*): AndsReorderable = {
     val predicates = predicateExpressionsOrStrings.map {

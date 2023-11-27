@@ -52,7 +52,7 @@ sealed trait DeleteMutatingPattern extends SimpleMutatingPattern with NoSymbols
 case class SetPropertyPattern(entityExpression: Expression, propertyKeyName: PropertyKeyName, expression: Expression)
     extends SetMutatingPattern
     with HasMappableExpressions[SetPropertyPattern] {
-  override def dependencies: Set[LogicalVariable] = (entityExpression.dependencies ++ expression.dependencies)
+  override def dependencies: Set[LogicalVariable] = entityExpression.dependencies ++ expression.dependencies
 
   override def mapExpressions(f: Expression => Expression): SetPropertyPattern =
     copy(

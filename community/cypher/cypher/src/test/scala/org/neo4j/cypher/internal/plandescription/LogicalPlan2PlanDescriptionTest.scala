@@ -143,6 +143,10 @@ import org.neo4j.cypher.internal.ir.CreateRelationship
 import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.ir.EagernessReason.Conflict
 import org.neo4j.cypher.internal.ir.NoHeaders
+import org.neo4j.cypher.internal.ir.RemoveLabelPattern
+import org.neo4j.cypher.internal.ir.SetLabelPattern
+import org.neo4j.cypher.internal.ir.SetNodePropertiesPattern
+import org.neo4j.cypher.internal.ir.SetNodePropertyPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
@@ -371,10 +375,6 @@ import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.logical.plans.VarExpand
 import org.neo4j.cypher.internal.logical.plans.WaitForCompletion
-import org.neo4j.cypher.internal.logical.plans.set.RemoveLabelPattern
-import org.neo4j.cypher.internal.logical.plans.set.SetLabelPattern
-import org.neo4j.cypher.internal.logical.plans.set.SetNodePropertiesPattern
-import org.neo4j.cypher.internal.logical.plans.set.SetNodePropertyPattern
 import org.neo4j.cypher.internal.logical.plans.shortest.PatternRelationship
 import org.neo4j.cypher.internal.logical.plans.shortest.ShortestRelationshipPattern
 import org.neo4j.cypher.internal.plandescription.Arguments.Details
@@ -4788,7 +4788,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           lhsLP,
           varFor("i"),
           parameter("p", CTList(CTInteger)),
-          Seq(org.neo4j.cypher.internal.logical.plans.set.DeleteExpression(varFor("x"), detachDelete = true))
+          Seq(org.neo4j.cypher.internal.ir.DeleteExpression(varFor("x"), detachDelete = true))
         ),
         32.2
       ),
@@ -4800,7 +4800,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           lhsLP,
           varFor("i"),
           parameter("p", CTList(CTInteger)),
-          Seq(org.neo4j.cypher.internal.logical.plans.set.DeleteExpression(varFor("x"), detachDelete = false))
+          Seq(org.neo4j.cypher.internal.ir.DeleteExpression(varFor("x"), detachDelete = false))
         ),
         32.2
       ),
