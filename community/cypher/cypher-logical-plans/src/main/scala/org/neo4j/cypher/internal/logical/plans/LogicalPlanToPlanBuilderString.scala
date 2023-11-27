@@ -40,6 +40,9 @@ import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.frontend.phases.ProcedureSignature
 import org.neo4j.cypher.internal.frontend.phases.QualifiedName
 import org.neo4j.cypher.internal.frontend.phases.ResolvedCall
+import org.neo4j.cypher.internal.ir.CreateCommand
+import org.neo4j.cypher.internal.ir.CreateNode
+import org.neo4j.cypher.internal.ir.CreateRelationship
 import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
@@ -51,9 +54,6 @@ import org.neo4j.cypher.internal.logical.plans.NFA.RelationshipExpansionPredicat
 import org.neo4j.cypher.internal.logical.plans.NFA.State
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath.Mapping
 import org.neo4j.cypher.internal.logical.plans.Trail.VariableGrouping
-import org.neo4j.cypher.internal.logical.plans.create.CreateEntity
-import org.neo4j.cypher.internal.logical.plans.create.CreateNode
-import org.neo4j.cypher.internal.logical.plans.create.CreateRelationship
 import org.neo4j.cypher.internal.logical.plans.set.CreatePattern
 import org.neo4j.cypher.internal.logical.plans.set.RemoveLabelPattern
 import org.neo4j.cypher.internal.logical.plans.set.SetLabelPattern
@@ -1380,7 +1380,7 @@ object LogicalPlanToPlanBuilderString {
     }.mkString("Map(", ", ", ")")
   }
 
-  private def createCreateCommandToString(create: CreateEntity) = create match {
+  private def createCreateCommandToString(create: CreateCommand) = create match {
     case c: CreateNode         => createNodeToString(c)
     case c: CreateRelationship => createRelationshipToString(c)
   }

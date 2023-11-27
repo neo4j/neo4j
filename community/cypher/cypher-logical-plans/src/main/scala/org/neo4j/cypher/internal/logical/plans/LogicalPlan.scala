@@ -40,6 +40,9 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.frontend.phases.ResolvedCall
 import org.neo4j.cypher.internal.ir.CSVFormat
+import org.neo4j.cypher.internal.ir.CreateCommand
+import org.neo4j.cypher.internal.ir.CreateNode
+import org.neo4j.cypher.internal.ir.CreateRelationship
 import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.ir.PatternLength
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
@@ -51,8 +54,6 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan.VERBOSE_TO_STRING
 import org.neo4j.cypher.internal.logical.plans.Prober.Probe
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath.Mapping
 import org.neo4j.cypher.internal.logical.plans.Trail.VariableGrouping
-import org.neo4j.cypher.internal.logical.plans.create.CreateNode
-import org.neo4j.cypher.internal.logical.plans.create.CreateRelationship
 import org.neo4j.cypher.internal.logical.plans.set.SetMutatingPattern
 import org.neo4j.cypher.internal.logical.plans.set.SimpleMutatingPattern
 import org.neo4j.cypher.internal.macros.AssertMacros
@@ -72,7 +73,6 @@ import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.util.Preconditions
 
 import java.lang.reflect.Method
-
 import scala.annotation.tailrec
 import scala.collection.immutable.ListSet
 import scala.collection.mutable
@@ -1089,16 +1089,16 @@ case class ConditionalApply(
 /**
  * For each input row, create new nodes and relationships.
  */
-case class Create(override val source: LogicalPlan, commands: Seq[create.CreateEntity])(
+case class Create(override val source: LogicalPlan, commands: Seq[CreateCommand])(
   implicit idGen: IdGen
 ) extends LogicalUnaryPlan(idGen) with UpdatingPlan {
 
-  def nodes: Seq[create.CreateNode] = commands.collect {
-    case c: create.CreateNode => c
+  def nodes: Seq[CreateNode] = commands.collect {
+    case c: CreateNode => c
   }
 
-  def relationships: Seq[create.CreateRelationship] = commands.collect {
-    case c: create.CreateRelationship => c
+  def relationships: Seq[CreateRelationship] = commands.collect {
+    case c: CreateRelationship => c
   }
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan with UpdatingPlan =

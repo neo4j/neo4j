@@ -27,6 +27,8 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.ir.CreateNode
+import org.neo4j.cypher.internal.ir.CreateRelationship
 import org.neo4j.cypher.internal.ir.CreatesKnownPropertyKeys
 import org.neo4j.cypher.internal.ir.CreatesNoPropertyKeys
 import org.neo4j.cypher.internal.ir.CreatesPropertyKeys
@@ -54,8 +56,6 @@ import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperties
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
 import org.neo4j.cypher.internal.logical.plans.UpdatingPlan
-import org.neo4j.cypher.internal.logical.plans.create.CreateNode
-import org.neo4j.cypher.internal.logical.plans.create.CreateRelationship
 import org.neo4j.cypher.internal.logical.plans.set.CreatePattern
 import org.neo4j.cypher.internal.logical.plans.set.DeleteMutatingPattern
 import org.neo4j.cypher.internal.logical.plans.set.RemoveLabelPattern

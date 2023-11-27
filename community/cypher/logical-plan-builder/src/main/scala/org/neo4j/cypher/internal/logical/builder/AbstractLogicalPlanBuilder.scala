@@ -63,6 +63,9 @@ import org.neo4j.cypher.internal.frontend.phases.ResolvedCall
 import org.neo4j.cypher.internal.frontend.phases.ResolvedFunctionInvocation
 import org.neo4j.cypher.internal.frontend.phases.UserFunctionSignature
 import org.neo4j.cypher.internal.ir.CSVFormat
+import org.neo4j.cypher.internal.ir.CreateCommand
+import org.neo4j.cypher.internal.ir.CreateNode
+import org.neo4j.cypher.internal.ir.CreateRelationship
 import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
@@ -215,9 +218,6 @@ import org.neo4j.cypher.internal.logical.plans.UnionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.logical.plans.VarExpand
-import org.neo4j.cypher.internal.logical.plans.create.CreateEntity
-import org.neo4j.cypher.internal.logical.plans.create.CreateNode
-import org.neo4j.cypher.internal.logical.plans.create.CreateRelationship
 import org.neo4j.cypher.internal.logical.plans.set.CreatePattern
 import org.neo4j.cypher.internal.logical.plans.set.RemoveLabelPattern
 import org.neo4j.cypher.internal.logical.plans.set.SetLabelPattern
@@ -2148,7 +2148,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     ))
   }
 
-  def create(commands: CreateEntity*): IMPL = {
+  def create(commands: CreateCommand*): IMPL = {
     commands.foreach {
       case node: CreateNode => newNode(VariableParser.unescaped(node.variable))
       case relationship: CreateRelationship =>

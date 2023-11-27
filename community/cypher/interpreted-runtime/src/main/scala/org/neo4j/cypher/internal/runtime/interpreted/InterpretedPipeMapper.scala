@@ -793,12 +793,12 @@ case class InterpretedPipeMapper(
       sideEffect match {
         case CreatePattern(commands) =>
           commands.map {
-            case org.neo4j.cypher.internal.logical.plans.create.CreateNode(node, labels, properties) =>
+            case org.neo4j.cypher.internal.ir.CreateNode(node, labels, properties) =>
               CreateNode(
                 CreateNodeCommand(node.name, labels.toSeq.map(LazyLabel.apply), properties.map(buildExpression)),
                 allowNullOrNaNProperty = true
               )
-            case r: org.neo4j.cypher.internal.logical.plans.create.CreateRelationship =>
+            case r: org.neo4j.cypher.internal.ir.CreateRelationship =>
               CreateRelationship(
                 CreateRelationshipCommand(
                   r.variable.name,
@@ -1337,9 +1337,9 @@ case class InterpretedPipeMapper(
         CreatePipe(
           source,
           commands.map {
-            case n: org.neo4j.cypher.internal.logical.plans.create.CreateNode =>
+            case n: org.neo4j.cypher.internal.ir.CreateNode =>
               CreateNodeCommand(n.variable.name, n.labels.toSeq.map(LazyLabel.apply), n.properties.map(buildExpression))
-            case r: org.neo4j.cypher.internal.logical.plans.create.CreateRelationship =>
+            case r: org.neo4j.cypher.internal.ir.CreateRelationship =>
               CreateRelationshipCommand(
                 r.variable.name,
                 r.startNode.name,
@@ -1352,13 +1352,13 @@ case class InterpretedPipeMapper(
 
       case Merge(_, createNodes, createRelationships, onMatch, onCreate, nodesToLock) =>
         val creates = createNodes.map {
-          case org.neo4j.cypher.internal.logical.plans.create.CreateNode(node, labels, properties) =>
+          case org.neo4j.cypher.internal.ir.CreateNode(node, labels, properties) =>
             CreateNode(
               CreateNodeCommand(node.name, labels.toSeq.map(LazyLabel.apply), properties.map(buildExpression)),
               allowNullOrNaNProperty = false
             )
         } ++ createRelationships.map {
-          (r: org.neo4j.cypher.internal.logical.plans.create.CreateRelationship) =>
+          (r: org.neo4j.cypher.internal.ir.CreateRelationship) =>
             CreateRelationship(
               CreateRelationshipCommand(
                 r.variable.name,

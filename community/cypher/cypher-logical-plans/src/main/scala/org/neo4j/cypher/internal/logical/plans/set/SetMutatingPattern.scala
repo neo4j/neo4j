@@ -25,9 +25,9 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.ir
-import org.neo4j.cypher.internal.logical.plans.create.CreateEntity
-import org.neo4j.cypher.internal.logical.plans.create.CreateNode
-import org.neo4j.cypher.internal.logical.plans.create.CreateRelationship
+import org.neo4j.cypher.internal.ir.CreateCommand
+import org.neo4j.cypher.internal.ir.CreateNode
+import org.neo4j.cypher.internal.ir.CreateRelationship
 
 // Note, this is a copy of org.neo4j.cypher.internal.ir.MutatingPattern
 // We can probably unify them.
@@ -183,7 +183,7 @@ case class RemoveLabelPattern(
   override def dependencies: Set[LogicalVariable] = Set(idName)
 }
 
-case class CreatePattern(commands: Seq[CreateEntity]) extends SimpleMutatingPattern {
+case class CreatePattern(commands: Seq[CreateCommand]) extends SimpleMutatingPattern {
 
   def nodes: Iterable[CreateNode] = commands.view.collect { case c: CreateNode => c }
   def relationships: Iterable[CreateRelationship] = commands.view.collect { case c: CreateRelationship => c }
@@ -194,7 +194,7 @@ case class CreatePattern(commands: Seq[CreateEntity]) extends SimpleMutatingPatt
 }
 
 object CreatePattern {
-  def from(c: ir.CreatePattern): CreatePattern = CreatePattern(c.commands.map(CreateEntity.from))
+  def from(c: ir.CreatePattern): CreatePattern = CreatePattern(c.commands)
 }
 
 case class DeleteExpression(

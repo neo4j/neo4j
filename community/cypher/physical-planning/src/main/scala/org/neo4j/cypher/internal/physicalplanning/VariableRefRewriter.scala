@@ -21,6 +21,9 @@ package org.neo4j.cypher.internal.physicalplanning
 
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.ir.CreateCommand
+import org.neo4j.cypher.internal.ir.CreateNode
+import org.neo4j.cypher.internal.ir.CreateRelationship
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.AntiConditionalApply
@@ -119,9 +122,6 @@ import org.neo4j.cypher.internal.logical.plans.UndirectedUnionRelationshipTypesS
 import org.neo4j.cypher.internal.logical.plans.UnionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.VarExpand
-import org.neo4j.cypher.internal.logical.plans.create.CreateEntity
-import org.neo4j.cypher.internal.logical.plans.create.CreateNode
-import org.neo4j.cypher.internal.logical.plans.create.CreateRelationship
 import org.neo4j.cypher.internal.logical.plans.set.CreatePattern
 import org.neo4j.cypher.internal.logical.plans.set.DeleteExpression
 import org.neo4j.cypher.internal.logical.plans.set.DeleteMutatingPattern
@@ -472,7 +472,7 @@ object VariableRefRewriter extends Rewriter {
       }
 
     case p: SimpleMutatingPattern                      => rewrite(p)
-    case c: CreateEntity                               => rewrite(c)
+    case c: CreateCommand                              => rewrite(c)
     case p @ ShortestRelationshipPattern(name, _, _)   => p.copy(name = name.map(varRef))(p.expr)
     case c: ColumnOrder                                => rewrite(c)
     case g @ VariableGrouping(left, right)             => g.copy(varRef(left), varRef(right))
@@ -511,7 +511,7 @@ object VariableRefRewriter extends Rewriter {
     case c: CreatePattern => c.copy(commands = c.commands.map(rewrite))
   }
 
-  private def rewrite(c: CreateEntity): CreateEntity = c match {
+  private def rewrite(c: CreateCommand): CreateCommand = c match {
     case n: CreateNode         => n.copy(variable = VariableRef(n.variable))
     case r: CreateRelationship => r.copy(variable = VariableRef(r.variable))
   }

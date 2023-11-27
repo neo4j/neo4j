@@ -257,7 +257,6 @@ import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.UpdatingPlan
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.logical.plans.VarExpand
-import org.neo4j.cypher.internal.logical.plans.create.CreateEntity
 import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreEnabled
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
@@ -2687,7 +2686,7 @@ case class LogicalPlanProducer(
       solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addMutatingPatterns(pattern)))
     val (rewrittenPattern: CreatePattern, rewrittenInner) =
       SubqueryExpressionSolver.ForMappable().solve(inner, pattern, context)
-    val plan = plans.Create(rewrittenInner, rewrittenPattern.commands.map(CreateEntity.from))
+    val plan = plans.Create(rewrittenInner, rewrittenPattern.commands)
     val providedOrder = providedOrderOfUpdate(plan, rewrittenInner, context.settings.executionModel)
     annotate(plan, solved, providedOrder, context)
   }
@@ -2731,8 +2730,8 @@ case class LogicalPlanProducer(
     val merge =
       Merge(
         inner,
-        rewrittenNodePatterns.map(org.neo4j.cypher.internal.logical.plans.create.CreateNode.from),
-        rewrittenRelPatterns.map(org.neo4j.cypher.internal.logical.plans.create.CreateRelationship.from),
+        rewrittenNodePatterns,
+        rewrittenRelPatterns,
         onMatchPatterns.map(org.neo4j.cypher.internal.logical.plans.set.SetMutatingPattern.from),
         onCreatePatterns.map(org.neo4j.cypher.internal.logical.plans.set.SetMutatingPattern.from),
         nodesToLock.map(varFor)
