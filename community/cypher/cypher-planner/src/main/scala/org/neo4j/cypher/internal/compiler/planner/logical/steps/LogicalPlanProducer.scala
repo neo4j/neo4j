@@ -263,6 +263,7 @@ import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreEnabled
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.LeveragedOrders
 import org.neo4j.cypher.internal.util.AssertionRunner
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.InputPosition
@@ -3338,10 +3339,14 @@ case class LogicalPlanProducer(
     lp: LogicalPlan,
     providedOrderFactory: ProvidedOrderFactory
   ): Unit = {
-    leveragedOrders.set(lp.id, true)
+    def setIfUndefined(plan: LogicalPlan, leveragedOrders: LeveragedOrders, bool: Boolean): Unit = {
+      if (!leveragedOrders.isDefinedAt(plan.id)) leveragedOrders.set(plan.id, bool)
+    }
+
+    setIfUndefined(lp, leveragedOrders, bool = true)
 
     def loop(current: LogicalPlan): Unit = {
-      leveragedOrders.set(current.id, true)
+      setIfUndefined(current, leveragedOrders, bool = true)
       val origin = providedOrders.get(current.id).orderOrigin
       origin match {
         case Some(ProvidedOrder.Left)  => loop(current.lhs.get)
