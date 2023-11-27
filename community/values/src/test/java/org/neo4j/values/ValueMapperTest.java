@@ -128,6 +128,12 @@ class ValueMapperTest {
 
         // then
         assertEquals(value, valueOf(mapped));
+
+        if (mapped instanceof List<?> mappedList) {
+            // Some users depends on mutable lists (GDS for example)
+            mappedList.clear();
+            assertEquals(0, mappedList.size());
+        }
     }
 
     private static AnyValue valueOf(Object obj) {
