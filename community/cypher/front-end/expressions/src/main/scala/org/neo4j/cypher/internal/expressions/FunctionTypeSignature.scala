@@ -40,6 +40,7 @@ case class FunctionTypeSignature(
   argumentTypes: IndexedSeq[CypherType],
   optionalTypes: IndexedSeq[CypherType] = Vector.empty,
   deprecated: Boolean = false,
+  internal: Boolean = false,
   overrideDefaultAsString: Option[String] = None
 ) extends TypeSignature {
 

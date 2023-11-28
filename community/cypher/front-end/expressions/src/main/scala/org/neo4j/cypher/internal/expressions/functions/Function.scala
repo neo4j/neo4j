@@ -141,10 +141,8 @@ object Function {
     lookup.values.flatMap {
       (f: Function) =>
         f.signatures.flatMap {
-          case signature: FunctionTypeSignature if !signature.deprecated => Some(signature)
-          case signature: FunctionTypeSignature if signature.deprecated  => None
-          case problem =>
-            throw new IllegalStateException("Did not expect the following at this point: " + problem)
+          case signature: FunctionTypeSignature if !(signature.deprecated || signature.internal) => Some(signature)
+          case _  => None
         }
     }.toList
   }
