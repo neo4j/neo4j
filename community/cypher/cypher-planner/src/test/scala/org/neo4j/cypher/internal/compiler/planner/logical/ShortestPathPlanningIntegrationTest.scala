@@ -1872,4 +1872,35 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .build()
     )
   }
+
+  test("Should plan shortest with dependencies to previous match in inlined predicate") {
+    val query = "MATCH (n) MATCH ANY SHORTEST ()-[r WHERE r.prop = n.prop]->() RETURN *"
+
+    val nfa = new TestNFABuilder(0, "anon_0")
+      .addTransition(0, 1, "(anon_0)-[r WHERE r.prop = cacheN[n.prop]]->(anon_2)")
+      .addFinalState(1)
+      .build()
+
+    val plan = planner.plan(query).stripProduceResults
+    plan should equal(
+      planner.subPlanBuilder()
+        .statefulShortestPath(
+          "anon_0",
+          "anon_1",
+          "SHORTEST 1 ((anon_0)-[r]->(anon_1) WHERE r.prop = n.prop)",
+          None,
+          Set(),
+          Set(),
+          Set(("anon_2", "anon_1")),
+          Set(("r", "r")),
+          StatefulShortestPath.Selector.Shortest(1),
+          nfa
+        )
+        .apply()
+        .|.allNodeScan("anon_0", "n")
+        .cacheProperties("cacheNFromStore[n.prop]")
+        .allNodeScan("n")
+        .build()
+    )
+  }
 }

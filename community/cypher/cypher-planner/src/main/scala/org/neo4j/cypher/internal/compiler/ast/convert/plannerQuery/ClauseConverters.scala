@@ -501,13 +501,14 @@ object ClauseConverters {
 
       // MATCH (a)-[r]-(b) MATCH SHORTEST (()--())+ ()-[r]-() (()--())+
       val previousPatternVars = acc.currentQueryGraph.coveredIdsForPatterns
-      val currentStrictInteriorVars = clause.pattern.patternParts.view.collect {
+      val currentStrictInteriorVarsAndDependencies = clause.pattern.patternParts.view.collect {
         case spp @ PatternPartWithSelector(_: SelectiveSelector, _) =>
-          (spp.allVariables -- boundaryNodes(spp.element)).map(_.name)
+          (spp.allVariables -- boundaryNodes(spp.element)).map(_.name) ++ spp.dependencies
       }.flatten.toSet
-      val hasInteriorReferringToPreviouslyBoundVar = previousPatternVars.intersect(currentStrictInteriorVars).nonEmpty
+      val hasInteriorOrDependencyReferringToPreviouslyBoundVar =
+        previousPatternVars.intersect(currentStrictInteriorVarsAndDependencies).nonEmpty
 
-      hasReferenceFromThisPatternToInterior || hasInteriorReferringToPreviouslyBoundVar
+      hasReferenceFromThisPatternToInterior || hasInteriorOrDependencyReferringToPreviouslyBoundVar
     }
 
     // This workaround targets a single-connected-component logical planning limitation that happens when the following
