@@ -45,6 +45,8 @@ public class SysInfo implements Command {
     private final TableOutputFormatter tableFormatter;
     private final CypherShell shell;
     private final Version firstSupportedVersion = version("4.4.0");
+    private final String SYSTEM_DB_TYPE = "system";
+    private final String COMPOSITE_DB_TYPE = "composite";
 
     public SysInfo(Printer printer, CypherShell shell) {
         this.printer = printer;
@@ -58,12 +60,14 @@ public class SysInfo implements Command {
 
         final var version = shell.getServerVersion();
         if (!shell.isConnected()) {
-            printer.printError("Connect to a database to use :sysinfo");
-        }
-        if (version != null
+            throw new CommandException("Connect to a database to use :sysinfo");
+        } else if (version != null
                 && !version.isBlank()
                 && version(shell.getServerVersion()).compareTo(firstSupportedVersion) < 0) {
-            printer.printError(":sysinfo is only supported since " + firstSupportedVersion);
+            throw new CommandException(":sysinfo is only supported since " + firstSupportedVersion);
+        } else if (isSystemOrCompositeDb()) {
+            throw new CommandException(
+                    "The :sysinfo command is not supported while using the system or a composite database.");
         } else {
             final var clientConfig = clientConfig();
             final var db = shell.getActualDatabaseAsReportedByServer();
@@ -73,6 +77,24 @@ public class SysInfo implements Command {
                 printMetrics(clientConfig, db, group);
             }
         }
+    }
+
+    private boolean isSystemOrCompositeDb() throws CommandException {
+        final var dbName = shell.getActualDatabaseAsReportedByServer();
+        final var query = "SHOW DATABASES WHERE name = $db";
+
+        final var result = shell.runCypher(query, Map.of("db", Values.value(dbName)), USER_ACTION);
+        if (result.isPresent()) {
+            for (final var record : result.get().getRecords()) {
+                final var dbType = record.get("type").asString("");
+                if (SYSTEM_DB_TYPE.equals(dbType)
+                        || COMPOSITE_DB_TYPE.equals(dbType)
+                        || (dbType.isEmpty() && "system".equals(dbName))) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private ClientConfig clientConfig() throws CommandException {

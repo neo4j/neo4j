@@ -1326,6 +1326,19 @@ class MainIntegrationTest {
                                 """));
     }
 
+    @Test
+    void sysInfoOnSystem() throws Exception {
+        assumeAtLeastVersion("4.4.0");
+        buildTest()
+                .addArgs("-u", USER, "-p", PASSWORD)
+                .userInputLines(":use system", ":sysinfo", ":exit")
+                .run()
+                .assertSuccess(false)
+                .assertThatErrorOutput(
+                        is("The :sysinfo command is not supported while using the system or a composite database.\n"))
+                .assertThatOutput(contains("> :sysinfo\n" + USER + "@system> :exit"));
+    }
+
     private static CypherStatement cypher(String cypher) {
         return CypherStatement.complete(cypher);
     }
