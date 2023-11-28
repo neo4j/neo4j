@@ -47,7 +47,6 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
-import org.neo4j.storageengine.api.ClosedTransactionMetadata;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -88,15 +87,17 @@ public class TransactionLogServiceImpl implements TransactionLogService {
     @Override
     public TransactionLogChannels logFilesChannels(long startingTxId) throws IOException {
         requirePositive(startingTxId);
-        LogPosition minimalLogPosition = getLogPosition(startingTxId);
+        LogPosition minimalLogPosition = getLogPosition(startingTxId, false);
         // prevent pruning while we build log channels to avoid cases when we will actually prevent pruning to remove
         // files (on some file systems and OSs),
         // or unexpected exceptions while traversing files
         pruneLock.lock();
         try {
             long minimalVersion = minimalLogPosition.getLogVersion();
-            var lastClosedTransaction = transactionIdStore.getLastClosedTransaction();
-            var channels = collectChannels(startingTxId, minimalLogPosition, minimalVersion, lastClosedTransaction);
+            var highestTxId = transactionIdStore.getLastCommittedTransactionId();
+            var highestLogPosition = getLogPosition(highestTxId, true);
+            var channels =
+                    collectChannels(startingTxId, minimalLogPosition, minimalVersion, highestTxId, highestLogPosition);
             return new TransactionLogChannels(channels);
         } finally {
             pruneLock.unlock();
@@ -144,10 +145,9 @@ public class TransactionLogServiceImpl implements TransactionLogService {
             long startingTxId,
             LogPosition minimalLogPosition,
             long minimalVersion,
-            ClosedTransactionMetadata lastClosedTransaction)
+            long highestTxId,
+            LogPosition highestLogPosition)
             throws IOException {
-        var highestLogPosition = lastClosedTransaction.logPosition();
-        var highestTxId = lastClosedTransaction.transactionId();
         var highestLogVersion = highestLogPosition.getLogVersion();
         int exposedChannels = (int) ((highestLogVersion - minimalVersion) + 1);
         var channels = new ArrayList<LogChannel>(exposedChannels);
@@ -177,8 +177,12 @@ public class TransactionLogServiceImpl implements TransactionLogService {
         return logFile.extractHeader(version).getLastCommittedTxId();
     }
 
-    private LogPosition getLogPosition(long startingTxId) throws IOException {
+    private LogPosition getLogPosition(long startingTxId, boolean returnEndPosition) throws IOException {
+
         try (CommandBatchCursor commandBatchCursor = transactionStore.getCommandBatches(startingTxId)) {
+            if (returnEndPosition) {
+                commandBatchCursor.next();
+            }
             return commandBatchCursor.position();
         } catch (NoSuchTransactionException e) {
             throw new IllegalArgumentException("Transaction id " + startingTxId + " not found in transaction logs.", e);

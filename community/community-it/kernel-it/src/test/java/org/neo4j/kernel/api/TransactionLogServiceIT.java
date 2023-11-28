@@ -32,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.collection.Dependencies.dependenciesOf;
 import static org.neo4j.configuration.GraphDatabaseSettings.CheckpointPolicy.PERIODIC;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.io.ByteUnit.kibiBytes;
@@ -46,6 +47,8 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.OptionalLong;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import org.junit.jupiter.api.Test;
@@ -55,6 +58,9 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.ByteBuffers;
+import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.version.VersionStorageTracer;
 import org.neo4j.kernel.api.database.transaction.LogChannel;
 import org.neo4j.kernel.api.database.transaction.TransactionLogChannels;
 import org.neo4j.kernel.api.database.transaction.TransactionLogService;
@@ -62,6 +68,7 @@ import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.availability.DescriptiveAvailabilityRequirement;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseTracers;
+import org.neo4j.kernel.impl.api.tracer.DefaultTracer;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
@@ -73,16 +80,26 @@ import org.neo4j.kernel.impl.transaction.log.files.LogTailInformation;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFile;
 import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointLogFile;
 import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitorAdapter;
+import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
+import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
+import org.neo4j.kernel.impl.transaction.tracing.StoreApplyEvent;
+import org.neo4j.kernel.impl.transaction.tracing.TransactionEvent;
+import org.neo4j.kernel.impl.transaction.tracing.TransactionRollbackEvent;
+import org.neo4j.kernel.impl.transaction.tracing.TransactionWriteEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.kernel.monitoring.tracing.Tracers;
+import org.neo4j.lock.LockTracer;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.util.concurrent.BinaryLatch;
 
 @DbmsExtension(configurationCallback = "configure")
 class TransactionLogServiceIT {
@@ -117,6 +134,11 @@ class TransactionLogServiceIT {
 
     @ExtensionCallback
     void configure(TestDatabaseManagementServiceBuilder builder) {
+
+        var tracers = new InjectableBeforeApplyTracers();
+
+        builder.setExternalDependencies(dependenciesOf(tracers));
+
         builder.setConfig(GraphDatabaseSettings.logical_log_rotation_threshold, THRESHOLD)
                 .setConfig(GraphDatabaseSettings.check_point_policy, PERIODIC)
                 .setConfig(GraphDatabaseSettings.check_point_interval_time, ofDays(10))
@@ -308,14 +330,13 @@ class TransactionLogServiceIT {
     }
 
     @Test
-    void endOffsetPositionedToEndOfFileOrLastClosedTransaction() throws IOException {
+    void endOffsetPositionedToEndOfFile() throws IOException {
         var propertyValue = randomAscii((int) THRESHOLD);
 
         int numberOfTransactions = 30;
         for (int i = 0; i < numberOfTransactions; i++) {
             createNodeInIsolatedTransaction(propertyValue);
         }
-
         try (TransactionLogChannels logReaders = logService.logFilesChannels(2)) {
 
             var channels = logReaders.getChannels();
@@ -325,11 +346,63 @@ class TransactionLogServiceIT {
                 assertThat(fullChannel.endOffset())
                         .isEqualTo(fullChannel.channel().size());
             }
+        }
+    }
 
-            var lastChannel = channels.get(channels.size() - 1);
-            var lastClosedTransaction = metadataProvider.getLastClosedTransaction();
-            assertThat(lastChannel.endOffset())
-                    .isEqualTo(lastClosedTransaction.logPosition().getByteOffset());
+    @Test
+    void endOffsetPositionedToLastCommittedTransaction() throws Exception {
+        createNodeInIsolatedTransaction("some prop value");
+        // This test ensures that we return the use the last committed transaction, not the last closed transaction as
+        // the upper bound when we retrieve channels.
+
+        var txIsCommitted = new BinaryLatch();
+        var canCloseTx = new BinaryLatch();
+
+        try (OtherThreadExecutor e1 = new OtherThreadExecutor("tx taking a long time to apply")) {
+
+            // lock next applying transaction on canCloseTx so that it is committed but not closed
+            InjectableBeforeApplyTracers.InjectableBeforeApplyTxWriteEvent.INSTANCE.beforeStoreApply.set(() -> {
+                txIsCommitted.release();
+                canCloseTx.await();
+            });
+
+            var hasAppliedTx = e1.executeDontWait(() -> {
+                try (var tx = databaseAPI.beginTx()) {
+                    tx.createNode();
+                    tx.commit();
+                }
+                return null;
+            });
+
+            var initialLastCommittedTx = metadataProvider.getLastCommittedTransactionId();
+            var initialLastClosedTx = metadataProvider.getLastClosedTransactionId();
+
+            try {
+                txIsCommitted.await();
+
+                // commit a transaction after the current opened one:
+                createNodeInIsolatedTransaction("some prop value");
+
+                // then we should have the last committed after the last closed:
+                var lastCommittedTransaction = metadataProvider.getLastCommittedTransactionId();
+                var lastClosedTx = metadataProvider.getLastClosedTransactionId();
+                assertThat(lastClosedTx).isEqualTo(initialLastClosedTx);
+                assertThat(lastCommittedTransaction).isEqualTo(initialLastCommittedTx + 2);
+
+                // when we get the channels starting at the last committed transaction:
+                try (TransactionLogChannels logReaders = logService.logFilesChannels(lastCommittedTransaction)) {
+                    var channels = logReaders.getChannels();
+                    assertThat(channels).hasSize(1);
+                    var channel = channels.get(0);
+                    // they should include only the last committed transaction (not the last closed)
+                    assertThat(channel.lastTxId()).isEqualTo(lastCommittedTransaction);
+                    assertThat(channel.startTxId()).isEqualTo(lastCommittedTransaction);
+                    assertThat(channel.endOffset()).isEqualTo(getTxEndOffset(lastCommittedTransaction));
+                }
+            } finally {
+                canCloseTx.release();
+                hasAppliedTx.get(1, TimeUnit.MINUTES);
+            }
         }
     }
 
@@ -340,11 +413,11 @@ class TransactionLogServiceIT {
             createNodeInIsolatedTransaction("abc");
         }
 
-        verifyReportedPositions(2, getTxOffset(2));
-        verifyReportedPositions(3, getTxOffset(3));
-        verifyReportedPositions(4, getTxOffset(4));
-        verifyReportedPositions(5, getTxOffset(5));
-        verifyReportedPositions(15, getTxOffset(15));
+        verifyReportedPositions(2, getTxStartOffset(2));
+        verifyReportedPositions(3, getTxStartOffset(3));
+        verifyReportedPositions(4, getTxStartOffset(4));
+        verifyReportedPositions(5, getTxStartOffset(5));
+        verifyReportedPositions(15, getTxStartOffset(15));
     }
 
     @Test
@@ -845,8 +918,14 @@ class TransactionLogServiceIT {
         return createBuffer(length).put(data);
     }
 
-    private long getTxOffset(int txId) throws IOException {
+    private long getTxStartOffset(long txId) throws IOException {
         return transactionStore.getCommandBatches(txId).position().getByteOffset();
+    }
+
+    private long getTxEndOffset(long txId) throws IOException {
+        var commandBatches = transactionStore.getCommandBatches(txId);
+        commandBatches.next();
+        return commandBatches.position().getByteOffset();
     }
 
     private void verifyReportedPositions(int txId, long expectedOffset) throws IOException {
@@ -888,6 +967,103 @@ class TransactionLogServiceIT {
 
         public List<Long> getObservedVersions() {
             return versions;
+        }
+    }
+
+    /**
+     * A tracer tree capable of injecting code into the {@link TransactionWriteEvent#beginStoreApply()},
+     * See {@link InjectableBeforeApplyTxWriteEvent#beforeStoreApply}
+     */
+    public static class InjectableBeforeApplyTracers implements Tracers {
+        @Override
+        public PageCacheTracer getPageCacheTracer() {
+            return PageCacheTracer.NULL;
+        }
+
+        @Override
+        public LockTracer getLockTracer() {
+            return LockTracer.NONE;
+        }
+
+        @Override
+        public DatabaseTracer getDatabaseTracer() {
+            return new InjectableBeforeApplyDatabaseTracer();
+        }
+
+        @Override
+        public VersionStorageTracer getVersionStorageTracer() {
+            return VersionStorageTracer.NULL;
+        }
+
+        private static class InjectableBeforeApplyDatabaseTracer extends DefaultTracer {
+            public InjectableBeforeApplyDatabaseTracer() {
+                super(PageCacheTracer.NULL);
+            }
+
+            @Override
+            public TransactionEvent beginTransaction(CursorContext cursorContext) {
+                return new InjectableBeforeApplyTransactionEvent();
+            }
+        }
+
+        private static class InjectableBeforeApplyTxWriteEvent implements TransactionWriteEvent {
+
+            public static final InjectableBeforeApplyTxWriteEvent INSTANCE = new InjectableBeforeApplyTxWriteEvent();
+
+            private final AtomicReference<Runnable> beforeStoreApply = new AtomicReference<>();
+
+            @Override
+            public void close() {}
+
+            @Override
+            public LogAppendEvent beginLogAppend() {
+                return LogAppendEvent.NULL;
+            }
+
+            @Override
+            public StoreApplyEvent beginStoreApply() {
+                var beforeStoreApplyRunnable = beforeStoreApply.getAndSet(null);
+                if (beforeStoreApplyRunnable != null) {
+                    beforeStoreApplyRunnable.run();
+                }
+                return StoreApplyEvent.NULL;
+            }
+
+            @Override
+            public void chunkAppended(int chunkNumber, long transactionSequenceNumber, long transactionId) {}
+        }
+
+        private static class InjectableBeforeApplyTransactionEvent implements TransactionEvent {
+
+            @Override
+            public void setCommit(boolean commit) {}
+
+            @Override
+            public void setRollback(boolean rollback) {}
+
+            @Override
+            public TransactionWriteEvent beginCommitEvent() {
+                return InjectableBeforeApplyTxWriteEvent.INSTANCE;
+            }
+
+            @Override
+            public TransactionWriteEvent beginChunkWriteEvent() {
+                return InjectableBeforeApplyTxWriteEvent.INSTANCE;
+            }
+
+            @Override
+            public TransactionRollbackEvent beginRollback() {
+                return TransactionRollbackEvent.NULL;
+            }
+
+            @Override
+            public void close() {}
+
+            @Override
+            public void setTransactionWriteState(String transactionWriteState) {}
+
+            @Override
+            public void setReadOnly(boolean wasReadOnly) {}
         }
     }
 }
