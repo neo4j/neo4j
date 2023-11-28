@@ -192,6 +192,8 @@ public class CliArgHelper {
                 .orElseGet(CypherShellTerminal.DefaultHistory::new);
         cliArgs.setHistoryBehaviour(historyBehaviour);
 
+        cliArgs.setNotificationsEnabled(ns.getBoolean("enable-notifications"));
+
         return cliArgs;
     }
 
@@ -367,6 +369,11 @@ public class CliArgHelper {
                 .dest("history-behaviour")
                 .type(new HistoryBehaviourHandler())
                 .setDefault((CypherShellTerminal.HistoryBehaviour) null);
+
+        parser.addArgument("--notifications")
+                .help("Enables notifications in interactive mode")
+                .dest("enable-notifications")
+                .action(Arguments.storeTrue());
 
         return parser;
     }

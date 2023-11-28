@@ -25,22 +25,15 @@ import org.neo4j.shell.cli.Format;
 /**
  * Configuration of pretty printer.
  */
-public class PrettyConfig {
+public record PrettyConfig(Format format, boolean wrap, int numSampleRows, boolean displayNotifications) {
+    public static final PrettyConfig DEFAULT = PrettyConfig.from(new CliArgs(), false);
 
-    public static final PrettyConfig DEFAULT = new PrettyConfig(new CliArgs());
-
-    public final Format format;
-    public final boolean wrap;
-    public final int numSampleRows;
-
-    public PrettyConfig(CliArgs cliArgs) {
-        this(selectFormat(cliArgs), cliArgs.getWrap(), cliArgs.getNumSampleRows());
-    }
-
-    public PrettyConfig(Format format, boolean wrap, int numSampleRows) {
-        this.format = format;
-        this.wrap = wrap;
-        this.numSampleRows = numSampleRows;
+    public static PrettyConfig from(CliArgs args, boolean isInteractive) {
+        return new PrettyConfig(
+                selectFormat(args),
+                args.getWrap(),
+                args.getNumSampleRows(),
+                isInteractive && args.getNotificationsEnabled());
     }
 
     private static Format selectFormat(CliArgs cliArgs) {

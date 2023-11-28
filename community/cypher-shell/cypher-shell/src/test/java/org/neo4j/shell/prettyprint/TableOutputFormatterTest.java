@@ -40,6 +40,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.Query;
@@ -61,6 +62,7 @@ import org.neo4j.driver.internal.value.PathValue;
 import org.neo4j.driver.internal.value.PointValue;
 import org.neo4j.driver.internal.value.RelationshipValue;
 import org.neo4j.driver.internal.value.StringValue;
+import org.neo4j.driver.summary.Notification;
 import org.neo4j.driver.summary.Plan;
 import org.neo4j.driver.summary.ProfiledPlan;
 import org.neo4j.driver.summary.QueryType;
@@ -75,7 +77,7 @@ import org.neo4j.shell.test.LocaleDependentTestBase;
 
 @SuppressWarnings("ArraysAsListWithZeroOrOneArgument")
 class TableOutputFormatterTest extends LocaleDependentTestBase {
-    private final PrettyPrinter verbosePrinter = new PrettyPrinter(new PrettyConfig(Format.VERBOSE, true, 100));
+    private final PrettyPrinter verbosePrinter = new PrettyPrinter(new PrettyConfig(Format.VERBOSE, true, 100, false));
 
     @Test
     void prettyPrintPlanInformation() {
@@ -720,11 +722,36 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
                         """);
     }
 
+    @Test
+    void formatNotifications() {
+        final var notifications = List.of(
+                notification("code1", "desc1", "INFORMATION"),
+                notification("code1", "desc1", "INFORMATION"),
+                notification("code2", "desc2", "WARNING"));
+
+        assertThat(formatNotifications(notifications))
+                .isEqualTo("""
+
+            info: desc1 (code1)
+
+            warn: desc2 (code2)
+            """);
+    }
+
+    @Test
+    void formatEmptyNotifications() {
+        assertThat(formatNotifications(List.of())).isEmpty();
+    }
+
     private static String formatResult(Result result) {
         ToStringLinePrinter printer = new ToStringLinePrinter();
         new TableOutputFormatter(true, 1000)
                 .formatAndCount(new ListBoltResult(result.list(), result.consume()), printer);
         return printer.result();
+    }
+
+    private static String formatNotifications(List<Notification> notifications) {
+        return new TableOutputFormatter(true, 1000).formatNotifications(notifications);
     }
 
     private static String formatResultWithHeading(Result result, String heading) {
@@ -735,13 +762,18 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
     }
 
     private static Result mockResult(List<String> cols, Object... data) {
+        return mockResultWithNotification(cols, asList(data), List.of());
+    }
+
+    private static Result mockResultWithNotification(
+            List<String> cols, List<Object> input, List<Notification> notifications) {
         Result result = mock(Result.class);
         Query query = mock(Query.class);
         ResultSummary summary = mock(ResultSummary.class);
         when(summary.query()).thenReturn(query);
+        when(summary.notifications()).thenReturn(notifications);
         when(result.keys()).thenReturn(cols);
         List<Record> records = new ArrayList<>();
-        List<Object> input = asList(data);
         int width = cols.size();
         for (int row = 0; row < input.size() / width; row++) {
             records.add(record(cols, input.subList(row * width, (row + 1) * width)));
@@ -750,6 +782,14 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
         when(result.consume()).thenReturn(summary);
         when(result.consume()).thenReturn(summary);
         return result;
+    }
+
+    private Notification notification(String code, String description, String severity) {
+        final var n = mock(Notification.class);
+        when(n.code()).thenReturn(code);
+        when(n.description()).thenReturn(description);
+        when(n.rawSeverityLevel()).thenReturn(Optional.of(severity));
+        return n;
     }
 
     private static Record record(List<String> cols, List<Object> data) {

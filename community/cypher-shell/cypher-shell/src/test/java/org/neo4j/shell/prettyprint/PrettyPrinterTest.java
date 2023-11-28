@@ -50,8 +50,8 @@ import org.neo4j.shell.state.BoltResult;
 import org.neo4j.shell.state.ListBoltResult;
 
 class PrettyPrinterTest {
-    private final PrettyPrinter plainPrinter = new PrettyPrinter(new PrettyConfig(Format.PLAIN, false, 100));
-    private final PrettyPrinter verbosePrinter = new PrettyPrinter(new PrettyConfig(Format.VERBOSE, true, 100));
+    private final PrettyPrinter plainPrinter = new PrettyPrinter(new PrettyConfig(Format.PLAIN, false, 100, false));
+    private final PrettyPrinter verbosePrinter = new PrettyPrinter(new PrettyConfig(Format.VERBOSE, true, 100, false));
 
     @Test
     void returnStatisticsForEmptyRecords() {

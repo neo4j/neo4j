@@ -41,7 +41,7 @@ class CypherShellPlainIntegrationTest extends CypherShellIntegrationTest {
     @BeforeEach
     void setUp() throws Exception {
         linePrinter.clear();
-        var printer = new PrettyPrinter(new PrettyConfig(Format.PLAIN, true, 1000));
+        var printer = new PrettyPrinter(new PrettyConfig(Format.PLAIN, true, 1000, false));
         var boltHandler = new BoltStateHandler(true);
         var parameters = ParameterService.create(boltHandler);
         shell = new CypherShell(linePrinter, boltHandler, printer, parameters);

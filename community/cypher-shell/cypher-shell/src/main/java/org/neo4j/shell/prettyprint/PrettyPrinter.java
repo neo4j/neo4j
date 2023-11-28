@@ -21,6 +21,7 @@ package org.neo4j.shell.prettyprint;
 
 import static org.neo4j.shell.prettyprint.OutputFormatter.Capabilities.FOOTER;
 import static org.neo4j.shell.prettyprint.OutputFormatter.Capabilities.INFO;
+import static org.neo4j.shell.prettyprint.OutputFormatter.Capabilities.NOTIFICATIONS;
 import static org.neo4j.shell.prettyprint.OutputFormatter.Capabilities.PLAN;
 import static org.neo4j.shell.prettyprint.OutputFormatter.Capabilities.RESULT;
 import static org.neo4j.shell.prettyprint.OutputFormatter.Capabilities.STATISTICS;
@@ -35,10 +36,12 @@ import org.neo4j.shell.state.BoltResult;
 public class PrettyPrinter {
     private final StatisticsCollector statisticsCollector;
     private final OutputFormatter outputFormatter;
+    private final boolean displayNotifications;
 
     public PrettyPrinter(PrettyConfig prettyConfig) {
-        this.statisticsCollector = new StatisticsCollector(prettyConfig.format);
+        this.statisticsCollector = new StatisticsCollector(prettyConfig.format());
         this.outputFormatter = selectFormatter(prettyConfig);
+        this.displayNotifications = prettyConfig.displayNotifications();
     }
 
     public void format(final BoltResult result, LinePrinter linePrinter) {
@@ -58,8 +61,12 @@ public class PrettyPrinter {
         if (capabilities.contains(FOOTER)) {
             printIfNotEmpty(outputFormatter.formatFooter(result, numberOfRows), linePrinter);
         }
+        final var summary = result.getSummary();
         if (capabilities.contains(STATISTICS)) {
-            printIfNotEmpty(statisticsCollector.collect(result.getSummary()), linePrinter);
+            printIfNotEmpty(statisticsCollector.collect(summary), linePrinter);
+        }
+        if (displayNotifications && capabilities.contains(NOTIFICATIONS)) {
+            printIfNotEmpty(outputFormatter.formatNotifications(summary.notifications()), linePrinter);
         }
     }
 
@@ -81,8 +88,8 @@ public class PrettyPrinter {
     }
 
     private static OutputFormatter selectFormatter(PrettyConfig prettyConfig) {
-        if (prettyConfig.format == Format.VERBOSE) {
-            return new TableOutputFormatter(prettyConfig.wrap, prettyConfig.numSampleRows);
+        if (prettyConfig.format() == Format.VERBOSE) {
+            return new TableOutputFormatter(prettyConfig.wrap(), prettyConfig.numSampleRows());
         } else {
             return new SimpleOutputFormatter();
         }

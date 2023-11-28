@@ -37,6 +37,7 @@ import static org.neo4j.shell.Conditions.contains;
 import static org.neo4j.shell.Conditions.emptyString;
 import static org.neo4j.shell.Conditions.endsWith;
 import static org.neo4j.shell.Conditions.is;
+import static org.neo4j.shell.Conditions.notContains;
 import static org.neo4j.shell.Conditions.startsWith;
 import static org.neo4j.shell.DatabaseManager.DEFAULT_DEFAULT_DB_NAME;
 import static org.neo4j.shell.DatabaseManager.SYSTEM_DB_NAME;
@@ -76,7 +77,7 @@ import org.neo4j.shell.test.AssertableMain;
 import org.neo4j.shell.util.Version;
 import org.neo4j.shell.util.Versions;
 
-// NOTE! Consider adding tests to BinaryNonInteractiveIntegrationTest instead of here.
+// NOTE! Consider adding tests to integration-test-expect instead of here.
 @Timeout(value = 5, unit = MINUTES)
 class MainIntegrationTest {
     private static final String USER = "neo4j";
@@ -1471,6 +1472,58 @@ class MainIntegrationTest {
                 .assertThatOutput(contains("> :sysinfo\n" + USER + "@system> :exit"));
     }
 
+    @Test
+    void showNotificationsIfEnabled() throws Exception {
+        final String expected;
+        if (serverVersion.compareTo(Versions.version("5.0.0")) >= 0) {
+            expected =
+                    "info: If a part of a query contains multiple disconnected patterns, this will build a cartesian product between all those parts. This may produce a large amount of data and slow down query processing. While occasionally intended, it may often be possible to reformulate the query that avoids the use of this cross product, perhaps by adding a relationship between the different parts or by using OPTIONAL MATCH (identifier is: (b)) (Neo.ClientNotification.Statement.CartesianProduct)";
+        } else {
+            expected =
+                    "warn: If a part of a query contains multiple disconnected patterns, this will build a cartesian product between all those parts. This may produce a large amount of data and slow down query processing. While occasionally intended, it may often be possible to reformulate the query that avoids the use of this cross product, perhaps by adding a relationship between the different parts or by using OPTIONAL MATCH (identifier is: (b)) (Neo.ClientNotification.Statement.CartesianProductWarning)";
+        }
+
+        buildTest()
+                .addArgs("-u", USER, "-p", PASSWORD, "--format", "verbose", "--notifications")
+                .userInputLines("match (a:A), (b:B) return *;", ":exit")
+                .run()
+                .assertSuccessAndConnected(true)
+                .assertThatOutput(contains(String.format("\n%s\n", expected)));
+    }
+
+    @Test
+    void showNotificationsIfEnabledWarn() throws Exception {
+        assumeAtLeastVersion("5.2");
+        buildTest()
+                .addArgs("-u", USER, "-p", PASSWORD, "--format", "verbose", "--notifications")
+                .userInputLines("match (n) return id(n);", ":exit")
+                .run()
+                .assertSuccessAndConnected(true)
+                .assertThatOutput(
+                        contains(
+                                "\nwarn: The query used a deprecated function: `id`. (Neo.ClientNotification.Statement.FeatureDeprecationWarning)\n"));
+    }
+
+    @Test
+    void hideNotificationsIfNonInteractive() throws Exception {
+        buildTest()
+                .addArgs("-u", USER, "-p", PASSWORD, "--format", "verbose", "--notifications", "--non-interactive")
+                .addArgs("match (a:A), (b:B) return *;")
+                .run()
+                .assertSuccessAndConnected(true)
+                .assertThatOutput(notContains("info:"));
+    }
+
+    @Test
+    void hideNotificationsByDefault() throws Exception {
+        buildTest()
+                .addArgs("-u", USER, "-p", PASSWORD, "--format", "verbose")
+                .userInputLines("match (a:A), (b:B) return *;", ":exit")
+                .run()
+                .assertSuccessAndConnected(true)
+                .assertThatOutput(notContains("info:"));
+    }
+
     private static CypherStatement cypher(String cypher) {
         return CypherStatement.complete(cypher);
     }
@@ -1510,7 +1563,7 @@ class MainIntegrationTest {
         CypherShell shell = null;
         try {
             var boltHandler = new BoltStateHandler(false);
-            var printer = new PrettyPrinter(new PrettyConfig(Format.PLAIN, false, 100));
+            var printer = new PrettyPrinter(new PrettyConfig(Format.PLAIN, false, 100, false));
             var parameters = ParameterService.create(boltHandler);
             shell = new CypherShell(new StringLinePrinter(), boltHandler, printer, parameters);
             shell.connect(testConnectionConfig("neo4j://localhost:7687")

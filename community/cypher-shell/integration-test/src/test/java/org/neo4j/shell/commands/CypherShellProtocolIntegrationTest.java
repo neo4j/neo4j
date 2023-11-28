@@ -89,7 +89,7 @@ class CypherShellProtocolIntegrationTest {
 
     private CypherShell shell() {
         var boltHandler = new BoltStateHandler(true);
-        var printer = new PrettyPrinter(new PrettyConfig(Format.PLAIN, true, 1000));
+        var printer = new PrettyPrinter(new PrettyConfig(Format.PLAIN, true, 1000, false));
         var parameters = mock(ParameterService.class);
         return new CypherShell(new StringLinePrinter(), boltHandler, printer, parameters);
     }

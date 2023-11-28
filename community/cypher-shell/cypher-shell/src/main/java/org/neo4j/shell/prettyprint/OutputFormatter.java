@@ -34,6 +34,7 @@ import java.util.stream.Collectors;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.Values;
 import org.neo4j.driver.internal.types.TypeRepresentation;
+import org.neo4j.driver.summary.Notification;
 import org.neo4j.driver.summary.Plan;
 import org.neo4j.driver.summary.ProfiledPlan;
 import org.neo4j.driver.summary.ResultSummary;
@@ -240,6 +241,10 @@ public interface OutputFormatter {
         return "";
     }
 
+    default String formatNotifications(List<Notification> notifications) {
+        return "";
+    }
+
     Set<Capabilities> capabilities();
 
     enum Capabilities {
@@ -247,6 +252,7 @@ public interface OutputFormatter {
         PLAN,
         RESULT,
         FOOTER,
-        STATISTICS
+        STATISTICS,
+        NOTIFICATIONS
     }
 }

@@ -403,4 +403,18 @@ class CliArgHelperTest extends LocaleDependentTestBase {
         assertThat(parse("--history", "/some/path/file.history").getHistoryBehaviour())
                 .isEqualTo(new CypherShellTerminal.FileHistory(Path.of("/some/path/file.history")));
     }
+
+    @Test
+    void notificationsEnabled() {
+        CliArgs arguments = parser.parse("--notifications");
+        assertNotNull(arguments);
+        assertEquals(true, arguments.getNotificationsEnabled());
+    }
+
+    @Test
+    void notificationsDefault() {
+        CliArgs arguments = parser.parse();
+        assertNotNull(arguments);
+        assertEquals(false, arguments.getNotificationsEnabled());
+    }
 }

@@ -28,14 +28,17 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.InternalRecord;
 import org.neo4j.driver.internal.value.NumberValueAdapter;
+import org.neo4j.driver.summary.Notification;
 import org.neo4j.driver.summary.Plan;
 import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.shell.state.BoltResult;
@@ -310,6 +313,38 @@ public class TableOutputFormatter implements OutputFormatter {
                 numberOfRows != 1 ? "s" : "",
                 summary.resultAvailableAfter(MILLISECONDS),
                 summary.resultConsumedAfter(MILLISECONDS));
+    }
+
+    @Override
+    public String formatNotifications(List<Notification> notifications) {
+        if (notifications.isEmpty()) {
+            return "";
+        } else {
+            final var messages = new HashSet<String>();
+            final var builder = new StringBuilder();
+            for (final var notification : notifications) {
+                final var message = formatNotification(notification);
+                if (messages.add(message)) {
+                    builder.append('\n').append(message).append('\n');
+                }
+            }
+            return builder.toString();
+        }
+    }
+
+    private String formatNotification(Notification notification) {
+        final var severity = severityString(notification);
+        return String.format("%s: %s (%s)", severity, notification.description(), notification.code());
+    }
+
+    private static String severityString(Notification notification) {
+        final var rawSeverity =
+                notification.rawSeverityLevel().orElse("information").toLowerCase(Locale.ROOT);
+        return switch (rawSeverity) {
+            case "information" -> "info";
+            case "warning" -> "warn";
+            default -> rawSeverity;
+        };
     }
 
     @Override

@@ -71,7 +71,8 @@ public class Main implements Closeable {
                 .logger(printer)
                 .parameters(parameters)
                 .build();
-        this.shell = new CypherShell(printer, boltStateHandler, new PrettyPrinter(new PrettyConfig(args)), parameters);
+        this.shell = new CypherShell(
+                printer, boltStateHandler, new PrettyPrinter(PrettyConfig.from(args, isInteractive)), parameters);
         this.isOutputInteractive = !args.getNonInteractive() && ShellRunner.isOutputInteractive();
         this.runnerFactory = new ShellRunner.Factory();
     }
@@ -82,9 +83,11 @@ public class Main implements Closeable {
         this.terminal = terminal;
         this.args = args;
         this.printer = new AnsiPrinter(Format.VERBOSE, out, err);
-        var boltStateHandler = new BoltStateHandler(shouldBeInteractive(args, terminal.isInteractive()));
+        final var isInteractive = shouldBeInteractive(args, terminal.isInteractive());
+        var boltStateHandler = new BoltStateHandler(isInteractive);
         this.parameters = ParameterService.create(boltStateHandler);
-        this.shell = new CypherShell(printer, boltStateHandler, new PrettyPrinter(new PrettyConfig(args)), parameters);
+        this.shell = new CypherShell(
+                printer, boltStateHandler, new PrettyPrinter(PrettyConfig.from(args, isInteractive)), parameters);
         this.isOutputInteractive = outputInteractive;
         this.runnerFactory = new ShellRunner.Factory();
     }

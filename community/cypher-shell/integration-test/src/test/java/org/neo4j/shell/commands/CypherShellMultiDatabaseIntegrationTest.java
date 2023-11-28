@@ -55,7 +55,7 @@ class CypherShellMultiDatabaseIntegrationTest {
     @BeforeEach
     void setUp() throws Exception {
         linePrinter.clear();
-        var printer = new PrettyPrinter(new PrettyConfig(Format.PLAIN, true, 1000));
+        var printer = new PrettyPrinter(new PrettyConfig(Format.PLAIN, true, 1000, false));
         var boltHandler = new BoltStateHandler(false);
         var parameters = ParameterService.create(boltHandler);
         shell = new CypherShell(linePrinter, boltHandler, printer, parameters);
@@ -144,7 +144,7 @@ class CypherShellMultiDatabaseIntegrationTest {
     void switchingToNonExistingDatabaseShouldGiveErrorResponseFromServerInteractive() throws CommandException {
         var boltHandler = new BoltStateHandler(true);
         var parameters = ParameterService.create(boltHandler);
-        var printer = new PrettyPrinter(new PrettyConfig(Format.PLAIN, true, 1000));
+        var printer = new PrettyPrinter(new PrettyConfig(Format.PLAIN, true, 1000, false));
         shell = new CypherShell(linePrinter, boltHandler, printer, parameters);
         useCommand = new Use(shell);
         shell.connect(testConnectionConfig("bolt://localhost:7687").withUsernameAndPassword("neo4j", "neo"));

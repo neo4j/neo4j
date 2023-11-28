@@ -28,6 +28,11 @@ public class Conditions {
         return new Condition<>(s -> s.contains(expected), "String contains \"%s\"", expected);
     }
 
+    public static Condition<String> notContains(String expected) {
+        Objects.requireNonNull(expected);
+        return new Condition<>(s -> !s.contains(expected), "String do not contains \"%s\"", expected);
+    }
+
     public static Condition<String> emptyString() {
         return new Condition<>(String::isEmpty, "String is empty");
     }

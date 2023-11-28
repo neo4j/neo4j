@@ -55,6 +55,7 @@ public class CliArgs {
     private boolean changePassword;
     private CypherShellTerminal.HistoryBehaviour historyBehaviour;
     private Handler logHandler;
+    private boolean notificationsEnabled;
 
     /**
      * Set the username to the primary value, or if null, the fallback value.
@@ -240,5 +241,13 @@ public class CliArgs {
 
     public void setLogHandler(Handler handler) {
         this.logHandler = handler;
+    }
+
+    public boolean getNotificationsEnabled() {
+        return notificationsEnabled;
+    }
+
+    public void setNotificationsEnabled(boolean enabled) {
+        this.notificationsEnabled = enabled;
     }
 }
