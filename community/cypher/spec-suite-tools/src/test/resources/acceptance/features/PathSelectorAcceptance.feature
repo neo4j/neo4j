@@ -1121,3 +1121,55 @@ Feature: PathSelectorAcceptance
       | ANY               |
       | ANY 1             |
       | ANY 2             |
+
+  Scenario Outline: PathSelector should accept single node as solution
+    And having executed:
+      """
+        CREATE (:A:B {p: 'a1'})-[:REL]->(:A {p: 'a2'})
+      """
+    When executing query:
+      """
+        MATCH <pathSelector> (a:A)-->*(:B)
+        WITH a.p AS ap, count(*) AS count ORDER BY a.p
+        RETURN collect([ap, count]) AS result
+      """
+    Then the result should be, in any order:
+      | result     |
+      | [['a1', 1]] |
+    Examples:
+      | pathSelector      |
+      | ANY SHORTEST      |
+      | SHORTEST 1        |
+      | SHORTEST 2        |
+      | ALL SHORTEST      |
+      | SHORTEST GROUP    |
+      | SHORTEST 1 GROUP  |
+      | SHORTEST 2 GROUPS |
+      | ANY               |
+      | ANY 1             |
+      | ANY 2             |
+
+  Scenario Outline: PathSelector should not find a path which is created later in the query
+    And having executed:
+      """
+        CREATE ()-[:R]->()
+      """
+    When executing query:
+      """
+        MATCH p = <pathSelector> ((start)((a)-[r:R]->(b))+(end)) MERGE (start)-[t:R]-(:B) RETURN p
+      """
+    Then the result should be, in any order:
+      | p                 |
+      | <()-[:R {}]->()>  |
+    Examples:
+      | pathSelector      |
+      | ANY SHORTEST      |
+      | SHORTEST 1        |
+      | SHORTEST 2        |
+      | ALL SHORTEST      |
+      | SHORTEST GROUP    |
+      | SHORTEST 1 GROUP  |
+      | SHORTEST 2 GROUPS |
+      | ANY               |
+      | ANY 1             |
+      | ANY 2             |
