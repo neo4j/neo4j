@@ -521,7 +521,7 @@ dropConstraintNodeCheck:
    UNIQUE | NODE KEY;
 
 createIndex:
-   (BTREE INDEX createIndex_ | RANGE INDEX createIndex_ | FULLTEXT INDEX createFulltextIndex | TEXT INDEX createIndex_ | POINT INDEX createIndex_ | LOOKUP INDEX createLookupIndex | INDEX (ON oldCreateIndex | createIndex_));
+   (BTREE INDEX createIndex_ | RANGE INDEX createIndex_ | FULLTEXT INDEX createFulltextIndex | TEXT INDEX createIndex_ | POINT INDEX createIndex_ | VECTOR INDEX createIndex_ | LOOKUP INDEX createLookupIndex | INDEX (ON oldCreateIndex | createIndex_));
 
 oldCreateIndex:
    labelOrRelType LPAREN symbolicNamePositions RPAREN;

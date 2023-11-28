@@ -345,6 +345,42 @@ case class CreatePointRelationshipIndex(
       checkSingleProperty("point indexes", properties)
 }
 
+case class CreateVectorNodeIndex(
+  variable: Variable,
+  label: LabelName,
+  properties: List[Property],
+  override val name: Option[String],
+  ifExistsDo: IfExistsDo,
+  options: Options,
+  useGraph: Option[GraphSelection] = None
+)(override val position: InputPosition)
+    extends CreateIndex(variable, properties, ifExistsDo, true)(position) {
+  override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
+  override def withName(name: Option[String]): CreateVectorNodeIndex = copy(name = name)(position)
+
+  override def semanticCheck: SemanticCheck =
+    checkOptionsMap("vector node index", options) chain
+      super.semanticCheck chain
+      checkSingleProperty("vector indexes", properties)
+}
+
+case class CreateVectorRelationshipIndex(
+  variable: Variable,
+  relType: RelTypeName,
+  properties: List[Property],
+  override val name: Option[String],
+  ifExistsDo: IfExistsDo,
+  options: Options,
+  useGraph: Option[GraphSelection] = None
+)(override val position: InputPosition)
+    extends CreateIndex(variable, properties, ifExistsDo, false)(position) {
+  override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
+  override def withName(name: Option[String]): CreateVectorRelationshipIndex = copy(name = name)(position)
+
+  override def semanticCheck: SemanticCheck =
+    error("Vector indexes are not available on relationships.", relType.position)
+}
+
 case class DropIndex(label: LabelName, properties: List[PropertyKeyName], useGraph: Option[GraphSelection] = None)(
   val position: InputPosition
 ) extends SchemaCommand {

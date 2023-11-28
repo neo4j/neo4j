@@ -133,6 +133,16 @@ object ParallelTransactionBoundQueryContext {
       provider: Option[IndexProviderDescriptor],
       indexConfig: IndexConfig
     ): IndexDescriptor = unsupported()
+
+    override def addVectorIndexRule(
+      entityId: Int,
+      entityType: EntityType,
+      propertyKeyIds: Seq[Int],
+      name: Option[String],
+      provider: Option[IndexProviderDescriptor],
+      indexConfig: IndexConfig
+    ): IndexDescriptor = unsupported()
+
     override def dropIndexRule(name: String): Unit = unsupported()
 
     override def createNodeKeyConstraint(

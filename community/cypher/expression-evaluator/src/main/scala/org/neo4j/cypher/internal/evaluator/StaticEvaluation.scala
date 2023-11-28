@@ -249,6 +249,15 @@ object StaticEvaluation {
       indexConfig: IndexConfig
     ): IndexDescriptor = notAvailable()
 
+    override def addVectorIndexRule(
+      entityId: Int,
+      entityType: EntityType,
+      propertyKeyIds: Seq[Int],
+      name: Option[String],
+      provider: Option[IndexProviderDescriptor],
+      indexConfig: IndexConfig
+    ): IndexDescriptor = notAvailable()
+
     override def dropIndexRule(name: String): Unit = notAvailable()
 
     override def getAllIndexes(): Map[IndexDescriptor, IndexInfo] = notAvailable()

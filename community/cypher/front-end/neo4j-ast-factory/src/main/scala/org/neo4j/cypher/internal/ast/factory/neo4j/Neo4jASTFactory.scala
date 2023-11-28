@@ -96,6 +96,8 @@ import org.neo4j.cypher.internal.ast.CreateTextNodeIndex
 import org.neo4j.cypher.internal.ast.CreateTextRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateUser
 import org.neo4j.cypher.internal.ast.CreateUserAction
+import org.neo4j.cypher.internal.ast.CreateVectorNodeIndex
+import org.neo4j.cypher.internal.ast.CreateVectorRelationshipIndex
 import org.neo4j.cypher.internal.ast.CurrentUser
 import org.neo4j.cypher.internal.ast.DatabaseAction
 import org.neo4j.cypher.internal.ast.DatabaseName
@@ -2034,6 +2036,24 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
         )(p)
       case (CreateIndexTypes.POINT, false) =>
         CreatePointRelationshipIndex(
+          variable,
+          RelTypeName(label.string)(label.pos),
+          properties,
+          Option(indexName),
+          ifExistsDo(replace, ifNotExists),
+          asOptionsAst(options)
+        )(p)
+      case (CreateIndexTypes.VECTOR, true) =>
+        CreateVectorNodeIndex(
+          variable,
+          LabelName(label.string)(label.pos),
+          properties,
+          Option(indexName),
+          ifExistsDo(replace, ifNotExists),
+          asOptionsAst(options)
+        )(p)
+      case (CreateIndexTypes.VECTOR, false) =>
+        CreateVectorRelationshipIndex(
           variable,
           RelTypeName(label.string)(label.pos),
           properties,

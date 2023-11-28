@@ -62,6 +62,7 @@ import org.neo4j.cypher.internal.ast.CreateRole
 import org.neo4j.cypher.internal.ast.CreateTextNodeIndex
 import org.neo4j.cypher.internal.ast.CreateTextRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateUser
+import org.neo4j.cypher.internal.ast.CreateVectorNodeIndex
 import org.neo4j.cypher.internal.ast.CurrentUser
 import org.neo4j.cypher.internal.ast.DatabaseName
 import org.neo4j.cypher.internal.ast.DatabasePrivilege
@@ -417,6 +418,10 @@ case class Prettifier(
         ) =>
         val startOfCommand = getStartOfCommand(name, ifExistsDo, "POINT INDEX")
         s"${startOfCommand}FOR ()-[${backtick(variable)}:${backtick(relType)}]-() ON ${propertiesToString(properties)}${asString(options)}"
+
+      case CreateVectorNodeIndex(Variable(variable), LabelName(label), properties, name, ifExistsDo, options, _) =>
+        val startOfCommand = getStartOfCommand(name, ifExistsDo, "VECTOR INDEX")
+        s"${startOfCommand}FOR (${backtick(variable)}:${backtick(label)}) ON ${propertiesToString(properties)}${asString(options)}"
 
       case DropIndexOnName(name, ifExists, _) =>
         val ifExistsString = if (ifExists) " IF EXISTS" else ""

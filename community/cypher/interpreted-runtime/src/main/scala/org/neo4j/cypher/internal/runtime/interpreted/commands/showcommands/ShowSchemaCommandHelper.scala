@@ -32,9 +32,7 @@ import scala.collection.immutable.ListMap
 import scala.jdk.CollectionConverters.MapHasAsScala
 
 object ShowSchemaCommandHelper {
-  def escapeBackticks(str: String): String = str.replaceAllLiterally("`", "``")
-
-  def escapeSingleQuotes(str: String): String = str.replace("\\", "\\\\").replace("'", "\\'")
+  def escapeBackticks(str: String): String = str.replace("`", "``")
 
   def extractOptionsMap(providerName: String, indexConfig: IndexConfig): MapValue = {
     val (configKeys, configValues) = indexConfig.asMap().asScala.toSeq.unzip
@@ -54,8 +52,6 @@ object ShowSchemaCommandHelper {
     }
     stringJoiner.toString
   }
-
-  def asEscapedProcedureArgumentString(argument: String): String = s"'${escapeSingleQuotes(argument)}'"
 
   def configAsString(indexConfig: IndexConfig, configValueAsString: Value => String): String = {
     val configString: StringJoiner = configStringJoiner

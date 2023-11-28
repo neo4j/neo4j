@@ -187,6 +187,7 @@ import org.neo4j.cypher.internal.logical.plans.CreateRemoteDatabaseAlias
 import org.neo4j.cypher.internal.logical.plans.CreateRole
 import org.neo4j.cypher.internal.logical.plans.CreateTextIndex
 import org.neo4j.cypher.internal.logical.plans.CreateUser
+import org.neo4j.cypher.internal.logical.plans.CreateVectorIndex
 import org.neo4j.cypher.internal.logical.plans.DeallocateServer
 import org.neo4j.cypher.internal.logical.plans.DeleteExpression
 import org.neo4j.cypher.internal.logical.plans.DeleteNode
@@ -2640,6 +2641,164 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         "CreateIndex",
         NoChildren,
         Seq(details("POINT INDEX `$indexName` FOR (:Label) ON (prop) OPTIONS $options")),
+        Set.empty
+      )
+    )
+
+    // VECTOR
+
+    assertGood(
+      attach(CreateVectorIndex(None, label("Label"), List(key("prop")), Some("$indexName"), NoOptions), 63.2),
+      planDescription(
+        id,
+        "CreateIndex",
+        NoChildren,
+        Seq(details("VECTOR INDEX `$indexName` FOR (:Label) ON (prop)")),
+        Set.empty
+      )
+    )
+
+    assertGood(
+      attach(CreateVectorIndex(None, label("Label"), List(key("prop")), None, NoOptions), 63.2),
+      planDescription(id, "CreateIndex", NoChildren, Seq(details("VECTOR INDEX FOR (:Label) ON (prop)")), Set.empty)
+    )
+
+    assertGood(
+      attach(
+        CreateVectorIndex(
+          None,
+          label("Label"),
+          List(key("prop")),
+          Some("$indexName"),
+          OptionsMap(Map("indexProvider" -> stringLiteral("vector-1.0")))
+        ),
+        63.2
+      ),
+      planDescription(
+        id,
+        "CreateIndex",
+        NoChildren,
+        Seq(details("""VECTOR INDEX `$indexName` FOR (:Label) ON (prop) OPTIONS {indexProvider: "vector-1.0"}""")),
+        Set.empty
+      )
+    )
+
+    assertGood(
+      attach(
+        CreateVectorIndex(
+          Some(DoNothingIfExistsForIndex(label("Label"), List(key("prop")), IndexType.VECTOR, None, NoOptions)),
+          label("Label"),
+          List(key("prop")),
+          None,
+          NoOptions
+        ),
+        63.2
+      ),
+      planDescription(
+        id,
+        "CreateIndex",
+        SingleChild(
+          planDescription(
+            id,
+            "DoNothingIfExists(INDEX)",
+            NoChildren,
+            Seq(details("VECTOR INDEX FOR (:Label) ON (prop)")),
+            Set.empty
+          )
+        ),
+        Seq(details("VECTOR INDEX FOR (:Label) ON (prop)")),
+        Set.empty
+      )
+    )
+
+    assertGood(
+      attach(CreateVectorIndex(None, relType("Label"), List(key("prop")), Some("$indexName"), NoOptions), 63.2),
+      planDescription(
+        id,
+        "CreateIndex",
+        NoChildren,
+        Seq(details("VECTOR INDEX `$indexName` FOR ()-[:Label]-() ON (prop)")),
+        Set.empty
+      )
+    )
+
+    assertGood(
+      attach(CreateVectorIndex(None, relType("Label"), List(key("prop")), None, NoOptions), 63.2),
+      planDescription(
+        id,
+        "CreateIndex",
+        NoChildren,
+        Seq(details("VECTOR INDEX FOR ()-[:Label]-() ON (prop)")),
+        Set.empty
+      )
+    )
+
+    assertGood(
+      attach(
+        CreateVectorIndex(
+          None,
+          relType("Label"),
+          List(key("prop")),
+          Some("$indexName"),
+          OptionsMap(Map("indexProvider" -> stringLiteral("vector-1.0")))
+        ),
+        63.2
+      ),
+      planDescription(
+        id,
+        "CreateIndex",
+        NoChildren,
+        Seq(
+          details("""VECTOR INDEX `$indexName` FOR ()-[:Label]-() ON (prop) OPTIONS {indexProvider: "vector-1.0"}""")
+        ),
+        Set.empty
+      )
+    )
+
+    assertGood(
+      attach(
+        CreateVectorIndex(
+          Some(DoNothingIfExistsForIndex(relType("Label"), List(key("prop")), IndexType.VECTOR, None, NoOptions)),
+          relType("Label"),
+          List(key("prop")),
+          None,
+          NoOptions
+        ),
+        63.2
+      ),
+      planDescription(
+        id,
+        "CreateIndex",
+        SingleChild(
+          planDescription(
+            id,
+            "DoNothingIfExists(INDEX)",
+            NoChildren,
+            Seq(details("VECTOR INDEX FOR ()-[:Label]-() ON (prop)")),
+            Set.empty
+          )
+        ),
+        Seq(details("VECTOR INDEX FOR ()-[:Label]-() ON (prop)")),
+        Set.empty
+      )
+    )
+
+    assertGood(
+      attach(
+        CreateVectorIndex(
+          None,
+          label("Label"),
+          List(key("prop")),
+          Some("$indexName"),
+          OptionsParam(parameter("options", CTMap))
+        ),
+        63.2
+      ),
+      planDescription(
+        id,
+        "CreateIndex",
+        NoChildren,
+        Seq(details("VECTOR INDEX `$indexName` FOR (:Label) ON (prop) OPTIONS $options")),
         Set.empty
       )
     )

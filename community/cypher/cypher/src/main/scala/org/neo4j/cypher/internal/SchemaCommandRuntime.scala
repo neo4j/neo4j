@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.logical.plans.CreateLookupIndex
 import org.neo4j.cypher.internal.logical.plans.CreatePointIndex
 import org.neo4j.cypher.internal.logical.plans.CreateRangeIndex
 import org.neo4j.cypher.internal.logical.plans.CreateTextIndex
+import org.neo4j.cypher.internal.logical.plans.CreateVectorIndex
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForConstraint
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForFulltextIndex
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForIndex
@@ -61,6 +62,7 @@ import org.neo4j.exceptions.CantCompileQueryException
 import org.neo4j.graphdb.schema.IndexType.POINT
 import org.neo4j.graphdb.schema.IndexType.RANGE
 import org.neo4j.graphdb.schema.IndexType.TEXT
+import org.neo4j.graphdb.schema.IndexType.VECTOR
 import org.neo4j.internal.schema.ConstraintDescriptor
 import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexType
@@ -333,6 +335,26 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
           source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context))
         )
 
+    // CREATE VECTOR INDEX [name] [IF NOT EXISTS] FOR (n:LABEL) ON (n.prop) OPTIONS {...}
+    case CreateVectorIndex(source, entityName, props, name, options) => context =>
+        SchemaExecutionPlan(
+          "CreateIndex",
+          (ctx, params) => {
+            val optionsConverter = CreateVectorIndexOptionsConverter(ctx)
+            val (indexProvider, indexConfig) = optionsConverter.convert(options, params) match {
+              case None =>
+                // will not get here due to mandatory config but need this to make it compile
+                (None, IndexConfig.empty())
+              case Some(CreateIndexWithFullOptions(provider, config)) => (provider, config)
+            }
+            val (entityId, entityType) = getEntityInfo(entityName, ctx)
+            val propertyKeyIds = props.map(p => propertyToId(ctx)(p).id)
+            ctx.addVectorIndexRule(entityId, entityType, propertyKeyIds, name, indexProvider, indexConfig)
+            SuccessResult
+          },
+          source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context))
+        )
+
     // DROP INDEX name [IF EXISTS]
     case DropIndexOnName(name, ifExists) => _ =>
         SchemaExecutionPlan(
@@ -347,11 +369,14 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
 
     case DoNothingIfExistsForIndex(entityName, propertyKeyNames, indexType, name, options) => _ =>
         val (innerIndexType, optionsConverter) = indexType match {
-          case POINT => (IndexType.POINT, CreatePointIndexOptionsConverter)
-          case RANGE => (IndexType.RANGE, ctx => CreateRangeIndexOptionsConverter("range index", ctx))
-          case TEXT  => (IndexType.TEXT, CreateTextIndexOptionsConverter)
+          case POINT  => (IndexType.POINT, CreatePointIndexOptionsConverter)
+          case RANGE  => (IndexType.RANGE, ctx => CreateRangeIndexOptionsConverter("range index", ctx))
+          case TEXT   => (IndexType.TEXT, CreateTextIndexOptionsConverter)
+          case VECTOR => (IndexType.VECTOR, CreateVectorIndexOptionsConverter)
           case it =>
-            throw new IllegalStateException(s"Did not expect index type $it here: only point, range or text indexes.")
+            throw new IllegalStateException(
+              s"Did not expect index type $it here: only point, range, text or vector indexes."
+            )
         }
         SchemaExecutionPlan(
           "DoNothingIfExist",

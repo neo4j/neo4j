@@ -101,6 +101,16 @@ case class CreatePointIndex(
   override def lhs: Option[LogicalPlan] = source
 }
 
+case class CreateVectorIndex(
+  source: Option[DoNothingIfExistsForIndex],
+  entityName: ElementTypeName,
+  propertyKeyNames: List[PropertyKeyName],
+  name: Option[String],
+  options: Options
+)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
+  override def lhs: Option[LogicalPlan] = source
+}
+
 case class DropIndexOnName(name: String, ifExists: Boolean)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
 
 case class DoNothingIfExistsForIndex(

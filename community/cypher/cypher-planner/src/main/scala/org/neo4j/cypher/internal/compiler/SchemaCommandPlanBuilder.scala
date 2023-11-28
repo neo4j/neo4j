@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyTypeConstraint
 import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyUniquenessConstraint
 import org.neo4j.cypher.internal.ast.CreateTextNodeIndex
 import org.neo4j.cypher.internal.ast.CreateTextRelationshipIndex
+import org.neo4j.cypher.internal.ast.CreateVectorNodeIndex
 import org.neo4j.cypher.internal.ast.DropConstraintOnName
 import org.neo4j.cypher.internal.ast.DropIndexOnName
 import org.neo4j.cypher.internal.ast.IfExistsDo
@@ -143,6 +144,17 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
     ): Option[LogicalPlan] = {
       val (propKeys, source) = handleIfExistsDo(entityName, props, IndexType.POINT, name, ifExistsDo, options)
       Some(plans.CreatePointIndex(source, entityName, propKeys, name, options))
+    }
+
+    def createVectorIndex(
+      entityName: ElementTypeName,
+      props: List[Property],
+      name: Option[String],
+      ifExistsDo: IfExistsDo,
+      options: Options
+    ): Option[LogicalPlan] = {
+      val (propKeys, source) = handleIfExistsDo(entityName, props, IndexType.VECTOR, name, ifExistsDo, options)
+      Some(plans.CreateVectorIndex(source, entityName, propKeys, name, options))
     }
 
     val maybeLogicalPlan: Option[LogicalPlan] = from.statement() match {
@@ -330,6 +342,10 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
       // CREATE POINT INDEX [name] [IF NOT EXISTS] FOR ()-[r:RELATIONSHIP_TYPE]->() ON (r.prop) [OPTIONS {...}]
       case CreatePointRelationshipIndex(_, relType, props, name, ifExistsDo, options, _) =>
         createPointIndex(relType, props, name, ifExistsDo, options)
+
+      // CREATE VECTOR INDEX [name] [IF NOT EXISTS] FOR (n:LABEL) ON (n.prop) OPTIONS {...}
+      case CreateVectorNodeIndex(_, label, props, name, ifExistsDo, options, _) =>
+        createVectorIndex(label, props, name, ifExistsDo, options)
 
       // DROP INDEX name [IF EXISTS]
       case DropIndexOnName(name, ifExists, _) =>

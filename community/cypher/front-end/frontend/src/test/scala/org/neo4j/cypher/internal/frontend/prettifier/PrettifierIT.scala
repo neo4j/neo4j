@@ -620,6 +620,37 @@ class PrettifierIT extends CypherFunSuite {
     "create POINT INDEX foo IF not EXISTS FOR ()-[n:R]-() ON (n.p)" ->
       "CREATE POINT INDEX foo IF NOT EXISTS FOR ()-[n:R]-() ON (n.p)",
 
+    // vector
+
+    "create VECTOR INDEX FOR (n:A) ON (n.p)" ->
+      "CREATE VECTOR INDEX FOR (n:A) ON (n.p)",
+    "create VECTOR INDEX FOR (n:A) ON (n.p1, n.p2, n.p3)" ->
+      "CREATE VECTOR INDEX FOR (n:A) ON (n.p1, n.p2, n.p3)",
+    "create VECTOR INDEX foo FOR (n:A) ON (n.p)" ->
+      "CREATE VECTOR INDEX foo FOR (n:A) ON (n.p)",
+    "create VECTOR INDEX `foo` FOR (n:A) ON (n.p)" ->
+      "CREATE VECTOR INDEX foo FOR (n:A) ON (n.p)",
+    "create VECTOR INDEX `$foo` FOR (n:A) ON (n.p1, n.p2, n.p3)" ->
+      "CREATE VECTOR INDEX `$foo` FOR (n:A) ON (n.p1, n.p2, n.p3)",
+    "CREATE VECTOR index FOR (n:Person) on (n.name) OPtiONS {indexProvider: 'vector-1.0'}" ->
+      """CREATE VECTOR INDEX FOR (n:Person) ON (n.name) OPTIONS {indexProvider: "vector-1.0"}""",
+    "create vector INDEX for (n:Person) ON (n.name) OPTIONS {`indexProvider`: 'vector-1.0', indexConfig: {`vector.dimensions`:50, `vector.similarity_function`: 'cosine' }}" ->
+      """CREATE VECTOR INDEX FOR (n:Person) ON (n.name) OPTIONS {indexProvider: "vector-1.0", indexConfig: {`vector.dimensions`: 50, `vector.similarity_function`: "cosine"}}""",
+    "create VECTOR INDEX myIndex for (n:Person) ON (n.name) OPTIONS {indexConfig: {`vector.dimensions`:50, `vector.similarity_function`: 'euclidean' }}" ->
+      """CREATE VECTOR INDEX myIndex FOR (n:Person) ON (n.name) OPTIONS {indexConfig: {`vector.dimensions`: 50, `vector.similarity_function`: "euclidean"}}""",
+    "CREATE VECTOR index FOR (n:Person) on (n.name) OPtiONS {`nonValidOption` : 42, `backticks.stays.when.needed`: 'theAnswer'}" ->
+      """CREATE VECTOR INDEX FOR (n:Person) ON (n.name) OPTIONS {nonValidOption: 42, `backticks.stays.when.needed`: "theAnswer"}""",
+    "CREATE VECTOR index FOR (n:Person) on (n.name) OPtiONS {}" ->
+      """CREATE VECTOR INDEX FOR (n:Person) ON (n.name) OPTIONS {}""",
+    "create or REPLACE VECTOR INDEX FOR (n:A) ON (n.p)" ->
+      "CREATE OR REPLACE VECTOR INDEX FOR (n:A) ON (n.p)",
+    "create or REPLACE VECTOR INDEX foo FOR (n:A) ON (n.p)" ->
+      "CREATE OR REPLACE VECTOR INDEX foo FOR (n:A) ON (n.p)",
+    "create VECTOR INDEX IF not EXISTS FOR (n:A) ON (n.p)" ->
+      "CREATE VECTOR INDEX IF NOT EXISTS FOR (n:A) ON (n.p)",
+    "create VECTOR INDEX foo IF not EXISTS FOR (n:A) ON (n.p)" ->
+      "CREATE VECTOR INDEX foo IF NOT EXISTS FOR (n:A) ON (n.p)",
+
     // drop
 
     "drop INDEX foo" ->

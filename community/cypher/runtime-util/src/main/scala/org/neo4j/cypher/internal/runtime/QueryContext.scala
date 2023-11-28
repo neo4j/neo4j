@@ -548,6 +548,15 @@ trait WriteQueryContext {
     indexConfig: IndexConfig
   ): IndexDescriptor
 
+  def addVectorIndexRule(
+    entityId: Int,
+    entityType: EntityType,
+    propertyKeyIds: Seq[Int],
+    name: Option[String],
+    provider: Option[IndexProviderDescriptor],
+    indexConfig: IndexConfig
+  ): IndexDescriptor
+
   def dropIndexRule(name: String): Unit
 
   /* throws if failed or pre-existing */

@@ -192,6 +192,19 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     result
   }
 
+  override def addVectorIndexRule(
+    entityId: Int,
+    entityType: EntityType,
+    propertyKeyIds: Seq[Int],
+    name: Option[String],
+    provider: Option[IndexProviderDescriptor],
+    indexConfig: IndexConfig
+  ): IndexDescriptor = {
+    val result = inner.addVectorIndexRule(entityId, entityType, propertyKeyIds, name, provider, indexConfig)
+    indexesAdded.increase()
+    result
+  }
+
   override def dropIndexRule(name: String): Unit = {
     inner.dropIndexRule(name)
     indexesRemoved.increase()

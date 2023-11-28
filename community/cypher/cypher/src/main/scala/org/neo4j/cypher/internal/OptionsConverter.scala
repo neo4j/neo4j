@@ -42,17 +42,24 @@ import org.neo4j.graphdb.schema.IndexSettingImpl.SPATIAL_WGS84_3D_MAX
 import org.neo4j.graphdb.schema.IndexSettingImpl.SPATIAL_WGS84_3D_MIN
 import org.neo4j.graphdb.schema.IndexSettingImpl.SPATIAL_WGS84_MAX
 import org.neo4j.graphdb.schema.IndexSettingImpl.SPATIAL_WGS84_MIN
+import org.neo4j.graphdb.schema.IndexSettingImpl.VECTOR_DIMENSIONS
+import org.neo4j.graphdb.schema.IndexSettingImpl.VECTOR_SIMILARITY_FUNCTION
 import org.neo4j.graphdb.schema.IndexSettingUtil
 import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexType
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
+import org.neo4j.kernel.api.impl.schema.vector.VectorSimilarityFunction
+import org.neo4j.kernel.api.impl.schema.vector.VectorUtils
 import org.neo4j.kernel.database.NormalizedDatabaseName
 import org.neo4j.storageengine.api.StorageEngineFactory
 import org.neo4j.storageengine.api.StorageEngineFactory.allAvailableStorageEngines
+import org.neo4j.util.Preconditions
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.BooleanValue
 import org.neo4j.values.storable.DoubleValue
+import org.neo4j.values.storable.IntValue
+import org.neo4j.values.storable.LongValue
 import org.neo4j.values.storable.NoValue
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.utils.PrettyPrinter
@@ -64,6 +71,7 @@ import org.neo4j.values.virtual.VirtualValues
 import java.lang.Boolean.FALSE
 import java.util.Collections
 import java.util.Locale
+import java.util.Objects
 import java.util.UUID
 
 import scala.jdk.CollectionConverters.IterableHasAsScala
@@ -79,6 +87,9 @@ trait OptionsConverter[T] {
   }
 
   def convert(options: Options, params: MapValue, config: Option[Config] = None): Option[T] = options match {
+    case NoOptions if hasMandatoryOptions =>
+      // If there are mandatory options we should call convert with empty options to throw expected errors
+      Some(convert(VirtualValues.EMPTY_MAP, config))
     case NoOptions => None
     case OptionsMap(map) => Some(convert(
         VirtualValues.map(
@@ -102,6 +113,8 @@ trait OptionsConverter[T] {
   implicit def operation: String
 
   def convert(options: MapValue, config: Option[Config]): T
+
+  protected val hasMandatoryOptions: Boolean = false
 }
 
 case object ServerOptionsConverter extends OptionsConverter[ServerOptions] {
@@ -271,7 +284,7 @@ object StoreFormatOption extends StringOptionValidator {
       val selectEngineConfig = Config.newBuilder()
         .set(GraphDatabaseSettings.db_format, value)
         .set(GraphDatabaseInternalSettings.include_versions_under_development, versionsUnderDev)
-        .build();
+        .build()
       StorageEngineFactory.selectStorageEngine(selectEngineConfig)
     } catch {
       case _: Exception =>
@@ -526,6 +539,21 @@ trait IndexOptionsConverter[T] extends OptionsConverter[T] {
       )
     }
 
+  protected def checkForVectorConfigValues(pp: PrettyPrinter, itemsMap: MapValue, schemaType: String): Unit =
+    if (
+      itemsMap.exists { case (p, _) =>
+        p.equalsIgnoreCase(VECTOR_DIMENSIONS.getSettingName) || p.equalsIgnoreCase(
+          VECTOR_SIMILARITY_FUNCTION.getSettingName
+        )
+      }
+    ) {
+      itemsMap.writeTo(pp)
+      throw new InvalidArgumentsException(
+        s"""Could not create $schemaType with specified index config '${pp.value()}', contains vector config options.
+           |To create vector index, please use 'CREATE VECTOR INDEX ...'.""".stripMargin
+      )
+    }
+
   protected def assertEmptyConfig(
     config: AnyValue,
     schemaType: String,
@@ -537,6 +565,7 @@ trait IndexOptionsConverter[T] extends OptionsConverter[T] {
       case itemsMap: MapValue =>
         checkForFulltextConfigValues(pp, itemsMap, schemaType)
         checkForPointConfigValues(pp, itemsMap, schemaType)
+        checkForVectorConfigValues(pp, itemsMap, schemaType)
 
         if (!itemsMap.isEmpty) {
           itemsMap.writeTo(pp)
@@ -639,6 +668,7 @@ case class CreateFulltextIndexOptionsConverter(context: QueryContext)
     config match {
       case itemsMap: MapValue =>
         checkForPointConfigValues(new PrettyPrinter(), itemsMap, schemaType)
+        checkForVectorConfigValues(new PrettyPrinter(), itemsMap, schemaType)
 
         val hm = new java.util.HashMap[String, Object]()
         itemsMap.foreach {
@@ -698,6 +728,7 @@ case class CreatePointIndexOptionsConverter(context: QueryContext)
     config match {
       case itemsMap: MapValue =>
         checkForFulltextConfigValues(new PrettyPrinter(), itemsMap, schemaType)
+        checkForVectorConfigValues(new PrettyPrinter(), itemsMap, schemaType)
 
         itemsMap.foldLeft(Map[String, Object]()) {
           case (m, (p: String, e: ListValue)) =>
@@ -710,6 +741,140 @@ case class CreatePointIndexOptionsConverter(context: QueryContext)
         }.asJava
       case unknown =>
         throw exceptionWrongType(unknown)
+    }
+  }
+
+  override def operation: String = s"create $schemaType"
+}
+
+case class CreateVectorIndexOptionsConverter(context: QueryContext)
+    extends IndexOptionsConverter[CreateIndexWithFullOptions] {
+  private val schemaType = "vector index"
+  private val dimensionsSetting = VECTOR_DIMENSIONS.getSettingName
+  private val similarityFunctionSetting = VECTOR_SIMILARITY_FUNCTION.getSettingName
+
+  override protected val hasMandatoryOptions: Boolean = true
+
+  override def convert(options: MapValue, config: Option[Config]): CreateIndexWithFullOptions = {
+    val (indexProvider, indexConfig) = getOptionsParts(options, schemaType, IndexType.VECTOR)
+
+    // We check that all mandatory settings are included if we get a config to throw errors on missing ones early.
+    // However, the validate config method isn't called when no config is given
+    // but this case should also give an error so we need to check that here.
+    assertMandatoryConfigSettingsExists(indexConfig)
+
+    CreateIndexWithFullOptions(indexProvider, indexConfig)
+  }
+
+  // VECTOR indexes has vector config settings
+  override def assertValidAndTransformConfig(config: AnyValue, schemaType: String): java.util.Map[String, Object] = {
+    // current keys: vector.(dimensions|similarity_function)
+    // current values: Long, String
+
+    def exceptionWrongType(suppliedValue: AnyValue): InvalidArgumentsException = {
+      val pp = new PrettyPrinter()
+      suppliedValue.writeTo(pp)
+      new InvalidArgumentsException(
+        s"Could not create $schemaType with specified index config '${pp.value()}'. Expected a map from String to Strings and Integers."
+      )
+    }
+
+    config match {
+      case itemsMap: MapValue =>
+        checkForFulltextConfigValues(new PrettyPrinter(), itemsMap, schemaType)
+        checkForPointConfigValues(new PrettyPrinter(), itemsMap, schemaType)
+
+        // throw error early on missing config settings
+        assertMandatoryConfigSettingsExists(itemsMap.keySet().asScala.toSet)
+
+        val hm = new java.util.HashMap[String, Object]()
+        itemsMap.foreach {
+          case (p: String, e: TextValue) =>
+            hm.put(p, e.stringValue().toUpperCase(Locale.ROOT))
+          case (p: String, e: IntValue) =>
+            hm.put(p, java.lang.Integer.valueOf(e.intValue()))
+          case (p: String, e: LongValue) =>
+            hm.put(p, java.lang.Long.valueOf(e.longValue()))
+          case _ => throw exceptionWrongType(itemsMap)
+        }
+
+        // Need to validate config settings here in the same way that is done in the procedure
+        // since the exceptions given on procedure level is nicer than the ones down in kernel
+        assertValidConfigValues(
+          hm.get(VECTOR_DIMENSIONS.getSettingName),
+          hm.get(VECTOR_SIMILARITY_FUNCTION.getSettingName)
+        )
+
+        hm
+      case unknown =>
+        throw exceptionWrongType(unknown)
+    }
+  }
+
+  private def assertMandatoryConfigSettingsExists(indexConfig: IndexConfig): Unit = {
+    val settings = indexConfig.asMap().keySet().asScala.toSet
+    // Call assert method to get the same error as for giving an empty setting map, without needing to duplicate it.
+    // If there is a config it has already been checked as part of the validation.
+    if (settings.isEmpty) {
+      assertMandatoryConfigSettingsExists(settings)
+    }
+  }
+
+  private def assertMandatoryConfigSettingsExists(givenConfigSettings: Set[String]): Unit = {
+    val hasDimensions =
+      givenConfigSettings.map(_.toLowerCase(Locale.ROOT)).contains(dimensionsSetting.toLowerCase(Locale.ROOT))
+    val hasSimilarityFunction =
+      givenConfigSettings.map(_.toLowerCase(Locale.ROOT)).contains(similarityFunctionSetting.toLowerCase(Locale.ROOT))
+
+    val missingConfig =
+      if (!hasDimensions && !hasSimilarityFunction) {
+        Some(List(dimensionsSetting, similarityFunctionSetting).sorted.mkString("'", "', '", "'"))
+      } else if (!hasDimensions) {
+        Some(s"'$dimensionsSetting'")
+      } else if (!hasSimilarityFunction) {
+        Some(s"'$similarityFunctionSetting'")
+      } else {
+        None
+      }
+    if (missingConfig.nonEmpty) {
+      throw new InvalidArgumentsException(
+        s"Failed to create $schemaType: Missing index config options [${missingConfig.get}]."
+      )
+    }
+  }
+
+  // Do the same checks as in the procedure + check for correct type
+  // The checks would still be done and errors thrown otherwise but they'd be wrapped in less helpful errors,
+  // so only looking at the top error would not give you the reason for the failure
+  private def assertValidConfigValues(dimensionValue: AnyRef, similarityFunctionValue: AnyRef): Unit = {
+    // Check dimension
+    Objects.requireNonNull(dimensionValue, s"'$dimensionsSetting' must not be null")
+    val vectorDimensionCheck = dimensionValue match {
+      case l: java.lang.Long =>
+        val vectorDimension = l.longValue()
+        1 <= vectorDimension && vectorDimension <= VectorUtils.MAX_DIMENSIONS
+      case i: Integer =>
+        val vectorDimension = i.intValue()
+        1 <= vectorDimension && vectorDimension <= VectorUtils.MAX_DIMENSIONS
+      case _ =>
+        throw new InvalidArgumentsException(
+          s"Could not create $schemaType with specified index config '$dimensionsSetting'. Expected an Integer."
+        )
+    }
+    Preconditions.checkArgument(
+      vectorDimensionCheck,
+      "'%s' must be between %d and %d inclusively".formatted(dimensionsSetting, 1, VectorUtils.MAX_DIMENSIONS)
+    )
+
+    // Check similarity function
+    Objects.requireNonNull(similarityFunctionValue, s"'$similarityFunctionSetting' must not be null")
+    similarityFunctionValue match {
+      case s: String =>
+        VectorSimilarityFunction.fromName(s)
+      case _ =>
+        throw new InvalidArgumentsException(
+          s"Could not create $schemaType with specified index config '$similarityFunctionSetting'. Expected a String."
+        )
     }
   }
 

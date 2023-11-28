@@ -266,6 +266,16 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   ): IndexDescriptor =
     singleDbHit(inner.addPointIndexRule(entityId, entityType, propertyKeyIds, name, provider, indexConfig))
 
+  override def addVectorIndexRule(
+    entityId: Int,
+    entityType: EntityType,
+    propertyKeyIds: Seq[Int],
+    name: Option[String],
+    provider: Option[IndexProviderDescriptor],
+    indexConfig: IndexConfig
+  ): IndexDescriptor =
+    singleDbHit(inner.addVectorIndexRule(entityId, entityType, propertyKeyIds, name, provider, indexConfig))
+
   override def dropIndexRule(name: String): Unit = singleDbHit(inner.dropIndexRule(name))
 
   override def getAllIndexes(): Map[IndexDescriptor, IndexInfo] = singleDbHit(inner.getAllIndexes())

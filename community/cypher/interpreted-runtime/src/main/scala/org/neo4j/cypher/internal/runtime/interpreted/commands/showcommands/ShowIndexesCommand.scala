@@ -34,7 +34,6 @@ import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.IndexInfo
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowIndexesCommand.createIndexStatement
-import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.asEscapedProcedureArgumentString
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.asEscapedString
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.barStringJoiner
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.colonStringJoiner
@@ -50,9 +49,10 @@ import org.neo4j.internal.schema.ConstraintDescriptor
 import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.internal.schema.IndexType
-import org.neo4j.kernel.api.impl.schema.vector.VectorUtils
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.BooleanValue
+import org.neo4j.values.storable.IntValue
+import org.neo4j.values.storable.LongValue
 import org.neo4j.values.storable.StringValue
 import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values
@@ -329,15 +329,14 @@ object ShowIndexesCommand {
           case _ => throw new IllegalArgumentException(s"Did not recognize entity type $entityType")
         }
       case IndexType.VECTOR =>
+        val labelsOrTypesWithColons = asEscapedString(labelsOrTypes, colonStringJoiner)
+        val vectorConfig = configAsString(indexConfig, value => vectorConfigValueAsString(value))
+        val optionsString = optionsAsString(providerName, vectorConfig)
+
         entityType match {
           case EntityType.NODE =>
-            val escapedName = asEscapedProcedureArgumentString(name)
-            val escapedLabel = asEscapedProcedureArgumentString(labelsOrTypes.head)
-            val escapedPropertyKey = asEscapedProcedureArgumentString(properties.last)
-            val dimension = VectorUtils.vectorDimensionsFrom(indexConfig)
-            val escapedSimilarityFunction =
-              asEscapedProcedureArgumentString(VectorUtils.vectorSimilarityFunctionFrom(indexConfig).name)
-            s"CALL db.index.vector.createNodeIndex($escapedName, $escapedLabel, $escapedPropertyKey, $dimension, $escapedSimilarityFunction)"
+            val escapedNodeProperties = asEscapedString(properties, propStringJoiner)
+            s"CREATE VECTOR INDEX $escapedName FOR (n$labelsOrTypesWithColons) ON ($escapedNodeProperties) OPTIONS $optionsString"
           case EntityType.RELATIONSHIP =>
             throw new IllegalArgumentException(s"$entityType not valid for $indexType index")
           case _ => throw new IllegalArgumentException(s"Did not recognize entity type $entityType")
@@ -358,6 +357,15 @@ object ShowIndexesCommand {
     configValue match {
       case booleanValue: BooleanValue => booleanValue.booleanValue().toString
       case stringValue: StringValue   => "'" + stringValue.stringValue() + "'"
+      case _ => throw new IllegalArgumentException(s"Could not convert config value '$configValue' to config string.")
+    }
+  }
+
+  private def vectorConfigValueAsString(configValue: Value): String = {
+    configValue match {
+      case intValue: IntValue       => intValue.intValue().toString
+      case longValue: LongValue     => longValue.longValue().toString
+      case stringValue: StringValue => "'" + stringValue.stringValue() + "'"
       case _ => throw new IllegalArgumentException(s"Could not convert config value '$configValue' to config string.")
     }
   }

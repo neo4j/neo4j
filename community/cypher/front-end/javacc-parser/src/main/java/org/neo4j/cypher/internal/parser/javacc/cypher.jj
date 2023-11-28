@@ -4999,6 +4999,7 @@ SCHEMA_COMMAND CreateIndex( Token start, boolean replace ) throws Exception:
         | <FULLTEXT> <INDEX> command=createFulltextIndex( start, replace )
         | <TEXT> <INDEX> command=createIndex( start, replace, CreateIndexTypes.TEXT )
         | <POINT> <INDEX> command=createIndex( start, replace, CreateIndexTypes.POINT )
+        | <VECTOR> <INDEX> command=createIndex( start, replace, CreateIndexTypes.VECTOR )
         | <LOOKUP> <INDEX> command=createLookupIndex( start, replace )
         | <INDEX> (
             LOOKAHEAD(<ON> <COLON>) <ON> command=oldCreateIndex( start, replace ) // old syntax: CREATE INDEX ON :nodeLabel(prop1, prop2)
@@ -5038,7 +5039,7 @@ SCHEMA_COMMAND createIndex( Token start, boolean replace, CreateIndexTypes index
     SimpleEither<Map<String, EXPRESSION>, PARAMETER> options = null;
 }
 {
-    //CREATE [RANGE | BTREE | TEXT | POINT] INDEX FOR (n:label) ON (n.prop)
+    //CREATE [RANGE | BTREE | TEXT | POINT | VECTOR] INDEX FOR (n:label) ON (n.prop)
     (
         //lookaheads for potential symbolicNames "for", "if"
         LOOKAHEAD(<FOR> <LPAREN>) <FOR> <LPAREN>

@@ -30,6 +30,7 @@ import org.neo4j.graphdb.schema.ConstraintDefinition
 import org.neo4j.graphdb.schema.ConstraintType
 import org.neo4j.graphdb.schema.IndexDefinition
 import org.neo4j.graphdb.schema.IndexSetting
+import org.neo4j.graphdb.schema.IndexSettingImpl
 import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.graphdb.schema.PropertyType
 import org.neo4j.internal.helpers.collection.Iterables
@@ -50,7 +51,6 @@ import org.neo4j.kernel.impl.util.ValueUtils
 import java.util.concurrent.TimeUnit
 
 import scala.jdk.CollectionConverters.IterableHasAsScala
-import scala.jdk.CollectionConverters.MapHasAsJava
 import scala.jdk.CollectionConverters.MapHasAsScala
 
 trait GraphIcing {
@@ -291,12 +291,12 @@ trait GraphIcing {
       createNodeIndex(None, label, Seq(property), IndexType.TEXT)
     }
 
-    def createTextNodeIndexWithOptions(
+    def createTextNodeIndexWithProvider(
       label: String,
       property: String,
-      options: Map[String, String]
+      provider: String
     ): IndexDefinition = {
-      createNodeIndex(None, label, Seq(property), IndexType.TEXT, options = options)
+      createNodeIndex(None, label, Seq(property), IndexType.TEXT, maybeProvider = Some(provider))
     }
 
     def createTextNodeIndexWithName(name: String, label: String, property: String): IndexDefinition = {
@@ -307,12 +307,12 @@ trait GraphIcing {
       createRelationshipIndex(None, relType, Seq(property), IndexType.TEXT)
     }
 
-    def createTextRelationshipIndexWithOptions(
+    def createTextRelationshipIndexWithProvider(
       relType: String,
       property: String,
-      options: Map[String, String]
+      provider: String
     ): IndexDefinition = {
-      createRelationshipIndex(None, relType, Seq(property), IndexType.TEXT, options = options)
+      createRelationshipIndex(None, relType, Seq(property), IndexType.TEXT, maybeProvider = Some(provider))
     }
 
     def createTextRelationshipIndexWithName(name: String, relType: String, property: String): IndexDefinition = {
@@ -337,6 +337,45 @@ trait GraphIcing {
       createRelationshipIndex(Some(name), relType, Seq(property), IndexType.POINT)
     }
 
+    // Create vector index
+
+    def createNodeVectorIndex(
+      name: String,
+      label: String,
+      property: String,
+      dimensions: Int,
+      similarityFunction: String
+    ): IndexDefinition = {
+      createNodeIndex(
+        Some(name),
+        label,
+        Seq(property),
+        IndexType.VECTOR,
+        maybeConfig = Some(getVectorConfigMap(dimensions, similarityFunction))
+      )
+    }
+
+    def createNodeVectorIndex(
+      label: String,
+      property: String,
+      dimensions: Int,
+      similarityFunction: String
+    ): IndexDefinition = {
+      createNodeIndex(
+        None,
+        label,
+        Seq(property),
+        IndexType.VECTOR,
+        maybeConfig = Some(getVectorConfigMap(dimensions, similarityFunction))
+      )
+    }
+
+    private def getVectorConfigMap(dimensions: Int, similarityFunction: String): Map[String, String] =
+      Map(
+        IndexSettingImpl.VECTOR_DIMENSIONS.getSettingName -> dimensions.toString,
+        IndexSettingImpl.VECTOR_SIMILARITY_FUNCTION.getSettingName -> s"'$similarityFunction'"
+      )
+
     // Create label/prop index help methods
 
     private def createNodeIndex(
@@ -344,7 +383,8 @@ trait GraphIcing {
       label: String,
       properties: Seq[String],
       indexType: IndexType = IndexType.RANGE,
-      options: Map[String, String] = Map.empty
+      maybeProvider: Option[String] = None,
+      maybeConfig: Option[Map[String, String]] = None
     ): IndexDefinition = {
       createIndex(
         maybeName,
@@ -352,7 +392,8 @@ trait GraphIcing {
         properties,
         indexType,
         () => getNodeIndex(label, properties, indexType),
-        options
+        maybeProvider,
+        maybeConfig
       )
     }
 
@@ -361,7 +402,8 @@ trait GraphIcing {
       relType: String,
       properties: Seq[String],
       indexType: IndexType = IndexType.RANGE,
-      options: Map[String, String] = Map.empty
+      maybeProvider: Option[String] = None,
+      maybeConfig: Option[Map[String, String]] = None
     ): IndexDefinition = {
       createIndex(
         maybeName,
@@ -369,7 +411,8 @@ trait GraphIcing {
         properties,
         indexType,
         () => getRelIndex(relType, properties, indexType),
-        options
+        maybeProvider,
+        maybeConfig
       )
     }
 
@@ -379,27 +422,33 @@ trait GraphIcing {
       properties: Seq[String],
       indexType: IndexType,
       getIndex: () => IndexDefinition,
-      options: Map[String, String]
+      maybeProvider: Option[String],
+      maybeConfig: Option[Map[String, String]]
     ): IndexDefinition = {
       val nameString = maybeName.map(n => s" `$n`").getOrElse("")
       withTx(tx => {
         tx.execute(
-          s"CREATE $indexType INDEX$nameString FOR $pattern ON (${properties.map(p => s"e.`$p`").mkString(",")})${optionsString(options)}"
+          s"""CREATE $indexType INDEX$nameString
+             |FOR $pattern ON (${properties.map(p => s"e.`$p`").mkString(",")})
+             |${optionsString(maybeProvider, maybeConfig)}""".stripMargin
         )
       })
       awaitIndexesOnline()
       getIndex()
     }
 
-    private def optionsString(options: Map[String, String]): String = {
-      if (options.nonEmpty) {
-        val keyValueString = options
-          .map { case (key, value) => s"$key: '$value'" }
-          .mkString("{ ", ", ", "}")
-        " OPTIONS " + keyValueString
-      } else {
-        ""
+    private def optionsString(maybeProvider: Option[String], maybeConfig: Option[Map[String, String]]): String = {
+      val provider = maybeProvider.map(value => s"indexProvider: '$value'")
+      val config = maybeConfig.map(c =>
+        c.map { case (key, value) => s"`$key`: $value" }.mkString("indexConfig: {", ", ", "}")
+      )
+      val maybeOptions = (provider, config) match {
+        case (Some(p), Some(c)) => Some(s"$p, $c")
+        case (Some(p), _)       => Some(p)
+        case (_, Some(c))       => Some(c)
+        case _                  => None
       }
+      maybeOptions.map(options => s" OPTIONS {$options}").getOrElse("")
     }
 
     // Create fulltext index
@@ -446,30 +495,6 @@ trait GraphIcing {
       })
       awaitIndexesOnline()
       getIndex()
-    }
-
-    // Create vector index
-
-    def createNodeVectorIndex(
-      name: String,
-      label: String,
-      property: String,
-      dimensions: Int,
-      similarityFunction: String
-    ): Unit = {
-      withTx(tx =>
-        tx.execute(
-          "CALL db.index.vector.createNodeIndex($name, $label, $prop, $dimensions, $simFunc)",
-          Map[String, AnyRef](
-            "name" -> name,
-            "label" -> label,
-            "prop" -> property,
-            "dimensions" -> dimensions.asInstanceOf[AnyRef],
-            "simFunc" -> similarityFunction
-          ).asJava
-        )
-      )
-      awaitIndexesOnline()
     }
 
     // Create and drop lookup index

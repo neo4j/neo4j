@@ -646,6 +646,19 @@ class ExceptionTranslatingQueryContext(override val inner: QueryContext)
       inner.addPointIndexRule(entityId, entityType, propertyKeyIds, name, provider, indexConfig)
     )
 
+  override def addVectorIndexRule(
+    entityId: Int,
+    entityType: EntityType,
+    propertyKeyIds: Seq[Int],
+    name: Option[String],
+    provider: Option[IndexProviderDescriptor],
+    indexConfig: IndexConfig
+  ): IndexDescriptor =
+    translateException(
+      tokenNameLookup,
+      inner.addVectorIndexRule(entityId, entityType, propertyKeyIds, name, provider, indexConfig)
+    )
+
   override def dropIndexRule(name: String): Unit =
     translateException(tokenNameLookup, inner.dropIndexRule(name))
 

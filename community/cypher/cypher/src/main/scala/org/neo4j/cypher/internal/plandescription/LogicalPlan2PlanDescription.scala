@@ -89,6 +89,7 @@ import org.neo4j.cypher.internal.logical.plans.CreateLookupIndex
 import org.neo4j.cypher.internal.logical.plans.CreatePointIndex
 import org.neo4j.cypher.internal.logical.plans.CreateRangeIndex
 import org.neo4j.cypher.internal.logical.plans.CreateTextIndex
+import org.neo4j.cypher.internal.logical.plans.CreateVectorIndex
 import org.neo4j.cypher.internal.logical.plans.DeleteExpression
 import org.neo4j.cypher.internal.logical.plans.DeleteNode
 import org.neo4j.cypher.internal.logical.plans.DeletePath
@@ -1112,6 +1113,23 @@ case class LogicalPlan2PlanDescription(
           "CreateIndex",
           NoChildren,
           Seq(Details(pointIndexInfo(nameOption, entityName, propertyKeyNames, options))),
+          variables,
+          withRawCardinalities,
+          withDistinctness
+        )
+
+      case CreateVectorIndex(
+          _,
+          entityName,
+          propertyKeyNames,
+          nameOption,
+          options
+        ) => // Can be both a leaf plan and a middle plan so need to be in both places
+        PlanDescriptionImpl(
+          id,
+          "CreateIndex",
+          NoChildren,
+          Seq(Details(vectorIndexInfo(nameOption, entityName, propertyKeyNames, options))),
           variables,
           withRawCardinalities,
           withDistinctness
@@ -2221,6 +2239,23 @@ case class LogicalPlan2PlanDescription(
           withDistinctness
         )
 
+      case CreateVectorIndex(
+          _,
+          entityName,
+          propertyKeyNames,
+          nameOption,
+          options
+        ) => // Can be both a leaf plan and a middle plan so need to be in both places
+        PlanDescriptionImpl(
+          id,
+          "CreateIndex",
+          children,
+          Seq(Details(vectorIndexInfo(nameOption, entityName, propertyKeyNames, options))),
+          variables,
+          withRawCardinalities,
+          withDistinctness
+        )
+
       case CreateConstraint(
           _,
           constraintType,
@@ -3186,6 +3221,14 @@ case class LogicalPlan2PlanDescription(
     options: Options
   ): PrettyString =
     indexInfo("POINT", nameOption, entityName, properties, options)
+
+  private def vectorIndexInfo(
+    nameOption: Option[String],
+    entityName: ElementTypeName,
+    properties: Seq[PropertyKeyName],
+    options: Options
+  ): PrettyString =
+    indexInfo("VECTOR", nameOption, entityName, properties, options)
 
   private def fulltextIndexInfo(
     nameOption: Option[String],

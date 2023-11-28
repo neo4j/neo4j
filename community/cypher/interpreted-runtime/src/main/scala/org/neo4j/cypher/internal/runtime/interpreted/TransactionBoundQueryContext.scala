@@ -308,6 +308,20 @@ sealed class TransactionBoundQueryContext(
     addIndexRule(descriptor, prototypeWithConfig)
   }
 
+  override def addVectorIndexRule(
+    entityId: Int,
+    entityType: EntityType,
+    propertyKeyIds: Seq[Int],
+    name: Option[String],
+    provider: Option[IndexProviderDescriptor],
+    indexConfig: IndexConfig
+  ): IndexDescriptor = {
+    val (descriptor, prototype) =
+      getIndexDescriptorAndPrototype(IndexType.VECTOR, entityId, entityType, propertyKeyIds, name, provider)
+    val prototypeWithConfig = prototype.withIndexConfig(indexConfig)
+    addIndexRule(descriptor, prototypeWithConfig)
+  }
+
   private def getIndexDescriptorAndPrototype(
     indexType: IndexType,
     entityId: Int,

@@ -23,6 +23,7 @@ public enum CreateIndexTypes {
     LOOKUP("LOOKUP"),
     TEXT("TEXT"),
     POINT("POINT"),
+    VECTOR("VECTOR"),
     DEFAULT("DEFAULT"),
     INVALID("INVALID");
 

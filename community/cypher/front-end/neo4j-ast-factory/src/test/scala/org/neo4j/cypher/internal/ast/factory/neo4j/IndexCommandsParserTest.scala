@@ -1719,6 +1719,252 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
   }
 
+  // vector loop (relationship currently fails in semantic checking with a nicer error)
+  Seq(
+    ("(n1:Person)", vectorNodeIndex: CreateIndexFunction),
+    ("()-[n1:R]-()", vectorRelIndex: CreateIndexFunction),
+    ("()-[n1:R]->()", vectorRelIndex: CreateIndexFunction),
+    ("()<-[n1:R]-()", vectorRelIndex: CreateIndexFunction)
+  ).foreach {
+    case (pattern, createIndex: CreateIndexFunction) =>
+      test(s"CREATE VECTOR INDEX FOR $pattern ON (n2.name)") {
+        yields(createIndex(List(prop("n2", "name")), None, posN2(testName), ast.IfExistsThrowError, ast.NoOptions))
+      }
+
+      test(s"USE neo4j CREATE VECTOR INDEX FOR $pattern ON (n2.name)") {
+        yields(_ =>
+          createIndex(List(prop("n2", "name")), None, posN2(testName), ast.IfExistsThrowError, ast.NoOptions).withGraph(
+            Some(use(varFor("neo4j")))
+          )
+        )
+      }
+
+      test(s"CREATE VECTOR INDEX FOR $pattern ON (n2.name, n3.age)") {
+        yields(createIndex(
+          List(prop("n2", "name"), prop("n3", "age")),
+          None,
+          posN2(testName),
+          ast.IfExistsThrowError,
+          ast.NoOptions
+        ))
+      }
+
+      test(s"CREATE VECTOR INDEX my_index FOR $pattern ON (n2.name)") {
+        yields(createIndex(
+          List(prop("n2", "name")),
+          Some("my_index"),
+          posN2(testName),
+          ast.IfExistsThrowError,
+          ast.NoOptions
+        ))
+      }
+
+      test(s"CREATE VECTOR INDEX my_index FOR $pattern ON (n2.name, n3.age)") {
+        yields(createIndex(
+          List(prop("n2", "name"), prop("n3", "age")),
+          Some("my_index"),
+          posN2(testName),
+          ast.IfExistsThrowError,
+          ast.NoOptions
+        ))
+      }
+
+      test(s"CREATE VECTOR INDEX `$$my_index` FOR $pattern ON (n2.name)") {
+        yields(createIndex(
+          List(prop("n2", "name")),
+          Some("$my_index"),
+          posN2(testName),
+          ast.IfExistsThrowError,
+          ast.NoOptions
+        ))
+      }
+
+      test(s"CREATE OR REPLACE VECTOR INDEX FOR $pattern ON (n2.name)") {
+        yields(createIndex(List(prop("n2", "name")), None, posN2(testName), ast.IfExistsReplace, ast.NoOptions))
+      }
+
+      test(s"CREATE OR REPLACE VECTOR INDEX my_index FOR $pattern ON (n2.name, n3.age)") {
+        yields(createIndex(
+          List(prop("n2", "name"), prop("n3", "age")),
+          Some("my_index"),
+          posN2(testName),
+          ast.IfExistsReplace,
+          ast.NoOptions
+        ))
+      }
+
+      test(s"CREATE OR REPLACE VECTOR INDEX IF NOT EXISTS FOR $pattern ON (n2.name)") {
+        yields(createIndex(List(prop("n2", "name")), None, posN2(testName), ast.IfExistsInvalidSyntax, ast.NoOptions))
+      }
+
+      test(s"CREATE OR REPLACE VECTOR INDEX my_index IF NOT EXISTS FOR $pattern ON (n2.name)") {
+        yields(createIndex(
+          List(prop("n2", "name")),
+          Some("my_index"),
+          posN2(testName),
+          ast.IfExistsInvalidSyntax,
+          ast.NoOptions
+        ))
+      }
+
+      test(s"CREATE VECTOR INDEX IF NOT EXISTS FOR $pattern ON (n2.name, n3.age)") {
+        yields(createIndex(
+          List(prop("n2", "name"), prop("n3", "age")),
+          None,
+          posN2(testName),
+          ast.IfExistsDoNothing,
+          ast.NoOptions
+        ))
+      }
+
+      test(s"CREATE VECTOR INDEX my_index IF NOT EXISTS FOR $pattern ON (n2.name)") {
+        yields(createIndex(
+          List(prop("n2", "name")),
+          Some("my_index"),
+          posN2(testName),
+          ast.IfExistsDoNothing,
+          ast.NoOptions
+        ))
+      }
+
+      test(s"CREATE VECTOR INDEX FOR $pattern ON (n2.name) OPTIONS {indexProvider : 'vector-1.0'}") {
+        yields(createIndex(
+          List(prop("n2", "name")),
+          None,
+          posN2(testName),
+          ast.IfExistsThrowError,
+          ast.OptionsMap(Map("indexProvider" -> literalString("vector-1.0")))
+        ))
+      }
+
+      test(
+        s"CREATE VECTOR INDEX FOR $pattern ON (n2.name) OPTIONS {indexProvider : 'vector-1.0', indexConfig : {`vector.dimensions`: 50, `vector.similarity_function`: 'euclidean' }}"
+      ) {
+        yields(createIndex(
+          List(prop("n2", "name")),
+          None,
+          posN2(testName),
+          ast.IfExistsThrowError,
+          ast.OptionsMap(Map(
+            "indexProvider" -> literalString("vector-1.0"),
+            "indexConfig" -> mapOf(
+              "vector.dimensions" -> literalInt(50),
+              "vector.similarity_function" -> literalString("euclidean")
+            )
+          ))
+        ))
+      }
+
+      test(
+        s"CREATE VECTOR INDEX FOR $pattern ON (n2.name) OPTIONS {indexConfig : {`vector.dimensions`: 50, `vector.similarity_function`: 'cosine' }, indexProvider : 'vector-1.0'}"
+      ) {
+        yields(createIndex(
+          List(prop("n2", "name")),
+          None,
+          posN2(testName),
+          ast.IfExistsThrowError,
+          ast.OptionsMap(Map(
+            "indexProvider" -> literalString("vector-1.0"),
+            "indexConfig" -> mapOf(
+              "vector.dimensions" -> literalInt(50),
+              "vector.similarity_function" -> literalString("cosine")
+            )
+          ))
+        ))
+      }
+
+      test(
+        s"CREATE VECTOR INDEX FOR $pattern ON (n2.name) OPTIONS {indexConfig : {`vector.dimensions`: 50, `vector.similarity_function`: 'cosine' }}"
+      ) {
+        yields(createIndex(
+          List(prop("n2", "name")),
+          None,
+          posN2(testName),
+          ast.IfExistsThrowError,
+          ast.OptionsMap(Map("indexConfig" -> mapOf(
+            "vector.dimensions" -> literalInt(50),
+            "vector.similarity_function" -> literalString("cosine")
+          )))
+        ))
+      }
+
+      test(s"CREATE VECTOR INDEX FOR $pattern ON (n2.name) OPTIONS $$options") {
+        yields(createIndex(
+          List(prop("n2", "name")),
+          None,
+          posN2(testName),
+          ast.IfExistsThrowError,
+          ast.OptionsParam(parameter("options", CTMap))
+        ))
+      }
+
+      test(s"CREATE VECTOR INDEX FOR $pattern ON (n2.name) OPTIONS {nonValidOption : 42}") {
+        yields(createIndex(
+          List(prop("n2", "name")),
+          None,
+          posN2(testName),
+          ast.IfExistsThrowError,
+          ast.OptionsMap(Map("nonValidOption" -> literalInt(42)))
+        ))
+      }
+
+      test(s"CREATE VECTOR INDEX my_index FOR $pattern ON (n2.name) OPTIONS {}") {
+        yields(createIndex(
+          List(prop("n2", "name")),
+          Some("my_index"),
+          posN2(testName),
+          ast.IfExistsThrowError,
+          ast.OptionsMap(Map.empty)
+        ))
+      }
+
+      test(s"CREATE VECTOR INDEX $$my_index FOR $pattern ON (n.name)") {
+        assertFailsWithMessageStart(testName, """Invalid input '$': expected "FOR", "IF" or an identifier""")
+      }
+
+      test(s"CREATE VECTOR INDEX FOR $pattern ON n2.name") {
+        assertAst(createIndex(
+          List(prop("n2", "name", posN2(testName))),
+          None,
+          posN1(testName),
+          ast.IfExistsThrowError,
+          ast.NoOptions
+        )(defaultPos))
+      }
+
+      test(s"CREATE VECTOR INDEX my_index FOR $pattern ON n2.name") {
+        assertAst(createIndex(
+          List(prop("n2", "name", posN2(testName))),
+          Some("my_index"),
+          posN1(testName),
+          ast.IfExistsThrowError,
+          ast.NoOptions
+        )(defaultPos))
+      }
+
+      test(s"CREATE OR REPLACE VECTOR INDEX IF NOT EXISTS FOR $pattern ON n2.name") {
+        assertAst(createIndex(
+          List(prop("n2", "name", posN2(testName))),
+          None,
+          posN1(testName),
+          ast.IfExistsInvalidSyntax,
+          ast.NoOptions
+        )(defaultPos))
+      }
+
+      test(s"CREATE VECTOR INDEX FOR $pattern ON n2.name, n3.age") {
+        assertFailsWithMessageStart(testName, """Invalid input ',': expected "OPTIONS" or <EOF>""")
+      }
+
+      test(s"CREATE VECTOR INDEX FOR $pattern ON (n.name) {indexProvider : 'vector-1.0'}") {
+        failsToParse
+      }
+
+      test(s"CREATE VECTOR INDEX FOR $pattern ON (n.name) OPTIONS") {
+        failsToParse
+      }
+  }
+
   test("CREATE LOOKUP INDEX FOR (x1) ON EACH labels(x2)") {
     yields(ast.CreateLookupIndex(
       varFor("x1"),
@@ -2030,6 +2276,69 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("CREATE POINT INDEX FOR ()-[n1:R]-(n2:A) ON (n2.name)") {
+    // variable on node
+    assertFailsWithMessageStart(testName, """Invalid input 'n2': expected ")"""")
+  }
+
+  test("CREATE VECTOR INDEX FOR n1:Person ON (n2.name)") {
+    failsToParse
+  }
+
+  test("CREATE VECTOR INDEX FOR (n1) ON (n2.name)") {
+    // missing label
+    failsToParse
+  }
+
+  test("CREATE VECTOR INDEX FOR ()-[n1]-() ON (n2.name)") {
+    // missing relationship type
+    failsToParse
+  }
+
+  test("CREATE VECTOR INDEX FOR -[r1:R]-() ON (r2.name)") {
+    failsToParse
+  }
+
+  test("CREATE VECTOR INDEX FOR ()-[r1:R]- ON (r2.name)") {
+    assertFailsWithMessage(
+      testName,
+      "Invalid input 'ON': expected \"(\", \">\" or <ARROW_RIGHT_HEAD> (line 1, column 36 (offset: 35))"
+    )
+  }
+
+  test("CREATE VECTOR INDEX FOR -[r1:R]- ON (r2.name)") {
+    failsToParse
+  }
+
+  test("CREATE VECTOR INDEX FOR [r1:R] ON (r2.name)") {
+    failsToParse
+  }
+
+  test("CREATE VECTOR INDEX FOR (:A)-[n1:R]-() ON (n2.name)") {
+    // label on node
+    assertFailsWithMessageStart(testName, """Invalid input ':': expected ")" or an identifier""")
+  }
+
+  test("CREATE VECTOR INDEX FOR ()-[n1:R]-(:A) ON (n2.name)") {
+    // label on node
+    assertFailsWithMessageStart(testName, """Invalid input ':': expected ")"""")
+  }
+
+  test("CREATE VECTOR INDEX FOR (n2)-[n1:R]-() ON (n2.name)") {
+    // variable on node
+    assertFailsWithMessageStart(testName, """Invalid input ')': expected ":"""")
+  }
+
+  test("CREATE VECTOR INDEX FOR ()-[n1:R]-(n2) ON (n2.name)") {
+    // variable on node
+    assertFailsWithMessageStart(testName, """Invalid input 'n2': expected ")"""")
+  }
+
+  test("CREATE VECTOR INDEX FOR (n2:A)-[n1:R]-() ON (n2.name)") {
+    // variable on node
+    assertFailsWithMessageStart(testName, """Invalid input '-': expected "ON"""")
+  }
+
+  test("CREATE VECTOR INDEX FOR ()-[n1:R]-(n2:A) ON (n2.name)") {
     // variable on node
     assertFailsWithMessageStart(testName, """Invalid input 'n2': expected ")"""")
   }
@@ -2458,6 +2767,39 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     options: ast.Options
   ): InputPosition => ast.CreateIndex = {
     ast.CreatePointRelationshipIndex(
+      Variable("n1")(varPos),
+      RelTypeName("R")(increasePos(varPos, 3)),
+      props,
+      name,
+      ifExistsDo,
+      options
+    )
+  }
+
+  private def vectorNodeIndex(
+    props: List[Property],
+    name: Option[String],
+    varPos: InputPosition,
+    ifExistsDo: ast.IfExistsDo,
+    options: ast.Options
+  ): InputPosition => ast.CreateIndex =
+    ast.CreateVectorNodeIndex(
+      Variable("n1")(varPos),
+      LabelName("Person")(increasePos(varPos, 3)),
+      props,
+      name,
+      ifExistsDo,
+      options
+    )
+
+  private def vectorRelIndex(
+    props: List[Property],
+    name: Option[String],
+    varPos: InputPosition,
+    ifExistsDo: ast.IfExistsDo,
+    options: ast.Options
+  ): InputPosition => ast.CreateIndex = {
+    ast.CreateVectorRelationshipIndex(
       Variable("n1")(varPos),
       RelTypeName("R")(increasePos(varPos, 3)),
       props,

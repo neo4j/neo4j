@@ -48,6 +48,8 @@ import org.neo4j.graphdb.schema.IndexSettingImpl.SPATIAL_WGS84_3D_MAX
 import org.neo4j.graphdb.schema.IndexSettingImpl.SPATIAL_WGS84_3D_MIN
 import org.neo4j.graphdb.schema.IndexSettingImpl.SPATIAL_WGS84_MAX
 import org.neo4j.graphdb.schema.IndexSettingImpl.SPATIAL_WGS84_MIN
+import org.neo4j.graphdb.schema.IndexSettingImpl.VECTOR_DIMENSIONS
+import org.neo4j.graphdb.schema.IndexSettingImpl.VECTOR_SIMILARITY_FUNCTION
 import org.neo4j.graphdb.schema.IndexSettingUtil
 import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexPrototype
@@ -197,8 +199,13 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
     entries.each(kv => builder.add(kv.getOne, kv.getTwo))
     builder.build
   }
-  private val vectorDimensions = VectorUtils.vectorDimensionsFrom(nodeVectorConfig)
-  private val vectorSimilarityFunction = VectorUtils.vectorSimilarityFunctionFrom(nodeVectorConfig).name
+  private val vectorDimensions = VECTOR_DIMENSIONS.getSettingName
+  private val vectorSimilarityFunction = VECTOR_SIMILARITY_FUNCTION.getSettingName
+  private val vectorDimensionsValue = VectorUtils.vectorDimensionsFrom(nodeVectorConfig)
+  private val vectorSimilarityFunctionValue = VectorUtils.vectorSimilarityFunctionFrom(nodeVectorConfig).name
+
+  private val nodeVectorConfigMapString =
+    s"{`$vectorDimensions`: $vectorDimensionsValue,`$vectorSimilarityFunction`: '$vectorSimilarityFunctionValue'}"
 
   private val rangeNodeIndexDescriptor =
     IndexPrototype.forSchema(labelDescriptor, RangeIndexProvider.DESCRIPTOR).withName("index00").materialise(0)
@@ -848,8 +855,8 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
       properties = List(prop),
       provider = vectorProvider,
       options = Map("indexProvider" -> Values.stringValue(vectorProvider), "indexConfig" -> nodeVectorConfigMap),
-      createStatement =
-        s"CALL db.index.vector.createNodeIndex('index10', '$label', '$prop', $vectorDimensions, '$vectorSimilarityFunction')"
+      createStatement = s"CREATE VECTOR INDEX `index10` FOR (n:`$label`) ON (n.`$prop`) " +
+        s"OPTIONS {indexConfig: $nodeVectorConfigMapString, indexProvider: '$vectorProvider'}"
     )
   }
 
@@ -1120,8 +1127,8 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
       properties = List(prop),
       provider = vectorProvider,
       options = Map("indexProvider" -> Values.stringValue(vectorProvider), "indexConfig" -> nodeVectorConfigMap),
-      createStatement =
-        s"CALL db.index.vector.createNodeIndex('index10', '$label', '$prop', $vectorDimensions, '$vectorSimilarityFunction')"
+      createStatement = s"CREATE VECTOR INDEX `index10` FOR (n:`$label`) ON (n.`$prop`) " +
+        s"OPTIONS {indexConfig: $nodeVectorConfigMapString, indexProvider: '$vectorProvider'}"
     )
   }
 
