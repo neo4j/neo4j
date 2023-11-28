@@ -2020,6 +2020,24 @@ class PrettifierIT extends CypherFunSuite {
             s"$action TRAVERSE ON GRAPH FoO FOR (Bar) WHERE Bar.fOO IN [$$foo] $preposition role",
           s"$action traverse on graph FoO for (Bar) where not Bar.fOO in [1] $preposition role" ->
             s"$action TRAVERSE ON GRAPH FoO FOR (Bar) WHERE NOT Bar.fOO IN [1] $preposition role",
+          s"$action traverse on graph FoO FOR (Bar) WHERE not Bar.fOO in $$foo $preposition role" ->
+            s"$action TRAVERSE ON GRAPH FoO FOR (Bar) WHERE NOT Bar.fOO IN $$foo $preposition role",
+          s"$action traverse on graph FoO FOR (Bar) WHERE 1 > Bar.fOO $preposition role" ->
+            s"$action TRAVERSE ON GRAPH FoO FOR (Bar) WHERE 1 > Bar.fOO $preposition role",
+          s"$action traverse on graph FoO FOR (Bar) WHERE not Bar.fOO > $$foo $preposition role" ->
+            s"$action TRAVERSE ON GRAPH FoO FOR (Bar) WHERE NOT Bar.fOO > $$foo $preposition role",
+          s"$action traverse on graph FoO FOR (Bar) WHERE not Bar.fOO >= 1.0 $preposition role" ->
+            s"$action TRAVERSE ON GRAPH FoO FOR (Bar) WHERE NOT Bar.fOO >= 1.0 $preposition role",
+          s"$action traverse on graph FoO FOR (Bar) WHERE Bar.fOO >= $$foo $preposition role" ->
+            s"$action TRAVERSE ON GRAPH FoO FOR (Bar) WHERE Bar.fOO >= $$foo $preposition role",
+          s"$action traverse on graph FoO FOR (Bar) WHERE Bar.fOO < 1 $preposition role" ->
+            s"$action TRAVERSE ON GRAPH FoO FOR (Bar) WHERE Bar.fOO < 1 $preposition role",
+          s"$action traverse on graph FoO FOR (Bar) WHERE not Bar.fOO < $$foo $preposition role" ->
+            s"$action TRAVERSE ON GRAPH FoO FOR (Bar) WHERE NOT Bar.fOO < $$foo $preposition role",
+          s"$action traverse on graph FoO FOR (Bar) WHERE Bar.fOO <= 1.0 $preposition role" ->
+            s"$action TRAVERSE ON GRAPH FoO FOR (Bar) WHERE Bar.fOO <= 1.0 $preposition role",
+          s"$action traverse on graph FoO FOR (Bar) WHERE not Bar.fOO <= $$foo $preposition role" ->
+            s"$action TRAVERSE ON GRAPH FoO FOR (Bar) WHERE NOT Bar.fOO <= $$foo $preposition role",
           s"$action traverse on graph * relationships * $preposition role" ->
             s"$action TRAVERSE ON GRAPH * RELATIONSHIPS * $preposition role",
           s"$action traverse on graph * relationships * (*) $preposition role" ->
@@ -2092,6 +2110,24 @@ class PrettifierIT extends CypherFunSuite {
             s"$action READ {*} ON GRAPH FoO FOR (Bar) WHERE Bar.fOO IN [1] $preposition role",
           s"$action read {*} on graph FoO FOR (Bar) WHERE not Bar.fOO in [$$foo] $preposition role" ->
             s"$action READ {*} ON GRAPH FoO FOR (Bar) WHERE NOT Bar.fOO IN [$$foo] $preposition role",
+          s"$action read {*} on graph FoO FOR (Bar) WHERE not Bar.fOO in $$foo $preposition role" ->
+            s"$action READ {*} ON GRAPH FoO FOR (Bar) WHERE NOT Bar.fOO IN $$foo $preposition role",
+          s"$action read {*} on graph FoO FOR (Bar) WHERE Bar.fOO > 1 $preposition role" ->
+            s"$action READ {*} ON GRAPH FoO FOR (Bar) WHERE Bar.fOO > 1 $preposition role",
+          s"$action read {*} on graph FoO FOR (Bar) WHERE not Bar.fOO > $$foo $preposition role" ->
+            s"$action READ {*} ON GRAPH FoO FOR (Bar) WHERE NOT Bar.fOO > $$foo $preposition role",
+          s"$action read {*} on graph FoO FOR (Bar) WHERE not Bar.fOO >= 1.0 $preposition role" ->
+            s"$action READ {*} ON GRAPH FoO FOR (Bar) WHERE NOT Bar.fOO >= 1.0 $preposition role",
+          s"$action read {*} on graph FoO FOR (Bar) WHERE Bar.fOO >= $$foo $preposition role" ->
+            s"$action READ {*} ON GRAPH FoO FOR (Bar) WHERE Bar.fOO >= $$foo $preposition role",
+          s"$action read {*} on graph FoO FOR (Bar) WHERE Bar.fOO < 1 $preposition role" ->
+            s"$action READ {*} ON GRAPH FoO FOR (Bar) WHERE Bar.fOO < 1 $preposition role",
+          s"$action read {*} on graph FoO FOR (Bar) WHERE not $$foo < Bar.fOO $preposition role" ->
+            s"$action READ {*} ON GRAPH FoO FOR (Bar) WHERE NOT $$foo < Bar.fOO $preposition role",
+          s"$action read {*} on graph FoO FOR (Bar) WHERE 1.0 <= Bar.fOO $preposition role" ->
+            s"$action READ {*} ON GRAPH FoO FOR (Bar) WHERE 1.0 <= Bar.fOO $preposition role",
+          s"$action read {*} on graph FoO FOR (Bar) WHERE not Bar.fOO <= $$foo $preposition role" ->
+            s"$action READ {*} ON GRAPH FoO FOR (Bar) WHERE NOT Bar.fOO <= $$foo $preposition role",
           s"$action read {*} on graph $$foo relationships * (*) $preposition role" ->
             s"$action READ {*} ON GRAPH $$foo RELATIONSHIPS * $preposition role",
           s"$action read {*} on graph foo, bar relationships * (*) $preposition role" ->
@@ -2148,6 +2184,24 @@ class PrettifierIT extends CypherFunSuite {
             s"$action MATCH {*} ON GRAPH FoO FOR (Bar) WHERE Bar.fOO IN [true] $preposition role",
           s"$action match {*} on graph FoO FOR (Bar) WHERE not Bar.fOO in [$$foo] $preposition role" ->
             s"$action MATCH {*} ON GRAPH FoO FOR (Bar) WHERE NOT Bar.fOO IN [$$foo] $preposition role",
+          s"$action match {*} on graph FoO FOR (Bar) WHERE not Bar.fOO in $$foo $preposition role" ->
+            s"$action MATCH {*} ON GRAPH FoO FOR (Bar) WHERE NOT Bar.fOO IN $$foo $preposition role",
+          s"$action match {*} on graph FoO FOR (Bar) WHERE Bar.fOO > 1 $preposition role" ->
+            s"$action MATCH {*} ON GRAPH FoO FOR (Bar) WHERE Bar.fOO > 1 $preposition role",
+          s"$action match {*} on graph FoO FOR (Bar) WHERE not Bar.fOO > $$foo $preposition role" ->
+            s"$action MATCH {*} ON GRAPH FoO FOR (Bar) WHERE NOT Bar.fOO > $$foo $preposition role",
+          s"$action match {*} on graph FoO FOR (Bar) WHERE not 1.0 >= Bar.fOO $preposition role" ->
+            s"$action MATCH {*} ON GRAPH FoO FOR (Bar) WHERE NOT 1.0 >= Bar.fOO $preposition role",
+          s"$action match {*} on graph FoO FOR (Bar) WHERE Bar.fOO >= $$foo $preposition role" ->
+            s"$action MATCH {*} ON GRAPH FoO FOR (Bar) WHERE Bar.fOO >= $$foo $preposition role",
+          s"$action match {*} on graph FoO FOR (Bar) WHERE Bar.fOO < 1 $preposition role" ->
+            s"$action MATCH {*} ON GRAPH FoO FOR (Bar) WHERE Bar.fOO < 1 $preposition role",
+          s"$action match {*} on graph FoO FOR (Bar) WHERE not Bar.fOO < $$foo $preposition role" ->
+            s"$action MATCH {*} ON GRAPH FoO FOR (Bar) WHERE NOT Bar.fOO < $$foo $preposition role",
+          s"$action match {*} on graph FoO FOR (Bar) WHERE Bar.fOO <= 1.0 $preposition role" ->
+            s"$action MATCH {*} ON GRAPH FoO FOR (Bar) WHERE Bar.fOO <= 1.0 $preposition role",
+          s"$action match {*} on graph FoO FOR (Bar) WHERE not Bar.fOO <= $$foo $preposition role" ->
+            s"$action MATCH {*} ON GRAPH FoO FOR (Bar) WHERE NOT Bar.fOO <= $$foo $preposition role",
           s"$action match {foo,bar} on graph $$foo relationship A,B,C (*) $preposition x,y,z" ->
             s"$action MATCH {foo, bar} ON GRAPH $$foo RELATIONSHIPS A, B, C $preposition x, y, z",
           s"$action match {*} on graph $$foo, bar nodes * (*) $preposition role" ->

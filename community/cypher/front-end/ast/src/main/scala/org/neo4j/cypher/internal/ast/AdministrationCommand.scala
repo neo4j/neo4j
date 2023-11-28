@@ -32,9 +32,13 @@ import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Expression.SemanticContext
+import org.neo4j.cypher.internal.expressions.GreaterThan
+import org.neo4j.cypher.internal.expressions.GreaterThanOrEqual
 import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.IsNull
+import org.neo4j.cypher.internal.expressions.LessThan
+import org.neo4j.cypher.internal.expressions.LessThanOrEqual
 import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.Literal
 import org.neo4j.cypher.internal.expressions.LogicalVariable
@@ -562,10 +566,25 @@ sealed abstract class PrivilegeCommand(
   position: InputPosition
 ) extends WriteAdministrationCommand {
 
+  private val FAILED_PROPERTY_RULE = "Failed to administer property rule."
+
   protected def immutableKeywordOrEmptyString(immutable: Boolean): String = if (immutable) " IMMUTABLE" else ""
 
   private def nanError(l: NaN) =
-    error(s"NaN is not supported for property-based access control.", l.position)
+    error(s"$FAILED_PROPERTY_RULE `NaN` is not supported for property-based access control.", l.position)
+
+  private def propertyAlwaysNullError(predicate: String, pos: InputPosition, hint: String = "") = {
+    error(
+      s"$FAILED_PROPERTY_RULE The property value access rule pattern `$predicate` always evaluates to `NULL`.$hint",
+      pos
+    )
+  }
+
+  private def propertyPositionError(p: Property, operator: String) =
+    error(
+      s"$FAILED_PROPERTY_RULE The property `${p.propertyKey.name}` must appear on the left hand side of the `$operator` operator.",
+      p.position
+    )
 
   private val featureCheck =
     requireFeatureSupport(s"The `$name` clause", SemanticFeature.PropertyValueAccessRules, position)
@@ -595,22 +614,67 @@ sealed abstract class PrivilegeCommand(
   }
 
   private def checkExpression(expression: Expression) = {
+
+    def stringifyExpression = {
+      ExpressionStringifier.apply(_.asCanonicalStringVal).apply(expression)
+    }
+
     (expression match {
       case Not(e: BooleanExpression) => e
       case e                         => e
     }) match {
-      case Equals(_: Property, l: NaN)    => nanError(l)
-      case NotEquals(_: Property, l: NaN) => nanError(l)
+      case Equals(_: Property, l: NaN)             => nanError(l)
+      case NotEquals(_: Property, l: NaN)          => nanError(l)
+      case GreaterThan(_: Property, l: NaN)        => nanError(l)
+      case GreaterThanOrEqual(_: Property, l: NaN) => nanError(l)
+      case LessThan(_: Property, l: NaN)           => nanError(l)
+      case LessThanOrEqual(_: Property, l: NaN)    => nanError(l)
+      case Equals(l: NaN, _: Property)             => nanError(l)
+      case NotEquals(l: NaN, _: Property)          => nanError(l)
+      case GreaterThan(l: NaN, _: Property)        => nanError(l)
+      case GreaterThanOrEqual(l: NaN, _: Property) => nanError(l)
+      case LessThan(l: NaN, _: Property)           => nanError(l)
+      case LessThanOrEqual(l: NaN, _: Property)    => nanError(l)
       case Equals(p: Property, l: Null) =>
-        error(s"${p.propertyKey.name} = NULL always evaluates to NULL. Use IS NULL instead.", l.position)
+        propertyAlwaysNullError(s"${p.propertyKey.name} = NULL", l.position, " Use `IS NULL` instead.")
       case NotEquals(p: Property, l: Null) =>
-        error(s"${p.propertyKey.name} <> NULL always evaluates to NULL. Use IS NOT NULL instead.", l.position)
+        propertyAlwaysNullError(s"${p.propertyKey.name} <> NULL", l.position, " Use `IS NOT NULL` instead.")
+      case GreaterThan(p: Property, l: Null) =>
+        propertyAlwaysNullError(s"${p.propertyKey.name} > NULL", l.position)
+      case GreaterThanOrEqual(p: Property, l: Null) =>
+        propertyAlwaysNullError(s"${p.propertyKey.name} >= NULL", l.position)
+      case LessThan(p: Property, l: Null) =>
+        propertyAlwaysNullError(s"${p.propertyKey.name} < NULL", l.position)
+      case LessThanOrEqual(p: Property, l: Null) =>
+        propertyAlwaysNullError(s"${p.propertyKey.name} <= NULL", l.position)
+      case Equals(l: Null, p: Property) =>
+        propertyAlwaysNullError(s"NULL = ${p.propertyKey.name}", l.position, " Use `IS NULL` instead.")
+      case NotEquals(l: Null, p: Property) =>
+        propertyAlwaysNullError(s"NULL <> ${p.propertyKey.name}", l.position, " Use `IS NOT NULL` instead.")
+      case GreaterThan(l: Null, p: Property) =>
+        propertyAlwaysNullError(s"NULL > ${p.propertyKey.name}", l.position)
+      case GreaterThanOrEqual(l: Null, p: Property) =>
+        propertyAlwaysNullError(s"NULL >= ${p.propertyKey.name}", l.position)
+      case LessThan(l: Null, p: Property) =>
+        propertyAlwaysNullError(s"NULL < ${p.propertyKey.name}", l.position)
+      case LessThanOrEqual(l: Null, p: Property) =>
+        propertyAlwaysNullError(s"NULL <= ${p.propertyKey.name}", l.position)
+      case Equals(_, p: Property)             => propertyPositionError(p, "=")
+      case NotEquals(_, p: Property)          => propertyPositionError(p, "<>")
+      case GreaterThan(_, p: Property)        => propertyPositionError(p, ">")
+      case GreaterThanOrEqual(_, p: Property) => propertyPositionError(p, ">=")
+      case LessThan(_, p: Property)           => propertyPositionError(p, "<")
+      case LessThanOrEqual(_, p: Property)    => propertyPositionError(p, "<=")
       case map @ MapExpression(items) if items.size > 1 =>
-        error("Property rules can only contain one property.", map.position)
-      case MapExpression(Seq((pk: PropertyKeyName, l: Null))) =>
         error(
-          s"{${pk.name}:NULL} always evaluates to NULL. Use WHERE syntax in combination with IS NULL instead.",
-          l.position
+          s"$FAILED_PROPERTY_RULE The expression: `$stringifyExpression` is not supported. Property rules can only contain one property.",
+          map.position
+        )
+      case MapExpression(Seq((pk: PropertyKeyName, l: Null))) =>
+        propertyAlwaysNullError(
+          s"{${pk.name}:NULL}",
+          l.position,
+          " Use `WHERE` syntax in combination with `IS NULL` instead."
         )
       case Equals(_: Property, _: Literal) | NotEquals(_: Property, _: Literal) |
         Equals(_: Property, _: ExplicitParameter) | NotEquals(_: Property, _: ExplicitParameter) |
@@ -620,11 +684,15 @@ sealed abstract class PrivilegeCommand(
         Not(In(_: Property, _: ExplicitParameter)) |
         IsNull(_: Property) | IsNotNull(_: Property) |
         MapExpression(Seq((_: PropertyKeyName, _: Literal))) |
-        MapExpression(Seq((_: PropertyKeyName, _: ExplicitParameter))) =>
+        MapExpression(Seq((_: PropertyKeyName, _: ExplicitParameter))) |
+        GreaterThan(_: Property, _: Literal) | GreaterThan(_: Property, _: ExplicitParameter) |
+        GreaterThanOrEqual(_: Property, _: Literal) | GreaterThanOrEqual(_: Property, _: ExplicitParameter) |
+        LessThan(_: Property, _: Literal) | LessThan(_: Property, _: ExplicitParameter) |
+        LessThanOrEqual(_: Property, _: Literal) | LessThanOrEqual(_: Property, _: ExplicitParameter) =>
         SemanticCheck.success
       case _ => error(
-          "Only single literal-based predicate expressions are allowed for property-based access control. Expression: " +
-            s"${ExpressionStringifier.apply(_.asCanonicalStringVal).apply(expression)} is not supported.",
+          s"$FAILED_PROPERTY_RULE The expression: `$stringifyExpression` is not supported. " +
+            s"Only single, literal-based predicate expressions are allowed for property-based access control.",
           expression.position
         )
     }

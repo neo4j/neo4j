@@ -49,6 +49,8 @@ import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.Variable
 
+import scala.util.Random
+
 class ReadMatchPropertyPrivilegeAdministrationCommandParserTest
     extends PropertyPrivilegeAdministrationCommandParserTestBase {
 
@@ -577,11 +579,15 @@ class ReadMatchPropertyPrivilegeAdministrationCommandParserTest
   }
 
   test("legitimate property rules, but with problems elsewhere in the privilege command") {
+    // To limit the amount of tests run (and reduce test setup time)
+    // only add 25 union combinations, but make it a random mix of combinations
+    val randomSamplesOfLiteralExpressions = Random.shuffle(literalExpressions).take(50)
+
     for {
       Action(action, verb, preposition, _) <- actions
       immutable <- Seq(true, false)
       graphKeyword <- graphKeywords
-      LiteralExpression(expression, _) <- literalExpressions
+      LiteralExpression(expression, _) <- randomSamplesOfLiteralExpressions
       Resource(properties, _) <- resources
       Scope(graphName, _) <- scopes
     } yield {

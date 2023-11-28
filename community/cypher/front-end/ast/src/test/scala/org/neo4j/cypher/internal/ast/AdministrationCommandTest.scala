@@ -26,7 +26,12 @@ import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
+import org.neo4j.cypher.internal.expressions.GreaterThan
+import org.neo4j.cypher.internal.expressions.GreaterThanOrEqual
 import org.neo4j.cypher.internal.expressions.In
+import org.neo4j.cypher.internal.expressions.LessThan
+import org.neo4j.cypher.internal.expressions.LessThanOrEqual
+import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.MatchMode
 import org.neo4j.cypher.internal.expressions.NaN
@@ -139,7 +144,8 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
   val multiLabelPatternQualifier: QualifierFn =
     (v, e) => List(PatternQualifier(Seq(LabelQualifier("A")(p), LabelQualifier("B")(p)), v, e))
 
-  val mixedList = listOf(literalInt(1), literalString("s"), literalFloat(1.1), falseLiteral, parameter("value1", CTAny))
+  val mixedList: ListLiteral =
+    listOf(literalInt(1), literalString("s"), literalFloat(1.1), falseLiteral, parameter("value1", CTAny))
 
   Seq(
     (allLabelPatternQualifier, "all labels"),
@@ -165,127 +171,362 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
 
         val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
         result.errors.exists(s => {
-          s.msg == "Property rules can only contain one property."
+          s.msg == "Failed to administer property rule. The expression: `{prop1: \"val1\", prop2: \"val2\"}` is not supported. Property rules can only contain one property."
         }) shouldBe true
       }
 
-      // e.g. FOR (n) WHERE n.prop1 = 1 AND n.prop2 = 1
-      test(
-        s"property rules using WHERE syntax with multiple predicates via AND should fail semantic checking ($qualifierDescription)"
-      ) {
-        val privilege = new GrantPrivilege(
-          GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
-          false,
-          None,
-          qualifierFn(
-            Some(Variable("n")(p)),
-            And(
-              Equals(
+      Seq(
+        ("=", " Use `IS NULL` instead.", (lhs: Expression, rhs: Expression) => Equals(lhs, rhs)(p)),
+        ("<>", " Use `IS NOT NULL` instead.", (lhs: Expression, rhs: Expression) => NotEquals(lhs, rhs)(p)),
+        (">", "", (lhs: Expression, rhs: Expression) => GreaterThan(lhs, rhs)(p)),
+        (">=", "", (lhs: Expression, rhs: Expression) => GreaterThanOrEqual(lhs, rhs)(p)),
+        ("<", "", (lhs: Expression, rhs: Expression) => LessThan(lhs, rhs)(p)),
+        ("<=", "", (lhs: Expression, rhs: Expression) => LessThanOrEqual(lhs, rhs)(p))
+      ).foreach { case (operator, suggestionPartOfErrorMessage, op) =>
+        // e.g. FOR (n) WHERE n.prop1 = 1 AND n.prop2 = 1
+        test(
+          s"property rules using WHERE syntax with multiple predicates via AND should fail semantic checking ($qualifierDescription)($operator)"
+        ) {
+          val privilege = new GrantPrivilege(
+            GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
+            false,
+            None,
+            qualifierFn(
+              Some(Variable("n")(p)),
+              And(
+                op(
+                  Property(Variable("n")(p), PropertyKeyName("prop1")(p))(p),
+                  SignedDecimalIntegerLiteral("1")(p)
+                ),
+                op(
+                  Property(Variable("n")(p), PropertyKeyName("prop2")(p))(p),
+                  SignedDecimalIntegerLiteral("1")(p)
+                )
+              )(p)
+            ),
+            Seq(Left("role1"))
+          )(p)
+
+          val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
+          result.errors.exists(s => {
+            s.msg == s"Failed to administer property rule. The expression: `n.prop1 $operator 1 AND n.prop2 $operator 1` is not supported. Only single, literal-based predicate expressions are allowed for property-based access control."
+          }) shouldBe true
+        }
+
+        // e.g. FOR (n) WHERE n.prop1 = 1 OR n.prop2 = 1
+        test(
+          s"property rules using WHERE syntax with multiple predicates via OR should fail semantic checking ($qualifierDescription)($operator)"
+        ) {
+          val privilege = new GrantPrivilege(
+            GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
+            false,
+            None,
+            qualifierFn(
+              Some(Variable("n")(p)),
+              Or(
+                op(
+                  Property(Variable("n")(p), PropertyKeyName("prop1")(p))(p),
+                  SignedDecimalIntegerLiteral("1")(p)
+                ),
+                op(
+                  Property(Variable("n")(p), PropertyKeyName("prop2")(p))(p),
+                  SignedDecimalIntegerLiteral("1")(p)
+                )
+              )(p)
+            ),
+            Seq(Left("role1"))
+          )(p)
+
+          val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
+          result.errors.exists(s => {
+            s.msg == s"Failed to administer property rule. The expression: `n.prop1 $operator 1 OR n.prop2 $operator 1` is not supported. Only single, literal-based predicate expressions are allowed for property-based access control."
+          }) shouldBe true
+        }
+
+        // e.g. FOR (n) WHERE n.prop1 = NULL
+        test(s"property rules using n.prop $operator NULL should fail semantic checking ($qualifierDescription)") {
+          val privilege = new GrantPrivilege(
+            GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
+            false,
+            None,
+            qualifierFn(
+              Some(Variable("n")(p)),
+              op(Property(Variable("n")(p), PropertyKeyName("prop1")(p))(p), Null.NULL)
+            ),
+            Seq(Left("role1"))
+          )(p)
+
+          val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
+          result.errors.exists(
+            _.msg == s"Failed to administer property rule. The property value access rule pattern `prop1 $operator NULL` always evaluates to `NULL`.$suggestionPartOfErrorMessage"
+          ) shouldBe true
+        }
+
+        // e.g. FOR (n) WHERE NULL = n.prop1
+        test(s"property rules using NULL $operator n.prop should fail semantic checking ($qualifierDescription)") {
+          val privilege = new GrantPrivilege(
+            GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
+            false,
+            None,
+            qualifierFn(
+              Some(Variable("n")(p)),
+              op(Null.NULL, Property(Variable("n")(p), PropertyKeyName("prop1")(p))(p))
+            ),
+            Seq(Left("role1"))
+          )(p)
+
+          val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
+          result.errors.exists(
+            _.msg == s"Failed to administer property rule. The property value access rule pattern `NULL $operator prop1` always evaluates to `NULL`.$suggestionPartOfErrorMessage"
+          ) shouldBe true
+        }
+
+        // e.g. FOR (n) WHERE NOT n.prop = NULL
+        test(
+          s"property rules using NOT n.prop $operator NULL should fail semantic checking ($qualifierDescription)"
+        ) {
+          val privilege = new GrantPrivilege(
+            GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
+            false,
+            None,
+            qualifierFn(
+              Some(Variable("n")(p)),
+              Not(op(Property(Variable("n")(p), PropertyKeyName("prop")(p))(p), Null.NULL))(p)
+            ),
+            Seq(Left("role1"))
+          )(p)
+
+          val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
+          result.errors.exists(
+            _.msg == s"Failed to administer property rule. The property value access rule pattern `prop $operator NULL` always evaluates to `NULL`.$suggestionPartOfErrorMessage"
+          ) shouldBe true
+        }
+
+        // e.g. FOR (n) WHERE NOT NULL = n.prop
+        test(
+          s"property rules using NOT NULL $operator n.prop should fail semantic checking ($qualifierDescription)"
+        ) {
+          val privilege = new GrantPrivilege(
+            GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
+            false,
+            None,
+            qualifierFn(
+              Some(Variable("n")(p)),
+              Not(op(Null.NULL, Property(Variable("n")(p), PropertyKeyName("prop")(p))(p)))(p)
+            ),
+            Seq(Left("role1"))
+          )(p)
+
+          val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
+          result.errors.exists(
+            _.msg == s"Failed to administer property rule. The property value access rule pattern `NULL $operator prop` always evaluates to `NULL`.$suggestionPartOfErrorMessage"
+          ) shouldBe true
+        }
+
+        // e.g. FOR (n) WHERE n.prop1 = NaN
+        test(
+          s"property rules using n.prop $operator NaN should fail semantic checking ($qualifierDescription)"
+        ) {
+          val privilege = new GrantPrivilege(
+            GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
+            false,
+            None,
+            qualifierFn(
+              Some(Variable("n")(p)),
+              op(Property(Variable("n")(p), PropertyKeyName("prop1")(p))(p), NaN()(p))
+            ),
+            Seq(Left("role1"))
+          )(p)
+
+          val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
+          result.errors.exists(s => {
+            s.msg == "Failed to administer property rule. `NaN` is not supported for property-based access control."
+          }) shouldBe true
+        }
+
+        // e.g. FOR (n) WHERE NaN = n.prop1
+        test(
+          s"property rules using NaN $operator n.prop should fail semantic checking ($qualifierDescription)"
+        ) {
+          val privilege = new GrantPrivilege(
+            GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
+            false,
+            None,
+            qualifierFn(
+              Some(Variable("n")(p)),
+              op(NaN()(p), Property(Variable("n")(p), PropertyKeyName("prop1")(p))(p))
+            ),
+            Seq(Left("role1"))
+          )(p)
+
+          val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
+          result.errors.exists(s => {
+            s.msg == "Failed to administer property rule. `NaN` is not supported for property-based access control."
+          }) shouldBe true
+        }
+
+        // e.g. FOR (n) WHERE n.prop1 = 1+2
+        test(
+          s"property rules using WHERE syntax with non-literal predicates should fail semantic checking ($qualifierDescription)($operator)"
+        ) {
+          val privilege = new GrantPrivilege(
+            GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
+            false,
+            None,
+            qualifierFn(
+              Some(Variable("n")(p)),
+              op(
+                Property(Variable("n")(p), PropertyKeyName("prop1")(p))(p),
+                Add(SignedDecimalIntegerLiteral("1")(p), SignedDecimalIntegerLiteral("2")(p))(p)
+              )
+            ),
+            Seq(Left("role1"))
+          )(p)
+
+          val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
+          result.errors.exists(s => {
+            s.msg == s"Failed to administer property rule. The expression: `n.prop1 $operator 1 + 2` is not supported. Only single, literal-based predicate expressions are allowed for property-based access control."
+          }) shouldBe true
+        }
+
+        // e.g. FOR (n) WHERE n.prop1 = [1, 2]
+        test(
+          s"property rules using WHERE syntax with List of literals should fail semantic checking ($qualifierDescription)($operator)"
+        ) {
+          val expressionStringifier = ExpressionStringifier()
+          Seq(
+            // List of ints
+            op(prop(varFor("n"), "prop1"), listOfInt(1, 2)), // n.prop = [1, 2]
+
+            // List of strings
+            op(prop(varFor("n"), "prop1"), listOfString("s1", "s2")), // n.prop = ['s1', 's2']
+
+            // List of booleans
+            op(prop(varFor("n"), "prop1"), listOf(trueLiteral, falseLiteral)), // n.prop = [true, false]
+
+            // List of floats
+            op(prop(varFor("n"), "prop1"), listOf(literalFloat(1.1), literalFloat(2.2))), // n.prop = [1.1, 2.2]
+
+            // List of parameters
+            op(
+              prop(varFor("n"), "prop1"),
+              listOf(parameter("value", CTAny), parameter("value2", CTAny))
+            ), // n.prop = [$value, $value2]
+
+            // Mixed list
+            op(prop(varFor("n"), "prop1"), mixedList) // n.prop = [1, 's', 1.1, false, $value1]
+          ).foreach { expression =>
+            withClue(expressionStringifier(expression)) {
+              val privilege = new GrantPrivilege(
+                GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
+                false,
+                None,
+                qualifierFn(
+                  Some(Variable("n")(p)),
+                  expression
+                ),
+                Seq(Left("role1"))
+              )(p)
+
+              val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
+              result.errors.exists(s => {
+                s.msg == "Failed to administer property rule. " +
+                  s"The expression: `${expressionStringifier(expression)}` is not supported. Only single, literal-based predicate expressions are allowed for property-based access control."
+              }) shouldBe true
+            }
+          }
+        }
+
+        // e.g. FOR (n) WHERE n.prop1 = [1]
+        test(
+          s"property rules using WHERE syntax with single-item list of literals should fail semantic checking ($qualifierDescription)($operator)"
+        ) {
+          val expressionStringifier = ExpressionStringifier()
+          Seq(
+            // List of ints
+            op(prop(varFor("n"), "prop1"), listOfInt(1)), // n.prop = [1]
+
+            // List of strings
+            op(prop(varFor("n"), "prop1"), listOfString("s1")), // n.prop = ['s1']
+
+            // List of booleans
+            op(prop(varFor("n"), "prop1"), listOf(trueLiteral)), // n.prop = [true]
+
+            // List of floats
+            op(prop(varFor("n"), "prop1"), listOf(literalFloat(1.1))), // n.prop = [1.1]
+
+            // List of parameters
+            op(
+              prop(varFor("n"), "prop1"),
+              listOf(parameter("value", CTAny))
+            ) // n.prop = [$value]
+          ).foreach { expression =>
+            withClue(expressionStringifier(expression)) {
+              val privilege = new GrantPrivilege(
+                GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
+                false,
+                None,
+                qualifierFn(
+                  Some(Variable("n")(p)),
+                  expression
+                ),
+                Seq(Left("role1"))
+              )(p)
+
+              val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
+              result.errors.exists(s => {
+                s.msg == "Failed to administer property rule. " +
+                  s"The expression: `${expressionStringifier(expression)}` is not supported. Only single, literal-based predicate expressions are allowed for property-based access control."
+              }) shouldBe true
+            }
+          }
+        }
+
+        // e.g. FOR (n) WHERE NOT NOT n.prop1 = 1
+        test(
+          s"using more than one NOT keyword combined with an '$operator' should fail semantic checking ($qualifierDescription)"
+        ) {
+          val privilege = new GrantPrivilege(
+            GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
+            false,
+            None,
+            qualifierFn(
+              Some(Variable("n")(p)),
+              Not(Not(op(
                 Property(Variable("n")(p), PropertyKeyName("prop1")(p))(p),
                 SignedDecimalIntegerLiteral("1")(p)
-              )(p),
-              Equals(
-                Property(Variable("n")(p), PropertyKeyName("prop2")(p))(p),
-                SignedDecimalIntegerLiteral("1")(p)
-              )(p)
-            )(p)
-          ),
-          Seq(Left("role1"))
-        )(p)
+              ))(p))(p)
+            ),
+            Seq(Left("role1"))
+          )(p)
 
-        val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
-        result.errors.exists(s => {
-          s.msg == "Only single literal-based predicate expressions are allowed for property-based access control. " +
-            "Expression: n.prop1 = 1 AND n.prop2 = 1 is not supported."
-        }) shouldBe true
-      }
+          val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
+          result.errors.exists(s => {
+            s.msg == s"Failed to administer property rule. The expression: `NOT (NOT n.prop1 $operator 1)` is not supported. " +
+              s"Only single, literal-based predicate expressions are allowed for property-based access control."
+          }) shouldBe true
+        }
 
-      // e.g. FOR (n) WHERE n.prop1 = 1 OR n.prop2 = 1
-      test(
-        s"property rules using WHERE syntax with multiple predicates via OR should fail semantic checking ($qualifierDescription)"
-      ) {
-        val privilege = new GrantPrivilege(
-          GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
-          false,
-          None,
-          qualifierFn(
-            Some(Variable("n")(p)),
-            Or(
-              Equals(
-                Property(Variable("n")(p), PropertyKeyName("prop1")(p))(p),
-                SignedDecimalIntegerLiteral("1")(p)
-              )(p),
-              Equals(
-                Property(Variable("n")(p), PropertyKeyName("prop2")(p))(p),
-                SignedDecimalIntegerLiteral("1")(p)
-              )(p)
-            )(p)
-          ),
-          Seq(Left("role1"))
-        )(p)
+        // e.g. FOR (n) WHERE 1 = n.prop1
+        test(
+          s"property rules having n.prop on right hand side of operator $operator should fail semantic checking ($qualifierDescription)"
+        ) {
+          val privilege = new GrantPrivilege(
+            GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
+            false,
+            None,
+            qualifierFn(
+              Some(Variable("n")(p)),
+              op(SignedDecimalIntegerLiteral("1")(p), Property(Variable("n")(p), PropertyKeyName("prop1")(p))(p))
+            ),
+            Seq(Left("role1"))
+          )(p)
 
-        val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
-        result.errors.exists(s => {
-          s.msg == "Only single literal-based predicate expressions are allowed for property-based access control. " +
-            "Expression: n.prop1 = 1 OR n.prop2 = 1 is not supported."
-        }) shouldBe true
-      }
-
-      // e.g. FOR (n) WHERE n.prop1 = NULL
-      test(s"property rules using = NULL should fail semantic checking ($qualifierDescription)") {
-        val privilege = new GrantPrivilege(
-          GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
-          false,
-          None,
-          qualifierFn(
-            Some(Variable("n")(p)),
-            Equals(Property(Variable("n")(p), PropertyKeyName("prop1")(p))(p), Null.NULL)(p)
-          ),
-          Seq(Left("role1"))
-        )(p)
-
-        val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
-        result.errors.exists(s => {
-          s.msg == "prop1 = NULL always evaluates to NULL. Use IS NULL instead."
-        }) shouldBe true
-      }
-
-      // e.g. FOR (n) WHERE NOT n.prop = NULL
-      test(s"property rules using NOT n.prop = NULL should fail semantic checking ($qualifierDescription)") {
-        val privilege = new GrantPrivilege(
-          GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
-          false,
-          None,
-          qualifierFn(
-            Some(Variable("n")(p)),
-            Not(Equals(Property(Variable("n")(p), PropertyKeyName("prop")(p))(p), Null.NULL)(p))(p)
-          ),
-          Seq(Left("role1"))
-        )(p)
-
-        val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
-        result.errors.exists(s => {
-          s.msg == "prop = NULL always evaluates to NULL. Use IS NULL instead."
-        }) shouldBe true
-      }
-
-      // e.g. FOR (n) WHERE n.prop1 <> NULL
-      test(s"property rules using <> NULL should fail semantic checking ($qualifierDescription)") {
-        val privilege = new GrantPrivilege(
-          GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
-          false,
-          None,
-          qualifierFn(
-            Some(Variable("n")(p)),
-            NotEquals(Property(Variable("n")(p), PropertyKeyName("prop1")(p))(p), Null.NULL)(p)
-          ),
-          Seq(Left("role1"))
-        )(p)
-
-        val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
-        result.errors.exists(s => {
-          s.msg == "prop1 <> NULL always evaluates to NULL. Use IS NOT NULL instead."
-        }) shouldBe true
+          val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
+          result.errors.exists(
+            _.msg == s"Failed to administer property rule. The property `prop1` must appear on the left hand side of the `$operator` operator."
+          ) shouldBe true
+        }
       }
 
       // e.g. FOR ({n:NULL})
@@ -300,45 +541,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
 
         val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
         result.errors.exists(s => {
-          s.msg == "{prop1:NULL} always evaluates to NULL. Use WHERE syntax in combination with IS NULL instead."
-        }) shouldBe true
-      }
-
-      // e.g. FOR (n) WHERE n.prop1 = NaN
-      test(s"property rules using = NaN should fail semantic checking ($qualifierDescription)") {
-        val privilege = new GrantPrivilege(
-          GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
-          false,
-          None,
-          qualifierFn(
-            Some(Variable("n")(p)),
-            Equals(Property(Variable("n")(p), PropertyKeyName("prop1")(p))(p), NaN()(p))(p)
-          ),
-          Seq(Left("role1"))
-        )(p)
-
-        val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
-        result.errors.exists(s => {
-          s.msg == "NaN is not supported for property-based access control."
-        }) shouldBe true
-      }
-
-      // e.g. FOR (n) WHERE n.prop1 <> NaN
-      test(s"property rules using <> NaN should fail semantic checking ($qualifierDescription)") {
-        val privilege = new GrantPrivilege(
-          GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
-          false,
-          None,
-          qualifierFn(
-            Some(Variable("n")(p)),
-            NotEquals(Property(Variable("n")(p), PropertyKeyName("prop1")(p))(p), NaN()(p))(p)
-          ),
-          Seq(Left("role1"))
-        )(p)
-
-        val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
-        result.errors.exists(s => {
-          s.msg == "NaN is not supported for property-based access control."
+          s.msg == "Failed to administer property rule. The property value access rule pattern `{prop1:NULL}` always evaluates to `NULL`. Use `WHERE` syntax in combination with `IS NULL` instead."
         }) shouldBe true
       }
 
@@ -362,80 +565,37 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
 
         val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
         result.errors.exists(s => {
-          s.msg == "Only single literal-based predicate expressions are allowed for property-based access control. " +
-            "Expression: {prop1: 1 + 2} is not supported."
+          s.msg == "Failed to administer property rule. " +
+            "The expression: `{prop1: 1 + 2}` is not supported. Only single, literal-based predicate expressions are allowed for property-based access control."
         }) shouldBe true
       }
 
-      // e.g. FOR (n) WHERE n.prop1 = 1+2
+      // e.g. FOR (n {prop1: [1, 2]})
       test(
-        s"property rules using WHERE syntax with non-literal predicates should fail semantic checking ($qualifierDescription)"
-      ) {
-        val privilege = new GrantPrivilege(
-          GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
-          false,
-          None,
-          qualifierFn(
-            Some(Variable("n")(p)),
-            Equals(
-              Property(Variable("n")(p), PropertyKeyName("prop1")(p))(p),
-              Add(SignedDecimalIntegerLiteral("1")(p), SignedDecimalIntegerLiteral("2")(p))(p)
-            )(p)
-          ),
-          Seq(Left("role1"))
-        )(p)
-
-        val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
-        result.errors.exists(s => {
-          s.msg == "Only single literal-based predicate expressions are allowed for property-based access control. " +
-            "Expression: n.prop1 = 1 + 2 is not supported."
-        }) shouldBe true
-      }
-
-      // e.g. FOR (n) WHERE n.prop1 = [1, 2]
-      test(
-        s"property rules using WHERE syntax with List of literals should fail semantic checking ($qualifierDescription)"
+        s"property rules using map expression syntax with List of literals should fail semantic checking ($qualifierDescription)"
       ) {
         val expressionStringifier = ExpressionStringifier()
         Seq(
           // List of ints
-          equals(prop(varFor("n"), "prop1"), listOfInt(1, 2)), // n.prop = [1, 2]
-          notEquals(prop(varFor("n"), "prop1"), listOfInt(1, 2)), // n.prop <> [1, 2]
           MapExpression(Seq((propName("prop1"), listOfInt(1, 2))))(p), // {prop1: [1, 2]}
 
           // List of strings
-          equals(prop(varFor("n"), "prop1"), listOfString("s1", "s2")), // n.prop = ['s1', 's2']
-          notEquals(prop(varFor("n"), "prop1"), listOfString("s1", "s2")), // n.prop <> ['s1', 's2']
           MapExpression(Seq((propName("prop1"), listOfString("s1", "s2"))))(p), // {prop1: ['s1', 's2']}
 
           // List of booleans
-          equals(prop(varFor("n"), "prop1"), listOf(trueLiteral, falseLiteral)), // n.prop = [true, false]
-          notEquals(prop(varFor("n"), "prop1"), listOf(trueLiteral, falseLiteral)), // n.prop <> [true, false]
           MapExpression(Seq((propName("prop1"), listOf(trueLiteral, falseLiteral))))(p), // {prop1: [true, false]}
 
           // List of floats
-          equals(prop(varFor("n"), "prop1"), listOf(literalFloat(1.1), literalFloat(2.2))), // n.prop = [1.1, 2.2]
-          notEquals(prop(varFor("n"), "prop1"), listOf(literalFloat(1.1), literalFloat(2.2))), // n.prop <> [1.1, 2.2]
           MapExpression(
             Seq((propName("prop1"), listOf(literalFloat(1.1), literalFloat(1.2))))
           )(p), // {prop1: [1.1, 2.2]}
 
           // List of parameters
-          equals(
-            prop(varFor("n"), "prop1"),
-            listOf(parameter("value", CTAny), parameter("value2", CTAny))
-          ), // n.prop = [$value, $value2]
-          notEquals(
-            prop(varFor("n"), "prop1"),
-            listOf(parameter("value", CTAny), parameter("value2", CTAny))
-          ), // n.prop <> [$value, $value2]
           MapExpression(
             Seq((propName("prop1"), listOf(parameter("value", CTAny), parameter("value2", CTAny))))
           )(p), // {prop1: [$value, $value2]}
 
           // Mixed list
-          equals(prop(varFor("n"), "prop1"), mixedList), // n.prop = [1, 's', 1.1, false, $value1]
-          notEquals(prop(varFor("n"), "prop1"), mixedList), // n.prop <> [1, 's', 1.1, false, $value1]
           MapExpression(Seq((propName("prop1"), mixedList)))(p) // {prop1: [1, 's', 1.1, false, $value1]}
 
         ).foreach { expression =>
@@ -453,50 +613,35 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
 
             val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
             result.errors.exists(s => {
-              s.msg == "Only single literal-based predicate expressions are allowed for property-based access control. " +
-                s"Expression: ${expressionStringifier(expression)} is not supported."
+              s.msg == "Failed to administer property rule. " +
+                s"The expression: `${expressionStringifier(expression)}` is not supported. " +
+                "Only single, literal-based predicate expressions are allowed for property-based access control."
             }) shouldBe true
           }
         }
       }
 
-      // e.g. FOR (n) WHERE n.prop1 = [1]
+      // e.g. FOR (n {prop1: [1]})
       test(
-        s"property rules using WHERE syntax with single-item list of literals should fail semantic checking ($qualifierDescription)"
+        s"property rules using map expression syntax with single-item list of literals should fail semantic checking ($qualifierDescription)"
       ) {
         val expressionStringifier = ExpressionStringifier()
         Seq(
           // List of ints
-          equals(prop(varFor("n"), "prop1"), listOfInt(1)), // n.prop = [1]
-          notEquals(prop(varFor("n"), "prop1"), listOfInt(1)), // n.prop <> [1]
           MapExpression(Seq((propName("prop1"), listOfInt(1))))(p), // {prop1: [1]}
 
           // List of strings
-          equals(prop(varFor("n"), "prop1"), listOfString("s1")), // n.prop = ['s1']
-          notEquals(prop(varFor("n"), "prop1"), listOfString("s1")), // n.prop <> ['s1']
           MapExpression(Seq((propName("prop1"), listOfString("s1"))))(p), // {prop1: ['s1']}
 
           // List of booleans
-          equals(prop(varFor("n"), "prop1"), listOf(trueLiteral)), // n.prop = [true]
-          notEquals(prop(varFor("n"), "prop1"), listOf(trueLiteral)), // n.prop <> [true]
           MapExpression(Seq((propName("prop1"), listOf(trueLiteral))))(p), // {prop1: [true]}
 
           // List of floats
-          equals(prop(varFor("n"), "prop1"), listOf(literalFloat(1.1))), // n.prop = [1.1]
-          notEquals(prop(varFor("n"), "prop1"), listOf(literalFloat(1.1))), // n.prop <> [1.1]
           MapExpression(
             Seq((propName("prop1"), listOf(literalFloat(1.1))))
           )(p), // {prop1: [1.1]}
 
           // List of parameters
-          equals(
-            prop(varFor("n"), "prop1"),
-            listOf(parameter("value", CTAny))
-          ), // n.prop = [$value]
-          notEquals(
-            prop(varFor("n"), "prop1"),
-            listOf(parameter("value", CTAny))
-          ), // n.prop <> [$value]
           MapExpression(
             Seq((propName("prop1"), listOf(parameter("value", CTAny))))
           )(p) // {prop1: [$value]}
@@ -515,8 +660,9 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
 
             val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
             result.errors.exists(s => {
-              s.msg == "Only single literal-based predicate expressions are allowed for property-based access control. " +
-                s"Expression: ${expressionStringifier(expression)} is not supported."
+              s.msg == "Failed to administer property rule. " +
+                s"The expression: `${expressionStringifier(expression)}` is not supported. " +
+                "Only single, literal-based predicate expressions are allowed for property-based access control."
             }) shouldBe true
           }
         }
@@ -567,8 +713,9 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
 
             val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
             result.errors.exists(s => {
-              s.msg == "Only single literal-based predicate expressions are allowed for property-based access control. " +
-                s"Expression: ${expressionStringifier(expression)} is not supported."
+              s.msg == "Failed to administer property rule. " +
+                s"The expression: `${expressionStringifier(expression)}` is not supported. " +
+                "Only single, literal-based predicate expressions are allowed for property-based access control."
             }) shouldBe false
           }
         }
@@ -629,8 +776,9 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
 
             val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
             result.errors.exists(s => {
-              s.msg == "Only single literal-based predicate expressions are allowed for property-based access control. " +
-                s"Expression: ${expressionStringifier(expression)} is not supported."
+              s.msg == "Failed to administer property rule. " +
+                s"The expression: `${expressionStringifier(expression)}` is not supported. " +
+                "Only single, literal-based predicate expressions are allowed for property-based access control."
             }) shouldBe true
           }
         }
@@ -709,8 +857,9 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
 
         val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
         result.errors.exists(s => {
-          s.msg == "Only single literal-based predicate expressions are allowed for property-based access control. " +
-            "Expression: 1 = n.prop1(foo) is not supported."
+          s.msg == "Failed to administer property rule. " +
+            "The expression: `1 = n.prop1(foo)` is not supported. " +
+            "Only single, literal-based predicate expressions are allowed for property-based access control."
         }) shouldBe true
       }
 
@@ -746,58 +895,9 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
 
         val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
         result.errors.exists(s => {
-          s.msg == "Only single literal-based predicate expressions are allowed for property-based access control. " +
-            "Expression: EXISTS { MATCH (n) } is not supported."
-        }) shouldBe true
-      }
-
-      // e.g. FOR (n) WHERE NOT NOT n.prop1 = 1
-      test(
-        s"using more than one NOT keyword combined with an equal '=' should fail semantic checking ($qualifierDescription)"
-      ) {
-        val privilege = new GrantPrivilege(
-          GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
-          false,
-          None,
-          qualifierFn(
-            Some(Variable("n")(p)),
-            Not(Not(Equals(
-              Property(Variable("n")(p), PropertyKeyName("prop1")(p))(p),
-              SignedDecimalIntegerLiteral("1")(p)
-            )(p))(p))(p)
-          ),
-          Seq(Left("role1"))
-        )(p)
-
-        val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
-        result.errors.exists(s => {
-          s.msg == "Only single literal-based predicate expressions are allowed for property-based access control. " +
-            "Expression: NOT (NOT n.prop1 = 1) is not supported."
-        }) shouldBe true
-      }
-
-      // e.g. FOR (n) WHERE NOT NOT n.prop1 <> 1
-      test(
-        s"using more than one NOT keyword combined with an not equal '<>' should fail semantic checking ($qualifierDescription)"
-      ) {
-        val privilege = new GrantPrivilege(
-          GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
-          false,
-          None,
-          qualifierFn(
-            Some(Variable("n")(p)),
-            Not(Not(NotEquals(
-              Property(Variable("n")(p), PropertyKeyName("prop1")(p))(p),
-              SignedDecimalIntegerLiteral("1")(p)
-            )(p))(p))(p)
-          ),
-          Seq(Left("role1"))
-        )(p)
-
-        val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
-        result.errors.exists(s => {
-          s.msg == "Only single literal-based predicate expressions are allowed for property-based access control. " +
-            "Expression: NOT (NOT n.prop1 <> 1) is not supported."
+          s.msg == "Failed to administer property rule. " +
+            "The expression: `EXISTS { MATCH (n) }` is not supported. " +
+            "Only single, literal-based predicate expressions are allowed for property-based access control."
         }) shouldBe true
       }
 

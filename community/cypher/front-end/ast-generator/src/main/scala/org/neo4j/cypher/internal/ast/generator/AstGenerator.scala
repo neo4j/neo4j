@@ -2490,14 +2490,27 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     )
   }
 
-  def _propertyRuleComparisonPredicate(l: Expression, r: Expression): Gen[Expression] = oneOf(
-    Equals(l, r)(pos),
-    Not(Equals(l, r)(pos))(pos),
-    NotEquals(l, r)(pos),
-    Not(NotEquals(l, r)(pos))(pos),
-    In(l, ListLiteral(Seq(r))(pos))(pos),
-    Not(In(l, ListLiteral(Seq(r))(pos))(pos))(pos)
+  def _propertyRuleComparisonPredicate(l: Expression, r: Expression): Gen[Expression] = {
+    val predicates = Seq(
+      Equals(l, r)(pos),
+      NotEquals(l, r)(pos),
+      In(l, ListLiteral(Seq(r))(pos))(pos)
+    ) ++ _inequalitiesPredicate(l, r)
+
+    oneOf(
+      predicates ++ _notExpressions(predicates)
+    )
+  }
+
+  def _inequalitiesPredicate(l: Expression, r: Expression): Seq[Expression] = Seq(
+    GreaterThan(l, r)(pos),
+    GreaterThanOrEqual(l, r)(pos),
+    LessThan(l, r)(pos),
+    LessThanOrEqual(l, r)(pos)
   )
+
+  def _notExpressions(predicates: Seq[Expression]): Seq[Expression] =
+    predicates.map(Not(_)(pos))
 
   def _propertyRuleUnaryPredicate(p: Property): Gen[Expression] = oneOf(
     IsNull(p)(pos),

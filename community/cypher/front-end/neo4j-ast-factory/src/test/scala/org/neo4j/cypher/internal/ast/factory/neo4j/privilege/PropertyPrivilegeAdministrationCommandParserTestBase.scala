@@ -36,158 +36,93 @@ class PropertyPrivilegeAdministrationCommandParserTestBase extends Administratio
 
   val expressionStringifier: ExpressionStringifier = ExpressionStringifier(preferSingleQuotes = true)
 
-  // These should parse correctly to allow them to be rejected in the semantic check with a user-friendly explanation
-  val semanticInvalidExpressions: Seq[LiteralExpression] = Seq(
-    LiteralExpression(equals(prop(varFor("n"), "prop"), nullLiteral)), // n.prop = null
-    LiteralExpression(notEquals(prop(varFor("n"), "prop"), nullLiteral)), // n.prop <> null
-    LiteralExpression(not(equals(prop(varFor("n"), "prop"), nullLiteral))), // NOT n.prop = null
-
-    LiteralExpression(
-      equals(nullLiteral, prop(varFor("n"), "prop")),
-      equals(prop(varFor("n"), "prop"), nullLiteral)
-    ), // null = n.prop
-    LiteralExpression(
-      notEquals(nullLiteral, prop(varFor("n"), "prop")),
-      notEquals(prop(varFor("n"), "prop"), nullLiteral)
-    ), // null <> n.prop
-
-    LiteralExpression(and(
-      equals(prop(varFor("n"), "prop1"), literalInt(1)),
-      equals(prop(varFor("n"), "prop2"), literalInt(1))
-    )), // n.prop1 = 1 AND n.prop2 = 1
-    LiteralExpression(or(
-      equals(prop(varFor("n"), "prop1"), literalInt(1)),
-      equals(prop(varFor("n"), "prop2"), literalInt(1))
-    )), // n.prop1 = 1 OR n.prop2 = 1
-
-    LiteralExpression(
-      MapExpression(Seq((propName("prop1"), literalInt(1)), (propName("prop2"), literalInt(1))))(pos)
-    ), // {prop1: 1, prop2: 1}
-
-    LiteralExpression(not(not(equals(prop(varFor("n"), "prop1"), literalInt(1))))), // NOT NOT n.prop = 1
-
-    LiteralExpression(equals(prop(varFor("n"), "prop"), add(literalInt(1), literalInt(2)))), // n.prop = 1 + 2
-    LiteralExpression(equals(prop(varFor("n"), "prop"), subtract(literalInt(1), literalInt(2)))), // n.prop = 1 - 2
-
-    // List of ints
-    LiteralExpression(equals(prop(varFor("n"), "prop1"), listOfInt(1, 2))), // n.prop = [1, 2]
-    LiteralExpression(notEquals(prop(varFor("n"), "prop1"), listOfInt(1, 2))), // n.prop <> [1, 2]
-    LiteralExpression(MapExpression(Seq((propName("prop1"), listOfInt(1, 2))))(pos)), // {prop1: [1, 2]}
-    LiteralExpression(in(prop(varFor("n"), "prop1"), listOfInt(1, 2))), // n.prop IN [1, 2]
-
-    // List of strings
-    LiteralExpression(equals(prop(varFor("n"), "prop1"), listOfString("s1", "s2"))), // n.prop = ['s1', 's2']
-    LiteralExpression(notEquals(prop(varFor("n"), "prop1"), listOfString("s1", "s2"))), // n.prop <> ['s1', 's2']
-    LiteralExpression(MapExpression(Seq((propName("prop1"), listOfString("s1", "s2"))))(pos)), // {prop1: ['s1', 's2']}
-    LiteralExpression(in(prop(varFor("n"), "prop1"), listOfString("s1", "s2"))), // n.prop IN ['s1', 's2']
-
-    // List of booleans
-    LiteralExpression(equals(prop(varFor("n"), "prop1"), listOf(trueLiteral, falseLiteral))), // n.prop = [true, false]
-    LiteralExpression(notEquals(
-      prop(varFor("n"), "prop1"),
-      listOf(trueLiteral, falseLiteral)
-    )), // n.prop <> [true, false]
-    LiteralExpression(
-      MapExpression(Seq((propName("prop1"), listOf(trueLiteral, falseLiteral))))(pos)
-    ), // {prop1: [true, false]}
-    LiteralExpression(in(prop(varFor("n"), "prop1"), listOf(trueLiteral, falseLiteral))), // n.prop IN [true, false]
-
-    // List of floats
-    LiteralExpression(equals(
-      prop(varFor("n"), "prop1"),
-      listOf(literalFloat(1.1), literalFloat(2.2))
-    )), // n.prop = [1.1, 2.2]
-    LiteralExpression(notEquals(
-      prop(varFor("n"), "prop1"),
-      listOf(literalFloat(1.1), literalFloat(2.2))
-    )), // n.prop <> [1.1, 2.2]
-    LiteralExpression(
-      MapExpression(Seq((propName("prop1"), listOf(literalFloat(1.1), literalFloat(1.2)))))(pos)
-    ), // {prop1: [1.1, 2.2]}
-    LiteralExpression(in(
-      prop(varFor("n"), "prop1"),
-      listOf(literalFloat(1.1), literalFloat(2.2))
-    )) // n.prop IN [1.1, 2.2]
-  )
-
   val literalExpressions: Seq[LiteralExpression] = Seq(
-    // Integer
-    LiteralExpression(equals(prop(varFor("n"), "prop1"), literalInt(1))), // n.prop1 = 1
-    LiteralExpression(not(notEquals(prop(varFor("n"), "prop1"), literalInt(1)))), // NOT n.prop1 <> 1
-    LiteralExpression(MapExpression(Seq((propName("prop1"), literalInt(1))))(pos)), // {prop1: 1}
-    LiteralExpression(in(prop(varFor("n"), "prop1"), listOf(literalInt(1)))), // n.prop1 IN [1]
-    LiteralExpression(not(in(prop(varFor("n"), "prop1"), listOf(literalInt(1))))), // NOT n.prop1 IN [1]
+    literalInt(1),
+    literalFloat(1.1),
+    literalString("s1"),
+    trueLiteral,
+    falseLiteral,
+    parameter("value", CTAny),
+    nullLiteral // Semantically invalid
+  ).flatMap(l =>
+    Seq(
+      l,
+      listOf(l, l) // Semantically invalid
+    ).flatMap(literal =>
+      Seq(
+        // equals
+        LiteralExpression(equals(prop(varFor("n"), "prop1"), literal)), // n.prop1 = value
+        LiteralExpression(not(notEquals(prop(varFor("n"), "prop1"), literal))), // NOT n.prop1 <> value
+        LiteralExpression(MapExpression(Seq((propName("prop1"), literal)))(pos)), // {prop1: value}
+        LiteralExpression(in(prop(varFor("n"), "prop1"), listOf(literal))), // n.prop1 IN [value]
 
-    // commutated Integer
-    LiteralExpression(
-      equals(literalInt(1), prop(varFor("n"), "prop1")),
-      equals(prop(varFor("n"), "prop1"), literalInt(1))
-    ), // 1 = n.prop1
-    LiteralExpression(
-      not(notEquals(literalInt(1), prop(varFor("n"), "prop1"))),
-      not(notEquals(prop(varFor("n"), "prop1"), literalInt(1)))
-    ), // NOT 1 <> n.prop1
+        // not equals
+        LiteralExpression(not(in(prop(varFor("n"), "prop1"), listOf(literal)))), // NOT n.prop1 IN [value]
+        LiteralExpression(notEquals(prop(varFor("n"), "prop1"), literal)), // n.prop <> value
+        LiteralExpression(not(equals(prop(varFor("n"), "prop1"), literal))), // NOT n.prop = value
 
-    // integer inequality
-    LiteralExpression(notEquals(prop(varFor("n"), "prop1"), literalInt(1))), // n.prop <> 1
-    LiteralExpression(not(equals(prop(varFor("n"), "prop1"), literalInt(1)))), // NOT n.prop = 1
+        // greater than
+        LiteralExpression(greaterThan(prop(varFor("n"), "prop1"), literal)), // n.prop1 > value
+        LiteralExpression(not(greaterThan(prop(varFor("n"), "prop1"), literal))), // NOT n.prop1 > value
 
-    // commutated integer inequality
-    LiteralExpression(
-      notEquals(literalInt(1), prop(varFor("n"), "prop1")),
-      notEquals(prop(varFor("n"), "prop1"), literalInt(1))
-    ), //  1 <> n.prop
-    LiteralExpression(
-      not(equals(literalInt(1), prop(varFor("n"), "prop1"))),
-      not(equals(prop(varFor("n"), "prop1"), literalInt(1)))
-    ), //  NOT 1 = n.prop
+        // greater than or equals
+        LiteralExpression(greaterThanOrEqual(prop(varFor("n"), "prop1"), literal)), // n.prop1 >= value
+        LiteralExpression(not(greaterThanOrEqual(prop(varFor("n"), "prop1"), literal))), // NOT n.prop1 >= value
 
-    // String
-    LiteralExpression(equals(prop(varFor("n"), "prop1"), literalString("s1"))), // n.prop = 's1'
-    LiteralExpression(not(notEquals(prop(varFor("n"), "prop1"), literalString("s1")))), // NOT n.prop <> 's1'
-    LiteralExpression(notEquals(prop(varFor("n"), "prop1"), literalString("s1"))), // n.prop <> 's1'
-    LiteralExpression(not(equals(prop(varFor("n"), "prop1"), literalString("s1")))), // NOT n.prop = 's1'
-    LiteralExpression(MapExpression(Seq((propName("prop1"), literalString("s1"))))(pos)), // {prop1: 's1'}
-    LiteralExpression(in(prop(varFor("n"), "prop1"), listOf(literalString("s1")))), // n.prop IN ['s1']
-    LiteralExpression(not(in(prop(varFor("n"), "prop1"), listOf(literalString("s1"))))), // NOT n.prop = 's1'
+        // less than
+        LiteralExpression(lessThan(prop(varFor("n"), "prop1"), literal)), // n.prop1 < value
+        LiteralExpression(not(lessThan(prop(varFor("n"), "prop1"), literal))), // NOT n.prop1 < value
 
-    // Boolean
-    LiteralExpression(equals(prop(varFor("n"), "prop1"), trueLiteral)), // n.prop = true
-    LiteralExpression(not(notEquals(prop(varFor("n"), "prop1"), trueLiteral))), // NOT n.prop <> true
-    LiteralExpression(notEquals(prop(varFor("n"), "prop1"), trueLiteral)), // n.prop <> true
-    LiteralExpression(not(equals(prop(varFor("n"), "prop1"), trueLiteral))), // NOT n.prop = true
-    LiteralExpression(MapExpression(Seq((propName("prop1"), trueLiteral)))(pos)), // {prop1: true}
-    LiteralExpression(equals(prop(varFor("n"), "prop1"), falseLiteral)), // n.prop = false
-    LiteralExpression(not(notEquals(prop(varFor("n"), "prop1"), falseLiteral))), // NOT n.prop <> false
-    LiteralExpression(notEquals(prop(varFor("n"), "prop1"), falseLiteral)), // n.prop <> false
-    LiteralExpression(not(equals(prop(varFor("n"), "prop1"), falseLiteral))), // n.prop <> false
-    LiteralExpression(MapExpression(Seq((propName("prop1"), falseLiteral)))(pos)), // {prop1: false}
-    LiteralExpression(in(prop(varFor("n"), "prop1"), listOf(trueLiteral))), // n.prop IN [true]
-    LiteralExpression(not(in(prop(varFor("n"), "prop1"), listOf(trueLiteral)))), // NOT n.prop IN [true]
+        // less than or equals
+        LiteralExpression(lessThanOrEqual(prop(varFor("n"), "prop1"), literal)), // n.prop1 <= value
+        LiteralExpression(not(lessThanOrEqual(prop(varFor("n"), "prop1"), literal))), // NOT n.prop1 <= value
 
-    // Float
-    LiteralExpression(equals(prop(varFor("n"), "prop1"), literalFloat(1.1))), // n.prop = 1.1
-    LiteralExpression(not(notEquals(prop(varFor("n"), "prop1"), literalFloat(1.1)))), // NOT n.prop <> 1.1
-    LiteralExpression(notEquals(prop(varFor("n"), "prop1"), literalFloat(1.1))), // n.prop <> 1.1
-    LiteralExpression(not(equals(prop(varFor("n"), "prop1"), literalFloat(1.1)))), // NOT n.prop = 1.1
-    LiteralExpression(MapExpression(Seq((propName("prop1"), literalFloat(1.1))))(pos)), // {prop1: 1.1}
-    LiteralExpression(in(prop(varFor("n"), "prop1"), listOf(literalFloat(1.1)))), // n.prop IN [1.1]
-    LiteralExpression(not(in(prop(varFor("n"), "prop1"), listOf(literalFloat(1.1))))), // NOT n.prop IN [1.1]
+        // Semantic invalid expressions, these should parse correctly to allow them to be rejected in the semantic check with a user-friendly explanation
+        LiteralExpression(equals(literal, prop(varFor("n"), "prop1"))), // value = n.prop1
+        LiteralExpression(not(notEquals(literal, prop(varFor("n"), "prop1")))), // NOT value <> n.prop1
 
+        LiteralExpression(notEquals(literal, prop(varFor("n"), "prop1"))), // value <> n.prop
+        LiteralExpression(not(equals(literal, prop(varFor("n"), "prop1")))), // NOT value = n.prop
+
+        LiteralExpression(and(
+          equals(prop(varFor("n"), "prop1"), literal),
+          equals(prop(varFor("n"), "prop2"), literal)
+        )), // n.prop1 = value AND n.prop2 = value
+        LiteralExpression(or(
+          equals(prop(varFor("n"), "prop1"), literal),
+          equals(prop(varFor("n"), "prop2"), literal)
+        )), // n.prop1 = value OR n.prop2 = value
+
+        LiteralExpression(
+          MapExpression(Seq((propName("prop1"), literal), (propName("prop2"), literal)))(pos)
+        ), // {prop1: value, prop2: value}
+
+        LiteralExpression(not(not(equals(prop(varFor("n"), "prop1"), literal)))), // NOT NOT n.prop = value
+
+        LiteralExpression(equals(prop(varFor("n"), "prop"), add(literal, literal))), // n.prop = value + value
+        LiteralExpression(equals(prop(varFor("n"), "prop"), subtract(literal, literal))), // n.prop = value - value
+
+        LiteralExpression(greaterThan(literal, prop(varFor("n"), "prop1"))), // value > n.prop1
+        LiteralExpression(not(greaterThan(literal, prop(varFor("n"), "prop1")))), // NOT value > n.prop1
+
+        LiteralExpression(greaterThanOrEqual(literal, prop(varFor("n"), "prop1"))), // value >= n.prop1
+        LiteralExpression(not(greaterThanOrEqual(literal, prop(varFor("n"), "prop1")))), // NOT value >= n.prop1
+
+        LiteralExpression(lessThan(literal, prop(varFor("n"), "prop1"))), // value < n.prop1
+        LiteralExpression(not(lessThan(literal, prop(varFor("n"), "prop1")))), // NOT value < n.prop1
+
+        LiteralExpression(lessThanOrEqual(literal, prop(varFor("n"), "prop1"))), // value <= n.prop1
+        LiteralExpression(not(lessThanOrEqual(literal, prop(varFor("n"), "prop1")))) // NOT value <= n.prop1
+      )
+    )
+  ) ++ Seq(
     // IS NULL, IS NOT NULL
     LiteralExpression(isNull(prop(varFor("n"), "prop1"))), // n.prop1 IS NULL
-    LiteralExpression(not(isNotNull(prop(varFor("n"), "prop1")))), // NOT n.prop1 IS NULL
+    LiteralExpression(not(isNotNull(prop(varFor("n"), "prop1")))), // NOT n.prop1 IS NOT NULL
     LiteralExpression(isNotNull(prop(varFor("n"), "prop1"))), // n.prop1 IS NOT NULL
     LiteralExpression(not(isNull(prop(varFor("n"), "prop1")))), // NOT n.prop1 IS NULL
-    LiteralExpression(MapExpression(Seq((propName("prop1"), nullLiteral)))(pos)), // {prop1:NULL}
-
-    // Parameter
-    LiteralExpression(equals(prop(varFor("n"), "prop1"), parameter("value", CTAny))), // n.prop1 = $value
-    LiteralExpression(not(notEquals(prop(varFor("n"), "prop1"), parameter("value", CTAny)))), // NOT n.prop1 <> $value
-    LiteralExpression(MapExpression(Seq((propName("prop1"), parameter("value", CTAny))))(pos)), // {prop1: $value}
-    LiteralExpression(in(prop(varFor("n"), "prop1"), listOf(parameter("value", CTAny)))), // n.prop1 IN [$value]
-    LiteralExpression(not(in(prop(varFor("n"), "prop1"), listOf(parameter("value", CTAny))))) // NOT n.prop1 IN [$value]
-  ) ++ semanticInvalidExpressions
+    LiteralExpression(MapExpression(Seq((propName("prop1"), nullLiteral)))(pos)) // {prop1:NULL}
+  )
 
   val invalidSegments: Seq[String] = Seq("ELEMENT", "ELEMENTS", "NODE", "NODES", "RELATIONSHIP", "RELATIONSHIPS", "")
   val graphKeywords: Seq[String] = Seq("GRAPH", "GRAPHS")

@@ -2548,20 +2548,8 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     qualifiers: util.List[PrivilegeQualifier],
     variable: Variable,
     expression: Expression
-  ): PrivilegeQualifier = {
-    def switchSides(expression: Expression): Expression =
-      expression match {
-        case eq @ Equals(_, _: Property)     => eq.switchSides
-        case neq @ NotEquals(_, _: Property) => neq.switchSides
-        case _                               => expression
-      }
-
-    val e = expression match {
-      case notExpression @ Not(inner) => Not(switchSides(inner))(notExpression.position)
-      case e                          => switchSides(e)
-    }
-    PatternQualifier(qualifiers.asScala.toList, Option(variable), e)
-  }
+  ): PrivilegeQualifier =
+    PatternQualifier(qualifiers.asScala.toList, Option(variable), expression)
 
   override def allQualifier(): util.List[PrivilegeQualifier] = {
     val list = new util.ArrayList[PrivilegeQualifier]()
