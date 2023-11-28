@@ -200,7 +200,17 @@ public class QueryProcessorImpl implements QueryProcessor {
             PreParsedQuery preParsedQuery,
             BaseState parsedQuery,
             Set<InternalNotification> parsingNotifications) {
-        if (locationService.locationOf(databaseReference) instanceof Location.Local localLocation
+        Location location;
+        try {
+            location = locationService.locationOf(databaseReference);
+        } catch (Exception e) {
+            // Let's ignore any routing-related errors while trying to insert
+            // into a cache. This might not be the biggest problem the query has
+            // and if yes, we will get the error again later.
+            return;
+        }
+
+        if (location instanceof Location.Local localLocation
                 // System DB queries are hassle, because they might contain sensitive information
                 // and AST cache is not used for them anyway.
                 && !localLocation.getDatabaseName().equals(SYSTEM_DATABASE_NAME)) {
