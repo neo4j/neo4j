@@ -152,24 +152,6 @@ object Function {
   def isIdFunction(func: FunctionInvocation) = func.function == functions.Id || func.function == functions.ElementId
 }
 
-abstract case class FunctionInfo(f: FunctionWithName) {
-  def getFunctionName: String = f.name
-
-  def isAggregationFunction: Boolean = f match {
-    case _: AggregatingFunction => true
-    case _                      => false
-  }
-
-  def getDescription: String
-
-  def getCategory: String
-
-  def getSignature: String
-
-  override def toString: String =
-    getFunctionName + " || " + getSignature + " || " + getDescription + " || " + isAggregationFunction
-}
-
 /**
  * Deterministic function, always produces the same output given the same input
  * arguments and graph state.

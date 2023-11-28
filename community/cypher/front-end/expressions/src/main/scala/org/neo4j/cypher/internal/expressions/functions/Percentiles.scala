@@ -41,7 +41,10 @@ case object Percentiles extends AggregatingFunction {
       ),
       outputType = CTMap,
       description = "Returns the nearest `INTEGER` or `FLOAT` value for each of the given percentiles.",
-      category = Category.AGGREGATING
+      category = Category.AGGREGATING,
+      // TODO REVIEWER: is deprecating the best way to prevent function from appearing in SHOW FUNCTIONS?
+      // NOTE: deprecating to prevent method from getting listed by SHOW FUNCTIONS
+      deprecated = true
     )
   )
 }
