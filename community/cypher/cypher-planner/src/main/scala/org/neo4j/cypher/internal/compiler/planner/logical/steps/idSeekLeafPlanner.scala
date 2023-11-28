@@ -71,7 +71,7 @@ case class idSeekLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
           if (skipIDs.contains(id)) {
             None
           } else {
-            queryGraph.patternRelationships.find(_.name == id) match {
+            queryGraph.patternRelationships.find(_.variable.name == id) match {
               case Some(relationship) =>
                 Some(planHiddenSelectionAndRelationshipLeafPlan(
                   queryGraph.argumentIds,
@@ -125,10 +125,10 @@ case class idSeekLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
       case IdType.ElementId => context.staticComponents.logicalPlanProducer.planRelationshipByElementIdSeek _
     }
 
-    val name = originalPattern.name
+    val variable = originalPattern.variable
     val relTypeFilterHiddenSelection = relTypeFilter(idExpr, originalPattern.types.toList)
     producePlan(
-      name,
+      variable.name,
       idValues,
       patternForLeafPlan,
       originalPattern,

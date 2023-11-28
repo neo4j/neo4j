@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans
 
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.ast.ASTAnnotationMap
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.ast.semantics.ExpressionTypeInfo
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.ExecutionModel
@@ -269,12 +270,12 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
   test("simple directed relationship by id seek with a collection of relationship ids") {
     // given
     val expr = in(id(varFor("r")), listOfInt(42, 43, 43))
-    val from = "from"
-    val end = "to"
-    val patternRel = PatternRelationship("r", (from, end), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+    val from = v"from"
+    val end = v"to"
+    val patternRel = PatternRelationship(v"r", (from, end), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
     val qg = QueryGraph(
       selections = Selections(Set(Predicate(Set("r"), expr))),
-      patternNodes = Set(from, end),
+      patternNodes = Set(from, end).map(_.name),
       patternRelationships = Set(patternRel)
     )
 
@@ -309,8 +310,8 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
       Set(DirectedRelationshipByIdSeek(
         varFor("r"),
         ManySeekableArgs(listOfInt(42, 43, 43)),
-        varFor(from),
-        varFor(end),
+        from,
+        end,
         Set.empty
       ))
     )
@@ -319,12 +320,12 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
   test("simple undirected relationship by id seek with a collection of relationship ids") {
     // given
     val expr = in(id(varFor("r")), listOfInt(42, 43, 43))
-    val from = "from"
-    val end = "to"
-    val patternRel = PatternRelationship("r", (from, end), SemanticDirection.BOTH, Seq.empty, SimplePatternLength)
+    val from = v"from"
+    val end = v"to"
+    val patternRel = PatternRelationship(v"r", (from, end), SemanticDirection.BOTH, Seq.empty, SimplePatternLength)
     val qg = QueryGraph(
       selections = Selections(Set(Predicate(Set("r"), expr))),
-      patternNodes = Set(from, end),
+      patternNodes = Set(from, end).map(_.name),
       patternRelationships = Set(patternRel)
     )
 
@@ -359,8 +360,8 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
       Set(UndirectedRelationshipByIdSeek(
         varFor("r"),
         ManySeekableArgs(listOfInt(42, 43, 43)),
-        varFor(from),
-        varFor(end),
+        from,
+        end,
         Set.empty
       ))
     )
@@ -369,8 +370,8 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
   test("simple undirected typed relationship by id seek with a collection of relationship ids") {
     // given
     val expr = in(id(varFor("r")), listOfInt(42))
-    val from = "from"
-    val end = "to"
+    val from = v"from"
+    val end = v"to"
     val relTypeX = RelTypeName("X")(pos)
 
     val semanticTable =
@@ -380,7 +381,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     semanticTable.resolvedRelTypeNames += "X" -> RelTypeId(1)
 
     val patternRel = PatternRelationship(
-      "r",
+      v"r",
       (from, end),
       SemanticDirection.BOTH,
       Seq(relTypeX),
@@ -388,7 +389,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     )
     val qg = QueryGraph(
       selections = Selections(Set(Predicate(Set("r"), expr))),
-      patternNodes = Set(from, end),
+      patternNodes = Set(from, end).map(_.name),
       patternRelationships = Set(patternRel)
     )
 
@@ -425,8 +426,8 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
         UndirectedRelationshipByIdSeek(
           varFor("r"),
           ManySeekableArgs(listOfInt(42)),
-          varFor(from),
-          varFor(end),
+          from,
+          end,
           Set.empty
         )
       ))
@@ -436,8 +437,8 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
   test("simple undirected multi-typed relationship by id seek with a collection of relationship ids") {
     // given
     val expr = in(id(varFor("r")), listOfInt(42))
-    val from = "from"
-    val end = "to"
+    val from = v"from"
+    val end = v"to"
     val relTypeX = RelTypeName("X") _
     val relTypeY = RelTypeName("Y") _
 
@@ -449,7 +450,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     semanticTable.resolvedRelTypeNames += "Y" -> RelTypeId(2)
 
     val patternRel = PatternRelationship(
-      "r",
+      v"r",
       (from, end),
       SemanticDirection.BOTH,
       Seq[RelTypeName](relTypeX, relTypeY),
@@ -457,7 +458,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     )
     val qg = QueryGraph(
       selections = Selections(Set(Predicate(Set("r"), expr))),
-      patternNodes = Set(from, end),
+      patternNodes = Set(from, end).map(_.name),
       patternRelationships = Set(patternRel)
     )
 
@@ -496,8 +497,8 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
         UndirectedRelationshipByIdSeek(
           varFor("r"),
           ManySeekableArgs(listOfInt(42)),
-          varFor(from),
-          varFor(end),
+          from,
+          end,
           Set.empty
         )
       ))
@@ -508,14 +509,14 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     // given
     val rel = varFor("r")
     val expr = in(id(rel), listOfInt(42, 43, 43))
-    val from = "from"
-    val end = "to"
-    val patternRel = PatternRelationship("r", (from, end), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+    val from = v"from"
+    val end = v"to"
+    val patternRel = PatternRelationship(v"r", (from, end), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
     val qg = QueryGraph(
       selections = Selections(Set(Predicate(Set("r"), expr))),
-      patternNodes = Set(from, end),
+      patternNodes = Set(from, end).map(_.name),
       patternRelationships = Set(patternRel),
-      argumentIds = Set(from)
+      argumentIds = Set(from.name)
     )
 
     val factory = newMockedMetricsFactory
@@ -549,7 +550,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     val newFrom = "anon_0"
     val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
       .filter(s"from = `$newFrom`")
-      .directedRelationshipByIdSeek("r", newFrom, end, Set(from), 42, 43, 43)
+      .directedRelationshipByIdSeek("r", newFrom, end.name, Set(from.name), 42, 43, 43)
       .build()
 
     resultPlans shouldEqual Set(expectedPlan)
@@ -561,14 +562,14 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     // given
     val rel = varFor("r")
     val expr = in(id(rel), listOfInt(42, 43, 43))
-    val from = "from"
-    val end = "to"
-    val patternRel = PatternRelationship("r", (from, end), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+    val from = v"from"
+    val end = v"to"
+    val patternRel = PatternRelationship(v"r", (from, end), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
     val qg = QueryGraph(
       selections = Selections(Set(Predicate(Set("r"), expr))),
-      patternNodes = Set(from, end),
+      patternNodes = Set(from, end).map(_.name),
       patternRelationships = Set(patternRel),
-      argumentIds = Set(from, end)
+      argumentIds = Set(from, end).map(_.name)
     )
 
     val factory = newMockedMetricsFactory
@@ -602,8 +603,8 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     val newFrom = "anon_0"
     val newTo = "anon_1"
     val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
-      .filter(s"$from = `$newFrom`", s"$end = `$newTo`")
-      .directedRelationshipByIdSeek("r", newFrom, newTo, Set(from, end), 42, 43, 43)
+      .filter(s"${from.name} = `$newFrom`", s"${end.name} = `$newTo`")
+      .directedRelationshipByIdSeek("r", newFrom, newTo, Set(from, end).map(_.name), 42, 43, 43)
       .build()
 
     resultPlans shouldEqual Set(expectedPlan)
@@ -612,12 +613,12 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
   test("self-loop directed relationship by id seek single relationship id, start and end node already bound") {
     // given
     val expr = in(id(varFor("r")), listOfInt(42))
-    val from = "n"
+    val from = v"n"
     val to = from
-    val patternRel = PatternRelationship("r", (from, to), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+    val patternRel = PatternRelationship(v"r", (from, to), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
     val qg = QueryGraph(
       selections = Selections(Set(Predicate(Set("r"), expr))),
-      patternNodes = Set(from, to),
+      patternNodes = Set(from, to).map(_.name),
       patternRelationships = Set(patternRel)
     )
 
@@ -650,8 +651,8 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     val newTo = "  UNNAMED0"
     // then
     val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
-      .filter(s"$to = `$newTo`")
-      .directedRelationshipByIdSeek("r", from, newTo, Set.empty, 42)
+      .filter(s"${to.name} = `$newTo`")
+      .directedRelationshipByIdSeek("r", from.name, newTo, Set.empty, 42)
       .build()
 
     resultPlans shouldEqual Set(expectedPlan)
@@ -663,12 +664,12 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     // given
     val rel = varFor("r")
     val expr = in(id(rel), listOfInt(42, 43, 43))
-    val from = "n"
+    val from = v"n"
     val to = from
-    val patternRel = PatternRelationship("r", (from, to), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+    val patternRel = PatternRelationship(v"r", (from, to), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
     val qg = QueryGraph(
       selections = Selections(Set(Predicate(Set("r"), expr))),
-      patternNodes = Set(from, to),
+      patternNodes = Set(from, to).map(_.name),
       patternRelationships = Set(patternRel)
     )
 
@@ -701,8 +702,8 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     val newTo = "  UNNAMED0"
     // then
     val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
-      .filter(s"$to = `$newTo`")
-      .directedRelationshipByIdSeek("r", from, newTo, Set.empty, 42, 43, 43)
+      .filter(s"${to.name} = `$newTo`")
+      .directedRelationshipByIdSeek("r", from.name, newTo, Set.empty, 42, 43, 43)
       .build()
 
     resultPlans shouldEqual Set(expectedPlan)

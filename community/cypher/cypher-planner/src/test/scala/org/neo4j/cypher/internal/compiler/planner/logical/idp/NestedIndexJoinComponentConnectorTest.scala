@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.PlanMatchHelp
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
@@ -121,10 +122,10 @@ class NestedIndexJoinComponentConnectorTest extends CypherFunSuite with LogicalP
       val order = InterestingOrderConfig.empty
       val kit = ctx.plannerState.config.toKit(order, ctx)
       val nQg = QueryGraph(patternRelationships =
-        Set(PatternRelationship("n", ("a", "b"), BOTH, Seq(relTypeName("N")), SimplePatternLength))
+        Set(PatternRelationship(v"n", (v"a", v"b"), BOTH, Seq(relTypeName("N")), SimplePatternLength))
       )
       val mQg = QueryGraph(patternRelationships =
-        Set(PatternRelationship("m", ("c", "d"), BOTH, Seq(relTypeName("M")), SimplePatternLength))
+        Set(PatternRelationship(v"m", (v"c", v"d"), BOTH, Seq(relTypeName("M")), SimplePatternLength))
       )
       val fullQg = (nQg ++ mQg).addPredicates(joinPred)
 

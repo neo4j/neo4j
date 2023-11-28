@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.expressions.Expression
@@ -137,8 +138,8 @@ class SelectorTest extends CypherFunSuite with LogicalPlanningTestSupport {
           patternNodes = Set("a", "  UNNAMED2"),
           patternRelationships =
             Set(PatternRelationship(
-              "  UNNAMED1",
-              ("a", "  UNNAMED2"),
+              v"  UNNAMED1",
+              (v"a", v"  UNNAMED2"),
               SemanticDirection.OUTGOING,
               Seq.empty,
               SimplePatternLength

@@ -373,7 +373,7 @@ object SinglePlannerQuery {
   def empty: RegularSinglePlannerQuery = RegularSinglePlannerQuery()
 
   def coveredIdsForPatterns(patternNodeIds: Set[String], patternRels: Set[PatternRelationship]): Set[String] = {
-    val patternRelIds = patternRels.flatMap(_.coveredIds)
+    val patternRelIds = patternRels.flatMap(_.coveredIds.map(_.name))
     patternNodeIds ++ patternRelIds
   }
 

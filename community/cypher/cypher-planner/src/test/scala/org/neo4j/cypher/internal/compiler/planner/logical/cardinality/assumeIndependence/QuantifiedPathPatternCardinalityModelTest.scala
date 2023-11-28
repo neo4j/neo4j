@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.IndependenceCombiner
 import org.neo4j.cypher.internal.compiler.test_helpers.TestGraphStatistics
@@ -93,19 +94,19 @@ class QuantifiedPathPatternCardinalityModelTest extends CypherFunSuite with Quan
 
     val qpp =
       QuantifiedPathPattern(
-        leftBinding = NodeBinding("a_i", "start"),
-        rightBinding = NodeBinding("c_i", "end"),
+        leftBinding = NodeBinding(v"a_i", v"start"),
+        rightBinding = NodeBinding(v"c_i", v"end"),
         patternRelationships = NonEmptyList(
           PatternRelationship(
-            "r_i",
-            ("a_i", "b_i"),
+            v"r_i",
+            (v"a_i", v"b_i"),
             SemanticDirection.OUTGOING,
             List(RelTypeName("R")(InputPosition.NONE)),
             SimplePatternLength
           ),
           PatternRelationship(
-            "s_i",
-            ("b_i", "c_i"),
+            v"s_i",
+            (v"b_i", v"c_i"),
             SemanticDirection.INCOMING,
             List(RelTypeName("R")(InputPosition.NONE)),
             SimplePatternLength
@@ -117,8 +118,8 @@ class QuantifiedPathPatternCardinalityModelTest extends CypherFunSuite with Quan
         )(InputPosition.NONE)),
         repetition = Repetition.apply(2, UpperBound.Limited(2)),
         nodeVariableGroupings =
-          Set(VariableGrouping("a_i", "a"), VariableGrouping("b_i", "b"), VariableGrouping("c_i", "c")),
-        relationshipVariableGroupings = Set(VariableGrouping("r_i", "r"), VariableGrouping("s_i", "s"))
+          Set(VariableGrouping(v"a_i", v"a"), VariableGrouping(v"b_i", v"b"), VariableGrouping(v"c_i", v"c")),
+        relationshipVariableGroupings = Set(VariableGrouping(v"r_i", v"r"), VariableGrouping(v"s_i", v"s"))
       )
 
     val cardinality =

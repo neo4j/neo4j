@@ -24,6 +24,7 @@ import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.when
 import org.mockito.verification.VerificationMode
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.CacheBackedQPPInnerPlanner.CacheKeyInner
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.CacheBackedQPPInnerPlanner.CacheKeyOuter
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.CacheBackedQPPInnerPlannerTest.QPPInnerPlannerOps
@@ -176,24 +177,26 @@ object CacheBackedQPPInnerPlannerTest extends CypherFunSuite {
   val fromRight: Boolean = false
 
   val `(a) ((n)-[r]->(m))+ (b)` : QuantifiedPathPattern = QuantifiedPathPattern(
-    leftBinding = NodeBinding("n", "a"),
-    rightBinding = NodeBinding("m", "b"),
-    patternRelationships = NonEmptyList(PatternRelationship("r", ("n", "m"), OUTGOING, Seq.empty, SimplePatternLength)),
+    leftBinding = NodeBinding(v"n", v"a"),
+    rightBinding = NodeBinding(v"m", v"b"),
+    patternRelationships =
+      NonEmptyList(PatternRelationship(v"r", (v"n", v"m"), OUTGOING, Seq.empty, SimplePatternLength)),
     argumentIds = Set.empty,
     selections = Selections.empty,
     repetition = Repetition(1, UpperBound.unlimited),
-    nodeVariableGroupings = Set(VariableGrouping("n", "n"), VariableGrouping("m", "m")),
-    relationshipVariableGroupings = Set(VariableGrouping("r", "r"))
+    nodeVariableGroupings = Set(VariableGrouping(v"n", v"n"), VariableGrouping(v"m", v"m")),
+    relationshipVariableGroupings = Set(VariableGrouping(v"r", v"r"))
   )
 
   val `(c) ((x)-[r]->(y))+ (d)` : QuantifiedPathPattern = QuantifiedPathPattern(
-    leftBinding = NodeBinding("x", "c"),
-    rightBinding = NodeBinding("y", "d"),
-    patternRelationships = NonEmptyList(PatternRelationship("r", ("x", "y"), OUTGOING, Seq.empty, SimplePatternLength)),
+    leftBinding = NodeBinding(v"x", v"c"),
+    rightBinding = NodeBinding(v"y", v"d"),
+    patternRelationships =
+      NonEmptyList(PatternRelationship(v"r", (v"x", v"y"), OUTGOING, Seq.empty, SimplePatternLength)),
     argumentIds = Set.empty,
     selections = Selections.empty,
     repetition = Repetition(1, UpperBound.unlimited),
-    nodeVariableGroupings = Set(VariableGrouping("x", "x"), VariableGrouping("y", "y")),
-    relationshipVariableGroupings = Set(VariableGrouping("r", "r"))
+    nodeVariableGroupings = Set(VariableGrouping(v"x", v"x"), VariableGrouping(v"y", v"y")),
+    relationshipVariableGroupings = Set(VariableGrouping(v"r", v"r"))
   )
 }

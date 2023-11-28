@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.ShortestPathsPatternPart
-import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.ir.PatternLength
 import org.neo4j.cypher.internal.util.Rewritable
 
@@ -50,7 +49,7 @@ object ShortestRelationshipPattern {
 
   def from(pattern: org.neo4j.cypher.internal.ir.ShortestRelationshipPattern): ShortestRelationshipPattern = {
     ShortestRelationshipPattern(
-      name = pattern.name.map(varFor),
+      name = pattern.maybePathVar,
       rel = PatternRelationship.from(pattern.rel),
       single = pattern.single
     )(pattern.expr)
@@ -73,8 +72,8 @@ object PatternRelationship {
 
   def from(pattern: org.neo4j.cypher.internal.ir.PatternRelationship): PatternRelationship = {
     PatternRelationship(
-      name = varFor(pattern.name),
-      nodes = (varFor(pattern.left), varFor(pattern.right)),
+      name = pattern.variable,
+      nodes = (pattern.left, pattern.right),
       dir = pattern.dir,
       types = pattern.types,
       length = pattern.length

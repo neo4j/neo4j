@@ -485,7 +485,7 @@ object ClauseConverters {
     // If a QPP depends on a non-local variable from a previous clause, we need to insert a horizon. This is to
     // guarantee that the non-local variable is bound prior to QPP plan, so that the QPP plan may use it.
     def qppHasDependencyToPreviousClauses: Boolean = {
-      val qppDependencies = pathPatterns.allQuantifiedPathPatterns.flatMap(_.dependencies).toSet
+      val qppDependencies = pathPatterns.allQuantifiedPathPatterns.flatMap(_.dependencies).map(_.name)
       val availableVars = acc.currentlyAvailableVariables
       qppDependencies.intersect(availableVars).nonEmpty
     }
@@ -495,7 +495,7 @@ object ClauseConverters {
     def hasPatternOverlapOnInteriorVars: Boolean = {
       // MATCH SHORTEST (()--())+ ()-[r]-() (()--())+ MATCH (a)-[r]-(b)
       val previousStrictInteriorVars =
-        acc.currentQueryGraph.selectivePathPatterns.flatMap(spp => spp.coveredIds -- spp.boundaryNodesSet)
+        acc.currentQueryGraph.selectivePathPatterns.flatMap(spp => spp.coveredIds -- spp.boundaryNodesSet).map(_.name)
       val currentPatternVars = clause.pattern.patternParts.flatMap(_.allVariables.map(_.name)).toSet
       val hasReferenceFromThisPatternToInterior = previousStrictInteriorVars.intersect(currentPatternVars).nonEmpty
 
@@ -775,8 +775,8 @@ object ClauseConverters {
           patternRelationships = rels.map {
             case CreateRelCommand(r, _) =>
               PatternRelationship(
-                r.variable.name,
-                (r.leftNode.name, r.rightNode.name),
+                r.variable,
+                (r.leftNode, r.rightNode),
                 r.direction,
                 Seq(r.relType),
                 SimplePatternLength

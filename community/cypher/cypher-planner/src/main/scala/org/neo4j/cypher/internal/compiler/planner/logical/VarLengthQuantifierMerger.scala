@@ -43,7 +43,7 @@ case object VarLengthQuantifierMerger extends PlannerQueryRewriter with StepSequ
       case RegularSinglePlannerQuery(queryGraph, interestingOrder, horizon, tail, queryInput) =>
         val (simpleRels, varLengthRels) = queryGraph.patternRelationships.partition(_.length.isSimple)
 
-        val mergedRels = varLengthRels.groupBy(_.name).values.flatMap { rels =>
+        val mergedRels = varLengthRels.groupBy(_.variable).values.flatMap { rels =>
           val newLength = rels.map(_.length).fold(VarPatternLength(0, None))(_ intersect _)
           rels.map(_.copy(length = newLength))
         }

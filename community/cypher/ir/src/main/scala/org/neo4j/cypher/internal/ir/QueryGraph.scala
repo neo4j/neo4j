@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.PartialPredicate
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
+import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.ir.ast.IRExpression
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.PredicateConverter
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
@@ -137,7 +138,7 @@ final case class QueryGraph private (
    */
   def withPattern(pattern: PatternRelationship): QueryGraph =
     copy(
-      patternNodes = pattern.boundaryNodesSet,
+      patternNodes = pattern.boundaryNodesSet.map(_.name),
       patternRelationships = Set(pattern)
     )
 
@@ -147,7 +148,7 @@ final case class QueryGraph private (
    */
   def withPatternRelationships(patterns: Set[PatternRelationship]): QueryGraph =
     copy(
-      patternNodes = patternNodes ++ patterns.flatMap(_.boundaryNodesSet),
+      patternNodes = patternNodes ++ patterns.flatMap(_.boundaryNodesSet).map(_.name),
       patternRelationships = patterns
     )
 
@@ -157,7 +158,7 @@ final case class QueryGraph private (
    */
   def withQuantifiedPathPatterns(patterns: Set[QuantifiedPathPattern]): QueryGraph =
     copy(
-      patternNodes = patternNodes ++ patterns.flatMap(_.boundaryNodesSet),
+      patternNodes = patternNodes ++ patterns.flatMap(_.boundaryNodesSet).map(_.name),
       quantifiedPathPatterns = patterns
     )
 
@@ -182,7 +183,7 @@ final case class QueryGraph private (
 
   private def addExhaustivePathPattern(pathPattern: ExhaustivePathPattern[_]): QueryGraph =
     pathPattern match {
-      case ExhaustivePathPattern.SingleNode(name)             => addPatternNodes(name)
+      case ExhaustivePathPattern.SingleNode(name)             => addPatternNodes(name.name)
       case ExhaustivePathPattern.NodeConnections(connections) => addNodeConnections(connections.toIterable)
     }
 
@@ -191,7 +192,7 @@ final case class QueryGraph private (
 
   def addPatternRelationship(rel: PatternRelationship): QueryGraph =
     copy(
-      patternNodes = patternNodes ++ rel.boundaryNodesSet,
+      patternNodes = patternNodes ++ rel.boundaryNodesSet.map(_.name),
       patternRelationships = patternRelationships + rel
     )
 
@@ -213,14 +214,14 @@ final case class QueryGraph private (
 
   def addQuantifiedPathPattern(pattern: QuantifiedPathPattern): QueryGraph =
     copy(
-      patternNodes = patternNodes ++ pattern.boundaryNodesSet,
+      patternNodes = patternNodes ++ pattern.boundaryNodesSet.map(_.name),
       quantifiedPathPatterns = quantifiedPathPatterns + pattern
     )
 
   def addShortestRelationship(shortestRelationship: ShortestRelationshipPattern): QueryGraph = {
     val rel = shortestRelationship.rel
     copy(
-      patternNodes = patternNodes ++ rel.boundaryNodesSet,
+      patternNodes = patternNodes ++ rel.boundaryNodesSet.map(_.name),
       shortestRelationshipPatterns = shortestRelationshipPatterns + shortestRelationship
     )
   }
@@ -233,7 +234,7 @@ final case class QueryGraph private (
    */
   def addSelectivePathPattern(selectivePathPattern: SelectivePathPattern): QueryGraph =
     copy(
-      patternNodes = patternNodes ++ selectivePathPattern.boundaryNodesSet,
+      patternNodes = patternNodes ++ selectivePathPattern.boundaryNodesSet.map(_.name),
       selectivePathPatterns = selectivePathPatterns + selectivePathPattern
     )
 
@@ -319,8 +320,8 @@ final case class QueryGraph private (
     optionalMatches.flatMap(_.dependencies).toSet ++
       selections.predicates.flatMap(_.dependencies) ++
       mutatingPatterns.flatMap(_.dependencies.map(_.name)) ++
-      quantifiedPathPatterns.flatMap(_.dependencies) ++
-      selectivePathPatterns.flatMap(_.dependencies) ++
+      quantifiedPathPatterns.flatMap(_.dependencies).map(_.name) ++
+      selectivePathPatterns.flatMap(_.dependencies).map(_.name) ++
       argumentIds
 
   /**
@@ -352,7 +353,7 @@ final case class QueryGraph private (
 
   private def collectAllPatternNodes(f: String => Unit): Unit = {
     patternNodes.foreach(f)
-    selectivePathPatterns.foreach(_.pathPattern.connections.foreach(_.boundaryNodesSet.foreach(f)))
+    selectivePathPatterns.foreach(_.pathPattern.connections.foreach(_.boundaryNodesSet.map(_.name).foreach(f)))
     optionalMatches.foreach(m => m.allPatternNodes.foreach(f))
     for {
       create <- createPatterns
@@ -392,7 +393,7 @@ final case class QueryGraph private (
 
   def inlinedRelTypes(rel: String): Set[RelTypeName] = {
     patternRelationships
-      .find(_.name == rel)
+      .find(_.variable.name == rel)
       .toSet[PatternRelationship]
       .flatMap(_.types.toSet)
   }
@@ -428,7 +429,7 @@ final case class QueryGraph private (
     Selections(traverseAllQueryGraphs(_.selections.predicates))
 
   def coveredIdsForPatterns: Set[String] = {
-    val patternRelIds = nodeConnections.flatMap(_.coveredIds)
+    val patternRelIds = nodeConnections.flatMap(_.coveredIds).map(_.name)
     patternNodes ++ patternRelIds
   }
 
@@ -439,7 +440,7 @@ final case class QueryGraph private (
   def idsWithoutOptionalMatchesOrUpdates: Set[String] =
     coveredIdsForPatterns ++
       argumentIds ++
-      shortestRelationshipPatterns.flatMap(_.name)
+      shortestRelationshipPatterns.flatMap(_.maybePathVar).map(_.name)
 
   /**
    * All variables that are bound after this QG has been matched
@@ -492,7 +493,7 @@ final case class QueryGraph private (
       for {
         selectivePathPattern <- selectivePathPatterns.toVector
         connection <- selectivePathPattern.pathPattern.connections.toIterable
-        node <- connection.boundaryNodesSet
+        node <- connection.boundaryNodesSet.map(_.name)
       } yield node -> (selections ++ selectivePathPattern.selections).labelsOnNode(node)
 
     (labelsOnPatternNodes ++ labelsOnSelectivePathPatternNodes).groupMapReduce(_._1)(_._2)(_.union(_))
@@ -514,7 +515,7 @@ final case class QueryGraph private (
     val allRelationships = patternRelationships ++ selectivePathPatternsRelationships
 
     allRelationships.collect {
-      case PatternRelationship(name, _, _, Seq(relType), _) => name -> relType
+      case PatternRelationship(name, _, _, Seq(relType), _) => name.name -> relType
     }.toMap
   }
 
@@ -535,9 +536,9 @@ final case class QueryGraph private (
       val qg = connectedComponentFor(patternNode, visited)
       val coveredIds = qg.idsWithoutOptionalMatchesOrUpdates
       val shortestRelationships = shortestRelationshipPatterns.filter {
-        _.rel.boundaryNodesSet.forall(coveredIds.contains)
+        _.rel.boundaryNodesSet.map(_.name).forall(coveredIds.contains)
       }
-      val shortestPathIds = shortestRelationships.flatMap(p => Set(p.rel.name) ++ p.name)
+      val shortestPathIds = shortestRelationships.flatMap(p => Set(p.rel.variable) ++ p.maybePathVar).map(_.name)
       val allIds = coveredIds ++ argumentIds ++ shortestPathIds
 
       val predicates = predicatesWithLocalDependencies.filter(_.dependencies.subsetOf(allIds))
@@ -611,17 +612,17 @@ final case class QueryGraph private (
 
     // All node connections that either have `node` as the left or the right node.
     val nodeConnectionsOfNode = nodeConnections.filter { nc =>
-      nc.boundaryNodesSet.contains(node) && !connectedComponent.nodeConnections.contains(nc)
+      nc.boundaryNodesSet.map(_.name).contains(node) && !connectedComponent.nodeConnections.contains(nc)
     }
     // All nodes that get connected through `nodeConnectionsOfNode`
-    val nodesConnectedThroughOneConnection = nodeConnectionsOfNode.map(_.otherSide(node))
+    val nodesConnectedThroughOneConnection = nodeConnectionsOfNode.map(_.otherSide(varFor(node)))
 
     // `(a)-[r]->(b), (c)-[r]->(d)` are connected through both relationships being named `r`.
     val patternRelationshipsWithSameName =
       patternRelationships.filterNot(nodeConnectionsOfNode).filter { r =>
         nodeConnectionsOfNode.exists {
-          case r2: PatternRelationship if r.name == r2.name => true
-          case _                                            => false
+          case r2: PatternRelationship if r.variable == r2.variable => true
+          case _                                                    => false
         }
       }
     // All nodes that get connected through `patternRelationshipsWithSameName`
@@ -629,7 +630,7 @@ final case class QueryGraph private (
 
     (
       nodeConnectionsOfNode ++ patternRelationshipsWithSameName,
-      nodesConnectedThroughOneConnection ++ patternRelationshipsWithSameNameNodes
+      (nodesConnectedThroughOneConnection ++ patternRelationshipsWithSameNameNodes).map(_.name)
     )
   }
 
@@ -643,8 +644,8 @@ final case class QueryGraph private (
   def standaloneArgumentPatternNodes: Set[String] = {
     patternNodes
       .intersect(argumentIds)
-      .diff(nodeConnections.flatMap(_.coveredIds))
-      .diff(shortestRelationshipPatterns.flatMap(_.rel.coveredIds))
+      .diff(nodeConnections.flatMap(_.coveredIds).map(_.name))
+      .diff(shortestRelationshipPatterns.flatMap(_.rel.coveredIds).map(_.name))
   }
 
   override def toString: String = {
@@ -755,10 +756,10 @@ object QueryGraph {
     selectivePathPatterns: Set[SelectivePathPattern] = Set.empty
   ): QueryGraph = {
     val allPatternNodes = patternNodes ++
-      patternRelationships.flatMap(_.boundaryNodesSet) ++
-      quantifiedPathPatterns.flatMap(_.boundaryNodesSet) ++
-      selectivePathPatterns.flatMap(_.boundaryNodesSet) ++
-      shortestRelationshipPatterns.flatMap(_.rel.boundaryNodesSet)
+      patternRelationships.flatMap(_.boundaryNodesSet).map(_.name) ++
+      quantifiedPathPatterns.flatMap(_.boundaryNodesSet).map(_.name) ++
+      selectivePathPatterns.flatMap(_.boundaryNodesSet).map(_.name) ++
+      shortestRelationshipPatterns.flatMap(_.rel.boundaryNodesSet).map(_.name)
 
     new QueryGraph(
       patternRelationships,

@@ -134,7 +134,7 @@ trait LogicalPlanningTestSupport extends AstConstructionTestSupport with Logical
     types: Seq[RelTypeName] = Seq.empty,
     length: PatternLength = SimplePatternLength
   ) = {
-    PatternRelationship(rel, (start, end), dir, types, length)
+    PatternRelationship(varFor(rel), (varFor(start), varFor(end)), dir, types, length)
   }
 
   /**

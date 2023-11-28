@@ -87,7 +87,7 @@ case class QgWithLeafInfo(
     queryGraph.allPatternNodesRead -- stableIdentifier.map(_.name).filterNot(unstableLeaves.contains)
 
   lazy val unstablePatternRelationships: Set[PatternRelationship] =
-    queryGraph.allPatternRelationshipsRead.filterNot(rel => stableIdentifier.exists(i => i.name == rel.name))
+    queryGraph.allPatternRelationshipsRead.filterNot(rel => stableIdentifier.exists(i => i.name == rel.variable.name))
 
   lazy val patternNodes: Set[Identifier] = {
     val unstableIdentifiers: Set[Identifier] = unstablePatternNodes.map(UnstableIdentifier)
@@ -129,9 +129,10 @@ case class QgWithLeafInfo(
     })
 
   lazy val patternRelationships: Set[Identifier] = {
-    val unstableIdentifiers: Set[Identifier] = unstablePatternRelationships.map(rel => UnstableIdentifier(rel.name))
+    val unstableIdentifiers: Set[Identifier] =
+      unstablePatternRelationships.map(rel => UnstableIdentifier(rel.variable.name))
     val maybeStableIdentifier =
-      stableIdentifier.filter(i => queryGraph.patternRelationships.exists(rel => i.name == rel.name))
+      stableIdentifier.filter(i => queryGraph.patternRelationships.exists(rel => i.name == rel.variable.name))
     unstableIdentifiers ++ maybeStableIdentifier
   }
 

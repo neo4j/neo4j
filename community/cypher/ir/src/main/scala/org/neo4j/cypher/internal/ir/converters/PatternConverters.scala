@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.ir.converters
 
 import org.neo4j.cypher.internal.expressions.AnonymousPatternPart
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.NamedPatternPart
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.NonPrefixedPatternPart
@@ -36,6 +37,7 @@ import org.neo4j.cypher.internal.expressions.QuantifiedPath
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.ShortestPathsPatternPart
 import org.neo4j.cypher.internal.expressions.SimplePattern
+import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.ir.ExhaustiveNodeConnection
 import org.neo4j.cypher.internal.ir.ExhaustivePathPattern
 import org.neo4j.cypher.internal.ir.ExhaustivePathPattern.NodeConnections
@@ -60,14 +62,14 @@ class PatternConverters(anonymousVariableNameGenerator: AnonymousVariableNameGen
   private def convertPatternPart(patternPart: PatternPartWithSelector): PathPattern =
     patternPart.part match {
       case NamedPatternPart(variable, anonymousPatternPart) =>
-        convertAnonymousPatternPart(patternPart.selector, Some(variable.name), anonymousPatternPart)
+        convertAnonymousPatternPart(patternPart.selector, Some(variable), anonymousPatternPart)
       case anonymousPatternPart: AnonymousPatternPart =>
         convertAnonymousPatternPart(patternPart.selector, None, anonymousPatternPart)
     }
 
   private def convertAnonymousPatternPart(
     selector: PatternPart.Selector,
-    pathName: Option[String],
+    pathName: Option[LogicalVariable],
     anonymousPatternPart: AnonymousPatternPart
   ): PathPattern =
     anonymousPatternPart match {
@@ -88,7 +90,7 @@ class PatternConverters(anonymousVariableNameGenerator: AnonymousVariableNameGen
         element match {
           case RelationshipChain(leftNode: NodePattern, relationship, rightNode) =>
             ShortestRelationshipPattern(
-              name = Some(pathName.getOrElse(anonymousVariableNameGenerator.nextName)),
+              maybePathVar = Some(pathName.getOrElse(varFor(anonymousVariableNameGenerator.nextName))),
               rel = SimplePatternConverters.makePatternRelationship(leftNode, relationship, rightNode),
               single = single
             )(expr = part)

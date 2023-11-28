@@ -73,6 +73,7 @@ import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.util.Preconditions
 
 import java.lang.reflect.Method
+
 import scala.annotation.tailrec
 import scala.collection.immutable.ListSet
 import scala.collection.mutable
@@ -3516,6 +3517,7 @@ case class Trail(
       _.groupName
     )
   override val distinctness: Distinctness = NotDistinct
+
 }
 
 object Trail {

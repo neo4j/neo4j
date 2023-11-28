@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.expressions.functions.Length
 import org.neo4j.cypher.internal.ir.PatternRelationship
@@ -201,14 +202,14 @@ class GoalBitAllocationTest extends CypherFunSuite with AstConstructionTestSuppo
       QueryGraph(
         patternNodes = Set("a", "b"),
         patternRelationships =
-          Set(PatternRelationship("r", ("a", "b"), OUTGOING, Seq(relTypeName("R")), SimplePatternLength))
+          Set(PatternRelationship(v"r", (v"a", v"b"), OUTGOING, Seq(relTypeName("R")), SimplePatternLength))
       ), // 1
       QueryGraph(patternNodes = Set("c", "d")), // 2
       QueryGraph(
         patternNodes = Set("e", "f", "g"),
         shortestRelationshipPatterns = Set(ShortestRelationshipPattern(
-          Some("p"),
-          PatternRelationship("p_r", ("e", "f"), OUTGOING, Seq(relTypeName("R")), SimplePatternLength),
+          Some(v"p"),
+          PatternRelationship(v"p_r", (v"e", v"f"), OUTGOING, Seq(relTypeName("R")), SimplePatternLength),
           single = true
         )(null))
       ) // 3
@@ -233,7 +234,7 @@ class GoalBitAllocationTest extends CypherFunSuite with AstConstructionTestSuppo
     )
 
     // WHEN
-    val (gba, initalTodo) = GoalBitAllocation.create(
+    val (gba, initialTodo) = GoalBitAllocation.create(
       components,
       QueryGraph(optionalMatches = optionalMatches)
     )
@@ -253,8 +254,8 @@ class GoalBitAllocationTest extends CypherFunSuite with AstConstructionTestSuppo
         BitSet(2, 3)
       )
     ))
-    initalTodo.take(components.size).toSet should equal(components)
-    initalTodo.drop(components.size) should equal(optionalMatches)
+    initialTodo.take(components.size).toSet should equal(components)
+    initialTodo.drop(components.size) should equal(optionalMatches)
   }
 
   // noinspection SameParameterValue

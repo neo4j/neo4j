@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QueryGraph
@@ -27,13 +28,13 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class SolvablesTest extends CypherFunSuite {
 
-  val node1Name = "a"
-  val node2Name = "b"
+  private val node1 = v"a"
+  private val node2 = v"b"
 
-  val relName = "rel"
+  private val relVar = v"rel"
 
-  val rel =
-    PatternRelationship(relName, (node1Name, node2Name), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+  private val rel =
+    PatternRelationship(relVar, (node1, node2), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
   test("should compute solvables from empty query graph") {
     val qg = QueryGraph.empty
@@ -42,7 +43,7 @@ class SolvablesTest extends CypherFunSuite {
   }
 
   test("should compute solvables from query graph with pattern relationships") {
-    val qg = QueryGraph.empty.addPatternNodes(node1Name, node2Name).addPatternRelationship(rel)
+    val qg = QueryGraph.empty.addPatternNodes(node1.name, node2.name).addPatternRelationship(rel)
 
     Solvables(qg) should equal(Set(SolvableRelationship(rel)))
   }

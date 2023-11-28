@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.ir
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.Repetition
@@ -29,27 +30,27 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 class NodeConnectionTest extends CypherFunSuite with AstConstructionTestSupport {
 
   private val `(foo)-[x]->(start)` = PatternRelationship(
-    "x",
-    ("foo", "start"),
+    v"x",
+    (v"foo", v"start"),
     SemanticDirection.OUTGOING,
     Seq.empty,
     SimplePatternLength
   )
 
   private val `(start) ((a)-[r]->(b)-[s]->(c))+ (end)` = QuantifiedPathPattern(
-    leftBinding = NodeBinding("a", "start"),
-    rightBinding = NodeBinding("c", "end"),
+    leftBinding = NodeBinding(v"a", v"start"),
+    rightBinding = NodeBinding(v"c", v"end"),
     patternRelationships = NonEmptyList(
       PatternRelationship(
-        name = "r",
-        boundaryNodes = ("a", "b"),
+        variable = v"r",
+        boundaryNodes = (v"a", v"b"),
         dir = SemanticDirection.OUTGOING,
         types = Nil,
         length = SimplePatternLength
       ),
       PatternRelationship(
-        name = "s",
-        boundaryNodes = ("b", "c"),
+        variable = v"s",
+        boundaryNodes = (v"b", v"c"),
         dir = SemanticDirection.OUTGOING,
         types = Nil,
         length = SimplePatternLength
@@ -58,42 +59,42 @@ class NodeConnectionTest extends CypherFunSuite with AstConstructionTestSupport 
     argumentIds = Set.empty,
     selections = Selections.empty,
     repetition = Repetition(0, UpperBound.Unlimited),
-    nodeVariableGroupings = Set("a", "b", "c").map(name => VariableGrouping(name, name)),
-    relationshipVariableGroupings = Set("r", "s").map(name => VariableGrouping(name, name))
+    nodeVariableGroupings = Set("a", "b", "c").map(name => VariableGrouping(varFor(name), varFor(name))),
+    relationshipVariableGroupings = Set("r", "s").map(name => VariableGrouping(varFor(name), varFor(name)))
   )
 
   test("pathVariables of a relationship") {
     `(foo)-[x]->(start)`.pathVariables should equal(Seq(
-      NodePathVariable("foo"),
-      RelationshipPathVariable("x"),
-      NodePathVariable("start")
+      NodePathVariable(v"foo"),
+      RelationshipPathVariable(v"x"),
+      NodePathVariable(v"start")
     ))
   }
 
   test("pathVariables of a QPP") {
     `(start) ((a)-[r]->(b)-[s]->(c))+ (end)`.pathVariables should equal(Seq(
-      NodePathVariable("start"),
-      NodePathVariable("a"),
-      RelationshipPathVariable("r"),
-      NodePathVariable("b"),
-      RelationshipPathVariable("s"),
-      NodePathVariable("c"),
-      NodePathVariable("end")
+      NodePathVariable(v"start"),
+      NodePathVariable(v"a"),
+      RelationshipPathVariable(v"r"),
+      NodePathVariable(v"b"),
+      RelationshipPathVariable(v"s"),
+      NodePathVariable(v"c"),
+      NodePathVariable(v"end")
     ))
   }
 
   test("pathVariables of a QPP with gaps in group variables") {
     `(start) ((a)-[r]->(b)-[s]->(c))+ (end)`
       .copy(
-        nodeVariableGroupings = Set("a", "c").map(name => VariableGrouping(name, name)),
-        relationshipVariableGroupings = Set("s").map(name => VariableGrouping(name, name))
+        nodeVariableGroupings = Set("a", "c").map(name => VariableGrouping(varFor(name), varFor(name))),
+        relationshipVariableGroupings = Set("s").map(name => VariableGrouping(varFor(name), varFor(name)))
       )
       .pathVariables should equal(Seq(
-      NodePathVariable("start"),
-      NodePathVariable("a"),
-      RelationshipPathVariable("s"),
-      NodePathVariable("c"),
-      NodePathVariable("end")
+      NodePathVariable(v"start"),
+      NodePathVariable(v"a"),
+      RelationshipPathVariable(v"s"),
+      NodePathVariable(v"c"),
+      NodePathVariable(v"end")
     ))
   }
 
@@ -103,7 +104,7 @@ class NodeConnectionTest extends CypherFunSuite with AstConstructionTestSupport 
         nodeVariableGroupings = Set.empty,
         relationshipVariableGroupings = Set.empty
       )
-      .pathVariables should equal(Seq(NodePathVariable("start"), NodePathVariable("end")))
+      .pathVariables should equal(Seq(NodePathVariable(v"start"), NodePathVariable(v"end")))
   }
 
   test("pathVariables of an SPP") {
@@ -118,15 +119,15 @@ class NodeConnectionTest extends CypherFunSuite with AstConstructionTestSupport 
       )
 
     spp.pathVariables should equal(Seq(
-      NodePathVariable("foo"),
-      RelationshipPathVariable("x"),
-      NodePathVariable("start"),
-      NodePathVariable("a"),
-      RelationshipPathVariable("r"),
-      NodePathVariable("b"),
-      RelationshipPathVariable("s"),
-      NodePathVariable("c"),
-      NodePathVariable("end")
+      NodePathVariable(v"foo"),
+      RelationshipPathVariable(v"x"),
+      NodePathVariable(v"start"),
+      NodePathVariable(v"a"),
+      RelationshipPathVariable(v"r"),
+      NodePathVariable(v"b"),
+      RelationshipPathVariable(v"s"),
+      NodePathVariable(v"c"),
+      NodePathVariable(v"end")
     ))
   }
 
@@ -146,15 +147,15 @@ class NodeConnectionTest extends CypherFunSuite with AstConstructionTestSupport 
         selector = SelectivePathPattern.Selector.ShortestGroups(1)
       )
     val `(a)-[r]->(b)` = PatternRelationship(
-      "r",
-      ("a", "b"),
+      v"r",
+      (v"a", v"b"),
       SemanticDirection.OUTGOING,
       Seq.empty,
       SimplePatternLength
     )
     val `(b)-[s]->(c)` = PatternRelationship(
-      "s",
-      ("b", "c"),
+      v"s",
+      (v"b", v"c"),
       SemanticDirection.OUTGOING,
       Seq.empty,
       SimplePatternLength

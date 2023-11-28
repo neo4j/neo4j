@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.NodeBinding
@@ -46,19 +47,19 @@ class MoveQuantifiedPathPatternPredicatesTest extends CypherFunSuite with Logica
 
   // (start) ((a)-[r]->(b))+ (end)
   private val qpp = QuantifiedPathPattern(
-    leftBinding = NodeBinding("a", "start"),
-    rightBinding = NodeBinding("b", "end"),
+    leftBinding = NodeBinding(v"a", v"start"),
+    rightBinding = NodeBinding(v"b", v"end"),
     patternRelationships =
       NonEmptyList(PatternRelationship(
-        "r",
-        ("a", "b"),
+        v"r",
+        (v"a", v"b"),
         SemanticDirection.OUTGOING,
         Seq.empty,
         SimplePatternLength
       )),
     repetition = Repetition(min = 1, max = UpperBound.Unlimited),
-    nodeVariableGroupings = Set(VariableGrouping("a", "a"), VariableGrouping("b", "b")),
-    relationshipVariableGroupings = Set(VariableGrouping("r", "r"))
+    nodeVariableGroupings = Set(VariableGrouping(v"a", v"a"), VariableGrouping(v"b", v"b")),
+    relationshipVariableGroupings = Set(VariableGrouping(v"r", v"r"))
   )
 
   test("should move QPP predicate with singleton variable") {

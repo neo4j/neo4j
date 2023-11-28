@@ -58,7 +58,6 @@ import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.QueryExpression
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
-import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTPoint
 import org.neo4j.cypher.internal.util.symbols.CTPointNotNull
@@ -202,8 +201,6 @@ object EntityIndexLeafPlanner {
 
     PredicatesForIndex(matchingPredicates, providedOrder, indexOrder)
   }
-
-  private[index] def variable(name: String): Variable = Variable(name)(InputPosition.NONE)
 
   /**
    * A predicate that could potentially be solved by a property index

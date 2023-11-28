@@ -19,9 +19,11 @@
  */
 package org.neo4j.cypher.internal.ir
 
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.ShortestPathsPatternPart
+import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.ir.ExhaustivePathPattern.NodeConnections
 import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.util.NonEmptyList
@@ -29,11 +31,11 @@ import org.neo4j.cypher.internal.util.Repetition
 import org.neo4j.cypher.internal.util.Rewritable
 
 sealed trait PathVariable {
-  val variable: String
+  val variable: LogicalVariable
 }
 
-case class NodePathVariable(variable: String) extends PathVariable
-case class RelationshipPathVariable(variable: String) extends PathVariable
+case class NodePathVariable(variable: LogicalVariable) extends PathVariable
+case class RelationshipPathVariable(variable: LogicalVariable) extends PathVariable
 
 /**
  * Part of a pattern that is connecting nodes (as in "connected components").
@@ -46,20 +48,20 @@ case class RelationshipPathVariable(variable: String) extends PathVariable
  */
 sealed trait NodeConnection {
 
-  val left: String
-  val right: String
-  val nodes: Set[String]
-  val relationships: Set[String]
+  val left: LogicalVariable
+  val right: LogicalVariable
+  val nodes: Set[LogicalVariable]
+  val relationships: Set[LogicalVariable]
 
   /**
    * The nodes connected by this node connection. That is, the outer-most nodes in this part of the pattern.
    */
-  val boundaryNodes: (String, String)
+  val boundaryNodes: (LogicalVariable, LogicalVariable)
 
-  lazy val boundaryNodesSet: Set[String] = Set(left, right)
+  lazy val boundaryNodesSet: Set[LogicalVariable] = Set(left, right)
 
-  def withLeft(left: String): NodeConnection
-  def withRight(right: String): NodeConnection
+  def withLeft(left: LogicalVariable): NodeConnection
+  def withRight(right: LogicalVariable): NodeConnection
 
   /**
    * All node/relationship/group variables along the path of this node connection, from left to right.
@@ -74,9 +76,9 @@ sealed trait NodeConnection {
   /**
    * Same as [[pathVariables]], but as a Set and without PathVariable wrapper class
    */
-  final lazy val coveredIds: Set[String] = pathVariables.map(_.variable).toSet
+  final lazy val coveredIds: Set[LogicalVariable] = pathVariables.map(_.variable).toSet
 
-  def otherSide(node: String): String =
+  def otherSide(node: LogicalVariable): LogicalVariable =
     if (node == left) {
       right
     } else if (node == right) {
@@ -103,8 +105,8 @@ sealed trait ExhaustiveNodeConnection extends NodeConnection {
    */
   def solvedStringSuffix: String
 
-  override def withLeft(left: String): ExhaustiveNodeConnection
-  override def withRight(right: String): ExhaustiveNodeConnection
+  override def withLeft(left: LogicalVariable): ExhaustiveNodeConnection
+  override def withRight(right: LogicalVariable): ExhaustiveNodeConnection
 }
 
 object ExhaustiveNodeConnection {
@@ -118,31 +120,31 @@ object ExhaustiveNodeConnection {
 }
 
 final case class PatternRelationship(
-  name: String,
-  boundaryNodes: (String, String),
+  variable: LogicalVariable,
+  boundaryNodes: (LogicalVariable, LogicalVariable),
   dir: SemanticDirection,
   types: Seq[RelTypeName],
   length: PatternLength
 ) extends ExhaustiveNodeConnection {
 
-  def directionRelativeTo(node: String): SemanticDirection = if (node == left) dir else dir.reversed
+  def directionRelativeTo(node: LogicalVariable): SemanticDirection = if (node == left) dir else dir.reversed
 
   override def pathVariables: Seq[PathVariable] =
-    Seq(NodePathVariable(left), RelationshipPathVariable(name), NodePathVariable(right))
+    Seq(NodePathVariable(left), RelationshipPathVariable(variable), NodePathVariable(right))
 
   override def nonBoundaryPathVariables: Seq[PathVariable] =
-    Seq(RelationshipPathVariable(name))
+    Seq(RelationshipPathVariable(variable))
 
-  override val left: String = boundaryNodes._1
-  override val right: String = boundaryNodes._2
-  override val nodes: Set[String] = Set(left, right)
-  override val relationships: Set[String] = Set(name)
+  override val left: LogicalVariable = boundaryNodes._1
+  override val right: LogicalVariable = boundaryNodes._2
+  override val nodes: Set[LogicalVariable] = Set(left, right)
+  override val relationships: Set[LogicalVariable] = Set(variable)
 
-  override def withLeft(left: String): PatternRelationship = copy(boundaryNodes = (left, right))
+  override def withLeft(left: LogicalVariable): PatternRelationship = copy(boundaryNodes = (left, right))
 
-  override def withRight(right: String): PatternRelationship = copy(boundaryNodes = (left, right))
+  override def withRight(right: LogicalVariable): PatternRelationship = copy(boundaryNodes = (left, right))
 
-  def inOrder: (String, String) = dir match {
+  def inOrder: (LogicalVariable, LogicalVariable) = dir match {
     case SemanticDirection.INCOMING => (right, left)
     case _                          => (left, right)
   }
@@ -150,7 +152,7 @@ final case class PatternRelationship(
   override def toString: String = solvedString
 
   override def solvedString: String =
-    s"(${boundaryNodes._1})$solvedStringSuffix"
+    s"(${boundaryNodes._1.name})$solvedStringSuffix"
 
   override def solvedStringSuffix: String = {
     val lArrow = if (dir == SemanticDirection.INCOMING) "<" else ""
@@ -167,14 +169,14 @@ final case class PatternRelationship(
       case VarPatternLength(x, None)        => s"*$x.."
       case VarPatternLength(min, Some(max)) => s"*$min..$max"
     }
-    s"$lArrow-[$name$typesStr$lengthStr]-$rArrow(${boundaryNodes._2})"
+    s"$lArrow-[${variable.name}$typesStr$lengthStr]-$rArrow(${boundaryNodes._2.name})"
   }
 }
 
 object PatternRelationship {
 
   implicit val byName: Ordering[PatternRelationship] = Ordering.by { (patternRel: PatternRelationship) =>
-    patternRel.name
+    patternRel.variable.name
   }
 }
 
@@ -211,7 +213,7 @@ object VarPatternLength {
  * Describes the connection between two juxtaposed nodes - one inside of a [[QuantifiedPathPattern]]
  * and the other one outside.
  */
-case class NodeBinding(inner: String, outer: String) {
+case class NodeBinding(inner: LogicalVariable, outer: LogicalVariable) {
   override def toString: String = s"(inner=$inner, outer=$outer)"
 }
 
@@ -221,13 +223,13 @@ case class NodeBinding(inner: String, outer: String) {
  * @param singletonName the name of the singleton variable inside the QuantifiedPath.
  * @param groupName     the name of the group variable exposed outside of the QuantifiedPath.
  */
-case class VariableGrouping(singletonName: String, groupName: String) {
+case class VariableGrouping(singletonName: LogicalVariable, groupName: LogicalVariable) {
   override def toString: String = s"(singletonName=$singletonName, groupName=$groupName)"
 }
 
 object VariableGrouping {
 
-  def singletonToGroup(groupings: Set[VariableGrouping], singletonName: String): Option[String] = {
+  def singletonToGroup(groupings: Set[VariableGrouping], singletonName: LogicalVariable): Option[LogicalVariable] = {
     groupings.collectFirst {
       case VariableGrouping(`singletonName`, groupName) => groupName
     }
@@ -238,7 +240,7 @@ final case class QuantifiedPathPattern(
   leftBinding: NodeBinding,
   rightBinding: NodeBinding,
   patternRelationships: NonEmptyList[PatternRelationship],
-  argumentIds: Set[String] = Set.empty,
+  argumentIds: Set[LogicalVariable] = Set.empty,
   selections: Selections = Selections(),
   repetition: Repetition,
   nodeVariableGroupings: Set[VariableGrouping],
@@ -246,7 +248,7 @@ final case class QuantifiedPathPattern(
 ) extends ExhaustiveNodeConnection {
 
   // all pattern nodes are part of a relationship because a QPP has always at least one relationship and is linear in shape
-  val patternNodes: Set[String] = patternRelationships.iterator.flatMap(_.boundaryNodesSet).toSet
+  val patternNodes: Set[LogicalVariable] = patternRelationships.iterator.flatMap(_.boundaryNodesSet).toSet
 
   // all variables are meant as singletons except those in the groupings
   AssertMacros.checkOnlyWhenAssertionsAreEnabled(
@@ -265,21 +267,25 @@ final case class QuantifiedPathPattern(
   )
 
   AssertMacros.checkOnlyWhenAssertionsAreEnabled(
-    relationshipVariableGroupings.forall(grouping => patternRelationships.map(_.name).contains(grouping.singletonName)),
+    relationshipVariableGroupings.forall(grouping =>
+      patternRelationships.map(_.variable).contains(grouping.singletonName)
+    ),
     s"Not all singleton relationship variables ${relationshipVariableGroupings.map(_.singletonName)} were relationship names"
   )
 
-  override val left: String = leftBinding.outer
-  override val right: String = rightBinding.outer
-  override val nodes: Set[String] = Set(left, right) ++ nodeVariableGroupings.map(_.groupName)
-  override val relationships: Set[String] = relationshipVariableGroupings.map(_.groupName)
-  override val boundaryNodes: (String, String) = (left, right)
+  override val left: LogicalVariable = leftBinding.outer
+  override val right: LogicalVariable = rightBinding.outer
+  override val nodes: Set[LogicalVariable] = Set(left, right) ++ nodeVariableGroupings.map(_.groupName)
+  override val relationships: Set[LogicalVariable] = relationshipVariableGroupings.map(_.groupName)
+  override val boundaryNodes: (LogicalVariable, LogicalVariable) = (left, right)
   val variableGroupings: Set[VariableGrouping] = nodeVariableGroupings ++ relationshipVariableGroupings
-  val variableGroupNames: Set[String] = variableGroupings.map(_.groupName)
+  val variableGroupNames: Set[LogicalVariable] = variableGroupings.map(_.groupName)
 
-  override def withLeft(left: String): QuantifiedPathPattern = copy(leftBinding = leftBinding.copy(outer = left))
+  override def withLeft(left: LogicalVariable): QuantifiedPathPattern =
+    copy(leftBinding = leftBinding.copy(outer = left))
 
-  override def withRight(right: String): QuantifiedPathPattern = copy(rightBinding = rightBinding.copy(outer = right))
+  override def withRight(right: LogicalVariable): QuantifiedPathPattern =
+    copy(rightBinding = rightBinding.copy(outer = right))
 
   override def pathVariables: Seq[PathVariable] =
     Seq(NodePathVariable(left)) ++ nonBoundaryPathVariables ++ Seq(NodePathVariable(right))
@@ -291,7 +297,9 @@ final case class QuantifiedPathPattern(
     patternRelationships.foldRight(rightTail) {
       case (rel, acc) =>
         (VariableGrouping.singletonToGroup(nodeVariableGroupings, rel.left).map(NodePathVariable) ++
-          VariableGrouping.singletonToGroup(relationshipVariableGroupings, rel.name).map(RelationshipPathVariable) ++
+          VariableGrouping.singletonToGroup(relationshipVariableGroupings, rel.variable).map(
+            RelationshipPathVariable
+          ) ++
           acc).toSeq
     }
   }
@@ -303,13 +311,13 @@ final case class QuantifiedPathPattern(
     val where =
       if (selections.isEmpty) ""
       else selections.flatPredicates.map(QueryGraph.stringifier(_)).mkString(" WHERE ", " AND ", "")
-    s" (${ExhaustiveNodeConnection.solvedString(patternRelationships.toIndexedSeq)}$where)${repetition.solvedString} (${rightBinding.outer})"
+    s" (${ExhaustiveNodeConnection.solvedString(patternRelationships.toIndexedSeq)}$where)${repetition.solvedString} (${rightBinding.outer.name})"
   }
 
   override def solvedString: String =
-    s"(${leftBinding.outer})$solvedStringSuffix"
+    s"(${leftBinding.outer.name})$solvedStringSuffix"
 
-  val dependencies: Set[String] = selections.predicates.flatMap(_.dependencies) ++ argumentIds
+  val dependencies: Set[LogicalVariable] = selections.predicates.flatMap(_.dependencies).map(varFor) ++ argumentIds
 
   /**
    * Creates a QueryGraph representation of the Quantified Path Pattern and collects all dependent selections eg.
@@ -320,8 +328,8 @@ final case class QuantifiedPathPattern(
     QueryGraph
       .empty
       .addPatternRelationships(patternRelationships.toSet)
-      .addPatternNodes(patternNodes.toList: _*)
-      .addArgumentIds(argumentIds.toList)
+      .addPatternNodes(patternNodes.toList.map(_.name): _*)
+      .addArgumentIds(argumentIds.toList.map(_.name))
       .addSelections(selections)
 }
 
@@ -371,9 +379,10 @@ object ExhaustivePathPattern {
   /**
    * A path pattern of length 0, made of a single node.
    *
-   * @param name name of the variable bound to the node pattern
+   * @param variable the variable bound to the node pattern
    */
-  final case class SingleNode[A <: ExhaustiveNodeConnection](name: String) extends ExhaustivePathPattern[A] {
+  final case class SingleNode[A <: ExhaustiveNodeConnection](variable: LogicalVariable)
+      extends ExhaustivePathPattern[A] {
     override def allQuantifiedPathPatterns: Set[QuantifiedPathPattern] = Set.empty
     override def allNodeConnections: Set[NodeConnection] = Set.empty
   }
@@ -414,19 +423,19 @@ final case class SelectivePathPattern(
 
   override def allNodeConnections: Set[NodeConnection] = pathPattern.allNodeConnections
 
-  override val left: String = pathPattern.connections.head.left
-  override val right: String = pathPattern.connections.last.right
-  override val nodes: Set[String] = pathPattern.connections.map(_.nodes).toSet.flatten
-  override val relationships: Set[String] = pathPattern.connections.map(_.relationships).toSet.flatten
-  override val boundaryNodes: (String, String) = (left, right)
+  override val left: LogicalVariable = pathPattern.connections.head.left
+  override val right: LogicalVariable = pathPattern.connections.last.right
+  override val nodes: Set[LogicalVariable] = pathPattern.connections.map(_.nodes).toSet.flatten
+  override val relationships: Set[LogicalVariable] = pathPattern.connections.map(_.relationships).toSet.flatten
+  override val boundaryNodes: (LogicalVariable, LogicalVariable) = (left, right)
 
-  override def withLeft(left: String): SelectivePathPattern = copy(
+  override def withLeft(left: LogicalVariable): SelectivePathPattern = copy(
     pathPattern = pathPattern.copy(
       connections = pathPattern.connections.head.withLeft(left) +: pathPattern.connections.tailOption
     )
   )
 
-  override def withRight(right: String): SelectivePathPattern = copy(
+  override def withRight(right: LogicalVariable): SelectivePathPattern = copy(
     pathPattern = pathPattern.copy(
       connections = pathPattern.connections.initOption :+ pathPattern.connections.last.withRight(right)
     )
@@ -440,7 +449,7 @@ final case class SelectivePathPattern(
   override def nonBoundaryPathVariables: Seq[PathVariable] =
     pathPattern.connections.iterator.flatMap(_.nonBoundaryPathVariables).toSeq
 
-  val dependencies: Set[String] = selections.predicates.flatMap(_.dependencies)
+  val dependencies: Set[LogicalVariable] = selections.predicates.flatMap(_.dependencies).map(varFor)
 
   def solvedString: String = {
     val where =
@@ -467,13 +476,13 @@ final case class SelectivePathPattern(
           // We do not need to take the outer nodes into consideration here
           acc.addPatternRelationships(innerQppAsQueryGraph.patternRelationships)
             // since they are added in the pattern relationship part of the selective path pattern or are considered for analysis in the outer QueryGraph
-            .addPatternNodes(innerQppAsQueryGraph.patternNodes.diff(boundaryNodesSet).toList: _*)
+            .addPatternNodes(innerQppAsQueryGraph.patternNodes.diff(boundaryNodesSet.map(_.name)).toList: _*)
             .addSelections(innerQppAsQueryGraph.selections)
             .addArgumentIds(innerQppAsQueryGraph.argumentIds.toSeq)
       }
     }.addSelections(selections)
 
-  lazy val varLengthRelationshipNames: Seq[String] = pathPattern.connections.toIndexedSeq.collect {
+  lazy val varLengthRelationships: Seq[LogicalVariable] = pathPattern.connections.toIndexedSeq.collect {
     case PatternRelationship(name, _, _, _, _: VarPatternLength) => name
   }
 }
@@ -518,20 +527,24 @@ object SelectivePathPattern {
 }
 
 //noinspection ZeroIndexToHead
-final case class ShortestRelationshipPattern(name: Option[String], rel: PatternRelationship, single: Boolean)(
+final case class ShortestRelationshipPattern(
+  maybePathVar: Option[LogicalVariable],
+  rel: PatternRelationship,
+  single: Boolean
+)(
   val expr: ShortestPathsPatternPart
 ) extends PathPattern with Rewritable {
 
   def dup(children: Seq[AnyRef]): this.type =
     copy(
-      children(0).asInstanceOf[Option[String]],
+      children(0).asInstanceOf[Option[LogicalVariable]],
       children(1).asInstanceOf[PatternRelationship],
       children(2).asInstanceOf[Boolean]
     )(expr).asInstanceOf[this.type]
 
-  def isFindableFrom(symbols: Set[String]): Boolean = symbols.contains(rel.left) && symbols.contains(rel.right)
+  def isFindableFrom(symbols: Set[LogicalVariable]): Boolean = symbols.contains(rel.left) && symbols.contains(rel.right)
 
-  def availableSymbols: Set[String] = name.toSet ++ rel.coveredIds
+  def availableSymbols: Set[LogicalVariable] = maybePathVar.toSet ++ rel.coveredIds
 
   override def allQuantifiedPathPatterns: Set[QuantifiedPathPattern] = Set.empty
 

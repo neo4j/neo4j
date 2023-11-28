@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.ir.converters
 
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Range
 import org.neo4j.cypher.internal.expressions.RelationshipChain
@@ -86,24 +87,22 @@ object SimplePatternConverters {
     rightNode: NodePattern
   ): PatternRelationship =
     PatternRelationship(
-      name = getRelationshipPatternVariableName(relationship),
+      variable = getRelationshipPatternVariableName(relationship),
       boundaryNodes = (getNodePatternVariableName(leftNode), getNodePatternVariableName(rightNode)),
       dir = relationship.direction,
       types = getRelTypes(relationship.labelExpression),
       length = convertRelationshipLength(relationship.length)
     )
 
-  private def getRelationshipPatternVariableName(relationshipPattern: RelationshipPattern): String =
+  private def getRelationshipPatternVariableName(relationshipPattern: RelationshipPattern): LogicalVariable =
     relationshipPattern
       .variable
       .getOrElse(throw new IllegalArgumentException("Missing variable in relationship pattern"))
-      .name
 
-  private def getNodePatternVariableName(nodePattern: NodePattern): String =
+  private def getNodePatternVariableName(nodePattern: NodePattern): LogicalVariable =
     nodePattern
       .variable
       .getOrElse(throw new IllegalArgumentException("Missing variable in node pattern"))
-      .name
 
   private[converters] def convertRelationshipLength(relationshipLength: Option[Option[Range]]): PatternLength =
     relationshipLength match {

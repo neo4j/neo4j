@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.ir.converters
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.ExhaustivePathPattern.NodeConnections
 import org.neo4j.cypher.internal.ir.ExhaustivePathPattern.SingleNode
@@ -35,7 +36,7 @@ class SimplePatternConvertersTest extends CypherFunSuite with AstConstructionTes
 
   // (a)
   test("single node") {
-    convertSimplePattern(nodePat(Some("a"))) shouldEqual SingleNode("a")
+    convertSimplePattern(nodePat(Some("a"))) shouldEqual SingleNode(v"a")
   }
 
   // ()
@@ -59,8 +60,8 @@ class SimplePatternConvertersTest extends CypherFunSuite with AstConstructionTes
     )
 
     val ir = NodeConnections(NonEmptyList(PatternRelationship(
-      name = "r",
-      boundaryNodes = ("a", "b"),
+      variable = v"r",
+      boundaryNodes = (v"a", v"b"),
       dir = SemanticDirection.OUTGOING,
       types = List(relTypeName("R")),
       length = SimplePatternLength
@@ -83,8 +84,8 @@ class SimplePatternConvertersTest extends CypherFunSuite with AstConstructionTes
     )
 
     val ir = NodeConnections(NonEmptyList(PatternRelationship(
-      name = "r",
-      boundaryNodes = ("a", "b"),
+      variable = v"r",
+      boundaryNodes = (v"a", v"b"),
       dir = SemanticDirection.OUTGOING,
       types = List(relTypeName("R")),
       length = VarPatternLength(0, Some(5))
@@ -151,15 +152,15 @@ class SimplePatternConvertersTest extends CypherFunSuite with AstConstructionTes
 
     val ir = NodeConnections(NonEmptyList(
       PatternRelationship(
-        name = "r",
-        boundaryNodes = ("a", "b"),
+        variable = v"r",
+        boundaryNodes = (v"a", v"b"),
         dir = SemanticDirection.OUTGOING,
         types = List(relTypeName("R")),
         length = SimplePatternLength
       ),
       PatternRelationship(
-        name = "s",
-        boundaryNodes = ("b", "a"),
+        variable = v"s",
+        boundaryNodes = (v"b", v"a"),
         dir = SemanticDirection.INCOMING,
         types = Nil,
         length = SimplePatternLength

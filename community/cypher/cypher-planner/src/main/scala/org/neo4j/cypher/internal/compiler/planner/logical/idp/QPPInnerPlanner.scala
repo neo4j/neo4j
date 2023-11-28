@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOr
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.IsRepeatTrailUnique
 import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -153,8 +154,9 @@ case class IDPQPPInnerPlanner(context: LogicalPlanningContext) extends QPPInnerP
     fromLeft: Boolean,
     extractedPredicates: ExtractedPredicates
   ): LogicalPlan = {
-    val argumentsIntroducedByExtractedPredicates = extractedPredicates.requiredSymbols.map(_.name) -- qpp.argumentIds
-    val additionalArguments = argumentsIntroducedByExtractedPredicates + getQPPStartNode(qpp, fromLeft)
+    val argumentsIntroducedByExtractedPredicates =
+      extractedPredicates.requiredSymbols.map(_.name) -- qpp.argumentIds.map(_.name)
+    val additionalArguments = argumentsIntroducedByExtractedPredicates + getQPPStartNode(qpp, fromLeft).name
     val additionalPredicates = extractedPredicates.predicates.map(_.extracted) ++ additionalTrailPredicates(qpp)
     val qg = qpp.asQueryGraph
       .addArgumentIds(additionalArguments)
@@ -169,14 +171,14 @@ case class IDPQPPInnerPlanner(context: LogicalPlanningContext) extends QPPInnerP
     )
   }
 
-  private def getQPPStartNode(qpp: QuantifiedPathPattern, fromLeft: Boolean): String = {
+  private def getQPPStartNode(qpp: QuantifiedPathPattern, fromLeft: Boolean): LogicalVariable = {
     if (fromLeft) qpp.leftBinding.inner
     else qpp.rightBinding.inner
   }
 
   private def additionalTrailPredicates(qpp: QuantifiedPathPattern): NonEmptyList[Expression] =
     qpp.patternRelationships.map(r =>
-      IsRepeatTrailUnique(Variable(r.name)(InputPosition.NONE))(InputPosition.NONE)
+      IsRepeatTrailUnique(r.variable.asInstanceOf[Variable])(InputPosition.NONE)
     )
 
   override def updateQpp(
@@ -186,7 +188,7 @@ case class IDPQPPInnerPlanner(context: LogicalPlanningContext) extends QPPInnerP
   ): QuantifiedPathPattern = {
     val updated = updateQPPStartNodeArgument(qpp, fromLeft)
 
-    val endNode = if (fromLeft) qpp.right else qpp.left
+    val endNode = if (fromLeft) qpp.right.name else qpp.left.name
     val overlapping = availableSymbols.contains(endNode)
     if (overlapping) {
       updateQppForTrailInto(updated, fromLeft, context)
@@ -205,12 +207,12 @@ case class IDPQPPInnerPlanner(context: LogicalPlanningContext) extends QPPInnerP
     fromLeft: Boolean,
     context: LogicalPlanningContext
   ): QuantifiedPathPattern = {
-    val newName = context.staticComponents.anonymousVariableNameGenerator.nextName
+    val newVar = varFor(context.staticComponents.anonymousVariableNameGenerator.nextName)
     val qppWithNewEndBindingOuterName =
       if (fromLeft) {
-        qpp.copy(rightBinding = qpp.rightBinding.copy(outer = newName))
+        qpp.copy(rightBinding = qpp.rightBinding.copy(outer = newVar))
       } else {
-        qpp.copy(leftBinding = qpp.leftBinding.copy(outer = newName))
+        qpp.copy(leftBinding = qpp.leftBinding.copy(outer = newVar))
       }
     qppWithNewEndBindingOuterName
   }

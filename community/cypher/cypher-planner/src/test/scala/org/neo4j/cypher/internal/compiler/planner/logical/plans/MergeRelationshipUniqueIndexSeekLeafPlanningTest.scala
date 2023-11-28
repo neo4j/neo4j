@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.plans
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.StubbedLogicalPlanningConfiguration
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
@@ -59,17 +60,17 @@ class MergeRelationshipUniqueIndexSeekLeafPlanningTest
     with LogicalPlanningTestSupport2
     with AstConstructionTestSupport {
 
-  private val relationshipName = "r"
+  private val relationshipVar = v"r"
   private val relationshipTypeName = "REL"
-  private val startNodeName = "start"
-  private val endNodeName = "end"
+  private val startNode = v"start"
+  private val endNode = v"end"
   private val prop = "prop"
   private val prop2 = "prop2"
   private val prop3 = "prop3"
 
-  private val rProp = prop(relationshipName, prop)
-  private val rProp2 = prop(relationshipName, prop2)
-  private val rProp3 = prop(relationshipName, prop3)
+  private val rProp = prop(relationshipVar, prop)
+  private val rProp2 = prop(relationshipVar, prop2)
+  private val rProp3 = prop(relationshipVar, prop3)
   private val lit42 = literalInt(42)
   private val lit6 = literalInt(6)
   private val litFoo = literalString("Foo")
@@ -82,8 +83,8 @@ class MergeRelationshipUniqueIndexSeekLeafPlanningTest
     QueryGraph(
       selections = Selections.from(predicates),
       patternRelationships = Set(PatternRelationship(
-        relationshipName,
-        (startNodeName, endNodeName),
+        relationshipVar,
+        (startNode, endNode),
         SemanticDirection.OUTGOING,
         List(relTypeName(relationshipTypeName)),
         SimplePatternLength
@@ -148,9 +149,9 @@ class MergeRelationshipUniqueIndexSeekLeafPlanningTest
 
     // then
     plans shouldEqual Set(DirectedRelationshipUniqueIndexSeek(
-      idName = varFor(relationshipName),
-      startNode = varFor(startNodeName),
-      endNode = varFor(endNodeName),
+      idName = relationshipVar,
+      startNode = startNode,
+      endNode = endNode,
       typeToken =
         RelationshipTypeToken(relationshipTypeName, config.semanticTable.resolvedRelTypeNames(relationshipTypeName)),
       properties = Seq(IndexedProperty(
@@ -180,9 +181,9 @@ class MergeRelationshipUniqueIndexSeekLeafPlanningTest
     val plans = mergeRelationshipUniqueIndexSeekLeafPlanner(queryGraph, InterestingOrderConfig.empty, context)
 
     val lhs = DirectedRelationshipUniqueIndexSeek(
-      idName = varFor(relationshipName),
-      startNode = varFor(startNodeName),
-      endNode = varFor(endNodeName),
+      idName = relationshipVar,
+      startNode = startNode,
+      endNode = endNode,
       typeToken =
         RelationshipTypeToken(relationshipTypeName, config.semanticTable.resolvedRelTypeNames(relationshipTypeName)),
       properties = Seq(IndexedProperty(
@@ -197,9 +198,9 @@ class MergeRelationshipUniqueIndexSeekLeafPlanningTest
     )
 
     val rhs = DirectedRelationshipUniqueIndexSeek(
-      idName = varFor(relationshipName),
-      startNode = varFor(startNodeName),
-      endNode = varFor(endNodeName),
+      idName = relationshipVar,
+      startNode = startNode,
+      endNode = endNode,
       typeToken =
         RelationshipTypeToken(relationshipTypeName, config.semanticTable.resolvedRelTypeNames(relationshipTypeName)),
       properties = Seq(IndexedProperty(
@@ -214,7 +215,7 @@ class MergeRelationshipUniqueIndexSeekLeafPlanningTest
     )
 
     // then
-    plans shouldEqual Set(AssertSameRelationship(idName = varFor(relationshipName), left = lhs, right = rhs))
+    plans shouldEqual Set(AssertSameRelationship(idName = relationshipVar, left = lhs, right = rhs))
   }
 
   test("plans a single index seek when querying two properties with a composite index") {
@@ -230,9 +231,9 @@ class MergeRelationshipUniqueIndexSeekLeafPlanningTest
 
     // then
     plans shouldEqual Set(DirectedRelationshipUniqueIndexSeek(
-      idName = varFor(relationshipName),
-      startNode = varFor(startNodeName),
-      endNode = varFor(endNodeName),
+      idName = relationshipVar,
+      startNode = startNode,
+      endNode = endNode,
       typeToken =
         RelationshipTypeToken(relationshipTypeName, config.semanticTable.resolvedRelTypeNames(relationshipTypeName)),
       properties = Seq(
@@ -267,9 +268,9 @@ class MergeRelationshipUniqueIndexSeekLeafPlanningTest
     val plans = mergeRelationshipUniqueIndexSeekLeafPlanner(queryGraph, InterestingOrderConfig.empty, context)
 
     val lhs = DirectedRelationshipUniqueIndexSeek(
-      idName = varFor(relationshipName),
-      startNode = varFor(startNodeName),
-      endNode = varFor(endNodeName),
+      idName = relationshipVar,
+      startNode = startNode,
+      endNode = endNode,
       typeToken =
         RelationshipTypeToken(relationshipTypeName, config.semanticTable.resolvedRelTypeNames(relationshipTypeName)),
       properties = Seq(
@@ -291,9 +292,9 @@ class MergeRelationshipUniqueIndexSeekLeafPlanningTest
     )
 
     val rhs = DirectedRelationshipUniqueIndexSeek(
-      idName = varFor(relationshipName),
-      startNode = varFor(startNodeName),
-      endNode = varFor(endNodeName),
+      idName = relationshipVar,
+      startNode = startNode,
+      endNode = endNode,
       typeToken =
         RelationshipTypeToken(relationshipTypeName, config.semanticTable.resolvedRelTypeNames(relationshipTypeName)),
       properties = Seq(IndexedProperty(
@@ -308,6 +309,6 @@ class MergeRelationshipUniqueIndexSeekLeafPlanningTest
     )
 
     // then
-    plans shouldEqual Set(AssertSameRelationship(idName = varFor(relationshipName), left = lhs, right = rhs))
+    plans shouldEqual Set(AssertSameRelationship(idName = relationshipVar, left = lhs, right = rhs))
   }
 }

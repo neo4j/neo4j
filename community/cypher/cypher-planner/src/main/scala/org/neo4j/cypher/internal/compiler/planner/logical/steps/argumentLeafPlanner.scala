@@ -32,7 +32,7 @@ case class argumentLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
     interestingOrderConfig: InterestingOrderConfig,
     context: LogicalPlanningContext
   ): Set[LogicalPlan] = {
-    val ids = qg.patternNodes.diff(skipIDs) ++ qg.patternRelationships.map(_.name)
+    val ids = qg.patternNodes.diff(skipIDs) ++ qg.patternRelationships.map(_.variable.name)
     if ((qg.argumentIds intersect ids).isEmpty)
       Set.empty
     else

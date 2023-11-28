@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.phases.CompilationContains
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.expressions.HasTypes
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.Variable
@@ -53,10 +54,10 @@ case object InlineRelationshipTypePredicates extends PlannerQueryRewriter with S
 
   private case class InlinedRelationship(rel: PatternRelationship, inlinedPredicate: Option[Predicate])
 
-  private def tryToInline(typePredicates: Map[String, (Predicate, Seq[RelTypeName])])(rel: PatternRelationship)
+  private def tryToInline(typePredicates: Map[LogicalVariable, (Predicate, Seq[RelTypeName])])(rel: PatternRelationship)
     : InlinedRelationship =
     // if there are types we could inline on that relationship
-    typePredicates.get(rel.name)
+    typePredicates.get(rel.variable)
       // and that relationship does not have any relationship types yet
       .filter(_ => rel.types.isEmpty)
       .map { case (pred, types) =>
@@ -96,16 +97,17 @@ case object InlineRelationshipTypePredicates extends PlannerQueryRewriter with S
     )
   }
 
-  private def findRelationshipTypePredicatesPerSymbol(qg: QueryGraph): Map[String, (Predicate, Seq[RelTypeName])] = {
-    qg.selections.predicates.foldLeft(Map.empty[String, (Predicate, Seq[RelTypeName])]) {
+  private def findRelationshipTypePredicatesPerSymbol(qg: QueryGraph)
+    : Map[LogicalVariable, (Predicate, Seq[RelTypeName])] = {
+    qg.selections.predicates.foldLeft(Map.empty[LogicalVariable, (Predicate, Seq[RelTypeName])]) {
       // WHERE r:REL
-      case (acc, pred @ Predicate(_, HasTypes(Variable(name), relTypes))) =>
-        acc + (name -> (pred -> relTypes))
+      case (acc, pred @ Predicate(_, HasTypes(v: Variable, relTypes))) =>
+        acc + (v -> (pred -> relTypes))
 
       // WHERE r:REL OR r:OTHER_REL
       case (acc, pred @ Predicate(_, ors: Ors)) =>
         ors.exprs.head match {
-          case HasTypes(Variable(name), _) =>
+          case HasTypes(v @ Variable(name), _) =>
             val relTypesOnTheSameVariable = ors.exprs.flatMap {
               case HasTypes(Variable(`name`), relTypes) => relTypes
               case _                                    => ListSet.empty
@@ -113,7 +115,7 @@ case object InlineRelationshipTypePredicates extends PlannerQueryRewriter with S
 
             // all predicates must refer to the same variable to be equivalent to [r:A|B|C]
             if (relTypesOnTheSameVariable.size == ors.exprs.size) {
-              acc + (name -> (pred -> relTypesOnTheSameVariable.toSeq))
+              acc + (v -> (pred -> relTypesOnTheSameVariable.toSeq))
             } else {
               acc
             }

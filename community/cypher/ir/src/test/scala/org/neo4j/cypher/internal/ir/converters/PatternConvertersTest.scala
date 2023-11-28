@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.ir.converters
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.expressions.NamedPatternPart
 import org.neo4j.cypher.internal.expressions.ParenthesizedPath
 import org.neo4j.cypher.internal.expressions.PathPatternPart
@@ -82,11 +83,11 @@ class PatternConvertersTest extends CypherFunSuite with AstConstructionTestSuppo
   private val longPathPattern =
     NodeConnections(NonEmptyList(
       QuantifiedPathPattern(
-        leftBinding = NodeBinding("a", "start"),
-        rightBinding = NodeBinding("b", "c"),
+        leftBinding = NodeBinding(v"a", v"start"),
+        rightBinding = NodeBinding(v"b", v"c"),
         patternRelationships = NonEmptyList(PatternRelationship(
-          name = "r",
-          boundaryNodes = ("a", "b"),
+          variable = v"r",
+          boundaryNodes = (v"a", v"b"),
           dir = SemanticDirection.OUTGOING,
           types = List(relTypeName("R")),
           length = SimplePatternLength
@@ -94,12 +95,12 @@ class PatternConvertersTest extends CypherFunSuite with AstConstructionTestSuppo
         argumentIds = Set.empty,
         selections = Selections.empty,
         repetition = Repetition(1, UpperBound.unlimited),
-        nodeVariableGroupings = Set(VariableGrouping("a", "a"), VariableGrouping("b", "b")),
-        relationshipVariableGroupings = Set(VariableGrouping("r", "r"))
+        nodeVariableGroupings = Set(VariableGrouping(v"a", v"a"), VariableGrouping(v"b", v"b")),
+        relationshipVariableGroupings = Set(VariableGrouping(v"r", v"r"))
       ),
       PatternRelationship(
-        name = "s",
-        boundaryNodes = ("c", "end"),
+        variable = v"s",
+        boundaryNodes = (v"c", v"end"),
         dir = SemanticDirection.BOTH,
         types = Nil,
         length = SimplePatternLength
@@ -134,8 +135,8 @@ class PatternConvertersTest extends CypherFunSuite with AstConstructionTestSuppo
 
     val ir = NodeConnections(NonEmptyList(
       PatternRelationship(
-        name = "r",
-        boundaryNodes = ("a", "b"),
+        variable = v"r",
+        boundaryNodes = (v"a", v"b"),
         dir = SemanticDirection.OUTGOING,
         types = List(relTypeName("R")),
         length = SimplePatternLength
@@ -173,7 +174,7 @@ class PatternConvertersTest extends CypherFunSuite with AstConstructionTestSuppo
       selector = allPathsSelector()
     )
 
-    val ir = SingleNode("start")
+    val ir = SingleNode(v"start")
 
     convertPatternParts(ast) shouldEqual List(ir)
   }
@@ -199,11 +200,11 @@ class PatternConvertersTest extends CypherFunSuite with AstConstructionTestSuppo
 
     val ir = NodeConnections(NonEmptyList(
       QuantifiedPathPattern(
-        leftBinding = NodeBinding("a", "start"),
-        rightBinding = NodeBinding("b", "c"),
+        leftBinding = NodeBinding(v"a", v"start"),
+        rightBinding = NodeBinding(v"b", v"c"),
         patternRelationships = NonEmptyList(PatternRelationship(
-          name = "r",
-          boundaryNodes = ("a", "b"),
+          variable = v"r",
+          boundaryNodes = (v"a", v"b"),
           dir = SemanticDirection.OUTGOING,
           types = List(relTypeName("R")),
           length = SimplePatternLength
@@ -211,12 +212,12 @@ class PatternConvertersTest extends CypherFunSuite with AstConstructionTestSuppo
         argumentIds = Set.empty,
         selections = Selections.empty,
         repetition = Repetition(1, UpperBound.unlimited),
-        nodeVariableGroupings = Set(VariableGrouping("a", "a"), VariableGrouping("b", "b")),
-        relationshipVariableGroupings = Set(VariableGrouping("r", "r"))
+        nodeVariableGroupings = Set(VariableGrouping(v"a", v"a"), VariableGrouping(v"b", v"b")),
+        relationshipVariableGroupings = Set(VariableGrouping(v"r", v"r"))
       ),
       PatternRelationship(
-        name = "s",
-        boundaryNodes = ("c", "end"),
+        variable = v"s",
+        boundaryNodes = (v"c", v"end"),
         dir = SemanticDirection.BOTH,
         types = Nil,
         length = SimplePatternLength
@@ -485,10 +486,10 @@ class PatternConvertersTest extends CypherFunSuite with AstConstructionTestSuppo
     )
 
     val ir = ShortestRelationshipPattern(
-      name = Some("p"),
+      maybePathVar = Some(v"p"),
       rel = PatternRelationship(
-        name = "r",
-        boundaryNodes = ("a", "b"),
+        variable = v"r",
+        boundaryNodes = (v"a", v"b"),
         dir = SemanticDirection.OUTGOING,
         types = List(relTypeName("R")),
         length = VarPatternLength(0, Some(3))
@@ -501,10 +502,10 @@ class PatternConvertersTest extends CypherFunSuite with AstConstructionTestSuppo
 
   test("anonymous shortest relationship pattern") {
     val ir = ShortestRelationshipPattern(
-      name = Some("  UNNAMED0"),
+      maybePathVar = Some(v"  UNNAMED0"),
       rel = PatternRelationship(
-        name = "r",
-        boundaryNodes = ("a", "b"),
+        variable = v"r",
+        boundaryNodes = (v"a", v"b"),
         dir = SemanticDirection.OUTGOING,
         types = List(relTypeName("R")),
         length = VarPatternLength(0, Some(3))
@@ -534,8 +535,8 @@ class PatternConvertersTest extends CypherFunSuite with AstConstructionTestSuppo
 
     val ir1 = NodeConnections(NonEmptyList(
       PatternRelationship(
-        name = "r",
-        boundaryNodes = ("a", "b"),
+        variable = v"r",
+        boundaryNodes = (v"a", v"b"),
         dir = SemanticDirection.OUTGOING,
         types = List(relTypeName("R")),
         length = SimplePatternLength
@@ -559,10 +560,10 @@ class PatternConvertersTest extends CypherFunSuite with AstConstructionTestSuppo
     val part3 = shortestRelationship.withAllPathsSelector
 
     val ir3 = ShortestRelationshipPattern(
-      name = Some("  UNNAMED0"),
+      maybePathVar = Some(v"  UNNAMED0"),
       rel = PatternRelationship(
-        name = "r",
-        boundaryNodes = ("a", "b"),
+        variable = v"r",
+        boundaryNodes = (v"a", v"b"),
         dir = SemanticDirection.OUTGOING,
         types = List(relTypeName("R")),
         length = VarPatternLength(0, Some(3))

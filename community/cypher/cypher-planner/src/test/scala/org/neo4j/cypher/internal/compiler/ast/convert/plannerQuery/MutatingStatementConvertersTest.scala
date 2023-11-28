@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
@@ -94,7 +95,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
     ))
 
     query.queryGraph.patternRelationships should equal(Set(
-      PatternRelationship("r", ("a", "b"), OUTGOING, List(), SimplePatternLength)
+      PatternRelationship(v"r", (v"a", v"b"), OUTGOING, List(), SimplePatternLength)
     ))
     query.queryGraph.mutatingPatterns should equal(List(
       SetRelationshipPropertyPattern(varFor("r"), PropertyKeyName("prop")(pos), literalInt(42))
@@ -109,7 +110,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
     ))
 
     query.queryGraph.patternRelationships should equal(Set(
-      PatternRelationship("r", ("a", "b"), OUTGOING, List(), SimplePatternLength)
+      PatternRelationship(v"r", (v"a", v"b"), OUTGOING, List(), SimplePatternLength)
     ))
     query.queryGraph.mutatingPatterns should equal(List(
       SetRelationshipPropertyPattern(varFor("r"), PropertyKeyName("prop")(pos), nullLiteral)
@@ -301,11 +302,11 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
     )
     val qpp1: QuantifiedPathPattern =
       QuantifiedPathPattern(
-        leftBinding = NodeBinding("a", "u"),
-        rightBinding = NodeBinding("b", "v"),
+        leftBinding = NodeBinding(v"a", v"u"),
+        rightBinding = NodeBinding(v"b", v"v"),
         patternRelationships = NonEmptyList(PatternRelationship(
-          name = "r",
-          boundaryNodes = ("a", "b"),
+          variable = v"r",
+          boundaryNodes = (v"a", v"b"),
           dir = SemanticDirection.OUTGOING,
           types = Nil,
           length = SimplePatternLength
@@ -313,16 +314,16 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
         argumentIds = Set.empty,
         selections = Selections.empty,
         repetition = Repetition(1, Unlimited),
-        nodeVariableGroupings = Set("a", "b").map(name => VariableGrouping(name, name)),
-        relationshipVariableGroupings = Set(VariableGrouping("r", "r"))
+        nodeVariableGroupings = Set("a", "b").map(name => VariableGrouping(varFor(name), varFor(name))),
+        relationshipVariableGroupings = Set(VariableGrouping(v"r", v"r"))
       )
     val qpp2: QuantifiedPathPattern =
       QuantifiedPathPattern(
-        leftBinding = NodeBinding("c", "v"),
-        rightBinding = NodeBinding("d", "w"),
+        leftBinding = NodeBinding(v"c", v"v"),
+        rightBinding = NodeBinding(v"d", v"w"),
         patternRelationships = NonEmptyList(PatternRelationship(
-          name = "r2",
-          boundaryNodes = ("c", "d"),
+          variable = v"r2",
+          boundaryNodes = (v"c", v"d"),
           dir = SemanticDirection.OUTGOING,
           types = Nil,
           length = SimplePatternLength
@@ -330,8 +331,8 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
         argumentIds = Set.empty,
         selections = Selections.empty,
         repetition = Repetition(1, Unlimited),
-        nodeVariableGroupings = Set("c", "d").map(name => VariableGrouping(name, name)),
-        relationshipVariableGroupings = Set(VariableGrouping("r2", "r2"))
+        nodeVariableGroupings = Set("c", "d").map(name => VariableGrouping(varFor(name), varFor(name))),
+        relationshipVariableGroupings = Set(VariableGrouping(v"r2", v"r2"))
       )
 
     val shortestPathPattern =

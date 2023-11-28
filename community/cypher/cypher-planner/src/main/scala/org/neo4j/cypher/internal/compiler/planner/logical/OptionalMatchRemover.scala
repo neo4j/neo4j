@@ -154,7 +154,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
             // Here, we keep the adjacent nodes, and in the next step we add the relationship itself
             val elementsToKeep2 =
               elementsToKeep1 ++ overlappingRels(original.patternRelationships, elementsToKeep1).flatMap(r =>
-                Seq(r.left, r.right)
+                Seq(r.left, r.right).map(_.name)
               )
 
             // We must (again) keep all variables connecting the so far elementsToKeep
@@ -163,7 +163,8 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
             extractElementsAndPatterns(original, elementsToKeep3)
           }
 
-          val (patternsToKeep, patternsToFilter) = original.patternRelationships.partition(r => elementsToKeep(r.name))
+          val (patternsToKeep, patternsToFilter) =
+            original.patternRelationships.partition(r => elementsToKeep(r.variable.name))
           val patternNodes = original.patternNodes.filter(elementsToKeep.apply)
 
           val patternPredicates = patternsToFilter.map(toAst(
@@ -191,11 +192,11 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
    * These are all so-far kept relationships plus all other relationships that have an overlap, unless the overlap is on an elementToKeep.
    */
   private def overlappingRels(rels: Set[PatternRelationship], elementsToKeep: Set[String]): Set[PatternRelationship] = {
-    val (keptRels, notYetKeptRels) = rels.partition(r => elementsToKeep(r.name))
+    val (keptRels, notYetKeptRels) = rels.partition(r => elementsToKeep(r.variable.name))
     val alsoKeptRels = notYetKeptRels.filter { rel =>
-      val relIds = rel.coveredIds -- elementsToKeep
+      val relIds = rel.coveredIds.map(_.name) -- elementsToKeep
       (notYetKeptRels - rel).exists { rel2 =>
-        val rel2Ids = rel2.coveredIds -- elementsToKeep
+        val rel2Ids = rel2.coveredIds.map(_.name) -- elementsToKeep
         relIds.intersect(rel2Ids).nonEmpty
       }
     }
@@ -316,14 +317,14 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): Expression = {
 
-    val innerVars = pattern.boundaryNodesSet
+    val innerVars = pattern.boundaryNodesSet.map(_.name)
     val innerPreds = innerVars.flatMap(predicates.get)
 
     val arguments = innerVars.intersect(elementsToKeep)
     val query = RegularSinglePlannerQuery(
       queryGraph = QueryGraph(
         argumentIds = arguments,
-        patternNodes = pattern.boundaryNodesSet,
+        patternNodes = pattern.boundaryNodesSet.map(_.name),
         patternRelationships = Set(pattern),
         selections = Selections.from(innerPreds)
       ),
@@ -378,9 +379,9 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
     if (mustInclude.size < 2)
       mustInclude intersect qg.allCoveredIds
     else {
-      val mustIncludeRels = qg.patternRelationships.filter(r => mustInclude(r.name))
+      val mustIncludeRels = qg.patternRelationships.filter(r => mustInclude(r.variable.name))
       val mustIncludeNodes =
-        mustInclude.intersect(qg.patternNodes) ++ mustIncludeRels.flatMap(r => Seq(r.left, r.right))
+        mustInclude.intersect(qg.patternNodes) ++ mustIncludeRels.flatMap(r => Seq(r.left, r.right).map(_.name))
       var accumulatedElements = mustIncludeNodes
       for {
         lhs <- mustIncludeNodes
@@ -399,17 +400,17 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
     for {
       lhs <- from
       rhs <- into
-      if rhs.alreadyVisited.exists(p => p.coveredIds.contains(lhs.end))
+      if rhs.alreadyVisited.exists(p => p.coveredIds.map(_.name).contains(lhs.end))
     } yield {
-      (lhs.alreadyVisited ++ rhs.alreadyVisited).flatMap(_.coveredIds)
+      (lhs.alreadyVisited ++ rhs.alreadyVisited).flatMap(_.coveredIds.map(_.name))
     }
 
   private def expand(queryGraph: QueryGraph, from: Seq[PathSoFar]): Seq[PathSoFar] = {
     from.flatMap {
       case PathSoFar(end, alreadyVisited) =>
         queryGraph.patternRelationships.collect {
-          case pr if !alreadyVisited(pr) && pr.coveredIds(end) =>
-            PathSoFar(pr.otherSide(end), alreadyVisited + pr)
+          case pr if !alreadyVisited(pr) && pr.coveredIds.map(_.name)(end) =>
+            PathSoFar(pr.otherSide(varFor(end)).name, alreadyVisited + pr)
         }
     }
   }
@@ -435,7 +436,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
     }
 
     // Did not find any path. Let's do the safe thing and return everything
-    qg.patternRelationships.flatMap(_.coveredIds)
+    qg.patternRelationships.flatMap(_.coveredIds).map(_.name)
   }
 
   override def preConditions: Set[StepSequencer.Condition] = Set(

@@ -34,7 +34,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityInde
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexLeafPlanner.NonSeekablePredicate
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexLeafPlanner.NotExactPredicate
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexLeafPlanner.SingleExactPredicate
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexLeafPlanner.variable
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProvider.allPossibleRangeIndexRequirements
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProvider.findExplicitCompatiblePredicates
 import org.neo4j.cypher.internal.expressions.Contains
@@ -44,6 +43,7 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.PartialPredicate.PartialDistanceSeekWrapper
 import org.neo4j.cypher.internal.expressions.Property
+import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.logical.plans.ExistenceQueryExpression
 import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
@@ -77,7 +77,7 @@ trait IndexCompatiblePredicatesProvider {
     planContext: PlanContext,
     indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
   ): Set[IndexCompatiblePredicate] = {
-    val arguments: Set[LogicalVariable] = argumentIds.map(variable)
+    val arguments: Set[LogicalVariable] = argumentIds.map(varFor)
 
     val explicitCompatiblePredicates = findExplicitCompatiblePredicates(arguments, predicates, semanticTable)
 

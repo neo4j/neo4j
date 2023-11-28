@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.ast.Hint
 import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.ast.UsingJoinHint
@@ -159,7 +160,7 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
     .build()
 
   test("plans expands for queries with single pattern rel") {
-    val pattern = PatternRelationship("r1", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+    val pattern = PatternRelationship(v"r1", (v"a", v"b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
     val qg = QueryGraph(patternRelationships = Set(pattern), patternNodes = Set("a", "b"))
     val context = newMockedLogicalPlanningContext(planContext = mock[PlanContext])
     val aPlan = newMockedLogicalPlan(context.staticComponents.planningAttributes, "a")
@@ -182,20 +183,20 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
   }
 
   test("does not plan Expand on top of relationship leaf plan for queries with more than one pattern rel") {
-    val rel1 = PatternRelationship("r1", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
-    val rel2 = PatternRelationship("r2", ("b", "c"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+    val rel1 = PatternRelationship(v"r1", (v"a", v"b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+    val rel2 = PatternRelationship(v"r2", (v"b", v"c"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
     val qg = QueryGraph(patternRelationships = Set(rel1, rel2), patternNodes = Set("a", "b", "c"))
     val context = newMockedLogicalPlanningContext(planContext = mock[PlanContext])
     val r1Plan =
       newMockedLogicalPlanWithPatterns(
         context.staticComponents.planningAttributes,
-        Set(rel1.name, rel1.left, rel1.right),
+        Set(rel1.variable, rel1.left, rel1.right).map(_.name),
         Set(rel1)
       )
     val r2Plan =
       newMockedLogicalPlanWithPatterns(
         context.staticComponents.planningAttributes,
-        Set(rel2.name, rel2.left, rel2.right),
+        Set(rel2.variable, rel2.left, rel2.right).map(_.name),
         Set(rel2)
       )
 
@@ -216,7 +217,7 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
   }
 
   test("plans hashjoins and cartesian product for queries with single pattern rel and multiple index hints") {
-    val pattern = PatternRelationship("r1", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+    val pattern = PatternRelationship(v"r1", (v"a", v"b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
     val hint1 = UsingIndexHint(varFor("a"), labelOrRelTypeName("X"), Seq(PropertyKeyName("p")(pos)))(pos)
     val hint2 = UsingIndexHint(varFor("b"), labelOrRelTypeName("X"), Seq(PropertyKeyName("p")(pos)))(pos)
     val qg =
@@ -251,7 +252,7 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
   }
 
   test("plans hashjoins and cartesian product for queries with single pattern rel and a join hint") {
-    val pattern = PatternRelationship("r1", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+    val pattern = PatternRelationship(v"r1", (v"a", v"b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
     val hint = UsingJoinHint(Seq(varFor("a")))(pos)
     val qg = QueryGraph(patternRelationships = Set(pattern), patternNodes = Set("a", "b"), hints = Set(hint))
     val context = newMockedLogicalPlanningContext(planContext = mock[PlanContext])
@@ -293,7 +294,7 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
   }
 
   test("does not plan hashjoins and cartesian product if start and end node are the same") {
-    val pattern = PatternRelationship("r1", ("a", "a"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+    val pattern = PatternRelationship(v"r1", (v"a", v"a"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
     val hint = UsingJoinHint(Seq(varFor("a")))(pos)
     val qg = QueryGraph(patternRelationships = Set(pattern), patternNodes = Set("a", "a"), hints = Set(hint))
     val context = newMockedLogicalPlanningContext(planContext = mock[PlanContext])
@@ -312,7 +313,7 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
   }
 
   test("plans hashjoins and cartesian product for queries with single pattern rel and a join hint on the end node") {
-    val pattern = PatternRelationship("r1", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+    val pattern = PatternRelationship(v"r1", (v"a", v"b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
     val hint = UsingJoinHint(Seq(varFor("b")))(pos)
     val qg = QueryGraph(patternRelationships = Set(pattern), patternNodes = Set("a", "b"), hints = Set(hint))
     val context = newMockedLogicalPlanningContext(planContext = mock[PlanContext])
@@ -354,7 +355,7 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
   }
 
   test("plans expands, hashjoins and cartesian product with generic sort only in sensible places") {
-    val pattern = PatternRelationship("r1", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+    val pattern = PatternRelationship(v"r1", (v"a", v"b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
     val hint = UsingJoinHint(Seq(varFor("a")))(pos)
     val qg = QueryGraph(patternRelationships = Set(pattern), patternNodes = Set("a", "b"), hints = Set(hint))
     val context = newMockedLogicalPlanningContext(planContext = mock[PlanContext])

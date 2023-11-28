@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanRestrictions
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
@@ -141,29 +142,29 @@ class RelationshipIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanni
         selections = Selections(predicates.flatMap(_.asPredicates)),
         patternRelationships = Set(
           PatternRelationship(
-            "n",
-            ("n1", "n2"),
+            v"n",
+            (v"n1", v"n2"),
             OUTGOING,
             Seq(RelTypeName("Awesome")(InputPosition.NONE)),
             SimplePatternLength
           ),
           PatternRelationship(
-            "m",
-            ("m1", "m2"),
+            v"m",
+            (v"m1", v"m2"),
             BOTH,
             Seq(RelTypeName("Awesome")(InputPosition.NONE)),
             SimplePatternLength
           ),
           PatternRelationship(
-            "o",
-            ("o1", "o2"),
+            v"o",
+            (v"o1", v"o2"),
             OUTGOING,
             Seq(RelTypeName("Awesome")(InputPosition.NONE)),
             SimplePatternLength
           ),
           PatternRelationship(
-            "x",
-            ("x1", "x2"),
+            v"x",
+            (v"x1", v"x2"),
             OUTGOING,
             Seq(RelTypeName("Awesome")(InputPosition.NONE)),
             SimplePatternLength
@@ -190,7 +191,7 @@ class RelationshipIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanni
       val bbbToken = PropertyKeyToken("bbb", PropertyKeyId(4))
       val cccToken = PropertyKeyToken("ccc", PropertyKeyId(5))
 
-      resultPlans.toSet shouldEqual Set(
+      resultPlans shouldEqual Set(
         // nPropInLit6Lit42
         DirectedRelationshipIndexSeek(
           varFor("n"),

@@ -30,7 +30,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityInde
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexLeafPlanner.getValueBehaviors
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexLeafPlanner.implicitIsNotNullPredicates
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexLeafPlanner.predicatesForIndex
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexLeafPlanner.variable
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.RelationshipIndexLeafPlanner.findIndexMatchesForQueryGraph
 import org.neo4j.cypher.internal.expressions.EntityType
 import org.neo4j.cypher.internal.expressions.Expression
@@ -142,12 +141,12 @@ object RelationshipIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
     findPointIndexes: Boolean = true
   ): Set[RelationshipIndexMatch] = {
     def shouldIgnore(pattern: PatternRelationship) =
-      qg.argumentIds.contains(pattern.name)
+      qg.argumentIds.contains(pattern.variable.name)
 
     val predicates = qg.selections.flatPredicatesSet
     val patternRelationshipsMap: Map[String, PatternRelationship] = qg.patternRelationships.collect({
-      case pattern @ PatternRelationship(name, _, _, Seq(_), SimplePatternLength) if !shouldIgnore(pattern) =>
-        name -> pattern
+      case pattern @ PatternRelationship(rel, _, _, Seq(_), SimplePatternLength) if !shouldIgnore(pattern) =>
+        rel.name -> pattern
     }).toMap
 
     // Find plans solving given property predicates together with any label predicates from QG
@@ -214,7 +213,7 @@ object RelationshipIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
             planContext.getRelationshipPropertiesWithExistenceConstraint(relTypeName)
 
         implicitIsNotNullPredicates(
-          variable(name),
+          name,
           indexPredicateProviderContext.aggregatingProperties,
           constrainedPropNames,
           generalCompatiblePredicates

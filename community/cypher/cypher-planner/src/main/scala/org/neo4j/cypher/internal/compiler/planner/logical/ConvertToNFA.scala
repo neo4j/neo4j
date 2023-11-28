@@ -30,7 +30,6 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.VarLengthLowerBound
 import org.neo4j.cypher.internal.expressions.VarLengthUpperBound
-import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions.EndNode
 import org.neo4j.cypher.internal.expressions.functions.StartNode
 import org.neo4j.cypher.internal.frontend.phases.Namespacer
@@ -73,16 +72,16 @@ object ConvertToNFA {
   ): (NFA, Selections, Map[String, String]) = {
     val firstNodeName = if (fromLeft) spp.left else spp.right
 
-    val builder = new NFABuilder(varFor(firstNodeName))
+    val builder = new NFABuilder(firstNodeName)
     val connections = spp.pathPattern.connections
     val directedConnections = if (fromLeft) connections else connections.reverse
 
-    val syntheticVarLengthSingletons = spp.varLengthRelationshipNames.map { relName =>
+    val syntheticVarLengthSingletons = spp.varLengthRelationships.map { rel =>
       val singletonRelName = Namespacer.genName(
         anonymousVariableNameGenerator,
-        relName
+        rel.name
       )
-      relName -> singletonRelName
+      rel.name -> singletonRelName
     }.toMap
 
     val nonInlinedSelections =
@@ -241,9 +240,9 @@ object ConvertToNFA {
         val newlyInlinedSelections = nodeConnection match {
           case PatternRelationship(relationshipName, (left, right), dir, types, SimplePatternLength) =>
             val targetName = if (fromLeft) right else left
-            addRelationship(relationshipName, targetName, dir, types)
+            addRelationship(relationshipName.name, targetName.name, dir, types)
 
-          case PatternRelationship(relationshipName, (left, right), dir, types, VarPatternLength(lowerBound, max)) =>
+          case PatternRelationship(relationship, (left, right), dir, types, VarPatternLength(lowerBound, max)) =>
             /*
              * We introduce anonymous nodes for the nodes that we traverse while evaluating a var-length relationship.
              * Furthermore, we try to use a similar logic to that from QPPs also for var-length relationships.
@@ -272,7 +271,7 @@ object ConvertToNFA {
              *
              * (kudos to https://github.com/ggerganov/dot-to-ascii)
              */
-            val singletonRelationshipName = syntheticVarLengthSingleton(relationshipName)
+            val singletonRelationshipName = syntheticVarLengthSingleton(relationship.name)
             val sourceState = builder.getLastState
 
             val innerState = builder.addAndGetState(varFor(anonymousVariableNameGenerator.nextName))
@@ -305,9 +304,9 @@ object ConvertToNFA {
                 Seq.empty
             }
 
-            val targetName = if (fromLeft) right else left
-            val targetState = builder.addAndGetState(varFor(targetName))
-            val (predicatesOnTargetNode, variablePredicateOnTargetNode) = getVariablePredicates(targetName)
+            val target = if (fromLeft) right else left
+            val targetState = builder.addAndGetState(target)
+            val (predicatesOnTargetNode, variablePredicateOnTargetNode) = getVariablePredicates(target.name)
             (exitableState +: furtherExitableStates).foreach { exitableState =>
               builder.addTransition(
                 exitableState,
@@ -319,8 +318,8 @@ object ConvertToNFA {
             // The part of the automaton that we created should make sure that we observe the lower and upper bound
             // of the var-length relationship. We therefore can claim to have solved these predicates.
             val varLengthPredicates = selections.flatPredicates.filter {
-              case VarLengthLowerBound(Variable(`relationshipName`), `lowerBound`) => true
-              case VarLengthUpperBound(Variable(`relationshipName`), upperBound) if max.contains(upperBound.intValue) =>
+              case VarLengthLowerBound(`relationship`, `lowerBound`) => true
+              case VarLengthUpperBound(`relationship`, upperBound) if max.contains(upperBound.intValue) =>
                 true
               case _ => false
             }
@@ -367,12 +366,12 @@ object ConvertToNFA {
             // === 1. Add entry juxtaposition ===
             val sourceBinding = if (fromLeft) leftBinding else rightBinding
             val sourceOuterState = builder.getLastState
-            val sourceInnerName = sourceBinding.inner
+            val sourceInner = sourceBinding.inner
             // var because it will get overwritten if the lower bound is > 1
-            var lastSourceInnerState = builder.addAndGetState(varFor(sourceInnerName))
-            val predicatesOnSourceInner = qppSelections.predicatesGiven(availableSymbols + sourceInnerName)
+            var lastSourceInnerState = builder.addAndGetState(sourceInner)
+            val predicatesOnSourceInner = qppSelections.predicatesGiven(availableSymbols + sourceInner.name)
             val variablePredicateOnSourceInner =
-              toVariablePredicates(sourceInnerName, predicatesOnSourceInner.to(ListSet))
+              toVariablePredicates(sourceInner.name, predicatesOnSourceInner.to(ListSet))
             builder.addTransition(
               sourceOuterState,
               lastSourceInnerState,
@@ -401,7 +400,7 @@ object ConvertToNFA {
             // If the lower bound is larger than 1, repeat the inner steps of the QPP (min - 1) times.
             for (_ <- 1L to (repetition.min - 1)) {
               val targetInnerState = builder.getLastState
-              lastSourceInnerState = builder.addAndGetState(varFor(sourceInnerName))
+              lastSourceInnerState = builder.addAndGetState(sourceInner)
               builder.addTransition(
                 targetInnerState,
                 lastSourceInnerState,
@@ -423,7 +422,7 @@ object ConvertToNFA {
               case UpperBound.Limited(max) =>
                 for (_ <- Math.max(repetition.min, 1) until max) yield {
                   val targetInnerState = builder.getLastState
-                  val sourceInnerState = builder.addAndGetState(varFor(sourceInnerName))
+                  val sourceInnerState = builder.addAndGetState(sourceInner)
                   builder.addTransition(
                     targetInnerState,
                     sourceInnerState,
@@ -438,12 +437,12 @@ object ConvertToNFA {
             // === 4. Add exit juxtapositions ===
             // Connect all exitableTargetInnerStates with the targetOuterState
             val targetBinding = if (fromLeft) rightBinding else leftBinding
-            val targetOuterName = targetBinding.outer
-            val targetOuterState = builder.addAndGetState(varFor(targetOuterName))
-            val predicatesOnTargetOuter = getPredicates(Set(targetOuterName))
-              .filter(_.dependencies.exists(_.name == targetOuterName))
+            val targetOuter = targetBinding.outer
+            val targetOuterState = builder.addAndGetState(targetOuter)
+            val predicatesOnTargetOuter = getPredicates(Set(targetOuter.name))
+              .filter(_.dependencies.exists(_.name == targetOuter.name))
             val variablePredicateOnTargetOuter =
-              toVariablePredicates(targetOuterName, predicatesOnTargetOuter.to(ListSet))
+              toVariablePredicates(targetOuter.name, predicatesOnTargetOuter.to(ListSet))
             exitableTargetInnerStates.foreach { targetInnerState =>
               builder.addTransition(
                 targetInnerState,

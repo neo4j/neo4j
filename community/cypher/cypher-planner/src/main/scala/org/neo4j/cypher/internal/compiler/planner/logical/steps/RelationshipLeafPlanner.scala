@@ -23,6 +23,8 @@ import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.equalsPredicate
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
@@ -64,7 +66,7 @@ object RelationshipLeafPlanner {
     relationshipLeafPlanProvider: RelationshipLeafPlanProvider
   ): LogicalPlan = {
     val startNodeAndEndNodeIsSame = relationship.left == relationship.right
-    val startOrEndNodeIsBound = relationship.coveredIds.intersect(argumentIds).nonEmpty
+    val startOrEndNodeIsBound = relationship.coveredIds.map(_.name).intersect(argumentIds).nonEmpty
     if (!startOrEndNodeIsBound && !startNodeAndEndNodeIsSame) {
       relationshipLeafPlanProvider.getRelationshipLeafPlan(relationship, relationship, Seq.empty)
     } else if (startOrEndNodeIsBound) {
@@ -79,7 +81,7 @@ object RelationshipLeafPlanner {
     } else {
       // In the case where `startNodeAndEndNodeIsSame == true` we need to generate 1 new variable name for one side of the relationship
       // and plan a Selection after the seek so that both sides are the same
-      val newRightNode = context.staticComponents.anonymousVariableNameGenerator.nextName
+      val newRightNode = varFor(context.staticComponents.anonymousVariableNameGenerator.nextName)
       val nodePredicate = equalsPredicate(relationship.right, newRightNode)
       val newRelationship = relationship.copy(boundaryNodes = (relationship.left, newRightNode))
       relationshipLeafPlanProvider.getRelationshipLeafPlan(newRelationship, relationship, Seq(nodePredicate))
@@ -91,15 +93,17 @@ object RelationshipLeafPlanner {
    * Otherwise, return the same variable name.
    */
   private def generateNewStartEndNodes(
-    oldNodes: (String, String),
+    oldNodes: (LogicalVariable, LogicalVariable),
     argumentIds: Set[String],
     context: LogicalPlanningContext
-  ): (String, String) = {
+  ): (LogicalVariable, LogicalVariable) = {
     val (left, right) = oldNodes
     val newLeft =
-      if (!argumentIds.contains(left)) left else context.staticComponents.anonymousVariableNameGenerator.nextName
+      if (!argumentIds.contains(left.name)) left
+      else varFor(context.staticComponents.anonymousVariableNameGenerator.nextName)
     val newRight =
-      if (!argumentIds.contains(right)) right else context.staticComponents.anonymousVariableNameGenerator.nextName
+      if (!argumentIds.contains(right.name)) right
+      else varFor(context.staticComponents.anonymousVariableNameGenerator.nextName)
     (newLeft, newRight)
   }
 
@@ -115,8 +119,11 @@ object RelationshipLeafPlanner {
     oldRelationship.copy(boundaryNodes = generateNewStartEndNodes(oldRelationship.boundaryNodes, argumentIds, context))
   }
 
-  private def buildNodePredicates(oldNodes: (String, String), newNodes: (String, String)): Seq[Equals] = {
-    def pred(oldName: String, newName: String) = {
+  private def buildNodePredicates(
+    oldNodes: (LogicalVariable, LogicalVariable),
+    newNodes: (LogicalVariable, LogicalVariable)
+  ): Seq[Equals] = {
+    def pred(oldName: LogicalVariable, newName: LogicalVariable): Seq[Equals] = {
       if (oldName == newName) {
         Seq.empty
       } else {

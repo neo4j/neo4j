@@ -36,20 +36,20 @@ case class allRelationshipsScanLeafPlanner(skipIDs: Set[String]) extends LeafPla
     context: LogicalPlanningContext
   ): Set[LogicalPlan] = {
     def shouldIgnore(pattern: PatternRelationship): Boolean =
-      queryGraph.argumentIds.contains(pattern.name) ||
-        skipIDs.contains(pattern.name) ||
-        skipIDs.contains(pattern.left) ||
-        skipIDs.contains(pattern.right)
+      queryGraph.argumentIds.contains(pattern.variable.name) ||
+        skipIDs.contains(pattern.variable.name) ||
+        skipIDs.contains(pattern.left.name) ||
+        skipIDs.contains(pattern.right.name)
     queryGraph.patternRelationships.flatMap {
 
-      case relationship @ PatternRelationship(name, (_, _), _, types, SimplePatternLength)
+      case relationship @ PatternRelationship(rel, (_, _), _, types, SimplePatternLength)
         if !shouldIgnore(relationship) && types.isEmpty =>
         Some(planHiddenSelectionAndRelationshipLeafPlan(
           queryGraph.argumentIds,
           relationship,
           context,
           context.staticComponents.logicalPlanProducer.planAllRelationshipsScan(
-            name,
+            rel.name,
             _,
             _,
             _,

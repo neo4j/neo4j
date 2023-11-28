@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.ast.Union.UnionMapping
 import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
@@ -1247,19 +1248,19 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val innerPlan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "inner")
 
       val quantifiedPathPattern = QuantifiedPathPattern(
-        leftBinding = NodeBinding("n", "anon_0"),
-        rightBinding = NodeBinding("m", "anon_1"),
+        leftBinding = NodeBinding(v"n", v"anon_0"),
+        rightBinding = NodeBinding(v"m", v"anon_1"),
         patternRelationships =
           NonEmptyList(PatternRelationship(
-            "r",
-            ("n", "m"),
+            v"r",
+            (v"n", v"m"),
             SemanticDirection.OUTGOING,
             Nil,
             SimplePatternLength
           )),
         repetition = Repetition(min = 1, max = UpperBound.Unlimited),
-        nodeVariableGroupings = Set(VariableGrouping("n", "n"), VariableGrouping("m", "m")),
-        relationshipVariableGroupings = Set(VariableGrouping("r", "r"))
+        nodeVariableGroupings = Set(VariableGrouping(v"n", v"n"), VariableGrouping(v"m", v"m")),
+        relationshipVariableGroupings = Set(VariableGrouping(v"r", v"r"))
       )
 
       the[InternalException] thrownBy producer.planTrail(

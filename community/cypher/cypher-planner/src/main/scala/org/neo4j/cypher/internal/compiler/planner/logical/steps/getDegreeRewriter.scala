@@ -200,8 +200,8 @@ object QuerySolvableByGetDegree {
         RegularQueryProjection(_, QueryPagination.empty, Selections.empty, _) | _: AggregatingQueryProjection,
         None,
         None
-      ) if patternNodes.contains(argument) && patternNodes == Set(firstNode, secondNode) =>
-      Some((firstNode, relationship, secondNode, types, direction))
+      ) if patternNodes.contains(argument) && patternNodes == Set(firstNode.name, secondNode.name) =>
+      Some((firstNode.name, relationship.name, secondNode.name, types, direction))
     case _ => None
   }
 }

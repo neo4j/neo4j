@@ -181,8 +181,8 @@ case object triadicSelectionFinder extends SelectionCandidateGenerator {
         context = context
       )
       val newExpand2 = {
-        val from = exp2.from.name
-        val to = exp2.to.name
+        val from = exp2.from
+        val to = exp2.to
         val expand2PR = qg.patternRelationships.find {
           case PatternRelationship(_, (`from`, `to`), _, _, _) => true
           case PatternRelationship(_, (`to`, `from`), _, _, _) => true
@@ -218,7 +218,7 @@ case object triadicSelectionFinder extends SelectionCandidateGenerator {
 
   private def leftPredicatesAcceptable(leftId: String, leftPredicates: Seq[Expression]) = leftPredicates.forall {
     case HasLabels(Variable(id), Seq(_)) if id == leftId => true
-    case a                                               => false
+    case _                                               => false
   }
 
   private def matchingLabels(positivePredicate: Boolean, node1: String, node2: String, qg: QueryGraph): Boolean = {
@@ -266,12 +266,12 @@ case object triadicSelectionFinder extends SelectionCandidateGenerator {
         _,
         _
       )
-      if patternNodes == Set(predicateFrom, predicateTo)
-        && predicateFrom == from
-        && predicateTo == to
+      if patternNodes == Set(predicateFrom.name, predicateTo.name)
+        && predicateFrom.name == from
+        && predicateTo.name == to
         && predicateDir == dir
         && predicateTypes == types
-        && !pattern.dependencies.map(_.name).contains(rel) => true
+        && !pattern.dependencies.contains(rel) => true
     case _ => false
   }
 }

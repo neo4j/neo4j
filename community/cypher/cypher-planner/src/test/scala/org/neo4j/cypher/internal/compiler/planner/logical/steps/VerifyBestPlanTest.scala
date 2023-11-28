@@ -23,6 +23,7 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mockito.when
 import org.neo4j.common.EntityType
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.ast.Hint
 import org.neo4j.cypher.internal.ast.UsingAnyIndexType
 import org.neo4j.cypher.internal.ast.UsingIndexHint
@@ -87,7 +88,7 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
   ) = RegularSinglePlannerQuery(
     QueryGraph(
       patternNodes = Set("a", "b"),
-      patternRelationships = Set(PatternRelationship("r", ("a", "b"), BOTH, Seq.empty, SimplePatternLength))
+      patternRelationships = Set(PatternRelationship(v"r", (v"a", v"b"), BOTH, Seq.empty, SimplePatternLength))
     ).addHints(Set(newRelationshipIndexHint(indexType))).addSelections(selections)
   )
 
@@ -123,7 +124,7 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
     newMockedLogicalPlanWithPatterns(
       context.staticComponents.planningAttributes,
       Set("a", "b"),
-      Set(PatternRelationship("r", ("a", "b"), BOTH, Seq.empty, SimplePatternLength)),
+      Set(PatternRelationship(v"r", (v"a", v"b"), BOTH, Seq.empty, SimplePatternLength)),
       selections = selections
     )
   }
@@ -168,7 +169,7 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
 
   test("should throw when finding plan that does not solve all pattern relationships") {
     val patternRel =
-      PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, VarPatternLength.unlimited)
+      PatternRelationship(v"r", (v"a", v"b"), SemanticDirection.OUTGOING, Seq.empty, VarPatternLength.unlimited)
     val query = RegularSinglePlannerQuery(
       QueryGraph(
         patternNodes = Set("a", "b"),
@@ -401,7 +402,7 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
     val plan: LogicalPlan = newMockedLogicalPlanWithPatterns(
       context.staticComponents.planningAttributes,
       Set("a", "b"),
-      Set(PatternRelationship("r", ("a", "b"), BOTH, Seq.empty, SimplePatternLength)),
+      Set(PatternRelationship(v"r", (v"a", v"b"), BOTH, Seq.empty, SimplePatternLength)),
       hints = Set[Hint](newRelationshipIndexHint())
     )
 

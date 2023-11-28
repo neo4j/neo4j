@@ -44,9 +44,9 @@ trait SelectivePathPatternCardinalityModel
     selectivePathPattern: SelectivePathPattern
   ): Cardinality = {
     val leftNodeCardinality =
-      getNodeCardinality(context, labelInfo, selectivePathPattern.left).getOrElse(Cardinality.EMPTY)
+      getNodeCardinality(context, labelInfo, selectivePathPattern.left.name).getOrElse(Cardinality.EMPTY)
     val rightNodeCardinality =
-      getNodeCardinality(context, labelInfo, selectivePathPattern.right).getOrElse(Cardinality.EMPTY)
+      getNodeCardinality(context, labelInfo, selectivePathPattern.right.name).getOrElse(Cardinality.EMPTY)
 
     selectivePathPattern.selector match {
       case Selector.Any(k) =>
@@ -131,7 +131,8 @@ trait SelectivePathPatternCardinalityModel
         tail.foldLeft(headCardinality) { case (cardinality, connection) =>
           val connectionCardinality =
             getExhaustiveNodeConnectionCardinality(context, labelInfo, predicates.uniqueRelationships, connection)
-          val leftNodeCardinality = getNodeCardinality(context, labelInfo, connection.left).getOrElse(Cardinality.EMPTY)
+          val leftNodeCardinality =
+            getNodeCardinality(context, labelInfo, connection.left.name).getOrElse(Cardinality.EMPTY)
           val connectionMultiplier =
             Multiplier.ofDivision(
               dividend = connectionCardinality,
@@ -156,7 +157,12 @@ trait SelectivePathPatternCardinalityModel
   ): Cardinality =
     exhaustiveNodeConnection match {
       case relationship: PatternRelationship =>
-        getRelationshipCardinality(context, labelInfo, relationship, uniqueRelationships.contains(relationship.name))
+        getRelationshipCardinality(
+          context,
+          labelInfo,
+          relationship,
+          uniqueRelationships.contains(relationship.variable.name)
+        )
       case quantifiedPathPattern: QuantifiedPathPattern =>
         getQuantifiedPathPatternCardinality(context, labelInfo, quantifiedPathPattern, uniqueRelationships)
     }

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.ExhaustivePathPattern
 import org.neo4j.cypher.internal.ir.NodeBinding
@@ -39,26 +40,26 @@ class NodeConnectionManipulationTest extends CypherFunSuite with NodeConnectionM
     // (a) ((b)-[r]->(c)){1, ?} (d)
     def qpp1(upperBound: UpperBound): QuantifiedPathPattern =
       QuantifiedPathPattern(
-        leftBinding = NodeBinding("b", "a"),
-        rightBinding = NodeBinding("c", "d"),
+        leftBinding = NodeBinding(v"b", v"a"),
+        rightBinding = NodeBinding(v"c", v"d"),
         patternRelationships =
           NonEmptyList(PatternRelationship(
-            "r",
-            ("b", "c"),
+            v"r",
+            (v"b", v"c"),
             SemanticDirection.OUTGOING,
             Seq.empty,
             SimplePatternLength
           )),
         repetition = Repetition(min = 1, max = upperBound),
-        nodeVariableGroupings = Set(VariableGrouping("b", "b"), VariableGrouping("c", "c")),
-        relationshipVariableGroupings = Set(VariableGrouping("r", "r"))
+        nodeVariableGroupings = Set(VariableGrouping(v"b", v"b"), VariableGrouping(v"c", v"c")),
+        relationshipVariableGroupings = Set(VariableGrouping(v"r", v"r"))
       )
 
     // (d)-[s]-(e)
     val relationship =
       PatternRelationship(
-        name = "s",
-        boundaryNodes = ("d", "e"),
+        variable = v"s",
+        boundaryNodes = (v"d", v"e"),
         dir = SemanticDirection.BOTH,
         types = Nil,
         length = SimplePatternLength
@@ -67,19 +68,19 @@ class NodeConnectionManipulationTest extends CypherFunSuite with NodeConnectionM
     // (e) ((f)<-[t]-(g)){0, ?} (h)
     def qpp2(upperBound: UpperBound): QuantifiedPathPattern =
       QuantifiedPathPattern(
-        leftBinding = NodeBinding("f", "e"),
-        rightBinding = NodeBinding("g", "h"),
+        leftBinding = NodeBinding(v"f", v"e"),
+        rightBinding = NodeBinding(v"g", v"h"),
         patternRelationships =
           NonEmptyList(PatternRelationship(
-            "t",
-            ("f", "g"),
+            v"t",
+            (v"f", v"g"),
             SemanticDirection.INCOMING,
             Seq.empty,
             SimplePatternLength
           )),
         repetition = Repetition(min = 0, max = upperBound),
-        nodeVariableGroupings = Set(VariableGrouping("f", "f"), VariableGrouping("g", "g")),
-        relationshipVariableGroupings = Set(VariableGrouping("t", "t"))
+        nodeVariableGroupings = Set(VariableGrouping(v"f", v"f"), VariableGrouping(v"g", v"g")),
+        relationshipVariableGroupings = Set(VariableGrouping(v"t", v"t"))
       )
 
     // (a) ((b)-[r]->(c))+ (d)-[s]-(e) ((f)<-[t]-(g)){0,2} (h)
@@ -109,19 +110,19 @@ class NodeConnectionManipulationTest extends CypherFunSuite with NodeConnectionM
   ) {
     def qpp(upperBound: UpperBound): QuantifiedPathPattern =
       QuantifiedPathPattern(
-        leftBinding = NodeBinding("b", "a"),
-        rightBinding = NodeBinding("c", "d"),
+        leftBinding = NodeBinding(v"b", v"a"),
+        rightBinding = NodeBinding(v"c", v"d"),
         patternRelationships =
           NonEmptyList(PatternRelationship(
-            "r",
-            ("b", "c"),
+            v"r",
+            (v"b", v"c"),
             SemanticDirection.OUTGOING,
             Seq.empty,
             SimplePatternLength
           )),
         repetition = Repetition(min = 0, max = upperBound),
-        nodeVariableGroupings = Set(VariableGrouping("b", "b"), VariableGrouping("c", "c")),
-        relationshipVariableGroupings = Set(VariableGrouping("r", "r"))
+        nodeVariableGroupings = Set(VariableGrouping(v"b", v"b"), VariableGrouping(v"c", v"c")),
+        relationshipVariableGroupings = Set(VariableGrouping(v"r", v"r"))
       )
 
     increasinglyLargerConnection(qpp(UpperBound.Unlimited)).toList shouldEqual (1 to 32).map { n =>

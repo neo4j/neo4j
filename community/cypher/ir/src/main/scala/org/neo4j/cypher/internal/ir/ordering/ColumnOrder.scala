@@ -23,7 +23,9 @@ import org.neo4j.cypher.internal.expressions.DesugaredMapProjection
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.ir.ast.IRExpression
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.projectExpression
+import org.neo4j.cypher.internal.util.RewriterStopperWithParent
 import org.neo4j.cypher.internal.util.RewriterWithParent
 import org.neo4j.cypher.internal.util.topDownWithParent
 
@@ -104,7 +106,10 @@ object ColumnOrder {
           }
         case (v @ Variable(varName), _) =>
           projections.getOrElse(varName, v)
-      }
+      },
+      // Do not attempt rewriting in IR expressions, they contain variables in places where they cannot get substituted
+      // by other expression.
+      stopper = RewriterStopperWithParent(_.isInstanceOf[IRExpression])
     ))
   }
 }

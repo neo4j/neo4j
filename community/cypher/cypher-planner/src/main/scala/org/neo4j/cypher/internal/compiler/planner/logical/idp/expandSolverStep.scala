@@ -80,7 +80,7 @@ case class expandSolverStep(qg: QueryGraph, qppInnerPlanner: QPPInnerPlanner)
         pattern <- registry.lookup(patternId)
       } yield {
         pattern match {
-          case relationship: PatternRelationship if plan.availableSymbols.contains(varFor(relationship.name)) =>
+          case relationship: PatternRelationship if plan.availableSymbols.contains(relationship.variable) =>
             Iterator(
               // we do not project endpoints for quantified path patterns
               planSingleProjectEndpoints(relationship, plan, context)
@@ -91,7 +91,7 @@ case class expandSolverStep(qg: QueryGraph, qppInnerPlanner: QPPInnerPlanner)
                 qg,
                 pattern,
                 plan,
-                pattern.left,
+                pattern.left.name,
                 qppInnerPlanner,
                 context
               ),
@@ -99,7 +99,7 @@ case class expandSolverStep(qg: QueryGraph, qppInnerPlanner: QPPInnerPlanner)
                 qg,
                 pattern,
                 plan,
-                pattern.right,
+                pattern.right.name,
                 qppInnerPlanner,
                 context
               )
@@ -122,14 +122,14 @@ object expandSolverStep {
     context: LogicalPlanningContext
   ): LogicalPlan = {
     val (start, end) = patternRel.boundaryNodes
-    val isStartInScope = plan.availableSymbols(varFor(start))
-    val isEndInScope = plan.availableSymbols(varFor(end))
+    val isStartInScope = plan.availableSymbols(start)
+    val isEndInScope = plan.availableSymbols(end)
 
     context.staticComponents.logicalPlanProducer.planProjectEndpoints(
       plan,
-      start,
+      start.name,
       isStartInScope,
-      end,
+      end.name,
       isEndInScope,
       patternRel,
       context
@@ -181,7 +181,7 @@ object expandSolverStep {
   ): LogicalPlan = {
     patternRel match {
       case rel: PatternRelationship =>
-        produceExpandLogicalPlan(qg, rel, rel.name, sourcePlan, nodeId, availableSymbols, context)
+        produceExpandLogicalPlan(qg, rel, rel.variable.name, sourcePlan, nodeId, availableSymbols, context)
       case qpp: QuantifiedPathPattern =>
         produceTrailLogicalPlan(
           qpp,
@@ -219,7 +219,7 @@ object expandSolverStep {
     availableSymbols: Set[String],
     context: LogicalPlanningContext
   ): LogicalPlan = {
-    val otherSide = patternRelationship.otherSide(nodeId)
+    val otherSide = patternRelationship.otherSide(varFor(nodeId)).name
     val overlapping = availableSymbols.contains(otherSide)
     val mode = if (overlapping) ExpandInto else ExpandAll
 
@@ -282,7 +282,7 @@ object expandSolverStep {
     qppInnerPlanner: QPPInnerPlanner,
     predicates: Seq[Expression]
   ): LogicalPlan = {
-    val fromLeft = startNode == quantifiedPathPattern.left
+    val fromLeft = startNode == quantifiedPathPattern.left.name
 
     // Get the QPP inner plan
     val availableVars = availableSymbols.map(UnPositionedVariable.varFor)
@@ -305,7 +305,7 @@ object expandSolverStep {
         None
       }
 
-    val groupingRelationshipNames = quantifiedPathPattern.relationshipVariableGroupings.map(_.groupName)
+    val groupingRelationshipNames = quantifiedPathPattern.relationshipVariableGroupings.map(_.groupName.name)
 
     def isBound(variable: String): Boolean = {
       sourcePlan.availableSymbols.contains(varFor(variable))
@@ -367,11 +367,11 @@ object expandSolverStep {
     queryGraphSelections: Selections,
     context: LogicalPlanningContext
   ) = {
-    val fromLeft = startNode == spp.left
-    val endNode = if (fromLeft) spp.right else spp.left
+    val fromLeft = startNode == spp.left.name
+    val endNode = if (fromLeft) spp.right.name else spp.left.name
 
     // Check unsupported cases
-    val strictInteriorVariables = spp.nonBoundaryPathVariables.map(_.variable)
+    val strictInteriorVariables = spp.nonBoundaryPathVariables.map(_.variable.name)
     val overlap = (availableSymbols + endNode).intersect(strictInteriorVariables.toSet)
     if (overlap.nonEmpty) {
       throw new InternalException(
@@ -397,7 +397,7 @@ object expandSolverStep {
     // Updated connections
     val rewrittenConnectionsBuilder = NonEmptyList.newBuilder[ExhaustiveNodeConnection]
     orderedConnections.foreach { connection =>
-      val currentEndNode = if (fromLeft) connection.right else connection.left
+      val currentEndNode = if (fromLeft) connection.right.name else connection.left.name
       val newEndNode =
         seenNodes.get(currentEndNode) match {
           // In case we've already encountered this node
@@ -417,7 +417,7 @@ object expandSolverStep {
             currentEndNode
         }
       val (left, right) = if (fromLeft) (lastEndNode, newEndNode) else (newEndNode, lastEndNode)
-      val rewrittenConnection = connection.withLeft(left).withRight(right)
+      val rewrittenConnection = connection.withLeft(varFor(left)).withRight(varFor(right))
       rewrittenConnectionsBuilder.addOne(rewrittenConnection)
       // Keep track of the new end node for the next iteration
       lastEndNode = newEndNode
@@ -435,7 +435,7 @@ object expandSolverStep {
     seenNodes.foreach { case (node, aliases) =>
       // Note that `aliases` would be empty in case the node was only encountered once
       aliases.foreach { alias =>
-        joins.addOne(equalsPredicate(node, alias))
+        joins.addOne(equalsPredicate(varFor(node), varFor(alias)))
       }
     }
 
@@ -444,7 +444,7 @@ object expandSolverStep {
       selections = spp.selections ++ Selections.from(joins.result())
     )
 
-    val newEndNode = if (fromLeft) newSpp.right else newSpp.left
+    val newEndNode = if (fromLeft) newSpp.right.name else newSpp.left.name
     val unsolvedPredicatesOnEndNode = queryGraphSelections
       .predicatesGiven(availableSymbols + endNode)
       .filterNot(predicate =>
@@ -485,14 +485,14 @@ object expandSolverStep {
 
     val rewriteLookup = mutable.Map.empty[LogicalVariable, LogicalVariable]
     val nonSingletons =
-      spp.allQuantifiedPathPatterns.flatMap(_.variableGroupNames) ++ spp.varLengthRelationshipNames + startNode
+      spp.allQuantifiedPathPatterns.flatMap(_.variableGroupNames) ++ spp.varLengthRelationships + varFor(startNode)
     val singletonNodeVariables = Set.newBuilder[Mapping]
     val singletonRelVariables = Set.newBuilder[Mapping]
     spp.pathVariables.iterator
       .filterNot(pathVariable => nonSingletons.contains(pathVariable.variable))
       .foreach { pathVar =>
-        val nfaName = Namespacer.genName(context.staticComponents.anonymousVariableNameGenerator, pathVar.variable)
-        val mapping = Mapping(varFor(nfaName), varFor(pathVar.variable))
+        val nfaName = Namespacer.genName(context.staticComponents.anonymousVariableNameGenerator, pathVar.variable.name)
+        val mapping = Mapping(varFor(nfaName), pathVar.variable)
         rewriteLookup.addOne(mapping.rowVar -> mapping.nfaExprVar)
         pathVar match {
           case _: NodePathVariable         => singletonNodeVariables.addOne(mapping)
@@ -555,6 +555,6 @@ object expandSolverStep {
 
   // this should go eventually when we have Variables instead of Strings in IR
   private def convertGroupingFromIr(variableGrouping: VariableGrouping) =
-    Trail.VariableGrouping(varFor(variableGrouping.singletonName), varFor(variableGrouping.groupName))
+    Trail.VariableGrouping(varFor(variableGrouping.singletonName.name), varFor(variableGrouping.groupName.name))
 
 }

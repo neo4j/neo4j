@@ -105,19 +105,21 @@ object ForAllRepetitions {
   def apply(qpp: QuantifiedPathPattern, predicate: Expression): ForAllRepetitions = {
 
     val groupVariableAnchor =
-      predicate.dependencies.flatMap(v => VariableGrouping.singletonToGroup(qpp.variableGroupings, v.name))
-        .minOption
-        .getOrElse(qpp.variableGroupNames.min) // if the predicate doesn't use any QPP variables, just pick one
+      predicate.dependencies.flatMap(v => VariableGrouping.singletonToGroup(qpp.variableGroupings, v))
+        .minOption(Ordering.by[LogicalVariable, String](_.name))
+        .getOrElse(qpp.variableGroupNames.min(
+          Ordering.by[LogicalVariable, String](_.name)
+        )) // if the predicate doesn't use any QPP variables, just pick one
 
     val astVariableGroupings = qpp.variableGroupings.map { irGrouping =>
       expressions.VariableGrouping(
-        singleton = UnPositionedVariable.varFor(irGrouping.singletonName),
-        group = UnPositionedVariable.varFor(irGrouping.groupName)
+        singleton = irGrouping.singletonName,
+        group = irGrouping.groupName
       )(InputPosition.NONE)
     }
 
     ForAllRepetitions(
-      UnPositionedVariable.varFor(groupVariableAnchor),
+      groupVariableAnchor,
       astVariableGroupings,
       predicate
     )(predicate.position)

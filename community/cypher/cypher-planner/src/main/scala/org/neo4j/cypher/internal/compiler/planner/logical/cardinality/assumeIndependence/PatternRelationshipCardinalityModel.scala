@@ -47,8 +47,8 @@ trait PatternRelationshipCardinalityModel extends NodeCardinalityModel {
         getSimpleRelationshipCardinality(
           context = context,
           labelInfo = labelInfo,
-          leftNode = relationship.left,
-          rightNode = relationship.right,
+          leftNode = relationship.left.name,
+          rightNode = relationship.right.name,
           relationshipTypes = relationship.types,
           relationshipDirection = relationship.dir
         )
@@ -58,12 +58,13 @@ trait PatternRelationshipCardinalityModel extends NodeCardinalityModel {
           .varPatternLengthAsRange(varPatternLength)
           .view
           .map {
-            case 0 => getEmptyPathPatternCardinality(context, labelInfo, relationship.left, relationship.right)
+            case 0 =>
+              getEmptyPathPatternCardinality(context, labelInfo, relationship.left.name, relationship.right.name)
             case 1 => getSimpleRelationshipCardinality(
                 context = context,
                 labelInfo = labelInfo,
-                leftNode = relationship.left,
-                rightNode = relationship.right,
+                leftNode = relationship.left.name,
+                rightNode = relationship.right.name,
                 relationshipTypes = relationship.types,
                 relationshipDirection = relationship.dir
               )
@@ -72,9 +73,9 @@ trait PatternRelationshipCardinalityModel extends NodeCardinalityModel {
                 val firstRelationshipCardinality =
                   getSimpleRelationshipCardinality(
                     context = context,
-                    labelInfo = labelInfo.removed(relationship.right),
-                    leftNode = relationship.left,
-                    rightNode = relationship.right,
+                    labelInfo = labelInfo.removed(relationship.right.name),
+                    leftNode = relationship.left.name,
+                    rightNode = relationship.right.name,
                     relationshipTypes = relationship.types,
                     relationshipDirection = relationship.dir
                   )
@@ -83,8 +84,8 @@ trait PatternRelationshipCardinalityModel extends NodeCardinalityModel {
                   getSimpleRelationshipCardinality(
                     context = context,
                     labelInfo = Map.empty,
-                    leftNode = relationship.left,
-                    rightNode = relationship.right,
+                    leftNode = relationship.left.name,
+                    rightNode = relationship.right.name,
                     relationshipTypes = relationship.types,
                     relationshipDirection = relationship.dir
                   )
@@ -95,9 +96,9 @@ trait PatternRelationshipCardinalityModel extends NodeCardinalityModel {
                 val lastRelationshipCardinality =
                   getSimpleRelationshipCardinality(
                     context = context,
-                    labelInfo = labelInfo.removed(relationship.left),
-                    leftNode = relationship.left,
-                    rightNode = relationship.right,
+                    labelInfo = labelInfo.removed(relationship.left.name),
+                    leftNode = relationship.left.name,
+                    rightNode = relationship.right.name,
                     relationshipTypes = relationship.types,
                     relationshipDirection = relationship.dir
                   )

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.mockito.Mockito.when
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.ast.Hint
 import org.neo4j.cypher.internal.ast.UsingJoinHint
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
@@ -34,7 +35,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.MetricsFactory
 import org.neo4j.cypher.internal.compiler.planner.logical.PlanMatchHelp
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.simpleExpressionEvaluator
-import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QueryGraph
@@ -55,12 +55,12 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
 
   private val planContext = notImplementedPlanContext(hardcodedStatistics)
 
-  private val aNode = "a"
-  private val bNode = "b"
-  private val r1Name = "r1"
+  private val aNode = v"a"
+  private val bNode = v"b"
+  private val r1Var = v"r1"
 
   private val r1Rel =
-    PatternRelationship(r1Name, (aNode, bNode), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+    PatternRelationship(r1Var, (aNode, bNode), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
   private def newMockedMetrics(factory: MetricsFactory): Metrics =
     factory.newMetrics(planContext, simpleExpressionEvaluator, ExecutionModel.default)
@@ -68,9 +68,9 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
   test("solve optional match with outer joins") {
     // MATCH a OPTIONAL MATCH a-->b
     val optionalQg = QueryGraph(
-      patternNodes = Set(aNode, bNode),
+      patternNodes = Set(aNode, bNode).map(_.name),
       patternRelationships = Set(r1Rel),
-      argumentIds = Set(aNode)
+      argumentIds = Set(aNode.name)
     )
     val enclosingQg = QueryGraph(optionalMatches = IndexedSeq(optionalQg))
 
@@ -88,35 +88,35 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
         _: CostModelMonitor
       ) =>
         plan match {
-          case AllNodesScan(LogicalVariable(`bNode`), _) => Cost(1) // Make sure we start the inner plan using b
-          case _                                         => Cost(1000)
+          case AllNodesScan(`bNode`, _) => Cost(1) // Make sure we start the inner plan using b
+          case _                        => Cost(1000)
         }
     ): CostModel)
 
-    val innerPlan = newMockedLogicalPlan(bNode)
+    val innerPlan = newMockedLogicalPlan(bNode.name)
 
     val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext(),
       metrics = newMockedMetrics(factory),
       strategy = newMockedStrategy(innerPlan)
     )
-    val left = newMockedLogicalPlanWithPatterns(context.staticComponents.planningAttributes, idNames = Set(aNode))
+    val left = newMockedLogicalPlanWithPatterns(context.staticComponents.planningAttributes, idNames = Set(aNode.name))
     val plans = outerHashJoin.solver(optionalQg, enclosingQg, InterestingOrderConfig.empty, context).connect(left).toSeq
 
     plans should contain theSameElementsAs Seq(
-      LeftOuterHashJoin(Set(varFor(aNode)), left, innerPlan),
-      RightOuterHashJoin(Set(varFor(aNode)), innerPlan, left)
+      LeftOuterHashJoin(Set(aNode), left, innerPlan),
+      RightOuterHashJoin(Set(aNode), innerPlan, left)
     )
   }
 
   test("solve optional match with hint") {
-    val theHint: Set[Hint] = Set(UsingJoinHint(Seq(varFor(aNode)))(pos))
+    val theHint: Set[Hint] = Set(UsingJoinHint(Seq(aNode))(pos))
     // MATCH a OPTIONAL MATCH a-->b
     val optionalQg = QueryGraph(
-      patternNodes = Set(aNode, bNode),
+      patternNodes = Set(aNode, bNode).map(_.name),
       patternRelationships = Set(r1Rel),
       hints = theHint,
-      argumentIds = Set(aNode)
+      argumentIds = Set(aNode.name)
     )
     val enclosingQg = QueryGraph(optionalMatches = IndexedSeq(optionalQg))
 
@@ -133,24 +133,24 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
         _: CostModelMonitor
       ) =>
         plan match {
-          case AllNodesScan(LogicalVariable(`bNode`), _) => Cost(1) // Make sure we start the inner plan using b
-          case _                                         => Cost(1000)
+          case AllNodesScan(`bNode`, _) => Cost(1) // Make sure we start the inner plan using b
+          case _                        => Cost(1000)
         }
     ): CostModel)
 
-    val innerPlan = newMockedLogicalPlan(bNode)
+    val innerPlan = newMockedLogicalPlan(bNode.name)
 
     val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext(),
       metrics = newMockedMetrics(factory),
       strategy = newMockedStrategy(innerPlan)
     )
-    val left = newMockedLogicalPlanWithPatterns(context.staticComponents.planningAttributes, Set(aNode))
+    val left = newMockedLogicalPlanWithPatterns(context.staticComponents.planningAttributes, Set(aNode.name))
     val plans = outerHashJoin.solver(optionalQg, enclosingQg, InterestingOrderConfig.empty, context).connect(left).toSeq
 
     plans should contain theSameElementsAs Seq(
-      LeftOuterHashJoin(Set(varFor(aNode)), left, innerPlan),
-      RightOuterHashJoin(Set(varFor(aNode)), innerPlan, left)
+      LeftOuterHashJoin(Set(aNode), left, innerPlan),
+      RightOuterHashJoin(Set(aNode), innerPlan, left)
     )
     plans.map { p =>
       context.staticComponents.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.lastQueryGraph.allHints
@@ -162,9 +162,9 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
   test("solve optional match with interesting order with outer joins") {
     // MATCH a OPTIONAL MATCH a-->b
     val optionalQg = QueryGraph(
-      patternNodes = Set(aNode, bNode),
+      patternNodes = Set(aNode, bNode).map(_.name),
       patternRelationships = Set(r1Rel),
-      argumentIds = Set(aNode)
+      argumentIds = Set(aNode.name)
     )
     val enclosingQg = QueryGraph(optionalMatches = IndexedSeq(optionalQg))
 
@@ -181,27 +181,27 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
         _: CostModelMonitor
       ) =>
         plan match {
-          case AllNodesScan(LogicalVariable(`bNode`), _) => Cost(1) // Make sure we start the inner plan using b
-          case _                                         => Cost(1000)
+          case AllNodesScan(`bNode`, _) => Cost(1) // Make sure we start the inner plan using b
+          case _                        => Cost(1000)
         }
     ): CostModel)
 
-    val unorderedPlan = newMockedLogicalPlan(bNode, "iAmUnordered")
-    val orderedPlan = newMockedLogicalPlan(bNode, "iAmOrdered")
+    val unorderedPlan = newMockedLogicalPlan(bNode.name, "iAmUnordered")
+    val orderedPlan = newMockedLogicalPlan(bNode.name, "iAmOrdered")
 
     val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext(),
       metrics = newMockedMetrics(factory),
       strategy = newMockedStrategyWithSortedPlan(unorderedPlan, orderedPlan)
     )
-    val left = newMockedLogicalPlanWithPatterns(context.staticComponents.planningAttributes, idNames = Set(aNode))
-    val io = InterestingOrderConfig(InterestingOrder.required(RequiredOrderCandidate.asc(varFor(bNode))))
+    val left = newMockedLogicalPlanWithPatterns(context.staticComponents.planningAttributes, idNames = Set(aNode.name))
+    val io = InterestingOrderConfig(InterestingOrder.required(RequiredOrderCandidate.asc(bNode)))
     val plans = outerHashJoin.solver(optionalQg, enclosingQg, io, context).connect(left).toSeq
 
     plans should contain theSameElementsAs Seq(
-      LeftOuterHashJoin(Set(varFor(aNode)), left, unorderedPlan),
-      LeftOuterHashJoin(Set(varFor(aNode)), left, orderedPlan),
-      RightOuterHashJoin(Set(varFor(aNode)), unorderedPlan, left)
+      LeftOuterHashJoin(Set(aNode), left, unorderedPlan),
+      LeftOuterHashJoin(Set(aNode), left, orderedPlan),
+      RightOuterHashJoin(Set(aNode), unorderedPlan, left)
     )
   }
 }

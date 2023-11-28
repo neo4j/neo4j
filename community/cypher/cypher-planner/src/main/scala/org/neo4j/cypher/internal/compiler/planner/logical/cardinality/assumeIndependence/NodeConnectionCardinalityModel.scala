@@ -41,13 +41,13 @@ trait NodeConnectionCardinalityModel
   ): (BoundNodesAndArguments, Multiplier) =
     nodeConnection match {
       case relationship: PatternRelationship =>
-        if (boundNodesAndArguments.argumentIds.contains(relationship.name)) {
+        if (boundNodesAndArguments.argumentIds.contains(relationship.variable.name)) {
           val additionalLabelsSelectivity =
             // arguably we should check whether the two nodes are the same instead of applying the selectivity twice
-            getArgumentSelectivity(context, predicates.localLabelInfo, relationship.left) *
-              getArgumentSelectivity(context, predicates.localLabelInfo, relationship.right)
+            getArgumentSelectivity(context, predicates.localLabelInfo, relationship.left.name) *
+              getArgumentSelectivity(context, predicates.localLabelInfo, relationship.right.name)
           val newBoundNodesAndArguments =
-            boundNodesAndArguments.addArgumentIdsMarkedAsBound(Set(relationship.left, relationship.right))
+            boundNodesAndArguments.addArgumentIdsMarkedAsBound(Set(relationship.left.name, relationship.right.name))
           val multiplier = Multiplier(additionalLabelsSelectivity.factor)
           (newBoundNodesAndArguments, multiplier)
         } else {
@@ -56,7 +56,7 @@ trait NodeConnectionCardinalityModel
               context,
               predicates.allLabelInfo,
               relationship,
-              predicates.uniqueRelationships.contains(relationship.name)
+              predicates.uniqueRelationships.contains(relationship.variable.name)
             )
           boundNodesAndArguments.bindEndpoints(context, predicates, relationship, cardinality)
         }
@@ -110,17 +110,17 @@ case class BoundNodesAndArguments(boundNodes: Set[String], argumentIds: Set[Stri
     nodeConnectionCardinality: Cardinality
   ): (BoundNodesAndArguments, Multiplier) = {
     // First calculate the cardinality of the left node
-    val leftNodeCardinality = getBoundEndpointCardinality(context, predicates, nodeConnection.left)
+    val leftNodeCardinality = getBoundEndpointCardinality(context, predicates, nodeConnection.left.name)
     // Then calculate the cardinality of the right node, having marked the left node as bound, in cases both endpoints are the same node
     val rightNodeCardinality =
-      copy(boundNodes = boundNodes.incl(nodeConnection.left))
-        .getBoundEndpointCardinality(context, predicates, nodeConnection.right)
+      copy(boundNodes = boundNodes.incl(nodeConnection.left.name))
+        .getBoundEndpointCardinality(context, predicates, nodeConnection.right.name)
     val multiplier =
       Multiplier.ofDivision(
         dividend = nodeConnectionCardinality,
         divisor = leftNodeCardinality * rightNodeCardinality
       ).getOrElse(Multiplier.ZERO)
-    (copy(boundNodes = boundNodes.union(Set(nodeConnection.left, nodeConnection.right))), multiplier)
+    (copy(boundNodes = boundNodes.union(Set(nodeConnection.left.name, nodeConnection.right.name))), multiplier)
   }
 
   private def getBoundEndpointCardinality(

@@ -219,7 +219,9 @@ case class CreateIrExpressions(
               // We can simply override the final horizon with our aggregation.
               plannerQuery.asSinglePlannerQuery
                 .updateTailOrSelf(_.withHorizon(
-                  AggregatingQueryProjection(aggregationExpressions = Map(countVariable.name -> CountStar()(q.position)))
+                  AggregatingQueryProjection(aggregationExpressions =
+                    Map(countVariable.name -> CountStar()(q.position))
+                  )
                 ))
                 // And also remove any ORDER BY since that won't have any impact in a COUNT subquery anyway.
                 .updateTailOrSelf(_.withInterestingOrder(InterestingOrder.empty))

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.IndependenceCombiner
 import org.neo4j.cypher.internal.compiler.test_helpers.TestGraphStatistics
@@ -121,7 +122,7 @@ class PatternRelationshipCardinalityModelTest extends CypherFunSuite with Patter
     )
     val labelInfo = Map("a" -> Set(LabelName("L")(InputPosition.NONE)))
     val relationship =
-      PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Nil, VarPatternLength(33, Some(33)))
+      PatternRelationship(v"r", (v"a", v"b"), SemanticDirection.OUTGOING, Nil, VarPatternLength(33, Some(33)))
     val cardinality = getRelationshipCardinality(context, labelInfo, relationship, isUnique = false)
     cardinality shouldEqual Cardinality.SINGLE
   }

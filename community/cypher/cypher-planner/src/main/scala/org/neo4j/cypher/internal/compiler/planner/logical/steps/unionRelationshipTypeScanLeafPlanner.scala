@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.RelationshipLeaf
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
 import org.neo4j.cypher.internal.expressions.RelTypeName
-import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.SimplePatternLength
@@ -43,13 +42,13 @@ case class unionRelationshipTypeScanLeafPlanner(skipIDs: Set[String]) extends Le
     context: LogicalPlanningContext
   ): Set[LogicalPlan] = {
     def shouldIgnore(pattern: PatternRelationship) =
-      queryGraph.argumentIds.contains(pattern.name) ||
-        skipIDs.contains(pattern.name) ||
-        skipIDs.contains(pattern.left) ||
-        skipIDs.contains(pattern.right)
+      queryGraph.argumentIds.contains(pattern.variable.name) ||
+        skipIDs.contains(pattern.variable.name) ||
+        skipIDs.contains(pattern.left.name) ||
+        skipIDs.contains(pattern.right.name)
 
     queryGraph.patternRelationships.flatMap {
-      case relationship @ PatternRelationship(name, (_, _), _, types, SimplePatternLength)
+      case relationship @ PatternRelationship(rel, (_, _), _, types, SimplePatternLength)
         if types.distinct.length > 1 && !shouldIgnore(relationship) =>
         context.staticComponents.planContext.relationshipTokenIndex.flatMap { relTokenIndex =>
           // UnionRelationshipTypeScan relies on ordering, so we can only use this plan if the relTokenIndex is ordered.
@@ -59,7 +58,7 @@ case class unionRelationshipTypeScanLeafPlanner(skipIDs: Set[String]) extends Le
               relationship,
               context,
               planUnionRelationshipTypeScan(
-                name,
+                rel.name,
                 types,
                 _,
                 _,
@@ -111,7 +110,7 @@ case class unionRelationshipTypeScanLeafPlanner(skipIDs: Set[String]) extends Le
 
   private def hints(queryGraph: QueryGraph, patternRelationship: PatternRelationship): Seq[UsingScanHint] = {
     queryGraph.hints.toSeq.collect {
-      case hint @ UsingScanHint(Variable(patternRelationship.name), LabelOrRelTypeName(relTypeName))
+      case hint @ UsingScanHint(patternRelationship.variable, LabelOrRelTypeName(relTypeName))
         if patternRelationship.types.map(_.name).contains(relTypeName) => hint
     }
   }

@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.PlannerQueryBuilder.finalizeQuery
 import org.neo4j.cypher.internal.compiler.helpers.SeqSupport.RichSeq
 import org.neo4j.cypher.internal.expressions.AssertIsNode
+import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.CallSubqueryHorizon
 import org.neo4j.cypher.internal.ir.PlannerQuery
@@ -147,7 +148,7 @@ object PlannerQueryBuilder {
 
       // A QPP can currently only refer to variables from previous clauses,
       // so we can use the arguments of the current QG
-      val qppsWithArguments = qpps.map(qpp => qpp.copy(argumentIds = arguments))
+      val qppsWithArguments = qpps.map(qpp => qpp.copy(argumentIds = arguments.map(varFor)))
       plannerQuery
         .amendQueryGraph(_.withQuantifiedPathPatterns(qppsWithArguments))
         .updateTail(fixArgumentIdsOnQPPs)

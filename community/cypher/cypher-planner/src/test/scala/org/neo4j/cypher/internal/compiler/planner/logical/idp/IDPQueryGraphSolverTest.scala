@@ -23,6 +23,7 @@ import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
@@ -142,7 +143,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
       qg = QueryGraph(
         patternNodes = Set("a", "b"),
         patternRelationships =
-          Set(PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)),
+          Set(PatternRelationship(v"r", (v"a", v"b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)),
         selections = Selections.from(hasLabels("b", "B"))
       )
 
@@ -181,7 +182,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
       qg = QueryGraph(
         patternNodes = Set("a", "b"),
         patternRelationships =
-          Set(PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)),
+          Set(PatternRelationship(v"r", (v"a", v"b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)),
         selections = Selections.from(Seq(
           hasLabels("a", "A"),
           labelBPredicate
@@ -229,8 +230,8 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
       qg = QueryGraph(
         patternNodes = Set("a", "b", "c"),
         patternRelationships = Set(
-          PatternRelationship("r1", ("a", "c"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength),
-          PatternRelationship("r2", ("c", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+          PatternRelationship(v"r1", (v"a", v"c"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength),
+          PatternRelationship(v"r2", (v"c", v"b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
         ),
         selections = Selections.from(Seq(
           hasLabels("a", "A"),
@@ -290,8 +291,8 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
       qg = QueryGraph(
         patternNodes = Set("a", "b", "c"),
         patternRelationships = Set(
-          PatternRelationship("r1", ("a", "c"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength),
-          PatternRelationship("r2", ("c", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+          PatternRelationship(v"r1", (v"a", v"c"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength),
+          PatternRelationship(v"r2", (v"c", v"b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
         ),
         selections = Selections.from(Seq(
           predicate,
@@ -355,7 +356,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
       qg = QueryGraph(
         patternNodes = Set("a"),
         patternRelationships =
-          Set(PatternRelationship("r", ("a", "a"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength))
+          Set(PatternRelationship(v"r", (v"a", v"a"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength))
       )
     }.withLogicalPlanningContext { (cfg, ctx) =>
       val plan = queryGraphSolver.plan(cfg.qg, InterestingOrderConfig.empty, ctx).result
@@ -386,8 +387,8 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
       qg = QueryGraph(
         patternNodes = Set("a", "b", "c"),
         patternRelationships = Set(
-          PatternRelationship("r1", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength),
-          PatternRelationship("r2", ("b", "c"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+          PatternRelationship(v"r1", (v"a", v"b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength),
+          PatternRelationship(v"r2", (v"b", v"c"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
         )
       )
       // make it expensive to do allRelationshipsScans
@@ -479,7 +480,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
       qg = QueryGraph(
         patternNodes = Set("a", "b"),
         patternRelationships =
-          Set(PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)),
+          Set(PatternRelationship(v"r", (v"a", v"b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)),
         argumentIds = Set("r")
       )
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -524,8 +525,10 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
       }
 
       queryGraphSolver = createQueryGraphSolver(monitor = monitor, solverConfig = ExpandOnlyIDPSolverConfig)
-      val pattern1 = PatternRelationship("r1", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
-      val pattern2 = PatternRelationship("r2", ("b", "c"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+      val pattern1 =
+        PatternRelationship(v"r1", (v"a", v"b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+      val pattern2 =
+        PatternRelationship(v"r2", (v"b", v"c"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
       qg = QueryGraph(
         patternNodes = Set("a", "b", "c"),
         patternRelationships = Set(pattern1, pattern2),
@@ -578,7 +581,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
       qg = QueryGraph(
         patternNodes = Set("a", "b"),
         patternRelationships =
-          Set(PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)),
+          Set(PatternRelationship(v"r", (v"a", v"b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)),
         argumentIds = Set("a")
       )
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -630,8 +633,8 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
 
         val patternRels: Seq[PatternRelationship] = for (i <- 1 to numberOfPatternRelationships) yield {
           PatternRelationship(
-            s"r$i",
-            (s"n${i - 1}", s"n$i"),
+            v"r$i",
+            (v"n${i - 1}", v"n$i"),
             SemanticDirection.OUTGOING,
             Seq.empty,
             SimplePatternLength
@@ -707,7 +710,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
     new givenConfig {
       queryGraphSolver = createQueryGraphSolver(monitor, DefaultIDPSolverConfig)
       val patternRels: Seq[PatternRelationship] = for (i <- 1 to numberOfPatternRelationships) yield {
-        PatternRelationship("r" + i, ("n" + i, "x"), SemanticDirection.INCOMING, Seq.empty, SimplePatternLength)
+        PatternRelationship(v"r $i", (v"n $i", v"x"), SemanticDirection.INCOMING, Seq.empty, SimplePatternLength)
       }
 
       val patternNodes: Seq[String] = for (i <- 1 to numberOfPatternRelationships) yield {
@@ -729,8 +732,8 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
     new givenConfig {
       val patternRels: Seq[PatternRelationship] = for (i <- 1 until numberOfPatternRelationships) yield {
         PatternRelationship(
-          "r" + i,
-          ("n" + i, "n" + (i + 1)),
+          v"r $i",
+          (v"n $i", v"n ${i + 1}"),
           SemanticDirection.INCOMING,
           Seq.empty,
           SimplePatternLength
@@ -815,7 +818,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
         patternNodes = Set("a", "b", "c"),
         selections = Selections.from(predicate),
         patternRelationships =
-          Set(PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength))
+          Set(PatternRelationship(v"r", (v"a", v"b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength))
       )
     }.withLogicalPlanningContext { (cfg, ctx) =>
       val allRelScanAB = DirectedAllRelationshipsScan(varFor("r"), varFor("a"), varFor("b"), Set.empty)
@@ -842,7 +845,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
           patternNodes = Set("a", "b"),
           argumentIds = Set("a"),
           patternRelationships =
-            Set(PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength))
+            Set(PatternRelationship(v"r", (v"a", v"b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength))
         ))
       )
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -915,7 +918,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
           patternNodes = Set("a", "b"),
           argumentIds = Set("a", "b"),
           patternRelationships =
-            Set(PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength))
+            Set(PatternRelationship(v"r", (v"a", v"b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength))
         ))
       )
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -944,7 +947,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
           patternNodes = Set("a", "b"),
           argumentIds = Set.empty,
           patternRelationships =
-            Set(PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength))
+            Set(PatternRelationship(v"r", (v"a", v"b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength))
         ))
       )
       // make it expensive to do allRelationshipsScans
@@ -980,7 +983,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
       qg = QueryGraph( // MATCH (a)-[r]->(b) WHERE id(r) = 42 RETURN *
         patternNodes = Set("a", "b"),
         patternRelationships =
-          Set(PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)),
+          Set(PatternRelationship(v"r", (v"a", v"b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)),
         selections = Selections.from(
           in(id(varFor("r")), listOfInt(42))
         )
@@ -1012,8 +1015,8 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
       qg = QueryGraph(
         patternNodes = Set("a", "b", "c"),
         patternRelationships = Set(
-          PatternRelationship("r1", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength),
-          PatternRelationship("r2", ("b", "c"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+          PatternRelationship(v"r1", (v"a", v"b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength),
+          PatternRelationship(v"r2", (v"b", v"c"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
         ),
         argumentIds = Set("r1", "r2")
       )
@@ -1053,9 +1056,9 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
       qg = QueryGraph(
         patternNodes = Set("a", "b", "c", "d"),
         patternRelationships = Set(
-          PatternRelationship("r1", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength),
-          PatternRelationship("r2", ("c", "d"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength),
-          PatternRelationship("r3", ("a", "d"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+          PatternRelationship(v"r1", (v"a", v"b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength),
+          PatternRelationship(v"r2", (v"c", v"d"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength),
+          PatternRelationship(v"r3", (v"a", v"d"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
         ),
         argumentIds = Set("a", "b", "c", "d", "r1", "r2")
       )

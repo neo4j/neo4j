@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
 import org.neo4j.cypher.internal.expressions.HasLabels
@@ -193,7 +194,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
   test("overlap when reading all rel types and creating a specific type") {
     // MATCH (a)-[r]->(b)  CREATE (a)-[r2:T]->(b)
     val qg = QueryGraph(patternRelationships =
-      Set(PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength))
+      Set(PatternRelationship(v"r", (v"a", v"b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength))
     )
     val ug = QueryGraph(mutatingPatterns = IndexedSeq(createRelationship("r2", "a", "T", "b")))
 
@@ -204,8 +205,8 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
     // MATCH (a)-[r:T1]->(b)  CREATE (a)-[r2:T]->(b)
     val qg = QueryGraph(patternRelationships =
       Set(PatternRelationship(
-        "r",
-        ("a", "b"),
+        v"r",
+        (v"a", v"b"),
         SemanticDirection.OUTGOING,
         Seq(RelTypeName("T1")(pos)),
         SimplePatternLength
@@ -220,8 +221,8 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
     // MATCH (a)-[r:T1]->(b)  CREATE (a)-[r2:T1]->(b)
     val qg = QueryGraph(patternRelationships =
       Set(PatternRelationship(
-        "r",
-        ("a", "b"),
+        v"r",
+        (v"a", v"b"),
         SemanticDirection.OUTGOING,
         Seq(RelTypeName("T1")(pos)),
         SimplePatternLength
@@ -242,8 +243,8 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
     val qg = QueryGraph(
       patternRelationships =
         Set(PatternRelationship(
-          "r",
-          ("a", "b"),
+          v"r",
+          (v"a", v"b"),
           SemanticDirection.OUTGOING,
           Seq(RelTypeName("T1")(pos)),
           SimplePatternLength
@@ -265,8 +266,8 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
     val qg = QueryGraph(
       patternRelationships =
         Set(PatternRelationship(
-          "r",
-          ("a", "b"),
+          v"r",
+          (v"a", v"b"),
           SemanticDirection.OUTGOING,
           Seq(RelTypeName("T1")(pos)),
           SimplePatternLength
@@ -435,7 +436,9 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
       SetNodePropertiesFromMapPattern(varFor("b"), mapOfInt(propName -> 123), true) -> ListSet(),
 
       // SET r = {prop: 123}
-      SetRelationshipPropertiesFromMapPattern(varFor("r"), mapOfInt(propName -> 123), true) -> ListSet(EagernessReason.Unknown),
+      SetRelationshipPropertiesFromMapPattern(varFor("r"), mapOfInt(propName -> 123), true) -> ListSet(
+        EagernessReason.Unknown
+      ),
 
       // SET r_no_type = {prop: 123}
       SetPropertiesFromMapPattern(varFor("r_no_type"), mapOfInt(propName -> 123), true) -> ListSet(
@@ -452,7 +455,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
     val selections = Selections.from(Seq(
       in(prop("q", propName), listOfInt(42))
     ))
-    val pr = PatternRelationship("q", ("a", "b"), BOTH, Seq.empty, SimplePatternLength)
+    val pr = PatternRelationship(v"q", (v"a", v"b"), BOTH, Seq.empty, SimplePatternLength)
     val qg = QueryGraph(patternNodes = Set("a", "b"), patternRelationships = Set(pr), selections = selections)
 
     // Test with bare SET
@@ -607,11 +610,11 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
 
   private val `((a)-[r:R]->(b))+` =
     QuantifiedPathPattern(
-      leftBinding = NodeBinding("a", "start"),
-      rightBinding = NodeBinding("b", "end"),
+      leftBinding = NodeBinding(v"a", v"start"),
+      rightBinding = NodeBinding(v"b", v"end"),
       patternRelationships = NonEmptyList(PatternRelationship(
-        name = "r",
-        boundaryNodes = ("a", "b"),
+        variable = v"r",
+        boundaryNodes = (v"a", v"b"),
         dir = SemanticDirection.OUTGOING,
         types = List(relTypeName("R")),
         length = SimplePatternLength
@@ -619,8 +622,8 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
       argumentIds = Set.empty,
       selections = Selections.empty,
       repetition = Repetition(1, UpperBound.Unlimited),
-      nodeVariableGroupings = Set("a", "b").map(name => VariableGrouping(name, name)),
-      relationshipVariableGroupings = Set(VariableGrouping("r", "r"))
+      nodeVariableGroupings = Set(v"a", v"b").map(name => VariableGrouping(name, name)),
+      relationshipVariableGroupings = Set(VariableGrouping(v"r", v"r"))
     )
 
   // SPPs does not contain any unstable leaf nodes so there should never be any overlaps on creating a node without a relationship.
@@ -676,7 +679,11 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
       ))
     )
 
-  private def setPropertyIr(entity: String, key: String, value: String): org.neo4j.cypher.internal.ir.SetMutatingPattern =
+  private def setPropertyIr(
+    entity: String,
+    key: String,
+    value: String
+  ): org.neo4j.cypher.internal.ir.SetMutatingPattern =
     org.neo4j.cypher.internal.ir.SetPropertyPattern(
       Parser.parseExpression(entity),
       PropertyKeyName(key)(InputPosition.NONE),

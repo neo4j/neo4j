@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.expressions.FilterScope
@@ -66,8 +67,8 @@ class SelectSubQueryPredicatesTest extends CypherFunSuite with LogicalPlanningTe
     val subQuery = RegularSinglePlannerQuery(QueryGraph.empty
       .addArgumentId("a")
       .addPatternRelationship(PatternRelationship(
-        "r",
-        ("a", "b"),
+        v"r",
+        (v"a", v"b"),
         SemanticDirection.OUTGOING,
         Nil,
         SimplePatternLength
@@ -196,8 +197,8 @@ class SelectSubQueryPredicatesTest extends CypherFunSuite with LogicalPlanningTe
       QueryGraph.empty
         .addArgumentId(argumentName)
         .addPatternRelationship(PatternRelationship(
-          relationshipName,
-          (argumentName, otherNodeName),
+          varFor(relationshipName),
+          (varFor(argumentName), varFor(otherNodeName)),
           SemanticDirection.OUTGOING,
           Nil,
           SimplePatternLength

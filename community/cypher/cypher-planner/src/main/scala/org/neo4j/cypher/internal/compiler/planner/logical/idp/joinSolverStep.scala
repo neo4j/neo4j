@@ -137,14 +137,14 @@ case class joinSolverStep(qg: QueryGraph, IGNORE_EXPAND_SOLUTIONS_FOR_TEST: Bool
     (leftSymbols intersect rightSymbols) -- argumentsToRemove
   }
 
-  private def nodes(plan: LogicalPlan, solveds: Solveds) =
+  private def nodes(plan: LogicalPlan, solveds: Solveds): Set[String] =
     solveds.get(plan.id).asSinglePlannerQuery.queryGraph.patternNodes
 
   private def show(goal: Goal, symbols: Set[String]) =
     s"${showIds(goal.bitSet)}: ${showNames(symbols)}"
 
-  private def goalSymbols(goal: Goal, registry: IdRegistry[NodeConnection]) =
-    registry.explode(goal.bitSet).flatMap(_.coveredIds)
+  private def goalSymbols(goal: Goal, registry: IdRegistry[NodeConnection]): Set[String] =
+    registry.explode(goal.bitSet).flatMap(_.coveredIds).map(_.name)
 
   private def showIds(ids: Set[Int]) =
     ids.toIndexedSeq.sorted.mkString("{", ", ", "}")

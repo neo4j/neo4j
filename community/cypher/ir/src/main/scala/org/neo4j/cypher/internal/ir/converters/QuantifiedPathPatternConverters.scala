@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.ir.converters
 import org.neo4j.cypher.internal.expressions.FixedQuantifier
 import org.neo4j.cypher.internal.expressions.GraphPatternQuantifier
 import org.neo4j.cypher.internal.expressions.IntervalQuantifier
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.NamedPatternPart
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.ParenthesizedPath
@@ -45,9 +46,9 @@ import org.neo4j.cypher.internal.util.UpperBound
 object QuantifiedPathPatternConverters {
 
   def convertQuantifiedPath(
-    outerLeft: String,
+    outerLeft: LogicalVariable,
     quantifiedPath: QuantifiedPath,
-    outerRight: String
+    outerRight: LogicalVariable
   ): QuantifiedPathPattern = {
     val patternPart = getPathPattern(quantifiedPath)
     val patternElement = patternPart.element
@@ -103,8 +104,8 @@ object QuantifiedPathPatternConverters {
     }
 
   final private case class QuantifiedPathPatternBuilder(
-    leftMostNode: String,
-    rightMostNode: String,
+    leftMostNode: LogicalVariable,
+    rightMostNode: LogicalVariable,
     patternRelationships: NonEmptyList[PatternRelationship],
     nodeVariableGroupings: Set[VariableGrouping],
     relationshipVariableGroupings: Set[VariableGrouping]
@@ -120,8 +121,8 @@ object QuantifiedPathPatternConverters {
       )
 
     def build(
-      outerLeft: String,
-      outerRight: String,
+      outerLeft: LogicalVariable,
+      outerRight: LogicalVariable,
       selections: Selections,
       repetition: Repetition
     ): QuantifiedPathPattern =
@@ -149,17 +150,18 @@ object QuantifiedPathPatternConverters {
         rightMostNode = patternRelationship.right,
         patternRelationships = NonEmptyList(patternRelationship),
         nodeVariableGroupings = variableGroupings.forSingletonNames(patternNodes),
-        relationshipVariableGroupings = variableGroupings.forSingletonName(patternRelationship.name).toSet
+        relationshipVariableGroupings = variableGroupings.forSingletonName(patternRelationship.variable).toSet
       )
     }
   }
 
-  final private case class VariableGroupings(singletonNameToGroupName: Map[String, String]) extends AnyVal {
+  final private case class VariableGroupings(singletonNameToGroupName: Map[LogicalVariable, LogicalVariable])
+      extends AnyVal {
 
-    def forSingletonNames(singletonNames: Set[String]): Set[VariableGrouping] =
+    def forSingletonNames(singletonNames: Set[LogicalVariable]): Set[VariableGrouping] =
       singletonNames.flatMap(forSingletonName)
 
-    def forSingletonName(singletonName: String): Option[VariableGrouping] =
+    def forSingletonName(singletonName: LogicalVariable): Option[VariableGrouping] =
       singletonNameToGroupName
         .get(singletonName)
         .map(groupName => VariableGrouping(singletonName, groupName))
@@ -171,7 +173,7 @@ object QuantifiedPathPatternConverters {
       VariableGroupings(
         groupings
           .view
-          .map(grouping => grouping.singleton.name -> grouping.group.name)
+          .map(grouping => grouping.singleton -> grouping.group)
           .toMap
       )
   }

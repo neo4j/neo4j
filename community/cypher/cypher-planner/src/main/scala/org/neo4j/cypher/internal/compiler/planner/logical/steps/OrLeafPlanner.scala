@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.leafPlanOptions.
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.HasTypes
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.Variable
@@ -90,23 +91,23 @@ object OrLeafPlanner {
   /**
    * A disjunction of predicates that all use only one variable
    *
-   * @param variableName               the name of the variable
+   * @param variable                   the variable
    * @param predicates                 the predicates.
    * @param interestingOrderCandidates if these candidates lead to different leaf plans, we can plan OrderedUnion instead of Union
    */
   case class DisjunctionForOneVariable(
-    variableName: String,
+    variable: LogicalVariable,
     predicates: Iterable[DistributablePredicate],
     interestingOrderCandidates: Seq[InterestingOrderCandidate]
   ) {
     override def toString: String = predicates.mkString(" OR ")
 
     def qgWithOnlyRelevantVariable(bareQg: QueryGraph): QueryGraph = {
-      val solvedRel = bareQg.patternRelationships.find(_.name == variableName)
+      val solvedRel = bareQg.patternRelationships.find(_.variable == variable)
       QueryGraph(
         argumentIds = bareQg.argumentIds,
         patternNodes =
-          solvedRel.fold(bareQg.patternNodes.filter(_ == variableName))(r => Set(r.left, r.right)),
+          solvedRel.fold(bareQg.patternNodes.filter(_ == variable.name))(r => Set(r.left, r.right).map(_.name)),
         patternRelationships = solvedRel.toSet,
         hints = bareQg.hints
       )
@@ -163,7 +164,7 @@ object OrLeafPlanner {
               } yield InterestingOrderCandidate(Seq(indexOrder(v)))
 
               Some(DisjunctionForOneVariable(
-                singleUsedVar.name,
+                singleUsedVar,
                 exprs.map(WhereClausePredicate),
                 interestingOrderCandidates
               ))
@@ -189,7 +190,7 @@ object OrLeafPlanner {
           // Any Ors will not get added. Those can either be the disjunction itself, or any other OR which we can't solve with the leaf planners anyway.
           case e
             if variableUsedInExpression(e, qg.argumentIds).map(_.name).contains(
-              disjunction.variableName
+              disjunction.variable.name
             ) && !e.isInstanceOf[Ors] => WhereClausePredicate(e)
         }
     }
@@ -233,8 +234,8 @@ object OrLeafPlanner {
   final case class WhereClausePredicate(e: Expression) extends DistributablePredicate {
 
     override def addToQueryGraph(qg: QueryGraph): QueryGraph = e match {
-      case HasTypes(Variable(varName), Seq(singleType)) =>
-        InlinedRelationshipTypePredicate(varName, singleType).addToQueryGraph(qg)
+      case HasTypes(variable: Variable, Seq(singleType)) =>
+        InlinedRelationshipTypePredicate(variable, singleType).addToQueryGraph(qg)
       case _ => qg.addPredicates(e)
     }
 
@@ -249,15 +250,15 @@ object OrLeafPlanner {
   final case object InlinedRelationshipTypePredicateKind extends PredicateKind {
 
     override def findDisjunctions(qg: QueryGraph): Seq[DisjunctionForOneVariable] = qg.patternRelationships.collect {
-      case PatternRelationship(name, _, _, types, SimplePatternLength) if types.distinct.length > 1 =>
+      case PatternRelationship(rel, _, _, types, SimplePatternLength) if types.distinct.length > 1 =>
         val interestingOrderCandidates = for {
           // ASC before DESC because it is slightly cheaper
           indexOrder <- Seq(Asc(_, Map.empty), Desc(_, Map.empty))
-        } yield InterestingOrderCandidate(Seq(indexOrder(Variable(name)(InputPosition.NONE))))
+        } yield InterestingOrderCandidate(Seq(indexOrder(rel)))
 
         DisjunctionForOneVariable(
-          name,
-          ListSet.from(types.map(InlinedRelationshipTypePredicate(name, _))),
+          rel,
+          ListSet.from(types.map(InlinedRelationshipTypePredicate(rel, _))),
           interestingOrderCandidates
         )
     }.toSeq
@@ -280,18 +281,18 @@ object OrLeafPlanner {
       if (!includesHasTypes(disjunction)) {
         qg.patternRelationships.toSeq.collect {
           // PatternRelationships that have inlined type predicates
-          case rel @ PatternRelationship(disjunction.variableName, _, _, types, SimplePatternLength) =>
-            types.map(InlinedRelationshipTypePredicate(rel.name, _))
+          case rel @ PatternRelationship(disjunction.`variable`, _, _, types, SimplePatternLength) =>
+            types.map(InlinedRelationshipTypePredicate(rel.variable, _))
         }.flatten
       } else {
         Seq.empty
       }
     }
 
-    def addTypesToRelationship(qg: QueryGraph, variableName: String, types: Seq[RelTypeName]): QueryGraph = {
+    def addTypesToRelationship(qg: QueryGraph, variable: LogicalVariable, types: Seq[RelTypeName]): QueryGraph = {
       // Replace the rel without a predicate with a rel with a predicate
       val relWithoutInlinedTypePredicate = qg.patternRelationships.collectFirst {
-        case pr @ PatternRelationship(`variableName`, _, _, _, _) => pr
+        case pr @ PatternRelationship(`variable`, _, _, _, _) => pr
       }.head
       val relWithInlinedTypePredicate = relWithoutInlinedTypePredicate.copy(types = types)
       qg
@@ -307,33 +308,33 @@ object OrLeafPlanner {
     ): QueryGraph = {
       val relTypes = solvedQgs.map { solvedQG =>
         solvedQG.patternRelationships.collectFirst {
-          case PatternRelationship(disjunction.variableName, _, _, Seq(singleType), _) => singleType
+          case PatternRelationship(disjunction.`variable`, _, _, Seq(singleType), _) => singleType
         }
       }
 
       // If all plans solve the relationship, let's build the disjunction of solved types
       if (relTypes.forall(_.isDefined)) {
         val types = relTypes.flatten.distinct
-        addTypesToRelationship(qg, disjunction.variableName, types)
+        addTypesToRelationship(qg, disjunction.variable, types)
       } else {
         qg
       }
     }
   }
 
-  final case class InlinedRelationshipTypePredicate(variableName: String, typ: RelTypeName)
+  final case class InlinedRelationshipTypePredicate(variable: LogicalVariable, typ: RelTypeName)
       extends DistributablePredicate {
 
     override def addToQueryGraph(qg: QueryGraph): QueryGraph =
-      InlinedRelationshipTypePredicateKind.addTypesToRelationship(qg, variableName, Seq(typ))
+      InlinedRelationshipTypePredicateKind.addTypesToRelationship(qg, variable, Seq(typ))
 
     override def containedIn(qg: QueryGraph): Boolean = qg.patternRelationships.exists {
-      case PatternRelationship(`variableName`, _, _, Seq(`typ`), _) => true
-      case _                                                        => false
+      case PatternRelationship(`variable`, _, _, Seq(`typ`), _) => true
+      case _                                                    => false
     }
 
     override def toString: String = ExpressionStringifier(e => e.asCanonicalStringVal)(
-      HasTypes(Variable(variableName)(InputPosition.NONE), Seq(typ))(InputPosition.NONE)
+      HasTypes(variable, Seq(typ))(InputPosition.NONE)
     )
   }
 

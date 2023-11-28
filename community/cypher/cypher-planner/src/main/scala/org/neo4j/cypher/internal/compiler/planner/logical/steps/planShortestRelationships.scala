@@ -61,10 +61,10 @@ case object planShortestRelationships {
   ): LogicalPlan = {
 
     val patternRelationship = shortestRelationship.rel
-    val relName = patternRelationship.name
-    val pathNameOpt = shortestRelationship.name
+    val relName = patternRelationship.variable.name
+    val pathNameOpt = shortestRelationship.maybePathVar.map(_.name)
 
-    val variables = Set(shortestRelationship.name, Some(shortestRelationship.rel.name)).flatten
+    val variables = Set(shortestRelationship.maybePathVar, Some(shortestRelationship.rel.variable)).flatten.map(_.name)
 
     def predicateAppliesToShortestRelationship(p: Predicate) =
       // only select predicates related to this pattern (this is code in common with normal MATCH Pattern clauses)
@@ -137,11 +137,12 @@ case object planShortestRelationships {
 
     val lpp = context.staticComponents.logicalPlanProducer
 
-    val argumentNodes = shortestRelationship.rel.boundaryNodesSet
-    val otherDependencies = pathPredicates.flatMap(_.dependencies.map(_.name)) -- shortestRelationship.name ++
-      Set(nodePredicates, relPredicates).flatMap(_.flatMap { varPred =>
-        varPred.predicate.dependencies.map(_.name) - varPred.variable.name
-      })
+    val argumentNodes = shortestRelationship.rel.boundaryNodesSet.map(_.name)
+    val otherDependencies =
+      pathPredicates.flatMap(_.dependencies.map(_.name)) -- shortestRelationship.maybePathVar.map(_.name) ++
+        Set(nodePredicates, relPredicates).flatMap(_.flatMap { varPred =>
+          varPred.predicate.dependencies.map(_.name) - varPred.variable.name
+        })
     // Plan FindShortestPaths within an Apply with an Optional so we get null rows when
     // the graph algorithm does not find anything (left-hand-side)
     val lhsArgument = context.staticComponents.logicalPlanProducer.planArgument(
@@ -190,7 +191,7 @@ case object planShortestRelationships {
       _.addShortestRelationship(shortestRelationship).addPredicates(solvedPredicates.toSeq: _*)
     )
 
-    lpp.planAntiConditionalApply(lhs, rhs, Seq(shortestRelationship.name.get), context, Some(solved))
+    lpp.planAntiConditionalApply(lhs, rhs, Seq(shortestRelationship.maybePathVar.get.name), context, Some(solved))
   }
 
   private def buildPlanShortestRelationshipsFallbackPlans(
@@ -206,17 +207,17 @@ case object planShortestRelationships {
     val from = pattern.left
     val lpp = context.staticComponents.logicalPlanProducer
     // We assume there is always a path name (either explicit or auto-generated)
-    val pathName = shortestRelationship.name.get
+    val pathVariable = shortestRelationship.maybePathVar.get
 
     // TODO: When the path is named, we need to redo the projectNamedPaths stuff so that
     // we can extract the per step predicates again
 
     // Projection with path
-    val map = Map(pathName -> createPathExpression(shortestRelationship.expr.element))
+    val map = Map(pathVariable.name -> createPathExpression(shortestRelationship.expr.element))
 
     // Rewriter for path name to path expression
     val rewriter = topDown(Rewriter.lift {
-      case Variable(name) if name == pathName => createPathExpression(shortestRelationship.expr.element)
+      case Variable(name) if name == pathVariable.name => createPathExpression(shortestRelationship.expr.element)
     })
 
     // Rewrite query graph to match during inlining of predicates in var expand
@@ -232,9 +233,9 @@ case object planShortestRelationships {
       expandSolverStep.produceExpandLogicalPlan(
         rewrittenQg,
         pattern,
-        pattern.name,
+        pattern.variable.name,
         rhsArgument,
-        from,
+        from.name,
         rhsArgument.availableSymbols.map(_.name),
         context
       )
@@ -257,7 +258,6 @@ case object planShortestRelationships {
 
     // Plan Top
     val pos = shortestRelationship.expr.position
-    val pathVariable = Variable(pathName)(pos)
     val lengthOfPath = FunctionInvocation(FunctionName(Length.name)(pos), pathVariable)(pos)
     val columnName = context.staticComponents.anonymousVariableNameGenerator.nextName
 

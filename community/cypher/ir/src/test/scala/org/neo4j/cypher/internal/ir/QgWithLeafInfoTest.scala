@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.ir
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
@@ -35,7 +36,7 @@ class QgWithLeafInfoTest extends CypherFunSuite with AstConstructionTestSupport 
   private val semanticTable = SemanticTable()
 
   test("unstablePatternNodes includes only nodes excluding stable identifier") {
-    val r = PatternRelationship("r", ("a", "b"), OUTGOING, Seq.empty, SimplePatternLength)
+    val r = PatternRelationship(v"r", (v"a", v"b"), OUTGOING, Seq.empty, SimplePatternLength)
     val qg = QueryGraph(
       patternNodes = Set("a", "b", "c"),
       patternRelationships = Set(r)
@@ -46,7 +47,7 @@ class QgWithLeafInfoTest extends CypherFunSuite with AstConstructionTestSupport 
   }
 
   test("unstablePatternNodes includes optional match nodes") {
-    val r = PatternRelationship("r", ("a", "b"), OUTGOING, Seq.empty, SimplePatternLength)
+    val r = PatternRelationship(v"r", (v"a", v"b"), OUTGOING, Seq.empty, SimplePatternLength)
     val qg = QueryGraph(
       patternNodes = Set("a"),
       patternRelationships = Set(r),
@@ -57,8 +58,8 @@ class QgWithLeafInfoTest extends CypherFunSuite with AstConstructionTestSupport 
   }
 
   test("unstablePatternRelationships excludes stable identifier") {
-    val r = PatternRelationship("r", ("a", "b"), OUTGOING, Seq.empty, SimplePatternLength)
-    val r2 = PatternRelationship("r2", ("b", "c"), OUTGOING, Seq.empty, SimplePatternLength)
+    val r = PatternRelationship(v"r", (v"a", v"b"), OUTGOING, Seq.empty, SimplePatternLength)
+    val r2 = PatternRelationship(v"r2", (v"b", v"c"), OUTGOING, Seq.empty, SimplePatternLength)
     val qg = QueryGraph(
       patternNodes = Set("a", "b", "c"),
       patternRelationships = Set(r, r2)
@@ -69,8 +70,8 @@ class QgWithLeafInfoTest extends CypherFunSuite with AstConstructionTestSupport 
   }
 
   test("unstablePatternRelationships includes optional match relationships") {
-    val r = PatternRelationship("r", ("a", "b"), OUTGOING, Seq.empty, SimplePatternLength)
-    val r2 = PatternRelationship("r2", ("b", "c"), OUTGOING, Seq.empty, SimplePatternLength)
+    val r = PatternRelationship(v"r", (v"a", v"b"), OUTGOING, Seq.empty, SimplePatternLength)
+    val r2 = PatternRelationship(v"r2", (v"b", v"c"), OUTGOING, Seq.empty, SimplePatternLength)
     val qg = QueryGraph(
       patternNodes = Set("a", "b", "c"),
       patternRelationships = Set(r),
@@ -81,7 +82,7 @@ class QgWithLeafInfoTest extends CypherFunSuite with AstConstructionTestSupport 
   }
 
   test("unstablePatternRelationships includes shortest path relationships") {
-    val r = PatternRelationship("r", ("a", "b"), OUTGOING, Seq.empty, SimplePatternLength)
+    val r = PatternRelationship(v"r", (v"a", v"b"), OUTGOING, Seq.empty, SimplePatternLength)
     val spp = ShortestRelationshipPattern(None, r, single = true)(null)
 
     val qg = QueryGraph(
@@ -104,7 +105,7 @@ class QgWithLeafInfoTest extends CypherFunSuite with AstConstructionTestSupport 
   test("patternNodes should not include stable relationship identifiers") {
     val a = UnstableIdentifier("a")
     val b = UnstableIdentifier("b")
-    val r = PatternRelationship("r", ("a", "b"), OUTGOING, Seq.empty, SimplePatternLength)
+    val r = PatternRelationship(v"r", (v"a", v"b"), OUTGOING, Seq.empty, SimplePatternLength)
     val rIdent = StableIdentifier("r")
     val qg = QueryGraph(
       patternNodes = Set("a", "b"),
@@ -118,7 +119,7 @@ class QgWithLeafInfoTest extends CypherFunSuite with AstConstructionTestSupport 
   test("leafPatternNodes should include only leaves (unstable and stable)") {
     val a = UnstableIdentifier("a")
     val b = StableIdentifier("b")
-    val r = PatternRelationship("r", ("a", "b"), OUTGOING, Seq.empty, SimplePatternLength)
+    val r = PatternRelationship(v"r", (v"a", v"b"), OUTGOING, Seq.empty, SimplePatternLength)
     val qg = QueryGraph(
       patternNodes = Set("a", "b", "c"),
       patternRelationships = Set(r)
@@ -131,7 +132,7 @@ class QgWithLeafInfoTest extends CypherFunSuite with AstConstructionTestSupport 
   test("nonArgumentPatternNodes should exclude arguments") {
     val a = UnstableIdentifier("a")
     val b = StableIdentifier("b")
-    val r = PatternRelationship("r", ("a", "b"), OUTGOING, Seq.empty, SimplePatternLength)
+    val r = PatternRelationship(v"r", (v"a", v"b"), OUTGOING, Seq.empty, SimplePatternLength)
     val qg = QueryGraph(
       argumentIds = Set("b"),
       patternNodes = Set("a", "b", "c"),
@@ -144,8 +145,8 @@ class QgWithLeafInfoTest extends CypherFunSuite with AstConstructionTestSupport 
 
   test("patternRelationships should not include stable node identifiers") {
     val b = StableIdentifier("b")
-    val r = PatternRelationship("r", ("a", "b"), OUTGOING, Seq.empty, SimplePatternLength)
-    val r2 = PatternRelationship("r2", ("b", "c"), OUTGOING, Seq.empty, SimplePatternLength)
+    val r = PatternRelationship(v"r", (v"a", v"b"), OUTGOING, Seq.empty, SimplePatternLength)
+    val r2 = PatternRelationship(v"r2", (v"b", v"c"), OUTGOING, Seq.empty, SimplePatternLength)
     val rIdent = UnstableIdentifier("r")
     val r2Ident = UnstableIdentifier("r2")
 
@@ -158,8 +159,8 @@ class QgWithLeafInfoTest extends CypherFunSuite with AstConstructionTestSupport 
   }
 
   test("patternRelationships includes unstable and stable identifiers") {
-    val r = PatternRelationship("r", ("a", "b"), OUTGOING, Seq.empty, SimplePatternLength)
-    val r2 = PatternRelationship("r2", ("b", "c"), OUTGOING, Seq.empty, SimplePatternLength)
+    val r = PatternRelationship(v"r", (v"a", v"b"), OUTGOING, Seq.empty, SimplePatternLength)
+    val r2 = PatternRelationship(v"r2", (v"b", v"c"), OUTGOING, Seq.empty, SimplePatternLength)
     val rIdent = StableIdentifier("r")
     val r2Ident = UnstableIdentifier("r2")
 
@@ -174,7 +175,7 @@ class QgWithLeafInfoTest extends CypherFunSuite with AstConstructionTestSupport 
 
   test("allKnownUnstableNodeLabelsFor should include all labels for unstable identifier") {
     val a = UnstableIdentifier("a")
-    val r = PatternRelationship("r", ("a", "b"), OUTGOING, Seq.empty, SimplePatternLength)
+    val r = PatternRelationship(v"r", (v"a", v"b"), OUTGOING, Seq.empty, SimplePatternLength)
     val qg = QueryGraph(
       patternNodes = Set("a", "b", "c"),
       patternRelationships = Set(r),
@@ -188,7 +189,7 @@ class QgWithLeafInfoTest extends CypherFunSuite with AstConstructionTestSupport 
 
   test("allKnownUnstableNodeLabelsFor should include labels from HasLabelsOrTypes") {
     val a = UnstableIdentifier("a")
-    val r = PatternRelationship("r", ("a", "b"), OUTGOING, Seq.empty, SimplePatternLength)
+    val r = PatternRelationship(v"r", (v"a", v"b"), OUTGOING, Seq.empty, SimplePatternLength)
     val qg = QueryGraph(
       patternNodes = Set("a", "b", "c"),
       patternRelationships = Set(r),
@@ -202,7 +203,7 @@ class QgWithLeafInfoTest extends CypherFunSuite with AstConstructionTestSupport 
 
   test("allKnownUnstableNodeLabelsFor should include all labels from optional matches") {
     val a = UnstableIdentifier("a")
-    val r = PatternRelationship("r", ("a", "b"), OUTGOING, Seq.empty, SimplePatternLength)
+    val r = PatternRelationship(v"r", (v"a", v"b"), OUTGOING, Seq.empty, SimplePatternLength)
     val qg = QueryGraph(
       patternNodes = Set("a", "b", "c"),
       patternRelationships = Set(r),
@@ -219,7 +220,7 @@ class QgWithLeafInfoTest extends CypherFunSuite with AstConstructionTestSupport 
 
   test("allKnownUnstableNodeLabelsFor should not include any solved labels for stable identifier") {
     val b = StableIdentifier("b")
-    val r = PatternRelationship("r", ("a", "b"), OUTGOING, Seq.empty, SimplePatternLength)
+    val r = PatternRelationship(v"r", (v"a", v"b"), OUTGOING, Seq.empty, SimplePatternLength)
     val solvedExpression = hasLabels("b", "B2")
     val qg = QueryGraph(
       patternNodes = Set("a", "b", "c"),
@@ -233,7 +234,8 @@ class QgWithLeafInfoTest extends CypherFunSuite with AstConstructionTestSupport 
   }
 
   test("allPossibleUnstableRelTypesFor should include all inlined rel types for unstable identifier") {
-    val r = PatternRelationship("r", ("a", "b"), OUTGOING, Seq(relTypeName("R"), relTypeName("Q")), SimplePatternLength)
+    val r =
+      PatternRelationship(v"r", (v"a", v"b"), OUTGOING, Seq(relTypeName("R"), relTypeName("Q")), SimplePatternLength)
     val rIdent = UnstableIdentifier("r")
 
     val qg = QueryGraph(
@@ -247,7 +249,7 @@ class QgWithLeafInfoTest extends CypherFunSuite with AstConstructionTestSupport 
   }
 
   test("allPossibleUnstableRelTypesFor should include all rel types from selections for unstable identifier") {
-    val r = PatternRelationship("r", ("a", "b"), OUTGOING, Seq.empty, SimplePatternLength)
+    val r = PatternRelationship(v"r", (v"a", v"b"), OUTGOING, Seq.empty, SimplePatternLength)
     val rIdent = UnstableIdentifier("r")
 
     val qg = QueryGraph(
@@ -268,7 +270,7 @@ class QgWithLeafInfoTest extends CypherFunSuite with AstConstructionTestSupport 
   test(
     "allPossibleUnstableRelTypesFor should include all rel types from HasLabelsOrTypes selections for unstable identifier"
   ) {
-    val r = PatternRelationship("r", ("a", "b"), OUTGOING, Seq.empty, SimplePatternLength)
+    val r = PatternRelationship(v"r", (v"a", v"b"), OUTGOING, Seq.empty, SimplePatternLength)
     val rIdent = UnstableIdentifier("r")
 
     val qg = QueryGraph(
@@ -288,7 +290,7 @@ class QgWithLeafInfoTest extends CypherFunSuite with AstConstructionTestSupport 
   }
 
   test("allPossibleUnstableRelTypesFor should include all types from optional matches") {
-    val r = PatternRelationship("r", ("a", "b"), OUTGOING, Seq.empty, SimplePatternLength)
+    val r = PatternRelationship(v"r", (v"a", v"b"), OUTGOING, Seq.empty, SimplePatternLength)
     val rIdent = UnstableIdentifier("r")
     val qg = QueryGraph(
       patternNodes = Set("a", "b", "c"),
@@ -305,7 +307,7 @@ class QgWithLeafInfoTest extends CypherFunSuite with AstConstructionTestSupport 
   }
 
   test("allPossibleUnstableRelTypesFor should not include any solved types for stable identifier") {
-    val r = PatternRelationship("r", ("a", "b"), OUTGOING, Seq(relTypeName("R3")), SimplePatternLength)
+    val r = PatternRelationship(v"r", (v"a", v"b"), OUTGOING, Seq(relTypeName("R3")), SimplePatternLength)
     val rIdent = StableIdentifier("r")
     val solvedExpression = hasTypes("r", "R")
     val qg = QueryGraph(
@@ -321,7 +323,7 @@ class QgWithLeafInfoTest extends CypherFunSuite with AstConstructionTestSupport 
 
   test("allKnownUnstablePropertiesFor should include all properties for unstable identifier") {
     val a = UnstableIdentifier("a")
-    val r = PatternRelationship("r", ("a", "b"), OUTGOING, Seq.empty, SimplePatternLength)
+    val r = PatternRelationship(v"r", (v"a", v"b"), OUTGOING, Seq.empty, SimplePatternLength)
     val qg = QueryGraph(
       patternNodes = Set("a", "b", "c"),
       patternRelationships = Set(r),
@@ -335,7 +337,7 @@ class QgWithLeafInfoTest extends CypherFunSuite with AstConstructionTestSupport 
 
   test("allKnownUnstablePropertiesFor should include all properties from optional matches") {
     val a = UnstableIdentifier("a")
-    val r = PatternRelationship("r", ("a", "b"), OUTGOING, Seq.empty, SimplePatternLength)
+    val r = PatternRelationship(v"r", (v"a", v"b"), OUTGOING, Seq.empty, SimplePatternLength)
     val qg = QueryGraph(
       patternNodes = Set("a", "b", "c"),
       patternRelationships = Set(r),
@@ -352,7 +354,7 @@ class QgWithLeafInfoTest extends CypherFunSuite with AstConstructionTestSupport 
 
   test("allKnownUnstablePropertiesFor should not include any solved labels for stable identifier") {
     val b = StableIdentifier("b")
-    val r = PatternRelationship("r", ("a", "b"), OUTGOING, Seq.empty, SimplePatternLength)
+    val r = PatternRelationship(v"r", (v"a", v"b"), OUTGOING, Seq.empty, SimplePatternLength)
     val solvedExpression = equals(prop("b", "prop"), literalInt(5))
     val qg = QueryGraph(
       patternNodes = Set("a", "b", "c"),

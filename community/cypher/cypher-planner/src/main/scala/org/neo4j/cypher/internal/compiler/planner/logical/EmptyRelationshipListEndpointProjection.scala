@@ -25,7 +25,8 @@ import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
 import org.neo4j.cypher.internal.ir.PatternLength
@@ -60,12 +61,12 @@ case object EmptyRelationshipListEndpointProjection extends PlannerQueryRewriter
               case (rel @ PatternRelationship(name, nodes, _, _, length), _)
                 if relationshipQualifies(qg, nodes, length) &&
                   // Where the relationship is an argument
-                  qg.argumentIds.contains(name) =>
+                  qg.argumentIds.contains(name.name) =>
                 copyRelWithPredicate(from, rel, name)
 
               // Cases where a legacy var-length relationship has the same name as a relationship group variable
               case (rel @ PatternRelationship(name, _, _, _, _: VarPatternLength), _)
-                if relGroupNames.contains(rel.name) =>
+                if relGroupNames.contains(rel.variable) =>
                 copyRelWithPredicate(from, rel, name)
 
               // Cases where the relationship is repeated in the same query graph.
@@ -73,7 +74,7 @@ case object EmptyRelationshipListEndpointProjection extends PlannerQueryRewriter
                 if relationshipQualifies(qg, nodes, length) =>
                 // Where the relationship is defined more than once in this query graph.
                 // We look in the remainder of the sortedRels list to find a copy with the same name.
-                rels.drop(i + 1).find(_.name == name) match {
+                rels.drop(i + 1).find(_.variable == name) match {
                   // And where no node is shared between the 2 occurences of the relationships.
                   case Some(sameRel) if !atLeastOneSharedNode(rel.boundaryNodes, sameRel.boundaryNodes) =>
                     copyRelWithPredicate(from, rel, name)
@@ -91,22 +92,29 @@ case object EmptyRelationshipListEndpointProjection extends PlannerQueryRewriter
     )
   }
 
-  private def atLeastOneSharedNode(firstNodes: (String, String), secondNodes: (String, String)): Boolean = {
+  private def atLeastOneSharedNode(
+    firstNodes: (LogicalVariable, LogicalVariable),
+    secondNodes: (LogicalVariable, LogicalVariable)
+  ): Boolean = {
     firstNodes._1 == secondNodes._1 ||
     firstNodes._1 == secondNodes._2 ||
     firstNodes._2 == secondNodes._1 ||
     firstNodes._2 == secondNodes._2
   }
 
-  private def relationshipQualifies(qg: QueryGraph, nodes: (String, String), length: PatternLength) = {
+  private def relationshipQualifies(
+    qg: QueryGraph,
+    nodes: (LogicalVariable, LogicalVariable),
+    length: PatternLength
+  ) = {
     // Var length rels that include length 0
     (length match {
       case SimplePatternLength      => false
       case VarPatternLength(min, _) => min == 0
     }) &&
     // Where no node is an argument
-    !qg.argumentIds.contains(nodes._1) &&
-    !qg.argumentIds.contains(nodes._2)
+    !qg.argumentIds.contains(nodes._1.name) &&
+    !qg.argumentIds.contains(nodes._2.name)
   }
 
   /**
@@ -116,12 +124,12 @@ case object EmptyRelationshipListEndpointProjection extends PlannerQueryRewriter
   private def copyRelWithPredicate(
     from: LogicalPlanState,
     rel: PatternRelationship,
-    name: String
+    variable: LogicalVariable
   ): (PatternRelationship, Some[Expression]) = {
-    val relCopy = rel.copy(name = from.anonymousVariableNameGenerator.nextName)
+    val relCopy = rel.copy(variable = varFor(from.anonymousVariableNameGenerator.nextName))
     val predicate = Equals(
-      Variable(name)(InputPosition.NONE),
-      Variable(relCopy.name)(InputPosition.NONE)
+      variable,
+      relCopy.variable
     )(InputPosition.NONE)
     (relCopy, Some(predicate))
   }

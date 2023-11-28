@@ -537,7 +537,7 @@ trait UpdateGraph {
         qgWithInfo.queryGraph.argumentIds.filter(semanticTable.typeFor(_).couldBe(CTNode))
 
     val relsToRead =
-      qgWithInfo.queryGraph.allPatternRelationshipsRead.map(_.name) ++
+      qgWithInfo.queryGraph.allPatternRelationshipsRead.map(_.variable.name) ++
         qgWithInfo.queryGraph.argumentIds.filter(semanticTable.typeFor(_).couldBe(CTRelationship))
 
     val identifiersToRead = nodesToRead ++ relsToRead

@@ -81,7 +81,7 @@ final class AssumeIndependenceQueryGraphCardinalityModel(
         case relationship @ PatternRelationship(_, _, dir, Seq(relationshipTypeName), SimplePatternLength)
           if dir == SemanticDirection.OUTGOING || dir == SemanticDirection.INCOMING =>
           val (startNode, endNode) = relationship.inOrder
-          semanticTable.id(relationshipTypeName).map(SimpleRelationship(startNode, endNode, _))
+          semanticTable.id(relationshipTypeName).map(SimpleRelationship(startNode.name, endNode.name, _))
         case _ => None
       }
   }

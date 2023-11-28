@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.ir.ast
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.NodeBinding
@@ -39,35 +40,35 @@ class ForAllRepetitionsTest extends CypherFunSuite with AstConstructionTestSuppo
 
   // (start) ((x)-[r]->(y)-[q]->(z))* (end)
   private val qpp = QuantifiedPathPattern(
-    leftBinding = NodeBinding("x", "start"),
-    rightBinding = NodeBinding("z", "end"),
+    leftBinding = NodeBinding(v"x", v"start"),
+    rightBinding = NodeBinding(v"z", v"end"),
     patternRelationships = NonEmptyList(
       PatternRelationship(
-        "r",
-        ("x", "y"),
+        v"r",
+        (v"x", v"y"),
         SemanticDirection.OUTGOING,
         Seq.empty,
         SimplePatternLength
       ),
       PatternRelationship(
-        "q",
-        ("y", "z"),
+        v"q",
+        (v"y", v"z"),
         SemanticDirection.OUTGOING,
         Seq.empty,
         SimplePatternLength
       )
     ),
-    argumentIds = Set("argument"),
+    argumentIds = Set(v"argument"),
     selections = Selections.empty,
     repetition = Repetition(0, UpperBound.Unlimited),
     nodeVariableGroupings = Set(
-      VariableGrouping("x", "xGroup"),
-      VariableGrouping("y", "yGroup"),
-      VariableGrouping("z", "zGroup")
+      VariableGrouping(v"x", v"xGroup"),
+      VariableGrouping(v"y", v"yGroup"),
+      VariableGrouping(v"z", v"zGroup")
     ),
     relationshipVariableGroupings = Set(
-      VariableGrouping("r", "rGroup"),
-      VariableGrouping("q", "qGroup")
+      VariableGrouping(v"r", v"rGroup"),
+      VariableGrouping(v"q", v"qGroup")
     )
   )
 

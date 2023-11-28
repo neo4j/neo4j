@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
@@ -54,7 +55,7 @@ class OrLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 
         selections = Selections(predicates.flatMap(_.asPredicates)),
         patternNodes = Set("n", "m"),
         patternRelationships =
-          Set(PatternRelationship("r", ("n", "m"), OUTGOING, Seq(relTypeName("R")), SimplePatternLength)),
+          Set(PatternRelationship(v"r", (v"n", v"m"), OUTGOING, Seq(relTypeName("R")), SimplePatternLength)),
         argumentIds = Set()
       )
       // Make AllRelationshipsScan (also with Selection on top) cheap,

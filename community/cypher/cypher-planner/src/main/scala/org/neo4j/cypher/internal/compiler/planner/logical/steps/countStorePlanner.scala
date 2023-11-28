@@ -72,7 +72,7 @@ case object countStorePlanner {
   ): Option[LogicalPlan] = {
     def patternHasNoDependencies: Boolean = {
       val qg = query.queryGraph
-      (qg.patternNodes ++ qg.patternRelationships.map(_.name)).intersect(qg.argumentIds).isEmpty
+      (qg.patternNodes ++ qg.patternRelationships.map(_.variable.name)).intersect(qg.argumentIds).isEmpty
     }
 
     query.queryGraph match {
@@ -266,8 +266,8 @@ case object countStorePlanner {
     patternRelationship match {
 
       case PatternRelationship(relId, (startNodeId, endNodeId), direction, types, SimplePatternLength)
-        if variableName.forall(name => Set(relId, startNodeId, endNodeId).contains(name)) &&
-          noWrongPredicates(Set(startNodeId, endNodeId), selections) =>
+        if variableName.forall(name => Set(relId, startNodeId, endNodeId).map(_.name).contains(name)) &&
+          noWrongPredicates(Set(startNodeId, endNodeId).map(_.name), selections) =>
         def planRelAggr(fromLabel: Option[LabelName], toLabel: Option[LabelName]): Option[LogicalPlan] =
           Some(context.staticComponents.logicalPlanProducer.planCountStoreRelationshipAggregation(
             query,
@@ -280,7 +280,7 @@ case object countStorePlanner {
           ))
 
         // plan relationship aggregation only when max one of the nodes has a label
-        (findLabel(startNodeId, selections), direction, findLabel(endNodeId, selections)) match {
+        (findLabel(startNodeId.name, selections), direction, findLabel(endNodeId.name, selections)) match {
           case (None, OUTGOING, None)       => planRelAggr(None, None)
           case (None, INCOMING, None)       => planRelAggr(None, None)
           case (None, OUTGOING, endLabel)   => planRelAggr(None, endLabel)

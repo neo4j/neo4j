@@ -400,16 +400,16 @@ case class LogicalPlanProducer(
         RegularSinglePlannerQuery(queryGraph =
           QueryGraph(
             argumentIds = argumentIds,
-            patternNodes = Set(firstNode, secondNode),
+            patternNodes = Set(firstNode, secondNode).map(_.name),
             patternRelationships = Set(patternForLeafPlan)
           )
         )
 
       val leafPlan =
         if (patternForLeafPlan.dir == BOTH) {
-          UndirectedAllRelationshipsScan(varFor(idName), varFor(firstNode), varFor(secondNode), argumentIds.map(varFor))
+          UndirectedAllRelationshipsScan(varFor(idName), firstNode, secondNode, argumentIds.map(varFor))
         } else {
-          DirectedAllRelationshipsScan(varFor(idName), varFor(firstNode), varFor(secondNode), argumentIds.map(varFor))
+          DirectedAllRelationshipsScan(varFor(idName), firstNode, secondNode, argumentIds.map(varFor))
         }
       annotate(leafPlan, solved, ProvidedOrder.empty, context)
     }
@@ -442,18 +442,18 @@ case class LogicalPlanProducer(
         if (patternForLeafPlan.dir == BOTH) {
           UndirectedRelationshipTypeScan(
             varFor(idName),
-            varFor(firstNode),
+            firstNode,
             relType,
-            varFor(secondNode),
+            secondNode,
             argumentIds.map(varFor),
             toIndexOrder(providedOrder)
           )
         } else {
           DirectedRelationshipTypeScan(
             varFor(idName),
-            varFor(firstNode),
+            firstNode,
             relType,
-            varFor(secondNode),
+            secondNode,
             argumentIds.map(varFor),
             toIndexOrder(providedOrder)
           )
@@ -498,18 +498,18 @@ case class LogicalPlanProducer(
         if (patternForLeafPlan.dir == BOTH) {
           UndirectedUnionRelationshipTypesScan(
             varFor(idName),
-            varFor(firstNode),
+            firstNode,
             relTypes,
-            varFor(secondNode),
+            secondNode,
             argumentIds.map(varFor),
             toIndexOrder(providedOrder)
           )
         } else {
           DirectedUnionRelationshipTypesScan(
             varFor(idName),
-            varFor(firstNode),
+            firstNode,
             relTypes,
-            varFor(secondNode),
+            secondNode,
             argumentIds.map(varFor),
             toIndexOrder(providedOrder)
           )
@@ -549,8 +549,8 @@ case class LogicalPlanProducer(
         if (patternForLeafPlan.dir == BOTH) {
           UndirectedRelationshipIndexScan(
             varFor(idName),
-            varFor(patternForLeafPlan.inOrder._1),
-            varFor(patternForLeafPlan.inOrder._2),
+            patternForLeafPlan.inOrder._1,
+            patternForLeafPlan.inOrder._2,
             relationshipType,
             properties,
             argumentIds.map(varFor),
@@ -560,8 +560,8 @@ case class LogicalPlanProducer(
         } else {
           DirectedRelationshipIndexScan(
             varFor(idName),
-            varFor(patternForLeafPlan.inOrder._1),
-            varFor(patternForLeafPlan.inOrder._2),
+            patternForLeafPlan.inOrder._1,
+            patternForLeafPlan.inOrder._2,
             relationshipType,
             properties,
             argumentIds.map(varFor),
@@ -619,8 +619,8 @@ case class LogicalPlanProducer(
 
       val leafPlan = planTemplate(
         varFor(idName),
-        varFor(patternForLeafPlan.inOrder._1),
-        varFor(patternForLeafPlan.inOrder._2),
+        patternForLeafPlan.inOrder._1,
+        patternForLeafPlan.inOrder._2,
         relationshipType,
         properties.head,
         rewrittenValueExpr,
@@ -678,8 +678,8 @@ case class LogicalPlanProducer(
 
           makeUndirected(
             varFor(idName),
-            varFor(patternForLeafPlan.left),
-            varFor(patternForLeafPlan.right),
+            patternForLeafPlan.left,
+            patternForLeafPlan.right,
             typeToken,
             properties,
             rewrittenValueExpr,
@@ -696,8 +696,8 @@ case class LogicalPlanProducer(
 
           makeDirected(
             varFor(idName),
-            varFor(patternForLeafPlan.inOrder._1),
-            varFor(patternForLeafPlan.inOrder._2),
+            patternForLeafPlan.inOrder._1,
+            patternForLeafPlan.inOrder._2,
             typeToken,
             properties,
             rewrittenValueExpr,
@@ -813,16 +813,16 @@ case class LogicalPlanProducer(
           makeUndirected(
             varFor(idName),
             rewrittenRelIds,
-            varFor(firstNode),
-            varFor(secondNode),
+            firstNode,
+            secondNode,
             (argumentIds ++ newArguments).map(varFor)
           )
         } else {
           makeDirected(
             varFor(idName),
             rewrittenRelIds,
-            varFor(firstNode),
-            varFor(secondNode),
+            firstNode,
+            secondNode,
             (argumentIds ++ newArguments).map(varFor)
           )
         }
@@ -1010,11 +1010,11 @@ case class LogicalPlanProducer(
     mode: ExpansionMode,
     context: LogicalPlanningContext
   ): LogicalPlan = {
-    val dir = pattern.directionRelativeTo(from)
+    val dir = pattern.directionRelativeTo(varFor(from))
     val solved = solveds.get(left.id).asSinglePlannerQuery.amendQueryGraph(_.addPatternRelationship(pattern))
     val providedOrder = providedOrders.get(left.id).fromLeft
     annotate(
-      Expand(left, varFor(from), dir, pattern.types, varFor(to), varFor(pattern.name), mode),
+      Expand(left, varFor(from), dir, pattern.types, varFor(to), pattern.variable, mode),
       solved,
       providedOrder,
       context
@@ -1033,7 +1033,7 @@ case class LogicalPlanProducer(
     context: LogicalPlanningContext
   ): LogicalPlan = {
 
-    val dir = patternRelationship.directionRelativeTo(from)
+    val dir = patternRelationship.directionRelativeTo(varFor(from))
 
     patternRelationship.length match {
       case l: VarPatternLength =>
@@ -1059,7 +1059,7 @@ case class LogicalPlanProducer(
             projectedDir = projectedDir,
             types = patternRelationship.types,
             to = varFor(to),
-            relName = varFor(patternRelationship.name),
+            relName = patternRelationship.variable,
             length = l,
             mode = mode,
             nodePredicates = rewrittenNodePredicates.toSeq,
@@ -1157,18 +1157,18 @@ case class LogicalPlanProducer(
         left = source,
         right = innerPlan,
         repetition = pattern.repetition,
-        start = varFor(startBinding.outer),
-        end = varFor(endBinding.outer),
-        innerStart = varFor(startBinding.inner),
-        innerEnd = varFor(endBinding.inner),
+        start = startBinding.outer,
+        end = endBinding.outer,
+        innerStart = startBinding.inner,
+        innerEnd = endBinding.inner,
         nodeVariableGroupings = pattern.nodeVariableGroupings.map { case VariableGrouping(singleton, group) =>
-          plans.Trail.VariableGrouping(varFor(singleton), varFor(group))
+          plans.Trail.VariableGrouping(singleton, group)
         },
         relationshipVariableGroupings = pattern.relationshipVariableGroupings.map {
           case VariableGrouping(singleton, group) =>
-            plans.Trail.VariableGrouping(varFor(singleton), varFor(group))
+            plans.Trail.VariableGrouping(singleton, group)
         },
-        innerRelationships = pattern.patternRelationships.map(p => varFor(p.name)).toSet,
+        innerRelationships = pattern.patternRelationships.map(p => p.variable).toSet,
         previouslyBoundRelationships = previouslyBoundRelationships.map(varFor),
         previouslyBoundRelationshipGroups = previouslyBoundRelationshipGroups.map(varFor),
         reverseGroupVariableProjections = reverseGroupVariableProjections
@@ -1510,7 +1510,7 @@ case class LogicalPlanProducer(
     context: LogicalPlanningContext
   ): LogicalPlan =
     annotate(
-      AssertSameRelationship(varFor(relationship.name), left, right),
+      AssertSameRelationship(relationship.variable, left, right),
       solveds.get(left.id).asSinglePlannerQuery ++ solveds.get(right.id).asSinglePlannerQuery,
       providedOrders.get(left.id).fromLeft,
       context
@@ -1531,7 +1531,7 @@ case class LogicalPlanProducer(
     val patternRelationships =
       optionalQG
         .patternRelationships
-        .filter(rel => ids(rel.name))
+        .filter(rel => ids(rel.variable.name))
 
     val optionalMatchQG =
       solveds
@@ -1796,7 +1796,9 @@ case class LogicalPlanProducer(
   def planQueryArgument(queryGraph: QueryGraph, context: LogicalPlanningContext): LogicalPlan = {
     val patternNodes = queryGraph.argumentIds intersect queryGraph.patternNodes
     val patternRels =
-      queryGraph.patternRelationships.filter(rel => queryGraph.argumentIds.contains(rel.name)).map(_.name)
+      queryGraph.patternRelationships.filter(rel => queryGraph.argumentIds.contains(rel.variable.name)).map(
+        _.variable.name
+      )
     val otherIds = queryGraph.argumentIds -- patternNodes
     planArgument(patternNodes, patternRels, otherIds, context)
   }
@@ -2422,7 +2424,7 @@ case class LogicalPlanProducer(
     annotate(
       ProjectEndpoints(
         inner,
-        varFor(patternRel.name),
+        patternRel.variable,
         varFor(start),
         startInScope,
         varFor(end),
@@ -3213,7 +3215,7 @@ case class LogicalPlanProducer(
     dir: SemanticDirection
   ): SemanticDirection = {
     if (dir == SemanticDirection.BOTH) {
-      if (from == pattern.left) {
+      if (from == pattern.left.name) {
         SemanticDirection.OUTGOING
       } else {
         SemanticDirection.INCOMING

@@ -20,17 +20,17 @@
 package org.neo4j.cypher.internal.compiler.planner
 
 import org.neo4j.cypher.internal.expressions.Equals
-import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.util.InputPosition
 
 package object logical {
   type Selector[P] = Iterable[P] => Option[P]
 
-  def equalsPredicate(left: String, right: String): Equals = {
+  def equalsPredicate(left: LogicalVariable, right: LogicalVariable): Equals = {
     val pos = InputPosition.NONE
     Equals(
-      Variable(left)(pos),
-      Variable(right)(pos)
+      left,
+      right
     )(pos)
   }
 }

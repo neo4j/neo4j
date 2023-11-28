@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.NodeConnection
@@ -40,10 +41,10 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSuppor
   implicit def converter(s: Symbol): String = s.toString()
 
   private val pattern1 =
-    PatternRelationship("r1", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+    PatternRelationship(v"r1", (v"a", v"b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
   private val pattern2 =
-    PatternRelationship("r2", ("b", "c"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+    PatternRelationship(v"r2", (v"b", v"c"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
   private val table = IDPTable.empty[LogicalPlan]
   private val qg = mock[QueryGraph]
@@ -87,8 +88,8 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
       val patternX =
         PatternRelationship(
-          "r2",
-          ("a", "b"),
+          v"r2",
+          (v"a", v"b"),
           SemanticDirection.OUTGOING,
           Seq.empty,
           SimplePatternLength
@@ -111,7 +112,8 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSuppor
       )
       table.put(register(pattern1), sorted = false, plan1)
 
-      val patternX = PatternRelationship("r2", ("x", "y"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+      val patternX =
+        PatternRelationship(v"r2", (v"x", v"y"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
       expandSolverStep(qg, noQPPInnerPlans)(registry, register(pattern1, patternX), table, ctx).toSet should be(empty)
     }
@@ -129,7 +131,8 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSuppor
       )
       table.put(register(pattern1, pattern2), sorted = false, plan1)
 
-      val pattern3 = PatternRelationship("r3", ("b", "c"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+      val pattern3 =
+        PatternRelationship(v"r3", (v"b", v"c"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
       expandSolverStep(qg, noQPPInnerPlans)(
         registry,

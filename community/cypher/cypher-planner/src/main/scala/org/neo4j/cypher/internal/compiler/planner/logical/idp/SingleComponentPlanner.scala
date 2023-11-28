@@ -258,12 +258,12 @@ object SingleComponentPlanner {
           // Avoid planning an Expand on a plan that already solves another relationship.
           // That is not supposed to happen when we initialize the table, but rather during IDP.
           NonExpandSolutions(None)
-        case pattern: PatternRelationship if solvedQg.allCoveredIds.contains(pattern.name) =>
+        case pattern: PatternRelationship if solvedQg.allCoveredIds.contains(pattern.variable.name) =>
           NonExpandSolutions(Some(planSingleProjectEndpoints(pattern, leaf, context)))
         case pattern =>
           val (start, end) = pattern.boundaryNodes
-          val leftExpand = planSinglePatternSide(qg, pattern, leaf, start, qppInnerPlanner, context)
-          val rightExpand = planSinglePatternSide(qg, pattern, leaf, end, qppInnerPlanner, context)
+          val leftExpand = planSinglePatternSide(qg, pattern, leaf, start.name, qppInnerPlanner, context)
+          val rightExpand = planSinglePatternSide(qg, pattern, leaf, end.name, qppInnerPlanner, context)
           ExpandSolutions(leftExpand, rightExpand)
       }
       leaf -> solutions
@@ -274,12 +274,12 @@ object SingleComponentPlanner {
       if (start == end) {
         // We are not allowed to plan CP or joins with identical LHS and RHS
         Iterable.empty[LogicalPlan]
-      } else if (qg.argumentIds.contains(start) || qg.argumentIds.contains(end)) {
+      } else if (qg.argumentIds.contains(start.name) || qg.argumentIds.contains(end.name)) {
         // This kind of join for single relationship patterns is currently only supported for non-argument nodes.
         Iterable.empty[LogicalPlan]
       } else {
-        val startJoinNodes = Set(start)
-        val endJoinNodes = Set(end)
+        val startJoinNodes = Set(start.name)
+        val endJoinNodes = Set(end.name)
 
         val maybeStartBestPlans = bestLeafPlansPerAvailableSymbol.get(startJoinNodes ++ qg.argumentIds)
         val maybeEndBestPlans = bestLeafPlansPerAvailableSymbol.get(endJoinNodes ++ qg.argumentIds)
@@ -287,7 +287,7 @@ object SingleComponentPlanner {
         val cartesianProducts = planSinglePatternCartesianProducts(
           qg,
           patternToSolve,
-          start,
+          start.name,
           maybeStartBestPlans,
           maybeEndBestPlans,
           qppInnerPlanner,

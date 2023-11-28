@@ -51,6 +51,7 @@ import org.neo4j.cypher.internal.expressions.PartialPredicate
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QueryGraph
@@ -330,8 +331,8 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext) ex
     val relQgs = relationships.map { r =>
       QueryGraph(
         patternRelationships = Set(PatternRelationship(
-          r,
-          ("  UNNAMED0", "  UNNAMED1"),
+          varFor(r),
+          (varFor("  UNNAMED0"), varFor("  UNNAMED1")),
           SemanticDirection.OUTGOING,
           Seq.empty,
           SimplePatternLength
@@ -349,7 +350,7 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext) ex
         WhereClausePredicate(HasLabels(Variable(name)(InputPosition.NONE), labels.toSeq)(InputPosition.NONE))
     }
     val relTypePredicates = relTypeInfo.collect {
-      case (name, relType) if qg.patternRelationships.map(_.name).contains(name) =>
+      case (name, relType) if qg.patternRelationships.map(_.variable.name).contains(name) =>
         WhereClausePredicate(HasTypes(Variable(name)(InputPosition.NONE), Seq(relType))(InputPosition.NONE))
     }
     (labelPredicates ++ relTypePredicates).foldLeft(qg) {

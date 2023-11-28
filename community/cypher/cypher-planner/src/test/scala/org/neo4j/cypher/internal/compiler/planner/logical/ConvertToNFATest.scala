@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.ExhaustivePathPattern
 import org.neo4j.cypher.internal.ir.NodeBinding
@@ -41,11 +42,11 @@ import org.neo4j.exceptions.InternalException
 class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
 
   private val `(start) ((a)-[r]->(b))+ (end)` = QuantifiedPathPattern(
-    leftBinding = NodeBinding("a", "start"),
-    rightBinding = NodeBinding("b", "end"),
+    leftBinding = NodeBinding(v"a", v"start"),
+    rightBinding = NodeBinding(v"b", v"end"),
     patternRelationships = NonEmptyList(PatternRelationship(
-      name = "r",
-      boundaryNodes = ("a", "b"),
+      variable = v"r",
+      boundaryNodes = (v"a", v"b"),
       dir = SemanticDirection.OUTGOING,
       types = Nil,
       length = SimplePatternLength
@@ -53,24 +54,24 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
     argumentIds = Set.empty,
     selections = Selections.empty,
     repetition = Repetition(1, UpperBound.Unlimited),
-    nodeVariableGroupings = Set("a", "b").map(name => VariableGrouping(name, name)),
-    relationshipVariableGroupings = Set(VariableGrouping("r", "r"))
+    nodeVariableGroupings = Set(v"a", v"b").map(name => VariableGrouping(name, name)),
+    relationshipVariableGroupings = Set(VariableGrouping(v"r", v"r"))
   )
 
   private val `(start) ((a)-[r]->(b)-[r2]->(c))+ (end)` = QuantifiedPathPattern(
-    leftBinding = NodeBinding("a", "start"),
-    rightBinding = NodeBinding("c", "end"),
+    leftBinding = NodeBinding(v"a", v"start"),
+    rightBinding = NodeBinding(v"c", v"end"),
     patternRelationships = NonEmptyList(
       PatternRelationship(
-        name = "r",
-        boundaryNodes = ("a", "b"),
+        variable = v"r",
+        boundaryNodes = (v"a", v"b"),
         dir = SemanticDirection.OUTGOING,
         types = Nil,
         length = SimplePatternLength
       ),
       PatternRelationship(
-        name = "r2",
-        boundaryNodes = ("b", "c"),
+        variable = v"r2",
+        boundaryNodes = (v"b", v"c"),
         dir = SemanticDirection.OUTGOING,
         types = Nil,
         length = SimplePatternLength
@@ -79,18 +80,18 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
     argumentIds = Set.empty,
     selections = Selections.empty,
     repetition = Repetition(1, UpperBound.Unlimited),
-    nodeVariableGroupings = Set("a", "b", "c").map(name => VariableGrouping(name, name)),
-    relationshipVariableGroupings = Set("r", "r2").map(name => VariableGrouping(name, name))
+    nodeVariableGroupings = Set(v"a", v"b", v"c").map(name => VariableGrouping(name, name)),
+    relationshipVariableGroupings = Set(v"r", v"r2").map(name => VariableGrouping(name, name))
   )
 
   // QPP with internal predicates
   private val `(start) ((a)-[r]->(b))+ (end) [with predicates]` =
     QuantifiedPathPattern(
-      leftBinding = NodeBinding("a", "start"),
-      rightBinding = NodeBinding("b", "end"),
+      leftBinding = NodeBinding(v"a", v"start"),
+      rightBinding = NodeBinding(v"b", v"end"),
       patternRelationships = NonEmptyList(PatternRelationship(
-        name = "r",
-        boundaryNodes = ("a", "b"),
+        variable = v"r",
+        boundaryNodes = (v"a", v"b"),
         dir = SemanticDirection.OUTGOING,
         types = Seq(relTypeName("T")),
         length = SimplePatternLength
@@ -103,8 +104,8 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
         equals(prop("b", "prop"), literalInt(2))
       )),
       repetition = Repetition(1, UpperBound.Unlimited),
-      nodeVariableGroupings = Set("a", "b").map(name => VariableGrouping(name, name)),
-      relationshipVariableGroupings = Set(VariableGrouping("r", "r"))
+      nodeVariableGroupings = Set(v"a", v"b").map(name => VariableGrouping(name, name)),
+      relationshipVariableGroupings = Set(VariableGrouping(v"r", v"r"))
     )
 
   test("create simple NFA") {
@@ -243,19 +244,19 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("create NFA reversed for (start) ((a)-[r]->(b)-[s]-(c))* (d)<-[t]-(end)") {
     val qpp = QuantifiedPathPattern(
-      leftBinding = NodeBinding("a", "start"),
-      rightBinding = NodeBinding("c", "d"),
+      leftBinding = NodeBinding(v"a", v"start"),
+      rightBinding = NodeBinding(v"c", v"d"),
       patternRelationships = NonEmptyList(
         PatternRelationship(
-          name = "r",
-          boundaryNodes = ("a", "b"),
+          variable = v"r",
+          boundaryNodes = (v"a", v"b"),
           dir = SemanticDirection.OUTGOING,
           types = Nil,
           length = SimplePatternLength
         ),
         PatternRelationship(
-          name = "s",
-          boundaryNodes = ("b", "c"),
+          variable = v"s",
+          boundaryNodes = (v"b", v"c"),
           dir = SemanticDirection.BOTH,
           types = Nil,
           length = SimplePatternLength
@@ -264,12 +265,12 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
       argumentIds = Set.empty,
       selections = Selections.from(differentRelationships(varFor("r"), varFor("s"))),
       repetition = Repetition(0, UpperBound.Unlimited),
-      nodeVariableGroupings = Set("a", "b", "c").map(name => VariableGrouping(name, name)),
-      relationshipVariableGroupings = Set("r", "s").map(name => VariableGrouping(name, name))
+      nodeVariableGroupings = Set(v"a", v"b", v"c").map(name => VariableGrouping(name, name)),
+      relationshipVariableGroupings = Set(v"r", v"s").map(name => VariableGrouping(name, name))
     )
     val rel = PatternRelationship(
-      name = "t",
-      boundaryNodes = ("d", "end"),
+      variable = v"t",
+      boundaryNodes = (v"d", v"end"),
       dir = SemanticDirection.INCOMING,
       types = Seq.empty,
       length = SimplePatternLength
@@ -333,11 +334,11 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("create NFA with predicates that depend on interior and other available symbol") {
     val qpp = QuantifiedPathPattern(
-      leftBinding = NodeBinding("a", "start"),
-      rightBinding = NodeBinding("b", "c"),
+      leftBinding = NodeBinding(v"a", v"start"),
+      rightBinding = NodeBinding(v"b", v"c"),
       patternRelationships = NonEmptyList(PatternRelationship(
-        name = "r",
-        boundaryNodes = ("a", "b"),
+        variable = v"r",
+        boundaryNodes = (v"a", v"b"),
         dir = SemanticDirection.OUTGOING,
         types = Seq.empty,
         length = SimplePatternLength
@@ -349,12 +350,12 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
         equals(prop("b", "prop"), varFor("foo"))
       )),
       repetition = Repetition(1, UpperBound.Unlimited),
-      nodeVariableGroupings = Set("a", "b").map(name => VariableGrouping(name, name)),
-      relationshipVariableGroupings = Set(VariableGrouping("r", "r"))
+      nodeVariableGroupings = Set(v"a", v"b").map(name => VariableGrouping(name, name)),
+      relationshipVariableGroupings = Set(VariableGrouping(v"r", v"r"))
     )
     val rel = PatternRelationship(
-      name = "r2",
-      boundaryNodes = ("c", "end"),
+      variable = v"r2",
+      boundaryNodes = (v"c", v"end"),
       dir = SemanticDirection.INCOMING,
       types = Seq.empty,
       length = SimplePatternLength
@@ -589,8 +590,8 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
   test("(start)-[r:R*0..]->(end)") {
     val varRel =
       PatternRelationship(
-        "r",
-        ("start", "end"),
+        v"r",
+        (v"start", v"end"),
         SemanticDirection.OUTGOING,
         Seq(relTypeName("R")),
         VarPatternLength(0, None)
@@ -621,8 +622,8 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
   test("(start)-[r:R*1..]->(end)") {
     val varRel =
       PatternRelationship(
-        "r",
-        ("start", "end"),
+        v"r",
+        (v"start", v"end"),
         SemanticDirection.OUTGOING,
         Seq(relTypeName("R")),
         VarPatternLength(1, None)
@@ -654,8 +655,8 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
   test("(start)-[r:R*2..]->(end)") {
     val varRel =
       PatternRelationship(
-        "r",
-        ("start", "end"),
+        v"r",
+        (v"start", v"end"),
         SemanticDirection.OUTGOING,
         Seq(relTypeName("R")),
         VarPatternLength(2, None)
@@ -688,8 +689,8 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
   test("(start)-[r:R*3..]->(end)") {
     val varRel =
       PatternRelationship(
-        "r",
-        ("start", "end"),
+        v"r",
+        (v"start", v"end"),
         SemanticDirection.OUTGOING,
         Seq(relTypeName("R")),
         VarPatternLength(3, None)
@@ -723,8 +724,8 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
   test("(start)-[r:R*2..3]->(end)") {
     val varRel =
       PatternRelationship(
-        "r",
-        ("start", "end"),
+        v"r",
+        (v"start", v"end"),
         SemanticDirection.OUTGOING,
         Seq(relTypeName("R")),
         VarPatternLength(2, Some(3))
@@ -758,8 +759,8 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
   test("(start)-[r:R*0..3]->(end)") {
     val varRel =
       PatternRelationship(
-        "r",
-        ("start", "end"),
+        v"r",
+        (v"start", v"end"),
         SemanticDirection.OUTGOING,
         Seq(relTypeName("R")),
         VarPatternLength(0, Some(3))
@@ -796,8 +797,8 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
   test("(start:Label)-[r:R|T*2..3 {prop: 2}]->(end {prop: 42})") {
     val varRel =
       PatternRelationship(
-        "r",
-        ("start", "end"),
+        v"r",
+        (v"start", v"end"),
         SemanticDirection.OUTGOING,
         Seq(relTypeName("R"), relTypeName("T")),
         VarPatternLength(0, Some(3))
