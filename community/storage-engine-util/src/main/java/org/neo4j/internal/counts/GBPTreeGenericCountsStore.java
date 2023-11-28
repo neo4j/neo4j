@@ -243,7 +243,10 @@ public class GBPTreeGenericCountsStore implements AutoCloseable, ConsistencyChec
         if (needsRebuild || rebuilder.lastCommittedTxId() != idSequence.getHighestGapFreeNumber()) {
             checkState(
                     !readOnly,
-                    "Counts store needs rebuilding (most likely this database needs to be recovered), but is read-only.");
+                    "Counts store needs rebuilding (most likely this database needs to be recovered), but is read-only. needsRebuild:%b, lastCommittedTxId:%d, expectedLastCommittedTxId:%d",
+                    needsRebuild,
+                    idSequence.getHighestGapFreeNumber(),
+                    rebuilder.lastCommittedTxId());
             try (CountUpdater updater = createDirectUpdater(false, cursorContext)) {
                 rebuilder.rebuild(updater, cursorContext, memoryTracker);
             } finally {
