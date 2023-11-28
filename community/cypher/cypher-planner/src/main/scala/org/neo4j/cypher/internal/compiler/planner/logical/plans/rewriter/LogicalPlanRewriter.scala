@@ -72,7 +72,6 @@ case object PlanRewriter extends LogicalPlanRewriter with StepSequencer.Step wit
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
     readOnly: Boolean
   ): Rewriter = {
-    val idGen = context.logicalPlanIdGen
     fixedPoint(context.cancellationChecker)(
       inSequence(context.cancellationChecker)(
         ForAllRepetitionsPredicateRewriter(anonymousVariableNameGenerator),
@@ -125,7 +124,10 @@ case object PlanRewriter extends LogicalPlanRewriter with StepSequencer.Step wit
         UniquenessRewriter(anonymousVariableNameGenerator),
         VarLengthRewriter,
         extractRuntimeConstants(anonymousVariableNameGenerator),
-        groupPercentileFunctions(anonymousVariableNameGenerator, idGen, cardinalities)
+        groupPercentileFunctions(
+          anonymousVariableNameGenerator,
+          otherAttributes.withAlso(solveds, cardinalities, effectiveCardinalities, providedOrders)
+        )
       )
     )
   }

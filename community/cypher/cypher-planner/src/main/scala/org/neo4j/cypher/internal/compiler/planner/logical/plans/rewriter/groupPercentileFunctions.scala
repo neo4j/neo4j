@@ -35,12 +35,13 @@ import org.neo4j.cypher.internal.expressions.functions.PercentileCont
 import org.neo4j.cypher.internal.expressions.functions.PercentileDisc
 import org.neo4j.cypher.internal.expressions.functions.Percentiles
 import org.neo4j.cypher.internal.logical.plans.Aggregation
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
 import org.neo4j.cypher.internal.logical.plans.Projection
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
-import org.neo4j.cypher.internal.util.attribution.IdGen
+import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.bottomUp
 
@@ -67,8 +68,7 @@ import org.neo4j.cypher.internal.util.bottomUp
  */
 case class groupPercentileFunctions(
   anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
-  idGen: IdGen,
-  cardinalities: Cardinalities
+  attributes: Attributes[LogicalPlan]
 ) extends Rewriter {
 
   override def apply(input: AnyRef): AnyRef = instance.apply(input)
@@ -76,41 +76,56 @@ case class groupPercentileFunctions(
   private val pos: InputPosition = InputPosition.NONE
 
   private val instance: Rewriter = bottomUp(Rewriter.lift {
-    case aggregation @ Aggregation(_, _, aggregations: Map[LogicalVariable, Expression]) =>
+    case aggregation @ OrderedAggregation(_, _, aggregations: Map[LogicalVariable, Expression], _) =>
       val groupedPercentileFunctions = groupPercentileFunctions(aggregations)
-
       if (groupedPercentileFunctions.isEmpty) {
         aggregation
       } else {
-        val functionVariableMappings: Map[FunctionInvocation, Seq[LogicalVariable]] =
-          toPercentilesAndVariables(groupedPercentileFunctions)
-
-        val (percentilesExpressions, variableMappings) =
-          functionVariableMappings.foldLeft(
-            (Map.empty[LogicalVariable, Expression], Map.empty[LogicalVariable, Expression])
-          ) {
-            case ((accAggregations, accMappings), (percentilesFun, variables)) =>
-              val mapVar = varFor(anonymousVariableNameGenerator.nextName)
-              (
-                accAggregations + (mapVar -> percentilesFun),
-                accMappings ++ variables.map(v => (v, mapVar))
-              )
-          }
-
-        val aggregationsToRemove = groupedPercentileFunctions.flatMap { case (_, fs) => fs.keys }.toSet
-        val newAggregations = (aggregations -- aggregationsToRemove) ++ percentilesExpressions
+        val (newAggregations, projectExpressions) = newExpressions(groupedPercentileFunctions, aggregations)
         val newAggregation = aggregation.copy(aggregationExpressions = newAggregations)(SameId(aggregation.id))
-
-        val projectExpressions = variableMappings.map {
-          case (projectTo: LogicalVariable, map: Expression) =>
-            projectTo -> Property(map, PropertyKeyName(varToKey(projectTo))(pos))(pos)
-        }
-
-        val projection = Projection(newAggregation, projectExpressions)(idGen)
-        cardinalities.set(projection.id, cardinalities.get(newAggregation.id))
-        projection
+        val id = attributes.copy(aggregation.id).id()
+        Projection(newAggregation, projectExpressions)(SameId(id))
+      }
+    case aggregation @ Aggregation(_, _, aggregations: Map[LogicalVariable, Expression]) =>
+      val groupedPercentileFunctions = groupPercentileFunctions(aggregations)
+      if (groupedPercentileFunctions.isEmpty) {
+        aggregation
+      } else {
+        val (newAggregations, projectExpressions) = newExpressions(groupedPercentileFunctions, aggregations)
+        val newAggregation = aggregation.copy(aggregationExpressions = newAggregations)(SameId(aggregation.id))
+        val id = attributes.copy(aggregation.id).id()
+        Projection(newAggregation, projectExpressions)(SameId(id))
       }
   })
+
+  private def newExpressions(
+    groupedPercentileFunctions: Map[(Expression, Boolean), Map[LogicalVariable, FunctionInvocation]],
+    aggregations: Map[LogicalVariable, Expression]
+  ): (Map[LogicalVariable, Expression], Map[LogicalVariable, Property]) = {
+    val functionVariableMappings: Map[FunctionInvocation, Seq[LogicalVariable]] =
+      toPercentilesAndVariables(groupedPercentileFunctions)
+
+    val (percentilesExpressions, variableMappings) =
+      functionVariableMappings.foldLeft(
+        (Map.empty[LogicalVariable, Expression], Map.empty[LogicalVariable, Expression])
+      ) {
+        case ((accAggregations, accMappings), (percentilesFun, variables)) =>
+          val mapVar = varFor(anonymousVariableNameGenerator.nextName)
+          (
+            accAggregations + (mapVar -> percentilesFun),
+            accMappings ++ variables.map(v => (v, mapVar))
+          )
+      }
+
+    val aggregationsToRemove = groupedPercentileFunctions.flatMap { case (_, fs) => fs.keys }.toSet
+    val newAggregations = (aggregations -- aggregationsToRemove) ++ percentilesExpressions
+
+    val projectExpressions = variableMappings.map {
+      case (projectTo: LogicalVariable, map: Expression) =>
+        projectTo -> Property(map, PropertyKeyName(varToKey(projectTo))(pos))(pos)
+    }
+    (newAggregations, projectExpressions)
+  }
 
   /**
    * Filters out all aggregation expressions other than [[PercentileDisc]] and returns those (if any) expressions

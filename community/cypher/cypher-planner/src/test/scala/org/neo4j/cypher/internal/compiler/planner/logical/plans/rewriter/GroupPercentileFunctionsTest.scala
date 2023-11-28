@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.functions.PercentileDisc
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
-import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
+import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class GroupPercentileFunctionsTest extends CypherFunSuite with LogicalPlanningTestSupport {
@@ -84,6 +84,33 @@ class GroupPercentileFunctionsTest extends CypherFunSuite with LogicalPlanningTe
       .aggregation(
         Map.empty[String, Expression],
         Map(mapName -> percentiles(varFor("n"), Seq(0.5, 0.6), Seq("p1", "p2"), Seq(true, true)))
+      )
+      .projection("from.number1 AS n")
+      .allNodeScan("from")
+      .build()
+
+    rewrite(before, names = Seq(mapName)) should equal(after)
+  }
+
+  test("should rewrite two percentileDisc on same variable in ordered aggregation") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .orderedAggregation(
+        Seq("from AS from"),
+        Seq("percentileDisc(n, 0.5) AS p1", "percentileDisc(n, 0.6) AS p2"),
+        Seq("from")
+      )
+      .projection("from.number1 AS n")
+      .allNodeScan("from")
+      .build()
+
+    val mapName = "   map0"
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .projection(s"`$mapName`.p1 AS p1", s"`$mapName`.p2 AS p2")
+      .orderedAggregation(
+        Map("from" -> varFor("from")),
+        Map(mapName -> percentiles(varFor("n"), Seq(0.5, 0.6), Seq("p1", "p2"), Seq(true, true))),
+        Seq("from")
       )
       .projection("from.number1 AS n")
       .allNodeScan("from")
@@ -319,8 +346,7 @@ class GroupPercentileFunctionsTest extends CypherFunSuite with LogicalPlanningTe
   private def rewrite(p: LogicalPlan, names: Seq[String] = Seq.empty): LogicalPlan = {
     p.endoRewrite(groupPercentileFunctions(
       new VariableNameGenerator(names),
-      new SequentialIdGen(initialValue = 0),
-      new StubCardinalities
+      Attributes(idGen)
     ))
   }
 
