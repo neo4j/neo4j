@@ -1894,7 +1894,8 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           Set(("anon_2", "anon_1")),
           Set(("r", "r")),
           StatefulShortestPath.Selector.Shortest(1),
-          nfa
+          nfa,
+          ExpandAll
         )
         .apply()
         .|.allNodeScan("anon_0", "n")
