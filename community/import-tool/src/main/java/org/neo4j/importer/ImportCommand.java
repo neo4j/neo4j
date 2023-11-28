@@ -276,9 +276,11 @@ public class ImportCommand {
         @Option(
                 names = BAD_TOLERANCE_OPTION,
                 paramLabel = "<num>",
-                description = "Number of bad entries before the import is aborted. Import is optimized for fault-free "
-                        + "data and we recommend cleaning data before importing. This setting can increase the "
-                        + "fault-tolerance, however a large number of faults will affect the tool's performance.")
+                description =
+                        "Number of bad entries before the import is aborted. The import process is optimized for error-free data. "
+                                + "Therefore, cleaning the data before importing it is highly recommended. If you encounter any bad entries during "
+                                + "the import process, you can set the number of bad entries to a specific value that suits your needs. "
+                                + "However, setting a high value may affect the performance of the tool.")
         private long badTolerance = 1000;
 
         public static final String SKIP_BAD_ENTRIES_LOGGING = "--skip-bad-entries-logging";
@@ -290,9 +292,9 @@ public class ImportCommand {
                 paramLabel = "true|false",
                 fallbackValue = "true",
                 description =
-                        "When set to true the details of bad entries are not written to the log. Disabling logging "
-                                + "can improve performance when the data contains lots of faults. We recommend cleaning data "
-                                + "before importing because faults dramatically affect the tool’s performance even without "
+                        "When set to `true`, the details of bad entries are not written in the log. Disabling logging "
+                                + "can improve performance when the data contains lots of faults. Cleaning the data before importing "
+                                + "it is highly recommended because faults dramatically affect the tool's performance even without "
                                 + "logging.")
         private boolean skipBadEntriesLogging;
 
