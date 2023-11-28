@@ -125,7 +125,14 @@ case class FeatureDatabaseManagementService(
 
   private val cypherExecutor = createExecutor()
 
-  private lazy val fabricExecutor = database.getDependencyResolver.resolveDependency(classOf[FabricExecutor])
+  private lazy val maybeFabricExecutor = {
+    val resolver = database.getDependencyResolver
+    // Fabric executor is present only in composite databases
+    if (resolver.containsDependency(classOf[FabricExecutor]))
+      Option(resolver.resolveDependency(classOf[FabricExecutor]))
+    else Option.empty
+  }
+
   private lazy val kernel = database.getDependencyResolver.resolveDependency(classOf[Kernel])
   private lazy val globalProcedures = database.getDependencyResolver.provideDependency(classOf[GlobalProcedures]).get()
   private lazy val executionEngine = database.getDependencyResolver.resolveDependency(classOf[QueryExecutionEngine])
@@ -146,7 +153,8 @@ case class FeatureDatabaseManagementService(
   def registerUserAggregation(function: CallableUserAggregationFunction): Unit =
     kernel.registerUserAggregationFunction(function)
 
-  def clearFabricQueryCache(dbName: String): Unit = fabricExecutor.clearQueryCachesForDatabase(dbName)
+  def clearFabricQueryCache(dbName: String): Unit =
+    maybeFabricExecutor.map(fe => fe.clearQueryCachesForDatabase(dbName))
 
   def clearQueryCaches(): Unit = executionEngine.clearQueryCaches()
 
