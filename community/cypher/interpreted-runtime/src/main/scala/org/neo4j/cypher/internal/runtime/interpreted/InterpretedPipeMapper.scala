@@ -1216,7 +1216,7 @@ case class InterpretedPipeMapper(
 
         val patternRelationship = shortestPathPattern.rel
 
-        val (sourceNodeName, targetNodeName) = patternRelationship.nodes
+        val (sourceNodeName, targetNodeName) = patternRelationship.boundaryNodes
 
         val rel = shortestPathPattern.expr.element match {
           case internal.expressions.RelationshipChain(_, relationshipPattern, _) =>
@@ -1236,7 +1236,7 @@ case class InterpretedPipeMapper(
           throw new IllegalArgumentException("We don't allow -[*1..]- for AllowSameNode")
         }
 
-        val pathName = shortestPathPattern.name.map(_.name).getOrElse(anonymousVariableNameGenerator.nextName)
+        val pathName = shortestPathPattern.maybePathVar.map(_.name).getOrElse(anonymousVariableNameGenerator.nextName)
         ShortestPathPipe(
           source,
           sourceNodeName.name,

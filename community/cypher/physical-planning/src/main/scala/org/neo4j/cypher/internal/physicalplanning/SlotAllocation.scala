@@ -922,7 +922,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
             throw new IllegalStateException("This should be caught during semantic checking")
         }
 
-        val pathName = sp.pattern.name.get // Should always be given anonymous name
+        val pathName = sp.pattern.maybePathVar.get // Should always be given anonymous name
         val relsName = rel.variable.get.name // Should always be given anonymous name
 
         slots.newReference(pathName, nullable, CTPath)

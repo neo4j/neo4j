@@ -46,6 +46,7 @@ import org.neo4j.cypher.internal.ir.CreateRelationship
 import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.ir.PatternLength
 import org.neo4j.cypher.internal.ir.SetMutatingPattern
+import org.neo4j.cypher.internal.ir.ShortestRelationshipPattern
 import org.neo4j.cypher.internal.ir.SimpleMutatingPattern
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.VarPatternLength
@@ -1878,7 +1879,7 @@ case class PathPropagatingBFS(
  */
 case class FindShortestPaths(
   override val source: LogicalPlan,
-  pattern: shortest.ShortestRelationshipPattern,
+  pattern: ShortestRelationshipPattern,
   perStepNodePredicates: Seq[VariablePredicate] = Seq.empty,
   perStepRelPredicates: Seq[VariablePredicate] = Seq.empty,
   pathPredicates: Seq[Expression] = Seq.empty,

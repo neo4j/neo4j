@@ -59,11 +59,11 @@ import org.neo4j.cypher.internal.expressions.ShortestPathsPatternPart
 import org.neo4j.cypher.internal.expressions.SingleIterablePredicate
 import org.neo4j.cypher.internal.frontend.phases.ResolvedCall
 import org.neo4j.cypher.internal.frontend.phases.ResolvedFunctionInvocation
+import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.ast.IRExpression
 import org.neo4j.cypher.internal.label_expressions.LabelExpression
 import org.neo4j.cypher.internal.logical.plans.LogicalPlanStringTest.WhiteList
-import org.neo4j.cypher.internal.logical.plans.shortest.PatternRelationship
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.reflections.Reflections
@@ -210,7 +210,8 @@ object LogicalPlanStringTest {
 
     val whiteListedAccessors: Set[(Class[_], String)] = Set[(Class[_], String)](
       classOf[AndedPropertyInequalities] -> "inequalities",
-      classOf[PatternRelationship] -> "nodes",
+      classOf[PatternRelationship] -> "boundaryNodes",
+      classOf[PatternRelationship] -> "inOrder",
       classOf[MultiNodeIndexSeek] -> "copyWithoutGettingValues",
       classOf[AssertingMultiNodeIndexSeek] -> "copyWithoutGettingValues",
       classOf[ProjectingPlan] -> "projectExpressions",
@@ -314,7 +315,8 @@ object LogicalPlanStringTest {
       "prettified",
       "mkString",
       "className",
-      "solvedString"
+      "solvedString",
+      "solvedStringSuffix"
     )
   }
 }

@@ -45,6 +45,7 @@ import org.neo4j.cypher.internal.ir.CreateNode
 import org.neo4j.cypher.internal.ir.CreatePattern
 import org.neo4j.cypher.internal.ir.CreateRelationship
 import org.neo4j.cypher.internal.ir.EagernessReason
+import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.RemoveLabelPattern
 import org.neo4j.cypher.internal.ir.SetLabelPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertiesFromMapPattern
@@ -56,6 +57,7 @@ import org.neo4j.cypher.internal.ir.SetPropertyPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesFromMapPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertyPattern
+import org.neo4j.cypher.internal.ir.ShortestRelationshipPattern
 import org.neo4j.cypher.internal.ir.SimpleMutatingPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
@@ -67,8 +69,6 @@ import org.neo4j.cypher.internal.logical.plans.NFA.RelationshipExpansionPredicat
 import org.neo4j.cypher.internal.logical.plans.NFA.State
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath.Mapping
 import org.neo4j.cypher.internal.logical.plans.Trail.VariableGrouping
-import org.neo4j.cypher.internal.logical.plans.shortest.PatternRelationship
-import org.neo4j.cypher.internal.logical.plans.shortest.ShortestRelationshipPattern
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.Repetition
 import org.neo4j.graphdb.schema.IndexType

@@ -1006,13 +1006,13 @@ class SlottedPipeMapper(
 
         val patternRelationship = shortestPathPattern.rel
 
-        val (sourceNodeName, targetNodeName) = patternRelationship.nodes
+        val (sourceNodeName, targetNodeName) = patternRelationship.boundaryNodes
 
         if (sameNodeMode == DisallowSameNode && sourceNodeName == targetNodeName) {
           throw new ShortestPathCommonEndNodesForbiddenException
         }
 
-        val pathName = shortestPathPattern.name.get // Should always be given anonymous name
+        val pathName = shortestPathPattern.maybePathVar.get // Should always be given anonymous name
         val relsName = rel.variable.get.name // Should always be given anonymous name
 
         val sourceSlot = slots(sourceNodeName)

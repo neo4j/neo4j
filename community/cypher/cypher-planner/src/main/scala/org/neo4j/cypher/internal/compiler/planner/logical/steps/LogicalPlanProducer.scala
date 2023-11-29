@@ -2329,7 +2329,7 @@ case class LogicalPlanProducer(
     annotate(
       FindShortestPaths(
         rewrittenSource,
-        org.neo4j.cypher.internal.logical.plans.shortest.ShortestRelationshipPattern.from(shortestRelationship),
+        shortestRelationship,
         rewrittenNodePredicates.toSeq,
         rewrittenRelationshipPredicates.toSeq,
         rewrittenPathPredicates.toSeq,

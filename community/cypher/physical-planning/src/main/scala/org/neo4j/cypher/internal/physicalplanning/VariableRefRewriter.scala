@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.ir.CreatePattern
 import org.neo4j.cypher.internal.ir.CreateRelationship
 import org.neo4j.cypher.internal.ir.DeleteExpression
 import org.neo4j.cypher.internal.ir.DeleteMutatingPattern
+import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.RemoveLabelPattern
 import org.neo4j.cypher.internal.ir.SetLabelPattern
 import org.neo4j.cypher.internal.ir.SetMutatingPattern
@@ -39,6 +40,7 @@ import org.neo4j.cypher.internal.ir.SetPropertyPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesFromMapPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertyPattern
+import org.neo4j.cypher.internal.ir.ShortestRelationshipPattern
 import org.neo4j.cypher.internal.ir.SimpleMutatingPattern
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
@@ -138,8 +140,6 @@ import org.neo4j.cypher.internal.logical.plans.UndirectedUnionRelationshipTypesS
 import org.neo4j.cypher.internal.logical.plans.UnionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.VarExpand
-import org.neo4j.cypher.internal.logical.plans.shortest.PatternRelationship
-import org.neo4j.cypher.internal.logical.plans.shortest.ShortestRelationshipPattern
 import org.neo4j.cypher.internal.runtime.ast.VariableRef
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.attribution.SameId
@@ -473,12 +473,12 @@ object VariableRefRewriter extends Rewriter {
 
     case p: SimpleMutatingPattern                      => rewrite(p)
     case c: CreateCommand                              => rewrite(c)
-    case p @ ShortestRelationshipPattern(name, _, _)   => p.copy(name = name.map(varRef))(p.expr)
+    case p @ ShortestRelationshipPattern(name, _, _)   => p.copy(maybePathVar = name.map(varRef))(p.expr)
     case c: ColumnOrder                                => rewrite(c)
     case g @ VariableGrouping(left, right)             => g.copy(varRef(left), varRef(right))
     case m @ StatefulShortestPath.Mapping(left, right) => m.copy(varRef(left), varRef(right))
     case p @ PatternRelationship(name, (left, right), _, _, _) =>
-      p.copy(name = varRef(name), nodes = (varRef(left), varRef(right)))
+      p.copy(variable = varRef(name), boundaryNodes = (varRef(left), varRef(right)))
     case NFA.State(id, variable)                => NFA.State(id, varRef(variable))
     case re: NFA.RelationshipExpansionPredicate => re.copy(relationshipVariable = varRef(re.relationshipVariable))
   }
