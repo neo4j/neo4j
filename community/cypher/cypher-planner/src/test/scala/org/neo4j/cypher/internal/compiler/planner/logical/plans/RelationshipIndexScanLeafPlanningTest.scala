@@ -102,7 +102,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
 
   private def queryGraph(types: Seq[String], semanticDirection: SemanticDirection, predicates: Expression*) =
     QueryGraph(
-      selections = Selections(predicates.map(Predicate(Set(relVar.name), _)).toSet),
+      selections = Selections(predicates.map(Predicate(Set(relVar), _)).toSet),
       patternRelationships = Set(PatternRelationship(
         relVar,
         (startNode, endNode),

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.ir.Predicate
@@ -42,7 +43,7 @@ class ValueHashJoinComponentConnectorTest extends CypherFunSuite with LogicalPla
       val kit = ctx.plannerState.config.toKit(order, ctx)
       val nQg = QueryGraph(patternNodes = Set("n"))
       val mQg = QueryGraph(patternNodes = Set("m"))
-      val fullQg = (nQg ++ mQg).withSelections(Selections(Set(Predicate(Set("n", "m"), joinPred))))
+      val fullQg = (nQg ++ mQg).withSelections(Selections(Set(Predicate(Set(v"n", v"m"), joinPred))))
 
       val nPlan = fakeLogicalPlanFor(ctx.staticComponents.planningAttributes, "n")
       val mPlan = fakeLogicalPlanFor(ctx.staticComponents.planningAttributes, "m")
@@ -71,7 +72,7 @@ class ValueHashJoinComponentConnectorTest extends CypherFunSuite with LogicalPla
       val kit = ctx.plannerState.config.toKit(order, ctx)
       val nQg = QueryGraph(patternNodes = Set("n"))
       val mQg = QueryGraph(patternNodes = Set("m"))
-      val fullQg = (nQg ++ mQg).withSelections(Selections(Set(Predicate(Set("n", "m"), joinPred))))
+      val fullQg = (nQg ++ mQg).withSelections(Selections(Set(Predicate(Set(v"n", v"m"), joinPred))))
 
       // extra-symbol is used to make `nPlan != nPlanSort`
       val nPlan = fakeLogicalPlanFor(ctx.staticComponents.planningAttributes, "n")
@@ -110,9 +111,9 @@ class ValueHashJoinComponentConnectorTest extends CypherFunSuite with LogicalPla
       val mQg = QueryGraph(patternNodes = Set("m"))
       val oQg = QueryGraph(patternNodes = Set("o"))
       val fullQg = (nQg ++ mQg ++ oQg).withSelections(Selections(Set(
-        Predicate(Set("n", "m"), joinPred1),
-        Predicate(Set("m", "o"), joinPred2),
-        Predicate(Set("n", "o"), joinPred3)
+        Predicate(Set(v"n", v"m"), joinPred1),
+        Predicate(Set(v"m", v"o"), joinPred2),
+        Predicate(Set(v"n", v"o"), joinPred3)
       )))
 
       val nPlan = fakeLogicalPlanFor(ctx.staticComponents.planningAttributes, "n")

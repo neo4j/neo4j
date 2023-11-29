@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.logical.generator
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.NotImplementedPlanContext
 import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults
 import org.neo4j.cypher.internal.compiler.test_helpers.TestGraphStatistics
@@ -286,7 +287,7 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
       cardinalities = new Cardinalities with Default[LogicalPlan, Cardinality] {
         override protected def defaultValue: Cardinality = defaultSourceCardinality
       },
-      labelInfo = Map("from" -> Set(LabelName("Label")(pos)))
+      labelInfo = Map(v"from" -> Set(LabelName("Label")(pos)))
     )
 
     val stats = new TestGraphStatistics {

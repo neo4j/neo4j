@@ -109,7 +109,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
     val qg = QueryGraph(
       argumentIds = Set("a"),
       selections =
-        Selections(Set(Predicate(Set("a"), Variable("a")(pos)), Predicate(Set("a"), Labels(Variable("a")(pos))(pos))))
+        Selections(Set(Predicate(Set(v"a"), Variable("a")(pos)), Predicate(Set(v"a"), Labels(Variable("a")(pos))(pos))))
     )
     val ug = QueryGraph(mutatingPatterns = IndexedSeq(setPropertyIr("a", "prop", "[]")))
 
@@ -121,7 +121,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
     val qg = QueryGraph(
       argumentIds = Set("a"),
       selections =
-        Selections(Set(Predicate(Set("a"), Variable("a")(pos)), Predicate(Set("a"), Labels(Variable("a")(pos))(pos))))
+        Selections(Set(Predicate(Set(v"a"), Variable("a")(pos)), Predicate(Set(v"a"), Labels(Variable("a")(pos))(pos))))
     )
     val ug = QueryGraph(mutatingPatterns = IndexedSeq(removeLabelIr("a", "Label")))
 

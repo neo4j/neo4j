@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.IntegerLiteral
 import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.functions.DeterministicFunction.isFunctionDeterministic
@@ -184,14 +185,14 @@ object Metrics {
   /**
    * A node can have multiple labels at the same time. If labelInfo("n") = Set(LabelName("Foo"), LabelName("Bar")), then n:Foo AND n:Bar.
    */
-  type LabelInfo = Map[String, Set[LabelName]]
+  type LabelInfo = Map[LogicalVariable, Set[LabelName]]
   val LabelInfo: Map.type = Map
 
   /**
    * A relationship can only have one type. If labelInfo("r") = RelTypeName("Foo"), then we are certain that r:Foo.
    * If a relationship is given with multiple OR'ed types, such as ()-[:T1|T2]-(), then none of those types should be present in this map.
    */
-  type RelTypeInfo = Map[String, RelTypeName]
+  type RelTypeInfo = Map[LogicalVariable, RelTypeName]
   val RelTypeInfo: Map.type = Map
 }
 

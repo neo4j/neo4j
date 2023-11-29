@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringIn
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.Predicate
@@ -43,7 +44,7 @@ class SelectorTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     val predicate = equals(literalInt(10), literalInt(10))
     val inner = newMockedLogicalPlan(context.staticComponents.planningAttributes, "x")
-    val selections = Selections(Set(Predicate(inner.availableSymbols.map(_.name), predicate)))
+    val selections = Selections(Set(Predicate(inner.availableSymbols, predicate)))
 
     val qg = QueryGraph(selections = selections)
     val selector = Selector(pickBestPlanUsingHintsAndCost, selectCovered)
@@ -98,7 +99,7 @@ class SelectorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     // Given
     val context = newMockedLogicalPlanningContext(planContext)
 
-    val coveredIds = Set("x")
+    val coveredIds = Set[LogicalVariable](v"x")
     val qg = QueryGraph(selections = Selections(Set(Predicate(coveredIds, literalInt(1)))))
     val solved = RegularSinglePlannerQuery(qg)
     val inner =
@@ -117,7 +118,7 @@ class SelectorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val context = newMockedLogicalPlanningContext(planContext)
 
     val predicate = mock[Expression]
-    val selections = Selections(Set(Predicate(Set("x", "y"), predicate)))
+    val selections = Selections(Set(Predicate(Set(v"x", v"y"), predicate)))
     val inner = newMockedLogicalPlanWithProjections(context.staticComponents.planningAttributes, "x")
     val qg = QueryGraph(selections = selections)
     val selector = Selector(pickBestPlanUsingHintsAndCost, selectCovered)
@@ -150,7 +151,7 @@ class SelectorTest extends CypherFunSuite with LogicalPlanningTestSupport {
       ""
     )(pos, None, Some(Set(varFor("a"))))
 
-    val predicate = Predicate(Set("a"), subqueryExpression)
+    val predicate = Predicate(Set(v"a"), subqueryExpression)
     val selections = Selections(Set(predicate))
 
     val qg = QueryGraph(

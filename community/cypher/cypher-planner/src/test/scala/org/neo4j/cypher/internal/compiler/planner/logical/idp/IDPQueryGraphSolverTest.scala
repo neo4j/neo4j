@@ -1140,7 +1140,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
       val planWithDifferentLabelInfo =
         ctx.staticComponents.queryGraphSolver.planInnerOfExistsSubquery(
           exists,
-          LabelInfo("a" -> Set(labelName("REL"))),
+          LabelInfo(v"a" -> Set(labelName("REL"))),
           ctx
         )
 

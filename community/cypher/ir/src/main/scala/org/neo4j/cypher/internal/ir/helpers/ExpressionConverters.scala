@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.HasTypes
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
@@ -39,33 +40,28 @@ object ExpressionConverters {
       asPredicates(ListSet.empty)
     }
 
-    def asPredicates(outerScope: Set[String]): ListSet[Predicate] = {
+    def asPredicates(outerScope: Set[LogicalVariable]): ListSet[Predicate] = {
       predicate.folder.treeFold(ListSet.empty[Predicate]) {
         // n:Label
-        case p @ HasLabels(Variable(name), labels) =>
+        case p @ HasLabels(v: Variable, labels) =>
           acc =>
             val newAcc = acc ++ labels.map { label =>
-              Predicate(Set(name), p.copy(labels = Seq(label))(p.position))
+              Predicate(Set(v), p.copy(labels = Seq(label))(p.position))
             }
             SkipChildren(newAcc)
         // r:T
-        case p @ HasTypes(Variable(name), types) =>
+        case p @ HasTypes(v: Variable, types) =>
           acc =>
             val newAcc = acc ++ types.map { typ =>
-              Predicate(Set(name), p.copy(types = Seq(typ))(p.position))
+              Predicate(Set(v), p.copy(types = Seq(typ))(p.position))
             }
             SkipChildren(newAcc)
         // and
         case _: Ands | _: And =>
           acc => TraverseChildren(acc)
         case p: Expression =>
-          acc => SkipChildren(acc + Predicate(p.idNames -- outerScope, p))
+          acc => SkipChildren(acc + Predicate(p.dependencies -- outerScope, p))
       }
     }
   }
-
-  implicit class IdExtractor(val exp: Expression) extends AnyVal {
-    def idNames: Set[String] = exp.dependencies.map(id => id.name)
-  }
-
 }

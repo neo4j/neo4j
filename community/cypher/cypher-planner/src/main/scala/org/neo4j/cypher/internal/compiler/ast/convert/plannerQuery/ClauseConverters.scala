@@ -697,7 +697,7 @@ object ClauseConverters {
 
         // Dependencies: Everything from the WHERE part plus everything from the MERGE pattern, excluding the merged node
         // itself, since it is provided by the MERGE.
-        val dependencies = selections.variableDependencies ++
+        val dependencies = selections.variableDependencies.map(_.name) ++
           createNodePattern.dependencies.map(_.name) ++
           onCreate.flatMap(_.dependencies.map(_.name)) ++
           onMatch.flatMap(_.dependencies.map(_.name)) -
@@ -764,7 +764,7 @@ object ClauseConverters {
 
         // Dependencies: Everything from the WHERE part plus everything from the MERGE pattern,
         // excluding nodes and rels to create, since they are provided by the MERGE.
-        val dependencies = selections.variableDependencies ++
+        val dependencies = selections.variableDependencies.map(_.name) ++
           nodesCreatedBefore.map(_.create.variable.name) ++
           nodesToCreate.map(_.create).flatMap(_.dependencies.map(_.name)) ++
           rels.map(_.create).flatMap(_.dependencies.map(_.name)) ++

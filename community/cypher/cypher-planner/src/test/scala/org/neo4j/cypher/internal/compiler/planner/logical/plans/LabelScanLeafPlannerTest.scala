@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.plans
 
 import org.mockito.Mockito.when
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
@@ -34,12 +35,12 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  private val idName = "n"
+  private val n = v"n"
   private val labelId = LabelId(12)
 
   private val qg = QueryGraph(
-    selections = Selections(Set(Predicate(Set(idName), hasLabels(idName, "Awesome")))),
-    patternNodes = Set(idName)
+    selections = Selections(Set(Predicate(Set(n), hasLabels(n, "Awesome")))),
+    patternNodes = Set(n.name)
   )
 
   test("simple label scan without compile-time label id") {
@@ -53,7 +54,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
     // then
     resultPlans should equal(Set(
-      NodeByLabelScan(varFor(idName), labelName("Awesome"), Set.empty, IndexOrderNone)
+      NodeByLabelScan(n, labelName("Awesome"), Set.empty, IndexOrderNone)
     ))
   }
 
@@ -69,7 +70,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
     // then
     resultPlans should equal(Set(
-      NodeByLabelScan(varFor(idName), labelName("Awesome"), Set.empty, IndexOrderNone)
+      NodeByLabelScan(n, labelName("Awesome"), Set.empty, IndexOrderNone)
     ))
   }
 

@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.ast.UsingJoinHint
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.PartialPredicate
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
@@ -256,7 +257,7 @@ final case class QueryGraph private (
   }
 
   def addPredicates(outerScope: Set[String], predicates: Expression*): QueryGraph = {
-    val newSelections = Selections(predicates.flatMap(_.asPredicates(outerScope)).toSet)
+    val newSelections = Selections(predicates.flatMap(_.asPredicates(outerScope.map(varFor))).toSet)
     copy(selections = selections ++ newSelections)
   }
 
@@ -318,7 +319,7 @@ final case class QueryGraph private (
    */
   def dependencies: Set[String] =
     optionalMatches.flatMap(_.dependencies).toSet ++
-      selections.predicates.flatMap(_.dependencies) ++
+      selections.predicates.flatMap(_.dependencies).map(_.name) ++
       mutatingPatterns.flatMap(_.dependencies.map(_.name)) ++
       quantifiedPathPatterns.flatMap(_.dependencies).map(_.name) ++
       selectivePathPatterns.flatMap(_.dependencies).map(_.name) ++
@@ -379,14 +380,14 @@ final case class QueryGraph private (
       selectivePathPatterns.flatMap(_.asQueryGraph.allPatternNodesRead)
 
   private def knownProperties(idName: String): Set[PropertyKeyName] =
-    selections.allPropertyPredicatesInvolving.getOrElse(idName, Set.empty).map(_.propertyKey)
+    selections.allPropertyPredicatesInvolving.getOrElse(varFor(idName), Set.empty).map(_.propertyKey)
 
   private def possibleLabelsOnNode(node: String): Set[LabelName] = {
     val label = selections
-      .allHasLabelsInvolving.getOrElse(node, Set.empty)
+      .allHasLabelsInvolving.getOrElse(varFor(node), Set.empty)
       .flatMap(_.labels)
     val labelOrType = selections
-      .allHasLabelsOrTypesInvolving.getOrElse(node, Set.empty)
+      .allHasLabelsOrTypesInvolving.getOrElse(varFor(node), Set.empty)
       .flatMap(_.labelsOrTypes).map(_.asLabelName)
     label ++ labelOrType
   }
@@ -400,11 +401,11 @@ final case class QueryGraph private (
 
   private def possibleTypesOnRel(rel: String): Set[RelTypeName] = {
     val whereClauseTypes = selections
-      .allHasTypesInvolving.getOrElse(rel, Set.empty)
+      .allHasTypesInvolving.getOrElse(varFor(rel), Set.empty)
       .flatMap(_.types)
 
     val whereClauseLabelOrTypes = selections
-      .allHasLabelsOrTypesInvolving.getOrElse(rel, Set.empty)
+      .allHasLabelsOrTypesInvolving.getOrElse(varFor(rel), Set.empty)
       .flatMap(_.labelsOrTypes).map(lblOrType => RelTypeName(lblOrType.name)(lblOrType.position))
 
     inlinedRelTypes(rel) ++ whereClauseTypes ++ whereClauseLabelOrTypes
@@ -484,22 +485,22 @@ final case class QueryGraph private (
 
   def hasOptionalPatterns: Boolean = optionalMatches.nonEmpty
 
-  def patternNodeLabels: Map[String, Set[LabelName]] = {
+  def patternNodeLabels: Map[LogicalVariable, Set[LabelName]] = {
     // Node label predicates are extracted from the pattern nodes to predicates in LabelPredicateNormalizer.
     // Therefore, we only need to look in selections.
-    val labelsOnPatternNodes = patternNodes.toVector.map(node => node -> selections.labelsOnNode(node))
+    val labelsOnPatternNodes = patternNodes.toVector.map(node => varFor(node) -> selections.labelsOnNode(varFor(node)))
 
     val labelsOnSelectivePathPatternNodes =
       for {
         selectivePathPattern <- selectivePathPatterns.toVector
         connection <- selectivePathPattern.pathPattern.connections.toIterable
-        node <- connection.boundaryNodesSet.map(_.name)
+        node <- connection.boundaryNodesSet
       } yield node -> (selections ++ selectivePathPattern.selections).labelsOnNode(node)
 
     (labelsOnPatternNodes ++ labelsOnSelectivePathPatternNodes).groupMapReduce(_._1)(_._2)(_.union(_))
   }
 
-  def patternRelationshipTypes: Map[String, RelTypeName] = {
+  def patternRelationshipTypes: Map[LogicalVariable, RelTypeName] = {
     // Pattern relationship type predicates are inlined in PlannerQueryBuilder::inlineRelationshipTypePredicates().
     // Therefore, we don't need to look at predicates in selections.
     val selectivePathPatternsRelationships =
@@ -515,7 +516,7 @@ final case class QueryGraph private (
     val allRelationships = patternRelationships ++ selectivePathPatternsRelationships
 
     allRelationships.collect {
-      case PatternRelationship(name, _, _, Seq(relType), _) => name.name -> relType
+      case PatternRelationship(rel, _, _, Seq(relType), _) => rel -> relType
     }.toMap
   }
 
@@ -529,7 +530,7 @@ final case class QueryGraph private (
     val visited = mutable.Set.empty[String]
 
     val (predicatesWithLocalDependencies, strayPredicates) = selections.predicates.partition {
-      p => (p.dependencies -- argumentIds).nonEmpty
+      p => (p.dependencies.map(_.name) -- argumentIds).nonEmpty
     }
 
     def createComponentQueryGraphStartingFrom(patternNode: String) = {
@@ -541,7 +542,7 @@ final case class QueryGraph private (
       val shortestPathIds = shortestRelationships.flatMap(p => Set(p.rel.variable) ++ p.maybePathVar).map(_.name)
       val allIds = coveredIds ++ argumentIds ++ shortestPathIds
 
-      val predicates = predicatesWithLocalDependencies.filter(_.dependencies.subsetOf(allIds))
+      val predicates = predicatesWithLocalDependencies.filter(_.dependencies.map(_.name).subsetOf(allIds))
       val filteredHints = hints.filter(_.variables.forall(variable => coveredIds.contains(variable.name)))
       qg.withSelections(Selections(predicates))
         .withArgumentIds(argumentIds)

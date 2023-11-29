@@ -83,6 +83,7 @@ import org.neo4j.cypher.internal.expressions.RegexMatch
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.True
+import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.Unique
 import org.neo4j.cypher.internal.expressions.VarLengthBound
 import org.neo4j.cypher.internal.expressions.Variable
@@ -365,8 +366,8 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     propertyKey: PropertyKeyName,
     existenceConstraints: Set[(ElementTypeName, String)]
   )(implicit semanticTable: SemanticTable): Selectivity = {
-    val labels = labelInfo.getOrElse(variable, Set.empty)
-    val relTypes = relTypeInfo.get(variable)
+    val labels = labelInfo.getOrElse(varFor(variable), Set.empty)
+    val relTypes = relTypeInfo.get(varFor(variable))
     val relevantConstraints: Set[(ElementTypeName, String)] = (labels ++ relTypes).map(_ -> propertyKey.name)
 
     if (relevantConstraints.intersect(existenceConstraints).nonEmpty)
@@ -433,8 +434,8 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     propertyKey: PropertyKeyName,
     indexTypesPriorityOrder: Seq[IndexType]
   )(implicit semanticTable: SemanticTable): Seq[(Selectivity, IndexType)] = {
-    val labels = labelInfo.getOrElse(variable, Set.empty)
-    val relTypes = relTypeInfo.get(variable)
+    val labels = labelInfo.getOrElse(varFor(variable), Set.empty)
+    val relTypes = relTypeInfo.get(varFor(variable))
 
     val entityTypeAndPropertyIds: Seq[(NameId, PropertyKeyId)] = {
       labels.toIndexedSeq.flatMap { (labelName: LabelName) =>
@@ -501,8 +502,8 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     def indexSelectivity: Selectivity = {
       val indexTypesToConsider = indexTypesForPropertyEquality(cypherType)
       indexSelectivityWithSizeHint(sizeHint) { size =>
-        val labels = labelInfo.getOrElse(variable, Set.empty)
-        val relTypes = relTypeInfo.get(variable)
+        val labels = labelInfo.getOrElse(varFor(variable), Set.empty)
+        val relTypes = relTypeInfo.get(varFor(variable))
         val indexSelectivities = (labels ++ relTypes).toIndexedSeq.flatMap { name =>
           def descriptorCreator(nameId: Option[NameId], propertyKeyId: PropertyKeyId) =
             nameId.map(id => indexTypesToConsider.map(IndexDescriptor(_, EntityType.of(id), Seq(propertyKeyId))))
@@ -555,8 +556,8 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
 
     val indexTypesToConsider = indexTypesForRangeSeeks(seekable.propertyValueType(semanticTable))
 
-    val labels = labelInfo.getOrElse(seekable.ident.name, Set.empty)
-    val relTypes = relTypeInfo.get(seekable.ident.name)
+    val labels = labelInfo.getOrElse(seekable.ident, Set.empty)
+    val relTypes = relTypeInfo.get(seekable.ident)
 
     val idTuples = labels.toIndexedSeq.map { name =>
       (semanticTable.id(name), semanticTable.id(seekable.expr.property.propertyKey))
@@ -622,8 +623,8 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
       Selectivity(math.max(propEqValueSelectivity.factor, pRange.factor))
     }
 
-    val labels = labelInfo.getOrElse(seekable.ident.name, Set.empty)
-    val relTypes = relTypeInfo.get(seekable.ident.name)
+    val labels = labelInfo.getOrElse(seekable.ident, Set.empty)
+    val relTypes = relTypeInfo.get(seekable.ident)
 
     val idTuples = labels.toIndexedSeq.map { name =>
       (semanticTable.id(name), semanticTable.id(seekable.property.propertyKey))
@@ -793,8 +794,8 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     relTypeInfo: RelTypeInfo,
     typeConstraints: Map[ElementTypeName, Map[String, Seq[SchemaValueType]]]
   ): Option[Selectivity] = {
-    val labels = labelInfo.getOrElse(variable, Set.empty)
-    val relTypes = relTypeInfo.get(variable)
+    val labels = labelInfo.getOrElse(varFor(variable), Set.empty)
+    val relTypes = relTypeInfo.get(varFor(variable))
 
     val matchingConstraintSelectivities = for {
       elementTypeName <- (labels ++ relTypes)

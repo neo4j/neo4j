@@ -129,7 +129,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
         // The dependencies on an optional match are:
         val allDeps =
           // dependencies from optional matches listed later in the query
-          tail.flatMap(g => g.argumentIds ++ g.selections.variableDependencies).toSet ++
+          tail.flatMap(g => g.argumentIds ++ g.selections.variableDependencies.map(_.name)).toSet ++
             // any dependencies from the next horizon
             dependencies --
             // But we don't need to solve variables already present by the non-optional part of the QG
@@ -286,8 +286,8 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
 
     predicates.foreach {
       case Predicate(deps, predicate)
-        if deps.size == 1 && !kept(deps.head) && checkLabelExpression(predicate, deps.head).result =>
-        addLabel(deps.head, predicate)
+        if deps.size == 1 && !kept(deps.head.name) && checkLabelExpression(predicate, deps.head.name).result =>
+        addLabel(deps.head.name, predicate)
 
       case Predicate(_, expr) =>
         predicatesToKeep += expr

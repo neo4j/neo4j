@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.ir.helpers
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.PredicateConverter
@@ -41,14 +42,14 @@ class ExpressionConvertersTest extends AnyFunSuite with AstConstructionTestSuppo
 
     expression.asPredicates should equal(
       Set(
-        Predicate(Set("n"), hasLabels("n", "L")),
-        Predicate(Set("n"), hasLabels("n", "N")),
-        Predicate(Set("m"), hasTypes("m", "P")),
-        Predicate(Set("n"), propGreaterThan("n", "prop", 42)),
-        Predicate(Set("o"), hasLabels("o", "L")),
-        Predicate(Set("o"), hasLabels("o", "N")),
-        Predicate(Set("p"), hasTypes("p", "P")),
-        Predicate(Set("o"), propGreaterThan("o", "prop", 42))
+        Predicate(Set(v"n"), hasLabels("n", "L")),
+        Predicate(Set(v"n"), hasLabels("n", "N")),
+        Predicate(Set(v"m"), hasTypes("m", "P")),
+        Predicate(Set(v"n"), propGreaterThan("n", "prop", 42)),
+        Predicate(Set(v"o"), hasLabels("o", "L")),
+        Predicate(Set(v"o"), hasLabels("o", "N")),
+        Predicate(Set(v"p"), hasTypes("p", "P")),
+        Predicate(Set(v"o"), propGreaterThan("o", "prop", 42))
       )
     )
   }

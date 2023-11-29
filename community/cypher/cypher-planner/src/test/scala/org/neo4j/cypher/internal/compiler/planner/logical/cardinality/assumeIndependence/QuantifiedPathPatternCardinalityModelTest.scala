@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeInd
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.IndependenceCombiner
 import org.neo4j.cypher.internal.compiler.test_helpers.TestGraphStatistics
 import org.neo4j.cypher.internal.expressions.DifferentRelationships
@@ -86,10 +87,10 @@ class QuantifiedPathPatternCardinalityModelTest extends CypherFunSuite with Quan
       allNodesCardinality = Cardinality(200)
     )
 
-    val labelInfo =
+    val labelInfo: LabelInfo =
       Map(
-        "start" -> Set(LabelName("A")(InputPosition.NONE)),
-        "end" -> Set(LabelName("B")(InputPosition.NONE))
+        v"start" -> Set(LabelName("A")(InputPosition.NONE)),
+        v"end" -> Set(LabelName("B")(InputPosition.NONE))
       )
 
     val qpp =

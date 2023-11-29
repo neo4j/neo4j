@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
+import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.functions.Labels
 import org.neo4j.cypher.internal.expressions.functions.Properties
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo.StableIdentifier
@@ -345,7 +346,7 @@ trait UpdateGraph {
           qgWithInfo.queryGraph.optionalMatches.flatMap(_.selections.predicates)
       )
 
-    val unstableNodePredicates = selections.predicatesGiven(Set(nodes.matchedNode))
+    val unstableNodePredicates = selections.predicatesGiven(Set(varFor(nodes.matchedNode)))
 
     possibleLabelCombinations.exists { labelsToCreate =>
       val overlap = CreateOverlaps.overlap(unstableNodePredicates, labelsToCreate.map(_.name), propertiesToCreate)
@@ -571,7 +572,9 @@ trait UpdateGraph {
         // Using qgWithInfo.queryGraph.argumentIds here would give many false positives, where a node is an
         // argument, but not further used. Using selections (only), because QueryHorizon.allQueryGraphs
         // puts any expressions into there.
-        qgWithInfo.queryGraph.selections.variableDependencies.filter(semanticTable.typeFor(_).couldBe(CTNode))
+        qgWithInfo.queryGraph.selections.variableDependencies
+          .filter(semanticTable.typeFor(_).couldBe(CTNode))
+          .map(_.name)
     val nodesWithLabelOverlap = relevantNodes
       .flatMap(unstableNode => identifiersToDelete.map((unstableNode, _)))
       .filter { case (readNode, deletedNode) =>
@@ -627,7 +630,7 @@ trait UpdateGraph {
     val selections =
       qgWithInfo.queryGraph.allSelections ++
         getMaybeQueryGraph.map(_.allSelections).getOrElse(Selections.empty)
-    val deletedNodePredicates = selections.predicatesGiven(Set(deletedNode))
+    val deletedNodePredicates = selections.predicatesGiven(Set(varFor(deletedNode)))
 
     // If readNodePredicates == NoLeafPlansFound, we could not find the leaf plan(s) that solve the read node.
     // This happens for instance when we are on the RHS of an Apply.

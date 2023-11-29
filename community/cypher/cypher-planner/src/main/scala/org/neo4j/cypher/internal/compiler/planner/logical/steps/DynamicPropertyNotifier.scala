@@ -44,11 +44,11 @@ object DynamicPropertyNotifier {
     notification: Set[String] => InternalNotification,
     qg: QueryGraph,
     context: LogicalPlanningContext
-  ) = {
+  ): Unit = {
 
     val indexedLabelOrRelTypes = variables.flatMap { variable =>
-      val labels = qg.selections.labelsOnNode(variable.name)
-      val relTypes = qg.inlinedRelTypes(variable.name) ++ qg.selections.typesOnRel(variable.name)
+      val labels = qg.selections.labelsOnNode(variable)
+      val relTypes = qg.inlinedRelTypes(variable.name) ++ qg.selections.typesOnRel(variable)
 
       val indexedLabels = labels.filter(withNodeIndex(_, context))
       val indexedRelTypes = relTypes.filter(withRelIndex(_, context))

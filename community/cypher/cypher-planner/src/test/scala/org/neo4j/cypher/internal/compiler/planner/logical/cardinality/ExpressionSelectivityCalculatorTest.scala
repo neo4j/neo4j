@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.cardinality
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.NotImplementedPlanContext
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
@@ -48,6 +49,7 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.InequalityExpression
 import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.PartialPredicate
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.RelTypeName
@@ -104,10 +106,10 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
   protected val nIsPerson: Predicate = nPredicate(HasLabels(varFor("n"), Seq(personLabelName)) _)
   protected val nIsAnimal: Predicate = nPredicate(HasLabels(varFor("n"), Seq(labelName("Animal"))) _)
 
-  protected val nIsPersonLabelInfo: Map[String, Set[LabelName]] = Map("n" -> Set(personLabelName))
+  protected val nIsPersonLabelInfo: Map[LogicalVariable, Set[LabelName]] = Map(v"n" -> Set(personLabelName))
 
-  protected val nIsPersonAndAnimalLabelInfo: Map[String, Set[LabelName]] =
-    Map("n" -> Set(personLabelName, labelName("Animal")))
+  protected val nIsPersonAndAnimalLabelInfo: Map[LogicalVariable, Set[LabelName]] =
+    Map(v"n" -> Set(personLabelName, labelName("Animal")))
 
   protected val personPropIsNotNullSel: Double = 0.2
   protected val personTextPropIsNotNullSel: Double = 0.1
@@ -128,7 +130,7 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
   protected val rProp: Property = prop("r", relPropName)
 
   protected val friendsRelTypeName: RelTypeName = relTypeName("Friends")
-  protected val rFriendsRelTypeInfo: Map[String, RelTypeName] = Map("r" -> friendsRelTypeName)
+  protected val rFriendsRelTypeInfo: Map[LogicalVariable, RelTypeName] = Map(v"r" -> friendsRelTypeName)
 
   protected val friendsPropIsNotNullSel: Double = 0.2
   protected val friendsTextPropIsNotNullSel: Double = 0.15
@@ -2334,8 +2336,8 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
     case Relationship(relTypeId) => relTypeId.id
   }
 
-  protected def nPredicate(expr: Expression): Predicate = Predicate(Set("n"), expr)
-  protected def rPredicate(expr: Expression): Predicate = Predicate(Set("r"), expr)
+  protected def nPredicate(expr: Expression): Predicate = Predicate(Set(v"n"), expr)
+  protected def rPredicate(expr: Expression): Predicate = Predicate(Set(v"r"), expr)
 
   protected def nAnded(exprs: NonEmptyList[InequalityExpression]): Expression =
     AndedPropertyInequalities(varFor("n"), nProp, exprs)

@@ -64,11 +64,11 @@ case object planShortestRelationships {
     val relName = patternRelationship.variable.name
     val pathNameOpt = shortestRelationship.maybePathVar.map(_.name)
 
-    val variables = Set(shortestRelationship.maybePathVar, Some(shortestRelationship.rel.variable)).flatten.map(_.name)
+    val variables = Set(shortestRelationship.maybePathVar, Some(shortestRelationship.rel.variable)).flatten
 
     def predicateAppliesToShortestRelationship(p: Predicate) =
       // only select predicates related to this pattern (this is code in common with normal MATCH Pattern clauses)
-      p.hasDependenciesMet(variables ++ inner.availableSymbols.map(_.name)) &&
+      p.hasDependenciesMet(variables ++ inner.availableSymbols) &&
         // And filter with predicates that explicitly depend on shortestPath variables
         (p.dependencies intersect variables).nonEmpty
 

@@ -3143,7 +3143,11 @@ object Selection {
     assert(predicates.nonEmpty, "A selection plan should never be created without predicates")
     Selection(Ands(predicates)(predicates.head.position), source)
   }
-  case class LabelAndRelTypeInfo(labelInfo: Map[String, Set[LabelName]], relTypeInfo: Map[String, RelTypeName])
+
+  case class LabelAndRelTypeInfo(
+    labelInfo: Map[LogicalVariable, Set[LabelName]],
+    relTypeInfo: Map[LogicalVariable, RelTypeName]
+  )
 }
 
 /**

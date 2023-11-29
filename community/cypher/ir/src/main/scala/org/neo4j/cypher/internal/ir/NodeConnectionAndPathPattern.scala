@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.ShortestPathsPatternPart
-import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.ir.ExhaustivePathPattern.NodeConnections
 import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.util.NonEmptyList
@@ -307,7 +306,7 @@ final case class QuantifiedPathPattern(
   override def solvedString: String =
     s"(${leftBinding.outer.name})$solvedStringSuffix"
 
-  val dependencies: Set[LogicalVariable] = selections.predicates.flatMap(_.dependencies).map(varFor) ++ argumentIds
+  val dependencies: Set[LogicalVariable] = selections.predicates.flatMap(_.dependencies) ++ argumentIds
 
   /**
    * Creates a QueryGraph representation of the Quantified Path Pattern and collects all dependent selections eg.
@@ -436,7 +435,7 @@ final case class SelectivePathPattern(
       case (acc, nc) => acc ++ nc.pathVariables.tail
     }
 
-  val dependencies: Set[LogicalVariable] = selections.predicates.flatMap(_.dependencies).map(varFor)
+  val dependencies: Set[LogicalVariable] = selections.predicates.flatMap(_.dependencies)
 
   def solvedString: String = {
     val where =

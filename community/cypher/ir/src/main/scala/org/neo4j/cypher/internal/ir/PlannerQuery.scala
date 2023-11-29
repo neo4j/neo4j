@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.ir
 import org.neo4j.cypher.internal.ast.Hint
 import org.neo4j.cypher.internal.ast.Union.UnionMapping
 import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery.extractLabelInfo
@@ -333,10 +334,10 @@ sealed trait SinglePlannerQuery extends PlannerQuery {
     buffer
   }
 
-  lazy val firstLabelInfo: Map[String, Set[LabelName]] =
+  lazy val firstLabelInfo: Map[LogicalVariable, Set[LabelName]] =
     extractLabelInfo(this)
 
-  lazy val lastLabelInfo: Map[String, Set[LabelName]] =
+  lazy val lastLabelInfo: Map[LogicalVariable, Set[LabelName]] =
     extractLabelInfo(last)
 
   override def returns: Set[String] = {
@@ -397,15 +398,15 @@ object SinglePlannerQuery {
     }
   }
 
-  def extractLabelInfo(q: SinglePlannerQuery): Map[String, Set[LabelName]] = {
+  def extractLabelInfo(q: SinglePlannerQuery): Map[LogicalVariable, Set[LabelName]] = {
     val labelInfo = q.queryGraph.selections.labelInfo
     val projectedLabelInfo = q.horizon match {
       case projection: QueryProjection =>
         projection.projections.collect {
-          case (projectedName, Variable(name)) if labelInfo.contains(name) =>
-            projectedName -> labelInfo(name)
+          case (projectedName, v: Variable) if labelInfo.contains(v) =>
+            varFor(projectedName) -> labelInfo(v)
         }
-      case _ => Map.empty[String, Set[LabelName]]
+      case _ => Map.empty[LogicalVariable, Set[LabelName]]
     }
     labelInfo ++ projectedLabelInfo
   }

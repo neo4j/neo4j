@@ -73,7 +73,7 @@ trait PatternRelationshipCardinalityModel extends NodeCardinalityModel {
                 val firstRelationshipCardinality =
                   getSimpleRelationshipCardinality(
                     context = context,
-                    labelInfo = labelInfo.removed(relationship.right.name),
+                    labelInfo = labelInfo.removed(relationship.right),
                     leftNode = relationship.left.name,
                     rightNode = relationship.right.name,
                     relationshipTypes = relationship.types,
@@ -96,7 +96,7 @@ trait PatternRelationshipCardinalityModel extends NodeCardinalityModel {
                 val lastRelationshipCardinality =
                   getSimpleRelationshipCardinality(
                     context = context,
-                    labelInfo = labelInfo.removed(relationship.left.name),
+                    labelInfo = labelInfo.removed(relationship.left),
                     leftNode = relationship.left.name,
                     rightNode = relationship.right.name,
                     relationshipTypes = relationship.types,

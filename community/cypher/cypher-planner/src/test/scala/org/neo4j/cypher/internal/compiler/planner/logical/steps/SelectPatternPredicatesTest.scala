@@ -84,7 +84,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
 
   test("should introduce semi apply for unsolved exclusive pattern predicate") {
     // Given
-    val predicate = Predicate(Set(arg.name), subqueryExp)
+    val predicate = Predicate(Set(arg), subqueryExp)
     val selections = Selections(Set(predicate))
 
     val qg = QueryGraph(
@@ -115,7 +115,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
   test("should introduce anti semi apply for unsolved exclusive negated pattern predicate") {
     val notExpr = not(subqueryExp)
     // Given
-    val predicate = Predicate(Set(arg.name), notExpr)
+    val predicate = Predicate(Set(arg), notExpr)
     val selections = Selections(Set(predicate))
 
     val qg = QueryGraph(
@@ -147,7 +147,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     // Given
     val equalsExp = equals(prop(arg, "prop"), literalString("42"))
     val orsExp = ors(subqueryExp, equalsExp)
-    val orPredicate = Predicate(Set(arg.name), orsExp)
+    val orPredicate = Predicate(Set(arg), orsExp)
     val selections = Selections(Set(orPredicate))
 
     val qg = QueryGraph(
@@ -174,7 +174,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     // Given
     val equalsExp = equals(prop(arg, "prop"), literalString("42"))
     val orsExp = ors(not(subqueryExp), equalsExp)
-    val orPredicate = Predicate(Set(arg.name), orsExp)
+    val orPredicate = Predicate(Set(arg), orsExp)
     val selections = Selections(Set(orPredicate))
 
     val qg = QueryGraph(
@@ -206,7 +206,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     // Given
 
     val orsExp = ors(subqueryExp, subqueryExp2)
-    val orPredicate = Predicate(Set(arg.name), orsExp)
+    val orPredicate = Predicate(Set(arg), orsExp)
     val selections = Selections(Set(orPredicate))
 
     val qg = QueryGraph(
@@ -251,7 +251,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
   test("should introduce let semi apply and select or anti semi apply for multiple pattern predicates in or") {
     // Given
     val orsExp = ors(subqueryExp, not(subqueryExp2))
-    val orPredicate = Predicate(Set(arg.name), orsExp)
+    val orPredicate = Predicate(Set(arg), orsExp)
     val selections = Selections(Set(orPredicate))
 
     val qg = QueryGraph(
@@ -296,7 +296,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
   test("should introduce let anti semi apply and select or semi apply for multiple pattern predicates in or") {
     // Given
     val orsExp = ors(not(subqueryExp), subqueryExp2)
-    val orPredicate = Predicate(Set(arg.name), orsExp)
+    val orPredicate = Predicate(Set(arg), orsExp)
     val selections = Selections(Set(orPredicate))
 
     val qg = QueryGraph(
@@ -344,7 +344,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     // Given
     val equalsExp = equals(prop(arg, "prop"), literalString("42"))
     val orsExp = ors(equalsExp, subqueryExp, not(subqueryExp2))
-    val orPredicate = Predicate(Set(arg.name), orsExp)
+    val orPredicate = Predicate(Set(arg), orsExp)
     val selections = Selections(Set(orPredicate))
 
     val qg = QueryGraph(
@@ -396,7 +396,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     // Given
     val equalsExp = equals(prop(arg, "prop"), literalString("42"))
     val orsExp = ors(equalsExp, not(subqueryExp), subqueryExp2)
-    val orPredicate = Predicate(Set(arg.name), orsExp)
+    val orPredicate = Predicate(Set(arg), orsExp)
     val selections = Selections(Set(orPredicate))
 
     val qg = QueryGraph(

@@ -20,12 +20,13 @@
 package org.neo4j.cypher.internal.ir
 
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 
-case class Predicate(dependencies: Set[String], expr: Expression) {
+case class Predicate(dependencies: Set[LogicalVariable], expr: Expression) {
 
-  def hasDependenciesMet(symbols: Set[String]): Boolean = dependencies.forall(symbols.contains)
+  def hasDependenciesMet(symbols: Set[LogicalVariable]): Boolean = dependencies.forall(symbols.contains)
 
-  def hasDependenciesMetForRequiredSymbol(symbols: Set[String], required: String): Boolean =
+  def hasDependenciesMetForRequiredSymbol(symbols: Set[LogicalVariable], required: LogicalVariable): Boolean =
     dependencies.contains(required) && hasDependenciesMet(symbols)
 }
 

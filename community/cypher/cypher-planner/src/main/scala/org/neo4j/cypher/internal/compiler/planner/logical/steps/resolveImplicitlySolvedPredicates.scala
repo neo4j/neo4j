@@ -71,7 +71,7 @@ case object resolveImplicitlySolvedPredicates extends SelectionCandidateGenerato
       context.staticComponents.planningAttributes.solveds(plan.id).asSinglePlannerQuery.queryGraph.selections.labelInfo
     for {
       (variable, property, predicate) <- unsolvedNotNullPredicates
-      labelName <- solvedLabelPredicates.getOrElse(variable.name, Set.empty)
+      labelName <- solvedLabelPredicates.getOrElse(variable, Set.empty)
       if context.staticComponents.planContext.hasNodePropertyExistenceConstraint(labelName.name, property)
     } yield predicate
   }
@@ -86,7 +86,7 @@ case object resolveImplicitlySolvedPredicates extends SelectionCandidateGenerato
     for {
       predicateCandidate <- unsolvedIsTypedPredicates
       if predicateCandidate.predicate.typeName.isNullable
-      label <- solvedLabelPredicates.getOrElse(predicateCandidate.variable.name, Set.empty)
+      label <- solvedLabelPredicates.getOrElse(predicateCandidate.variable, Set.empty)
       propertyType <- PropertyTypeMapper.asSchemaValueType(predicateCandidate.predicate.typeName)
       if context.staticComponents.planContext.hasNodePropertyTypeConstraint(
         label.name,
@@ -107,7 +107,7 @@ case object resolveImplicitlySolvedPredicates extends SelectionCandidateGenerato
 
     for {
       (variable, property, predicate) <- unsolvedNotNullPredicates
-      typeName <- solvedRelTypePredicates.getOrElse(variable.name, Set.empty)
+      typeName <- solvedRelTypePredicates.getOrElse(variable, Set.empty)
       if context.staticComponents.planContext.hasRelationshipPropertyExistenceConstraint(typeName.name, property)
     } yield predicate
   }
@@ -124,7 +124,7 @@ case object resolveImplicitlySolvedPredicates extends SelectionCandidateGenerato
     for {
       predicateCandidate <- unsolvedIsTypedPredicates
       if predicateCandidate.predicate.typeName.isNullable
-      relType <- solvedRelTypePredicates.getOrElse(predicateCandidate.variable.name, Set.empty)
+      relType <- solvedRelTypePredicates.getOrElse(predicateCandidate.variable, Set.empty)
       propertyType <- PropertyTypeMapper.asSchemaValueType(predicateCandidate.predicate.typeName)
       if context.staticComponents.planContext.hasRelationshipPropertyTypeConstraint(
         relType.name,

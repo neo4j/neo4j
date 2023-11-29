@@ -181,7 +181,7 @@ case object SelectPatternPredicates extends SelectionCandidateGenerator {
     subquery: ExistsIRExpression,
     context: LogicalPlanningContext
   ): LogicalPlan = {
-    val arguments = subquery.dependencies.map(_.name)
+    val arguments = subquery.dependencies
     // We compute LabelInfo here instead of using plannerQueryPlanner.planSubqueryWithLabelInfo
     // This has the benefit of a smaller cache key (just the labelInfo, and not the whole plan).
     val labelInfo =

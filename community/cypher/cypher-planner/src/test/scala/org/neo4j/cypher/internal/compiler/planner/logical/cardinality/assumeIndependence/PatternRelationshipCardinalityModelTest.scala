@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeInd
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.IndependenceCombiner
 import org.neo4j.cypher.internal.compiler.test_helpers.TestGraphStatistics
 import org.neo4j.cypher.internal.expressions.LabelName
@@ -58,7 +59,7 @@ class PatternRelationshipCardinalityModelTest extends CypherFunSuite with Patter
       cardinalityModel = null,
       allNodesCardinality = null
     )
-    val labelInfo = Map("a" -> Set(LabelName("L")(InputPosition.NONE)))
+    val labelInfo: LabelInfo = Map(v"a" -> Set(LabelName("L")(InputPosition.NONE)))
     val cardinality = getSimpleRelationshipCardinality(
       context = context,
       labelInfo = labelInfo,
@@ -89,7 +90,7 @@ class PatternRelationshipCardinalityModelTest extends CypherFunSuite with Patter
       cardinalityModel = null,
       allNodesCardinality = null
     )
-    val labelInfo = Map("a" -> Set(LabelName("L")(InputPosition.NONE)))
+    val labelInfo: LabelInfo = Map(v"a" -> Set(LabelName("L")(InputPosition.NONE)))
     val cardinality = getSimpleRelationshipCardinality(
       context = context,
       labelInfo = labelInfo,
@@ -120,7 +121,7 @@ class PatternRelationshipCardinalityModelTest extends CypherFunSuite with Patter
       cardinalityModel = null,
       allNodesCardinality = Cardinality.SINGLE
     )
-    val labelInfo = Map("a" -> Set(LabelName("L")(InputPosition.NONE)))
+    val labelInfo: LabelInfo = Map(v"a" -> Set(LabelName("L")(InputPosition.NONE)))
     val relationship =
       PatternRelationship(v"r", (v"a", v"b"), SemanticDirection.OUTGOING, Nil, VarPatternLength(33, Some(33)))
     val cardinality = getRelationshipCardinality(context, labelInfo, relationship, isUnique = false)

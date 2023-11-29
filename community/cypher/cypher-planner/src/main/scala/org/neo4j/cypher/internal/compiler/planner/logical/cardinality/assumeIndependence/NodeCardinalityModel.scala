@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeInd
 
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.Selectivity
@@ -43,7 +44,7 @@ trait NodeCardinalityModel {
   ): Selectivity = {
     val selectivities =
       labelInfo
-        .getOrElse(argumentId, Set.empty)
+        .getOrElse(varFor(argumentId), Set.empty)
         .toList
         .flatMap(context.semanticTable.id)
         .flatMap(getLabelSelectivity(context, _))
@@ -55,7 +56,7 @@ trait NodeCardinalityModel {
     labelInfo: LabelInfo,
     node: String
   ): Option[Set[LabelId]] =
-    resolveNodeLabels(context, labelInfo.getOrElse(node, Set.empty))
+    resolveNodeLabels(context, labelInfo.getOrElse(varFor(node), Set.empty))
 
   def resolveNodeLabels(
     context: QueryGraphCardinalityContext,

@@ -120,7 +120,7 @@ object ConvertToNFA {
     })
 
     def getPredicates(entityNames: Set[String]) = {
-      selectionsWithoutUniquenessPredicates.predicatesGiven(availableSymbols ++ entityNames)
+      selectionsWithoutUniquenessPredicates.predicatesGiven((availableSymbols ++ entityNames).map(varFor))
         .filterNot(_.isInstanceOf[IRExpression])
         .to(ListSet)
     }
@@ -369,7 +369,8 @@ object ConvertToNFA {
             val sourceInner = sourceBinding.inner
             // var because it will get overwritten if the lower bound is > 1
             var lastSourceInnerState = builder.addAndGetState(sourceInner)
-            val predicatesOnSourceInner = qppSelections.predicatesGiven(availableSymbols + sourceInner.name)
+            val predicatesOnSourceInner =
+              qppSelections.predicatesGiven((availableSymbols + sourceInner.name).map(varFor))
             val variablePredicateOnSourceInner =
               toVariablePredicates(sourceInner.name, predicatesOnSourceInner.to(ListSet))
             builder.addTransition(

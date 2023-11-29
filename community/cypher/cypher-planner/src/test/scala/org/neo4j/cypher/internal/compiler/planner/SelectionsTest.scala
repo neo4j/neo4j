@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.planner
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.PartialPredicate
 import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.Selections
@@ -69,8 +71,8 @@ class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport {
     ))
 
     selections.labelPredicates should equal(Map(
-      "a" -> Set(aIsPerson),
-      "b" -> Set(bIsAnimal)
+      v"a" -> Set(aIsPerson),
+      v"b" -> Set(bIsAnimal)
     ))
   }
 
@@ -127,5 +129,5 @@ class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport {
     fromRight should equal(expected)
   }
 
-  private def idNames(names: String*) = names.toSet
+  private def idNames(names: String*): Set[LogicalVariable] = names.toSet.map(varFor)
 }

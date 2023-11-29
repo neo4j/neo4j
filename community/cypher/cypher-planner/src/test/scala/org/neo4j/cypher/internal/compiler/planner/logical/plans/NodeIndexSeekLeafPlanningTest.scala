@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
@@ -32,7 +33,6 @@ import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelToken
-import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
@@ -74,7 +74,7 @@ import scala.language.reflectiveCalls
 
 class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
-  private val idName = "n"
+  private val n = v"n"
   private val nProp = prop("n", "prop")
   private val nFoo = prop("n", "foo")
   private val lit42: Expression = literalInt(42)
@@ -139,7 +139,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       // then
       resultPlans should beLike {
         case SetExtractor(NodeIndexSeek(
-            LogicalVariable(`idName`),
+            `n`,
             _,
             Seq(IndexedProperty(_, CanGetValue, NODE_TYPE)),
             SingleQueryExpression(`lit42`),
@@ -176,7 +176,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
       val expected = Set(
         NodeIndexSeek(
-          varFor(idName),
+          n,
           labelToken,
           Seq(IndexedProperty(prop1Token, CanGetValue, NODE_TYPE)),
           prop1Predicate1Expr,
@@ -185,7 +185,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           IndexType.RANGE
         ),
         NodeIndexSeek(
-          varFor(idName),
+          n,
           labelToken,
           Seq(IndexedProperty(prop1Token, DoNotGetValue, NODE_TYPE)),
           prop1Predicate2Expr,
@@ -243,7 +243,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
       val expected = Set(
         NodeIndexSeek(
-          varFor(idName),
+          n,
           labelToken,
           Seq(IndexedProperty(prop1Token, CanGetValue, NODE_TYPE), IndexedProperty(prop2Token, CanGetValue, NODE_TYPE)),
           CompositeQueryExpression(Seq(prop1Predicate1Expr, prop2Predicate1Expr)),
@@ -252,7 +252,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           IndexType.RANGE
         ),
         NodeIndexSeek(
-          varFor(idName),
+          n,
           labelToken,
           Seq(
             IndexedProperty(prop1Token, CanGetValue, NODE_TYPE),
@@ -264,7 +264,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           IndexType.RANGE
         ),
         NodeIndexSeek(
-          varFor(idName),
+          n,
           labelToken,
           Seq(IndexedProperty(prop1Token, CanGetValue, NODE_TYPE), IndexedProperty(prop2Token, CanGetValue, NODE_TYPE)),
           CompositeQueryExpression(Seq(prop1Predicate2Expr, prop2Predicate1Expr)),
@@ -273,7 +273,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           IndexType.RANGE
         ),
         NodeIndexSeek(
-          varFor(idName),
+          n,
           labelToken,
           Seq(
             IndexedProperty(prop1Token, CanGetValue, NODE_TYPE),
@@ -285,7 +285,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           IndexType.RANGE
         ),
         NodeIndexSeek(
-          varFor(idName),
+          n,
           labelToken,
           Seq(IndexedProperty(prop1Token, CanGetValue, NODE_TYPE), IndexedProperty(prop2Token, CanGetValue, NODE_TYPE)),
           CompositeQueryExpression(Seq(prop1Predicate3Expr, prop2Predicate1Expr)),
@@ -294,7 +294,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           IndexType.RANGE
         ),
         NodeIndexSeek(
-          varFor(idName),
+          n,
           labelToken,
           Seq(
             IndexedProperty(prop1Token, CanGetValue, NODE_TYPE),
@@ -343,7 +343,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
       val expected = Set(
         NodeIndexSeek(
-          varFor(idName),
+          n,
           labelToken,
           Seq(IndexedProperty(prop1Token, CanGetValue, NODE_TYPE), IndexedProperty(prop2Token, CanGetValue, NODE_TYPE)),
           CompositeQueryExpression(Seq(prop1Predicate1Expr, prop2Predicate1Expr)),
@@ -352,7 +352,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           IndexType.RANGE
         ),
         NodeIndexSeek(
-          varFor(idName),
+          n,
           labelToken,
           Seq(IndexedProperty(prop1Token, CanGetValue, NODE_TYPE), IndexedProperty(prop2Token, CanGetValue, NODE_TYPE)),
           CompositeQueryExpression(Seq(prop1Predicate2Expr, prop2Predicate1Expr)),
@@ -361,7 +361,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           IndexType.RANGE
         ),
         NodeIndexSeek(
-          varFor(idName),
+          n,
           labelToken,
           Seq(IndexedProperty(prop2Token, CanGetValue, NODE_TYPE), IndexedProperty(prop1Token, CanGetValue, NODE_TYPE)),
           CompositeQueryExpression(Seq(prop2Predicate1Expr, prop1Predicate1Expr)),
@@ -370,7 +370,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           IndexType.RANGE
         ),
         NodeIndexSeek(
-          varFor(idName),
+          n,
           labelToken,
           Seq(IndexedProperty(prop2Token, CanGetValue, NODE_TYPE), IndexedProperty(prop1Token, CanGetValue, NODE_TYPE)),
           CompositeQueryExpression(Seq(prop2Predicate1Expr, prop1Predicate2Expr)),
@@ -429,7 +429,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       // then
       resultPlans should beLike {
         case SetExtractor(NodeIndexSeek(
-            LogicalVariable(`idName`),
+            `n`,
             _,
             Seq(IndexedProperty(_, DoNotGetValue, NODE_TYPE)),
             _,
@@ -456,7 +456,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       // then
       resultPlans should beLike {
         case SetExtractor(NodeIndexSeek(
-            LogicalVariable(`idName`),
+            `n`,
             _,
             Seq(IndexedProperty(_, CanGetValue, NODE_TYPE)),
             _,
@@ -540,15 +540,15 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
     val values = (0 to 10).map(n => literalInt(n * 10 + 2))
     val predicates = properties.zip(values).map { pair =>
       val predicate = in(pair._1, listOf(pair._2))
-      Predicate(Set(idName), predicate)
+      Predicate(Set(n), predicate)
     }
 
     new givenConfig {
       addTypeToSemanticTable(lit42, CTInteger.invariant)
       values.foreach(addTypeToSemanticTable(_, CTInteger.invariant))
       qg = QueryGraph(
-        selections = Selections(predicates.toSet + Predicate(Set(idName), hasLabel("Awesome"))),
-        patternNodes = Set(idName)
+        selections = Selections(predicates.toSet + Predicate(Set(n), hasLabel("Awesome"))),
+        patternNodes = Set(n.name)
       )
 
       indexOn("Awesome", propertyNames: _*)
@@ -560,7 +560,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       // then
       resultPlans should beLike {
         case SetExtractor(NodeIndexSeek(
-            LogicalVariable(`idName`),
+            `n`,
             LabelToken("Awesome", _),
             props @ Seq(_*),
             CompositeQueryExpression(vals @ Seq(_*)),
@@ -600,7 +600,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
       // then
       resultPlans should beLike {
-        case SetExtractor(NodeIndexSeek(LogicalVariable(`idName`), _, _, SingleQueryExpression(`x`), _, _, _)) => ()
+        case SetExtractor(NodeIndexSeek(`n`, _, _, SingleQueryExpression(`x`), _, _, _)) => ()
       }
     }
   }
@@ -663,7 +663,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
       val expected = Set(
         NodeIndexSeek(
-          varFor(idName),
+          n,
           labelToken,
           Seq(IndexedProperty(nPropToken, CanGetValue, NODE_TYPE)),
           xPropExpr,
@@ -728,7 +728,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       // This contains all combinations except n.prop = 42 AND n.foo = 42, because it does not depend on x or y
       val expected = Set(
         NodeIndexSeek(
-          varFor(idName),
+          n,
           labelToken,
           indexedProperties,
           CompositeQueryExpression(Seq(xPropExpr, lit42Expr)),
@@ -737,7 +737,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           IndexType.RANGE
         ),
         NodeIndexSeek(
-          varFor(idName),
+          n,
           labelToken,
           indexedProperties,
           CompositeQueryExpression(Seq(xPropExpr, yPropExpr)),
@@ -746,7 +746,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           IndexType.RANGE
         ),
         NodeIndexSeek(
-          varFor(idName),
+          n,
           labelToken,
           indexedProperties,
           CompositeQueryExpression(Seq(lit42Expr, yPropExpr)),
@@ -811,7 +811,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
       val expected: Set[LogicalPlan] = Set(
         NodeIndexSeek(
-          varFor(idName),
+          n,
           labelToken,
           Seq(IndexedProperty(nPropToken, CanGetValue, NODE_TYPE)),
           ManyQueryExpression(listOf(lit6, lit42)),
@@ -820,7 +820,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           IndexType.RANGE
         ),
         NodeIndexSeek(
-          varFor(idName),
+          n,
           labelToken,
           Seq(IndexedProperty(nPropToken, DoNotGetValue, NODE_TYPE)),
           RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(ExclusiveBound(lit6))))(pos)),
@@ -829,7 +829,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           IndexType.RANGE
         ),
         NodeIndexSeek(
-          varFor(idName),
+          n,
           labelToken,
           Seq(IndexedProperty(nPropToken, CanGetValue, NODE_TYPE)),
           SingleQueryExpression(lit42),
@@ -838,7 +838,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           IndexType.RANGE
         ),
         NodeIndexSeek(
-          varFor(idName),
+          n,
           labelToken,
           Seq(IndexedProperty(nPropToken, DoNotGetValue, NODE_TYPE)),
           RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(literalFoo))(pos)),
@@ -847,7 +847,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           IndexType.RANGE
         ),
         NodeIndexSeek(
-          varFor(idName),
+          n,
           labelToken,
           Seq(IndexedProperty(nPropToken, CanGetValue, NODE_TYPE)),
           xPropExpr,
@@ -875,7 +875,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       // then
       resultPlans should beLike {
         case SetExtractor(NodeUniqueIndexSeek(
-            LogicalVariable(`idName`),
+            `n`,
             _,
             Seq(IndexedProperty(_, CanGetValue, NODE_TYPE)),
             SingleQueryExpression(`lit42`),
@@ -901,7 +901,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       // then
       resultPlans should beLike {
         case SetExtractor(NodeUniqueIndexSeek(
-            LogicalVariable(`idName`),
+            `n`,
             _,
             Seq(IndexedProperty(_, DoNotGetValue, NODE_TYPE)),
             _,
@@ -927,7 +927,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       // then
       resultPlans should beLike {
         case SetExtractor(NodeUniqueIndexSeek(
-            LogicalVariable(`idName`),
+            `n`,
             _,
             Seq(IndexedProperty(_, CanGetValue, NODE_TYPE)),
             _,
@@ -955,7 +955,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
       // then
       resultPlans should beLike {
-        case SetExtractor(NodeIndexSeek(LogicalVariable(`idName`), _, _, SingleQueryExpression(`lit42`), _, _, _)) => ()
+        case SetExtractor(NodeIndexSeek(`n`, _, _, SingleQueryExpression(`lit42`), _, _, _)) => ()
       }
 
       resultPlans.map(p =>
@@ -981,7 +981,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       // then
       resultPlans should beLike {
         case SetExtractor(NodeUniqueIndexSeek(
-            LogicalVariable(`idName`),
+            `n`,
             _,
             _,
             SingleQueryExpression(`lit42`),
@@ -1011,9 +1011,9 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       // then
       resultPlans should beLike {
         case SetExtractor(AssertSameNode(
-            LogicalVariable(`idName`),
+            `n`,
             NodeUniqueIndexSeek(
-              LogicalVariable(`idName`),
+              `n`,
               LabelToken("Awesome", _),
               _,
               SingleQueryExpression(`lit42`),
@@ -1022,7 +1022,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
               _
             ),
             NodeUniqueIndexSeek(
-              LogicalVariable(`idName`),
+              `n`,
               LabelToken("Awesomer", _),
               _,
               SingleQueryExpression(`lit42`),
@@ -1048,7 +1048,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       // then
       resultPlans should beLike {
         case SetExtractor(NodeUniqueIndexSeek(
-            LogicalVariable(`idName`),
+            `n`,
             _,
             _,
             SingleQueryExpression(`lit42`),
@@ -1076,11 +1076,11 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       resultPlans should beLike {
         case SetExtractor(
             AssertSameNode(
-              LogicalVariable(`idName`),
+              `n`,
               AssertSameNode(
-                LogicalVariable(`idName`),
+                `n`,
                 NodeUniqueIndexSeek(
-                  LogicalVariable(`idName`),
+                  `n`,
                   LabelToken(l1, _),
                   _,
                   SingleQueryExpression(`lit42`),
@@ -1089,7 +1089,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
                   _
                 ),
                 NodeUniqueIndexSeek(
-                  LogicalVariable(`idName`),
+                  `n`,
                   LabelToken(l2, _),
                   _,
                   SingleQueryExpression(`lit42`),
@@ -1099,7 +1099,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
                 )
               ),
               NodeUniqueIndexSeek(
-                LogicalVariable(`idName`),
+                `n`,
                 LabelToken(l3, _),
                 _,
                 SingleQueryExpression(`lit42`),
@@ -1136,13 +1136,13 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       resultPlans should beLike {
         case SetExtractor(
             AssertSameNode(
-              LogicalVariable(`idName`),
+              `n`,
               AssertSameNode(
-                LogicalVariable(`idName`),
+                `n`,
                 AssertSameNode(
-                  LogicalVariable(`idName`),
+                  `n`,
                   NodeUniqueIndexSeek(
-                    LogicalVariable(`idName`),
+                    `n`,
                     LabelToken(l1, _),
                     _,
                     SingleQueryExpression(`lit42`),
@@ -1151,7 +1151,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
                     _
                   ),
                   NodeUniqueIndexSeek(
-                    LogicalVariable(`idName`),
+                    `n`,
                     LabelToken(l2, _),
                     _,
                     SingleQueryExpression(`lit42`),
@@ -1161,7 +1161,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
                   )
                 ),
                 NodeUniqueIndexSeek(
-                  LogicalVariable(`idName`),
+                  `n`,
                   LabelToken(l3, _),
                   _,
                   SingleQueryExpression(`lit42`),
@@ -1171,7 +1171,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
                 )
               ),
               NodeUniqueIndexSeek(
-                LogicalVariable(`idName`),
+                `n`,
                 LabelToken(l4, _),
                 _,
                 SingleQueryExpression(`lit42`),
@@ -1212,9 +1212,9 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       resultPlans should beLike {
         case SetExtractor(
             AssertSameNode(
-              LogicalVariable(`idName`),
+              `n`,
               NodeUniqueIndexSeek(
-                LogicalVariable(`idName`),
+                `n`,
                 LabelToken("Awesome", _),
                 Seq(
                   IndexedProperty(PropertyKeyToken("prop1", _), CanGetValue, NODE_TYPE),
@@ -1229,7 +1229,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
                 _
               ),
               NodeUniqueIndexSeek(
-                LogicalVariable(`idName`),
+                `n`,
                 LabelToken("Awesome", _),
                 _,
                 SingleQueryExpression(`val3`),
@@ -1270,9 +1270,9 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       resultPlans should beLike {
         case SetExtractor(
             AssertSameNode(
-              LogicalVariable(`idName`),
+              `n`,
               NodeUniqueIndexSeek(
-                LogicalVariable(`idName`),
+                `n`,
                 LabelToken("Awesome", _),
                 Seq(
                   IndexedProperty(PropertyKeyToken("prop1", _), CanGetValue, NODE_TYPE),
@@ -1287,7 +1287,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
                 _
               ),
               NodeUniqueIndexSeek(
-                LogicalVariable(`idName`),
+                `n`,
                 LabelToken("Awesome", _),
                 Seq(
                   IndexedProperty(PropertyKeyToken("prop2", _), CanGetValue, NODE_TYPE),
@@ -1332,7 +1332,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       resultPlans should beLike {
         case SetExtractor(
             NodeUniqueIndexSeek(
-              LogicalVariable(`idName`),
+              `n`,
               LabelToken("Awesome", _),
               Seq(
                 IndexedProperty(PropertyKeyToken("prop1", _), CanGetValue, NODE_TYPE),
@@ -1369,7 +1369,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       // then
       resultPlans should beLike {
         case SetExtractor(p @ NodeIndexSeek(
-            LogicalVariable(`idName`),
+            `n`,
             _,
             _,
             CompositeQueryExpression(Seq(SingleQueryExpression(`lit42`), ExistenceQueryExpression())),
@@ -1410,7 +1410,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       // then
       resultPlans should beLike {
         case SetExtractor(NodeIndexSeek(
-            LogicalVariable(`idName`),
+            `n`,
             _,
             _,
             CompositeQueryExpression(Seq(SingleQueryExpression(`lit42`), ExistenceQueryExpression())),
@@ -1436,7 +1436,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       // then
       resultPlans should beLike {
         case SetExtractor(NodeIndexSeek(
-            LogicalVariable(`idName`),
+            `n`,
             _,
             _,
             CompositeQueryExpression(Seq(SingleQueryExpression(`lit42`), ExistenceQueryExpression())),
@@ -1462,7 +1462,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       // then
       resultPlans should beLike {
         case SetExtractor(NodeIndexSeek(
-            LogicalVariable(`idName`),
+            `n`,
             _,
             _,
             CompositeQueryExpression(Seq(SingleQueryExpression(`lit42`), ExistenceQueryExpression())),
@@ -1476,7 +1476,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
   private def queryGraph(predicates: Expression*) =
     QueryGraph(
-      selections = Selections(predicates.map(Predicate(Set(idName), _)).toSet),
-      patternNodes = Set(idName)
+      selections = Selections(predicates.map(Predicate(Set(n), _)).toSet),
+      patternNodes = Set(n.name)
     )
 }

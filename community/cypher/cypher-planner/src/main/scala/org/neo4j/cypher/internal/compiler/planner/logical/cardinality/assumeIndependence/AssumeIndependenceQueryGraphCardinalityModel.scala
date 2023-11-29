@@ -147,8 +147,8 @@ final class AssumeIndependenceQueryGraphCardinalityModel(
 
       def addInferredLabelOnlyIfNoOtherLabel(labelInfo: LabelInfo): LabelInfo = {
         labelInfo.map {
-          case (nodeName, labelNames) if labelNames.isEmpty => // only infer if node has no labels
-            nodeName -> Set(inferredLabels.get(nodeName).map(x => LabelName(x.labelName)(InputPosition.NONE))).flatten
+          case (node, labelNames) if labelNames.isEmpty => // only infer if node has no labels
+            node -> Set(inferredLabels.get(node.name).map(x => LabelName(x.labelName)(InputPosition.NONE))).flatten
           case (nodeName, labelNames) =>
             nodeName -> labelNames
         }

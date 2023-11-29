@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.VariableList
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Unique
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.Predicate
@@ -50,12 +51,12 @@ case class QueryGraphPredicates(
 object QueryGraphPredicates {
 
   def partitionSelections(labelInfo: LabelInfo, selections: Selections): QueryGraphPredicates = {
-    val allLabelInfoBuilder = mutable.Map.empty[String, mutable.Set[LabelName]]
+    val allLabelInfoBuilder = mutable.Map.empty[LogicalVariable, mutable.Set[LabelName]]
     val uniqueRelationshipsBuilder = Set.newBuilder[String]
     val otherPredicatesBuilder = Set.newBuilder[Predicate]
     selections.predicates.foreach {
-      case Predicate(_, HasLabels(Variable(variableName), labels)) =>
-        allLabelInfoBuilder.updateWith(variableName)(existingLabels =>
+      case Predicate(_, HasLabels(v: Variable, labels)) =>
+        allLabelInfoBuilder.updateWith(v)(existingLabels =>
           Some(existingLabels.getOrElse(mutable.Set.empty).addAll(labels))
         )
       case Predicate(_, Unique(VariableList(relationships))) =>
@@ -64,14 +65,14 @@ object QueryGraphPredicates {
         otherPredicatesBuilder.addOne(otherPredicate)
     }
     val localLabelInfo = allLabelInfoBuilder.view.mapValues(_.toSet).toMap
-    val externalLabelInfoBuilder = Map.newBuilder[String, Set[LabelName]]
+    val externalLabelInfoBuilder = Map.newBuilder[LogicalVariable, Set[LabelName]]
     labelInfo.foreach {
-      case (variableName, labels) =>
-        val localLabels = localLabelInfo.getOrElse(variableName, Set.empty)
-        allLabelInfoBuilder.updateWith(variableName)(existingLabels =>
+      case (variable, labels) =>
+        val localLabels = localLabelInfo.getOrElse(variable, Set.empty)
+        allLabelInfoBuilder.updateWith(variable)(existingLabels =>
           Some(existingLabels.getOrElse(mutable.Set.empty).addAll(labels))
         )
-        externalLabelInfoBuilder.addOne(variableName -> labels.diff(localLabels))
+        externalLabelInfoBuilder.addOne(variable -> labels.diff(localLabels))
     }
     QueryGraphPredicates(
       localLabelInfo = localLabelInfo,

@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QueryGraph
@@ -222,8 +223,8 @@ case object triadicSelectionFinder extends SelectionCandidateGenerator {
   }
 
   private def matchingLabels(positivePredicate: Boolean, node1: String, node2: String, qg: QueryGraph): Boolean = {
-    val labels1 = qg.selections.labelsOnNode(node1)
-    val labels2 = qg.selections.labelsOnNode(node2)
+    val labels1 = qg.selections.labelsOnNode(varFor(node1))
+    val labels2 = qg.selections.labelsOnNode(varFor(node2))
     if (positivePredicate)
       labels1 == labels2
     else

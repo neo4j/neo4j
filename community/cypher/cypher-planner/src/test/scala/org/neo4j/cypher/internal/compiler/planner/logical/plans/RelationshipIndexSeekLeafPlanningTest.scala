@@ -90,7 +90,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
 
   private def queryGraph(types: Seq[String], semanticDirection: SemanticDirection, predicates: Expression*) =
     QueryGraph(
-      selections = Selections(predicates.map(Predicate(Set(relVar.name), _)).toSet),
+      selections = Selections(predicates.map(Predicate(Set(relVar), _)).toSet),
       patternRelationships = Set(PatternRelationship(
         relVar,
         (startNode, endNode),
@@ -698,7 +698,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
   test("should not plan relationship index seek for self-loop") {
     new givenConfig {
       qg = QueryGraph(
-        selections = Selections(Set(Predicate(Set(relVar.name), rPropIsNotNull))),
+        selections = Selections(Set(Predicate(Set(relVar), rPropIsNotNull))),
         patternRelationships = Set(PatternRelationship(
           relVar,
           (startNode, startNode),

@@ -187,8 +187,8 @@ object LogicalPlanGenerator extends AstConstructionTestSupport {
       leafCardinalityMultipliersStack.headOption.getOrElse(Cardinality.SINGLE)
 
     def recordLabel(variable: Variable, label: String): State = {
-      val newLabels = labelInfo(label) + LabelName(label)(pos)
-      copy(labelInfo = labelInfo.updated(variable.name, newLabels))
+      val newLabels = labelInfo(variable) + LabelName(label)(pos)
+      copy(labelInfo = labelInfo.updated(variable, newLabels))
     }
   }
 }

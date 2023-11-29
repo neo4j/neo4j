@@ -74,7 +74,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     // given
     val expr = in(id(varFor("n")), listOfInt(42, 43, 43))
     val qg = QueryGraph(
-      selections = Selections(Set(Predicate(Set("n"), expr))),
+      selections = Selections(Set(Predicate(Set(v"n"), expr))),
       patternNodes = Set("n")
     )
 
@@ -114,7 +114,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     // given
     val expr = in(id(varFor("n")), listOfInt(42, 43, 43))
     val qg = QueryGraph(
-      selections = Selections(Set(Predicate(Set("n"), expr))),
+      selections = Selections(Set(Predicate(Set(v"n"), expr))),
       patternNodes = Set("n")
     )
 
@@ -152,7 +152,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     // given
     val expr = in(id(varFor("n")), varFor("arr"))
     val qg = QueryGraph(
-      selections = Selections(Set(Predicate(Set("n"), expr))),
+      selections = Selections(Set(Predicate(Set(v"n"), expr))),
       patternNodes = Set("n"),
       argumentIds = Set("arr")
     )
@@ -193,7 +193,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     // given match (n) where id(n) in arr
     val expr = in(id(varFor("n")), varFor("arr"))
     val qg = QueryGraph(
-      selections = Selections(Set(Predicate(Set("n"), expr))),
+      selections = Selections(Set(Predicate(Set(v"n"), expr))),
       patternNodes = Set("n"),
       argumentIds = Set()
     )
@@ -232,7 +232,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     // given match (n) where id(n) in arr
     val expr = in(id(varFor("n")), varFor("arr"))
     val qg = QueryGraph(
-      selections = Selections(Set(Predicate(Set("n"), expr))),
+      selections = Selections(Set(Predicate(Set(v"n"), expr))),
       patternNodes = Set("n"),
       argumentIds = Set("arr", "n")
     )
@@ -274,7 +274,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     val end = v"to"
     val patternRel = PatternRelationship(v"r", (from, end), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
     val qg = QueryGraph(
-      selections = Selections(Set(Predicate(Set("r"), expr))),
+      selections = Selections(Set(Predicate(Set(v"r"), expr))),
       patternNodes = Set(from, end).map(_.name),
       patternRelationships = Set(patternRel)
     )
@@ -324,7 +324,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     val end = v"to"
     val patternRel = PatternRelationship(v"r", (from, end), SemanticDirection.BOTH, Seq.empty, SimplePatternLength)
     val qg = QueryGraph(
-      selections = Selections(Set(Predicate(Set("r"), expr))),
+      selections = Selections(Set(Predicate(Set(v"r"), expr))),
       patternNodes = Set(from, end).map(_.name),
       patternRelationships = Set(patternRel)
     )
@@ -388,7 +388,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
       SimplePatternLength
     )
     val qg = QueryGraph(
-      selections = Selections(Set(Predicate(Set("r"), expr))),
+      selections = Selections(Set(Predicate(Set(v"r"), expr))),
       patternNodes = Set(from, end).map(_.name),
       patternRelationships = Set(patternRel)
     )
@@ -457,7 +457,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
       SimplePatternLength
     )
     val qg = QueryGraph(
-      selections = Selections(Set(Predicate(Set("r"), expr))),
+      selections = Selections(Set(Predicate(Set(v"r"), expr))),
       patternNodes = Set(from, end).map(_.name),
       patternRelationships = Set(patternRel)
     )
@@ -513,7 +513,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     val end = v"to"
     val patternRel = PatternRelationship(v"r", (from, end), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
     val qg = QueryGraph(
-      selections = Selections(Set(Predicate(Set("r"), expr))),
+      selections = Selections(Set(Predicate(Set(v"r"), expr))),
       patternNodes = Set(from, end).map(_.name),
       patternRelationships = Set(patternRel),
       argumentIds = Set(from.name)
@@ -566,7 +566,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     val end = v"to"
     val patternRel = PatternRelationship(v"r", (from, end), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
     val qg = QueryGraph(
-      selections = Selections(Set(Predicate(Set("r"), expr))),
+      selections = Selections(Set(Predicate(Set(v"r"), expr))),
       patternNodes = Set(from, end).map(_.name),
       patternRelationships = Set(patternRel),
       argumentIds = Set(from, end).map(_.name)
@@ -617,7 +617,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     val to = from
     val patternRel = PatternRelationship(v"r", (from, to), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
     val qg = QueryGraph(
-      selections = Selections(Set(Predicate(Set("r"), expr))),
+      selections = Selections(Set(Predicate(Set(v"r"), expr))),
       patternNodes = Set(from, to).map(_.name),
       patternRelationships = Set(patternRel)
     )
@@ -668,7 +668,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     val to = from
     val patternRel = PatternRelationship(v"r", (from, to), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
     val qg = QueryGraph(
-      selections = Selections(Set(Predicate(Set("r"), expr))),
+      selections = Selections(Set(Predicate(Set(v"r"), expr))),
       patternNodes = Set(from, to).map(_.name),
       patternRelationships = Set(patternRel)
     )

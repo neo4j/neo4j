@@ -137,14 +137,12 @@ class GroupInequalityPredicatesTest extends CypherFunSuite with AstConstructionT
   }
 
   private def pred(expr: Expression) =
-    Predicate(expr.dependencies.map { ident => ident.name }, expr)
+    Predicate(expr.dependencies.map { ident => ident }, expr)
 
   private def anded(property: Property, first: InequalityExpression, others: InequalityExpression*) = {
     val variable = property.map.asInstanceOf[Variable]
     val inequalities = NonEmptyList(first, others: _*)
-    val deps = others.foldLeft(first.dependencies) { (acc, elem) => acc ++ elem.dependencies }.map { ident =>
-      ident.name
-    }
+    val deps = others.foldLeft(first.dependencies) { (acc, elem) => acc ++ elem.dependencies }
     Predicate(deps, AndedPropertyInequalities(variable, property, inequalities))
   }
 }

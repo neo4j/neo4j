@@ -232,7 +232,7 @@ object expandSolverStep {
         )
       case PatternRelationship(_, _, _, _, varLength: VarPatternLength) =>
         val availablePredicates: collection.Seq[Expression] =
-          qg.selections.predicatesGiven(availableSymbols + patternName + otherSide)
+          qg.selections.predicatesGiven((availableSymbols + patternName + otherSide).map(varFor))
         val (
           nodePredicates: ListSet[VariablePredicate],
           relationshipPredicates: ListSet[VariablePredicate],
@@ -368,7 +368,7 @@ object expandSolverStep {
     val endNode = if (fromLeft) spp.right.name else spp.left.name
 
     val unsolvedPredicatesOnEndNode = queryGraphSelections
-      .predicatesGiven(availableSymbols + endNode)
+      .predicatesGiven((availableSymbols + endNode).map(varFor))
       .filterNot(predicate =>
         context.staticComponents.planningAttributes.solveds
           .get(sourcePlan.id)

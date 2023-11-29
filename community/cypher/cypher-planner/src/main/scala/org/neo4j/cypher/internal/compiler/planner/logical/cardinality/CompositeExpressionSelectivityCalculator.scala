@@ -47,6 +47,7 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.HasTypes
 import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.PartialPredicate
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.RelTypeName
@@ -318,20 +319,20 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext) ex
     val nodes = variables.filter(labelInfo.contains)
     val relationships = variables.filter(relTypeInfo.contains)
 
-    def findSelectionsFor(variable: String): Selections =
+    def findSelectionsFor(variable: LogicalVariable): Selections =
       unwrappedSelections.filter(expressionsContainingVariable(variable))
 
     // Construct query graphs for each variable that can be fed to leaf planners to search for index matches.
     val nodeQgs = nodes.map { n =>
       QueryGraph(
-        patternNodes = Set(n),
+        patternNodes = Set(n.name),
         selections = findSelectionsFor(n)
       )
     }
     val relQgs = relationships.map { r =>
       QueryGraph(
         patternRelationships = Set(PatternRelationship(
-          varFor(r),
+          r,
           (varFor("  UNNAMED0"), varFor("  UNNAMED1")),
           SemanticDirection.OUTGOING,
           Seq.empty,
@@ -346,12 +347,12 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext) ex
 
   private def inlineLabelAndRelTypeInfo(qg: QueryGraph, labelInfo: LabelInfo, relTypeInfo: RelTypeInfo): QueryGraph = {
     val labelPredicates = labelInfo.collect {
-      case (name, labels) if qg.patternNodes.contains(name) =>
-        WhereClausePredicate(HasLabels(Variable(name)(InputPosition.NONE), labels.toSeq)(InputPosition.NONE))
+      case (variable, labels) if qg.patternNodes.contains(variable.name) =>
+        WhereClausePredicate(HasLabels(variable, labels.toSeq)(InputPosition.NONE))
     }
     val relTypePredicates = relTypeInfo.collect {
-      case (name, relType) if qg.patternRelationships.map(_.variable.name).contains(name) =>
-        WhereClausePredicate(HasTypes(Variable(name)(InputPosition.NONE), Seq(relType))(InputPosition.NONE))
+      case (variable, relType) if qg.patternRelationships.map(_.variable).contains(variable) =>
+        WhereClausePredicate(HasTypes(variable, Seq(relType))(InputPosition.NONE))
     }
     (labelPredicates ++ relTypePredicates).foldLeft(qg) {
       case (qg, predicate) => predicate.addToQueryGraph(qg)

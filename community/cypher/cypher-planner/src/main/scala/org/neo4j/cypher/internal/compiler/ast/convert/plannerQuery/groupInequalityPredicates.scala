@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.expressions.InequalityExpression
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.Predicate
-import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.IdExtractor
 import org.neo4j.cypher.internal.util.NonEmptyList.IterableConverter
 import org.neo4j.cypher.internal.util.Rewritable.RewritableAny
 import org.neo4j.cypher.internal.util.Rewriter
@@ -79,7 +78,7 @@ object groupInequalityPredicates extends (ListSet[Predicate] => ListSet[Predicat
       val predicates = expressions.map(e =>
         // No need to call org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.PredicateConverter.asPredicates,
         // since we have already split up HasLabels etc. at this point.
-        Predicate(e.idNames, e)
+        Predicate(e.dependencies, e)
       )
       val groupedExpressions = groupInequalityPredicates(predicates).map(_.expr)
       Ands.create(groupedExpressions)

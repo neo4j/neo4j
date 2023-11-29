@@ -24,6 +24,8 @@ import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAUL
 import org.neo4j.cypher.internal.expressions.DifferentRelationships
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.Predicate
@@ -63,7 +65,7 @@ trait QuantifiedPathPatternCardinalityModel extends NodeCardinalityModel with Pa
       context.predicatesSelectivityWithExtraRelTypeInfo(
         labelInfo = predicates.allLabelInfo,
         extraRelTypeInfo = quantifiedPathPattern.patternRelationships.collect {
-          case PatternRelationship(rel, _, _, Seq(relType), _) => rel.name -> relType
+          case PatternRelationship(rel, _, _, Seq(relType), _) => rel -> relType
         }.toMap,
         predicates = predicates.otherPredicates
       )
@@ -84,8 +86,8 @@ trait QuantifiedPathPatternCardinalityModel extends NodeCardinalityModel with Pa
           case 1 =>
             val singleIterationLabels =
               predicates.allLabelInfo
-                .updated(quantifiedPathPattern.leftBinding.inner.name, labelsOnFirstNode)
-                .updated(quantifiedPathPattern.rightBinding.inner.name, labelsOnLastNode)
+                .updated(quantifiedPathPattern.leftBinding.inner, labelsOnFirstNode)
+                .updated(quantifiedPathPattern.rightBinding.inner, labelsOnLastNode)
             val uniquenessSelectivity = DEFAULT_REL_UNIQUENESS_SELECTIVITY ^ predicates.differentRelationships.size
             val patternCardinality =
               getPatternRelationshipsCardinality(
@@ -108,8 +110,8 @@ trait QuantifiedPathPatternCardinalityModel extends NodeCardinalityModel with Pa
 
             val firstIterationLabels =
               predicates.allLabelInfo
-                .updated(quantifiedPathPattern.leftBinding.inner.name, labelsOnFirstNode)
-                .updated(quantifiedPathPattern.rightBinding.inner.name, labelsOnJunctionNode)
+                .updated(quantifiedPathPattern.leftBinding.inner, labelsOnFirstNode)
+                .updated(quantifiedPathPattern.rightBinding.inner, labelsOnJunctionNode)
             val firstIterationCardinality =
               getPatternRelationshipsCardinality(
                 context,
@@ -119,8 +121,8 @@ trait QuantifiedPathPatternCardinalityModel extends NodeCardinalityModel with Pa
 
             val intermediateIterationLabels =
               predicates.allLabelInfo
-                .updated(quantifiedPathPattern.leftBinding.inner.name, labelsOnJunctionNode)
-                .updated(quantifiedPathPattern.rightBinding.inner.name, labelsOnJunctionNode)
+                .updated(quantifiedPathPattern.leftBinding.inner, labelsOnJunctionNode)
+                .updated(quantifiedPathPattern.rightBinding.inner, labelsOnJunctionNode)
             val intermediateIterationCardinality =
               getPatternRelationshipsCardinality(
                 context,
@@ -133,8 +135,8 @@ trait QuantifiedPathPatternCardinalityModel extends NodeCardinalityModel with Pa
 
             val lastIterationLabels =
               predicates.allLabelInfo
-                .updated(quantifiedPathPattern.leftBinding.inner.name, labelsOnJunctionNode)
-                .updated(quantifiedPathPattern.rightBinding.inner.name, labelsOnLastNode)
+                .updated(quantifiedPathPattern.leftBinding.inner, labelsOnJunctionNode)
+                .updated(quantifiedPathPattern.rightBinding.inner, labelsOnLastNode)
             val lastIterationCardinality =
               getPatternRelationshipsCardinality(
                 context,
@@ -200,7 +202,7 @@ case class QuantifiedPathPatternPredicates(
   differentRelationships: Set[DifferentRelationships],
   otherPredicates: Set[Predicate]
 ) {
-  def labelsOnNode(nodeName: String): Set[LabelName] = allLabelInfo.getOrElse(nodeName, Set.empty)
+  def labelsOnNode(nodeName: String): Set[LabelName] = allLabelInfo.getOrElse(varFor(nodeName), Set.empty)
 
   def labelsOnNodes(nodeNames: String*): Set[LabelName] = nodeNames.foldLeft(Set.empty[LabelName]) {
     case (labels, nodeName) => labels.union(labelsOnNode(nodeName))
@@ -210,12 +212,12 @@ case class QuantifiedPathPatternPredicates(
 object QuantifiedPathPatternPredicates {
 
   def partitionSelections(labelInfo: LabelInfo, selections: Selections): QuantifiedPathPatternPredicates = {
-    val labelsBuilder = mutable.Map.empty[String, mutable.Builder[LabelName, Set[LabelName]]]
+    val labelsBuilder = mutable.Map.empty[LogicalVariable, mutable.Builder[LabelName, Set[LabelName]]]
     val differentRelationshipsBuilder = Set.newBuilder[DifferentRelationships]
     val otherPredicatesBuilder = Set.newBuilder[Predicate]
     selections.predicates.foreach {
-      case Predicate(_, HasLabels(Variable(name), labels)) =>
-        labelsBuilder.updateWith(name)(builder => Some(builder.getOrElse(Set.newBuilder).addOne(labels.head)))
+      case Predicate(_, HasLabels(v: Variable, labels)) =>
+        labelsBuilder.updateWith(v)(builder => Some(builder.getOrElse(Set.newBuilder).addOne(labels.head)))
       case Predicate(_, differentRelationships: DifferentRelationships) =>
         differentRelationshipsBuilder.addOne(differentRelationships)
       case otherPredicate =>

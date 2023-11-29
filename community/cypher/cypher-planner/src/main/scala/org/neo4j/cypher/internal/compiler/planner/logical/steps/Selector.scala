@@ -98,7 +98,7 @@ case class Selector(
    * All unsolved predicates. Includes scalar and pattern predicates.
    */
   private def unsolvedPreds(solveds: Solveds, s: Selections, l: LogicalPlan): Set[Expression] =
-    s.predicatesGiven(l.availableSymbols.map(_.name))
+    s.predicatesGiven(l.availableSymbols)
       .filterNot(predicate =>
         solveds.get(l.id).asSinglePlannerQuery.exists(_.queryGraph.selections.contains(predicate))
       )

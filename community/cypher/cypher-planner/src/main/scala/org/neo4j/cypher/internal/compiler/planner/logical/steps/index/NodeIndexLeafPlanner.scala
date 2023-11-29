@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
+import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.ordering.NoProvidedOrderFactory
@@ -138,7 +139,7 @@ object NodeIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
     findPointIndexes: Boolean = true
   ): Set[NodeIndexMatch] = {
     val predicates = qg.selections.flatPredicates.toSet
-    val allLabelPredicatesMap: Map[String, Set[HasLabels]] = qg.selections.labelPredicates
+    val allLabelPredicatesMap: Map[LogicalVariable, Set[HasLabels]] = qg.selections.labelPredicates
 
     if (allLabelPredicatesMap.isEmpty) {
       Set.empty[NodeIndexMatch]
@@ -154,7 +155,7 @@ object NodeIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
       val matches = for {
         propertyPredicates <- compatiblePropertyPredicates.groupBy(_.name)
         variableName = propertyPredicates._1
-        labelPredicates = allLabelPredicatesMap.getOrElse(variableName, Set.empty)
+        labelPredicates = allLabelPredicatesMap.getOrElse(varFor(variableName), Set.empty)
         indexMatch <- findIndexMatches(
           variableName,
           propertyPredicates._2,
