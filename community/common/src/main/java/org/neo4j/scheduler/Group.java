@@ -114,6 +114,7 @@ public enum Group {
     AKKA_HELPER("AkkaActorSystemRestarter"),
     LIGHTHOUSE("Lighthouse"),
     LIGHTHOUSE_RECEIVER("LighthouseReceiver", ExecutorServiceFactory.singleThread()),
+    LIGHTHOUSE_JOIN_LEAVE("LighthouseJoinLeave", ExecutorServiceFactory.singleThread()),
     DOWNLOAD_SNAPSHOT("DownloadSnapshot"),
     CATCHUP_CHANNEL_POOL("CatchupChannelPool"),
     CATCHUP_CLIENT("CatchupClient"),
