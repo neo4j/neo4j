@@ -2675,7 +2675,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     typ: String,
     right: String,
     direction: SemanticDirection = OUTGOING,
-    properties: Option[String] = None
+    properties: Option[String]
   ): org.neo4j.cypher.internal.ir.CreateRelationship = {
     val props = properties.map(Parser.parseExpression)
     if (props.exists(!_.isInstanceOf[MapExpression]))
