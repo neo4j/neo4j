@@ -155,11 +155,11 @@ public final class Extractors {
         add(stringArray = new StringArrayExtractor(arrayDelimiter, trimStrings));
         add(booleanArray = new BooleanArrayExtractor(arrayDelimiter));
         add(longArray = new LongArrayExtractor(arrayDelimiter));
-        add(byteArray = new ByteArrayExtractor(arrayDelimiter, longArray));
-        add(shortArray = new ShortArrayExtractor(arrayDelimiter, longArray));
-        add(intArray = new IntArrayExtractor(arrayDelimiter, longArray));
+        add(byteArray = new ByteArrayExtractor(arrayDelimiter));
+        add(shortArray = new ShortArrayExtractor(arrayDelimiter));
+        add(intArray = new IntArrayExtractor(arrayDelimiter));
         add(doubleArray = new DoubleArrayExtractor(arrayDelimiter));
-        add(floatArray = new FloatArrayExtractor(arrayDelimiter, doubleArray));
+        add(floatArray = new FloatArrayExtractor(arrayDelimiter));
         add(point = new PointExtractor());
         add(pointArray = new PointArrayExtractor(arrayDelimiter));
         add(date = new DateExtractor());
@@ -632,8 +632,8 @@ public final class Extractors {
     }
 
     private static final class ByteArrayExtractor extends ArrayExtractor<byte[], byte[]> {
-        ByteArrayExtractor(char arrayDelimiter, LongArrayExtractor longArrayExtractor) {
-            super(arrayDelimiter, byte[].class, longArrayExtractor);
+        ByteArrayExtractor(char arrayDelimiter) {
+            super(arrayDelimiter, byte[].class);
         }
 
         @Override
@@ -665,8 +665,8 @@ public final class Extractors {
     }
 
     private static final class ShortArrayExtractor extends ArrayExtractor<short[], short[]> {
-        ShortArrayExtractor(char arrayDelimiter, LongArrayExtractor longArrayExtractor) {
-            super(arrayDelimiter, short[].class, longArrayExtractor);
+        ShortArrayExtractor(char arrayDelimiter) {
+            super(arrayDelimiter, short[].class);
         }
 
         @Override
@@ -698,8 +698,8 @@ public final class Extractors {
     }
 
     private static final class IntArrayExtractor extends ArrayExtractor<int[], int[]> {
-        IntArrayExtractor(char arrayDelimiter, LongArrayExtractor longArrayExtractor) {
-            super(arrayDelimiter, int[].class, longArrayExtractor);
+        IntArrayExtractor(char arrayDelimiter) {
+            super(arrayDelimiter, int[].class);
         }
 
         @Override
@@ -764,8 +764,8 @@ public final class Extractors {
     }
 
     private static final class FloatArrayExtractor extends ArrayExtractor<float[], float[]> {
-        FloatArrayExtractor(char arrayDelimiter, DoubleArrayExtractor doubleArrayExtractor) {
-            super(arrayDelimiter, float[].class, doubleArrayExtractor);
+        FloatArrayExtractor(char arrayDelimiter) {
+            super(arrayDelimiter, float[].class);
         }
 
         @Override

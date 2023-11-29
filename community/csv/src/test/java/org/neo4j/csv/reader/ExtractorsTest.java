@@ -232,7 +232,7 @@ class ExtractorsTest {
                 .build());
         types.add(new ExtractorTypeTestCaseBuilder(
                         "Byte Array Extractor", Extractors::byteArray, "-33; 0; 55", new byte[] {-33, 0, 55}, "byte[]")
-                .withNormalization(Extractors::longArray, new long[] {-33, 0, 55})
+                .withNormalization(Extractors::byteArray, new byte[] {-33, 0, 55})
                 .build());
 
         types.add(
@@ -245,7 +245,7 @@ class ExtractorsTest {
                         "-10000; 0; 20000",
                         new short[] {-10000, 0, 20000},
                         "short[]")
-                .withNormalization(Extractors::longArray, new long[] {-10000, 0, 20000})
+                .withNormalization(Extractors::shortArray, new short[] {-10000, 0, 20000})
                 .build());
 
         types.add(new ExtractorTypeTestCaseBuilder("Int Extractor", Extractors::int_, "2000000", 2000000, "int")
@@ -257,7 +257,7 @@ class ExtractorsTest {
                         "-1000000; 0; 2000000",
                         new int[] {-1000000, 0, 2000000},
                         "int[]")
-                .withNormalization(Extractors::longArray, new long[] {-1000000, 0, 2000000})
+                .withNormalization(Extractors::intArray, new int[] {-1000000, 0, 2000000})
                 .build());
 
         types.add(
@@ -280,7 +280,7 @@ class ExtractorsTest {
                         "-1.0; 0.0; 1.0",
                         new float[] {-1.0F, 0F, 1.0F},
                         "float[]")
-                .withNormalization(Extractors::doubleArray, new double[] {-1.0D, 0D, 1.0D})
+                .withNormalization(Extractors::floatArray, new float[] {-1.0F, 0F, 1.0F})
                 .build());
 
         types.add(new ExtractorTypeTestCaseBuilder("Double Extractor", Extractors::double_, "1.0", 1.0D, "double")
