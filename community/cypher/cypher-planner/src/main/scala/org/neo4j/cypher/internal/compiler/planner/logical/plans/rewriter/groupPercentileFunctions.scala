@@ -77,21 +77,21 @@ case class groupPercentileFunctions(
 
   private val instance: Rewriter = bottomUp(Rewriter.lift {
     case aggregation @ OrderedAggregation(_, _, aggregations: Map[LogicalVariable, Expression], _) =>
-      val groupedPercentileFunctions = groupPercentileFunctions(aggregations)
-      if (groupedPercentileFunctions.isEmpty) {
+      val groupedFunctions = groupFunctions(aggregations)
+      if (groupedFunctions.isEmpty) {
         aggregation
       } else {
-        val (newAggregations, projectExpressions) = newExpressions(groupedPercentileFunctions, aggregations)
+        val (newAggregations, projectExpressions) = newExpressions(groupedFunctions, aggregations)
         val newAggregation = aggregation.copy(aggregationExpressions = newAggregations)(SameId(aggregation.id))
         val id = attributes.copy(aggregation.id).id()
         Projection(newAggregation, projectExpressions)(SameId(id))
       }
     case aggregation @ Aggregation(_, _, aggregations: Map[LogicalVariable, Expression]) =>
-      val groupedPercentileFunctions = groupPercentileFunctions(aggregations)
-      if (groupedPercentileFunctions.isEmpty) {
+      val groupedFunctions = groupFunctions(aggregations)
+      if (groupedFunctions.isEmpty) {
         aggregation
       } else {
-        val (newAggregations, projectExpressions) = newExpressions(groupedPercentileFunctions, aggregations)
+        val (newAggregations, projectExpressions) = newExpressions(groupedFunctions, aggregations)
         val newAggregation = aggregation.copy(aggregationExpressions = newAggregations)(SameId(aggregation.id))
         val id = attributes.copy(aggregation.id).id()
         Projection(newAggregation, projectExpressions)(SameId(id))
@@ -152,11 +152,11 @@ case class groupPercentileFunctions(
    *
    * @return groups that contain at least two expressions.
    */
-  private def groupPercentileFunctions(aggregationExpressions: Map[LogicalVariable, Expression])
+  private def groupFunctions(aggregationExpressions: Map[LogicalVariable, Expression])
     : Map[(Expression, Boolean), Map[LogicalVariable, FunctionInvocation]] = {
     aggregationExpressions.collect {
       case (v, f @ FunctionInvocation(_, FunctionName(name), _, _))
-        if name == PercentileDisc.name || name == PercentileCont.name => (v, f)
+        if name.equalsIgnoreCase(PercentileDisc.name) || name.equalsIgnoreCase(PercentileCont.name) => (v, f)
     }.groupBy { case (_, f: FunctionInvocation) => (f.args(0), f.distinct) }.filter { case (_, fs) => fs.size > 1 }
   }
 
@@ -203,8 +203,8 @@ case class groupPercentileFunctions(
   }
 
   /**
-   * Given an already-grouped percentile functions map, for a single input,
-   * method will returns the variable:percentile pairs.
+   * For each entry in a map from variables to percentile functions,
+   * this method will return a three-tuple of variable:percentile:isDiscrete
    *
    * For example,
    * {{{
@@ -222,9 +222,9 @@ case class groupPercentileFunctions(
     percentileGroup.foldLeft((Seq.empty[LogicalVariable], Seq.empty[Expression], Seq.empty[BooleanLiteral])) {
       case ((accVars, accPercentiles, accIsDiscretes), (v, FunctionInvocation(_, FunctionName(name), _, args))) =>
         val isDiscrete =
-          if (name == PercentileDisc.name) {
+          if (name.equalsIgnoreCase(PercentileDisc.name)) {
             True()(pos)
-          } else if (name == PercentileCont.name) {
+          } else if (name.equalsIgnoreCase(PercentileCont.name)) {
             False()(pos)
           } else {
             throw new IllegalArgumentException(s"Unexpected function name: $name")

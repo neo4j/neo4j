@@ -142,7 +142,7 @@ object Function {
       (f: Function) =>
         f.signatures.flatMap {
           case signature: FunctionTypeSignature if !(signature.deprecated || signature.internal) => Some(signature)
-          case _  => None
+          case _                                                                                 => None
         }
     }.toList
   }
