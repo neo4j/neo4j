@@ -106,6 +106,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlanExtension
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlanExtension
 import org.neo4j.cypher.internal.logical.plans.Merge
+import org.neo4j.cypher.internal.logical.plans.NFA
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
 import org.neo4j.cypher.internal.logical.plans.NodeByElementIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
@@ -638,11 +639,11 @@ object ReadFinder {
           _,
           sourceNode,
           targetNode,
-          _,
+          nfa,
           _,
           nonInlinedPreFilters,
-          nodeVariableGroupings,
-          relationshipVariableGroupings,
+          nodevarG,
+          relvarg,
           singletonNodeVariables,
           singletonRelationshipVariables,
           _,
@@ -652,9 +653,8 @@ object ReadFinder {
         processStatefulShortest(
           sourceNode,
           targetNode,
+          nfa,
           nonInlinedPreFilters,
-          nodeVariableGroupings,
-          relationshipVariableGroupings,
           singletonNodeVariables,
           singletonRelationshipVariables,
           semanticTable
@@ -1072,9 +1072,8 @@ object ReadFinder {
   private def processStatefulShortest(
     sourceNode: LogicalVariable,
     targetNode: LogicalVariable,
+    nfa: NFA,
     nonInlinedPreFilters: Option[Expression],
-    nodeVariableGroupings: Set[Trail.VariableGrouping],
-    relationshipVariableGroupings: Set[Trail.VariableGrouping],
     singletonNodeVariables: Set[Mapping],
     singletonRelationshipVariables: Set[Mapping],
     semanticTable: SemanticTable
@@ -1085,17 +1084,18 @@ object ReadFinder {
       .withIntroducedNodeVariable(targetNode)
 
     Function.chain[PlanReads](Seq(
-      nodeVariableGroupings.foldLeft(_) { (acc, pathNode) =>
-        acc.withIntroducedNodeVariable(pathNode.singletonName)
+      // We cannot find the variableGroupings since they might have been removed in RemoveUnusedGroupVariablesRewriter
+      (nfa.nodeNames - sourceNode -- singletonNodeVariables.map(_.nfaExprVar)).foldLeft(_) { (acc, nodeName) =>
+        acc.withIntroducedNodeVariable(nodeName)
+      },
+      (nfa.relationshipNames -- singletonRelationshipVariables.map(_.nfaExprVar)).foldLeft(_) { (acc, relName) =>
+        acc.withIntroducedRelationshipVariable(relName)
       },
       singletonNodeVariables.foldLeft(_) { (acc, mapping) =>
         acc.withIntroducedNodeVariable(mapping.rowVar)
       },
       singletonRelationshipVariables.foldLeft(_) { (acc, mapping) =>
         acc.withIntroducedRelationshipVariable(mapping.rowVar)
-      },
-      relationshipVariableGroupings.foldLeft(_) { (acc, pathRel) =>
-        acc.withIntroducedRelationshipVariable(pathRel.singletonName)
       },
       nonInlinedPreFilters.foldLeft(_)(processFilterExpression(_, _, semanticTable))
     ))(initialRead)

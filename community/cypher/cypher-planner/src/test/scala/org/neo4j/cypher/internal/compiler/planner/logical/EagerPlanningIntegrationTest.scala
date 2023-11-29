@@ -972,7 +972,10 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
       case EagerAnalysisImplementation.IR =>
         ListSet(ReadDeleteConflict("s"))
       case EagerAnalysisImplementation.LP =>
-        ListSet(ReadDeleteConflict("s").withConflict(Conflict(Id(1), Id(3))))
+        ListSet(
+          ReadDeleteConflict("s").withConflict(Conflict(Id(1), Id(3))),
+          ReadDeleteConflict("r").withConflict(Conflict(Id(1), Id(3)))
+        )
     }
 
     val plan = planner.plan(query)
@@ -1110,6 +1113,10 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
       .|.merge(Seq(), Seq(createRelationship("t", "start", "T", "end", BOTH)), Seq(), Seq(), Set("start", "end"))
       .|.expandInto("(start)-[t:T]-(end)")
       .|.argument("start", "end")
+      .lpEager(ListSet(
+        TypeReadSetConflict(relTypeName("T")).withConflict(Conflict(Id(2), Id(6)))
+      ) // TODO: This eager is unnecessary since a relationship cannot have more than one type.
+      )
       .statefulShortestPath(`((start)((a)-[r:R]->(b))+(end))`)
       .allNodeScan("start")
       .build()
@@ -1129,13 +1136,22 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
     val query =
       "MATCH ANY SHORTEST ((start)((a)-[r:R]->(b))+(end)) MERGE (start)-[t:R]-(end) RETURN end"
 
+    val reason: ListSet[EagernessReason] = impl match {
+      case EagerAnalysisImplementation.IR =>
+        ListSet(Unknown)
+      case EagerAnalysisImplementation.LP =>
+        ListSet(
+          TypeReadSetConflict(relTypeName("R")).withConflict(Conflict(Id(2), Id(6)))
+        )
+    }
+
     val expected = planner.planBuilder()
       .produceResults("end")
       .apply()
       .|.merge(Seq(), Seq(createRelationship("t", "start", "R", "end", BOTH)), Seq(), Seq(), Set("start", "end"))
       .|.expandInto("(start)-[t:R]-(end)")
       .|.argument("start", "end")
-      .irEager(ListSet(Unknown)) // TODO LP should find Eager here too
+      .eager(reason)
       .statefulShortestPath(`((start)((a)-[r:R]->(b))+(end))`)
       .allNodeScan("start")
       .build()
