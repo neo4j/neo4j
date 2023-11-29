@@ -148,7 +148,7 @@ trait QuantifiedPathPatternCardinalityModel extends NodeCardinalityModel with Pa
                 .getOrElse(Multiplier.ZERO)
 
             val uniqueRelationshipsInPattern =
-              uniqueRelationships.intersect(quantifiedPathPattern.relationshipVariableGroupings.map(_.groupName.name))
+              uniqueRelationships.intersect(quantifiedPathPattern.relationshipVariableGroupings.map(_.group.name))
             val uniquenessSelectivity =
               RepetitionCardinalityModel.relationshipUniquenessSelectivity(
                 differentRelationships = predicates.differentRelationships.size,

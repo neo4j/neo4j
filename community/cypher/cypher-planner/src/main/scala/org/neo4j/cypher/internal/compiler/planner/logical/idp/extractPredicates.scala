@@ -39,8 +39,8 @@ import org.neo4j.cypher.internal.expressions.Unique
 import org.neo4j.cypher.internal.expressions.VarLengthLowerBound
 import org.neo4j.cypher.internal.expressions.VarLengthUpperBound
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.expressions.VariableGrouping
 import org.neo4j.cypher.internal.ir.VarPatternLength
-import org.neo4j.cypher.internal.ir.VariableGrouping
 import org.neo4j.cypher.internal.ir.ast.ForAllRepetitions
 import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
 
@@ -443,7 +443,7 @@ object extractQPPPredicates {
     availableLocalSymbols: Set[VariableGrouping],
     availableNonLocalSymbols: Set[LogicalVariable]
   ): Seq[Expression] = {
-    val availableLocalGroupNames = availableLocalSymbols.map(_.groupName)
+    val availableLocalGroupNames = availableLocalSymbols.map(_.group)
     val availableSymbols = availableLocalGroupNames ++ availableNonLocalSymbols
     predicates.filter(_.dependencies.subsetOf(availableSymbols))
   }
@@ -461,7 +461,7 @@ object extractQPPPredicates {
     availableLocalSymbols: Set[VariableGrouping]
   ): Seq[ExtractedPredicate] = {
     val availableLocalSymbolsMapping = availableLocalSymbols
-      .map(g => g.groupName -> g.singletonName)
+      .map(g => g.group -> g.singleton)
       .toMap
 
     predicates.collect {
@@ -489,7 +489,7 @@ object extractQPPPredicates {
     predicates: Seq[ExtractedPredicate],
     availableLocalSymbols: Set[VariableGrouping]
   ): Set[LogicalVariable] = {
-    val availableLocalSingletons = availableLocalSymbols.map(_.singletonName)
+    val availableLocalSingletons = availableLocalSymbols.map(_.singleton)
     val predicateDependencies = predicates.flatMap(_.extracted.dependencies).toSet
     val requiredDependencies = predicateDependencies -- availableLocalSingletons
     requiredDependencies

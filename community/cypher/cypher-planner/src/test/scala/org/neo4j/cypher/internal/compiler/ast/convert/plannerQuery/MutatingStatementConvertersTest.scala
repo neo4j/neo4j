@@ -45,7 +45,6 @@ import org.neo4j.cypher.internal.ir.SetNodePropertyPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertyPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.UnwindProjection
-import org.neo4j.cypher.internal.ir.VariableGrouping
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.Repetition
@@ -314,8 +313,8 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
         argumentIds = Set.empty,
         selections = Selections.empty,
         repetition = Repetition(1, Unlimited),
-        nodeVariableGroupings = Set("a", "b").map(name => VariableGrouping(varFor(name), varFor(name))),
-        relationshipVariableGroupings = Set(VariableGrouping(v"r", v"r"))
+        nodeVariableGroupings = Set("a", "b").map(name => variableGrouping(varFor(name), varFor(name))),
+        relationshipVariableGroupings = Set(variableGrouping(v"r", v"r"))
       )
     val qpp2: QuantifiedPathPattern =
       QuantifiedPathPattern(
@@ -331,8 +330,8 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
         argumentIds = Set.empty,
         selections = Selections.empty,
         repetition = Repetition(1, Unlimited),
-        nodeVariableGroupings = Set("c", "d").map(name => VariableGrouping(varFor(name), varFor(name))),
-        relationshipVariableGroupings = Set(VariableGrouping(v"r2", v"r2"))
+        nodeVariableGroupings = Set("c", "d").map(name => variableGrouping(varFor(name), varFor(name))),
+        relationshipVariableGroupings = Set(variableGrouping(v"r2", v"r2"))
       )
 
     val shortestPathPattern =

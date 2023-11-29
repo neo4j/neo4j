@@ -57,6 +57,7 @@ import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.UnsignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.expressions.VariableGrouping
 import org.neo4j.cypher.internal.frontend.phases.ProcedureSignature
 import org.neo4j.cypher.internal.frontend.phases.QualifiedName
 import org.neo4j.cypher.internal.frontend.phases.ResolvedCall
@@ -219,7 +220,6 @@ import org.neo4j.cypher.internal.logical.plans.SubqueryForeach
 import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.Top1WithTies
 import org.neo4j.cypher.internal.logical.plans.Trail
-import org.neo4j.cypher.internal.logical.plans.Trail.VariableGrouping
 import org.neo4j.cypher.internal.logical.plans.TransactionApply
 import org.neo4j.cypher.internal.logical.plans.TransactionForeach
 import org.neo4j.cypher.internal.logical.plans.TriadicBuild
@@ -561,16 +561,18 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     mode: ExpansionMode,
     reverseGroupVariableProjections: Boolean
   ): IMPL = {
-    val nodeVariableGroupings = groupNodes.map { case (x, y) => VariableGrouping(varFor(x), varFor(y)) }
-    val relationshipVariableGroupings = groupRelationships.map { case (x, y) => VariableGrouping(varFor(x), varFor(y)) }
+    val nodeVariableGroupings = groupNodes.map { case (x, y) => VariableGrouping(varFor(x), varFor(y))(pos) }
+    val relationshipVariableGroupings = groupRelationships.map { case (x, y) =>
+      VariableGrouping(varFor(x), varFor(y))(pos)
+    }
     val singletonNodeMappings = singletonNodeVariables.map { case (x, y) => Mapping(varFor(x), varFor(y)) }
     val singletonRelMappings = singletonRelationshipVariables.map { case (x, y) => Mapping(varFor(x), varFor(y)) }
 
     newNodes(nfa.nodeNames.map(_.name) + targetNode)
     newRelationships(nfa.relationshipNames.map(_.name))
-    nodeVariableGroupings.map(_.groupName.asInstanceOf[Variable])
+    nodeVariableGroupings.map(_.group.asInstanceOf[Variable])
       .foreach(newVariable(_, CTList(CTNode)))
-    relationshipVariableGroupings.map(_.groupName.asInstanceOf[Variable])
+    relationshipVariableGroupings.map(_.group.asInstanceOf[Variable])
       .foreach(newVariable(_, CTList(CTRelationship)))
     singletonNodeMappings.map(_.rowVar.asInstanceOf[Variable])
       .foreach(newVariable(_, CTNode))
@@ -2384,9 +2386,9 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         varFor(trailParameters.end),
         varFor(trailParameters.innerStart),
         varFor(trailParameters.innerEnd),
-        trailParameters.groupNodes.map { case (inner, outer) => VariableGrouping(varFor(inner), varFor(outer)) },
+        trailParameters.groupNodes.map { case (inner, outer) => VariableGrouping(varFor(inner), varFor(outer))(pos) },
         trailParameters.groupRelationships.map { case (inner, outer) =>
-          VariableGrouping(varFor(inner), varFor(outer))
+          VariableGrouping(varFor(inner), varFor(outer))(pos)
         },
         trailParameters.innerRelationships.map(varFor),
         trailParameters.previouslyBoundRelationships.map(varFor),
@@ -2414,9 +2416,11 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
             varFor(trailParameters.end),
             varFor(trailParameters.innerStart),
             varFor(trailParameters.innerEnd),
-            trailParameters.groupNodes.map { case (inner, outer) => VariableGrouping(varFor(inner), varFor(outer)) },
+            trailParameters.groupNodes.map { case (inner, outer) =>
+              VariableGrouping(varFor(inner), varFor(outer))(pos)
+            },
             trailParameters.groupRelationships.map { case (inner, outer) =>
-              VariableGrouping(varFor(inner), varFor(outer))
+              VariableGrouping(varFor(inner), varFor(outer))(pos)
             },
             trailParameters.innerRelationships.map(varFor),
             trailParameters.previouslyBoundRelationships.map(varFor),

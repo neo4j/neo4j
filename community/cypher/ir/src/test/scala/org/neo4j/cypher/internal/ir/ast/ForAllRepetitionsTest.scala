@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SimplePatternLength
-import org.neo4j.cypher.internal.ir.VariableGrouping
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.Repetition
@@ -62,13 +61,13 @@ class ForAllRepetitionsTest extends CypherFunSuite with AstConstructionTestSuppo
     selections = Selections.empty,
     repetition = Repetition(0, UpperBound.Unlimited),
     nodeVariableGroupings = Set(
-      VariableGrouping(v"x", v"xGroup"),
-      VariableGrouping(v"y", v"yGroup"),
-      VariableGrouping(v"z", v"zGroup")
+      variableGrouping(v"x", v"xGroup"),
+      variableGrouping(v"y", v"yGroup"),
+      variableGrouping(v"z", v"zGroup")
     ),
     relationshipVariableGroupings = Set(
-      VariableGrouping(v"r", v"rGroup"),
-      VariableGrouping(v"q", v"qGroup")
+      variableGrouping(v"r", v"rGroup"),
+      variableGrouping(v"q", v"qGroup")
     )
   )
 

@@ -750,6 +750,9 @@ trait AstConstructionTestSupport {
 
   def starQuantifier: StarQuantifier = StarQuantifier()(pos)
 
+  def variableGrouping(singleton: LogicalVariable, group: LogicalVariable): VariableGrouping =
+    VariableGrouping(singleton, group)(pos)
+
   def variableGrouping(singleton: String, group: String): VariableGrouping =
     VariableGrouping(varFor(singleton), varFor(group))(pos)
 

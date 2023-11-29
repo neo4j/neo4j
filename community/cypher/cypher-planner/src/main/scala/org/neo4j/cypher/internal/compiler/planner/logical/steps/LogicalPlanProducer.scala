@@ -70,6 +70,7 @@ import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.expressions.VariableGrouping
 import org.neo4j.cypher.internal.expressions.functions.Collect
 import org.neo4j.cypher.internal.expressions.functions.UnresolvedFunction
 import org.neo4j.cypher.internal.frontend.phases.ResolvedCall
@@ -114,7 +115,6 @@ import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.UnionQuery
 import org.neo4j.cypher.internal.ir.UnwindProjection
 import org.neo4j.cypher.internal.ir.VarPatternLength
-import org.neo4j.cypher.internal.ir.VariableGrouping
 import org.neo4j.cypher.internal.ir.ast.IRExpression
 import org.neo4j.cypher.internal.ir.ordering
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
@@ -1163,13 +1163,8 @@ case class LogicalPlanProducer(
         end = endBinding.outer,
         innerStart = startBinding.inner,
         innerEnd = endBinding.inner,
-        nodeVariableGroupings = pattern.nodeVariableGroupings.map { case VariableGrouping(singleton, group) =>
-          plans.Trail.VariableGrouping(singleton, group)
-        },
-        relationshipVariableGroupings = pattern.relationshipVariableGroupings.map {
-          case VariableGrouping(singleton, group) =>
-            plans.Trail.VariableGrouping(singleton, group)
-        },
+        nodeVariableGroupings = pattern.nodeVariableGroupings,
+        relationshipVariableGroupings = pattern.relationshipVariableGroupings,
         innerRelationships = pattern.patternRelationships.map(p => p.variable).toSet,
         previouslyBoundRelationships = previouslyBoundRelationships.map(varFor),
         previouslyBoundRelationshipGroups = previouslyBoundRelationshipGroups.map(varFor),
@@ -2348,8 +2343,8 @@ case class LogicalPlanProducer(
     endNode: String,
     nfa: NFA,
     nonInlinedPreFilters: Option[Expression],
-    nodeVariableGroupings: Set[Trail.VariableGrouping],
-    relationshipVariableGroupings: Set[Trail.VariableGrouping],
+    nodeVariableGroupings: Set[VariableGrouping],
+    relationshipVariableGroupings: Set[VariableGrouping],
     singletonNodeVariables: Set[Mapping],
     singletonRelationshipVariables: Set[Mapping],
     selector: StatefulShortestPath.Selector,

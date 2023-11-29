@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
-import org.neo4j.cypher.internal.ir.VariableGrouping
 import org.neo4j.cypher.internal.ir.ast.ForAllRepetitions
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.Repetition
@@ -58,8 +57,8 @@ class MoveQuantifiedPathPatternPredicatesTest extends CypherFunSuite with Logica
         SimplePatternLength
       )),
     repetition = Repetition(min = 1, max = UpperBound.Unlimited),
-    nodeVariableGroupings = Set(VariableGrouping(v"a", v"a"), VariableGrouping(v"b", v"b")),
-    relationshipVariableGroupings = Set(VariableGrouping(v"r", v"r"))
+    nodeVariableGroupings = Set(variableGrouping(v"a", v"a"), variableGrouping(v"b", v"b")),
+    relationshipVariableGroupings = Set(variableGrouping(v"r", v"r"))
   )
 
   test("should move QPP predicate with singleton variable") {

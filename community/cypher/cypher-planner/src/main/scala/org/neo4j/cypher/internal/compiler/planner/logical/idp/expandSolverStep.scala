@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.expressions.UnPositionedVariable
 import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.Unique
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.expressions.VariableGrouping
 import org.neo4j.cypher.internal.frontend.phases.Namespacer
 import org.neo4j.cypher.internal.ir.NodeConnection
 import org.neo4j.cypher.internal.ir.NodePathVariable
@@ -45,15 +46,14 @@ import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SelectivePathPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
-import org.neo4j.cypher.internal.ir.VariableGrouping
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath.Mapping
-import org.neo4j.cypher.internal.logical.plans.Trail
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.topDown
@@ -302,7 +302,7 @@ object expandSolverStep {
         None
       }
 
-    val groupingRelationshipNames = quantifiedPathPattern.relationshipVariableGroupings.map(_.groupName.name)
+    val groupingRelationshipNames = quantifiedPathPattern.relationshipVariableGroupings.map(_.group.name)
 
     def isBound(variable: String): Boolean = {
       sourcePlan.availableSymbols.contains(varFor(variable))
@@ -457,10 +457,12 @@ object expandSolverStep {
 
     val selector = convertSelectorFromIr(spp.selector)
     val nodeVariableGroupings =
-      spp.allQuantifiedPathPatterns.flatMap(_.nodeVariableGroupings.map(convertGroupingFromIr))
+      spp.allQuantifiedPathPatterns.flatMap(_.nodeVariableGroupings)
     val relationshipVariableGroupings =
-      spp.allQuantifiedPathPatterns.flatMap(_.relationshipVariableGroupings.map(convertGroupingFromIr)) ++
-        syntheticVarLengthSingletons.map(entry => Trail.VariableGrouping(varFor(entry._2), varFor(entry._1)))
+      spp.allQuantifiedPathPatterns.flatMap(_.relationshipVariableGroupings) ++
+        syntheticVarLengthSingletons.map(entry =>
+          VariableGrouping(varFor(entry._2), varFor(entry._1))(InputPosition.NONE)
+        )
     val nonInlinedPreFilters =
       Option.when(nonInlinedSelections.nonEmpty)(Ands.create(nonInlinedSelections.flatPredicates.to(ListSet)))
 
@@ -489,9 +491,4 @@ object expandSolverStep {
     case SelectivePathPattern.Selector.ShortestGroups(k) => StatefulShortestPath.Selector.ShortestGroups(k)
     case SelectivePathPattern.Selector.Shortest(k)       => StatefulShortestPath.Selector.Shortest(k)
   }
-
-  // this should go eventually when we have Variables instead of Strings in IR
-  private def convertGroupingFromIr(variableGrouping: VariableGrouping) =
-    Trail.VariableGrouping(varFor(variableGrouping.singletonName.name), varFor(variableGrouping.groupName.name))
-
 }

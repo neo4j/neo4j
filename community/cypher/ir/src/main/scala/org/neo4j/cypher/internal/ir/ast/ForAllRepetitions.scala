@@ -28,9 +28,9 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Subtract
 import org.neo4j.cypher.internal.expressions.UnPositionedVariable
 import org.neo4j.cypher.internal.expressions.UnsignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.expressions.VariableGrouping
 import org.neo4j.cypher.internal.expressions.functions
 import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
-import org.neo4j.cypher.internal.ir.VariableGrouping
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.InputPosition
 
@@ -113,8 +113,8 @@ object ForAllRepetitions {
 
     val astVariableGroupings = qpp.variableGroupings.map { irGrouping =>
       expressions.VariableGrouping(
-        singleton = irGrouping.singletonName,
-        group = irGrouping.groupName
+        singleton = irGrouping.singleton,
+        group = irGrouping.group
       )(InputPosition.NONE)
     }
 

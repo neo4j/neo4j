@@ -69,7 +69,6 @@ import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.UnionQuery
 import org.neo4j.cypher.internal.ir.UnwindProjection
 import org.neo4j.cypher.internal.ir.VarPatternLength
-import org.neo4j.cypher.internal.ir.VariableGrouping
 import org.neo4j.cypher.internal.ir.ast.ExistsIRExpression
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.builder.Parser
@@ -1692,8 +1691,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
               SimplePatternLength
             )),
           repetition = Repetition(min = 1, max = UpperBound.Unlimited),
-          nodeVariableGroupings = Set(VariableGrouping(v"n", v"n"), VariableGrouping(v"m", v"m")),
-          relationshipVariableGroupings = Set(VariableGrouping(v"r", v"r"))
+          nodeVariableGroupings = Set(variableGrouping(v"n", v"n"), variableGrouping(v"m", v"m")),
+          relationshipVariableGroupings = Set(variableGrouping(v"r", v"r"))
         )
       ),
       selections = Selections.from(unique(varFor("r")))
@@ -1717,8 +1716,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
               SimplePatternLength
             )),
           repetition = Repetition(min = 1, max = UpperBound.Unlimited),
-          nodeVariableGroupings = Set(VariableGrouping(v"anon_5", v"anon_8"), VariableGrouping(v"anon_7", v"anon_10")),
-          relationshipVariableGroupings = Set(VariableGrouping(v"anon_6", v"anon_9"))
+          nodeVariableGroupings = Set(variableGrouping(v"anon_5", v"anon_8"), variableGrouping(v"anon_7", v"anon_10")),
+          relationshipVariableGroupings = Set(variableGrouping(v"anon_6", v"anon_9"))
         )
       ),
       selections = Selections.from(unique(varFor("anon_9")))
@@ -1742,8 +1741,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
               SimplePatternLength
             )),
           repetition = Repetition(min = 2, max = UpperBound.Limited(5)),
-          nodeVariableGroupings = Set(VariableGrouping(v"n", v"n"), VariableGrouping(v"m", v"m")),
-          relationshipVariableGroupings = Set(VariableGrouping(v"r", v"r"))
+          nodeVariableGroupings = Set(variableGrouping(v"n", v"n"), variableGrouping(v"m", v"m")),
+          relationshipVariableGroupings = Set(variableGrouping(v"r", v"r"))
         )
       ),
       selections = Selections.from(unique(varFor("r")))
@@ -1777,8 +1776,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
               SimplePatternLength
             )),
           repetition = Repetition(min = 3, max = UpperBound.Unlimited),
-          nodeVariableGroupings = Set(VariableGrouping(v"n", v"n"), VariableGrouping(v"m", v"m")),
-          relationshipVariableGroupings = Set(VariableGrouping(v"r2", v"r2"))
+          nodeVariableGroupings = Set(variableGrouping(v"n", v"n"), variableGrouping(v"m", v"m")),
+          relationshipVariableGroupings = Set(variableGrouping(v"r2", v"r2"))
         )
       )
     )
@@ -1817,8 +1816,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
               SimplePatternLength
             )),
           repetition = Repetition(min = 3, max = UpperBound.Unlimited),
-          nodeVariableGroupings = Set(VariableGrouping(v"n", v"n"), VariableGrouping(v"m", v"m")),
-          relationshipVariableGroupings = Set(VariableGrouping(v"r2", v"r2"))
+          nodeVariableGroupings = Set(variableGrouping(v"n", v"n"), variableGrouping(v"m", v"m")),
+          relationshipVariableGroupings = Set(variableGrouping(v"r2", v"r2"))
         )
       ),
       selections = Selections.from(unique(varFor("r2")))
@@ -1847,8 +1846,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
               SimplePatternLength
             )),
           repetition = Repetition(min = 1, max = UpperBound.Unlimited),
-          nodeVariableGroupings = Set(VariableGrouping(v"n", v"n"), VariableGrouping(v"m", v"m")),
-          relationshipVariableGroupings = Set(VariableGrouping(v"r1", v"r1"))
+          nodeVariableGroupings = Set(variableGrouping(v"n", v"n"), variableGrouping(v"m", v"m")),
+          relationshipVariableGroupings = Set(variableGrouping(v"r1", v"r1"))
         ),
         QuantifiedPathPattern(
           leftBinding = NodeBinding(v"x", v"anon_1"),
@@ -1862,8 +1861,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
               SimplePatternLength
             )),
           repetition = Repetition(min = 0, max = UpperBound.Limited(3)),
-          nodeVariableGroupings = Set(VariableGrouping(v"x", v"x"), VariableGrouping(v"y", v"y")),
-          relationshipVariableGroupings = Set(VariableGrouping(v"r2", v"r2"))
+          nodeVariableGroupings = Set(variableGrouping(v"x", v"x"), variableGrouping(v"y", v"y")),
+          relationshipVariableGroupings = Set(variableGrouping(v"r2", v"r2"))
         )
       )
     )
@@ -1902,8 +1901,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
           selections = Selections.from(differentRelationships("r2", "r1")),
           repetition = Repetition(min = 5, max = UpperBound.Limited(5)),
           nodeVariableGroupings =
-            Set(VariableGrouping(v"a", v"a"), VariableGrouping(v"b", v"b"), VariableGrouping(v"c", v"c")),
-          relationshipVariableGroupings = Set(VariableGrouping(v"r1", v"r1"), VariableGrouping(v"r2", v"r2"))
+            Set(variableGrouping(v"a", v"a"), variableGrouping(v"b", v"b"), variableGrouping(v"c", v"c")),
+          relationshipVariableGroupings = Set(variableGrouping(v"r1", v"r1"), variableGrouping(v"r2", v"r2"))
         ),
         QuantifiedPathPattern(
           leftBinding = NodeBinding(v"x", v"anon_1"),
@@ -1917,8 +1916,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
               SimplePatternLength
             )),
           repetition = Repetition(min = 1, max = UpperBound.Unlimited),
-          nodeVariableGroupings = Set(VariableGrouping(v"x", v"x"), VariableGrouping(v"y", v"y")),
-          relationshipVariableGroupings = Set(VariableGrouping(v"r3", v"r3"))
+          nodeVariableGroupings = Set(variableGrouping(v"x", v"x"), variableGrouping(v"y", v"y")),
+          relationshipVariableGroupings = Set(variableGrouping(v"r3", v"r3"))
         )
       )
     )
@@ -1969,13 +1968,13 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
           repetition = Repetition(min = 5, max = UpperBound.Limited(5)),
           nodeVariableGroupings =
             Set(
-              VariableGrouping(v"a", v"a"),
-              VariableGrouping(v"b", v"b"),
-              VariableGrouping(v"c", v"c"),
-              VariableGrouping(v"d", v"d")
+              variableGrouping(v"a", v"a"),
+              variableGrouping(v"b", v"b"),
+              variableGrouping(v"c", v"c"),
+              variableGrouping(v"d", v"d")
             ),
           relationshipVariableGroupings =
-            Set(VariableGrouping(v"r1", v"r1"), VariableGrouping(v"r2", v"r2"), VariableGrouping(v"r3", v"r3"))
+            Set(variableGrouping(v"r1", v"r1"), variableGrouping(v"r2", v"r2"), variableGrouping(v"r3", v"r3"))
         )
       )
     )
@@ -2001,8 +2000,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
                 SimplePatternLength
               )),
             repetition = Repetition(min = 1, max = UpperBound.Unlimited),
-            nodeVariableGroupings = Set(VariableGrouping(v"n", v"n"), VariableGrouping(v"m", v"m")),
-            relationshipVariableGroupings = Set(VariableGrouping(v"r", v"r"))
+            nodeVariableGroupings = Set(variableGrouping(v"n", v"n"), variableGrouping(v"m", v"m")),
+            relationshipVariableGroupings = Set(variableGrouping(v"r", v"r"))
           )
         ),
         selections = Selections.from(unique(varFor("r")))
@@ -2031,8 +2030,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         )),
       argumentIds = Set(v"a"),
       repetition = Repetition(min = 1, max = UpperBound.Unlimited),
-      nodeVariableGroupings = Set(VariableGrouping(n, n), VariableGrouping(m, m)),
-      relationshipVariableGroupings = Set(VariableGrouping(r, r))
+      nodeVariableGroupings = Set(variableGrouping(n, n), variableGrouping(m, m)),
+      relationshipVariableGroupings = Set(variableGrouping(r, r))
     )
 
     query.queryGraph.selections.predicates.headOption.map(_.expr.asInstanceOf[ExistsIRExpression].query) shouldBe
@@ -2066,8 +2065,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
             )),
           selections = Selections.from(andedPropertyInequalities(greaterThan(prop("n", "prop"), prop("m", "prop")))),
           repetition = Repetition(min = 1, max = UpperBound.Unlimited),
-          nodeVariableGroupings = Set(VariableGrouping(v"n", v"n"), VariableGrouping(v"m", v"m")),
-          relationshipVariableGroupings = Set(VariableGrouping(v"r", v"r"))
+          nodeVariableGroupings = Set(variableGrouping(v"n", v"n"), variableGrouping(v"m", v"m")),
+          relationshipVariableGroupings = Set(variableGrouping(v"r", v"r"))
         )
       ),
       selections = Selections.from(unique(varFor("r")))
@@ -2095,8 +2094,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
             propLessThan("r", "prop", 10)
           )),
           repetition = Repetition(min = 1, max = UpperBound.Unlimited),
-          nodeVariableGroupings = Set(VariableGrouping(v"n", v"n"), VariableGrouping(v"m", v"m")),
-          relationshipVariableGroupings = Set(VariableGrouping(v"r", v"r"))
+          nodeVariableGroupings = Set(variableGrouping(v"n", v"n"), variableGrouping(v"m", v"m")),
+          relationshipVariableGroupings = Set(variableGrouping(v"r", v"r"))
         )
       ),
       selections = Selections.from(unique(varFor("r")))
@@ -2279,8 +2278,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         argumentIds = Set.empty,
         selections = Selections.empty,
         repetition = Repetition(1, UpperBound.Limited(5)),
-        nodeVariableGroupings = Set(v"a", v"b").map(name => VariableGrouping(name, name)),
-        relationshipVariableGroupings = Set(VariableGrouping(v"r", v"r"))
+        nodeVariableGroupings = Set(v"a", v"b").map(name => variableGrouping(name, name)),
+        relationshipVariableGroupings = Set(variableGrouping(v"r", v"r"))
       )
 
     val shortestPathPattern =
@@ -2427,8 +2426,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         argumentIds = Set.empty,
         selections = Selections.empty,
         repetition = Repetition(1, UpperBound.Unlimited),
-        nodeVariableGroupings = Set(v"a", v"b").map(name => VariableGrouping(name, name)),
-        relationshipVariableGroupings = Set(VariableGrouping(v"r", v"r"))
+        nodeVariableGroupings = Set(v"a", v"b").map(name => variableGrouping(name, name)),
+        relationshipVariableGroupings = Set(variableGrouping(v"r", v"r"))
       )
 
     val shortestPathPattern =

@@ -53,7 +53,6 @@ import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesFromMapPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertyPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
-import org.neo4j.cypher.internal.ir.VariableGrouping
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.ir.ordering.RequiredOrderCandidate
@@ -1259,8 +1258,8 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
             SimplePatternLength
           )),
         repetition = Repetition(min = 1, max = UpperBound.Unlimited),
-        nodeVariableGroupings = Set(VariableGrouping(v"n", v"n"), VariableGrouping(v"m", v"m")),
-        relationshipVariableGroupings = Set(VariableGrouping(v"r", v"r"))
+        nodeVariableGroupings = Set(variableGrouping(v"n", v"n"), variableGrouping(v"m", v"m")),
+        relationshipVariableGroupings = Set(variableGrouping(v"r", v"r"))
       )
 
       the[InternalException] thrownBy producer.planTrail(

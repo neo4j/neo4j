@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.ExhaustivePathPattern
@@ -26,13 +27,13 @@ import org.neo4j.cypher.internal.ir.NodeBinding
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
-import org.neo4j.cypher.internal.ir.VariableGrouping
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.Repetition
 import org.neo4j.cypher.internal.util.UpperBound
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class NodeConnectionManipulationTest extends CypherFunSuite with NodeConnectionManipulation {
+class NodeConnectionManipulationTest extends CypherFunSuite with NodeConnectionManipulation
+    with AstConstructionTestSupport {
 
   test(
     "generates increasingly larger variations of a concatenated path pattern by continuously incrementing the various upper bounds in lockstep"
@@ -51,8 +52,8 @@ class NodeConnectionManipulationTest extends CypherFunSuite with NodeConnectionM
             SimplePatternLength
           )),
         repetition = Repetition(min = 1, max = upperBound),
-        nodeVariableGroupings = Set(VariableGrouping(v"b", v"b"), VariableGrouping(v"c", v"c")),
-        relationshipVariableGroupings = Set(VariableGrouping(v"r", v"r"))
+        nodeVariableGroupings = Set(variableGrouping(v"b", v"b"), variableGrouping(v"c", v"c")),
+        relationshipVariableGroupings = Set(variableGrouping(v"r", v"r"))
       )
 
     // (d)-[s]-(e)
@@ -79,8 +80,8 @@ class NodeConnectionManipulationTest extends CypherFunSuite with NodeConnectionM
             SimplePatternLength
           )),
         repetition = Repetition(min = 0, max = upperBound),
-        nodeVariableGroupings = Set(VariableGrouping(v"f", v"f"), VariableGrouping(v"g", v"g")),
-        relationshipVariableGroupings = Set(VariableGrouping(v"t", v"t"))
+        nodeVariableGroupings = Set(variableGrouping(v"f", v"f"), variableGrouping(v"g", v"g")),
+        relationshipVariableGroupings = Set(variableGrouping(v"t", v"t"))
       )
 
     // (a) ((b)-[r]->(c))+ (d)-[s]-(e) ((f)<-[t]-(g)){0,2} (h)
@@ -121,8 +122,8 @@ class NodeConnectionManipulationTest extends CypherFunSuite with NodeConnectionM
             SimplePatternLength
           )),
         repetition = Repetition(min = 0, max = upperBound),
-        nodeVariableGroupings = Set(VariableGrouping(v"b", v"b"), VariableGrouping(v"c", v"c")),
-        relationshipVariableGroupings = Set(VariableGrouping(v"r", v"r"))
+        nodeVariableGroupings = Set(variableGrouping(v"b", v"b"), variableGrouping(v"c", v"c")),
+        relationshipVariableGroupings = Set(variableGrouping(v"r", v"r"))
       )
 
     increasinglyLargerConnection(qpp(UpperBound.Unlimited)).toList shouldEqual (1 to 32).map { n =>

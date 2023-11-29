@@ -30,7 +30,6 @@ import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SelectivePathPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
-import org.neo4j.cypher.internal.ir.VariableGrouping
 import org.neo4j.cypher.internal.logical.builder.TestNFABuilder
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.NonEmptyList
@@ -54,8 +53,8 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
     argumentIds = Set.empty,
     selections = Selections.empty,
     repetition = Repetition(1, UpperBound.Unlimited),
-    nodeVariableGroupings = Set(v"a", v"b").map(name => VariableGrouping(name, name)),
-    relationshipVariableGroupings = Set(VariableGrouping(v"r", v"r"))
+    nodeVariableGroupings = Set(v"a", v"b").map(name => variableGrouping(name, name)),
+    relationshipVariableGroupings = Set(variableGrouping(v"r", v"r"))
   )
 
   private val `(start) ((a)-[r]->(b)-[r2]->(c))+ (end)` = QuantifiedPathPattern(
@@ -80,8 +79,8 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
     argumentIds = Set.empty,
     selections = Selections.empty,
     repetition = Repetition(1, UpperBound.Unlimited),
-    nodeVariableGroupings = Set(v"a", v"b", v"c").map(name => VariableGrouping(name, name)),
-    relationshipVariableGroupings = Set(v"r", v"r2").map(name => VariableGrouping(name, name))
+    nodeVariableGroupings = Set(v"a", v"b", v"c").map(name => variableGrouping(name, name)),
+    relationshipVariableGroupings = Set(v"r", v"r2").map(name => variableGrouping(name, name))
   )
 
   // QPP with internal predicates
@@ -104,8 +103,8 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
         equals(prop("b", "prop"), literalInt(2))
       )),
       repetition = Repetition(1, UpperBound.Unlimited),
-      nodeVariableGroupings = Set(v"a", v"b").map(name => VariableGrouping(name, name)),
-      relationshipVariableGroupings = Set(VariableGrouping(v"r", v"r"))
+      nodeVariableGroupings = Set(v"a", v"b").map(name => variableGrouping(name, name)),
+      relationshipVariableGroupings = Set(variableGrouping(v"r", v"r"))
     )
 
   test("create simple NFA") {
@@ -265,8 +264,8 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
       argumentIds = Set.empty,
       selections = Selections.from(differentRelationships(varFor("r"), varFor("s"))),
       repetition = Repetition(0, UpperBound.Unlimited),
-      nodeVariableGroupings = Set(v"a", v"b", v"c").map(name => VariableGrouping(name, name)),
-      relationshipVariableGroupings = Set(v"r", v"s").map(name => VariableGrouping(name, name))
+      nodeVariableGroupings = Set(v"a", v"b", v"c").map(name => variableGrouping(name, name)),
+      relationshipVariableGroupings = Set(v"r", v"s").map(name => variableGrouping(name, name))
     )
     val rel = PatternRelationship(
       variable = v"t",
@@ -350,8 +349,8 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
         equals(prop("b", "prop"), varFor("foo"))
       )),
       repetition = Repetition(1, UpperBound.Unlimited),
-      nodeVariableGroupings = Set(v"a", v"b").map(name => VariableGrouping(name, name)),
-      relationshipVariableGroupings = Set(VariableGrouping(v"r", v"r"))
+      nodeVariableGroupings = Set(v"a", v"b").map(name => variableGrouping(name, name)),
+      relationshipVariableGroupings = Set(variableGrouping(v"r", v"r"))
     )
     val rel = PatternRelationship(
       variable = v"r2",

@@ -24,6 +24,7 @@ import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.when
 import org.mockito.verification.VerificationMode
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.CacheBackedQPPInnerPlanner.CacheKeyInner
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.CacheBackedQPPInnerPlanner.CacheKeyOuter
@@ -43,7 +44,6 @@ import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SimplePatternLength
-import org.neo4j.cypher.internal.ir.VariableGrouping
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.util.NonEmptyList
@@ -136,7 +136,7 @@ class CacheBackedQPPInnerPlannerTest extends CypherFunSuite {
   }
 }
 
-object CacheBackedQPPInnerPlannerTest extends CypherFunSuite {
+object CacheBackedQPPInnerPlannerTest extends CypherFunSuite with AstConstructionTestSupport {
 
   implicit class QPPInnerPlannerOps(planner: QPPInnerPlanner) {
 
@@ -184,8 +184,8 @@ object CacheBackedQPPInnerPlannerTest extends CypherFunSuite {
     argumentIds = Set.empty,
     selections = Selections.empty,
     repetition = Repetition(1, UpperBound.unlimited),
-    nodeVariableGroupings = Set(VariableGrouping(v"n", v"n"), VariableGrouping(v"m", v"m")),
-    relationshipVariableGroupings = Set(VariableGrouping(v"r", v"r"))
+    nodeVariableGroupings = Set(variableGrouping(v"n", v"n"), variableGrouping(v"m", v"m")),
+    relationshipVariableGroupings = Set(variableGrouping(v"r", v"r"))
   )
 
   val `(c) ((x)-[r]->(y))+ (d)` : QuantifiedPathPattern = QuantifiedPathPattern(
@@ -196,7 +196,7 @@ object CacheBackedQPPInnerPlannerTest extends CypherFunSuite {
     argumentIds = Set.empty,
     selections = Selections.empty,
     repetition = Repetition(1, UpperBound.unlimited),
-    nodeVariableGroupings = Set(VariableGrouping(v"x", v"x"), VariableGrouping(v"y", v"y")),
-    relationshipVariableGroupings = Set(VariableGrouping(v"r", v"r"))
+    nodeVariableGroupings = Set(variableGrouping(v"x", v"x"), variableGrouping(v"y", v"y")),
+    relationshipVariableGroupings = Set(variableGrouping(v"r", v"r"))
   )
 }

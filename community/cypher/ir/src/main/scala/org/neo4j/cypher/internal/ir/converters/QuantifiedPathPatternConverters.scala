@@ -34,11 +34,11 @@ import org.neo4j.cypher.internal.expressions.QuantifiedPath
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.ShortestPathsPatternPart
 import org.neo4j.cypher.internal.expressions.StarQuantifier
+import org.neo4j.cypher.internal.expressions.VariableGrouping
 import org.neo4j.cypher.internal.ir.NodeBinding
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
 import org.neo4j.cypher.internal.ir.Selections
-import org.neo4j.cypher.internal.ir.VariableGrouping
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.Repetition
 import org.neo4j.cypher.internal.util.UpperBound
@@ -155,25 +155,24 @@ object QuantifiedPathPatternConverters {
     }
   }
 
-  final private case class VariableGroupings(singletonNameToGroupName: Map[LogicalVariable, LogicalVariable])
+  final private case class VariableGroupings(singletonNameToVariableGrouping: Map[LogicalVariable, VariableGrouping])
       extends AnyVal {
 
     def forSingletonNames(singletonNames: Set[LogicalVariable]): Set[VariableGrouping] =
       singletonNames.flatMap(forSingletonName)
 
     def forSingletonName(singletonName: LogicalVariable): Option[VariableGrouping] =
-      singletonNameToGroupName
+      singletonNameToVariableGrouping
         .get(singletonName)
-        .map(groupName => VariableGrouping(singletonName, groupName))
   }
 
   private object VariableGroupings {
 
-    def build(groupings: Set[org.neo4j.cypher.internal.expressions.VariableGrouping]): VariableGroupings =
+    def build(groupings: Set[VariableGrouping]): VariableGroupings =
       VariableGroupings(
         groupings
           .view
-          .map(grouping => grouping.singleton -> grouping.group)
+          .map(grouping => grouping.singleton -> grouping)
           .toMap
       )
   }

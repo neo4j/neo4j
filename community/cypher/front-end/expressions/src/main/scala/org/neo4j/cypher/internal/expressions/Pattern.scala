@@ -316,10 +316,21 @@ object QuantifiedPath {
 case class VariableGrouping(singleton: LogicalVariable, group: LogicalVariable)(val position: InputPosition)
     extends ASTNode with HasMappableExpressions[VariableGrouping] {
 
+  override def toString: String = s"(singletonName=${singleton.name}, groupName=${group.name})"
+
   override def mapExpressions(f: Expression => Expression): VariableGrouping = copy(
     f(singleton).asInstanceOf[LogicalVariable],
     f(group).asInstanceOf[LogicalVariable]
   )(this.position)
+}
+
+object VariableGrouping {
+
+  def singletonToGroup(groupings: Set[VariableGrouping], singletonName: LogicalVariable): Option[LogicalVariable] = {
+    groupings.collectFirst {
+      case VariableGrouping(`singletonName`, groupName) => groupName
+    }
+  }
 }
 
 // We can currently parse these but not plan them. Therefore, we represent them in the AST but disallow them in semantic checking when concatenated and unwrap them otherwise.

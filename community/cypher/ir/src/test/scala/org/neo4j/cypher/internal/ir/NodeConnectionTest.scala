@@ -67,8 +67,8 @@ class NodeConnectionTest extends CypherFunSuite with AstConstructionTestSupport 
     argumentIds = Set.empty,
     selections = Selections.empty,
     repetition = Repetition(0, UpperBound.Unlimited),
-    nodeVariableGroupings = Set("a", "b", "c").map(name => VariableGrouping(varFor(name), varFor(name))),
-    relationshipVariableGroupings = Set("r", "s").map(name => VariableGrouping(varFor(name), varFor(name)))
+    nodeVariableGroupings = Set("a", "b", "c").map(name => variableGrouping(varFor(name), varFor(name))),
+    relationshipVariableGroupings = Set("r", "s").map(name => variableGrouping(varFor(name), varFor(name)))
   )
 
   test("pathVariables of a relationship") {
@@ -94,8 +94,8 @@ class NodeConnectionTest extends CypherFunSuite with AstConstructionTestSupport 
   test("pathVariables of a QPP with gaps in group variables") {
     `(start) ((a)-[r]->(b)-[s]->(c))+ (end)`
       .copy(
-        nodeVariableGroupings = Set("a", "c").map(name => VariableGrouping(varFor(name), varFor(name))),
-        relationshipVariableGroupings = Set("s").map(name => VariableGrouping(varFor(name), varFor(name)))
+        nodeVariableGroupings = Set("a", "c").map(name => variableGrouping(varFor(name), varFor(name))),
+        relationshipVariableGroupings = Set("s").map(name => variableGrouping(varFor(name), varFor(name)))
       )
       .pathVariables should equal(Seq(
       NodePathVariable(v"start"),

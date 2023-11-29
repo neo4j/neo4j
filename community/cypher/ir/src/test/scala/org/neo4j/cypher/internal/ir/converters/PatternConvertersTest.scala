@@ -40,7 +40,6 @@ import org.neo4j.cypher.internal.ir.SelectivePathPattern
 import org.neo4j.cypher.internal.ir.ShortestRelationshipPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
-import org.neo4j.cypher.internal.ir.VariableGrouping
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.Repetition
@@ -95,8 +94,8 @@ class PatternConvertersTest extends CypherFunSuite with AstConstructionTestSuppo
         argumentIds = Set.empty,
         selections = Selections.empty,
         repetition = Repetition(1, UpperBound.unlimited),
-        nodeVariableGroupings = Set(VariableGrouping(v"a", v"a"), VariableGrouping(v"b", v"b")),
-        relationshipVariableGroupings = Set(VariableGrouping(v"r", v"r"))
+        nodeVariableGroupings = Set(variableGrouping(v"a", v"a"), variableGrouping(v"b", v"b")),
+        relationshipVariableGroupings = Set(variableGrouping(v"r", v"r"))
       ),
       PatternRelationship(
         variable = v"s",
@@ -212,8 +211,8 @@ class PatternConvertersTest extends CypherFunSuite with AstConstructionTestSuppo
         argumentIds = Set.empty,
         selections = Selections.empty,
         repetition = Repetition(1, UpperBound.unlimited),
-        nodeVariableGroupings = Set(VariableGrouping(v"a", v"a"), VariableGrouping(v"b", v"b")),
-        relationshipVariableGroupings = Set(VariableGrouping(v"r", v"r"))
+        nodeVariableGroupings = Set(variableGrouping(v"a", v"a"), variableGrouping(v"b", v"b")),
+        relationshipVariableGroupings = Set(variableGrouping(v"r", v"r"))
       ),
       PatternRelationship(
         variable = v"s",

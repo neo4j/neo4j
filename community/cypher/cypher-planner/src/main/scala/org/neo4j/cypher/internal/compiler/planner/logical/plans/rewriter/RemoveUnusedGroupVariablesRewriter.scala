@@ -64,8 +64,8 @@ case object RemoveUnusedGroupVariablesRewriter extends Rewriter {
 
   def instance(unusedGroupVariables: Set[LogicalVariable]): Rewriter = topDown(Rewriter.lift {
     case p: PlanWithVariableGroupings =>
-      val usedNodeVariables = p.nodeVariableGroupings.filterNot(g => unusedGroupVariables.contains(g.groupName))
-      val usedRelVariables = p.relationshipVariableGroupings.filterNot(g => unusedGroupVariables.contains(g.groupName))
+      val usedNodeVariables = p.nodeVariableGroupings.filterNot(g => unusedGroupVariables.contains(g.group))
+      val usedRelVariables = p.relationshipVariableGroupings.filterNot(g => unusedGroupVariables.contains(g.group))
       p.withVariableGroupings(
         nodeVariableGroupings = usedNodeVariables,
         relationshipVariableGroupings = usedRelVariables
@@ -75,7 +75,7 @@ case object RemoveUnusedGroupVariablesRewriter extends Rewriter {
   def findGroupVariableDeclarations(plan: AnyRef): Set[LogicalVariable] = {
     plan.folder.treeFold(Set.empty[LogicalVariable]) {
       case p: PlanWithVariableGroupings =>
-        val groupVars = p.nodeVariableGroupings.map(_.groupName) ++ p.relationshipVariableGroupings.map(_.groupName)
+        val groupVars = p.nodeVariableGroupings.map(_.group) ++ p.relationshipVariableGroupings.map(_.group)
         acc => TraverseChildren(acc ++ groupVars)
     }
   }

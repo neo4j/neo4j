@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.physicalplanning
 
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.VariableGrouping
 import org.neo4j.cypher.internal.ir.CreateCommand
 import org.neo4j.cypher.internal.ir.CreateNode
 import org.neo4j.cypher.internal.ir.CreatePattern
@@ -121,7 +122,6 @@ import org.neo4j.cypher.internal.logical.plans.SimulatedExpand
 import org.neo4j.cypher.internal.logical.plans.SimulatedNodeScan
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
 import org.neo4j.cypher.internal.logical.plans.Trail
-import org.neo4j.cypher.internal.logical.plans.Trail.VariableGrouping
 import org.neo4j.cypher.internal.logical.plans.TransactionApply
 import org.neo4j.cypher.internal.logical.plans.TransactionForeach
 import org.neo4j.cypher.internal.logical.plans.TriadicBuild
@@ -475,7 +475,7 @@ object VariableRefRewriter extends Rewriter {
     case c: CreateCommand                              => rewrite(c)
     case p @ ShortestRelationshipPattern(name, _, _)   => p.copy(maybePathVar = name.map(varRef))(p.expr)
     case c: ColumnOrder                                => rewrite(c)
-    case g @ VariableGrouping(left, right)             => g.copy(varRef(left), varRef(right))
+    case g @ VariableGrouping(left, right)             => g.copy(varRef(left), varRef(right))(g.position)
     case m @ StatefulShortestPath.Mapping(left, right) => m.copy(varRef(left), varRef(right))
     case p @ PatternRelationship(name, (left, right), _, _, _) =>
       p.copy(variable = varRef(name), boundaryNodes = (varRef(left), varRef(right)))

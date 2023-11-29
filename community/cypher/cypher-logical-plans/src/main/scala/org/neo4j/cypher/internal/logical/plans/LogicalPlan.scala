@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipTypeToken
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.expressions.VariableGrouping
 import org.neo4j.cypher.internal.frontend.phases.ResolvedCall
 import org.neo4j.cypher.internal.ir.CSVFormat
 import org.neo4j.cypher.internal.ir.CreateCommand
@@ -58,7 +59,6 @@ import org.neo4j.cypher.internal.logical.plans.FindShortestPaths.SameNodeMode
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan.VERBOSE_TO_STRING
 import org.neo4j.cypher.internal.logical.plans.Prober.Probe
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath.Mapping
-import org.neo4j.cypher.internal.logical.plans.Trail.VariableGrouping
 import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.util.Foldable
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
@@ -1001,8 +1001,8 @@ case class BidirectionalRepeatTrail(
   }
 
   override val availableSymbols: Set[LogicalVariable] =
-    left.availableSymbols + end + start ++ nodeVariableGroupings.map(_.groupName) ++ relationshipVariableGroupings.map(
-      _.groupName
+    left.availableSymbols + end + start ++ nodeVariableGroupings.map(_.group) ++ relationshipVariableGroupings.map(
+      _.group
     )
 
   override val distinctness: Distinctness = NotDistinct
@@ -2012,8 +2012,8 @@ case class StatefulShortestPath(
   override val availableSymbols: Set[LogicalVariable] = source.availableSymbols ++
     singletonNodeVariables.map(_.rowVar) ++
     singletonRelationshipVariables.map(_.rowVar) ++
-    nodeVariableGroupings.map(_.groupName) ++
-    relationshipVariableGroupings.map(_.groupName)
+    nodeVariableGroupings.map(_.group) ++
+    relationshipVariableGroupings.map(_.group)
 
   override val distinctness: Distinctness = NotDistinct
 
@@ -3556,22 +3556,11 @@ case class Trail(
   )(idGen)
 
   override val availableSymbols: Set[LogicalVariable] =
-    left.availableSymbols + end + start ++ nodeVariableGroupings.map(_.groupName) ++ relationshipVariableGroupings.map(
-      _.groupName
+    left.availableSymbols + end + start ++ nodeVariableGroupings.map(_.group) ++ relationshipVariableGroupings.map(
+      _.group
     )
   override val distinctness: Distinctness = NotDistinct
 
-}
-
-object Trail {
-
-  /**
-   * Describes a variable that is exposed from a QuantifiedPath.
-   *
-   * @param singletonName the name of the singleton variable inside the QuantifiedPath.
-   * @param groupName     the name of the group variable exposed outside of the QuantifiedPath.
-   */
-  case class VariableGrouping(singletonName: LogicalVariable, groupName: LogicalVariable)
 }
 
 /**

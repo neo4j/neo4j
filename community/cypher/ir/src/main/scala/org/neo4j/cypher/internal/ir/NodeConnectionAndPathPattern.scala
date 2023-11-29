@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.ShortestPathsPatternPart
+import org.neo4j.cypher.internal.expressions.VariableGrouping
 import org.neo4j.cypher.internal.ir.ExhaustivePathPattern.NodeConnections
 import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.util.NonEmptyList
@@ -208,25 +209,6 @@ case class NodeBinding(inner: LogicalVariable, outer: LogicalVariable) {
   override def toString: String = s"(inner=$inner, outer=$outer)"
 }
 
-/**
- * Describes a variable that is exposed from a [[org.neo4j.cypher.internal.expressions.QuantifiedPath]].
- *
- * @param singletonName the name of the singleton variable inside the QuantifiedPath.
- * @param groupName     the name of the group variable exposed outside of the QuantifiedPath.
- */
-case class VariableGrouping(singletonName: LogicalVariable, groupName: LogicalVariable) {
-  override def toString: String = s"(singletonName=$singletonName, groupName=$groupName)"
-}
-
-object VariableGrouping {
-
-  def singletonToGroup(groupings: Set[VariableGrouping], singletonName: LogicalVariable): Option[LogicalVariable] = {
-    groupings.collectFirst {
-      case VariableGrouping(`singletonName`, groupName) => groupName
-    }
-  }
-}
-
 final case class QuantifiedPathPattern(
   leftBinding: NodeBinding,
   rightBinding: NodeBinding,
@@ -253,24 +235,24 @@ final case class QuantifiedPathPattern(
   )
 
   AssertMacros.checkOnlyWhenAssertionsAreEnabled(
-    nodeVariableGroupings.forall(grouping => patternNodes.contains(grouping.singletonName)),
-    s"Not all singleton node variables ${nodeVariableGroupings.map(_.singletonName)} were pattern nodes"
+    nodeVariableGroupings.forall(grouping => patternNodes.contains(grouping.singleton)),
+    s"Not all singleton node variables ${nodeVariableGroupings.map(_.singleton)} were pattern nodes"
   )
 
   AssertMacros.checkOnlyWhenAssertionsAreEnabled(
     relationshipVariableGroupings.forall(grouping =>
-      patternRelationships.map(_.variable).contains(grouping.singletonName)
+      patternRelationships.map(_.variable).contains(grouping.singleton)
     ),
-    s"Not all singleton relationship variables ${relationshipVariableGroupings.map(_.singletonName)} were relationship names"
+    s"Not all singleton relationship variables ${relationshipVariableGroupings.map(_.singleton)} were relationship names"
   )
 
   override val left: LogicalVariable = leftBinding.outer
   override val right: LogicalVariable = rightBinding.outer
-  override val nodes: Set[LogicalVariable] = Set(left, right) ++ nodeVariableGroupings.map(_.groupName)
-  override val relationships: Set[LogicalVariable] = relationshipVariableGroupings.map(_.groupName)
+  override val nodes: Set[LogicalVariable] = Set(left, right) ++ nodeVariableGroupings.map(_.group)
+  override val relationships: Set[LogicalVariable] = relationshipVariableGroupings.map(_.group)
   override val boundaryNodes: (LogicalVariable, LogicalVariable) = (left, right)
   val variableGroupings: Set[VariableGrouping] = nodeVariableGroupings ++ relationshipVariableGroupings
-  val variableGroupNames: Set[LogicalVariable] = variableGroupings.map(_.groupName)
+  val variableGroupNames: Set[LogicalVariable] = variableGroupings.map(_.group)
 
   override def withLeft(left: LogicalVariable): QuantifiedPathPattern =
     copy(leftBinding = leftBinding.copy(outer = left))

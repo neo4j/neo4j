@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipTypeToken
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.expressions.VariableGrouping
 import org.neo4j.cypher.internal.frontend.phases.ProcedureSignature
 import org.neo4j.cypher.internal.frontend.phases.QualifiedName
 import org.neo4j.cypher.internal.frontend.phases.ResolvedCall
@@ -68,7 +69,6 @@ import org.neo4j.cypher.internal.logical.plans.NFA.Predicate
 import org.neo4j.cypher.internal.logical.plans.NFA.RelationshipExpansionPredicate
 import org.neo4j.cypher.internal.logical.plans.NFA.State
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath.Mapping
-import org.neo4j.cypher.internal.logical.plans.Trail.VariableGrouping
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.Repetition
 import org.neo4j.graphdb.schema.IndexType
@@ -1179,7 +1179,7 @@ object LogicalPlanToPlanBuilderString {
   }
 
   private def groupEntitiesString(groupEntities: Set[VariableGrouping]): String =
-    groupEntities.map(g => s"(${wrapInQuotations(g.singletonName)}, ${wrapInQuotations(g.groupName)})").mkString(
+    groupEntities.map(g => s"(${wrapInQuotations(g.singleton)}, ${wrapInQuotations(g.group)})").mkString(
       ", "
     )
 

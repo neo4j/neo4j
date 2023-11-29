@@ -360,7 +360,6 @@ import org.neo4j.cypher.internal.logical.plans.StopDatabase
 import org.neo4j.cypher.internal.logical.plans.TerminateTransactions
 import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.Trail
-import org.neo4j.cypher.internal.logical.plans.Trail.VariableGrouping
 import org.neo4j.cypher.internal.logical.plans.TransactionApply
 import org.neo4j.cypher.internal.logical.plans.TransactionForeach
 import org.neo4j.cypher.internal.logical.plans.TriadicBuild
@@ -6991,10 +6990,10 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           varFor("  a@1"),
           varFor("  UNNAMED1"),
           Set(
-            VariableGrouping(varFor("  a@1"), varFor("  a@2")),
-            VariableGrouping(varFor("  UNNAMED1"), varFor("  UNNAMED2"))
+            variableGrouping(varFor("  a@1"), varFor("  a@2")),
+            variableGrouping(varFor("  UNNAMED1"), varFor("  UNNAMED2"))
           ),
-          Set(VariableGrouping(varFor("  r@1"), varFor("  r@2"))),
+          Set(variableGrouping(varFor("  r@1"), varFor("  r@2"))),
           Set(varFor("  r@1")),
           Set.empty,
           Set.empty,
@@ -7022,10 +7021,10 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           varFor("  a@1"),
           varFor("  UNNAMED1"),
           Set(
-            VariableGrouping(varFor("  a@1"), varFor("  a@2")),
-            VariableGrouping(varFor("  UNNAMED1"), varFor("  UNNAMED2"))
+            variableGrouping(varFor("  a@1"), varFor("  a@2")),
+            variableGrouping(varFor("  UNNAMED1"), varFor("  UNNAMED2"))
           ),
-          Set(VariableGrouping(varFor("  r@1"), varFor("  r@2"))),
+          Set(variableGrouping(varFor("  r@1"), varFor("  r@2"))),
           Set(varFor("  r@1")),
           Set.empty,
           Set.empty,
@@ -7055,10 +7054,10 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           varFor("  a@1"),
           varFor("  UNNAMED1"),
           Set(
-            VariableGrouping(varFor("  a@1"), varFor("  a@2")),
-            VariableGrouping(varFor("  UNNAMED1"), varFor("  UNNAMED2"))
+            variableGrouping(varFor("  a@1"), varFor("  a@2")),
+            variableGrouping(varFor("  UNNAMED1"), varFor("  UNNAMED2"))
           ),
-          Set(VariableGrouping(varFor("  r@1"), varFor("  r@2"))),
+          Set(variableGrouping(varFor("  r@1"), varFor("  r@2"))),
           Set(varFor("  r@1")),
           Set.empty,
           Set.empty,

@@ -33,7 +33,6 @@ import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SelectivePathPattern
 import org.neo4j.cypher.internal.ir.ShortestRelationshipPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
-import org.neo4j.cypher.internal.ir.VariableGrouping
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.Repetition
 import org.neo4j.cypher.internal.util.UpperBound.Unlimited
@@ -71,10 +70,10 @@ class QueryGraphConnectedComponentsTest
       patternRelationships = NonEmptyList(rel(v"${from}_inner_singleton", v"${to}_inner_singleton", v"r")),
       repetition = Repetition(0, Unlimited),
       nodeVariableGroupings = Set(
-        VariableGrouping(v"${from}_inner_singleton", v"${from}_inner_group"),
-        VariableGrouping(v"${to}_inner_singleton", v"${to}_inner_group")
+        variableGrouping(v"${from}_inner_singleton", v"${from}_inner_group"),
+        variableGrouping(v"${to}_inner_singleton", v"${to}_inner_group")
       ),
-      relationshipVariableGroupings = Set(VariableGrouping(v"r", v"r_group"))
+      relationshipVariableGroupings = Set(variableGrouping(v"r", v"r_group"))
     )
 
   private def spp(from: LogicalVariable, to: LogicalVariable) =
@@ -332,7 +331,7 @@ class QueryGraphConnectedComponentsTest
   test("quantified path pattern should pull in predicates") {
     // (a) ((a_inner)-[r1]->(b_inner))* (b) WHERE r1 IS NOT NULL
     val qppUnderTest = qpp(A, B)
-    val predicate = isNotNull(qppUnderTest.relationshipVariableGroupings.head.groupName)
+    val predicate = isNotNull(qppUnderTest.relationshipVariableGroupings.head.group)
     val singleQuantifiedPathPatternQG = QueryGraph.empty
       .addQuantifiedPathPattern(qppUnderTest)
       .addPredicates(predicate)

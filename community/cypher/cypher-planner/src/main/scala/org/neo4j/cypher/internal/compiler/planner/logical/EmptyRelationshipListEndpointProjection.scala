@@ -53,7 +53,7 @@ case object EmptyRelationshipListEndpointProjection extends PlannerQueryRewriter
       rewriter = Rewriter.lift {
         case qg: QueryGraph =>
           val rels = qg.patternRelationships.toSeq
-          val relGroupNames = qg.quantifiedPathPatterns.flatMap(_.relationshipVariableGroupings).map(_.groupName)
+          val relGroupNames = qg.quantifiedPathPatterns.flatMap(_.relationshipVariableGroupings).map(_.group)
 
           val (newRels, predicates) = rels
             .zipWithIndex.map {

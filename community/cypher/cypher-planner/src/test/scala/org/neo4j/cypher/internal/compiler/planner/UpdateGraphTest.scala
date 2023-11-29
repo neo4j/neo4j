@@ -71,7 +71,6 @@ import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertyPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.UpdateGraph.LeafPlansPredicatesResolver
-import org.neo4j.cypher.internal.ir.VariableGrouping
 import org.neo4j.cypher.internal.ir.ast.ExistsIRExpression
 import org.neo4j.cypher.internal.ir.ast.ListIRExpression
 import org.neo4j.cypher.internal.logical.builder.Parser
@@ -622,8 +621,8 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
       argumentIds = Set.empty,
       selections = Selections.empty,
       repetition = Repetition(1, UpperBound.Unlimited),
-      nodeVariableGroupings = Set(v"a", v"b").map(name => VariableGrouping(name, name)),
-      relationshipVariableGroupings = Set(VariableGrouping(v"r", v"r"))
+      nodeVariableGroupings = Set(v"a", v"b").map(name => variableGrouping(name, name)),
+      relationshipVariableGroupings = Set(variableGrouping(v"r", v"r"))
     )
 
   // SPPs does not contain any unstable leaf nodes so there should never be any overlaps on creating a node without a relationship.

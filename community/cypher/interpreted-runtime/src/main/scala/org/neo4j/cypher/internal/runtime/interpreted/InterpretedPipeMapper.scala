@@ -1274,7 +1274,7 @@ case class InterpretedPipeMapper(
             .rewriteAsPredicate(KeyTokenResolver.resolveExpressions(_, tokenContext))
 
         val groupMap = (nodeVariableGroupings ++ relationshipVariableGroupings)
-          .map(grouping => grouping.singletonName.name -> grouping.groupName.name)
+          .map(grouping => grouping.singleton.name -> grouping.group.name)
           .toMap
 
         val singletonMap = (singletonNodeVariables ++ singletonRelationshipVariables)

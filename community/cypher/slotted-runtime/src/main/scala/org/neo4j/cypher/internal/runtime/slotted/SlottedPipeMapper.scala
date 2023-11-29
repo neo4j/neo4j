@@ -1083,7 +1083,7 @@ class SlottedPipeMapper(
           reverseGroupVariableProjections
         ) =>
         val groupMap = (nodeVariableGroupings ++ relationshipVariableGroupings)
-          .map(grouping => grouping.singletonName.name -> slots(grouping.groupName.name))
+          .map(grouping => grouping.singleton.name -> slots(grouping.group.name))
           .toMap
 
         val singletonMap = (singletonNodeVariables ++ singletonRelationshipVariables)
@@ -1666,8 +1666,8 @@ class SlottedPipeMapper(
           rhsSlots.getLongOffsetFor(innerStart),
           trailStateMetadataSlot = rhsSlots.getMetaDataOffsetFor(SlotAllocation.TRAIL_STATE_METADATA_KEY, id),
           rhsSlots(innerEnd),
-          groupNodes.map(n => GroupSlot(rhsSlots(n.singletonName), slots(n.groupName))).toArray,
-          groupRelationships.map(r => GroupSlot(rhsSlots(r.singletonName), slots(r.groupName))).toArray,
+          groupNodes.map(n => GroupSlot(rhsSlots(n.singleton), slots(n.group))).toArray,
+          groupRelationships.map(r => GroupSlot(rhsSlots(r.singleton), slots(r.group))).toArray,
           innerRelationships.map(r => rhsSlots(r)).toArray,
           previouslyBoundRelationships.map(r => lhsSlots(r)).toArray,
           previouslyBoundRelationshipGroups.map(r => lhsSlots(r)).toArray,
