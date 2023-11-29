@@ -73,5 +73,3 @@ case class CodeGenerationFailedNotification(
   fallbackRuntimeConf: String,
   msg: String
 ) extends InternalNotification
-
-case class SideEffectVisibility(position: InputPosition) extends InternalNotification

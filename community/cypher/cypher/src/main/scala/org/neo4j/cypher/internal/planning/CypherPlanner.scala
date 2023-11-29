@@ -94,6 +94,7 @@ import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
+import org.neo4j.cypher.internal.util.InternalNotificationStats
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.exceptions.DatabaseAdministrationException
 import org.neo4j.exceptions.Neo4jException
@@ -181,7 +182,8 @@ case class CypherPlanner(
   queryCaches: CypherQueryCaches,
   plannerOption: CypherPlannerOption,
   updateStrategy: CypherUpdateStrategy,
-  databaseReferenceRepository: DatabaseReferenceRepository
+  databaseReferenceRepository: DatabaseReferenceRepository,
+  internalNotificationStats: InternalNotificationStats
 ) {
 
   private val caches = new queryCaches.CypherPlannerCaches()
@@ -385,7 +387,8 @@ case class CypherPlanner(
       options.queryOptions.eagerAnalyzer,
       databaseReferenceRepository,
       transactionalContextWrapper.databaseId,
-      log
+      log,
+      internalNotificationStats
     )
 
     // Prepare query for caching
@@ -517,10 +520,16 @@ case class CypherPlanner(
         val fingerprintReference = new PlanFingerprintReference(fingerprint)
         (MaybeReusable(fingerprintReference), shouldBeCached)
     }
+
+    val notifications = notificationLogger.notifications
+
+    // Record stats for finalized notifications, used for notification counter metrics
+    notifications.foreach { context.internalNotificationStats.incrementNotificationCount }
+
     CacheableLogicalPlan(
       logicalPlanState.asCachableLogicalPlanState(),
       reusabilityState,
-      notificationLogger.notifications.toIndexedSeq,
+      notifications.toIndexedSeq,
       shouldCache
     )
   }

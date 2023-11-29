@@ -40,6 +40,7 @@ import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.ErrorMessageProvider
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
+import org.neo4j.cypher.internal.util.InternalNotificationStats
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.messages.MessageUtilProvider
 import org.neo4j.kernel.database.DatabaseReferenceRepository
@@ -98,7 +99,8 @@ class PlannerContext(
   val eagerAnalyzer: CypherEagerAnalyzerOption,
   val databaseReferenceRepository: DatabaseReferenceRepository,
   val databaseId: NamedDatabaseId,
-  val log: Log
+  val log: Log,
+  val internalNotificationStats: InternalNotificationStats
 ) extends BaseContextImpl(cypherExceptionFactory, tracer, notificationLogger, monitors, cancellationChecker)
 
 object PlannerContext {
@@ -125,7 +127,8 @@ object PlannerContext {
     eagerAnalyzer: CypherEagerAnalyzerOption,
     databaseReferenceRepository: DatabaseReferenceRepository,
     databaseId: NamedDatabaseId,
-    log: Log
+    log: Log,
+    internalNotificationStats: InternalNotificationStats
   ): PlannerContext = {
     val exceptionFactory = Neo4jCypherExceptionFactory(queryText, offset)
 
@@ -151,7 +154,8 @@ object PlannerContext {
       eagerAnalyzer,
       databaseReferenceRepository,
       databaseId,
-      log
+      log,
+      internalNotificationStats
     )
   }
 }

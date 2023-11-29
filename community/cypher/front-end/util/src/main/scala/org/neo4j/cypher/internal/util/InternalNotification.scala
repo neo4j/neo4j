@@ -16,10 +16,69 @@
  */
 package org.neo4j.cypher.internal.util
 
+import java.lang
+
+import scala.jdk.CollectionConverters.IterableHasAsJava
+
 /**
  * Describes a notification
  */
-trait InternalNotification
+trait InternalNotification {
+  val notificationName: String = this.getClass.getSimpleName.stripSuffix("$")
+}
+
+object InternalNotification {
+
+  val allNotifications: Set[String] = Set(
+    "CartesianProductNotification",
+    "UnboundedShortestPathNotification",
+    "DeprecatedFunctionNotification",
+    "DeprecatedRelTypeSeparatorNotification",
+    "DeprecatedNodesOrRelationshipsInSetClauseNotification",
+    "DeprecatedPropertyReferenceInCreate",
+    "SubqueryVariableShadowing",
+    "UnionReturnItemsInDifferentOrder",
+    "HomeDatabaseNotPresent",
+    "FixedLengthRelationshipInShortestPath",
+    "DeprecatedDatabaseNameNotification",
+    "DeprecatedRuntimeNotification",
+    "DeprecatedTextIndexProvider",
+    "DeprecatedIdentifierWhitespaceUnicode",
+    "DeprecatedIdentifierUnicode",
+    "UnsatisfiableRelationshipTypeExpression",
+    "RepeatedRelationshipReference",
+    "RepeatedVarLengthRelationshipReference",
+    "DeprecatedConnectComponentsPlannerPreParserOption",
+    "AssignPrivilegeCommandHasNoEffectNotification",
+    "RevokePrivilegeCommandHasNoEffectNotification",
+    "GrantRoleCommandHasNoEffectNotification",
+    "RevokeRoleCommandHasNoEffectNotification",
+    "ImpossibleRevokeCommandWarning",
+    "ServerAlreadyEnabled",
+    "ServerAlreadyCordoned",
+    "NoDatabasesReallocated",
+    "SideEffectVisibility",
+    "CordonedServersExistedDuringAllocation",
+    "RuntimeUnsupportedNotification",
+    "IndexHintUnfulfillableNotification",
+    "JoinHintUnfulfillableNotification",
+    "NodeIndexLookupUnfulfillableNotification",
+    "RelationshipIndexLookupUnfulfillableNotification",
+    "EagerLoadCsvNotification",
+    "LargeLabelWithLoadCsvNotification",
+    "MissingLabelNotification",
+    "MissingRelTypeNotification",
+    "MissingPropertyNameNotification",
+    "ExhaustiveShortestPathForbiddenNotification",
+    "DeprecatedProcedureNotification",
+    "ProcedureWarningNotification",
+    "DeprecatedFieldNotification",
+    "MissingParametersNotification",
+    "CodeGenerationFailedNotification"
+  )
+
+  def allNotificationsAsJavaIterable(): lang.Iterable[String] = allNotifications.asJava
+}
 
 case class CartesianProductNotification(position: InputPosition, isolatedVariables: Set[String], pattern: String)
     extends InternalNotification

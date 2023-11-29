@@ -104,6 +104,7 @@ class LogicalPlanCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTe
       caches,
       CypherPlannerOption.default,
       CypherUpdateStrategy.default,
+      null,
       null
     )
 

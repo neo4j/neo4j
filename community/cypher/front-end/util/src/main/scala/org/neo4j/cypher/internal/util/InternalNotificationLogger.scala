@@ -16,6 +16,10 @@
  */
 package org.neo4j.cypher.internal.util
 
+import java.util.concurrent.atomic.LongAdder
+
+import scala.collection.concurrent.TrieMap
+
 /**
  * A NotificationLogger records notifications.
  */
@@ -43,4 +47,20 @@ class RecordingNotificationLogger() extends InternalNotificationLogger {
   def log(notification: InternalNotification): Unit = builder += notification
 
   def notifications: Set[InternalNotification] = builder.result()
+}
+
+case class InternalNotificationStats() {
+  private val notificationCounts: TrieMap[String, LongAdder] = new TrieMap()
+
+  def incrementNotificationCount(notification: InternalNotification): Unit = {
+    val counts = notificationCounts.getOrElseUpdate(notification.notificationName, new LongAdder)
+    counts.increment()
+  }
+
+  def getNotificationCount(notificationName: String): Long = {
+    notificationCounts.get(notificationName) match {
+      case Some(l) => l.longValue()
+      case _       => 0L
+    }
+  }
 }
