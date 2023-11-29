@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.ir.ordering
 
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Asc
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Desc
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder.OrderOrigin
@@ -50,17 +51,17 @@ object ProvidedOrder {
 
   val empty: ProvidedOrder = NoProvidedOrder
 
-  def asc(expression: Expression, projections: Map[String, Expression] = Map.empty): NonEmptyProvidedOrder =
+  def asc(expression: Expression, projections: Map[LogicalVariable, Expression] = Map.empty): NonEmptyProvidedOrder =
     NonEmptyProvidedOrder(NonEmptyList(Asc(expression, projections)), Self)
 
-  def desc(expression: Expression, projections: Map[String, Expression] = Map.empty): NonEmptyProvidedOrder =
+  def desc(expression: Expression, projections: Map[LogicalVariable, Expression] = Map.empty): NonEmptyProvidedOrder =
     NonEmptyProvidedOrder(NonEmptyList(Desc(expression, projections)), Self)
 }
 
 sealed trait ProvidedOrderFactory {
   def providedOrder(columns: Seq[ColumnOrder], orderOrigin: OrderOrigin): ProvidedOrder
-  def asc(expression: Expression, projections: Map[String, Expression] = Map.empty): ProvidedOrder
-  def desc(expression: Expression, projections: Map[String, Expression] = Map.empty): ProvidedOrder
+  def asc(expression: Expression, projections: Map[LogicalVariable, Expression] = Map.empty): ProvidedOrder
+  def desc(expression: Expression, projections: Map[LogicalVariable, Expression] = Map.empty): ProvidedOrder
   def assertOnNoProvidedOrder: Boolean
 }
 
@@ -69,10 +70,16 @@ case object DefaultProvidedOrderFactory extends ProvidedOrderFactory {
   override def providedOrder(columns: Seq[ColumnOrder], orderOrigin: OrderOrigin): ProvidedOrder =
     ProvidedOrder.apply(columns, orderOrigin)
 
-  override def asc(expression: Expression, projections: Map[String, Expression] = Map.empty): NonEmptyProvidedOrder =
+  override def asc(
+    expression: Expression,
+    projections: Map[LogicalVariable, Expression] = Map.empty
+  ): NonEmptyProvidedOrder =
     ProvidedOrder.asc(expression, projections)
 
-  override def desc(expression: Expression, projections: Map[String, Expression] = Map.empty): NonEmptyProvidedOrder =
+  override def desc(
+    expression: Expression,
+    projections: Map[LogicalVariable, Expression] = Map.empty
+  ): NonEmptyProvidedOrder =
     ProvidedOrder.desc(expression, projections)
 
   override def assertOnNoProvidedOrder: Boolean = true
@@ -81,10 +88,10 @@ case object DefaultProvidedOrderFactory extends ProvidedOrderFactory {
 case object NoProvidedOrderFactory extends ProvidedOrderFactory {
   override def providedOrder(columns: Seq[ColumnOrder], orderOrigin: OrderOrigin): ProvidedOrder = ProvidedOrder.empty
 
-  override def asc(expression: Expression, projections: Map[String, Expression] = Map.empty): ProvidedOrder =
+  override def asc(expression: Expression, projections: Map[LogicalVariable, Expression] = Map.empty): ProvidedOrder =
     ProvidedOrder.empty
 
-  override def desc(expression: Expression, projections: Map[String, Expression] = Map.empty): ProvidedOrder =
+  override def desc(expression: Expression, projections: Map[LogicalVariable, Expression] = Map.empty): ProvidedOrder =
     ProvidedOrder.empty
   override def assertOnNoProvidedOrder: Boolean = false
 }
@@ -124,7 +131,7 @@ sealed trait ProvidedOrder {
   /**
    * Trim provided order up until a sort column that matches any of the given args.
    */
-  def upToExcluding(args: Set[String]): ProvidedOrder
+  def upToExcluding(args: Set[LogicalVariable]): ProvidedOrder
 
   /**
    * Returns the common prefix between this and another provided order.
@@ -157,7 +164,7 @@ case object NoProvidedOrder extends ProvidedOrder {
   override def isEmpty: Boolean = true
   override def orderOrigin: Option[OrderOrigin] = None
   override def followedBy(nextOrder: ProvidedOrder): ProvidedOrder = this
-  override def upToExcluding(args: Set[String]): ProvidedOrder = this
+  override def upToExcluding(args: Set[LogicalVariable]): ProvidedOrder = this
   override def commonPrefixWith(otherOrder: ProvidedOrder): ProvidedOrder = this
   override def mapColumns(f: ColumnOrder => ColumnOrder): ProvidedOrder = this
   override def fromLeft: ProvidedOrder = this
@@ -174,10 +181,10 @@ case class NonEmptyProvidedOrder(allColumns: NonEmptyList[ColumnOrder], theOrder
 
   override def orderOrigin: Option[OrderOrigin] = Some(theOrderOrigin)
 
-  def asc(expression: Expression, projections: Map[String, Expression] = Map.empty): NonEmptyProvidedOrder =
+  def asc(expression: Expression, projections: Map[LogicalVariable, Expression] = Map.empty): NonEmptyProvidedOrder =
     NonEmptyProvidedOrder(allColumns :+ Asc(expression, projections), theOrderOrigin)
 
-  def desc(expression: Expression, projections: Map[String, Expression] = Map.empty): NonEmptyProvidedOrder =
+  def desc(expression: Expression, projections: Map[LogicalVariable, Expression] = Map.empty): NonEmptyProvidedOrder =
     NonEmptyProvidedOrder(allColumns :+ Desc(expression, projections), theOrderOrigin)
 
   override def fromLeft: NonEmptyProvidedOrder = copy(theOrderOrigin = ProvidedOrder.Left)
@@ -190,11 +197,11 @@ case class NonEmptyProvidedOrder(allColumns: NonEmptyList[ColumnOrder], theOrder
     NonEmptyProvidedOrder(allColumns :++ nextOrder.columns, theOrderOrigin)
   }
 
-  override def upToExcluding(args: Set[String]): ProvidedOrder = {
+  override def upToExcluding(args: Set[LogicalVariable]): ProvidedOrder = {
     val (_, trimmed) = columns.foldLeft((false, Seq.empty[ColumnOrder])) {
-      case (acc, _) if acc._1                                                  => acc
-      case (acc, col) if args.intersect(col.dependencies.map(_.name)).nonEmpty => (true, acc._2)
-      case (acc, col)                                                          => (acc._1, acc._2 :+ col)
+      case (acc, _) if acc._1                                      => acc
+      case (acc, col) if args.intersect(col.dependencies).nonEmpty => (true, acc._2)
+      case (acc, col)                                              => (acc._1, acc._2 :+ col)
     }
     if (trimmed.isEmpty) {
       NoProvidedOrder

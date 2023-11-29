@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.SortPlanner.SatisfiedForPlan
@@ -121,8 +122,8 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   test("should copy projections from interesting order to provided order: aliased sort expression") {
     new givenConfig().withLogicalPlanningContext { (_, context) =>
       val io = InterestingOrder.required(RequiredOrderCandidate
-        .asc(varFor("xfoo"), Map("xfoo" -> prop("x", "foo")))
-        .desc(varFor("yprop"), Map("yprop" -> prop("y", "prop"))))
+        .asc(varFor("xfoo"), Map(v"xfoo" -> prop("x", "foo")))
+        .desc(varFor("yprop"), Map(v"yprop" -> prop("y", "prop"))))
       val inputPlan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x", "y")
 
       // When
@@ -136,16 +137,16 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
       // Then
       context.staticComponents.planningAttributes.providedOrders.get(sortedPlan.get.id) should equal(ProvidedOrder
-        .asc(varFor("xfoo"), Map("xfoo" -> prop("x", "foo")))
-        .desc(varFor("yprop"), Map("yprop" -> prop("y", "prop"))))
+        .asc(varFor("xfoo"), Map(v"xfoo" -> prop("x", "foo")))
+        .desc(varFor("yprop"), Map(v"yprop" -> prop("y", "prop"))))
     }
   }
 
   test("should copy projections from interesting order to provided order: unaliased sort expression") {
     new givenConfig().withLogicalPlanningContext { (_, context) =>
       val io = InterestingOrder.required(RequiredOrderCandidate
-        .asc(prop("x", "foo"), Map("x" -> varFor("xx")))
-        .desc(prop("y", "prop"), Map("y" -> varFor("yy"))))
+        .asc(prop("x", "foo"), Map(v"x" -> varFor("xx")))
+        .desc(prop("y", "prop"), Map(v"y" -> varFor("yy"))))
       val inputPlan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x", "y")
 
       // When
@@ -159,8 +160,8 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
       // Then
       context.staticComponents.planningAttributes.providedOrders.get(sortedPlan.get.id) should equal(ProvidedOrder
-        .asc(prop("x", "foo"), Map("x" -> varFor("xx")))
-        .desc(prop("y", "prop"), Map("y" -> varFor("yy"))))
+        .asc(prop("x", "foo"), Map(v"x" -> varFor("xx")))
+        .desc(prop("y", "prop"), Map(v"y" -> varFor("yy"))))
     }
   }
 
@@ -231,7 +232,7 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   test("should return sorted plan when needed for renamed property") {
     // [WITH x] WITH x.foo AS a ORDER BY a
     new givenConfig().withLogicalPlanningContext { (_, context) =>
-      val io = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("a"), Map("a" -> prop("x", "foo"))))
+      val io = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("a"), Map(v"a" -> prop("x", "foo"))))
       val inputPlan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x")
 
       // When
@@ -678,7 +679,7 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
     // [WITH x] WITH x.foo + 42 AS add ORDER BY add
     new givenConfig().withLogicalPlanningContext { (_, context) =>
       val sortOn = add(prop("x", "foo"), literalInt(42))
-      val io = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("add"), Map("add" -> sortOn)))
+      val io = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("add"), Map(v"add" -> sortOn)))
       val inputPlan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x")
 
       // When
@@ -705,7 +706,7 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
     new givenConfig().withLogicalPlanningContext { (_, context) =>
       val inputPlan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "n")
-      val io = InterestingOrder.required(RequiredOrderCandidate.asc(sortExpression, Map("m" -> mExpr)))
+      val io = InterestingOrder.required(RequiredOrderCandidate.asc(sortExpression, Map(v"m" -> mExpr)))
 
       // When
       val sortedPlan =
@@ -732,7 +733,7 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
     new givenConfig().withLogicalPlanningContext { (_, context) =>
       val io = InterestingOrder.required(RequiredOrderCandidate.asc(prop("p", "name")).asc(
         varFor("bday"),
-        Map("bday" -> bdayExp)
+        Map(v"bday" -> bdayExp)
       ))
       val inputPlan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "p")
 
@@ -759,7 +760,7 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
     val bdayExp = isNotNull(prop("p", "born"))
 
     new givenConfig().withLogicalPlanningContext { (_, context) =>
-      val io = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("bday"), Map("bday" -> bdayExp)).asc(prop(
+      val io = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("bday"), Map(v"bday" -> bdayExp)).asc(prop(
         "p",
         "name"
       )))

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.ast.ProcedureResultItem
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.ProcedureCallProjection
@@ -157,7 +158,8 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
     // Given
     new givenConfig().withLogicalPlanningContext { (_, context) =>
       val literal = literalInt(42)
-      val interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("a"), Map("a" -> varFor("a"))))
+      val interestingOrder =
+        InterestingOrder.required(RequiredOrderCandidate.asc(varFor("a"), Map(v"a" -> varFor("a"))))
       val horizon = RegularQueryProjection(Map("a" -> varFor("a"), "b" -> literal, "c" -> literal), QueryPagination())
       val pq = RegularSinglePlannerQuery(interestingOrder = interestingOrder, horizon = horizon)
       val inputPlan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "a")
@@ -179,7 +181,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
     // Given
     new givenConfig().withLogicalPlanningContext { (_, context) =>
       val literal = literalInt(42)
-      val interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("a"), Map("a" -> literal)))
+      val interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("a"), Map(v"a" -> literal)))
       val horizon = RegularQueryProjection(Map("a" -> literal, "b" -> literal, "c" -> literal), QueryPagination())
       val pq = RegularSinglePlannerQuery(interestingOrder = interestingOrder, horizon = horizon)
       val inputPlan = fakeLogicalPlanFor(context.staticComponents.planningAttributes)

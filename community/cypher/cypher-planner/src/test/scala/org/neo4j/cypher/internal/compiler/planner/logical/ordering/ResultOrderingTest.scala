@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.ordering
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrdering.PropertyAndPredicateType
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrdering.extractVariableForValue
@@ -96,11 +97,11 @@ abstract class ResultOrderingTest[OC <: OrderCandidate[OC]](
   test(
     "IndexOperator: Single property order with projected property results in matching provided order for compatible index capability"
   ) {
-    val interestingAsc = toInterestingOrder(orderCandidateFactory.asc(varFor("xfoo"), Map("xfoo" -> xFoo)))
+    val interestingAsc = toInterestingOrder(orderCandidateFactory.asc(varFor("xfoo"), Map(v"xfoo" -> xFoo)))
     indexOrder(interestingAsc, indexPropertyXFoo, BOTH) should be((ProvidedOrder.asc(xFoo), IndexOrderAscending))
     indexOrder(interestingAsc, indexPropertyXFooExact, BOTH) should be((ProvidedOrder.asc(xFoo), IndexOrderAscending))
 
-    val interestingDesc = toInterestingOrder(orderCandidateFactory.desc(varFor("xfoo"), Map("xfoo" -> xFoo)))
+    val interestingDesc = toInterestingOrder(orderCandidateFactory.desc(varFor("xfoo"), Map(v"xfoo" -> xFoo)))
     indexOrder(interestingDesc, indexPropertyXFoo, BOTH) should be((ProvidedOrder.desc(xFoo), IndexOrderDescending))
     // Since the property has an exact predicate the ascending and descending order is the same, so we can choose both index orders and ascending is cheaper
     indexOrder(interestingDesc, indexPropertyXFooExact, BOTH) should be((ProvidedOrder.desc(xFoo), IndexOrderAscending))
@@ -109,11 +110,11 @@ abstract class ResultOrderingTest[OC <: OrderCandidate[OC]](
   test(
     "IndexOperator: Single property order with projected node results in matching provided order for compatible index capability"
   ) {
-    val interestingAsc = toInterestingOrder(orderCandidateFactory.asc(yFoo, Map("y" -> x)))
+    val interestingAsc = toInterestingOrder(orderCandidateFactory.asc(yFoo, Map(y -> x)))
     indexOrder(interestingAsc, indexPropertyXFoo, BOTH) should be((ProvidedOrder.asc(xFoo), IndexOrderAscending))
     indexOrder(interestingAsc, indexPropertyXFooExact, BOTH) should be((ProvidedOrder.asc(xFoo), IndexOrderAscending))
 
-    val interestingDesc = toInterestingOrder(orderCandidateFactory.desc(yFoo, Map("y" -> x)))
+    val interestingDesc = toInterestingOrder(orderCandidateFactory.desc(yFoo, Map(y -> x)))
     indexOrder(interestingDesc, indexPropertyXFoo, BOTH) should be((ProvidedOrder.desc(xFoo), IndexOrderDescending))
     // Since the property has an exact predicate the ascending and descending order is the same, so we can choose both index orders and ascending is cheaper
     indexOrder(interestingDesc, indexPropertyXFooExact, BOTH) should be((ProvidedOrder.desc(xFoo), IndexOrderAscending))
@@ -303,10 +304,10 @@ abstract class ResultOrderingTest[OC <: OrderCandidate[OC]](
   }
 
   test("Label scan: Simple order with projected variable results in matching provided order") {
-    val interestingAsc = toInterestingOrder(orderCandidateFactory.asc(varFor("blob"), Map("blob" -> x)))
+    val interestingAsc = toInterestingOrder(orderCandidateFactory.asc(varFor("blob"), Map(v"blob" -> x)))
     providedOrderForLabelScan(interestingAsc, x, IndexOrderCapability.BOTH) should be(ProvidedOrder.asc(x))
 
-    val interestingDesc = toInterestingOrder(orderCandidateFactory.desc(varFor("blob"), Map("blob" -> x)))
+    val interestingDesc = toInterestingOrder(orderCandidateFactory.desc(varFor("blob"), Map(v"blob" -> x)))
     providedOrderForLabelScan(interestingDesc, x, IndexOrderCapability.BOTH) should be(ProvidedOrder.desc(x))
   }
 
@@ -351,10 +352,10 @@ abstract class ResultOrderingTest[OC <: OrderCandidate[OC]](
   }
 
   test("RelType scan: Simple order with projected variable results in matching provided order") {
-    val interestingAsc = toInterestingOrder(orderCandidateFactory.asc(varFor("blob"), Map("blob" -> x)))
+    val interestingAsc = toInterestingOrder(orderCandidateFactory.asc(varFor("blob"), Map(v"blob" -> x)))
     providedOrderForRelationshipTypeScan(interestingAsc, "x", IndexOrderCapability.BOTH) should be(ProvidedOrder.asc(x))
 
-    val interestingDesc = toInterestingOrder(orderCandidateFactory.desc(varFor("blob"), Map("blob" -> x)))
+    val interestingDesc = toInterestingOrder(orderCandidateFactory.desc(varFor("blob"), Map(v"blob" -> x)))
     providedOrderForRelationshipTypeScan(interestingDesc, "x", IndexOrderCapability.BOTH) should be(
       ProvidedOrder.desc(x)
     )
@@ -396,10 +397,10 @@ abstract class ResultOrderingTest[OC <: OrderCandidate[OC]](
   test("extractVariableForValue") {
     extractVariableForValue(x, Map.empty) should be(Some(x))
     extractVariableForValue(prop("x", "prop"), Map.empty) should be(None)
-    extractVariableForValue(prop("x", "prop"), Map("x" -> y)) should be(None)
-    extractVariableForValue(x, Map("x" -> prop("y", "prop"))) should be(None)
-    extractVariableForValue(x, Map("x" -> varFor("z"), "z" -> prop("y", "prop"))) should be(None)
-    extractVariableForValue(x, Map("x" -> varFor("z"))) should be(Some(varFor("z")))
+    extractVariableForValue(prop("x", "prop"), Map(v"x" -> y)) should be(None)
+    extractVariableForValue(x, Map(v"x" -> prop("y", "prop"))) should be(None)
+    extractVariableForValue(x, Map(v"x" -> varFor("z"), v"z" -> prop("y", "prop"))) should be(None)
+    extractVariableForValue(x, Map(v"x" -> varFor("z"))) should be(Some(varFor("z")))
   }
 }
 

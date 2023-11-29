@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.ir
 import org.neo4j.cypher.internal.ast.Hint
 import org.neo4j.cypher.internal.ast.Union.UnionMapping
 import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery.extractLabelInfo
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery.reverseProjectedInterestingOrder
@@ -390,8 +391,9 @@ object SinglePlannerQuery {
     argumentIds: Set[String]
   ): InterestingOrder = {
     horizon match {
-      case qp: QueryProjection => order.withReverseProjectedColumns(qp.projections, argumentIds)
-      case _                   => order.withReverseProjectedColumns(Map.empty, argumentIds)
+      case qp: QueryProjection =>
+        order.withReverseProjectedColumns(qp.projections.map { case (k, v) => (varFor(k), v) }, argumentIds.map(varFor))
+      case _ => order.withReverseProjectedColumns(Map.empty, argumentIds.map(varFor))
     }
   }
 

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.ir.ordering
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class ProvidedOrderTest extends CypherFunSuite with AstConstructionTestSupport {
@@ -52,15 +53,15 @@ class ProvidedOrderTest extends CypherFunSuite with AstConstructionTestSupport {
       .desc(prop("d", "prop"))
       .desc(add(literalInt(10), prop("e", "prop")))
 
-    left.upToExcluding(Set("x")).columns should be(left.columns)
+    left.upToExcluding(Set(v"x")).columns should be(left.columns)
 
-    left.upToExcluding(Set("a")).columns should be(Seq.empty)
+    left.upToExcluding(Set(v"a")).columns should be(Seq.empty)
 
-    left.upToExcluding(Set("c")).columns should be(left.columns.slice(0, 2))
-    left.upToExcluding(Set("d")).columns should be(left.columns.slice(0, 3))
-    left.upToExcluding(Set("e")).columns should be(left.columns.slice(0, 4))
+    left.upToExcluding(Set(v"c")).columns should be(left.columns.slice(0, 2))
+    left.upToExcluding(Set(v"d")).columns should be(left.columns.slice(0, 3))
+    left.upToExcluding(Set(v"e")).columns should be(left.columns.slice(0, 4))
 
-    ProvidedOrder.empty.upToExcluding(Set("c")).columns should be(Seq.empty)
+    ProvidedOrder.empty.upToExcluding(Set(v"c")).columns should be(Seq.empty)
   }
 
   test("should find common prefixes") {

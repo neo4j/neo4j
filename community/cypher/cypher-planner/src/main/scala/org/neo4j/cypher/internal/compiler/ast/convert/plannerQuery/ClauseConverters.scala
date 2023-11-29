@@ -79,6 +79,7 @@ import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
+import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.frontend.phases.ResolvedCall
 import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
@@ -256,16 +257,19 @@ object ClauseConverters {
     val sortItems = if (optOrderBy.isDefined) optOrderBy.get.sortItems else Seq.empty
     val (requiredOrderCandidate, interestingOrderCandidates: Seq[InterestingOrderCandidate]) = horizon match {
       case RegularQueryProjection(projections, _, _, _) =>
-        val requiredOrderCandidate = extractColumnOrderFromOrderBy(sortItems, projections)
+        val requiredOrderCandidate =
+          extractColumnOrderFromOrderBy(sortItems, projections.map { case (k, v) => (varFor(k), v) })
         (requiredOrderCandidate, Seq.empty)
       case AggregatingQueryProjection(groupingExpressions, aggregationExpressions, _, _, _) =>
-        val requiredOrderCandidate = extractColumnOrderFromOrderBy(sortItems, groupingExpressions)
+        val requiredOrderCandidate =
+          extractColumnOrderFromOrderBy(sortItems, groupingExpressions.map { case (k, v) => (varFor(k), v) })
         val interestingCandidates =
           interestingOrderCandidatesForGroupingExpressions(groupingExpressions) ++
             interestingOrderCandidateForMinOrMax(groupingExpressions, aggregationExpressions)
         (requiredOrderCandidate, interestingCandidates)
       case DistinctQueryProjection(groupingExpressions, _, _, _) =>
-        val requiredOrderCandidate = extractColumnOrderFromOrderBy(sortItems, groupingExpressions)
+        val requiredOrderCandidate =
+          extractColumnOrderFromOrderBy(sortItems, groupingExpressions.map { case (k, v) => (varFor(k), v) })
         val interestingCandidates = interestingOrderCandidatesForGroupingExpressions(groupingExpressions)
 
         (requiredOrderCandidate, interestingCandidates)
@@ -306,42 +310,42 @@ object ClauseConverters {
 
   private def extractColumnOrderFromOrderBy(
     sortItems: Seq[SortItem],
-    projections: Map[String, Expression]
+    projections: Map[LogicalVariable, Expression]
   ): RequiredOrderCandidate = {
     val columns = sortItems.map {
       // RETURN a AS b ORDER BY b.prop
-      case AscSortItem(e @ Property(LogicalVariable(varName), _)) =>
-        projections.get(varName) match {
-          case Some(expression) => Asc(e, Map(varName -> expression))
+      case AscSortItem(e @ Property(v: LogicalVariable, _)) =>
+        projections.get(v) match {
+          case Some(expression) => Asc(e, Map(v -> expression))
           case None             => Asc(e)
         }
-      case DescSortItem(e @ Property(LogicalVariable(varName), _)) =>
-        projections.get(varName) match {
-          case Some(expression) => Desc(e, Map(varName -> expression))
+      case DescSortItem(e @ Property(v: LogicalVariable, _)) =>
+        projections.get(v) match {
+          case Some(expression) => Desc(e, Map(v -> expression))
           case None             => Desc(e)
         }
 
       // RETURN n.prop as foo ORDER BY foo
-      case AscSortItem(e @ LogicalVariable(name)) =>
-        projections.get(name) match {
-          case Some(expression) => Asc(e, Map(name -> expression))
-          case None             => Asc(e)
+      case AscSortItem(v: LogicalVariable) =>
+        projections.get(v) match {
+          case Some(expression) => Asc(v, Map(v -> expression))
+          case None             => Asc(v)
         }
-      case DescSortItem(e @ LogicalVariable(name)) =>
-        projections.get(name) match {
-          case Some(expression) => Desc(e, Map(name -> expression))
-          case None             => Desc(e)
+      case DescSortItem(v: LogicalVariable) =>
+        projections.get(v) match {
+          case Some(expression) => Desc(v, Map(v -> expression))
+          case None             => Desc(v)
         }
 
       //  RETURN n.prop AS foo ORDER BY foo * 2
       //  RETURN n.prop ORDER BY n.prop * 2
       case AscSortItem(expression) =>
-        val depNames = expression.dependencies.map(_.name)
-        val orderProjections = projections.filter(p => depNames.contains(p._1))
+        val deps = expression.dependencies
+        val orderProjections = projections.filter(p => deps.contains(p._1))
         Asc(expression, orderProjections)
       case DescSortItem(expression) =>
-        val depNames = expression.dependencies.map(_.name)
-        val orderProjections = projections.filter(p => depNames.contains(p._1))
+        val deps = expression.dependencies
+        val orderProjections = projections.filter(p => deps.contains(p._1))
         Desc(expression, orderProjections)
     }
     RequiredOrderCandidate(columns)

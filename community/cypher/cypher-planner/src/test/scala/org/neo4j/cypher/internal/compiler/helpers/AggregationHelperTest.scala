@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.helpers
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.helpers.AggregationHelper.extractPropertyForValue
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -28,9 +29,9 @@ class AggregationHelperTest extends CypherFunSuite with AstConstructionTestSuppo
   test("extractPropertyForValue") {
     extractPropertyForValue(varFor("x"), Map.empty) should be(None)
     extractPropertyForValue(prop("x", "prop"), Map.empty) should be(Some(prop("x", "prop")))
-    extractPropertyForValue(prop("x", "prop"), Map("x" -> varFor("y"))) should be(Some(prop("y", "prop")))
-    extractPropertyForValue(varFor("x"), Map("x" -> prop("y", "prop"))) should be(Some(prop("y", "prop")))
-    extractPropertyForValue(varFor("x"), Map("x" -> varFor("z"), "z" -> prop("y", "prop"))) should be(Some(prop(
+    extractPropertyForValue(prop("x", "prop"), Map(v"x" -> varFor("y"))) should be(Some(prop("y", "prop")))
+    extractPropertyForValue(varFor("x"), Map(v"x" -> prop("y", "prop"))) should be(Some(prop("y", "prop")))
+    extractPropertyForValue(varFor("x"), Map(v"x" -> varFor("z"), v"z" -> prop("y", "prop"))) should be(Some(prop(
       "y",
       "prop"
     )))

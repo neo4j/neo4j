@@ -22,8 +22,10 @@ package org.neo4j.cypher.internal.compiler.helpers
 import org.neo4j.cypher.internal.compiler.helpers.PropertyAccessHelper.PropertyAccess
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.Variable
 
 import java.util.Locale
@@ -68,18 +70,18 @@ object AggregationHelper {
     renamings: Map[String, Expression]
   ): Set[PropertyAccess] = {
     aggregationExpressions.values.flatMap {
-      extractPropertyForValue(_, renamings).map {
+      extractPropertyForValue(_, renamings.map { case (k, v) => (varFor(k), v) }).map {
         case Property(Variable(varName), PropertyKeyName(propName)) => PropertyAccess(varName, propName)
         case _ => throw new IllegalStateException("expression must be a property value")
       }
     }.toSet
   }
 
-  def extractPropertyForValue(expression: Expression, renamings: Map[String, Expression]): Option[Property] = {
+  def extractPropertyForValue(expression: Expression, renamings: Map[LogicalVariable, Expression]): Option[Property] = {
     @tailrec
     def inner(
       expression: Expression,
-      renamings: Map[String, Expression],
+      renamings: Map[LogicalVariable, Expression],
       property: Option[Property]
     ): Option[Property] = {
       expression match {
@@ -89,14 +91,14 @@ object AggregationHelper {
             None
           else
             inner(expr, renamings, property)
-        case prop @ Property(Variable(varName), _) =>
-          if (renamings.contains(varName))
-            inner(renamings(varName), renamings, Some(prop))
+        case prop @ Property(variable: Variable, _) =>
+          if (renamings.contains(variable))
+            inner(renamings(variable), renamings, Some(prop))
           else
             Some(prop)
-        case variable @ Variable(varName) =>
-          if (renamings.contains(varName) && renamings(varName) != variable)
-            inner(renamings(varName), renamings, property)
+        case variable: Variable =>
+          if (renamings.contains(variable) && renamings(variable) != variable)
+            inner(renamings(variable), renamings, property)
           else if (property.nonEmpty)
             Some(Property(variable, property.get.propertyKey)(property.get.position))
           else

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.ir.ordering
 
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Asc
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Desc
 
@@ -41,9 +42,9 @@ trait OrderCandidate[T <: OrderCandidate[T]] {
 
   def renameColumns(f: Seq[ColumnOrder] => Seq[ColumnOrder]): T
 
-  def asc(expression: Expression, projections: Map[String, Expression] = Map.empty): T
+  def asc(expression: Expression, projections: Map[LogicalVariable, Expression] = Map.empty): T
 
-  def desc(expression: Expression, projections: Map[String, Expression] = Map.empty): T
+  def desc(expression: Expression, projections: Map[LogicalVariable, Expression] = Map.empty): T
 
   def asProvidedOrder(providedOrderFactory: ProvidedOrderFactory): ProvidedOrder =
     providedOrderFactory.providedOrder(order, ProvidedOrder.Self)
@@ -55,21 +56,27 @@ case class RequiredOrderCandidate(order: Seq[ColumnOrder]) extends OrderCandidat
   override def renameColumns(f: Seq[ColumnOrder] => Seq[ColumnOrder]): RequiredOrderCandidate =
     RequiredOrderCandidate(f(order))
 
-  override def asc(expression: Expression, projections: Map[String, Expression] = Map.empty): RequiredOrderCandidate =
+  override def asc(
+    expression: Expression,
+    projections: Map[LogicalVariable, Expression] = Map.empty
+  ): RequiredOrderCandidate =
     RequiredOrderCandidate(order :+ Asc(expression, projections))
 
-  override def desc(expression: Expression, projections: Map[String, Expression] = Map.empty): RequiredOrderCandidate =
+  override def desc(
+    expression: Expression,
+    projections: Map[LogicalVariable, Expression] = Map.empty
+  ): RequiredOrderCandidate =
     RequiredOrderCandidate(order :+ Desc(expression, projections))
 }
 
 object RequiredOrderCandidate extends OrderCandidateFactory[RequiredOrderCandidate] {
 
-  def asc(expression: Expression, projections: Map[String, Expression] = Map.empty): RequiredOrderCandidate =
+  def asc(expression: Expression, projections: Map[LogicalVariable, Expression] = Map.empty): RequiredOrderCandidate =
     empty.asc(expression, projections)
 
   def empty: RequiredOrderCandidate = RequiredOrderCandidate(Seq.empty)
 
-  def desc(expression: Expression, projections: Map[String, Expression] = Map.empty): RequiredOrderCandidate =
+  def desc(expression: Expression, projections: Map[LogicalVariable, Expression] = Map.empty): RequiredOrderCandidate =
     empty.desc(expression, projections)
 }
 
@@ -80,30 +87,36 @@ case class InterestingOrderCandidate(order: Seq[ColumnOrder]) extends OrderCandi
 
   override def asc(
     expression: Expression,
-    projections: Map[String, Expression] = Map.empty
+    projections: Map[LogicalVariable, Expression] = Map.empty
   ): InterestingOrderCandidate = InterestingOrderCandidate(order :+ Asc(expression, projections))
 
   override def desc(
     expression: Expression,
-    projections: Map[String, Expression] = Map.empty
+    projections: Map[LogicalVariable, Expression] = Map.empty
   ): InterestingOrderCandidate = InterestingOrderCandidate(order :+ Desc(expression, projections))
 }
 
 object InterestingOrderCandidate extends OrderCandidateFactory[InterestingOrderCandidate] {
 
-  def asc(expression: Expression, projections: Map[String, Expression] = Map.empty): InterestingOrderCandidate =
+  def asc(
+    expression: Expression,
+    projections: Map[LogicalVariable, Expression] = Map.empty
+  ): InterestingOrderCandidate =
     empty.asc(expression, projections)
 
-  def desc(expression: Expression, projections: Map[String, Expression] = Map.empty): InterestingOrderCandidate =
+  def desc(
+    expression: Expression,
+    projections: Map[LogicalVariable, Expression] = Map.empty
+  ): InterestingOrderCandidate =
     empty.desc(expression, projections)
 
   def empty: InterestingOrderCandidate = InterestingOrderCandidate(Seq.empty)
 }
 
 trait OrderCandidateFactory[T <: OrderCandidate[T]] {
-  def asc(expression: Expression, projections: Map[String, Expression] = Map.empty): T
+  def asc(expression: Expression, projections: Map[LogicalVariable, Expression] = Map.empty): T
 
-  def desc(expression: Expression, projections: Map[String, Expression] = Map.empty): T
+  def desc(expression: Expression, projections: Map[LogicalVariable, Expression] = Map.empty): T
 
   def empty: OrderCandidate[T]
 }

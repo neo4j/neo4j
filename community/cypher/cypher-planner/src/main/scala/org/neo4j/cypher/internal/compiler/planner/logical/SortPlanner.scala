@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOr
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.projection
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.IsAggregate
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.frontend.phases.Namespacer
@@ -170,25 +171,31 @@ object SortPlanner {
     updateSolved: Boolean
   ): Option[LogicalPlan] = {
 
-    def idFrom(expression: Expression, projection: Map[String, Expression]): String = {
+    def idFrom(expression: Expression, projection: Map[LogicalVariable, Expression]): LogicalVariable = {
       projection
         .collectFirst { case (key, e) if e == expression => key }
         .getOrElse(
-          Namespacer.genName(
-            context.staticComponents.anonymousVariableNameGenerator,
-            ExpressionStringifier.pretty(_ =>
-              context.staticComponents.anonymousVariableNameGenerator.nextName
-            ).apply(expression)
+          varFor(
+            Namespacer.genName(
+              context.staticComponents.anonymousVariableNameGenerator,
+              ExpressionStringifier.pretty(_ =>
+                context.staticComponents.anonymousVariableNameGenerator.nextName
+              ).apply(expression)
+            )
           )
         )
     }
 
-    def projected(plan: LogicalPlan, projections: Map[String, Expression], updateSolved: Boolean): LogicalPlan = {
+    def projected(
+      plan: LogicalPlan,
+      projections: Map[LogicalVariable, Expression],
+      updateSolved: Boolean
+    ): LogicalPlan = {
       val projectionDeps = projections.flatMap(e => e._2.dependencies)
       val projectionsToMarkSolved = projections.filter(_._2 match {
         case IsAggregate(_) => false
         case _              => true
-      })
+      }).map { case (k, v) => (k.name, v) }
       if (projectionsToMarkSolved.nonEmpty && projectionDeps.forall(e => plan.availableSymbols.contains(e))) {
         val keepAllColumns = if (updateSolved) Some(projectionsToMarkSolved) else None
         projection(plan, projectionsToMarkSolved, keepAllColumns, context)
@@ -199,7 +206,7 @@ object SortPlanner {
     case class SortColumnsWithProjections(
       columnOrder: ColumnOrder,
       providedOrderColumn: ir.ordering.ColumnOrder,
-      unaliasedProjections: Option[(String, Expression)]
+      unaliasedProjections: Option[(LogicalVariable, Expression)]
     )
 
     val sortItems: Seq[SortColumnsWithProjections] =
@@ -213,20 +220,20 @@ object SortPlanner {
         // Unaliased sort expressions
         case asc @ Asc(expression, projections) =>
           val columnId = idFrom(expression, projections)
-          SortColumnsWithProjections(Ascending(varFor(columnId)), asc, Some(columnId -> expression))
+          SortColumnsWithProjections(Ascending(columnId), asc, Some(columnId -> expression))
         case desc @ Desc(expression, projections) =>
           val columnId = idFrom(expression, projections)
-          SortColumnsWithProjections(Descending(varFor(columnId)), desc, Some(columnId -> expression))
+          SortColumnsWithProjections(Descending(columnId), desc, Some(columnId -> expression))
       }
 
     // Project all variables needed for sort in two steps
     // First the ones that are part of projection list and may introduce variables that are needed for the second projection
     val projections =
-      sortItems.foldLeft(Map.empty[String, Expression])((acc, i) => acc ++ i.providedOrderColumn.projections)
+      sortItems.foldLeft(Map.empty[LogicalVariable, Expression])((acc, i) => acc ++ i.providedOrderColumn.projections)
     val projected1 = projected(plan, projections, updateSolved = updateSolved)
     // And then all the ones from unaliased sort items that may refer to newly introduced variables
     val unaliasedProjections =
-      sortItems.foldLeft(Map.empty[String, Expression])((acc, i) => acc ++ i.unaliasedProjections)
+      sortItems.foldLeft(Map.empty[LogicalVariable, Expression])((acc, i) => acc ++ i.unaliasedProjections)
     val projected2 = projected(projected1, unaliasedProjections, updateSolved = false)
 
     val sortColumns: Seq[ColumnOrder] = sortItems.map(_.columnOrder)

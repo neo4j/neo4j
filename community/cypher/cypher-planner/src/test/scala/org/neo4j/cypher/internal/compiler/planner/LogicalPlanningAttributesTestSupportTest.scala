@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.planner.AttributeComparisonStrategy.ComparingProvidedAttributesOnly
 import org.neo4j.cypher.internal.ir.ordering.NoProvidedOrder
@@ -53,7 +54,7 @@ class LogicalPlanningAttributesTestSupportTest
     config.planState(query)
 
   val providedOrder: NonEmptyProvidedOrder =
-    ProvidedOrder.asc(prop("a", "prop"), Map("a" -> varFor("a"))).fromLeft
+    ProvidedOrder.asc(prop("a", "prop"), Map(v"a" -> varFor("a"))).fromLeft
 
   val planAndEffectiveCardinalities: (LogicalPlan, PlanningAttributes.EffectiveCardinalities) =
     (planState.logicalPlan, planState.planningAttributes.effectiveCardinalities)

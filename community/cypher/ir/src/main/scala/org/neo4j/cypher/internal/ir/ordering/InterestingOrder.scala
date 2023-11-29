@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.ir.ordering
 
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.QueryGraph
@@ -101,21 +102,21 @@ case class InterestingOrder(
   }
 
   def withReverseProjectedColumns(
-    projectExpressions: Map[String, Expression],
-    argumentIds: Set[String]
+    projectExpressions: Map[LogicalVariable, Expression],
+    argumentIds: Set[LogicalVariable]
   ): InterestingOrder = {
     def columnIfArgument(expression: Expression, column: ColumnOrder): Option[ColumnOrder] = {
       expression match {
-        case Property(Variable(varName), _) if argumentIds.contains(varName) => Some(column)
-        case Variable(varName) if argumentIds.contains(varName)              => Some(column)
-        case _                                                               => None
+        case Property(v: Variable, _) if argumentIds.contains(v) => Some(column)
+        case v: Variable if argumentIds.contains(v)              => Some(column)
+        case _                                                   => None
       }
     }
 
-    def projectedColumnOrder(column: ColumnOrder, projected: Expression, name: String) = {
+    def projectedColumnOrder(column: ColumnOrder, projected: Expression, variable: LogicalVariable) = {
       column match {
-        case _: Asc  => Some(Asc(projected, Map(name -> projectExpressions(name))))
-        case _: Desc => Some(Desc(projected, Map(name -> projectExpressions(name))))
+        case _: Asc  => Some(Asc(projected, Map(variable -> projectExpressions(variable))))
+        case _: Desc => Some(Desc(projected, Map(variable -> projectExpressions(variable))))
       }
     }
 
@@ -123,10 +124,10 @@ case class InterestingOrder(
       // expression with all incoming projections applied
       val projected = projectExpression(column.expression, column.projections)
       projected match {
-        case Property(Variable(prevVarName), _) if projectExpressions.contains(prevVarName) =>
-          projectedColumnOrder(column, projected, prevVarName)
-        case Variable(prevVarName) if projectExpressions.contains(prevVarName) =>
-          projectedColumnOrder(column, projected, prevVarName)
+        case Property(prevVar: Variable, _) if projectExpressions.contains(prevVar) =>
+          projectedColumnOrder(column, projected, prevVar)
+        case prevVar: Variable if projectExpressions.contains(prevVar) =>
+          projectedColumnOrder(column, projected, prevVar)
         case _ =>
           columnIfArgument(projected, column)
       }
@@ -149,7 +150,7 @@ case class InterestingOrder(
     def satisfied(
       providedOrder: Expression,
       requiredOrder: Expression,
-      projections: Map[String, Expression]
+      projections: Map[LogicalVariable, Expression]
     ): Boolean = {
       val projected = projectExpression(requiredOrder, projections)
       if (providedOrder == requiredOrder || providedOrder == projected) {

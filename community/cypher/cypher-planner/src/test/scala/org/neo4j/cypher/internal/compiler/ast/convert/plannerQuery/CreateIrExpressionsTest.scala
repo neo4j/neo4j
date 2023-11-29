@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.ast.CollectExpression
 import org.neo4j.cypher.internal.ast.CountExpression
 import org.neo4j.cypher.internal.ast.ExistsExpression
@@ -393,7 +394,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     val nameGenerator = makeAnonymousVariableNameGenerator()
     val existsVariable = varFor(nameGenerator.nextName)
 
-    val semanticTable = new SemanticTable().addNode(varFor("n"))
+    val semanticTable = new SemanticTable().addNode(n)
 
     val rewritten = rewrite(esc, semanticTable)
     val existsIRExpression = rewritten.asInstanceOf[ExistsIRExpression]
@@ -438,7 +439,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     val nameGenerator = makeAnonymousVariableNameGenerator()
     val existsVariable = varFor(nameGenerator.nextName)
 
-    val semanticTable = new SemanticTable().addNode(varFor("n"))
+    val semanticTable = new SemanticTable().addNode(n)
 
     val rewritten = rewrite(esc, semanticTable)
     val existsIRExpression = rewritten.asInstanceOf[ExistsIRExpression]
@@ -464,7 +465,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     val simpleMatchQuery = singleQuery(
       match_(n_r_m_chain),
       return_(
-        orderBy(varFor("n").asc),
+        orderBy(n.asc),
         aliasedReturnItem(n)
       )
     )
@@ -474,7 +475,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     val nameGenerator = makeAnonymousVariableNameGenerator()
     val existsVariable = varFor(nameGenerator.nextName)
 
-    val semanticTable = new SemanticTable().addNode(varFor("n"))
+    val semanticTable = new SemanticTable().addNode(n)
 
     val rewritten = rewrite(esc, semanticTable)
     val existsIRExpression = rewritten.asInstanceOf[ExistsIRExpression]
@@ -492,7 +493,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
         horizon =
           Some(RegularQueryProjection(Map("n" -> n), isTerminating = true)),
         interestingOrder =
-          InterestingOrder.required(RequiredOrderCandidate.asc(varFor("n"), Map("n" -> varFor("n"))))
+          InterestingOrder.required(RequiredOrderCandidate.asc(n, Map(v"n" -> n)))
       )
     )
 
@@ -516,7 +517,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     val nameGenerator = makeAnonymousVariableNameGenerator()
     val existsVariable = varFor(nameGenerator.nextName)
 
-    val semanticTable = new SemanticTable().addNode(varFor("n"))
+    val semanticTable = new SemanticTable().addNode(n)
 
     val rewritten = rewrite(esc, semanticTable)
     val existsIRExpression = rewritten.asInstanceOf[ExistsIRExpression]
@@ -558,7 +559,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     val nameGenerator = makeAnonymousVariableNameGenerator()
     val existsVariable = varFor(nameGenerator.nextName)
 
-    val semanticTable = new SemanticTable().addNode(varFor("n"))
+    val semanticTable = new SemanticTable().addNode(n)
 
     val rewritten = rewrite(esc, semanticTable)
     val existsIRExpression = rewritten.asInstanceOf[ExistsIRExpression]
@@ -590,7 +591,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     val simpleMatchQuery = singleQuery(
       match_(n_r_m_chain),
       return_(
-        orderBy(varFor("n").asc),
+        orderBy(n.asc),
         skip(2),
         limit(42),
         aliasedReturnItem(n)
@@ -602,7 +603,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     val nameGenerator = makeAnonymousVariableNameGenerator()
     val existsVariable = varFor(nameGenerator.nextName)
 
-    val semanticTable = new SemanticTable().addNode(varFor("n"))
+    val semanticTable = new SemanticTable().addNode(n)
 
     val rewritten = rewrite(esc, semanticTable)
     val existsIRExpression = rewritten.asInstanceOf[ExistsIRExpression]
@@ -624,7 +625,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
             queryPagination = QueryPagination(Some(literalInt(2)), Some(literalInt(42)))
           )),
         interestingOrder =
-          InterestingOrder.required(RequiredOrderCandidate.asc(varFor("n"), Map("n" -> varFor("n"))))
+          InterestingOrder.required(RequiredOrderCandidate.asc(n, Map(n -> n)))
       )
     )
 
@@ -707,7 +708,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     val nameGenerator = makeAnonymousVariableNameGenerator()
     val existsVariable = varFor(nameGenerator.nextName)
 
-    val semanticTable = new SemanticTable().addNode(varFor("n"))
+    val semanticTable = new SemanticTable().addNode(n)
 
     val rewritten = rewrite(esc, semanticTable)
     val existsIRExpression = rewritten.asInstanceOf[ExistsIRExpression]
@@ -747,7 +748,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     val nameGenerator = makeAnonymousVariableNameGenerator()
     val countVariable = varFor(nameGenerator.nextName)
 
-    val semanticTable = new SemanticTable().addNode(varFor("n"))
+    val semanticTable = new SemanticTable().addNode(n)
 
     val rewritten = rewrite(esc, semanticTable)
     val countIRExpression = rewritten.asInstanceOf[CountIRExpression]
@@ -794,7 +795,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     val nameGenerator = makeAnonymousVariableNameGenerator()
     val countVariable = varFor(nameGenerator.nextName)
 
-    val semanticTable = new SemanticTable().addNode(varFor("n"))
+    val semanticTable = new SemanticTable().addNode(n)
 
     val rewritten = rewrite(esc, semanticTable)
     val countIRExpression = rewritten.asInstanceOf[CountIRExpression]
@@ -823,7 +824,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     val simpleMatchQuery = singleQuery(
       match_(n_r_m_chain),
       return_(
-        orderBy(varFor("n").asc),
+        orderBy(n.asc),
         aliasedReturnItem(n)
       )
     )
@@ -833,7 +834,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     val nameGenerator = makeAnonymousVariableNameGenerator()
     val countVariable = varFor(nameGenerator.nextName)
 
-    val semanticTable = new SemanticTable().addNode(varFor("n"))
+    val semanticTable = new SemanticTable().addNode(n)
 
     val rewritten = rewrite(esc, semanticTable)
     val countIRExpression = rewritten.asInstanceOf[CountIRExpression]
@@ -874,7 +875,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     val nameGenerator = makeAnonymousVariableNameGenerator()
     val countVariable = varFor(nameGenerator.nextName)
 
-    val semanticTable = new SemanticTable().addNode(varFor("n"))
+    val semanticTable = new SemanticTable().addNode(n)
 
     val rewritten = rewrite(esc, semanticTable)
     val countIRExpression = rewritten.asInstanceOf[CountIRExpression]
@@ -920,7 +921,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     val nameGenerator = makeAnonymousVariableNameGenerator()
     val countVariable = varFor(nameGenerator.nextName)
 
-    val semanticTable = new SemanticTable().addNode(varFor("n"))
+    val semanticTable = new SemanticTable().addNode(n)
 
     val rewritten = rewrite(esc, semanticTable)
     val countIRExpression = rewritten.asInstanceOf[CountIRExpression]
@@ -956,7 +957,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     val simpleMatchQuery = singleQuery(
       match_(n_r_m_chain),
       return_(
-        orderBy(varFor("n").asc),
+        orderBy(n.asc),
         skip(2),
         limit(42),
         aliasedReturnItem(n)
@@ -968,7 +969,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     val nameGenerator = makeAnonymousVariableNameGenerator()
     val countVariable = varFor(nameGenerator.nextName)
 
-    val semanticTable = new SemanticTable().addNode(varFor("n"))
+    val semanticTable = new SemanticTable().addNode(n)
 
     val rewritten = rewrite(esc, semanticTable)
     val countIRExpression = rewritten.asInstanceOf[CountIRExpression]
@@ -994,7 +995,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
           )
         ),
         interestingOrder =
-          InterestingOrder.required(RequiredOrderCandidate.asc(varFor("n"), Map("n" -> varFor("n"))))
+          InterestingOrder.required(RequiredOrderCandidate.asc(n, Map(n -> n)))
       )
     )
 
@@ -1017,7 +1018,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     val nameGenerator = makeAnonymousVariableNameGenerator()
     val countVariable = varFor(nameGenerator.nextName)
 
-    val semanticTable = new SemanticTable().addNode(varFor("n"))
+    val semanticTable = new SemanticTable().addNode(n)
 
     val rewritten = rewrite(esc, semanticTable)
     val countIRExpression = rewritten.asInstanceOf[CountIRExpression]
@@ -1393,7 +1394,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
         horizon =
           Some(RegularQueryProjection(Map("n" -> n), isTerminating = true)),
         None,
-        InterestingOrder.required(RequiredOrderCandidate.asc(n, Map("n" -> n)))
+        InterestingOrder.required(RequiredOrderCandidate.asc(n, Map(n -> n)))
       )
     )
 
@@ -1443,7 +1444,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
         horizon =
           Some(RegularQueryProjection(Map("n" -> n), isTerminating = true)),
         None,
-        InterestingOrder.required(RequiredOrderCandidate.asc(n, Map("n" -> n)))
+        InterestingOrder.required(RequiredOrderCandidate.asc(n, Map(n -> n)))
       )
     )
 
@@ -1458,7 +1459,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     val simpleMatchQuery = singleQuery(
       match_(n_r_m_chain),
       return_(
-        orderBy(varFor("n").asc),
+        orderBy(n.asc),
         aliasedReturnItem(n)
       )
     )
@@ -1466,7 +1467,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     val esc = CollectExpression(simpleMatchQuery)(pos, Some(Set(r, m)), Some(Set(n)))
 
     val collectVariable = varFor(makeAnonymousVariableNameGenerator().nextName)
-    val semanticTable = new SemanticTable().addNode(varFor("n"))
+    val semanticTable = new SemanticTable().addNode(n)
 
     val rewritten = rewrite(esc, semanticTable)
     val collectIRExpression = rewritten.asInstanceOf[ListIRExpression]
@@ -1484,7 +1485,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
         horizon =
           Some(RegularQueryProjection(Map("n" -> n), isTerminating = true)),
         interestingOrder =
-          InterestingOrder.required(RequiredOrderCandidate.asc(varFor("n"), Map("n" -> varFor("n"))))
+          InterestingOrder.required(RequiredOrderCandidate.asc(n, Map(n -> n)))
       )
     )
 
@@ -1507,7 +1508,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     val esc = CollectExpression(simpleMatchQuery)(pos, Some(Set(r, m)), Some(Set(n)))
 
     val collectVariable = varFor(makeAnonymousVariableNameGenerator().nextName)
-    val semanticTable = new SemanticTable().addNode(varFor("n"))
+    val semanticTable = new SemanticTable().addNode(n)
 
     val rewritten = rewrite(esc, semanticTable)
     val collectIRExpression = rewritten.asInstanceOf[ListIRExpression]
@@ -1548,7 +1549,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     val esc = CollectExpression(simpleMatchQuery)(pos, Some(Set(r, m)), Some(Set(n)))
 
     val collectVariable = varFor(makeAnonymousVariableNameGenerator().nextName)
-    val semanticTable = new SemanticTable().addNode(varFor("n"))
+    val semanticTable = new SemanticTable().addNode(n)
 
     val rewritten = rewrite(esc, semanticTable)
     val collectIRExpression = rewritten.asInstanceOf[ListIRExpression]
@@ -1583,7 +1584,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     val simpleMatchQuery = singleQuery(
       match_(n_r_m_chain),
       return_(
-        orderBy(varFor("n").asc),
+        orderBy(n.asc),
         skip(2),
         limit(42),
         aliasedReturnItem(n)
@@ -1593,7 +1594,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     val esc = CollectExpression(simpleMatchQuery)(pos, Some(Set(r, m)), Some(Set(n)))
 
     val collectVariable = varFor(makeAnonymousVariableNameGenerator().nextName)
-    val semanticTable = new SemanticTable().addNode(varFor("n"))
+    val semanticTable = new SemanticTable().addNode(n)
 
     val rewritten = rewrite(esc, semanticTable)
     val collectIRExpression = rewritten.asInstanceOf[ListIRExpression]
@@ -1615,7 +1616,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
             queryPagination = QueryPagination(Some(literalInt(2)), Some(literalInt(42)))
           )),
         interestingOrder =
-          InterestingOrder.required(RequiredOrderCandidate.asc(varFor("n"), Map("n" -> varFor("n"))))
+          InterestingOrder.required(RequiredOrderCandidate.asc(n, Map(n -> n)))
       )
     )
 
@@ -1637,7 +1638,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     val esc = CollectExpression(simpleMatchQuery)(pos, Some(Set(r, m)), Some(Set(n)))
 
     val collectVariable = varFor(makeAnonymousVariableNameGenerator().nextName)
-    val semanticTable = new SemanticTable().addNode(varFor("n"))
+    val semanticTable = new SemanticTable().addNode(n)
 
     val rewritten = rewrite(esc, semanticTable)
     val collectIRExpression = rewritten.asInstanceOf[ListIRExpression]

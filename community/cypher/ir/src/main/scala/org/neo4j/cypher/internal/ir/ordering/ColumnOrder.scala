@@ -48,7 +48,7 @@ sealed trait ColumnOrder {
   /**
    * @return projections needed to apply the sort of the expression
    */
-  def projections: Map[String, Expression]
+  def projections: Map[LogicalVariable, Expression]
 
   /**
    * @return all dependencies from the  expression.
@@ -76,11 +76,13 @@ object ColumnOrder {
     if (ascending) Asc(expression) else Desc(expression)
   }
 
-  case class Asc(expression: Expression, projections: Map[String, Expression] = Map.empty) extends ColumnOrder {
+  case class Asc(expression: Expression, projections: Map[LogicalVariable, Expression] = Map.empty)
+      extends ColumnOrder {
     override val isAscending: Boolean = true
   }
 
-  case class Desc(expression: Expression, projections: Map[String, Expression] = Map.empty) extends ColumnOrder {
+  case class Desc(expression: Expression, projections: Map[LogicalVariable, Expression] = Map.empty)
+      extends ColumnOrder {
     override val isAscending: Boolean = false
   }
 
@@ -91,12 +93,12 @@ object ColumnOrder {
    * @param projections projections that might involve the expression.
    * @return the original expression, or the same expression.
    */
-  def projectExpression(expression: Expression, projections: Map[String, Expression]): Expression = {
+  def projectExpression(expression: Expression, projections: Map[LogicalVariable, Expression]): Expression = {
     expression.endoRewrite(topDownWithParent(
       RewriterWithParent.lift {
         // We must be careful when rewriting the logical variable used in a map projection
-        case (v @ LogicalVariable(varName), Some(DesugaredMapProjection(mapVar, _, _))) if mapVar == v =>
-          projections.get(varName) match {
+        case (v: LogicalVariable, Some(DesugaredMapProjection(mapVar, _, _))) if mapVar == v =>
+          projections.get(v) match {
             // Replacing the variable with another logical variable is sound
             case Some(lv: LogicalVariable) => lv
             // Any other type is not
@@ -104,8 +106,8 @@ object ColumnOrder {
             // If v isn't a projected value, keep it as is
             case None => v
           }
-        case (v @ Variable(varName), _) =>
-          projections.getOrElse(varName, v)
+        case (v: Variable, _) =>
+          projections.getOrElse(v, v)
       },
       // Do not attempt rewriting in IR expressions, they contain variables in places where they cannot get substituted
       // by other expression.

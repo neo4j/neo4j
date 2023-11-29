@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.ordering
 
 import org.neo4j.cypher.internal.compiler.helpers.AggregationHelper
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder
@@ -63,7 +64,11 @@ object ResultOrdering {
     indexOrderCapability: IndexOrderCapability,
     providedOrderFactory: ProvidedOrderFactory = DefaultProvidedOrderFactory
   ): (ProvidedOrder, IndexOrder) = {
-    def satisfies(indexProperty: Property, expression: Expression, projections: Map[String, Expression]): Boolean =
+    def satisfies(
+      indexProperty: Property,
+      expression: Expression,
+      projections: Map[LogicalVariable, Expression]
+    ): Boolean =
       AggregationHelper.extractPropertyForValue(expression, projections).contains(indexProperty)
 
     def getNewProvidedOrderColumn(orderColumn: ColumnOrder, prop: Property): ColumnOrder = orderColumn match {
@@ -224,7 +229,7 @@ object ResultOrdering {
     indexOrderCapability: IndexOrderCapability,
     providedOrderFactory: ProvidedOrderFactory
   ): ProvidedOrder = {
-    def satisfies(expression: Expression, projections: Map[String, Expression]): Boolean =
+    def satisfies(expression: Expression, projections: Map[LogicalVariable, Expression]): Boolean =
       extractVariableForValue(expression, projections).contains(variable)
 
     indexOrderCapability match {
@@ -244,12 +249,12 @@ object ResultOrdering {
   @tailrec
   private[ordering] def extractVariableForValue(
     expression: Expression,
-    renamings: Map[String, Expression]
+    renamings: Map[LogicalVariable, Expression]
   ): Option[Variable] = {
     expression match {
-      case variable @ Variable(varName) =>
-        if (renamings.contains(varName) && renamings(varName) != variable)
-          extractVariableForValue(renamings(varName), renamings)
+      case variable: Variable =>
+        if (renamings.contains(variable) && renamings(variable) != variable)
+          extractVariableForValue(renamings(variable), renamings)
         else
           Some(variable)
       case _ => None

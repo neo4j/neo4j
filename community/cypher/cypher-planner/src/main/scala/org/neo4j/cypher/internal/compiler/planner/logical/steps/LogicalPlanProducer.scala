@@ -1572,7 +1572,7 @@ case class LogicalPlanProducer(
       } else {
         // If the order is on a join column (or derived from a join column), we cannot continue guaranteeing that order.
         // The join nodes that are not matched from the RHS will appear out-of-order after all join nodes which were matched.
-        inputOrder.upToExcluding(nodes).fromRight
+        inputOrder.upToExcluding(nodes.map(varFor)).fromRight
       }
     annotate(LeftOuterHashJoin(nodes.map(varFor), left, right), solved, providedOrder, context)
   }
