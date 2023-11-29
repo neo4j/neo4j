@@ -21,6 +21,7 @@ package org.neo4j.codegen;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -51,11 +52,11 @@ import static org.neo4j.codegen.Expression.newInstance;
 import static org.neo4j.codegen.Expression.not;
 import static org.neo4j.codegen.Expression.notNull;
 import static org.neo4j.codegen.Expression.or;
+import static org.neo4j.codegen.Expression.self;
 import static org.neo4j.codegen.Expression.subtract;
 import static org.neo4j.codegen.Expression.ternary;
 import static org.neo4j.codegen.ExpressionTemplate.cast;
 import static org.neo4j.codegen.ExpressionTemplate.load;
-import static org.neo4j.codegen.ExpressionTemplate.self;
 import static org.neo4j.codegen.MethodReference.constructorReference;
 import static org.neo4j.codegen.MethodReference.methodReference;
 import static org.neo4j.codegen.Parameter.param;
@@ -2129,6 +2130,69 @@ public abstract class CodeGenerationTest {
     }
 
     @Test
+    void shouldGenerateNestedTryCatchWhereOuterCatchesInner() throws Throwable {
+        // given
+        int success = -1;
+        ClassHandle handle;
+
+        // Will generate the following:
+        //  public int run(java.lang.Runnable runner) {
+        //        try {
+        //            try {
+        //                runner.run();
+        //            } catch (org.neo4j.codegen.CodeGenerationTest.MyFirstException E2) {
+        //                throw new org.neo4j.codegen.CodeGenerationTest.MySecondException("inner", E2);
+        //            }
+        //        } catch (org.neo4j.codegen.CodeGenerationTest.MySecondException E1) {
+        //            throw new java.lang.RuntimeException("outer", E1);
+        //        }
+        //        return -1;
+        //    }
+        try (ClassGenerator simple = generateClass("SimpleClass")) {
+            try (CodeBlock outer = simple.generateMethod(int.class, "run", param(Runnable.class, "runner"))) {
+                try (var firstBlock = outer.tryCatch(
+                        onError -> onError.throwException(newRuntimeException("outer", onError.load("E1"))),
+                        param(MySecondException.class, "E1"))) {
+                    try (var secondBlock = firstBlock.tryCatch(
+                            onError -> onError.throwException(
+                                    newException("inner", MySecondException.class, onError.load("E2"))),
+                            param(MyFirstException.class, "E2"))) {
+                        secondBlock.expression(invoke(secondBlock.load("runner"), RUN));
+                    }
+                }
+                outer.returns(constant(success));
+            }
+            handle = simple.handle();
+        }
+
+        // when
+        Runnable successBody = mock(Runnable.class);
+        Runnable failBody1 = mock(Runnable.class);
+        Runnable failBody2 = mock(Runnable.class);
+        MyFirstException fail1 = new MyFirstException();
+        MySecondException fail2 = new MySecondException();
+        doThrow(fail1).when(failBody1).run();
+        doThrow(fail2).when(failBody2).run();
+        MethodHandle run = instanceMethod(handle.newInstance(), "run", Runnable.class);
+
+        // success
+        assertThat(run.invoke(successBody)).isEqualTo(success);
+        // error is caught by inner, rethrown and caught by outer and then rethrown again
+        Throwable error = catchThrowable(() -> run.invoke(failBody1));
+        assertThat(error).hasMessage("outer");
+        assertThat(error.getCause())
+                .hasMessage("inner")
+                .isInstanceOf(MySecondException.class)
+                .rootCause()
+                .isSameAs(fail1);
+        // error is caught by outer and then rethrown
+        assertThatThrownBy(() -> run.invoke(failBody2))
+                .hasMessage("outer")
+                .rootCause()
+                .isSameAs(fail2);
+    }
+
+    @Test
     void shouldGenerateDeeplyNestedTryCatch() throws Throwable {
         // given
         int success = -1;
@@ -2683,17 +2747,78 @@ public abstract class CodeGenerationTest {
         return methodReference(Runnable.class, void.class, "run");
     }
 
-    public static class MyFirstException extends RuntimeException {}
+    public static class MyFirstException extends RuntimeException {
+        public MyFirstException() {
+            super();
+        }
 
-    public static class MySecondException extends RuntimeException {}
+        public MyFirstException(String msg) {
+            super(msg);
+        }
 
-    public static class MyThirdException extends RuntimeException {}
+        public MyFirstException(Throwable cause) {
+            super(cause);
+        }
+
+        public MyFirstException(String msg, Throwable cause) {
+            super(msg, cause);
+        }
+    }
+
+    public static class MySecondException extends RuntimeException {
+        public MySecondException() {
+            super();
+        }
+
+        public MySecondException(String msg) {
+            super(msg);
+        }
+
+        public MySecondException(Throwable cause) {
+            super(cause);
+        }
+
+        public MySecondException(String msg, Throwable cause) {
+            super(msg, cause);
+        }
+    }
+
+    public static class MyThirdException extends RuntimeException {
+        public MyThirdException() {
+            super();
+        }
+
+        public MyThirdException(String msg) {
+            super(msg);
+        }
+
+        public MyThirdException(Throwable cause) {
+            super(cause);
+        }
+
+        public MyThirdException(String msg, Throwable cause) {
+            super(msg, cause);
+        }
+    }
 
     private Expression newRuntimeException(String msg) {
+        return newException(msg, RuntimeException.class);
+    }
+
+    private Expression newRuntimeException(String msg, Expression cause) {
+        return newException(msg, RuntimeException.class, cause);
+    }
+
+    private Expression newException(String msg, Class<?> exceptionClass) {
+        return invoke(newInstance(exceptionClass), constructorReference(exceptionClass, String.class), constant(msg));
+    }
+
+    private Expression newException(String msg, Class<?> exceptionClass, Expression cause) {
         return invoke(
-                newInstance(RuntimeException.class),
-                constructorReference(RuntimeException.class, String.class),
-                constant(msg));
+                newInstance(exceptionClass),
+                constructorReference(exceptionClass, String.class, Throwable.class),
+                constant(msg),
+                cause);
     }
 }
 
