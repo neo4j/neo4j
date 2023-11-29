@@ -1291,7 +1291,7 @@ case class InterpretedPipeMapper(
         StatefulShortestPathPipe(
           source,
           sourceNode.name,
-          mode == ExpandInto,
+          p.isImplicitlyInto, // TODO: implement ExpandInto properly
           commandNFA,
           commandPreFilters,
           selector,

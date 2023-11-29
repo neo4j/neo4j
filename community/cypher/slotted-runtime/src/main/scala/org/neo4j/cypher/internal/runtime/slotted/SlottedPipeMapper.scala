@@ -1107,7 +1107,7 @@ class SlottedPipeMapper(
         StatefulShortestPathSlottedPipe(
           source,
           slots(sourceNode),
-          mode == ExpandInto,
+          p.isImplicitlyInto, // TODO: implement ExpandInto properly
           commandNFA,
           commandPreFilters,
           selector,

@@ -158,7 +158,6 @@ import org.neo4j.cypher.internal.logical.plans.ErrorPlan
 import org.neo4j.cypher.internal.logical.plans.ExhaustiveLimit
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
-import org.neo4j.cypher.internal.logical.plans.Expand.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpansionMode
 import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
 import org.neo4j.cypher.internal.logical.plans.FindShortestPaths
@@ -2376,31 +2375,12 @@ case class LogicalPlanProducer(
       (rewrittenNFA, rewrittenNonInlinablePreFilters)
     }
 
-    // hacky workaround while we implement a real ExpandInto check
-    val isInto: Boolean =
-      nfa.transitions.values
-        .flatten
-        .filter(t => nfa.finalStates.contains(t.end))
-        .map(t =>
-          t.predicate match {
-            case NFA.NodeJuxtapositionPredicate(pred)                 => pred
-            case NFA.RelationshipExpansionPredicate(_, _, _, _, pred) => pred
-          }
-        )
-        .forall {
-          case Some(VariablePredicate(exprVar, Equals(lhs: LogicalVariable, rhs))) =>
-            rhs == exprVar && inner.availableSymbols.map(_.name).contains(lhs.name)
-          case Some(VariablePredicate(exprVar, Equals(lhs, rhs: LogicalVariable))) =>
-            lhs == exprVar && inner.availableSymbols.map(_.name).contains(rhs.name)
-          case _ => false
-        }
-
     val plan = StatefulShortestPath(
       inner,
       varFor(startNode),
       varFor(endNode),
       rewrittenNFA,
-      if (isInto) ExpandInto else ExpandAll,
+      ExpandAll,
       rewrittenNonInlinablePreFilters,
       nodeVariableGroupings,
       relationshipVariableGroupings,

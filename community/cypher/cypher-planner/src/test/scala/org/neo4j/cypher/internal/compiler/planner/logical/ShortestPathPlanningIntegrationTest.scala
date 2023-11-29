@@ -36,7 +36,6 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.crea
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.logical.builder.TestNFABuilder
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
-import org.neo4j.cypher.internal.logical.plans.Expand.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
@@ -326,7 +325,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           Set(),
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
-          ExpandInto,
+          ExpandAll,
           reverseGroupVariableProjections = false
         )
         .skip(0)
@@ -540,7 +539,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
-          ExpandInto,
+          ExpandAll,
           reverseGroupVariableProjections = false
         )
         .filter("cacheN[d.prop] = 5")
@@ -719,7 +718,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
-          ExpandInto,
+          ExpandAll,
           reverseGroupVariableProjections = false
         )
         .nodeByLabelScan("a", "User")
@@ -1096,7 +1095,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           singletonRelationshipVariables = Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
-          ExpandInto,
+          ExpandAll,
           reverseGroupVariableProjections = false
         )
         .skip(1)
@@ -1139,7 +1138,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           singletonRelationshipVariables = Set("r2" -> "r2"),
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
-          ExpandInto,
+          ExpandAll,
           reverseGroupVariableProjections = false
         )
         .skip(1)
