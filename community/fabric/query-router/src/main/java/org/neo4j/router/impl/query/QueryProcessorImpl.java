@@ -72,7 +72,6 @@ public class QueryProcessorImpl implements QueryProcessor {
     private final PreParser preParser;
     private final CypherParsing parsing;
     private final CompilationTracer tracer;
-    private final CancellationChecker cancellationChecker;
     private final GlobalProcedures globalProcedures;
     private final DatabaseContextProvider<?> databaseContextProvider;
     private final StaticUseEvaluation staticUseEvaluation = new StaticUseEvaluation();
@@ -82,22 +81,24 @@ public class QueryProcessorImpl implements QueryProcessor {
             PreParser preParser,
             CypherParsing parsing,
             CompilationTracer tracer,
-            CancellationChecker cancellationChecker,
             GlobalProcedures globalProcedures,
             DatabaseContextProvider<?> databaseContextProvider) {
         this.cache = cache;
         this.preParser = preParser;
         this.parsing = parsing;
         this.tracer = tracer;
-        this.cancellationChecker = cancellationChecker;
         this.globalProcedures = globalProcedures;
         this.databaseContextProvider = databaseContextProvider;
     }
 
     @Override
-    public ProcessedQueryInfo processQuery(Query query, TargetService targetService, LocationService locationService) {
+    public ProcessedQueryInfo processQuery(
+            Query query,
+            TargetService targetService,
+            LocationService locationService,
+            CancellationChecker cancellationChecker) {
 
-        var cachedValue = getFromCache(query);
+        var cachedValue = getFromCache(query, cancellationChecker);
 
         var databaseReference = targetService.target(cachedValue.catalogInfo());
 
@@ -129,23 +130,23 @@ public class QueryProcessorImpl implements QueryProcessor {
         return cache.clearQueryCachesForDatabase(databaseName);
     }
 
-    private ProcessedQueryInfoCache.Value getFromCache(Query query) {
+    private ProcessedQueryInfoCache.Value getFromCache(Query query, CancellationChecker cancellationChecker) {
         var cachedValue = cache.get(query.text());
 
         if (cachedValue == null) {
-            var preparedForCacheQuery = prepareQueryForCache(query);
+            var preparedForCacheQuery = prepareQueryForCache(query, cancellationChecker);
             cache.put(query.text(), preparedForCacheQuery);
             cachedValue = preparedForCacheQuery;
         }
         return cachedValue;
     }
 
-    private ProcessedQueryInfoCache.Value prepareQueryForCache(Query query) {
+    private ProcessedQueryInfoCache.Value prepareQueryForCache(Query query, CancellationChecker cancellationChecker) {
         var queryTracer = tracer.compileQuery(query.text());
         var notificationLogger = new RecordingNotificationLogger();
         var preParsedQuery = preParser.preParse(query.text(), notificationLogger);
         var resolver = SignatureResolver.from(globalProcedures.getCurrentView());
-        var parsedQuery = parse(query, queryTracer, preParsedQuery, resolver, notificationLogger);
+        var parsedQuery = parse(query, queryTracer, preParsedQuery, resolver, notificationLogger, cancellationChecker);
         var catalogInfo = resolveCatalogInfo(parsedQuery.statement());
         var rewrittenQueryText = rewriteQueryText(parsedQuery, preParsedQuery.options());
         var maybeExtractedParams = formatMaybeExtractedParams(parsedQuery);
@@ -239,7 +240,8 @@ public class QueryProcessorImpl implements QueryProcessor {
             CompilationTracer.QueryCompilationEvent queryTracer,
             PreParsedQuery preParsedQuery,
             ProcedureSignatureResolver resolver,
-            RecordingNotificationLogger notificationLogger) {
+            RecordingNotificationLogger notificationLogger,
+            CancellationChecker cancellationChecker) {
         return parsing.parseQuery(
                 preParsedQuery.statement(),
                 preParsedQuery.rawStatement(),

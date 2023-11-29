@@ -21,6 +21,7 @@ package org.neo4j.router.query;
 
 import java.util.Optional;
 import org.neo4j.cypher.internal.options.CypherExecutionMode;
+import org.neo4j.cypher.internal.util.CancellationChecker;
 import org.neo4j.cypher.internal.util.ObfuscationMetadata;
 import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.router.impl.query.StatementType;
@@ -40,7 +41,11 @@ public interface QueryProcessor {
             StatementType statementType,
             CypherExecutionMode cypherExecutionMode) {}
 
-    ProcessedQueryInfo processQuery(Query query, TargetService targetService, LocationService locationService);
+    ProcessedQueryInfo processQuery(
+            Query query,
+            TargetService targetService,
+            LocationService locationService,
+            CancellationChecker cancellationChecker);
 
     long clearQueryCachesForDatabase(String databaseName);
 }

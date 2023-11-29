@@ -425,13 +425,16 @@ public class RouterTransactionImpl implements CompoundTransaction<DatabaseTransa
     }
 
     private void checkTransactionOpenForStatementExecution() {
+        throwIfTerminatedOrClosed(() -> "Trying to execute query in a closed transaction");
+    }
+
+    public void throwIfTerminatedOrClosed(Supplier<String> closedExceptionMessage) {
         if (terminationMark != null) {
             throw new TransactionTerminatedException(terminationMark.getReason());
         }
 
         if (state.get() == State.CLOSED) {
-            throw new QueryRouterException(
-                    Status.Statement.ExecutionFailed, "Trying to execute query in a closed transaction");
+            throw new QueryRouterException(Status.Statement.ExecutionFailed, closedExceptionMessage.get());
         }
     }
 

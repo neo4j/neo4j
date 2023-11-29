@@ -21,6 +21,7 @@ package org.neo4j.router.transaction;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
 import org.neo4j.fabric.executor.Location;
 import org.neo4j.fabric.transaction.TransactionMode;
 import org.neo4j.fabric.transaction.parent.CompoundTransaction;
@@ -35,4 +36,6 @@ public interface RouterTransaction extends CompoundTransaction<DatabaseTransacti
     void verifyStatementType(StatementType type);
 
     void setMetaData(Map<String, Object> txMeta);
+
+    void throwIfTerminatedOrClosed(Supplier<String> closedExceptionMessage);
 }
