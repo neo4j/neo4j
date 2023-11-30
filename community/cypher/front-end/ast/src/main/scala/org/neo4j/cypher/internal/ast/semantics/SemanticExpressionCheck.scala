@@ -625,6 +625,7 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
       case x: MapProjection =>
         check(ctx, x.items) chain
           ensureDefined(x.name) chain
+          expectType(CTMap.covariant, x.name) chain
           specifyType(CTMap, x) ifOkChain // We need to remember the scope to later rewrite this ASTNode
           SemanticState.recordCurrentScope(x)
 
