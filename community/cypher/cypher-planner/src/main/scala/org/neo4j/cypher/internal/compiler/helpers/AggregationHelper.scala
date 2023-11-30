@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.Variable
 
 import java.util.Locale
+
 import scala.annotation.tailrec
 
 object AggregationHelper {

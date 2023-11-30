@@ -366,7 +366,8 @@ class InterestingOrderStatementConvertersTest extends CypherFunSuite with Logica
         queryGraph = QueryGraph(argumentIds = Set("foo", "n")),
         interestingOrder =
           InterestingOrder.required(RequiredOrderCandidate.asc(varFor("foo"), Map(v"foo" -> varFor("foo")))),
-        horizon = RegularQueryProjection(Map(v"n.bar" -> prop("n", "bar"), v"foo" -> varFor("foo")), isTerminating = true)
+        horizon =
+          RegularQueryProjection(Map(v"n.bar" -> prop("n", "bar"), v"foo" -> varFor("foo")), isTerminating = true)
       ))
     )
 

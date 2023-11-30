@@ -315,7 +315,10 @@ object StatisticsBackedCardinalityModel {
       copy(relTypeInfo = relTypeInfo ++ newRelTypeInfo)
   }
 
-  def aggregateCardinalityEstimation(in: Cardinality, groupingExpressions: Map[LogicalVariable, Expression]): Cardinality =
+  def aggregateCardinalityEstimation(
+    in: Cardinality,
+    groupingExpressions: Map[LogicalVariable, Expression]
+  ): Cardinality =
     if (groupingExpressions.isEmpty)
       Cardinality.SINGLE
     else

@@ -253,7 +253,10 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
       sortedPlan should equal(Some(sorted))
       context.staticComponents.planningAttributes.solveds.get(sortedPlan.get.id) should equal(
-        RegularSinglePlannerQuery(interestingOrder = io, horizon = RegularQueryProjection(Map(v"a" -> prop("x", "foo"))))
+        RegularSinglePlannerQuery(
+          interestingOrder = io,
+          horizon = RegularQueryProjection(Map(v"a" -> prop("x", "foo")))
+        )
       )
     }
   }
