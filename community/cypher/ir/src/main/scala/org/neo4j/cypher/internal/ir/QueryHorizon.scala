@@ -306,7 +306,7 @@ case class CommandProjection(clause: CommandClause) extends QueryHorizon {
     val columnNames = clause match {
       case t: CommandClause if t.yieldItems.nonEmpty =>
         t.yieldItems.map(_.aliasedVariable.name)
-      case _ => clause.unfilteredColumns.columns.map(_.name)
+      case _ => clause.unfilteredColumns.columns.map(_.variable.name)
     }
     coveredIds ++ columnNames
   }
