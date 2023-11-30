@@ -21,7 +21,6 @@ package org.neo4j.values.virtual;
 
 import java.util.Comparator;
 import java.util.function.Consumer;
-import org.neo4j.exceptions.IncomparableValuesException;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.Comparison;
 import org.neo4j.values.TernaryComparator;
@@ -67,17 +66,12 @@ public abstract class VirtualRelationshipValue extends VirtualValue {
     public boolean equals(VirtualValue other) {
         if (!(other instanceof VirtualRelationshipValue that)) {
             return false;
-        } else if (!(this instanceof RelationshipValue) && other instanceof CompositeDatabaseValue) {
-            /*
-             * If we get here, it means we try to compare a composite relationship with a relationship that does not have an element id.
-             * It is not possible to compare those values as they might OR might not refer to the same element.
-             *
-             * We should never get here, as we always work with either only composite or only non-composite values.
-             */
-            throw new IncomparableValuesException(
-                    this.getClass().getSimpleName(), other.getClass().getSimpleName());
         }
-        return id() == that.id();
+        return that.equals(this);
+    }
+
+    protected boolean equals(VirtualRelationshipValue other) {
+        return id() == other.id();
     }
 
     @Override

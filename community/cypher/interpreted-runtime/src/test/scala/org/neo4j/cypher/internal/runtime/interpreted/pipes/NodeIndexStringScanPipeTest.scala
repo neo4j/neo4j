@@ -83,7 +83,7 @@ class NodeIndexStringScanPipeTest extends CypherFunSuite with ImplicitDummyPos w
     val result = pipe.createResults(queryState).toList
 
     // then
-    result.map(_.getByName("n")) should be(List(node))
+    result.map(_.getByName("n").asInstanceOf[NodeValue].id()) should be(List(node.id()))
     result.map(_.getCachedProperty(cachedProperty("n", propertyKey).runtimeKey)) should be(
       List(Values.stringValue("hello"))
     )
@@ -110,7 +110,7 @@ class NodeIndexStringScanPipeTest extends CypherFunSuite with ImplicitDummyPos w
     val result = pipe.createResults(queryState).toList
 
     // then
-    result.map(_.getByName("n")) should be(List(node2))
+    result.map(_.getByName("n").asInstanceOf[NodeValue].id()) should be(List(node2.id()))
     result.map(_.getCachedProperty(cachedProperty("n", propertyKey).runtimeKey)) should be(
       List(Values.stringValue("bye"))
     )

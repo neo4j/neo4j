@@ -29,7 +29,7 @@ import org.neo4j.values.storable.TextValue;
 public interface CompositeDatabaseValue {
     long sourceId();
 
-    class CompositeGraphDirectNodeValue extends NodeValue.DirectNodeValue implements CompositeDatabaseValue {
+    final class CompositeGraphDirectNodeValue extends NodeValue.DirectNodeValue implements CompositeDatabaseValue {
         private final long sourceId;
 
         /**
@@ -56,9 +56,7 @@ public interface CompositeDatabaseValue {
          * @return true if the entity is a node which has the same id and sourceId as this object, otherwise false.
          */
         @Override
-        public boolean equals(VirtualValue other) {
-            assert (other instanceof VirtualNodeReference);
-
+        protected boolean equals(VirtualNodeValue other) {
             if (!super.equals(other)) {
                 return false;
             }
@@ -94,7 +92,7 @@ public interface CompositeDatabaseValue {
         }
     }
 
-    class CompositeDirectRelationshipValue extends RelationshipValue.DirectRelationshipValue
+    final class CompositeDirectRelationshipValue extends RelationshipValue.DirectRelationshipValue
             implements CompositeDatabaseValue {
         private final long sourceId;
         /**
@@ -130,9 +128,7 @@ public interface CompositeDatabaseValue {
          * @return true if the entity is a relationship which has the same id and sourceId as this object, otherwise false.
          */
         @Override
-        public boolean equals(VirtualValue other) {
-            assert (other instanceof RelationshipValue);
-
+        public boolean equals(VirtualRelationshipValue other) {
             if (!super.equals(other)) {
                 return false;
             }
@@ -168,7 +164,7 @@ public interface CompositeDatabaseValue {
         }
     }
 
-    class CompositeFullNodeReference extends FullNodeReference implements CompositeDatabaseValue {
+    final class CompositeFullNodeReference extends FullNodeReference implements CompositeDatabaseValue {
 
         private final long sourceId;
 
@@ -186,9 +182,7 @@ public interface CompositeDatabaseValue {
          * @return true if the entity is a node which has the same id and sourceId as this object, otherwise false.
          */
         @Override
-        public boolean equals(VirtualValue other) {
-            assert (other instanceof VirtualNodeReference);
-
+        protected boolean equals(VirtualNodeValue other) {
             if (!super.equals(other)) {
                 return false;
             }
