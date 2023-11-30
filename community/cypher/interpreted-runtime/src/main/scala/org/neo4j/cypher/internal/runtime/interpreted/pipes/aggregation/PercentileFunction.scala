@@ -31,20 +31,19 @@ import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.memory.HeapEstimator.shallowSizeOfInstance
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.AnyValue
-import org.neo4j.values.SequenceValue
 import org.neo4j.values.storable.BooleanValue
 import org.neo4j.values.storable.NumberValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValueBuilder
 
-abstract class PercentileFunction(val value: Expression, percentiles: Expression, memoryTracker: MemoryTracker)
+abstract class PercentileFunction(val value: Expression, memoryTracker: MemoryTracker)
     extends AggregationFunction
-    with NumericExpressionOnly {
+    with NumericExpressionOnly
+    with InitiateOnFirstRow {
 
   protected var temp: HeapTrackingArrayList[NumberValue] =
     HeapTrackingCollections.newArrayList[NumberValue](memoryTracker)
   protected var count: Int = 0
-  protected var percs: Array[Double] = _
   protected var estimatedNumberValue: Long = -1
 
   override def apply(data: ReadableRow, state: QueryState): Unit = {
@@ -57,39 +56,34 @@ abstract class PercentileFunction(val value: Expression, percentiles: Expression
         count += 1
         temp.add(number)
         if (estimatedNumberValue == -1) {
-          estimatedNumberValue = number.estimatedHeapUsage();
+          estimatedNumberValue = number.estimatedHeapUsage()
         }
         memoryTracker.allocateHeap(estimatedNumberValue)
       }
     )
   }
+}
 
-  protected def onFirstRow(data: ReadableRow, state: QueryState): Unit = {
-    percentiles(data, state) match {
-      case percentilesValue: SequenceValue =>
-        percs = new Array[Double](percentilesValue.length())
-        var i = 0
-        while (i < percentilesValue.length()) {
-          val perc = CypherCoercions.asNumberValue(percentilesValue.value(i)).doubleValue()
-          percs(i) = perc
-          if (perc < 0 || perc > 1.0)
-            throw new InvalidArgumentException(
-              s"Invalid input '$perc' is not a valid argument, must be a number in the range 0.0 to 1.0"
-            )
-          i += 1
-        }
-      case value =>
-        percs = Array(CypherCoercions.asNumberValue(value).doubleValue())
-        if (percs(0) < 0 || percs(0) > 1.0)
-          throw new InvalidArgumentException(
-            s"Invalid input '${percs(0)}' is not a valid argument, must be a number in the range 0.0 to 1.0"
-          )
-    }
+sealed trait InitiateOnFirstRow {
+  protected def onFirstRow(data: ReadableRow, state: QueryState): Unit
+}
+
+trait OnePercentile extends InitiateOnFirstRow {
+  protected var perc: Double = 0
+
+  protected def percentile: Expression
+
+  override protected def onFirstRow(data: ReadableRow, state: QueryState): Unit = {
+    perc = CypherCoercions.asNumberValue(percentile(data, state)).doubleValue()
+    if (perc < 0 || perc > 1.0)
+      throw new InvalidArgumentException(
+        s"Invalid input '$perc' is not a valid argument, must be a number in the range 0.0 to 1.0"
+      )
   }
 }
 
-class PercentileContFunction(value: Expression, percentile: Expression, memoryTracker: MemoryTracker)
-    extends PercentileFunction(value, percentile, memoryTracker) {
+class PercentileContFunction(value: Expression, val percentile: Expression, memoryTracker: MemoryTracker)
+    extends PercentileFunction(value, memoryTracker) with OnePercentile {
 
   def name = "PERCENTILE_CONT"
 
@@ -100,7 +94,6 @@ class PercentileContFunction(value: Expression, percentile: Expression, memoryTr
       if (count == 0) {
         Values.NO_VALUE
       } else {
-        val perc = percs(0)
         PercentileContFunction.computePercentileCont(temp, count, perc)
       }
 
@@ -127,8 +120,8 @@ object PercentileContFunction {
   }
 }
 
-class PercentileDiscFunction(value: Expression, percentile: Expression, memoryTracker: MemoryTracker)
-    extends PercentileFunction(value, percentile, memoryTracker) {
+class PercentileDiscFunction(value: Expression, val percentile: Expression, memoryTracker: MemoryTracker)
+    extends PercentileFunction(value, memoryTracker) with OnePercentile {
 
   def name = "PERCENTILE_DISC"
 
@@ -139,7 +132,6 @@ class PercentileDiscFunction(value: Expression, percentile: Expression, memoryTr
       if (count == 0) {
         Values.NO_VALUE
       } else {
-        val perc = percs(0)
         PercentileDiscFunction.computePercentileDisc(temp, count, perc)
       }
 
@@ -171,42 +163,51 @@ class PercentilesFunction(
   keys: Expression,
   isDiscreteRange: Expression,
   memoryTracker: MemoryTracker
-) extends PercentileFunction(value, percentiles, memoryTracker) {
+) extends PercentileFunction(value, memoryTracker) {
 
+  private var percs: Array[Double] = _
   private var mapKeys: Array[String] = _
   private var isDiscretes: Array[Boolean] = _
   override val name = "PERCENTILES"
 
   override protected def onFirstRow(data: ReadableRow, state: QueryState): Unit = {
-    super.onFirstRow(data, state)
-    keys(data, state) match {
-      case values: SequenceValue =>
-        mapKeys = new Array[String](values.length())
-        var i = 0
-        while (i < mapKeys.length) {
-          mapKeys(i) = CypherFunctions.asTextValue(values.value(i)).stringValue()
-          i += 1
-        }
-        if (values.length() != percs.length) {
-          throw new InternalException(
-            s"Expected 'percentiles' ${percs.mkString(",")} and 'keys' ${mapKeys.mkString(",")} to have the same length"
-          )
-        }
+    val percsValue = CypherCoercions.asSequenceValue(percentiles(data, state))
+    percs = new Array[Double](percsValue.length())
+    var i = 0
+    while (i < percsValue.length()) {
+      val perc = CypherCoercions.asNumberValue(percsValue.value(i)).doubleValue()
+      percs(i) = perc
+      if (perc < 0 || perc > 1.0)
+        throw new InvalidArgumentException(
+          s"Invalid input '$perc' is not a valid argument, must be a number in the range 0.0 to 1.0"
+        )
+      i += 1
     }
-    isDiscreteRange(data, state) match {
-      case values: SequenceValue =>
-        isDiscretes = new Array[Boolean](values.length())
-        var i = 0
-        while (i < isDiscretes.length) {
-          // TODO is there a better way than casting?
-          isDiscretes(i) = values.value(i).asInstanceOf[BooleanValue].booleanValue()
-          i += 1
-        }
-        if (values.length() != percs.length) {
-          throw new InternalException(
-            s"Expected 'percentiles' ${percs.mkString(",")} and 'isDiscreteRange' ${isDiscretes.mkString(",")} to have the same length"
-          )
-        }
+
+    val keysValue = CypherCoercions.asSequenceValue(keys(data, state))
+    mapKeys = new Array[String](keysValue.length())
+    i = 0
+    while (i < mapKeys.length) {
+      mapKeys(i) = CypherFunctions.asTextValue(keysValue.value(i)).stringValue()
+      i += 1
+    }
+    if (keysValue.length() != percs.length) {
+      throw new InternalException(
+        s"Expected 'percentiles' ${percs.mkString(",")} and 'keys' ${mapKeys.mkString(",")} to have the same length"
+      )
+    }
+
+    val isDiscreteValues = CypherCoercions.asSequenceValue(isDiscreteRange(data, state))
+    isDiscretes = new Array[Boolean](isDiscreteValues.length())
+    i = 0
+    while (i < isDiscretes.length) {
+      isDiscretes(i) = isDiscreteValues.value(i).asInstanceOf[BooleanValue].booleanValue()
+      i += 1
+    }
+    if (isDiscreteValues.length() != percs.length) {
+      throw new InternalException(
+        s"Expected 'percentiles' ${percs.mkString(",")} and 'isDiscreteRange' ${isDiscretes.mkString(",")} to have the same length"
+      )
     }
   }
 

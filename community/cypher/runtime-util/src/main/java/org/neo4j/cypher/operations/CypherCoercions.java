@@ -279,6 +279,14 @@ public final class CypherCoercions {
         return value == NO_VALUE ? NO_VALUE : asMapValue(value, access, nodeCursor, relationshipCursor, propertyCursor);
     }
 
+    public static SequenceValue asSequenceValue(AnyValue value) {
+        assert value != NO_VALUE : "NO_VALUE checks need to happen outside this call";
+        if (!(value instanceof SequenceValue)) {
+            throw cantCoerce(value, "SequenceValue");
+        }
+        return (SequenceValue) value;
+    }
+
     static CypherTypeException cantCoerce(AnyValue value, String type) {
         return new CypherTypeException(format("Can't coerce `%s` to %s", value, type));
     }
