@@ -57,6 +57,18 @@ object EagernessReason {
   final case class LabelReadSetConflict(label: LabelName) extends NonUnique
   final case class TypeReadSetConflict(relType: RelTypeName) extends NonUnique
   final case class LabelReadRemoveConflict(label: LabelName) extends NonUnique
+
+  /**
+   * Note: 
+   * We don't usually use Strings to represent Variables in anything that can end up
+   * in a LogicalPlan.
+   *
+   * But `identifier` is on purpose kept as a String and not a variable.
+   * This is because it can refer to a variable only declared later in the plan,
+   * and would otherwise require work in SlottedRewriter and LivenessAnalysis to
+   * work around that fact. Since `identifier` is only for EXPLAIN and does not
+   * actually mean that we reference that column here, having it as a String should be OK.
+   */
   final case class ReadDeleteConflict(identifier: String) extends NonUnique
   final case class PropertyReadSetConflict(property: PropertyKeyName) extends NonUnique
   case object ReadCreateConflict extends NonUnique
