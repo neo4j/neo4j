@@ -140,29 +140,43 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
     isDeprecated: Option[Boolean] = None,
     option: Option[Map[String, AnyValue]] = None
   ): Unit = {
-    name.foreach(expected => resultMap("name") should be(Values.stringValue(expected)))
-    description.foreach(expected => resultMap("description") should be(Values.stringValue(expected)))
-    mode.foreach(expected => resultMap("mode") should be(Values.stringValue(expected)))
-    worksOnSystem.foreach(expected => resultMap("worksOnSystem") should be(Values.booleanValue(expected)))
-    signature.foreach(expected => resultMap("signature") should be(Values.stringValue(expected)))
+    name.foreach(expected => resultMap(ShowProceduresClause.nameColumn) should be(Values.stringValue(expected)))
+    description.foreach(expected =>
+      resultMap(ShowProceduresClause.descriptionColumn) should be(Values.stringValue(expected))
+    )
+    mode.foreach(expected => resultMap(ShowProceduresClause.modeColumn) should be(Values.stringValue(expected)))
+    worksOnSystem.foreach(expected =>
+      resultMap(ShowProceduresClause.worksOnSystemColumn) should be(Values.booleanValue(expected))
+    )
+    signature.foreach(expected =>
+      resultMap(ShowProceduresClause.signatureColumn) should be(Values.stringValue(expected))
+    )
     argumentDescription.foreach(expected =>
-      resultMap("argumentDescription") should be(VirtualValues.list(expected: _*))
+      resultMap(ShowProceduresClause.argumentDescriptionColumn) should be(VirtualValues.list(expected: _*))
     )
     returnDescription.foreach(expected =>
-      resultMap("returnDescription") should be(VirtualValues.list(expected: _*))
+      resultMap(ShowProceduresClause.returnDescriptionColumn) should be(VirtualValues.list(expected: _*))
     )
-    admin.foreach(expected => resultMap("admin") should be(Values.booleanValue(expected)))
+    admin.foreach(expected => resultMap(ShowProceduresClause.adminColumn) should be(Values.booleanValue(expected)))
     roles.foreach(expected =>
-      if (expected == null) resultMap("rolesExecution") should be(Values.NO_VALUE)
-      else resultMap("rolesExecution") should be(VirtualValues.list(expected.map(Values.stringValue): _*))
+      if (expected == null) resultMap(ShowProceduresClause.rolesExecutionColumn) should be(Values.NO_VALUE)
+      else resultMap(ShowProceduresClause.rolesExecutionColumn) should be(
+        VirtualValues.list(expected.map(Values.stringValue): _*)
+      )
     )
     rolesBoosted.foreach(expected =>
-      if (expected == null) resultMap("rolesBoostedExecution") should be(Values.NO_VALUE)
-      else resultMap("rolesBoostedExecution") should be(VirtualValues.list(expected.map(Values.stringValue): _*))
+      if (expected == null) resultMap(ShowProceduresClause.rolesBoostedExecutionColumn) should be(Values.NO_VALUE)
+      else resultMap(ShowProceduresClause.rolesBoostedExecutionColumn) should be(
+        VirtualValues.list(expected.map(Values.stringValue): _*)
+      )
     )
-    isDeprecated.foreach(expected => resultMap("isDeprecated") should be(Values.booleanValue(expected)))
+    isDeprecated.foreach(expected =>
+      resultMap(ShowProceduresClause.isDeprecatedColumn) should be(Values.booleanValue(expected))
+    )
     option.foreach(expected =>
-      resultMap("option") should be(VirtualValues.map(expected.view.keys.toArray, expected.view.values.toArray))
+      resultMap(ShowProceduresClause.optionColumn) should be(
+        VirtualValues.map(expected.view.keys.toArray, expected.view.values.toArray)
+      )
     )
   }
 
@@ -173,7 +187,7 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
     when(procedures.proceduresGetAll()).thenReturn(Set(proc1, proc2, proc3).asJava)
 
     // When
-    val showProcedures = ShowProceduresCommand(None, verbose = false, defaultColumns, List.empty, isCommunity = true)
+    val showProcedures = ShowProceduresCommand(None, defaultColumns, List.empty, isCommunity = true)
     val result = showProcedures.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -202,14 +216,14 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
     // confirm no verbose columns:
     result.foreach(res => {
       res.keys.toList should contain noElementsOf List(
-        "signature",
-        "argumentDescription",
-        "returnDescription",
-        "admin",
-        "rolesExecution",
-        "rolesBoostedExecution",
-        "isDeprecated",
-        "option"
+        ShowProceduresClause.signatureColumn,
+        ShowProceduresClause.argumentDescriptionColumn,
+        ShowProceduresClause.returnDescriptionColumn,
+        ShowProceduresClause.adminColumn,
+        ShowProceduresClause.rolesExecutionColumn,
+        ShowProceduresClause.rolesBoostedExecutionColumn,
+        ShowProceduresClause.isDeprecatedColumn,
+        ShowProceduresClause.optionColumn
       )
     })
   }
@@ -219,7 +233,7 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
     when(procedures.proceduresGetAll()).thenReturn(Set(proc1, proc2, proc3).asJava)
 
     // When
-    val showProcedures = ShowProceduresCommand(None, verbose = false, defaultColumns, List.empty, isCommunity = false)
+    val showProcedures = ShowProceduresCommand(None, defaultColumns, List.empty, isCommunity = false)
     val result = showProcedures.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -248,14 +262,14 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
     // confirm no verbose columns:
     result.foreach(res => {
       res.keys.toList should contain noElementsOf List(
-        "signature",
-        "argumentDescription",
-        "returnDescription",
-        "admin",
-        "rolesExecution",
-        "rolesBoostedExecution",
-        "isDeprecated",
-        "option"
+        ShowProceduresClause.signatureColumn,
+        ShowProceduresClause.argumentDescriptionColumn,
+        ShowProceduresClause.returnDescriptionColumn,
+        ShowProceduresClause.adminColumn,
+        ShowProceduresClause.rolesExecutionColumn,
+        ShowProceduresClause.rolesBoostedExecutionColumn,
+        ShowProceduresClause.isDeprecatedColumn,
+        ShowProceduresClause.optionColumn
       )
     })
   }
@@ -265,7 +279,7 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
     when(procedures.proceduresGetAll()).thenReturn(Set(proc1, proc2, proc3).asJava)
 
     // When
-    val showProcedures = ShowProceduresCommand(None, verbose = true, allColumns, List.empty, isCommunity = true)
+    val showProcedures = ShowProceduresCommand(None, allColumns, List.empty, isCommunity = true)
     val result = showProcedures.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -325,7 +339,7 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
     when(procedures.proceduresGetAll()).thenReturn(Set(proc1, proc2, proc3).asJava)
 
     // When
-    val showProcedures = ShowProceduresCommand(None, verbose = true, allColumns, List.empty, isCommunity = false)
+    val showProcedures = ShowProceduresCommand(None, allColumns, List.empty, isCommunity = false)
     val result = showProcedures.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -385,7 +399,7 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
     when(procedures.proceduresGetAll()).thenReturn(Set(proc2, proc3, proc1).asJava)
 
     // When
-    val showProcedures = ShowProceduresCommand(None, verbose = false, defaultColumns, List.empty, isCommunity = true)
+    val showProcedures = ShowProceduresCommand(None, defaultColumns, List.empty, isCommunity = true)
     val result = showProcedures.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -416,7 +430,7 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
     when(procedures.proceduresGetAll()).thenReturn(Set(proc1, internalProc).asJava)
 
     // When
-    val showProcedures = ShowProceduresCommand(None, verbose = false, defaultColumns, List.empty, isCommunity = true)
+    val showProcedures = ShowProceduresCommand(None, defaultColumns, List.empty, isCommunity = true)
     val result = showProcedures.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -445,7 +459,7 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
     when(procedures.proceduresGetAll()).thenReturn(Set(deprecatedProc).asJava)
 
     // When
-    val showProcedures = ShowProceduresCommand(None, verbose = true, allColumns, List.empty, isCommunity = true)
+    val showProcedures = ShowProceduresCommand(None, allColumns, List.empty, isCommunity = true)
     val result = showProcedures.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -471,7 +485,7 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
     })
 
     // When
-    val showProcedures = ShowProceduresCommand(None, verbose = true, allColumns, List.empty, isCommunity = false)
+    val showProcedures = ShowProceduresCommand(None, allColumns, List.empty, isCommunity = false)
     val result = showProcedures.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -492,7 +506,7 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
     })
 
     // When
-    val showProcedures = ShowProceduresCommand(None, verbose = true, allColumns, List.empty, isCommunity = false)
+    val showProcedures = ShowProceduresCommand(None, allColumns, List.empty, isCommunity = false)
     val result = showProcedures.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -545,7 +559,7 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
       .thenAnswer(invocation => specialHandlingOfPrivileges(invocation.getArgument(0)))
 
     // When
-    val showProcedures = ShowProceduresCommand(None, verbose = true, allColumns, List.empty, isCommunity = false)
+    val showProcedures = ShowProceduresCommand(None, allColumns, List.empty, isCommunity = false)
     val result = showProcedures.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -583,7 +597,7 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
 
     // When
     val showProcedures =
-      ShowProceduresCommand(Some(CurrentUser), verbose = false, defaultColumns, List.empty, isCommunity = false)
+      ShowProceduresCommand(Some(CurrentUser), defaultColumns, List.empty, isCommunity = false)
     val result = showProcedures.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -605,7 +619,7 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
 
     // When: EXECUTABLE BY CURRENT USER
     val showProceduresCurrent =
-      ShowProceduresCommand(Some(CurrentUser), verbose = false, defaultColumns, List.empty, isCommunity = false)
+      ShowProceduresCommand(Some(CurrentUser), defaultColumns, List.empty, isCommunity = false)
     val resultCurrent = showProceduresCurrent.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -614,7 +628,7 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
 
     // When: EXECUTABLE BY <current user>
     val showProceduresSame =
-      ShowProceduresCommand(Some(User(username)), verbose = false, defaultColumns, List.empty, isCommunity = false)
+      ShowProceduresCommand(Some(User(username)), defaultColumns, List.empty, isCommunity = false)
     val resultSame = showProceduresSame.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -633,7 +647,7 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
 
     // When
     val showProceduresCurrent =
-      ShowProceduresCommand(Some(User(otherUser)), verbose = false, defaultColumns, List.empty, isCommunity = false)
+      ShowProceduresCommand(Some(User(otherUser)), defaultColumns, List.empty, isCommunity = false)
     val resultCurrent = showProceduresCurrent.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -664,7 +678,7 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
 
     // When
     val showProceduresCurrent =
-      ShowProceduresCommand(Some(User(missingUser)), verbose = false, defaultColumns, List.empty, isCommunity = false)
+      ShowProceduresCommand(Some(User(missingUser)), defaultColumns, List.empty, isCommunity = false)
     val resultCurrent = showProceduresCurrent.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -674,10 +688,19 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
   test("show procedures should rename columns renamed in YIELD") {
     // Given: YIELD name AS procedure, admin, isDeprecated AS deprecated, description
     val yieldColumns: List[CommandResultItem] = List(
-      CommandResultItem("name", Variable("procedure")(InputPosition.NONE))(InputPosition.NONE),
-      CommandResultItem("admin", Variable("admin")(InputPosition.NONE))(InputPosition.NONE),
-      CommandResultItem("isDeprecated", Variable("deprecated")(InputPosition.NONE))(InputPosition.NONE),
-      CommandResultItem("description", Variable("description")(InputPosition.NONE))(InputPosition.NONE)
+      CommandResultItem(ShowProceduresClause.nameColumn, Variable("procedure")(InputPosition.NONE))(InputPosition.NONE),
+      CommandResultItem(
+        ShowProceduresClause.adminColumn,
+        Variable(ShowProceduresClause.adminColumn)(InputPosition.NONE)
+      )(InputPosition.NONE),
+      CommandResultItem(
+        ShowProceduresClause.isDeprecatedColumn,
+        Variable("deprecated")(InputPosition.NONE)
+      )(InputPosition.NONE),
+      CommandResultItem(
+        ShowProceduresClause.descriptionColumn,
+        Variable(ShowProceduresClause.descriptionColumn)(InputPosition.NONE)
+      )(InputPosition.NONE)
     )
 
     // Set-up which procedures exists:
@@ -685,24 +708,18 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
 
     // When
     val showProcedures =
-      ShowProceduresCommand(None, verbose = true, allColumns, yieldColumns, isCommunity = false)
+      ShowProceduresCommand(None, allColumns, yieldColumns, isCommunity = false)
     val result = showProcedures.originalNameRows(queryState, initialCypherRow).toList
 
-    // Then: unyielded columns are left as is (to be filtered out at a later stage)
+    // Then
     result should have size 1
     result.head should be(Map(
       "procedure" -> Values.stringValue("proc1"),
-      "admin" -> Values.FALSE,
+      ShowProceduresClause.adminColumn -> Values.FALSE,
       "deprecated" -> Values.FALSE,
-      "description" -> Values.stringValue("Non-admin, non-system, void read procedure without input parameters"),
-      "mode" -> Values.stringValue(Mode.READ.name()),
-      "worksOnSystem" -> Values.FALSE,
-      "signature" -> Values.stringValue("proc1() :: ()"),
-      "argumentDescription" -> VirtualValues.EMPTY_LIST,
-      "returnDescription" -> VirtualValues.EMPTY_LIST,
-      "rolesExecution" -> VirtualValues.list(List(publicRole, adminRole).sorted.map(Values.stringValue): _*),
-      "rolesBoostedExecution" -> VirtualValues.list(Values.stringValue(adminRole)),
-      "option" -> VirtualValues.map(Array("deprecated"), Array(Values.FALSE))
+      ShowProceduresClause.descriptionColumn -> Values.stringValue(
+        "Non-admin, non-system, void read procedure without input parameters"
+      )
     ))
   }
 }

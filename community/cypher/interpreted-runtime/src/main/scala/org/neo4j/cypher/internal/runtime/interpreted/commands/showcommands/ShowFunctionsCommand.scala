@@ -25,6 +25,17 @@ import org.neo4j.cypher.internal.ast.CommandResultItem
 import org.neo4j.cypher.internal.ast.ExecutableBy
 import org.neo4j.cypher.internal.ast.ShowColumn
 import org.neo4j.cypher.internal.ast.ShowFunctionType
+import org.neo4j.cypher.internal.ast.ShowFunctionsClause.aggregatingColumn
+import org.neo4j.cypher.internal.ast.ShowFunctionsClause.argumentDescriptionColumn
+import org.neo4j.cypher.internal.ast.ShowFunctionsClause.categoryColumn
+import org.neo4j.cypher.internal.ast.ShowFunctionsClause.descriptionColumn
+import org.neo4j.cypher.internal.ast.ShowFunctionsClause.isBuiltInColumn
+import org.neo4j.cypher.internal.ast.ShowFunctionsClause.isDeprecatedColumn
+import org.neo4j.cypher.internal.ast.ShowFunctionsClause.nameColumn
+import org.neo4j.cypher.internal.ast.ShowFunctionsClause.returnDescriptionColumn
+import org.neo4j.cypher.internal.ast.ShowFunctionsClause.rolesBoostedExecutionColumn
+import org.neo4j.cypher.internal.ast.ShowFunctionsClause.rolesExecutionColumn
+import org.neo4j.cypher.internal.ast.ShowFunctionsClause.signatureColumn
 import org.neo4j.cypher.internal.ast.UserDefinedFunctions
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
@@ -47,17 +58,19 @@ import scala.jdk.CollectionConverters.ListHasAsScala
 case class ShowFunctionsCommand(
   functionType: ShowFunctionType,
   executableBy: Option[ExecutableBy],
-  verbose: Boolean,
   columns: List[ShowColumn],
   yieldColumns: List[CommandResultItem],
   isCommunity: Boolean
 ) extends Command(columns, yieldColumns) {
 
+  private val rolesColumnRequested =
+    requestedColumnsNames.contains(rolesExecutionColumn) || requestedColumnsNames.contains(rolesBoostedExecutionColumn)
+
   override def originalNameRows(state: QueryState, baseRow: CypherRow): ClosingIterator[Map[String, AnyValue]] = {
     lazy val systemGraph = state.query.systemGraph
 
     val privileges =
-      if (!isCommunity && (verbose || executableBy.isDefined))
+      if (!isCommunity && (rolesColumnRequested || executableBy.isDefined))
         ShowProcFuncCommandHelper.getPrivileges(systemGraph, "FUNCTION")
       else ShowProcFuncCommandHelper.Privileges(List.empty, List.empty, List.empty, List.empty)
 
@@ -73,7 +86,7 @@ case class ShowFunctionsCommand(
           "SHOW FUNCTIONS"
         )
         val allRoles =
-          if (functionType != UserDefinedFunctions && (verbose || executableBy.isDefined))
+          if (functionType != UserDefinedFunctions && (rolesColumnRequested || executableBy.isDefined))
             getAllRoles(systemGraph) // We will need roles column for built-in functions
           else Set.empty[String]
 
@@ -82,7 +95,7 @@ case class ShowFunctionsCommand(
         (Set.empty[String], Set.empty[String], true)
       }
     val allowShowRoles: Boolean =
-      if (!isCommunity && verbose)
+      if (!isCommunity && rolesColumnRequested)
         securityContext.allowsAdminAction(
           new AdminActionOnResource(SHOW_ROLE, DatabaseScope.ALL, Segment.ALL)
         ).allowsAccess()
@@ -120,7 +133,7 @@ case class ShowFunctionsCommand(
 
     val rows = sortedFunctions.map { func =>
       val (executeRoles, boostedExecuteRoles, allowedExecute) =
-        if (!isCommunity && (verbose || executableBy.isDefined)) {
+        if (!isCommunity && (rolesColumnRequested || executableBy.isDefined)) {
           if (func.isBuiltIn) (allRoles, Set.empty[String], userRoles.nonEmpty)
           else
             ShowProcFuncCommandHelper.roles(
@@ -158,40 +171,40 @@ case class ShowFunctionsCommand(
     boostedExecuteRoles: Set[String],
     allowShowRoles: Boolean
   ): Map[String, AnyValue] = {
-    val briefResult = Map(
-      // Name of the function, for example "my.func"
-      "name" -> Values.stringValue(func.name),
-      // Function category, for example Numeric or Temporal
-      "category" -> Values.stringValue(func.category),
-      // Function description or empty string
-      "description" -> Values.stringValue(func.description)
-    )
-    if (verbose) {
-      val (rolesList, boostedRolesList) =
-        if (allowShowRoles) ShowProcFuncCommandHelper.roleValues(executeRoles, boostedExecuteRoles)
-        else (Values.NO_VALUE, Values.NO_VALUE)
+    val (rolesList, boostedRolesList) =
+      if (rolesColumnRequested && allowShowRoles)
+        ShowProcFuncCommandHelper.roleValues(executeRoles, boostedExecuteRoles)
+      else (Values.NO_VALUE, Values.NO_VALUE)
 
-      briefResult ++ Map(
-        // Function signature
-        "signature" -> Values.stringValue(func.signature),
-        // Tells if the function is built in or user defined
-        "isBuiltIn" -> Values.booleanValue(func.isBuiltIn),
-        // Lists of arguments, as map of strings with name, type, default and description
-        "argumentDescription" -> ShowProcFuncCommandHelper.fieldDescriptions(func.argDescr),
-        // Return value type
-        "returnDescription" -> Values.stringValue(func.retDescr),
-        // Tells the function is aggregating
-        "aggregating" -> Values.booleanValue(func.aggregating),
-        // List of roles that can execute the function
-        "rolesExecution" -> rolesList,
-        // List of roles that can execute the function with boosted privileges
-        "rolesBoostedExecution" -> boostedRolesList,
-        // Tells if the function is deprecated
-        "isDeprecated" -> Values.booleanValue(func.deprecated)
-      )
-    } else {
-      briefResult
-    }
+    requestedColumnsNames.map {
+      // Name of the function, for example "my.func"
+      case `nameColumn` => nameColumn -> Values.stringValue(func.name)
+      // Function category, for example Numeric or Temporal
+      case `categoryColumn` => categoryColumn -> Values.stringValue(func.category)
+      // Function description or empty string
+      case `descriptionColumn` => descriptionColumn -> Values.stringValue(func.description)
+      // Function signature
+      case `signatureColumn` => signatureColumn -> Values.stringValue(func.signature)
+      // Tells if the function is built in or user defined
+      case `isBuiltInColumn` => isBuiltInColumn -> Values.booleanValue(func.isBuiltIn)
+      // Lists of arguments, as map of strings with name, type, default and description
+      case `argumentDescriptionColumn` =>
+        argumentDescriptionColumn -> ShowProcFuncCommandHelper.fieldDescriptions(func.argDescr)
+      // Return value type
+      case `returnDescriptionColumn` => returnDescriptionColumn -> Values.stringValue(func.retDescr)
+      // Tells the function is aggregating
+      case `aggregatingColumn` => aggregatingColumn -> Values.booleanValue(func.aggregating)
+      // List of roles that can execute the function
+      case `rolesExecutionColumn` => rolesExecutionColumn -> rolesList
+      // List of roles that can execute the function with boosted privileges
+      case `rolesBoostedExecutionColumn` => rolesBoostedExecutionColumn -> boostedRolesList
+      // Tells if the function is deprecated
+      case `isDeprecatedColumn` => isDeprecatedColumn -> Values.booleanValue(func.deprecated)
+      case unknown              =>
+        // This match should cover all existing columns but we get scala warnings
+        // on non-exhaustive match due to it being string values
+        throw new IllegalStateException(s"Missing case for column: $unknown")
+    }.toMap[String, AnyValue]
   }
 
   private def getAllRoles(systemGraph: GraphDatabaseService): Set[String] = {

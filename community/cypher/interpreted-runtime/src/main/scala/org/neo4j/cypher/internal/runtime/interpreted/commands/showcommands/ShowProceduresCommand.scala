@@ -22,6 +22,18 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands
 import org.neo4j.cypher.internal.ast.CommandResultItem
 import org.neo4j.cypher.internal.ast.ExecutableBy
 import org.neo4j.cypher.internal.ast.ShowColumn
+import org.neo4j.cypher.internal.ast.ShowProceduresClause.adminColumn
+import org.neo4j.cypher.internal.ast.ShowProceduresClause.argumentDescriptionColumn
+import org.neo4j.cypher.internal.ast.ShowProceduresClause.descriptionColumn
+import org.neo4j.cypher.internal.ast.ShowProceduresClause.isDeprecatedColumn
+import org.neo4j.cypher.internal.ast.ShowProceduresClause.modeColumn
+import org.neo4j.cypher.internal.ast.ShowProceduresClause.nameColumn
+import org.neo4j.cypher.internal.ast.ShowProceduresClause.optionColumn
+import org.neo4j.cypher.internal.ast.ShowProceduresClause.returnDescriptionColumn
+import org.neo4j.cypher.internal.ast.ShowProceduresClause.rolesBoostedExecutionColumn
+import org.neo4j.cypher.internal.ast.ShowProceduresClause.rolesExecutionColumn
+import org.neo4j.cypher.internal.ast.ShowProceduresClause.signatureColumn
+import org.neo4j.cypher.internal.ast.ShowProceduresClause.worksOnSystemColumn
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
@@ -44,17 +56,19 @@ import scala.jdk.CollectionConverters.SetHasAsScala
 // SHOW PROCEDURE[S] [EXECUTABLE [BY {CURRENT USER | username}]] [WHERE clause | YIELD clause]
 case class ShowProceduresCommand(
   executableBy: Option[ExecutableBy],
-  verbose: Boolean,
   columns: List[ShowColumn],
   yieldColumns: List[CommandResultItem],
   isCommunity: Boolean
 ) extends Command(columns, yieldColumns) {
 
+  private val rolesColumnRequested =
+    requestedColumnsNames.contains(rolesExecutionColumn) || requestedColumnsNames.contains(rolesBoostedExecutionColumn)
+
   override def originalNameRows(state: QueryState, baseRow: CypherRow): ClosingIterator[Map[String, AnyValue]] = {
     lazy val systemGraph = state.query.systemGraph
 
     val privileges =
-      if (!isCommunity && (verbose || executableBy.isDefined))
+      if (!isCommunity && (rolesColumnRequested || executableBy.isDefined))
         ShowProcFuncCommandHelper.getPrivileges(systemGraph, "PROCEDURE")
       else ShowProcFuncCommandHelper.Privileges(List.empty, List.empty, List.empty, List.empty)
 
@@ -73,7 +87,7 @@ case class ShowProceduresCommand(
         (Set.empty[String], true)
       }
     val allowShowRoles: Boolean =
-      if (!isCommunity && verbose)
+      if (!isCommunity && rolesColumnRequested)
         securityContext.allowsAdminAction(
           new AdminActionOnResource(SHOW_ROLE, DatabaseScope.ALL, Segment.ALL)
         ).allowsAccess()
@@ -85,7 +99,7 @@ case class ShowProceduresCommand(
 
     val rows = sortedProcedures.map { proc =>
       val (executeRoles, boostedExecuteRoles, allowedExecute) =
-        if (!isCommunity && (verbose || executableBy.isDefined))
+        if (!isCommunity && (rolesColumnRequested || executableBy.isDefined))
           ShowProcFuncCommandHelper.roles(proc.name.toString, proc.admin(), privileges, userRoles)
         else (Set.empty[String], Set.empty[String], isCommunity)
 
@@ -116,48 +130,41 @@ case class ShowProceduresCommand(
     boostedExecuteRoles: Set[String],
     allowShowRoles: Boolean
   ): Map[String, AnyValue] = {
-    val name = proc.name().toString
-    val mode = proc.mode().toString
-    val system = proc.systemProcedure()
-    val maybeDescr = proc.description()
-    val descrValue = Values.stringValue(maybeDescr.orElse(""))
+    val (rolesList, boostedRolesList) =
+      if (rolesColumnRequested && allowShowRoles)
+        ShowProcFuncCommandHelper.roleValues(executeRoles, boostedExecuteRoles)
+      else (Values.NO_VALUE, Values.NO_VALUE)
 
-    val briefResult = Map(
+    requestedColumnsNames.map {
       // Name of the procedure, for example "my.proc"
-      "name" -> Values.stringValue(name),
+      case `nameColumn` => nameColumn -> Values.stringValue(proc.name().toString)
       // Procedure description or empty string
-      "description" -> descrValue,
+      case `descriptionColumn` => descriptionColumn -> Values.stringValue(proc.description().orElse(""))
       // Procedure mode: READ, WRITE, SCHEMA, DBMS, DEFAULT
-      "mode" -> Values.stringValue(mode),
+      case `modeColumn` => modeColumn -> Values.stringValue(proc.mode().toString)
       // Tells if the procedure can be run on system database
-      "worksOnSystem" -> Values.booleanValue(system)
-    )
-    if (verbose) {
-      val (rolesList, boostedRolesList) =
-        if (allowShowRoles) ShowProcFuncCommandHelper.roleValues(executeRoles, boostedExecuteRoles)
-        else (Values.NO_VALUE, Values.NO_VALUE)
-
-      briefResult ++ Map(
-        // Procedure signature
-        "signature" -> Values.stringValue(proc.toString),
-        // Lists of arguments, as map of strings with name, type, default and description
-        "argumentDescription" -> fieldDescriptions(proc.inputSignature()),
-        // Lists of returned values, as map of strings with name, type and description
-        "returnDescription" -> fieldDescriptions(proc.outputSignature()),
-        // Tells if it is a procedure annotated with `admin`
-        "admin" -> Values.booleanValue(proc.admin()),
-        // List of roles that can execute the procedure
-        "rolesExecution" -> rolesList,
-        // List of roles that can execute the procedure with boosted privileges
-        "rolesBoostedExecution" -> boostedRolesList,
-        // Tells if the procedure is deprecated
-        "isDeprecated" -> Values.booleanValue(proc.deprecated().isPresent),
-        // Additional output, for example if the procedure is deprecated
-        "option" -> getOptionValue(proc)
-      )
-    } else {
-      briefResult
-    }
+      case `worksOnSystemColumn` => worksOnSystemColumn -> Values.booleanValue(proc.systemProcedure())
+      // Procedure signature
+      case `signatureColumn` => signatureColumn -> Values.stringValue(proc.toString)
+      // Lists of arguments, as map of strings with name, type, default and description
+      case `argumentDescriptionColumn` => argumentDescriptionColumn -> fieldDescriptions(proc.inputSignature())
+      // Lists of returned values, as map of strings with name, type and description
+      case `returnDescriptionColumn` => returnDescriptionColumn -> fieldDescriptions(proc.outputSignature())
+      // Tells if it is a procedure annotated with `admin`
+      case `adminColumn` => adminColumn -> Values.booleanValue(proc.admin())
+      // List of roles that can execute the procedure
+      case `rolesExecutionColumn` => rolesExecutionColumn -> rolesList
+      // List of roles that can execute the procedure with boosted privileges
+      case `rolesBoostedExecutionColumn` => rolesBoostedExecutionColumn -> boostedRolesList
+      // Tells if the procedure is deprecated
+      case `isDeprecatedColumn` => isDeprecatedColumn -> Values.booleanValue(proc.deprecated().isPresent)
+      // Additional output, for example if the procedure is deprecated
+      case `optionColumn` => optionColumn -> getOptionValue(proc)
+      case unknown        =>
+        // This match should cover all existing columns but we get scala warnings
+        // on non-exhaustive match due to it being string values
+        throw new IllegalStateException(s"Missing case for column: $unknown")
+    }.toMap[String, AnyValue]
   }
 
   private def fieldDescriptions(fields: util.List[FieldSignature]): ListValue =

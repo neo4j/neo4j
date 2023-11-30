@@ -30,7 +30,6 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
 
 case class ShowIndexes(
   indexType: ShowIndexType,
-  verbose: Boolean,
   defaultColumns: List[ShowColumn],
   yieldColumns: List[CommandResultItem],
   yieldAll: Boolean
@@ -38,7 +37,6 @@ case class ShowIndexes(
 
 case class ShowConstraints(
   constraintType: ShowConstraintType,
-  verbose: Boolean,
   defaultColumns: List[ShowColumn],
   yieldColumns: List[CommandResultItem],
   yieldAll: Boolean
@@ -46,7 +44,6 @@ case class ShowConstraints(
 
 case class ShowProcedures(
   executableBy: Option[ExecutableBy],
-  verbose: Boolean,
   defaultColumns: List[ShowColumn],
   yieldColumns: List[CommandResultItem],
   yieldAll: Boolean
@@ -55,7 +52,6 @@ case class ShowProcedures(
 case class ShowFunctions(
   functionType: ShowFunctionType,
   executableBy: Option[ExecutableBy],
-  verbose: Boolean,
   defaultColumns: List[ShowColumn],
   yieldColumns: List[CommandResultItem],
   yieldAll: Boolean
@@ -63,7 +59,6 @@ case class ShowFunctions(
 
 case class ShowTransactions(
   ids: Either[List[String], Expression],
-  verbose: Boolean,
   defaultColumns: List[ShowColumn],
   yieldColumns: List[CommandResultItem],
   yieldAll: Boolean
@@ -78,7 +73,6 @@ case class TerminateTransactions(
 
 case class ShowSettings(
   names: Either[List[String], Expression],
-  verbose: Boolean,
   defaultColumns: List[ShowColumn],
   yieldColumns: List[CommandResultItem],
   yieldAll: Boolean

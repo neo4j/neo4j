@@ -1861,6 +1861,22 @@ case class ShowIndexesClause(
 }
 
 object ShowIndexesClause {
+  val idColumn = "id"
+  val nameColumn = "name"
+  val stateColumn = "state"
+  val populationPercentColumn = "populationPercent"
+  val typeColumn = "type"
+  val entityTypeColumn = "entityType"
+  val labelsOrTypesColumn = "labelsOrTypes"
+  val propertiesColumn = "properties"
+  val indexProviderColumn = "indexProvider"
+  val owningConstraintColumn = "owningConstraint"
+  val lastReadColumn = "lastRead"
+  val readCountColumn = "readCount"
+  val trackedSinceColumn = "trackedSince"
+  val optionsColumn = "options"
+  val failureMessageColumn = "failureMessage"
+  val createStatementColumn = "createStatement"
 
   def apply(
     indexType: ShowIndexType,
@@ -1871,24 +1887,24 @@ object ShowIndexesClause {
     yieldAll: Boolean
   )(position: InputPosition): ShowIndexesClause = {
     val briefCols = List(
-      ShowAndTerminateColumn("id", CTInteger),
-      ShowAndTerminateColumn("name"),
-      ShowAndTerminateColumn("state"),
-      ShowAndTerminateColumn("populationPercent", CTFloat),
-      ShowAndTerminateColumn("type"),
-      ShowAndTerminateColumn("entityType"),
-      ShowAndTerminateColumn("labelsOrTypes", CTList(CTString)),
-      ShowAndTerminateColumn("properties", CTList(CTString)),
-      ShowAndTerminateColumn("indexProvider"),
-      ShowAndTerminateColumn("owningConstraint"),
-      ShowAndTerminateColumn("lastRead", CTDateTime),
-      ShowAndTerminateColumn("readCount", CTInteger)
+      ShowAndTerminateColumn(idColumn, CTInteger),
+      ShowAndTerminateColumn(nameColumn),
+      ShowAndTerminateColumn(stateColumn),
+      ShowAndTerminateColumn(populationPercentColumn, CTFloat),
+      ShowAndTerminateColumn(typeColumn),
+      ShowAndTerminateColumn(entityTypeColumn),
+      ShowAndTerminateColumn(labelsOrTypesColumn, CTList(CTString)),
+      ShowAndTerminateColumn(propertiesColumn, CTList(CTString)),
+      ShowAndTerminateColumn(indexProviderColumn),
+      ShowAndTerminateColumn(owningConstraintColumn),
+      ShowAndTerminateColumn(lastReadColumn, CTDateTime),
+      ShowAndTerminateColumn(readCountColumn, CTInteger)
     )
     val verboseCols = List(
-      ShowAndTerminateColumn("trackedSince", CTDateTime),
-      ShowAndTerminateColumn("options", CTMap),
-      ShowAndTerminateColumn("failureMessage"),
-      ShowAndTerminateColumn("createStatement")
+      ShowAndTerminateColumn(trackedSinceColumn, CTDateTime),
+      ShowAndTerminateColumn(optionsColumn, CTMap),
+      ShowAndTerminateColumn(failureMessageColumn),
+      ShowAndTerminateColumn(createStatementColumn)
     )
 
     ShowIndexesClause(
@@ -1947,6 +1963,16 @@ case class ShowConstraintsClause(
 }
 
 object ShowConstraintsClause {
+  val idColumn = "id"
+  val nameColumn = "name"
+  val typeColumn = "type"
+  val entityTypeColumn = "entityType"
+  val labelsOrTypesColumn = "labelsOrTypes"
+  val propertiesColumn = "properties"
+  val ownedIndexColumn = "ownedIndex"
+  val propertyTypeColumn = "propertyType"
+  val optionsColumn = "options"
+  val createStatementColumn = "createStatement"
 
   def apply(
     constraintType: ShowConstraintType,
@@ -1957,18 +1983,18 @@ object ShowConstraintsClause {
     yieldAll: Boolean
   )(position: InputPosition): ShowConstraintsClause = {
     val briefCols = List(
-      ShowAndTerminateColumn("id", CTInteger),
-      ShowAndTerminateColumn("name"),
-      ShowAndTerminateColumn("type"),
-      ShowAndTerminateColumn("entityType"),
-      ShowAndTerminateColumn("labelsOrTypes", CTList(CTString)),
-      ShowAndTerminateColumn("properties", CTList(CTString)),
-      ShowAndTerminateColumn("ownedIndex"),
-      ShowAndTerminateColumn("propertyType")
+      ShowAndTerminateColumn(idColumn, CTInteger),
+      ShowAndTerminateColumn(nameColumn),
+      ShowAndTerminateColumn(typeColumn),
+      ShowAndTerminateColumn(entityTypeColumn),
+      ShowAndTerminateColumn(labelsOrTypesColumn, CTList(CTString)),
+      ShowAndTerminateColumn(propertiesColumn, CTList(CTString)),
+      ShowAndTerminateColumn(ownedIndexColumn),
+      ShowAndTerminateColumn(propertyTypeColumn)
     )
     val verboseCols = List(
-      ShowAndTerminateColumn("options", CTMap),
-      ShowAndTerminateColumn("createStatement")
+      ShowAndTerminateColumn(optionsColumn, CTMap),
+      ShowAndTerminateColumn(createStatementColumn)
     )
 
     ShowConstraintsClause(
@@ -2009,6 +2035,18 @@ case class ShowProceduresClause(
 }
 
 object ShowProceduresClause {
+  val nameColumn = "name"
+  val descriptionColumn = "description"
+  val modeColumn = "mode"
+  val worksOnSystemColumn = "worksOnSystem"
+  val signatureColumn = "signature"
+  val argumentDescriptionColumn = "argumentDescription"
+  val returnDescriptionColumn = "returnDescription"
+  val adminColumn = "admin"
+  val rolesExecutionColumn = "rolesExecution"
+  val rolesBoostedExecutionColumn = "rolesBoostedExecution"
+  val isDeprecatedColumn = "isDeprecated"
+  val optionColumn = "option"
 
   def apply(
     executable: Option[ExecutableBy],
@@ -2017,20 +2055,20 @@ object ShowProceduresClause {
     yieldAll: Boolean
   )(position: InputPosition): ShowProceduresClause = {
     val briefCols = List(
-      ShowAndTerminateColumn("name"),
-      ShowAndTerminateColumn("description"),
-      ShowAndTerminateColumn("mode"),
-      ShowAndTerminateColumn("worksOnSystem", CTBoolean)
+      ShowAndTerminateColumn(nameColumn),
+      ShowAndTerminateColumn(descriptionColumn),
+      ShowAndTerminateColumn(modeColumn),
+      ShowAndTerminateColumn(worksOnSystemColumn, CTBoolean)
     )
     val verboseCols = List(
-      ShowAndTerminateColumn("signature"),
-      ShowAndTerminateColumn("argumentDescription", CTList(CTMap)),
-      ShowAndTerminateColumn("returnDescription", CTList(CTMap)),
-      ShowAndTerminateColumn("admin", CTBoolean),
-      ShowAndTerminateColumn("rolesExecution", CTList(CTString)),
-      ShowAndTerminateColumn("rolesBoostedExecution", CTList(CTString)),
-      ShowAndTerminateColumn("isDeprecated", CTBoolean),
-      ShowAndTerminateColumn("option", CTMap)
+      ShowAndTerminateColumn(signatureColumn),
+      ShowAndTerminateColumn(argumentDescriptionColumn, CTList(CTMap)),
+      ShowAndTerminateColumn(returnDescriptionColumn, CTList(CTMap)),
+      ShowAndTerminateColumn(adminColumn, CTBoolean),
+      ShowAndTerminateColumn(rolesExecutionColumn, CTList(CTString)),
+      ShowAndTerminateColumn(rolesBoostedExecutionColumn, CTList(CTString)),
+      ShowAndTerminateColumn(isDeprecatedColumn, CTBoolean),
+      ShowAndTerminateColumn(optionColumn, CTMap)
     )
 
     ShowProceduresClause(
@@ -2070,6 +2108,17 @@ case class ShowFunctionsClause(
 }
 
 object ShowFunctionsClause {
+  val nameColumn = "name"
+  val categoryColumn = "category"
+  val descriptionColumn = "description"
+  val signatureColumn = "signature"
+  val isBuiltInColumn = "isBuiltIn"
+  val argumentDescriptionColumn = "argumentDescription"
+  val returnDescriptionColumn = "returnDescription"
+  val aggregatingColumn = "aggregating"
+  val rolesExecutionColumn = "rolesExecution"
+  val rolesBoostedExecutionColumn = "rolesBoostedExecution"
+  val isDeprecatedColumn = "isDeprecated"
 
   def apply(
     functionType: ShowFunctionType,
@@ -2079,19 +2128,19 @@ object ShowFunctionsClause {
     yieldAll: Boolean
   )(position: InputPosition): ShowFunctionsClause = {
     val briefCols = List(
-      ShowAndTerminateColumn("name"),
-      ShowAndTerminateColumn("category"),
-      ShowAndTerminateColumn("description")
+      ShowAndTerminateColumn(nameColumn),
+      ShowAndTerminateColumn(categoryColumn),
+      ShowAndTerminateColumn(descriptionColumn)
     )
     val verboseCols = List(
-      ShowAndTerminateColumn("signature"),
-      ShowAndTerminateColumn("isBuiltIn", CTBoolean),
-      ShowAndTerminateColumn("argumentDescription", CTList(CTMap)),
-      ShowAndTerminateColumn("returnDescription"),
-      ShowAndTerminateColumn("aggregating", CTBoolean),
-      ShowAndTerminateColumn("rolesExecution", CTList(CTString)),
-      ShowAndTerminateColumn("rolesBoostedExecution", CTList(CTString)),
-      ShowAndTerminateColumn("isDeprecated", CTBoolean)
+      ShowAndTerminateColumn(signatureColumn),
+      ShowAndTerminateColumn(isBuiltInColumn, CTBoolean),
+      ShowAndTerminateColumn(argumentDescriptionColumn, CTList(CTMap)),
+      ShowAndTerminateColumn(returnDescriptionColumn),
+      ShowAndTerminateColumn(aggregatingColumn, CTBoolean),
+      ShowAndTerminateColumn(rolesExecutionColumn, CTList(CTString)),
+      ShowAndTerminateColumn(rolesBoostedExecutionColumn, CTList(CTString)),
+      ShowAndTerminateColumn(isDeprecatedColumn, CTBoolean)
     )
 
     ShowFunctionsClause(
@@ -2134,6 +2183,45 @@ case class ShowTransactionsClause(
 }
 
 object ShowTransactionsClause {
+  val databaseColumn = "database"
+  val transactionIdColumn = "transactionId"
+  val currentQueryIdColumn = "currentQueryId"
+  val outerTransactionIdColumn = "outerTransactionId"
+  val connectionIdColumn = "connectionId"
+  val clientAddressColumn = "clientAddress"
+  val usernameColumn = "username"
+  val metaDataColumn = "metaData"
+  val currentQueryColumn = "currentQuery"
+  val parametersColumn = "parameters"
+  val plannerColumn = "planner"
+  val runtimeColumn = "runtime"
+  val indexesColumn = "indexes"
+  val startTimeColumn = "startTime"
+  val currentQueryStartTimeColumn = "currentQueryStartTime"
+  val protocolColumn = "protocol"
+  val requestUriColumn = "requestUri"
+  val statusColumn = "status"
+  val currentQueryStatusColumn = "currentQueryStatus"
+  val statusDetailsColumn = "statusDetails"
+  val resourceInformationColumn = "resourceInformation"
+  val activeLockCountColumn = "activeLockCount"
+  val currentQueryActiveLockCountColumn = "currentQueryActiveLockCount"
+  val elapsedTimeColumn = "elapsedTime"
+  val cpuTimeColumn = "cpuTime"
+  val waitTimeColumn = "waitTime"
+  val idleTimeColumn = "idleTime"
+  val currentQueryElapsedTimeColumn = "currentQueryElapsedTime"
+  val currentQueryCpuTimeColumn = "currentQueryCpuTime"
+  val currentQueryWaitTimeColumn = "currentQueryWaitTime"
+  val currentQueryIdleTimeColumn = "currentQueryIdleTime"
+  val currentQueryAllocatedBytesColumn = "currentQueryAllocatedBytes"
+  val allocatedDirectBytesColumn = "allocatedDirectBytes"
+  val estimatedUsedHeapMemoryColumn = "estimatedUsedHeapMemory"
+  val pageHitsColumn = "pageHits"
+  val pageFaultsColumn = "pageFaults"
+  val currentQueryPageHitsColumn = "currentQueryPageHits"
+  val currentQueryPageFaultsColumn = "currentQueryPageFaults"
+  val initializationStackTraceColumn = "initializationStackTrace"
 
   def apply(
     ids: Either[List[String], Expression],
@@ -2143,45 +2231,45 @@ object ShowTransactionsClause {
   )(position: InputPosition): ShowTransactionsClause = {
     val columns = List(
       // (column, brief)
-      (ShowAndTerminateColumn("database"), true),
-      (ShowAndTerminateColumn("transactionId"), true),
-      (ShowAndTerminateColumn("currentQueryId"), true),
-      (ShowAndTerminateColumn("outerTransactionId"), false),
-      (ShowAndTerminateColumn("connectionId"), true),
-      (ShowAndTerminateColumn("clientAddress"), true),
-      (ShowAndTerminateColumn("username"), true),
-      (ShowAndTerminateColumn("metaData", CTMap), false),
-      (ShowAndTerminateColumn("currentQuery"), true),
-      (ShowAndTerminateColumn("parameters", CTMap), false),
-      (ShowAndTerminateColumn("planner"), false),
-      (ShowAndTerminateColumn("runtime"), false),
-      (ShowAndTerminateColumn("indexes", CTList(CTMap)), false),
-      (ShowAndTerminateColumn("startTime"), true),
-      (ShowAndTerminateColumn("currentQueryStartTime"), false),
-      (ShowAndTerminateColumn("protocol"), false),
-      (ShowAndTerminateColumn("requestUri"), false),
-      (ShowAndTerminateColumn("status"), true),
-      (ShowAndTerminateColumn("currentQueryStatus"), false),
-      (ShowAndTerminateColumn("statusDetails"), false),
-      (ShowAndTerminateColumn("resourceInformation", CTMap), false),
-      (ShowAndTerminateColumn("activeLockCount", CTInteger), false),
-      (ShowAndTerminateColumn("currentQueryActiveLockCount", CTInteger), false),
-      (ShowAndTerminateColumn("elapsedTime", CTDuration), true),
-      (ShowAndTerminateColumn("cpuTime", CTDuration), false),
-      (ShowAndTerminateColumn("waitTime", CTDuration), false),
-      (ShowAndTerminateColumn("idleTime", CTDuration), false),
-      (ShowAndTerminateColumn("currentQueryElapsedTime", CTDuration), false),
-      (ShowAndTerminateColumn("currentQueryCpuTime", CTDuration), false),
-      (ShowAndTerminateColumn("currentQueryWaitTime", CTDuration), false),
-      (ShowAndTerminateColumn("currentQueryIdleTime", CTDuration), false),
-      (ShowAndTerminateColumn("currentQueryAllocatedBytes", CTInteger), false),
-      (ShowAndTerminateColumn("allocatedDirectBytes", CTInteger), false),
-      (ShowAndTerminateColumn("estimatedUsedHeapMemory", CTInteger), false),
-      (ShowAndTerminateColumn("pageHits", CTInteger), false),
-      (ShowAndTerminateColumn("pageFaults", CTInteger), false),
-      (ShowAndTerminateColumn("currentQueryPageHits", CTInteger), false),
-      (ShowAndTerminateColumn("currentQueryPageFaults", CTInteger), false),
-      (ShowAndTerminateColumn("initializationStackTrace"), false)
+      (ShowAndTerminateColumn(databaseColumn), true),
+      (ShowAndTerminateColumn(transactionIdColumn), true),
+      (ShowAndTerminateColumn(currentQueryIdColumn), true),
+      (ShowAndTerminateColumn(outerTransactionIdColumn), false),
+      (ShowAndTerminateColumn(connectionIdColumn), true),
+      (ShowAndTerminateColumn(clientAddressColumn), true),
+      (ShowAndTerminateColumn(usernameColumn), true),
+      (ShowAndTerminateColumn(metaDataColumn, CTMap), false),
+      (ShowAndTerminateColumn(currentQueryColumn), true),
+      (ShowAndTerminateColumn(parametersColumn, CTMap), false),
+      (ShowAndTerminateColumn(plannerColumn), false),
+      (ShowAndTerminateColumn(runtimeColumn), false),
+      (ShowAndTerminateColumn(indexesColumn, CTList(CTMap)), false),
+      (ShowAndTerminateColumn(startTimeColumn), true),
+      (ShowAndTerminateColumn(currentQueryStartTimeColumn), false),
+      (ShowAndTerminateColumn(protocolColumn), false),
+      (ShowAndTerminateColumn(requestUriColumn), false),
+      (ShowAndTerminateColumn(statusColumn), true),
+      (ShowAndTerminateColumn(currentQueryStatusColumn), false),
+      (ShowAndTerminateColumn(statusDetailsColumn), false),
+      (ShowAndTerminateColumn(resourceInformationColumn, CTMap), false),
+      (ShowAndTerminateColumn(activeLockCountColumn, CTInteger), false),
+      (ShowAndTerminateColumn(currentQueryActiveLockCountColumn, CTInteger), false),
+      (ShowAndTerminateColumn(elapsedTimeColumn, CTDuration), true),
+      (ShowAndTerminateColumn(cpuTimeColumn, CTDuration), false),
+      (ShowAndTerminateColumn(waitTimeColumn, CTDuration), false),
+      (ShowAndTerminateColumn(idleTimeColumn, CTDuration), false),
+      (ShowAndTerminateColumn(currentQueryElapsedTimeColumn, CTDuration), false),
+      (ShowAndTerminateColumn(currentQueryCpuTimeColumn, CTDuration), false),
+      (ShowAndTerminateColumn(currentQueryWaitTimeColumn, CTDuration), false),
+      (ShowAndTerminateColumn(currentQueryIdleTimeColumn, CTDuration), false),
+      (ShowAndTerminateColumn(currentQueryAllocatedBytesColumn, CTInteger), false),
+      (ShowAndTerminateColumn(allocatedDirectBytesColumn, CTInteger), false),
+      (ShowAndTerminateColumn(estimatedUsedHeapMemoryColumn, CTInteger), false),
+      (ShowAndTerminateColumn(pageHitsColumn, CTInteger), false),
+      (ShowAndTerminateColumn(pageFaultsColumn, CTInteger), false),
+      (ShowAndTerminateColumn(currentQueryPageHitsColumn, CTInteger), false),
+      (ShowAndTerminateColumn(currentQueryPageFaultsColumn, CTInteger), false),
+      (ShowAndTerminateColumn(initializationStackTraceColumn), false)
     )
     val briefColumns = columns.filter(_._2).map(_._1)
     val allColumns = columns.map(_._1)
@@ -2229,6 +2317,9 @@ case class TerminateTransactionsClause(
 }
 
 object TerminateTransactionsClause {
+  val transactionIdColumn = "transactionId"
+  val usernameColumn = "username"
+  val messageColumn = "message"
 
   def apply(
     ids: Either[List[String], Expression],
@@ -2238,9 +2329,9 @@ object TerminateTransactionsClause {
   )(position: InputPosition): TerminateTransactionsClause = {
     // All columns are currently default
     val columns = List(
-      ShowAndTerminateColumn("transactionId"),
-      ShowAndTerminateColumn("username"),
-      ShowAndTerminateColumn("message")
+      ShowAndTerminateColumn(transactionIdColumn),
+      ShowAndTerminateColumn(usernameColumn),
+      ShowAndTerminateColumn(messageColumn)
     )
 
     TerminateTransactionsClause(
@@ -2287,6 +2378,15 @@ case class ShowSettingsClause(
 }
 
 object ShowSettingsClause {
+  val nameColumn = "name"
+  val valueColumn = "value"
+  val isDynamicColumn = "isDynamic"
+  val defaultValueColumn = "defaultValue"
+  val descriptionColumn = "description"
+  val startupValueColumn = "startupValue"
+  val isExplicitlySetColumn = "isExplicitlySet"
+  val validValuesColumn = "validValues"
+  val isDeprecatedColumn = "isDeprecated"
 
   def apply(
     names: Either[List[String], Expression],
@@ -2295,17 +2395,17 @@ object ShowSettingsClause {
     yieldAll: Boolean
   )(position: InputPosition): ShowSettingsClause = {
     val defaultCols = List(
-      ShowAndTerminateColumn("name"),
-      ShowAndTerminateColumn("value"),
-      ShowAndTerminateColumn("isDynamic", CTBoolean),
-      ShowAndTerminateColumn("defaultValue"),
-      ShowAndTerminateColumn("description")
+      ShowAndTerminateColumn(nameColumn),
+      ShowAndTerminateColumn(valueColumn),
+      ShowAndTerminateColumn(isDynamicColumn, CTBoolean),
+      ShowAndTerminateColumn(defaultValueColumn),
+      ShowAndTerminateColumn(descriptionColumn)
     )
     val verboseCols = List(
-      ShowAndTerminateColumn("startupValue"),
-      ShowAndTerminateColumn("isExplicitlySet", CTBoolean),
-      ShowAndTerminateColumn("validValues"),
-      ShowAndTerminateColumn("isDeprecated", CTBoolean)
+      ShowAndTerminateColumn(startupValueColumn),
+      ShowAndTerminateColumn(isExplicitlySetColumn, CTBoolean),
+      ShowAndTerminateColumn(validValuesColumn),
+      ShowAndTerminateColumn(isDeprecatedColumn, CTBoolean)
     )
 
     ShowSettingsClause(

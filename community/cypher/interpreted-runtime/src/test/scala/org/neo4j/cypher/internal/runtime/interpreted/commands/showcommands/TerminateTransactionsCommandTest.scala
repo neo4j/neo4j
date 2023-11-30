@@ -129,12 +129,16 @@ class TerminateTransactionsCommandTest extends ShowCommandTestBase {
     message: Option[String],
     username: Option[String] = None
   ): Unit = {
-    txId.foreach(expected => resultMap("transactionId") should be(Values.stringValue(expected)))
+    txId.foreach(expected =>
+      resultMap(TerminateTransactionsClause.transactionIdColumn) should be(Values.stringValue(expected))
+    )
     username.foreach(maybeExpected => {
       val expected = if (maybeExpected == null) Values.NO_VALUE else Values.stringValue(maybeExpected)
-      resultMap("username") should be(expected)
+      resultMap(TerminateTransactionsClause.usernameColumn) should be(expected)
     })
-    message.foreach(expected => resultMap("message") should be(Values.stringValue(expected)))
+    message.foreach(expected =>
+      resultMap(TerminateTransactionsClause.messageColumn) should be(Values.stringValue(expected))
+    )
   }
 
   // Tests
@@ -476,20 +480,25 @@ class TerminateTransactionsCommandTest extends ShowCommandTestBase {
 
     // Given: YIELD transactionId AS txId, username
     val yieldColumns: List[CommandResultItem] = List(
-      CommandResultItem("transactionId", Variable("txId")(InputPosition.NONE))(InputPosition.NONE),
-      CommandResultItem("username", Variable("username")(InputPosition.NONE))(InputPosition.NONE)
+      CommandResultItem(
+        TerminateTransactionsClause.transactionIdColumn,
+        Variable("txId")(InputPosition.NONE)
+      )(InputPosition.NONE),
+      CommandResultItem(
+        TerminateTransactionsClause.usernameColumn,
+        Variable(TerminateTransactionsClause.usernameColumn)(InputPosition.NONE)
+      )(InputPosition.NONE)
     )
 
     // When
     val terminateTx = TerminateTransactionsCommand(Left(List(tx1)), columns, yieldColumns)
     val result = terminateTx.originalNameRows(queryState, initialCypherRow).toList
 
-    // Then: unyielded columns are left as is (to be filtered out at a later stage)
+    // Then
     result should have size 1
     result should be(List(Map(
       "txId" -> Values.stringValue(tx1),
-      "username" -> Values.stringValue(username),
-      "message" -> Values.stringValue("Transaction terminated.")
+      TerminateTransactionsClause.usernameColumn -> Values.stringValue(username)
     )))
   }
 

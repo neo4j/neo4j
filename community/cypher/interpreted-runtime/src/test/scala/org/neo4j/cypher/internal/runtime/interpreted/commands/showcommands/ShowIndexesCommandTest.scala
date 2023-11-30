@@ -348,36 +348,50 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
     failureMessage: Option[String] = None,
     createStatement: Option[String] = None
   ): Unit = {
-    id.foreach(expected => resultMap("id") should be(Values.longValue(expected)))
-    name.foreach(expected => resultMap("name") should be(Values.stringValue(expected)))
-    state.foreach(expected => resultMap("state") should be(Values.stringValue(expected)))
-    population.foreach(expected => resultMap("populationPercent") should be(Values.floatValue(expected)))
-    indexType.foreach(expected => resultMap("type") should be(Values.stringValue(expected)))
-    entityType.foreach(expected => resultMap("entityType") should be(Values.stringValue(expected)))
+    id.foreach(expected => resultMap(ShowIndexesClause.idColumn) should be(Values.longValue(expected)))
+    name.foreach(expected => resultMap(ShowIndexesClause.nameColumn) should be(Values.stringValue(expected)))
+    state.foreach(expected => resultMap(ShowIndexesClause.stateColumn) should be(Values.stringValue(expected)))
+    population.foreach(expected =>
+      resultMap(ShowIndexesClause.populationPercentColumn) should be(Values.floatValue(expected))
+    )
+    indexType.foreach(expected => resultMap(ShowIndexesClause.typeColumn) should be(Values.stringValue(expected)))
+    entityType.foreach(expected =>
+      resultMap(ShowIndexesClause.entityTypeColumn) should be(Values.stringValue(expected))
+    )
     labelsOrTypes.foreach(maybeExpected => {
       val expected =
         if (maybeExpected != null) VirtualValues.list(maybeExpected.map(Values.stringValue): _*)
         else Values.NO_VALUE
 
-      resultMap("labelsOrTypes") should be(expected)
+      resultMap(ShowIndexesClause.labelsOrTypesColumn) should be(expected)
     })
     properties.foreach(maybeExpected => {
       val expected =
         if (maybeExpected != null) VirtualValues.list(maybeExpected.map(Values.stringValue): _*)
         else Values.NO_VALUE
 
-      resultMap("properties") should be(expected)
+      resultMap(ShowIndexesClause.propertiesColumn) should be(expected)
     })
-    provider.foreach(expected => resultMap("indexProvider") should be(Values.stringValue(expected)))
-    constraint.foreach(expected => resultMap("owningConstraint") should be(Values.stringOrNoValue(expected)))
-    lastRead.foreach(expected => resultMap("lastRead") should be(expected))
-    readCount.foreach(expected => resultMap("readCount") should be(expected))
-    trackedSince.foreach(expected => resultMap("trackedSince") should be(expected))
-    options.foreach(expected =>
-      resultMap("options") should be(VirtualValues.map(expected.view.keys.toArray, expected.view.values.toArray))
+    provider.foreach(expected =>
+      resultMap(ShowIndexesClause.indexProviderColumn) should be(Values.stringValue(expected))
     )
-    failureMessage.foreach(expected => resultMap("failureMessage") should be(Values.stringValue(expected)))
-    createStatement.foreach(expected => resultMap("createStatement") should be(Values.stringValue(expected)))
+    constraint.foreach(expected =>
+      resultMap(ShowIndexesClause.owningConstraintColumn) should be(Values.stringOrNoValue(expected))
+    )
+    lastRead.foreach(expected => resultMap(ShowIndexesClause.lastReadColumn) should be(expected))
+    readCount.foreach(expected => resultMap(ShowIndexesClause.readCountColumn) should be(expected))
+    trackedSince.foreach(expected => resultMap(ShowIndexesClause.trackedSinceColumn) should be(expected))
+    options.foreach(expected =>
+      resultMap(ShowIndexesClause.optionsColumn) should be(
+        VirtualValues.map(expected.view.keys.toArray, expected.view.values.toArray)
+      )
+    )
+    failureMessage.foreach(expected =>
+      resultMap(ShowIndexesClause.failureMessageColumn) should be(Values.stringValue(expected))
+    )
+    createStatement.foreach(expected =>
+      resultMap(ShowIndexesClause.createStatementColumn) should be(Values.stringValue(expected))
+    )
   }
 
   // Tests
@@ -390,7 +404,7 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
     ))
 
     // When
-    val showIndexes = ShowIndexesCommand(AllIndexes, verbose = false, defaultColumns, List.empty)
+    val showIndexes = ShowIndexesCommand(AllIndexes, defaultColumns, List.empty)
     val result = showIndexes.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -427,7 +441,12 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
     )
     // confirm no verbose columns:
     result.foreach(res => {
-      res.keys.toList should contain noElementsOf List("trackedSince", "options", "failureMessage", "createStatement")
+      res.keys.toList should contain noElementsOf List(
+        ShowIndexesClause.trackedSinceColumn,
+        ShowIndexesClause.optionsColumn,
+        ShowIndexesClause.failureMessageColumn,
+        ShowIndexesClause.createStatementColumn
+      )
     })
   }
 
@@ -439,7 +458,7 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
     ))
 
     // When
-    val showIndexes = ShowIndexesCommand(AllIndexes, verbose = true, allColumns, List.empty)
+    val showIndexes = ShowIndexesCommand(AllIndexes, allColumns, List.empty)
     val result = showIndexes.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -496,7 +515,7 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
     ))
 
     // When
-    val showIndexes = ShowIndexesCommand(AllIndexes, verbose = true, allColumns, List.empty)
+    val showIndexes = ShowIndexesCommand(AllIndexes, allColumns, List.empty)
     val result = showIndexes.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -566,7 +585,7 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
     ))
 
     // When
-    val showIndexes = ShowIndexesCommand(AllIndexes, verbose = true, allColumns, List.empty)
+    val showIndexes = ShowIndexesCommand(AllIndexes, allColumns, List.empty)
     val result = showIndexes.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -597,7 +616,7 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
     ))
 
     // When
-    val showIndexes = ShowIndexesCommand(AllIndexes, verbose = false, defaultColumns, List.empty)
+    val showIndexes = ShowIndexesCommand(AllIndexes, defaultColumns, List.empty)
     val result = showIndexes.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -618,7 +637,7 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
     when(ctx.getIndexUsageStatistics(any())).thenReturn(statistics)
 
     // When
-    val showIndexes = ShowIndexesCommand(AllIndexes, verbose = true, allColumns, List.empty)
+    val showIndexes = ShowIndexesCommand(AllIndexes, allColumns, List.empty)
     val result = showIndexes.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -639,7 +658,7 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
     when(ctx.getIndexUsageStatistics(any())).thenReturn(statistics)
 
     // When
-    val showIndexes = ShowIndexesCommand(AllIndexes, verbose = true, allColumns, List.empty)
+    val showIndexes = ShowIndexesCommand(AllIndexes, allColumns, List.empty)
     val result = showIndexes.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -667,7 +686,7 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
     when(ctx.getIndexUsageStatistics(any())).thenReturn(statistics)
 
     // When
-    val showIndexes = ShowIndexesCommand(AllIndexes, verbose = true, allColumns, List.empty)
+    val showIndexes = ShowIndexesCommand(AllIndexes, allColumns, List.empty)
     val result = showIndexes.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -695,7 +714,7 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
     when(ctx.getIndexUsageStatistics(any())).thenReturn(statistics)
 
     // When
-    val showIndexes = ShowIndexesCommand(AllIndexes, verbose = false, defaultColumns, List.empty)
+    val showIndexes = ShowIndexesCommand(AllIndexes, defaultColumns, List.empty)
     val result = showIndexes.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -725,7 +744,7 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
     ))
 
     // When
-    val showIndexes = ShowIndexesCommand(AllIndexes, verbose = true, allColumns, List.empty)
+    val showIndexes = ShowIndexesCommand(AllIndexes, allColumns, List.empty)
     val result = showIndexes.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -877,7 +896,7 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
     ))
 
     // When
-    val showIndexes = ShowIndexesCommand(RangeIndexes, verbose = true, allColumns, List.empty)
+    val showIndexes = ShowIndexesCommand(RangeIndexes, allColumns, List.empty)
     val result = showIndexes.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -923,7 +942,7 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
     ))
 
     // When
-    val showIndexes = ShowIndexesCommand(LookupIndexes, verbose = true, allColumns, List.empty)
+    val showIndexes = ShowIndexesCommand(LookupIndexes, allColumns, List.empty)
     val result = showIndexes.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -969,7 +988,7 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
     ))
 
     // When
-    val showIndexes = ShowIndexesCommand(PointIndexes, verbose = true, allColumns, List.empty)
+    val showIndexes = ShowIndexesCommand(PointIndexes, allColumns, List.empty)
     val result = showIndexes.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -1017,7 +1036,7 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
     ))
 
     // When
-    val showIndexes = ShowIndexesCommand(TextIndexes, verbose = true, allColumns, List.empty)
+    val showIndexes = ShowIndexesCommand(TextIndexes, allColumns, List.empty)
     val result = showIndexes.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -1065,7 +1084,7 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
     ))
 
     // When
-    val showIndexes = ShowIndexesCommand(FulltextIndexes, verbose = true, allColumns, List.empty)
+    val showIndexes = ShowIndexesCommand(FulltextIndexes, allColumns, List.empty)
     val result = showIndexes.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -1113,7 +1132,7 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
     ))
 
     // When
-    val showIndexes = ShowIndexesCommand(VectorIndexes, verbose = true, allColumns, List.empty)
+    val showIndexes = ShowIndexesCommand(VectorIndexes, allColumns, List.empty)
     val result = showIndexes.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -1135,10 +1154,19 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
   test("show indexes should rename columns renamed in YIELD") {
     // Given: YIELD name AS index, labelsOrTypes, createStatement AS create, type
     val yieldColumns: List[CommandResultItem] = List(
-      CommandResultItem("name", Variable("index")(InputPosition.NONE))(InputPosition.NONE),
-      CommandResultItem("labelsOrTypes", Variable("labelsOrTypes")(InputPosition.NONE))(InputPosition.NONE),
-      CommandResultItem("createStatement", Variable("create")(InputPosition.NONE))(InputPosition.NONE),
-      CommandResultItem("type", Variable("type")(InputPosition.NONE))(InputPosition.NONE)
+      CommandResultItem(ShowIndexesClause.nameColumn, Variable("index")(InputPosition.NONE))(InputPosition.NONE),
+      CommandResultItem(
+        ShowIndexesClause.labelsOrTypesColumn,
+        Variable(ShowIndexesClause.labelsOrTypesColumn)(InputPosition.NONE)
+      )(InputPosition.NONE),
+      CommandResultItem(
+        ShowIndexesClause.createStatementColumn,
+        Variable("create")(InputPosition.NONE)
+      )(InputPosition.NONE),
+      CommandResultItem(
+        ShowIndexesClause.typeColumn,
+        Variable(ShowIndexesClause.typeColumn)(InputPosition.NONE)
+      )(InputPosition.NONE)
     )
 
     // Set-up which indexes to return:
@@ -1147,31 +1175,16 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
     ))
 
     // When
-    val showIndexes = ShowIndexesCommand(AllIndexes, verbose = true, allColumns, yieldColumns)
+    val showIndexes = ShowIndexesCommand(AllIndexes, allColumns, yieldColumns)
     val result = showIndexes.originalNameRows(queryState, initialCypherRow).toList
 
-    // Then: unyielded columns are left as is (to be filtered out at a later stage)
+    // Then
     result should have size 1
     result.head should be(Map(
       "index" -> Values.stringValue("index00"),
-      "labelsOrTypes" -> VirtualValues.list(Values.stringValue(label)),
+      ShowIndexesClause.labelsOrTypesColumn -> VirtualValues.list(Values.stringValue(label)),
       "create" -> Values.stringValue(s"CREATE RANGE INDEX `index00` FOR (n:`$label`) ON (n.`$prop`)"),
-      "type" -> Values.stringValue("RANGE"),
-      "id" -> Values.longValue(0),
-      "state" -> Values.stringValue("ONLINE"),
-      "populationPercent" -> Values.floatValue(100.0f),
-      "entityType" -> Values.stringValue("NODE"),
-      "properties" -> VirtualValues.list(Values.stringValue(prop)),
-      "indexProvider" -> Values.stringValue(rangeProvider),
-      "owningConstraint" -> Values.NO_VALUE,
-      "lastRead" -> Values.NO_VALUE,
-      "readCount" -> Values.NO_VALUE,
-      "trackedSince" -> Values.NO_VALUE,
-      "options" -> VirtualValues.map(
-        Array("indexProvider", "indexConfig"),
-        Array(Values.stringValue(rangeProvider), VirtualValues.EMPTY_MAP)
-      ),
-      "failureMessage" -> Values.stringValue("")
+      ShowIndexesClause.typeColumn -> Values.stringValue("RANGE")
     ))
   }
 }

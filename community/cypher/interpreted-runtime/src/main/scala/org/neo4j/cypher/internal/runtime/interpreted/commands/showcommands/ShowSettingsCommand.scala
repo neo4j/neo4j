@@ -23,6 +23,15 @@ import org.neo4j.configuration.Config
 import org.neo4j.configuration.SettingImpl
 import org.neo4j.cypher.internal.ast.CommandResultItem
 import org.neo4j.cypher.internal.ast.ShowColumn
+import org.neo4j.cypher.internal.ast.ShowSettingsClause.defaultValueColumn
+import org.neo4j.cypher.internal.ast.ShowSettingsClause.descriptionColumn
+import org.neo4j.cypher.internal.ast.ShowSettingsClause.isDeprecatedColumn
+import org.neo4j.cypher.internal.ast.ShowSettingsClause.isDynamicColumn
+import org.neo4j.cypher.internal.ast.ShowSettingsClause.isExplicitlySetColumn
+import org.neo4j.cypher.internal.ast.ShowSettingsClause.nameColumn
+import org.neo4j.cypher.internal.ast.ShowSettingsClause.startupValueColumn
+import org.neo4j.cypher.internal.ast.ShowSettingsClause.validValuesColumn
+import org.neo4j.cypher.internal.ast.ShowSettingsClause.valueColumn
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
@@ -36,28 +45,26 @@ import scala.util.Try
 // SHOW SETTING[S] [names | nameExpression] [WHERE clause | YIELD clause]
 case class ShowSettingsCommand(
   givenNames: Either[List[String], Expression],
-  verbose: Boolean,
   columns: List[ShowColumn],
   yieldColumns: List[CommandResultItem]
 ) extends Command(columns, yieldColumns) {
 
-  private def asMap[T](config: Config)(setting: SettingImpl[T]): Map[String, AnyValue] = {
-    val defaultColumns = Map(
-      "name" -> Values.of(setting.name()),
-      "description" -> Values.of(setting.description()),
-      "value" -> Values.of(setting.valueToString(config.get(setting))),
-      "isDynamic" -> Values.of(setting.dynamic()),
-      "defaultValue" -> Values.of(setting.valueToString(config.getDefault(setting)))
-    )
-    lazy val verboseColumns = Map(
-      "startupValue" -> Values.of(setting.valueToString(config.getStartupValue(setting))),
-      "validValues" -> Values.of(setting.validValues()),
-      "isExplicitlySet" -> Values.of(config.isExplicitlySet(setting)),
-      "isDeprecated" -> Values.booleanValue(setting.deprecated)
-    )
-    if (verbose) defaultColumns ++ verboseColumns
-    else defaultColumns
-  }
+  private def asMap[T](config: Config)(setting: SettingImpl[T]): Map[String, AnyValue] = requestedColumnsNames.map {
+    case `nameColumn`         => nameColumn -> Values.of(setting.name())
+    case `descriptionColumn`  => descriptionColumn -> Values.of(setting.description())
+    case `valueColumn`        => valueColumn -> Values.of(setting.valueToString(config.get(setting)))
+    case `isDynamicColumn`    => isDynamicColumn -> Values.of(setting.dynamic())
+    case `defaultValueColumn` => defaultValueColumn -> Values.of(setting.valueToString(config.getDefault(setting)))
+    case `startupValueColumn` =>
+      startupValueColumn -> Values.of(setting.valueToString(config.getStartupValue(setting)))
+    case `validValuesColumn`     => validValuesColumn -> Values.of(setting.validValues())
+    case `isExplicitlySetColumn` => isExplicitlySetColumn -> Values.of(config.isExplicitlySet(setting))
+    case `isDeprecatedColumn`    => isDeprecatedColumn -> Values.booleanValue(setting.deprecated)
+    case unknown                 =>
+      // This match should cover all existing columns but we get scala warnings
+      // on non-exhaustive match due to it being string values
+      throw new IllegalStateException(s"Missing case for column: $unknown")
+  }.toMap[String, AnyValue]
 
   override def originalNameRows(state: QueryState, baseRow: CypherRow): ClosingIterator[Map[String, AnyValue]] = {
     val names = Command.extractNames(givenNames, state, baseRow)

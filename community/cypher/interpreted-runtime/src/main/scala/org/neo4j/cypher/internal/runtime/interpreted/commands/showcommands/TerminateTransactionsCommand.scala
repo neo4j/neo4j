@@ -21,6 +21,9 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands
 
 import org.neo4j.cypher.internal.ast.CommandResultItem
 import org.neo4j.cypher.internal.ast.ShowColumn
+import org.neo4j.cypher.internal.ast.TerminateTransactionsClause.messageColumn
+import org.neo4j.cypher.internal.ast.TerminateTransactionsClause.transactionIdColumn
+import org.neo4j.cypher.internal.ast.TerminateTransactionsClause.usernameColumn
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
@@ -79,10 +82,9 @@ case class TerminateTransactionsCommand(
     val rows = transactionsByDatabase.flatMap {
       case (databaseId: NamedDatabaseId, txIds: Set[TransactionId]) =>
         val maybeDatabaseContext = databaseManager.getDatabaseContext(databaseId)
-        val dbName = databaseId.name
-
         val allowedTransactions =
           if (maybeDatabaseContext.isPresent) {
+            val dbName = databaseId.name
             val databaseContext = maybeDatabaseContext.get
             val dbScope = new AdminActionOnResource.DatabaseScope(dbName)
             TransactionCommandHelper.getExecutingTransactions(databaseContext).map(tx => {
@@ -108,23 +110,26 @@ case class TerminateTransactionsCommand(
               log.info("User %s terminated transaction %s.", loggingUser, txId.toString)
               (handle.subject.executingUser(), "Transaction terminated.")
           }.getOrElse((null, "Transaction not found."))
-          Map(
-            "transactionId" -> Values.stringValue(txId.toString),
-            "username" -> Values.stringOrNoValue(username),
-            "message" -> Values.stringValue(message)
-          )
+          getResultMap(txId, username, message)
         })
     }
     // Add 'transaction not found' results for the ids on non-existing databases as well
-    val updatedWithExtraRows = rows ++ otherTxIds.map(txId => {
-      Map(
-        "transactionId" -> Values.stringValue(txId.toString),
-        "username" -> Values.NO_VALUE,
-        "message" -> Values.stringValue("Transaction not found.")
-      )
-    })
+    val updatedWithExtraRows = rows ++ otherTxIds.map(txId =>
+      getResultMap(txId, null, "Transaction not found.")
+    )
 
     val updatedColumnNameRows = updateRowsWithPotentiallyRenamedColumns(updatedWithExtraRows.toList)
     ClosingIterator.apply(updatedColumnNameRows.iterator)
   }
+
+  private def getResultMap(txId: TransactionId, username: String, message: String): Map[String, AnyValue] =
+    requestedColumnsNames.map {
+      case `transactionIdColumn` => transactionIdColumn -> Values.stringValue(txId.toString)
+      case `usernameColumn`      => usernameColumn -> Values.stringOrNoValue(username)
+      case `messageColumn`       => messageColumn -> Values.stringValue(message)
+      case unknown               =>
+        // This match should cover all existing columns but we get scala warnings
+        // on non-exhaustive match due to it being string values
+        throw new IllegalStateException(s"Missing case for column: $unknown")
+    }.toMap[String, AnyValue]
 }

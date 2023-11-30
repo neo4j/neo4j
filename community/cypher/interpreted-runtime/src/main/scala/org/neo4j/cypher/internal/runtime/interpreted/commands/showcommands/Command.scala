@@ -44,6 +44,17 @@ abstract class Command(
 ) {
   private val columns: List[ShowColumn] = getColumns(defaultColumns, yieldColumns)
 
+  // The requested columns for the command,
+  // only these will be returned to the user and need to be generated
+  protected val requestedColumnsNames: List[String] = {
+    // we want the original column names here as we want to match on the names for the columns we want to create
+    val yieldedColumns = yieldColumns.map(_.originalName)
+    // Make sure to get the yielded columns if YIELD was specified
+    // otherwise get the default columns
+    if (yieldedColumns.isEmpty) defaultColumns.map(_.name)
+    else yieldedColumns
+  }
+
   protected def originalNameRows(state: QueryState, baseRow: CypherRow): ClosingIterator[Map[String, AnyValue]]
 
   final def rows(state: QueryState, baseRow: CypherRow): ClosingIterator[Map[String, AnyValue]] = {

@@ -35,6 +35,16 @@ import org.neo4j.cypher.internal.ast.RelPropTypeConstraints
 import org.neo4j.cypher.internal.ast.RelUniqueConstraints
 import org.neo4j.cypher.internal.ast.ShowColumn
 import org.neo4j.cypher.internal.ast.ShowConstraintType
+import org.neo4j.cypher.internal.ast.ShowConstraintsClause.createStatementColumn
+import org.neo4j.cypher.internal.ast.ShowConstraintsClause.entityTypeColumn
+import org.neo4j.cypher.internal.ast.ShowConstraintsClause.idColumn
+import org.neo4j.cypher.internal.ast.ShowConstraintsClause.labelsOrTypesColumn
+import org.neo4j.cypher.internal.ast.ShowConstraintsClause.nameColumn
+import org.neo4j.cypher.internal.ast.ShowConstraintsClause.optionsColumn
+import org.neo4j.cypher.internal.ast.ShowConstraintsClause.ownedIndexColumn
+import org.neo4j.cypher.internal.ast.ShowConstraintsClause.propertiesColumn
+import org.neo4j.cypher.internal.ast.ShowConstraintsClause.propertyTypeColumn
+import org.neo4j.cypher.internal.ast.ShowConstraintsClause.typeColumn
 import org.neo4j.cypher.internal.ast.UniqueConstraints
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.ConstraintInfo
@@ -71,7 +81,6 @@ import scala.jdk.CollectionConverters.SeqHasAsJava
 // ] CONSTRAINT[S] [BRIEF | VERBOSE | WHERE clause | YIELD clause]
 case class ShowConstraintsCommand(
   constraintType: ShowConstraintType,
-  verbose: Boolean,
   columns: List[ShowColumn],
   yieldColumns: List[CommandResultItem]
 ) extends Command(columns, yieldColumns) {
@@ -117,82 +126,108 @@ case class ShowConstraintsCommand(
 
     val rows = sortedRelevantConstraints.map {
       case (constraintDescriptor: ConstraintDescriptor, constraintInfo: ConstraintInfo) =>
-        val name = constraintDescriptor.getName
-        val labels = constraintInfo.labelsOrTypes
-        val properties = constraintInfo.properties
-        val isIndexBacked = constraintDescriptor.isIndexBackedConstraint
-        val ownedIndex =
-          if (isIndexBacked)
-            indexIdToName.get(constraintDescriptor.asIndexBackedConstraint().ownedIndexId())
-              .map(Values.stringValue)
-              .getOrElse(Values.NO_VALUE)
-          else Values.NO_VALUE
         val propertyType =
-          if (constraintDescriptor.isPropertyTypeConstraint)
+          if (
+            constraintDescriptor.isPropertyTypeConstraint &&
+            // only fetch value if we need it
+            (requestedColumnsNames.contains(propertyTypeColumn) ||
+              requestedColumnsNames.contains(createStatementColumn))
+          )
             Some(
               constraintDescriptor.asPropertyTypeConstraint().propertyType().userDescription()
             )
           else None
+        // These don't really have a default/fallback and is used in multiple columns
+        // so let's keep them as is regardless of if they are actually needed or not
         val entityType = constraintDescriptor.schema.entityType
         val constraintType = getConstraintType(constraintDescriptor.`type`, entityType)
 
-        val briefResult = Map(
-          // The id of the constraint
-          "id" -> Values.longValue(constraintDescriptor.getId),
-          // Name of the constraint, for example "myConstraint"
-          "name" -> Values.stringValue(name),
-          // The ConstraintType of this constraint, one of "UNIQUENESS", "RELATIONSHIP_UNIQUENESS", "NODE_KEY", "RELATIONSHIP_KEY", "NODE_PROPERTY_EXISTENCE", "RELATIONSHIP_PROPERTY_EXISTENCE"
-          "type" -> Values.stringValue(constraintType.output),
-          // Type of entities this constraint represents, either "NODE" or "RELATIONSHIP"
-          "entityType" -> Values.stringValue(entityType.name),
-          // The labels or relationship types of this constraint, for example ["Label1", "Label2"] or ["RelType1", "RelType2"]
-          "labelsOrTypes" -> VirtualValues.fromList(labels.map(elem => Values.of(elem).asInstanceOf[AnyValue]).asJava),
-          // The properties of this constraint, for example ["propKey", "propKey2"]
-          "properties" -> VirtualValues.fromList(properties.map(prop => Values.of(prop).asInstanceOf[AnyValue]).asJava),
-          // The name of the index associated to the constraint
-          "ownedIndex" -> ownedIndex,
-          // The Cypher type this constraint restricts its property to
-          "propertyType" -> propertyType.map(Values.stringValue).getOrElse(Values.NO_VALUE)
-        )
-        if (verbose) {
-          val (options, createString) =
-            if (isIndexBacked) {
-              val index = constraintInfo.maybeIndex.getOrElse(
-                throw new IllegalStateException(s"Expected to find an index for index backed constraint $name")
-              )
-              val providerName = index.getIndexProvider.name
-              val indexConfig = index.getIndexConfig
-              val options: MapValue = extractOptionsMap(providerName, indexConfig)
-              val createWithOptions = createConstraintStatement(
-                name,
-                constraintType,
-                labels,
-                properties,
-                Some(providerName),
-                Some(indexConfig)
-              )
-              (options, createWithOptions)
-            } else {
-              val createWithoutOptions = createConstraintStatement(
-                name,
-                constraintType,
-                labels,
-                properties,
-                propertyType = propertyType
-              )
-              (Values.NO_VALUE, createWithoutOptions)
-            }
+        val (options, createString) =
+          getOptionsAndCreateString(constraintDescriptor, constraintInfo, propertyType, constraintType)
 
-          briefResult ++ Map(
-            "options" -> options,
-            "createStatement" -> Values.stringValue(createString)
-          )
-        } else {
-          briefResult
-        }
+        requestedColumnsNames.map {
+          // The id of the constraint
+          case `idColumn` => idColumn -> Values.longValue(constraintDescriptor.getId)
+          // Name of the constraint, for example "myConstraint"
+          case `nameColumn` => nameColumn -> Values.stringValue(constraintDescriptor.getName)
+          // The ConstraintType of this constraint, one of "UNIQUENESS", "RELATIONSHIP_UNIQUENESS", "NODE_KEY", "RELATIONSHIP_KEY", "NODE_PROPERTY_EXISTENCE", "RELATIONSHIP_PROPERTY_EXISTENCE"
+          case `typeColumn` => typeColumn -> Values.stringValue(constraintType.output)
+          // Type of entities this constraint represents, either "NODE" or "RELATIONSHIP"
+          case `entityTypeColumn` => entityTypeColumn -> Values.stringValue(entityType.name)
+          // The labels or relationship types of this constraint, for example ["Label1", "Label2"] or ["RelType1", "RelType2"]
+          case `labelsOrTypesColumn` => labelsOrTypesColumn -> VirtualValues.fromList(
+              constraintInfo.labelsOrTypes.map(elem => Values.of(elem).asInstanceOf[AnyValue]).asJava
+            )
+          // The properties of this constraint, for example ["propKey", "propKey2"]
+          case `propertiesColumn` => propertiesColumn -> VirtualValues.fromList(
+              constraintInfo.properties.map(prop => Values.of(prop).asInstanceOf[AnyValue]).asJava
+            )
+          // The name of the index associated to the constraint
+          case `ownedIndexColumn` =>
+            val ownedIndex =
+              if (constraintDescriptor.isIndexBackedConstraint)
+                indexIdToName.get(constraintDescriptor.asIndexBackedConstraint().ownedIndexId())
+                  .map(Values.stringValue)
+                  .getOrElse(Values.NO_VALUE)
+              else Values.NO_VALUE
+            ownedIndexColumn -> ownedIndex
+          // The Cypher type this constraint restricts its property to
+          case `propertyTypeColumn` =>
+            propertyTypeColumn -> propertyType.map(Values.stringValue).getOrElse(Values.NO_VALUE)
+          // The options for this constraint, shows index provider and config of the backing index
+          case `optionsColumn` => optionsColumn -> options
+          // The statement to recreate the constraint
+          case `createStatementColumn` => createStatementColumn -> createString
+          case unknown                 =>
+            // This match should cover all existing columns but we get scala warnings
+            // on non-exhaustive match due to it being string values
+            throw new IllegalStateException(s"Missing case for column: $unknown")
+        }.toMap[String, AnyValue]
     }
     val updatedRows = updateRowsWithPotentiallyRenamedColumns(rows.toList)
     ClosingIterator.apply(updatedRows.iterator)
+  }
+
+  private def getOptionsAndCreateString(
+    constraintDescriptor: ConstraintDescriptor,
+    constraintInfo: ConstraintInfo,
+    propertyType: Option[String],
+    constraintType: ShowConstraintType
+  ) = {
+    // Options and create statement share lot of their values
+    // let's fetch both together if at least one is used
+    if (requestedColumnsNames.contains(optionsColumn) || requestedColumnsNames.contains(createStatementColumn)) {
+      val name = constraintDescriptor.getName
+      val (options, createString) = {
+        if (constraintDescriptor.isIndexBackedConstraint) {
+          val index = constraintInfo.maybeIndex.getOrElse(
+            throw new IllegalStateException(s"Expected to find an index for index backed constraint $name")
+          )
+          val providerName = index.getIndexProvider.name
+          val indexConfig = index.getIndexConfig
+          val options: MapValue = extractOptionsMap(providerName, indexConfig)
+          val createWithOptions = createConstraintStatement(
+            name,
+            constraintType,
+            constraintInfo.labelsOrTypes,
+            constraintInfo.properties,
+            Some(providerName),
+            Some(indexConfig)
+          )
+          (options, createWithOptions)
+        } else {
+          val createWithoutOptions = createConstraintStatement(
+            name,
+            constraintType,
+            constraintInfo.labelsOrTypes,
+            constraintInfo.properties,
+            propertyType = propertyType
+          )
+          (Values.NO_VALUE, createWithoutOptions)
+        }
+      }
+      (options, Values.stringValue(createString))
+    } else (Values.NO_VALUE, Values.NO_VALUE)
   }
 }
 

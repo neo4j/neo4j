@@ -72,7 +72,7 @@ class ShowTransactionsCommandTest extends ShowCommandTestBase {
       .columns
 
   private val allColumns =
-    ShowTransactionsClause(Left(List.empty), None, List.empty, yieldAll = false)(InputPosition.NONE)
+    ShowTransactionsClause(Left(List.empty), None, List.empty, yieldAll = true)(InputPosition.NONE)
       .unfilteredColumns
       .columns
 
@@ -310,111 +310,188 @@ class ShowTransactionsCommandTest extends ShowCommandTestBase {
     startOfInitStackTrace: Option[String] = None
   ): Unit = {
     withClue("transactionId:") {
-      txId.foreach(expected => resultMap("transactionId") should be(Values.stringValue(expected)))
+      txId.foreach(expected =>
+        resultMap(ShowTransactionsClause.transactionIdColumn) should be(Values.stringValue(expected))
+      )
     }
     withClue("database:") {
-      database.foreach(expected => resultMap("database") should be(Values.stringValue(expected)))
+      database.foreach(expected =>
+        resultMap(ShowTransactionsClause.databaseColumn) should be(Values.stringValue(expected))
+      )
     }
     withClue("currentQueryId:") {
-      queryId.foreach(expected => resultMap("currentQueryId") should be(Values.stringValue(expected)))
+      queryId.foreach(expected =>
+        resultMap(ShowTransactionsClause.currentQueryIdColumn) should be(Values.stringValue(expected))
+      )
     }
     withClue("connectionId:") {
-      connectionId.foreach(expected => resultMap("connectionId") should be(Values.stringValue(expected)))
+      connectionId.foreach(expected =>
+        resultMap(ShowTransactionsClause.connectionIdColumn) should be(Values.stringValue(expected))
+      )
     }
     withClue("clientAddress:") {
-      clientAddress.foreach(expected => resultMap("clientAddress") should be(Values.stringValue(expected)))
+      clientAddress.foreach(expected =>
+        resultMap(ShowTransactionsClause.clientAddressColumn) should be(Values.stringValue(expected))
+      )
     }
     withClue("username:") {
-      username.foreach(expected => resultMap("username") should be(Values.stringValue(expected)))
+      username.foreach(expected =>
+        resultMap(ShowTransactionsClause.usernameColumn) should be(Values.stringValue(expected))
+      )
     }
     withClue("currentQuery:") {
-      currentQuery.foreach(expected => resultMap("currentQuery") should be(Values.stringValue(expected)))
+      currentQuery.foreach(expected =>
+        resultMap(ShowTransactionsClause.currentQueryColumn) should be(Values.stringValue(expected))
+      )
     }
     withClue("startTime:") {
-      startTime.foreach(expected => resultMap("startTime") should be(Values.stringValue(expected)))
+      startTime.foreach(expected =>
+        resultMap(ShowTransactionsClause.startTimeColumn) should be(Values.stringValue(expected))
+      )
     }
-    withClue("status:") { status.foreach(expected => resultMap("status") should be(Values.stringValue(expected))) }
-    withClue("elapsedTime:") { elapsedTime.foreach(expected => resultMap("elapsedTime") should be(expected)) }
+    withClue("status:") {
+      status.foreach(expected => resultMap(ShowTransactionsClause.statusColumn) should be(Values.stringValue(expected)))
+    }
+    withClue("elapsedTime:") {
+      elapsedTime.foreach(expected => resultMap(ShowTransactionsClause.elapsedTimeColumn) should be(expected))
+    }
     withClue("outerTransactionId:") {
-      outerTxId.foreach(expected => resultMap("outerTransactionId") should be(Values.stringValue(expected)))
+      outerTxId.foreach(expected =>
+        resultMap(ShowTransactionsClause.outerTransactionIdColumn) should be(Values.stringValue(expected))
+      )
     }
-    withClue("metaData:") { metaData.foreach(expected => resultMap("metaData") should be(expected)) }
-    withClue("parameters:") { params.foreach(expected => resultMap("parameters") should be(expected)) }
-    withClue("planner:") { planner.foreach(expected => resultMap("planner") should be(Values.stringValue(expected))) }
-    withClue("runtime:") { runtime.foreach(expected => resultMap("runtime") should be(Values.stringValue(expected))) }
+    withClue("metaData:") {
+      metaData.foreach(expected => resultMap(ShowTransactionsClause.metaDataColumn) should be(expected))
+    }
+    withClue("parameters:") {
+      params.foreach(expected => resultMap(ShowTransactionsClause.parametersColumn) should be(expected))
+    }
+    withClue("planner:") {
+      planner.foreach(expected =>
+        resultMap(ShowTransactionsClause.plannerColumn) should be(Values.stringValue(expected))
+      )
+    }
+    withClue("runtime:") {
+      runtime.foreach(expected =>
+        resultMap(ShowTransactionsClause.runtimeColumn) should be(Values.stringValue(expected))
+      )
+    }
     withClue("indexes:") {
-      indexes.foreach(expected => resultMap("indexes") should be(VirtualValues.list(expected: _*)))
+      indexes.foreach(expected =>
+        resultMap(ShowTransactionsClause.indexesColumn) should be(VirtualValues.list(expected: _*))
+      )
     }
     withClue("currentQueryStartTime:") {
-      queryStartTime.foreach(expected => resultMap("currentQueryStartTime") should be(Values.stringValue(expected)))
+      queryStartTime.foreach(expected =>
+        resultMap(ShowTransactionsClause.currentQueryStartTimeColumn) should be(Values.stringValue(expected))
+      )
     }
     withClue("protocol:") {
-      protocol.foreach(expected => resultMap("protocol") should be(Values.stringValue(expected)))
+      protocol.foreach(expected =>
+        resultMap(ShowTransactionsClause.protocolColumn) should be(Values.stringValue(expected))
+      )
     }
     withClue("requestUri:") {
       requestUri.foreach(expected =>
-        if (expected == null) resultMap("requestUri") should be(Values.NO_VALUE)
-        else resultMap("requestUri") should be(Values.stringValue(expected))
+        if (expected == null) resultMap(ShowTransactionsClause.requestUriColumn) should be(Values.NO_VALUE)
+        else resultMap(ShowTransactionsClause.requestUriColumn) should be(Values.stringValue(expected))
       )
     }
     withClue("currentQueryStatus:") {
-      queryStatus.foreach(expected => resultMap("currentQueryStatus") should be(Values.stringValue(expected)))
+      queryStatus.foreach(expected =>
+        resultMap(ShowTransactionsClause.currentQueryStatusColumn) should be(Values.stringValue(expected))
+      )
     }
     withClue("statusDetails:") {
-      statusDetails.foreach(expected => resultMap("statusDetails") should be(Values.stringValue(expected)))
+      statusDetails.foreach(expected =>
+        resultMap(ShowTransactionsClause.statusDetailsColumn) should be(Values.stringValue(expected))
+      )
     }
     withClue("resourceInformation:") {
-      resourceInfo.foreach(expected => resultMap("resourceInformation") should be(expected))
+      resourceInfo.foreach(expected => resultMap(ShowTransactionsClause.resourceInformationColumn) should be(expected))
     }
     withClue("activeLockCount:") {
-      activeLockCount.foreach(expected => resultMap("activeLockCount") should be(Values.longValue(expected)))
+      activeLockCount.foreach(expected =>
+        resultMap(ShowTransactionsClause.activeLockCountColumn) should be(Values.longValue(expected))
+      )
     }
     withClue("currentQueryActiveLockCount:") {
-      queryActiveLockCount.foreach(expected => resultMap("currentQueryActiveLockCount") should be(expected))
+      queryActiveLockCount.foreach(expected =>
+        resultMap(ShowTransactionsClause.currentQueryActiveLockCountColumn) should be(expected)
+      )
     }
-    withClue("cpuTime:") { cpuTime.foreach(expected => resultMap("cpuTime") should be(expected)) }
-    withClue("waitTime:") { waitTime.foreach(expected => resultMap("waitTime") should be(expected)) }
-    withClue("idleTime:") { idleTime.foreach(expected => resultMap("idleTime") should be(expected)) }
+    withClue("cpuTime:") {
+      cpuTime.foreach(expected => resultMap(ShowTransactionsClause.cpuTimeColumn) should be(expected))
+    }
+    withClue("waitTime:") {
+      waitTime.foreach(expected => resultMap(ShowTransactionsClause.waitTimeColumn) should be(expected))
+    }
+    withClue("idleTime:") {
+      idleTime.foreach(expected => resultMap(ShowTransactionsClause.idleTimeColumn) should be(expected))
+    }
     withClue("currentQueryElapsedTime:") {
-      queryElapsedTime.foreach(expected => resultMap("currentQueryElapsedTime") should be(expected))
+      queryElapsedTime.foreach(expected =>
+        resultMap(ShowTransactionsClause.currentQueryElapsedTimeColumn) should be(expected)
+      )
     }
     withClue("currentQueryCpuTime:") {
-      queryCpuTime.foreach(expected => resultMap("currentQueryCpuTime") should be(expected))
+      queryCpuTime.foreach(expected => resultMap(ShowTransactionsClause.currentQueryCpuTimeColumn) should be(expected))
     }
     withClue("currentQueryWaitTime:") {
-      queryWaitTime.foreach(expected => resultMap("currentQueryWaitTime") should be(expected))
+      queryWaitTime.foreach(expected =>
+        resultMap(ShowTransactionsClause.currentQueryWaitTimeColumn) should be(expected)
+      )
     }
     withClue("currentQueryIdleTime:") {
-      queryIdleTime.foreach(expected => resultMap("currentQueryIdleTime") should be(expected))
+      queryIdleTime.foreach(expected =>
+        resultMap(ShowTransactionsClause.currentQueryIdleTimeColumn) should be(expected)
+      )
     }
     withClue("currentQueryAllocatedBytes:") {
-      queryAllocatedBytes.foreach(expected => resultMap("currentQueryAllocatedBytes") should be(expected))
+      queryAllocatedBytes.foreach(expected =>
+        resultMap(ShowTransactionsClause.currentQueryAllocatedBytesColumn) should be(expected)
+      )
     }
     withClue("allocatedDirectBytes:") {
-      allocatedDirectBytes.foreach(expected => resultMap("allocatedDirectBytes") should be(expected))
+      allocatedDirectBytes.foreach(expected =>
+        resultMap(ShowTransactionsClause.allocatedDirectBytesColumn) should be(expected)
+      )
     }
     withClue("estimatedUsedHeapMemory:") {
-      estimatedUsedHeapMemory.foreach(expected => resultMap("estimatedUsedHeapMemory") should be(expected))
+      estimatedUsedHeapMemory.foreach(expected =>
+        resultMap(ShowTransactionsClause.estimatedUsedHeapMemoryColumn) should be(expected)
+      )
     }
-    withClue("pageHits:") { pageHits.foreach(expected => resultMap("pageHits") should be(Values.longValue(expected))) }
+    withClue("pageHits:") {
+      pageHits.foreach(expected =>
+        resultMap(ShowTransactionsClause.pageHitsColumn) should be(Values.longValue(expected))
+      )
+    }
     withClue("pageFaults:") {
-      pageFaults.foreach(expected => resultMap("pageFaults") should be(Values.longValue(expected)))
+      pageFaults.foreach(expected =>
+        resultMap(ShowTransactionsClause.pageFaultsColumn) should be(Values.longValue(expected))
+      )
     }
     withClue("currentQueryPageHits:") {
-      queryPageHits.foreach(expected => resultMap("currentQueryPageHits") should be(expected))
+      queryPageHits.foreach(expected =>
+        resultMap(ShowTransactionsClause.currentQueryPageHitsColumn) should be(expected)
+      )
     }
     withClue("currentQueryPageFaults:") {
-      queryPageFaults.foreach(expected => resultMap("currentQueryPageFaults") should be(expected))
+      queryPageFaults.foreach(expected =>
+        resultMap(ShowTransactionsClause.currentQueryPageFaultsColumn) should be(expected)
+      )
     }
     withClue("initializationStackTrace:") {
       startOfInitStackTrace.foreach(expected => {
         if (expected.isEmpty) {
           // If Some("") -> check it is the empty string
-          resultMap("initializationStackTrace") should be(Values.stringValue(""))
+          resultMap(ShowTransactionsClause.initializationStackTraceColumn) should be(Values.stringValue(""))
         } else {
           // If Some("string value") -> check that stacktrace starts with given value
           // this to avoid it breaking due to line number changes in stacktrace
-          resultMap("initializationStackTrace").asInstanceOf[StringValue].stringValue() should startWith(expected.get)
+          resultMap(ShowTransactionsClause.initializationStackTraceColumn)
+            .asInstanceOf[StringValue].stringValue() should startWith(expected.get)
         }
       })
     }
@@ -429,7 +506,7 @@ class ShowTransactionsCommandTest extends ShowCommandTestBase {
     when(systemTxRegistry.executingTransactions).thenReturn(Set(txHandle3).asJava)
 
     // When
-    val showTx = ShowTransactionsCommand(Left(List.empty), verbose = false, defaultColumns, List.empty)
+    val showTx = ShowTransactionsCommand(Left(List.empty), defaultColumns, List.empty)
     val result = showTx.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -477,35 +554,35 @@ class ShowTransactionsCommandTest extends ShowCommandTestBase {
     // confirm no verbose columns:
     result.foreach(res => {
       res.keys.toList should contain noElementsOf List(
-        "outerTransactionId",
-        "metaData",
-        "parameters",
-        "planner",
-        "runtime",
-        "indexes",
-        "currentQueryStartTime",
-        "protocol",
-        "requestUri",
-        "currentQueryStatus",
-        "statusDetails",
-        "resourceInformation",
-        "activeLockCount",
-        "currentQueryActiveLockCount",
-        "cpuTime",
-        "waitTime",
-        "idleTime",
-        "currentQueryElapsedTime",
-        "currentQueryCpuTime",
-        "currentQueryWaitTime",
-        "currentQueryIdleTime",
-        "currentQueryAllocatedBytes",
-        "allocatedDirectBytes",
-        "estimatedUsedHeapMemory",
-        "pageHits",
-        "pageFaults",
-        "currentQueryPageHits",
-        "currentQueryPageFaults",
-        "initializationStackTrace"
+        ShowTransactionsClause.outerTransactionIdColumn,
+        ShowTransactionsClause.metaDataColumn,
+        ShowTransactionsClause.parametersColumn,
+        ShowTransactionsClause.plannerColumn,
+        ShowTransactionsClause.runtimeColumn,
+        ShowTransactionsClause.indexesColumn,
+        ShowTransactionsClause.currentQueryStartTimeColumn,
+        ShowTransactionsClause.protocolColumn,
+        ShowTransactionsClause.requestUriColumn,
+        ShowTransactionsClause.currentQueryStatusColumn,
+        ShowTransactionsClause.statusDetailsColumn,
+        ShowTransactionsClause.resourceInformationColumn,
+        ShowTransactionsClause.activeLockCountColumn,
+        ShowTransactionsClause.currentQueryActiveLockCountColumn,
+        ShowTransactionsClause.cpuTimeColumn,
+        ShowTransactionsClause.waitTimeColumn,
+        ShowTransactionsClause.idleTimeColumn,
+        ShowTransactionsClause.currentQueryElapsedTimeColumn,
+        ShowTransactionsClause.currentQueryCpuTimeColumn,
+        ShowTransactionsClause.currentQueryWaitTimeColumn,
+        ShowTransactionsClause.currentQueryIdleTimeColumn,
+        ShowTransactionsClause.currentQueryAllocatedBytesColumn,
+        ShowTransactionsClause.allocatedDirectBytesColumn,
+        ShowTransactionsClause.estimatedUsedHeapMemoryColumn,
+        ShowTransactionsClause.pageHitsColumn,
+        ShowTransactionsClause.pageFaultsColumn,
+        ShowTransactionsClause.currentQueryPageHitsColumn,
+        ShowTransactionsClause.currentQueryPageFaultsColumn,
+        ShowTransactionsClause.initializationStackTraceColumn
       )
     })
   }
@@ -517,7 +594,7 @@ class ShowTransactionsCommandTest extends ShowCommandTestBase {
     when(systemTxRegistry.executingTransactions).thenReturn(Set(txHandle3).asJava)
 
     // When
-    val showTx = ShowTransactionsCommand(Left(List.empty), verbose = true, allColumns, List.empty)
+    val showTx = ShowTransactionsCommand(Left(List.empty), allColumns, List.empty)
     val result = showTx.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -668,7 +745,7 @@ class ShowTransactionsCommandTest extends ShowCommandTestBase {
     when(systemTxRegistry.executingTransactions).thenReturn(Set(txHandle3).asJava)
 
     // When
-    val showTx = ShowTransactionsCommand(Left(List(tx1)), verbose = false, defaultColumns, List.empty)
+    val showTx = ShowTransactionsCommand(Left(List(tx1)), defaultColumns, List.empty)
     val result = showTx.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -686,7 +763,7 @@ class ShowTransactionsCommandTest extends ShowCommandTestBase {
     when(systemTxRegistry.executingTransactions).thenReturn(Set(txHandle3).asJava)
 
     // When: given transactions not ordered by id
-    val showTx = ShowTransactionsCommand(Left(List.empty), verbose = false, defaultColumns, List.empty)
+    val showTx = ShowTransactionsCommand(Left(List.empty), defaultColumns, List.empty)
     val result = showTx.originalNameRows(queryState, initialCypherRow).toList
 
     // Then: will collect the transactions by database
@@ -704,7 +781,7 @@ class ShowTransactionsCommandTest extends ShowCommandTestBase {
     when(systemTxRegistry.executingTransactions).thenReturn(Set(txHandle3).asJava)
 
     // When: given transactions not ordered by id
-    val showTx = ShowTransactionsCommand(Left(List(tx2, tx3, tx1)), verbose = false, defaultColumns, List.empty)
+    val showTx = ShowTransactionsCommand(Left(List(tx2, tx3, tx1)), defaultColumns, List.empty)
     val result = showTx.originalNameRows(queryState, initialCypherRow).toList
 
     // Then: will collect the transactions by database
@@ -722,7 +799,7 @@ class ShowTransactionsCommandTest extends ShowCommandTestBase {
 
     // When
     val showTx =
-      ShowTransactionsCommand(Left(List("unknown-transaction-1")), verbose = false, defaultColumns, List.empty)
+      ShowTransactionsCommand(Left(List("unknown-transaction-1")), defaultColumns, List.empty)
     val result = showTx.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -739,7 +816,7 @@ class ShowTransactionsCommandTest extends ShowCommandTestBase {
     when(txHandle1.isClosing).thenReturn(true)
 
     // When
-    val showTx = ShowTransactionsCommand(Left(List.empty), verbose = false, defaultColumns, List.empty)
+    val showTx = ShowTransactionsCommand(Left(List.empty), defaultColumns, List.empty)
     val result = showTx.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -767,7 +844,7 @@ class ShowTransactionsCommandTest extends ShowCommandTestBase {
     when(dbCtxProvider.registeredDatabases).thenReturn(databaseMap)
 
     // When
-    val showTx = ShowTransactionsCommand(Left(List.empty), verbose = false, defaultColumns, List.empty)
+    val showTx = ShowTransactionsCommand(Left(List.empty), defaultColumns, List.empty)
     val result = showTx.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -800,7 +877,7 @@ class ShowTransactionsCommandTest extends ShowCommandTestBase {
     })
 
     // When
-    val showTx = ShowTransactionsCommand(Left(List.empty), verbose = false, defaultColumns, List.empty)
+    val showTx = ShowTransactionsCommand(Left(List.empty), defaultColumns, List.empty)
     val result = showTx.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -825,7 +902,7 @@ class ShowTransactionsCommandTest extends ShowCommandTestBase {
     when(securityContext.allowsAdminAction(any())).thenReturn(PermissionState.EXPLICIT_DENY)
 
     // When
-    val showTx = ShowTransactionsCommand(Left(List.empty), verbose = false, defaultColumns, List.empty)
+    val showTx = ShowTransactionsCommand(Left(List.empty), defaultColumns, List.empty)
     val result = showTx.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
@@ -844,31 +921,37 @@ class ShowTransactionsCommandTest extends ShowCommandTestBase {
 
     // Given: YIELD transactionId AS txId, username AS user, currentQuery, status
     val yieldColumns: List[CommandResultItem] = List(
-      CommandResultItem("transactionId", Variable("txId")(InputPosition.NONE))(InputPosition.NONE),
-      CommandResultItem("username", Variable("user")(InputPosition.NONE))(InputPosition.NONE),
-      CommandResultItem("currentQuery", Variable("currentQuery")(InputPosition.NONE))(InputPosition.NONE),
-      CommandResultItem("status", Variable("status")(InputPosition.NONE))(InputPosition.NONE)
+      CommandResultItem(
+        ShowTransactionsClause.transactionIdColumn,
+        Variable("txId")(InputPosition.NONE)
+      )(InputPosition.NONE),
+      CommandResultItem(
+        ShowTransactionsClause.usernameColumn,
+        Variable("user")(InputPosition.NONE)
+      )(InputPosition.NONE),
+      CommandResultItem(
+        ShowTransactionsClause.currentQueryColumn,
+        Variable(ShowTransactionsClause.currentQueryColumn)(InputPosition.NONE)
+      )(InputPosition.NONE),
+      CommandResultItem(
+        ShowTransactionsClause.statusColumn,
+        Variable(ShowTransactionsClause.statusColumn)(InputPosition.NONE)
+      )(InputPosition.NONE)
     )
 
     // When
-    val showTx = ShowTransactionsCommand(Left(List.empty), verbose = false, defaultColumns, yieldColumns)
+    val showTx = ShowTransactionsCommand(Left(List.empty), allColumns, yieldColumns)
     val result = showTx.originalNameRows(queryState, initialCypherRow).toList
 
-    // Then: unyielded columns are left as is (to be filtered out at a later stage)
+    // Then
     result should have size 1
     result should be(List(Map(
       "txId" -> Values.stringValue(tx1),
-      "database" -> Values.stringValue(userDbName),
-      "currentQueryId" -> Values.stringValue(""),
-      "connectionId" -> Values.stringValue(""),
-      "clientAddress" -> Values.stringValue(""),
       "user" -> Values.stringValue(username),
-      "currentQuery" -> Values.stringValue(""),
-      "startTime" -> Values.stringValue("1970-01-01T00:00:00.5Z"),
-      "status" -> Values.stringValue(
+      ShowTransactionsClause.currentQueryColumn -> Values.stringValue(""),
+      ShowTransactionsClause.statusColumn -> Values.stringValue(
         "Terminated with reason: Status.Code[Neo.ClientError.Transaction.TransactionTimedOut]"
-      ),
-      "elapsedTime" -> Values.durationValue(Duration.ofMillis(-1L))
+      )
     )))
   }
 }

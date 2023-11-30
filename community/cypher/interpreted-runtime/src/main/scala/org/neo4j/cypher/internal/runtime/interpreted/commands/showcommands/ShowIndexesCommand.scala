@@ -28,11 +28,28 @@ import org.neo4j.cypher.internal.ast.PointIndexes
 import org.neo4j.cypher.internal.ast.RangeIndexes
 import org.neo4j.cypher.internal.ast.ShowColumn
 import org.neo4j.cypher.internal.ast.ShowIndexType
+import org.neo4j.cypher.internal.ast.ShowIndexesClause.createStatementColumn
+import org.neo4j.cypher.internal.ast.ShowIndexesClause.entityTypeColumn
+import org.neo4j.cypher.internal.ast.ShowIndexesClause.failureMessageColumn
+import org.neo4j.cypher.internal.ast.ShowIndexesClause.idColumn
+import org.neo4j.cypher.internal.ast.ShowIndexesClause.indexProviderColumn
+import org.neo4j.cypher.internal.ast.ShowIndexesClause.labelsOrTypesColumn
+import org.neo4j.cypher.internal.ast.ShowIndexesClause.lastReadColumn
+import org.neo4j.cypher.internal.ast.ShowIndexesClause.nameColumn
+import org.neo4j.cypher.internal.ast.ShowIndexesClause.optionsColumn
+import org.neo4j.cypher.internal.ast.ShowIndexesClause.owningConstraintColumn
+import org.neo4j.cypher.internal.ast.ShowIndexesClause.populationPercentColumn
+import org.neo4j.cypher.internal.ast.ShowIndexesClause.propertiesColumn
+import org.neo4j.cypher.internal.ast.ShowIndexesClause.readCountColumn
+import org.neo4j.cypher.internal.ast.ShowIndexesClause.stateColumn
+import org.neo4j.cypher.internal.ast.ShowIndexesClause.trackedSinceColumn
+import org.neo4j.cypher.internal.ast.ShowIndexesClause.typeColumn
 import org.neo4j.cypher.internal.ast.TextIndexes
 import org.neo4j.cypher.internal.ast.VectorIndexes
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.IndexInfo
+import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowIndexesCommand.createIndexStatement
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.asEscapedString
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSchemaCommandHelper.barStringJoiner
@@ -58,13 +75,14 @@ import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualValues
 
+import java.time.ZoneId
+
 import scala.collection.immutable.ListMap
 import scala.jdk.CollectionConverters.SeqHasAsJava
 
 // SHOW [ALL|FULLTEXT|LOOKUP|POINT|RANGE|TEXT|VECTOR] INDEX[ES] [BRIEF|VERBOSE|WHERE clause|YIELD clause]
 case class ShowIndexesCommand(
   indexType: ShowIndexType,
-  verbose: Boolean,
   columns: List[ShowColumn],
   yieldColumns: List[CommandResultItem]
 ) extends Command(columns, yieldColumns) {
@@ -107,109 +125,129 @@ case class ShowIndexesCommand(
       ListMap(relevantIndexes.toSeq.sortBy(_._1.getName): _*)
 
     val zoneId = getConfiguredTimeZone(ctx)
-    def getAsTime(timeInMs: Long) =
-      Values.temporalValue(formatTime(timeInMs, zoneId).toZonedDateTime)
-
     val rows = sortedRelevantIndexes.map {
       case (indexDescriptor: IndexDescriptor, indexInfo: IndexInfo) =>
-        val indexStatus = indexInfo.indexStatus
-
-        val maybeOwningConstraintId = indexDescriptor.getOwningConstraintId
-        val owningConstraint =
-          if (maybeOwningConstraintId.isPresent)
-            constraintIdToName.get(maybeOwningConstraintId.getAsLong)
-              .map(Values.stringValue)
-              .getOrElse(Values.NO_VALUE)
-          else Values.NO_VALUE
-
+        // These don't really have a default/fallback and is used in multiple columns
+        // so let's keep them as is regardless of if they are actually needed or not
         val indexType = indexDescriptor.getIndexType
         val isLookupIndex = indexType.equals(IndexType.LOOKUP)
-
-        val name = indexDescriptor.getName
-
         val entityType = indexDescriptor.schema.entityType
-        val labelsOrTypes = indexInfo.labelsOrTypes
-        val properties = indexInfo.properties
         val providerName = indexDescriptor.getIndexProvider.name
-        val labelsOrTypesValue =
-          if (isLookupIndex) Values.NO_VALUE
-          else VirtualValues.fromList(labelsOrTypes.map(elem => Values.of(elem).asInstanceOf[AnyValue]).asJava)
-        val propertiesValue =
-          if (isLookupIndex) Values.NO_VALUE
-          else VirtualValues.fromList(properties.map(prop => Values.of(prop).asInstanceOf[AnyValue]).asJava)
 
-        val indexStatistics = ctx.getIndexUsageStatistics(indexDescriptor)
-        val trackedSinceKernelValue = indexStatistics.trackedSince()
-        val lastReadKernelValue = indexStatistics.lastRead()
-        val readCountKernelValue = indexStatistics.readCount()
+        val (lastRead, readCount, trackedSince) = getIndexStatistics(ctx, indexDescriptor, zoneId)
 
-        // Interpreting the kernel values into what SHOW INDEXES should return
-        val (lastRead, readCount, trackedSince) =
-          if (trackedSinceKernelValue == 0) {
-            // not tracked at all: all columns null
-            (Values.NO_VALUE, Values.NO_VALUE, Values.NO_VALUE)
-          } else if (lastReadKernelValue == 0) {
-            // tracked but not yet read:
-            // trackedSince should have real value, others default for when tracked but not seen
-            (Values.NO_VALUE, Values.longValue(0L), getAsTime(trackedSinceKernelValue))
-          } else {
-            // all columns have available values
-            (getAsTime(lastReadKernelValue), Values.longValue(readCountKernelValue), getAsTime(trackedSinceKernelValue))
-          }
-
-        val briefResult = Map(
+        requestedColumnsNames.map {
           // The id of the index
-          "id" -> Values.longValue(indexDescriptor.getId),
+          case `idColumn` => idColumn -> Values.longValue(indexDescriptor.getId)
           // Name of the index, for example "myIndex"
-          "name" -> Values.stringValue(name),
+          case `nameColumn` => nameColumn -> Values.stringValue(indexDescriptor.getName)
           // Current state of the index, one of "ONLINE", "FAILED", "POPULATING"
-          "state" -> Values.stringValue(indexStatus.state),
+          case `stateColumn` => stateColumn -> Values.stringValue(indexInfo.indexStatus.state)
           // % of index population, for example 0.0, 100.0, or 75.1
-          "populationPercent" -> Values.doubleValue(indexStatus.populationProgress),
+          case `populationPercentColumn` =>
+            populationPercentColumn -> Values.doubleValue(indexInfo.indexStatus.populationProgress)
           // The IndexType of this index, either "FULLTEXT", "TEXT", "RANGE", "POINT", "VECTOR" or "LOOKUP"
-          "type" -> Values.stringValue(indexType.name),
+          case `typeColumn` => typeColumn -> Values.stringValue(indexType.name)
           // Type of entities this index represents, either "NODE" or "RELATIONSHIP"
-          "entityType" -> Values.stringValue(entityType.name),
+          case `entityTypeColumn` => entityTypeColumn -> Values.stringValue(entityType.name)
           // The labels or relationship types of this constraint, for example ["Label1", "Label2"] or ["RelType1", "RelType2"], null for lookup indexes
-          "labelsOrTypes" -> labelsOrTypesValue,
+          case `labelsOrTypesColumn` =>
+            val labelsOrTypesValue =
+              if (isLookupIndex) Values.NO_VALUE
+              else VirtualValues.fromList(
+                indexInfo.labelsOrTypes.map(elem => Values.of(elem).asInstanceOf[AnyValue]).asJava
+              )
+            labelsOrTypesColumn -> labelsOrTypesValue
           // The properties of this constraint, for example ["propKey", "propKey2"], null for lookup indexes
-          "properties" -> propertiesValue,
+          case `propertiesColumn` =>
+            val propertiesValue =
+              if (isLookupIndex) Values.NO_VALUE
+              else
+                VirtualValues.fromList(indexInfo.properties.map(prop => Values.of(prop).asInstanceOf[AnyValue]).asJava)
+            propertiesColumn -> propertiesValue
           // The index provider for this index, one of "fulltext-1.0", "range-1.0", "point-1.0", "text-1.0", "token-lookup-1.0"
-          "indexProvider" -> Values.stringValue(providerName),
+          case `indexProviderColumn` => indexProviderColumn -> Values.stringValue(providerName)
           // The name of the constraint associated to the index
-          "owningConstraint" -> owningConstraint,
+          case `owningConstraintColumn` =>
+            val maybeOwningConstraintId = indexDescriptor.getOwningConstraintId
+            val owningConstraint =
+              if (maybeOwningConstraintId.isPresent)
+                constraintIdToName.get(maybeOwningConstraintId.getAsLong)
+                  .map(Values.stringValue)
+                  .getOrElse(Values.NO_VALUE)
+              else Values.NO_VALUE
+            owningConstraintColumn -> owningConstraint
           // Last time the index was used for reading
-          "lastRead" -> lastRead,
+          case `lastReadColumn` => lastReadColumn -> lastRead
           // The number of read queries that have been issued to this index
-          "readCount" -> readCount
-        )
-        if (verbose) {
-          val indexConfig = indexDescriptor.getIndexConfig
-          val optionsValue = extractOptionsMap(providerName, indexConfig)
-          briefResult ++ Map(
-            // The time when usage statistics tracking started for this index
-            "trackedSince" -> trackedSince,
-            "options" -> optionsValue,
-            "failureMessage" -> Values.stringValue(indexStatus.failureMessage),
-            "createStatement" -> Values.stringValue(
+          case `readCountColumn` => readCountColumn -> readCount
+          // The time when usage statistics tracking started for this index
+          case `trackedSinceColumn` => trackedSinceColumn -> trackedSince
+          // The options for this index, shows index provider and config
+          case `optionsColumn` =>
+            optionsColumn -> extractOptionsMap(providerName, indexDescriptor.getIndexConfig)
+          // Message of failure should the index be in a failed state
+          case `failureMessageColumn` =>
+            failureMessageColumn -> Values.stringValue(indexInfo.indexStatus.failureMessage)
+          // The statement to recreate the index
+          case `createStatementColumn` =>
+            createStatementColumn -> Values.stringValue(
               createIndexStatement(
-                name,
+                indexDescriptor.getName,
                 indexType,
                 entityType,
-                labelsOrTypes,
-                properties,
+                indexInfo.labelsOrTypes,
+                indexInfo.properties,
                 providerName,
-                indexConfig,
-                indexStatus.maybeConstraint
+                indexDescriptor.getIndexConfig,
+                indexInfo.indexStatus.maybeConstraint
               )
             )
-          )
-        } else {
-          briefResult
-        }
+          case unknown =>
+            // This match should cover all existing columns but we get scala warnings
+            // on non-exhaustive match due to it being string values
+            throw new IllegalStateException(s"Missing case for column: $unknown")
+        }.toMap[String, AnyValue]
     }
     val updatedRows = updateRowsWithPotentiallyRenamedColumns(rows.toList)
     ClosingIterator.apply(updatedRows.iterator)
+  }
+
+  private def getIndexStatistics(
+    ctx: QueryContext,
+    indexDescriptor: IndexDescriptor,
+    zoneId: ZoneId
+  ) = {
+    def getAsTime(timeInMs: Long) =
+      Values.temporalValue(formatTime(timeInMs, zoneId).toZonedDateTime)
+
+    // If we need any of the statistics, fetch all statistics columns
+    if (
+      requestedColumnsNames.contains(lastReadColumn) ||
+      requestedColumnsNames.contains(readCountColumn) ||
+      requestedColumnsNames.contains(trackedSinceColumn)
+    ) {
+      val indexStatistics = ctx.getIndexUsageStatistics(indexDescriptor)
+      val trackedSinceKernelValue = indexStatistics.trackedSince()
+      val lastReadKernelValue = indexStatistics.lastRead()
+
+      // Interpreting the kernel values into what SHOW INDEXES should return
+      if (trackedSinceKernelValue == 0) {
+        // not tracked at all: all columns null
+        (Values.NO_VALUE, Values.NO_VALUE, Values.NO_VALUE)
+      } else if (lastReadKernelValue == 0) {
+        // tracked but not yet read:
+        // trackedSince should have real value, others default for when tracked but not seen
+        (Values.NO_VALUE, Values.longValue(0L), getAsTime(trackedSinceKernelValue))
+      } else {
+        // all columns have available values
+        (
+          getAsTime(lastReadKernelValue),
+          Values.longValue(indexStatistics.readCount()),
+          getAsTime(trackedSinceKernelValue)
+        )
+      }
+    } else (Values.NO_VALUE, Values.NO_VALUE, Values.NO_VALUE)
   }
 
 }

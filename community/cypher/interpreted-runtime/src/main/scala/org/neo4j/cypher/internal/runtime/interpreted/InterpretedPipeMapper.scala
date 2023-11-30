@@ -737,24 +737,24 @@ case class InterpretedPipeMapper(
           indexOrder
         )(id = id)
 
-      case ShowIndexes(indexType, verbose, columns, yields, _) =>
-        CommandPipe(ShowIndexesCommand(indexType, verbose, columns, yields))(id)
+      case ShowIndexes(indexType, columns, yields, _) =>
+        CommandPipe(ShowIndexesCommand(indexType, columns, yields))(id)
 
-      case ShowConstraints(constraintType, verbose, columns, yields, _) =>
-        CommandPipe(ShowConstraintsCommand(constraintType, verbose, columns, yields))(id)
+      case ShowConstraints(constraintType, columns, yields, _) =>
+        CommandPipe(ShowConstraintsCommand(constraintType, columns, yields))(id)
 
-      case ShowProcedures(executableBy, verbose, columns, yields, _) =>
-        CommandPipe(ShowProceduresCommand(executableBy, verbose, columns, yields, isCommunity))(id)
+      case ShowProcedures(executableBy, columns, yields, _) =>
+        CommandPipe(ShowProceduresCommand(executableBy, columns, yields, isCommunity))(id)
 
-      case ShowFunctions(functionType, executableBy, verbose, columns, yields, _) =>
-        CommandPipe(ShowFunctionsCommand(functionType, executableBy, verbose, columns, yields, isCommunity))(id)
+      case ShowFunctions(functionType, executableBy, columns, yields, _) =>
+        CommandPipe(ShowFunctionsCommand(functionType, executableBy, columns, yields, isCommunity))(id)
 
-      case ShowTransactions(ids, verbose, columns, yields, _) =>
+      case ShowTransactions(ids, columns, yields, _) =>
         val newIds = ids match {
           case Right(e) => Right(buildExpression(e))
           case Left(l)  => Left(l)
         }
-        CommandPipe(ShowTransactionsCommand(newIds, verbose, columns, yields))(id)
+        CommandPipe(ShowTransactionsCommand(newIds, columns, yields))(id)
 
       case TerminateTransactions(ids, columns, yields, _) =>
         val newIds = ids match {
@@ -763,12 +763,12 @@ case class InterpretedPipeMapper(
         }
         CommandPipe(TerminateTransactionsCommand(newIds, columns, yields))(id)
 
-      case ShowSettings(names, verbose, columns, yields, _) =>
+      case ShowSettings(names, columns, yields, _) =>
         val newNames = names match {
           case Right(e) => Right(buildExpression(e))
           case Left(l)  => Left(l)
         }
-        CommandPipe(ShowSettingsCommand(newNames, verbose, columns, yields))(id)
+        CommandPipe(ShowSettingsCommand(newNames, columns, yields))(id)
 
       // Currently used for testing only
       case MultiNodeIndexSeek(indexLeafPlans) =>

@@ -2074,7 +2074,6 @@ case class LogicalPlanProducer(
       case s: ShowIndexesClause =>
         ShowIndexes(
           s.indexType,
-          s.unfilteredColumns.useAllColumns,
           s.unfilteredColumns.columns,
           s.yieldItems,
           s.yieldAll
@@ -2082,7 +2081,6 @@ case class LogicalPlanProducer(
       case s: ShowConstraintsClause =>
         ShowConstraints(
           s.constraintType,
-          s.unfilteredColumns.useAllColumns,
           s.unfilteredColumns.columns,
           s.yieldItems,
           s.yieldAll
@@ -2090,7 +2088,6 @@ case class LogicalPlanProducer(
       case s: ShowProceduresClause =>
         ShowProcedures(
           s.executable,
-          s.unfilteredColumns.useAllColumns,
           s.unfilteredColumns.columns,
           s.yieldItems,
           s.yieldAll
@@ -2099,7 +2096,6 @@ case class LogicalPlanProducer(
         ShowFunctions(
           s.functionType,
           s.executable,
-          s.unfilteredColumns.useAllColumns,
           s.unfilteredColumns.columns,
           s.yieldItems,
           s.yieldAll
@@ -2107,7 +2103,6 @@ case class LogicalPlanProducer(
       case s: ShowTransactionsClause =>
         ShowTransactions(
           s.names,
-          s.unfilteredColumns.useAllColumns,
           s.unfilteredColumns.columns,
           s.yieldItems,
           s.yieldAll
@@ -2115,7 +2110,7 @@ case class LogicalPlanProducer(
       case s: TerminateTransactionsClause =>
         TerminateTransactions(s.names, s.unfilteredColumns.columns, s.yieldItems, s.yieldAll)
       case s: ShowSettingsClause =>
-        ShowSettings(s.names, s.unfilteredColumns.useAllColumns, s.unfilteredColumns.columns, s.yieldItems, s.yieldAll)
+        ShowSettings(s.names, s.unfilteredColumns.columns, s.yieldItems, s.yieldAll)
     }
     val annotatedPlan = annotate(plan, solved, ProvidedOrder.empty, context)
 
