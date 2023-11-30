@@ -296,7 +296,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
     PartitionedPredicates(predicatesForIRExpressions.toMap, predicatesToKeep.toSet)
   }
 
-  private def validAggregations(aggregations: Map[String, Expression]): Boolean = {
+  private def validAggregations(aggregations: Map[LogicalVariable, Expression]): Boolean = {
     aggregations.isEmpty ||
     aggregations.values.forall {
       case func: FunctionInvocation => func.distinct

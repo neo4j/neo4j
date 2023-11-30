@@ -63,7 +63,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
   test("setting a node property: MATCH (n) SET n.prop = 42 RETURN n") {
     val query = buildSinglePlannerQuery("MATCH (n) SET n.prop = 42 RETURN n")
     query.horizon should equal(RegularQueryProjection(
-      projections = Map("n" -> varFor("n")),
+      projections = Map(v"n" -> varFor("n")),
       isTerminating = true
     ))
 
@@ -76,7 +76,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
   test("removing a node property should look like setting a property to null") {
     val query = buildSinglePlannerQuery("MATCH (n) REMOVE n.prop RETURN n")
     query.horizon should equal(RegularQueryProjection(
-      projections = Map("n" -> varFor("n")),
+      projections = Map(v"n" -> varFor("n")),
       isTerminating = true
     ))
 
@@ -89,7 +89,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
   test("setting a relationship property: MATCH (a)-[r]->(b) SET r.prop = 42 RETURN r") {
     val query = buildSinglePlannerQuery("MATCH (a)-[r]->(b) SET r.prop = 42 RETURN r")
     query.horizon should equal(RegularQueryProjection(
-      projections = Map("r" -> varFor("r")),
+      projections = Map(v"r" -> varFor("r")),
       isTerminating = true
     ))
 
@@ -104,7 +104,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
   test("removing a relationship property should look like setting a property to null") {
     val query = buildSinglePlannerQuery("MATCH (a)-[r]->(b) REMOVE r.prop RETURN r")
     query.horizon should equal(RegularQueryProjection(
-      projections = Map("r" -> varFor("r")),
+      projections = Map(v"r" -> varFor("r")),
       isTerminating = true
     ))
 
@@ -119,7 +119,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
   test("Query with single CREATE clause") {
     val query = buildSinglePlannerQuery("CREATE (a), (b), (a)-[r:X]->(b) RETURN a, r, b")
     query.horizon should equal(RegularQueryProjection(
-      projections = Map("a" -> varFor("a"), "r" -> varFor("r"), "b" -> varFor("b")),
+      projections = Map(v"a" -> varFor("a"), v"r" -> varFor("r"), v"b" -> varFor("b")),
       isTerminating = true
     ))
 
@@ -135,7 +135,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
   test("Read write and read again") {
     val query = buildSinglePlannerQuery("MATCH (n) CREATE (m) WITH * MATCH (o) RETURN *")
     query.horizon should equal(RegularQueryProjection(
-      projections = Map("n" -> varFor("n"), "m" -> varFor("m"))
+      projections = Map(v"n" -> varFor("n"), v"m" -> varFor("m"))
     ))
 
     query.queryGraph.patternNodes should equal(Set("n"))
@@ -149,7 +149,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
 
   test("Unwind, read write and read again") {
     val query = buildSinglePlannerQuery("UNWIND [1] as i MATCH (n) CREATE (m) WITH * MATCH (o) RETURN *")
-    query.horizon should equal(UnwindProjection("i", listOfInt(1)))
+    query.horizon should equal(UnwindProjection(v"i", listOfInt(1)))
     query.queryGraph.isEmpty shouldBe true
 
     val second = query.tail.get
@@ -267,7 +267,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
           )
         ),
         horizon = RegularQueryProjection(
-          projections = Map("m" -> varFor("m"))
+          projections = Map(v"m" -> varFor("m"))
         )
       )
     )
@@ -354,7 +354,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
           CreateRelationship(varFor("r3"), varFor("v"), relTypeName("R"), varFor("x"), OUTGOING, None)
         )))
 
-    val projection = RegularQueryProjection(projections = Map("x" -> varFor("x")), isTerminating = true)
+    val projection = RegularQueryProjection(projections = Map(v"x" -> varFor("x")), isTerminating = true)
 
     query shouldEqual RegularSinglePlannerQuery(queryGraph = queryGraph, horizon = projection)
   }

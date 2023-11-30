@@ -38,13 +38,13 @@ object distinct {
 
     val solver = SubqueryExpressionSolver.solverFor(plan, context)
     val groupingExpressionsMap = distinctQueryProjection.groupingExpressions.map { case (k, v) =>
-      (k, solver.solve(v, Some(k)))
+      (k, solver.solve(v, Some(k.name)))
     }
     val rewrittenPlan = solver.rewrittenPlan()
 
     val inputProvidedOrder = context.staticComponents.planningAttributes.providedOrders(plan.id)
     val OrderToLeverageWithAliases(orderToLeverage, newGroupingExpressionsMap) =
-      leverageOrder(inputProvidedOrder, groupingExpressionsMap, plan.availableSymbols.map(_.name))
+      leverageOrder(inputProvidedOrder, groupingExpressionsMap, plan.availableSymbols)
 
     val previousDistinctness = rewrittenPlan.distinctness
 
@@ -52,7 +52,7 @@ object distinct {
     // then we do not need to plan a Distinct.
     if (previousDistinctness.covers(newGroupingExpressionsMap.values)) {
       val projections =
-        projection.filterOutEmptyProjections(newGroupingExpressionsMap, rewrittenPlan.availableSymbols.map(_.name))
+        projection.filterOutEmptyProjections(newGroupingExpressionsMap, rewrittenPlan.availableSymbols)
 
       if (projections.isEmpty) {
         context.staticComponents.logicalPlanProducer.planEmptyDistinct(

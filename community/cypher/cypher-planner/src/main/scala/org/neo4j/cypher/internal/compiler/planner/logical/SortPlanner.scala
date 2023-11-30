@@ -195,7 +195,7 @@ object SortPlanner {
       val projectionsToMarkSolved = projections.filter(_._2 match {
         case IsAggregate(_) => false
         case _              => true
-      }).map { case (k, v) => (k.name, v) }
+      })
       if (projectionsToMarkSolved.nonEmpty && projectionDeps.forall(e => plan.availableSymbols.contains(e))) {
         val keepAllColumns = if (updateSolved) Some(projectionsToMarkSolved) else None
         projection(plan, projectionsToMarkSolved, keepAllColumns, context)

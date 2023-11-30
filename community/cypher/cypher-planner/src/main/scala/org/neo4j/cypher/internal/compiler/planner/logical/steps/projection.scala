@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.ir.QueryProjection
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
@@ -30,17 +30,17 @@ object projection {
 
   def apply(
     in: LogicalPlan,
-    projectionsToPlan: Map[String, Expression],
-    projectionsToMarkSolved: Option[Map[String, Expression]],
+    projectionsToPlan: Map[LogicalVariable, Expression],
+    projectionsToMarkSolved: Option[Map[LogicalVariable, Expression]],
     context: LogicalPlanningContext
   ): LogicalPlan = {
     val stillToSolveProjection =
       projectionsLeft(in, projectionsToPlan, context.staticComponents.planningAttributes.solveds)
     val solver = SubqueryExpressionSolver.solverFor(in, context)
-    val projectionsMap = stillToSolveProjection.map { case (k, v) => (k, solver.solve(v, Some(k))) }
+    val projectionsMap = stillToSolveProjection.map { case (k, v) => (k, solver.solve(v, Some(k.name))) }
     val plan = solver.rewrittenPlan()
 
-    val ids = plan.availableSymbols.map(_.name)
+    val ids = plan.availableSymbols
 
     // The projections that are not covered yet
     val projectionsDiff = filterOutEmptyProjections(projectionsMap, ids)
@@ -63,12 +63,12 @@ object projection {
    * filter out projections that simple project an available symbol without renaming it.
    */
   def filterOutEmptyProjections(
-    projections: Map[String, Expression],
-    availableSymbols: Set[String]
-  ): Map[String, Expression] = {
+    projections: Map[LogicalVariable, Expression],
+    availableSymbols: Set[LogicalVariable]
+  ): Map[LogicalVariable, Expression] = {
     projections.filter({
-      case (x, Variable(y)) if x == y => !availableSymbols.contains(x)
-      case _                          => true
+      case (x, y) if x == y => !availableSymbols.contains(x)
+      case _                => true
     })
   }
 
@@ -77,14 +77,14 @@ object projection {
    */
   private def projectionsLeft(
     in: LogicalPlan,
-    projectionsToPlan: Map[String, Expression],
+    projectionsToPlan: Map[LogicalVariable, Expression],
     solveds: Solveds
-  ): Map[String, Expression] = {
+  ): Map[LogicalVariable, Expression] = {
     // if we had a previous projection it might have projected something already
     // we only want to project what's left from that previous projection
     val alreadySolvedProjections = solveds.get(in.id).asSinglePlannerQuery.tailOrSelf.horizon match {
       case solvedProjection: QueryProjection => solvedProjection.projections
-      case _                                 => Map.empty[String, Expression]
+      case _                                 => Map.empty[LogicalVariable, Expression]
     }
     projectionsToPlan -- alreadySolvedProjections.keys
   }

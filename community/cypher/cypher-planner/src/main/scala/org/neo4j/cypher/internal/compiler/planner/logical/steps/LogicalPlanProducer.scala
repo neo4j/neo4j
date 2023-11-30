@@ -1825,7 +1825,7 @@ case class LogicalPlanProducer(
   def planEmptyProjection(inner: LogicalPlan, context: LogicalPlanningContext): LogicalPlan =
     annotate(EmptyResult(inner), solveds.get(inner.id), ProvidedOrder.empty, context)
 
-  def planStarProjection(inner: LogicalPlan, reported: Option[Map[String, Expression]]): LogicalPlan = {
+  def planStarProjection(inner: LogicalPlan, reported: Option[Map[LogicalVariable, Expression]]): LogicalPlan = {
     reported.fold(inner) { reported =>
       val newSolved: SinglePlannerQuery = solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(
         _.updateQueryProjection(_.withAddedProjections(reported))
@@ -1844,8 +1844,8 @@ case class LogicalPlanProducer(
    */
   def planRegularProjection(
     inner: LogicalPlan,
-    expressions: Map[String, Expression],
-    reported: Option[Map[String, Expression]],
+    expressions: Map[LogicalVariable, Expression],
+    reported: Option[Map[LogicalVariable, Expression]],
     context: LogicalPlanningContext
   ): LogicalPlan = {
     val innerSolved: SinglePlannerQuery = solveds.get(inner.id).asSinglePlannerQuery
@@ -1864,10 +1864,10 @@ case class LogicalPlanProducer(
    */
   def planAggregation(
     left: LogicalPlan,
-    grouping: Map[String, Expression],
-    aggregation: Map[String, Expression],
-    reportedGrouping: Map[String, Expression],
-    reportedAggregation: Map[String, Expression],
+    grouping: Map[LogicalVariable, Expression],
+    aggregation: Map[LogicalVariable, Expression],
+    reportedGrouping: Map[LogicalVariable, Expression],
+    reportedAggregation: Map[LogicalVariable, Expression],
     previousInterestingOrder: Option[InterestingOrder],
     context: LogicalPlanningContext
   ): LogicalPlan = {
@@ -1878,11 +1878,7 @@ case class LogicalPlanProducer(
     val trimmedAndRenamed = trimAndRenameProvidedOrder(providedOrders.get(left.id), grouping)
 
     val plan = annotate(
-      Aggregation(
-        left,
-        grouping.map { case (key, value) => varFor(key) -> value },
-        aggregation.map { case (key, value) => varFor(key) -> value }
-      ),
+      Aggregation(left, grouping, aggregation),
       solved,
       context.providedOrderFactory.providedOrder(trimmedAndRenamed, ProvidedOrder.Left),
       context
@@ -1903,11 +1899,11 @@ case class LogicalPlanProducer(
 
   def planOrderedAggregation(
     left: LogicalPlan,
-    grouping: Map[String, Expression],
-    aggregation: Map[String, Expression],
+    grouping: Map[LogicalVariable, Expression],
+    aggregation: Map[LogicalVariable, Expression],
     orderToLeverage: Seq[Expression],
-    reportedGrouping: Map[String, Expression],
-    reportedAggregation: Map[String, Expression],
+    reportedGrouping: Map[LogicalVariable, Expression],
+    reportedAggregation: Map[LogicalVariable, Expression],
     context: LogicalPlanningContext
   ): LogicalPlan = {
     val solved = solveds.get(left.id).asSinglePlannerQuery.updateTailOrSelf(_.withHorizon(
@@ -1917,12 +1913,7 @@ case class LogicalPlanProducer(
     val trimmedAndRenamed = trimAndRenameProvidedOrder(providedOrders.get(left.id), grouping)
 
     val plan = annotate(
-      OrderedAggregation(
-        left,
-        grouping.map { case (key, value) => varFor(key) -> value },
-        aggregation.map { case (key, value) => varFor(key) -> value },
-        orderToLeverage
-      ),
+      OrderedAggregation(left, grouping, aggregation, orderToLeverage),
       solved,
       context.providedOrderFactory.providedOrder(trimmedAndRenamed, ProvidedOrder.Left),
       context
@@ -2000,14 +1991,14 @@ case class LogicalPlanProducer(
 
   def planLoadCSV(
     inner: LogicalPlan,
-    variableName: String,
+    variable: LogicalVariable,
     url: Expression,
     format: CSVFormat,
     fieldTerminator: Option[StringLiteral],
     context: LogicalPlanningContext
   ): LogicalPlan = {
     val solved = solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.withHorizon(LoadCSVProjection(
-      variableName,
+      variable,
       url,
       format,
       fieldTerminator
@@ -2017,7 +2008,7 @@ case class LogicalPlanProducer(
       LoadCSV(
         rewrittenInner,
         rewrittenUrl,
-        varFor(variableName),
+        variable,
         format,
         fieldTerminator.map(_.value),
         context.settings.legacyCsvQuoteEscaping,
@@ -2036,15 +2027,15 @@ case class LogicalPlanProducer(
 
   def planUnwind(
     inner: LogicalPlan,
-    name: String,
+    variable: LogicalVariable,
     expression: Expression,
     context: LogicalPlanningContext
   ): LogicalPlan = {
     val solved =
-      solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.withHorizon(UnwindProjection(name, expression)))
+      solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.withHorizon(UnwindProjection(variable, expression)))
     val (rewrittenExpression, rewrittenInner) = SubqueryExpressionSolver.ForSingle.solve(inner, expression, context)
     annotate(
-      UnwindCollection(rewrittenInner, varFor(name), rewrittenExpression),
+      UnwindCollection(rewrittenInner, variable, rewrittenExpression),
       solved,
       providedOrders.get(rewrittenInner.id).fromLeft,
       context
@@ -2203,8 +2194,8 @@ case class LogicalPlanProducer(
 
   def planLimitForAggregation(
     inner: LogicalPlan,
-    reportedGrouping: Map[String, Expression],
-    reportedAggregation: Map[String, Expression],
+    reportedGrouping: Map[LogicalVariable, Expression],
+    reportedAggregation: Map[LogicalVariable, Expression],
     interestingOrder: InterestingOrder,
     context: LogicalPlanningContext
   ): LogicalPlan = {
@@ -2416,11 +2407,11 @@ case class LogicalPlanProducer(
 
   def planProjectionForUnionMapping(
     inner: LogicalPlan,
-    expressions: Map[String, Expression],
+    expressions: Map[LogicalVariable, Expression],
     context: LogicalPlanningContext
   ): LogicalPlan = {
     annotate(
-      Projection(inner, expressions.map { case (key, value) => varFor(key) -> value }),
+      Projection(inner, expressions),
       solveds.get(inner.id),
       providedOrders.get(inner.id).fromLeft,
       context
@@ -2511,8 +2502,8 @@ case class LogicalPlanProducer(
    */
   def planDistinct(
     left: LogicalPlan,
-    expressions: Map[String, Expression],
-    reported: Map[String, Expression],
+    expressions: Map[LogicalVariable, Expression],
+    reported: Map[LogicalVariable, Expression],
     context: LogicalPlanningContext
   ): LogicalPlan = {
     val solved: SinglePlannerQuery =
@@ -2522,7 +2513,7 @@ case class LogicalPlanProducer(
     val columnsWithRenames = renameProvidedOrderColumns(providedOrders.get(left.id).columns, expressions)
     val providedOrder = context.providedOrderFactory.providedOrder(columnsWithRenames, ProvidedOrder.Left)
     annotate(
-      Distinct(left, expressions.map { case (key, value) => varFor(key) -> value }),
+      Distinct(left, expressions),
       solved,
       providedOrder,
       context
@@ -2535,7 +2526,7 @@ case class LogicalPlanProducer(
    */
   def planEmptyDistinct(
     left: LogicalPlan,
-    reported: Map[String, Expression],
+    reported: Map[LogicalVariable, Expression],
     context: LogicalPlanningContext
   ): LogicalPlan = {
 
@@ -2568,8 +2559,8 @@ case class LogicalPlanProducer(
    */
   def planProjectionForDistinct(
     left: LogicalPlan,
-    expressions: Map[String, Expression],
-    reported: Map[String, Expression],
+    expressions: Map[LogicalVariable, Expression],
+    reported: Map[LogicalVariable, Expression],
     context: LogicalPlanningContext
   ): LogicalPlan = {
     val solved: SinglePlannerQuery =
@@ -2587,9 +2578,9 @@ case class LogicalPlanProducer(
    */
   def planOrderedDistinct(
     left: LogicalPlan,
-    expressions: Map[String, Expression],
+    expressions: Map[LogicalVariable, Expression],
     orderToLeverage: Seq[Expression],
-    reported: Map[String, Expression],
+    reported: Map[LogicalVariable, Expression],
     context: LogicalPlanningContext
   ): LogicalPlan = {
     val solved: SinglePlannerQuery =
@@ -2599,7 +2590,7 @@ case class LogicalPlanProducer(
     val columnsWithRenames = renameProvidedOrderColumns(providedOrders.get(left.id).columns, expressions)
     val providedOrder = context.providedOrderFactory.providedOrder(columnsWithRenames, ProvidedOrder.Left)
     val plan = annotate(
-      OrderedDistinct(left, expressions.map { case (key, value) => varFor(key) -> value }, orderToLeverage),
+      OrderedDistinct(left, expressions, orderToLeverage),
       solved,
       providedOrder,
       context
@@ -3202,14 +3193,14 @@ case class LogicalPlanProducer(
 
   private def planRegularProjectionHelper(
     inner: LogicalPlan,
-    expressions: Map[String, Expression],
+    expressions: Map[LogicalVariable, Expression],
     context: LogicalPlanningContext,
     solved: SinglePlannerQuery
   ) = {
     val columnsWithRenames = renameProvidedOrderColumns(providedOrders.get(inner.id).columns, expressions)
     val providedOrder = context.providedOrderFactory.providedOrder(columnsWithRenames, ProvidedOrder.Left)
     annotate(
-      Projection(inner, expressions.map { case (key, value) => varFor(key) -> value }),
+      Projection(inner, expressions),
       solved,
       providedOrder,
       context
@@ -3233,48 +3224,48 @@ case class LogicalPlanProducer(
    */
   private def renameProvidedOrderColumns(
     columns: Seq[ordering.ColumnOrder],
-    projectExpressions: Map[String, Expression]
+    projectExpressions: Map[LogicalVariable, Expression]
   ): Seq[ordering.ColumnOrder] = {
     columns.map {
-      case columnOrder @ ordering.ColumnOrder(e @ Property(v @ Variable(varName), p @ PropertyKeyName(propName))) =>
+      case columnOrder @ ordering.ColumnOrder(e @ Property(v: Variable, p @ PropertyKeyName(propName))) =>
         projectExpressions.collectFirst {
           case (
-              newName,
-              Property(Variable(`varName`), PropertyKeyName(`propName`)) | CachedProperty(
-                Variable(`varName`),
+              newVar,
+              Property(`v`, PropertyKeyName(`propName`)) | CachedProperty(
+                `v`,
                 _,
                 PropertyKeyName(`propName`),
                 _,
                 _
               )
             ) =>
-            ordering.ColumnOrder(Variable(newName)(v.position), columnOrder.isAscending)
-          case (newName, Variable(`varName`)) =>
+            ordering.ColumnOrder(newVar, columnOrder.isAscending)
+          case (newVar, `v`) =>
             ordering.ColumnOrder(
-              Property(Variable(newName)(v.position), PropertyKeyName(propName)(p.position))(e.position),
+              Property(newVar, PropertyKeyName(propName)(p.position))(e.position),
               columnOrder.isAscending
             )
         }.getOrElse(columnOrder)
       case columnOrder @ ordering.ColumnOrder(expression) =>
         projectExpressions.collectFirst {
-          case (newName, `expression`) =>
-            ordering.ColumnOrder(Variable(newName)(expression.position), columnOrder.isAscending)
+          case (newVar, `expression`) =>
+            ordering.ColumnOrder(newVar, columnOrder.isAscending)
         }.getOrElse(columnOrder)
     }
   }
 
   private def trimAndRenameProvidedOrder(
     providedOrder: ProvidedOrder,
-    grouping: Map[String, Expression]
+    grouping: Map[LogicalVariable, Expression]
   ): Seq[ordering.ColumnOrder] = {
     // Trim provided order for each sort column, if it is a non-grouping column
     val trimmed = providedOrder.columns.takeWhile {
-      case ordering.ColumnOrder(Property(Variable(varName), PropertyKeyName(propName))) =>
+      case ordering.ColumnOrder(Property(v: Variable, PropertyKeyName(propName))) =>
         grouping.values.exists {
-          case CachedProperty(Variable(`varName`), _, PropertyKeyName(`propName`), _, _)    => true
-          case CachedHasProperty(Variable(`varName`), _, PropertyKeyName(`propName`), _, _) => true
-          case Property(Variable(`varName`), PropertyKeyName(`propName`))                   => true
-          case _                                                                            => false
+          case CachedProperty(`v`, _, PropertyKeyName(`propName`), _, _)    => true
+          case CachedHasProperty(`v`, _, PropertyKeyName(`propName`), _, _) => true
+          case Property(`v`, PropertyKeyName(`propName`))                   => true
+          case _                                                            => false
         }
       case ordering.ColumnOrder(expression) =>
         grouping.values.exists {

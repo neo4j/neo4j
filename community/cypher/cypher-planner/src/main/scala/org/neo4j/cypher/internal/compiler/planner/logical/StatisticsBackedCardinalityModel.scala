@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.IntegerLiteral
 import org.neo4j.cypher.internal.expressions.ListLiteral
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.ir.AbstractProcedureCallProjection
 import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
@@ -314,7 +315,7 @@ object StatisticsBackedCardinalityModel {
       copy(relTypeInfo = relTypeInfo ++ newRelTypeInfo)
   }
 
-  def aggregateCardinalityEstimation(in: Cardinality, groupingExpressions: Map[String, Expression]): Cardinality =
+  def aggregateCardinalityEstimation(in: Cardinality, groupingExpressions: Map[LogicalVariable, Expression]): Cardinality =
     if (groupingExpressions.isEmpty)
       Cardinality.SINGLE
     else

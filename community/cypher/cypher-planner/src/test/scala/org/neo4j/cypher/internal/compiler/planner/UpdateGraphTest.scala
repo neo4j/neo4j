@@ -591,12 +591,12 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
     val innerQg2 = QueryGraph(patternNodes = Set("b"))
     val horizon = RegularQueryProjection(
       Map(
-        "a" -> ExistsIRExpression(RegularSinglePlannerQuery(innerQg1), varFor(""), "")(
+        v"a" -> ExistsIRExpression(RegularSinglePlannerQuery(innerQg1), varFor(""), "")(
           pos,
           Some(Set.empty),
           Some(Set.empty)
         ),
-        "b" -> ListIRExpression(RegularSinglePlannerQuery(innerQg2), varFor(""), varFor(""), "")(
+        v"b" -> ListIRExpression(RegularSinglePlannerQuery(innerQg2), varFor(""), varFor(""), "")(
           pos,
           Some(Set.empty),
           Some(Set.empty)

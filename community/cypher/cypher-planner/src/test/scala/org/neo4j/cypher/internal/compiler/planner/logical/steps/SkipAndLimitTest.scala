@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
@@ -139,7 +140,7 @@ class SkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   private def regularProjection(skip: Option[Expression] = None, limit: Option[Expression] = None) =
-    RegularQueryProjection(projections = Map("n" -> varFor("n")), queryPagination = QueryPagination(skip, limit))
+    RegularQueryProjection(projections = Map(v"n" -> varFor("n")), queryPagination = QueryPagination(skip, limit))
 
   private def solved(patternNodes: String*): SinglePlannerQuery =
     RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes(patternNodes: _*))

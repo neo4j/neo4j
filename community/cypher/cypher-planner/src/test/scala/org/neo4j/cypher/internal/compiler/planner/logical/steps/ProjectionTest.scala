@@ -20,11 +20,13 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.ast.ASTAnnotationMap.ASTAnnotationMap
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.ast.semantics.ExpressionTypeInfo
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularQueryProjection
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
@@ -36,7 +38,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("should add projection for expressions not already covered") {
     // given
-    val projections = Map("42" -> literalInt(42))
+    val projections = Map[LogicalVariable, Expression](v"42" -> literalInt(42))
 
     val (context, startPlan) = queryGraphWith(projectionsMap = projections)
 
@@ -44,7 +46,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val result = projection(startPlan, projections, Some(projections), context)
 
     // then
-    result should equal(Projection(startPlan, projections.map { case (key, value) => varFor(key) -> value }))
+    result should equal(Projection(startPlan, projections))
     context.staticComponents.planningAttributes.solveds.get(result.id).asSinglePlannerQuery.horizon should equal(
       RegularQueryProjection(projections)
     )
@@ -52,8 +54,8 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("should mark as solved according to projectionsToMarkSolved argument") {
     // given
-    val projections = Map("42" -> literalInt(42), "43" -> literalInt(43))
-    val projectionsToMarkSolved = Map("42" -> literalInt(42))
+    val projections = Map[LogicalVariable, Expression](v"42" -> literalInt(42), v"43" -> literalInt(43))
+    val projectionsToMarkSolved = Map[LogicalVariable, Expression](v"42" -> literalInt(42))
 
     val (context, startPlan) = queryGraphWith(projectionsMap = projections)
 
@@ -61,7 +63,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val result = projection(startPlan, projections, Some(projectionsToMarkSolved), context)
 
     // then
-    result should equal(Projection(startPlan, projections.map { case (key, value) => varFor(key) -> value }))
+    result should equal(Projection(startPlan, projections))
     context.staticComponents.planningAttributes.solveds.get(result.id).asSinglePlannerQuery.horizon should equal(
       RegularQueryProjection(projectionsToMarkSolved)
     )
@@ -69,7 +71,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("does not add projection when not needed") {
     // given
-    val projections = Map("n" -> varFor("n"))
+    val projections = Map[LogicalVariable, Expression](v"n" -> varFor("n"))
     val (context, startPlan) = queryGraphWith(projectionsMap = projections)
 
     // when
@@ -84,17 +86,15 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("only adds the set difference of projections needed") {
     // given
-    val projections = Map("n" -> varFor("n"), "42" -> literalInt(42))
+    val projections = Map[LogicalVariable, Expression](v"n" -> varFor("n"), v"42" -> literalInt(42))
     val (context, startPlan) = queryGraphWith(projectionsMap = projections)
 
     // when
     val result = projection(startPlan, projections, Some(projections), context)
 
-    // then
-    val actualProjections = Map("42" -> literalInt(42))
     result should equal(Projection(
       startPlan,
-      actualProjections.map { case (key, value) => varFor(key) -> value }
+      Map(v"42" -> literalInt(42))
     ))
     context.staticComponents.planningAttributes.solveds.get(result.id).asSinglePlannerQuery.horizon should equal(
       RegularQueryProjection(projections)
@@ -103,26 +103,27 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("does projection when renaming columns") {
     // given
-    val projections = Map("  n@34" -> varFor("n"))
+    val projections = Map[LogicalVariable, Expression](v"  n@34" -> varFor("n"))
     val (context, startPlan) = queryGraphWith(projectionsMap = projections)
 
     // when
     val result = projection(startPlan, projections, Some(projections), context)
 
     // then
-    result should equal(Projection(startPlan, projections.map { case (key, value) => varFor(key) -> value }))
+    result should equal(Projection(startPlan, projections))
     context.staticComponents.planningAttributes.solveds.get(result.id).asSinglePlannerQuery.horizon should equal(
       RegularQueryProjection(projections)
     )
   }
 
-  private def queryGraphWith(projectionsMap: Map[String, Expression]): (LogicalPlanningContext, LogicalPlan) = {
+  private def queryGraphWith(projectionsMap: Map[LogicalVariable, Expression])
+    : (LogicalPlanningContext, LogicalPlan) = {
     val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext(),
       semanticTable = new SemanticTable(types = mock[ASTAnnotationMap[Expression, ExpressionTypeInfo]])
     )
 
-    val ids = projectionsMap.keySet
+    val ids = projectionsMap.keySet.map(_.name)
 
     val plan =
       newMockedLogicalPlanWithSolved(

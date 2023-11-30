@@ -396,7 +396,7 @@ class QgWithLeafInfoTest extends CypherFunSuite with AstConstructionTestSupport 
     val irExp = ExistsIRExpression(
       RegularSinglePlannerQuery(
         horizon = RegularQueryProjection(Map(
-          "x" -> MapExpression(Seq(propName("prop") -> literalInt(5)))(pos)
+          v"x" -> MapExpression(Seq(propName("prop") -> literalInt(5)))(pos)
         ))
       ),
       varFor(""),
@@ -430,7 +430,7 @@ class QgWithLeafInfoTest extends CypherFunSuite with AstConstructionTestSupport 
     val irExp = ListIRExpression(
       RegularSinglePlannerQuery(
         horizon = RegularQueryProjection(Map(
-          "x" -> MapExpression(Seq(propName("prop") -> literalInt(5)))(pos)
+          v"x" -> MapExpression(Seq(propName("prop") -> literalInt(5)))(pos)
         ))
       ),
       varFor(""),

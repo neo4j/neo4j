@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Asc
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Desc
@@ -29,7 +30,7 @@ object leverageOrder {
 
   final case class OrderToLeverageWithAliases(
     orderToLeverage: Seq[Expression],
-    groupingExpressionsMap: Map[String, Expression]
+    groupingExpressionsMap: Map[LogicalVariable, Expression]
   )
 
   /**
@@ -44,12 +45,12 @@ object leverageOrder {
    */
   def apply(
     inputProvidedOrder: ProvidedOrder,
-    groupingExpressionsMap: Map[String, Expression],
-    availableSymbols: Set[String]
+    groupingExpressionsMap: Map[LogicalVariable, Expression],
+    availableSymbols: Set[LogicalVariable]
   ): OrderToLeverageWithAliases = {
     // Collect aliases for all grouping expressions which project a variable that is already an available symbol
-    val aliasMap: Map[Expression, Variable] = groupingExpressionsMap.collect {
-      case (k, expr) if availableSymbols.contains(k) => (expr, Variable(k)(expr.position))
+    val aliasMap: Map[Expression, LogicalVariable] = groupingExpressionsMap.collect {
+      case (k, expr) if availableSymbols.contains(k) => (expr, k)
     }
 
     // When we can read variables instead of expressions in distinct, we should do that.
@@ -63,7 +64,7 @@ object leverageOrder {
 
       val aliasesForProvidedOrder = {
         val newGroupingVariablesAliases = newGroupingExpressionsMap.collect {
-          case (k, v: Variable) if availableSymbols.contains(k) => (Variable(k)(v.position), v)
+          case (k, v: Variable) if availableSymbols.contains(k) => (k, v)
         }
         aliasMap ++ newGroupingVariablesAliases
       }

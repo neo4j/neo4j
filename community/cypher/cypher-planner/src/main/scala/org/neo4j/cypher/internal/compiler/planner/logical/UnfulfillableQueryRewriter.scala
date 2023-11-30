@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.expressions.False
 import org.neo4j.cypher.internal.expressions.Null
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.Transformer
@@ -62,7 +63,7 @@ case object UnfulfillableQueryRewriter extends PlannerQueryRewriter with StepSeq
         )
         val projectionMap = queryGraph.allCoveredIds
           .filter(!queryGraph.argumentIds(_))
-          .map(id => id -> Null()(InputPosition.NONE)).toMap
+          .map(id => varFor(id) -> Null()(InputPosition.NONE)).toMap
         val projection = RegularQueryProjection(
           projectionMap,
           queryPagination = QueryPagination(limit = Some(SignedDecimalIntegerLiteral("0")(InputPosition.NONE)))

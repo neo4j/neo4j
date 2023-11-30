@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.limit
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.ProcedureCallProjection
 import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults
@@ -511,7 +512,7 @@ class LimitSelectivityTest extends CypherFunSuite with LogicalPlanningTestSuppor
     }.withLogicalPlanningContext { (_, context) =>
       val query = RegularSinglePlannerQuery(
         queryGraph = QueryGraph(patternNodes = Set("n")),
-        horizon = AggregatingQueryProjection(Map.empty, Map("c" -> countStar())),
+        horizon = AggregatingQueryProjection(Map.empty, Map(v"c" -> countStar())),
         tail = Some(RegularSinglePlannerQuery(
           queryGraph = QueryGraph(patternNodes = Set("m"), argumentIds = Set("c")),
           horizon = RegularQueryProjection(queryPagination = QueryPagination(limit = Some(literalInt(limit))))

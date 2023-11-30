@@ -206,7 +206,7 @@ class SelectSubQueryPredicatesTest extends CypherFunSuite with LogicalPlanningTe
 
     val subQuery = RegularSinglePlannerQuery(
       queryGraph = subQueryGraph,
-      horizon = RegularQueryProjection(Map("item" -> literalInt(1)))
+      horizon = RegularQueryProjection(Map(v"item" -> literalInt(1)))
     )
 
     val listIRExpression = ListIRExpression(

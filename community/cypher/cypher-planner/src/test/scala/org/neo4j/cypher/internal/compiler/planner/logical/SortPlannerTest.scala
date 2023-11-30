@@ -253,7 +253,7 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
       sortedPlan should equal(Some(sorted))
       context.staticComponents.planningAttributes.solveds.get(sortedPlan.get.id) should equal(
-        RegularSinglePlannerQuery(interestingOrder = io, horizon = RegularQueryProjection(Map("a" -> prop("x", "foo"))))
+        RegularSinglePlannerQuery(interestingOrder = io, horizon = RegularQueryProjection(Map(v"a" -> prop("x", "foo"))))
       )
     }
   }
@@ -694,7 +694,7 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
         .build()
       sortedPlan should equal(sorted)
       context.staticComponents.planningAttributes.solveds.get(sortedPlan.id) should equal(
-        RegularSinglePlannerQuery(interestingOrder = io, horizon = RegularQueryProjection(Map("add" -> sortOn)))
+        RegularSinglePlannerQuery(interestingOrder = io, horizon = RegularQueryProjection(Map(v"add" -> sortOn)))
       )
     }
   }
@@ -721,7 +721,7 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
         .build()
       sortedPlan should equal(sorted)
       context.staticComponents.planningAttributes.solveds.get(sortedPlan.id) should equal(
-        RegularSinglePlannerQuery(interestingOrder = io, horizon = RegularQueryProjection(Map("m" -> mExpr)))
+        RegularSinglePlannerQuery(interestingOrder = io, horizon = RegularQueryProjection(Map(v"m" -> mExpr)))
       )
     }
   }
@@ -750,7 +750,7 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
         .build()
       sortedPlan should equal(sorted)
       context.staticComponents.planningAttributes.solveds.get(sortedPlan.id) should equal(
-        RegularSinglePlannerQuery(interestingOrder = io, horizon = RegularQueryProjection(Map("bday" -> bdayExp)))
+        RegularSinglePlannerQuery(interestingOrder = io, horizon = RegularQueryProjection(Map(v"bday" -> bdayExp)))
       )
     }
   }
@@ -780,7 +780,7 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
       sortedPlan should equal(sorted)
       context.staticComponents.planningAttributes.solveds.get(sortedPlan.id) should equal(
-        RegularSinglePlannerQuery(interestingOrder = io, horizon = RegularQueryProjection(Map("bday" -> bdayExp)))
+        RegularSinglePlannerQuery(interestingOrder = io, horizon = RegularQueryProjection(Map(v"bday" -> bdayExp)))
       )
     }
   }

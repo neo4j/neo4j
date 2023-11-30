@@ -38,7 +38,6 @@ import org.neo4j.cypher.internal.ast.Remove
 import org.neo4j.cypher.internal.ast.RemoveLabelItem
 import org.neo4j.cypher.internal.ast.RemovePropertyItem
 import org.neo4j.cypher.internal.ast.Return
-import org.neo4j.cypher.internal.ast.ReturnItem
 import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.SetClause
 import org.neo4j.cypher.internal.ast.SetExactPropertiesFromMapItem
@@ -187,7 +186,7 @@ object ClauseConverters {
   private def addLoadCSVToLogicalPlanInput(acc: PlannerQueryBuilder, clause: LoadCSV): PlannerQueryBuilder =
     acc.withHorizon(
       LoadCSVProjection(
-        variable = clause.variable.name,
+        variable = clause.variable,
         url = clause.urlString,
         format = if (clause.withHeaders) HasHeaders else NoHeaders,
         clause.fieldTerminator
@@ -205,13 +204,14 @@ object ClauseConverters {
 
   private def asQueryProjection(
     distinct: Boolean,
-    items: Seq[ReturnItem],
+    items: Seq[AliasedReturnItem],
     returningQueryProjection: Boolean
   ): QueryProjection = {
-    val (aggregatingItems: Seq[ReturnItem], groupingKeys: Seq[ReturnItem]) =
+    val (aggregatingItems: Seq[AliasedReturnItem], groupingKeys: Seq[AliasedReturnItem]) =
       items.partition(item => IsAggregate(item.expression))
 
-    def turnIntoMap(x: Seq[ReturnItem]) = x.map(e => e.name -> e.expression).toMap
+    def turnIntoMap(x: Seq[AliasedReturnItem]): Map[LogicalVariable, Expression] =
+      x.map(e => e.variable -> e.expression).toMap
 
     val projectionMap = turnIntoMap(groupingKeys)
     val aggregationsMap = turnIntoMap(aggregatingItems)
@@ -241,7 +241,12 @@ object ClauseConverters {
         val queryPagination = QueryPagination().withSkip(skip).withLimit(limit)
 
         val projection =
-          asQueryProjection(distinct, items, returningQueryProjection = !nonTerminating).withPagination(queryPagination)
+          asQueryProjection(
+            distinct,
+            // Return items have been aliased at this point
+            items.asInstanceOf[Seq[AliasedReturnItem]],
+            returningQueryProjection = !nonTerminating
+          ).withPagination(queryPagination)
         val requiredOrder = findRequiredOrder(projection, optOrderBy)
 
         acc
@@ -258,18 +263,18 @@ object ClauseConverters {
     val (requiredOrderCandidate, interestingOrderCandidates: Seq[InterestingOrderCandidate]) = horizon match {
       case RegularQueryProjection(projections, _, _, _) =>
         val requiredOrderCandidate =
-          extractColumnOrderFromOrderBy(sortItems, projections.map { case (k, v) => (varFor(k), v) })
+          extractColumnOrderFromOrderBy(sortItems, projections)
         (requiredOrderCandidate, Seq.empty)
       case AggregatingQueryProjection(groupingExpressions, aggregationExpressions, _, _, _) =>
         val requiredOrderCandidate =
-          extractColumnOrderFromOrderBy(sortItems, groupingExpressions.map { case (k, v) => (varFor(k), v) })
+          extractColumnOrderFromOrderBy(sortItems, groupingExpressions)
         val interestingCandidates =
           interestingOrderCandidatesForGroupingExpressions(groupingExpressions) ++
             interestingOrderCandidateForMinOrMax(groupingExpressions, aggregationExpressions)
         (requiredOrderCandidate, interestingCandidates)
       case DistinctQueryProjection(groupingExpressions, _, _, _) =>
         val requiredOrderCandidate =
-          extractColumnOrderFromOrderBy(sortItems, groupingExpressions.map { case (k, v) => (varFor(k), v) })
+          extractColumnOrderFromOrderBy(sortItems, groupingExpressions)
         val interestingCandidates = interestingOrderCandidatesForGroupingExpressions(groupingExpressions)
 
         (requiredOrderCandidate, interestingCandidates)
@@ -280,8 +285,8 @@ object ClauseConverters {
   }
 
   private def interestingOrderCandidateForMinOrMax(
-    groupingExpressions: Map[String, Expression],
-    aggregationExpressions: Map[String, Expression]
+    groupingExpressions: Map[LogicalVariable, Expression],
+    aggregationExpressions: Map[LogicalVariable, Expression]
   ): Option[InterestingOrderCandidate] = {
     if (groupingExpressions.isEmpty && aggregationExpressions.size == 1) {
       // just checked that there is only one key
@@ -294,7 +299,7 @@ object ClauseConverters {
     }
   }
 
-  private def interestingOrderCandidatesForGroupingExpressions(groupingExpressions: Map[String, Expression])
+  private def interestingOrderCandidatesForGroupingExpressions(groupingExpressions: Map[LogicalVariable, Expression])
     : Seq[InterestingOrderCandidate] = {
     val propsAndVars = groupingExpressions.values.collect {
       case e: Property => e
@@ -469,11 +474,11 @@ object ClauseConverters {
     acc.amendQueryGraph(_.addMutatingPatterns(clause.expressions.map(DeleteExpression(_, clause.forced))))
   }
 
-  private def asReturnItems(current: QueryGraph, returnItems: ReturnItems): Seq[ReturnItem] = returnItems match {
+  private def asReturnItems(current: QueryGraph, returnItems: ReturnItems): Seq[AliasedReturnItem] = returnItems match {
     case ReturnItems(star, items, _) if star =>
-      QueryProjection.forIds(current.allCoveredIds) ++ items
+      (QueryProjection.forIds(current.allCoveredIds.map(varFor)) ++ items).asInstanceOf[Seq[AliasedReturnItem]]
     case ReturnItems(_, items, _) =>
-      items
+      items.asInstanceOf[Seq[AliasedReturnItem]]
     case _ =>
       Seq.empty
   }
@@ -489,7 +494,7 @@ object ClauseConverters {
     // If a QPP depends on a non-local variable from a previous clause, we need to insert a horizon. This is to
     // guarantee that the non-local variable is bound prior to QPP plan, so that the QPP plan may use it.
     def qppHasDependencyToPreviousClauses: Boolean = {
-      val qppDependencies = pathPatterns.allQuantifiedPathPatterns.flatMap(_.dependencies).map(_.name)
+      val qppDependencies = pathPatterns.allQuantifiedPathPatterns.flatMap(_.dependencies)
       val availableVars = acc.currentlyAvailableVariables
       qppDependencies.intersect(availableVars).nonEmpty
     }
@@ -697,22 +702,22 @@ object ClauseConverters {
 
         // Dependencies: Everything from the WHERE part plus everything from the MERGE pattern, excluding the merged node
         // itself, since it is provided by the MERGE.
-        val dependencies = selections.variableDependencies.map(_.name) ++
-          createNodePattern.dependencies.map(_.name) ++
-          onCreate.flatMap(_.dependencies.map(_.name)) ++
-          onMatch.flatMap(_.dependencies.map(_.name)) -
-          id.name
+        val dependencies = selections.variableDependencies ++
+          createNodePattern.dependencies ++
+          onCreate.flatMap(_.dependencies) ++
+          onMatch.flatMap(_.dependencies) -
+          id
         val arguments = builder.currentlyAvailableVariables.intersect(dependencies)
 
         val matchGraph = QueryGraph(
           patternNodes = Set(id.name),
           selections = selections,
-          argumentIds = arguments
+          argumentIds = arguments.map(_.name)
         )
 
         val mergePattern = MergeNodePattern(createNodePattern, matchGraph, onCreate, onMatch)
         val queryGraph = QueryGraph.empty
-          .withArgumentIds(arguments)
+          .withArgumentIds(arguments.map(_.name))
           .addMutatingPatterns(mergePattern)
 
         builder
@@ -764,14 +769,14 @@ object ClauseConverters {
 
         // Dependencies: Everything from the WHERE part plus everything from the MERGE pattern,
         // excluding nodes and rels to create, since they are provided by the MERGE.
-        val dependencies = selections.variableDependencies.map(_.name) ++
-          nodesCreatedBefore.map(_.create.variable.name) ++
-          nodesToCreate.map(_.create).flatMap(_.dependencies.map(_.name)) ++
-          rels.map(_.create).flatMap(_.dependencies.map(_.name)) ++
-          onCreate.flatMap(_.dependencies.map(_.name)) ++
-          onMatch.flatMap(_.dependencies.map(_.name)) --
-          nodesToCreate.map(_.create.variable.name) --
-          rels.map(_.create.variable.name)
+        val dependencies = selections.variableDependencies ++
+          nodesCreatedBefore.map(_.create.variable) ++
+          nodesToCreate.map(_.create).flatMap(_.dependencies) ++
+          rels.map(_.create).flatMap(_.dependencies) ++
+          onCreate.flatMap(_.dependencies) ++
+          onMatch.flatMap(_.dependencies) --
+          nodesToCreate.map(_.create.variable) --
+          rels.map(_.create.variable)
         val arguments = builder.currentlyAvailableVariables.intersect(dependencies)
 
         val matchGraph = QueryGraph(
@@ -787,11 +792,11 @@ object ClauseConverters {
               )
           }.toSet,
           selections = selections,
-          argumentIds = arguments
+          argumentIds = arguments.map(_.name)
         )
 
         val queryGraph = QueryGraph.empty
-          .withArgumentIds(arguments)
+          .withArgumentIds(arguments.map(_.name))
           .addMutatingPatterns(MergeRelationshipPattern(
             nodesToCreate.map(_.create),
             rels.map(_.create),
@@ -895,7 +900,7 @@ object ClauseConverters {
   private def addUnwindToLogicalPlanInput(builder: PlannerQueryBuilder, clause: Unwind): PlannerQueryBuilder =
     builder.withHorizon(
       UnwindProjection(
-        variable = clause.variable.name,
+        variable = clause.variable,
         exp = clause.expression
       )
     ).withTail(SinglePlannerQuery.empty)
@@ -913,13 +918,13 @@ object ClauseConverters {
     cancellationChecker: CancellationChecker
   ): PlannerQueryBuilder = {
     val availableBeforeForeach = builder.currentlyAvailableVariables
-    val availableToInnerClauses = availableBeforeForeach + clause.variable.name
+    val availableToInnerClauses = availableBeforeForeach + clause.variable
 
     val innerBuilder = StatementConverters.addClausesToPlannerQueryBuilder(
       clause.updates,
       new PlannerQueryBuilder(SinglePlannerQuery.empty, builder.semanticTable)
         // First, set all available symbols as arguments. Will be fixed a little further down.
-        .amendQueryGraph(_.withArgumentIds(availableToInnerClauses))
+        .amendQueryGraph(_.withArgumentIds(availableToInnerClauses.map(_.name)))
         .withHorizon(PassthroughAllHorizon()),
       anonymousVariableNameGenerator,
       cancellationChecker,
@@ -927,11 +932,11 @@ object ClauseConverters {
     )
 
     val dependencies = innerBuilder.q.allPlannerQueries.view
-      .flatMap(_.queryGraph.mutatingPatterns.flatMap(_.dependencies.map(_.name))).to(Set)
+      .flatMap(_.queryGraph.mutatingPatterns.flatMap(_.dependencies)).to(Set)
     val arguments = availableToInnerClauses.intersect(dependencies)
     // This fixes the arguments of the first planner query inside the foreach.
     // All subsequent planner queries will get their arguments fixed by `.build()`.
-    val innerBuilderWithFixedArguments = innerBuilder.withInitialArguments(arguments)
+    val innerBuilderWithFixedArguments = innerBuilder.withInitialArguments(arguments.map(_.name))
 
     val innerPlannerQuery = innerBuilderWithFixedArguments.build()
 
@@ -942,7 +947,7 @@ object ClauseConverters {
     )
 
     val foreachGraph = QueryGraph(
-      argumentIds = availableBeforeForeach,
+      argumentIds = availableBeforeForeach.map(_.name),
       mutatingPatterns = IndexedSeq(foreachPattern)
     )
 

@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.helpers.AggregationHelper
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.leverageOrder.OrderToLeverageWithAliases
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Asc
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Desc
@@ -44,11 +45,11 @@ object aggregation {
   ): LogicalPlan = {
 
     val solver = SubqueryExpressionSolver.solverFor(plan, context)
-    val groupingExpressionsMap = aggregation.groupingExpressions.map { case (k, v) => (k, solver.solve(v, Some(k))) }
-    val aggregations = aggregation.aggregationExpressions.map { case (k, v) => (k, solver.solve(v, Some(k))) }
+    val groupingExpressionsMap = aggregation.groupingExpressions.map { case (k, v) => (k, solver.solve(v, Some(k.name))) }
+    val aggregations = aggregation.aggregationExpressions.map { case (k, v) => (k, solver.solve(v, Some(k.name))) }
     val rewrittenPlan = solver.rewrittenPlan()
 
-    val projectionMapForLimit: Map[String, Expression] =
+    val projectionMapForLimit: Map[LogicalVariable, Expression] =
       if (groupingExpressionsMap.isEmpty && aggregations.size == 1) {
         val key = aggregations.keys.head // just checked that there is only one key
         val value: Expression = aggregations(key)
@@ -95,7 +96,7 @@ object aggregation {
     } else {
       val inputProvidedOrder = context.staticComponents.planningAttributes.providedOrders(plan.id)
       val OrderToLeverageWithAliases(orderToLeverage, newGroupingExpressionsMap) =
-        leverageOrder(inputProvidedOrder, groupingExpressionsMap, plan.availableSymbols.map(_.name))
+        leverageOrder(inputProvidedOrder, groupingExpressionsMap, plan.availableSymbols)
 
       if (orderToLeverage.isEmpty) {
         context.staticComponents.logicalPlanProducer.planAggregation(

@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.PlannerQueryBuilder.finalizeQuery
 import org.neo4j.cypher.internal.compiler.helpers.SeqSupport.RichSeq
 import org.neo4j.cypher.internal.expressions.AssertIsNode
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.CallSubqueryHorizon
@@ -62,7 +63,9 @@ case class PlannerQueryBuilder(q: SinglePlannerQuery, semanticTable: SemanticTab
 
   def withTail(newTail: SinglePlannerQuery): PlannerQueryBuilder = {
     copy(q =
-      q.updateTailOrSelf(_.withTail(newTail.amendQueryGraph(_.addArgumentIds(currentlyExposedSymbols.toIndexedSeq))))
+      q.updateTailOrSelf(
+        _.withTail(newTail.amendQueryGraph(_.addArgumentIds(currentlyExposedSymbols.toIndexedSeq.map(_.name))))
+      )
     )
   }
 
@@ -83,20 +86,20 @@ case class PlannerQueryBuilder(q: SinglePlannerQuery, semanticTable: SemanticTab
     copy(q = q.withTailInterestingOrder(q.last.interestingOrder))
   }
 
-  private def currentlyExposedSymbols: Set[String] = {
-    q.lastQueryHorizon.exposedSymbols(q.lastQueryGraph.allCoveredIds)
+  private def currentlyExposedSymbols: Set[LogicalVariable] = {
+    q.lastQueryHorizon.exposedSymbols(q.lastQueryGraph.allCoveredIds.map(varFor))
   }
 
-  def currentlyAvailableVariables: Set[String] = {
+  def currentlyAvailableVariables: Set[LogicalVariable] = {
     val allPlannerQueries = q.allPlannerQueries
     val previousAvailableSymbols =
       if (allPlannerQueries.length > 1) {
         val current = allPlannerQueries(allPlannerQueries.length - 2)
-        current.horizon.exposedSymbols(current.queryGraph.allCoveredIds)
+        current.horizon.exposedSymbols(current.queryGraph.allCoveredIds.map(varFor))
       } else Set.empty
 
     // for the last planner query we should not consider the return projection
-    previousAvailableSymbols ++ q.lastQueryGraph.allCoveredIds
+    previousAvailableSymbols ++ q.lastQueryGraph.allCoveredIds.map(varFor)
   }
 
   def currentQueryGraph: QueryGraph = q.lastQueryGraph
@@ -125,8 +128,8 @@ object PlannerQueryBuilder {
 
     def fixArgumentIds(plannerQuery: SinglePlannerQuery): SinglePlannerQuery = plannerQuery.foldMap {
       case (head, tail) =>
-        val symbols = head.horizon.exposedSymbols(head.queryGraph.allCoveredIds)
-        val newTailGraph = tail.queryGraph.withArgumentIds(symbols)
+        val symbols = head.horizon.exposedSymbols(head.queryGraph.allCoveredIds.map(varFor))
+        val newTailGraph = tail.queryGraph.withArgumentIds(symbols.map(_.name))
         tail.withQueryGraph(newTailGraph)
     }
 

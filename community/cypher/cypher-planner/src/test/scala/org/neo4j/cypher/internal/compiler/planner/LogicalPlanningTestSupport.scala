@@ -359,7 +359,7 @@ trait LogicalPlanningTestSupport extends AstConstructionTestSupport with Logical
     newMockedLogicalPlan(ids.toSet, planningAttributes)
 
   def newMockedLogicalPlanWithProjections(planningAttributes: PlanningAttributes, ids: String*): LogicalPlan = {
-    val projections = RegularQueryProjection(projections = ids.map(id => id -> varFor(id)).toMap)
+    val projections = RegularQueryProjection(projections = ids.map(id => varFor(id) -> varFor(id)).toMap)
     val solved = RegularSinglePlannerQuery(
       queryGraph = QueryGraph.empty.addPatternNodes(ids: _*),
       horizon = projections

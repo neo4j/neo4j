@@ -24,25 +24,24 @@ import org.neo4j.cypher.internal.ast.CommandClause
 import org.neo4j.cypher.internal.ast.Hint
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsParameters
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.StringLiteral
+import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.ast.IRExpression
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.PredicateConverter
 import org.neo4j.cypher.internal.util.Foldable
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
-import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.exceptions.InternalException
 
 sealed trait QueryHorizon extends Foldable {
 
-  def exposedSymbols(coveredIds: Set[String]): Set[String]
+  def exposedSymbols(coveredIds: Set[LogicalVariable]): Set[LogicalVariable]
 
   def dependingExpressions: Iterable[Expression]
 
-  def dependencies: Set[String] = dependingExpressions.folder.treeFold(Set.empty[String]) {
-    case id: Variable =>
-      acc => TraverseChildren(acc + id.name)
-  }
+  def dependencies: Set[LogicalVariable] = dependingExpressions.folder.findAllByClass[LogicalVariable].toSet
 
   def readOnly = true
 
@@ -95,7 +94,7 @@ sealed trait QueryHorizon extends Foldable {
 }
 
 final case class PassthroughAllHorizon() extends QueryHorizon {
-  override def exposedSymbols(coveredIds: Set[String]): Set[String] = coveredIds
+  override def exposedSymbols(coveredIds: Set[LogicalVariable]): Set[LogicalVariable] = coveredIds
 
   override def dependingExpressions: Seq[Expression] = Seq.empty
 
@@ -108,8 +107,8 @@ final case class PassthroughAllHorizon() extends QueryHorizon {
   override def isTerminatingProjection: Boolean = false
 }
 
-case class UnwindProjection(variable: String, exp: Expression) extends QueryHorizon {
-  override def exposedSymbols(coveredIds: Set[String]): Set[String] = coveredIds + variable
+case class UnwindProjection(variable: LogicalVariable, exp: Expression) extends QueryHorizon {
+  override def exposedSymbols(coveredIds: Set[LogicalVariable]): Set[LogicalVariable] = coveredIds + variable
 
   override def dependingExpressions: Seq[Expression] = Seq(exp)
 
@@ -121,12 +120,12 @@ case class UnwindProjection(variable: String, exp: Expression) extends QueryHori
 }
 
 case class LoadCSVProjection(
-  variable: String,
+  variable: LogicalVariable,
   url: Expression,
   format: CSVFormat,
   fieldTerminator: Option[StringLiteral]
 ) extends QueryHorizon {
-  override def exposedSymbols(coveredIds: Set[String]): Set[String] = coveredIds + variable
+  override def exposedSymbols(coveredIds: Set[LogicalVariable]): Set[LogicalVariable] = coveredIds + variable
 
   override def dependingExpressions: Seq[Expression] = Seq(url)
 
@@ -144,9 +143,9 @@ case class CallSubqueryHorizon(
   inTransactionsParameters: Option[InTransactionsParameters]
 ) extends QueryHorizon {
 
-  override def exposedSymbols(coveredIds: Set[String]): Set[String] = {
-    val maybeReportAs = inTransactionsParameters.flatMap(_.reportParams.map(_.reportAs.name))
-    coveredIds ++ callSubquery.returns ++ maybeReportAs.toSeq
+  override def exposedSymbols(coveredIds: Set[LogicalVariable]): Set[LogicalVariable] = {
+    val maybeReportAs = inTransactionsParameters.flatMap(_.reportParams.map(_.reportAs))
+    coveredIds ++ callSubquery.returns.map(varFor) ++ maybeReportAs.toSeq
   }
 
   override def dependingExpressions: Seq[Expression] = Seq.empty
@@ -170,13 +169,13 @@ case class CallSubqueryHorizon(
 
 sealed abstract class QueryProjection extends QueryHorizon {
   def selections: Selections
-  def projections: Map[String, Expression]
+  def projections: Map[LogicalVariable, Expression]
   def queryPagination: QueryPagination
-  def keySet: Set[String]
+  def keySet: Set[LogicalVariable]
   def isTerminating: Boolean
   override def isTerminatingProjection: Boolean = isTerminating
   def withSelection(selections: Selections): QueryProjection
-  def withAddedProjections(projections: Map[String, Expression]): QueryProjection
+  def withAddedProjections(projections: Map[LogicalVariable, Expression]): QueryProjection
   def withPagination(queryPagination: QueryPagination): QueryProjection
   def withIsTerminating(boolean: Boolean): QueryProjection
 
@@ -197,9 +196,9 @@ sealed abstract class QueryProjection extends QueryHorizon {
 object QueryProjection {
   def empty: RegularQueryProjection = RegularQueryProjection()
 
-  def forIds(coveredIds: Set[String]) =
+  def forIds(coveredIds: Set[LogicalVariable]): Seq[AliasedReturnItem] =
     coveredIds.toIndexedSeq.map(idName =>
-      AliasedReturnItem(Variable(idName)(null), Variable(idName)(null))(null)
+      AliasedReturnItem(idName, idName)(InputPosition.NONE)
     )
 
   def combine(lhs: QueryProjection, rhs: QueryProjection): QueryProjection = (lhs, rhs) match {
@@ -212,14 +211,14 @@ object QueryProjection {
 }
 
 final case class RegularQueryProjection(
-  projections: Map[String, Expression] = Map.empty,
+  projections: Map[LogicalVariable, Expression] = Map.empty,
   queryPagination: QueryPagination = QueryPagination.empty,
   selections: Selections = Selections(),
   isTerminating: Boolean = false
 ) extends QueryProjection {
-  def keySet: Set[String] = projections.keySet
+  def keySet: Set[LogicalVariable] = projections.keySet
 
-  def ++(other: RegularQueryProjection) =
+  def ++(other: RegularQueryProjection): RegularQueryProjection =
     RegularQueryProjection(
       projections = projections ++ other.projections,
       queryPagination = queryPagination ++ other.queryPagination,
@@ -230,20 +229,20 @@ final case class RegularQueryProjection(
   override def withIsTerminating(boolean: Boolean): RegularQueryProjection =
     copy(isTerminating = boolean)
 
-  override def withAddedProjections(projections: Map[String, Expression]): RegularQueryProjection =
+  override def withAddedProjections(projections: Map[LogicalVariable, Expression]): RegularQueryProjection =
     copy(projections = this.projections ++ projections)
 
   def withPagination(queryPagination: QueryPagination): RegularQueryProjection =
     copy(queryPagination = queryPagination)
 
-  override def exposedSymbols(coveredIds: Set[String]): Set[String] = projections.keySet
+  override def exposedSymbols(coveredIds: Set[LogicalVariable]): Set[LogicalVariable] = projections.keySet
 
   override def withSelection(selections: Selections): QueryProjection = copy(selections = selections)
 }
 
 final case class AggregatingQueryProjection(
-  groupingExpressions: Map[String, Expression] = Map.empty,
-  aggregationExpressions: Map[String, Expression] = Map.empty,
+  groupingExpressions: Map[LogicalVariable, Expression] = Map.empty,
+  aggregationExpressions: Map[LogicalVariable, Expression] = Map.empty,
   queryPagination: QueryPagination = QueryPagination.empty,
   selections: Selections = Selections(),
   isTerminating: Boolean = false
@@ -257,58 +256,58 @@ final case class AggregatingQueryProjection(
   override def withIsTerminating(boolean: Boolean): AggregatingQueryProjection =
     copy(isTerminating = boolean)
 
-  override def projections: Map[String, Expression] = groupingExpressions ++ aggregationExpressions
+  override def projections: Map[LogicalVariable, Expression] = groupingExpressions ++ aggregationExpressions
 
-  override def keySet: Set[String] = groupingExpressions.keySet ++ aggregationExpressions.keySet
+  override def keySet: Set[LogicalVariable] = groupingExpressions.keySet ++ aggregationExpressions.keySet
 
   override def dependingExpressions: Iterable[Expression] = super.dependingExpressions ++ aggregationExpressions.values
 
-  override def withAddedProjections(groupingKeys: Map[String, Expression]): AggregatingQueryProjection =
+  override def withAddedProjections(groupingKeys: Map[LogicalVariable, Expression]): AggregatingQueryProjection =
     copy(groupingExpressions = this.groupingExpressions ++ groupingKeys)
 
   override def withPagination(queryPagination: QueryPagination): AggregatingQueryProjection =
     copy(queryPagination = queryPagination)
 
-  override def exposedSymbols(coveredIds: Set[String]): Set[String] =
+  override def exposedSymbols(coveredIds: Set[LogicalVariable]): Set[LogicalVariable] =
     groupingExpressions.keySet ++ aggregationExpressions.keySet
 
   override def withSelection(selections: Selections): QueryProjection = copy(selections = selections)
 }
 
 final case class DistinctQueryProjection(
-  groupingExpressions: Map[String, Expression] = Map.empty,
+  groupingExpressions: Map[LogicalVariable, Expression] = Map.empty,
   queryPagination: QueryPagination = QueryPagination.empty,
   selections: Selections = Selections(),
   isTerminating: Boolean = false
 ) extends QueryProjection {
 
-  def projections: Map[String, Expression] = groupingExpressions
+  def projections: Map[LogicalVariable, Expression] = groupingExpressions
 
-  def keySet: Set[String] = groupingExpressions.keySet
+  def keySet: Set[LogicalVariable] = groupingExpressions.keySet
 
   override def withIsTerminating(boolean: Boolean): DistinctQueryProjection =
     copy(isTerminating = boolean)
 
-  override def withAddedProjections(groupingKeys: Map[String, Expression]): DistinctQueryProjection =
+  override def withAddedProjections(groupingKeys: Map[LogicalVariable, Expression]): DistinctQueryProjection =
     copy(groupingExpressions = this.groupingExpressions ++ groupingKeys)
 
   override def withPagination(queryPagination: QueryPagination): DistinctQueryProjection =
     copy(queryPagination = queryPagination)
 
-  override def exposedSymbols(coveredIds: Set[String]): Set[String] = groupingExpressions.keySet
+  override def exposedSymbols(coveredIds: Set[LogicalVariable]): Set[LogicalVariable] = groupingExpressions.keySet
 
   override def withSelection(selections: Selections): QueryProjection = copy(selections = selections)
 }
 
 case class CommandProjection(clause: CommandClause) extends QueryHorizon {
 
-  override def exposedSymbols(coveredIds: Set[String]): Set[String] = {
-    val columnNames = clause match {
+  override def exposedSymbols(coveredIds: Set[LogicalVariable]): Set[LogicalVariable] = {
+    val columns = clause match {
       case t: CommandClause if t.yieldItems.nonEmpty =>
-        t.yieldItems.map(_.aliasedVariable.name)
-      case _ => clause.unfilteredColumns.columns.map(_.variable.name)
+        t.yieldItems.map(_.aliasedVariable)
+      case _ => clause.unfilteredColumns.columns.map(_.variable)
     }
-    coveredIds ++ columnNames
+    coveredIds ++ columns
   }
 
   override def dependingExpressions: Seq[Expression] = Seq()

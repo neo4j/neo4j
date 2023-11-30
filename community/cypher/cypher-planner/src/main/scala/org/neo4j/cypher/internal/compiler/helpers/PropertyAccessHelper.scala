@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.helpers
 
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.Variable
@@ -59,7 +60,7 @@ object PropertyAccessHelper {
     // The renamings map is used to keep track of any projections changing the name of the property,
     // as in MATCH (n:Label) WITH n.prop1 AS prop RETURN count(prop)
     @tailrec
-    def rec(currentQuery: SinglePlannerQuery, renamings: Map[String, Expression]): Set[PropertyAccess] = {
+    def rec(currentQuery: SinglePlannerQuery, renamings: Map[LogicalVariable, Expression]): Set[PropertyAccess] = {
       // If the graph is mutated between the MATCH and the aggregation, an index scan might lead to the wrong number of mutations
       if (currentQuery.queryGraph.mutatingPatterns.nonEmpty) return Set.empty
 

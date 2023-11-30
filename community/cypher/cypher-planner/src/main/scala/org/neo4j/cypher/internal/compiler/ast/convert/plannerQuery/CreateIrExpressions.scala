@@ -179,7 +179,7 @@ case class CreateIrExpressions(
         pattern,
         pe.dependencies.map(_.name),
         None,
-        RegularQueryProjection(Map(variableToCollect.name -> pathExpression))
+        RegularQueryProjection(Map(variableToCollect -> pathExpression))
       )
       ListIRExpression(query, variableToCollect, collection, stringifier(pe))(
         pe.position,
@@ -220,7 +220,7 @@ case class CreateIrExpressions(
               plannerQuery.asSinglePlannerQuery
                 .updateTailOrSelf(_.withHorizon(
                   AggregatingQueryProjection(aggregationExpressions =
-                    Map(countVariable.name -> CountStar()(q.position))
+                    Map(countVariable -> CountStar()(q.position))
                   )
                 ))
                 // And also remove any ORDER BY since that won't have any impact in a COUNT subquery anyway.
@@ -230,7 +230,7 @@ case class CreateIrExpressions(
               plannerQuery.asSinglePlannerQuery
                 .updateTailOrSelf(_.withTail(RegularSinglePlannerQuery(
                   horizon = AggregatingQueryProjection(aggregationExpressions =
-                    Map(countVariable.name -> CountStar()(q.position))
+                    Map(countVariable -> CountStar()(q.position))
                   )
                 )))
           }
@@ -247,7 +247,7 @@ case class CreateIrExpressions(
             tail = Some(
               RegularSinglePlannerQuery(
                 horizon = AggregatingQueryProjection(aggregationExpressions =
-                  Map(countVariable.name -> CountStar()(countExpression.position))
+                  Map(countVariable -> CountStar()(countExpression.position))
                 )
               )
             )

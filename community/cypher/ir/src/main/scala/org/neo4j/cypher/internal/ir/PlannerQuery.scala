@@ -342,7 +342,7 @@ sealed trait SinglePlannerQuery extends PlannerQuery {
 
   override def returns: Set[String] = {
     lastQueryHorizon match {
-      case projection: QueryProjection => projection.keySet
+      case projection: QueryProjection => projection.keySet.map(_.name)
       case _                           => Set.empty
     }
   }
@@ -393,7 +393,7 @@ object SinglePlannerQuery {
   ): InterestingOrder = {
     horizon match {
       case qp: QueryProjection =>
-        order.withReverseProjectedColumns(qp.projections.map { case (k, v) => (varFor(k), v) }, argumentIds.map(varFor))
+        order.withReverseProjectedColumns(qp.projections, argumentIds.map(varFor))
       case _ => order.withReverseProjectedColumns(Map.empty, argumentIds.map(varFor))
     }
   }
@@ -403,8 +403,8 @@ object SinglePlannerQuery {
     val projectedLabelInfo = q.horizon match {
       case projection: QueryProjection =>
         projection.projections.collect {
-          case (projectedName, v: Variable) if labelInfo.contains(v) =>
-            varFor(projectedName) -> labelInfo(v)
+          case (projectedVar, v: Variable) if labelInfo.contains(v) =>
+            projectedVar -> labelInfo(v)
         }
       case _ => Map.empty[LogicalVariable, Set[LabelName]]
     }
@@ -445,7 +445,7 @@ case class RegularSinglePlannerQuery(
     RegularSinglePlannerQuery(queryGraph, interestingOrder, horizon, tail, queryInput)
 
   override def dependencies: Set[String] =
-    horizon.dependencies ++ queryGraph.dependencies ++ tail.map(_.dependencies).getOrElse(Set.empty)
+    horizon.dependencies.map(_.name) ++ queryGraph.dependencies ++ tail.map(_.dependencies).getOrElse(Set.empty)
 
   override def canEqual(that: Any): Boolean = that.isInstanceOf[RegularSinglePlannerQuery]
 

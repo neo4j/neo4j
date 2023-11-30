@@ -213,7 +213,7 @@ case object planShortestRelationships {
     // we can extract the per step predicates again
 
     // Projection with path
-    val map = Map(pathVariable.name -> createPathExpression(shortestRelationship.expr.element))
+    val map = Map(pathVariable -> createPathExpression(shortestRelationship.expr.element))
 
     // Rewriter for path name to path expression
     val rewriter = topDown(Rewriter.lift {
@@ -259,11 +259,11 @@ case object planShortestRelationships {
     // Plan Top
     val pos = shortestRelationship.expr.position
     val lengthOfPath = FunctionInvocation(FunctionName(Length.name)(pos), pathVariable)(pos)
-    val columnName = context.staticComponents.anonymousVariableNameGenerator.nextName
+    val column = varFor(context.staticComponents.anonymousVariableNameGenerator.nextName)
 
-    val rhsProjMap = Map(columnName -> lengthOfPath)
+    val rhsProjMap = Map(column -> lengthOfPath)
     val rhsProjected = lpp.planRegularProjection(rhsFiltered, rhsProjMap, Some(rhsProjMap), context)
-    val sortDescription = Seq(Ascending(varFor(columnName)))
+    val sortDescription = Seq(Ascending(column))
     val plan =
       if (shortestRelationship.single) {
         lpp.planTop(

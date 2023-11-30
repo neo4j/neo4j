@@ -50,8 +50,8 @@ case object countStorePlanner {
     query.horizon match {
       case AggregatingQueryProjection(groupingKeys, aggregatingExpressions, queryPagination, selections, _)
         if groupingKeys.isEmpty && query.queryInput.isEmpty && aggregatingExpressions.size == 1 && queryPagination.isEmpty =>
-        val (columnName, exp) = aggregatingExpressions.head
-        val countStorePlan = checkForValidQueryGraph(query, columnName, exp, context)
+        val (column, exp) = aggregatingExpressions.head
+        val countStorePlan = checkForValidQueryGraph(query, column.name, exp, context)
         countStorePlan.map { plan =>
           val projectionPlan = projection(plan, groupingKeys, Some(groupingKeys), context)
           context.staticComponents.logicalPlanProducer.planHorizonSelection(

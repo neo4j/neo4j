@@ -198,8 +198,8 @@ case object plannerQueryPlanner {
       case pq: SinglePlannerQuery =>
         planSingleQuery.plan(pq, context)
       case UnionQuery(lhs, rhs, distinct, unionMappings) =>
-        val projectionsForLhs = unionMappings.map(um => um.unionVariable.name -> um.variableInLhs).toMap
-        val projectionsForRhs = unionMappings.map(um => um.unionVariable.name -> um.variableInRhs).toMap
+        val projectionsForLhs = unionMappings.map(um => um.unionVariable -> um.variableInLhs).toMap
+        val projectionsForRhs = unionMappings.map(um => um.unionVariable -> um.variableInRhs).toMap
 
         val lhsPlan = plan(lhs, context, distinctifyUnions = false) // Only one distinct at the top level
         val lhsPlanWithProjection =

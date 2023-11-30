@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
@@ -373,7 +374,7 @@ class countStorePlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
   private def producePlannerQuery(query: String, variable: String) = {
     val (pq, _) = producePlannerQueryForPattern(query)
     pq.withHorizon(AggregatingQueryProjection(
-      aggregationExpressions = Map(s"count($variable)" -> count(varFor(variable)))
+      aggregationExpressions = Map(v"count($variable)" -> count(varFor(variable)))
     ))
   }
 

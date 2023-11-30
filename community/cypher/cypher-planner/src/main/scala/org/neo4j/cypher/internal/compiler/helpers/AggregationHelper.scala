@@ -25,11 +25,9 @@ import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
-import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.Variable
 
 import java.util.Locale
-
 import scala.annotation.tailrec
 
 object AggregationHelper {
@@ -66,11 +64,11 @@ object AggregationHelper {
   }
 
   def extractProperties(
-    aggregationExpressions: Map[String, Expression],
-    renamings: Map[String, Expression]
+    aggregationExpressions: Map[LogicalVariable, Expression],
+    renamings: Map[LogicalVariable, Expression]
   ): Set[PropertyAccess] = {
     aggregationExpressions.values.flatMap {
-      extractPropertyForValue(_, renamings.map { case (k, v) => (varFor(k), v) }).map {
+      extractPropertyForValue(_, renamings).map {
         case Property(Variable(varName), PropertyKeyName(propName)) => PropertyAccess(varName, propName)
         case _ => throw new IllegalStateException("expression must be a property value")
       }

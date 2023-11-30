@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.BestResults
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.BestPlans
@@ -72,7 +73,7 @@ class PlanSingleQueryTest extends CypherFunSuite with LogicalPlanningTestSupport
     val q = RegularSinglePlannerQuery(
       queryGraph = QueryGraph(patternNodes = Set("n")),
       horizon = RegularQueryProjection(
-        projections = Map("m" -> varFor("n")),
+        projections = Map(v"m" -> varFor("n")),
         queryPagination = QueryPagination(
           limit = Some(literalInt(1000))
         )
@@ -98,7 +99,7 @@ class PlanSingleQueryTest extends CypherFunSuite with LogicalPlanningTestSupport
     val q = RegularSinglePlannerQuery(
       queryGraph = QueryGraph(patternNodes = Set("n")),
       horizon = RegularQueryProjection(
-        projections = Map("m" -> varFor("n")),
+        projections = Map(v"m" -> varFor("n")),
         queryPagination = QueryPagination(
           limit = Some(literalInt(1000))
         )

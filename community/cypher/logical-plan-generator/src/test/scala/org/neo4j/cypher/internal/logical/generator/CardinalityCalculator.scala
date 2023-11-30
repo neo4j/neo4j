@@ -173,7 +173,7 @@ object CardinalityCalculator {
       val in = state.cardinalities.get(plan.source.id)
       StatisticsBackedCardinalityModel.aggregateCardinalityEstimation(
         in,
-        plan.groupingExpressions.map { case (v, e) => v.name -> e }
+        plan.groupingExpressions
       )
   }
 

@@ -191,7 +191,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
             patternRelationships =
               Set(PatternRelationship(r, (n, m), BOTH, Seq.empty, SimplePatternLength))
           ),
-          Some(RegularQueryProjection(Map(variableToCollect.name -> pathExpression)))
+          Some(RegularQueryProjection(Map(variableToCollect -> pathExpression)))
         ),
         variableToCollect,
         collection,
@@ -224,7 +224,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
               varLengthUpperLimitPredicate("r", 5)
             ))
           ),
-          Some(RegularQueryProjection(Map(variableToCollect.name -> pathExpression)))
+          Some(RegularQueryProjection(Map(variableToCollect -> pathExpression)))
         ),
         variableToCollect,
         collection,
@@ -268,7 +268,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
               not(hasALabel(o.name))
             ))
           ),
-          Some(RegularQueryProjection(Map(variableToCollect.name -> pathExpression)))
+          Some(RegularQueryProjection(Map(variableToCollect -> pathExpression)))
         ),
         variableToCollect,
         collection,
@@ -416,7 +416,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
             differentRelationships(r3, r2)
           ))
         ),
-        horizon = Some(RegularQueryProjection(Map("n" -> n), isTerminating = true))
+        horizon = Some(RegularQueryProjection(Map(n -> n), isTerminating = true))
       )
     )
 
@@ -453,7 +453,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
               PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
             )
         ),
-        horizon = Some(RegularQueryProjection(Map("n" -> n), isTerminating = true))
+        horizon = Some(RegularQueryProjection(Map(n -> n), isTerminating = true))
       )
     )
 
@@ -491,7 +491,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
             )
         ),
         horizon =
-          Some(RegularQueryProjection(Map("n" -> n), isTerminating = true)),
+          Some(RegularQueryProjection(Map(n -> n), isTerminating = true)),
         interestingOrder =
           InterestingOrder.required(RequiredOrderCandidate.asc(n, Map(v"n" -> n)))
       )
@@ -534,7 +534,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
         ),
         horizon =
           Some(RegularQueryProjection(
-            Map("n" -> n),
+            Map(n -> n),
             isTerminating = true,
             queryPagination = QueryPagination(Some(literalInt(2)), None)
           ))
@@ -576,7 +576,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
         ),
         horizon =
           Some(RegularQueryProjection(
-            Map("n" -> n),
+            Map(n -> n),
             isTerminating = true,
             queryPagination = QueryPagination(None, Some(literalInt(42)))
           ))
@@ -620,7 +620,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
         ),
         horizon =
           Some(RegularQueryProjection(
-            Map("n" -> n),
+            Map(n -> n),
             isTerminating = true,
             queryPagination = QueryPagination(Some(literalInt(2)), Some(literalInt(42)))
           )),
@@ -673,7 +673,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
                 PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
               )
           ),
-          horizon = RegularQueryProjection(Map("n" -> n))
+          horizon = RegularQueryProjection(Map(n -> n))
         ),
         RegularSinglePlannerQuery(
           QueryGraph(
@@ -683,7 +683,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
                 PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
               )
           ),
-          horizon = RegularQueryProjection(Map("n" -> n))
+          horizon = RegularQueryProjection(Map(n -> n))
         ),
         distinct = true,
         List(UnionMapping(varFor(n.name), varFor(n.name), varFor(n.name)))
@@ -725,7 +725,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
         ),
         horizon =
           Some(DistinctQueryProjection(
-            Map("n" -> n),
+            Map(n -> n),
             isTerminating = true
           ))
       )
@@ -771,7 +771,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
           ))
         ),
         horizon =
-          Some(AggregatingQueryProjection(aggregationExpressions = Map(countVariable.name -> CountStar()(pos)))),
+          Some(AggregatingQueryProjection(aggregationExpressions = Map(countVariable -> CountStar()(pos)))),
         None
       )
     )
@@ -811,7 +811,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
             )
         ),
         horizon =
-          Some(AggregatingQueryProjection(aggregationExpressions = Map(countVariable.name -> CountStar()(pos)))),
+          Some(AggregatingQueryProjection(aggregationExpressions = Map(countVariable -> CountStar()(pos)))),
         None
       )
     )
@@ -850,7 +850,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
             )
         ),
         horizon =
-          Some(AggregatingQueryProjection(aggregationExpressions = Map(countVariable.name -> CountStar()(pos)))),
+          Some(AggregatingQueryProjection(aggregationExpressions = Map(countVariable -> CountStar()(pos)))),
         None
       )
     )
@@ -891,13 +891,13 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
             )
         ),
         horizon = Some(RegularQueryProjection(
-          Map("n" -> n),
+          Map(n -> n),
           queryPagination = QueryPagination(Some(literalInt(2)), None),
           isTerminating = true
         )),
         tail = Some(
           RegularSinglePlannerQuery(
-            horizon = AggregatingQueryProjection(aggregationExpressions = Map(countVariable.name -> CountStar()(pos)))
+            horizon = AggregatingQueryProjection(aggregationExpressions = Map(countVariable -> CountStar()(pos)))
           )
         )
       )
@@ -937,13 +937,13 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
             )
         ),
         horizon = Some(RegularQueryProjection(
-          Map("n" -> n),
+          Map(n -> n),
           queryPagination = QueryPagination(None, Some(literalInt(42))),
           isTerminating = true
         )),
         tail = Some(
           RegularSinglePlannerQuery(
-            horizon = AggregatingQueryProjection(aggregationExpressions = Map(countVariable.name -> CountStar()(pos)))
+            horizon = AggregatingQueryProjection(aggregationExpressions = Map(countVariable -> CountStar()(pos)))
           )
         )
       )
@@ -985,13 +985,13 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
             )
         ),
         horizon = Some(RegularQueryProjection(
-          Map("n" -> n),
+          Map(n -> n),
           queryPagination = QueryPagination(Some(literalInt(2)), Some(literalInt(42))),
           isTerminating = true
         )),
         tail = Some(
           RegularSinglePlannerQuery(
-            horizon = AggregatingQueryProjection(aggregationExpressions = Map(countVariable.name -> CountStar()(pos)))
+            horizon = AggregatingQueryProjection(aggregationExpressions = Map(countVariable -> CountStar()(pos)))
           )
         ),
         interestingOrder =
@@ -1034,12 +1034,12 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
             )
         ),
         horizon = Some(DistinctQueryProjection(
-          Map("n" -> n),
+          Map(n -> n),
           isTerminating = true
         )),
         tail = Some(
           RegularSinglePlannerQuery(
-            horizon = AggregatingQueryProjection(aggregationExpressions = Map(countVariable.name -> CountStar()(pos)))
+            horizon = AggregatingQueryProjection(aggregationExpressions = Map(countVariable -> CountStar()(pos)))
           )
         )
       )
@@ -1093,7 +1093,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
                     PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
                   )
               ),
-              horizon = RegularQueryProjection(Map("n" -> n))
+              horizon = RegularQueryProjection(Map(n -> n))
             ),
             RegularSinglePlannerQuery(
               QueryGraph(
@@ -1104,7 +1104,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
                     PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
                   )
               ),
-              horizon = RegularQueryProjection(Map("n" -> n))
+              horizon = RegularQueryProjection(Map(n -> n))
             ),
             distinct = true,
             List(UnionMapping(varFor(n.name), varFor(n.name), varFor(n.name)))
@@ -1115,7 +1115,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
         )),
         tail = Some(
           RegularSinglePlannerQuery(
-            horizon = AggregatingQueryProjection(aggregationExpressions = Map(countVariable.name -> CountStar()(pos)))
+            horizon = AggregatingQueryProjection(aggregationExpressions = Map(countVariable -> CountStar()(pos)))
           )
         )
       )
@@ -1146,7 +1146,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
             Set(PatternRelationship(r, (n, m), BOTH, Seq.empty, SimplePatternLength))
         ),
         horizon =
-          Some(AggregatingQueryProjection(aggregationExpressions = Map(countVariable.name -> CountStar()(pos)))),
+          Some(AggregatingQueryProjection(aggregationExpressions = Map(countVariable -> CountStar()(pos)))),
         None
       )
     )
@@ -1175,7 +1175,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
           selections = Selections.from(andedPropertyInequalities(rPred))
         ),
         horizon =
-          Some(AggregatingQueryProjection(aggregationExpressions = Map(countVariable.name -> CountStar()(pos)))),
+          Some(AggregatingQueryProjection(aggregationExpressions = Map(countVariable -> CountStar()(pos)))),
         None
       )
     )
@@ -1219,7 +1219,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
           ))
         ),
         horizon =
-          Some(AggregatingQueryProjection(aggregationExpressions = Map(countVariable.name -> CountStar()(pos)))),
+          Some(AggregatingQueryProjection(aggregationExpressions = Map(countVariable -> CountStar()(pos)))),
         None
       )
     )
@@ -1248,7 +1248,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
           selections = Selections.from(AssertIsNode(m)(pos))
         ),
         horizon =
-          Some(AggregatingQueryProjection(aggregationExpressions = Map(countVariable.name -> CountStar()(pos)))),
+          Some(AggregatingQueryProjection(aggregationExpressions = Map(countVariable -> CountStar()(pos)))),
         None
       )
     )
@@ -1278,7 +1278,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
           selections = Selections.from(andedPropertyInequalities(rPred, rLessPred))
         ),
         horizon =
-          Some(AggregatingQueryProjection(aggregationExpressions = Map(countVariable.name -> CountStar()(pos)))),
+          Some(AggregatingQueryProjection(aggregationExpressions = Map(countVariable -> CountStar()(pos)))),
         None
       )
     )
@@ -1316,7 +1316,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
           ))
         ),
         horizon =
-          Some(AggregatingQueryProjection(aggregationExpressions = Map(countVariable.name -> CountStar()(pos)))),
+          Some(AggregatingQueryProjection(aggregationExpressions = Map(countVariable -> CountStar()(pos)))),
         None
       )
     )
@@ -1354,7 +1354,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
             )
         ),
         horizon =
-          Some(RegularQueryProjection(Map("n" -> n), isTerminating = true)),
+          Some(RegularQueryProjection(Map(n -> n), isTerminating = true)),
         None
       )
     )
@@ -1392,7 +1392,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
             )
         ),
         horizon =
-          Some(RegularQueryProjection(Map("n" -> n), isTerminating = true)),
+          Some(RegularQueryProjection(Map(n -> n), isTerminating = true)),
         None,
         InterestingOrder.required(RequiredOrderCandidate.asc(n, Map(n -> n)))
       )
@@ -1442,7 +1442,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
           ))
         ),
         horizon =
-          Some(RegularQueryProjection(Map("n" -> n), isTerminating = true)),
+          Some(RegularQueryProjection(Map(n -> n), isTerminating = true)),
         None,
         InterestingOrder.required(RequiredOrderCandidate.asc(n, Map(n -> n)))
       )
@@ -1483,7 +1483,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
             )
         ),
         horizon =
-          Some(RegularQueryProjection(Map("n" -> n), isTerminating = true)),
+          Some(RegularQueryProjection(Map(n -> n), isTerminating = true)),
         interestingOrder =
           InterestingOrder.required(RequiredOrderCandidate.asc(n, Map(n -> n)))
       )
@@ -1525,7 +1525,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
         ),
         horizon =
           Some(RegularQueryProjection(
-            Map("n" -> n),
+            Map(n -> n),
             isTerminating = true,
             queryPagination = QueryPagination(Some(literalInt(2)), None)
           ))
@@ -1566,7 +1566,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
         ),
         horizon =
           Some(RegularQueryProjection(
-            Map("n" -> n),
+            Map(n -> n),
             isTerminating = true,
             queryPagination = QueryPagination(None, Some(literalInt(42)))
           ))
@@ -1611,7 +1611,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
         ),
         horizon =
           Some(RegularQueryProjection(
-            Map("n" -> n),
+            Map(n -> n),
             isTerminating = true,
             queryPagination = QueryPagination(Some(literalInt(2)), Some(literalInt(42)))
           )),
@@ -1655,7 +1655,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
         ),
         horizon =
           Some(DistinctQueryProjection(
-            Map("n" -> n),
+            Map(n -> n),
             isTerminating = true
           ))
       )
@@ -1705,7 +1705,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
                 PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
               )
           ),
-          horizon = RegularQueryProjection(Map("n" -> n))
+          horizon = RegularQueryProjection(Map(n -> n))
         ),
         RegularSinglePlannerQuery(
           QueryGraph(
@@ -1716,7 +1716,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
                 PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
               )
           ),
-          horizon = RegularQueryProjection(Map("n" -> n))
+          horizon = RegularQueryProjection(Map(n -> n))
         ),
         distinct = true,
         List(UnionMapping(varFor(n.name), varFor(n.name), varFor(n.name)))
