@@ -412,6 +412,11 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
     }
 
     @Override
+    int leafNodeMaxKeys() {
+        return dataLeafNode.maxKeyCount();
+    }
+
+    @Override
     void unsafe(GBPTreeUnsafe unsafe, boolean dataTree, CursorContext cursorContext) throws IOException {
         if (dataTree) {
             support.unsafe(unsafe, dataLayout, dataLeafNode, dataInternalNode, cursorContext);

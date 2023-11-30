@@ -1151,14 +1151,25 @@ class InternalTreeLogic<KEY, VALUE> implements InternalAccess<KEY, VALUE> {
             if (structurePropagation.hasRightKeyReplace && levels[currentLevel].covers(structurePropagation.rightKey)) {
                 structurePropagation.hasRightKeyReplace = false;
                 switch (structurePropagation.keyReplaceStrategy) {
-                    case REPLACE -> overwriteKeyInternal(
-                            cursor,
-                            structurePropagation,
-                            structurePropagation.rightKey,
-                            pos,
-                            stableGeneration,
-                            unstableGeneration,
-                            cursorContext);
+                    case REPLACE -> {
+                        int keyCount = keyCount(cursor);
+                        if (keyCount != pos) {
+                            overwriteKeyInternal(
+                                    cursor,
+                                    structurePropagation,
+                                    structurePropagation.rightKey,
+                                    pos,
+                                    stableGeneration,
+                                    unstableGeneration,
+                                    cursorContext);
+                        } else {
+                            // we are at the right boundary of the internal node, actual key that should be replaced is
+                            // above us
+                            // PS: replacing leftmost key in the right sibling isn't correct here because that key is
+                            // the left boundary for the right sibling of our right sibling
+                            structurePropagation.hasRightKeyReplace = true;
+                        }
+                    }
                     case BUBBLE -> replaceKeyByBubbleRightmostFromSubtree(
                             cursor, structurePropagation, pos, stableGeneration, unstableGeneration, cursorContext);
                 }
@@ -1180,9 +1191,9 @@ class InternalTreeLogic<KEY, VALUE> implements InternalAccess<KEY, VALUE> {
             CursorContext cursorContext)
             throws IOException {
         createSuccessorIfNeeded(cursor, structurePropagation, UPDATE_MID_CHILD, stableGeneration, unstableGeneration);
-        int keyCount = keyCount(cursor);
         boolean couldOverwrite = internalNode.setKeyAt(cursor, newKey, pos);
         if (!couldOverwrite) {
+            int keyCount = keyCount(cursor);
             // Remove key and right child
             long rightChild = internalNode.childAt(cursor, pos + 1, stableGeneration, unstableGeneration);
             internalNode.removeKeyAndRightChildAt(

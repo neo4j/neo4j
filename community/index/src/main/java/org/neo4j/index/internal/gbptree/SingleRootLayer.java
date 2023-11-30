@@ -145,6 +145,11 @@ class SingleRootLayer<KEY, VALUE> extends RootLayer<SingleRoot, KEY, VALUE> {
     }
 
     @Override
+    int leafNodeMaxKeys() {
+        return leafNode.maxKeyCount();
+    }
+
+    @Override
     void visitAllDataTreeRoots(CursorContext cursorContext, TreeRootsVisitor<SingleRoot> visitor) {
         visitor.accept(SingleRoot.SINGLE_ROOT);
     }

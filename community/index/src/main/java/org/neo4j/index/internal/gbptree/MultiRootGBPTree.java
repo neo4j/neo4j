@@ -1365,6 +1365,11 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
         rootLayer.unsafe(unsafe, dataTree, cursorContext);
     }
 
+    @VisibleForTesting
+    public int leafMaxKeyCount() {
+        return rootLayer.leafNodeMaxKeys();
+    }
+
     @Override
     public String toString() {
         long generation = this.generation;

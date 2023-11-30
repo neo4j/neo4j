@@ -94,7 +94,7 @@ public class StructurePropagation<KEY> {
     /**
      * See {@link #keyReplaceStrategy}.
      */
-    final KEY rightKey;
+    public final KEY rightKey;
 
     /**
      * See {@link #keyReplaceStrategy}.
@@ -147,10 +147,10 @@ public class StructurePropagation<KEY> {
      * {@link KeyReplaceStrategy#BUBBLE bubble} rightmost from subtree). In the case of bubble, {@link #leftKey} / {@link #rightKey}
      * is used to find "common ancestor" of leaves involved in merge. See {@link org.neo4j.index.internal.gbptree}.
      */
-    KeyReplaceStrategy keyReplaceStrategy;
+    public KeyReplaceStrategy keyReplaceStrategy;
 
     boolean hasLeftKeyReplace;
-    boolean hasRightKeyReplace;
+    public boolean hasRightKeyReplace;
 
     StructurePropagation(KEY leftKey, KEY rightKey, KEY bubbleKey) {
         this.leftKey = leftKey;
@@ -198,7 +198,7 @@ public class StructurePropagation<KEY> {
         sp.rightChild = childId;
     };
 
-    enum KeyReplaceStrategy {
+    public enum KeyReplaceStrategy {
         REPLACE,
         BUBBLE
     }

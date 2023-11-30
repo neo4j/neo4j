@@ -166,6 +166,11 @@ abstract class RootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> implements TreeRootExch
     abstract int inlineKeyValueSizeCap();
 
     /**
+     * @return max number of keys that can fit into single data leaf node
+     */
+    abstract int leafNodeMaxKeys();
+
+    /**
      * Visits keys for all existing root mappings.
      *
      * @param cursorContext the {@link CursorContext}.
