@@ -341,8 +341,8 @@ public class ImportCommand {
                 showDefaultValue = ALWAYS,
                 paramLabel = "true|false",
                 fallbackValue = "true",
-                description =
-                        "Whether or not to normalize property types to Cypher types, e.g. 'int' becomes 'long' and 'float' becomes 'double'.")
+                description = "When `true`, non-array property values are converted to their equivalent Cypher types. "
+                        + "For example, all integer values will be converted to 64-bit long integers.")
         private boolean normalizeTypes = true;
 
         @Option(
