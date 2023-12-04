@@ -1190,6 +1190,12 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             newBuilder("internal.dbms.query_router.new_stack", BOOL, false).build();
 
     @Internal
+    @Description("A feature toggle behind which CALL IN TRANSACTIONS for composite databases is developed")
+    public static final Setting<Boolean> composite_call_in_transactions = newBuilder(
+                    "internal.dbms.composite.call_in_transactions", BOOL, false)
+            .build();
+
+    @Internal
     @Description("A feature toggle behind which composite queries are routed through the new query router stack")
     public static final Setting<Boolean> composite_queries_with_query_router = newBuilder(
                     "internal.dbms.query_router.composite_queries", BOOL, false)
