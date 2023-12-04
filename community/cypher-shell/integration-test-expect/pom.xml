@@ -18,7 +18,7 @@
     <properties>
         <moduleName>org.neo4j.shell.it</moduleName>
         <default.jupiter.test.mode>concurrent</default.jupiter.test.mode>
-        <testcontainers.version>1.19.1</testcontainers.version>
+        <testcontainers.version>1.19.3</testcontainers.version>
     </properties>
 
     <scm>
@@ -75,13 +75,13 @@
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-core</artifactId>
-            <version>1.4.11</version>
+            <version>1.4.13</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-            <version>1.4.11</version>
+            <version>1.4.13</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>

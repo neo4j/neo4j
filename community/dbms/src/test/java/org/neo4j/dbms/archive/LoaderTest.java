@@ -39,7 +39,6 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Random;
-import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.junit.jupiter.api.Test;
@@ -116,7 +115,7 @@ class LoaderTest {
         final Path testFile = testDirectory.file("testFile");
         try (TarArchiveOutputStream tar = new TarArchiveOutputStream(
                 new GzipCompressorOutputStream(fileSystem.openAsOutputStream(archive, false)))) {
-            ArchiveEntry archiveEntry = tar.createArchiveEntry(testFile.toFile(), "../../../../etc/shadow");
+            var archiveEntry = tar.createArchiveEntry(testFile.toFile(), "../../../../etc/shadow");
             tar.putArchiveEntry(archiveEntry);
             tar.closeArchiveEntry();
         }
