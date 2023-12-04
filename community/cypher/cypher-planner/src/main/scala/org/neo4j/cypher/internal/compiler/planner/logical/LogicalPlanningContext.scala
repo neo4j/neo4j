@@ -111,7 +111,6 @@ object LogicalPlanningContext {
    * @param errorIfShortestPathHasCommonNodesAtRuntime a setting to fail if the start and the end node is the same for shortestPaths, at runtime.
    * @param legacyCsvQuoteEscaping a setting to configure quoting in LOAD CSV
    * @param csvBufferSize the buffer size for LOAD CSV
-   * @param useLegacyShortestPath a setting for the shortest path algorithm to use.
    */
   case class Settings(
     executionModel: ExecutionModel,
@@ -170,10 +169,6 @@ object LogicalPlanningContext {
 
         if (GraphDatabaseInternalSettings.planning_intersection_scans_enabled.dynamic())
           builder.addOne(planningIntersectionScansEnabled)
-
-        // use_legacy_shortest_path is dynamic, but documented to not affect caching.
-        // if (GraphDatabaseInternalSettings.use_legacy_shortest_path.dynamic())
-        //  builder.addOne(useLegacyShortestPath)
 
         if (GraphDatabaseInternalSettings.cypher_eager_analysis_implementation.dynamic())
           builder.addOne(eagerAnalyzer)

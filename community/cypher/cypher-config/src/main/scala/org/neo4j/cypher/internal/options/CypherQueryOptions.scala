@@ -45,7 +45,8 @@ case class CypherQueryOptions(
   debugOptions: CypherDebugOptions,
   parallelRuntimeSupportOption: CypherParallelRuntimeSupportOption,
   eagerAnalyzer: CypherEagerAnalyzerOption,
-  labelInference: LabelInferenceOption
+  labelInference: LabelInferenceOption,
+  statefulShortestPlanningModeOption: CypherStatefulShortestPlanningModeOption
 ) {
 
   if (ILLEGAL_EXPRESSION_ENGINE_RUNTIME_COMBINATIONS((expressionEngine, runtime)))
@@ -404,6 +405,31 @@ case object CypherEagerAnalyzerOption extends CypherOptionCompanion[CypherEagerA
   implicit val renderer: OptionRenderer[CypherEagerAnalyzerOption] = OptionRenderer.create(_.render)
   implicit val cacheKey: OptionCacheKey[CypherEagerAnalyzerOption] = OptionCacheKey.create(_.cacheKey)
   implicit val reader: OptionReader[CypherEagerAnalyzerOption] = singleOptionReader()
+}
+
+sealed abstract class CypherStatefulShortestPlanningModeOption(name: String) extends CypherKeyValueOption(name) {
+  override def companion: CypherStatefulShortestPlanningModeOption.type = CypherStatefulShortestPlanningModeOption
+}
+
+case object CypherStatefulShortestPlanningModeOption
+    extends CypherOptionCompanion[CypherStatefulShortestPlanningModeOption](
+      name = "statefulShortestPlanningMode",
+      setting = Some(GraphDatabaseInternalSettings.stateful_shortest_planning_mode),
+      cypherConfigField = Some(_.statefulShortestPlanningMode)
+    ) {
+
+  case object intoOnly extends CypherStatefulShortestPlanningModeOption("into_only")
+  case object allIfPossible extends CypherStatefulShortestPlanningModeOption("all_if_possible")
+  case object costWeighted extends CypherStatefulShortestPlanningModeOption("cost_weighted")
+
+  override def default: CypherStatefulShortestPlanningModeOption = intoOnly
+
+  def values: Set[CypherStatefulShortestPlanningModeOption] = Set(intoOnly, allIfPossible, costWeighted)
+
+  implicit val hasDefault: OptionDefault[CypherStatefulShortestPlanningModeOption] = OptionDefault.create(default)
+  implicit val renderer: OptionRenderer[CypherStatefulShortestPlanningModeOption] = OptionRenderer.create(_.render)
+  implicit val cacheKey: OptionCacheKey[CypherStatefulShortestPlanningModeOption] = OptionCacheKey.create(_.cacheKey)
+  implicit val reader: OptionReader[CypherStatefulShortestPlanningModeOption] = singleOptionReader()
 }
 
 sealed abstract class CypherDebugOption(flag: String) extends CypherKeyValueOption(flag) {

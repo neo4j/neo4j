@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.options.CypherEagerAnalyzerOption
+import org.neo4j.cypher.internal.options.CypherStatefulShortestPlanningModeOption
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.InputPosition
@@ -280,4 +281,11 @@ class CypherPlannerConfiguration(
 
   val queryRouterEnabled: Boolean = config.useQueryRouterForRegularQueries
   val queryRouterForCompositeQueriesEnabled: Boolean = config.allowCompositeQueries
+
+  val statefulShortestPlanningMode: () => CypherStatefulShortestPlanningModeOption = {
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+      !GraphDatabaseInternalSettings.stateful_shortest_planning_mode.dynamic()
+    )
+    () => config.statefulShortestPlanningMode
+  }
 }

@@ -492,7 +492,9 @@ trait LogicalPlanningTestSupport2 extends AstConstructionTestSupport with Logica
         config = cypherConfig,
         logicalPlanIdGen = idGen,
         debugOptions = debugOptions,
-        executionModel = config.executionModel
+        executionModel = config.executionModel,
+        eagerAnalyzer = cypherConfig.eagerAnalyzer(),
+        statefulShortestPlanningMode = cypherConfig.statefulShortestPlanningMode()
       )
     }
 

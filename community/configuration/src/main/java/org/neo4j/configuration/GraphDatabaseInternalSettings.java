@@ -206,6 +206,30 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
                     "internal.cypher.enable_label_inference", ofEnum(LabelInference.class), LabelInference.DISABLED)
             .build();
 
+    public enum StatefulShortestPlanningMode {
+        /**
+         * Only plan StatefulShortestPath(Into).
+         */
+        INTO_ONLY,
+        /**
+         * Plan StatefulShortestPath(All) always, except when both boundary nodes are previously bound, e.g.
+         * in MATCH (a), (b) WITH * SKIP 10 MATCH SHORTEST (a) ... (b)`
+         */
+        ALL_IF_POSSIBLE,
+        /**
+         * Let the cost model decide between both plan alternatives.
+         */
+        COST_WEIGHTED
+    }
+
+    @Internal
+    @Description("The planning strategy for selective path patterns, e.g. `MATCH ANY SHORTEST ...`.")
+    public static final Setting<StatefulShortestPlanningMode> stateful_shortest_planning_mode = newBuilder(
+                    "internal.cypher.stateful_shortest_planning_mode",
+                    ofEnum(StatefulShortestPlanningMode.class),
+                    StatefulShortestPlanningMode.INTO_ONLY)
+            .build();
+
     @Internal
     @Description(
             "The threshold when a warning is generated if a label scan is done after a load csv where the label has no index")

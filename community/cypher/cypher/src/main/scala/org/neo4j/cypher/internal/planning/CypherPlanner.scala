@@ -388,6 +388,7 @@ case class CypherPlanner(
       options.materializedEntitiesMode,
       options.queryOptions.eagerAnalyzer,
       options.queryOptions.labelInference,
+      options.queryOptions.statefulShortestPlanningModeOption,
       databaseReferenceRepository,
       transactionalContextWrapper.databaseId,
       log,

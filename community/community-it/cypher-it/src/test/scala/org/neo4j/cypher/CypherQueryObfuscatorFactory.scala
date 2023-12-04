@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.frontend.phases.Parse
 import org.neo4j.cypher.internal.frontend.phases.ProcedureSignature
 import org.neo4j.cypher.internal.frontend.phases.QualifiedName
 import org.neo4j.cypher.internal.options.CypherEagerAnalyzerOption
+import org.neo4j.cypher.internal.options.CypherStatefulShortestPlanningModeOption
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.spi.procsHelpers.asCypherProcedureSignature
@@ -97,6 +98,7 @@ class CypherQueryObfuscatorFactory {
       CancellationChecker.NeverCancelled,
       false,
       CypherEagerAnalyzerOption.default,
+      CypherStatefulShortestPlanningModeOption.default,
       null,
       null,
       null,

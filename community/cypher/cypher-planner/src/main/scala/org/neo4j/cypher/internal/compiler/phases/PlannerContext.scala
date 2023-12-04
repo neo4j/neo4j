@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.options.CypherEagerAnalyzerOption
+import org.neo4j.cypher.internal.options.CypherStatefulShortestPlanningModeOption
 import org.neo4j.cypher.internal.options.LabelInferenceOption
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.CancellationChecker
@@ -99,6 +100,7 @@ class PlannerContext(
   cancellationChecker: CancellationChecker,
   val materializedEntitiesMode: Boolean,
   val eagerAnalyzer: CypherEagerAnalyzerOption,
+  val statefulShortestPlanningMode: CypherStatefulShortestPlanningModeOption,
   val databaseReferenceRepository: DatabaseReferenceRepository,
   val databaseId: NamedDatabaseId,
   val log: Log,
@@ -128,6 +130,7 @@ object PlannerContext {
     materializedEntitiesMode: Boolean,
     eagerAnalyzer: CypherEagerAnalyzerOption,
     labelInference: LabelInferenceOption,
+    statefulShortestPlanningMode: CypherStatefulShortestPlanningModeOption,
     databaseReferenceRepository: DatabaseReferenceRepository,
     databaseId: NamedDatabaseId,
     log: Log,
@@ -160,6 +163,7 @@ object PlannerContext {
       cancellationChecker,
       materializedEntitiesMode,
       eagerAnalyzer,
+      statefulShortestPlanningMode,
       databaseReferenceRepository,
       databaseId,
       log,
