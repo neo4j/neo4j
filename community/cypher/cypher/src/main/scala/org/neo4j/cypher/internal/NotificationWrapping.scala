@@ -228,10 +228,12 @@ object NotificationWrapping {
         NotificationDetail.missingParameters(javaParameters),
         NotificationDetail.parameters(javaParameters)
       )
-    case CodeGenerationFailedNotification(msg) =>
+    case CodeGenerationFailedNotification(failingConf, fallbackRuntimeConf, cause) =>
       NotificationCodeWithDescription.codeGenerationFailed(
         graphdb.InputPosition.empty,
-        msg
+        failingConf,
+        fallbackRuntimeConf,
+        cause
       )
     case SubqueryVariableShadowing(pos, varName) =>
       NotificationCodeWithDescription.subqueryVariableShadowing(

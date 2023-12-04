@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime
 import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.config.MemoryTrackingController
+import org.neo4j.cypher.internal.options.CypherExpressionEngineOption
 import org.neo4j.util.Preconditions
 
 import java.io.File
@@ -42,7 +43,8 @@ object CypherRuntimeConfiguration {
       varExpandRelationshipIdSetThreshold = config.varExpandRelationshipIdSetThreshold,
       compiledExpressionMethodLimit = config.compiledExpressionMethodLimit,
       operatorFusingMethodLimit = config.operatorFusingMethodLimit,
-      freeMemoryOfUnusedColumns = config.freeMemoryOfUnusedColumns
+      freeMemoryOfUnusedColumns = config.freeMemoryOfUnusedColumns,
+      expressionEngineOption = config.expressionEngineOption
     )
   }
 
@@ -63,7 +65,8 @@ case class CypherRuntimeConfiguration(
   varExpandRelationshipIdSetThreshold: Int,
   compiledExpressionMethodLimit: Int,
   operatorFusingMethodLimit: Int,
-  freeMemoryOfUnusedColumns: Boolean
+  freeMemoryOfUnusedColumns: Boolean,
+  expressionEngineOption: CypherExpressionEngineOption
 ) {
 
   Preconditions.checkArgument(

@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.expressions.IsRepeatTrailUnique
 import org.neo4j.cypher.internal.expressions.LogicalProperty
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
+import org.neo4j.cypher.internal.expressions.NonCompilable
 import org.neo4j.cypher.internal.expressions.NullCheckAssert
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
@@ -455,6 +456,7 @@ case class CommunityExpressionConverter(
         commands.expressions.ElementIdListToRelationshipIdListFunction(self.toCommandExpression(id, rhs))
       case _: IsRepeatTrailUnique => predicates.True()
       case _: NullCheckAssert     => commands.expressions.Literal(NO_VALUE)
+      case _: NonCompilable       => commands.expressions.Literal(NO_VALUE)
       case _                      => null
     }
 

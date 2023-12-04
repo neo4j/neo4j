@@ -627,7 +627,11 @@ class NotificationCodeWithDescriptionTest {
 
     @Test
     void shouldConstructNotificationsFor_CODE_GENERATION_FAILED() {
-        NotificationImplementation notification = codeGenerationFailed(InputPosition.empty, "method too big");
+        NotificationImplementation notification = codeGenerationFailed(
+                InputPosition.empty,
+                "runtime=pipelined operatorEngine=compiled expressionEngine=compiled",
+                "runtime=pipelined operatorEngine=interpreted expressionEngine=compiled",
+                "method too big");
 
         verifyNotification(
                 notification,
@@ -636,7 +640,8 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Statement.CodeGenerationFailed",
                 "The database was unable to generate code for the query. A stacktrace can be found in the debug.log. (method too big)",
                 NotificationCategory.PERFORMANCE,
-                null);
+                "The query cannot be executed with `runtime=pipelined operatorEngine=compiled expressionEngine=compiled`, "
+                        + "`runtime=pipelined operatorEngine=interpreted expressionEngine=compiled` is used. Cause: `method too big`.");
     }
 
     @Test

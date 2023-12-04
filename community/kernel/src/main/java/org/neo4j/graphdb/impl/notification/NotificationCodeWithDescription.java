@@ -43,7 +43,7 @@ public enum NotificationCodeWithDescription {
     RUNTIME_UNSUPPORTED(
             Status.Statement.RuntimeUnsupportedWarning,
             "Selected runtime is unsupported for this query, please use a different runtime instead or fallback to default. (%s)",
-            "The query cannot be executed with `%s`, `%s` is used. Cause: `%s`."),
+            NotificationCodeWithDescription.RUNTIME_UNSUPPORTED_MESSAGE),
     INDEX_HINT_UNFULFILLABLE(
             Status.Schema.HintedIndexNotFound,
             "The hinted index does not exist, please check the schema (%s)",
@@ -185,7 +185,9 @@ public enum NotificationCodeWithDescription {
             "The query plan cannot be cached and is not executable without `EXPLAIN` due to the undefined parameter(s) `%s`. Provide the parameter(s)."),
     CODE_GENERATION_FAILED(
             Status.Statement.CodeGenerationFailed,
-            "The database was unable to generate code for the query. A stacktrace can be found in the debug.log. (%s)"),
+            "The database was unable to generate code for the query. A stacktrace can be found in the debug.log. (%s)",
+            NotificationCodeWithDescription.RUNTIME_UNSUPPORTED_MESSAGE),
+
     SUBQUERY_VARIABLE_SHADOWING(
             Status.Statement.SubqueryVariableShadowing,
             "Variable in subquery is shadowing a variable with the same name from the outer scope. "
@@ -463,8 +465,11 @@ public enum NotificationCodeWithDescription {
                 position, new String[] {oldDetails}, new String[] {parameters});
     }
 
-    public static NotificationImplementation codeGenerationFailed(InputPosition position, String param) {
-        return CODE_GENERATION_FAILED.notification(position, param);
+    public static NotificationImplementation codeGenerationFailed(
+            InputPosition position, String failingRuntimeConf, String fallbackRuntimeConf, String cause) {
+        final var oldDetails = new String[] {cause};
+        final var params = new String[] {failingRuntimeConf, fallbackRuntimeConf, cause};
+        return CODE_GENERATION_FAILED.notificationWithMessage(position, oldDetails, params);
     }
 
     public static NotificationImplementation subqueryVariableShadowing(
@@ -587,4 +592,7 @@ public enum NotificationCodeWithDescription {
     private static final String DEPRECATION_MESSAGE_1 = "`%s` is deprecated. It is replaced by `%s`.";
 
     private static final String DEPRECATION_MESSAGE_2 = "`%s` is deprecated and will be removed without a replacement.";
+
+    private static final String RUNTIME_UNSUPPORTED_MESSAGE =
+            "The query cannot be executed with `%s`, `%s` is used. Cause: `%s`.";
 }

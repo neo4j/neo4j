@@ -86,14 +86,14 @@ trait ExpressionConverter {
 }
 
 trait ExpressionConversionLogger {
-  def failedToConvertExpression(expression: internal.expressions.Expression): Unit
-  def failedToConvertProjection(projection: Map[LogicalVariable, expressions.Expression]): Unit
+  def failedToConvertCompiledExpression(expression: internal.expressions.Expression): Unit
+  def failedToConvertCompiledProjection(projection: Map[LogicalVariable, expressions.Expression]): Unit
   def warnings: Set[InternalNotification]
 }
 
 object NullExpressionConversionLogger extends ExpressionConversionLogger {
-  override def failedToConvertExpression(expression: internal.expressions.Expression): Unit = {}
-  override def failedToConvertProjection(projection: Map[LogicalVariable, Expression]): Unit = {}
+  override def failedToConvertCompiledExpression(expression: internal.expressions.Expression): Unit = {}
+  override def failedToConvertCompiledProjection(projection: Map[LogicalVariable, Expression]): Unit = {}
   override def warnings: Set[InternalNotification] = Set.empty
 
 }

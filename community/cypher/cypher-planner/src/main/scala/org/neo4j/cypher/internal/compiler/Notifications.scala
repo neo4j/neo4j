@@ -68,6 +68,10 @@ case class DeprecatedFieldNotification(position: InputPosition, procedure: Strin
 
 case class MissingParametersNotification(parameters: Seq[String]) extends InternalNotification
 
-case class CodeGenerationFailedNotification(msg: String) extends InternalNotification
+case class CodeGenerationFailedNotification(
+  failingRuntimeConf: String,
+  fallbackRuntimeConf: String,
+  msg: String
+) extends InternalNotification
 
 case class SideEffectVisibility(position: InputPosition) extends InternalNotification
