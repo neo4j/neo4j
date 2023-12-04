@@ -107,8 +107,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           singletonRelationshipVariables = Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
-          ExpandAll,
-          false
+          ExpandAll
         )
         .nodeByLabelScan("u", "User")
         .build()
@@ -173,8 +172,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
             .addTransition(6, 7, "(anon_10) (t)")
             .setFinalState(7)
             .build(),
-          ExpandAll,
-          reverseGroupVariableProjections = false
+          ExpandAll
         )
         .nodeByLabelScan("s", "User")
         .build()
@@ -206,8 +204,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           singletonRelationshipVariables = Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
-          ExpandAll,
-          false
+          ExpandAll
         )
         .nodeByLabelScan("u", "User")
         .build()
@@ -308,8 +305,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           singletonRelationshipVariables = Set("s" -> "s"),
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
-          ExpandAll,
-          reverseGroupVariableProjections = false
+          ExpandAll
         )
         .nodeByLabelScan("u", "User")
         .build()
@@ -349,8 +345,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
-          ExpandAll,
-          reverseGroupVariableProjections = false
+          ExpandAll
         )
         .apply()
         .|.allNodeScan("a", "d")
@@ -387,8 +382,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           Set(),
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
-          ExpandAll,
-          reverseGroupVariableProjections = false
+          ExpandAll
         )
         .skip(0)
         .cartesianProduct()
@@ -599,8 +593,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
-          ExpandAll,
-          reverseGroupVariableProjections = false
+          ExpandAll
         )
         .filter("cacheN[d.prop] = 5")
         .skip(0)
@@ -744,8 +737,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
-          ExpandAll,
-          reverseGroupVariableProjections = false
+          ExpandAll
         )
         .nodeByLabelScan("a", "User")
         .build()
@@ -797,8 +789,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
-          ExpandAll,
-          reverseGroupVariableProjections = false
+          ExpandAll
         )
         .nodeByLabelScan("a", "User")
         .build()
@@ -850,8 +841,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
-          ExpandAll,
-          reverseGroupVariableProjections = false
+          ExpandAll
         )
         .nodeByLabelScan("a", "User")
         .build()
@@ -886,8 +876,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
-          ExpandAll,
-          reverseGroupVariableProjections = false
+          ExpandAll
         )
         .nodeByLabelScan("a", "User")
         .build()
@@ -920,7 +909,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
           ExpandAll,
-          true
+          reverseGroupVariableProjections = true
         )
         .nodeByLabelScan("v", "User")
         .build()
@@ -973,8 +962,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           singletonRelationshipVariables = Set.empty,
           selector = StatefulShortestPath.Selector.Shortest(1),
           nfa = expectedNfa,
-          ExpandAll,
-          false
+          ExpandAll
         )
         .nodeByLabelScan("u", "User")
         .build()
@@ -1010,8 +998,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           singletonRelationshipVariables = Set("s" -> "s"),
           StatefulShortestPath.Selector.Shortest(1),
           expectedNfa,
-          ExpandAll,
-          false
+          ExpandAll
         )
         .nodeByLabelScan("u", "User")
         .build()
@@ -1047,8 +1034,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           singletonRelationshipVariables = Set("s" -> "s"),
           StatefulShortestPath.Selector.Shortest(1),
           expectedNfa,
-          ExpandAll,
-          false
+          ExpandAll
         )
         .nodeByLabelScan("u", "User")
         .build()
@@ -1084,8 +1070,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           singletonRelationshipVariables = Set("s" -> "s"),
           StatefulShortestPath.Selector.Shortest(1),
           expectedNfa,
-          ExpandAll,
-          false
+          ExpandAll
         )
         .nodeByLabelScan("u", "User")
         .build()
@@ -1128,8 +1113,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           singletonRelationshipVariables = Set("t" -> "t"),
           selector = StatefulShortestPath.Selector.Shortest(1),
           nfa = expectedNfa,
-          ExpandAll,
-          false
+          ExpandAll
         )
         .nodeByLabelScan("u", "User")
         .build()
@@ -1233,8 +1217,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           singletonRelationshipVariables = Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
-          ExpandAll,
-          false
+          ExpandAll
         )
         .filter("CoerceToPredicate($param)")
         .nodeByLabelScan("u", "User")
@@ -1355,8 +1338,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           singletonRelationshipVariables = Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
-          ExpandAll,
-          false
+          ExpandAll
         )
         .nodeByLabelScan("u", "User")
         .build()
@@ -1394,8 +1376,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           singletonRelationshipVariables = Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
-          ExpandAll,
-          reverseGroupVariableProjections = false
+          ExpandAll
         )
         .skip(1)
         .cartesianProduct()
@@ -1437,8 +1418,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           singletonRelationshipVariables = Set("r2" -> "r2"),
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
-          ExpandAll,
-          reverseGroupVariableProjections = false
+          ExpandAll
         )
         .skip(1)
         .cartesianProduct()
@@ -1474,8 +1454,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           singletonRelationshipVariables = Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
-          ExpandAll,
-          false
+          ExpandAll
         )
         .nodeIndexOperator("u:User(prop > 5)", getValue = _ => GetValue)
         .build()
@@ -1526,7 +1505,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           StatefulShortestPath.Selector.Shortest(1),
           expectedNfa,
           ExpandAll,
-          false
+          reverseGroupVariableProjections = false
         )
         .nodeByLabelScan("u", "User")
         .build()
@@ -1576,7 +1555,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           StatefulShortestPath.Selector.Shortest(1),
           expectedNfa,
           ExpandAll,
-          false
+          reverseGroupVariableProjections = false
         )
         .nodeByLabelScan("u", "User")
         .build()
@@ -1615,8 +1594,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           .addTransition(2, 3, "(c) (d)")
           .setFinalState(3)
           .build(),
-        ExpandAll,
-        false
+        ExpandAll
       )
       .allNodeScan("a")
       .build()
@@ -1668,8 +1646,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           .addTransition(4, 5, "(e)-[anon_3]-(f)")
           .setFinalState(5)
           .build(),
-        ExpandAll,
-        false
+        ExpandAll
       )
       .allNodeScan("a")
       .build()
@@ -1707,8 +1684,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           .addTransition(0, 1, "(a)-[r]->(b)")
           .setFinalState(1)
           .build(),
-        ExpandAll,
-        false
+        ExpandAll
       )
       .allNodeScan("a")
       .build()
@@ -1736,8 +1712,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         singletonRelationshipVariables = Set(),
         StatefulShortestPath.Selector.Shortest(1),
         nfaLR,
-        ExpandAll,
-        reverseGroupVariableProjections = false
+        ExpandAll
       )
       .nodeByLabelScan("a", "A")
       .build()
