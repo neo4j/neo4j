@@ -252,7 +252,7 @@ final case class QuantifiedPathPattern(
   override val relationships: Set[LogicalVariable] = relationshipVariableGroupings.map(_.group)
   override val boundaryNodes: (LogicalVariable, LogicalVariable) = (left, right)
   val variableGroupings: Set[VariableGrouping] = nodeVariableGroupings ++ relationshipVariableGroupings
-  val variableGroupNames: Set[LogicalVariable] = variableGroupings.map(_.group)
+  val groupVariables: Set[LogicalVariable] = variableGroupings.map(_.group)
 
   override def withLeft(left: LogicalVariable): QuantifiedPathPattern =
     copy(leftBinding = leftBinding.copy(outer = left))

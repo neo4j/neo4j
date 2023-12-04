@@ -61,7 +61,6 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.bottomUp
-import org.neo4j.cypher.internal.util.topDown
 
 import scala.collection.immutable.ListSet
 import scala.collection.mutable
@@ -439,36 +438,15 @@ object expandSolverStep {
           .exists(_.queryGraph.selections.contains(predicate))
       )
 
-    val (newEndNode, newSpp, newUnsolvedPredicatesOnEndNode) = if (availableSymbols.contains(endNode)) {
-      // If both the start and the end are already bound, we need to plan an extra filter to verify that we expanded to the right end nodes.
-      val newEndNodeVar = varFor(Namespacer.genName(context.staticComponents.anonymousVariableNameGenerator, endNode))
-      val hiddenFilter = equalsPredicate(newEndNodeVar, varFor(endNode))
-      val rewriter = topDown(Rewriter.lift {
-        case Variable(`endNode`) => newEndNodeVar
-      })
-
-      val newSpp = (if (fromLeft) {
-                      sppWithInlinedQppPredicates.withRight(newEndNodeVar)
-                    } else {
-                      sppWithInlinedQppPredicates.withLeft(newEndNodeVar)
-                    })
-        .copy(selections = Selections.from(sppWithInlinedQppPredicates.selections.flatPredicatesSet + hiddenFilter))
-      val newUnsolvedPredicatesOnEndNode = unsolvedPredicatesOnEndNode.endoRewrite(rewriter)
-
-      (newEndNodeVar.name, newSpp, newUnsolvedPredicatesOnEndNode)
-    } else {
-      (endNode, sppWithInlinedQppPredicates, unsolvedPredicatesOnEndNode)
-    }
-
     convertToNFAAndPlan(
-      newSpp,
+      sppWithInlinedQppPredicates,
       sourcePlan,
       startNode,
       fromLeft,
-      newEndNode,
+      endNode,
       availableSymbols,
       spp,
-      newUnsolvedPredicatesOnEndNode,
+      unsolvedPredicatesOnEndNode,
       context,
       reverseGroupVariableProjections = !fromLeft
     )
@@ -486,7 +464,7 @@ object expandSolverStep {
     sourcePlan: LogicalPlan,
     startNode: String,
     fromLeft: Boolean,
-    newEndNode: String,
+    endNode: String,
     availableSymbols: Set[String],
     solvedSpp: SelectivePathPattern,
     unsolvedPredicatesOnTargetNode: Seq[Expression],
@@ -494,9 +472,15 @@ object expandSolverStep {
     reverseGroupVariableProjections: Boolean
   ): LogicalPlan = {
 
+    val mode = if (availableSymbols.contains(endNode)) ExpandInto else ExpandAll
+
     val rewriteLookup = mutable.Map.empty[LogicalVariable, LogicalVariable]
     val nonSingletons =
-      spp.allQuantifiedPathPatterns.flatMap(_.variableGroupNames) ++ spp.varLengthRelationships + varFor(startNode)
+      spp.allQuantifiedPathPatterns.flatMap(_.groupVariables) ++
+        spp.varLengthRelationships +
+        varFor(startNode) ++
+        Option.when(mode == ExpandInto)(varFor(endNode))
+
     val singletonNodeVariables = Set.newBuilder[Mapping]
     val singletonRelVariables = Set.newBuilder[Mapping]
     spp.pathVariables.iterator
@@ -553,8 +537,9 @@ object expandSolverStep {
     context.staticComponents.logicalPlanProducer.planStatefulShortest(
       sourcePlan,
       startNode,
-      newEndNode,
+      endNode,
       rewrittenNfa,
+      mode,
       nonInlinedPreFilters,
       nodeVariableGroupings,
       relationshipVariableGroupings,

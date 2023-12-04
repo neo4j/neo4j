@@ -157,7 +157,6 @@ import org.neo4j.cypher.internal.logical.plans.EmptyResult
 import org.neo4j.cypher.internal.logical.plans.ErrorPlan
 import org.neo4j.cypher.internal.logical.plans.ExhaustiveLimit
 import org.neo4j.cypher.internal.logical.plans.Expand
-import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpansionMode
 import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
 import org.neo4j.cypher.internal.logical.plans.FindShortestPaths
@@ -2333,6 +2332,7 @@ case class LogicalPlanProducer(
     startNode: String,
     endNode: String,
     nfa: NFA,
+    mode: ExpansionMode,
     nonInlinedPreFilters: Option[Expression],
     nodeVariableGroupings: Set[VariableGrouping],
     relationshipVariableGroupings: Set[VariableGrouping],
@@ -2363,7 +2363,7 @@ case class LogicalPlanProducer(
       varFor(startNode),
       varFor(endNode),
       rewrittenNFA,
-      ExpandAll,
+      mode,
       rewrittenNonInlinablePreFilters,
       nodeVariableGroupings,
       relationshipVariableGroupings,
