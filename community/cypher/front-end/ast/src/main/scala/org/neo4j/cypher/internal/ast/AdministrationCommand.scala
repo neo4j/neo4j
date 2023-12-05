@@ -87,6 +87,9 @@ sealed trait AdministrationCommand extends StatementWithGraph with SemanticAnaly
         s"The `USE` clause is not required for Administration Commands. Retry your query omitting the `USE` clause and it will be routed automatically.",
         position
       ))
+
+  override def dup(children: Seq[AnyRef]): this.type =
+    super.dup(children).withGraph(useGraph).asInstanceOf[this.type]
 }
 
 sealed trait ReadAdministrationCommand extends AdministrationCommand {
