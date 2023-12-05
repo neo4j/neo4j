@@ -287,7 +287,7 @@ sealed trait NonEmptyList[+T] extends IterableOnce[T] {
 
   final def toSet[X >: T]: Set[X] = foldLeft(Set.empty[X])(_ + _)
   final def toListSet[X >: T]: ListSet[X] = foldLeft(ListSet.empty[X])(_ + _)
-  final def toIndexedSeq: Seq[T] = foldLeft(IndexedSeq.empty[T])(_ :+ _)
+  final def toIndexedSeq: IndexedSeq[T] = foldLeft(IndexedSeq.empty[T])(_ :+ _)
 
   @tailrec
   private def reverseFlatMapLoop[S](
