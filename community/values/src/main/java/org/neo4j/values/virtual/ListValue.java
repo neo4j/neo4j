@@ -118,10 +118,11 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         private final ValueRepresentation itemRepresentation;
 
         ArrayListValue(AnyValue[] values, long payloadSize, ValueRepresentation itemRepresentation) {
-            assert values != null;
+            assert values != null
+                    && payloadSize >= 0
+                    && !containsNull(values)
+                    && assertValueRepresentation(values, itemRepresentation);
             this.payloadSize = shallowSizeOfObjectArray(values.length) + payloadSize;
-            assert !containsNull(values);
-            assert assertValueRepresentation(values, itemRepresentation);
 
             this.values = values;
             this.itemRepresentation = itemRepresentation;
@@ -173,11 +174,12 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         private final ValueRepresentation itemRepresentation;
 
         JavaListListValue(List<AnyValue> values, long payloadSize, ValueRepresentation itemRepresentation) {
-            this.payloadSize = payloadSize;
-            assert values != null;
-            assert !containsNull(values);
-            assert assertValueRepresentation(values.toArray(AnyValue[]::new), itemRepresentation);
+            assert payloadSize >= 0
+                    && values != null
+                    && !containsNull(values)
+                    && assertValueRepresentation(values.toArray(AnyValue[]::new), itemRepresentation);
 
+            this.payloadSize = payloadSize;
             this.values = values;
             this.itemRepresentation = itemRepresentation;
         }

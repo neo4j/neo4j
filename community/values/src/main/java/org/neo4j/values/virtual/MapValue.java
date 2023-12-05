@@ -92,11 +92,13 @@ public abstract class MapValue extends VirtualValue {
         private final long wrappedHeapSize;
 
         MapWrappingMapValue(Map<String, AnyValue> map, long payloadSize) {
+            assert payloadSize >= 0;
             this.map = map;
             this.wrappedHeapSize = sizeOfHashMap(map) + payloadSize;
         }
 
         MapWrappingMapValue(Map<String, AnyValue> map, long mapSize, long payloadSize) {
+            assert payloadSize >= 0;
             this.map = map;
             this.wrappedHeapSize = mapSize + payloadSize;
         }

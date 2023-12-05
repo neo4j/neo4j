@@ -95,7 +95,8 @@ public class HeapTrackingMapValueBuilder implements AutoCloseable {
 
     private long payloadSize() {
         // The shallow size should not be transferred to the MapValue (but the ScopedMemoryTracker is)
-        return unAllocatedHeapSize + scopedMemoryTracker.estimatedHeapMemory() - SHALLOW_SIZE;
+        // If using an EmptyMemoryTracker this might evaluate to a value less than 0
+        return Math.max(unAllocatedHeapSize + scopedMemoryTracker.estimatedHeapMemory() - SHALLOW_SIZE, 0L);
     }
 
     @VisibleForTesting
