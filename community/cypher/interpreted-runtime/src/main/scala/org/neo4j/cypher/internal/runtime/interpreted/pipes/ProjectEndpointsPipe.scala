@@ -241,6 +241,9 @@ case object ProjectEndpoints {
     scanCursor: RelationshipScanCursor,
     typeCheck: RelationshipScanCursorPredicate
   ): Option[EndNodes] = {
+    if (rels.isEmpty) {
+      return None
+    }
 
     val (iterator, start, end, effectiveDirection, reversed) = (startIfInScope, endIfInScope) match {
       // If end is in scope but not start, reverse the order of iteration to fail fast
