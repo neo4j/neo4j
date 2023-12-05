@@ -1127,4 +1127,34 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
       .nodeByLabelScan("a", "A")
       .build()
   }
+
+  test(
+    "should prefer cartesian product + index seek with low cardinality over nested-index-join with high cardinality"
+  ) {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(10000)
+      .setLabelCardinality("A", 1000)
+      .setLabelCardinality("B", 5000)
+      .addNodeIndex("A", Seq("id"), existsSelectivity = 1.0, uniqueSelectivity = 1.0 / 1000.0, isUnique = true)
+      .addNodeIndex("B", Seq("prop"), existsSelectivity = 1.0, uniqueSelectivity = 0.1)
+      .addNodeIndex("B", Seq("otherProp"), existsSelectivity = 1.0, uniqueSelectivity = 0.5)
+      .build()
+
+    val query =
+      """
+        |MATCH (a:A {id: 1}), (b:B {prop: 2})
+        |WHERE b.otherProp < a.otherProp
+        |RETURN a, b
+        |""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .filter("cacheN[b.otherProp] < cacheN[a.otherProp]")
+      .cartesianProduct()
+      .|.cacheProperties("cacheNFromStore[b.otherProp]")
+      .|.nodeIndexOperator("b:B(prop = 2)")
+      .cacheProperties("cacheNFromStore[a.otherProp]")
+      .nodeIndexOperator("a:A(id = 1)", unique = true)
+      .build()
+  }
 }
