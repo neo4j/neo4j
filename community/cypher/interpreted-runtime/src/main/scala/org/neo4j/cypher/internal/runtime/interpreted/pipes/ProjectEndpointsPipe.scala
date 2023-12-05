@@ -367,6 +367,10 @@ case object ProjectEndpoints {
     typeCheck: RelationshipScanCursorPredicate
   ): Seq[EndNodes] = {
 
+    if (rels.isEmpty) {
+      return Seq.empty
+    }
+
     val iterator = rels.iterator()
 
     val DISQUALIFIED = -2L
