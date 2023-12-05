@@ -182,8 +182,8 @@ class StatementDeserializerTest {
                 "[{]}",
                 "Could not parse the incoming JSON",
                 "Unexpected close marker ']': " + "expected '}' "
-                        + "(for Object starting at [Source: (ByteArrayInputStream); line: 1, column: 2])\n "
-                        + "at [Source: (ByteArrayInputStream); line: 1, column: 4]");
+                        + "(for Object starting at [Source: REDACTED (`StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION` disabled); line: 1, column: 2])\n "
+                        + "at [Source: REDACTED (`StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION` disabled); line: 1, column: 4]");
 
         assertYieldsErrors(
                 "{ \"statements\" : \"ITS A STRING\" }",
@@ -194,7 +194,7 @@ class StatementDeserializerTest {
                 "{ \"statements\" : [ { \"statement\" : [\"dd\"] } ] }",
                 "Could not map the incoming JSON",
                 "Cannot deserialize value of type"
-                        + " `java.lang.String` from Array value (token `JsonToken.START_ARRAY`)\n at [Source: (ByteArrayInputStream); line: 1, "
+                        + " `java.lang.String` from Array value (token `JsonToken.START_ARRAY`)\n at [Source: REDACTED (`StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION` disabled); line: 1, "
                         + "column: 36]");
 
         assertYieldsErrors(
@@ -202,7 +202,7 @@ class StatementDeserializerTest {
                 "Could not map the incoming JSON",
                 "Cannot deserialize value of type"
                         + " `java.util.LinkedHashMap<java.lang.Object,java.lang.Object>` from Array value (token `JsonToken.START_ARRAY`)\n "
-                        + "at [Source: (ByteArrayInputStream); line: 1, column: 59]");
+                        + "at [Source: REDACTED (`StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION` disabled); line: 1, column: 59]");
     }
 
     private void assertYieldsErrors(String json, String... expectedErrorMessages) {
