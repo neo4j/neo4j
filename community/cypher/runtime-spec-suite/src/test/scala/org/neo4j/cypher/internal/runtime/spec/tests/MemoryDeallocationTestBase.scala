@@ -936,6 +936,50 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
     )
   }
 
+  test("should account for memory allocated in value population with deeply nested nodes") {
+    val nodes = givenGraph {
+      // Some nodes with memory hungry properties and labels
+      nodePropertyGraphFunctional(
+        nNodes = 32,
+        properties = { i =>
+          Range(0, 128).map(p => s"p$p" -> s"$i:$p:${"bla".repeat(24)}").toMap
+        },
+        labels = { i =>
+          Range(0, 128).map(l => s"Label-$i-$l")
+        }
+      )
+    }
+
+    val estHeapPropsAndLabels = nodes
+      .map { n =>
+        val propValueHeap = n.getAllProperties.asScala.values.map(v => Values.of(v).estimatedHeapUsage()).sum
+        val labelsHeap = n.getLabels.asScala.map(l => Values.of(l.name()).estimatedHeapUsage()).sum
+        propValueHeap + labelsHeap
+      }
+      .sum
+
+    val queryWithNestedNodeRefs = new LogicalQueryBuilder(this)
+      .produceResults("nestedNodes")
+      .projection("[[[[[[[[[[nodes]]]]]]]]]] as nestedNodes")
+      // .projection("nodes as nestedNodes")
+      .aggregation(Seq.empty, Seq("collect(n) as nodes"))
+      .allNodeScan("n")
+      .build()
+
+    val queryWithPropsAndLabels = new LogicalQueryBuilder(this)
+      .produceResults("props", "labels")
+      .aggregation(Seq.empty, Seq("collect(properties(n)) as props", "collect(labels(n)) as labels"))
+      .allNodeScan("n")
+      .build()
+
+    compareMemoryUsage(
+      queryWithNestedNodeRefs,
+      queryWithPropsAndLabels,
+      toleratedDeviation = 0.20,
+      minAllocated = estHeapPropsAndLabels
+    )
+  }
+
   protected def compareMemoryUsageImplicitTx(
     logicalQuery1: LogicalQuery,
     logicalQuery2: LogicalQuery,

@@ -29,7 +29,6 @@ import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.kernel.impl.util.NodeEntityWrappingNodeValue;
 import org.neo4j.kernel.impl.util.RelationshipEntityWrappingValue;
-import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.TextArray;
@@ -178,16 +177,7 @@ public final class ValuePopulation {
         final var builder = HeapTrackingMapValueBuilder.newHeapTrackingMapValueBuilder(memoryTracker);
 
         value.foreach((key, anyValue) ->
-                // Empty memory tracker here to avoid duplicated estimation in nested lists/maps.
-                builder.put(
-                        key,
-                        populate(
-                                anyValue,
-                                dbAccess,
-                                nodeCursor,
-                                relCursor,
-                                propertyCursor,
-                                EmptyMemoryTracker.INSTANCE)));
+                builder.put(key, populate(anyValue, dbAccess, nodeCursor, relCursor, propertyCursor, memoryTracker)));
 
         // Values are still in memory but harder to track after this point.
         // The intention is to at least avoid OOM during population of heavy maps.
@@ -203,8 +193,7 @@ public final class ValuePopulation {
             MemoryTracker memoryTracker) {
         final var builder = new HeapTrackingListValueBuilder(memoryTracker);
         for (AnyValue v : value) {
-            // Empty memory tracker here to avoid duplicated estimation in nested lists/maps.
-            builder.add(populate(v, dbAccess, nodeCursor, relCursor, propertyCursor, EmptyMemoryTracker.INSTANCE));
+            builder.add(populate(v, dbAccess, nodeCursor, relCursor, propertyCursor, memoryTracker));
         }
         return builder.buildAndClose();
     }
