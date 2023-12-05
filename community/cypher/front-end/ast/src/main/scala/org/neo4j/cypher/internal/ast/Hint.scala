@@ -35,9 +35,7 @@ sealed trait Hint extends ASTNode with SemanticCheckable with SemanticAnalysisTo
   def variables: NonEmptyList[Variable]
 }
 
-trait NodeHint {
-  self: Hint =>
-}
+sealed trait NodeHint extends Hint
 
 object Hint {
 
@@ -105,6 +103,21 @@ case class UsingJoinHint(variables: NonEmptyList[Variable])(val position: InputP
       _ chain _
     )
 }
+
+/**
+ * These are never introduced from the parser currently. Thus no need for semantic checks or input positions.
+ */
+sealed trait UsingStatefulShortestPathHint extends UsingHint {
+  override def semanticCheck: SemanticCheck = SemanticCheck.success
+
+  override def position: InputPosition = InputPosition.NONE
+}
+
+case class UsingStatefulShortestPathInto(override val variables: NonEmptyList[Variable])
+    extends UsingStatefulShortestPathHint
+
+case class UsingStatefulShortestPathAll(override val variables: NonEmptyList[Variable])
+    extends UsingStatefulShortestPathHint
 
 // start items
 

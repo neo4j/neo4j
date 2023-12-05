@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.ast.Union.UnionMapping
 import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.ast.UsingJoinHint
 import org.neo4j.cypher.internal.ast.UsingScanHint
+import org.neo4j.cypher.internal.ast.UsingStatefulShortestPathHint
 import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.helpers.PredicateHelper.coercePredicatesWithAnds
 import org.neo4j.cypher.internal.compiler.planner.ProcedureCallProjection
@@ -2342,12 +2343,14 @@ case class LogicalPlanProducer(
     solvedExpressionAsString: String,
     solvedSpp: SelectivePathPattern,
     solvedPredicates: Seq[Expression],
-    context: LogicalPlanningContext,
-    reverseGroupVariableProjections: Boolean
+    reverseGroupVariableProjections: Boolean,
+    hints: Set[UsingStatefulShortestPathHint],
+    context: LogicalPlanningContext
   ): LogicalPlan = {
     val solved = solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(
       _.addSelectivePathPattern(solvedSpp)
         .addPredicates(solvedPredicates: _*)
+        .addHints(hints)
     )
     val (rewrittenNFA, rewrittenNonInlinablePreFilters) = {
       // We do not use the SubqueryExpressionSolver, since all expressions for StatefulShortest

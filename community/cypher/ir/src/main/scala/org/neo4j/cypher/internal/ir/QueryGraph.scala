@@ -21,6 +21,9 @@ package org.neo4j.cypher.internal.ir
 
 import org.neo4j.cypher.internal.ast.Hint
 import org.neo4j.cypher.internal.ast.UsingJoinHint
+import org.neo4j.cypher.internal.ast.UsingStatefulShortestPathAll
+import org.neo4j.cypher.internal.ast.UsingStatefulShortestPathHint
+import org.neo4j.cypher.internal.ast.UsingStatefulShortestPathInto
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelName
@@ -573,6 +576,12 @@ final case class QueryGraph private (
 
   def joinHints: Set[UsingJoinHint] =
     hints.collect { case hint: UsingJoinHint => hint }
+
+  def statefulShortestPathIntoHints: Set[UsingStatefulShortestPathHint] =
+    hints.collect { case hint: UsingStatefulShortestPathInto => hint }
+
+  def statefulShortestPathAllHints: Set[UsingStatefulShortestPathHint] =
+    hints.collect { case hint: UsingStatefulShortestPathAll => hint }
 
   private def connectedComponentFor(startNode: String, visited: mutable.Set[String]): QueryGraph = {
     val queue = mutable.Queue(startNode)

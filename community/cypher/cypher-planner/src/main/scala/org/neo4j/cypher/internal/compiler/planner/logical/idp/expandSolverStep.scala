@@ -194,7 +194,14 @@ object expandSolverStep {
           unsolvedPredicates(context.staticComponents.planningAttributes.solveds, qg.selections, sourcePlan)
         )
       case spp: SelectivePathPattern =>
-        produceStatefulShortestLogicalPlan(spp, sourcePlan, nodeId, availableSymbols, qg.selections, context)
+        produceStatefulShortestLogicalPlan(
+          spp,
+          sourcePlan,
+          nodeId,
+          availableSymbols,
+          qg,
+          context
+        )
     }
   }
 
@@ -418,18 +425,18 @@ object expandSolverStep {
   }
 
   private def produceStatefulShortestLogicalPlan(
-    spp: SelectivePathPattern,
+    originalSpp: SelectivePathPattern,
     sourcePlan: LogicalPlan,
     startNode: String,
     availableSymbols: Set[String],
-    queryGraphSelections: Selections,
+    queryGraph: QueryGraph,
     context: LogicalPlanningContext
   ) = {
-    val sppWithInlinedQppPredicates = inlineQPPPredicates(spp, availableSymbols)
-    val fromLeft = startNode == sppWithInlinedQppPredicates.left.name
-    val endNode = if (fromLeft) sppWithInlinedQppPredicates.right.name else sppWithInlinedQppPredicates.left.name
+    val spp = inlineQPPPredicates(originalSpp, availableSymbols)
+    val fromLeft = startNode == spp.left.name
+    val endNode = if (fromLeft) spp.right.name else spp.left.name
 
-    val unsolvedPredicatesOnEndNode = queryGraphSelections
+    val unsolvedPredicatesOnEndNode = queryGraph.selections
       .predicatesGiven((availableSymbols + endNode).map(varFor))
       .filterNot(predicate =>
         context.staticComponents.planningAttributes.solveds
@@ -438,41 +445,15 @@ object expandSolverStep {
           .exists(_.queryGraph.selections.contains(predicate))
       )
 
-    convertToNFAAndPlan(
-      sppWithInlinedQppPredicates,
-      sourcePlan,
-      startNode,
-      fromLeft,
-      endNode,
-      availableSymbols,
-      spp,
-      unsolvedPredicatesOnEndNode,
-      context,
-      reverseGroupVariableProjections = !fromLeft
-    )
-  }
-
-  private def selectionsWithOriginalPredicates(spp: SelectivePathPattern): Selections =
-    Selections.from(spp.selections.flatPredicates.map {
-      case far: ForAllRepetitions =>
-        far.originalInnerPredicate
-      case expr: Expression => expr
-    })
-
-  private def convertToNFAAndPlan(
-    spp: SelectivePathPattern,
-    sourcePlan: LogicalPlan,
-    startNode: String,
-    fromLeft: Boolean,
-    endNode: String,
-    availableSymbols: Set[String],
-    solvedSpp: SelectivePathPattern,
-    unsolvedPredicatesOnTargetNode: Seq[Expression],
-    context: LogicalPlanningContext,
-    reverseGroupVariableProjections: Boolean
-  ): LogicalPlan = {
-
-    val mode = if (availableSymbols.contains(endNode)) ExpandInto else ExpandAll
+    val (mode, matchingHints) = if (availableSymbols.contains(endNode)) {
+      val matchingHints = queryGraph.statefulShortestPathIntoHints
+        .filter(_.variables.toIndexedSeq == spp.pathVariables.map(_.variable))
+      (ExpandInto, matchingHints)
+    } else {
+      val matchingHints = queryGraph.statefulShortestPathAllHints
+        .filter(_.variables.toIndexedSeq == spp.pathVariables.map(_.variable))
+      (ExpandAll, matchingHints)
+    }
 
     val rewriteLookup = mutable.Map.empty[LogicalVariable, LogicalVariable]
     val nonSingletons =
@@ -500,7 +481,7 @@ object expandSolverStep {
         spp,
         fromLeft,
         availableSymbols,
-        unsolvedPredicatesOnTargetNode,
+        unsolvedPredicatesOnEndNode,
         context.staticComponents.anonymousVariableNameGenerator
       )
     }
@@ -518,7 +499,9 @@ object expandSolverStep {
       case variable: LogicalVariable => rewriteLookup.getOrElse(variable, variable)
     }))
     val solvedExpressionAsString =
-      spp.copy(selections = selectionsWithOriginalPredicates(spp) ++ unsolvedPredicatesOnTargetNode)
+      spp.copy(selections =
+        selectionsWithOriginalPredicates(spp) ++ unsolvedPredicatesOnEndNode
+      )
         .solvedString
 
     val selector = convertSelectorFromIr(spp.selector)
@@ -547,12 +530,20 @@ object expandSolverStep {
       singletonRelVariables.result(),
       selector,
       solvedExpressionAsString,
-      solvedSpp,
-      unsolvedPredicatesOnTargetNode,
-      context,
-      reverseGroupVariableProjections
+      originalSpp,
+      unsolvedPredicatesOnEndNode,
+      reverseGroupVariableProjections = !fromLeft,
+      matchingHints,
+      context
     )
   }
+
+  private def selectionsWithOriginalPredicates(spp: SelectivePathPattern): Selections =
+    Selections.from(spp.selections.flatPredicates.map {
+      case far: ForAllRepetitions =>
+        far.originalInnerPredicate
+      case expr: Expression => expr
+    })
 
   private val convertSelectorFromIr: SelectivePathPattern.Selector => StatefulShortestPath.Selector = {
     // for now we will implement ANY via SHORTEST.

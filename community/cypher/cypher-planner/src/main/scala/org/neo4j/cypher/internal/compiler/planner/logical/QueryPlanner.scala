@@ -156,7 +156,8 @@ case object QueryPlanner
     VarLengthQuantifierMerger.completed,
     ResolveTokens.completed,
     CopyQuantifiedPathPatternPredicatesToJuxtaposedNodes.completed,
-    InlineRelationshipTypePredicates.completed
+    InlineRelationshipTypePredicates.completed,
+    StatefulShortestPlanningHintsInserter.completed
   )
 
   override def postConditions: Set[StepSequencer.Condition] = Set(

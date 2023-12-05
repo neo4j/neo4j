@@ -711,7 +711,7 @@ case class Match(
   }
 
   private def checkHints: SemanticCheck = SemanticCheck.fromFunctionWithContext { (semanticState, context) =>
-    def getMissingEntityKindError(variable: String, labelOrRelTypeName: String, hint: Hint): String = {
+    def getMissingEntityKindError(variable: String, labelOrRelTypeName: String, hint: NodeHint): String = {
       val isNode = semanticState.isNode(variable)
       val typeName = if (isNode) "label" else "relationship type"
       val functionName = if (isNode) "labels" else "type"
@@ -765,7 +765,7 @@ case class Match(
 
     def getHintErrorForVariable(
       operatorDescription: String,
-      hint: Hint,
+      hint: NodeHint,
       missingThingDescription: String,
       foundThingsDescription: String,
       variable: String,
@@ -787,7 +787,7 @@ case class Match(
 
     def getHintError(
       operatorDescription: String,
-      hint: Hint,
+      hint: NodeHint,
       missingThingDescription: String,
       foundThingsDescription: String,
       entityDescription: String,

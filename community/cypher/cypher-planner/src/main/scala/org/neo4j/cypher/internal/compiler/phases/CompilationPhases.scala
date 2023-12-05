@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.InlineRelationshipType
 import org.neo4j.cypher.internal.compiler.planner.logical.MoveQuantifiedPathPatternPredicates
 import org.neo4j.cypher.internal.compiler.planner.logical.OptionalMatchRemover
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlanner
+import org.neo4j.cypher.internal.compiler.planner.logical.StatefulShortestPlanningHintsInserter
 import org.neo4j.cypher.internal.compiler.planner.logical.UnfulfillableQueryRewriter
 import org.neo4j.cypher.internal.compiler.planner.logical.VarLengthQuantifierMerger
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.CardinalityRewriter
@@ -110,7 +111,8 @@ object CompilationPhases extends FrontEndCompilationPhases {
           UnfulfillableQueryRewriter,
           VarLengthQuantifierMerger,
           CheckForUnresolvedTokens,
-          MoveQuantifiedPathPatternPredicates
+          MoveQuantifiedPathPatternPredicates,
+          StatefulShortestPlanningHintsInserter
         ),
         initialConditions = astPlanPipelinePostConditions
       )

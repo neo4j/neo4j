@@ -224,6 +224,8 @@ import org.neo4j.cypher.internal.ast.UsingJoinHint
 import org.neo4j.cypher.internal.ast.UsingPointIndexType
 import org.neo4j.cypher.internal.ast.UsingRangeIndexType
 import org.neo4j.cypher.internal.ast.UsingScanHint
+import org.neo4j.cypher.internal.ast.UsingStatefulShortestPathAll
+import org.neo4j.cypher.internal.ast.UsingStatefulShortestPathInto
 import org.neo4j.cypher.internal.ast.UsingTextIndexType
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.With
@@ -1129,6 +1131,18 @@ case class Prettifier(
 
         case UsingJoinHint(vs) => Seq(
             s"${INDENT}USING JOIN ON ",
+            vs.map(expr(_)).toIterable.mkString(", ")
+          ).mkString
+
+        // Note: This hint cannot be written in Cypher.
+        case UsingStatefulShortestPathAll(vs) => Seq(
+            s"${INDENT}USING SSP_ALL ON ",
+            vs.map(expr(_)).toIterable.mkString(", ")
+          ).mkString
+
+        // Note: This hint cannot be written in Cypher.
+        case UsingStatefulShortestPathInto(vs) => Seq(
+            s"${INDENT}USING SSP_INTO ON ",
             vs.map(expr(_)).toIterable.mkString(", ")
           ).mkString
       }

@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseInternalSettings.EagerAnalysisImplementation
+import org.neo4j.configuration.GraphDatabaseInternalSettings.StatefulShortestPlanningMode.ALL_IF_POSSIBLE
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.assertIsNode
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.literalInt
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.propName
@@ -62,6 +63,8 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
   override protected def plannerBuilder(): StatisticsBackedLogicalPlanningConfigurationBuilder =
     super.plannerBuilder()
       .withSetting(GraphDatabaseInternalSettings.cypher_eager_analysis_implementation, impl)
+      // TODO remove this later
+      .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, ALL_IF_POSSIBLE)
 
   implicit class OptionallyEagerPlannerBuilder(b: LogicalPlanBuilder) {
 

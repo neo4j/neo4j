@@ -19,6 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings
+import org.neo4j.configuration.GraphDatabaseInternalSettings.StatefulShortestPlanningMode.ALL_IF_POSSIBLE
+import org.neo4j.configuration.GraphDatabaseInternalSettings.StatefulShortestPlanningMode.INTO_ONLY
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.helpers.WindowsSafeAnyRef
@@ -75,6 +78,8 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     .setRelationshipCardinality("(:B)-[]->(:N)", 10)
     .setRelationshipCardinality("()-[:T]->()", 10)
     .addSemanticFeature(SemanticFeature.GpmShortestPath)
+    // TODO remove this later
+    .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, ALL_IF_POSSIBLE)
 
   private val planner = plannerBase.build()
 
@@ -1753,6 +1758,8 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .setRelationshipCardinality("(:A)-[]->(:B)", 20)
       .setRelationshipCardinality("()-[]->(:B)", 20)
       .addSemanticFeature(SemanticFeature.GpmShortestPath)
+      // TODO remove this later
+      .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, ALL_IF_POSSIBLE)
       .build()
       .plan(query).stripProduceResults should equal(planLR)
 
@@ -1766,6 +1773,8 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .setRelationshipCardinality("(:A)-[]->(:B)", 20)
       .setRelationshipCardinality("()-[]->(:B)", 20)
       .addSemanticFeature(SemanticFeature.GpmShortestPath)
+      // TODO remove this later
+      .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, ALL_IF_POSSIBLE)
       .build()
       .plan(query).stripProduceResults should equal(planRL)
   }
@@ -2318,6 +2327,174 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           false
         )
         .nodeByLabelScan("u", "User")
+        .build()
+    )
+  }
+
+  test(
+    "With statefulShortestPlanningMode=into_only should produce an Into plan even if boundary nodes are not previously bound"
+  ) {
+    val planner = plannerBase
+      .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, INTO_ONLY)
+      .build()
+
+    val query = "MATCH ANY SHORTEST (u:User)((n)-[r]->(m))+(v) RETURN *"
+
+    val nfa = new TestNFABuilder(0, "u")
+      .addTransition(0, 1, "(u) (n)")
+      .addTransition(1, 2, "(n)-[r]->(m)")
+      .addTransition(2, 1, "(m) (n)")
+      .addTransition(2, 3, "(m) (v)")
+      .setFinalState(3)
+      .build()
+
+    val plan = planner.plan(query).stripProduceResults
+    plan should equal(
+      planner.subPlanBuilder()
+        .statefulShortestPath(
+          "u",
+          "v",
+          "SHORTEST 1 ((u) ((n)-[r]->(m)){1, } (v) WHERE unique(`r`))",
+          None,
+          groupNodes = Set(("n", "n"), ("m", "m")),
+          groupRelationships = Set(("r", "r")),
+          singletonNodeVariables = Set(),
+          singletonRelationshipVariables = Set.empty,
+          StatefulShortestPath.Selector.Shortest(1),
+          nfa,
+          ExpandInto
+        )
+        .cartesianProduct()
+        .|.allNodeScan("v")
+        .nodeByLabelScan("u", "User")
+        .build()
+    )
+  }
+
+  test("With statefulShortestPlanningMode=into_only should plan Into if both start and end are already bound") {
+    val planner = plannerBase
+      .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, INTO_ONLY)
+      .build()
+
+    val query =
+      s"""
+         |MATCH (n), (m)
+         |WITH * SKIP 1
+         |MATCH ANY SHORTEST (n)((n_inner)-[r_inner]->(m_inner))+ (m)
+         |RETURN *
+         |""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+    val nfa = new TestNFABuilder(0, "n")
+      .addTransition(0, 1, "(n) (n_inner)")
+      .addTransition(1, 2, "(n_inner)-[r_inner]->(m_inner)")
+      .addTransition(2, 1, "(m_inner) (n_inner)")
+      .addTransition(2, 3, "(m_inner) (m)")
+      .setFinalState(3)
+      .build()
+
+    plan should equal(
+      planner.subPlanBuilder()
+        .statefulShortestPath(
+          "n",
+          "m",
+          "SHORTEST 1 ((n) ((n_inner)-[r_inner]->(m_inner)){1, } (m) WHERE unique(`r_inner`))",
+          None,
+          groupNodes = Set(("n_inner", "n_inner"), ("m_inner", "m_inner")),
+          groupRelationships = Set(("r_inner", "r_inner")),
+          singletonNodeVariables = Set(),
+          singletonRelationshipVariables = Set.empty,
+          StatefulShortestPath.Selector.Shortest(1),
+          nfa,
+          ExpandInto
+        )
+        .skip(1)
+        .cartesianProduct()
+        .|.allNodeScan("m")
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test(
+    "With statefulShortestPlanningMode=all_if_possible should produce an All plan if boundary nodes are not previously bound"
+  ) {
+    val planner = plannerBase
+      .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, ALL_IF_POSSIBLE)
+      .build()
+
+    val query = "MATCH ANY SHORTEST (u:User)((n)-[r]->(m))+(v) RETURN *"
+
+    val nfa = new TestNFABuilder(0, "u")
+      .addTransition(0, 1, "(u) (n)")
+      .addTransition(1, 2, "(n)-[r]->(m)")
+      .addTransition(2, 1, "(m) (n)")
+      .addTransition(2, 3, "(m) (v)")
+      .setFinalState(3)
+      .build()
+
+    val plan = planner.plan(query).stripProduceResults
+    plan should equal(
+      planner.subPlanBuilder()
+        .statefulShortestPath(
+          "u",
+          "v",
+          "SHORTEST 1 ((u) ((n)-[r]->(m)){1, } (v) WHERE unique(`r`))",
+          None,
+          groupNodes = Set(("n", "n"), ("m", "m")),
+          groupRelationships = Set(("r", "r")),
+          singletonNodeVariables = Set("v" -> "v"),
+          singletonRelationshipVariables = Set.empty,
+          StatefulShortestPath.Selector.Shortest(1),
+          nfa,
+          ExpandAll
+        )
+        .nodeByLabelScan("u", "User")
+        .build()
+    )
+  }
+
+  test("With statefulShortestPlanningMode=all_if_possible should plan Into if both start and end are already bound") {
+    val planner = plannerBase
+      .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, ALL_IF_POSSIBLE)
+      .build()
+
+    val query =
+      s"""
+         |MATCH (n), (m)
+         |WITH * SKIP 1
+         |MATCH ANY SHORTEST (n)((n_inner)-[r_inner]->(m_inner))+ (m)
+         |RETURN *
+         |""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+    val nfa = new TestNFABuilder(0, "n")
+      .addTransition(0, 1, "(n) (n_inner)")
+      .addTransition(1, 2, "(n_inner)-[r_inner]->(m_inner)")
+      .addTransition(2, 1, "(m_inner) (n_inner)")
+      .addTransition(2, 3, "(m_inner) (m)")
+      .setFinalState(3)
+      .build()
+
+    plan should equal(
+      planner.subPlanBuilder()
+        .statefulShortestPath(
+          "n",
+          "m",
+          "SHORTEST 1 ((n) ((n_inner)-[r_inner]->(m_inner)){1, } (m) WHERE unique(`r_inner`))",
+          None,
+          groupNodes = Set(("n_inner", "n_inner"), ("m_inner", "m_inner")),
+          groupRelationships = Set(("r_inner", "r_inner")),
+          singletonNodeVariables = Set(),
+          singletonRelationshipVariables = Set.empty,
+          StatefulShortestPath.Selector.Shortest(1),
+          nfa,
+          ExpandInto
+        )
+        .skip(1)
+        .cartesianProduct()
+        .|.allNodeScan("m")
+        .allNodeScan("n")
         .build()
     )
   }
