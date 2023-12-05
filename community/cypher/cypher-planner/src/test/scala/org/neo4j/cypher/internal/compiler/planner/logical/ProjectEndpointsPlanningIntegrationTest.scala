@@ -156,16 +156,24 @@ class ProjectEndpointsPlanningIntegrationTest extends CypherFunSuite
   }
 
   test("Don't plan 0 length project endpoints - relationships in the same query graph") {
-    val query = "MATCH (a1)-[rs*0..1]->(b1) MATCH (a2)-[rs*0..1]-(b2) RETURN a2, rs, b2"
+    val query = "MATCH (a1:A)-[rs*0..1]->(b1) MATCH (a2:AA)-[rs*0..1]-(b2) RETURN a2, rs, b2"
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(10000)
+      .setAllRelationshipsCardinality(10000)
+      .setLabelCardinality("A", 1000)
+      .setLabelCardinality("AA", 5000)
+      .build()
+
     val plan = planner.plan(query).stripProduceResults
 
     plan should equal(
       planner.subPlanBuilder()
         .valueHashJoin("anon_0 = rs")
         .|.expand("(a2)-[rs*0..1]-(b2)")
-        .|.allNodeScan("a2")
+        .|.nodeByLabelScan("a2", "AA")
         .expand("(a1)-[anon_0*0..1]->(b1)")
-        .allNodeScan("a1")
+        .nodeByLabelScan("a1", "A")
         .build()
     )
   }

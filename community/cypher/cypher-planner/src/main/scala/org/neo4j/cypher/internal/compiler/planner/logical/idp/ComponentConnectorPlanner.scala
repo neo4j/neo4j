@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlannerKit
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.GoalBitAllocation.startComponents
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPQueryGraphSolver.extraRequirementForInterestingOrder
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPTable.SORTED_BIT
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.cartesianProductsOrValueJoins.COMPONENT_THRESHOLD_FOR_CARTESIAN_PRODUCT
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.cartesianProductsOrValueJoins.planLotsOfCartesianProducts
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.BestPlans
@@ -116,10 +117,17 @@ case class ComponentConnectorPlanner(singleComponentPlanner: SingleComponentPlan
     val composedOmSolverStep =
       IDPQueryGraphSolver.selectingAndSortingSolverStep(queryGraph, interestingOrderConfig, kit, context, omSolverStep)
 
-    // Only even generate CP plans if no joins are available, since joins will always be better.
-    val generator = ((composedJoinSolverStep || composedCPSolverStep) ++ composedOmSolverStep)
+    val generator = {
+      val solverSteps = if (components.size < COMPONENT_THRESHOLD_FOR_CARTESIAN_PRODUCT) {
+        composedJoinSolverStep ++ composedCPSolverStep ++ composedOmSolverStep
+      } else {
+        // Only even generate CP plans if no joins are available
+        (composedJoinSolverStep || composedCPSolverStep) ++ composedOmSolverStep
+      }
+
       // Filter out goals that are not solvable before even asking the connectors
-      .filterGoals(goalBitAllocation.goalIsSolvable)
+      solverSteps.filterGoals(goalBitAllocation.goalIsSolvable)
+    }
 
     val solver = new IDPSolver[QueryGraph, LogicalPlan, LogicalPlanningContext](
       generator = generator,
