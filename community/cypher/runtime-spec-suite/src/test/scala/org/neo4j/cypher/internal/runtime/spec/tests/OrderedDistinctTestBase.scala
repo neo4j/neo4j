@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.runtime.spec.Edition
@@ -28,10 +29,12 @@ import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.graphdb.Node
 
+import scala.util.Try
+
 abstract class OrderedDistinctTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
   runtime: CypherRuntime[CONTEXT],
-  sizeHint: Int
+  val sizeHint: Int
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should work on distinct input with no projection, one column, sorted") {
@@ -364,5 +367,622 @@ abstract class OrderedDistinctTestBase[CONTEXT <: RuntimeContext](
     } yield Array[Any](x, x, y)
 
     runtimeResult should beColumns("x", "a", "b").withRows(expectedRows)
+  }
+
+  test("should work with limit below") {
+    // given
+    val nodes = givenGraph {
+      nodeGraph(10)
+    }
+    val input =
+      inputValues((0 until sizeHint).map(i => Array[Any](nodes(i % 10))).sortBy(_.head.asInstanceOf[Node].getId): _*)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .orderedDistinct(Seq("x"), "x AS x")
+      .limit(1)
+      .input(nodes = Seq("x"), nullable = false)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    runtimeResult should beColumns("x").withRows(singleColumn(Seq(nodes.head)))
+  }
+
+  test("should work with limit on top") {
+    // given
+    val nodes = givenGraph {
+      nodeGraph(10)
+    }
+    val input =
+      inputValues((0 until sizeHint).map(i => Array[Any](nodes(i % 10))).sortBy(_.head.asInstanceOf[Node].getId): _*)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .limit(1)
+      .orderedDistinct(Seq("x"), "x AS x")
+      .input(nodes = Seq("x"), nullable = false)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    runtimeResult should beColumns("x").withRows(singleColumn(Seq(nodes.head)))
+  }
+
+  test("should work with chained distincts, one column, sorted") {
+    // given
+    val nodes = givenGraph {
+      nodeGraph(10)
+    }
+    val input =
+      inputValues((0 until sizeHint).map(i => Array[Any](nodes(i % 10))).sortBy(_.head.asInstanceOf[Node].getId): _*)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x3")
+      .orderedDistinct(Seq("x2"), "x2 as x3")
+      .orderedDistinct(Seq("x"), "x AS x2")
+      .input(nodes = Seq("x"), nullable = false)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    runtimeResult should beColumns("x3").withRows(singleColumn(nodes))
+  }
+
+  test("should work with chained distincts, two columns, one sorted") {
+    // given
+    val input = for (x <- 0 until sizeHint) yield Array[Any](x)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x3", "y3")
+      .orderedDistinct(Seq("x2"), "x2 as x3", "y2 as y3")
+      .orderedDistinct(Seq("x"), "x AS x2", "y as y2")
+      .unwind("[1,2,3,1,2,3] as y")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input: _*))
+
+    // then
+    val expectedRows = for {
+      x <- 0 until sizeHint
+      y <- 1 to 3
+    } yield Array[Any](x, y)
+
+    runtimeResult should beColumns("x3", "y3").withRows(expectedRows)
+  }
+
+  test("should work with chained distincts, two columns, both sorted") {
+    // given
+    val input = for (x <- 0 until sizeHint) yield Array[Any](x)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x3", "y3")
+      .orderedDistinct(Seq("x2", "y2"), "x2 as x3", "y2 as y3")
+      .orderedDistinct(Seq("x", "y"), "x AS x2", "y as y2")
+      .unwind("[1,1,2,2,3,3] as y")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input: _*))
+
+    // then
+    val expectedRows = for {
+      x <- 0 until sizeHint
+      y <- 1 to 3
+    } yield Array[Any](x, y)
+
+    runtimeResult should beColumns("x3", "y3").withRows(expectedRows)
+  }
+
+  test("should work with chained distincts, one, two and three columns") {
+    // given
+    val input = for (x <- 0 until sizeHint) yield Array[Any](x)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x3", "y3", "z2")
+      .orderedDistinct(Seq("x2", "y2"), "x2 as x3", "y2 as y3", "z as z2")
+      .unwind("[4,5,6,4,5,6] as z")
+      .orderedDistinct(Seq("x", "y"), "x AS x2", "y as y2")
+      .unwind("[1,1,2,2,3,3] as y")
+      .orderedDistinct(Seq("x"), "x as x")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input: _*))
+
+    // then
+    val expectedRows = for {
+      x <- 0 until sizeHint
+      y <- 1 to 3
+      z <- 4 to 6
+    } yield Array[Any](x, y, z)
+
+    runtimeResult should beColumns("x3", "y3", "z2").withRows(expectedRows)
+  }
+
+  test("should work with aggregation") {
+    // given
+    val input = for (x <- 0 until sizeHint) yield Array[Any](x)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("group", "c")
+      .aggregation(Seq("x as group"), Seq("count(y) as c"))
+      .orderedDistinct(Seq("x", "y"), "x as x", "y AS y")
+      .unwind("[1,1,2,2,3,3] AS y")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(input: _*))
+
+    // then
+    val expectedRows = for {
+      x <- 0 until sizeHint
+    } yield Array[Any](x, 3)
+
+    runtimeResult should beColumns("group", "c").withRows(expectedRows)
+  }
+
+  Seq(
+    0,
+    1,
+    10,
+    Int.MaxValue
+  ).foreach {
+    limit: Int =>
+      {
+        test(s"should work with limit = $limit on top under apply, one column, one sorted") {
+          // given
+          val input = for (x <- 0 until sizeHint) yield Array[Any](x)
+
+          // when
+          val logicalQuery = new LogicalQueryBuilder(this)
+            .produceResults("x", "y")
+            .apply()
+            .|.limit(limit)
+            .|.orderedDistinct(Seq("y"), "y AS y")
+            .|.unwind("[1,1,2,2,3,3] AS y")
+            .|.argument("x")
+            .input(variables = Seq("x"))
+            .build()
+
+          val runtimeResult = execute(logicalQuery, runtime, inputValues(input: _*))
+
+          // then
+          val expectedRows = for {
+            x <- 0 until sizeHint
+            y <- (1 to 3).take(limit)
+          } yield Array[Any](x, y)
+
+          runtimeResult should beColumns("x", "y").withRows(expectedRows)
+        }
+
+        test(s"should work with limit = $limit on top under apply, two columns, one sorted") {
+          // given
+          val input = for (x <- 0 until sizeHint) yield Array[Any](x)
+
+          // when
+          val logicalQuery = new LogicalQueryBuilder(this)
+            .produceResults("x", "a", "b")
+            .apply()
+            .|.limit(limit)
+            .|.orderedDistinct(Seq("x"), "x AS a", "y AS b")
+            .|.unwind("[1,2,3,1,2,3] AS y")
+            .|.argument("x")
+            .input(variables = Seq("x"))
+            .build()
+
+          val runtimeResult = execute(logicalQuery, runtime, inputValues(input: _*))
+
+          // then
+          val expectedRows = for {
+            x <- 0 until sizeHint
+            y <- (1 to 3).take(limit)
+          } yield Array[Any](x, x, y)
+
+          runtimeResult should beColumns("x", "a", "b").withRows(expectedRows)
+        }
+
+        test(s"should work with limit = $limit on top under apply, two columns, two sorted") {
+          // given
+          val input = for (x <- 0 until sizeHint) yield Array[Any](x)
+
+          // when
+          val logicalQuery = new LogicalQueryBuilder(this)
+            .produceResults("x", "a", "b")
+            .apply()
+            .|.limit(limit)
+            .|.orderedDistinct(Seq("x", "y"), "x AS a", "y AS b")
+            .|.unwind("[1,1,2,2,3,3] AS y")
+            .|.argument("x")
+            .input(variables = Seq("x"))
+            .build()
+
+          val runtimeResult = execute(logicalQuery, runtime, inputValues(input: _*))
+
+          // then
+          val expectedRows = for {
+            x <- 0 until sizeHint
+            y <- (1 to 3).take(limit)
+          } yield Array[Any](x, x, y)
+
+          runtimeResult should beColumns("x", "a", "b").withRows(expectedRows)
+        }
+
+        test(s"should work under apply, with limit = $limit on top of apply, one column, one sorted") {
+          // given
+          val input = for (x <- 0 until sizeHint) yield Array[Any](x)
+
+          // when
+          val logicalQuery = new LogicalQueryBuilder(this)
+            .produceResults("x", "y")
+            .limit(limit)
+            .apply()
+            .|.orderedDistinct(Seq("y"), "y AS y")
+            .|.unwind("[1,1,2,2,3,3] AS y")
+            .|.argument("x")
+            .input(variables = Seq("x"))
+            .build()
+
+          val runtimeResult = execute(logicalQuery, runtime, inputValues(input: _*))
+
+          // then
+          val expectedRows = (for {
+            x <- 0 until sizeHint
+            y <- 1 to 3
+          } yield Array[Any](x, y)).take(limit)
+
+          runtimeResult should beColumns("x", "y").withRows(expectedRows)
+        }
+
+        test(s"should work under apply, with limit = $limit on top of apply, two columns, one sorted") {
+          // given
+          val input = for (x <- 0 until sizeHint) yield Array[Any](x)
+
+          // when
+          val logicalQuery = new LogicalQueryBuilder(this)
+            .produceResults("x", "a", "b")
+            .limit(limit)
+            .apply()
+            .|.orderedDistinct(Seq("x"), "x AS a", "y AS b")
+            .|.unwind("[1,2,3,1,2,3] AS y")
+            .|.argument("x")
+            .input(variables = Seq("x"))
+            .build()
+
+          val runtimeResult = execute(logicalQuery, runtime, inputValues(input: _*))
+
+          // then
+          val expectedRows = (for {
+            x <- 0 until sizeHint
+            y <- 1 to 3
+          } yield Array[Any](x, x, y)).take(limit)
+
+          runtimeResult should beColumns("x", "a", "b").withRows(expectedRows)
+        }
+
+        test(s"should work under apply, with limit = $limit on top of apply, two columns, two sorted") {
+          // given
+          val input = for (x <- 0 until sizeHint) yield Array[Any](x)
+
+          // when
+          val logicalQuery = new LogicalQueryBuilder(this)
+            .produceResults("x", "a", "b")
+            .limit(limit)
+            .apply()
+            .|.orderedDistinct(Seq("x", "y"), "x AS a", "y AS b")
+            .|.unwind("[1,1,2,2,3,3] AS y")
+            .|.argument("x")
+            .input(variables = Seq("x"))
+            .build()
+
+          val runtimeResult = execute(logicalQuery, runtime, inputValues(input: _*))
+
+          // then
+          val expectedRows = (for {
+            x <- 0 until sizeHint
+            y <- 1 to 3
+          } yield Array[Any](x, x, y)).take(limit)
+
+          runtimeResult should beColumns("x", "a", "b").withRows(expectedRows)
+        }
+
+        test(s"should work under apply, with limit = $limit on top of apply and on rhs, one column, one sorted") {
+          // given
+          val input = for (x <- 0 until sizeHint) yield Array[Any](x)
+
+          // when
+          val logicalQuery = new LogicalQueryBuilder(this)
+            .produceResults("x", "y")
+            .limit(limit)
+            .apply()
+            .|.limit(limit)
+            .|.orderedDistinct(Seq("y"), "y AS y")
+            .|.unwind("[1,1,2,2,3,3] AS y")
+            .|.argument("x")
+            .input(variables = Seq("x"))
+            .build()
+
+          val runtimeResult = execute(logicalQuery, runtime, inputValues(input: _*))
+
+          // then
+          val expectedRows = (for {
+            x <- 0 until sizeHint
+            y <- (1 to 3).take(limit)
+          } yield Array[Any](x, y)).take(limit)
+
+          runtimeResult should beColumns("x", "y").withRows(expectedRows)
+        }
+
+        test(s"should work under apply, with limit = $limit on top of apply and on rhs, two columns, one sorted") {
+          // given
+          val input = for (x <- 0 until sizeHint) yield Array[Any](x)
+
+          // when
+          val logicalQuery = new LogicalQueryBuilder(this)
+            .produceResults("x", "a", "b")
+            .limit(limit)
+            .apply()
+            .|.limit(limit)
+            .|.orderedDistinct(Seq("x"), "x AS a", "y AS b")
+            .|.unwind("[1,2,3,1,2,3] AS y")
+            .|.argument("x")
+            .input(variables = Seq("x"))
+            .build()
+
+          val runtimeResult = execute(logicalQuery, runtime, inputValues(input: _*))
+
+          // then
+          val expectedRows = (for {
+            x <- 0 until sizeHint
+            y <- (1 to 3).take(limit)
+          } yield Array[Any](x, x, y)).take(limit)
+
+          runtimeResult should beColumns("x", "a", "b").withRows(expectedRows)
+        }
+
+        test(s"should work under apply, with limit = $limit on top of apply and on rhs, two columns, two sorted") {
+          // given
+          val input = for (x <- 0 until sizeHint) yield Array[Any](x)
+
+          // when
+          val logicalQuery = new LogicalQueryBuilder(this)
+            .produceResults("x", "a", "b")
+            .limit(limit)
+            .apply()
+            .|.limit(limit)
+            .|.orderedDistinct(Seq("x", "y"), "x AS a", "y AS b")
+            .|.unwind("[1,1,2,2,3,3] AS y")
+            .|.argument("x")
+            .input(variables = Seq("x"))
+            .build()
+
+          val runtimeResult = execute(logicalQuery, runtime, inputValues(input: _*))
+
+          // then
+          val expectedRows = (for {
+            x <- 0 until sizeHint
+            y <- (1 to 3).take(limit)
+          } yield Array[Any](x, x, y)).take(limit)
+
+          runtimeResult should beColumns("x", "a", "b").withRows(expectedRows)
+        }
+
+        test(s"should work with sort and limit = $limit on top under apply") {
+          // given
+          val input = for (x <- 0 until sizeHint) yield Array[Any](x)
+
+          // when
+          val logicalQuery = new LogicalQueryBuilder(this)
+            .produceResults("a", "b")
+            .apply()
+            .|.sort("a ASC", "b ASC")
+            .|.limit(limit)
+            .|.orderedDistinct(Seq("x"), "x AS a", "y AS b")
+            .|.unwind("[1,2,3,1,2,3] AS y")
+            .|.argument("x")
+            .input(variables = Seq("x"))
+            .build()
+
+          val runtimeResult = execute(logicalQuery, runtime, inputValues(input: _*))
+
+          // then
+          val expectedRows = for {
+            x <- 0 until sizeHint
+            y <- (1 to 3).take(limit)
+          } yield Array[Any](x, y)
+
+          runtimeResult should beColumns("a", "b").withRows(inOrder(expectedRows))
+        }
+
+        test(s"should work with top = $limit and aggregation under nested applys") {
+          // given
+          val nodes = givenGraph {
+            nodeGraph(sizeHint, "X", "Y", "Z")
+          }
+
+          val argSize = Math.max(sizeHint / 100, 10)
+
+          // when
+          val logicalQuery = new LogicalQueryBuilder(this)
+            .produceResults("n", "a", "b", "c")
+            .apply().withLeveragedOrder()
+            .|.orderedDistinct(Seq("y"), "y as a", "z as b", "c as c")
+            .|.top(Seq(Ascending(varFor("y"))), limit)
+            .|.aggregation(Seq("y as y", "z as z"), Seq("collect(u) as c"))
+            .|.apply()
+            .|.|.orderedDistinct(Seq("z"), "z as z", "u as u")
+            .|.|.limit(limit)
+            .|.|.unwind("[1,2,3] as u")
+            .|.|.apply()
+            .|.|.|.orderedDistinct(Seq("z"), "z as z")
+            .|.|.|.top(Seq(Ascending(varFor("z"))), limit)
+            .|.|.|.aggregation(Seq.empty, Seq("collect(y) as z"))
+            .|.|.|.filter("y:Y")
+            .|.|.|.argument("y")
+            .|.|.argument("y")
+            .|.projection("x as y")
+            .|.filter("x:X")
+            .|.sort("x ASC")
+            .|.allNodeScan("x")
+            .unwind(s"range(1,$argSize) as n")
+            .argument()
+            .build()
+
+          val runtimeResult = execute(logicalQuery, runtime)
+
+          val expectedRows =
+            (1 to argSize).flatMap(n =>
+              (for {
+                a <- nodes
+                b = Array(a)
+                c = Array(1, 2, 3).take(limit)
+              } yield Array[Any](n, a, b, c)).take(limit)
+            )
+
+          // then
+          runtimeResult should beColumns("n", "a", "b", "c").withRows(expectedRows)
+        }
+
+      }
+  }
+
+  test("should work with work with optional and node hash join on rhs") {
+    // given
+    val nodes = givenGraph {
+      lineGraph(sizeHint, "R", "LABEL", "LABEL_2")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a", "b", "r")
+      .apply()
+      .|.orderedDistinct(Seq("x"), "x AS a", "y AS b", "r as r")
+      .|.optional("x")
+      .|.nodeHashJoin("x")
+      .|.|.filter("x:LABEL_2")
+      .|.|.nodeByLabelScan("x", "LABEL", IndexOrderAscending)
+      .|.expandAll("(x)-[r]->(y)")
+      .|.argument("x")
+      .nodeByLabelScan("x", "LABEL", IndexOrderAscending)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val (n, r) = nodes
+    val expectedRows = for {
+      x <- n.indices
+      y = x + 1
+    } yield Array[Any](n(x), Try(n(y)).getOrElse(null), Try(r(x)).getOrElse(null))
+
+    runtimeResult should beColumns("a", "b", "r").withRows(expectedRows)
+  }
+
+  test("should work on nested ordered unions") {
+    // given
+    val nodes = givenGraph {
+      nodeGraph(sizeHint, "X", "Y", "Z")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("a")
+      .orderedDistinct(Seq("x"), "x AS a")
+      .orderedUnion("x ASC")
+      .|.orderedDistinct(Seq("y"), "y as x")
+      .|.orderedUnion("y ASC")
+      .|.|.orderedDistinct(Seq("z"), "z as y")
+      .|.|.sort("z ASC")
+      .|.|.allNodeScan("z", "Z")
+      .|.sort("y ASC")
+      .|.allNodeScan("y", "Y")
+      .sort("x ASC")
+      .allNodeScan("x", "X")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    val expectedRows = nodes.map(Array[Any](_))
+    // then
+    runtimeResult should beColumns("a").withRows(expectedRows)
+  }
+
+  test("should work with conditional apply on rhs") {
+    // given
+    givenGraph {
+      nodeGraph(sizeHint, "Z")
+    }
+
+    val argSize = Math.max(sizeHint / 100, 10)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .apply()
+      .|.orderedDistinct(Seq("x"), "x as x", "y as y")
+      .|.conditionalApply("y")
+      .|.|.nodeByLabelScan("z", "Z", IndexOrderAscending)
+      .|.skip(4)
+      .|.unwind("[1,2,3,4,1,2,3,1,2,3] as y")
+      .|.argument("x")
+      .unwind(s"range(1,$argSize) as x")
+      .argument()
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    val expectedRows =
+      for {
+        x <- 1 to argSize
+        y <- 1 to 3
+      } yield Array[Any](x, y)
+
+    // then
+    runtimeResult should beColumns("x", "y").withRows(expectedRows)
+  }
+
+  test("should work with selectOrAntiSemiApply apply on rhs") {
+    // given
+    givenGraph {
+      nodeGraph(sizeHint, "Z")
+    }
+
+    val argSize = Math.max(sizeHint / 100, 10)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .apply()
+      .|.orderedDistinct(Seq("x"), "x as x", "y as y")
+      .|.selectOrAntiSemiApply("x > 5").withLeveragedOrder()
+      .|.|.projection("1 as a")
+      .|.|.argument()
+      .|.unwind("[1,2,3,1,2,3] as y")
+      .|.argument("x")
+      .unwind(s"range(1,$argSize) as x")
+      .argument()
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    val expectedRows =
+      for {
+        x <- (1 to argSize) if x > 5
+        y <- 1 to 3
+      } yield Array[Any](x, y)
+
+    // then
+    runtimeResult should beColumns("x", "y").withRows(expectedRows)
   }
 }
