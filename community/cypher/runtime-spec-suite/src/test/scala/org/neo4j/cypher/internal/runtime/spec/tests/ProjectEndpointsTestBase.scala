@@ -1051,6 +1051,25 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
     execute(query, runtime) should beColumns("source", "target", "r", "source2", "target2").withNoRows()
   }
 
+  test("should filter out rows where relationships are null with no nodes in scope - directed") {
+    givenGraph {
+      bipartiteGraph(1, "A", "B", "R")
+    }
+
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("source", "target", "r", "source2", "target2")
+      .projectEndpoints("(source2)-[r*]->(target2)", startInScope = false, endInScope = false)
+      .apply()
+      .|.optional("source")
+      .|.filter("false")
+      .|.expandAll("(source)-[r:NO_SUCH_TYPE*]-(target)")
+      .|.argument()
+      .nodeByLabelScan("source", "A")
+      .build()
+
+    execute(query, runtime) should beColumns("source", "target", "r", "source2", "target2").withNoRows()
+  }
+
   // ====================================================================
   // =========================INVALID CASES==============================
   // ====================================================================
