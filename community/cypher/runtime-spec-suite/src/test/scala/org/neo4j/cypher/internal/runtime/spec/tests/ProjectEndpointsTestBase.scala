@@ -1032,6 +1032,25 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "y").withRows(expected)
   }
 
+  test("should filter out rows where relationships are null with no nodes in scope - undirected") {
+    val (aNodes, _) = givenGraph {
+      bipartiteGraph(1, "A", "B", "R")
+    }
+
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("source", "target", "r", "source2", "target2")
+      .projectEndpoints("(source2)-[r*]-(target2)", startInScope = false, endInScope = false)
+      .apply()
+      .|.optional("source")
+      .|.filter("false")
+      .|.expandAll("(source)-[r:NO_SUCH_TYPE*]-(target)")
+      .|.argument()
+      .nodeByLabelScan("source", "A")
+      .build()
+
+    execute(query, runtime) should beColumns("source", "target", "r", "source2", "target2").withNoRows()
+  }
+
   // ====================================================================
   // =========================INVALID CASES==============================
   // ====================================================================
@@ -1623,65 +1642,5 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
     val result = execute(query, runtime)
 
     result should beColumns("n0", "n4", "r3", "n5", "n2").withNoRows()
-  }
-
-  test("should filter out rows where relationship is null with no nodes in scope - undirected") {
-    givenGraph {
-      bipartiteGraph(5, "A", "B", "R")
-    }
-
-    val query = new LogicalQueryBuilder(this)
-      .produceResults("source", "target", "r", "source2", "target2")
-      .projectEndpoints("(source2)-[r]-(target2)", startInScope = false, endInScope = false)
-      .optionalExpandAll("(source)-[r:NO_SUCH_TYPE]-(target)")
-      .nodeByLabelScan("source", "A")
-      .build()
-
-    execute(query, runtime) should beColumns("source", "target", "r", "source2", "target2").withNoRows()
-  }
-
-  test("should filter out rows where relationship is null with no nodes in scope - directed") {
-    givenGraph {
-      bipartiteGraph(5, "A", "B", "R")
-    }
-
-    val query = new LogicalQueryBuilder(this)
-      .produceResults("source", "target", "r", "source2", "target2")
-      .projectEndpoints("(source2)-[r]->(target2)", startInScope = false, endInScope = false)
-      .optionalExpandAll("(source)-[r:NO_SUCH_TYPE]-(target)")
-      .nodeByLabelScan("source", "A")
-      .build()
-
-    execute(query, runtime) should beColumns("source", "target", "r", "source2", "target2").withNoRows()
-  }
-
-  test("should filter out rows where relationship is null with only start node in scope - undirected") {
-    givenGraph {
-      bipartiteGraph(5, "A", "B", "R")
-    }
-
-    val query = new LogicalQueryBuilder(this)
-      .produceResults("source", "target", "r", "target2")
-      .projectEndpoints("(source)-[r]-(target2)", startInScope = true, endInScope = false)
-      .optionalExpandAll("(source)-[r:NO_SUCH_TYPE]-(target)")
-      .nodeByLabelScan("source", "A")
-      .build()
-
-    execute(query, runtime) should beColumns("source", "target", "r", "target2").withNoRows()
-  }
-
-  test("should filter out rows where relationship is null with only start node in scope - directed") {
-    givenGraph {
-      bipartiteGraph(5, "A", "B", "R")
-    }
-
-    val query = new LogicalQueryBuilder(this)
-      .produceResults("source", "target", "r", "target2")
-      .projectEndpoints("(source)-[r]->(target2)", startInScope = true, endInScope = false)
-      .optionalExpandAll("(source)-[r:NO_SUCH_TYPE]-(target)")
-      .nodeByLabelScan("source", "A")
-      .build()
-
-    execute(query, runtime) should beColumns("source", "target", "r", "target2").withNoRows()
   }
 }
