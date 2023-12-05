@@ -342,7 +342,7 @@ case object ProjectEndpoints {
     typeCheck: RelationshipScanCursorPredicate
   ): Seq[EndNodes] = {
 
-    if (!typeCheck.test(scanCursor)) {
+    if (scanCursor.reference() == NO_ID || !typeCheck.test(scanCursor)) {
       Seq.empty
     } else {
       val source = scanCursor.sourceNodeReference()
