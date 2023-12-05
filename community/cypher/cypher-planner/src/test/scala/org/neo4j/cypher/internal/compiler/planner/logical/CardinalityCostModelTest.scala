@@ -34,7 +34,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.E
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.INDEX_SCAN_COST_PER_ROW
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.LABEL_CHECK_DB_HITS
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.PROPERTY_ACCESS_DB_HITS
-import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.SHORTEST_ALL_PRODUCT_GRAPH_COST
+import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.SHORTEST_PRODUCT_GRAPH_COST
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.planner.logical.limit.LimitSelectivityConfig
 import org.neo4j.cypher.internal.expressions.Expression
@@ -967,7 +967,7 @@ class CardinalityCostModelTest extends CypherFunSuite with AstConstructionTestSu
       builder.providedOrders
     ) should equal(Cost(
       ansCardinality * ALL_SCAN_COST_PER_ROW +
-        ansCardinality * SHORTEST_ALL_PRODUCT_GRAPH_COST
+        ansCardinality * SHORTEST_PRODUCT_GRAPH_COST
     ))
   }
 

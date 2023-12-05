@@ -406,7 +406,7 @@ object CardinalityCostModel {
   val ALL_SCAN_COST_PER_ROW = 1.2
 
   val SHORTEST_INTO_COST = 12.0
-  val SHORTEST_ALL_PRODUCT_GRAPH_COST = 18.0
+  val SHORTEST_PRODUCT_GRAPH_COST = 18.0
 
   val INDEX_SCAN_COST_PER_ROW = 1.0
   val INDEX_SEEK_COST_PER_ROW = 1.9
@@ -590,7 +590,7 @@ object CardinalityCostModel {
         SHORTEST_INTO_COST
 
       case _: StatefulShortestPath =>
-        SHORTEST_ALL_PRODUCT_GRAPH_COST
+        SHORTEST_PRODUCT_GRAPH_COST
 
       case _ // Default
         => DEFAULT_COST_PER_ROW
