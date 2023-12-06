@@ -51,7 +51,7 @@ import java.util.function.Predicate
 case class CommandNFA(
   states: Set[State],
   startState: State,
-  finalStates: Set[State]
+  finalState: State
 ) {
 
   /**
@@ -101,7 +101,7 @@ case class CommandNFA(
         null,
         null,
         startState == state,
-        finalStates.contains(state)
+        finalState == state
       )
     ).toMap
 
@@ -215,7 +215,7 @@ object CommandNFA {
     }
 
     var startState: State = null
-    val finalStates = Set.newBuilder[State]
+    var finalState: State = null
 
     // We need to compile the NFA in two phases here due to potential cycles in the NFA
 
@@ -228,7 +228,8 @@ object CommandNFA {
         startState = commandState
       }
       if (logicalNFA.finalState == logicalState) {
-        finalStates.addOne(commandState)
+        assert(finalState == null, "There should only be one final state in an NFA")
+        finalState = commandState
       }
 
       logicalState -> commandState
@@ -253,7 +254,7 @@ object CommandNFA {
     CommandNFA(
       states = stateLookup.values.toSet,
       startState,
-      finalStates.result()
+      finalState
     )
   }
 
