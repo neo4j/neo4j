@@ -371,6 +371,12 @@ import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.GraphPatternQuantifier
 import org.neo4j.cypher.internal.expressions.GreaterThan
 import org.neo4j.cypher.internal.expressions.GreaterThanOrEqual
+import org.neo4j.cypher.internal.expressions.HasALabel
+import org.neo4j.cypher.internal.expressions.HasALabelOrType
+import org.neo4j.cypher.internal.expressions.HasAnyLabel
+import org.neo4j.cypher.internal.expressions.HasLabels
+import org.neo4j.cypher.internal.expressions.HasLabelsOrTypes
+import org.neo4j.cypher.internal.expressions.HasTypes
 import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.Infinity
 import org.neo4j.cypher.internal.expressions.IntervalQuantifier
@@ -998,6 +1004,33 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
       )
     )
 
+  def _labelCheckExpression(variable: Variable): Gen[Expression] = {
+    def _hasLabels(): Gen[HasLabels] = for {
+      labels <- oneOrMore(_labelName)
+    } yield HasLabels(variable, labels)(pos)
+
+    def _hasAnyLabel(): Gen[HasAnyLabel] = for {
+      labels <- oneOrMore(_labelName)
+    } yield HasAnyLabel(variable, labels)(pos)
+
+    def _hasLabelsOrTypes(): Gen[HasLabelsOrTypes] = for {
+      labelOrRelTypes <- oneOrMore(_labelOrTypeName)
+    } yield HasLabelsOrTypes(variable, labelOrRelTypes)(pos)
+
+    def _hasTypes(): Gen[HasTypes] = for {
+      relTypes <- oneOrMore(_relTypeName)
+    } yield HasTypes(variable, relTypes)(pos)
+
+    oneOf(
+      _hasLabels(),
+      _hasAnyLabel(),
+      _hasLabelsOrTypes(),
+      _hasTypes,
+      lzy(HasALabelOrType(variable)(pos)),
+      lzy(HasALabel(variable)(pos))
+    )
+  }
+
   def _labelExpression(entityType: Option[EntityType], containsIs: Boolean): Gen[LabelExpression] = {
 
     def _labelExpressionConjunction(): Gen[LabelExpression.Conjunctions] = for {
@@ -1038,8 +1071,12 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     labelExpression <- option(_labelExpression(Some(NODE_TYPE), containsIs))
     properties <- option(oneOf(_map, _parameter))
     predicate <- variable match {
-      case Some(_) => option(_expression) // Only generate WHERE if we have a variable name.
-      case None    => const(None)
+      case Some(someVariable) =>
+        option(oneOf(
+          _expression,
+          _labelCheckExpression(someVariable)
+        )) // Only generate WHERE if we have a variable name.
+      case None => const(None)
     }
   } yield NodePattern(variable, labelExpression, properties, predicate)(pos)
 
@@ -1063,8 +1100,12 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     properties <- option(oneOf(_map, _parameter))
     direction <- _semanticDirection
     predicate <- variable match {
-      case None    => const(None)
-      case Some(_) => option(_expression) // Only generate WHERE if we have a variable name.
+      case Some(someVariable) =>
+        option(oneOf(
+          _expression,
+          _labelCheckExpression(someVariable)
+        )) // Only generate WHERE if we have a variable name.
+      case None => const(None)
     }
   } yield RelationshipPattern(variable, labelExpression, length, properties, predicate, direction)(pos)
 
