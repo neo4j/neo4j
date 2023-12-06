@@ -41,6 +41,22 @@ public interface FabricRemoteExecutor {
                 TransactionMode transactionMode,
                 MapValue params);
 
+        /**
+         * A method for executing CALL IN TRANSACTIONS.
+         * The reason why CALL IN TRANSACTIONS has a special entry point is that a lot of
+         * restrictions like being able to write to only one graph per Fabric transaction
+         * don't apply.
+         * <p>
+         * Unlike the generic remote query execution, CALL IN TRANSACTIONS cannot be executed in parallel,
+         * so this method tries to save some grief to the users and is synchronous.
+         */
+        StatementResult runInAutocommitTransaction(
+                Location.Remote location,
+                ExecutionOptions executionOptions,
+                String query,
+                TransactionMode transactionMode,
+                MapValue params);
+
         boolean isEmptyContext();
 
         @Override

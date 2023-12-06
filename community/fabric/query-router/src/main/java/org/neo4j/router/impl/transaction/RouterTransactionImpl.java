@@ -380,6 +380,16 @@ public class RouterTransactionImpl implements CompoundTransaction<DatabaseTransa
     }
 
     @Override
+    public void registerAutocommitQuery(AutocommitQuery autocommitQuery) {
+        throw new IllegalStateException("Autocommit queries are not supported by Query Router transaction");
+    }
+
+    @Override
+    public void unRegisterAutocommitQuery(AutocommitQuery autocommitQuery) {
+        throw new IllegalStateException("Autocommit queries are not supported by Query Router transaction");
+    }
+
+    @Override
     public void childTransactionTerminated(Status reason) {
         markForTermination(reason);
     }

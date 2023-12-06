@@ -61,6 +61,7 @@ public abstract class AbstractCompoundTransaction<Child extends ChildTransaction
     protected State state = State.OPEN;
     protected TerminationMark terminationMark;
 
+    private final Set<AutocommitQuery> autocommitQueries = ConcurrentHashMap.newKeySet();
     protected final Set<ReadingChildTransaction<Child>> readingTransactions = ConcurrentHashMap.newKeySet();
     protected Child writingTransaction;
 
@@ -275,6 +276,7 @@ public abstract class AbstractCompoundTransaction<Child extends ChildTransaction
             state = State.TERMINATED;
 
             terminateChildren(reason);
+            autocommitQueries.forEach(q -> q.terminate(reason));
         } finally {
             exclusiveLock.unlock();
         }
@@ -289,6 +291,16 @@ public abstract class AbstractCompoundTransaction<Child extends ChildTransaction
         }
 
         markForTermination(reason);
+    }
+
+    @Override
+    public void registerAutocommitQuery(AutocommitQuery autocommitQuery) {
+        autocommitQueries.add(autocommitQuery);
+    }
+
+    @Override
+    public void unRegisterAutocommitQuery(AutocommitQuery autocommitQuery) {
+        autocommitQueries.remove(autocommitQuery);
     }
 
     private void terminateChildren(Status reason) {

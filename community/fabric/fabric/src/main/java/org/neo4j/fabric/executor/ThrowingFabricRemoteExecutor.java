@@ -49,6 +49,16 @@ public class ThrowingFabricRemoteExecutor implements FabricRemoteExecutor {
         }
 
         @Override
+        public StatementResult runInAutocommitTransaction(
+                Location.Remote location,
+                ExecutionOptions executionOptions,
+                String query,
+                TransactionMode transactionMode,
+                MapValue params) {
+            throw new IllegalStateException("Remote query execution not supported");
+        }
+
+        @Override
         public boolean isEmptyContext() {
             return true;
         }

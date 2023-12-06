@@ -58,8 +58,23 @@ public interface CompoundTransaction<Child extends ChildTransaction> {
     <Tx extends Child> void upgradeToWritingTransaction(Tx childTransaction);
 
     /**
+     * Register an autocommit query with the transaction.
+     * The only reason for this connection is termination.
+     * If the transaction gets terminated, all registered
+     * autocommit queries get terminated, too.
+     */
+    void registerAutocommitQuery(AutocommitQuery autocommitQuery);
+
+    void unRegisterAutocommitQuery(AutocommitQuery autocommitQuery);
+
+    /**
      * A callback invoked when a child transaction is terminated.
      * It is a best effort as it works only for local child transactions.
      */
     void childTransactionTerminated(Status reason);
+
+    interface AutocommitQuery {
+
+        void terminate(Status reason);
+    }
 }
