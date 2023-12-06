@@ -95,21 +95,33 @@ trait PrettifierTestUtils extends Matchers {
         parse(pretty)
       } catch {
         case e: Exception =>
-          println("-- failure --------------------------------------")
+          printSeparator("failed query")
           println(pretty)
-          printComparison(original, None)
+          printAstComparison(original, None)
           throw e
       }
     val clean = dropQuotedSyntax(parsed)
+    val prettifiedClean = prettifier.asString(clean)
     try {
-      original shouldEqual clean
+      pretty should equal(prettifiedClean)
     } catch {
       case e: Exception =>
-        println("-- failure --------------------------------------")
+        printSeparator("failed query")
         println(pretty)
-        printComparison(original, Some(clean))
+        printSeparator("string diff")
+        printStringComparison(pretty, prettifiedClean)
+        printSeparator("AST diff")
+        printAstComparison(original, Some(clean))
         throw e
     }
+  }
+
+  def printSeparator(word: String, width: Int = defaultWidth): Unit = {
+    val separatorLine = "#" * (width * 2)
+    println()
+    println(separatorLine)
+    println(s"## $word")
+    println(separatorLine)
   }
 
   def dropQuotedSyntax[T <: ASTNode](n: T): T =
