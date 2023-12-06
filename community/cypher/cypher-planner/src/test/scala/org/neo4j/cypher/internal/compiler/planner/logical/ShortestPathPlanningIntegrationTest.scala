@@ -24,6 +24,7 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings.StatefulShortestPla
 import org.neo4j.configuration.GraphDatabaseInternalSettings.StatefulShortestPlanningMode.INTO_ONLY
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
+import org.neo4j.cypher.internal.compiler.ExecutionModel.Volcano
 import org.neo4j.cypher.internal.compiler.helpers.WindowsSafeAnyRef
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.expressions.NilPathStep
@@ -78,10 +79,14 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     .setRelationshipCardinality("(:B)-[]->(:N)", 10)
     .setRelationshipCardinality("()-[:T]->()", 10)
     .addSemanticFeature(SemanticFeature.GpmShortestPath)
-    // TODO remove this later
-    .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, ALL_IF_POSSIBLE)
+    // This makes it deterministic which plans ends up on what side of a CartesianProduct.
+    .setExecutionModel(Volcano)
 
   private val planner = plannerBase.build()
+
+  private val all_if_possible_planner = plannerBase
+    .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, ALL_IF_POSSIBLE)
+    .build()
 
   private val nonDeduplicatingPlanner =
     plannerBase
@@ -109,12 +114,14 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           None,
           groupNodes = Set(("n", "n"), ("m", "m")),
           groupRelationships = Set(("r", "r")),
-          singletonNodeVariables = Set("v" -> "v"),
+          singletonNodeVariables = Set(),
           singletonRelationshipVariables = Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
-          ExpandAll
+          ExpandInto
         )
+        .cartesianProduct()
+        .|.allNodeScan("v")
         .nodeByLabelScan("u", "User")
         .build()
     )
@@ -164,7 +171,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
             ("anon_9", "anon_19"),
             ("anon_1", "anon_20")
           ),
-          singletonNodeVariables = Set("t" -> "t"),
+          singletonNodeVariables = Set(),
           singletonRelationshipVariables = Set(),
           selector = StatefulShortestPath.Selector.Shortest(1),
           nfa = new TestNFABuilder(0, "s")
@@ -178,8 +185,10 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
             .addTransition(6, 7, "(anon_10) (t)")
             .setFinalState(7)
             .build(),
-          ExpandAll
+          ExpandInto
         )
+        .cartesianProduct()
+        .|.allNodeScan("t")
         .nodeByLabelScan("s", "User")
         .build()
     )
@@ -206,12 +215,14 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           None,
           groupNodes = Set(),
           groupRelationships = Set(("r", "r")),
-          singletonNodeVariables = Set("v" -> "v"),
+          singletonNodeVariables = Set(),
           singletonRelationshipVariables = Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
-          ExpandAll
+          ExpandInto
         )
+        .cartesianProduct()
+        .|.allNodeScan("v")
         .nodeByLabelScan("u", "User")
         .build()
     )
@@ -225,17 +236,17 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         |RETURN *""".stripMargin
 
     val nfa = new TestNFABuilder(0, "  UNNAMED0")
-      .addTransition(0, 1, "(`  UNNAMED0`) (`  UNNAMED3`)")
-      .addTransition(1, 2, "(`  UNNAMED3`)-[`  next@4`:R]->(`  UNNAMED4`)")
-      .addTransition(2, 3, "(`  UNNAMED4`)-[`  next@4`:R]->(`  UNNAMED5`)")
-      .addTransition(2, 7, "(`  UNNAMED4`) (`  UNNAMED2`)")
-      .addTransition(3, 4, "(`  UNNAMED5`)-[`  next@4`:R]->(`  UNNAMED6`)")
-      .addTransition(3, 7, "(`  UNNAMED5`) (`  UNNAMED2`)")
-      .addTransition(4, 5, "(`  UNNAMED6`)-[`  next@4`:R]->(`  UNNAMED7`)")
-      .addTransition(4, 7, "(`  UNNAMED6`) (`  UNNAMED2`)")
-      .addTransition(5, 6, "(`  UNNAMED7`)-[`  next@4`:R]->(`  UNNAMED8`)")
-      .addTransition(5, 7, "(`  UNNAMED7`) (`  UNNAMED2`)")
-      .addTransition(6, 7, "(`  UNNAMED8`) (`  UNNAMED2`)")
+      .addTransition(0, 1, "(`  UNNAMED0`) (`  UNNAMED2`)")
+      .addTransition(1, 2, "(`  UNNAMED2`)-[`  next@1`:R]->(`  UNNAMED3`)")
+      .addTransition(2, 3, "(`  UNNAMED3`)-[`  next@1`:R]->(`  UNNAMED4`)")
+      .addTransition(2, 7, "(`  UNNAMED3`) (`  UNNAMED1`)")
+      .addTransition(3, 4, "(`  UNNAMED4`)-[`  next@1`:R]->(`  UNNAMED5`)")
+      .addTransition(3, 7, "(`  UNNAMED4`) (`  UNNAMED1`)")
+      .addTransition(4, 5, "(`  UNNAMED5`)-[`  next@1`:R]->(`  UNNAMED6`)")
+      .addTransition(4, 7, "(`  UNNAMED5`) (`  UNNAMED1`)")
+      .addTransition(5, 6, "(`  UNNAMED6`)-[`  next@1`:R]->(`  UNNAMED7`)")
+      .addTransition(5, 7, "(`  UNNAMED6`) (`  UNNAMED1`)")
+      .addTransition(6, 7, "(`  UNNAMED7`) (`  UNNAMED1`)")
       .setFinalState(7)
       .build()
 
@@ -245,28 +256,36 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "  UNNAMED0",
           "  UNNAMED1",
-          "SHORTEST 1 ((  UNNAMED0)-[  next@2:R*1..5]->(  UNNAMED1) WHERE `  next@2` = next)",
-          Some("`  next@2` = next"),
+          "SHORTEST 1 ((  UNNAMED0)-[  next@0:R*1..5]->(  UNNAMED1) WHERE `  next@0` = next)",
+          Some("`  next@0` = next"),
           Set(),
-          Set(("  next@4", "  next@2")),
-          Set(("  UNNAMED2", "  UNNAMED1")),
+          Set(("  next@1", "  next@0")),
+          Set(),
           Set(),
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
-          ExpandAll
+          ExpandInto
         )
+        .apply()
+        .|.cartesianProduct()
+
         // Yup, not pretty, we could drop these predicates.
         // But currently they are inserted quite early in ASTRewriter,
-        // and only later the variable `next` gets renamed to `  next@2` in the 2ns match clause.
+        // and only later the variable `next` gets renamed to `  next@2` in the 2nd match clause.
         // In general, it is beneficial to NOT rewrite references to `next` to use `  next@2` in predicates,
         // because that allows the predicates to be solved earlier.
         // These implicitly solved relationship predicates are an exception.
-        .filter(
+        .|.|.filter(
           "size(next) >= 1",
           "size(next) <= 5",
-          "all(`  UNNAMED9` IN next WHERE single(`  UNNAMED10` IN next WHERE `  UNNAMED9` = `  UNNAMED10`))"
+          "all(`  UNNAMED10` IN next WHERE single(`  UNNAMED11` IN next WHERE `  UNNAMED10` = `  UNNAMED11`))"
         )
-        .apply()
+        .|.|.allNodeScan("`  UNNAMED1`", "from", "to", "next")
+        .|.filter(
+          "size(next) >= 1",
+          "size(next) <= 5",
+          "all(`  UNNAMED8` IN next WHERE single(`  UNNAMED9` IN next WHERE `  UNNAMED8` = `  UNNAMED9`))"
+        )
         .|.allNodeScan("`  UNNAMED0`", "from", "to", "next")
         .filter("to:B")
         .expand("(from)-[next:R*1..5]->(to)")
@@ -307,12 +326,14 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           Some("all(anon_0 IN r WHERE anon_0.prop = 42)"),
           groupNodes = Set(),
           groupRelationships = Set(("r", "r"), ("t", "t")),
-          singletonNodeVariables = Set("v" -> "v", "w" -> "w", "x" -> "x"),
+          singletonNodeVariables = Set("v" -> "v", "w" -> "w"),
           singletonRelationshipVariables = Set("s" -> "s"),
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
-          ExpandAll
+          ExpandInto
         )
+        .cartesianProduct()
+        .|.allNodeScan("x")
         .nodeByLabelScan("u", "User")
         .build()
     )
@@ -347,13 +368,15 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           None,
           groupNodes = Set(("b", "b"), ("c", "c"), ("e", "e"), ("f", "f")),
           groupRelationships = Set(("r", "r"), ("s", "s")),
-          singletonNodeVariables = Set("d" -> "d", "g" -> "g"),
+          singletonNodeVariables = Set("d" -> "d"),
           Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
-          ExpandAll
+          ExpandInto
         )
         .apply()
+        .|.cartesianProduct()
+        .|.|.allNodeScan("g", "d")
         .|.allNodeScan("a", "d")
         .nodeByLabelScan("d", "User")
         .build()
@@ -400,7 +423,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
 
   test("should allow planning of shortest with already bound interior node with predicate on interior node") {
     val query =
-      "MATCH (d:User) MATCH ANY SHORTEST (a) ((b)-[r]->(c))* (d {prop: 5}) ((e)-[s]->(f))* (g) RETURN *"
+      "MATCH (d:User) MATCH ANY SHORTEST (a:N) ((b)-[r]->(c))* (d {prop: 5}) ((e)-[s]->(f))* (g) RETURN *"
 
     val nfa =
       new TestNFABuilder(0, "a")
@@ -427,15 +450,18 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           None,
           Set(("b", "b"), ("c", "c"), ("e", "e"), ("f", "f")),
           Set(("r", "r"), ("s", "s")),
-          Set("d" -> "d", "g" -> "g"),
+          Set("d" -> "d"),
           Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
-          ExpandAll
+          ExpandInto
         )
-        .filter("cacheN[d.prop] = 5")
         .apply()
-        .|.allNodeScan("a", "d")
+        .|.cartesianProduct()
+        .|.|.filter("cacheN[d.prop] = 5")
+        .|.|.allNodeScan("g", "d")
+        .|.filter("cacheN[d.prop] = 5")
+        .|.nodeByLabelScan("a", "N", "d")
         .cacheProperties("cacheNFromStore[d.prop]")
         .nodeByLabelScan("d", "User")
         .build()
@@ -449,15 +475,15 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     val nfa =
       new TestNFABuilder(0, "a")
         .addTransition(0, 1, "(a) (`  b@1`)")
-        .addTransition(0, 3, "(a) (`  d@13`)") // it would be more efficient to add "WHERE `  d@13`.prop = 5"
+        .addTransition(0, 3, "(a) (`  d@13` WHERE `  d@13` = d)")
         .addTransition(1, 2, "(`  b@1`)-[`  r@2`]->(`  c@3`)")
         .addTransition(2, 1, "(`  c@3`) (`  b@1`)")
-        .addTransition(2, 3, "(`  c@3`) (`  d@13`)") // it would be more efficient to add "WHERE `  d@13`.prop = 5"
+        .addTransition(2, 3, "(`  c@3`) (`  d@13` WHERE `  d@13` = d)")
         .addTransition(3, 4, "(`  d@13`) (`  e@7`)")
-        .addTransition(3, 6, "(`  d@13`) (`  d@14` WHERE `  d@14`.prop = 5)")
+        .addTransition(3, 6, "(`  d@13`) (d)")
         .addTransition(4, 5, "(`  e@7`)-[`  s@8`]->(`  f@9`)")
         .addTransition(5, 4, "(`  f@9`) (`  e@7`)")
-        .addTransition(5, 6, "(`  f@9`) (`  d@14` WHERE `  d@14`.prop = 5)")
+        .addTransition(5, 6, "(`  f@9`) (d)")
         .setFinalState(6)
         .build()
 
@@ -467,22 +493,30 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "a",
           "d",
-          "SHORTEST 1 ((a) ((  b@1)-[  r@2]->(  c@3)){0, } (  d@0) ((  e@7)-[  s@8]->(  f@9)){0, } (d) WHERE `  d@0` = d AND d.prop IN [5] AND disjoint(`  r@5`, `  s@11`) AND unique(`  r@5`) AND unique(`  s@11`))",
-          Some("`  d@0` = d"),
+          "SHORTEST 1 ((a) ((  b@1)-[  r@2]->(  c@3)){0, } (  d@0) ((  e@7)-[  s@8]->(  f@9)){0, } (d) WHERE `  d@0` = d AND disjoint(`  r@5`, `  s@11`) AND unique(`  r@5`) AND unique(`  s@11`))",
+          None,
           Set(("  b@1", "  b@4"), ("  c@3", "  c@6"), ("  e@7", "  e@10"), ("  f@9", "  f@12")),
           Set(("  r@2", "  r@5"), ("  s@8", "  s@11")),
-          Set("  d@13" -> "  d@0", "  d@14" -> "d"),
+          Set("  d@13" -> "  d@0"),
           Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
-          ExpandAll
+          ExpandInto
         )
-        .nodeByLabelScan("a", "User")
+        .cartesianProduct()
+        .|.nodeByLabelScan("a", "User")
+        .filter("d.prop = 5")
+        .allNodeScan("d")
         .build()
     )
   }
 
   test("should allow planning of shortest with repeated interior node - reverse") {
+    val planner = plannerBase
+      .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, ALL_IF_POSSIBLE)
+      .enableDeduplicateNames(false)
+      .build()
+
     val query =
       "MATCH ANY SHORTEST (a) ((b)-[r]->(c))* (d WHERE d.prop = 5) ((e)-[s]->(f))* (d:User) RETURN *"
 
@@ -501,9 +535,9 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .setFinalState(6)
         .build()
 
-    val plan = nonDeduplicatingPlanner.plan(query).stripProduceResults
+    val plan = planner.plan(query).stripProduceResults
     plan should equal(
-      nonDeduplicatingPlanner.subPlanBuilder()
+      planner.subPlanBuilder()
         .statefulShortestPath(
           "d",
           "a",
@@ -524,6 +558,11 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
   }
 
   test("should plan shortest with bound interior node with predicate - reversed") {
+    val planner = plannerBase
+      .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, ALL_IF_POSSIBLE)
+      .enableDeduplicateNames(false)
+      .build()
+
     val query =
       "MATCH ANY SHORTEST (a) ((b)-[r]->(c))* (a WHERE a.prop = 5) ((e)-[s]->(f))* (d:User) RETURN *"
 
@@ -542,9 +581,9 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .setFinalState(6)
         .build()
 
-    val plan = nonDeduplicatingPlanner.plan(query).stripProduceResults
+    val plan = planner.plan(query).stripProduceResults
     plan should equal(
-      nonDeduplicatingPlanner.subPlanBuilder()
+      planner.subPlanBuilder()
         .statefulShortestPath(
           "d",
           "a",
@@ -568,7 +607,12 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     "should allow planning of shortest with already bound interior start and end node with predicate on interior node"
   ) {
     val query =
-      "MATCH (a), (d) WITH * SKIP 0 MATCH ANY SHORTEST (a) ((b)-[r]->(c))* (d WHERE d.prop = 5) ((e)-[s]->(f))* (d) RETURN *"
+      """MATCH (a:N), (d)
+        |  // This makes it deterministic which plans ends up on what side of a CartesianProduct.
+        |  WHERE a.prop = 5
+        |WITH * SKIP 0
+        |MATCH ANY SHORTEST (a) ((b)-[r]->(c))* (d WHERE d.prop = 5) ((e)-[s]->(f))* (d)
+        |RETURN *""".stripMargin
 
     val nfa =
       new TestNFABuilder(0, "a")
@@ -601,12 +645,12 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           nfa,
           ExpandInto
         )
-        .filter("cacheN[d.prop] = 5")
+        .filter("d.prop = 5")
         .skip(0)
         .cartesianProduct()
-        .|.cacheProperties("cacheNFromStore[d.prop]")
         .|.allNodeScan("d")
-        .allNodeScan("a")
+        .filter("a.prop = 5")
+        .nodeByLabelScan("a", "N")
         .build()
     )
   }
@@ -625,10 +669,10 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .addTransition(2, 1, "(`  c@3`) (`  b@1`)")
         .addTransition(2, 3, "(`  c@3`) (`  d@13` WHERE `  d@13` = d)")
         .addTransition(3, 4, "(`  d@13`) (`  e@7`)")
-        .addTransition(3, 6, "(`  d@13`) (`  g@14`)")
+        .addTransition(3, 6, "(`  d@13`) (g)")
         .addTransition(4, 5, "(`  e@7`)-[`  s@8`]->(`  f@9`)")
         .addTransition(5, 4, "(`  f@9`) (`  e@7`)")
-        .addTransition(5, 6, "(`  f@9`) (`  g@14`)")
+        .addTransition(5, 6, "(`  f@9`) (g)")
         .setFinalState(6)
         .build()
 
@@ -642,15 +686,18 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           None,
           Set(("  b@1", "  b@4"), ("  c@3", "  c@6"), ("  e@7", "  e@10"), ("  f@9", "  f@12")),
           Set(("  r@2", "  r@5"), ("  s@8", "  s@11")),
-          Set(("  d@13", "  d@0"), ("  g@14", "g")),
+          Set(("  d@13", "  d@0")),
           Set(),
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
-          ExpandAll
+          ExpandInto
         )
-        .filter("cacheN[d.prop] = 5")
         .apply()
-        .|.allNodeScan("a", "d")
+        .|.cartesianProduct()
+        .|.|.filter("cacheN[d.prop] = 5")
+        .|.|.allNodeScan("a", "d")
+        .|.filter("cacheN[d.prop] = 5")
+        .|.allNodeScan("g", "d")
         .cacheProperties("cacheNFromStore[d.prop]")
         .skip(0)
         .allNodeScan("d")
@@ -668,10 +715,10 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     val nfa = new TestNFABuilder(0, "from")
       .addTransition(0, 1, "(from)-[`  r@7`:R WHERE `  r@7` = r]->(`  b@8`)")
       .addTransition(1, 2, "(`  b@8`) (`  c@1`)")
-      .addTransition(1, 4, "(`  b@8`) (`  e@9`)")
+      .addTransition(1, 4, "(`  b@8`) (e)")
       .addTransition(2, 3, "(`  c@1`)-[`  r2@2`]->(`  d@3`)")
       .addTransition(3, 2, "(`  d@3`) (`  c@1`)")
-      .addTransition(3, 4, "(`  d@3`) (`  e@9`)")
+      .addTransition(3, 4, "(`  d@3`) (e)")
       .setFinalState(4)
       .build()
 
@@ -685,13 +732,17 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           None,
           Set(("  c@1", "  c@4"), ("  d@3", "  d@6")),
           Set(("  r2@2", "  r2@5")),
-          Set(("  b@8", "b"), ("  e@9", "e")),
+          Set(("  b@8", "b")),
           Set(("  r@7", "  r@0")),
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
-          ExpandAll
+          ExpandInto
         )
-        .filter("r.prop = 5", "to:B")
+        .filter("cacheR[r.prop] = 5")
+        .apply()
+        .|.allNodeScan("e", "from", "to", "r")
+        .cacheProperties("cacheRFromStore[r.prop]")
+        .filter("to:B")
         .expandAll("(from)-[r:R]->(to)")
         .nodeByLabelScan("from", "User")
         .build()
@@ -705,20 +756,20 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     val nfa =
       new TestNFABuilder(0, "a")
         .addTransition(0, 1, "(a) (`  b@2`)")
-        .addTransition(0, 3, "(a) (`  d@20`)")
+        .addTransition(0, 3, "(a) (`  d@20` WHERE `  d@20` = d)")
         .addTransition(1, 2, "(`  b@2`)-[`  r@3`]->(`  c@4`)")
         .addTransition(2, 1, "(`  c@4`) (`  b@2`)")
-        .addTransition(2, 3, "(`  c@4`) (`  d@20`)")
+        .addTransition(2, 3, "(`  c@4`) (`  d@20` WHERE `  d@20` = d)")
         .addTransition(3, 4, "(`  d@20`) (`  e@8`)")
-        .addTransition(3, 6, "(`  d@20`) (`  d@21`)")
+        .addTransition(3, 6, "(`  d@20`) (`  d@21` WHERE `  d@21` = d)")
         .addTransition(4, 5, "(`  e@8`)-[`  s@9`]->(`  f@10`)")
         .addTransition(5, 4, "(`  f@10`) (`  e@8`)")
-        .addTransition(5, 6, "(`  f@10`) (`  d@21`)")
+        .addTransition(5, 6, "(`  f@10`) (`  d@21` WHERE `  d@21` = d)")
         .addTransition(6, 7, "(`  d@21`) (`  g@14`)")
-        .addTransition(6, 9, "(`  d@21`) (`  d@22`)")
+        .addTransition(6, 9, "(`  d@21`) (d)")
         .addTransition(7, 8, "(`  g@14`)-[`  t@15`]->(`  h@16`)")
         .addTransition(8, 7, "(`  h@16`) (`  g@14`)")
-        .addTransition(8, 9, "(`  h@16`) (`  d@22`)")
+        .addTransition(8, 9, "(`  h@16`) (d)")
         .setFinalState(9)
         .build()
 
@@ -729,7 +780,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           "a",
           "d",
           "SHORTEST 1 ((a) ((  b@2)-[  r@3]->(  c@4)){0, } (  d@0) ((  e@8)-[  s@9]->(  f@10)){0, } (  d@1) ((  g@14)-[  t@15]->(  h@16)){0, } (d) WHERE `  d@0` = d AND `  d@1` = d AND disjoint(`  r@6`, `  s@12`) AND disjoint(`  r@6`, `  t@18`) AND disjoint(`  s@12`, `  t@18`) AND unique(`  r@6`) AND unique(`  s@12`) AND unique(`  t@18`))",
-          Some("`  d@1` = d AND `  d@0` = d"),
+          None,
           Set(
             ("  h@16", "  h@19"),
             ("  f@10", "  f@13"),
@@ -739,12 +790,14 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
             ("  b@2", "  b@5")
           ),
           Set(("  r@3", "  r@6"), ("  s@9", "  s@12"), ("  t@15", "  t@18")),
-          Set("  d@22" -> "d", "  d@20" -> "  d@0", "  d@21" -> "  d@1"),
+          Set("  d@20" -> "  d@0", "  d@21" -> "  d@1"),
           Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
-          ExpandAll
+          ExpandInto
         )
+        .cartesianProduct()
+        .|.allNodeScan("d")
         .nodeByLabelScan("a", "User")
         .build()
     )
@@ -767,10 +820,10 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .addTransition(5, 4, "(`  f@10`) (`  e@8`)")
         .addTransition(5, 6, "(`  f@10`) (`  a@21` WHERE `  a@21` = a)")
         .addTransition(6, 7, "(`  a@21`) (`  g@14`)")
-        .addTransition(6, 9, "(`  a@21`) (`  d@22`)")
+        .addTransition(6, 9, "(`  a@21`) (d)")
         .addTransition(7, 8, "(`  g@14`)-[`  t@15`]->(`  h@16`)")
         .addTransition(8, 7, "(`  h@16`) (`  g@14`)")
-        .addTransition(8, 9, "(`  h@16`) (`  d@22`)")
+        .addTransition(8, 9, "(`  h@16`) (d)")
         .setFinalState(9)
         .build()
 
@@ -791,12 +844,14 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
             ("  b@2", "  b@5")
           ),
           Set(("  r@3", "  r@6"), ("  s@9", "  s@12"), ("  t@15", "  t@18")),
-          Set("  a@20" -> "  a@0", "  a@21" -> "  a@1", "  d@22" -> "d"),
+          Set("  a@20" -> "  a@0", "  a@21" -> "  a@1"),
           Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
-          ExpandAll
+          ExpandInto
         )
+        .cartesianProduct()
+        .|.allNodeScan("d")
         .nodeByLabelScan("a", "User")
         .build()
     )
@@ -819,10 +874,10 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .addTransition(5, 4, "(`  f@9`) (`  e@7`)")
         .addTransition(5, 6, "(`  f@9`) (`  d@20`)")
         .addTransition(6, 7, "(`  d@20`) (`  g@13`)")
-        .addTransition(6, 9, "(`  d@20`) (`  i@21`)")
+        .addTransition(6, 9, "(`  d@20`) (i)")
         .addTransition(7, 8, "(`  g@13`)-[`  t@14`]->(`  h@15`)")
         .addTransition(8, 7, "(`  h@15`) (`  g@13`)")
-        .addTransition(8, 9, "(`  h@15`) (`  i@21`)")
+        .addTransition(8, 9, "(`  h@15`) (i)")
         .setFinalState(9)
         .build()
 
@@ -843,12 +898,14 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
             ("  f@9", "  f@12")
           ),
           Set(("  r@2", "  r@5"), ("  s@8", "  s@11"), ("  t@14", "  t@17")),
-          Set("  d@19" -> "d", "  d@20" -> "  d@0", "  i@21" -> "i"),
+          Set("  d@19" -> "d", "  d@20" -> "  d@0"),
           Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
-          ExpandAll
+          ExpandInto
         )
+        .cartesianProduct()
+        .|.allNodeScan("i")
         .nodeByLabelScan("a", "User")
         .build()
     )
@@ -900,9 +957,9 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .setFinalState(3)
       .build()
 
-    val plan = planner.plan(query).stripProduceResults
+    val plan = all_if_possible_planner.plan(query).stripProduceResults
     plan should equal(
-      planner.subPlanBuilder()
+      all_if_possible_planner.subPlanBuilder()
         .statefulShortestPath(
           "v",
           "u",
@@ -964,12 +1021,14 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           nonInlinedPreFilters = None,
           groupNodes = Set(("a", "a"), ("b", "b"), ("c", "c"), ("d", "d")),
           groupRelationships = Set(("r", "r"), ("s", "s")),
-          singletonNodeVariables = Set("v" -> "v", "w" -> "w"),
+          singletonNodeVariables = Set("v" -> "v"),
           singletonRelationshipVariables = Set.empty,
           selector = StatefulShortestPath.Selector.Shortest(1),
           nfa = expectedNfa,
-          ExpandAll
+          ExpandInto
         )
+        .cartesianProduct()
+        .|.allNodeScan("w")
         .nodeByLabelScan("u", "User")
         .build()
     )
@@ -980,7 +1039,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       """MATCH ANY SHORTEST ((u:User) ((a)-[r:R]->(b:B))+ (v)-[s]->(w:N) WHERE v.prop = 42)
         |RETURN *""".stripMargin
     val plan =
-      planner.plan(query).stripProduceResults
+      all_if_possible_planner.plan(query).stripProduceResults
 
     val expectedNfa = new TestNFABuilder(0, "u")
       .addTransition(0, 1, "(u) (a)")
@@ -992,7 +1051,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .build()
 
     plan should equal(
-      planner.subPlanBuilder()
+      all_if_possible_planner.subPlanBuilder()
         .statefulShortestPath(
           "u",
           "w",
@@ -1022,8 +1081,8 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .addTransition(0, 1, "(u) (a)")
       .addTransition(1, 2, "(a)-[r:R]->(b:B)")
       .addTransition(2, 1, "(b) (a)")
-      .addTransition(2, 3, "(b) (v WHERE v.prop = cacheNFromStore[u.prop] AND v:B)")
-      .addTransition(3, 4, "(v)-[s WHERE s.prop = cacheNFromStore[u.prop]]->(w:N)")
+      .addTransition(2, 3, "(b) (v WHERE v.prop = cacheN[u.prop] AND v:B)")
+      .addTransition(3, 4, "(v)-[s WHERE s.prop = cacheN[u.prop]]->(w)")
       .setFinalState(4)
       .build()
 
@@ -1032,16 +1091,19 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "u",
           "w",
-          "SHORTEST 1 ((u) ((a)-[r:R]->(b) WHERE `b`:B){1, } (v)-[s]->(w) WHERE NOT s IN `r` AND s.prop = u.prop AND unique(`r`) AND v.prop = u.prop AND v:B AND w:N)",
+          "SHORTEST 1 ((u) ((a)-[r:R]->(b) WHERE `b`:B){1, } (v)-[s]->(w) WHERE NOT s IN `r` AND s.prop = u.prop AND unique(`r`) AND v.prop = u.prop AND v:B)",
           None,
           Set(("a", "a"), ("b", "b")),
           Set(("r", "r")),
-          singletonNodeVariables = Set("v" -> "v", "w" -> "w"),
+          singletonNodeVariables = Set("v" -> "v"),
           singletonRelationshipVariables = Set("s" -> "s"),
           StatefulShortestPath.Selector.Shortest(1),
           expectedNfa,
-          ExpandAll
+          ExpandInto
         )
+        .cartesianProduct()
+        .|.nodeByLabelScan("w", "N")
+        .cacheProperties("cacheNFromStore[u.prop]")
         .nodeByLabelScan("u", "User")
         .build()
     )
@@ -1052,7 +1114,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       """MATCH ANY SHORTEST ((u:User) ((a)-[r]->(b))+ (v)-[s]-(w) WHERE v.prop = w.prop AND size(a) <> 5)
         |RETURN *""".stripMargin
     val plan =
-      planner.plan(query).stripProduceResults
+      all_if_possible_planner.plan(query).stripProduceResults
 
     val expectedNfa = new TestNFABuilder(0, "u")
       .addTransition(0, 1, "(u) (a)")
@@ -1064,7 +1126,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .build()
 
     plan should equal(
-      planner.subPlanBuilder()
+      all_if_possible_planner.subPlanBuilder()
         .statefulShortestPath(
           "u",
           "w",
@@ -1115,12 +1177,14 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           nonInlinedPreFilters = None,
           groupNodes = Set(("a", "a"), ("b", "b"), ("c", "c"), ("d", "d")),
           groupRelationships = Set(("r", "r"), ("s", "s")),
-          singletonNodeVariables = Set("v" -> "v", "w" -> "w", "x" -> "x"),
+          singletonNodeVariables = Set("v" -> "v", "w" -> "w"),
           singletonRelationshipVariables = Set("t" -> "t"),
           selector = StatefulShortestPath.Selector.Shortest(1),
           nfa = expectedNfa,
-          ExpandAll
+          ExpandInto
         )
+        .cartesianProduct()
+        .|.allNodeScan("x")
         .nodeByLabelScan("u", "User")
         .build()
     )
@@ -1149,13 +1213,14 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         Some("all(anon_1 IN range(0, size(b) - 1) WHERE b[anon_1] = b[anon_1])"),
         Set(("b", "b")),
         Set(),
-        Set(("c", "c")),
+        Set(),
         Set(),
         StatefulShortestPath.Selector.Shortest(1),
         nfa,
-        ExpandAll,
-        false
+        ExpandInto
       )
+      .cartesianProduct()
+      .|.allNodeScan("c")
       .allNodeScan("a")
       .build()
     plan should equal(expected)
@@ -1184,14 +1249,15 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         Some("all(anon_1 IN range(0, size(b) - 1) WHERE (b[anon_1]).prop < (c[anon_1]).prop)"),
         Set(("b", "b"), ("c", "c")),
         Set(),
-        Set(("d", "d")),
+        Set(),
         Set(),
         StatefulShortestPath.Selector.Shortest(1),
         nfa,
-        ExpandAll,
-        false
+        ExpandInto
       )
-      .allNodeScan("a")
+      .cartesianProduct()
+      .|.allNodeScan("a")
+      .allNodeScan("d")
       .build()
     plan should equal(expected)
   }
@@ -1219,12 +1285,18 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           None,
           groupNodes = Set(("n", "n"), ("m", "m")),
           groupRelationships = Set(("r", "r")),
-          singletonNodeVariables = Set("v" -> "v"),
+          singletonNodeVariables = Set(),
           singletonRelationshipVariables = Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
-          ExpandAll
+          ExpandInto
         )
+        .cartesianProduct()
+        .|.filter("CoerceToPredicate($param)")
+        .|.allNodeScan("v")
+        // Note: this should not be solved twice.
+        // This happens because we solve predicates on leaf plans as early as possible.
+        // Since predicates with no dependencies are rare in practice, this is benign.
         .filter("CoerceToPredicate($param)")
         .nodeByLabelScan("u", "User")
         .build()
@@ -1259,14 +1331,17 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           None,
           groupNodes = Set(("n", "n"), ("m", "m")),
           groupRelationships = Set(("r", "r")),
-          singletonNodeVariables = Set("v" -> "v"),
+          singletonNodeVariables = Set(),
           singletonRelationshipVariables = Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
-          ExpandAll
+          ExpandInto
         )
-        .filter("cache[arg.prop] > 5")
         .apply()
+        .|.cartesianProduct()
+        .|.|.filter("cacheN[arg.prop] > 5")
+        .|.|.allNodeScan("v", "arg")
+        .|.filter("cacheN[arg.prop] > 5")
         .|.nodeByLabelScan("u", "User", "arg")
         .cacheProperties("cacheNFromStore[arg.prop]")
         .allNodeScan("arg")
@@ -1302,14 +1377,16 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           None,
           groupNodes = Set(("n", "n"), ("m", "m")),
           groupRelationships = Set(("r", "r")),
-          singletonNodeVariables = Set("v" -> "v"),
+          singletonNodeVariables = Set(),
           singletonRelationshipVariables = Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
-          ExpandAll
+          ExpandInto
         )
-        .filter("cache[arg.prop] > u.prop")
         .apply()
+        .|.cartesianProduct()
+        .|.|.allNodeScan("v", "arg")
+        .|.filter("cacheN[arg.prop] > u.prop")
         .|.nodeByLabelScan("u", "User", "arg")
         .cacheProperties("cacheNFromStore[arg.prop]")
         .allNodeScan("arg")
@@ -1330,9 +1407,9 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .setFinalState(3)
       .build()
 
-    val plan = planner.plan(query).stripProduceResults
+    val plan = all_if_possible_planner.plan(query).stripProduceResults
     plan should equal(
-      planner.subPlanBuilder()
+      all_if_possible_planner.subPlanBuilder()
         .statefulShortestPath(
           "u",
           "v",
@@ -1395,7 +1472,9 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
   test("Should plan SHORTEST if both start and end are already bound with rewritten selection on boundary nodes") {
     val query =
       s"""
-         |MATCH (n), (o)
+         |MATCH (n:N), (o)
+         |  // This makes it deterministic which plans ends up on what side of a CartesianProduct.
+         |  WHERE n.prop = 5
          |WITH * SKIP 1
          |MATCH ANY SHORTEST ((n)((n_inner)-[r_inner]->(m_inner))+ (m)-[r2]->(o) WHERE m.prop = o.prop)
          |RETURN *
@@ -1406,7 +1485,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .addTransition(0, 1, "(n) (n_inner)")
       .addTransition(1, 2, "(n_inner)-[r_inner]->(m_inner)")
       .addTransition(2, 1, "(m_inner) (n_inner)")
-      .addTransition(2, 3, "(m_inner) (m WHERE m.prop = cacheN[o.prop])")
+      .addTransition(2, 3, "(m_inner) (m WHERE m.prop = o.prop)")
       .addTransition(3, 4, "(m)-[r2]->(o)")
       .setFinalState(4)
       .build()
@@ -1428,9 +1507,9 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         )
         .skip(1)
         .cartesianProduct()
-        .|.cacheProperties("cacheNFromStore[o.prop]")
         .|.allNodeScan("o")
-        .allNodeScan("n")
+        .filter("n.prop = 5")
+        .nodeByLabelScan("n", "N")
         .build()
     )
   }
@@ -1456,13 +1535,15 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           None,
           groupNodes = Set(("n", "n"), ("m", "m")),
           groupRelationships = Set(("r", "r")),
-          singletonNodeVariables = Set("v" -> "v"),
+          singletonNodeVariables = Set(),
           singletonRelationshipVariables = Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
-          ExpandAll
+          ExpandInto
         )
-        .nodeIndexOperator("u:User(prop > 5)", getValue = _ => GetValue)
+        .cartesianProduct()
+        .|.allNodeScan("v")
+        .nodeIndexOperator("u:User(prop > 5)", getValue = Map("prop" -> GetValue))
         .build()
     )
   }
@@ -1506,13 +1587,15 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           Some(patternExpressionPredicate),
           Set(("a", "a"), ("b", "b")),
           Set(("r", "r")),
-          singletonNodeVariables = Set("v" -> "v", "w" -> "w"),
+          singletonNodeVariables = Set("v" -> "v"),
           singletonRelationshipVariables = Set("s" -> "s"),
           StatefulShortestPath.Selector.Shortest(1),
           expectedNfa,
-          ExpandAll,
+          ExpandInto,
           reverseGroupVariableProjections = false
         )
+        .cartesianProduct()
+        .|.allNodeScan("w")
         .nodeByLabelScan("u", "User")
         .build()
     )
@@ -1556,13 +1639,15 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           Some(nestedPlanExpression),
           Set(("a", "a"), ("b", "b")),
           Set(("r", "r")),
-          singletonNodeVariables = Set("w" -> "w", "v" -> "v", "x" -> "x"),
+          singletonNodeVariables = Set("w" -> "w", "v" -> "v"),
           singletonRelationshipVariables = Set("t" -> "t", "s" -> "s"),
           StatefulShortestPath.Selector.Shortest(1),
           expectedNfa,
-          ExpandAll,
+          ExpandInto,
           reverseGroupVariableProjections = false
         )
+        .cartesianProduct()
+        .|.allNodeScan("x")
         .nodeByLabelScan("u", "User")
         .build()
     )
@@ -1590,7 +1675,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         None,
         Set(("b", "b")),
         Set(("r", "r")),
-        Set("d" -> "d"),
+        Set(),
         Set.empty,
         StatefulShortestPath.Selector.Shortest(1),
         new TestNFABuilder(0, "a")
@@ -1600,8 +1685,10 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           .addTransition(2, 3, "(c) (d)")
           .setFinalState(3)
           .build(),
-        ExpandAll
+        ExpandInto
       )
+      .cartesianProduct()
+      .|.allNodeScan("d")
       .allNodeScan("a")
       .build()
   }
@@ -1640,7 +1727,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         None,
         Set(("c", "c")),
         Set(("r", "r")),
-        Set("f" -> "f", "e" -> "e", "b" -> "b"),
+        Set("e" -> "e", "b" -> "b"),
         Set("anon_2" -> "anon_0", "anon_3" -> "anon_1"),
         StatefulShortestPath.Selector.Shortest(1),
         new TestNFABuilder(0, "a")
@@ -1652,9 +1739,11 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           .addTransition(4, 5, "(e)-[anon_3]-(f)")
           .setFinalState(5)
           .build(),
-        ExpandAll
+        ExpandInto
       )
-      .allNodeScan("a")
+      .cartesianProduct()
+      .|.allNodeScan("a")
+      .allNodeScan("f")
       .build()
   }
 
@@ -1683,16 +1772,18 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         None,
         Set(),
         Set(),
-        Set("b" -> "b"),
+        Set(),
         Set("r" -> "r"),
         StatefulShortestPath.Selector.Shortest(1),
         new TestNFABuilder(0, "a")
           .addTransition(0, 1, "(a)-[r]->(b)")
           .setFinalState(1)
           .build(),
-        ExpandAll
+        ExpandInto
       )
-      .allNodeScan("a")
+      .cartesianProduct()
+      .|.allNodeScan("a")
+      .allNodeScan("b")
       .build()
   }
 
@@ -1758,7 +1849,6 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .setRelationshipCardinality("(:A)-[]->(:B)", 20)
       .setRelationshipCardinality("()-[]->(:B)", 20)
       .addSemanticFeature(SemanticFeature.GpmShortestPath)
-      // TODO remove this later
       .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, ALL_IF_POSSIBLE)
       .build()
       .plan(query).stripProduceResults should equal(planLR)
@@ -1773,7 +1863,6 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .setRelationshipCardinality("(:A)-[]->(:B)", 20)
       .setRelationshipCardinality("()-[]->(:B)", 20)
       .addSemanticFeature(SemanticFeature.GpmShortestPath)
-      // TODO remove this later
       .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, ALL_IF_POSSIBLE)
       .build()
       .plan(query).stripProduceResults should equal(planRL)
@@ -1805,7 +1894,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         Some(greaterThan(length(path), literalInt(3))),
         Set(("b", "b"), ("e", "e")),
         Set(("r", "r"), ("s", "s")),
-        Set("d" -> "d", "g" -> "g"),
+        Set("d" -> "d"),
         Set(),
         StatefulShortestPath.Selector.Shortest(1),
         new TestNFABuilder(0, "a")
@@ -1819,10 +1908,12 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           .addTransition(5, 6, "(f) (g)")
           .setFinalState(6)
           .build(),
-        ExpandAll,
+        ExpandInto,
         reverseGroupVariableProjections = false
       )
-      .allNodeScan("a")
+      .cartesianProduct()
+      .|.allNodeScan("a")
+      .allNodeScan("g")
       .build()
   }
 
@@ -1853,7 +1944,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         None,
         Set(("b", "b"), ("e", "e")),
         Set(("r", "r"), ("s", "s")),
-        Set("d" -> "d", "g" -> "g"),
+        Set("d" -> "d"),
         Set(),
         StatefulShortestPath.Selector.Shortest(1),
         new TestNFABuilder(0, "a")
@@ -1867,9 +1958,11 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           .addTransition(5, 6, "(f) (g)")
           .setFinalState(6)
           .build(),
-        ExpandAll,
+        ExpandInto,
         reverseGroupVariableProjections = false
       )
+      .cartesianProduct()
+      .|.allNodeScan("g")
       .allNodeScan("a")
       .build()
   }
@@ -1901,7 +1994,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         Some(greaterThan(length(path), literalInt(3))),
         Set(("b", "b"), ("e", "e")),
         Set(("r", "r"), ("s", "s")),
-        Set("d" -> "d", "g" -> "g"),
+        Set("d" -> "d"),
         Set(),
         StatefulShortestPath.Selector.Shortest(1),
         new TestNFABuilder(0, "a")
@@ -1915,22 +2008,24 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           .addTransition(5, 6, "(f) (g)")
           .setFinalState(6)
           .build(),
-        ExpandAll,
+        ExpandInto,
         reverseGroupVariableProjections = false
       )
-      .allNodeScan("a")
+      .cartesianProduct()
+      .|.allNodeScan("a")
+      .allNodeScan("g")
       .build()
   }
 
   test("Should inline relationship local (start and end node) predicate into NFA: outside QPP") {
-    val query = "MATCH ANY SHORTEST ((u:User)((n)-[r]->(m))+(v)-[r2]->(w) WHERE v.prop > w.prop) RETURN *"
+    val query = "MATCH ANY SHORTEST ((u:User)((n)-[r]->(m))+(v)-[r2]->(w) WHERE v.prop > r2.prop + w.prop) RETURN *"
 
     val nfa = new TestNFABuilder(0, "u")
       .addTransition(0, 1, "(u) (n)")
       .addTransition(1, 2, "(n)-[r]->(m)")
       .addTransition(2, 1, "(m) (n)")
       .addTransition(2, 3, "(m) (v)")
-      .addTransition(3, 4, "(v)-[r2 WHERE startNode(r2).prop > endNode(r2).prop]->(w)")
+      .addTransition(3, 4, "(v)-[r2 WHERE startNode(r2).prop > r2.prop + endNode(r2).prop]->(w)")
       .setFinalState(4)
       .build()
 
@@ -1940,16 +2035,18 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "u",
           "w",
-          "SHORTEST 1 ((u) ((n)-[r]->(m)){1, } (v)-[r2]->(w) WHERE NOT r2 IN `r` AND unique(`r`) AND v.prop > w.prop)",
+          "SHORTEST 1 ((u) ((n)-[r]->(m)){1, } (v)-[r2]->(w) WHERE NOT r2 IN `r` AND unique(`r`) AND v.prop > r2.prop + w.prop)",
           None,
           groupNodes = Set(("n", "n"), ("m", "m")),
           groupRelationships = Set(("r", "r")),
-          singletonNodeVariables = Set("v" -> "v", "w" -> "w"),
+          singletonNodeVariables = Set("v" -> "v"),
           singletonRelationshipVariables = Set("r2" -> "r2"),
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
-          ExpandAll
+          ExpandInto
         )
+        .cartesianProduct()
+        .|.allNodeScan("w")
         .nodeByLabelScan("u", "User")
         .build()
     )
@@ -1977,26 +2074,28 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           None,
           groupNodes = Set(("n", "n"), ("m", "m")),
           groupRelationships = Set(("r", "r")),
-          singletonNodeVariables = Set("v" -> "v", "w" -> "w"),
+          singletonNodeVariables = Set("v" -> "v"),
           singletonRelationshipVariables = Set("r2" -> "r2"),
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
-          ExpandAll
+          ExpandInto
         )
+        .cartesianProduct()
+        .|.allNodeScan("w")
         .nodeByLabelScan("u", "User")
         .build()
     )
   }
 
   test("Should inline relationship local (start and end node) predicate into NFA: direction INCOMING") {
-    val query = "MATCH ANY SHORTEST ((u:User)((n)-[r]->(m))+(v)<-[r2]-(w) WHERE v.prop > w.prop) RETURN *"
+    val query = "MATCH ANY SHORTEST ((u:User)((n)-[r]->(m))+(v)<-[r2]-(w) WHERE v.prop > r2.prop + w.prop) RETURN *"
 
     val nfa = new TestNFABuilder(0, "u")
       .addTransition(0, 1, "(u) (n)")
       .addTransition(1, 2, "(n)-[r]->(m)")
       .addTransition(2, 1, "(m) (n)")
       .addTransition(2, 3, "(m) (v)")
-      .addTransition(3, 4, "(v)<-[r2 WHERE endNode(r2).prop > startNode(r2).prop]-(w)")
+      .addTransition(3, 4, "(v)<-[r2 WHERE endNode(r2).prop > r2.prop + startNode(r2).prop]-(w)")
       .setFinalState(4)
       .build()
 
@@ -2006,16 +2105,18 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "u",
           "w",
-          "SHORTEST 1 ((u) ((n)-[r]->(m)){1, } (v)<-[r2]-(w) WHERE NOT r2 IN `r` AND unique(`r`) AND v.prop > w.prop)",
+          "SHORTEST 1 ((u) ((n)-[r]->(m)){1, } (v)<-[r2]-(w) WHERE NOT r2 IN `r` AND unique(`r`) AND v.prop > r2.prop + w.prop)",
           None,
           groupNodes = Set(("n", "n"), ("m", "m")),
           groupRelationships = Set(("r", "r")),
-          singletonNodeVariables = Set("v" -> "v", "w" -> "w"),
+          singletonNodeVariables = Set("v" -> "v"),
           singletonRelationshipVariables = Set("r2" -> "r2"),
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
-          ExpandAll
+          ExpandInto
         )
+        .cartesianProduct()
+        .|.allNodeScan("w")
         .nodeByLabelScan("u", "User")
         .build()
     )
@@ -2033,9 +2134,9 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .setFinalState(4)
       .build()
 
-    val plan = planner.plan(query).stripProduceResults
+    val plan = all_if_possible_planner.plan(query).stripProduceResults
     plan should equal(
-      planner.subPlanBuilder()
+      all_if_possible_planner.subPlanBuilder()
         .statefulShortestPath(
           "w",
           "u",
@@ -2067,9 +2168,9 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .setFinalState(4)
       .build()
 
-    val plan = planner.plan(query).stripProduceResults
+    val plan = all_if_possible_planner.plan(query).stripProduceResults
     plan should equal(
-      planner.subPlanBuilder()
+      all_if_possible_planner.subPlanBuilder()
         .statefulShortestPath(
           "w",
           "u",
@@ -2090,7 +2191,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
   }
 
   test("Should not inline relationship local (start and end node) predicate into NFA: direction BOTH") {
-    val query = "MATCH ANY SHORTEST ((u:User)((n)-[r]->(m))+(v)-[r2]-(w) WHERE v.prop > w.prop) RETURN *"
+    val query = "MATCH ANY SHORTEST ((u:User)((n)-[r]->(m))+(v)-[r2]-(w) WHERE v.prop > r2.prop + w.prop) RETURN *"
 
     val nfa = new TestNFABuilder(0, "u")
       .addTransition(0, 1, "(u) (n)")
@@ -2107,16 +2208,18 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "u",
           "w",
-          "SHORTEST 1 ((u) ((n)-[r]->(m)){1, } (v)-[r2]-(w) WHERE NOT r2 IN `r` AND unique(`r`) AND v.prop > w.prop)",
-          Some("v.prop > w.prop"),
+          "SHORTEST 1 ((u) ((n)-[r]->(m)){1, } (v)-[r2]-(w) WHERE NOT r2 IN `r` AND unique(`r`) AND v.prop > r2.prop + w.prop)",
+          Some("v.prop > r2.prop + w.prop"),
           groupNodes = Set(("n", "n"), ("m", "m")),
           groupRelationships = Set(("r", "r")),
-          singletonNodeVariables = Set("v" -> "v", "w" -> "w"),
+          singletonNodeVariables = Set("v" -> "v"),
           singletonRelationshipVariables = Set("r2" -> "r2"),
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
-          ExpandAll
+          ExpandInto
         )
+        .cartesianProduct()
+        .|.allNodeScan("w")
         .nodeByLabelScan("u", "User")
         .build()
     )
@@ -2124,7 +2227,8 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
 
   // Our AST does not allow rewriting DesugaredMapProjections to use an expression instead of a variable.
   test("Should not inline relationship local (start and end node) predicate into NFA: DesugaredMapProjection") {
-    val query = "MATCH ANY SHORTEST ((u:User)((n)-[r]->(m))+(v)-[r2]->(w) WHERE v{.foo,.bar} = w{.foo,.bar}) RETURN *"
+    val query =
+      "MATCH ANY SHORTEST ((u:User)((n)-[r]->(m))+(v)-[r2]->(w) WHERE v{.foo,.bar} = w{.foo,.bar, baz: r2.baz}) RETURN *"
 
     val nfa = new TestNFABuilder(0, "u")
       .addTransition(0, 1, "(u) (n)")
@@ -2141,16 +2245,18 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "u",
           "w",
-          "SHORTEST 1 ((u) ((n)-[r]->(m)){1, } (v)-[r2]->(w) WHERE NOT r2 IN `r` AND unique(`r`) AND v{foo: v.foo, bar: v.bar} = w{foo: w.foo, bar: w.bar})",
-          Some("v{foo: v.foo, bar: v.bar} = w{foo: w.foo, bar: w.bar}"),
+          "SHORTEST 1 ((u) ((n)-[r]->(m)){1, } (v)-[r2]->(w) WHERE NOT r2 IN `r` AND unique(`r`) AND v{foo: v.foo, bar: v.bar} = w{foo: w.foo, bar: w.bar, baz: r2.baz})",
+          Some("v{foo: v.foo, bar: v.bar} = w{foo: w.foo, bar: w.bar, baz: r2.baz}"),
           groupNodes = Set(("n", "n"), ("m", "m")),
           groupRelationships = Set(("r", "r")),
-          singletonNodeVariables = Set("v" -> "v", "w" -> "w"),
+          singletonNodeVariables = Set("v" -> "v"),
           singletonRelationshipVariables = Set("r2" -> "r2"),
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
-          ExpandAll
+          ExpandInto
         )
+        .cartesianProduct()
+        .|.allNodeScan("w")
         .nodeByLabelScan("u", "User")
         .build()
     )
@@ -2179,12 +2285,14 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         Some("all(anon_1 IN range(0, size(m) - 1) WHERE (n[anon_1]).prop <= (m[anon_1]).prop)"),
         Set(("n", "n"), ("c", "c"), ("m", "m")),
         Set(("r", "r")),
-        Set(("v", "v")),
+        Set(),
         Set(),
         StatefulShortestPath.Selector.Shortest(1),
         nfa,
-        ExpandAll
+        ExpandInto
       )
+      .cartesianProduct()
+      .|.allNodeScan("v")
       .nodeByLabelScan("u", "User")
       .build()
     plan should equal(expected)
@@ -2194,7 +2302,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     val query = "MATCH (n) MATCH ANY SHORTEST ()-[r WHERE r.prop = n.prop]->() RETURN *"
 
     val nfa = new TestNFABuilder(0, "anon_0")
-      .addTransition(0, 1, "(anon_0)-[r WHERE r.prop = cacheN[n.prop]]->(anon_2)")
+      .addTransition(0, 1, "(anon_0)-[r WHERE r.prop = cacheN[n.prop]]->(anon_1)")
       .setFinalState(1)
       .build()
 
@@ -2208,13 +2316,15 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           None,
           Set(),
           Set(),
-          Set(("anon_2", "anon_1")),
+          Set(),
           Set(("r", "r")),
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
-          ExpandAll
+          ExpandInto
         )
         .apply()
+        .|.cartesianProduct()
+        .|.|.allNodeScan("anon_1", "n")
         .|.allNodeScan("anon_0", "n")
         .cacheProperties("cacheNFromStore[n.prop]")
         .allNodeScan("n")
@@ -2245,15 +2355,16 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           None,
           Set(("n", "n"), ("m", "m")),
           Set(("r", "r")),
-          Set(("v", "v")),
+          Set(),
           Set(),
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
-          ExpandAll,
-          false
+          ExpandInto
         )
-        .filter("cacheN[a.prop] = u.prop")
         .apply()
+        .|.cartesianProduct()
+        .|.|.allNodeScan("v", "a")
+        .|.filter("cacheN[a.prop] = u.prop")
         .|.allNodeScan("u", "a")
         .cacheProperties("cacheNFromStore[a.prop]")
         .allNodeScan("a")
@@ -2274,9 +2385,9 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .setFinalState(3)
       .build()
 
-    val plan = planner.plan(query).stripProduceResults
+    val plan = all_if_possible_planner.plan(query).stripProduceResults
     plan should equal(
-      planner.subPlanBuilder()
+      all_if_possible_planner.subPlanBuilder()
         .statefulShortestPath(
           "u",
           "v",
@@ -2309,9 +2420,9 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .setFinalState(3)
       .build()
 
-    val plan = planner.plan(query).stripProduceResults
+    val plan = all_if_possible_planner.plan(query).stripProduceResults
     plan should equal(
-      planner.subPlanBuilder()
+      all_if_possible_planner.subPlanBuilder()
         .statefulShortestPath(
           "u",
           "v",
@@ -2419,10 +2530,6 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
   test(
     "With statefulShortestPlanningMode=all_if_possible should produce an All plan if boundary nodes are not previously bound"
   ) {
-    val planner = plannerBase
-      .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, ALL_IF_POSSIBLE)
-      .build()
-
     val query = "MATCH ANY SHORTEST (u:User)((n)-[r]->(m))+(v) RETURN *"
 
     val nfa = new TestNFABuilder(0, "u")
@@ -2433,9 +2540,9 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .setFinalState(3)
       .build()
 
-    val plan = planner.plan(query).stripProduceResults
+    val plan = all_if_possible_planner.plan(query).stripProduceResults
     plan should equal(
-      planner.subPlanBuilder()
+      all_if_possible_planner.subPlanBuilder()
         .statefulShortestPath(
           "u",
           "v",
@@ -2455,9 +2562,6 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
   }
 
   test("With statefulShortestPlanningMode=all_if_possible should plan Into if both start and end are already bound") {
-    val planner = plannerBase
-      .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, ALL_IF_POSSIBLE)
-      .build()
 
     val query =
       s"""
@@ -2467,7 +2571,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
          |RETURN *
          |""".stripMargin
 
-    val plan = planner.plan(query).stripProduceResults
+    val plan = all_if_possible_planner.plan(query).stripProduceResults
     val nfa = new TestNFABuilder(0, "n")
       .addTransition(0, 1, "(n) (n_inner)")
       .addTransition(1, 2, "(n_inner)-[r_inner]->(m_inner)")
@@ -2477,7 +2581,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .build()
 
     plan should equal(
-      planner.subPlanBuilder()
+      all_if_possible_planner.subPlanBuilder()
         .statefulShortestPath(
           "n",
           "m",

@@ -21,13 +21,13 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseInternalSettings.EagerAnalysisImplementation
-import org.neo4j.configuration.GraphDatabaseInternalSettings.StatefulShortestPlanningMode.ALL_IF_POSSIBLE
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.assertIsNode
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.literalInt
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.propName
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.relTypeName
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.varFor
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
+import org.neo4j.cypher.internal.compiler.ExecutionModel.Volcano
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
@@ -44,7 +44,7 @@ import org.neo4j.cypher.internal.ir.EagernessReason.Unknown
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.logical.builder.TestNFABuilder
-import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
+import org.neo4j.cypher.internal.logical.plans.Expand.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.NFA
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
@@ -63,8 +63,8 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
   override protected def plannerBuilder(): StatisticsBackedLogicalPlanningConfigurationBuilder =
     super.plannerBuilder()
       .withSetting(GraphDatabaseInternalSettings.cypher_eager_analysis_implementation, impl)
-      // TODO remove this later
-      .withSetting(GraphDatabaseInternalSettings.stateful_shortest_planning_mode, ALL_IF_POSSIBLE)
+      // This makes it deterministic which plans ends up on what side of a CartesianProduct.
+      .setExecutionModel(Volcano)
 
   implicit class OptionallyEagerPlannerBuilder(b: LogicalPlanBuilder) {
 
@@ -610,7 +610,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
     val planner = plannerBuilder()
       .setAllNodesCardinality(100)
       .setLabelCardinality("A", 50)
-      .setLabelCardinality("C", 50)
+      .setLabelCardinality("C", 60)
       .setLabelCardinality("B", 50)
       .setRelationshipCardinality("()-[:BAR]->()", 10)
       .setRelationshipCardinality("(:A)-[:BAR]->()", 10)
@@ -660,7 +660,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
     val planner = plannerBuilder()
       .setAllNodesCardinality(100)
       .setLabelCardinality("A", 50)
-      .setLabelCardinality("C", 50)
+      .setLabelCardinality("C", 60)
       .setLabelCardinality("B", 50)
       .setRelationshipCardinality("()-[:BAR]->()", 10)
       .setRelationshipCardinality("(:A)-[:BAR]->()", 10)
@@ -731,8 +731,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
           parameters.singletonRelationshipVariables,
           StatefulShortestPath.Selector.Shortest(1),
           parameters.nfa,
-          ExpandAll,
-          false
+          ExpandInto
         )
   }
 
@@ -741,7 +740,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
       "start",
       "end",
       "SHORTEST 1 ((start)-[r]->(end))",
-      Set("end" -> "end"),
+      Set(),
       Set("r" -> "r"),
       StatefulShortestPath.Selector.Shortest(1),
       new TestNFABuilder(0, "start")
@@ -755,7 +754,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
       "start",
       "end",
       "SHORTEST 1 ((start) ((a)-[r:R]->(b)){1, } (end) WHERE unique(`r`))",
-      Set("end" -> "end"),
+      Set(),
       Set.empty,
       StatefulShortestPath.Selector.Shortest(1),
       new TestNFABuilder(0, "start")
@@ -772,7 +771,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
       "start",
       "end",
       "SHORTEST 1 ((start)-[r:R]->(end))",
-      Set("end" -> "end"),
+      Set(),
       Set("r" -> "r"),
       StatefulShortestPath.Selector.Shortest(1),
       new TestNFABuilder(0, "start")
@@ -793,12 +792,13 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
         ListSet(Unknown)
       case EagerAnalysisImplementation.LP =>
         ListSet(
-          ReadCreateConflict.withConflict(Conflict(Id(1), Id(3))),
+          ReadCreateConflict.withConflict(Conflict(Id(1), Id(5))),
           TypeReadSetConflict(relTypeName("S")).withConflict(Conflict(Id(1), Id(3)))
         )
     }
 
-    val query = "MATCH ANY SHORTEST (start)-[r]->(end) CREATE (end)-[s:S]->() RETURN end"
+    // {prop: 5} makes it deterministic which plans ends up on what side of a CartesianProduct.
+    val query = "MATCH ANY SHORTEST (start {prop: 5})-[r]->(end) CREATE (end)-[s:S]->() RETURN end"
     val plan = planner.plan(query)
 
     val expectedPlan = planner.planBuilder()
@@ -806,13 +806,16 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
       .create(createNode("anon_0"), createRelationship("s", "end", "S", "anon_0", OUTGOING))
       .eager(reason)
       .statefulShortestPath(`(start)-[r]->(end)`)
+      .cartesianProduct()
+      .|.allNodeScan("end")
+      .filter("start.prop = 5")
       .allNodeScan("start")
       .build()
 
     plan should equal(expectedPlan)
   }
 
-  test("Shortest match should not produce an eager when there is no relationship overlap") {
+  test("Shortest match produces an unnecessary eager when there is no relationship overlap") {
     val planner = plannerBuilder()
       .setAllNodesCardinality(10)
       .setRelationshipCardinality("()-[]->()", 10)
@@ -820,17 +823,29 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
       .addSemanticFeature(SemanticFeature.GpmShortestPath)
       .build()
 
-    val query = "MATCH ANY SHORTEST (start)-[r:R]->(end) CREATE (end)-[s:S]->() RETURN end"
+    // {prop: 5} makes it deterministic which plans ends up on what side of a CartesianProduct.
+    val query = "MATCH ANY SHORTEST (start {prop: 5})-[r:R]->(end) CREATE (end)-[s:S]->() RETURN end"
     val plan = planner.plan(query)
+
+    val reason: ListSet[EagernessReason] = impl match {
+      case EagerAnalysisImplementation.IR =>
+        ListSet(Unknown)
+      case EagerAnalysisImplementation.LP =>
+        ListSet(
+          ReadCreateConflict.withConflict(Conflict(Id(1), Id(5))),
+          TypeReadSetConflict(relTypeName("S")).withConflict(Conflict(Id(1), Id(3)))
+        )
+    }
 
     val expectedPlan = planner.planBuilder()
       .produceResults("end")
       .create(createNode("anon_0"), createRelationship("s", "end", "S", "anon_0", OUTGOING))
-      .lpEager(ListSet(
-        ReadCreateConflict.withConflict(Conflict(Id(1), Id(3))),
-        TypeReadSetConflict(relTypeName("S")).withConflict(Conflict(Id(1), Id(3)))
-      ))
+      // Unnecessary Eager
+      .eager(reason)
       .statefulShortestPath(`(start)-[r:R]->(end)`)
+      .cartesianProduct()
+      .|.allNodeScan("end")
+      .filter("start.prop = 5")
       .allNodeScan("start")
       .build()
 
@@ -851,7 +866,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
       case EagerAnalysisImplementation.IR =>
         ListSet(Unknown)
       case EagerAnalysisImplementation.LP =>
-        ListSet(PropertyReadSetConflict(propName("prop")).withConflict(Conflict(Id(7), Id(3))))
+        ListSet(PropertyReadSetConflict(propName("prop")).withConflict(Conflict(Id(9), Id(6))))
     }
 
     val plan = planner.plan(query)
@@ -866,18 +881,19 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
           None,
           Set.empty,
           Set.empty,
-          Set("end" -> "end"),
+          Set(),
           Set("r" -> "r"),
           StatefulShortestPath.Selector.Shortest(1),
           new TestNFABuilder(0, "start")
             .addTransition(0, 1, "(start)-[r]->(end)")
             .setFinalState(1)
             .build(),
-          ExpandAll,
-          reverseGroupVariableProjections = false
+          ExpandInto
         )
-        .filter("start.prop = 1")
         .apply()
+        .|.cartesianProduct()
+        .|.|.allNodeScan("end", "a")
+        .|.filter("start.prop = 1")
         .|.allNodeScan("start", "a")
         .eager(reason)
         .setNodeProperty("a", "prop", "1")
@@ -893,16 +909,16 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
       .addSemanticFeature(SemanticFeature.GpmShortestPath)
       .build()
 
-    val query = "CREATE (a)-[s:S]->(b) WITH b MATCH ANY SHORTEST (start)-[r]->(end) RETURN end"
+    // {prop: 5} makes it deterministic which plans ends up on what side of a CartesianProduct.
+    val query = "CREATE (a)-[s:S]->(b) WITH b MATCH ANY SHORTEST (start {prop: 5})-[r]->(end) RETURN end"
 
     val reason: ListSet[EagernessReason] = impl match {
       case EagerAnalysisImplementation.IR =>
         ListSet(Unknown)
       case EagerAnalysisImplementation.LP =>
         ListSet(
-          ReadCreateConflict.withConflict(Conflict(Id(5), Id(1))),
-          TypeReadSetConflict(relTypeName("S")).withConflict(Conflict(Id(5), Id(1))),
-          ReadCreateConflict.withConflict(Conflict(Id(5), Id(3)))
+          ReadCreateConflict.withConflict(Conflict(Id(8), Id(4))),
+          TypeReadSetConflict(relTypeName("S")).withConflict(Conflict(Id(8), Id(1)))
         )
     }
 
@@ -910,6 +926,9 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
       .produceResults("end")
       .statefulShortestPath(`(start)-[r]->(end)`)
       .apply()
+      .|.cartesianProduct()
+      .|.|.allNodeScan("end", "b")
+      .|.filter("start.prop = 5")
       .|.allNodeScan("start", "b")
       .eager(reason)
       .create(createNode("a"), createNode("b"), createRelationship("s", "a", "S", "b", OUTGOING))
@@ -928,7 +947,8 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
       .addSemanticFeature(SemanticFeature.GpmShortestPath)
       .build()
 
-    val query = "MATCH (a:Label) DELETE a WITH * MATCH ANY SHORTEST (start)-[r]->(end) RETURN end"
+    // {prop: 5} makes it deterministic which plans ends up on what side of a CartesianProduct.
+    val query = "MATCH (a:Label) DELETE a WITH * MATCH ANY SHORTEST (start {prop: 5})-[r]->(end) RETURN end"
 
     val reason: ListSet[EagernessReason] = impl match {
       case EagerAnalysisImplementation.IR =>
@@ -938,9 +958,10 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
         )
       case EagerAnalysisImplementation.LP =>
         ListSet(
-          ReadDeleteConflict("end").withConflict(Conflict(Id(5), Id(1))),
-          ReadDeleteConflict("start").withConflict(Conflict(Id(5), Id(3))),
-          ReadDeleteConflict("a").withConflict(Conflict(Id(5), Id(3)))
+          ReadDeleteConflict("end").withConflict(Conflict(Id(8), Id(4))),
+          ReadDeleteConflict("start").withConflict(Conflict(Id(8), Id(6))),
+          ReadDeleteConflict("a").withConflict(Conflict(Id(8), Id(4))),
+          ReadDeleteConflict("a").withConflict(Conflict(Id(8), Id(6)))
         )
     }
 
@@ -948,6 +969,9 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
       .produceResults("end")
       .statefulShortestPath(`(start)-[r]->(end)`)
       .apply()
+      .|.cartesianProduct()
+      .|.|.allNodeScan("end", "a")
+      .|.filter("start.prop = 5")
       .|.allNodeScan("start", "a")
       .eager(reason)
       .deleteNode("a")
@@ -968,8 +992,9 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
       .addSemanticFeature(SemanticFeature.GpmShortestPath)
       .build()
 
+    // {prop: 5} makes it deterministic which plans ends up on what side of a CartesianProduct.
     val query =
-      "MATCH ANY SHORTEST ((start)-[s]-(x) ((a)-[r:R]->(b))+(end)) DELETE s RETURN end"
+      "MATCH ANY SHORTEST ((start {prop: 5})-[s]-(x) ((a)-[r:R]->(b))+(end)) DELETE s RETURN end"
 
     val reason: ListSet[EagernessReason] = impl match {
       case EagerAnalysisImplementation.IR =>
@@ -995,7 +1020,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
           None,
           Set.empty,
           Set.empty,
-          Set("end" -> "end", "x" -> "x"),
+          Set("x" -> "x"),
           Set("s" -> "s"),
           StatefulShortestPath.Selector.Shortest(1),
           new TestNFABuilder(0, "start")
@@ -1006,9 +1031,11 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
             .addTransition(3, 4, "(b) (end)")
             .setFinalState(4)
             .build(),
-          ExpandAll,
-          false
+          ExpandInto
         )
+        .cartesianProduct()
+        .|.allNodeScan("end")
+        .filter("start.prop = 5")
         .allNodeScan("start")
         .build()
     )
@@ -1033,7 +1060,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
       case EagerAnalysisImplementation.IR =>
         ListSet(Unknown)
       case EagerAnalysisImplementation.LP =>
-        ListSet(PropertyReadSetConflict(propName("prop")).withConflict(Conflict(Id(2), Id(5))))
+        ListSet(PropertyReadSetConflict(propName("prop")).withConflict(Conflict(Id(2), Id(7))))
     }
 
     val plan = planner.plan(query)
@@ -1050,16 +1077,17 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
           None,
           Set.empty,
           Set.empty,
-          Set("end" -> "end"),
+          Set(),
           Set("r" -> "r"),
           StatefulShortestPath.Selector.Shortest(1),
           new TestNFABuilder(0, "start")
             .addTransition(0, 1, "(start)-[r:R]->(end)")
             .setFinalState(1)
             .build(),
-          ExpandAll,
-          reverseGroupVariableProjections = false
+          ExpandInto
         )
+        .cartesianProduct()
+        .|.allNodeScan("end")
         .filter("start.prop = 1")
         .allNodeScan("start")
         .build()
@@ -1073,16 +1101,19 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
       .addSemanticFeature(SemanticFeature.GpmShortestPath)
       .build()
 
-    val query = "MATCH ANY SHORTEST (start)-[r:R]->(end) DETACH DELETE end RETURN 1"
+    // {prop: 5} makes it deterministic which plans ends up on what side of a CartesianProduct.
+    val query = "MATCH ANY SHORTEST (start {prop: 5})-[r:R]->(end) DETACH DELETE end RETURN 1"
 
     val reason: ListSet[EagernessReason] = impl match {
       case EagerAnalysisImplementation.IR =>
         ListSet(Unknown)
       case EagerAnalysisImplementation.LP =>
         ListSet(
+          ReadDeleteConflict("end").withConflict(Conflict(Id(2), Id(6))),
           ReadDeleteConflict("end").withConflict(Conflict(Id(2), Id(4))),
           ReadDeleteConflict("r").withConflict(Conflict(Id(2), Id(4))),
-          ReadDeleteConflict("start").withConflict(Conflict(Id(2), Id(4)))
+          ReadDeleteConflict("start").withConflict(Conflict(Id(2), Id(4))),
+          ReadDeleteConflict("start").withConflict(Conflict(Id(2), Id(7)))
         )
     }
 
@@ -1092,6 +1123,9 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
       .detachDeleteNode("end")
       .eager(reason) // This eager is unnecessary since we are limited to one shortest
       .statefulShortestPath(`(start)-[r:R]->(end)`)
+      .cartesianProduct()
+      .|.allNodeScan("end")
+      .filter("start.prop = 5")
       .allNodeScan("start")
       .build()
 
@@ -1107,8 +1141,9 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
       .addSemanticFeature(SemanticFeature.GpmShortestPath)
       .build()
 
+    // {prop: 5} makes it deterministic which plans ends up on what side of a CartesianProduct.
     val query =
-      "MATCH ANY SHORTEST ((start)((a)-[r:R]->(b))+(end)) MERGE (start)-[t:T]-(end) RETURN end"
+      "MATCH ANY SHORTEST ((start {prop: 5})((a)-[r:R]->(b))+(end)) MERGE (start)-[t:T]-(end) RETURN end"
 
     val expected = planner.planBuilder()
       .produceResults("end")
@@ -1116,11 +1151,14 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
       .|.merge(Seq(), Seq(createRelationship("t", "start", "T", "end", BOTH)), Seq(), Seq(), Set("start", "end"))
       .|.expandInto("(start)-[t:T]-(end)")
       .|.argument("start", "end")
+      // This eager is unnecessary since a relationship cannot have more than one type.
       .lpEager(ListSet(
         TypeReadSetConflict(relTypeName("T")).withConflict(Conflict(Id(2), Id(6)))
-      ) // TODO: This eager is unnecessary since a relationship cannot have more than one type.
-      )
+      ))
       .statefulShortestPath(`((start)((a)-[r:R]->(b))+(end))`)
+      .cartesianProduct()
+      .|.allNodeScan("end")
+      .filter("start.prop = 5")
       .allNodeScan("start")
       .build()
 
@@ -1136,8 +1174,9 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
       .addSemanticFeature(SemanticFeature.GpmShortestPath)
       .build()
 
+    // {prop: 5} makes it deterministic which plans ends up on what side of a CartesianProduct.
     val query =
-      "MATCH ANY SHORTEST ((start)((a)-[r:R]->(b))+(end)) MERGE (start)-[t:R]-(end) RETURN end"
+      "MATCH ANY SHORTEST ((start {prop: 5})((a)-[r:R]->(b))+(end)) MERGE (start)-[t:R]-(end) RETURN end"
 
     val reason: ListSet[EagernessReason] = impl match {
       case EagerAnalysisImplementation.IR =>
@@ -1156,6 +1195,9 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
       .|.argument("start", "end")
       .eager(reason)
       .statefulShortestPath(`((start)((a)-[r:R]->(b))+(end))`)
+      .cartesianProduct()
+      .|.allNodeScan("end")
+      .filter("start.prop = 5")
       .allNodeScan("start")
       .build()
 
@@ -1165,24 +1207,23 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
 
   test("Shortest match produces an unnecessary eager when there is no overlap on the inner qpp relationship") {
     val planner = plannerBuilder()
-      .setAllNodesCardinality(10)
+      .setAllNodesCardinality(100)
       .setLabelCardinality("Label", 10)
       .setRelationshipCardinality("()-[:R]->()", 10)
       .setRelationshipCardinality("()-[]->()", 10)
       .addSemanticFeature(SemanticFeature.GpmShortestPath)
       .build()
 
+    // {prop: 5} makes it deterministic which plans ends up on what side of a CartesianProduct.
     val query =
-      "MATCH ANY SHORTEST ((start:!Label)((a:!Label)-[r:!R]->(b:!Label))+(end:!Label)) MERGE (start)-[t:R]-(end) RETURN end"
+      "MATCH ANY SHORTEST ((start:!Label {prop: 5})((a:!Label)-[r:!R]->(b:!Label))+(end:!Label)) MERGE (start)-[t:R]-(end) RETURN end"
 
     val reason: ListSet[EagernessReason] = impl match {
       case EagerAnalysisImplementation.IR =>
         ListSet(Unknown)
       case EagerAnalysisImplementation.LP =>
-        ListSet(EagernessReason.TypeReadSetConflict(relTypeName("R")).withConflict(EagernessReason.Conflict(
-          Id(2),
-          Id(6)
-        )))
+        ListSet(EagernessReason.TypeReadSetConflict(relTypeName("R"))
+          .withConflict(EagernessReason.Conflict(Id(2), Id(6))))
     }
 
     val plan = planner.plan(query)
@@ -1197,24 +1238,26 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
         .statefulShortestPath(
           "start",
           "end",
-          "SHORTEST 1 ((start) ((a)-[r]->(b) WHERE NOT `a`:Label AND NOT `r`:R AND NOT `b`:Label){1, } (end) WHERE NOT end:Label AND unique(`r`))",
+          "SHORTEST 1 ((start) ((a)-[r]->(b) WHERE NOT `a`:Label AND NOT `r`:R AND NOT `b`:Label){1, } (end) WHERE unique(`r`))",
           None,
           Set.empty,
           Set.empty,
-          Set("end" -> "end"),
+          Set(),
           Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           new TestNFABuilder(0, "start")
             .addTransition(0, 1, "(start) (a WHERE NOT a:Label)")
             .addTransition(1, 2, "(a)-[r WHERE NOT r:R]->(b WHERE NOT b:Label)")
             .addTransition(2, 1, "(b) (a WHERE NOT a:Label)")
-            .addTransition(2, 3, "(b) (end WHERE NOT end:Label)")
+            .addTransition(2, 3, "(b) (end)")
             .setFinalState(3)
             .build(),
-          ExpandAll,
-          false
+          ExpandInto
         )
-        .filter("NOT start:Label")
+        .cartesianProduct()
+        .|.filter("NOT end:Label")
+        .|.allNodeScan("end")
+        .filter("NOT start:Label", "start.prop = 5")
         .allNodeScan("start")
         .build()
     )
@@ -1224,15 +1267,16 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
     // We cannot find the leafPlans for variables within a SPP so we plan an eager for each found variable.
     // This is only applicable when we don't have the deleted node as an argument, then we would instead just mention the overlap on the deleted node.
     val planner = plannerBuilder()
-      .setAllNodesCardinality(10)
+      .setAllNodesCardinality(100)
       .setLabelCardinality("Label", 10)
       .setRelationshipCardinality("()-[:R]->()", 10)
       .setRelationshipCardinality("()-[]->()", 10)
       .addSemanticFeature(SemanticFeature.GpmShortestPath)
       .build()
 
+    // {prop: 5} makes it deterministic which plans ends up on what side of a CartesianProduct.
     val query =
-      "MATCH (x:Label) DELETE x WITH 1 as z MATCH ANY SHORTEST ((start:!Label)((a:!Label)-[r:R]->(b:!Label))+(end:!Label)) return end"
+      "MATCH (x:Label) DELETE x WITH 1 as z MATCH ANY SHORTEST ((start:!Label {prop: 5})((a:!Label)-[r:R]->(b:!Label))+(end:!Label)) return end"
 
     val reason: ListSet[EagernessReason] = impl match {
       case EagerAnalysisImplementation.IR =>
@@ -1244,10 +1288,10 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
         )
       case EagerAnalysisImplementation.LP =>
         ListSet(
-          ReadDeleteConflict("start").withConflict(Conflict(Id(7), Id(4))),
-          ReadDeleteConflict("end").withConflict(Conflict(Id(7), Id(1))),
-          ReadDeleteConflict("a").withConflict(Conflict(Id(7), Id(1))),
-          ReadDeleteConflict("b").withConflict(Conflict(Id(7), Id(1)))
+          ReadDeleteConflict("start").withConflict(Conflict(Id(10), Id(7))),
+          ReadDeleteConflict("end").withConflict(Conflict(Id(10), Id(5))),
+          ReadDeleteConflict("a").withConflict(Conflict(Id(10), Id(1))),
+          ReadDeleteConflict("b").withConflict(Conflict(Id(10), Id(1)))
         )
     }
 
@@ -1258,25 +1302,27 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
         .statefulShortestPath(
           "start",
           "end",
-          "SHORTEST 1 ((start) ((a)-[r:R]->(b) WHERE NOT `a`:Label AND NOT `b`:Label){1, } (end) WHERE NOT end:Label AND unique(`r`))",
+          "SHORTEST 1 ((start) ((a)-[r:R]->(b) WHERE NOT `a`:Label AND NOT `b`:Label){1, } (end) WHERE unique(`r`))",
           None,
           Set.empty,
           Set.empty,
-          Set("end" -> "end"),
+          Set(),
           Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           new TestNFABuilder(0, "start")
             .addTransition(0, 1, "(start) (a WHERE NOT a:Label)")
             .addTransition(1, 2, "(a)-[r:R]->(b WHERE NOT b:Label)")
             .addTransition(2, 1, "(b) (a WHERE NOT a:Label)")
-            .addTransition(2, 3, "(b) (end WHERE NOT end:Label)")
+            .addTransition(2, 3, "(b) (end)")
             .setFinalState(3)
             .build(),
-          ExpandAll,
-          false
+          ExpandInto
         )
-        .filter("NOT start:Label")
         .apply()
+        .|.cartesianProduct()
+        .|.|.filter("NOT end:Label")
+        .|.|.allNodeScan("end", "z")
+        .|.filter("NOT start:Label", "start.prop = 5")
         .|.allNodeScan("start", "z")
         .lpEager(reason)
         .projection("1 AS z")
