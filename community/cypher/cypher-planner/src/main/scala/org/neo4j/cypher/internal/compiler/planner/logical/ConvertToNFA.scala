@@ -96,7 +96,7 @@ object ConvertToNFA {
       )
 
     val lastNode = builder.getLastState
-    builder.addFinalState(lastNode)
+    builder.setFinalState(lastNode)
     (builder.build(), nonInlinedSelections, syntheticVarLengthSingletons)
   }
 

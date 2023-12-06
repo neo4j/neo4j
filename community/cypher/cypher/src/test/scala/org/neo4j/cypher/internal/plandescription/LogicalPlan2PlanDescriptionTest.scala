@@ -5477,13 +5477,19 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
   test("StatefulShortestPath") {
     val solvedExpressionStr = "SHORTEST 5 PATHS (a)-->*(b)"
+    val nfa = {
+      val builder = new NFABuilder(varFor("a"))
+      builder
+        .setFinalState(builder.getLastState)
+        .build()
+    }
     assertGood(
       attach(
         StatefulShortestPath(
           lhsLP,
           varFor("a"),
           varFor("b"),
-          new NFABuilder(varFor("a")).build(),
+          nfa,
           ExpandAll,
           None,
           Set.empty,

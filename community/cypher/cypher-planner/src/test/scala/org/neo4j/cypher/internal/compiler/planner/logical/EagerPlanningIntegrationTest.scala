@@ -743,7 +743,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
       StatefulShortestPath.Selector.Shortest(1),
       new TestNFABuilder(0, "start")
         .addTransition(0, 1, "(start)-[r]->(end)")
-        .addFinalState(1)
+        .setFinalState(1)
         .build()
     )
 
@@ -760,7 +760,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
         .addTransition(1, 2, "(a)-[r:R]->(b)")
         .addTransition(2, 1, "(b) (a)")
         .addTransition(2, 3, "(b) (end)")
-        .addFinalState(3)
+        .setFinalState(3)
         .build()
     )
 
@@ -774,7 +774,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
       StatefulShortestPath.Selector.Shortest(1),
       new TestNFABuilder(0, "start")
         .addTransition(0, 1, "(start)-[r:R]->(end)")
-        .addFinalState(1)
+        .setFinalState(1)
         .build()
     )
 
@@ -868,7 +868,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
           StatefulShortestPath.Selector.Shortest(1),
           new TestNFABuilder(0, "start")
             .addTransition(0, 1, "(start)-[r]->(end)")
-            .addFinalState(1)
+            .setFinalState(1)
             .build(),
           ExpandAll,
           reverseGroupVariableProjections = false
@@ -1001,7 +1001,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
             .addTransition(2, 3, "(a)-[r:R]->(b)")
             .addTransition(3, 2, "(b) (a)")
             .addTransition(3, 4, "(b) (end)")
-            .addFinalState(4)
+            .setFinalState(4)
             .build(),
           ExpandAll,
           false
@@ -1052,7 +1052,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
           StatefulShortestPath.Selector.Shortest(1),
           new TestNFABuilder(0, "start")
             .addTransition(0, 1, "(start)-[r:R]->(end)")
-            .addFinalState(1)
+            .setFinalState(1)
             .build(),
           ExpandAll,
           reverseGroupVariableProjections = false
@@ -1206,7 +1206,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
             .addTransition(1, 2, "(a)-[r WHERE NOT r:R]->(b WHERE NOT b:Label)")
             .addTransition(2, 1, "(b) (a WHERE NOT a:Label)")
             .addTransition(2, 3, "(b) (end WHERE NOT end:Label)")
-            .addFinalState(3)
+            .setFinalState(3)
             .build(),
           ExpandAll,
           false
@@ -1267,7 +1267,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
             .addTransition(1, 2, "(a)-[r:R]->(b WHERE NOT b:Label)")
             .addTransition(2, 1, "(b) (a WHERE NOT a:Label)")
             .addTransition(2, 3, "(b) (end WHERE NOT end:Label)")
-            .addFinalState(3)
+            .setFinalState(3)
             .build(),
           ExpandAll,
           false

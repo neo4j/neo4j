@@ -78,14 +78,14 @@ object NFABuilder {
  *     NodeJuxtapositionPredicate(None)
  *   )
  *
- *   builder.addFinalState(cState)
+ *   builder.setFinalState(cState)
  *   builder.build()
  *  }}}
  */
 class NFABuilder protected (_startState: State) {
   private val states: mutable.Map[Int, LogicalVariable] = mutable.Map(_startState.id -> _startState.variable)
   private var startState: State = _startState
-  private val finalStates: mutable.Set[State] = mutable.Set.empty
+  private var finalState: State = _
   private val transitions: mutable.MultiDict[State, Transition] = mutable.MultiDict.empty
   private var nextId: Int = 0
   private var lastState: State = _startState
@@ -127,6 +127,10 @@ class NFABuilder protected (_startState: State) {
   }
 
   def build(): NFA = {
+    if (this.finalState == null) {
+      throw new IllegalStateException("finalState not set")
+    }
+
     // Create a mapping from our own State to NFAState to avoid instantiating many identical copies of NFAStates.
     val stateToNFAState =
       this.states.map { case (key, value) => StateImpl(key, value) -> NFA.State(key, value) }.toMap[State, NFA.State]
@@ -142,10 +146,9 @@ class NFABuilder protected (_startState: State) {
     }.toMap
 
     val startState = stateToNFAState(this.startState)
+    val finalState = stateToNFAState(this.finalState)
 
-    val finalStates = this.finalStates.toSet.map(stateToNFAState.apply)
-
-    NFA(states, transitions, startState, finalStates)
+    NFA(states, transitions, startState, finalState)
   }
 
   def getStartState: State = startState
@@ -165,8 +168,12 @@ class NFABuilder protected (_startState: State) {
     this
   }
 
-  def addFinalState(finalState: State): NFABuilder = {
-    this.finalStates += finalState
+  def setFinalState(finalState: State): NFABuilder = {
+    if (this.finalState != null) {
+      throw new IllegalStateException("finalState already set")
+    }
+
+    this.finalState = finalState
     this
   }
 

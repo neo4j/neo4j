@@ -7651,7 +7651,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .addTransition(4, 5, "(c_inner)-[s_inner]->(d_inner)")
       .addTransition(5, 4, "(d_inner) (c_inner)")
       .addTransition(5, 6, "(d_inner) (w_inner WHERE w_inner:N)")
-      .addFinalState(6)
+      .setFinalState(6)
       .build()
 
     val planBuilder = new LogicalPlanBuilder()
@@ -7706,7 +7706,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   test("Insert eager between shortest path pattern and create relationship") {
     val nfa = new TestNFABuilder(0, "a")
       .addTransition(0, 1, "(a)-[r_inner]->(b_inner)")
-      .addFinalState(1)
+      .setFinalState(1)
       .build()
 
     val planBuilder = new LogicalPlanBuilder()
@@ -7765,7 +7765,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .addTransition(4, 5, "(c_inner)-[s_inner]->(d_inner)")
       .addTransition(5, 4, "(d_inner) (c_inner)")
       .addTransition(5, 6, "(d_inner) (w_inner WHERE w_inner:N)")
-      .addFinalState(6)
+      .setFinalState(6)
       .build()
 
     val planBuilder = new LogicalPlanBuilder()
@@ -7832,7 +7832,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .addTransition(4, 5, "(c_inner)-[s_inner]->(d_inner)")
       .addTransition(5, 4, "(d_inner) (c_inner)")
       .addTransition(5, 6, "(d_inner) (w_inner WHERE w_inner:N)")
-      .addFinalState(6)
+      .setFinalState(6)
       .build()
 
     val planBuilder = new LogicalPlanBuilder()
@@ -7901,7 +7901,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .addTransition(4, 5, "(c_inner)-[s_inner]->(d_inner)")
       .addTransition(5, 4, "(d_inner) (c_inner)")
       .addTransition(5, 6, "(d_inner) (w_inner WHERE w_inner:N)")
-      .addFinalState(6)
+      .setFinalState(6)
       .build()
 
     val planBuilder = new LogicalPlanBuilder()
@@ -7961,7 +7961,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .addTransition(4, 5, "(c_inner)-[s_inner WHERE s_inner:A]->(d_inner WHERE d_inner:A)")
       .addTransition(5, 4, "(d_inner) (c_inner WHERE c_inner:A)")
       .addTransition(5, 6, "(d_inner) (w_inner WHERE w_inner:A)")
-      .addFinalState(6)
+      .setFinalState(6)
       .build()
 
     val planBuilder = new LogicalPlanBuilder()
@@ -8002,7 +8002,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .addTransition(4, 5, "(c_inner)-[s_inner WHERE s_inner:A]->(d_inner WHERE d_inner:A)")
       .addTransition(5, 4, "(d_inner) (c_inner WHERE c_inner:A)")
       .addTransition(5, 6, "(d_inner) (w_inner WHERE w_inner:A)")
-      .addFinalState(6)
+      .setFinalState(6)
       .build()
 
     val planBuilder = new LogicalPlanBuilder()

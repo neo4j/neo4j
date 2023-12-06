@@ -65,7 +65,7 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
     // pattern:
     // (s)
     val nfa = new TestNFABuilder(0, "s")
-      .addFinalState(0)
+      .setFinalState(0)
       .build()
 
     val vars = Seq("s")
@@ -108,7 +108,7 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
     // (s) (t: T)
     val nfa = new TestNFABuilder(0, "s")
       .addTransition(0, 1, "(s) (t_inner: T)")
-      .addFinalState(1)
+      .setFinalState(1)
       .build()
 
     val vars = Seq("s", "t")
@@ -153,7 +153,7 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
     // (s) (t WHERE t.passes)
     val nfa = new TestNFABuilder(0, "s")
       .addTransition(0, 1, "(s) (t_inner WHERE t_inner.passes)")
-      .addFinalState(1)
+      .setFinalState(1)
       .build()
 
     val vars = Seq("s", "t")
@@ -210,7 +210,7 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
     // (s) (t:T WHERE t.passes)
     val nfa = new TestNFABuilder(0, "s")
       .addTransition(0, 1, "(s) (t_inner: T WHERE t_inner.passes)")
-      .addFinalState(1)
+      .setFinalState(1)
       .build()
 
     val vars = Seq("s", "t")
@@ -274,7 +274,7 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
       .addTransition(1, 2, "(n1_inner) (n2_inner)")
       .addTransition(2, 3, "(n2_inner) (n3_inner WHERE n3_inner.passes)")
       .addTransition(3, 4, "(n3_inner) (t_inner:T)")
-      .addFinalState(4)
+      .setFinalState(4)
       .build()
 
     val vars = Seq("s", "n1", "n2", "n3", "t")
@@ -322,7 +322,7 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
       .addTransition(0, 1, "(s) (n1_inner)")
       .addTransition(1, 2, "(n1_inner)-[r_inner]->(n2_inner)")
       .addTransition(2, 3, "(n2_inner) (t_inner)")
-      .addFinalState(3)
+      .setFinalState(3)
       .build()
 
     val vars = Seq("s", "n1", "r", "n2", "t")
@@ -372,7 +372,7 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
       .addTransition(0, 1, "(s) (n1_inner)")
       .addTransition(1, 2, "(n1_inner)<-[r_inner]-(n2_inner)")
       .addTransition(2, 3, "(n2_inner) (t_inner)")
-      .addFinalState(3)
+      .setFinalState(3)
       .build()
 
     val vars = Seq("s", "n1", "r", "n2", "t")
@@ -422,7 +422,7 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
       .addTransition(0, 1, "(s) (n1_inner)")
       .addTransition(1, 2, "(n1_inner)-[r_inner]-(n2_inner)")
       .addTransition(2, 3, "(n2_inner) (t_inner)")
-      .addFinalState(3)
+      .setFinalState(3)
       .build()
 
     val vars = Seq("s", "n1", "r", "n2", "t")
@@ -471,7 +471,7 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
       .addTransition(0, 1, "(s) (n1_inner)")
       .addTransition(1, 2, "(n1_inner)-[r_inner]->(n2_inner)")
       .addTransition(2, 3, "(n2_inner) (t_inner)")
-      .addFinalState(3)
+      .setFinalState(3)
       .build()
 
     val vars = Seq("s", "n1", "r", "n2", "t")
@@ -516,7 +516,7 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
       .addTransition(0, 1, "(s) (n1_inner: N)")
       .addTransition(1, 2, "(n1_inner)-[r_inner]->(n2_inner)")
       .addTransition(2, 3, "(n2_inner) (t_inner)")
-      .addFinalState(3)
+      .setFinalState(3)
       .build()
 
     val vars = Seq("s", "n1", "r", "n2", "t")
@@ -561,7 +561,7 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
       .addTransition(0, 1, "(s) (n1_inner WHERE n1_inner.passes)")
       .addTransition(1, 2, "(n1_inner)-[r_inner]->(n2_inner)")
       .addTransition(2, 3, "(n2_inner) (t_inner)")
-      .addFinalState(3)
+      .setFinalState(3)
       .build()
 
     val vars = Seq("s", "n1", "r", "n2", "t")
@@ -606,7 +606,7 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
       .addTransition(0, 1, "(s) (n1_inner)")
       .addTransition(1, 2, "(n1_inner)-[r_inner]->(n2_inner:N)")
       .addTransition(2, 3, "(n2_inner) (t_inner)")
-      .addFinalState(3)
+      .setFinalState(3)
       .build()
 
     val vars = Seq("s", "n1", "r", "n2", "t")
@@ -651,7 +651,7 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
       .addTransition(0, 1, "(s) (n1_inner)")
       .addTransition(1, 2, "(n1_inner)-[r_inner]->(n2_inner WHERE n2_inner.passes)")
       .addTransition(2, 3, "(n2_inner) (t_inner)")
-      .addFinalState(3)
+      .setFinalState(3)
       .build()
 
     val vars = Seq("s", "n1", "r", "n2", "t")
@@ -696,7 +696,7 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
       .addTransition(0, 1, "(s) (n1_inner)")
       .addTransition(1, 2, "(n1_inner)-[r_inner: NOT_R]->(n2_inner)")
       .addTransition(2, 3, "(n2_inner) (t_inner)")
-      .addFinalState(3)
+      .setFinalState(3)
       .build()
 
     val vars = Seq("s", "n1", "r", "n2", "t")
@@ -741,7 +741,7 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
       .addTransition(0, 1, "(s) (n1_inner)")
       .addTransition(1, 2, "(n1_inner)-[r_inner WHERE r_inner.passes]->(n2_inner)")
       .addTransition(2, 3, "(n2_inner) (t_inner)")
-      .addFinalState(3)
+      .setFinalState(3)
       .build()
 
     val vars = Seq("s", "n1", "r", "n2", "t")
@@ -787,7 +787,7 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
       .addTransition(0, 1, "(s) (n1_inner: N)")
       .addTransition(1, 2, "(n1_inner)-[r_inner]->(n2_inner)")
       .addTransition(2, 3, "(n2_inner) (t_inner)")
-      .addFinalState(3)
+      .setFinalState(3)
       .build()
 
     val vars = Seq("s", "n1", "r", "n2", "t")
@@ -833,7 +833,7 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
       .addTransition(0, 1, "(s) (n1_inner)")
       .addTransition(1, 2, "(n1_inner)-[r_inner]->(n2_inner: N)")
       .addTransition(2, 3, "(n2_inner) (t_inner)")
-      .addFinalState(3)
+      .setFinalState(3)
       .build()
 
     val vars = Seq("s", "n1", "r", "n2", "t")
@@ -880,7 +880,7 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
       .addTransition(0, 1, "(s) (n1_inner)")
       .addTransition(1, 2, "(n1_inner)-[r_inner]->(n2_inner)")
       .addTransition(2, 3, "(n2_inner) (t_inner)")
-      .addFinalState(3)
+      .setFinalState(3)
       .build()
 
     val vars = Seq("s", "n1", "r", "n2", "t")
@@ -932,7 +932,7 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
       .addTransition(0, 1, "(s) (n1_inner: N1 WHERE n1_inner.passes)")
       .addTransition(1, 2, "(n1_inner)-[r_inner: R WHERE r_inner.passes]->(n2_inner: N2 WHERE n2_inner.passes)")
       .addTransition(2, 3, "(n2_inner) (t_inner)")
-      .addFinalState(3)
+      .setFinalState(3)
       .build()
 
     val vars = Seq("s", "n1", "r", "n2", "t")
@@ -984,7 +984,7 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
       .addTransition(1, 2, "(n1_inner)-[r1_inner]->(n2_inner)")
       .addTransition(2, 3, "(n2_inner)-[r2_inner]->(n3_inner)")
       .addTransition(3, 4, "(n3_inner) (t_inner)")
-      .addFinalState(4)
+      .setFinalState(4)
       .build()
 
     val vars = Seq("s", "n1", "r1", "n2", "r2", "n3", "t")
@@ -1035,7 +1035,7 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
       .addTransition(1, 2, "(n1_inner)-[r1_inner]->(n2_inner)")
       .addTransition(2, 3, "(n2_inner)-[r2_inner]->(n3_inner)")
       .addTransition(3, 4, "(n3_inner) (t_inner)")
-      .addFinalState(4)
+      .setFinalState(4)
       .build()
 
     val vars = Seq("s", "n1", "r1", "n2", "r2", "n3", "t")
@@ -1081,7 +1081,7 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
       .addTransition(1, 2, "(n1_inner)-[r1_inner]->(n2_inner)")
       .addTransition(2, 3, "(n2_inner)<-[r2_inner]-(n3_inner)")
       .addTransition(3, 4, "(n3_inner) (t_inner)")
-      .addFinalState(4)
+      .setFinalState(4)
       .build()
 
     val vars = Seq("s", "n1", "r1", "n2", "r2", "n3", "t")
@@ -1127,7 +1127,7 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
       .addTransition(1, 2, "(n1_inner)-[r1_inner]-(n2_inner)")
       .addTransition(2, 3, "(n2_inner)-[r2_inner]-(n3_inner)")
       .addTransition(3, 4, "(n3_inner) (t_inner)")
-      .addFinalState(4)
+      .setFinalState(4)
       .build()
 
     val vars = Seq("s", "n1", "r1", "n2", "r2", "n3", "t")
@@ -1175,7 +1175,7 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
       .addTransition(1, 2, "(n1_inner)-[r_inner]->(n2_inner)")
       .addTransition(2, 1, "(n2_inner) (n1_inner)")
       .addTransition(2, 3, "(n2_inner) (t_inner)")
-      .addFinalState(3)
+      .setFinalState(3)
       .build()
 
     val vars = Seq("s", "n1", "r", "n2", "t")
@@ -1278,7 +1278,7 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
       .addTransition(1, 2, "(n1_inner)-[r_inner]->(n2_inner)")
       .addTransition(2, 1, "(n2_inner) (n1_inner)")
       .addTransition(2, 3, "(n2_inner) (t_inner)")
-      .addFinalState(3)
+      .setFinalState(3)
       .build()
 
     val vars = Seq("s", "n1", "r", "n2", "t")
@@ -1374,7 +1374,7 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
       .addTransition(1, 2, "(n1_inner)-[r_inner]->(n2_inner)")
       .addTransition(2, 1, "(n2_inner) (n1_inner)")
       .addTransition(2, 3, "(n2_inner) (t_inner:T)")
-      .addFinalState(3)
+      .setFinalState(3)
       .build()
 
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -1428,7 +1428,7 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
       .addTransition(1, 2, "(n1_inner)-[r_inner]-(n2_inner)")
       .addTransition(2, 1, "(n2_inner) (n1_inner)")
       .addTransition(2, 3, "(n2_inner) (t_inner)")
-      .addFinalState(3)
+      .setFinalState(3)
       .build()
 
     val vars = Seq("s", "n1", "r", "n2", "t")
@@ -1562,7 +1562,7 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
       .addTransition(5, 6, "(n1_3_inner)-[r_3_inner]->(n2_3_inner)")
       .addTransition(6, 7, "(n2_3_inner) (t_inner)")
       // 3 hops
-      .addFinalState(7)
+      .setFinalState(7)
       .build()
 
     val vars = Seq("s", "n1", "r", "n2", "t")
@@ -1707,7 +1707,7 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
       .addTransition(2, 3, "(n2_inner)-[r2_inner: R1]-(n3_inner)")
       .addTransition(3, 1, "(n3_inner) (n1_inner)")
       .addTransition(3, 4, "(n3_inner) (t_inner: T)")
-      .addFinalState(4)
+      .setFinalState(4)
       .build()
 
     val vars = Seq("s", "n1", "r1", "n2", "r2", "n3", "t")
@@ -1770,7 +1770,7 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
       .addTransition(2, 3, "(anon_inner)-[r2_inner: DOWN]->(n2_inner)")
       .addTransition(3, 1, "(n2_inner) (n1_inner)")
       .addTransition(3, 4, s"(n2_inner) (t_inner: $bottomRightLabel)")
-      .addFinalState(4)
+      .setFinalState(4)
       .build()
 
     val vars = Seq("s", "n1", "r1", "n2", "r2", "t")
@@ -1846,7 +1846,7 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
       // - Full outer quantification traversed
       .addTransition(10, 1, "(anon2_inner) (row_1_inner)")
       .addTransition(10, 11, s"(anon2_inner) (t_inner: $bottomRightLabel)")
-      .addFinalState(11)
+      .setFinalState(11)
       .build()
 
     val retVars = Seq("s", "row", "rowEnd", "t")
@@ -1933,7 +1933,7 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
       .addTransition(1, 2, "(n_inner)-[r1_inner]-(anon_inner)")
       .addTransition(2, 1, s"(anon_inner) (n_inner)")
       .addTransition(2, 3, s"(anon_inner) (t_inner)")
-      .addFinalState(3)
+      .setFinalState(3)
       .build()
 
     val vars = Seq("s", "n", "r1", "t")
@@ -2037,7 +2037,7 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
       .addTransition(1, 2, "(n1_inner)-[r_inner]->(n2_inner)")
       .addTransition(2, 1, "(n2_inner) (n1_inner)")
       .addTransition(2, 3, "(n2_inner) (t_inner: T)")
-      .addFinalState(3)
+      .setFinalState(3)
       .build()
 
     val vars = Seq("s", "n1", "r", "n2", "t")
@@ -2090,7 +2090,7 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
       .addTransition(1, 2, "(n1_inner)-[r_inner]-(n2_inner)")
       .addTransition(2, 1, "(n2_inner) (n1_inner)")
       .addTransition(2, 3, s"(n2_inner) (t_inner: $bottomRightLabel)")
-      .addFinalState(3)
+      .setFinalState(3)
       .build()
 
     val vars = Seq("s", "n1", "r", "n2", "t")
@@ -2236,7 +2236,7 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
       .addTransition(5, 6, "(n5_inner)-[r3_inner:NOT_R]-(n6_inner)")
       .addTransition(6, 5, "(n6_inner) (n5_inner)")
       .addTransition(6, 7, "(n6_inner) (t_inner: T)")
-      .addFinalState(7)
+      .setFinalState(7)
       .build()
 
     val vars = Seq("s", "n1", "n2", "n3", "n4", "n5", "n6", "t")
@@ -2345,7 +2345,7 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
       .addTransition(1, 2, "(n1_inner)-[r_inner]->(n2_inner)")
       .addTransition(2, 1, "(n2_inner) (n1_inner)")
       .addTransition(2, 3, "(n2_inner) (t_inner:T)")
-      .addFinalState(3)
+      .setFinalState(3)
       .build()
 
     val vars = Seq("s", "n1", "r", "n2", "t")
@@ -2447,7 +2447,7 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
       .addTransition(1, 2, "(n1_inner)-[r_inner]->(n2_inner)")
       .addTransition(2, 1, "(n2_inner) (n1_inner)")
       .addTransition(2, 3, "(n2_inner) (t_inner:T)")
-      .addFinalState(3)
+      .setFinalState(3)
       .build()
 
     val vars = Seq("s", "n1", "r", "n2", "t")
@@ -2663,7 +2663,7 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
       .addTransition(7, 8, "(v7_inner)-[r4_inner:REST]-(v8_inner)")
       .addTransition(8, 7, "(v8_inner) (v7_inner)")
       .addTransition(8, 9, "(v8_inner) (t_inner: T)")
-      .addFinalState(9)
+      .setFinalState(9)
       .build()
 
     val vars = Seq("s", "v1", "v2", "v3", "v4", "v5", "v6", "v7", "v8", "t")

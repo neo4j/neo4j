@@ -90,7 +90,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .addTransition(1, 2, "(n)-[r]->(m)")
       .addTransition(2, 1, "(m) (n)")
       .addTransition(2, 3, "(m) (v)")
-      .addFinalState(3)
+      .setFinalState(3)
       .build()
 
     val plan = planner.plan(query).stripProduceResults
@@ -171,7 +171,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
             .addTransition(5, 6, "(anon_8)-[anon_9:R]->(anon_10)")
             .addTransition(6, 1, "(anon_10) (anon_0)")
             .addTransition(6, 7, "(anon_10) (t)")
-            .addFinalState(7)
+            .setFinalState(7)
             .build(),
           ExpandAll,
           reverseGroupVariableProjections = false
@@ -189,7 +189,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .addTransition(1, 2, "(anon_0)-[r:R]->(anon_1)")
       .addTransition(2, 2, "(anon_1)-[r:R]->(anon_1)")
       .addTransition(2, 3, "(anon_1) (v)")
-      .addFinalState(3)
+      .setFinalState(3)
       .build()
 
     val plan = planner.plan(query).stripProduceResults
@@ -230,7 +230,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .addTransition(6, 7, "(anon_4)-[t:R|T]->(anon_5)")
         .addTransition(6, 8, "(anon_4) (x)")
         .addTransition(7, 8, "(anon_5) (x)")
-        .addFinalState(8)
+        .setFinalState(8)
         .build()
 
     val plan = planner.plan(query).stripProduceResults
@@ -274,7 +274,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .addTransition(4, 5, "(e)-[s]->(f)")
         .addTransition(5, 4, "(f) (e)")
         .addTransition(5, 6, "(f) (g)")
-        .addFinalState(6)
+        .setFinalState(6)
         .build()
 
     val plan = planner.plan(query).stripProduceResults
@@ -312,7 +312,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .addTransition(1, 2, "(b)-[r]->(c)")
         .addTransition(2, 1, "(c) (b)")
         .addTransition(2, 3, "(c) (d WHERE d = d)")
-        .addFinalState(3)
+        .setFinalState(3)
         .build()
 
     val plan = planner.plan(query).stripProduceResults
@@ -356,7 +356,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .addTransition(4, 5, "(e)-[s]->(f)")
         .addTransition(5, 4, "(f) (e)")
         .addTransition(5, 6, "(f) (g)")
-        .addFinalState(6)
+        .setFinalState(6)
         .build()
 
     val plan = planner.plan(query).stripProduceResults
@@ -401,7 +401,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .addTransition(4, 5, "(`  e@7`)-[`  s@8`]->(`  f@9`)")
         .addTransition(5, 4, "(`  f@9`) (`  e@7`)")
         .addTransition(5, 6, "(`  f@9`) (`  d@14` WHERE `  d@14`.prop = 5)")
-        .addFinalState(6)
+        .setFinalState(6)
         .build()
 
     val plan = nonDeduplicatingPlanner.plan(query).stripProduceResults
@@ -441,7 +441,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .addTransition(4, 5, "(`  c@3`)<-[`  r@2`]-(`  b@1`)")
         .addTransition(5, 4, "(`  b@1`) (`  c@3`)")
         .addTransition(5, 6, "(`  b@1`) (`  a@13`)")
-        .addFinalState(6)
+        .setFinalState(6)
         .build()
 
     val plan = nonDeduplicatingPlanner.plan(query).stripProduceResults
@@ -482,7 +482,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .addTransition(4, 5, "(`  c@3`)<-[`  r@2`]-(`  b@1`)")
         .addTransition(5, 4, "(`  b@1`) (`  c@3`)")
         .addTransition(5, 6, "(`  b@1`) (`  a@13` WHERE `  a@13`.prop = 5)")
-        .addFinalState(6)
+        .setFinalState(6)
         .build()
 
     val plan = nonDeduplicatingPlanner.plan(query).stripProduceResults
@@ -525,7 +525,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .addTransition(4, 5, "(`  e@7`)-[`  s@8`]->(`  f@9`)")
         .addTransition(5, 4, "(`  f@9`) (`  e@7`)")
         .addTransition(5, 6, "(`  f@9`) (`  d@15` WHERE `  d@15` = d)")
-        .addFinalState(6)
+        .setFinalState(6)
         .build()
 
     val plan = nonDeduplicatingPlanner.plan(query).stripProduceResults
@@ -576,7 +576,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .addTransition(7, 8, "(`  g@14`)-[`  t@15`]->(`  h@16`)")
         .addTransition(8, 7, "(`  h@16`) (`  g@14`)")
         .addTransition(8, 9, "(`  h@16`) (`  d@22`)")
-        .addFinalState(9)
+        .setFinalState(9)
         .build()
 
     val plan = nonDeduplicatingPlanner.plan(query).stripProduceResults
@@ -629,7 +629,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .addTransition(7, 8, "(`  g@14`)-[`  t@15`]->(`  h@16`)")
         .addTransition(8, 7, "(`  h@16`) (`  g@14`)")
         .addTransition(8, 9, "(`  h@16`) (`  d@22`)")
-        .addFinalState(9)
+        .setFinalState(9)
         .build()
 
     val plan = nonDeduplicatingPlanner.plan(query).stripProduceResults
@@ -682,7 +682,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .addTransition(7, 8, "(`  g@13`)-[`  t@14`]->(`  h@15`)")
         .addTransition(8, 7, "(`  h@15`) (`  g@13`)")
         .addTransition(8, 9, "(`  h@15`) (`  i@21`)")
-        .addFinalState(9)
+        .setFinalState(9)
         .build()
 
     val plan = nonDeduplicatingPlanner.plan(query).stripProduceResults
@@ -725,7 +725,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .addTransition(1, 2, "(b)-[r]->(c)")
         .addTransition(2, 1, "(c) (b)")
         .addTransition(2, 3, "(c) (a WHERE a = a)")
-        .addFinalState(3)
+        .setFinalState(3)
         .build()
 
     val plan = planner.plan(query).stripProduceResults
@@ -758,7 +758,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .addTransition(1, 2, "(m)<-[r]-(n)")
       .addTransition(2, 1, "(n) (m)")
       .addTransition(2, 3, "(n) (u)")
-      .addFinalState(3)
+      .setFinalState(3)
       .build()
 
     val plan = planner.plan(query).stripProduceResults
@@ -810,7 +810,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .addTransition(4, 5, "(c)-[s]->(d)")
       .addTransition(5, 4, "(d) (c)")
       .addTransition(5, 6, "(d) (w)")
-      .addFinalState(6)
+      .setFinalState(6)
       .build()
 
     plan should equal(
@@ -850,7 +850,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .addTransition(2, 1, "(b) (a)")
       .addTransition(2, 3, "(b) (v WHERE v.prop = 42 AND v:B)")
       .addTransition(3, 4, "(v)-[s]->(w:N)")
-      .addFinalState(4)
+      .setFinalState(4)
       .build()
 
     plan should equal(
@@ -887,7 +887,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .addTransition(2, 1, "(b) (a)")
       .addTransition(2, 3, "(b) (v WHERE v.prop = cacheNFromStore[u.prop] AND v:B)")
       .addTransition(3, 4, "(v)-[s WHERE s.prop = cacheNFromStore[u.prop]]->(w:N)")
-      .addFinalState(4)
+      .setFinalState(4)
       .build()
 
     plan should equal(
@@ -924,7 +924,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .addTransition(2, 1, "(b) (a)")
       .addTransition(2, 3, "(b) (v)")
       .addTransition(3, 4, "(v)-[s]-(w)")
-      .addFinalState(4)
+      .setFinalState(4)
       .build()
 
     plan should equal(
@@ -966,7 +966,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .addTransition(5, 4, "(d) (c)")
       .addTransition(5, 6, "(d) (w)")
       .addTransition(6, 7, "(w)-[t]->(x)")
-      .addFinalState(7)
+      .setFinalState(7)
       .build()
 
     plan should equal(
@@ -1018,7 +1018,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .addTransition(1, 2, "(n)-[r]->(m)")
       .addTransition(2, 1, "(m) (n)")
       .addTransition(2, 3, "(m) (v)")
-      .addFinalState(3)
+      .setFinalState(3)
       .build()
 
     val plan = planner.plan(query).stripProduceResults
@@ -1054,7 +1054,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .addTransition(1, 2, "(n)-[r]->(m)")
       .addTransition(2, 1, "(m) (n)")
       .addTransition(2, 3, "(m) (v:NN)")
-      .addFinalState(3)
+      .setFinalState(3)
       .build()
 
     val plan = planner.plan(query).stripProduceResults
@@ -1094,7 +1094,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .addTransition(1, 2, "(n_inner)-[r_inner]->(m_inner)")
       .addTransition(2, 1, "(m_inner) (n_inner)")
       .addTransition(2, 3, "(m_inner) (m WHERE m = m)")
-      .addFinalState(3)
+      .setFinalState(3)
       .build()
 
     plan should equal(
@@ -1137,7 +1137,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .addTransition(2, 1, "(m_inner) (n_inner)")
       .addTransition(2, 3, "(m_inner) (m WHERE m.prop = cacheN[o.prop])")
       .addTransition(3, 4, "(m)-[r2]->(o WHERE o = o)")
-      .addFinalState(4)
+      .setFinalState(4)
       .build()
 
     plan should equal(
@@ -1173,7 +1173,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .addTransition(1, 2, "(n)-[r]->(m)")
       .addTransition(2, 1, "(m) (n)")
       .addTransition(2, 3, "(m) (v WHERE v.prop = cache[u.prop])")
-      .addFinalState(3)
+      .setFinalState(3)
       .build()
 
     val plan = planner.plan(query).stripProduceResults
@@ -1225,7 +1225,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .addTransition(2, 1, "(b) (a)")
       .addTransition(2, 3, "(b) (v)")
       .addTransition(3, 4, "(v)-[s]->(w)")
-      .addFinalState(4)
+      .setFinalState(4)
       .build()
 
     plan should equal(
@@ -1275,7 +1275,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .addTransition(2, 3, "(b) (v)")
       .addTransition(3, 4, "(v)-[s]->(w)")
       .addTransition(4, 5, "(w)-[t]->(x)")
-      .addFinalState(5)
+      .setFinalState(5)
       .build()
 
     plan should equal(
@@ -1329,7 +1329,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           .addTransition(1, 2, "(b)-[r]->(c)")
           .addTransition(2, 1, "(c) (b)")
           .addTransition(2, 3, "(c) (d)")
-          .addFinalState(3)
+          .setFinalState(3)
           .build(),
         ExpandAll,
         false
@@ -1382,7 +1382,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           .addTransition(3, 2, "(d) (c)")
           .addTransition(3, 4, "(d) (e)")
           .addTransition(4, 5, "(e)-[anon_3]-(f)")
-          .addFinalState(5)
+          .setFinalState(5)
           .build(),
         ExpandAll,
         false
@@ -1421,7 +1421,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         StatefulShortestPath.Selector.Shortest(1),
         new TestNFABuilder(0, "a")
           .addTransition(0, 1, "(a)-[r]->(b)")
-          .addFinalState(1)
+          .setFinalState(1)
           .build(),
         ExpandAll,
         false
@@ -1438,7 +1438,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .addTransition(1, 2, "(n)-[r]->(m)")
       .addTransition(2, 1, "(m) (n)")
       .addTransition(2, 3, "(m) (b:B)")
-      .addFinalState(3)
+      .setFinalState(3)
       .build()
     val planLR = planner.subPlanBuilder()
       .statefulShortestPath(
@@ -1463,7 +1463,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .addTransition(1, 2, "(m)<-[r]-(n)")
       .addTransition(2, 1, "(n) (m)")
       .addTransition(2, 3, "(n) (a:A)")
-      .addFinalState(3)
+      .setFinalState(3)
       .build()
     val planRL = planner.subPlanBuilder()
       .statefulShortestPath(
@@ -1548,7 +1548,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           .addTransition(4, 5, "(e)<-[s]-(f)")
           .addTransition(5, 4, "(f) (e)")
           .addTransition(5, 6, "(f) (g)")
-          .addFinalState(6)
+          .setFinalState(6)
           .build(),
         ExpandAll,
         reverseGroupVariableProjections = false
@@ -1596,7 +1596,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           .addTransition(4, 5, "(e)<-[s]-(f)")
           .addTransition(5, 4, "(f) (e)")
           .addTransition(5, 6, "(f) (g)")
-          .addFinalState(6)
+          .setFinalState(6)
           .build(),
         ExpandAll,
         reverseGroupVariableProjections = false
@@ -1644,7 +1644,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           .addTransition(4, 5, "(e)<-[s]-(f)")
           .addTransition(5, 4, "(f) (e)")
           .addTransition(5, 6, "(f) (g)")
-          .addFinalState(6)
+          .setFinalState(6)
           .build(),
         ExpandAll,
         reverseGroupVariableProjections = false
@@ -1662,7 +1662,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .addTransition(2, 1, "(m) (n)")
       .addTransition(2, 3, "(m) (v)")
       .addTransition(3, 4, "(v)-[r2 WHERE startNode(r2).prop > endNode(r2).prop]->(w)")
-      .addFinalState(4)
+      .setFinalState(4)
       .build()
 
     val plan = planner.plan(query).stripProduceResults
@@ -1695,7 +1695,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .addTransition(2, 1, "(m) (n)")
       .addTransition(2, 3, "(m) (v)")
       .addTransition(3, 4, "(v)-[r2]->(w)")
-      .addFinalState(4)
+      .setFinalState(4)
       .build()
 
     val plan = planner.plan(query).stripProduceResults
@@ -1728,7 +1728,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .addTransition(2, 1, "(m) (n)")
       .addTransition(2, 3, "(m) (v)")
       .addTransition(3, 4, "(v)<-[r2 WHERE endNode(r2).prop > startNode(r2).prop]-(w)")
-      .addFinalState(4)
+      .setFinalState(4)
       .build()
 
     val plan = planner.plan(query).stripProduceResults
@@ -1761,7 +1761,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .addTransition(2, 3, "(m)<-[r]-(n)")
       .addTransition(3, 2, "(n) (m)")
       .addTransition(3, 4, "(n) (u)")
-      .addFinalState(4)
+      .setFinalState(4)
       .build()
 
     val plan = planner.plan(query).stripProduceResults
@@ -1795,7 +1795,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .addTransition(2, 3, "(m)<-[r]-(n)")
       .addTransition(3, 2, "(n) (m)")
       .addTransition(3, 4, "(n) (u)")
-      .addFinalState(4)
+      .setFinalState(4)
       .build()
 
     val plan = planner.plan(query).stripProduceResults
@@ -1829,7 +1829,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .addTransition(2, 1, "(m) (n)")
       .addTransition(2, 3, "(m) (v)")
       .addTransition(3, 4, "(v)-[r2]-(w)")
-      .addFinalState(4)
+      .setFinalState(4)
       .build()
 
     val plan = planner.plan(query).stripProduceResults
@@ -1863,7 +1863,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .addTransition(2, 1, "(m) (n)")
       .addTransition(2, 3, "(m) (v)")
       .addTransition(3, 4, "(v)-[r2]->(w)")
-      .addFinalState(4)
+      .setFinalState(4)
       .build()
 
     val plan = planner.plan(query).stripProduceResults
@@ -1892,7 +1892,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
 
     val nfa = new TestNFABuilder(0, "anon_0")
       .addTransition(0, 1, "(anon_0)-[r WHERE r.prop = cacheN[n.prop]]->(anon_2)")
-      .addFinalState(1)
+      .setFinalState(1)
       .build()
 
     val plan = planner.plan(query).stripProduceResults

@@ -936,7 +936,7 @@ class CardinalityCostModelTest extends CypherFunSuite with AstConstructionTestSu
       .addTransition(1, 2, "(n)-[r]->(m)")
       .addTransition(2, 1, "(m) (n)")
       .addTransition(2, 3, "(m) (v)")
-      .addFinalState(3)
+      .setFinalState(3)
       .build()
 
     val ansCardinality = 10

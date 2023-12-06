@@ -568,7 +568,7 @@ object RemoveUnusedGroupVariablesRewriterTest extends CypherFunSuite {
       .addTransition(1, 2, "(n_i)-[r_i]-(m_i)")
       .addTransition(2, 1, "(m_i) (n_i)")
       .addTransition(2, 3, "(m_i) (b)")
-      .addFinalState(3)
+      .setFinalState(3)
       .build()
   }
 

@@ -120,7 +120,7 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
       .addTransition(1, 2, "(a)-[r]->(b)")
       .addTransition(2, 1, "(b) (a)")
       .addTransition(2, 3, "(b) (end)")
-      .addFinalState(3)
+      .setFinalState(3)
       .build()
 
     ConvertToNFA.convertToNfa(
@@ -146,7 +146,7 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
       .addTransition(1, 2, "(a)-[r]->(b)")
       .addTransition(2, 1, "(b) (a)")
       .addTransition(2, 3, "(b) (end)")
-      .addFinalState(3)
+      .setFinalState(3)
       .build()
 
     ConvertToNFA.convertToNfa(
@@ -177,7 +177,7 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
       .addTransition(1, 2, "(a)-[r]->(b)")
       .addTransition(2, 1, "(b) (a)")
       .addTransition(2, 3, "(b) (end)")
-      .addFinalState(3)
+      .setFinalState(3)
       .build()
 
     ConvertToNFA.convertToNfa(
@@ -229,7 +229,7 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
       .addTransition(1, 2, "(b)<-[r]-(a)")
       .addTransition(2, 1, "(a) (b)")
       .addTransition(2, 3, "(a) (start)")
-      .addFinalState(3)
+      .setFinalState(3)
       .build()
 
     ConvertToNFA.convertToNfa(
@@ -289,7 +289,7 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
       .addTransition(4, 2, "(a) (c)")
       .addTransition(1, 5, "(d) (start)")
       .addTransition(4, 5, "(a) (start)")
-      .addFinalState(5)
+      .setFinalState(5)
       .build()
 
     ConvertToNFA.convertToNfa(
@@ -315,7 +315,7 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
       .addTransition(1, 2, "(a)-[r:T]->(b:B WHERE b.prop = 2)")
       .addTransition(2, 1, "(b) (a:A WHERE a.prop = 1)")
       .addTransition(2, 3, "(b) (end:E)")
-      .addFinalState(3)
+      .setFinalState(3)
       .build()
 
     ConvertToNFA.convertToNfa(
@@ -375,7 +375,7 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
       .addTransition(2, 1, "(b) (a WHERE a.prop = foo)")
       .addTransition(2, 3, "(b) (c)")
       .addTransition(3, 4, "(c)<-[r2 WHERE r2.prop = foo]-(end WHERE end.prop = foo)")
-      .addFinalState(4)
+      .setFinalState(4)
       .build()
 
     ConvertToNFA.convertToNfa(
@@ -409,7 +409,7 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
       .addTransition(3, 4, "(a)-[r]->(b)")
       .addTransition(4, 3, "(b) (a)")
       .addTransition(4, 5, "(b) (end)")
-      .addFinalState(5)
+      .setFinalState(5)
       .build()
 
     ConvertToNFA.convertToNfa(
@@ -440,7 +440,7 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
       .addTransition(0, 5, "(start) (end)")
       .addTransition(2, 5, "(b) (end)")
       .addTransition(4, 5, "(b) (end)")
-      .addFinalState(5)
+      .setFinalState(5)
       .build()
 
     ConvertToNFA.convertToNfa(
@@ -474,7 +474,7 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
       .addTransition(4, 5, "(b) (a)")
       .addTransition(5, 6, "(a)-[r]->(b)")
       .addTransition(6, 7, "(b) (end)")
-      .addFinalState(7)
+      .setFinalState(7)
       .build()
 
     ConvertToNFA.convertToNfa(
@@ -507,7 +507,7 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
       .addTransition(4, 5, "(b) (a)")
       .addTransition(5, 6, "(a)-[r]->(b)")
       .addTransition(6, 7, "(b) (end)")
-      .addFinalState(7)
+      .setFinalState(7)
       .build()
 
     ConvertToNFA.convertToNfa(
@@ -539,7 +539,7 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
       .addTransition(4, 5, "(b) (a:A WHERE a.prop = 1)")
       .addTransition(5, 6, "(a)-[r:T]->(b:B WHERE b.prop = 2)")
       .addTransition(6, 7, "(b) (end:E)")
-      .addFinalState(7)
+      .setFinalState(7)
       .build()
 
     ConvertToNFA.convertToNfa(
@@ -573,7 +573,7 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
       .addTransition(2, 1, "(b) (a)")
       .addTransition(2, 3, "(b) (end)")
       .addTransition(0, 3, "(start) (end)")
-      .addFinalState(3)
+      .setFinalState(3)
       .build()
 
     ConvertToNFA.convertToNfa(
@@ -606,7 +606,7 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
       .addTransition(0, 1, "(start) (`  UNNAMED1`)")
       .addTransition(1, 2, "(`  UNNAMED1`) (end)")
       .addTransition(1, 1, "(`  UNNAMED1`)-[`  r@0`:R]->(`  UNNAMED1`)")
-      .addFinalState(2)
+      .setFinalState(2)
       .build()
 
     ConvertToNFA.convertToNfa(
@@ -639,7 +639,7 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
       .addTransition(1, 2, "(`  UNNAMED1`)-[`  r@0`:R]->(`  UNNAMED2`)")
       .addTransition(2, 2, "(`  UNNAMED2`)-[`  r@0`:R]->(`  UNNAMED2`)")
       .addTransition(2, 3, "(`  UNNAMED2`) (end)")
-      .addFinalState(3)
+      .setFinalState(3)
       .build()
 
     ConvertToNFA.convertToNfa(
@@ -673,7 +673,7 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
       .addTransition(2, 3, "(`  UNNAMED2`)-[`  r@0`:R]->(`  UNNAMED3`)")
       .addTransition(3, 3, "(`  UNNAMED3`)-[`  r@0`:R]->(`  UNNAMED3`)")
       .addTransition(3, 4, "(`  UNNAMED3`) (end)")
-      .addFinalState(4)
+      .setFinalState(4)
       .build()
 
     ConvertToNFA.convertToNfa(
@@ -708,7 +708,7 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
       .addTransition(3, 4, "(`  UNNAMED3`)-[`  r@0`:R]->(`  UNNAMED4`)")
       .addTransition(4, 4, "(`  UNNAMED4`)-[`  r@0`:R]->(`  UNNAMED4`)")
       .addTransition(4, 5, "(`  UNNAMED4`) (end)")
-      .addFinalState(5)
+      .setFinalState(5)
       .build()
 
     ConvertToNFA.convertToNfa(
@@ -743,7 +743,7 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
       .addTransition(3, 4, "(`  UNNAMED3`)-[`  r@0`:R]->(`  UNNAMED4`)")
       .addTransition(3, 5, "(`  UNNAMED3`) (end)")
       .addTransition(4, 5, "(`  UNNAMED4`) (end)")
-      .addFinalState(5)
+      .setFinalState(5)
       .build()
 
     ConvertToNFA.convertToNfa(
@@ -780,7 +780,7 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
       .addTransition(2, 5, "(`  UNNAMED2`) (end)")
       .addTransition(3, 5, "(`  UNNAMED3`) (end)")
       .addTransition(4, 5, "(`  UNNAMED4`) (end)")
-      .addFinalState(5)
+      .setFinalState(5)
       .build()
 
     ConvertToNFA.convertToNfa(
@@ -826,7 +826,7 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
       .addTransition(2, 5, "(`  UNNAMED2`) (end WHERE end.prop IN [42])")
       .addTransition(3, 5, "(`  UNNAMED3`) (end WHERE end.prop IN [42])")
       .addTransition(4, 5, "(`  UNNAMED4`) (end WHERE end.prop IN [42])")
-      .addFinalState(5)
+      .setFinalState(5)
       .build()
 
     ConvertToNFA.convertToNfa(

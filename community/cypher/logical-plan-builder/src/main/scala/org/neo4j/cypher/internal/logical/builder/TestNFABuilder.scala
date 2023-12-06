@@ -145,9 +145,9 @@ class TestNFABuilder(startStateId: Int, startStateName: String)
     this
   }
 
-  def addFinalState(id: Int): TestNFABuilder = {
+  def setFinalState(id: Int): TestNFABuilder = {
     val state = getState(id)
-    addFinalState(state)
+    setFinalState(state)
     this
   }
 }

@@ -1330,7 +1330,7 @@ abstract class PGShortestPathPropagationTestBase[CONTEXT <: RuntimeContext](
         )
         .addTransition(2, 1, s"($secondAnon) ($firstAnon)")
         .addTransition(2, 3, s"($secondAnon) ($targetName $targetString)")
-        .addFinalState(3)
+        .setFinalState(3)
       if (includeZeroLength) {
         builder.addTransition(0, 3, s"($sourceName) ($targetName $targetString)")
       }

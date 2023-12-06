@@ -59,7 +59,7 @@ class CompressAnonymousVariablesTest extends CypherFunSuite
       .addTransition(2, 3, "(`  UNNAMED22`)-[`  UNNAMED12`]->(`  UNNAMED10`)")
       .addTransition(3, 1, "(`  UNNAMED10`) (`  UNNAMED21`)")
       .addTransition(3, 4, "(`  UNNAMED10`) (t)")
-      .addFinalState(4)
+      .setFinalState(4)
       .build()
 
     rewrite(nfa) should equal(
@@ -69,7 +69,7 @@ class CompressAnonymousVariablesTest extends CypherFunSuite
         .addTransition(2, 3, "(`  UNNAMED4`)-[`  UNNAMED2`]->(`  UNNAMED0`)")
         .addTransition(3, 1, "(`  UNNAMED0`) (`  UNNAMED3`)")
         .addTransition(3, 4, "(`  UNNAMED0`) (t)")
-        .addFinalState(4)
+        .setFinalState(4)
         .build()
     )
 
@@ -111,7 +111,7 @@ class CompressAnonymousVariablesTest extends CypherFunSuite
           .addTransition(5, 6, "(`  UNNAMED25`)-[`  UNNAMED15`:R]->(`  UNNAMED10`)")
           .addTransition(6, 1, "(`  UNNAMED10`) (`  UNNAMED21`)")
           .addTransition(6, 7, "(`  UNNAMED10`) (t)")
-          .addFinalState(7)
+          .setFinalState(7)
           .build(),
         ExpandAll,
         reverseGroupVariableProjections = false
@@ -153,7 +153,7 @@ class CompressAnonymousVariablesTest extends CypherFunSuite
             .addTransition(5, 6, "(`  UNNAMED15`)-[`  UNNAMED5`:R]->(`  UNNAMED0`)")
             .addTransition(6, 1, "(`  UNNAMED0`) (`  UNNAMED11`)")
             .addTransition(6, 7, "(`  UNNAMED0`) (t)")
-            .addFinalState(7)
+            .setFinalState(7)
             .build(),
           ExpandAll,
           reverseGroupVariableProjections = false

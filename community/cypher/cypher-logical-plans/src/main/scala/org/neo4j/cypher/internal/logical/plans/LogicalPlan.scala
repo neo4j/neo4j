@@ -2021,7 +2021,7 @@ case class StatefulShortestPath(
   val isImplicitlyInto: Boolean =
     nfa.transitions.values
       .flatten
-      .filter(t => nfa.finalStates.contains(t.end))
+      .filter(t => nfa.finalState == t.end)
       .map(t =>
         t.predicate match {
           case NFA.NodeJuxtapositionPredicate(pred)                 => pred

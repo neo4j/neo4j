@@ -100,7 +100,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName wi
         StatefulShortestPath.Selector.Shortest(1),
         new TestNFABuilder(0, "a")
           .addTransition(0, 1, "(a)-[r_expr]->(b_expr)")
-          .addFinalState(1)
+          .setFinalState(1)
           .build(),
         ExpandAll,
         false
@@ -131,8 +131,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName wi
           .addTransition(3, 4, "(c_in) (c_expr:C&D WHERE c_expr.prop = 5)")
           .addTransition(1, 4, "(b_expr) (c_expr)")
           .addTransition(4, 5, "(c_expr)-[r3_expr]-(d_expr)")
-          .addFinalState(4)
-          .addFinalState(5)
+          .setFinalState(5)
           .build(),
         ExpandAll,
         false
@@ -169,8 +168,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName wi
           .addTransition(3, 4, "(c_in) (c_expr:C&D WHERE c_expr.prop = 5)")
           .addTransition(1, 4, "(b_expr) (c_expr)")
           .addTransition(4, 5, "(c_expr)-[r3_expr]-(d_expr)")
-          .addFinalState(4)
-          .addFinalState(5)
+          .setFinalState(5)
           .build(),
         ExpandAll,
         false

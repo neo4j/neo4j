@@ -115,6 +115,8 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
       val s2 = nfaBuilder.addAndGetState(varFor("s2"))
       val s0 = nfaBuilder.getStartState
 
+      nfaBuilder.setFinalState(s2)
+
       nfaBuilder.addTransition(
         s0,
         s1,
@@ -186,6 +188,8 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
       val s2 = nfaBuilder.addAndGetState(varFor("s2"))
       val s0 = nfaBuilder.getStartState
 
+      nfaBuilder.setFinalState(s2)
+
       nfaBuilder.addTransition(
         s0,
         s1,
@@ -254,6 +258,8 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
       val s1 = nfaBuilder.addAndGetState(varFor("s1"))
       val s2 = nfaBuilder.addAndGetState(varFor("s2"))
       val s0 = nfaBuilder.getStartState
+
+      nfaBuilder.setFinalState(s2)
 
       nfaBuilder.addTransition(
         s0,
@@ -324,6 +330,8 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
       val s2 = nfaBuilder.addAndGetState(varFor("s2"))
       val s0 = nfaBuilder.getStartState
 
+      nfaBuilder.setFinalState(s2)
+
       nfaBuilder.addTransition(
         s0,
         s1,
@@ -392,6 +400,8 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
       val s1 = nfaBuilder.addAndGetState(varFor("s1"))
       val s2 = nfaBuilder.addAndGetState(varFor("s2"))
       val s0 = nfaBuilder.getStartState
+
+      nfaBuilder.setFinalState(s2)
 
       nfaBuilder.addTransition(
         s0,
@@ -482,7 +492,7 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
       val s3 = nfaBuilder.addAndGetState(varFor("s3"))
       val s4 = nfaBuilder.addAndGetState(varFor("s4"))
       val s0 = nfaBuilder.getStartState
-      nfaBuilder.addFinalState(s4)
+      nfaBuilder.setFinalState(s4)
 
       nfaBuilder.addTransition(
         s0,
@@ -595,6 +605,8 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
       val s2 = nfaBuilder.addAndGetState(varFor("s2"))
       val s0 = nfaBuilder.getStartState
 
+      nfaBuilder.setFinalState(s2)
+
       nfaBuilder.addTransition(
         s0,
         s1,
@@ -697,6 +709,8 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
       val re2 = nfaBuilder.addAndGetState(varFor("re2"))
       val _ = nfaBuilder.addAndGetState(varFor("re3"))
       val _ = nfaBuilder.addAndGetState(varFor("re4"))
+
+      nfaBuilder.setFinalState(re2)
 
       nfaBuilder.addTransition(
         nj0,
@@ -913,6 +927,8 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
       val s8 = nfaBuilder.addAndGetState(varFor("s8"))
       val _ = nfaBuilder.addAndGetState(varFor("s9"))
       val _ = nfaBuilder.addAndGetState(varFor("s10"))
+
+      nfaBuilder.setFinalState(s8)
 
       nfaBuilder.addTransition(
         s0,

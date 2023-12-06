@@ -119,13 +119,13 @@ object NFA {
  * @param states the states of the automaton
  * @param transitions a map that maps each state to its outgoing transitions.
  * @param startState the start state. Must be an element of states.
- * @param finalStates all final states. Must be a subset of states.
+ * @param finalState the final state. Must be an element of states.
  */
 case class NFA(
   states: Set[State],
   transitions: Map[State, Set[Transition]],
   startState: State,
-  finalStates: Set[State]
+  finalState: State
 ) extends Rewritable with Foldable {
 
   def predicateVariables: Seq[LogicalVariable] =
@@ -150,8 +150,7 @@ case class NFA(
     val transitions = this.transitions.view.mapValues(
       _.toList.sortBy(_.end.id).mkString("[\n  ", "\n  ", "\n]")
     ).toList.sortBy(_._1.id).mkString("\n")
-    val finalStates = this.finalStates.toList.sortBy(_.id)
-    s"NFA($states,\n$transitions\n, $startState, $finalStates)"
+    s"NFA($states,\n$transitions\n, $startState, $finalState)"
   }
 
   /**
@@ -164,7 +163,7 @@ case class NFA(
       .sortBy(_.id)
       .map { node =>
         val style = if (node == startState) " style=filled" else ""
-        val shape = if (finalStates.contains(node)) " shape=doublecircle" else ""
+        val shape = if (node == finalState) " shape=doublecircle" else ""
         s"""  ${node.id} [label=${node.toDotString}$style$shape];"""
       }.mkString("\n")
     val edges =
@@ -180,10 +179,11 @@ case class NFA(
     s"digraph G {\n$nodes\n$edges\n}"
   }
 
+  // noinspection ZeroIndexToHead
   def dup(children: Seq[AnyRef]): this.type = NFA(
     children(0).asInstanceOf[Set[State]],
     children(1).asInstanceOf[Map[State, Set[Transition]]],
     children(2).asInstanceOf[State],
-    children(3).asInstanceOf[Set[State]]
+    children(3).asInstanceOf[State]
   ).asInstanceOf[this.type]
 }

@@ -227,7 +227,7 @@ object CommandNFA {
         assert(startState == null, "There should only be one start state in an NFA")
         startState = commandState
       }
-      if (logicalNFA.finalStates.contains(logicalState)) {
+      if (logicalNFA.finalState == logicalState) {
         finalStates.addOne(commandState)
       }
 

@@ -1202,10 +1202,10 @@ object LogicalPlanToPlanBuilderString {
       case (from, transitions) =>
         transitions.toSeq.sortBy(_.end.id).map(t => transitionString(from, t.predicate, t.end))
     }
-    val finalStates = nfa.finalStates.map(fs => s"${indent}${indent}.addFinalState(${fs.id})")
+    val finalState = s"${indent}${indent}.setFinalState(${nfa.finalState.id})"
     val build = s"${indent}${indent}.build()"
 
-    val lines = Seq(constructor) ++ transitions ++ finalStates :+ build
+    val lines = Seq(constructor) ++ transitions :+ finalState :+ build
     lines.mkString("", "\n", "\n")
   }
 
