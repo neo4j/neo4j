@@ -28,21 +28,36 @@ import org.scalatest.Assertion
 import org.scalatest.matchers.should.Matchers
 
 trait PrettifierTestUtils extends Matchers {
+  private val defaultWidth: Int = 60
+  private val defaultHeight: Int = 1000
+  private val defaultIndent: Int = 4
+  private val defaultPadding: Int = 1
 
   def prettifier: Prettifier
 
-  def printComparison(a: Any, b: Option[Any]): Unit = {
-    val width = 60
-    val height = 1000
+  def printStringComparison(a: Any, b: Any, width: Int = defaultWidth): Unit = {
+    val escapeAndIndent = (x: Any) => {
+      val escapedString = x.toString.linesIterator.map(s => literalize(s))
+      escapedString.flatMap(splitAndIndent(_, width, indentation = defaultIndent))
+    }
+
+    val as = escapeAndIndent(a)
+    val bs = escapeAndIndent(b)
+
+    printComparison(as, bs)
+  }
+
+  def printAstComparison(a: Any, b: Option[Any], width: Int = defaultWidth, height: Int = defaultHeight): Unit = {
     b match {
-      case Some(bb) => printComparison(a, bb, width, height)
-      case None     => pprint.pprintln(a, width = width, height = height)
+      case Some(bb) =>
+        val as = pprint.apply(a, width, height).render.linesIterator
+        val bs = pprint.apply(bb, width, height).render.linesIterator
+        printComparison(as, bs)
+      case None => pprint.pprintln(a, width, height)
     }
   }
 
-  def printComparison(a: Any, b: Any, width: Int, height: Int): Unit = {
-    val as = pprint.apply(a, width = width, height = height).render.linesIterator
-    val bs = pprint.apply(b, width = width, height = height).render.linesIterator
+  private def printComparison(as: Iterator[String], bs: Iterator[String], width: Int = defaultWidth): Unit = {
     for {
       (l, r) <- as.zipAll(bs, "", "")
       printedWidth = fansi.Str.ansiRegex.matcher(l).replaceAll("").length
@@ -50,6 +65,27 @@ trait PrettifierTestUtils extends Matchers {
       sep = if (l == r) "|" else "X"
       line = lp + sep + r
     } println(line)
+  }
+
+  private def splitAndIndent(s: String, width: Int, indentation: Int): Seq[String] = {
+    val actualWidth = width - defaultPadding
+    val (firstLine, rest) = s.splitAt(actualWidth)
+    val restLines = rest.grouped(actualWidth - indentation).map((" " * indentation) + _)
+    firstLine +: restLines.toSeq
+  }
+
+  private def literalize(s: IndexedSeq[Char]): String = {
+    val sb = new StringBuilder
+    var i = 0
+    val len = s.length
+    while (i < len) {
+      val c = s(i)
+      if (c < ' ' || (c > '~')) sb.append("\\u%04x" format c.toInt)
+      else sb.append(c)
+      i += 1
+    }
+
+    sb.result()
   }
 
   def roundTripCheck(original: Statement): Assertion = {
