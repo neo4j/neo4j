@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.runtime.ClosingIterator.OptionAsClosingIterator
 import org.neo4j.cypher.internal.runtime.ClosingIterator.ScalaSeqAsClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.DbAccess
+import org.neo4j.cypher.internal.runtime.IsList.makeTraversable
 import org.neo4j.cypher.internal.runtime.ListSupport
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ProjectEndpoints.EndNodes
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ProjectEndpoints.genTypeCheck
@@ -41,7 +42,6 @@ import org.neo4j.kernel.api.StatementConstants
 import org.neo4j.util.CalledFromGeneratedCode
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
 import org.neo4j.values.virtual.VirtualValues
@@ -56,8 +56,7 @@ case class ProjectEndpointsPipe(
   relTypes: RelationshipTypes,
   direction: SemanticDirection,
   simpleLength: Boolean
-)(val id: Id = Id.INVALID_ID) extends PipeWithSource(source)
-    with ListSupport {
+)(val id: Id = Id.INVALID_ID) extends PipeWithSource(source) with ListSupport {
   type Projector = CypherRow => ClosingIterator[CypherRow]
 
   protected def internalCreateResults(
@@ -70,10 +69,10 @@ case class ProjectEndpointsPipe(
     if (simpleLength) project(state) else projectVarLength(state)
 
   private def projectVarLength(state: QueryState)(row: CypherRow): ClosingIterator[CypherRow] = {
-    val rels = makeTraversable(row.getByName(relName))
+    val relsOrNull = row.getByName(relName)
     if (startInScope || endInScope || direction != SemanticDirection.BOTH) {
       validateRels(
-        rels,
+        relsOrNull,
         direction,
         Option.when(startInScope)(nodeId(row.getByName(start))),
         Option.when(endInScope)(nodeId(row.getByName(end))),
@@ -84,7 +83,7 @@ case class ProjectEndpointsPipe(
 
     } else {
       validateRelsUndirectedNothingInScope(
-        rels,
+        relsOrNull,
         state.query,
         state.cursors.relationshipScanCursor,
         genTypeCheck(relTypes.types(state.query))
@@ -233,7 +232,7 @@ case object ProjectEndpoints {
   }
 
   def validateRels(
-    rels: ListValue,
+    relsOrNull: AnyValue,
     direction: SemanticDirection,
     startIfInScope: Option[Long],
     endIfInScope: Option[Long],
@@ -241,9 +240,11 @@ case object ProjectEndpoints {
     scanCursor: RelationshipScanCursor,
     typeCheck: RelationshipScanCursorPredicate
   ): Option[EndNodes] = {
-    if (rels.isEmpty) {
+    if (relsOrNull == Values.NO_VALUE) {
       return None
     }
+
+    val rels = makeTraversable(relsOrNull)
 
     val (iterator, start, end, effectiveDirection, reversed) = (startIfInScope, endIfInScope) match {
       // If end is in scope but not start, reverse the order of iteration to fail fast
@@ -364,15 +365,16 @@ case object ProjectEndpoints {
   }
 
   def validateRelsUndirectedNothingInScope(
-    rels: ListValue,
+    relsOrNull: AnyValue,
     dbAccess: DbAccess,
     scanCursor: RelationshipScanCursor,
     typeCheck: RelationshipScanCursorPredicate
   ): Seq[EndNodes] = {
-
-    if (rels.isEmpty) {
+    if (relsOrNull == Values.NO_VALUE) {
       return Seq.empty
     }
+
+    val rels = makeTraversable(relsOrNull)
 
     val iterator = rels.iterator()
 
@@ -461,7 +463,7 @@ case object ProjectEndpoints {
 
   @CalledFromGeneratedCode
   def validateRelsOrNull(
-    rels: ListValue,
+    rels: AnyValue,
     direction: SemanticDirection,
     startIfInScope: Option[Long],
     endIfInScope: Option[Long],
