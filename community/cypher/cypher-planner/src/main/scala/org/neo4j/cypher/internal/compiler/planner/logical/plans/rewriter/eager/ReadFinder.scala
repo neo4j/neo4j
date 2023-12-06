@@ -602,27 +602,45 @@ object ReadFinder {
       case Selection(predicate, _) =>
         processFilterExpression(PlanReads(), predicate, semanticTable)
 
-      case Expand(_, _, _, relTypes, to, relName, _) =>
-        processExpand(relTypes, to, relName)
+      case Expand(_, _, _, relTypes, to, relName, mode) =>
+        processExpand(relTypes, to, relName, mode)
 
-      case OptionalExpand(_, _, _, relTypes, to, relName, _, _) =>
-        processExpand(relTypes, to, relName)
+      case OptionalExpand(_, _, _, relTypes, to, relName, mode, _) =>
+        processExpand(relTypes, to, relName, mode)
 
-      case VarExpand(_, _, _, _, relTypes, to, relName, _, _, _, _) =>
+      case VarExpand(_, _, _, _, relTypes, to, relName, _, mode, _, _) =>
+        // Note: nodePredicates and relPredicates are matched further down already, since
+        //  they are VariablePredicates.
         // relName is actually a List of relationships but we can consider it to be a Relationship Variable when doing eagerness analysis
-        processExpand(relTypes, to, relName)
+        processExpand(relTypes, to, relName, mode)
 
       case PruningVarExpand(_, _, _, relTypes, to, _, _, _, _) =>
+        // Note: nodePredicates and relPredicates are matched further down already, since
+        //  they are VariablePredicates.
         // PruningVarExpand does not introduce a rel variable, but we need one to attach the predicates to.
-        processExpand(relTypes, to, Variable(anonymousVariableNameGenerator.nextName)(InputPosition.NONE))
+        processExpand(
+          relTypes,
+          to,
+          Variable(anonymousVariableNameGenerator.nextName)(InputPosition.NONE),
+          Expand.ExpandAll
+        )
 
       case BFSPruningVarExpand(_, _, _, relTypes, to, _, _, _, _, _) =>
+        // Note: nodePredicates and relPredicates are matched further down already, since
+        //  they are VariablePredicates.
         // bfsPruningVarExpand does not introduce a rel variable, but we need one to attach the predicates to.
-        processExpand(relTypes, to, Variable(anonymousVariableNameGenerator.nextName)(InputPosition.NONE))
+        processExpand(
+          relTypes,
+          to,
+          Variable(anonymousVariableNameGenerator.nextName)(InputPosition.NONE),
+          Expand.ExpandAll
+        )
 
       case PathPropagatingBFS(_, _, _, _, _, relTypes, to, relName, _, _, _) =>
+        // Note: nodePredicates and relPredicates are matched further down already, since
+        //  they are VariablePredicates.
         // relName is actually a List of relationships but we can consider it to be a Relationship Variable when doing eagerness analysis
-        processExpand(relTypes, to, relName)
+        processExpand(relTypes, to, relName, Expand.ExpandAll)
 
       case FindShortestPaths(
           _,
@@ -633,6 +651,9 @@ object ReadFinder {
           _,
           _
         ) =>
+        // Note: pathPredicates is on a path - so not on an entity - therefore no need to process it.
+        // Note: perStepNodePredicates and perStepRelPredicates are matched further down already, since
+        //  they are VariablePredicates.
         processShortestPaths(relationship, types)
 
       case StatefulShortestPath(
@@ -640,10 +661,10 @@ object ReadFinder {
           sourceNode,
           targetNode,
           nfa,
-          _,
+          mode,
           nonInlinedPreFilters,
-          nodevarG,
-          relvarg,
+          _,
+          _,
           singletonNodeVariables,
           singletonRelationshipVariables,
           _,
@@ -654,6 +675,7 @@ object ReadFinder {
           sourceNode,
           targetNode,
           nfa,
+          mode,
           nonInlinedPreFilters,
           singletonNodeVariables,
           singletonRelationshipVariables,
@@ -1073,6 +1095,7 @@ object ReadFinder {
     sourceNode: LogicalVariable,
     targetNode: LogicalVariable,
     nfa: NFA,
+    mode: Expand.ExpansionMode,
     nonInlinedPreFilters: Option[Expression],
     singletonNodeVariables: Set[Mapping],
     singletonRelationshipVariables: Set[Mapping],
@@ -1081,11 +1104,20 @@ object ReadFinder {
 
     val initialRead = PlanReads()
       .withReferencedNodeVariable(sourceNode)
-      .withIntroducedNodeVariable(targetNode)
+
+    val alreadyBound = mode match {
+      case Expand.ExpandAll  => Set(sourceNode)
+      case Expand.ExpandInto => Set(sourceNode, targetNode)
+    }
 
     Function.chain[PlanReads](Seq(
+      mode match {
+        case Expand.ExpandAll  => _.withIntroducedNodeVariable(targetNode)
+        case Expand.ExpandInto => _.withReferencedNodeVariable(targetNode)
+      },
+
       // We cannot find the variableGroupings since they might have been removed in RemoveUnusedGroupVariablesRewriter
-      (nfa.nodeNames - sourceNode -- singletonNodeVariables.map(_.nfaExprVar)).foldLeft(_) { (acc, nodeName) =>
+      (nfa.nodeNames -- alreadyBound -- singletonNodeVariables.map(_.nfaExprVar)).foldLeft(_) { (acc, nodeName) =>
         acc.withIntroducedNodeVariable(nodeName)
       },
       (nfa.relationshipNames -- singletonRelationshipVariables.map(_.nfaExprVar)).foldLeft(_) { (acc, relName) =>
@@ -1227,18 +1259,22 @@ object ReadFinder {
   private def processExpand(
     relTypes: Seq[RelTypeName],
     to: LogicalVariable,
-    relationshipVariable: LogicalVariable
+    relationshipVariable: LogicalVariable,
+    mode: Expand.ExpansionMode
   ): PlanReads = {
-    val res = PlanReads()
-      .withIntroducedNodeVariable(to)
-      .withIntroducedRelationshipVariable(relationshipVariable)
-
-    if (relTypes.isEmpty) {
-      res
-    } else {
-      val filterExpression = relTypeNamesToOrs(relationshipVariable, relTypes)
-      res.withAddedRelationshipFilterExpression(relationshipVariable, filterExpression)
-    }
+    Function.chain[PlanReads](Seq(
+      mode match {
+        case Expand.ExpandAll  => _.withIntroducedNodeVariable(to)
+        case Expand.ExpandInto => _.withReferencedNodeVariable(to)
+      },
+      _.withIntroducedRelationshipVariable(relationshipVariable),
+      if (relTypes.isEmpty) {
+        identity
+      } else {
+        val filterExpression = relTypeNamesToOrs(relationshipVariable, relTypes)
+        _.withAddedRelationshipFilterExpression(relationshipVariable, filterExpression)
+      }
+    ))(PlanReads())
   }
 
   /**
