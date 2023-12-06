@@ -129,17 +129,6 @@ trait PrettifierTestUtils extends Matchers {
       case i @ UnaliasedReturnItem(e, _) => UnaliasedReturnItem(e, "")(i.position)
     })))
 
-  def show(original: String): Unit = {
-    println("original: " + original)
-    val parsed1 = parse(original)
-    println("  - ast1: " + parsed1)
-    val pretty = prettifier.asString(parsed1)
-    println("  - pret: " + pretty)
-    val parsed2 = parse(pretty)
-    println("  - ast2: " + parsed2)
-  }
-
   private def parse(original: String): Statement =
     JavaCCParser.parse(original, OpenCypherExceptionFactory(None))
-
 }
