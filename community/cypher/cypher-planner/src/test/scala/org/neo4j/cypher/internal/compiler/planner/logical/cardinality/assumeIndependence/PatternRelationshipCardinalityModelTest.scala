@@ -36,8 +36,6 @@ import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-import scala.collection.mutable
-
 class PatternRelationshipCardinalityModelTest extends CypherFunSuite with PatternRelationshipCardinalityModel {
 
   test("should return zero if there are no nodes with the given labels") {
@@ -48,7 +46,7 @@ class PatternRelationshipCardinalityModelTest extends CypherFunSuite with Patter
         toLabel: Option[LabelId]
       ): Cardinality = Cardinality.EMPTY
     }
-    val semanticTable = new SemanticTable(resolvedLabelNames = mutable.Map("L" -> LabelId(0)))
+    val semanticTable = new SemanticTable(resolvedLabelNames = Map("L" -> LabelId(0)))
     val context = QueryGraphCardinalityContext(
       graphStatistics = graphStatistics,
       selectivityCalculator = null,
@@ -79,7 +77,7 @@ class PatternRelationshipCardinalityModelTest extends CypherFunSuite with Patter
         toLabel: Option[LabelId]
       ): Cardinality = Cardinality.SINGLE
     }
-    val semanticTable = new SemanticTable(resolvedLabelNames = mutable.Map("L" -> LabelId(0)))
+    val semanticTable = new SemanticTable(resolvedLabelNames = Map("L" -> LabelId(0)))
     val context = QueryGraphCardinalityContext(
       graphStatistics = graphStatistics,
       selectivityCalculator = null,
@@ -110,7 +108,7 @@ class PatternRelationshipCardinalityModelTest extends CypherFunSuite with Patter
         toLabel: Option[LabelId]
       ): Cardinality = Cardinality.SINGLE
     }
-    val semanticTable = new SemanticTable(resolvedLabelNames = mutable.Map("L" -> LabelId(0)))
+    val semanticTable = new SemanticTable(resolvedLabelNames = Map("L" -> LabelId(0)))
     val context = QueryGraphCardinalityContext(
       graphStatistics = graphStatistics,
       selectivityCalculator = null,
@@ -136,7 +134,7 @@ class PatternRelationshipCardinalityModelTest extends CypherFunSuite with Patter
         toLabel: Option[LabelId]
       ): Cardinality = Cardinality.EMPTY
     })
-    val semanticTable = new SemanticTable(resolvedRelTypeNames = mutable.Map("KNOWN" -> RelTypeId(0)))
+    val semanticTable = new SemanticTable(resolvedRelTypeNames = Map("KNOWN" -> RelTypeId(0)))
     val context = QueryGraphCardinalityContext(
       graphStatistics = graphStatistics,
       selectivityCalculator = null,

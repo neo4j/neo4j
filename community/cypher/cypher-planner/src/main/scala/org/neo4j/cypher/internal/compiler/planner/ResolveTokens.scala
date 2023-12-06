@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner
 
 import org.neo4j.cypher.internal.ast.Query
+import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
@@ -29,7 +30,7 @@ import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.frontend.phases.BaseContains
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
-import org.neo4j.cypher.internal.frontend.phases.VisitorPhase
+import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
 import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.util.LabelId
@@ -41,79 +42,77 @@ import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
 /**
  * Resolve token ids for labels, property keys and relationship types.
  */
-case object ResolveTokens extends VisitorPhase[PlannerContext, BaseState] with StepSequencer.Step
+case object ResolveTokens extends Phase[PlannerContext, BaseState, BaseState] with StepSequencer.Step
     with DefaultPostCondition
     with PlanPipelineTransformerFactory {
 
-  def resolve(ast: Query)(implicit semanticTable: SemanticTable, tokenContext: ReadTokenContext): Unit = {
-    ast.folder.fold(()) {
+  private[planner] def resolve(ast: Query, semanticTable: SemanticTable)(
+    implicit tokenContext: ReadTokenContext
+  ): SemanticTable = {
+    ast.folder.fold(semanticTable) {
       case token: PropertyKeyName =>
-        _ => resolvePropertyKeyName(token.name)
+        acc => resolvePropertyKeyName(token.name, acc)
       case token: LabelName =>
-        _ => resolveLabelName(token.name)
+        acc => resolveLabelName(token.name, acc)
       case token: RelTypeName =>
-        _ => resolveRelTypeName(token.name)
+        acc => resolveRelTypeName(token.name, acc)
     }
   }
 
-  private def resolvePropertyKeyName(name: String)(
-    implicit semanticTable: SemanticTable,
-    tokenContext: ReadTokenContext
-  ): Unit = {
+  private def resolvePropertyKeyName(name: String, semanticTable: SemanticTable)(
+    implicit tokenContext: ReadTokenContext
+  ): SemanticTable = {
     tokenContext.getOptPropertyKeyId(name).map(PropertyKeyId) match {
       case Some(id) =>
-        semanticTable.resolvedPropertyKeyNames += name -> id
-      case None =>
+        semanticTable.addResolvedPropertyKeyName(name, id)
+      case None => semanticTable
     }
   }
 
-  private def resolveLabelName(name: String)(
-    implicit semanticTable: SemanticTable,
-    tokenContext: ReadTokenContext
-  ): Unit = {
+  private def resolveLabelName(name: String, semanticTable: SemanticTable)(
+    implicit tokenContext: ReadTokenContext
+  ): SemanticTable = {
     tokenContext.getOptLabelId(name).map(LabelId) match {
       case Some(id) =>
-        semanticTable.resolvedLabelNames += name -> id
-      case None =>
+        semanticTable.addResolvedLabelName(name, id)
+      case None => semanticTable
     }
   }
 
-  private def resolveRelTypeName(name: String)(
-    implicit semanticTable: SemanticTable,
-    tokenContext: ReadTokenContext
-  ): Unit = {
+  private def resolveRelTypeName(name: String, semanticTable: SemanticTable)(
+    implicit tokenContext: ReadTokenContext
+  ): SemanticTable = {
     tokenContext.getOptRelTypeId(name).map(RelTypeId) match {
       case Some(id) =>
-        semanticTable.resolvedRelTypeNames += name -> id
-      case None =>
+        semanticTable.addResolvedRelTypeName(name, id)
+      case None => semanticTable
     }
   }
 
   override def phase = AST_REWRITE
 
-  override def visit(value: BaseState, context: PlannerContext): Unit = {
-    value.statement() match {
-      case q: Query => resolve(q)(value.semanticTable(), context.planContext)
-      case _        =>
+  override def process(from: BaseState, context: PlannerContext): BaseState = {
+    val semTab1 = from.statement() match {
+      case q: Query => resolve(q, from.semanticTable())(context.planContext)
+      case _        => from.semanticTable()
     }
-    context.planContext.getPropertiesWithExistenceConstraint.foreach(resolvePropertyKeyName(_)(
-      value.semanticTable(),
-      context.planContext
-    ))
+    val result = context.planContext.getPropertiesWithExistenceConstraint.foldLeft(semTab1) {
+      case (acc, name) => resolvePropertyKeyName(name, acc)(context.planContext)
+    }
+
+    from.withSemanticTable(result)
   }
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     // This sets fields in the semantic table
-    BaseContains[SemanticTable]()
+    BaseContains[SemanticTable](),
+    BaseContains[Statement]()
   )
-
-  // necessary because VisitorPhase defines empty postConditions
-  override def postConditions: Set[StepSequencer.Condition] = Set(completed)
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 
   override def getTransformer(
     pushdownPropertyReads: Boolean,
     semanticFeatures: Seq[SemanticFeature]
-  ): VisitorPhase[PlannerContext, BaseState] = this
+  ): ResolveTokens.type = this
 }

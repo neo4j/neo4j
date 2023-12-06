@@ -79,9 +79,12 @@ class CheckForUnresolvedTokensTest extends CypherFunSuite with AstConstructionTe
 
   test("don't warn when labels are there") {
     // given
-    val semanticTable = new SemanticTable
-    semanticTable.resolvedLabelNames.put("A", LabelId(42))
-    semanticTable.resolvedLabelNames.put("B", LabelId(84))
+    val semanticTable = new SemanticTable(
+      resolvedLabelNames = Map(
+        "A" -> LabelId(42),
+        "B" -> LabelId(84)
+      )
+    )
 
     // when
     val ast = parse("MATCH (a:A)-->(b:B) RETURN *")
@@ -92,9 +95,12 @@ class CheckForUnresolvedTokensTest extends CypherFunSuite with AstConstructionTe
 
   test("warn when missing relationship type") {
     // given
-    val semanticTable = new SemanticTable
-    semanticTable.resolvedLabelNames.put("A", LabelId(42))
-    semanticTable.resolvedLabelNames.put("B", LabelId(84))
+    val semanticTable = new SemanticTable(
+      resolvedLabelNames = Map(
+        "A" -> LabelId(42),
+        "B" -> LabelId(84)
+      )
+    )
 
     // when
     val ast = parse("MATCH (a:A)-[r:R1|R2]->(b:B) RETURN *")
@@ -108,11 +114,16 @@ class CheckForUnresolvedTokensTest extends CypherFunSuite with AstConstructionTe
 
   test("don't warn when relationship types are there") {
     // given
-    val semanticTable = new SemanticTable
-    semanticTable.resolvedLabelNames.put("A", LabelId(42))
-    semanticTable.resolvedLabelNames.put("B", LabelId(84))
-    semanticTable.resolvedRelTypeNames.put("R1", RelTypeId(1))
-    semanticTable.resolvedRelTypeNames.put("R2", RelTypeId(2))
+    val semanticTable = new SemanticTable(
+      resolvedLabelNames = Map(
+        "A" -> LabelId(42),
+        "B" -> LabelId(84)
+      ),
+      resolvedRelTypeNames = Map(
+        "R1" -> RelTypeId(1),
+        "R2" -> RelTypeId(2)
+      )
+    )
 
     // when
     val ast = parse("MATCH (a:A)-[r:R1|R2]->(b:B) RETURN *")
@@ -136,8 +147,9 @@ class CheckForUnresolvedTokensTest extends CypherFunSuite with AstConstructionTe
 
   test("don't warn when node property key name is there") {
     // given
-    val semanticTable = new SemanticTable().addNode(Variable("a")(InputPosition(7, 1, 8)))
-    semanticTable.resolvedPropertyKeyNames.put("prop", PropertyKeyId(0))
+    val semanticTable = new SemanticTable(
+      resolvedPropertyKeyNames = Map("prop" -> PropertyKeyId(0))
+    ).addNode(Variable("a")(InputPosition(7, 1, 8)))
 
     // when
     val ast = parse("MATCH (a {prop: 42}) RETURN a")
@@ -161,8 +173,9 @@ class CheckForUnresolvedTokensTest extends CypherFunSuite with AstConstructionTe
 
   test("don't warn when relationship property key name is there") {
     // given
-    val semanticTable = new SemanticTable().addRelationship(Variable("r")(InputPosition(10, 1, 11)))
-    semanticTable.resolvedPropertyKeyNames.put("prop", PropertyKeyId(0))
+    val semanticTable = new SemanticTable(
+      resolvedPropertyKeyNames = Map("prop" -> PropertyKeyId(0))
+    ).addRelationship(Variable("r")(InputPosition(10, 1, 11)))
 
     // when
     val ast = parse("MATCH ()-[r {prop: 42}]->() RETURN r")
@@ -175,8 +188,10 @@ class CheckForUnresolvedTokensTest extends CypherFunSuite with AstConstructionTe
     // given
     val emptyTypeMap = ASTAnnotationMap.empty[Expression, ExpressionTypeInfo]
     val semanticTypes = emptyTypeMap.updated(Variable("map")(InputPosition(32, 1, 33)), ExpressionTypeInfo(CTMap))
-    val semanticTable = new SemanticTable(types = semanticTypes)
-    semanticTable.resolvedPropertyKeyNames.put("key", PropertyKeyId(0))
+    val semanticTable = new SemanticTable(
+      types = semanticTypes,
+      resolvedPropertyKeyNames = Map("key" -> PropertyKeyId(0))
+    )
 
     // when
     val ast = parse("WITH {key: 'val'} as map RETURN map.key")
@@ -200,8 +215,10 @@ class CheckForUnresolvedTokensTest extends CypherFunSuite with AstConstructionTe
     // given
     val emptyTypeMap = ASTAnnotationMap.empty[Expression, ExpressionTypeInfo]
     val semanticTypes = emptyTypeMap.updated(functionAt("point", 16), ExpressionTypeInfo(CTPoint))
-    val semanticTable = new SemanticTable(types = semanticTypes).addNode(Variable("a")(InputPosition(22, 1, 23)))
-    semanticTable.resolvedPropertyKeyNames.put("prop", PropertyKeyId(42))
+    val semanticTable = new SemanticTable(
+      types = semanticTypes,
+      resolvedPropertyKeyNames = Map("prop" -> PropertyKeyId(42))
+    ).addNode(Variable("a")(InputPosition(22, 1, 23)))
 
     PointFields.values().foreach { property =>
       // when
@@ -216,8 +233,10 @@ class CheckForUnresolvedTokensTest extends CypherFunSuite with AstConstructionTe
     // given
     val emptyTypeMap = ASTAnnotationMap.empty[Expression, ExpressionTypeInfo]
     val semanticTypes = emptyTypeMap.updated(functionAt("date", 16), ExpressionTypeInfo(CTDate))
-    val semanticTable = new SemanticTable(types = semanticTypes).addNode(Variable("a")(InputPosition(21, 1, 22)))
-    semanticTable.resolvedPropertyKeyNames.put("prop", PropertyKeyId(42))
+    val semanticTable = new SemanticTable(
+      types = semanticTypes,
+      resolvedPropertyKeyNames = Map("prop" -> PropertyKeyId(42))
+    ).addNode(Variable("a")(InputPosition(21, 1, 22)))
 
     TemporalFields.allFields().asScala.foreach { property =>
       // when
@@ -232,8 +251,10 @@ class CheckForUnresolvedTokensTest extends CypherFunSuite with AstConstructionTe
     // given
     val emptyTypeMap = ASTAnnotationMap.empty[Expression, ExpressionTypeInfo]
     val semanticTypes = emptyTypeMap.updated(functionAt("duration", 16), ExpressionTypeInfo(CTDuration))
-    val semanticTable = new SemanticTable(types = semanticTypes).addNode(Variable("a")(InputPosition(25, 1, 26)))
-    semanticTable.resolvedPropertyKeyNames.put("prop", PropertyKeyId(42))
+    val semanticTable = new SemanticTable(
+      types = semanticTypes,
+      resolvedPropertyKeyNames = Map("prop" -> PropertyKeyId(42))
+    ).addNode(Variable("a")(InputPosition(25, 1, 26)))
 
     DurationFields.values().foreach { property =>
       // when
@@ -248,8 +269,10 @@ class CheckForUnresolvedTokensTest extends CypherFunSuite with AstConstructionTe
     // given
     val emptyTypeMap = ASTAnnotationMap.empty[Expression, ExpressionTypeInfo]
     val semanticTypes = emptyTypeMap.updated(propertyAt(16), ExpressionTypeInfo(CTDuration))
-    val semanticTable = new SemanticTable(types = semanticTypes).addNode(Variable("a")(InputPosition(16, 1, 17)))
-    semanticTable.resolvedPropertyKeyNames.put("prop", PropertyKeyId(42))
+    val semanticTable = new SemanticTable(
+      types = semanticTypes,
+      resolvedPropertyKeyNames = Map("prop" -> PropertyKeyId(42))
+    ).addNode(Variable("a")(InputPosition(16, 1, 17)))
 
     Seq("X", "yEaRs", "DAY", "epochMillis").foreach { property =>
       // when

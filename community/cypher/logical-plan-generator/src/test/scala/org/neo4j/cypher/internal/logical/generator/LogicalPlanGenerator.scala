@@ -103,7 +103,6 @@ import org.neo4j.graphdb.Relationship
 import org.neo4j.kernel.api.StatementConstants
 import org.scalacheck.Gen
 
-import scala.collection.mutable
 import scala.language.implicitConversions
 
 object LogicalPlanGenerator extends AstConstructionTestSupport {
@@ -112,8 +111,8 @@ object LogicalPlanGenerator extends AstConstructionTestSupport {
   object State {
 
     def apply(labelsWithIds: Map[String, Int], relTypesWithIds: Map[String, Int]): State = {
-      val resolvedLabelTypes = mutable.HashMap(labelsWithIds.mapValues(LabelId).toSeq: _*)
-      val resolvedRelTypes = mutable.HashMap(relTypesWithIds.mapValues(RelTypeId).toSeq: _*)
+      val resolvedLabelTypes = Map(labelsWithIds.mapValues(LabelId).toSeq: _*)
+      val resolvedRelTypes = Map(relTypesWithIds.mapValues(RelTypeId).toSeq: _*)
       State(
         new SemanticTable(
           resolvedLabelNames = resolvedLabelTypes,
@@ -657,8 +656,8 @@ class LogicalPlanGenerator(
    * - Shares idGen with state
    */
   private def copyStateWithoutVariableInfo(state: State) = {
-    val resolvedLabelTypes = mutable.HashMap(labelsWithIds.mapValues(LabelId).toSeq: _*)
-    val resolvedRelTypes = mutable.HashMap(relTypesWithIds.mapValues(RelTypeId).toSeq: _*)
+    val resolvedLabelTypes = Map(labelsWithIds.mapValues(LabelId).toSeq: _*)
+    val resolvedRelTypes = Map(relTypesWithIds.mapValues(RelTypeId).toSeq: _*)
     val arguments = state.arguments
     val variables = arguments.map(_.asInstanceOf[Expression])
 

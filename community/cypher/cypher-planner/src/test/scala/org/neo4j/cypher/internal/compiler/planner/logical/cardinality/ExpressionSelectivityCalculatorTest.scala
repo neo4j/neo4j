@@ -1414,8 +1414,9 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
   // OTHER
 
   test("Label index: Should peek inside sub predicates") {
-    val semanticTable: SemanticTable = SemanticTable()
-    semanticTable.resolvedLabelNames.put("Page", LabelId(0))
+    val semanticTable: SemanticTable = SemanticTable(
+      resolvedLabelNames = Map("Page" -> LabelId(0))
+    )
 
     val hasLabels = HasLabels(varFor("n"), Seq(labelName("Page"))) _
     val labelInfo: LabelInfo = Selections(Set(nPredicate(hasLabels))).labelInfo
@@ -2165,14 +2166,20 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
   // HELPER METHODS
 
   protected def setupSemanticTable(): SemanticTable = {
-    val semanticTable: SemanticTable = SemanticTable()
-    semanticTable.resolvedLabelNames.put("Person", indexPersonRange.label)
-    semanticTable.resolvedLabelNames.put("Animal", indexAnimal.label)
-    semanticTable.resolvedPropertyKeyNames.put("nodeProp", indexPersonRange.property)
-
-    semanticTable.resolvedRelTypeNames.put("Friends", indexFriendsRange.relType)
-    semanticTable.resolvedRelTypeNames.put("Friends", indexFriendsRange.relType)
-    semanticTable.resolvedPropertyKeyNames.put("relProp", indexFriendsRange.property)
+    val semanticTable: SemanticTable = SemanticTable(
+      resolvedLabelNames = Map(
+        "Person" -> indexPersonRange.label,
+        "Animal" -> indexAnimal.label
+      ),
+      resolvedRelTypeNames = Map(
+        "Friends" -> indexFriendsRange.relType,
+        "Friends" -> indexFriendsRange.relType
+      ),
+      resolvedPropertyKeyNames = Map(
+        "nodeProp" -> indexPersonRange.property,
+        "relProp" -> indexFriendsRange.property
+      )
+    )
 
     semanticTable
       .addTypeInfo(literalInt(3), CTInteger)

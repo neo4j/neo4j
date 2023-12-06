@@ -130,7 +130,7 @@ final class AssumeIndependenceQueryGraphCardinalityModel(
   ): (LabelInfo, Cardinality) = {
     val initialPredicates = QueryGraphPredicates.partitionSelections(labelInfo, queryGraph.selections)
 
-    val predicates = if (labelInference) {
+    val (predicates, newContext) = if (labelInference) {
       val allInferredLabels = for {
         nodeConnection <- queryGraph.nodeConnections.toSeq
         simpleRelationship <- SimpleRelationship.fromNodeConnection(nodeConnection, context.semanticTable).iterator
@@ -143,7 +143,14 @@ final class AssumeIndependenceQueryGraphCardinalityModel(
           key -> value.minBy(x => planContext.statistics.nodesWithLabelCardinality(Some(x.labelId)))
         }.toMap
 
-      inferredLabels.values.foreach { il => context.semanticTable.resolvedLabelNames(il.labelName) = il.labelId }
+      // Update the semantic table with newly resolved label names.
+      // Note that the new context is not propagated further than this method.
+      // This means that any newly resolved label names will not be known
+      // to any later query graphs.
+      val newContext = inferredLabels.values.foldLeft(context) {
+        case (context, il) =>
+          context.copy(semanticTable = context.semanticTable.addResolvedLabelName(il.labelName, il.labelId))
+      }
 
       def addInferredLabelOnlyIfNoOtherLabel(labelInfo: LabelInfo): LabelInfo = {
         labelInfo.map {
@@ -157,9 +164,9 @@ final class AssumeIndependenceQueryGraphCardinalityModel(
       val allLabelInfo = addInferredLabelOnlyIfNoOtherLabel(initialPredicates.allLabelInfo)
       val localLabelInfo = addInferredLabelOnlyIfNoOtherLabel(initialPredicates.localLabelInfo)
 
-      initialPredicates.copy(allLabelInfo = allLabelInfo, localLabelInfo = localLabelInfo)
+      (initialPredicates.copy(allLabelInfo = allLabelInfo, localLabelInfo = localLabelInfo), newContext)
     } else {
-      initialPredicates
+      (initialPredicates, context)
     }
 
     // Calculate the multiplier for each node connection, accumulating bound nodes and arguments and threading them through
@@ -169,11 +176,11 @@ final class AssumeIndependenceQueryGraphCardinalityModel(
         .toSeq
         .foldMap(BoundNodesAndArguments.withArguments(queryGraph.argumentIds)) {
           (boundNodesAndArguments, nodeConnection) =>
-            getNodeConnectionMultiplier(context, predicates, boundNodesAndArguments, nodeConnection)
+            getNodeConnectionMultiplier(newContext, predicates, boundNodesAndArguments, nodeConnection)
         }
 
     // Number of nodes with no labels at all, different from the number of nodes with any labels (i.e. the total number of nodes)
-    lazy val nodeWithNoLabelsCardinality = context.graphStatistics.nodesWithLabelCardinality(None)
+    lazy val nodeWithNoLabelsCardinality = newContext.graphStatistics.nodesWithLabelCardinality(None)
 
     // Calculate the cardinality of the node patterns that are still not bound
     val nodesCardinality =
@@ -185,12 +192,13 @@ final class AssumeIndependenceQueryGraphCardinalityModel(
             // In case the node is passed as an argument in the query graph (or indeed the endpoint of a relationship passed as an argument),
             // then we apply the selectivity of the additional labels defined in this query graph but not in the previous ones.
             // For example: MATCH (n:A) OPTIONAL MATCH (n:B) <- we would apply the selectivity of label B here
-            Cardinality(getArgumentSelectivity(context, predicates.localLabelInfo, node).factor)
+            Cardinality(getArgumentSelectivity(newContext, predicates.localLabelInfo, node).factor)
           } else
-            getNodeCardinality(context, predicates.allLabelInfo, node).getOrElse(nodeWithNoLabelsCardinality)
+            getNodeCardinality(newContext, predicates.allLabelInfo, node).getOrElse(nodeWithNoLabelsCardinality)
         }.product(NumericCardinality)
 
-    val otherPredicatesSelectivity = context.predicatesSelectivity(predicates.allLabelInfo, predicates.otherPredicates)
+    val otherPredicatesSelectivity =
+      newContext.predicatesSelectivity(predicates.allLabelInfo, predicates.otherPredicates)
 
     val cardinality =
       nodesCardinality *
