@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime
 
 import org.neo4j.io.fs.FileUtils
 
+import java.io.File
 import java.io.FileOutputStream
 import java.io.OutputStreamWriter
 import java.io.PrintWriter
@@ -32,7 +33,6 @@ import java.util.zip.ZipOutputStream
 
 import scala.io.Codec
 import scala.language.implicitConversions
-import scala.reflect.io.File
 
 trait TempFileCreator {
 
@@ -68,7 +68,7 @@ trait TempFileCreator {
 
   def createTempFile(name: String, ext: String, f: PrintWriter => Unit)(implicit writer: File => PrintWriter): String =
     synchronized {
-      withTempFileWriter(name, ext)(f).toAbsolute.path
+      withTempFileWriter(name, ext)(f).getAbsolutePath
     }
 
   def createTempDirectory(name: String): Path = synchronized {
@@ -85,7 +85,7 @@ trait TempFileCreator {
   private def withTempFileWriter(name: String, ext: String)(f: PrintWriter => Unit)(implicit
   writer: File => PrintWriter) = {
     val path = Files.createTempFile(name, ext)
-    val file = new File(path.toFile)
+    val file = path.toFile
     try {
       fileWrite(file)(f)
     } finally {
@@ -96,7 +96,7 @@ trait TempFileCreator {
 
   def pathWrite(path: Path)(f: PrintWriter => Unit): Path = {
     Files.createDirectories(path.getParent)
-    fileWrite(new File(path.toFile))(f)
+    fileWrite(path.toFile)(f)
     path
   }
 
@@ -110,18 +110,18 @@ trait TempFileCreator {
     }
   }
 
-  implicit def normalWriter(file: File): PrintWriter = new PrintWriter(file.bufferedWriter(append = false, Codec.UTF8))
+  implicit def normalWriter(file: File): PrintWriter = new PrintWriter(Files.newBufferedWriter(file.toPath))
 
   def gzipWriter(file: File): PrintWriter = new PrintWriter(new OutputStreamWriter(
     new GZIPOutputStream(
-      new FileOutputStream(file.jfile, false)
+      new FileOutputStream(file, false)
     ),
     Codec.UTF8.charSet
   ))
 
   def zipWriter(file: File): PrintWriter = {
-    val zos = new ZipOutputStream(new FileOutputStream(file.jfile))
-    val ze = new ZipEntry(file.name)
+    val zos = new ZipOutputStream(new FileOutputStream(file))
+    val ze = new ZipEntry(file.getName)
     zos.putNextEntry(ze)
 
     new PrintWriter(new OutputStreamWriter(zos))
