@@ -989,6 +989,108 @@ class SemanticAnalysisTest extends CypherFunSuite {
     }
   }
 
+  // Literal Map Entry on a MAP, NODE or RELATIONSHIP should work
+  test("WITH {g: 1} AS l RETURN l{p: 2}") {
+    val query = "WITH {g: 1} AS l RETURN l{p: 2}"
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors shouldBe empty
+  }
+
+  test("WITH {g: 1} AS l RETURN l{.*, p: 2}") {
+    val query = "WITH {g: 1} AS l RETURN l{.*, p: 2}"
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors shouldBe empty
+  }
+
+  test("MATCH (n) RETURN n{p: 2}") {
+    val query = "MATCH (n) RETURN n{p: 2}"
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors shouldBe empty
+  }
+
+  test("MATCH (n) RETURN n{.*, p: 2}") {
+    val query = "MATCH (n) RETURN n{.*, p: 2}"
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors shouldBe empty
+  }
+
+  test("MATCH ()-[r]->() RETURN r{.*, p: 2}") {
+    val query = "MATCH ()-[r]->() RETURN r{.*, p: 2}"
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors shouldBe empty
+  }
+
+  test("MATCH ()-[r]->() RETURN r{p: 2}") {
+    val query = "MATCH ()-[r]->() RETURN r{p: 2}"
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+
+    pipeline.transform(startState, context)
+
+    context.errors shouldBe empty
+  }
+
+  // Literal Map Entry not on a map should not work
+  test("WITH [1] AS l RETURN l{p: 2}") {
+    val query = "WITH [1] AS l RETURN l{p: 2}"
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+    pipeline.transform(startState, context)
+    context.errors shouldBe Seq(
+      SemanticError("Type mismatch: expected Map, Node or Relationship but was List<Integer>", InputPosition(21, 1, 22))
+    )
+  }
+
+  test("WITH [1] AS l RETURN l{.*, p: 2}") {
+    val query = "WITH [1] AS l RETURN l{.*, p: 2}"
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+    pipeline.transform(startState, context)
+    context.errors shouldBe Seq(
+      SemanticError("Type mismatch: expected Map, Node or Relationship but was List<Integer>", InputPosition(21, 1, 22))
+    )
+  }
+
+  test("WITH 2 AS l RETURN l{.*, p: 2}") {
+    val query = "WITH 2 AS l RETURN l{.*, p: 2}"
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+    pipeline.transform(startState, context)
+    context.errors shouldBe Seq(
+      SemanticError("Type mismatch: expected Map, Node or Relationship but was Integer", InputPosition(19, 1, 20))
+    )
+  }
+
+  test("WITH \"hello\" AS l RETURN l{.*, p: 2}") {
+    val query = "WITH \"hello\" AS l RETURN l{.*, p: 2}"
+    val startState = initStartState(query)
+    val context = new ErrorCollectingContext()
+    pipeline.transform(startState, context)
+    context.errors shouldBe Seq(
+      SemanticError("Type mismatch: expected Map, Node or Relationship but was String", InputPosition(25, 1, 26))
+    )
+  }
+
   private def initStartState(query: String) =
     InitialState(query, None, NoPlannerName, new AnonymousVariableNameGenerator)
 
