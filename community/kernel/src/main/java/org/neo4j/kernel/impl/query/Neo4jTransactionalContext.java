@@ -371,6 +371,11 @@ public class Neo4jTransactionalContext implements TransactionalContext {
     }
 
     @Override
+    public boolean targetsComposite() {
+        return false;
+    }
+
+    @Override
     public StatisticProvider kernelStatisticProvider() {
         return statisticProvider;
     }

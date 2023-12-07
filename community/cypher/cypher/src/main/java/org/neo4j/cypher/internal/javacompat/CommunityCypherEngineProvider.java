@@ -77,7 +77,7 @@ public class CommunityCypherEngineProvider extends QueryEngineProvider {
         deps.satisfyDependency(Neo4jTransactionalContextFactory.create(queryService));
         CypherConfiguration cypherConfig = CypherConfiguration.fromConfig(spi.config());
         CypherPlannerConfiguration plannerConfig =
-                CypherPlannerConfiguration.fromCypherConfiguration(cypherConfig, spi.config(), isSystemDatabase);
+                CypherPlannerConfiguration.fromCypherConfiguration(cypherConfig, spi.config(), isSystemDatabase, false);
         CypherRuntimeConfiguration runtimeConfig = CypherRuntimeConfiguration.fromCypherConfiguration(cypherConfig);
         CacheFactory cacheFactory = getCacheFactory(deps, spi);
         Clock clock = Clock.systemUTC();
@@ -95,7 +95,7 @@ public class CommunityCypherEngineProvider extends QueryEngineProvider {
 
         if (isSystemDatabase) {
             CypherPlannerConfiguration innerPlannerConfig =
-                    CypherPlannerConfiguration.fromCypherConfiguration(cypherConfig, spi.config(), false);
+                    CypherPlannerConfiguration.fromCypherConfiguration(cypherConfig, spi.config(), false, false);
             CypherQueryCaches innerQueryCaches =
                     makeCypherQueryCaches(spi, queryService, cypherConfig, cacheSize, cacheFactory, clock);
             QueryCacheStatistics innerCacheStatistics = innerQueryCaches.statistics();

@@ -118,4 +118,6 @@ public interface TransactionalContext {
     ElementIdMapper elementIdMapper();
 
     QueryExecutionConfiguration queryExecutingConfiguration();
+
+    boolean targetsComposite();
 }

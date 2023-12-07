@@ -31,9 +31,11 @@ public interface TargetService {
 
     DatabaseReference target(CatalogInfo catalogInfo);
 
-    sealed interface CatalogInfo permits SingleQueryCatalogInfo, UnionQueryCatalogInfo {}
+    sealed interface CatalogInfo permits SingleQueryCatalogInfo, UnionQueryCatalogInfo, CompositeCatalogInfo {}
 
     record SingleQueryCatalogInfo(Optional<CatalogName> catalogName) implements CatalogInfo {}
 
     record UnionQueryCatalogInfo(List<Optional<CatalogName>> catalogNames) implements CatalogInfo {}
+
+    record CompositeCatalogInfo() implements CatalogInfo {}
 }

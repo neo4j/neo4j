@@ -159,8 +159,12 @@ public class CommunityQueryRouterBoostrap extends CommonQueryRouterBoostrap {
                 cacheFactory, cypherConfig.queryCacheSize(), monitors.newMonitor(CacheTracer.class, MONITOR_TAG));
         var preParser = new PreParser(cypherConfig);
         CypherPlannerConfiguration plannerConfig =
-                CypherPlannerConfiguration.fromCypherConfiguration(cypherConfig, config, true);
-        var parsing = new CypherParsing(null, CypherParsingConfig.fromCypherPlannerConfiguration(plannerConfig));
+                CypherPlannerConfiguration.fromCypherConfiguration(cypherConfig, config, true, false);
+        var parsing = new CypherParsing(
+                null,
+                CypherParsingConfig.fromCypherPlannerConfiguration(plannerConfig),
+                plannerConfig.queryRouterEnabled(),
+                plannerConfig.queryRouterForCompositeQueriesEnabled());
         DefaultDatabaseReferenceResolver databaseReferenceResolver =
                 new DefaultDatabaseReferenceResolver(databaseReferenceRepo);
         var databaseManager = (DatabaseContextProvider<DatabaseContext>) resolve(DatabaseContextProvider.class);

@@ -234,7 +234,7 @@ class VerifyGraphTargetTest extends CypherFunSuite {
 
     val conf = mock[CypherPlannerConfiguration]
     when(plannerContext.config).thenReturn(conf)
-    when(conf.allowCompositeQueries).thenReturn(allowCompositeQueries)
+    when(conf.queryRouterForCompositeQueriesEnabled).thenReturn(allowCompositeQueries)
 
     VerifyGraphTarget.transform(state, plannerContext)
   }

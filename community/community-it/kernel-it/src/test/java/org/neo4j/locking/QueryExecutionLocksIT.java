@@ -517,6 +517,11 @@ class QueryExecutionLocksIT {
         public QueryExecutionConfiguration queryExecutingConfiguration() {
             return QueryExecutionConfiguration.DEFAULT_CONFIG;
         }
+
+        @Override
+        public boolean targetsComposite() {
+            return false;
+        }
     }
 
     private static class RecordingLocks implements Locks {

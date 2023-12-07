@@ -26,11 +26,7 @@ import org.neo4j.cypher.internal.compiler.phases.BaseContextImpl
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.ParsingConfig
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.defaultSemanticFeatures
-import org.neo4j.cypher.internal.frontend.phases.BaseState
-import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
-import org.neo4j.cypher.internal.frontend.phases.InitialState
-import org.neo4j.cypher.internal.frontend.phases.Monitors
-import org.neo4j.cypher.internal.frontend.phases.ProcedureSignatureResolver
+import org.neo4j.cypher.internal.frontend.phases._
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.spi.PlannerNameFor
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -41,7 +37,9 @@ import org.neo4j.values.virtual.MapValue
 
 class CypherParsing(
   monitors: Monitors,
-  config: CypherParsingConfig
+  config: CypherParsingConfig,
+  queryRouterEnabled: Boolean,
+  queryRouterForCompositeEnabled: Boolean
 ) {
 
   def parseQuery(
@@ -53,17 +51,25 @@ class CypherParsing(
     tracer: CompilationPhaseTracer,
     params: MapValue,
     cancellationChecker: CancellationChecker,
-    resolver: Option[ProcedureSignatureResolver] = None
+    resolver: Option[ProcedureSignatureResolver] = None,
+    targetsComposite: Boolean
   ): BaseState = {
     val plannerName = PlannerNameFor(plannerNameText)
     val startState = InitialState(queryText, offset, plannerName, new AnonymousVariableNameGenerator)
     val context = BaseContextImpl(tracer, notificationLogger, rawQueryText, offset, monitors, cancellationChecker)
     val paramTypes = ParameterValueTypeHelper.asCypherTypeMap(params, config.useParameterSizeHint())
+
+    val features = CypherParsingConfig.getEnabledFeatures(
+      config.semanticFeatures(),
+      targetsComposite,
+      queryRouterEnabled,
+      queryRouterForCompositeEnabled
+    )
     CompilationPhases.parsing(
       ParsingConfig(
         extractLiterals = config.extractLiterals(),
         parameterTypeMapping = paramTypes,
-        semanticFeatures = config.semanticFeatures(),
+        semanticFeatures = features,
         obfuscateLiterals = config.obfuscateLiterals()
       ),
       resolver = resolver
@@ -85,12 +91,6 @@ case class CypherParsingConfig(
     () => defaultSemanticFeatures,
     () => false
   )
-
-  def withUseGraphSelector(): CypherParsingConfig =
-    withSemanticFeature(SemanticFeature.UseAsSingleGraphSelector)
-
-  private def withSemanticFeature(feature: SemanticFeature): CypherParsingConfig =
-    copy(semanticFeatures = () => semanticFeatures() :+ feature)
 }
 
 object CypherParsingConfig {
@@ -102,4 +102,18 @@ object CypherParsingConfig {
       semanticFeatures = plannerConfiguration.enabledSemanticFeatures,
       obfuscateLiterals = plannerConfiguration.obfuscateLiterals
     )
+
+  def getEnabledFeatures(
+    semanticFeatures: Seq[SemanticFeature],
+    targetsCompositeInQueryRouter: Boolean,
+    queryRouterEnabled: Boolean,
+    queryRouterForCompositeEnabled: Boolean
+  ): Seq[SemanticFeature] = {
+    if (targetsCompositeInQueryRouter && queryRouterEnabled && queryRouterForCompositeEnabled)
+      semanticFeatures ++ Seq(SemanticFeature.UseAsMultipleGraphsSelector, SemanticFeature.MultipleGraphs)
+    else if (queryRouterEnabled)
+      semanticFeatures ++ Seq(SemanticFeature.UseAsSingleGraphSelector)
+    else
+      semanticFeatures
+  }
 }

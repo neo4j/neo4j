@@ -82,6 +82,7 @@ class CypherConfiguration private (val config: Config) {
   val idpIterationDuration: Long = config.get(GraphDatabaseInternalSettings.cypher_idp_solver_duration_threshold).toLong
   val predicatesAsUnionMaxSize: Int = config.get(GraphDatabaseInternalSettings.predicates_as_union_max_size)
   val allowCompositeQueries: Boolean = config.get(GraphDatabaseInternalSettings.composite_queries_with_query_router)
+  val useQueryRouterForRegularQueries: Boolean = config.get(GraphDatabaseInternalSettings.query_router_new_stack)
   val labelInference: Boolean = config.get(GraphDatabaseInternalSettings.label_inference)
 
   val errorIfShortestPathFallbackUsedAtRuntime: Boolean =

@@ -59,18 +59,25 @@ case class CypherPlanner[Context <: PlannerContext](
 
   private val parsingConfig = CypherParsingConfig.fromCypherPlannerConfiguration(config)
 
-  private val parsing = new CypherParsing(monitors, parsingConfig)
+  private val parsing =
+    new CypherParsing(monitors, parsingConfig, config.queryRouterEnabled, config.queryRouterForCompositeQueriesEnabled)
 
   def normalizeQuery(state: BaseState, context: Context): BaseState = prepareForCaching.transform(state, context)
 
   def planPreparedQuery(state: BaseState, context: Context): LogicalPlanState = {
+    val features: Seq[SemanticFeature] = CypherParsingConfig.getEnabledFeatures(
+      context.config.enabledSemanticFeatures.apply(),
+      context.config.targetsComposite,
+      config.queryRouterEnabled,
+      config.queryRouterForCompositeQueriesEnabled
+    )
     val pipeLine =
       if (config.planSystemCommands)
         systemPipeLine
-      else if (context.debugOptions.toStringEnabled)
-        planPipeLine(semanticFeatures = context.config.enabledSemanticFeatures()) andThen DebugPrinter
-      else
-        planPipeLine(semanticFeatures = context.config.enabledSemanticFeatures())
+      else if (context.debugOptions.toStringEnabled) {
+        planPipeLine(semanticFeatures = features) andThen DebugPrinter
+      } else
+        planPipeLine(semanticFeatures = features)
 
     pipeLine.transform(state, context)
   }
@@ -83,7 +90,8 @@ case class CypherPlanner[Context <: PlannerContext](
     offset: Option[InputPosition],
     tracer: CompilationPhaseTracer,
     params: MapValue,
-    cancellationChecker: CancellationChecker
+    cancellationChecker: CancellationChecker,
+    targetsComposite: Boolean
   ): BaseState = {
     parsing.parseQuery(
       queryText,
@@ -93,7 +101,8 @@ case class CypherPlanner[Context <: PlannerContext](
       offset,
       tracer,
       params,
-      cancellationChecker
+      cancellationChecker,
+      targetsComposite = targetsComposite
     )
   }
 
@@ -104,22 +113,32 @@ object CypherPlannerConfiguration {
   def fromCypherConfiguration(
     config: CypherConfiguration,
     cfg: Config,
-    planSystemCommands: Boolean
+    planSystemCommands: Boolean,
+    targetsComposite: Boolean
   ): CypherPlannerConfiguration =
-    new CypherPlannerConfiguration(config, cfg, planSystemCommands)
+    new CypherPlannerConfiguration(config, cfg, planSystemCommands, targetsComposite)
 
   def defaults(): CypherPlannerConfiguration = {
     val cfg = Config.defaults()
-    fromCypherConfiguration(CypherConfiguration.fromConfig(cfg), cfg, planSystemCommands = false)
+    fromCypherConfiguration(
+      CypherConfiguration.fromConfig(cfg),
+      cfg,
+      planSystemCommands = false,
+      targetsComposite = false
+    )
   }
 
   def withSettings(settings: Map[Setting[_], AnyRef]): CypherPlannerConfiguration = {
     val cfg = Config.defaults(
       settings.asJava
     )
-    fromCypherConfiguration(CypherConfiguration.fromConfig(cfg), cfg, planSystemCommands = false)
+    fromCypherConfiguration(
+      CypherConfiguration.fromConfig(cfg),
+      cfg,
+      planSystemCommands = false,
+      targetsComposite = false
+    )
   }
-
 }
 
 /**
@@ -128,7 +147,12 @@ object CypherPlannerConfiguration {
  * Any field below must either be a static configuration, or one that does not affect caching.
  * If you introduce a dynamic setting here, you will have to make sure it ends up in the relevant cache keys.
  */
-class CypherPlannerConfiguration(config: CypherConfiguration, cfg: Config, val planSystemCommands: Boolean) {
+class CypherPlannerConfiguration(
+  config: CypherConfiguration,
+  cfg: Config,
+  val planSystemCommands: Boolean,
+  val targetsComposite: Boolean
+) {
 
   val statsDivergenceCalculator: () => StatsDivergenceCalculator = {
     AssertMacros.checkOnlyWhenAssertionsAreEnabled(Seq(
@@ -213,7 +237,6 @@ class CypherPlannerConfiguration(config: CypherConfiguration, cfg: Config, val p
     () => {
       CompilationPhases.enabledSemanticFeatures(config.enableExtraSemanticFeatures ++ config.toggledFeatures(Map(
         GraphDatabaseInternalSettings.show_setting -> SemanticFeature.ShowSetting.productPrefix,
-        GraphDatabaseInternalSettings.query_router_new_stack -> SemanticFeature.UseAsSingleGraphSelector.productPrefix,
         GraphDatabaseInternalSettings.property_value_access_rules -> SemanticFeature.PropertyValueAccessRules.productPrefix,
         GraphDatabaseInternalSettings.composable_commands -> SemanticFeature.ComposableCommands.productPrefix
       )))
@@ -255,7 +278,8 @@ class CypherPlannerConfiguration(config: CypherConfiguration, cfg: Config, val p
     () => config.eagerAnalyzer
   }
 
-  val allowCompositeQueries = config.allowCompositeQueries;
+  val queryRouterEnabled: Boolean = config.useQueryRouterForRegularQueries
+  val queryRouterForCompositeQueriesEnabled: Boolean = config.allowCompositeQueries
 
   val labelInference: () => Boolean = {
     AssertMacros.checkOnlyWhenAssertionsAreEnabled(

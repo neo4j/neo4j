@@ -71,7 +71,7 @@ case object VerifyGraphTarget extends VisitorPhase[PlannerContext, BaseState] wi
       context.databaseReferenceRepository,
       value.statement(),
       context.databaseId,
-      context.config.allowCompositeQueries
+      context.config.queryRouterForCompositeQueriesEnabled
     )
   }
 

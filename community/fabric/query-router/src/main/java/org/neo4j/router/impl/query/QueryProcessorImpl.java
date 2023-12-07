@@ -98,7 +98,7 @@ public class QueryProcessorImpl implements QueryProcessor {
             LocationService locationService,
             CancellationChecker cancellationChecker) {
 
-        var cachedValue = getFromCache(query, cancellationChecker);
+        var cachedValue = getFromCache(query, cancellationChecker, targetService instanceof CompositeTargetService);
 
         var databaseReference = targetService.target(cachedValue.catalogInfo());
 
@@ -130,24 +130,33 @@ public class QueryProcessorImpl implements QueryProcessor {
         return cache.clearQueryCachesForDatabase(databaseName);
     }
 
-    private ProcessedQueryInfoCache.Value getFromCache(Query query, CancellationChecker cancellationChecker) {
+    private ProcessedQueryInfoCache.Value getFromCache(
+            Query query, CancellationChecker cancellationChecker, boolean targetsComposite) {
         var cachedValue = cache.get(query.text());
 
         if (cachedValue == null) {
-            var preparedForCacheQuery = prepareQueryForCache(query, cancellationChecker);
+            var preparedForCacheQuery = prepareQueryForCache(query, cancellationChecker, targetsComposite);
             cache.put(query.text(), preparedForCacheQuery);
             cachedValue = preparedForCacheQuery;
         }
         return cachedValue;
     }
 
-    private ProcessedQueryInfoCache.Value prepareQueryForCache(Query query, CancellationChecker cancellationChecker) {
+    private ProcessedQueryInfoCache.Value prepareQueryForCache(
+            Query query, CancellationChecker cancellationChecker, boolean targetsComposite) {
         var queryTracer = tracer.compileQuery(query.text());
         var notificationLogger = new RecordingNotificationLogger();
         var preParsedQuery = preParser.preParse(query.text(), notificationLogger);
         var resolver = SignatureResolver.from(globalProcedures.getCurrentView());
-        var parsedQuery = parse(query, queryTracer, preParsedQuery, resolver, notificationLogger, cancellationChecker);
-        var catalogInfo = resolveCatalogInfo(parsedQuery.statement());
+        var parsedQuery = parse(
+                query,
+                queryTracer,
+                preParsedQuery,
+                resolver,
+                notificationLogger,
+                cancellationChecker,
+                targetsComposite);
+        var catalogInfo = resolveCatalogInfo(parsedQuery.statement(), targetsComposite);
         var rewrittenQueryText = rewriteQueryText(parsedQuery, preParsedQuery.options());
         var maybeExtractedParams = formatMaybeExtractedParams(parsedQuery);
         var statementType = StatementType.of(parsedQuery.statement(), resolver);
@@ -163,9 +172,13 @@ public class QueryProcessorImpl implements QueryProcessor {
                 parsingNotifications);
     }
 
-    private TargetService.CatalogInfo resolveCatalogInfo(Statement statement) {
+    private TargetService.CatalogInfo resolveCatalogInfo(Statement statement, boolean targetsComposite) {
         if (statement instanceof AdministrationCommand) {
             return new TargetService.SingleQueryCatalogInfo(Optional.of(SYSTEM_DATABASE_CATALOG_NAME));
+        }
+
+        if (targetsComposite) {
+            return new TargetService.CompositeCatalogInfo();
         }
 
         var graphSelections = staticUseEvaluation.evaluateStaticTopQueriesGraphSelections(statement);
@@ -241,7 +254,8 @@ public class QueryProcessorImpl implements QueryProcessor {
             PreParsedQuery preParsedQuery,
             ProcedureSignatureResolver resolver,
             RecordingNotificationLogger notificationLogger,
-            CancellationChecker cancellationChecker) {
+            CancellationChecker cancellationChecker,
+            boolean targetsComposite) {
         return parsing.parseQuery(
                 preParsedQuery.statement(),
                 preParsedQuery.rawStatement(),
@@ -251,7 +265,8 @@ public class QueryProcessorImpl implements QueryProcessor {
                 queryTracer,
                 query.parameters(),
                 cancellationChecker,
-                Some$.MODULE$.apply(resolver));
+                Some$.MODULE$.apply(resolver),
+                targetsComposite);
     }
 
     private TargetService.CatalogInfo toCatalogInfo(Seq<Option<CatalogName>> graphSelections) {
