@@ -55,7 +55,7 @@ import org.neo4j.cypher.internal.frontend.phases.ObfuscationMetadataCollection
 import org.neo4j.cypher.internal.frontend.phases.PreparatoryRewriting
 import org.neo4j.cypher.internal.frontend.phases.ProjectNamedPathsRewriter
 import org.neo4j.cypher.internal.frontend.phases.SemanticAnalysis
-import org.neo4j.cypher.internal.frontend.phases.ShortestPathNodeDeduplicator
+import org.neo4j.cypher.internal.frontend.phases.ShortestPathVariableDeduplicator
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.collapseMultipleInPredicates
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
@@ -86,7 +86,7 @@ object CompilationPhases extends FrontEndCompilationPhases {
           VerifyGraphTarget,
           CopyQuantifiedPathPatternPredicatesToJuxtaposedNodes,
           MoveBoundaryNodePredicates,
-          ShortestPathNodeDeduplicator
+          ShortestPathVariableDeduplicator
         ) ++ CNFNormalizer.steps,
         initialConditions =
           Set(BaseContains[Statement]())
