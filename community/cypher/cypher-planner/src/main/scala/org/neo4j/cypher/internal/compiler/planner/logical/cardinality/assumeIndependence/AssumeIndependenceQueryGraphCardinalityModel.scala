@@ -169,6 +169,18 @@ final class AssumeIndependenceQueryGraphCardinalityModel(
       (initialPredicates, context)
     }
 
+    getBaseQueryGraphCardinalityWithInferredLabelContext(queryGraph, predicates, newContext)
+  }
+
+  /**
+   * @param context a context in which new the semantic table contains resolved tokens for all
+   *                inferred labels.
+   */
+  private def getBaseQueryGraphCardinalityWithInferredLabelContext(
+    queryGraph: QueryGraph,
+    predicates: QueryGraphPredicates,
+    context: QueryGraphCardinalityContext
+  ): (LabelInfo, Cardinality) = {
     // Calculate the multiplier for each node connection, accumulating bound nodes and arguments and threading them through
     val (boundNodesAndArguments, nodeConnectionMultipliers) =
       queryGraph
@@ -176,11 +188,11 @@ final class AssumeIndependenceQueryGraphCardinalityModel(
         .toSeq
         .foldMap(BoundNodesAndArguments.withArguments(queryGraph.argumentIds)) {
           (boundNodesAndArguments, nodeConnection) =>
-            getNodeConnectionMultiplier(newContext, predicates, boundNodesAndArguments, nodeConnection)
+            getNodeConnectionMultiplier(context, predicates, boundNodesAndArguments, nodeConnection)
         }
 
     // Number of nodes with no labels at all, different from the number of nodes with any labels (i.e. the total number of nodes)
-    lazy val nodeWithNoLabelsCardinality = newContext.graphStatistics.nodesWithLabelCardinality(None)
+    lazy val nodeWithNoLabelsCardinality = context.graphStatistics.nodesWithLabelCardinality(None)
 
     // Calculate the cardinality of the node patterns that are still not bound
     val nodesCardinality =
@@ -192,13 +204,13 @@ final class AssumeIndependenceQueryGraphCardinalityModel(
             // In case the node is passed as an argument in the query graph (or indeed the endpoint of a relationship passed as an argument),
             // then we apply the selectivity of the additional labels defined in this query graph but not in the previous ones.
             // For example: MATCH (n:A) OPTIONAL MATCH (n:B) <- we would apply the selectivity of label B here
-            Cardinality(getArgumentSelectivity(newContext, predicates.localLabelInfo, node).factor)
+            Cardinality(getArgumentSelectivity(context, predicates.localLabelInfo, node).factor)
           } else
-            getNodeCardinality(newContext, predicates.allLabelInfo, node).getOrElse(nodeWithNoLabelsCardinality)
+            getNodeCardinality(context, predicates.allLabelInfo, node).getOrElse(nodeWithNoLabelsCardinality)
         }.product(NumericCardinality)
 
     val otherPredicatesSelectivity =
-      newContext.predicatesSelectivity(predicates.allLabelInfo, predicates.otherPredicates)
+      context.predicatesSelectivity(predicates.allLabelInfo, predicates.otherPredicates)
 
     val cardinality =
       nodesCardinality *
