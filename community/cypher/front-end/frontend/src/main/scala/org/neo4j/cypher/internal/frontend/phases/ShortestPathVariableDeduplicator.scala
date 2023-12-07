@@ -17,7 +17,9 @@
 package org.neo4j.cypher.internal.frontend.phases
 
 import org.neo4j.cypher.internal.ast.Match
+import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.Where
+import org.neo4j.cypher.internal.ast.semantics.Scope
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.Equals
@@ -32,6 +34,7 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.Compilat
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizePredicates
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
@@ -44,12 +47,12 @@ import scala.collection.mutable
 
 /**
  * Rename interior variables in a shortest path pattern.
+ * TODO add tests for relationships
  */
 case object ShortestPathVariableDeduplicator extends Phase[BaseContext, BaseState, BaseState]
     with StepSequencer.Step
     with DefaultPostCondition
     with PlanPipelineTransformerFactory {
-  type VariableRenamings = Map[Ref[LogicalVariable], LogicalVariable]
 
   override def getTransformer(
     pushdownPropertyReads: Boolean,
@@ -57,86 +60,17 @@ case object ShortestPathVariableDeduplicator extends Phase[BaseContext, BaseStat
   ): Transformer[_ <: BaseContext, _ <: BaseState, BaseState] = this
 
   override def process(from: BaseState, context: BaseContext): BaseState = {
-    def generateRenaming(variable: LogicalVariable): (Ref[LogicalVariable], LogicalVariable) = {
-      val newName = Namespacer.genName(from.anonymousVariableNameGenerator, variable.name)
-      Ref(variable) -> variable.renameId(newName)
-    }
-
     val renamings = mutable.Map.empty[Ref[LogicalVariable], LogicalVariable]
 
-    val statementWithPredicates = from.statement().endoRewrite(topDown(Rewriter.lift {
-      case clause @ Match(_, _, _, _, _) =>
-        val currentScope = from.semantics().scope(clause)
-        clause.endoRewrite(topDown(Rewriter.lift {
-          case p @ PatternPartWithSelector(_: SelectiveSelector, patternPart) =>
-            val element = patternPart.element
-            val rewrittenElement = element.endoRewrite(topDown(Rewriter.lift {
-              case qpp: QuantifiedPath =>
-                val variables = qpp.part.element.allVariablesLeftToRight
-                val currentRenamings = variables.groupBy(identity).flatMap {
-                  case (_, variables) =>
-                    variables.tail.map(generateRenaming)
-                }
-
-                if (currentRenamings.isEmpty) {
-                  qpp
-                } else {
-                  renamings ++= currentRenamings
-
-                  val predicates = equijoinsForRenamings(currentRenamings)
-
-                  val newGroupings = currentRenamings.values.map(QuantifiedPath.getGrouping(_, qpp.position))
-
-                  val oldWhere = qpp.optionalWhereExpression
-                  val newWhere = Where.combineOrCreate(oldWhere, predicates)
-                  qpp.copy(
-                    optionalWhereExpression = newWhere,
-                    variableGroupings = qpp.variableGroupings ++ newGroupings
-                  )(qpp.position)
-                }
-            }))
-            val variables = rewrittenElement.allVariablesLeftToRight
-            val exterior = Set(variables.head, variables.last)
-            val interior = variables.tail.init
-            val currentRenamings = interior.groupBy(identity).flatMap {
-              case (key, variables) if exterior.contains(key) =>
-                variables.map(generateRenaming)
-              case (_, variables) =>
-                val firstVariable = variables.head
-                val variableDefinedInThisClause =
-                  currentScope.flatMap(_.symbol(firstVariable.name))
-                    .forall(_.definition.asVariable.position == firstVariable.position)
-                if (variableDefinedInThisClause) {
-                  variables.tail.map(generateRenaming)
-                } else {
-                  // The variable is defined in previous clause.
-                  variables.map(generateRenaming)
-                }
-            }
-
-            if (currentRenamings.isEmpty && element == rewrittenElement) {
-              p
-            } else {
-              renamings ++= currentRenamings
-
-              val rewriter = bottomUp(Rewriter.lift {
-                case v: LogicalVariable => currentRenamings.getOrElse(Ref(v), v)
-              })
-
-              val newP = p.replaceElement(rewrittenElement).endoRewrite(rewriter)
-
-              val predicates = equijoinsForRenamings(currentRenamings)
-              newP.modifyElement {
-                case path: ParenthesizedPath =>
-                  val where = path.optionalWhereClause
-                  val newWhere = Where.combineOrCreate(where, predicates)
-                  path.copy(optionalWhereClause = newWhere)(path.position)
-                case otherElement =>
-                  ParenthesizedPath(PathPatternPart(otherElement), Some(Ands.create(predicates)))(p.position)
-              }
-            }
-        }))
-    }))
+    val statementWithPredicates = from.statement().endoRewrite(
+      topDown(Rewriter.lift {
+        case clause: Match =>
+          val currentScope = from.semantics().recordedScopes(clause).scope
+          clause.endoRewrite(
+            clauseRewriter(from.anonymousVariableNameGenerator, currentScope, renamings)
+          )
+      })
+    )
 
     if (renamings.isEmpty) {
       from
@@ -147,15 +81,113 @@ case object ShortestPathVariableDeduplicator extends Phase[BaseContext, BaseStat
       }))
       from.withStatement(newStatement)
     }
-
   }
+
+  private def generateRenaming(anonymousVariableNameGenerator: AnonymousVariableNameGenerator)(
+    variable: LogicalVariable
+  ): (Ref[LogicalVariable], LogicalVariable) = {
+    val newName = Namespacer.genName(anonymousVariableNameGenerator, variable.name)
+    Ref(variable) -> variable.renameId(newName)
+  }
+
+  private def clauseRewriter(
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
+    currentScope: Scope,
+    renamings: mutable.Map[Ref[LogicalVariable], LogicalVariable]
+  ): Rewriter = {
+    val innerRewriter = patternElementRewriter(anonymousVariableNameGenerator, renamings)
+
+    topDown(
+      Rewriter.lift {
+        case p @ PatternPartWithSelector(_: SelectiveSelector, patternPart) =>
+          val element = patternPart.element
+
+          val rewrittenElement = element.endoRewrite(innerRewriter)
+          val variables = rewrittenElement.allVariablesLeftToRight
+          val exterior = Set(variables.head, variables.last)
+          val interior = variables.tail.init
+
+          val currentRenamings = interior.groupBy(identity).flatMap {
+            case (key, variables) if exterior.contains(key) =>
+              variables.map(generateRenaming(anonymousVariableNameGenerator))
+            case (_, variables) =>
+              val firstVariable = variables.head
+              val variableDefinedInThisClause =
+                currentScope
+                  .symbolTable(firstVariable.name)
+                  .definition.asVariable.position == firstVariable.position
+              if (variableDefinedInThisClause) {
+                variables.tail.map(generateRenaming(anonymousVariableNameGenerator))
+              } else {
+                // The variable is defined in previous clause.
+                variables.map(generateRenaming(anonymousVariableNameGenerator))
+              }
+          }
+
+          if (currentRenamings.isEmpty && element == rewrittenElement) {
+            p
+          } else {
+            renamings ++= currentRenamings
+
+            val newP = p.replaceElement(rewrittenElement)
+
+            val predicates = equijoinsForRenamings(currentRenamings)
+            newP.modifyElement {
+              case path: ParenthesizedPath =>
+                val where = path.optionalWhereClause
+                val newWhere = Where.combineOrCreate(where, predicates)
+                path.copy(optionalWhereClause = newWhere)(path.position)
+              case otherElement =>
+                ParenthesizedPath(PathPatternPart(otherElement), Some(Ands.create(predicates)))(p.position)
+            }
+          }
+      },
+      // Don't recurse into subqueries here. The other rewriter will match any MATCH clause
+      // and we would otherwise end up twice in here if the MATCH is nested in a subquery in
+      // another MATCH.
+      stopper = _.isInstanceOf[Query]
+    )
+  }
+
+  private def patternElementRewriter(
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
+    renamings: mutable.Map[Ref[LogicalVariable], LogicalVariable]
+  ): Rewriter = topDown(Rewriter.lift {
+    case qpp: QuantifiedPath =>
+      val variables = qpp.part.element.allVariablesLeftToRight
+      val currentRenamings = variables.groupBy(identity).flatMap {
+        case (_, variables) =>
+          variables.tail.map(generateRenaming(anonymousVariableNameGenerator))
+      }
+
+      if (currentRenamings.isEmpty) {
+        qpp
+      } else {
+        renamings ++= currentRenamings
+
+        val predicates = equijoinsForRenamings(currentRenamings)
+
+        val newGroupings = currentRenamings.values.map(QuantifiedPath.getGrouping(_, qpp.position))
+
+        val oldWhere = qpp.optionalWhereExpression
+        val newWhere = Where.combineOrCreate(oldWhere, predicates)
+        qpp.copy(
+          optionalWhereExpression = newWhere,
+          variableGroupings = qpp.variableGroupings ++ newGroupings
+        )(qpp.position)
+      }
+  })
 
   private def equijoinsForRenamings(currentRenamings: Map[Ref[LogicalVariable], LogicalVariable]): ListSet[Expression] =
     currentRenamings.view.map {
       case (from, to) => Equals(to, from.value.copyId)(from.value.position)
     }.to(ListSet)
 
-  override def preConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable + normalizePredicates.completed
+  override def preConditions: Set[StepSequencer.Condition] =
+    // Reads scope of MATCH clauses
+    SemanticInfoAvailable +
+      // Rewrites predicates
+      normalizePredicates.completed
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable // Introduces new AST nodes
 

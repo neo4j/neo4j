@@ -21,7 +21,9 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.flattenBooleanOperators
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class ShortestPathVariableDeduplicatorTest extends CypherFunSuite with AstConstructionTestSupport with RewritePhaseTest {
+class ShortestPathVariableDeduplicatorTest extends CypherFunSuite
+    with AstConstructionTestSupport
+    with RewritePhaseTest {
   override def rewriterPhaseUnderTest: Transformer[BaseContext, BaseState, BaseState] = ShortestPathVariableDeduplicator
 
   override def semanticFeatures: Seq[SemanticFeature] = Seq(SemanticFeature.GpmShortestPath, SemanticFeature.MatchModes)
