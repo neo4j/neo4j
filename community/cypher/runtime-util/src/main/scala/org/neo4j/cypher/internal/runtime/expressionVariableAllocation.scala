@@ -74,13 +74,17 @@ object expressionVariableAllocation {
 
     def allocateVariables(
       outerVars: List[ExpressionVariable],
-      variables: Iterable[LogicalVariable]
+      variables: Set[LogicalVariable]
     ): List[ExpressionVariable] = {
       var innerVars = outerVars
       for (variable <- variables) {
-        val nextVariable = TemporaryExpressionVariable(numberOfConstantVariables + innerVars.length, variable.name)
-        globalMapping += variable.name -> nextVariable
-        innerVars = nextVariable :: innerVars
+        if (!globalMapping.contains(variable.name)) {
+          val nextVariable = TemporaryExpressionVariable(numberOfConstantVariables + innerVars.length, variable.name)
+          globalMapping += variable.name -> nextVariable
+          innerVars = nextVariable :: innerVars
+        } else {
+          throw new IllegalStateException(s"expressionVariableAllocation.globalMapping.contains(${variable.name})")
+        }
       }
       innerVars
     }
@@ -102,23 +106,26 @@ object expressionVariableAllocation {
 
       case x: VarExpand =>
         outerVars =>
-          val innerVars = allocateVariables(outerVars, (x.nodePredicates ++ x.relationshipPredicates).map(_.variable))
+          val innerVars =
+            allocateVariables(outerVars, (x.nodePredicates ++ x.relationshipPredicates).map(_.variable).toSet)
           TraverseChildrenNewAccForSiblings(innerVars, _ => outerVars)
 
       case x: PruningVarExpand =>
         outerVars =>
-          val innerVars = allocateVariables(outerVars, (x.nodePredicates ++ x.relationshipPredicates).map(_.variable))
+          val innerVars =
+            allocateVariables(outerVars, (x.nodePredicates ++ x.relationshipPredicates).map(_.variable).toSet)
           TraverseChildrenNewAccForSiblings(innerVars, _ => outerVars)
 
       case x: BFSPruningVarExpand =>
         outerVars =>
-          val innerVars = allocateVariables(outerVars, (x.nodePredicates ++ x.relationshipPredicates).map(_.variable))
+          val innerVars =
+            allocateVariables(outerVars, (x.nodePredicates ++ x.relationshipPredicates).map(_.variable).toSet)
           TraverseChildrenNewAccForSiblings(innerVars, _ => outerVars)
 
       case x: FindShortestPaths =>
         outerVars =>
           val innerVars =
-            allocateVariables(outerVars, (x.perStepNodePredicates ++ x.perStepRelPredicates).map(_.variable))
+            allocateVariables(outerVars, (x.perStepNodePredicates ++ x.perStepRelPredicates).map(_.variable).toSet)
           TraverseChildrenNewAccForSiblings(innerVars, _ => outerVars)
 
       case x: NFA =>

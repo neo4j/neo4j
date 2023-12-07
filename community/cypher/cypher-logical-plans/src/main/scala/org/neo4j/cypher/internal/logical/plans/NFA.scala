@@ -128,8 +128,8 @@ case class NFA(
   finalState: State
 ) extends Rewritable with Foldable {
 
-  def predicateVariables: Seq[LogicalVariable] =
-    transitions.values.flatten.toSeq.flatMap(_.predicate.variablePredicates).map(_.variable)
+  def predicateVariables: Set[LogicalVariable] =
+    transitions.values.flatten.toSeq.flatMap(_.predicate.variablePredicates).map(_.variable).toSet
 
   def nodeNames: Set[LogicalVariable] =
     states.map(_.variable) ++ transitionPredicates.flatMap {
