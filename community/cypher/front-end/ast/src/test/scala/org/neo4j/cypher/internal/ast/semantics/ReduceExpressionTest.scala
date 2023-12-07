@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.ast.semantics
 
 import org.neo4j.cypher.internal.ast.SemanticCheckInTest.SemanticCheckWithDefaultContext
+import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.DummyExpression
 import org.neo4j.cypher.internal.expressions.ReduceExpression
 import org.neo4j.cypher.internal.expressions.Variable
@@ -79,6 +80,25 @@ class ReduceExpressionTest extends SemanticFunSuite {
     val result = SemanticExpressionCheck.simple(filter).run(SemanticState.clean)
     result.errors shouldBe empty
     types(filter)(result.state) should equal(CTAny | CTFloat)
+  }
+
+  test("shouldReturnMinimalConvertibleTypeOfAccumulatorAndReduceFunction") {
+    val initType = CTList(CTString)
+    val listType = CTList(CTList(CTInteger))
+
+    val reduceExpression = Add(variable("x"), variable("y"))(DummyPosition(1))
+
+    val filter = ReduceExpression(
+      accumulator = Variable("x")(DummyPosition(2)),
+      init = DummyExpression(initType),
+      variable = Variable("y")(DummyPosition(6)),
+      list = DummyExpression(listType),
+      expression = reduceExpression
+    )(DummyPosition(0))
+
+    val result = SemanticExpressionCheck.simple(filter).run(SemanticState.clean)
+    result.errors shouldBe empty
+    types(filter)(result.state) should equal(CTList(CTAny).invariant)
   }
 
   test("shouldFailSemanticCheckIfReduceFunctionTypeDiffersFromAccumulator") {

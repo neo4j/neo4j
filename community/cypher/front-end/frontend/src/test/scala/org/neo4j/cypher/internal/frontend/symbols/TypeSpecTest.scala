@@ -417,6 +417,17 @@ class TypeSpecTest extends CypherFunSuite {
     )
   }
 
+  test("should coerce or convert") {
+    CTInteger coerceOrConvert CTInteger should equal(CTInteger.invariant)
+    CTInteger coerceOrConvert CTFloat should equal(CTFloat.invariant)
+    CTFloat coerceOrConvert CTInteger should equal(CTFloat.invariant)
+
+    CTInteger coerceOrConvert CTString should equal(CTInteger.invariant)
+
+    CTList(CTInteger) coerceOrConvert CTList(CTBoolean) should equal(CTList(CTInteger).invariant)
+    CTList(CTInteger) coerceOrConvert CTList(CTAny) should equal(CTList(CTAny).invariant)
+  }
+
   test("equal TypeSpecs should equal") {
     CTString.invariant should equal(CTString.invariant)
 
