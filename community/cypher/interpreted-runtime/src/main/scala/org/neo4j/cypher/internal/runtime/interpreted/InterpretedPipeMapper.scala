@@ -1259,7 +1259,7 @@ case class InterpretedPipeMapper(
       case p @ StatefulShortestPath(
           _,
           sourceNode,
-          _,
+          targetNode,
           nfa,
           mode,
           nonInlinedPreFilters,
@@ -1296,10 +1296,16 @@ case class InterpretedPipeMapper(
 
         val commandPreFilters: Option[Predicate] = nonInlinedPreFilters.map(buildPredicate(id, _))
 
+        val intoTargetName = mode match {
+          case ExpandInto                      => Some(targetNode.name)
+          case ExpandAll if p.isImplicitlyInto => Some(targetNode.name) // TODO remove this later
+          case ExpandAll                       => None
+        }
+
         StatefulShortestPathPipe(
           source,
           sourceNode.name,
-          p.isImplicitlyInto, // TODO: implement ExpandInto properly
+          intoTargetName,
           commandNFA,
           commandPreFilters,
           selector,

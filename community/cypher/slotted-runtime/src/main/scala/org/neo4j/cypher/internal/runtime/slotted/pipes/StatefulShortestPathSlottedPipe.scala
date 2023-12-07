@@ -22,10 +22,12 @@ package org.neo4j.cypher.internal.runtime.slotted.pipes
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
 import org.neo4j.cypher.internal.physicalplanning.Slot
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration
+import org.neo4j.cypher.internal.physicalplanning.SlotConfigurationUtils.NO_ENTITY_FUNCTION
 import org.neo4j.cypher.internal.physicalplanning.SlotConfigurationUtils.makeGetPrimitiveNodeFromSlotFunctionFor
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.ClosingIterator.JavaIteratorAsClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.CommandNFA
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
@@ -41,12 +43,14 @@ import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.PPBFSHooks
 import org.neo4j.values.virtual.ListValueBuilder
 import org.neo4j.values.virtual.VirtualValues
 
+import java.util.function.ToLongFunction
+
 import scala.collection.mutable
 
 case class StatefulShortestPathSlottedPipe(
   source: Pipe,
   sourceSlot: Slot,
-  isTargetBound: Boolean,
+  intoTargetSlot: Option[Slot],
   commandNFA: CommandNFA,
   preFilters: Option[Predicate],
   selector: StatefulShortestPath.Selector,
@@ -57,6 +61,10 @@ case class StatefulShortestPathSlottedPipe(
   self =>
 
   private val getSourceNodeFunction = makeGetPrimitiveNodeFromSlotFunctionFor(sourceSlot, throwOnTypeError = false)
+
+  private val getTargetNodeFunction: ToLongFunction[ReadableRow] = intoTargetSlot.map(slot =>
+    makeGetPrimitiveNodeFromSlotFunctionFor(slot, throwOnTypeError = false)
+  ).getOrElse(NO_ENTITY_FUNCTION)
 
   override protected def internalCreateResults(
     input: ClosingIterator[CypherRow],
@@ -76,10 +84,11 @@ case class StatefulShortestPathSlottedPipe(
 
     input.flatMap { inputRow =>
       val sourceNode = getSourceNodeFunction.applyAsLong(inputRow)
+      val intoTargetNode = getTargetNodeFunction.applyAsLong(inputRow)
 
       val ppbfs = new PGPathPropagatingBFS(
         sourceNode,
-        isTargetBound,
+        intoTargetNode,
         commandNFA.compile(inputRow, state),
         state.query.transactionalContext.dataRead,
         nodeCursor,

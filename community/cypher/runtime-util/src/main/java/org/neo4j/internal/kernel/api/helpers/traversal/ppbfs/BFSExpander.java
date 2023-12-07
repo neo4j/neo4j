@@ -38,6 +38,7 @@ final class BFSExpander implements AutoCloseable {
     private final NodeCursor nodeCursor;
     private final RelationshipTraversalCursor relCursor;
     private final ProductGraphTraversalCursor pgCursor;
+    private final long intoTarget;
 
     // allocated once and reused per source node;
     // max capacity should be total number of states in nfa if we had that info here,
@@ -50,7 +51,8 @@ final class BFSExpander implements AutoCloseable {
             NodeCursor nodeCursor,
             RelationshipTraversalCursor relCursor,
             MemoryTracker mt,
-            PPBFSHooks hooks) {
+            PPBFSHooks hooks,
+            long intoTarget) {
         this.dataManager = dataManager;
         this.read = read;
         this.nodeCursor = nodeCursor;
@@ -59,6 +61,7 @@ final class BFSExpander implements AutoCloseable {
         this.hooks = hooks;
         this.pgCursor = new ProductGraphTraversalCursor(relCursor, mt);
         this.statesList = HeapTrackingArrayList.newArrayList(2, mt);
+        this.intoTarget = intoTarget;
     }
 
     public void floodInitialNodeJuxtapositions() {
@@ -75,7 +78,8 @@ final class BFSExpander implements AutoCloseable {
                             currentNode.id(), nj.targetState().id());
 
                     if (nextNode == null) { // Only add unseen nodes to next level
-                        nextNode = new NodeData(mt, currentNode.id(), nj.targetState(), depthOfNextLevel, dataManager);
+                        nextNode = new NodeData(
+                                mt, currentNode.id(), nj.targetState(), depthOfNextLevel, dataManager, intoTarget);
                         dataManager.addToNextLevel(nextNode);
                     }
 
@@ -111,7 +115,8 @@ final class BFSExpander implements AutoCloseable {
                         foundNode, pgCursor.targetState().id());
 
                 if (nextNode == null) {
-                    nextNode = new NodeData(mt, foundNode, pgCursor.targetState(), depthOfNextLevel, dataManager);
+                    nextNode = new NodeData(
+                            mt, foundNode, pgCursor.targetState(), depthOfNextLevel, dataManager, intoTarget);
 
                     dataManager.addToNextLevel(nextNode); // Only add unseen nodes to next level
                 }

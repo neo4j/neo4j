@@ -41,7 +41,7 @@ import scala.collection.mutable
 case class StatefulShortestPathPipe(
   source: Pipe,
   sourceNodeName: String,
-  isTargetBound: Boolean,
+  intoTargetNodeName: Option[String],
   commandNFA: CommandNFA,
   preFilters: Option[Predicate],
   selector: StatefulShortestPath.Selector,
@@ -69,12 +69,15 @@ case class StatefulShortestPathPipe(
       preFilters.fold[java.util.function.Predicate[CypherRow]](_ => true)(pred => pred.isTrue(_, state))
 
     input.flatMap { inputRow =>
+      // TODO will blow up if not a VirtualNodeValue, clean up later
+      val intoTargetNodeId: Long =
+        intoTargetNodeName.map(inputRow.getByName).map(_.asInstanceOf[VirtualNodeValue].id()).getOrElse(-1L)
       inputRow.getByName(sourceNodeName) match {
 
         case sourceNode: VirtualNodeValue =>
           val ppbfs = new PGPathPropagatingBFS(
             sourceNode.id(),
-            isTargetBound,
+            intoTargetNodeId,
             commandNFA.compile(inputRow, state),
             state.query.transactionalContext.dataRead,
             nodeCursor,

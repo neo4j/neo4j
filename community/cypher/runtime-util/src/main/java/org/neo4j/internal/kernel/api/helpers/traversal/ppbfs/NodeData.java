@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.kernel.api.helpers.traversal.ppbfs;
 
+import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_ENTITY;
+
 import java.util.BitSet;
 import java.util.function.Consumer;
 import org.neo4j.collection.trackable.HeapTrackingArrayList;
@@ -61,7 +63,8 @@ public final class NodeData implements AutoCloseable {
     // NB: this mechanism relies on the NFA having a single final state
     private int remainingTargetCount = 0;
 
-    public NodeData(MemoryTracker mt, long id, State state, int distanceFromSource, DataManager dataManager) {
+    public NodeData(
+            MemoryTracker mt, long id, State state, int distanceFromSource, DataManager dataManager, long intoTarget) {
         this.sourceSignposts = HeapTrackingArrayList.newArrayList(SIGNPOSTS_INIT_SIZE, mt);
         this.id = id;
         this.state = state;
@@ -70,7 +73,7 @@ public final class NodeData implements AutoCloseable {
         this.lengthsFromSource = new BitSet();
         this.validatedLengthsFromSource = new BitSet();
 
-        if (state().isFinalState()) {
+        if (state().isFinalState() && (intoTarget == NO_SUCH_ENTITY || intoTarget == id)) {
             this.remainingTargetCount = (int) dataManager.initialCountForTargetNodes;
             dataManager.incrementLiveTargetCount();
         }

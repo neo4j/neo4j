@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.kernel.api.helpers.traversal.ppbfs;
 
+import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_ENTITY;
+
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.function.Function;
@@ -44,7 +46,7 @@ public final class PGPathPropagatingBFS implements AutoCloseable {
     private final DataManager dataManager;
     private final BFSExpander bfsExpander;
     private final NodeData sourceData;
-    private final boolean isBoundTarget;
+    private final long intoTarget;
     private final PathTracer pathTracer;
     private final PPBFSHooks hooks;
     private int nextDepth = 0;
@@ -59,7 +61,7 @@ public final class PGPathPropagatingBFS implements AutoCloseable {
      */
     public PGPathPropagatingBFS(
             long source,
-            boolean isBoundTarget,
+            long intoTarget,
             State startState,
             Read read,
             NodeCursor nodeCursor,
@@ -69,12 +71,12 @@ public final class PGPathPropagatingBFS implements AutoCloseable {
             int numberOfNfaStates,
             MemoryTracker mt,
             PPBFSHooks hooks) {
-        this.isBoundTarget = isBoundTarget;
+        this.intoTarget = intoTarget;
         this.pathTracer = pathTracer;
         this.hooks = hooks;
         this.dataManager = new DataManager(mt, hooks, this, initialCountForTargetNodes, numberOfNfaStates);
-        this.bfsExpander = new BFSExpander(dataManager, read, nodeCursor, relCursor, mt, hooks);
-        this.sourceData = new NodeData(mt, source, startState, 0, dataManager);
+        this.bfsExpander = new BFSExpander(dataManager, read, nodeCursor, relCursor, mt, hooks, intoTarget);
+        this.sourceData = new NodeData(mt, source, startState, 0, dataManager, intoTarget);
 
         dataManager.addToNextLevel(sourceData);
 
@@ -121,7 +123,7 @@ public final class PGPathPropagatingBFS implements AutoCloseable {
                                     pathTracer.decrementTargetCount();
                                 }
 
-                                if (isBoundTarget && pathTracer.isSaturated()) {
+                                if (intoTarget != NO_SUCH_ENTITY && pathTracer.isSaturated()) {
                                     done = true;
                                 }
                                 return row;
