@@ -147,10 +147,11 @@ final class AssumeIndependenceQueryGraphCardinalityModel(
       // Note that the new context is not propagated further than this method.
       // This means that any newly resolved label names will not be known
       // to any later query graphs.
-      val newContext = inferredLabels.values.foldLeft(context) {
-        case (context, il) =>
-          context.copy(semanticTable = context.semanticTable.addResolvedLabelName(il.labelName, il.labelId))
-      }
+      val newContext = context.copy(
+        semanticTable = context.semanticTable.addResolvedLabelNames(
+          inferredLabels.values.map(il => il.labelName -> il.labelId)
+        )
+      )
 
       def addInferredLabelOnlyIfNoOtherLabel(labelInfo: LabelInfo): LabelInfo = {
         labelInfo.map {

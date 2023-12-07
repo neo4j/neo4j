@@ -131,6 +131,9 @@ case class SemanticTable(
   def addResolvedLabelName(name: String, labelId: LabelId): SemanticTable =
     copy(resolvedLabelNames = resolvedLabelNames + (name -> labelId))
 
+  def addResolvedLabelNames(names: IterableOnce[(String, LabelId)]): SemanticTable =
+    copy(resolvedLabelNames = resolvedLabelNames ++ names)
+
   def addResolvedRelTypeName(name: String, relTypeId: RelTypeId): SemanticTable =
     copy(resolvedRelTypeNames = resolvedRelTypeNames + (name -> relTypeId))
 
