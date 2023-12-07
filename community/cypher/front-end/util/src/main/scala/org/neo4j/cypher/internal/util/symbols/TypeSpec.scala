@@ -113,6 +113,14 @@ class TypeSpec(val ranges: Seq[TypeRange]) extends Equals {
       this leastUpperBounds that
   }
 
+  def coerceOrConvert(that: TypeSpec): TypeSpec = {
+    val coerced = this coerceOrLeastUpperBound that
+    if (coerced.equals(that))
+      that
+    else
+      this
+  }
+
   def without(aType: CypherType): TypeSpec = TypeSpec(ranges.flatMap(_ without aType))
 
 

@@ -452,7 +452,11 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
               declareVariable(x.accumulator, accType) chain
               check(SemanticContext.Simple, x.expression, x +: parents)
           } chain
-          expectType(types(x.init), x.expression, AccumulatorExpressionTypeMismatchMessageGenerator) chain
+          expectType(
+            s => types(x.init)(s) coerceOrConvert types(x.expression)(s),
+            x.expression,
+            AccumulatorExpressionTypeMismatchMessageGenerator
+          ) chain
           specifyType(s => types(x.init)(s) leastUpperBounds types(x.expression)(s), x) chain
           FilteringExpressions.failIfAggregating(x.expression)
 
