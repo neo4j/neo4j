@@ -214,6 +214,64 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     )
   }
 
+  test("should plan SHORTEST with previously bound var-length relationship") {
+    val query =
+      """
+        |MATCH (from:User)-[next:R*1..5]->(to:B)
+        |MATCH ANY SHORTEST ()-[next:R*1..5]->()
+        |RETURN *""".stripMargin
+
+    val nfa = new TestNFABuilder(0, "  UNNAMED0")
+      .addTransition(0, 1, "(`  UNNAMED0`) (`  UNNAMED3`)")
+      .addTransition(1, 2, "(`  UNNAMED3`)-[`  next@4`:R]->(`  UNNAMED4`)")
+      .addTransition(2, 3, "(`  UNNAMED4`)-[`  next@4`:R]->(`  UNNAMED5`)")
+      .addTransition(2, 7, "(`  UNNAMED4`) (`  UNNAMED2`)")
+      .addTransition(3, 4, "(`  UNNAMED5`)-[`  next@4`:R]->(`  UNNAMED6`)")
+      .addTransition(3, 7, "(`  UNNAMED5`) (`  UNNAMED2`)")
+      .addTransition(4, 5, "(`  UNNAMED6`)-[`  next@4`:R]->(`  UNNAMED7`)")
+      .addTransition(4, 7, "(`  UNNAMED6`) (`  UNNAMED2`)")
+      .addTransition(5, 6, "(`  UNNAMED7`)-[`  next@4`:R]->(`  UNNAMED8`)")
+      .addTransition(5, 7, "(`  UNNAMED7`) (`  UNNAMED2`)")
+      .addTransition(6, 7, "(`  UNNAMED8`) (`  UNNAMED2`)")
+      .setFinalState(7)
+      .build()
+
+    val plan = nonDeduplicatingPlanner.plan(query).stripProduceResults
+    plan should equal(
+      nonDeduplicatingPlanner.subPlanBuilder()
+        .statefulShortestPath(
+          "  UNNAMED0",
+          "  UNNAMED1",
+          "SHORTEST 1 ((  UNNAMED0)-[  next@2:R*1..5]->(  UNNAMED1) WHERE `  next@2` = next)",
+          Some("`  next@2` = next"),
+          Set(),
+          Set(("  next@4", "  next@2")),
+          Set(("  UNNAMED2", "  UNNAMED1")),
+          Set(),
+          StatefulShortestPath.Selector.Shortest(1),
+          nfa,
+          ExpandAll
+        )
+        // Yup, not pretty, we could drop these predicates.
+        // But currently they are inserted quite early in ASTRewriter,
+        // and only later the variable `next` gets renamed to `  next@2` in the 2ns match clause.
+        // In general, it is beneficial to NOT rewrite references to `next` to use `  next@2` in predicates,
+        // because that allows the predicates to be solved earlier.
+        // These implicitly solved relationship predicates are an exception.
+        .filter(
+          "size(next) >= 1",
+          "size(next) <= 5",
+          "all(`  UNNAMED9` IN next WHERE single(`  UNNAMED10` IN next WHERE `  UNNAMED9` = `  UNNAMED10`))"
+        )
+        .apply()
+        .|.allNodeScan("`  UNNAMED0`", "from", "to", "next")
+        .filter("to:B")
+        .expand("(from)-[next:R*1..5]->(to)")
+        .nodeByLabelScan("from", "User")
+        .build()
+    )
+  }
+
   test("should plan SHORTEST with var-length relationship and predicates") {
     val query =
       "MATCH ANY SHORTEST (u:User)-[r:R* {prop: 42}]->(v {prop: 3})-[s]->(w {prop: 4})-[t:R|T*1..2]->(x) RETURN *"
@@ -365,18 +423,17 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "a",
           "g",
-          "SHORTEST 1 ((a) ((b)-[r]->(c)){0, } (d) ((e)-[s]->(f)){0, } (g) WHERE `d` = d AND d.prop IN [5] AND disjoint(`r`, `s`) AND unique(`r`) AND unique(`s`))",
-          // TODO: This could be moved to the earlier nodeByLabelScan making it a indexSeek. We could also rewrite the variable name here to inline the predicate but that would make it impossible to optimise it later.
-          Some("cacheN[d.prop] = 5"),
+          "SHORTEST 1 ((a) ((b)-[r]->(c)){0, } (d) ((e)-[s]->(f)){0, } (g) WHERE `d` = d AND disjoint(`r`, `s`) AND unique(`r`) AND unique(`s`))",
+          None,
           Set(("b", "b"), ("c", "c"), ("e", "e"), ("f", "f")),
           Set(("r", "r"), ("s", "s")),
           Set("d" -> "d", "g" -> "g"),
           Set.empty,
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
-          ExpandAll,
-          reverseGroupVariableProjections = false
+          ExpandAll
         )
+        .filter("cacheN[d.prop] = 5")
         .apply()
         .|.allNodeScan("a", "d")
         .cacheProperties("cacheNFromStore[d.prop]")
@@ -555,6 +612,93 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     )
   }
 
+  test(
+    "should allow planning of shortest with already bound strict interior node with predicate"
+  ) {
+    val query =
+      "MATCH (d) WITH * SKIP 0 MATCH ANY SHORTEST (a) ((b)-[r]->(c))* (d WHERE d.prop = 5) ((e)-[s]->(f))* (g) RETURN *"
+
+    val nfa =
+      new TestNFABuilder(0, "a")
+        .addTransition(0, 1, "(a) (`  b@1`)")
+        .addTransition(0, 3, "(a) (`  d@13` WHERE `  d@13` = d)")
+        .addTransition(1, 2, "(`  b@1`)-[`  r@2`]->(`  c@3`)")
+        .addTransition(2, 1, "(`  c@3`) (`  b@1`)")
+        .addTransition(2, 3, "(`  c@3`) (`  d@13` WHERE `  d@13` = d)")
+        .addTransition(3, 4, "(`  d@13`) (`  e@7`)")
+        .addTransition(3, 6, "(`  d@13`) (`  g@14`)")
+        .addTransition(4, 5, "(`  e@7`)-[`  s@8`]->(`  f@9`)")
+        .addTransition(5, 4, "(`  f@9`) (`  e@7`)")
+        .addTransition(5, 6, "(`  f@9`) (`  g@14`)")
+        .setFinalState(6)
+        .build()
+
+    val plan = nonDeduplicatingPlanner.plan(query).stripProduceResults
+    plan should equal(
+      nonDeduplicatingPlanner.subPlanBuilder()
+        .statefulShortestPath(
+          "a",
+          "g",
+          "SHORTEST 1 ((a) ((  b@1)-[  r@2]->(  c@3)){0, } (  d@0) ((  e@7)-[  s@8]->(  f@9)){0, } (g) WHERE `  d@0` = d AND disjoint(`  r@5`, `  s@11`) AND unique(`  r@5`) AND unique(`  s@11`))",
+          None,
+          Set(("  b@1", "  b@4"), ("  c@3", "  c@6"), ("  e@7", "  e@10"), ("  f@9", "  f@12")),
+          Set(("  r@2", "  r@5"), ("  s@8", "  s@11")),
+          Set(("  d@13", "  d@0"), ("  g@14", "g")),
+          Set(),
+          StatefulShortestPath.Selector.Shortest(1),
+          nfa,
+          ExpandAll
+        )
+        .filter("cacheN[d.prop] = 5")
+        .apply()
+        .|.allNodeScan("a", "d")
+        .cacheProperties("cacheNFromStore[d.prop]")
+        .skip(0)
+        .allNodeScan("d")
+        .build()
+    )
+  }
+
+  test("should plan SHORTEST with previously bound relationship") {
+    val query =
+      """
+        |MATCH (from:User)-[r:R]->(to:B)
+        |MATCH ANY SHORTEST (from)-[r:R WHERE r.prop = 5]->(b) ((c)-[r2]->(d))* (e)
+        |RETURN *""".stripMargin
+
+    val nfa = new TestNFABuilder(0, "from")
+      .addTransition(0, 1, "(from)-[`  r@7`:R WHERE `  r@7` = r]->(`  b@8`)")
+      .addTransition(1, 2, "(`  b@8`) (`  c@1`)")
+      .addTransition(1, 4, "(`  b@8`) (`  e@9`)")
+      .addTransition(2, 3, "(`  c@1`)-[`  r2@2`]->(`  d@3`)")
+      .addTransition(3, 2, "(`  d@3`) (`  c@1`)")
+      .addTransition(3, 4, "(`  d@3`) (`  e@9`)")
+      .setFinalState(4)
+      .build()
+
+    val plan = nonDeduplicatingPlanner.plan(query).stripProduceResults
+    plan should equal(
+      nonDeduplicatingPlanner.subPlanBuilder()
+        .statefulShortestPath(
+          "from",
+          "e",
+          "SHORTEST 1 ((from)-[  r@0:R]->(b) ((  c@1)-[  r2@2]->(  d@3)){0, } (e) WHERE NOT r IN `  r2@5` AND `  r@0` = r AND unique(`  r2@5`))",
+          None,
+          Set(("  c@1", "  c@4"), ("  d@3", "  d@6")),
+          Set(("  r2@2", "  r2@5")),
+          Set(("  b@8", "b"), ("  e@9", "e")),
+          Set(("  r@7", "  r@0")),
+          StatefulShortestPath.Selector.Shortest(1),
+          nfa,
+          ExpandAll
+        )
+        .filter("r.prop = 5", "to:B")
+        .expandAll("(from)-[r:R]->(to)")
+        .nodeByLabelScan("from", "User")
+        .build()
+    )
+  }
+
   test("should allow planning of shortest with multiple repeated interior node") {
     val query =
       "MATCH ANY SHORTEST (a:User) ((b)-[r]->(c))* (d) ((e)-[s]->(f))* (d) ((g)-[t]->(h))* (d) RETURN *"
@@ -714,7 +858,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     )
   }
 
-  test("should allow planning of shortest with exterior node") {
+  test("should allow planning of shortest with repeated exterior node") {
     val query =
       "MATCH ANY SHORTEST (a:User) ((b)-[r]->(c))* (a) RETURN *"
 
@@ -1009,7 +1153,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
   }
 
   test(
-    "should plan SHORTEST with predicate depending on no path variables as a filter before the statefulShortestPath"
+    "should plan SHORTEST with predicate depending on no variables as a filter before the statefulShortestPath"
   ) {
     val query = "MATCH ANY SHORTEST ((u:User)((n)-[r]->(m))+(v) WHERE $param) RETURN *"
 
@@ -1040,6 +1184,92 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         )
         .filter("CoerceToPredicate($param)")
         .nodeByLabelScan("u", "User")
+        .build()
+    )
+  }
+
+  test(
+    "should plan SHORTEST with predicate depending on arguments only as a filter before the statefulShortestPath"
+  ) {
+    val query =
+      """MATCH (arg)
+        |WITH DISTINCT arg 
+        |MATCH ANY SHORTEST ((u:User)((n)-[r]->(m))+(v) WHERE arg.prop > 5) 
+        |RETURN *
+        |""".stripMargin
+
+    val nfa = new TestNFABuilder(0, "u")
+      .addTransition(0, 1, "(u) (n)")
+      .addTransition(1, 2, "(n)-[r]->(m)")
+      .addTransition(2, 1, "(m) (n)")
+      .addTransition(2, 3, "(m) (v)")
+      .setFinalState(3)
+      .build()
+
+    val plan = planner.plan(query).stripProduceResults
+    plan should equal(
+      planner.subPlanBuilder()
+        .statefulShortestPath(
+          "u",
+          "v",
+          "SHORTEST 1 ((u) ((n)-[r]->(m)){1, } (v) WHERE unique(`r`))",
+          None,
+          groupNodes = Set(("n", "n"), ("m", "m")),
+          groupRelationships = Set(("r", "r")),
+          singletonNodeVariables = Set("v" -> "v"),
+          singletonRelationshipVariables = Set.empty,
+          StatefulShortestPath.Selector.Shortest(1),
+          nfa,
+          ExpandAll
+        )
+        .filter("cache[arg.prop] > 5")
+        .apply()
+        .|.nodeByLabelScan("u", "User", "arg")
+        .cacheProperties("cacheNFromStore[arg.prop]")
+        .allNodeScan("arg")
+        .build()
+    )
+  }
+
+  test(
+    "should plan SHORTEST with predicate depending on arguments and start node only as a filter before the statefulShortestPath"
+  ) {
+    val query =
+      """MATCH (arg) 
+        |WITH DISTINCT arg
+        |MATCH ANY SHORTEST ((u:User)((n)-[r]->(m))+(v) WHERE arg.prop > u.prop) 
+        |RETURN *
+        |""".stripMargin
+
+    val nfa = new TestNFABuilder(0, "u")
+      .addTransition(0, 1, "(u) (n)")
+      .addTransition(1, 2, "(n)-[r]->(m)")
+      .addTransition(2, 1, "(m) (n)")
+      .addTransition(2, 3, "(m) (v)")
+      .setFinalState(3)
+      .build()
+
+    val plan = planner.plan(query).stripProduceResults
+    plan should equal(
+      planner.subPlanBuilder()
+        .statefulShortestPath(
+          "u",
+          "v",
+          "SHORTEST 1 ((u) ((n)-[r]->(m)){1, } (v) WHERE unique(`r`))",
+          None,
+          groupNodes = Set(("n", "n"), ("m", "m")),
+          groupRelationships = Set(("r", "r")),
+          singletonNodeVariables = Set("v" -> "v"),
+          singletonRelationshipVariables = Set.empty,
+          StatefulShortestPath.Selector.Shortest(1),
+          nfa,
+          ExpandAll
+        )
+        .filter("cache[arg.prop] > u.prop")
+        .apply()
+        .|.nodeByLabelScan("u", "User", "arg")
+        .cacheProperties("cacheNFromStore[arg.prop]")
+        .allNodeScan("arg")
         .build()
     )
   }

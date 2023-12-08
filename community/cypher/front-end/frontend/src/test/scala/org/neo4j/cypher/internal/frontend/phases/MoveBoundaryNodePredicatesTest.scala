@@ -22,7 +22,9 @@ import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.flattenBooleanOpe
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 
-class MoveBoundaryNodePredicatesTest extends CypherFunSuite with RewritePhaseTest with TestName
+class MoveBoundaryNodePredicatesTest extends CypherFunSuite
+    with RewritePhaseTest
+    with TestName
     with AstConstructionTestSupport {
 
   override def rewriterPhaseUnderTest: Transformer[BaseContext, BaseState, BaseState] = MoveBoundaryNodePredicates
@@ -66,6 +68,20 @@ class MoveBoundaryNodePredicatesTest extends CypherFunSuite with RewritePhaseTes
 
   test("MATCH ANY SHORTEST ((start) (()-->())+ (end) WHERE $param) RETURN count(*) AS c") {
     assertRewritten(testName, "MATCH ANY SHORTEST ((start) (()-->())+ (end)) WHERE $param RETURN count(*) AS c")
+  }
+
+  test("MATCH ANY SHORTEST ((start) (()-->())+ (end) WHERE $param > start.prop) RETURN count(*) AS c") {
+    assertRewritten(
+      testName,
+      "MATCH ANY SHORTEST ((start) (()-->())+ (end)) WHERE $param > start.prop RETURN count(*) AS c"
+    )
+  }
+
+  test("MATCH (a) MATCH ANY SHORTEST ((start) (()-->())+ (end) WHERE a.prop > start.prop) RETURN count(*) AS c") {
+    assertRewritten(
+      testName,
+      "MATCH (a) MATCH ANY SHORTEST ((start) (()-->())+ (end)) WHERE a.prop > start.prop RETURN count(*) AS c"
+    )
   }
 
   test(

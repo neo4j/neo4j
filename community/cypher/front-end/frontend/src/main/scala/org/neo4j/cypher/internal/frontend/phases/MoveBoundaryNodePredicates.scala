@@ -42,7 +42,13 @@ import org.neo4j.cypher.internal.util.topDown
 
 import scala.collection.immutable.ListSet
 
-case object MoveBoundaryNodePredicates extends StatementRewriter with StepSequencer.Step with DefaultPostCondition
+/**
+ * Moves predicates from inside a PatternPartWithSelector into the surrounding Match clause,
+ * if the predicate only depends on arguments and boundary nodes.
+ */
+case object MoveBoundaryNodePredicates extends StatementRewriter
+    with StepSequencer.Step
+    with DefaultPostCondition
     with PlanPipelineTransformerFactory {
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
@@ -50,7 +56,9 @@ case object MoveBoundaryNodePredicates extends StatementRewriter with StepSequen
     AndRewrittenToAnds,
     QuantifiedPathPatternNodeInsertRewriter.completed,
     CopyQuantifiedPathPatternPredicatesToJuxtaposedNodes.completed,
-    unwrapParenthesizedPath.completed
+    unwrapParenthesizedPath.completed,
+    // This will potentially change the dependencies of some predicates
+    ShortestPathVariableDeduplicator.completed
   )
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
@@ -63,7 +71,10 @@ case object MoveBoundaryNodePredicates extends StatementRewriter with StepSequen
             case pp @ ParenthesizedPath(part, Some(where)) =>
               val element = part.element
               val boundaryNodes = PatternElement.boundaryNodes(element)
-              val (extractedPredicates, notExtractedPredicates) = extractPredicates(where, boundaryNodes)
+              val variablesInPattern = parts.flatMap(_.allVariables).toSet
+              val disallowedDependencies = variablesInPattern -- boundaryNodes
+
+              val (extractedPredicates, notExtractedPredicates) = extractPredicates(where, disallowedDependencies)
               val newElement = notExtractedPredicates match {
                 case Some(predicates) => pp.copy(optionalWhereClause = Some(predicates))(pp.position)
                 case None => part match {
@@ -86,21 +97,24 @@ case object MoveBoundaryNodePredicates extends StatementRewriter with StepSequen
   })
 
   /**
-   * Extract predicates from an expression that only depend on the given boundary nodes.
+   * Extract predicates from an expression that do not depend on any of the given pattern variables 
+   * (disallowedDependencies).
    *
    * @return a tuple of, first all extracted predicates as a ListSet, and then all not-extracted predicates, already combined into one Option[Expression].
    */
   private def extractPredicates(
     where: Expression,
-    boundaryNodes: Set[LogicalVariable]
+    disallowedDependencies: Set[LogicalVariable]
   ): (ListSet[Expression], Option[Expression]) = {
     where match {
       case Ands(innerPredicates) =>
-        val (extracted, notExtracted) = innerPredicates.partition(_.dependencies.subsetOf(boundaryNodes))
+        val (extracted, notExtracted) =
+          innerPredicates.partition(_.dependencies.intersect(disallowedDependencies).isEmpty)
         val notExtractedAnds = Option.when(notExtracted.nonEmpty)(Ands.create(ListSet.from(notExtracted)))
         (ListSet.from(extracted), notExtractedAnds)
-      case singlePredicate if singlePredicate.dependencies.subsetOf(boundaryNodes) => (ListSet(singlePredicate), None)
-      case _                                                                       => (ListSet.empty, Some(where))
+      case singlePredicate if singlePredicate.dependencies.intersect(disallowedDependencies).isEmpty =>
+        (ListSet(singlePredicate), None)
+      case _ => (ListSet.empty, Some(where))
     }
   }
 
