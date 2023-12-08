@@ -34,7 +34,7 @@ class ShortestPathVariableDeduplicatorTest extends CypherFunSuite
       // flattenBooleanOperators invalidates SemanticInformation
       SemanticAnalysis(false, semanticFeatures.head)
 
-  test("should rewrite interior nodes and leave exterior nodes") {
+  test("should rewrite repeated interior nodes and leave exterior nodes") {
     assertRewritten(
       "MATCH SHORTEST 1 (a)-->*(b)-->*(b)-->*(b)-->*(a) RETURN a",
       "MATCH SHORTEST 1 ((a)-->*(b)-->*(`  b@0`)-->*(`  b@1`)-->*(a) WHERE `  b@0` = b AND `  b@1` = b) RETURN a"
@@ -49,7 +49,7 @@ class ShortestPathVariableDeduplicatorTest extends CypherFunSuite
     )
   }
 
-  ignore("should rewrite interior repeated relationship under REPEATED ELEMENTS MATCH mode") {
+  ignore("should rewrite repeated interior relationship under REPEATED ELEMENTS MATCH mode") {
     assertRewritten(
       "MATCH REPEATABLE ELEMENTS ANY SHORTEST ((d)-[b]->(e)-[b]->(f)) RETURN b",
       "MATCH REPEATABLE ELEMENTS ANY SHORTEST ((d)-[b]->(e)-[`  b@0`]->(f) WHERE `  b@0` = b) RETURN b"
@@ -101,6 +101,45 @@ class ShortestPathVariableDeduplicatorTest extends CypherFunSuite
       "MATCH (b) WHERE EXISTS { SHORTEST 1 (a)-->+(b)-->+(c) } RETURN b",
       "MATCH (b) WHERE EXISTS { SHORTEST 1 ((a)-->+(`  b@0`)-->+(c) WHERE `  b@0` = b) } RETURN b"
     )
+  }
+
+  test("should rewrite relationships bound in previous clauses") {
+    // We have to use AST for the expected assertion in here,
+    // since the preparatory phase generated uniqueness predicates (for both original and expected),
+    // but the rewriter does actually not rewrite those.
+
+    assertRewritten(
+      "MATCH ()-[r]->() MATCH ANY SHORTEST (()-[r]->()-[*]->()) RETURN r",
+      // "MATCH ()-[r]->() MATCH ANY SHORTEST (()-[`  r@0`]->()-[*]->() WHERE `  r@0` = r) RETURN r"
+      singleQuery(
+        match_(
+          relationshipChain(
+            nodePat(Some("  UNNAMED0")),
+            relPat(Some("r")),
+            nodePat(Some("  UNNAMED1"))
+          )
+        ),
+        match_shortest(
+          anyShortestPathSelector(1),
+          parenthesizedPath(
+            relationshipChain(
+              nodePat(Some("  UNNAMED2")),
+              relPat(Some("  r@0")),
+              nodePat(Some("  UNNAMED3")),
+              relPat(Some("  UNNAMED4"), length = Some(None)),
+              nodePat(Some("  UNNAMED5"))
+            ),
+            Some(ands(
+              equals(varFor("  r@0"), varFor("r")),
+              noneOfRels(varFor("r"), varFor("  UNNAMED4")),
+              unique(varFor("  UNNAMED4")),
+              varLengthLowerLimitPredicate("  UNNAMED4", 1)
+            ))
+          )
+        ),
+        return_(aliasedReturnItem(varFor("r")))
+      )
+    )
     assertRewritten(
       "MATCH (a)-[b*]->(c:User) MATCH ANY SHORTEST ((d)-[b*]->(e)-->(f)) RETURN b",
       // MATCH (a)-[b*]->(c:User) MATCH ANY SHORTEST ((d)-[`  b@0`*]->(e)-->(f) WHERE `  b@0` = b) RETURN b
@@ -121,7 +160,8 @@ class ShortestPathVariableDeduplicatorTest extends CypherFunSuite
             ),
             Some(ands(
               equals(varFor("  b@0"), varFor("b")),
-              // these were not rewritten, but that does not matter
+              // these were not rewritten, which creates a suboptimal plan.
+              // But we accept that.
               noneOfRels(varFor("  UNNAMED0"), varFor("b")),
               unique(varFor("b")),
               varLengthLowerLimitPredicate("b", 1)
@@ -160,7 +200,8 @@ class ShortestPathVariableDeduplicatorTest extends CypherFunSuite
             ),
             Some(ands(
               equals(varFor("  b@0"), varFor("b")),
-              // these were not rewritten, but that does not matter
+              // these were not rewritten, which creates a suboptimal plan.
+              // But we accept that.
               noneOfRels(varFor("  UNNAMED0"), varFor("b")),
               unique(varFor("b")),
               varLengthLowerLimitPredicate("b", 2),
@@ -173,7 +214,7 @@ class ShortestPathVariableDeduplicatorTest extends CypherFunSuite
     )
     assertRewritten(
       "MATCH (a)-[b*1..3]->(c:User) MATCH ANY SHORTEST ((d)-[b*2..4]->(e)-->(f)) WHERE size(b) < 5 RETURN b",
-      // MATCH (a)-[b*1..3]->(c:User) MATCH ANY SHORTEST ((d)-[`  b@0`*2..4]->(e)-->(f) WHERE `  b@0` = b) WHERE size(`  b@0`) < 5  RETURN b
+      // MATCH (a)-[b*1..3]->(c:User) MATCH ANY SHORTEST ((d)-[`  b@0`*2..4]->(e)-->(f) WHERE `  b@0` = b) WHERE size(b) < 5  RETURN b
       singleQuery(
         match_(
           relationshipChain(
@@ -200,7 +241,8 @@ class ShortestPathVariableDeduplicatorTest extends CypherFunSuite
             ),
             Some(ands(
               equals(varFor("  b@0"), varFor("b")),
-              // these were not rewritten, but that does not matter
+              // these were not rewritten, which creates a suboptimal plan.
+              // But we accept that.
               noneOfRels(varFor("  UNNAMED0"), varFor("b")),
               unique(varFor("b")),
               varLengthLowerLimitPredicate("b", 2),
@@ -208,7 +250,6 @@ class ShortestPathVariableDeduplicatorTest extends CypherFunSuite
             ))
           ),
           where = Some(where(
-            // this was not rewritten, but that does not matter
             lessThan(size(varFor("b")), literalInt(5))
           ))
         ),
@@ -222,7 +263,7 @@ class ShortestPathVariableDeduplicatorTest extends CypherFunSuite
     assertNotRewritten("MATCH (n)--()((m)--(m))+()--(n) RETURN *")
   }
 
-  test("should not rewrite exterior nodes") {
+  test("should not rewrite repeated exterior nodes") {
     assertNotRewritten("MATCH SHORTEST 1 (n)--(m)--(o)--(n) RETURN *")
   }
 }

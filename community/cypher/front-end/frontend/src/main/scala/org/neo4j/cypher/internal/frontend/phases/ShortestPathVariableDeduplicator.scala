@@ -47,7 +47,6 @@ import scala.collection.mutable
 
 /**
  * Rename interior variables in a shortest path pattern.
- * TODO add tests for relationships
  */
 case object ShortestPathVariableDeduplicator extends Phase[BaseContext, BaseState, BaseState]
     with StepSequencer.Step
