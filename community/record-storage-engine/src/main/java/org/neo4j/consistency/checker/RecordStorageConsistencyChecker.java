@@ -95,8 +95,6 @@ import org.neo4j.token.api.TokenHolder;
  * designed to try to maximize both CPU and I/O to its full extent, or rather at least maxing out one of them.
  */
 public class RecordStorageConsistencyChecker implements AutoCloseable {
-    private static final String ID_GEN_CONSISTENCY_CHECKER_TAG = "idGeneratorConsistencyChecker";
-    private static final String INDEX_STRUCTURE_CONSISTENCY_CHECKER_TAG = "indexStructureConsistencyChecker";
     private static final String COUNT_STORE_CONSISTENCY_CHECKER_TAG = "countStoreConsistencyChecker";
     private static final String SCHEMA_CONSISTENCY_CHECKER_TAG = "schemaConsistencyChecker";
     private static final String CONSISTENCY_CHECKER_TOKEN_LOADER_TAG = "consistencyCheckerTokenLoader";
@@ -318,13 +316,10 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
         List<IdGenerator> idGenerators = new ArrayList<>();
         idGeneratorFactory.visit(idGenerators::add);
 
-        try (var cursorContext = contextFactory.create(ID_GEN_CONSISTENCY_CHECKER_TAG)) {
-            ProgressListener progressListener =
-                    progressFactory.singlePart("ID Generator consistency check", idGenerators.size());
-
-            for (IdGenerator idGenerator : idGenerators) {
-                consistencyCheckSingleCheckable(report, progressListener, idGenerator, RecordType.ID_STORE);
-            }
+        ProgressListener progressListener =
+                progressFactory.singlePart("ID Generator consistency check", idGenerators.size());
+        for (IdGenerator idGenerator : idGenerators) {
+            consistencyCheckSingleCheckable(report, progressListener, idGenerator, RecordType.ID_STORE);
         }
     }
 
@@ -333,41 +328,38 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
             return;
         }
 
-        try (var cursorContext = contextFactory.create(INDEX_STRUCTURE_CONSISTENCY_CHECKER_TAG)) {
-            ProgressListener progressListener = progressFactory.singlePart(
-                    "Index structure consistency check",
-                    indexAccessors.onlineRules().size()
-                            + ((indexAccessors.nodeLabelIndex() != null) ? 1 : 0)
-                            + ((indexAccessors.relationshipTypeIndex() != null) ? 1 : 0));
+        ProgressListener progressListener = progressFactory.singlePart(
+                "Index structure consistency check",
+                indexAccessors.onlineRules().size()
+                        + ((indexAccessors.nodeLabelIndex() != null) ? 1 : 0)
+                        + ((indexAccessors.relationshipTypeIndex() != null) ? 1 : 0));
 
-            if (indexAccessors.nodeLabelIndex() != null) {
-                consistencyCheckSingleCheckable(
-                        report, progressListener, indexAccessors.nodeLabelIndex(), RecordType.LABEL_SCAN_DOCUMENT);
-            }
-            if (indexAccessors.relationshipTypeIndex() != null) {
-                consistencyCheckSingleCheckable(
-                        report,
-                        progressListener,
-                        indexAccessors.relationshipTypeIndex(),
-                        RecordType.RELATIONSHIP_TYPE_SCAN_DOCUMENT);
-            }
+        if (indexAccessors.nodeLabelIndex() != null) {
+            consistencyCheckSingleCheckable(
+                    report, progressListener, indexAccessors.nodeLabelIndex(), RecordType.LABEL_SCAN_DOCUMENT);
+        }
+        if (indexAccessors.relationshipTypeIndex() != null) {
+            consistencyCheckSingleCheckable(
+                    report,
+                    progressListener,
+                    indexAccessors.relationshipTypeIndex(),
+                    RecordType.RELATIONSHIP_TYPE_SCAN_DOCUMENT);
+        }
 
-            List<IndexDescriptor> rulesToRemove = new ArrayList<>();
-            for (IndexDescriptor onlineRule : indexAccessors.onlineRules()) {
-                ConsistencyReporter.FormattingDocumentedHandler handler =
-                        ConsistencyReporter.formattingHandler(report, RecordType.INDEX);
-                ReporterFactory reporterFactory = new ReporterFactory(handler);
-                IndexAccessor accessor = indexAccessors.accessorFor(onlineRule);
-                if (!accessor.consistencyCheck(
-                        reporterFactory, contextFactory, context.execution.getNumberOfThreads())) {
-                    rulesToRemove.add(onlineRule);
-                }
-                handler.updateSummary();
-                progressListener.add(1);
+        List<IndexDescriptor> rulesToRemove = new ArrayList<>();
+        for (IndexDescriptor onlineRule : indexAccessors.onlineRules()) {
+            ConsistencyReporter.FormattingDocumentedHandler handler =
+                    ConsistencyReporter.formattingHandler(report, RecordType.INDEX);
+            ReporterFactory reporterFactory = new ReporterFactory(handler);
+            IndexAccessor accessor = indexAccessors.accessorFor(onlineRule);
+            if (!accessor.consistencyCheck(reporterFactory, contextFactory, context.execution.getNumberOfThreads())) {
+                rulesToRemove.add(onlineRule);
             }
-            for (IndexDescriptor toRemove : rulesToRemove) {
-                indexAccessors.remove(toRemove);
-            }
+            handler.updateSummary();
+            progressListener.add(1);
+        }
+        for (IndexDescriptor toRemove : rulesToRemove) {
+            indexAccessors.remove(toRemove);
         }
     }
 
