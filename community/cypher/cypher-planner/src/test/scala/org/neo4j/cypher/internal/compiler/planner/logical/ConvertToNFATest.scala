@@ -31,10 +31,12 @@ import org.neo4j.cypher.internal.ir.SelectivePathPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.logical.builder.TestNFABuilder
+import org.neo4j.cypher.internal.logical.plans.CoerceToPredicate
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.Repetition
 import org.neo4j.cypher.internal.util.UpperBound
+import org.neo4j.cypher.internal.util.symbols.CTBoolean
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.InternalException
 
@@ -388,6 +390,75 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
       expectedNfa,
       Selections.empty,
       Map.empty
+    ))
+  }
+
+  test("create NFA with predicates that do not depend on path variables") {
+    val qpp = QuantifiedPathPattern(
+      leftBinding = NodeBinding(v"a", v"start"),
+      rightBinding = NodeBinding(v"b", v"c"),
+      patternRelationships = NonEmptyList(PatternRelationship(
+        variable = v"r",
+        boundaryNodes = (v"a", v"b"),
+        dir = SemanticDirection.OUTGOING,
+        types = Seq.empty,
+        length = SimplePatternLength
+      )),
+      argumentIds = Set.empty,
+      selections = Selections.empty,
+      repetition = Repetition(1, UpperBound.Unlimited),
+      nodeVariableGroupings = Set(v"a", v"b").map(name => variableGrouping(name, name)),
+      relationshipVariableGroupings = Set(variableGrouping(v"r", v"r"))
+    )
+    val rel = PatternRelationship(
+      variable = v"r2",
+      boundaryNodes = (v"c", v"d"),
+      dir = SemanticDirection.INCOMING,
+      types = Seq.empty,
+      length = SimplePatternLength
+    )
+    val varRel =
+      PatternRelationship(
+        v"r3",
+        (v"d", v"end"),
+        SemanticDirection.OUTGOING,
+        Seq(relTypeName("R")),
+        VarPatternLength(0, None)
+      )
+    val spp =
+      SelectivePathPattern(
+        pathPattern =
+          ExhaustivePathPattern.NodeConnections(NonEmptyList(qpp, rel, varRel)),
+        selections = Selections.from(
+          CoerceToPredicate(parameter("param", CTBoolean))
+        ),
+        selector = SelectivePathPattern.Selector.ShortestGroups(1)
+      )
+
+    val expectedNfa = new TestNFABuilder(0, "start")
+      .addTransition(0, 1, "(start) (a)")
+      .addTransition(1, 2, "(a)-[r]->(b)")
+      .addTransition(2, 1, "(b) (a)")
+      .addTransition(2, 3, "(b) (c)")
+      .addTransition(3, 4, "(c)<-[r2]-(d)")
+      .addTransition(4, 5, "(d) (`  UNNAMED1`)")
+      .addTransition(5, 6, "(`  UNNAMED1`) (end)")
+      .addTransition(5, 5, "(`  UNNAMED1`)-[`  r3@0`:R]->(`  UNNAMED1`)")
+      .setFinalState(6)
+      .build()
+
+    ConvertToNFA.convertToNfa(
+      spp,
+      fromLeft = true,
+      Set(),
+      Seq(),
+      new AnonymousVariableNameGenerator
+    ) should equal((
+      expectedNfa,
+      Selections.from(
+        CoerceToPredicate(parameter("param", CTBoolean))
+      ),
+      Map("r3" -> "  r3@0")
     ))
   }
 

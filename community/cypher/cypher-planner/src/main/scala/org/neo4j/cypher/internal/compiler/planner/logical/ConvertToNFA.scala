@@ -119,14 +119,26 @@ object ConvertToNFA {
       case _                                  => true
     })
 
-    def getPredicates(entityNames: Set[String]) = {
-      selectionsWithoutUniquenessPredicates.predicatesGiven((availableSymbols ++ entityNames).map(varFor))
+    /**
+     * Return the top level predicates that only depend on availableSymbols and entity names, but also use
+     * at least one entityName.
+     */
+    def getTopLevelPredicates(entityNames: Set[String]): ListSet[Expression] =
+      getPredicates(selectionsWithoutUniquenessPredicates, entityNames)
+
+    /**
+     * Return the subset of the given predicates that only depend on availableSymbols and entity names, but also use
+     * at least one entityName.
+     */
+    def getPredicates(selections: Selections, entityNames: Set[String]): ListSet[Expression] = {
+      selections.predicatesGiven((availableSymbols ++ entityNames).map(varFor))
         .filterNot(_.isInstanceOf[IRExpression])
         .to(ListSet)
+        .filter(p => (p.dependencies.map(_.name) intersect entityNames).nonEmpty)
     }
 
-    def getVariablePredicates(entityName: String) = {
-      val entityPredicates = getPredicates(Set(entityName))
+    def getVariablePredicates(entityName: String): (ListSet[Expression], Option[VariablePredicate]) = {
+      val entityPredicates = getTopLevelPredicates(Set(entityName))
       val entityVariablePredicates = toVariablePredicates(entityName, entityPredicates)
       (entityPredicates, entityVariablePredicates)
     }
@@ -168,7 +180,7 @@ object ConvertToNFA {
           Ands.create(inequalities.map(rewrite).toListSet)
       }))
 
-      val allPredicatesGiven = getPredicates(Set(
+      val allPredicatesGiven = getTopLevelPredicates(Set(
         sourceVariable.name,
         relationshipVariable.name,
         targetVariable.name
@@ -197,8 +209,8 @@ object ConvertToNFA {
           val relationshipVariable = varFor(relationshipName)
           val targetName = targetState.variable.name
 
-          val relPredicates = getPredicates(Set(relationshipName))
-          val nodePredicates = getPredicates(Set(targetName))
+          val relPredicates = getTopLevelPredicates(Set(relationshipName))
+          val nodePredicates = getTopLevelPredicates(Set(targetName))
 
           val extraRelPredicates = getExtraRelationshipPredicates(
             dir,
@@ -370,7 +382,7 @@ object ConvertToNFA {
             // var because it will get overwritten if the lower bound is > 1
             var lastSourceInnerState = builder.addAndGetState(sourceInner)
             val predicatesOnSourceInner =
-              qppSelections.predicatesGiven((availableSymbols + sourceInner.name).map(varFor))
+              getPredicates(qppSelections, availableSymbols + sourceInner.name)
             val variablePredicateOnSourceInner =
               toVariablePredicates(sourceInner.name, predicatesOnSourceInner.to(ListSet))
             builder.addTransition(
@@ -440,8 +452,8 @@ object ConvertToNFA {
             val targetBinding = if (fromLeft) rightBinding else leftBinding
             val targetOuter = targetBinding.outer
             val targetOuterState = builder.addAndGetState(targetOuter)
-            val predicatesOnTargetOuter = getPredicates(Set(targetOuter.name))
-              .filter(_.dependencies.exists(_.name == targetOuter.name))
+            val predicatesOnTargetOuter = getTopLevelPredicates(Set(targetOuter.name))
+
             val variablePredicateOnTargetOuter =
               toVariablePredicates(targetOuter.name, predicatesOnTargetOuter.to(ListSet))
             exitableTargetInnerStates.foreach { targetInnerState =>
