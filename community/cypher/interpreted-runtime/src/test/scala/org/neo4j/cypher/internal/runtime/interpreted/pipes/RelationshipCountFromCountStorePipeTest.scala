@@ -44,9 +44,8 @@ class RelationshipCountFromCountStorePipeTest extends CypherFunSuite with Implic
   }
 
   test("should return a count for relationships with a type but no labels") {
-    implicit val table = new SemanticTable(
-      resolvedRelTypeNames = Map("X" -> RelTypeId(22))
-    )
+    implicit val table = new SemanticTable()
+    table.resolvedRelTypeNames.put("X", RelTypeId(22))
 
     val pipe =
       RelationshipCountFromCountStorePipe("count(r)", None, RelationshipTypes(Array(RelTypeName("X")(pos))), None)()
@@ -58,10 +57,9 @@ class RelationshipCountFromCountStorePipeTest extends CypherFunSuite with Implic
   }
 
   test("should return a count for relationships with a type and start label") {
-    implicit val table = new SemanticTable(
-      resolvedRelTypeNames = Map("X" -> RelTypeId(22)),
-      resolvedLabelNames = Map("A" -> LabelId(12))
-    )
+    implicit val table = new SemanticTable()
+    table.resolvedRelTypeNames.put("X", RelTypeId(22))
+    table.resolvedLabelNames.put("A", LabelId(12))
 
     val pipe = RelationshipCountFromCountStorePipe(
       "count(r)",

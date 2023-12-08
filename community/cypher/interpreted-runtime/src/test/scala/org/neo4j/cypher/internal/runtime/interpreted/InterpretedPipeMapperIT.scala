@@ -77,13 +77,15 @@ import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values.intValue
 
+import scala.collection.mutable
+
 class InterpretedPipeMapperIT extends CypherFunSuite with AstConstructionTestSupport {
   implicit private val idGen: SequentialIdGen = new SequentialIdGen()
 
   private val planContext: PlanContext = mock[PlanContext]
 
   private val semanticTable = new SemanticTable(resolvedRelTypeNames =
-    Map("existing1" -> RelTypeId(1), "existing2" -> RelTypeId(2), "existing3" -> RelTypeId(3))
+    mutable.Map("existing1" -> RelTypeId(1), "existing2" -> RelTypeId(2), "existing3" -> RelTypeId(3))
   )
 
   private val converters =

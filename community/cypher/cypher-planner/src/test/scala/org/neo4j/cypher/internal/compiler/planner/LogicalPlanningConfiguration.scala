@@ -118,17 +118,15 @@ trait LogicalPlanningConfigurationAdHocSemanticTable {
   }
 
   override def updateSemanticTableWithTokens(table: SemanticTable): SemanticTable = {
-    var theTable = table
-
-    def addLabelIfUnknown(labelName: String): Unit =
-      if (!theTable.resolvedLabelNames.contains(labelName))
-        theTable = theTable.addResolvedLabelName(labelName, LabelId(theTable.resolvedLabelNames.size))
-    def addPropertyKeyIfUnknown(property: String): Unit =
-      if (!theTable.resolvedPropertyKeyNames.contains(property))
-        theTable = theTable.addResolvedPropertyKeyName(property, PropertyKeyId(theTable.resolvedPropertyKeyNames.size))
-    def addRelationshipTypeIfUnknown(relationType: String): Unit =
-      if (!theTable.resolvedRelTypeNames.contains(relationType)) {
-        theTable = theTable.addResolvedRelTypeName(relationType, RelTypeId(theTable.resolvedRelTypeNames.size))
+    def addLabelIfUnknown(labelName: String) =
+      if (!table.resolvedLabelNames.contains(labelName))
+        table.resolvedLabelNames.put(labelName, LabelId(table.resolvedLabelNames.size))
+    def addPropertyKeyIfUnknown(property: String) =
+      if (!table.resolvedPropertyKeyNames.contains(property))
+        table.resolvedPropertyKeyNames.put(property, PropertyKeyId(table.resolvedPropertyKeyNames.size))
+    def addRelationshipTypeIfUnknown(relationType: String) =
+      if (!table.resolvedRelTypeNames.contains(relationType)) {
+        table.resolvedRelTypeNames.put(relationType, RelTypeId(table.resolvedRelTypeNames.size))
       }
     indexes.keys.foreach {
       case IndexDef(IndexDefinition.EntityType.Node(label), properties, _) =>
@@ -143,6 +141,7 @@ trait LogicalPlanningConfigurationAdHocSemanticTable {
     knownLabels.foreach(addLabelIfUnknown)
     knownRelationships.foreach(addRelationshipTypeIfUnknown)
 
+    var theTable = table
     for ((expr, typ) <- mappings) {
       theTable = theTable.copy(types = theTable.types + ((expr, ExpressionTypeInfo(typ, None))))
     }

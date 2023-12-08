@@ -117,6 +117,8 @@ import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.internal.schema.constraints.SchemaValueType
 
+import scala.collection.mutable
+
 trait LogicalPlanningTestSupport extends AstConstructionTestSupport with LogicalPlanConstructionTestSupport {
   self: CypherFunSuite =>
 
@@ -203,9 +205,9 @@ trait LogicalPlanningTestSupport extends AstConstructionTestSupport with Logical
 
   def newMockedSemanticTable: SemanticTable = {
     val m = mock[SemanticTable]
-    when(m.resolvedLabelNames).thenReturn(Map.empty[String, LabelId])
-    when(m.resolvedPropertyKeyNames).thenReturn(Map.empty[String, PropertyKeyId])
-    when(m.resolvedRelTypeNames).thenReturn(Map.empty[String, RelTypeId])
+    when(m.resolvedLabelNames).thenReturn(mutable.Map.empty[String, LabelId])
+    when(m.resolvedPropertyKeyNames).thenReturn(mutable.Map.empty[String, PropertyKeyId])
+    when(m.resolvedRelTypeNames).thenReturn(mutable.Map.empty[String, RelTypeId])
     when(m.id(any[PropertyKeyName]())).thenReturn(None)
     when(m.id(any[LabelName])).thenReturn(None)
     when(m.id(any[RelTypeName])).thenReturn(None)

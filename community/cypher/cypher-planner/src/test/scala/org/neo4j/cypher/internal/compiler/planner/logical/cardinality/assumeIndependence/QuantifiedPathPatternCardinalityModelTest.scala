@@ -44,6 +44,8 @@ import org.neo4j.cypher.internal.util.Repetition
 import org.neo4j.cypher.internal.util.UpperBound
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
+import scala.collection.mutable
+
 class QuantifiedPathPatternCardinalityModelTest extends CypherFunSuite with QuantifiedPathPatternCardinalityModel
     with AstConstructionTestSupport {
 
@@ -71,8 +73,8 @@ class QuantifiedPathPatternCardinalityModelTest extends CypherFunSuite with Quan
 
     val semanticTable =
       new SemanticTable(
-        resolvedLabelNames = Map("A" -> LabelId(0), "B" -> LabelId(1)),
-        resolvedRelTypeNames = Map("R" -> RelTypeId(0))
+        resolvedLabelNames = mutable.Map("A" -> LabelId(0), "B" -> LabelId(1)),
+        resolvedRelTypeNames = mutable.Map("R" -> RelTypeId(0))
       )
 
     val context = QueryGraphCardinalityContext(

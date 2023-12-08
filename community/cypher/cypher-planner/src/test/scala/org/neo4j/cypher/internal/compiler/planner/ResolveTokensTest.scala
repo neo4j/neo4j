@@ -58,11 +58,11 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 class ResolveTokensTest extends CypherFunSuite {
 
   parseTest("match (n) where n.name = 'Resolved' return *") { query =>
-    var semanticTable = SemanticTable()
+    implicit val semanticTable = SemanticTable()
     val planContext = mock[PlanContext]
     when(planContext.getOptPropertyKeyId("name")).thenReturn(Some(12))
 
-    semanticTable = ResolveTokens.resolve(query, semanticTable)(planContext)
+    ResolveTokens.resolve(query)(semanticTable, planContext)
 
     query match {
       case SingleQuery(Seq(
@@ -82,11 +82,11 @@ class ResolveTokensTest extends CypherFunSuite {
   }
 
   parseTest("match (n) where n.name = 'Unresolved' return *") { query =>
-    var semanticTable = SemanticTable()
+    implicit val semanticTable = SemanticTable()
     val planContext = mock[PlanContext]
     when(planContext.getOptPropertyKeyId("name")).thenReturn(None)
 
-    semanticTable = ResolveTokens.resolve(query, semanticTable)(planContext)
+    ResolveTokens.resolve(query)(semanticTable, planContext)
 
     query match {
       case SingleQuery(Seq(
@@ -106,11 +106,11 @@ class ResolveTokensTest extends CypherFunSuite {
   }
 
   parseTest("match (n) where n:Resolved return *") { query =>
-    var semanticTable = SemanticTable()
+    implicit val semanticTable = SemanticTable()
     val planContext = mock[PlanContext]
     when(planContext.getOptLabelId("Resolved")).thenReturn(Some(12))
 
-    semanticTable = ResolveTokens.resolve(query, semanticTable)(planContext)
+    ResolveTokens.resolve(query)(semanticTable, planContext)
 
     query match {
       case SingleQuery(Seq(
@@ -130,11 +130,11 @@ class ResolveTokensTest extends CypherFunSuite {
   }
 
   parseTest("match (n) where n:Unresolved return *") { query =>
-    var semanticTable = SemanticTable()
+    implicit val semanticTable = SemanticTable()
     val planContext = mock[PlanContext]
     when(planContext.getOptLabelId("Unresolved")).thenReturn(None)
 
-    semanticTable = ResolveTokens.resolve(query, semanticTable)(planContext)
+    ResolveTokens.resolve(query)(semanticTable, planContext)
 
     query match {
       case SingleQuery(Seq(
@@ -154,11 +154,11 @@ class ResolveTokensTest extends CypherFunSuite {
   }
 
   parseTest("match ()-[:RESOLVED]->() return *") { query =>
-    var semanticTable = SemanticTable()
+    implicit val semanticTable = SemanticTable()
     val planContext = mock[PlanContext]
     when(planContext.getOptRelTypeId("RESOLVED")).thenReturn(Some(12))
 
-    semanticTable = ResolveTokens.resolve(query, semanticTable)(planContext)
+    ResolveTokens.resolve(query)(semanticTable, planContext)
 
     query match {
       case SingleQuery(Seq(
@@ -191,11 +191,11 @@ class ResolveTokensTest extends CypherFunSuite {
   }
 
   parseTest("match ()-[:UNRESOLVED]->() return *") { query =>
-    var semanticTable = SemanticTable()
+    implicit val semanticTable = SemanticTable()
     val planContext = mock[PlanContext]
     when(planContext.getOptRelTypeId("UNRESOLVED")).thenReturn(None)
 
-    semanticTable = ResolveTokens.resolve(query, semanticTable)(planContext)
+    ResolveTokens.resolve(query)(semanticTable, planContext)
 
     query match {
       case SingleQuery(Seq(

@@ -33,9 +33,8 @@ import org.neo4j.values.storable.Values.longValue
 class NodeCountFromCountStorePipeTest extends CypherFunSuite with ImplicitDummyPos {
 
   test("should return a count for nodes with a label") {
-    implicit val table = new SemanticTable(
-      resolvedLabelNames = Map("A" -> LabelId(12))
-    )
+    implicit val table = new SemanticTable()
+    table.resolvedLabelNames.put("A", LabelId(12))
 
     val pipe = NodeCountFromCountStorePipe("count(n)", List(Some(LazyLabel(LabelName("A") _))))()
 

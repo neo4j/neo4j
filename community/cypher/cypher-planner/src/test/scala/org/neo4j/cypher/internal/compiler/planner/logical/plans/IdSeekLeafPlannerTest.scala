@@ -375,12 +375,10 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     val relTypeX = RelTypeName("X")(pos)
 
     val semanticTable =
-      new SemanticTable(
-        ASTAnnotationMap(
-          varFor("r") -> ExpressionTypeInfo(symbols.CTRelationship)
-        ),
-        resolvedRelTypeNames = Map("X" -> RelTypeId(1))
-      )
+      new SemanticTable(ASTAnnotationMap(
+        varFor("r") -> ExpressionTypeInfo(symbols.CTRelationship)
+      ))
+    semanticTable.resolvedRelTypeNames += "X" -> RelTypeId(1)
 
     val patternRel = PatternRelationship(
       v"r",
@@ -445,15 +443,11 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     val relTypeY = RelTypeName("Y") _
 
     val semanticTable =
-      new SemanticTable(
-        ASTAnnotationMap(
-          varFor("r") -> ExpressionTypeInfo(symbols.CTRelationship)
-        ),
-        resolvedRelTypeNames = Map(
-          "X" -> RelTypeId(1),
-          "Y" -> RelTypeId(2)
-        )
-      )
+      new SemanticTable(ASTAnnotationMap(
+        varFor("r") -> ExpressionTypeInfo(symbols.CTRelationship)
+      ))
+    semanticTable.resolvedRelTypeNames += "X" -> RelTypeId(1)
+    semanticTable.resolvedRelTypeNames += "Y" -> RelTypeId(2)
 
     val patternRel = PatternRelationship(
       v"r",

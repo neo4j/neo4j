@@ -46,6 +46,15 @@ class SemanticTableTest extends CypherFunSuite with AstConstructionTestSupport {
     table.typeFor("r").is(CTNode) should be(false)
   }
 
+  test("doesn't share mutable references after being copied") {
+    val table1 = SemanticTable()
+    val table2 = table1.copy()
+
+    (table1.resolvedLabelNames eq table2.resolvedLabelNames) should be(false)
+    (table1.resolvedPropertyKeyNames eq table2.resolvedPropertyKeyNames) should be(false)
+    (table1.resolvedRelTypeNames eq table2.resolvedRelTypeNames) should be(false)
+  }
+
   test("should be able to tell the type of an variable") {
     val table = SemanticTable().addNode(varFor("a", position123)).addRelationship(varFor("b", position123))
 

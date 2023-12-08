@@ -36,7 +36,15 @@ import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.symbols.TypeSpec
 
+import scala.collection.mutable
+
 object SemanticTable {
+
+  def apply(
+    types: ASTAnnotationMap[Expression, ExpressionTypeInfo] = ASTAnnotationMap.empty,
+    recordedScopes: ASTAnnotationMap[ASTNode, Scope] = ASTAnnotationMap.empty
+  ) =
+    new SemanticTable(types, recordedScopes)
 
   /**
    * Provides convenience functions for some optionally missing type information.
@@ -65,13 +73,13 @@ object SemanticTable {
   }
 }
 
-case class SemanticTable(
-  types: ASTAnnotationMap[Expression, ExpressionTypeInfo] = ASTAnnotationMap.empty,
-  recordedScopes: ASTAnnotationMap[ASTNode, Scope] = ASTAnnotationMap.empty,
-  resolvedLabelNames: Map[String, LabelId] = Map.empty,
-  resolvedPropertyKeyNames: Map[String, PropertyKeyId] = Map.empty,
-  resolvedRelTypeNames: Map[String, RelTypeId] = Map.empty
-) {
+class SemanticTable(
+  val types: ASTAnnotationMap[Expression, ExpressionTypeInfo] = ASTAnnotationMap.empty,
+  val recordedScopes: ASTAnnotationMap[ASTNode, Scope] = ASTAnnotationMap.empty,
+  val resolvedLabelNames: mutable.Map[String, LabelId] = new mutable.HashMap[String, LabelId],
+  val resolvedPropertyKeyNames: mutable.Map[String, PropertyKeyId] = new mutable.HashMap[String, PropertyKeyId],
+  val resolvedRelTypeNames: mutable.Map[String, RelTypeId] = new mutable.HashMap[String, RelTypeId]
+) extends Cloneable {
 
   def id(labelName: LabelName): Option[LabelId] = resolvedLabelNames.get(labelName.name)
 
@@ -128,15 +136,20 @@ case class SemanticTable(
     copy(types = types.replaceKeys(replacements: _*), recordedScopes = recordedScopes.replaceKeys(replacements: _*))
   }
 
-  def addResolvedLabelName(name: String, labelId: LabelId): SemanticTable =
-    copy(resolvedLabelNames = resolvedLabelNames + (name -> labelId))
+  override def clone(): SemanticTable = copy()
 
-  def addResolvedLabelNames(names: IterableOnce[(String, LabelId)]): SemanticTable =
-    copy(resolvedLabelNames = resolvedLabelNames ++ names)
-
-  def addResolvedRelTypeName(name: String, relTypeId: RelTypeId): SemanticTable =
-    copy(resolvedRelTypeNames = resolvedRelTypeNames + (name -> relTypeId))
-
-  def addResolvedPropertyKeyName(name: String, propertyKeyId: PropertyKeyId): SemanticTable =
-    copy(resolvedPropertyKeyNames = resolvedPropertyKeyNames + (name -> propertyKeyId))
+  def copy(
+    types: ASTAnnotationMap[Expression, ExpressionTypeInfo] = types,
+    recordedScopes: ASTAnnotationMap[ASTNode, Scope] = recordedScopes,
+    resolvedLabelIds: mutable.Map[String, LabelId] = resolvedLabelNames,
+    resolvedPropertyKeyNames: mutable.Map[String, PropertyKeyId] = resolvedPropertyKeyNames,
+    resolvedRelTypeNames: mutable.Map[String, RelTypeId] = resolvedRelTypeNames
+  ) =
+    new SemanticTable(
+      types,
+      recordedScopes,
+      resolvedLabelIds.clone(),
+      resolvedPropertyKeyNames.clone(),
+      resolvedRelTypeNames.clone()
+    )
 }
