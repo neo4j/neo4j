@@ -93,7 +93,7 @@ class BuiltInDbmsProceduresIT extends KernelIntegrationTest {
             stringValue(TRUE),
             stringValue(TRUE),
             Values.FALSE,
-            stringValue("a boolean")
+            stringValue("A boolean.")
         });
     }
 
@@ -129,7 +129,7 @@ class BuiltInDbmsProceduresIT extends KernelIntegrationTest {
             stringValue("0s"),
             stringValue("0s"),
             Values.FALSE,
-            stringValue("a duration (Valid units are: `ns`, `μs`, `ms`, `s`, `m`, `h` and `d`; default unit is `s`)"),
+            stringValue("A duration (Valid units are: `ns`, `μs`, `ms`, `s`, `m`, `h` and `d`; default unit is `s`)."),
         });
     }
 

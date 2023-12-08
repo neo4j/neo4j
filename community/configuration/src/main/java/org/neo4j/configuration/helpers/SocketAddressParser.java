@@ -60,7 +60,7 @@ public class SocketAddressParser {
         }
 
         throw new IllegalArgumentException(format(
-                "Setting \"%s\" must be in the format "
+                "Setting \"%s\" must be in the format of "
                         + "\"hostname:port\" or \":port\". \"%s\" does not conform to these formats",
                 settingName, settingValue));
     }
@@ -84,7 +84,7 @@ public class SocketAddressParser {
 
         if (settingValue.contains("://")) {
             throw new IllegalArgumentException(format(
-                    "Configured socket address seems to be an URI. The socket address must be in the format "
+                    "Configured socket address seems to be a URI. The socket address must be in the format of "
                             + "\"hostname:port\", \"hostname\" or \":port\". \"%s\" does not conform to these formats",
                     settingValue));
         }
@@ -105,7 +105,7 @@ public class SocketAddressParser {
         }
 
         throw new IllegalArgumentException(format(
-                "Configured socket address must be in the format "
+                "Configured socket address must be in the format of "
                         + "\"hostname:port\", \"hostname\" or \":port\". \"%s\" does not conform to these formats",
                 settingValue));
     }

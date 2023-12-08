@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.StringUtils;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.Setting;
 
@@ -119,23 +120,33 @@ public final class SettingImpl<T> implements Setting<T> {
 
     @Override
     public String toString() {
-        return format("%s, %s", name, validValues());
+        return format("%s, %s", name, validValues(false));
     }
 
     public String validValues() {
+        return validValues(true);
+    }
+
+    private String validValues(boolean capitalize) {
         String desc = parser.getDescription();
 
         if (!constraints.isEmpty()) {
             String constraintDesc =
                     constraints.stream().map(SettingConstraint::getDescription).collect(Collectors.joining(" and "));
-            desc = format("%s which %s", desc, constraintDesc);
+            desc += parser.constraintConjunction() + constraintDesc;
         }
 
         if (dependency != null) {
             desc = format("%s. %s from %s", desc, parser.getSolverDescription(), dependency.name());
         }
 
-        return desc;
+        desc += ".";
+
+        if (capitalize) {
+            return StringUtils.capitalize(desc);
+        } else {
+            return desc;
+        }
     }
 
     public SettingImpl<T> dependency() {

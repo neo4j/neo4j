@@ -64,6 +64,7 @@ public final class SettingValueParsers {
     public static final String TRUE = "true";
     public static final String FALSE = "false";
     public static final String LIST_SEPARATOR = ",";
+    public static final String LIST_SEPARATOR_DESCRIPTION = "comma";
 
     // Pre defined parses
     public static final SettingValueParser<String> STRING = new SettingValueParser<>() {
@@ -371,10 +372,22 @@ public final class SettingValueParsers {
         @Override
         public String getDescription() {
             return format(
-                    "a '%s' separated %s with elements of type '%s'.",
-                    LIST_SEPARATOR,
+                    "a %s-separated %s where each element is %s",
+                    LIST_SEPARATOR_DESCRIPTION,
                     collectionClass.getSimpleName().toLowerCase(Locale.ENGLISH),
                     parser.getDescription());
+        }
+
+        @Override
+        public void validate(CT value) {
+            for (T element : value) {
+                parser.validate(element);
+            }
+        }
+
+        @Override
+        public String constraintConjunction() {
+            return ", which ";
         }
     }
 
@@ -525,7 +538,7 @@ public final class SettingValueParsers {
 
         @Override
         public String getDescription() {
-            return "a socket address in the format 'hostname:port', 'hostname' or ':port'";
+            return "a socket address in the format of `hostname:port`, `hostname`, or `:port`";
         }
 
         @Override
@@ -545,7 +558,7 @@ public final class SettingValueParsers {
 
         @Override
         public String getSolverDescription() {
-            return "If missing port or hostname it is acquired";
+            return "If missing, it is acquired";
         }
 
         private SocketAddress solve(SocketAddress value, SocketAddress dependencyValue) {
@@ -718,7 +731,7 @@ public final class SettingValueParsers {
 
         @Override
         public String getSolverDescription() {
-            return "If relative it is resolved";
+            return "If relative, it is resolved";
         }
     };
 
@@ -736,11 +749,11 @@ public final class SettingValueParsers {
 
         @Override
         public String getDescription() {
-            return "A valid database name containing only alphabetic characters, numbers, dots and dashes "
+            return "a valid database name containing only alphabetic characters, numbers, dots, and dashes "
                     + "with a length between "
                     + DatabaseNameValidator.MINIMUM_DATABASE_NAME_LENGTH + " and "
                     + DatabaseNameValidator.MAXIMUM_DATABASE_NAME_LENGTH
-                    + " characters, " + "starting with an alphabetic character but not with the name 'system'";
+                    + " characters, " + "starting with an alphabetic character but not with the name `system`";
         }
 
         @Override

@@ -52,6 +52,15 @@ public interface SettingValueParser<T> {
     String getDescription();
 
     /**
+     * String acting as a conjunction when joining the parser description with a constraint description clause.
+     *
+     * @return String to act as a conjunction.
+     */
+    default String constraintConjunction() {
+        return " that ";
+    }
+
+    /**
      *  The type of the object this parser is working on.
      * @return the type of {@code T}.
      */
@@ -90,7 +99,7 @@ public interface SettingValueParser<T> {
      * @return A natural language description of the dependency
      */
     default String getSolverDescription() {
-        return "If unset the value is inherited";
+        return "If unset, the value is inherited";
     }
 
     /**

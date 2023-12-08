@@ -25,7 +25,6 @@ import static java.util.stream.Collectors.joining;
 
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -34,13 +33,11 @@ import java.util.function.LongFunction;
 import java.util.regex.Pattern;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.neo4j.configuration.helpers.DatabaseNameValidator;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.internal.helpers.Numbers;
-import org.neo4j.kernel.database.NormalizedDatabaseName;
 
 public final class SettingConstraints {
     private SettingConstraints() {}
@@ -245,7 +242,7 @@ public final class SettingConstraints {
 
             @Override
             public String getDescription() {
-                return "no duplicate items";
+                return "contains no duplicate items";
             }
         };
     }
@@ -306,19 +303,7 @@ public final class SettingConstraints {
 
         @Override
         public String getDescription() {
-            return "accessible address";
-        }
-    };
-
-    public static final SettingConstraint<String> VALID_DATABASE_NAME = new SettingConstraint<>() {
-        @Override
-        public void validate(String value, Configuration config) {
-            DatabaseNameValidator.validateExternalDatabaseName(new NormalizedDatabaseName(value));
-        }
-
-        @Override
-        public String getDescription() {
-            return "must be valid database name";
+            return "is an accessible address";
         }
     };
 
@@ -357,7 +342,7 @@ public final class SettingConstraints {
             @Override
             public String getDescription() {
                 return format(
-                        "depends on %s. If %s %s then it %s otherwise it %s.",
+                        "depends on %s. If %s %s then it %s otherwise it %s",
                         dependency.name(),
                         dependency.name(),
                         condition.getDescription(),
@@ -406,7 +391,7 @@ public final class SettingConstraints {
 
             @Override
             public String getDescription() {
-                return format("Must be set greater than or equal to value of '%s'", other.name());
+                return format("must be set greater than or equal to value of '%s'", other.name());
             }
         };
     }
@@ -453,7 +438,7 @@ public final class SettingConstraints {
 
             @Override
             public String getDescription() {
-                return format("Must be set less than or equal to value of '%s' %s", other.name(), modifierDescription);
+                return format("must be set less than or equal to value of '%s' %s", other.name(), modifierDescription);
             }
         };
     }
@@ -468,22 +453,5 @@ public final class SettingConstraints {
 
     public static SettingConstraint<Long> lessThanOrEqualLong(Setting<Long> other) {
         return lessThanOrEqual(Long::valueOf, other);
-    }
-
-    public static <T, C extends Collection<T>> SettingConstraint<C> shouldNotContain(
-            T value, String collectionDescription) {
-        return new SettingConstraint<>() {
-            @Override
-            public void validate(C coll, Configuration config) {
-                if (coll.contains(value)) {
-                    throw new IllegalArgumentException(getDescription());
-                }
-            }
-
-            @Override
-            public String getDescription() {
-                return String.format("Value '%s' can't be included in %s!", value.toString(), collectionDescription);
-            }
-        };
     }
 }

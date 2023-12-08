@@ -154,6 +154,15 @@ class SettingTest {
     }
 
     @Test
+    void testListValidation() {
+        var setting = (SettingImpl<List<Integer>>) setting("setting", listOf(POSITIVE_INT));
+        assertDoesNotThrow(() -> setting.validate(List.of(), EMPTY));
+        assertDoesNotThrow(() -> setting.validate(List.of(5), EMPTY));
+        assertDoesNotThrow(() -> setting.validate(List.of(1, 2, 3), EMPTY));
+        assertThrows(IllegalArgumentException.class, () -> setting.validate(List.of(1, -2, 3), EMPTY));
+    }
+
+    @Test
     void testSet() {
         var setting = (SettingImpl<Set<Integer>>) setting("setting", setOf(INT));
         assertThat(setting.parse("5")).containsExactly(5);
@@ -161,6 +170,15 @@ class SettingTest {
         assertThat(setting.parse("5, 31, -4  ,2")).containsExactlyInAnyOrder(5, 31, -4, 2);
         assertThat(setting.parse("5, 5, 5, 3, 900, 0")).containsExactlyInAnyOrder(0, 3, 5, 900);
         assertThrows(IllegalArgumentException.class, () -> setting.parse("2,3,foo,7"));
+    }
+
+    @Test
+    void testSetValidation() {
+        var setting = (SettingImpl<Set<Integer>>) setting("setting", setOf(POSITIVE_INT));
+        assertDoesNotThrow(() -> setting.validate(Set.of(), EMPTY));
+        assertDoesNotThrow(() -> setting.validate(Set.of(5), EMPTY));
+        assertDoesNotThrow(() -> setting.validate(Set.of(1, 2, 3), EMPTY));
+        assertThrows(IllegalArgumentException.class, () -> setting.validate(Set.of(1, -2, 3), EMPTY));
     }
 
     @Test
@@ -230,7 +248,7 @@ class SettingTest {
                 .description();
 
         String expected =
-                "setting, a duration (Valid units are: `ns`, `μs`, `ms`, `s`, `m`, `h` and `d`; default unit is `s`) which is minimum `10s`";
+                "setting, a duration (Valid units are: `ns`, `μs`, `ms`, `s`, `m`, `h` and `d`; default unit is `s`) that is minimum `10s`.";
         assertEquals(expected, descriptionWithConstraint);
     }
 
@@ -341,7 +359,7 @@ class SettingTest {
 
         String expected =
                 "setting, a byte size (valid multipliers are `B`, `KiB`, `KB`, `K`, `kB`, `kb`, `k`, `MiB`, `MB`, `M`, `mB`, `mb`, `m`, "
-                        + "`GiB`, `GB`, `G`, `gB`, `gb`, `g`, `TiB`, `TB`, `PiB`, `PB`, `EiB`, `EB`) which is in the range `100.00MiB` to `10.00GiB`";
+                        + "`GiB`, `GB`, `G`, `gB`, `gb`, `g`, `TiB`, `TB`, `PiB`, `PB`, `EiB`, `EB`) that is in the range `100.00MiB` to `10.00GiB`.";
         assertEquals(expected, descriptionWithConstraint);
     }
 
@@ -692,7 +710,7 @@ class SettingTest {
         assertThrows(IllegalArgumentException.class, () -> durationSetting.validate(Duration.ofMillis(1), EMPTY));
 
         String expected =
-                "setting, a duration (Valid units are: `ns`, `μs`, `ms`, `s`, `m`, `h` and `d`; default unit is `s`) which is minimum `30m` or is `0s`";
+                "setting, a duration (Valid units are: `ns`, `μs`, `ms`, `s`, `m`, `h` and `d`; default unit is `s`) that is minimum `30m` or is `0s`.";
         assertEquals(expected, durationSetting.description());
     }
 
@@ -775,16 +793,16 @@ class SettingTest {
                 .build();
 
         // Then
-        assertEquals("setting.name, a long which is power of 2", oneConstraintSetting.description());
+        assertEquals("setting.name, a long that is power of 2.", oneConstraintSetting.description());
         assertEquals(
-                "setting.name, an integer which is minimum `2` and is maximum `10`",
+                "setting.name, an integer that is minimum `2` and is maximum `10`.",
                 twoConstraintSetting.description());
         assertEquals(
-                "setting.depending.name, a ',' separated list with elements of type 'a string'. which depends on setting.name."
+                "setting.depending.name, a comma-separated list where each element is a string, which depends on setting.name."
                         + " If setting.name is `BLUE` then it is of size `2` otherwise it is of size `4`.",
                 dependencySetting1.description());
         assertEquals(
-                "setting.depending.name, an integer which depends on setting.name."
+                "setting.depending.name, an integer that depends on setting.name."
                         + " If setting.name is minimum `3` then it is maximum `3` otherwise it is maximum `7`.",
                 dependencySetting2.description());
     }
@@ -800,7 +818,7 @@ class SettingTest {
         assertTrue(parsedSetting.containsAll(List.of(Colors.BLUE, Colors.RED)));
         assertTrue(enumSetting.parse("").isEmpty());
         assertEquals(
-                "setting.name, a ',' separated list with elements of type 'one of [BLUE, GREEN, RED]'.",
+                "setting.name, a comma-separated list where each element is one of [BLUE, GREEN, RED].",
                 enumSetting.description());
         assertEquals(List.of(Colors.GREEN), enumSetting.defaultValue());
         assertThrows(IllegalArgumentException.class, () -> enumSetting.parse("blue, kaputt"));
@@ -817,7 +835,7 @@ class SettingTest {
         assertTrue(parsedSetting.containsAll(List.of(Colors.BLUE, Colors.RED)));
         assertTrue(enumSetting.parse("").isEmpty());
         assertEquals(
-                "setting.name, a ',' separated set with elements of type 'one of [BLUE, GREEN, RED]'.",
+                "setting.name, a comma-separated set where each element is one of [BLUE, GREEN, RED].",
                 enumSetting.description());
         assertEquals(Set.of(Colors.GREEN), enumSetting.defaultValue());
         assertThrows(IllegalArgumentException.class, () -> enumSetting.parse("blue, kaputt"));
@@ -844,17 +862,17 @@ class SettingTest {
         tests.add(dynamicTest(
                 "Test int dependency description",
                 () -> testDescDependency(
-                        INT, "setting.child, an integer. If unset the value is inherited from setting.parent")));
+                        INT, "setting.child, an integer. If unset, the value is inherited from setting.parent.")));
         tests.add(dynamicTest(
                 "Test socket dependency description",
                 () -> testDescDependency(
                         SOCKET_ADDRESS,
-                        "setting.child, a socket address in the format 'hostname:port', 'hostname' or ':port'. "
-                                + "If missing port or hostname it is acquired from setting.parent")));
+                        "setting.child, a socket address in the format of `hostname:port`, `hostname`, or `:port`. "
+                                + "If missing, it is acquired from setting.parent.")));
         tests.add(dynamicTest(
                 "Test path dependency description",
                 () -> testDescDependency(
-                        PATH, "setting.child, a path. If relative it is resolved from setting.parent")));
+                        PATH, "setting.child, a path. If relative, it is resolved from setting.parent.")));
         return tests;
     }
 
@@ -896,4 +914,28 @@ class SettingTest {
             return name;
         }
     }
+
+    private static final SettingValueParser<Integer> POSITIVE_INT = new SettingValueParser<>() {
+        @Override
+        public Integer parse(String value) {
+            return INT.parse(value);
+        }
+
+        @Override
+        public String getDescription() {
+            return "a positive integer";
+        }
+
+        @Override
+        public Class<Integer> getType() {
+            return Integer.class;
+        }
+
+        @Override
+        public void validate(Integer value) {
+            if (value <= 0) {
+                throw new IllegalArgumentException("value %d is negative".formatted(value));
+            }
+        }
+    };
 }

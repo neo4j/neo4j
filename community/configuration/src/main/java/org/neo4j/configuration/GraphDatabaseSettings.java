@@ -31,12 +31,10 @@ import static org.neo4j.configuration.SettingConstraints.ABSOLUTE_PATH;
 import static org.neo4j.configuration.SettingConstraints.HOSTNAME_ONLY;
 import static org.neo4j.configuration.SettingConstraints.NO_ALL_INTERFACES_ADDRESS;
 import static org.neo4j.configuration.SettingConstraints.POWER_OF_2;
-import static org.neo4j.configuration.SettingConstraints.VALID_DATABASE_NAME;
 import static org.neo4j.configuration.SettingConstraints.any;
 import static org.neo4j.configuration.SettingConstraints.is;
 import static org.neo4j.configuration.SettingConstraints.min;
 import static org.neo4j.configuration.SettingConstraints.range;
-import static org.neo4j.configuration.SettingConstraints.shouldNotContain;
 import static org.neo4j.configuration.SettingImpl.newBuilder;
 import static org.neo4j.configuration.SettingValueParsers.BOOL;
 import static org.neo4j.configuration.SettingValueParsers.BYTES;
@@ -111,7 +109,6 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
     @Description("Name of the default database (aliases are not supported).")
     public static final Setting<String> initial_default_database = newBuilder(
                     "initial.dbms.default_database", DATABASENAME, DEFAULT_DATABASE_NAME)
-            .addConstraint(VALID_DATABASE_NAME)
             .build();
 
     public static final String DATA_DIRECTORY_SETTING_NAME = "server.directories.data";
@@ -161,7 +158,6 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
                     + "of server.databases.default_to_read_only.")
     public static final Setting<Set<String>> read_only_databases = newBuilder(
                     "server.databases.read_only", setOf(DATABASENAME), emptySet())
-            .addConstraint(shouldNotContain(SYSTEM_DATABASE_NAME, "read only databases collection"))
             .dynamic()
             .build();
 
