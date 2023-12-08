@@ -90,6 +90,14 @@ object Fragment {
     val importColumns: Seq[String] = input.importColumns
   }
 
+  sealed trait SingleQuerySegment extends Fragment.Segment {
+    def executable: Boolean
+    def queryType: QueryType
+    def statementType: StatementType
+    def localQuery: BaseState
+    def remoteQuery: RemoteQuery
+  }
+
   sealed trait Command extends Fragment {
 
     /** Graph selection for this fragment */
@@ -162,7 +170,7 @@ object Fragment {
     remoteQuery: RemoteQuery,
     sensitive: Boolean,
     outputColumns: Seq[String]
-  ) extends Fragment.Segment {
+  ) extends Fragment.SingleQuerySegment {
 
     override val producesResults: Boolean = query match {
       case query: Query => query.isReturning
@@ -171,6 +179,28 @@ object Fragment {
     val parameters: Map[String, String] = Columns.asParamMappings(importColumns)
     val executable: Boolean = hasExecutableClauses(query)
     val description: Fragment.Description = Description.ExecDesc(this)
+    val queryType: QueryType = QueryType.of(query)
+    val statementType: StatementType = StatementType.of(query)
+    def pos: InputPosition = query.position
+  }
+
+  final case class CallInTransactions(
+    input: Fragment.Chain,
+    query: Statement,
+    localQuery: BaseState,
+    remoteQuery: RemoteQuery,
+    sensitive: Boolean,
+    outputColumns: Seq[String],
+    batchSize: Integer
+  ) extends Fragment.SingleQuerySegment {
+    val parameter: String = "@@rows"
+
+    override val producesResults: Boolean = query match {
+      case query: Query => query.isReturning
+      case _            => true
+    }
+    val executable: Boolean = hasExecutableClauses(query)
+    val description: Fragment.Description = ???
     val queryType: QueryType = QueryType.of(query)
     val statementType: StatementType = StatementType.of(query)
     def pos: InputPosition = query.position
