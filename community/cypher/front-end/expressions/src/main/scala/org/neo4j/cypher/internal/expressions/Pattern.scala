@@ -230,9 +230,9 @@ object PatternPart {
  * That is that `factors(i)` is concatenated with `factors(i - 1)` and `factors(i + 1)` if they exist.
  */
 case class PathConcatenation(factors: Seq[PathFactor])(val position: InputPosition) extends PatternElement {
-  override def allVariables: Set[LogicalVariable] = allVariablesLeftToRight.toSet
+  override def allVariables: Set[LogicalVariable] = factors.view.flatMap(_.allVariables).toSet
 
-  def allVariablesLeftToRight: Seq[LogicalVariable] = factors.flatMap(_.allVariablesLeftToRight)
+  def allTopLevelVariablesLeftToRight: Seq[LogicalVariable] = factors.flatMap(_.allTopLevelVariablesLeftToRight)
 
   override def variable: Option[LogicalVariable] = None
 
@@ -263,7 +263,7 @@ case class QuantifiedPath(
 
   override def allVariables: Set[LogicalVariable] = variableGroupings.map(_.group)
 
-  override def allVariablesLeftToRight: Seq[LogicalVariable] = Seq.empty
+  override def allTopLevelVariablesLeftToRight: Seq[LogicalVariable] = Seq.empty
 
   override def variable: Option[LogicalVariable] = None
 
@@ -341,7 +341,7 @@ case class ParenthesizedPath(
     extends PathFactor with PatternAtom {
 
   override def allVariables: Set[LogicalVariable] = part.element.allVariables
-  override def allVariablesLeftToRight: Seq[LogicalVariable] = part.element.allVariablesLeftToRight
+  override def allTopLevelVariablesLeftToRight: Seq[LogicalVariable] = part.element.allTopLevelVariablesLeftToRight
 
   override def variable: Option[LogicalVariable] = None
 
@@ -366,9 +366,9 @@ sealed abstract class PatternElement extends ASTNode with HasMappableExpressions
   def allVariables: Set[LogicalVariable]
 
   /**
-   * In contrast to allVariables, this returns singletons of every grouping.
+   * In contrast to allVariables, this does not return variables that are nested inside QPPs.
    */
-  def allVariablesLeftToRight: Seq[LogicalVariable]
+  def allTopLevelVariablesLeftToRight: Seq[LogicalVariable]
   def variable: Option[LogicalVariable]
   def isBounded: Boolean
   def isFixedLength: Boolean
@@ -388,12 +388,12 @@ object PatternElement {
     element match {
       // Either we have a simple pattern
       case pattern: SimplePattern =>
-        val allVars = pattern.allVariablesLeftToRight
+        val allVars = pattern.allTopLevelVariablesLeftToRight
         Set(allVars.head, allVars.last)
       // or non-simple patterns (QPPs) have been padded (see QppsHavePaddedNodes)
       case PathConcatenation(factors) =>
-        val left = factors.head.asInstanceOf[SimplePattern].allVariablesLeftToRight.head
-        val right = factors.last.asInstanceOf[SimplePattern].allVariablesLeftToRight.last
+        val left = factors.head.asInstanceOf[SimplePattern].allTopLevelVariablesLeftToRight.head
+        val right = factors.last.asInstanceOf[SimplePattern].allTopLevelVariablesLeftToRight.last
         Set(left, right)
       case ParenthesizedPath(part, _) => boundaryNodes(part.element)
       case _                          => throw new IllegalStateException()
@@ -405,7 +405,7 @@ object PatternElement {
  * A part of the pattern that consists of alternating nodes and relationships, starting and ending in a node.
  */
 sealed abstract class SimplePattern extends PathFactor {
-  def allVariablesLeftToRight: Seq[LogicalVariable]
+  def allTopLevelVariablesLeftToRight: Seq[LogicalVariable]
 }
 
 case class RelationshipChain(
@@ -419,8 +419,8 @@ case class RelationshipChain(
 
   override def allVariables: Set[LogicalVariable] = element.allVariables ++ relationship.variable ++ rightNode.variable
 
-  override def allVariablesLeftToRight: Seq[LogicalVariable] =
-    element.allVariablesLeftToRight ++ relationship.variable.toSeq ++ rightNode.allVariablesLeftToRight
+  override def allTopLevelVariablesLeftToRight: Seq[LogicalVariable] =
+    element.allTopLevelVariablesLeftToRight ++ relationship.variable.toSeq ++ rightNode.allTopLevelVariablesLeftToRight
 
   override def isBounded: Boolean = relationship.isBounded && element.isBounded
 
@@ -454,7 +454,7 @@ case class NodePattern(
 
   override def allVariables: Set[LogicalVariable] = variable.toSet
 
-  override def allVariablesLeftToRight: Seq[LogicalVariable] = variable.toSeq
+  override def allTopLevelVariablesLeftToRight: Seq[LogicalVariable] = variable.toSeq
 
   override def isSingleNode = true
 

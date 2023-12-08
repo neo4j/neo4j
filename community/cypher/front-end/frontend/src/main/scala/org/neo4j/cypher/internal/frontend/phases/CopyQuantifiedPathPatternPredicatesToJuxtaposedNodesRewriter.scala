@@ -153,15 +153,15 @@ case object CopyQuantifiedPathPatternPredicatesToJuxtaposedNodesRewriter {
           QuantifiedPath(PathPatternPart(innerPattern: RelationshipChain), quantifier, Some(innerPredicate), _),
           rightPattern: SimplePattern
         ) if !quantifier.canBeEmpty =>
-        val left = leftPattern.allVariablesLeftToRight.last
-        val right = rightPattern.allVariablesLeftToRight.head
+        val left = leftPattern.allTopLevelVariablesLeftToRight.last
+        val right = rightPattern.allTopLevelVariablesLeftToRight.head
         RewritableQuantifiedPath(left, right, innerPattern, innerPredicate)
     }
 
   private def extractRewritableQppPredicates(rewritableQpp: RewritableQuantifiedPath): ListSet[RewritablePredicate] = {
     val RewritableQuantifiedPath(left, right, innerPattern, innerPredicates) = rewritableQpp
-    val innerLeft = innerPattern.allVariablesLeftToRight.head
-    val innerRight = innerPattern.allVariablesLeftToRight.last
+    val innerLeft = innerPattern.allTopLevelVariablesLeftToRight.head
+    val innerRight = innerPattern.allTopLevelVariablesLeftToRight.last
     val innerVariables = innerPattern.allVariables
 
     innerPredicates.folder.treeFold(ListSet.empty[RewritablePredicate]) {

@@ -102,7 +102,7 @@ case object ShortestPathVariableDeduplicator extends Phase[BaseContext, BaseStat
           val element = patternPart.element
 
           val rewrittenElement = element.endoRewrite(innerRewriter)
-          val variables = rewrittenElement.allVariablesLeftToRight
+          val variables = rewrittenElement.allTopLevelVariablesLeftToRight
           val exterior = Set(variables.head, variables.last)
           val interior = variables.tail.init
 
@@ -153,7 +153,7 @@ case object ShortestPathVariableDeduplicator extends Phase[BaseContext, BaseStat
     renamings: mutable.Map[Ref[LogicalVariable], LogicalVariable]
   ): Rewriter = topDown(Rewriter.lift {
     case qpp: QuantifiedPath =>
-      val variables = qpp.part.element.allVariablesLeftToRight
+      val variables = qpp.part.element.allTopLevelVariablesLeftToRight
       val currentRenamings = variables.groupBy(identity).flatMap {
         case (_, variables) =>
           variables.tail.map(generateRenaming(anonymousVariableNameGenerator))
