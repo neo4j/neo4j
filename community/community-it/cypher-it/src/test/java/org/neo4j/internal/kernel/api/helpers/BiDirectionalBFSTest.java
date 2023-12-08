@@ -452,7 +452,7 @@ class BiDirectionalBFSTest {
     }
 
     @Test
-    void shouldOnlyFindMultiplePaths() throws KernelException {
+    void shouldFindMultiplePaths() throws KernelException {
         // given
         try (var tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED);
                 var nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
@@ -509,6 +509,86 @@ class BiDirectionalBFSTest {
                             pathReference(new long[] {start, a1, end}, new long[] {startToA1, a1ToEnd}),
                             pathReference(new long[] {start, a2, end}, new long[] {startToA2, a2ToEnd}),
                             pathReference(new long[] {start, a3, end}, new long[] {startToA3, a3ToEnd}));
+        }
+    }
+
+    @Test
+    void shouldRespectTypes() throws KernelException {
+        // given
+        try (var tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED);
+                var nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
+                var relCursor = tx.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
+            Write write = tx.dataWrite();
+            int rel1 = tx.tokenWrite().relationshipTypeGetOrCreateForName("R1");
+            int rel2 = tx.tokenWrite().relationshipTypeGetOrCreateForName("R2");
+            int rel3 = tx.tokenWrite().relationshipTypeGetOrCreateForName("R3");
+            //           (a1)
+            //        ↗       ↘
+            // (start) → (a2) → (end)
+            //        ↘       ↗
+            //           (a3)
+            long start = write.nodeCreate();
+            // layer 1
+            long a1 = write.nodeCreate();
+            long a2 = write.nodeCreate();
+            long a3 = write.nodeCreate();
+            // layer 2
+            long end = write.nodeCreate();
+
+            // layer 1
+            long startToA1 = write.relationshipCreate(start, rel1, a1);
+            long startToA2 = write.relationshipCreate(start, rel2, a2);
+            long startToA3 = write.relationshipCreate(start, rel3, a3);
+            // layer 2
+            long a1ToEnd = write.relationshipCreate(a1, rel1, end);
+            long a2ToEnd = write.relationshipCreate(a2, rel2, end);
+            long a3ToEnd = write.relationshipCreate(a3, rel3, end);
+
+            var bfsR1 = newEmptyBiDirectionalBFS(
+                    new int[] {rel1},
+                    Direction.OUTGOING,
+                    10,
+                    true,
+                    tx.dataRead(),
+                    nodeCursor,
+                    relCursor,
+                    NO_TRACKING,
+                    false,
+                    false);
+
+            bfsR1.resetForNewRow(start, end, LongPredicates.alwaysTrue(), Predicates.alwaysTrue());
+            assertThat(single(bfsR1.shortestPathIterator()))
+                    .isEqualTo(pathReference(new long[] {start, a1, end}, new long[] {startToA1, a1ToEnd}));
+
+            var bfsR2 = newEmptyBiDirectionalBFS(
+                    new int[] {rel2},
+                    Direction.OUTGOING,
+                    10,
+                    true,
+                    tx.dataRead(),
+                    nodeCursor,
+                    relCursor,
+                    NO_TRACKING,
+                    false,
+                    false);
+            bfsR2.resetForNewRow(start, end, LongPredicates.alwaysTrue(), Predicates.alwaysTrue());
+            assertThat(single(bfsR2.shortestPathIterator()))
+                    .isEqualTo(pathReference(new long[] {start, a2, end}, new long[] {startToA2, a2ToEnd}));
+
+            var bfsR3 = newEmptyBiDirectionalBFS(
+                    new int[] {rel3},
+                    Direction.OUTGOING,
+                    10,
+                    true,
+                    tx.dataRead(),
+                    nodeCursor,
+                    relCursor,
+                    NO_TRACKING,
+                    false,
+                    false);
+            bfsR3.resetForNewRow(start, end, LongPredicates.alwaysTrue(), Predicates.alwaysTrue());
+            assertThat(single(bfsR3.shortestPathIterator()))
+                    .isEqualTo(pathReference(new long[] {start, a3, end}, new long[] {startToA3, a3ToEnd}));
         }
     }
 

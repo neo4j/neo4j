@@ -193,16 +193,16 @@ abstract class PathTracingIterator<STEPS> extends PrefetchingIterator<PathRefere
             }
             pathsToHereActiveIndices[pathPartIndexOfNode - 1]++;
             PathTraceStep pathToHere = getActivePathToNode(pathPartIndexOfNode);
-            updateInternalRelsToNode(pathToHere.relId, pathPartIndexOfNode);
-            updateInternalNodes(pathToHere.prevNodeId, pathPartIndexOfNode - 1);
+            updateInternalRelsToNode(pathToHere.relId(), pathPartIndexOfNode);
+            updateInternalNodes(pathToHere.prevNodeId(), pathPartIndexOfNode - 1);
             return true;
         }
 
         protected void activateFirstPathStepToNode(int pathPartIndexOfNode) {
             pathsToHereActiveIndices[pathPartIndexOfNode - 1] = 0;
             PathTraceStep pathToHere = getActivePathToNode(pathPartIndexOfNode);
-            updateInternalRelsToNode(pathToHere.relId, pathPartIndexOfNode);
-            updateInternalNodes(pathToHere.prevNodeId, pathPartIndexOfNode - 1);
+            updateInternalRelsToNode(pathToHere.relId(), pathPartIndexOfNode);
+            updateInternalNodes(pathToHere.prevNodeId(), pathPartIndexOfNode - 1);
         }
 
         public void resetPathPartToIntersection() {

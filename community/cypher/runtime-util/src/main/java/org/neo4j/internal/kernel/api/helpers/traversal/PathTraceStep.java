@@ -19,25 +19,4 @@
  */
 package org.neo4j.internal.kernel.api.helpers.traversal;
 
-public final class PathTraceStep {
-    public final long relId;
-    public final long prevNodeId;
-
-    public PathTraceStep(long relId, long prevNodeId) {
-        this.relId = relId;
-        this.prevNodeId = prevNodeId;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        PathTraceStep that = (PathTraceStep) o;
-        return relId == that.relId && prevNodeId == that.prevNodeId;
-    }
-
-    @Override
-    public String toString() {
-        return "PathTraceStep[" + "relId=" + relId + ", " + "prevNodeId=" + prevNodeId + ']';
-    }
-}
+public record PathTraceStep(long relId, long prevNodeId) {}
