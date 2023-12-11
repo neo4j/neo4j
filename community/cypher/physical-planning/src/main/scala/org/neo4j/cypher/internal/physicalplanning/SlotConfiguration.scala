@@ -48,7 +48,14 @@ import scala.collection.mutable
 object SlotConfiguration {
   def empty = new SlotConfiguration(mutable.Map.empty, 0, 0, new mutable.BitSet(0))
 
-  case class Size(nLongs: Int, nReferences: Int)
+  case class Size(nLongs: Int, nReferences: Int) {
+
+    def contains(slot: Slot): Boolean =
+      slot match {
+        case s: LongSlot => s.offset < nLongs
+        case s: RefSlot  => s.offset < nReferences
+      }
+  }
 
   object Size {
     val zero: Size = Size(nLongs = 0, nReferences = 0)
@@ -69,7 +76,6 @@ object SlotConfiguration {
   case class CachedPropertySlotKey(property: ASTCachedProperty.RuntimeKey) extends SlotKey
   case class ApplyPlanSlotKey(applyPlanId: Id) extends SlotKey
   case class OuterNestedApplyPlanSlotKey(applyPlanId: Id) extends SlotKey
-
   case class MetaDataSlotKey(name: String, planId: Id) extends SlotKey
 
   case class SlotWithKeyAndAliases(key: SlotKey, slot: Slot, aliases: collection.Set[String])
@@ -549,6 +555,16 @@ class SlotConfiguration private (
       },
       skipFirst
     )
+  }
+
+  def addArgumentAliasesTo(other: SlotConfiguration, argumentSize: SlotConfiguration.Size): Unit = {
+    slots.foreach {
+      case (VariableSlotKey(original), slot) =>
+        if (argumentSize.contains(slot)) {
+          slotAliases.get(original).foreach(_.foreach(alias => other.addAlias(alias, original)))
+        }
+      case _ => ()
+    }
   }
 
   def foreachCachedPropertySlotOffset(onOffset: Int => Unit): Unit = {

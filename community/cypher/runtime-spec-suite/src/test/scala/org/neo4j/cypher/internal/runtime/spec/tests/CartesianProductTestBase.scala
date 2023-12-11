@@ -973,4 +973,18 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
     runtimeResult should beColumns("res").withRows(singleColumn(List.fill(sizeHint * 11)(42)))
   }
+
+  test("argument projection on the rhs of a cartesian product") {
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("c")
+      .apply()
+      .|.cartesianProduct()
+      .|.|.projection("a AS c")
+      .|.|.argument("a")
+      .|.allNodeScan("b")
+      .allNodeScan("a")
+      .build()
+
+    execute(query, runtime) should beColumns("c")
+  }
 }

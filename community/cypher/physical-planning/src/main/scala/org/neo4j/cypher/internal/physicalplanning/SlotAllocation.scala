@@ -215,10 +215,7 @@ object SlotAllocation {
       slotConfiguration.get(field).fold(false)(isArgument)
 
     def isArgument(slot: Slot): Boolean =
-      slot match {
-        case s: LongSlot => s.offset < argumentSize.nLongs
-        case s: RefSlot  => s.offset < argumentSize.nReferences
-      }
+      argumentSize.contains(slot)
   }
 
   case class SlotMetaData(
@@ -1038,6 +1035,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
         // it is very important that we add the slots in the same order
         // Note, we can potentially carry discarded slots from rhs here to save memory
         rhs.addAllSlotsInOrderTo(result, argument.argumentSize)
+        rhs.addArgumentAliasesTo(result, argument.argumentSize)
         result
 
       case RightOuterHashJoin(nodes, _, _) =>
@@ -1127,6 +1125,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
       case _: ValueHashJoin =>
         // A new pipeline is not strictly needed here unless we have batching/vectorization
         recordArgument(lp)
+        rhs.addArgumentAliasesTo(lhs, argument.argumentSize)
         val result = breakingPolicy.invoke(lp, lhs, argument.slotConfiguration, applyPlans(lp.id))
         // For the implementation of the slotted pipe to use array copy
         // it is very important that we add the slots in the same order

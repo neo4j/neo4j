@@ -653,4 +653,18 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](
     val expected = nodes.map(n => Array(n, n, n, n))
     runtimeResult should beColumns("a", "b", "a2", "b2").withRows(expected)
   }
+
+  test("argument projection on the rhs of a value hash join") {
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("c")
+      .apply()
+      .|.valueHashJoin("b = c")
+      .|.|.projection("a AS c")
+      .|.|.argument("a")
+      .|.allNodeScan("b")
+      .allNodeScan("a")
+      .build()
+
+    execute(query, runtime) should beColumns("c")
+  }
 }
