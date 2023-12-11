@@ -400,6 +400,8 @@ case object CypherDebugOption extends CypherOptionCompanion[CypherDebugOption](
   case object showJavaSource extends CypherDebugOption("show_java_source")
   case object showBytecode extends CypherDebugOption("show_bytecode")
   case object visualizePipelines extends CypherDebugOption("visualizepipelines")
+  case object visualizePipelinesMermaid extends CypherDebugOption("mermaid")
+  case object visualizePipelinesGraphviz extends CypherDebugOption("graphviz")
   case object inverseCost extends CypherDebugOption("inverse_cost")
   case object queryGraph extends CypherDebugOption("querygraph")
   case object ast extends CypherDebugOption("ast")
@@ -422,6 +424,8 @@ case object CypherDebugOption extends CypherOptionCompanion[CypherDebugOption](
     showJavaSource,
     showBytecode,
     visualizePipelines,
+    visualizePipelinesMermaid,
+    visualizePipelinesGraphviz,
     inverseCost,
     queryGraph,
     ast,
@@ -473,6 +477,8 @@ case class CypherDebugOptions(enabledOptions: Set[CypherDebugOption]) {
   val showJavaSourceEnabled: Boolean = isEnabled(CypherDebugOption.showJavaSource)
   val showBytecodeEnabled: Boolean = isEnabled(CypherDebugOption.showBytecode)
   val visualizePipelinesEnabled: Boolean = isEnabled(CypherDebugOption.visualizePipelines)
+  val visualizePipelinesMermaidEnabled: Boolean = isEnabled(CypherDebugOption.visualizePipelinesMermaid)
+  val visualizePipelinesGraphvizEnabled: Boolean = isEnabled(CypherDebugOption.visualizePipelinesGraphviz)
   val inverseCostEnabled: Boolean = isEnabled(CypherDebugOption.inverseCost)
   val queryGraphEnabled: Boolean = isEnabled(CypherDebugOption.queryGraph)
   val astEnabled: Boolean = isEnabled(CypherDebugOption.ast)
