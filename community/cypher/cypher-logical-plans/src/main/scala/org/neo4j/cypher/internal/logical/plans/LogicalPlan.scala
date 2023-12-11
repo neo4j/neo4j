@@ -52,6 +52,7 @@ import org.neo4j.cypher.internal.ir.SimpleMutatingPattern
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
+import org.neo4j.cypher.internal.logical.plans.Expand.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpansionMode
 import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
 import org.neo4j.cypher.internal.logical.plans.FindShortestPaths.DisallowSameNode
@@ -2000,6 +2001,22 @@ case class StatefulShortestPath(
   reverseGroupVariableProjections: Boolean
 )(implicit idGen: IdGen)
     extends LogicalUnaryPlan(idGen) with PlanWithVariableGroupings {
+
+  def hasTargetNodePredicates: Boolean = {
+    nfa.transitions.view.values.flatten.collect {
+      case NFA.Transition(predicate, NFA.State(_, variable)) if variable == targetNode => predicate
+    }.collect {
+      case NFA.NodeJuxtapositionPredicate(Some(pred))                     => pred
+      case NFA.RelationshipExpansionPredicate(_, _, _, _, Some(nodePred)) => nodePred
+    }.nonEmpty
+  }
+
+  AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+    // With ExpandInto, we must not have predicates on the target node
+    mode != ExpandInto || !hasTargetNodePredicates,
+    "Expand into and predicates on the target node are forbidden: \n" + nfa.toDotString
+  )
+
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
   override def withVariableGroupings(
