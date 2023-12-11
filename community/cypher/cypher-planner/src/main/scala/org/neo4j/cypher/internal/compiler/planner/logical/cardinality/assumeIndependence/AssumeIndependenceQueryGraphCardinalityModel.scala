@@ -130,7 +130,7 @@ final class AssumeIndependenceQueryGraphCardinalityModel(
   ): (LabelInfo, Cardinality) = {
     val initialPredicates = QueryGraphPredicates.partitionSelections(labelInfo, queryGraph.selections)
 
-    val predicates = if (labelInference) {
+    val (predicates, newContext) = if (labelInference) {
       val allInferredLabels = for {
         nodeConnection <- queryGraph.nodeConnections.toSeq
         simpleRelationship <- SimpleRelationship.fromNodeConnection(nodeConnection, context.semanticTable).iterator
@@ -143,7 +143,15 @@ final class AssumeIndependenceQueryGraphCardinalityModel(
           key -> value.minBy(x => planContext.statistics.nodesWithLabelCardinality(Some(x.labelId)))
         }.toMap
 
-      inferredLabels.values.foreach { il => context.semanticTable.resolvedLabelNames(il.labelName) = il.labelId }
+      // Update the semantic table with newly resolved label names.
+      // Note that the new context is not propagated further than this method.
+      // This means that any newly resolved label names will not be known
+      // to any later query graphs.
+      val newContext = context.copy(
+        semanticTable = context.semanticTable.addResolvedLabelNames(
+          inferredLabels.values.map(il => il.labelName -> il.labelId)
+        )
+      )
 
       def addInferredLabelOnlyIfNoOtherLabel(labelInfo: LabelInfo): LabelInfo = {
         labelInfo.map {
@@ -157,11 +165,23 @@ final class AssumeIndependenceQueryGraphCardinalityModel(
       val allLabelInfo = addInferredLabelOnlyIfNoOtherLabel(initialPredicates.allLabelInfo)
       val localLabelInfo = addInferredLabelOnlyIfNoOtherLabel(initialPredicates.localLabelInfo)
 
-      initialPredicates.copy(allLabelInfo = allLabelInfo, localLabelInfo = localLabelInfo)
+      (initialPredicates.copy(allLabelInfo = allLabelInfo, localLabelInfo = localLabelInfo), newContext)
     } else {
-      initialPredicates
+      (initialPredicates, context)
     }
 
+    getBaseQueryGraphCardinalityWithInferredLabelContext(queryGraph, predicates, newContext)
+  }
+
+  /**
+   * @param context a context in which new the semantic table contains resolved tokens for all
+   *                inferred labels.
+   */
+  private def getBaseQueryGraphCardinalityWithInferredLabelContext(
+    queryGraph: QueryGraph,
+    predicates: QueryGraphPredicates,
+    context: QueryGraphCardinalityContext
+  ): (LabelInfo, Cardinality) = {
     // Calculate the multiplier for each node connection, accumulating bound nodes and arguments and threading them through
     val (boundNodesAndArguments, nodeConnectionMultipliers) =
       queryGraph
@@ -190,7 +210,8 @@ final class AssumeIndependenceQueryGraphCardinalityModel(
             getNodeCardinality(context, predicates.allLabelInfo, node).getOrElse(nodeWithNoLabelsCardinality)
         }.product(NumericCardinality)
 
-    val otherPredicatesSelectivity = context.predicatesSelectivity(predicates.allLabelInfo, predicates.otherPredicates)
+    val otherPredicatesSelectivity =
+      context.predicatesSelectivity(predicates.allLabelInfo, predicates.otherPredicates)
 
     val cardinality =
       nodesCardinality *
