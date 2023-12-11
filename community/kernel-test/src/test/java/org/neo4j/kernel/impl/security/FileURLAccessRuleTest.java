@@ -45,14 +45,22 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.URLAccessValidationError;
+import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
+import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.logging.NullLog;
 
 class FileURLAccessRuleTest {
+
+    private final SecurityAuthorizationHandler securityAuthorizationHandler =
+            new SecurityAuthorizationHandler(new CommunitySecurityLog(NullLog.getInstance()));
 
     @Test
     void shouldThrowWhenFileAccessIsDisabled() throws Exception {
         final URL url = new URL("file:///dir/file.csv");
         final Config config = Config.defaults(GraphDatabaseSettings.allow_file_urls, false);
-        assertThatThrownBy(() -> URLAccessRules.fileAccess().validate(config, url))
+        assertThatThrownBy(() -> new FileURLAccessRule(config)
+                        .validate(url, securityAuthorizationHandler, SecurityContext.AUTH_DISABLED))
                 .isInstanceOf(URLAccessValidationError.class)
                 .hasMessageContaining(
                         "configuration property 'dbms.security.allow_csv_import_from_file_urls' is false");
@@ -684,7 +692,8 @@ class FileURLAccessRuleTest {
 
     private URL validate(String root, String url) throws MalformedURLException, URLAccessValidationError {
         final Config config = Config.defaults(GraphDatabaseSettings.load_csv_file_url_root, Path.of(root));
-        return URLAccessRules.fileAccess().validate(config, new URL(url));
+        return new FileURLAccessRule(config)
+                .validate(new URL(url), securityAuthorizationHandler, SecurityContext.AUTH_DISABLED);
     }
 
     /**

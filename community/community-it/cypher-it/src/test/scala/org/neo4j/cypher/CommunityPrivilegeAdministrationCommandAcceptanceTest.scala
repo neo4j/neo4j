@@ -100,8 +100,23 @@ class CommunityPrivilegeAdministrationCommandAcceptanceTest extends CommunityAdm
 
   privilegeTypes.foreach {
     case (privilegeType, preposition) =>
-      test(s"should fail on $privilegeType from community") {
+      test(s"should fail on $privilegeType graph privilege from community") {
         val command = s"$privilegeType TRAVERSE ON GRAPH * NODES * (*) $preposition custom"
+        assertFailure(command, s"Unsupported administration command: $command")
+      }
+
+      test(s"should fail on $privilegeType database privilege from community") {
+        val command = s"$privilegeType ACCESS ON HOME DATABASE $preposition custom"
+        assertFailure(command, s"Unsupported administration command: $command")
+      }
+
+      test(s"should fail on $privilegeType dbms privilege from community") {
+        val command = s"$privilegeType ROLE MANAGEMENT ON DBMS $preposition custom"
+        assertFailure(command, s"Unsupported administration command: $command")
+      }
+
+      test(s"should fail on $privilegeType load privilege from community") {
+        val command = s"$privilegeType LOAD ON ALL DATA $preposition custom"
         assertFailure(command, s"Unsupported administration command: $command")
       }
   }

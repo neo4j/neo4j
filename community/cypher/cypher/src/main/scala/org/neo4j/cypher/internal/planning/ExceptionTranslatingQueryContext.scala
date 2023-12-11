@@ -23,6 +23,7 @@ import org.eclipse.collections.api.map.primitive.IntObjectMap
 import org.eclipse.collections.api.set.primitive.IntSet
 import org.neo4j.common.EntityType
 import org.neo4j.configuration.Config
+import org.neo4j.csv.reader.CharReadable
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.macros.TranslateExceptionMacros.translateException
@@ -356,8 +357,8 @@ class ExceptionTranslatingReadQueryContext(val inner: ReadQueryContext) extends 
   ): NodeValueIndexCursor =
     translateException(tokenNameLookup, inner.nodeLockingUniqueIndexSeek(index, values))
 
-  override def getImportURL(url: URL): Either[String, URL] =
-    translateException(tokenNameLookup, inner.getImportURL(url))
+  override def getImportDataConnection(url: URL): CharReadable =
+    translateException(tokenNameLookup, inner.getImportDataConnection(url))
 
   override def getRelationshipsForIds(
     node: Long,

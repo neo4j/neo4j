@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.security;
 
+import java.net.InetAddress;
+import java.net.URI;
 import java.util.function.Supplier;
 import org.eclipse.collections.api.factory.primitive.IntSets;
 import org.eclipse.collections.api.set.primitive.IntSet;
@@ -267,6 +269,11 @@ public class RestrictedAccessMode extends WrappedAccessMode {
     @Override
     public PermissionState allowsLoadAllData() {
         return original.allowsLoadAllData().restrict(wrapping.allowsLoadAllData());
+    }
+
+    @Override
+    public PermissionState allowsLoadUri(URI url, InetAddress inetAddress) {
+        return original.allowsLoadUri(url, inetAddress).restrict(wrapping.allowsLoadUri(url, inetAddress));
     }
 
     @Override

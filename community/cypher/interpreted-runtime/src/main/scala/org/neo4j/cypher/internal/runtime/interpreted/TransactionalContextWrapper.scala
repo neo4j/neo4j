@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.neo4j.configuration.Config
+import org.neo4j.csv.reader.CharReadable
 import org.neo4j.cypher.internal.runtime.QueryTransactionalContext
 import org.neo4j.cypher.internal.runtime.debug.DebugSupport
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.TransactionId
@@ -72,7 +73,7 @@ abstract class TransactionalContextWrapper extends QueryTransactionalContext {
 
   def cancellationChecker: CancellationChecker
 
-  def validateURLAccess(url: URL): URL
+  def getImportDataConnection(url: URL): CharReadable
 }
 
 class SingleThreadedTransactionalContextWrapper(tc: TransactionalContext)
@@ -176,7 +177,7 @@ class SingleThreadedTransactionalContextWrapper(tc: TransactionalContext)
 
   override val cancellationChecker: CancellationChecker = new TransactionCancellationChecker(kernelTransaction)
 
-  override def validateURLAccess(url: URL): URL = tc.graph().validateURLAccess(securityContext, url)
+  override def getImportDataConnection(url: URL): CharReadable = tc.graph().validateURLAccess(securityContext, url)
 
   override def userTransactionId: String = {
     TransactionId(tc.databaseId().name(), tc.kernelTransaction().getTransactionSequenceNumber).toString

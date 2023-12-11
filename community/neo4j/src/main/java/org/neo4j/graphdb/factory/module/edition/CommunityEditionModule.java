@@ -341,8 +341,6 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
             SystemGraphComponents.Builder systemGraphComponentsBuilder, GlobalModule globalModule) {
         var config = globalModule.getGlobalConfig();
         var fileSystem = globalModule.getFileSystem();
-        var logProvider = globalModule.getLogService().getInternalLogProvider();
-        var securityLog = new CommunitySecurityLog(logProvider.getLog(CommunitySecurityModule.class));
 
         var communityComponent = CommunitySecurityModule.createSecurityComponent(
                 config,

@@ -23,6 +23,7 @@ import org.eclipse.collections.api.map.primitive.IntObjectMap
 import org.eclipse.collections.api.set.primitive.IntSet
 import org.neo4j.common.EntityType
 import org.neo4j.configuration.Config
+import org.neo4j.csv.reader.CharReadable
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
@@ -224,7 +225,7 @@ trait ReadQueryContext extends ReadTokenContext with DbAccess with AutoCloseable
 
   def addStatistics(statistics: QueryStatistics): Unit = {}
 
-  def getImportURL(url: URL): Either[String, URL]
+  def getImportDataConnection(url: URL): CharReadable
 
   def nodeGetDegreeWithMax(maxDegree: Int, node: Long, dir: SemanticDirection, nodeCursor: NodeCursor): Int =
     dir match {

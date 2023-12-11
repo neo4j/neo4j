@@ -46,8 +46,6 @@ import org.neo4j.values.storable.Value
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
 
-import scala.collection.Iterator
-
 sealed class ParallelTransactionBoundQueryContext(
   transactionalContext: TransactionalContextWrapper,
   resources: ResourceManager,

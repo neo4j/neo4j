@@ -22,26 +22,39 @@ package org.neo4j.cypher.internal.runtime.interpreted
 import org.apache.commons.lang3.SystemUtils
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.verify
+import org.mockito.Mockito.when
+import org.mockito.invocation.InvocationOnMock
 import org.neo4j.configuration.Config
+import org.neo4j.configuration.GraphDatabaseSettings
+import org.neo4j.csv.reader.Readables
 import org.neo4j.cypher.internal.runtime.CreateTempFileTestSupport
+import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.interpreted.CSVResources.DEFAULT_BUFFER_SIZE
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.exceptions.LoadExternalResourceException
 import org.neo4j.internal.kernel.api.AutoCloseablePlus
 import org.neo4j.io.fs.FileUtils
 import org.neo4j.values.storable.TextValue
 
 import java.net.URL
+import java.nio.charset.StandardCharsets
+import java.nio.file.Paths
 
 class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
 
   var resources: CSVResources = _
   var cleaner: ResourceManager = _
+  var queryContext: QueryContext = _
+  var config: Config = _
 
   override def beforeEach(): Unit = {
     cleaner = mock[ResourceManager]
+    queryContext = mock[QueryContext]
+    config = mock[Config]
+
     resources = new CSVResources(cleaner)
+    when(queryContext.getConfig).thenReturn(config)
+    when(config.get(GraphDatabaseSettings.allow_file_urls)).thenReturn(true)
   }
 
   test("should handle strings") {
@@ -53,11 +66,14 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
         writer.println("3")
         writer.println("4")
     }
+    when(queryContext.getImportDataConnection(any[URL])).thenAnswer((invocation: InvocationOnMock) =>
+      Readables.files(StandardCharsets.UTF_8, Paths.get(invocation.getArgument[URL](0).toURI))
+    )
 
     // when
     val result: List[Array[String]] = resources.getCsvIterator(
-      new URL(url),
-      Config.defaults(),
+      url,
+      queryContext,
       None,
       legacyCsvQuoteEscaping = false,
       DEFAULT_BUFFER_SIZE
@@ -82,12 +98,15 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
         writer.println("1,2")
         writer.println("3,4")
     }
+    when(queryContext.getImportDataConnection(any[URL])).thenAnswer((invocation: InvocationOnMock) =>
+      Readables.files(StandardCharsets.UTF_8, Paths.get(invocation.getArgument[URL](0).toURI))
+    )
 
     // when
     val result =
       resources.getCsvIterator(
-        new URL(url),
-        Config.defaults(),
+        url,
+        queryContext,
         None,
         legacyCsvQuoteEscaping = false,
         DEFAULT_BUFFER_SIZE
@@ -114,12 +133,15 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
         writer.println("1,2")
         writer.println("3")
     }
+    when(queryContext.getImportDataConnection(any[URL])).thenAnswer((invocation: InvocationOnMock) =>
+      Readables.files(StandardCharsets.UTF_8, Paths.get(invocation.getArgument[URL](0).toURI))
+    )
 
     // when
     val result =
       resources.getCsvIterator(
-        new URL(url),
-        Config.defaults(),
+        url,
+        queryContext,
         None,
         legacyCsvQuoteEscaping = false,
         DEFAULT_BUFFER_SIZE
@@ -141,12 +163,15 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
   test("should give a helpful message when asking for headers with empty file") {
     // given
     val url = createCSVTempFileURL(_ => {})
+    when(queryContext.getImportDataConnection(any[URL])).thenAnswer((invocation: InvocationOnMock) =>
+      Readables.files(StandardCharsets.UTF_8, Paths.get(invocation.getArgument[URL](0).toURI))
+    )
 
     // when
     val result =
       resources.getCsvIterator(
-        new URL(url),
-        Config.defaults(),
+        url,
+        queryContext,
         None,
         legacyCsvQuoteEscaping = false,
         DEFAULT_BUFFER_SIZE
@@ -165,9 +190,12 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
         writer.println("1,2")
         writer.println("3,4")
     }
+    when(queryContext.getImportDataConnection(any[URL])).thenAnswer((invocation: InvocationOnMock) =>
+      Readables.files(StandardCharsets.UTF_8, Paths.get(invocation.getArgument[URL](0).toURI))
+    )
 
     // when
-    resources.getCsvIterator(new URL(url), Config.defaults(), None, legacyCsvQuoteEscaping = false, DEFAULT_BUFFER_SIZE)
+    resources.getCsvIterator(url, queryContext, None, legacyCsvQuoteEscaping = false, DEFAULT_BUFFER_SIZE)
 
     // then
     verify(cleaner).trace(any(classOf[AutoCloseablePlus]))
@@ -182,11 +210,14 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
         writer.println("3455\tbaz")
         writer.println("4\tx")
     }
+    when(queryContext.getImportDataConnection(any[URL])).thenAnswer((invocation: InvocationOnMock) =>
+      Readables.files(StandardCharsets.UTF_8, Paths.get(invocation.getArgument[URL](0).toURI))
+    )
 
     // when
     val result: List[Array[String]] = resources.getCsvIterator(
-      new URL(url),
-      Config.defaults(),
+      url,
+      queryContext,
       Some("\t"),
       legacyCsvQuoteEscaping = false,
       DEFAULT_BUFFER_SIZE
@@ -210,11 +241,13 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
         writer.println("Malm\u0246")
         writer.println("K\u0248benhavn")
     }
-
+    when(queryContext.getImportDataConnection(any[URL])).thenAnswer((invocation: InvocationOnMock) =>
+      Readables.files(StandardCharsets.UTF_8, Paths.get(invocation.getArgument[URL](0).toURI))
+    )
     // when
     val result: List[Array[String]] = resources.getCsvIterator(
-      new URL(url),
-      Config.defaults(),
+      url,
+      queryContext,
       None,
       legacyCsvQuoteEscaping = false,
       DEFAULT_BUFFER_SIZE
@@ -238,11 +271,14 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
         // that provides it.
         writer.println("\"quoted\" and then some")
     }
+    when(queryContext.getImportDataConnection(any[URL])).thenAnswer((invocation: InvocationOnMock) =>
+      Readables.files(StandardCharsets.UTF_8, Paths.get(invocation.getArgument[URL](0).toURI))
+    )
 
     // when
     val e = intercept[IllegalStateException](resources.getCsvIterator(
-      new URL(url),
-      Config.defaults(),
+      url,
+      queryContext,
       None,
       legacyCsvQuoteEscaping = false,
       DEFAULT_BUFFER_SIZE
@@ -258,23 +294,6 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
     e.getMessage should include(path)
   }
 
-  test("should handle local missing file") {
-    intercept[LoadExternalResourceException](resources.getCsvIterator(
-      new URL("file:///this/file/url/probably/doesnt/exist"),
-      Config.defaults(),
-      None,
-      legacyCsvQuoteEscaping = false,
-      DEFAULT_BUFFER_SIZE
-    ).toList)
-    intercept[LoadExternalResourceException](resources.getCsvIterator(
-      new URL("http://127.0.0.1/url/probably/doesnt/exist"),
-      Config.defaults(),
-      None,
-      legacyCsvQuoteEscaping = false,
-      DEFAULT_BUFFER_SIZE
-    ).toList)
-  }
-
   test("should parse multiline fields") {
     // given
     val url = createCSVTempFileURL {
@@ -284,11 +303,14 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
         writer.println("2\t\"Bar\n\nQuux\n\"")
         writer.println("3\t\"Bar\n\nQuux\"")
     }
+    when(queryContext.getImportDataConnection(any[URL])).thenAnswer((invocation: InvocationOnMock) =>
+      Readables.files(StandardCharsets.UTF_8, Paths.get(invocation.getArgument[URL](0).toURI))
+    )
 
     // when
     val result: List[Array[String]] = resources.getCsvIterator(
-      new URL(url),
-      Config.defaults(),
+      url,
+      queryContext,
       Some("\t"),
       legacyCsvQuoteEscaping = false,
       DEFAULT_BUFFER_SIZE

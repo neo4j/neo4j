@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.kernel.api.security;
 
+import java.net.InetAddress;
+import java.net.URI;
 import java.util.Collections;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -319,6 +321,11 @@ public interface AccessMode {
         public PermissionState allowsLoadAllData() {
             return PermissionState.fromAllowList(read);
         }
+
+        @Override
+        public PermissionState allowsLoadUri(URI uri, InetAddress inetAddress) {
+            return PermissionState.fromAllowList(read);
+        }
     }
 
     boolean allowsWrites();
@@ -573,6 +580,8 @@ public interface AccessMode {
     boolean allowsSetProperty(RelTypeSupplier relType, int propertyKey);
 
     PermissionState allowsLoadAllData();
+
+    PermissionState allowsLoadUri(URI url, InetAddress inetAddress);
 
     String name();
 

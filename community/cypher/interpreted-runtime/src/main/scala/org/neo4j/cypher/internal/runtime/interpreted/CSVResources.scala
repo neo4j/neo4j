@@ -19,41 +19,33 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
-import org.neo4j.configuration.Config
-import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.csv.reader.BufferOverflowException
-import org.neo4j.csv.reader.CharReadable
 import org.neo4j.csv.reader.CharSeekers
 import org.neo4j.csv.reader.Configuration
 import org.neo4j.csv.reader.Extractors
 import org.neo4j.csv.reader.Mark
-import org.neo4j.csv.reader.Readables
+import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExternalCSVResource
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.LoadCsvIterator
 import org.neo4j.exceptions.CypherExecutionException
 import org.neo4j.exceptions.LoadExternalResourceException
+import org.neo4j.graphdb.security.AuthorizationViolationException
 import org.neo4j.internal.kernel.api.AutoCloseablePlus
 import org.neo4j.internal.kernel.api.DefaultCloseListenable
-import org.neo4j.kernel.impl.security.WebURLAccessRule
 import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values
 
-import java.io.IOException
-import java.io.InputStream
 import java.net.CookieHandler
 import java.net.CookieManager
 import java.net.CookiePolicy
-import java.net.HttpURLConnection
+import java.net.MalformedURLException
 import java.net.URL
-import java.nio.charset.StandardCharsets
-import java.nio.file.Paths
-import java.util.zip.GZIPInputStream
-import java.util.zip.InflaterInputStream
 
 import scala.collection.mutable.ArrayBuffer
-import scala.jdk.CollectionConverters.IterableHasAsScala
-import scala.jdk.CollectionConverters.SeqHasAsJava
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 
 object CSVResources {
   val DEFAULT_FIELD_TERMINATOR: Char = ','
@@ -81,16 +73,26 @@ case class CSVResource(url: URL, resource: AutoCloseable) extends DefaultCloseLi
 
 class CSVResources(resourceManager: ResourceManager) extends ExternalCSVResource {
 
-  def getCsvIterator(
-    url: URL,
-    config: Config,
+  override def getCsvIterator(
+    urlString: String,
+    query: QueryContext,
     fieldTerminator: Option[String],
     legacyCsvQuoteEscaping: Boolean,
     bufferSize: Int,
     headers: Boolean = false
   ): LoadCsvIterator = {
 
-    val reader: CharReadable = getReader(url, config)
+    val (url, reader) = Try {
+      val url = new URL(urlString)
+      (url, query.getImportDataConnection(url))
+    } match {
+      case Success(readable)                               => readable
+      case Failure(error: AuthorizationViolationException) => throw error
+      case Failure(error: MalformedURLException) =>
+        throw new LoadExternalResourceException(s"Invalid URL '$urlString': ${error.getMessage}", error)
+      case Failure(error) =>
+        throw new LoadExternalResourceException(s"Cannot load from URL '$urlString': ${error.getMessage}", error)
+    }
     val delimiter: Char = fieldTerminator.map(_.charAt(0)).getOrElse(CSVResources.DEFAULT_FIELD_TERMINATOR)
     val seeker = CharSeekers.charSeeker(reader, CSVResources.config(legacyCsvQuoteEscaping, bufferSize), false)
     val extractor = new Extractors(delimiter).textValue()
@@ -143,85 +145,6 @@ class CSVResources(resourceManager: ResourceManager) extends ExternalCSVResource
         readAll = !hasNext
         row
       }
-    }
-  }
-
-  private def getReader(url: URL, config: Config) =
-    try {
-      val reader =
-        if (url.getProtocol == "file") {
-          Readables.files(StandardCharsets.UTF_8, Paths.get(url.toURI))
-        } else {
-          val inputStream = openStream(url, config)
-          Readables.wrap(
-            inputStream,
-            url.toString,
-            StandardCharsets.UTF_8,
-            0 /*length doesn't matter in this context*/
-          )
-        }
-      reader
-    } catch {
-      case e: IOException =>
-        throw new LoadExternalResourceException(s"Couldn't load the external resource at: $url", e)
-    }
-
-  private def openStream(
-    url: URL,
-    config: Config,
-    connectionTimeout: Int = 2000,
-    readTimeout: Int = 10 * 60 * 1000
-  ): InputStream = {
-    if (url.getProtocol.startsWith("http"))
-      TheCookieManager.ensureEnabled()
-
-    val javaBlocklist = config.get(GraphDatabaseInternalSettings.cypher_ip_blocklist)
-    val ipBlocklist = if (javaBlocklist != null) javaBlocklist.asScala.toList else List.empty
-
-    val con =
-      if (ipBlocklist.nonEmpty) {
-        new WebURLAccessRule(config).checkUrlIncludingHops(url, ipBlocklist.asJava)
-      } else {
-        val newCon = url.openConnection()
-        newCon.setRequestProperty(
-          "User-Agent",
-          s"${WebURLAccessRule.LOAD_CSV_USER_AGENT_PREFIX}${WebURLAccessRule.userAgent()}"
-        )
-        newCon
-      }
-
-    con match {
-      case urlConn: HttpURLConnection if WebURLAccessRule.isRedirect(urlConn.getResponseCode) =>
-        /*
-         * Note, HttpURLConnection will stop following a redirect if protocol changes or if Location header is missing
-         * (in the current implementation of my java version).
-         * WebURLAccessRule.checkUrlIncludingHops will currently also stop if protocol changes,
-         * but throws an exception if Location is missing.
-         * The http spec recommends to always have a Location header for redirects, but do not strictly forbid it.
-         *
-         * To be consistent with checkUrlIncludingHops we throw an exception here if we end up at a redirect
-         * that can't be followed.
-         * This is in line with the recommendations of the spec.
-         * If it turns out there is some wretched http server out there that we need to support,
-         * that don't respect the spec recommendations, please don't forget to align checkUrlIncludingHops.
-         */
-        throw new LoadExternalResourceException(
-          s"""LOAD CSV failed to access resource. The request to $url was at some point redirected to
-             | ${urlConn.getURL} from which it could not proceed. This may happen if ${urlConn.getURL} redirects to
-             | a resource which uses a different protocol than the original request.
-             |""".stripMargin
-        )
-      case _ =>
-    }
-
-    con.setConnectTimeout(connectionTimeout)
-    con.setReadTimeout(readTimeout)
-
-    val stream = con.getInputStream
-    con.getContentEncoding match {
-      case "gzip"    => new GZIPInputStream(stream)
-      case "deflate" => new InflaterInputStream(stream)
-      case _         => stream
     }
   }
 }

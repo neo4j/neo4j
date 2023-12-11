@@ -20,8 +20,9 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito
+import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
+import org.neo4j.csv.reader.Readables
 import org.neo4j.cypher.internal.ir.HasHeaders
 import org.neo4j.cypher.internal.ir.NoHeaders
 import org.neo4j.cypher.internal.runtime.ResourceManager
@@ -33,6 +34,8 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values
 
 import java.net.URL
+import java.nio.charset.StandardCharsets
+import java.nio.file.Paths
 
 class LoadCSVPipeTest extends CypherFunSuite {
 
@@ -43,8 +46,8 @@ class LoadCSVPipeTest extends CypherFunSuite {
       query = QueryStateHelper.emptyWithResourceManager(resourceManager).query,
       resources = new CSVResources(resourceManager)
     )
-    Mockito.when(state.query.getImportURL(any[URL])).thenAnswer((invocation: InvocationOnMock) =>
-      Right(invocation.getArgument[URL](0))
+    when(state.query.getImportDataConnection(any[URL])).thenAnswer((invocation: InvocationOnMock) =>
+      Readables.files(StandardCharsets.UTF_8, Paths.get(invocation.getArgument[URL](0).toURI))
     )
 
     val input = new FakePipe(Seq(Map("x" -> 0), Map("x" -> 1)))
@@ -72,8 +75,8 @@ class LoadCSVPipeTest extends CypherFunSuite {
       query = QueryStateHelper.emptyWithResourceManager(resourceManager).query,
       resources = new CSVResources(resourceManager)
     )
-    Mockito.when(state.query.getImportURL(any[URL])).thenAnswer((invocation: InvocationOnMock) =>
-      Right(invocation.getArgument[URL](0))
+    when(state.query.getImportDataConnection(any[URL])).thenAnswer((invocation: InvocationOnMock) =>
+      Readables.files(StandardCharsets.UTF_8, Paths.get(invocation.getArgument[URL](0).toURI))
     )
 
     val input = new FakePipe(Seq(
@@ -110,8 +113,8 @@ class LoadCSVPipeTest extends CypherFunSuite {
       query = QueryStateHelper.emptyWithResourceManager(resourceManager).query,
       resources = new CSVResources(resourceManager)
     )
-    Mockito.when(state.query.getImportURL(any[URL])).thenAnswer((invocation: InvocationOnMock) =>
-      Right(invocation.getArgument[URL](0))
+    when(state.query.getImportDataConnection(any[URL])).thenAnswer((invocation: InvocationOnMock) =>
+      Readables.files(StandardCharsets.UTF_8, Paths.get(invocation.getArgument[URL](0).toURI))
     )
 
     val input = new FakePipe(Seq(Map("x" -> 0), Map("x" -> 1)))
@@ -139,8 +142,8 @@ class LoadCSVPipeTest extends CypherFunSuite {
       query = QueryStateHelper.emptyWithResourceManager(resourceManager).query,
       resources = new CSVResources(resourceManager)
     )
-    Mockito.when(state.query.getImportURL(any[URL])).thenAnswer((invocation: InvocationOnMock) =>
-      Right(invocation.getArgument[URL](0))
+    when(state.query.getImportDataConnection(any[URL])).thenAnswer((invocation: InvocationOnMock) =>
+      Readables.files(StandardCharsets.UTF_8, Paths.get(invocation.getArgument[URL](0).toURI))
     )
 
     val input = new FakePipe(Seq(

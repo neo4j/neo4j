@@ -45,9 +45,11 @@ import org.neo4j.cypher.internal.ast.IfExistsDoNothing
 import org.neo4j.cypher.internal.ast.IndefiniteWait
 import org.neo4j.cypher.internal.ast.KeyConstraints
 import org.neo4j.cypher.internal.ast.LabelQualifier
-import org.neo4j.cypher.internal.ast.LoadAction
+import org.neo4j.cypher.internal.ast.LoadAllDataAction
 import org.neo4j.cypher.internal.ast.LoadAllQualifier
+import org.neo4j.cypher.internal.ast.LoadCidrAction
 import org.neo4j.cypher.internal.ast.LoadCidrQualifier
+import org.neo4j.cypher.internal.ast.LoadUrlAction
 import org.neo4j.cypher.internal.ast.LoadUrlQualifier
 import org.neo4j.cypher.internal.ast.LookupIndexes
 import org.neo4j.cypher.internal.ast.NamespacedName
@@ -6358,7 +6360,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         GrantLoadAction(
           privLhsLP,
-          LoadAction,
+          LoadAllDataAction,
           FileResource()(pos),
           LoadAllQualifier()(pos),
           util.Left("role1"),
@@ -6374,7 +6376,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         DenyLoadAction(
           privLhsLP,
-          LoadAction,
+          LoadCidrAction,
           FileResource()(pos),
           LoadCidrQualifier(Left("cidr"))(pos),
           util.Left("role1"),
@@ -6390,7 +6392,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         RevokeLoadAction(
           privLhsLP,
-          LoadAction,
+          LoadUrlAction,
           FileResource()(pos),
           LoadUrlQualifier(Right(parameter("url", CTString)))(pos),
           util.Left("role1"),

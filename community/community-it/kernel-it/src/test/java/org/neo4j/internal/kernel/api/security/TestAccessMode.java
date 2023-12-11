@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.kernel.api.security;
 
+import java.net.InetAddress;
+import java.net.URI;
 import java.util.function.Supplier;
 import org.eclipse.collections.api.set.primitive.IntSet;
 import org.eclipse.collections.impl.factory.primitive.IntSets;
@@ -277,6 +279,11 @@ public class TestAccessMode implements AccessMode {
 
     @Override
     public PermissionState allowsLoadAllData() {
+        return PermissionState.fromAllowList(allowLoad);
+    }
+
+    @Override
+    public PermissionState allowsLoadUri(URI url, InetAddress inetAddress) {
         return PermissionState.fromAllowList(allowLoad);
     }
 

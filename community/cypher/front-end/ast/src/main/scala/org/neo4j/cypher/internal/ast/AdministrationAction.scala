@@ -208,6 +208,12 @@ case object RemoveImmutablePrivilegeAction extends PrivilegeManagementAction("RE
 
 sealed trait DataExchangeAction extends AdministrationAction
 
-case object LoadAction extends DataExchangeAction {
+sealed trait LoadActions extends DataExchangeAction {
   override val name: String = "LOAD"
 }
+
+case object LoadAllDataAction extends LoadActions
+
+case object LoadCidrAction extends LoadActions
+
+case object LoadUrlAction extends LoadActions

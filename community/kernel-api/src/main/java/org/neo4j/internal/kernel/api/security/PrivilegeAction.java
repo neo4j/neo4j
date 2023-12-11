@@ -125,7 +125,8 @@ public enum PrivilegeAction {
     /**
      * Load data using LOAD CSV
      */
-    LOAD,
+    LOAD_CIDR,
+    LOAD_URL,
 
     // Some grouping actions that represent super-sets of other actions
 
@@ -341,6 +342,19 @@ public enum PrivilegeAction {
         @Override
         public boolean satisfies(PrivilegeAction action) {
             return SHOW_SERVER.satisfies(action) || this == action;
+        }
+    },
+
+    /**
+     * Load data using LOAD CSV
+     */
+    LOAD {
+        @Override
+        public boolean satisfies(PrivilegeAction action) {
+            return switch (action) {
+                case LOAD_CIDR, LOAD_URL -> true;
+                default -> this == action;
+            };
         }
     };
 

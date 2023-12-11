@@ -27,10 +27,12 @@ import org.mockito.Mockito.when
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
+import org.neo4j.cypher.HttpServerTestSupportBuilder
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.javacompat
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
+import org.neo4j.cypher.internal.runtime.CreateTempFileTestSupport
 import org.neo4j.cypher.internal.runtime.DummyResource
 import org.neo4j.cypher.internal.runtime.DummyResource.verifyClose
 import org.neo4j.cypher.internal.runtime.PrimitiveLongHelper
@@ -43,6 +45,7 @@ import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.RelationshipType
 import org.neo4j.graphdb.config.Setting
+import org.neo4j.graphdb.security.URLAccessValidationError
 import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor
 import org.neo4j.internal.kernel.api.RelationshipScanCursor
@@ -76,12 +79,14 @@ import org.neo4j.test.TestDatabaseManagementServiceBuilder
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 
 import java.lang.Boolean.FALSE
+import java.lang.Boolean.TRUE
 import java.net.URL
+import java.nio.charset.StandardCharsets
 import java.util.concurrent.atomic.AtomicReference
 
 import scala.jdk.CollectionConverters.MapHasAsJava
 
-class TransactionBoundQueryContextTest extends CypherFunSuite {
+class TransactionBoundQueryContextTest extends CypherFunSuite with CreateTempFileTestSupport {
 
   var managementService: DatabaseManagementService = _
   var graphOps: GraphDatabaseService = null
@@ -337,15 +342,27 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val tx = graph.beginTransaction(Type.EXPLICIT, AnonymousContext.read())
     val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
     val context = new TransactionBoundQueryContext(transactionalContext, new ResourceManager)(indexSearchMonitor)
+    val fileUrl = createCSVTempFileURL("data.csv")({
+      _ => ()
+    })
 
     // THEN
-    context.getImportURL(new URL("http://localhost:7474/data.csv")) should equal(
-      Right(new URL("http://localhost:7474/data.csv"))
+    withHttpServer(
+      "/data.csv",
+      httpPort => {
+        context.getImportDataConnection(
+          new URL(s"http://localhost:$httpPort/data.csv")
+        ).sourceDescription() should equal(
+          s"http://localhost:$httpPort/data.csv"
+        )
+      }
     )
-    context.getImportURL(new URL("file:///tmp/foo/data.csv")) should equal(Right(new URL("file:///tmp/foo/data.csv")))
-    context.getImportURL(new URL("jar:file:/tmp/blah.jar!/tmp/foo/data.csv")) should equal(
-      Left("loading resources via protocol 'jar' is not permitted")
+    context.getImportDataConnection(new URL(fileUrl)).sourceDescription() should equal(
+      new URL(fileUrl).getFile
     )
+    the[URLAccessValidationError] thrownBy (context.getImportDataConnection(
+      new URL("jar:file:/tmp/blah.jar!/tmp/foo/data.csv")
+    )) should have message "loading resources via protocol 'jar' is not permitted"
 
     transactionalContext.close()
     tx.close()
@@ -354,21 +371,30 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
   test("should deny file URLs when not allowed by config") {
     // GIVEN
     managementService.shutdown()
-    startGraph(GraphDatabaseSettings.allow_file_urls -> FALSE)
+    startGraph(GraphDatabaseSettings.allow_file_urls -> FALSE, GraphDatabaseSettings.auth_enabled -> TRUE)
     val tx = graph.beginTransaction(Type.EXPLICIT, AnonymousContext.read())
     val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
     val context = new TransactionBoundQueryContext(transactionalContext, new ResourceManager)(indexSearchMonitor)
 
     // THEN
-    context.getImportURL(new URL("http://localhost:7474/data.csv")) should equal(
-      Right(new URL("http://localhost:7474/data.csv"))
-    )
-    context.getImportURL(new URL("file:///tmp/foo/data.csv")) should equal(
-      Left("configuration property 'dbms.security.allow_csv_import_from_file_urls' is false")
-    )
+    withHttpServer(
+      "/data.csv",
+      httpPort => {
+        context.getImportDataConnection(
+          new URL(s"http://localhost:$httpPort/data.csv")
+        ).sourceDescription() should equal(
+          s"http://localhost:$httpPort/data.csv"
+        )
+        the[URLAccessValidationError] thrownBy (context.getImportDataConnection(
+          new URL("file:///tmp/foo/data.csv")
+        )) should have message (
+          "configuration property 'dbms.security.allow_csv_import_from_file_urls' is false"
+        )
 
-    transactionalContext.close()
-    tx.close()
+        transactionalContext.close()
+        tx.close()
+      }
+    )
   }
 
   test("provide access to kernel statement page cache tracer") {
@@ -463,8 +489,8 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     tx.close()
   }
 
-  private def startGraph(config: (Setting[_], Object)) = {
-    val configs = Map[Setting[_], Object](config)
+  private def startGraph(config: (Setting[_], Object)*): Unit = {
+    val configs = config.toMap
     managementService = new TestDatabaseManagementServiceBuilder().impermanent().setConfig(configs.asJava).build()
     graphOps = managementService.database(DEFAULT_DATABASE_NAME)
     graph = new GraphDatabaseCypherService(graphOps)
@@ -520,4 +546,17 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
       tx.close()
     }
   }
+
+  private def withHttpServer(path: String, test: Int => Unit): Unit = {
+    val builder = new HttpServerTestSupportBuilder()
+    builder.onPathReplyWithData(path, "".getBytes(StandardCharsets.UTF_8))
+    val httpServer = builder.build()
+    try {
+      httpServer.start()
+      test(httpServer.boundInfo.getPort)
+    } finally {
+      httpServer.stop()
+    }
+  }
+
 }

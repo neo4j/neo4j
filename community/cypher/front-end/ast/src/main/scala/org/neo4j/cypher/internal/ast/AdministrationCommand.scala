@@ -717,8 +717,6 @@ sealed abstract class PrivilegeCommand(
         error("`ON DEFAULT DATABASE` is not supported. Use `ON HOME DATABASE` instead.", position)
       case _: LoadPrivilege =>
         qualifier match {
-          case LoadCidrQualifier(_) :: _ =>
-            error("LOAD privileges with a CIDR range are not currently supported", position)
           case LoadUrlQualifier(_) :: _ =>
             error("LOAD privileges with a URL pattern are not currently supported", position)
           case _ => super.semanticCheck chain SemanticState.recordCurrentScope(this)

@@ -161,6 +161,7 @@ class AdministrationAndSchemaCommandParserTestBase
 
   type loadPrivilegeFunc =
     (
+      ast.LoadActions,
       ast.LoadPrivilegeQualifier,
       Seq[Either[String, Parameter]],
       Immutable

@@ -65,7 +65,9 @@ import org.neo4j.cypher.internal.ast.ExecuteBoostedProcedureAction
 import org.neo4j.cypher.internal.ast.ExecuteFunctionAction
 import org.neo4j.cypher.internal.ast.ExecuteProcedureAction
 import org.neo4j.cypher.internal.ast.ImpersonateUserAction
-import org.neo4j.cypher.internal.ast.LoadAction
+import org.neo4j.cypher.internal.ast.LoadAllDataAction
+import org.neo4j.cypher.internal.ast.LoadCidrAction
+import org.neo4j.cypher.internal.ast.LoadUrlAction
 import org.neo4j.cypher.internal.ast.MatchAction
 import org.neo4j.cypher.internal.ast.MergeAdminAction
 import org.neo4j.cypher.internal.ast.ReadAction
@@ -194,7 +196,9 @@ object ActionMapper {
 
     case ShowSettingAction => security.PrivilegeAction.SHOW_SETTING
 
-    case LoadAction => security.PrivilegeAction.LOAD
+    case LoadAllDataAction => security.PrivilegeAction.LOAD
+    case LoadCidrAction    => security.PrivilegeAction.LOAD_CIDR
+    case LoadUrlAction     => security.PrivilegeAction.LOAD_URL
 
     case AllDbmsAction => security.PrivilegeAction.DBMS_ACTIONS
 

@@ -20,30 +20,45 @@
 package org.neo4j.kernel.impl.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 import inet.ipaddr.IPAddressString;
+import java.net.ConnectException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLStreamHandler;
+import java.net.UnknownHostException;
 import java.util.List;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.graphdb.security.URLAccessValidationError;
+import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
+import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
+import org.neo4j.internal.kernel.api.security.AccessMode;
+import org.neo4j.internal.kernel.api.security.AuthSubject;
+import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
+import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.logging.NullLog;
 
 class WebURLAccessRuleTest {
+    private AbstractSecurityLog securityLog = new CommunitySecurityLog(NullLog.getInstance());
+    private final SecurityAuthorizationHandler securityAuthorizationHandler =
+            new SecurityAuthorizationHandler(securityLog);
+
     @Test
-    void shouldThrowWhenUrlIsWithinBlockedRange() throws MalformedURLException {
+    void shouldThrowWhenUrlIsWithinBlockedRange() throws Exception {
         final IPAddressString blockedIpv4Range = new IPAddressString("127.0.0.0/8");
         final IPAddressString blockedIpv6Range = new IPAddressString("0:0:0:0:0:0:0:1/8");
         final var urlAddresses = List.of(
@@ -60,8 +75,8 @@ class WebURLAccessRuleTest {
                     GraphDatabaseInternalSettings.cypher_ip_blocklist, List.of(blockedIpv4Range, blockedIpv6Range));
 
             // execute the query
-            final var error = assertThrows(
-                    URLAccessValidationError.class, () -> new WebURLAccessRule(config).validate(config, url));
+            final var error = assertThrows(URLAccessValidationError.class, () -> new WebURLAccessRule(config)
+                    .validate(url, securityAuthorizationHandler, fullSecurityContext()));
 
             // assert that the validation fails
             assertThat(error.getMessage())
@@ -70,24 +85,31 @@ class WebURLAccessRuleTest {
     }
 
     @Test
-    void validationShouldPassWhenUrlIsNotWithinBlockedRange() throws MalformedURLException, URLAccessValidationError {
+    void validationShouldPassWhenUrlIsNotWithinBlockedRange() throws Exception {
+        final IPAddressString blockedIpv4Range = new IPAddressString("132.0.0.0/8");
+        Config config = mock(Config.class);
+        when(config.get(GraphDatabaseInternalSettings.cypher_ip_blocklist)).thenReturn(List.of(blockedIpv4Range));
         final var urlAddresses = List.of(
                 "http://localhost/test.csv",
                 "https://localhost/test.csv",
                 "ftp://localhost/test.csv",
                 "http://[::1]/test.csv");
 
-        for (var urlAddress : urlAddresses) {
-            final URL url = new URL(urlAddress);
+        final var expected = List.of(
+                new URL("http://127.0.0.1/test.csv"),
+                new URL("https://localhost/test.csv"),
+                new URL("ftp://localhost/test.csv"),
+                new URL("http://[::1]/test.csv"));
 
-            // set the config
-            final Config config = Config.defaults();
+        for (int i = 0; i < urlAddresses.size(); i++) {
+            final URL url = new URL(urlAddresses.get(i));
 
             // execute the query
-            final var result = new WebURLAccessRule(config).validate(config, url);
+            final var result = new WebURLAccessRule(config)
+                    .checkNotBlockedAndPinToIP(url, securityAuthorizationHandler, fullSecurityContext());
 
-            // assert that the validation passes
-            assertThat(result).isSameAs(url);
+            // assert that the validation passes and the IP is pinned
+            assertThat(result).isEqualTo(expected.get(i));
         }
     }
 
@@ -101,8 +123,8 @@ class WebURLAccessRuleTest {
                 Config.defaults(GraphDatabaseInternalSettings.cypher_ip_blocklist, List.of(blockedIpv4Range));
 
         // execute the query
-        final var error =
-                assertThrows(URLAccessValidationError.class, () -> new WebURLAccessRule(config).validate(config, url));
+        final var error = assertThrows(URLAccessValidationError.class, () -> new WebURLAccessRule(config)
+                .validate(url, securityAuthorizationHandler, fullSecurityContext()));
 
         // assert that the validation fails
         assertThat(error.getMessage())
@@ -120,11 +142,11 @@ class WebURLAccessRuleTest {
                 Config.defaults(GraphDatabaseInternalSettings.cypher_ip_blocklist, List.of(blockedIpv4Range));
 
         // execute the query
-        final var error =
-                assertThrows(URLAccessValidationError.class, () -> new WebURLAccessRule(config).validate(config, url));
+        final var error = assertThrows(UnknownHostException.class, () -> new WebURLAccessRule(config)
+                .validate(url, securityAuthorizationHandler, fullSecurityContext()));
 
         // assert that the validation fails
-        assertThat(error.getMessage()).contains("Unable to verify access to always.invalid");
+        assertThat(error.getMessage()).contains("always.invalid: Name or service not known");
     }
 
     @Test
@@ -132,7 +154,7 @@ class WebURLAccessRuleTest {
         final IPAddressString blockedIpv4Range = new IPAddressString("127.0.0.1");
 
         // Mock a redirect (response code 302) from a valid URL (127.0.0.0) to an blocked URL (127.0.0.1)
-        HttpURLConnection connection = Mockito.mock(HttpURLConnection.class);
+        HttpURLConnection connection = mock(HttpURLConnection.class);
         when(connection.getResponseCode()).thenReturn(302);
         when(connection.getHeaderField("Location")).thenReturn("https://127.0.0.1");
 
@@ -150,8 +172,8 @@ class WebURLAccessRuleTest {
                 Config.defaults(GraphDatabaseInternalSettings.cypher_ip_blocklist, List.of(blockedIpv4Range));
 
         // execute the query
-        final var error =
-                assertThrows(URLAccessValidationError.class, () -> new WebURLAccessRule(config).validate(config, url));
+        final var error = assertThrows(URLAccessValidationError.class, () -> new WebURLAccessRule(config)
+                .validate(url, securityAuthorizationHandler, fullSecurityContext()));
 
         // assert that the validation fails
         assertThat(error.getMessage())
@@ -164,7 +186,7 @@ class WebURLAccessRuleTest {
         final IPAddressString blockedIpv4Range = new IPAddressString("127.168.0.1");
 
         // Mock a redirect (response code 306) from a valid URL (127.0.0.0) to another URL
-        HttpURLConnection connection = Mockito.mock(HttpURLConnection.class);
+        HttpURLConnection connection = mock(HttpURLConnection.class);
         when(connection.getResponseCode()).thenReturn(306);
         when(connection.getHeaderField("Location")).thenReturn("http://127.0.0.1");
 
@@ -182,10 +204,11 @@ class WebURLAccessRuleTest {
                 Config.defaults(GraphDatabaseInternalSettings.cypher_ip_blocklist, List.of(blockedIpv4Range));
 
         // execute the query
-        final var validatedURL = new WebURLAccessRule(config).validate(config, url);
+        final var urlConnection =
+                new WebURLAccessRule(config).validate(url, securityAuthorizationHandler, fullSecurityContext());
 
         // assert that the url is the same, as the redirect was a change in protocol and shouldn't be followed
-        assertEquals(url, validatedURL);
+        assertEquals(urlConnection, connection);
     }
 
     @Test
@@ -193,11 +216,11 @@ class WebURLAccessRuleTest {
         final IPAddressString blockedIpv4Range = new IPAddressString("127.168.0.1");
 
         // Mock a redirect (response code 302) from a valid URL (127.0.0.0) to an blocked URL (127.0.0.1)
-        HttpURLConnection connectionA = Mockito.mock(HttpURLConnection.class);
+        HttpURLConnection connectionA = mock(HttpURLConnection.class);
         when(connectionA.getResponseCode()).thenReturn(302);
         when(connectionA.getHeaderField("Location")).thenReturn("/b");
 
-        HttpURLConnection connectionB = Mockito.mock(HttpURLConnection.class);
+        HttpURLConnection connectionB = mock(HttpURLConnection.class);
         when(connectionB.getResponseCode()).thenReturn(302);
         when(connectionB.getHeaderField("Location")).thenReturn("/a");
 
@@ -219,7 +242,8 @@ class WebURLAccessRuleTest {
                 Config.defaults(GraphDatabaseInternalSettings.cypher_ip_blocklist, List.of(blockedIpv4Range));
 
         // assert that the validation fails
-        assertThatThrownBy(() -> new WebURLAccessRule(config).validate(config, urlA))
+        assertThatThrownBy(() -> new WebURLAccessRule(config)
+                        .validate(urlA, securityAuthorizationHandler, fullSecurityContext()))
                 .isInstanceOf(URLAccessValidationError.class)
                 .hasMessageContaining("Redirect limit exceeded");
     }
@@ -236,6 +260,7 @@ class WebURLAccessRuleTest {
                 Config.defaults(GraphDatabaseInternalSettings.cypher_ip_blocklist, List.of(blockedIpv4Range));
 
         class TestWebURLAccessRule extends WebURLAccessRule {
+
             public static boolean enteredIpPinning = false;
 
             public TestWebURLAccessRule() {
@@ -248,18 +273,22 @@ class WebURLAccessRuleTest {
                 return u;
             }
         }
-        var accessRule = new TestWebURLAccessRule();
+        TestWebURLAccessRule accessRule = new TestWebURLAccessRule();
 
         // execute the query
-        assertThrows(URLAccessValidationError.class, () -> accessRule.validate(config, httpUrl));
+        assertThrows(
+                ConnectException.class,
+                () -> accessRule.validate(httpUrl, securityAuthorizationHandler, fullSecurityContext()));
         assertTrue(TestWebURLAccessRule.enteredIpPinning);
 
         TestWebURLAccessRule.enteredIpPinning = false;
-        accessRule.validate(config, ftpUrl);
+        accessRule.validate(ftpUrl, securityAuthorizationHandler, fullSecurityContext());
         assertTrue(TestWebURLAccessRule.enteredIpPinning);
 
         TestWebURLAccessRule.enteredIpPinning = false;
-        assertThrows(URLAccessValidationError.class, () -> accessRule.validate(config, httpsUrl));
+        assertThrows(
+                ConnectException.class,
+                () -> accessRule.validate(httpsUrl, securityAuthorizationHandler, fullSecurityContext()));
         assertFalse(TestWebURLAccessRule.enteredIpPinning);
     }
 
@@ -286,5 +315,13 @@ class WebURLAccessRuleTest {
                 accessRule
                         .substituteHostByIP(new URL("ftp://user:password@localhost/test.csv"), "127.0.0.1")
                         .toString());
+    }
+
+    private SecurityContext fullSecurityContext() {
+        return new SecurityContext(
+                AuthSubject.ANONYMOUS,
+                AccessMode.Static.FULL,
+                ClientConnectionInfo.EMBEDDED_CONNECTION,
+                DEFAULT_DATABASE_NAME);
     }
 }

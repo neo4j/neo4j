@@ -21,7 +21,8 @@ package org.neo4j.internal.kernel.api.security;
 
 import static java.lang.String.format;
 
-import java.net.URL;
+import java.net.InetAddress;
+import java.net.URI;
 import java.util.Arrays;
 import java.util.function.IntFunction;
 import java.util.function.Supplier;
@@ -229,14 +230,20 @@ public class SecurityAuthorizationHandler {
         }
     }
 
-    public void assertLoadAllowed(SecurityContext securityContext, URL url) {
+    public void assertLoadAllowed(SecurityContext securityContext, URI uri, InetAddress inetAddress) {
         AccessMode accessMode = securityContext.mode();
         PermissionState permissionState = accessMode.allowsLoadAllData();
+        if (permissionState == PermissionState.NOT_GRANTED) {
+            permissionState = accessMode.allowsLoadUri(uri, inetAddress);
+        } else if (permissionState == PermissionState.EXPLICIT_GRANT) {
+            permissionState = permissionState.combine(accessMode.allowsLoadUri(uri, inetAddress));
+        }
+
         if (!permissionState.allowsAccess()) {
             String errorDescriptor = permissionState == PermissionState.NOT_GRANTED ? "not allowed" : "denied";
             throw logAndGetAuthorizationException(
                     securityContext,
-                    format("LOAD on URL '%s' is %s for %s.", url, errorDescriptor, securityContext.description()));
+                    format("LOAD on URL '%s' is %s for %s.", uri, errorDescriptor, securityContext.description()));
         }
     }
 

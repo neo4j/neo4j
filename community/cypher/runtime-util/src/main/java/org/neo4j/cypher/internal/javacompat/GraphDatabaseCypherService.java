@@ -23,6 +23,7 @@ import java.net.URL;
 import java.util.concurrent.TimeUnit;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
+import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Transaction;
@@ -75,8 +76,8 @@ public class GraphDatabaseCypherService implements GraphDatabaseQueryService {
     }
 
     @Override
-    public URL validateURLAccess(SecurityContext sec, URL url) throws URLAccessValidationError {
-        return urlAccessRule.validate(config, sec, url);
+    public CharReadable validateURLAccess(SecurityContext securityContext, URL url) throws URLAccessValidationError {
+        return urlAccessRule.validateAndOpen(securityContext, url);
     }
 
     public Transaction beginTx() {

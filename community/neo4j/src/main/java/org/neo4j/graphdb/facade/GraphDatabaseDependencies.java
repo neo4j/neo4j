@@ -45,7 +45,6 @@ public class GraphDatabaseDependencies implements ExternalDependencies {
     public static GraphDatabaseDependencies newDependencies() {
         Iterable<ExtensionFactory<?>> extensions =
                 getExtensions(Services.loadAll(ExtensionFactory.class).iterator());
-
         return new GraphDatabaseDependencies(null, null, null, extensions, empty());
     }
 

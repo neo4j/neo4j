@@ -23,6 +23,7 @@ import org.eclipse.collections.api.map.primitive.IntObjectMap
 import org.eclipse.collections.api.set.primitive.IntSet
 import org.neo4j.common.EntityType
 import org.neo4j.configuration.Config
+import org.neo4j.csv.reader.CharReadable
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.runtime.ClosingIterator
@@ -480,7 +481,7 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def getRelTypeName(id: Int): String = singleDbHit(inner.getRelTypeName(id))
 
-  override def getImportURL(url: URL): Either[String, URL] = inner.getImportURL(url)
+  override def getImportDataConnection(url: URL): CharReadable = inner.getImportDataConnection(url)
 
   override def nodeGetOutgoingDegreeWithMax(maxDegree: Int, node: Long, nodeCursor: NodeCursor): Int =
     singleDbHit(inner.nodeGetOutgoingDegreeWithMax(maxDegree, node, nodeCursor))

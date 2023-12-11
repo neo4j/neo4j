@@ -19,17 +19,15 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.runtime.ClosingIterator
+import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.values.storable.Value
-
-import java.net.URL
 
 trait ExternalCSVResource {
 
   def getCsvIterator(
-    url: URL,
-    config: Config,
+    urlString: String,
+    query: QueryContext,
     fieldTerminator: Option[String],
     legacyCsvQuoteEscaping: Boolean,
     bufferSize: Int,

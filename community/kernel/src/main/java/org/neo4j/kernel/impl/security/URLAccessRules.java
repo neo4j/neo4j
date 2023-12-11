@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.security;
 
+import java.io.IOException;
 import java.net.URL;
-import java.util.HashMap;
-import java.util.Map;
+import org.neo4j.csv.reader.CharReadable;
+import org.neo4j.exceptions.LoadExternalResourceException;
 import org.neo4j.graphdb.config.Configuration;
-import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.graphdb.security.URLAccessValidationError;
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
@@ -32,38 +32,32 @@ import org.neo4j.internal.kernel.api.security.SecurityContext;
 public class URLAccessRules {
 
     private final SecurityAuthorizationHandler securityAuthorizationHandler;
-    private final Map<String, URLAccessRule> rules;
-
     private final WebURLAccessRule webAccess;
+    private final FileURLAccessRule fileAccess;
 
     public URLAccessRules(AbstractSecurityLog securityLog, Configuration configuration) {
         this.securityAuthorizationHandler = new SecurityAuthorizationHandler(securityLog);
         this.webAccess = new WebURLAccessRule(configuration);
-        rules = new HashMap<>();
-        rules.put("http", webAccess);
-        rules.put("https", webAccess);
-        rules.put("ftp", webAccess);
-        rules.put("file", FILE_ACCESS);
-    }
-
-    private static final FileURLAccessRule FILE_ACCESS = new FileURLAccessRule();
-
-    public static URLAccessRule fileAccess() {
-        return FILE_ACCESS;
+        this.fileAccess = new FileURLAccessRule(configuration);
     }
 
     public WebURLAccessRule webAccess() {
         return this.webAccess;
     }
 
-    public URL validate(Configuration configuration, SecurityContext securityContext, URL url)
-            throws URLAccessValidationError {
-        securityAuthorizationHandler.assertLoadAllowed(securityContext, url);
+    public CharReadable validateAndOpen(SecurityContext securityContext, URL url) throws URLAccessValidationError {
+
         String protocol = url.getProtocol();
-        URLAccessRule protocolRule = rules.get(protocol);
-        if (protocolRule == null) {
-            throw new URLAccessValidationError("loading resources via protocol '" + protocol + "' is not permitted");
+        try {
+            return switch (protocol) {
+                case "file" -> fileAccess.getReader(url, securityAuthorizationHandler, securityContext);
+                case "http", "https", "ftp" -> webAccess.getReader(url, securityAuthorizationHandler, securityContext);
+                default -> throw new URLAccessValidationError(
+                        "loading resources via protocol '" + protocol + "' is not permitted");
+            };
+        } catch (IOException e) {
+            throw new LoadExternalResourceException(
+                    String.format("Couldn't load the external resource at: %s", url), e);
         }
-        return protocolRule.validate(configuration, url);
     }
 }

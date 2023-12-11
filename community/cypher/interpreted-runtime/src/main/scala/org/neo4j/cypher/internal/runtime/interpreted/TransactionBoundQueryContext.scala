@@ -25,6 +25,7 @@ import org.eclipse.collections.impl.factory.primitive.IntSets
 import org.neo4j.common.EntityType
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
+import org.neo4j.csv.reader.CharReadable
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
@@ -64,7 +65,6 @@ import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.NotFoundException
 import org.neo4j.graphdb.Relationship
-import org.neo4j.graphdb.security.URLAccessValidationError
 import org.neo4j.internal.helpers.collection.Iterators
 import org.neo4j.internal.kernel.api
 import org.neo4j.internal.kernel.api.IndexQueryConstraints
@@ -1549,12 +1549,8 @@ private[internal] class TransactionBoundReadQueryContext(
     }
   }
 
-  override def getImportURL(url: URL): Either[String, URL] = {
-    try {
-      Right(transactionalContext.validateURLAccess(url))
-    } catch {
-      case error: URLAccessValidationError => Left(error.getMessage)
-    }
+  override def getImportDataConnection(url: URL): CharReadable = {
+    transactionalContext.getImportDataConnection(url)
   }
 
   override def nodeCountByCountStore(labelId: Int): Long = {

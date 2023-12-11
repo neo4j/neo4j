@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.neo4j.configuration.Config
+import org.neo4j.csv.reader.CharReadable
 import org.neo4j.cypher.internal.runtime.debug.DebugSupport
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.graphdb.Entity
@@ -161,7 +162,7 @@ class ParallelTransactionalContextWrapper(
 
   override def cancellationChecker: CancellationChecker = new TransactionCancellationChecker(kernelTransaction)
 
-  override def validateURLAccess(url: URL): URL = tc.graph().validateURLAccess(securityContext, url)
+  override def getImportDataConnection(url: URL): CharReadable = tc.graph().validateURLAccess(securityContext, url)
 
   override def userTransactionId: String = unsupported()
 

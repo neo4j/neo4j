@@ -22,9 +22,9 @@ package org.neo4j.cypher
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpHandler
 import com.sun.net.httpserver.HttpServer
+import org.neo4j.test.ports.PortAuthority
 
 import java.io.IOException
-import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.util.concurrent.Executors
 
@@ -76,8 +76,14 @@ class HttpServerTestSupportBuilder {
   }
 
   def build(): HttpServerTestSupport = {
-    // Passing port=0 asks bind() to find a free port, use boundInfo to lookup the port later
-    new HttpServerTestSupportImpl(0, allowedMethods, mapping.toMap, filters.toMap, transformations.toMap)
+    // Have PortAuthority allocate a port, use boundInfo to lookup the port later
+    new HttpServerTestSupportImpl(
+      PortAuthority.allocatePort(),
+      allowedMethods,
+      mapping.toMap,
+      filters.toMap,
+      transformations.toMap
+    )
   }
 
   private class HttpServerTestSupportImpl(
@@ -92,7 +98,7 @@ class HttpServerTestSupportBuilder {
 
     private def provideServer = {
       try {
-        val address = new InetSocketAddress(InetAddress.getLoopbackAddress, port)
+        val address = new InetSocketAddress(port)
         HttpServer.create(address, 0)
       } catch {
         case ex: IOException =>

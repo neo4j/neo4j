@@ -26,4 +26,8 @@ public class URLAccessValidationError extends Exception {
     public URLAccessValidationError(String message) {
         super(message);
     }
+
+    public URLAccessValidationError(String message, Exception cause) {
+        super(message, cause);
+    }
 }

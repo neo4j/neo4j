@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.ir.NoHeaders
 import org.neo4j.cypher.internal.runtime.ArrayBackedMap
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
-import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.ResourceLinenumber
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.util.attribution.Id
@@ -37,6 +36,7 @@ import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualValues
 
+import java.net.MalformedURLException
 import java.net.URL
 
 import scala.jdk.CollectionConverters.MapHasAsJava
@@ -86,20 +86,12 @@ abstract class AbstractLoadCSVPipe(
     value: AnyValue
   ): CypherRow
 
-  protected def getImportURL(urlString: String, context: QueryContext): URL = {
-    val url: URL =
-      try {
-        new URL(urlString)
-      } catch {
-        case e: java.net.MalformedURLException =>
-          throw new LoadExternalResourceException(s"Invalid URL '$urlString': ${e.getMessage}", e)
-      }
-
-    context.getImportURL(url) match {
-      case Left(error) =>
-        throw new LoadExternalResourceException(s"Cannot load from URL '$urlString': $error")
-      case Right(urlToLoad) =>
-        urlToLoad
+  protected def getImportURL(urlString: String): URL = {
+    try {
+      new URL(urlString)
+    } catch {
+      case e: MalformedURLException =>
+        throw new LoadExternalResourceException(s"Invalid URL '$urlString': ${e.getMessage}", e)
     }
   }
 
@@ -170,10 +162,11 @@ abstract class AbstractLoadCSVPipe(
     }
   }
 
-  private def getLoadCSVIterator(state: QueryState, url: URL, useHeaders: Boolean): LoadCsvIterator = {
+  private def getLoadCSVIterator(state: QueryState, urlString: String, useHeaders: Boolean): LoadCsvIterator = {
+
     state.resources.getCsvIterator(
-      url,
-      state.query.getConfig,
+      urlString,
+      state.query,
       fieldTerminator,
       legacyCsvQuoteEscaping,
       bufferSize,
@@ -186,17 +179,20 @@ abstract class AbstractLoadCSVPipe(
     state: QueryState
   ): ClosingIterator[CypherRow] = {
     input.flatMap(row => {
-      val urlString: TextValue = urlExpression(row, state).asInstanceOf[TextValue]
-      val url = getImportURL(urlString.stringValue(), state.query)
+      val urlString: String = urlExpression(row, state).asInstanceOf[TextValue].stringValue()
 
       format match {
         case HasHeaders =>
-          val iterator = getLoadCSVIterator(state, url, useHeaders = true)
+          val iterator = getLoadCSVIterator(state, urlString, useHeaders = true)
           val headers =
             if (iterator.nonEmpty) iterator.next().toIndexedSeq else IndexedSeq.empty // First row is headers
-          new IteratorWithHeaders(replaceNoValues(headers), row, url.getFile, iterator)
+          new IteratorWithHeaders(replaceNoValues(headers), row, getImportURL(urlString).getFile, iterator)
         case NoHeaders =>
-          new IteratorWithoutHeaders(row, url.getFile, getLoadCSVIterator(state, url, useHeaders = false))
+          new IteratorWithoutHeaders(
+            row,
+            getImportURL(urlString).getFile,
+            getLoadCSVIterator(state, urlString, useHeaders = false)
+          )
       }
     })
   }

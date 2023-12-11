@@ -160,12 +160,15 @@ import org.neo4j.cypher.internal.ast.LabelAllQualifier
 import org.neo4j.cypher.internal.ast.LabelQualifier
 import org.neo4j.cypher.internal.ast.LabelsResource
 import org.neo4j.cypher.internal.ast.Limit
-import org.neo4j.cypher.internal.ast.LoadAction
+import org.neo4j.cypher.internal.ast.LoadActions
+import org.neo4j.cypher.internal.ast.LoadAllDataAction
 import org.neo4j.cypher.internal.ast.LoadAllQualifier
 import org.neo4j.cypher.internal.ast.LoadCSV
+import org.neo4j.cypher.internal.ast.LoadCidrAction
 import org.neo4j.cypher.internal.ast.LoadCidrQualifier
 import org.neo4j.cypher.internal.ast.LoadPrivilege
 import org.neo4j.cypher.internal.ast.LoadPrivilegeQualifier
+import org.neo4j.cypher.internal.ast.LoadUrlAction
 import org.neo4j.cypher.internal.ast.LoadUrlQualifier
 import org.neo4j.cypher.internal.ast.LookupIndexes
 import org.neo4j.cypher.internal.ast.Match
@@ -2600,14 +2603,14 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
       } yield (qualifier, Some(resource))
     }
 
-  def _loadQualifier: Gen[List[LoadPrivilegeQualifier]] = for {
+  def _loadQualifierAndAction: Gen[(List[LoadPrivilegeQualifier], LoadActions)] = for {
     // not a name as such but it's a string or parameter so :shrug:
     urlCidr <- _nameAsEither
     loadAll = LoadAllQualifier()(pos)
     loadCidr = LoadCidrQualifier(urlCidr)(pos)
     loadUrl = LoadUrlQualifier(urlCidr)(pos)
-    qualifier <- oneOf(loadAll, loadCidr, loadUrl)
-  } yield List(qualifier)
+    (qualifier, action) <- oneOf((loadAll, LoadAllDataAction), (loadCidr, LoadCidrAction), (loadUrl, LoadUrlAction))
+  } yield (List(qualifier), action)
 
   def _showSupportedPrivileges: Gen[ShowSupportedPrivilegeCommand] = for {
     yields <- _eitherYieldOrWhere
@@ -2695,12 +2698,12 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   } yield graph
 
   def _loadPrivilege: Gen[PrivilegeCommand] = for {
-    qualifier <- _loadQualifier
+    (qualifier, action) <- _loadQualifierAndAction
     roleNames <- _listOfNameOfEither
     revokeType <- _revokeType
     immutable <- boolean
     resource <- some(FileResource()(pos))
-    loadPriv = LoadPrivilege(LoadAction)(pos)
+    loadPriv = LoadPrivilege(action)(pos)
     loadGrant = GrantPrivilege(loadPriv, immutable, resource, qualifier, roleNames)(pos)
     loadDeny = DenyPrivilege(loadPriv, immutable, resource, qualifier, roleNames)(pos)
     loadRevoke = RevokePrivilege(loadPriv, immutable, resource, qualifier, roleNames, revokeType)(pos)

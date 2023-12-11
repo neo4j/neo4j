@@ -23,22 +23,45 @@ import static java.net.HttpURLConnection.HTTP_NOT_MODIFIED;
 
 import inet.ipaddr.IPAddressString;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.CookieHandler;
+import java.net.CookieManager;
+import java.net.CookiePolicy;
 import java.net.HttpURLConnection;
+import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.InflaterInputStream;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
+import org.neo4j.csv.reader.CharReadable;
+import org.neo4j.csv.reader.Readables;
+import org.neo4j.exceptions.LoadExternalResourceException;
 import org.neo4j.graphdb.config.Configuration;
-import org.neo4j.graphdb.security.URLAccessChecker;
-import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.graphdb.security.URLAccessValidationError;
+import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.util.VisibleForTesting;
 
-public class WebURLAccessRule implements URLAccessRule, URLAccessChecker {
+public class WebURLAccessRule implements URLAccessRule {
     public static final String LOAD_CSV_USER_AGENT_PREFIX = "NeoLoadCSV_";
     private static final int REDIRECT_LIMIT = 10;
     private final Configuration config;
+    public static final int CONNECTION_TIMEOUT = 2000;
+    public static final int READ_TIMOUT = 10 * 60 * 1000;
+    private static final CookieManager cookieManager;
+
+    static {
+        cookieManager = new CookieManager();
+        CookieHandler.setDefault(cookieManager);
+        cookieManager.setCookiePolicy(CookiePolicy.ACCEPT_ALL);
+    }
 
     public WebURLAccessRule(Configuration config) {
 
@@ -54,26 +77,15 @@ public class WebURLAccessRule implements URLAccessRule, URLAccessChecker {
         return agent + " Java/" + version;
     }
 
-    @Override
-    public URL checkURL(URL url) throws URLAccessValidationError {
+    @VisibleForTesting
+    URL checkNotBlockedAndPinToIP(
+            URL url, SecurityAuthorizationHandler securityAuthorizationHandler, SecurityContext securityContext)
+            throws UnknownHostException, MalformedURLException, URISyntaxException, URLAccessValidationError {
+
+        // Keep doing this for community, and for backward compatibility with users (and tests) that don't
+        // have security enabled.
         List<IPAddressString> blockedIpRanges = config.get(GraphDatabaseInternalSettings.cypher_ip_blocklist);
-        try {
-            return checkNotBlockedAndPinToIP(url, blockedIpRanges);
-        } catch (Exception e) {
-            if (e instanceof URLAccessValidationError) {
-                throw (URLAccessValidationError) e;
-            } else {
-                throw new URLAccessValidationError(
-                        "Unable to verify access to " + url.getHost() + ". Cause: " + e.getMessage());
-            }
-        }
-    }
-
-    // This is used by APOC and thus needs to be public
-    public URL checkNotBlockedAndPinToIP(URL url, List<IPAddressString> blockedIpRanges) throws Exception {
         InetAddress inetAddress = InetAddress.getByName(url.getHost());
-        URL result = url;
-
         for (var blockedIpRange : blockedIpRanges) {
             if (blockedIpRange.contains(new IPAddressString(inetAddress.getHostAddress()))) {
                 throw new URLAccessValidationError(
@@ -82,6 +94,9 @@ public class WebURLAccessRule implements URLAccessRule, URLAccessChecker {
             }
         }
 
+        // RBAC security check
+        securityAuthorizationHandler.assertLoadAllowed(securityContext, url.toURI(), inetAddress);
+
         // If the address is a http or ftp one, we want to avoid an extra DNS lookup to avoid
         // DNS spoofing. It is unlikely, but it could happen between the first DNS resolve above
         // and the con.connect() below, in case we have the JVM dns cache disabled, or it
@@ -89,8 +104,12 @@ public class WebURLAccessRule implements URLAccessRule, URLAccessChecker {
         //
         // In the case of https DNS spoofing is not possible. Source here:
         // https://security.stackexchange.com/questions/94331/why-doesnt-dns-spoofing-work-against-https-sites
+        URL result = url;
         if (url.getProtocol().equals("http") || url.getProtocol().equals("ftp")) {
-            result = substituteHostByIP(url, inetAddress.getHostAddress());
+            String ipAddress = inetAddress instanceof Inet6Address
+                    ? "[" + inetAddress.getHostAddress() + "]"
+                    : inetAddress.getHostAddress();
+            result = substituteHostByIP(url, ipAddress);
         }
 
         return result;
@@ -110,7 +129,9 @@ public class WebURLAccessRule implements URLAccessRule, URLAccessChecker {
         return new URL(newURLString);
     }
 
-    public URLConnection checkUrlIncludingHops(URL url, List<IPAddressString> blockedIpRanges) throws Exception {
+    private URLConnection checkUrlIncludingHops(
+            URL url, SecurityAuthorizationHandler securityAuthorizationHandler, SecurityContext securityContext)
+            throws IOException, URISyntaxException, URLAccessValidationError {
         URL result = url;
         boolean keepFollowingRedirects;
         int redirectLimit = REDIRECT_LIMIT;
@@ -122,7 +143,7 @@ public class WebURLAccessRule implements URLAccessRule, URLAccessChecker {
             // Otherwise, we could have situations like an internal ip, e.g. 10.0.0.1
             // is banned in the config, but it redirects to another different internal ip
             // and we would still have a security hole
-            result = checkNotBlockedAndPinToIP(result, blockedIpRanges);
+            result = checkNotBlockedAndPinToIP(result, securityAuthorizationHandler, securityContext);
             urlCon = result.openConnection();
 
             if (urlCon instanceof HttpURLConnection) {
@@ -137,7 +158,7 @@ public class WebURLAccessRule implements URLAccessRule, URLAccessChecker {
                 if (keepFollowingRedirects) {
                     if (redirectLimit-- == 0) {
                         httpCon.disconnect();
-                        throw new IOException("Redirect limit exceeded");
+                        throw new URLAccessValidationError("Redirect limit exceeded");
                     }
                     String location = httpCon.getHeaderField("Location");
 
@@ -166,24 +187,74 @@ public class WebURLAccessRule implements URLAccessRule, URLAccessChecker {
         return urlCon;
     }
 
-    public static boolean isRedirect(int responseCode) {
+    private static boolean isRedirect(int responseCode) {
         return responseCode >= 300 && responseCode <= 307 && responseCode != 306 && responseCode != HTTP_NOT_MODIFIED;
     }
 
-    @Override
-    public URL validate(Configuration config, URL url) throws URLAccessValidationError {
-        List<IPAddressString> blockedIpRanges = config.get(GraphDatabaseInternalSettings.cypher_ip_blocklist);
+    public URLConnection validate(
+            URL url, SecurityAuthorizationHandler securityAuthorizationHandler, SecurityContext securityContext)
+            throws URLAccessValidationError, IOException {
         String host = url.getHost();
-        if (!blockedIpRanges.isEmpty() && host != null && !host.isEmpty()) {
+        if (host != null && !host.isEmpty()) {
             try {
-                URLConnection con = checkUrlIncludingHops(url, blockedIpRanges);
-                if (con instanceof HttpURLConnection) {
-                    ((HttpURLConnection) con).disconnect();
-                }
-            } catch (Exception e) {
+                return checkUrlIncludingHops(url, securityAuthorizationHandler, securityContext);
+            } catch (URISyntaxException e) {
                 throw new URLAccessValidationError("Unable to verify access to " + host + ". Cause: " + e.getMessage());
             }
+        } else {
+            throw new URLAccessValidationError("Unable to verify access to URL" + url + ". URL is missing a host.");
         }
-        return url;
+    }
+
+    public CharReadable getReader(
+            URL url, SecurityAuthorizationHandler securityAuthorizationHandler, SecurityContext securityContext)
+            throws URLAccessValidationError {
+        try {
+            InputStream stream = openStream(url, securityAuthorizationHandler, securityContext);
+            return Readables.wrap(
+                    stream, url.toString(), StandardCharsets.UTF_8, 0); /*length doesn't matter in this context*/
+        } catch (IOException | URISyntaxException e) {
+            throw new LoadExternalResourceException(
+                    String.format("Couldn't load the external resource at: %s", url), e);
+        }
+    }
+
+    private InputStream openStream(
+            URL url, SecurityAuthorizationHandler securityAuthorizationHandler, SecurityContext securityContext)
+            throws IOException, URISyntaxException, URLAccessValidationError {
+
+        URLConnection con = validate(url, securityAuthorizationHandler, securityContext);
+
+        if (con instanceof HttpURLConnection
+                && WebURLAccessRule.isRedirect(((HttpURLConnection) con).getResponseCode())) {
+            /*
+             * Note, HttpURLConnection will stop following a redirect if protocol changes or if Location header is missing
+             * (in the current implementation of my java version).
+             * WebURLAccessRule.checkUrlIncludingHops will currently also stop if protocol changes,
+             * but throws an exception if Location is missing.
+             * The http spec recommends to always have a Location header for redirects, but do not strictly forbid it.
+             *
+             * To be consistent with checkUrlIncludingHops we throw an exception here if we end up at a redirect
+             * that can't be followed.
+             * This is in line with the recommendations of the spec.
+             * If it turns out there is some wretched http server out there that we need to support,
+             * that don't respect the spec recommendations, please don't forget to align checkUrlIncludingHops.
+             */
+            throw new LoadExternalResourceException(String.format(
+                    "LOAD CSV failed to access resource. The request to %s was at some point redirected to from which it could not proceed. This may happen if %s redirects to a resource which uses a different protocol than the original request.",
+                    con.getURL(), con.getURL()));
+        }
+
+        con.setConnectTimeout(CONNECTION_TIMEOUT);
+        con.setReadTimeout(READ_TIMOUT);
+
+        var stream = con.getInputStream();
+        if ("gzip".equals(con.getContentEncoding())) {
+            return new GZIPInputStream(stream);
+        } else if ("deflate".equals(con.getContentEncoding())) {
+            return new InflaterInputStream(stream);
+        } else {
+            return stream;
+        }
     }
 }

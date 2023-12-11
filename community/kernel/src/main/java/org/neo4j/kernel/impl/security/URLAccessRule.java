@@ -17,23 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb.security;
+package org.neo4j.kernel.impl.security;
 
+import java.io.IOException;
 import java.net.URL;
-import org.neo4j.graphdb.config.Configuration;
+import org.neo4j.csv.reader.CharReadable;
+import org.neo4j.graphdb.security.URLAccessValidationError;
+import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 
-/**
- * A rule to evaluate if Neo4j is permitted to reach out to the specified URL (e.g. when using {@code LOAD CSV} in Cypher).
- */
 public interface URLAccessRule {
-    /**
-     * Validate this rule against the specified URL and configuration, and throw a {@link URLAccessValidationError}
-     * if the URL is not permitted for access.
-     *
-     * @param configuration {@link Configuration} to validate the {@code url} against.
-     * @param url the URL being validated
-     * @return an updated URL that should be used for accessing the resource
-     * @throws URLAccessValidationError thrown if the url does not pass the validation rule
-     */
-    URL validate(Configuration configuration, URL url) throws URLAccessValidationError;
+    CharReadable getReader(
+            URL url, SecurityAuthorizationHandler securityAuthorizationHandler, SecurityContext securityContext)
+            throws URLAccessValidationError, IOException;
 }

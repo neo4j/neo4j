@@ -23,6 +23,7 @@ import org.eclipse.collections.api.map.primitive.IntObjectMap
 import org.eclipse.collections.api.set.primitive.IntSet
 import org.neo4j.common.EntityType
 import org.neo4j.configuration.Config
+import org.neo4j.csv.reader.CharReadable
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
@@ -411,7 +412,7 @@ object StaticEvaluation {
 
     override def getAllConstraints(): Map[ConstraintDescriptor, ConstraintInfo] = notAvailable()
 
-    override def getImportURL(url: URL): Either[String, URL] = notAvailable()
+    override def getImportDataConnection(url: URL): CharReadable = notAvailable()
 
     override def nodeHasCheapDegrees(node: Long, nodeCursor: NodeCursor): Boolean = notAvailable()
 

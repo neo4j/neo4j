@@ -57,6 +57,9 @@ import static org.neo4j.internal.kernel.api.security.PrivilegeAction.EXECUTE_ADM
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.GRAPH_ACTIONS;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.IMPERSONATE;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.INDEX;
+import static org.neo4j.internal.kernel.api.security.PrivilegeAction.LOAD;
+import static org.neo4j.internal.kernel.api.security.PrivilegeAction.LOAD_CIDR;
+import static org.neo4j.internal.kernel.api.security.PrivilegeAction.LOAD_URL;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.MATCH;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.MERGE;
 import static org.neo4j.internal.kernel.api.security.PrivilegeAction.PRIVILEGE_MANAGEMENT;
@@ -138,6 +141,7 @@ class PrivilegeActionTest {
                         IMPERSONATE,
                         SERVER_MANAGEMENT));
         expected.put(SERVER_MANAGEMENT, Set.of(SHOW_SERVER));
+        expected.put(LOAD, Set.of(LOAD_CIDR, LOAD_URL));
     }
 
     @Test
