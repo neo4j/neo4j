@@ -961,7 +961,6 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
     val queryWithNestedNodeRefs = new LogicalQueryBuilder(this)
       .produceResults("nestedNodes")
       .projection("[[[[[[[[[[nodes]]]]]]]]]] as nestedNodes")
-      // .projection("nodes as nestedNodes")
       .aggregation(Seq.empty, Seq("collect(n) as nodes"))
       .allNodeScan("n")
       .build()
