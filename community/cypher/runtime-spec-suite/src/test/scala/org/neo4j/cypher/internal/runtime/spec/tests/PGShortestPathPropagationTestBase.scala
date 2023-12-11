@@ -1312,27 +1312,26 @@ abstract class PGShortestPathPropagationTestBase[CONTEXT <: RuntimeContext](
       selector: StatefulShortestPath.Selector = StatefulShortestPath.Selector.Shortest(Int.MaxValue)
     ): LogicalQueryBuilder = {
       val targetLabelString = targetLabel.map(": " + _)
-      val targetFilterString = targetFilter.map(" WHERE " + _)
-      val targetString = targetLabelString.getOrElse("") ++ targetFilterString.getOrElse("")
+      // TODO FIXME: this is a dirty hack to make predicates work on inner (expression) variables
+      val targetFilterString = targetFilter.map(" WHERE " + _.replace(targetName, s"${targetName}_inner"))
+      val targetPredicateString = targetLabelString.getOrElse("") ++ targetFilterString.getOrElse("")
       val firstAnon = "__anon1"
       val secondAnon = "__anon2"
 
+      val relPattern = direction match {
+        case SemanticDirection.OUTGOING => s"-[${relName}_inner]->"
+        case SemanticDirection.INCOMING => s"<-[${relName}_inner]-"
+        case SemanticDirection.BOTH => s"-[${relName}_inner]-"
+      }
+
       val builder = new TestNFABuilder(0, s"$sourceName")
-        .addTransition(0, 1, s"($sourceName) ($firstAnon)")
-        .addTransition(
-          1,
-          2,
-          direction match {
-            case SemanticDirection.OUTGOING => s"($firstAnon)-[$relName]->($secondAnon)"
-            case SemanticDirection.INCOMING => s"($firstAnon)<-[$relName]-($secondAnon)"
-            case SemanticDirection.BOTH     => s"($firstAnon)-[$relName]-($secondAnon)"
-          }
-        )
-        .addTransition(2, 1, s"($secondAnon) ($firstAnon)")
-        .addTransition(2, 3, s"($secondAnon) ($targetName $targetString)")
+        .addTransition(0, 1, s"($sourceName) (${firstAnon}_inner)")
+        .addTransition(1, 2, s"(${firstAnon}_inner)$relPattern(${secondAnon}_inner)")
+        .addTransition(2, 1, s"(${secondAnon}_inner) (${firstAnon}_inner)")
+        .addTransition(2, 3, s"(${secondAnon}_inner) (${targetName}_inner $targetPredicateString)")
         .setFinalState(3)
       if (includeZeroLength) {
-        builder.addTransition(0, 3, s"($sourceName) ($targetName $targetString)")
+        builder.addTransition(0, 3, s"($sourceName) (${targetName}_inner $targetPredicateString)")
       }
       val nfa = builder.build()
 
@@ -1341,9 +1340,9 @@ abstract class PGShortestPathPropagationTestBase[CONTEXT <: RuntimeContext](
         targetName,
         "",
         nonInlinablePrefilters,
-        Set(firstAnon -> firstAnon, secondAnon -> secondAnon),
-        Set(relName -> relName),
-        Set(targetName -> targetName),
+        Set(s"${firstAnon}_inner" -> firstAnon, s"${secondAnon}_inner" -> secondAnon),
+        Set(s"${relName}_inner" -> relName),
+        Set(s"${targetName}_inner" -> targetName),
         Set(),
         selector,
         nfa,

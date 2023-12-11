@@ -3034,7 +3034,7 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
 
   test("grid graph - start anywhere, interleaved RIGHT DOWN pattern, end with bottom right - ExpandInto") {
     val dim = 5
-    val bottomRightLabel = s"`${dim - 1},${dim - 1}`"
+    val bottomRightLabel = s"${dim - 1},${dim - 1}"
 
     val diagonal = givenGraph {
       val (nodes, _) = gridGraph(dim, dim)
@@ -3209,7 +3209,7 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
     // This test tests propagation
     val dim = 5 // Don't change
     val topLeftLabel = s"0,0"
-    val bottomRightLabel = s"`${dim - 1},${dim - 1}`"
+    val bottomRightLabel = s"${dim - 1},${dim - 1}"
 
     val nodes = givenGraph {
       val (nodes, _) = gridGraph(dim, dim)
@@ -3732,7 +3732,7 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
 
   test("grid graph - top left to bottom right, shortest 2 groups - ExpandInto") {
     val dim = 5
-    val bottomRightLabel = s"`${dim - 1},${dim - 1}`"
+    val bottomRightLabel = s"${dim - 1},${dim - 1}"
     val topLeftLabel = s"`0,0`"
 
     givenGraph {

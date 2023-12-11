@@ -78,13 +78,9 @@ object expressionVariableAllocation {
     ): List[ExpressionVariable] = {
       var innerVars = outerVars
       for (variable <- variables) {
-        if (!globalMapping.contains(variable.name)) {
-          val nextVariable = TemporaryExpressionVariable(numberOfConstantVariables + innerVars.length, variable.name)
-          globalMapping += variable.name -> nextVariable
-          innerVars = nextVariable :: innerVars
-        } else {
-          throw new IllegalStateException(s"expressionVariableAllocation.globalMapping.contains(${variable.name})")
-        }
+        val nextVariable = TemporaryExpressionVariable(numberOfConstantVariables + innerVars.length, variable.name)
+        globalMapping += variable.name -> nextVariable
+        innerVars = nextVariable :: innerVars
       }
       innerVars
     }
