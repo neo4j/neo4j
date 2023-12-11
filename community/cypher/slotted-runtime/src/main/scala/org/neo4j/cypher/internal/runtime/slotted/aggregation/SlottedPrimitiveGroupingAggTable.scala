@@ -48,7 +48,8 @@ class SlottedPrimitiveGroupingAggTable(
   writeGrouping: Array[Int], // Offsets into the long array of the current execution context
   aggregations: Map[Int, AggregationExpression],
   state: QueryState,
-  operatorId: Id
+  operatorId: Id,
+  argumentSize: SlotConfiguration.Size
 ) extends AggregationTable {
 
   private[this] var resultMap: HeapTrackingOrderedAppendMap[LongArray, Array[AggregationFunction]] = _
@@ -83,7 +84,11 @@ class SlottedPrimitiveGroupingAggTable(
   private def createResultRow(groupingKey: LongArray, aggregateFunctions: Seq[AggregationFunction]): CypherRow = {
     val row = SlottedRow(slots)
     if (state.initialContext.nonEmpty) {
-      row.copyAllFrom(state.initialContext.get)
+      row.copyFrom(
+        state.initialContext.get,
+        Math.min(argumentSize.nLongs, slots.numberOfLongs),
+        Math.min(argumentSize.nReferences, slots.numberOfReferences)
+      )
     }
     projectGroupingKey(row, groupingKey)
     var i = 0
@@ -125,7 +130,8 @@ object SlottedPrimitiveGroupingAggTable {
     slots: SlotConfiguration,
     readGrouping: Array[Int],
     writeGrouping: Array[Int],
-    aggregations: Map[Int, AggregationExpression]
+    aggregations: Map[Int, AggregationExpression],
+    argumentSize: SlotConfiguration.Size
   ) extends AggregationTableFactory {
 
     override def table(
@@ -133,7 +139,15 @@ object SlottedPrimitiveGroupingAggTable {
       rowFactory: CypherRowFactory,
       operatorId: Id
     ): AggregationPipe.AggregationTable =
-      new SlottedPrimitiveGroupingAggTable(slots, readGrouping, writeGrouping, aggregations, state, operatorId)
+      new SlottedPrimitiveGroupingAggTable(
+        slots,
+        readGrouping,
+        writeGrouping,
+        aggregations,
+        state,
+        operatorId,
+        argumentSize
+      )
   }
 
 }

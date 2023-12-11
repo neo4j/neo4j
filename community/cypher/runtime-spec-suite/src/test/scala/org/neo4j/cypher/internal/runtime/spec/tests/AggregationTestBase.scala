@@ -1693,6 +1693,27 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
       Array[Any](3, true, 1)
     ))
   }
+
+  test("primitive grouping aggregation on rhs should handle lhs rows with extra slots") {
+    val Seq(n) = givenGraph {
+      nodeGraph(1)
+    }
+
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("a")
+      .letSemiApply("c")
+      .|.filter("true")
+      .|.aggregation(Seq("b as b"), Seq.empty)
+      .|.allNodeScan("b", "a")
+      .allNodeScan("a")
+      .build()
+
+    val runtimeResult = execute(query, runtime)
+
+    runtimeResult should beColumns("a").withRows(Seq(
+      Array[Any](n)
+    ))
+  }
 }
 
 trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] extends BeforeAndAfterEach {

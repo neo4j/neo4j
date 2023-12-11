@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.slotted.aggregation
 
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration
+import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.Size
 import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.CountStar
@@ -46,7 +47,8 @@ class SlottedPrimitiveGroupingAggTableTest extends CypherFunSuite {
       Array(slots("c").offset),
       Map(slots("c").offset -> CountStar()),
       state,
-      Id(0)
+      Id(0),
+      Size.zero
     )
     table.clear()
 

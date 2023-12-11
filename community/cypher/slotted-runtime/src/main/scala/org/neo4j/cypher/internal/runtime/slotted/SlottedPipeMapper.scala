@@ -1334,7 +1334,13 @@ class SlottedPipeMapper(
           ) {
             // If we are able to use primitive for all incoming and outgoing grouping columns, we can use the more effective
             // Primitive table that leverages that the fact that grouping can be done a single array of longs
-            SlottedPrimitiveGroupingAggTable.Factory(slots, longSlotGroupingValues, longSlotGroupingKeys, aggregation)
+            SlottedPrimitiveGroupingAggTable.Factory(
+              slots,
+              longSlotGroupingValues,
+              longSlotGroupingKeys,
+              aggregation,
+              physicalPlan.argumentSizes(plan.id)
+            )
           } else {
             SlottedGroupingAggTable.Factory(
               slots,
