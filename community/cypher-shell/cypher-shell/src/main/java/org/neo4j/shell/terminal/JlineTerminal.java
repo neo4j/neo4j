@@ -22,7 +22,11 @@ package org.neo4j.shell.terminal;
 import static java.util.stream.StreamSupport.stream;
 
 import java.io.IOException;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.List;
 import java.util.function.Supplier;
 import org.jline.reader.Expander;
@@ -97,7 +101,42 @@ public class JlineTerminal implements CypherShellTerminal {
     }
 
     @Override
-    public void setHistoryFile(Path file) {
+    public void setHistoryBehaviour(HistoryBehaviour behaviour) throws IOException {
+        if (behaviour instanceof FileHistory fileHistory) {
+            setFileHistory(fileHistory.historyFile());
+        } else if (behaviour instanceof DefaultHistory) {
+            setFileHistory(Historian.defaultHistoryFile());
+        } else if (behaviour instanceof InMemoryHistory) {
+            jLineReader.setVariable(LineReader.HISTORY_FILE, null);
+            loadHistory();
+        }
+    }
+
+    private static void safeCreateHistoryFile(Path path) throws IOException {
+        if (Files.isDirectory(path)) {
+            throw new IOException("History file cannot be a directory, please delete " + path);
+        }
+        if (!Files.exists(path.getParent())) {
+            Files.createDirectories(path.getParent());
+        }
+        if (!Files.exists(path)) {
+            try {
+                Files.createFile(path);
+            } catch (FileAlreadyExistsException e) {
+                // Ignore
+            }
+        }
+        if (isPosix()) {
+            Files.setPosixFilePermissions(path, PosixFilePermissions.fromString("rw-------"));
+        }
+    }
+
+    private static boolean isPosix() {
+        return FileSystems.getDefault().supportedFileAttributeViews().contains("posix");
+    }
+
+    private void setFileHistory(Path file) throws IOException {
+        safeCreateHistoryFile(file);
         if (!file.equals(jLineReader.getVariable(LineReader.HISTORY_FILE))) {
             jLineReader.setVariable(LineReader.HISTORY_FILE, file);
             // the load here makes sure that history will work right from the start

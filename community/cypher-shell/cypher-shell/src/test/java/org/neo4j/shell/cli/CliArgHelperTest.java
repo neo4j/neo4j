@@ -36,6 +36,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URI;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -49,6 +50,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.shell.Environment;
 import org.neo4j.shell.parameter.ParameterService.RawParameters;
+import org.neo4j.shell.terminal.CypherShellTerminal;
 import org.neo4j.shell.test.LocaleDependentTestBase;
 
 class CliArgHelperTest extends LocaleDependentTestBase {
@@ -391,5 +393,14 @@ class CliArgHelperTest extends LocaleDependentTestBase {
         CliArgs arguments = parse("--log", file.getAbsolutePath());
         assertThat(arguments.logHandler()).containsInstanceOf(FileHandler.class);
         file.delete();
+    }
+
+    @Test
+    void history() {
+        assertThat(parse().getHistoryBehaviour()).isInstanceOf(CypherShellTerminal.DefaultHistory.class);
+        assertThat(parse("--history", "in-memory").getHistoryBehaviour())
+                .isInstanceOf(CypherShellTerminal.InMemoryHistory.class);
+        assertThat(parse("--history", "/some/path/file.history").getHistoryBehaviour())
+                .isEqualTo(new CypherShellTerminal.FileHistory(Path.of("/some/path/file.history")));
     }
 }

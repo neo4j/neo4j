@@ -19,8 +19,9 @@
  */
 package org.neo4j.shell.terminal;
 
+import java.io.IOException;
 import java.io.PrintStream;
-import java.nio.file.Path;
+import java.io.UnsupportedEncodingException;
 import org.neo4j.shell.Historian;
 
 /**
@@ -61,8 +62,8 @@ public class WriteOnlyCypherShellTerminal implements CypherShellTerminal {
     }
 
     @Override
-    public void setHistoryFile(Path file) {
-        throw new UnsupportedOperationException();
+    public void setHistoryBehaviour(HistoryBehaviour behaviour) throws IOException {
+        throw new UnsupportedEncodingException();
     }
 
     @Override

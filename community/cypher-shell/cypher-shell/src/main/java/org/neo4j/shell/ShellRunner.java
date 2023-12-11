@@ -128,7 +128,7 @@ public interface ShellRunner {
                         printer,
                         terminal,
                         new UserMessagesHandler(shell),
-                        cliArgs.getHistoryFile());
+                        cliArgs.getHistoryBehaviour());
             } else {
                 return new NonInteractiveShellRunner(
                         cliArgs.getFailBehavior(), shell, printer, new ShellStatementParser(), getInputStream(cliArgs));

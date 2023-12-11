@@ -24,8 +24,6 @@ import static org.neo4j.shell.DatabaseManager.DATABASE_UNAVAILABLE_ERROR_CODE;
 import static org.neo4j.shell.terminal.CypherShellTerminal.PROMPT_MAX_LENGTH;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.shell.Connector;
@@ -78,7 +76,7 @@ public class InteractiveShellRunner implements ShellRunner, UserInterruptHandler
             Printer printer,
             CypherShellTerminal terminal,
             UserMessagesHandler userMessagesHandler,
-            Path historyFile) {
+            CypherShellTerminal.HistoryBehaviour historyBehaviour) {
         this.userMessagesHandler = userMessagesHandler;
         this.currentlyExecuting = new AtomicBoolean(false);
         this.executer = executer;
@@ -87,7 +85,7 @@ public class InteractiveShellRunner implements ShellRunner, UserInterruptHandler
         this.connector = connector;
         this.printer = printer;
         this.terminal = terminal;
-        setupHistory(historyFile);
+        setupHistory(historyBehaviour);
 
         // Catch ctrl-c
         terminal.bindUserInterruptHandler(this);
@@ -217,12 +215,17 @@ public class InteractiveShellRunner implements ShellRunner, UserInterruptHandler
         return errorPromptSuffix;
     }
 
-    private void setupHistory(Path historyFile) {
-        var dir = historyFile.getParent();
-        if (Files.isDirectory(dir)) {
-            terminal.setHistoryFile(historyFile);
-        } else {
-            printer.printError("Could not load history file. Falling back to session-based history.\n");
+    private void setupHistory(CypherShellTerminal.HistoryBehaviour behaviour) {
+        try {
+            terminal.setHistoryBehaviour(behaviour);
+        } catch (Exception e) {
+            final var message = AnsiFormattedText.s()
+                    .colorRed()
+                    .append(String.format(
+                            "Could not load history file, falling back to session-based history: %s%n", e.getMessage()))
+                    .formattedString();
+            printer.printError(message);
+            log.error(e);
         }
     }
 

@@ -534,7 +534,7 @@ class InteractiveShellRunnerTest {
                 printer,
                 terminal,
                 userMessagesHandler,
-                historyFile);
+                new CypherShellTerminal.FileHistory(historyFile));
 
         return new TestInteractiveShellRunner(runner, output, error, mockedBoltStateHandler);
     }
@@ -624,7 +624,7 @@ class InteractiveShellRunnerTest {
                 printer,
                 testTerminal(input),
                 userMessagesHandler,
-                historyFile);
+                new CypherShellTerminal.FileHistory(historyFile));
     }
 
     private InteractiveShellRunner runner(CypherShellTerminal terminal) {
@@ -636,7 +636,7 @@ class InteractiveShellRunnerTest {
                 printer,
                 terminal,
                 userMessagesHandler,
-                historyFile);
+                new CypherShellTerminal.FileHistory(historyFile));
     }
 
     private static String lines(String... lines) {

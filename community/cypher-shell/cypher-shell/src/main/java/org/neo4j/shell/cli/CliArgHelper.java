@@ -31,6 +31,8 @@ import static org.neo4j.shell.cli.FailBehavior.FAIL_FAST;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Locale;
@@ -54,6 +56,7 @@ import net.sourceforge.argparse4j.inf.Namespace;
 import org.neo4j.shell.Environment;
 import org.neo4j.shell.log.Logger;
 import org.neo4j.shell.parameter.ParameterService;
+import org.neo4j.shell.terminal.CypherShellTerminal;
 
 /**
  * Command line argument parsing and related stuff
@@ -65,6 +68,7 @@ public class CliArgHelper {
     public static final String DATABASE_ENV_VAR = "NEO4J_DATABASE";
     public static final String ADDRESS_ENV_VAR = "NEO4J_ADDRESS";
     public static final String URI_ENV_VAR = "NEO4J_URI";
+    private static final String HISTORY_ENV_VAR = "NEO4J_CYPHER_SHELL_HISTORY";
     private static final String DEFAULT_ADDRESS = format("%s://%s:%d", DEFAULT_SCHEME, DEFAULT_HOST, DEFAULT_PORT);
 
     private final Environment environment;
@@ -181,6 +185,12 @@ public class CliArgHelper {
         cliArgs.setChangePassword(ns.getBoolean("change-password"));
 
         cliArgs.setLogHandler(ns.get("log-file"));
+
+        final var historyBehaviour = ofNullable(ns.<CypherShellTerminal.HistoryBehaviour>get("history-behaviour"))
+                .or(() -> ofNullable(environment.getVariable(HISTORY_ENV_VAR))
+                        .map(HistoryBehaviourHandler::historyFromFilePath))
+                .orElseGet(CypherShellTerminal.DefaultHistory::new);
+        cliArgs.setHistoryBehaviour(historyBehaviour);
 
         return cliArgs;
     }
@@ -350,6 +360,14 @@ public class CliArgHelper {
                 .setDefault((LogHandlerType) null)
                 .setConst(new ConsoleHandler());
 
+        parser.addArgument("--history")
+                .help(
+                        "file path of query and command history file or `in-memory` for in memory history. Defaults to <user home>/.neo4j/.cypher_shell_history. Can also be set using environmental variable "
+                                + HISTORY_ENV_VAR)
+                .dest("history-behaviour")
+                .type(new HistoryBehaviourHandler())
+                .setDefault((CypherShellTerminal.HistoryBehaviour) null);
+
         return parser;
     }
 
@@ -378,6 +396,27 @@ public class CliArgHelper {
                 return new FileHandler(value, MAX_BYTES, LOG_FILE_COUNT, false);
             } catch (IOException e) {
                 throw new ArgumentParserException("Failed to open log file: " + e.getMessage(), parser);
+            }
+        }
+    }
+
+    private static class HistoryBehaviourHandler implements ArgumentType<CypherShellTerminal.HistoryBehaviour> {
+
+        @Override
+        public CypherShellTerminal.HistoryBehaviour convert(
+                ArgumentParser argumentParser, Argument argument, String value) {
+            if ("in-memory".equals(value.toLowerCase(Locale.ROOT))) {
+                return new CypherShellTerminal.InMemoryHistory();
+            } else {
+                return historyFromFilePath(value);
+            }
+        }
+
+        private static CypherShellTerminal.FileHistory historyFromFilePath(String path) {
+            try {
+                return new CypherShellTerminal.FileHistory(Path.of(path));
+            } catch (InvalidPathException e) {
+                throw new IllegalArgumentException("Invalid history file path " + path);
             }
         }
     }

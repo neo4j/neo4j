@@ -22,21 +22,15 @@ package org.neo4j.shell;
 import static java.lang.System.getProperty;
 
 import java.io.IOException;
-import java.nio.file.FileAlreadyExistsException;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Collections;
 import java.util.List;
-import org.neo4j.shell.exception.CypherShellIOException;
 
 /**
  * An object which keeps a record of past commands
  */
 public interface Historian {
     Historian empty = new EmptyHistory();
-    boolean isPosix = FileSystems.getDefault().supportedFileAttributeViews().contains("posix");
 
     /**
      * @return a list of all past commands in the history, in order of execution (first command sorted first).
@@ -52,41 +46,7 @@ public interface Historian {
 
     static Path defaultHistoryFile() {
         // Storing in same directory as driver uses
-        var path = Path.of(getProperty("user.home"), ".neo4j", ".cypher_shell_history");
-        return defaultHistoryFile(path);
-    }
-
-    static Path defaultHistoryFile(Path path) {
-        try {
-            var historyFile = safeExists(path) ? path : createFileAndDirectories(path);
-            if (isPosix) {
-                Files.setPosixFilePermissions(path, PosixFilePermissions.fromString("rw-------"));
-            }
-            return historyFile;
-        } catch (IOException e) {
-            throw new CypherShellIOException(e);
-        }
-    }
-
-    private static boolean safeExists(Path path) throws IOException {
-        if (Files.exists(path)) {
-            if (Files.isDirectory(path)) {
-                throw new CypherShellIOException("History file cannot be a directory, please delete " + path);
-            } else {
-                return true;
-            }
-        } else {
-            return false;
-        }
-    }
-
-    private static Path createFileAndDirectories(Path path) throws IOException {
-        Files.createDirectories(path.getParent());
-        try {
-            return Files.createFile(path);
-        } catch (FileAlreadyExistsException e) {
-            return path;
-        }
+        return Path.of(getProperty("user.home"), ".neo4j", ".cypher_shell_history");
     }
 
     class EmptyHistory implements Historian {

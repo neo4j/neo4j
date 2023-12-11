@@ -22,13 +22,12 @@ package org.neo4j.shell.cli;
 import static org.neo4j.shell.DatabaseManager.ABSENT_DB_NAME;
 
 import java.net.URI;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import java.util.logging.Handler;
 import org.neo4j.shell.ConnectionConfig;
-import org.neo4j.shell.Historian;
 import org.neo4j.shell.parameter.ParameterService;
+import org.neo4j.shell.terminal.CypherShellTerminal;
 
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public class CliArgs {
@@ -54,7 +53,7 @@ public class CliArgs {
     private String inputFilename;
     private List<ParameterService.RawParameters> parameters;
     private boolean changePassword;
-    private Path historyFile = Historian.defaultHistoryFile();
+    private CypherShellTerminal.HistoryBehaviour historyBehaviour;
     private Handler logHandler;
 
     /**
@@ -219,12 +218,12 @@ public class CliArgs {
                 getUri(), getUsername(), getPassword(), getEncryption(), getDatabase(), impersonatedUser);
     }
 
-    public Path getHistoryFile() {
-        return historyFile;
+    public CypherShellTerminal.HistoryBehaviour getHistoryBehaviour() {
+        return historyBehaviour;
     }
 
-    public void setHistoryFile(Path historyFile) {
-        this.historyFile = historyFile;
+    public void setHistoryBehaviour(CypherShellTerminal.HistoryBehaviour historyBehaviour) {
+        this.historyBehaviour = historyBehaviour;
     }
 
     public URI getUri() {

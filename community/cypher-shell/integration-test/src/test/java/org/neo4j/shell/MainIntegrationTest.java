@@ -28,7 +28,9 @@ import static org.assertj.core.api.Assertions.anyOf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.shell.Conditions.contains;
@@ -339,7 +341,7 @@ class MainIntegrationTest {
     @Test
     void shouldDisconnectAndHistory() throws Exception {
         buildTest()
-                .addArgs("-u", USER, "-p", PASSWORD, "--format", "plain")
+                .addArgs("-u", USER, "-p", PASSWORD, "--format", "plain", "--history", "in-memory")
                 .userInputLines(":disconnect ", ":history", ":exit")
                 .run()
                 .assertSuccessAndDisconnected()
@@ -631,6 +633,7 @@ class MainIntegrationTest {
 
     @Test
     void shouldHandleMultiLineHistory() throws Exception {
+        final var history = Files.createTempFile("temp-cypher-shell-history", null);
         var expected =
                 """
                 > :history
@@ -645,11 +648,89 @@ class MainIntegrationTest {
                 """;
 
         buildTest()
-                .addArgs("-u", USER, "-p", PASSWORD, "--format", "plain")
+                .addArgs("-u", USER, "-p", PASSWORD, "--format", "plain", "--history", history.toString())
                 .userInputLines("return", "'hej' as greeting;", "return", "1", "as", "x", ";", ":history", ":exit")
                 .run()
                 .assertSuccessAndConnected()
                 .assertThatOutput(contains(expected), endsWithInteractiveExit);
+    }
+
+    @Test
+    void createHistoryFileIfNotExists() throws Exception {
+        final var historyDirectory = Files.createTempDirectory("temp-cypher-shell-history");
+        final var history = historyDirectory.resolve("dir").resolve("dir").resolve("the-history");
+        assertFalse(Files.exists(history));
+
+        var expected =
+                """
+                > :history
+                 1  return 1;
+                 2  :history
+                """;
+
+        buildTest()
+                .addArgs("-u", USER, "-p", PASSWORD, "--format", "plain", "--history", history.toString())
+                .userInputLines("return 1;", ":history", ":exit")
+                .run()
+                .assertSuccessAndConnected()
+                .assertThatOutput(contains(expected), endsWithInteractiveExit);
+
+        assertTrue(Files.exists(history));
+    }
+
+    @Test
+    void historyFromEnvironment() throws Exception {
+        final var history = Files.createTempFile("temp-cypher-shell-history", null);
+
+        var expected1 =
+                """
+                > :history
+                 1  return 1;
+                 2  :history
+                """;
+
+        buildTest()
+                .addArgs("-u", USER, "-p", PASSWORD, "--format", "plain")
+                .addEnvVariable("NEO4J_CYPHER_SHELL_HISTORY", history.toString())
+                .userInputLines("return 1;", ":history", ":exit")
+                .run()
+                .assertSuccessAndConnected()
+                .assertThatOutput(contains(expected1), endsWithInteractiveExit);
+        assertTrue(Files.exists(history));
+
+        var expected2 =
+                """
+                > :history
+                 1  return 1;
+                 2  :history
+                 3  :exit
+                 4  return 2;
+                 5  :history
+                """;
+
+        buildTest()
+                .addArgs("-u", USER, "-p", PASSWORD, "--format", "plain")
+                .addEnvVariable("NEO4J_CYPHER_SHELL_HISTORY", history.toString())
+                .userInputLines("return 2;", ":history", ":exit")
+                .run()
+                .assertSuccessAndConnected()
+                .assertThatOutput(contains(expected2), endsWithInteractiveExit);
+
+        assertTrue(Files.exists(history));
+    }
+
+    @Test
+    void failIfHistoryIsDirectory() throws Exception {
+        final var history = Files.createTempDirectory("temp-cypher-shell-history");
+
+        buildTest()
+                .addArgs("-u", USER, "-p", PASSWORD, "--format", "plain", "--history", history.toString())
+                .userInputLines(":exit")
+                .run()
+                .assertSuccess(false)
+                .assertThatErrorOutput(
+                        contains(
+                                "Could not load history file, falling back to session-based history: History file cannot be a directory"));
     }
 
     @Test
@@ -658,8 +739,7 @@ class MainIntegrationTest {
 
         // Build up some history
         buildTest()
-                .historyFile(history)
-                .addArgs("-u", USER, "-p", PASSWORD, "--format", "plain")
+                .addArgs("-u", USER, "-p", PASSWORD, "--format", "plain", "--history", history.toString())
                 .userInputLines("return 1;", "return 2;", ":exit")
                 .run()
                 .assertSuccessAndConnected();
@@ -686,8 +766,7 @@ class MainIntegrationTest {
 
         // Build up more history and clear
         buildTest()
-                .historyFile(history)
-                .addArgs("-u", USER, "-p", PASSWORD, "--format", "plain")
+                .addArgs("-u", USER, "-p", PASSWORD, "--format", "plain", "--history", history.toString())
                 .userInputLines("return 3;", ":history", ":history clear", ":history", ":exit")
                 .run()
                 .assertSuccessAndConnected()
@@ -697,6 +776,52 @@ class MainIntegrationTest {
         assertEquals(2, readHistoryAfterClear.size());
         assertThat(readHistoryAfterClear.get(0)).is(endsWith(":history"));
         assertThat(readHistoryAfterClear.get(1)).is(endsWith(":exit"));
+    }
+
+    @Test
+    void inMemoryHistory() throws ArgumentParserException, IOException {
+        buildTest()
+                .addArgs("-u", USER, "-p", PASSWORD, "--format", "plain", "--history", "in-memory")
+                .userInputLines("return 1;", "return 2;", ":history", ":exit")
+                .run()
+                .assertSuccessAndConnected()
+                .assertThatOutput(
+                        contains(
+                                """
+                        neo4j@neo4j> return 1;
+                        1
+                        1
+                        neo4j@neo4j> return 2;
+                        2
+                        2
+                        neo4j@neo4j> :history
+                         1  return 1;
+                         2  return 2;
+                         3  :history
+
+                        neo4j@neo4j> :exit
+                                """));
+
+        // Running again, previous history should be lost
+        buildTest()
+                .addArgs("-u", USER, "-p", PASSWORD, "--format", "plain", "--history", "in-memory")
+                .userInputLines("return 3;", "return 4;", ":history", ":exit")
+                .run()
+                .assertSuccessAndConnected()
+                .assertThatOutput(
+                        contains(
+                                """
+                        neo4j@neo4j> return 3;
+                        3
+                        3
+                        neo4j@neo4j> return 4;
+                        4
+                        4
+                        neo4j@neo4j> :history
+                         1  return 3;
+                         2  return 4;
+                         3  :history
+                                """));
     }
 
     @Test

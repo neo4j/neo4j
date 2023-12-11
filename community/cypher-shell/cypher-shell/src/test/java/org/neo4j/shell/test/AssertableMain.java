@@ -39,7 +39,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.PrintWriter;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -195,11 +194,6 @@ public class AssertableMain {
             return this;
         }
 
-        public AssertableMainBuilder historyFile(Path file) {
-            this.historyFile = file;
-            return this;
-        }
-
         public AssertableMainBuilder parameters(ParameterService parameters) {
             this.parameters = parameters;
             return this;
@@ -237,11 +231,8 @@ public class AssertableMain {
             return new AssertableMain(exitCode, out, err, shell);
         }
 
-        protected CliArgs parseArgs() throws ArgumentParserException, IOException {
-            var parsedArgs = new CliArgHelper(environment).parseAndThrow(args.toArray(String[]::new));
-            var history = historyFile != null ? historyFile : Files.createTempFile("temp-history", null);
-            parsedArgs.setHistoryFile(history);
-            return parsedArgs;
+        protected CliArgs parseArgs() throws ArgumentParserException {
+            return new CliArgHelper(environment).parseAndThrow(args.toArray(String[]::new));
         }
     }
 }
