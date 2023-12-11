@@ -625,7 +625,7 @@ object ReadFinder {
           Expand.ExpandAll
         )
 
-      case BFSPruningVarExpand(_, _, _, relTypes, to, _, _, _, _, _) =>
+      case BFSPruningVarExpand(_, _, _, relTypes, to, _, _, _, mode, _, _) =>
         // Note: nodePredicates and relPredicates are matched further down already, since
         //  they are VariablePredicates.
         // bfsPruningVarExpand does not introduce a rel variable, but we need one to attach the predicates to.
@@ -633,7 +633,7 @@ object ReadFinder {
           relTypes,
           to,
           Variable(anonymousVariableNameGenerator.nextName)(InputPosition.NONE),
-          Expand.ExpandAll
+          mode
         )
 
       case PathPropagatingBFS(_, _, _, _, _, relTypes, to, relName, _, _, _) =>

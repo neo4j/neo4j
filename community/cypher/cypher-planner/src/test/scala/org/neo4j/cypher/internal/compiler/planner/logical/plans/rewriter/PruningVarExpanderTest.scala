@@ -65,14 +65,30 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     rewrite(before) should equal(after)
   }
 
-  test("should not rewrite simplest possible VarExpandInto plan") {
+  test("should not rewrite simplest possible VarExpandInto plan with DFS policy") {
     val before = new LogicalPlanBuilder(wholePlan = false)
       .distinct("to AS to")
       .expandInto("(from)-[*1..3]->(to)")
       .allNodeScan("from")
       .build()
 
-    assertNotRewritten(before)
+    assertNotRewritten(before, policy = VarExpandRewritePolicy.PreferDFS)
+  }
+
+  test("should rewrite simplest possible VarExpandInto plan with BFS policy") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("to AS to")
+      .expandInto("(from)-[*1..3]->(to)")
+      .allNodeScan("from")
+      .build()
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("to AS to")
+      .bfsPruningVarExpand("(from)-[*1..3]->(to)", mode = ExpandInto)
+      .allNodeScan("from")
+      .build()
+
+    rewrite(before, policy = VarExpandRewritePolicy.PreferBFS) should equal(after)
   }
 
   test("do use BFSPruningVarExpand for undirected search when min depth is 0") {
@@ -171,14 +187,30 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     rewrite(before) should equal(after)
   }
 
-  test("should not rewrite expand into query with distinct aggregation") {
+  test("should not rewrite expand into query with distinct aggregation with DFS policy") {
     val before = new LogicalPlanBuilder(wholePlan = false)
       .aggregation(Seq.empty, Seq("count(DISTINCT to) AS x"))
       .expandInto("(from)<-[*1..3]-(to)")
       .allNodeScan("from")
       .build()
 
-    assertNotRewritten(before)
+    assertNotRewritten(before, policy = VarExpandRewritePolicy.PreferDFS)
+  }
+
+  test("should rewrite expand into query with distinct aggregation with BFS policy") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .aggregation(Seq.empty, Seq("count(DISTINCT to) AS x"))
+      .expandInto("(from)<-[*1..3]-(to)")
+      .allNodeScan("from")
+      .build()
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .aggregation(Seq.empty, Seq("count(DISTINCT to) AS x"))
+      .bfsPruningVarExpand("(from)<-[*1..3]-(to)", mode = ExpandInto)
+      .allNodeScan("from")
+      .build()
+
+    rewrite(before, policy = VarExpandRewritePolicy.PreferBFS) should equal(after)
   }
 
   test("ordered grouping aggregation") {
@@ -1062,7 +1094,12 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val before = new LogicalPlanBuilder(wholePlan = false)
       .distinct("d AS d")
       .projection("nodes(path) AS d")
-      .projection(Map("path" -> varLengthPathExpression(varFor("a"), varFor("r"), varFor("b"), SemanticDirection.BOTH)))
+      .projection(Map("path" -> varLengthPathExpression(
+        varFor("from"),
+        varFor("r"),
+        varFor("to"),
+        SemanticDirection.BOTH
+      )))
       .expand("(from)-[r*0..2]-(to)")
       .allNodeScan("from")
       .build()
@@ -1070,8 +1107,9 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     assertNotRewritten(before)
   }
 
-  test("do not use pruning-varexpand when both sides of the var-length-relationship are already known") {
-
+  test(
+    "do not use pruning-varexpand when both sides of the var-length-relationship are already known with DFS policy"
+  ) {
     val before = new LogicalPlanBuilder(wholePlan = false)
       .distinct("to AS to")
       .expand("(from)-[*1..3]-(to)", expandMode = ExpandInto)
@@ -1080,7 +1118,27 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
       .allNodeScan("from")
       .build()
 
-    assertNotRewritten(before)
+    assertNotRewritten(before, policy = VarExpandRewritePolicy.PreferDFS)
+  }
+
+  test("use pruning-varexpand when both sides of the var-length-relationship are already known with BFS policy") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("to AS to")
+      .expand("(from)-[*1..3]-(to)", expandMode = ExpandInto)
+      .cartesianProduct()
+      .|.allNodeScan("to")
+      .allNodeScan("from")
+      .build()
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("to AS to")
+      .bfsPruningVarExpand("(from)-[*1..3]-(to)", mode = ExpandInto)
+      .cartesianProduct()
+      .|.allNodeScan("to")
+      .allNodeScan("from")
+      .build()
+
+    rewrite(before, policy = VarExpandRewritePolicy.PreferBFS) should equal(after)
   }
 
   test("should handle insanely long logical plans without running out of stack") {
@@ -1875,12 +1933,19 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     assertNotRewritten(before)
   }
 
-  private def assertNotRewritten(p: LogicalPlan): Unit = {
-    rewrite(p) should equal(p)
+  private def assertNotRewritten(
+    p: LogicalPlan,
+    policy: VarExpandRewritePolicy = VarExpandRewritePolicy.default
+  ): Unit = {
+    rewrite(p, policy = policy) should equal(p)
   }
 
-  private def rewrite(p: LogicalPlan, names: Seq[String] = Seq.empty): LogicalPlan =
-    p.endoRewrite(pruningVarExpander(new VariableNameGenerator(names)))
+  private def rewrite(
+    p: LogicalPlan,
+    names: Seq[String] = Seq.empty,
+    policy: VarExpandRewritePolicy = VarExpandRewritePolicy.default
+  ): LogicalPlan =
+    p.endoRewrite(pruningVarExpander(new VariableNameGenerator(names), policy))
 
   class VariableNameGenerator(names: Seq[String]) extends AnonymousVariableNameGenerator {
     private val namesIterator = names.iterator

@@ -20,6 +20,9 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.logical.plans.Expand
+import org.neo4j.cypher.internal.logical.plans.Expand.ExpandInto
+import org.neo4j.cypher.internal.logical.plans.Expand.ExpansionMode
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.ClosingLongIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
@@ -35,6 +38,7 @@ import org.neo4j.internal.kernel.api.helpers.BFSPruningVarExpandCursor.allExpand
 import org.neo4j.internal.kernel.api.helpers.BFSPruningVarExpandCursor.incomingExpander
 import org.neo4j.internal.kernel.api.helpers.BFSPruningVarExpandCursor.outgoingExpander
 import org.neo4j.io.IOUtils
+import org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualNodeValue
@@ -52,6 +56,7 @@ case class BFSPruningVarLengthExpandPipe(
   dir: SemanticDirection,
   includeStartNode: Boolean,
   max: Int,
+  mode: ExpansionMode,
   filteringStep: VarLengthPredicate = VarLengthPredicate.NONE
 )(val id: Id = Id.INVALID_ID) extends PipeWithSource(source) with Pipe {
   self =>
@@ -63,51 +68,63 @@ case class BFSPruningVarLengthExpandPipe(
     input: ClosingIterator[CypherRow],
     state: QueryState
   ): ClosingIterator[CypherRow] = {
-    input.flatMap {
-      row =>
-        {
-          row.getByName(fromName) match {
-            case node: VirtualNodeValue =>
-              if (filteringStep.filterNode(row, state)(node)) {
-                val (nodePredicate, relationshipPredicate) =
-                  VarLengthPredicate.createPredicates(filteringStep, state, row)
-                val memoryTracker = state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x)
-                val expand = bfsIterator(
-                  state.query,
-                  node.id(),
-                  types,
-                  dir,
-                  includeStartNode,
-                  max,
-                  nodePredicate,
-                  relationshipPredicate,
-                  memoryTracker
-                )
-                PrimitiveLongHelper.map(
-                  expand,
-                  endNode => {
-                    if (emitDepth) {
-                      rowFactory.copyWith(
-                        row,
-                        toName,
-                        VirtualValues.node(endNode),
-                        depthName,
-                        Values.intValue(expand.currentDepth)
-                      )
-                    } else {
-                      rowFactory.copyWith(row, toName, VirtualValues.node(endNode))
-                    }
-                  }
-                )
-              } else {
-                ClosingIterator.empty
-              }
+    def expand(row: CypherRow, fromNode: VirtualNodeValue, toNodeId: Long): ClosingIterator[CypherRow] = {
+      if (filteringStep.filterNode(row, state)(fromNode)) {
+        val (nodePredicate, relationshipPredicate) =
+          VarLengthPredicate.createPredicates(filteringStep, state, row)
+        val memoryTracker = state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x)
 
-            case IsNoValue() => ClosingIterator.empty
-            case value =>
-              throw new InternalException(s"Expected to find a node at '$fromName' but found $value instead")
+        val expand = bfsIterator(
+          state.query,
+          fromNode.id(),
+          toNodeId,
+          types,
+          dir,
+          includeStartNode,
+          max,
+          mode,
+          nodePredicate,
+          relationshipPredicate,
+          memoryTracker
+        )
+        PrimitiveLongHelper.map(
+          expand,
+          endNode => {
+            if (emitDepth) {
+              rowFactory.copyWith(
+                row,
+                toName,
+                VirtualValues.node(endNode),
+                depthName,
+                Values.intValue(expand.currentDepth)
+              )
+            } else {
+              rowFactory.copyWith(row, toName, VirtualValues.node(endNode))
+            }
           }
-        }
+        )
+      } else {
+        ClosingIterator.empty
+      }
+    }
+
+    input.flatMap { row =>
+      row.getByName(fromName) match {
+        case fromNode: VirtualNodeValue =>
+          mode match {
+            case Expand.ExpandAll => expand(row, fromNode, NO_SUCH_NODE)
+            case Expand.ExpandInto =>
+              row.getByName(toName) match {
+                case toNode: VirtualNodeValue => expand(row, fromNode, toNode.id())
+                case IsNoValue()              => ClosingIterator.empty
+                case value =>
+                  throw new InternalException(s"Expected to find a node at '$toName' but found $value instead")
+              }
+          }
+        case IsNoValue() => ClosingIterator.empty
+        case value =>
+          throw new InternalException(s"Expected to find a node at '$fromName' but found $value instead")
+      }
     }
   }
 
@@ -122,10 +139,12 @@ object BFSPruningVarLengthExpandPipe {
   def bfsIterator(
     query: QueryContext,
     node: Long,
+    to: Long,
     types: RelationshipTypes,
     dir: SemanticDirection,
     includeStartNode: Boolean,
     max: Int,
+    mode: ExpansionMode,
     nodePredicate: LongPredicate,
     relPredicate: Predicate[RelationshipTraversalCursor],
     memoryTracker: MemoryTracker
@@ -145,6 +164,7 @@ object BFSPruningVarLengthExpandPipe {
           traversalCursor,
           nodePredicate,
           relPredicate,
+          if (mode == ExpandInto) to else NO_SUCH_NODE,
           memoryTracker
         )
       case SemanticDirection.INCOMING =>
@@ -158,6 +178,7 @@ object BFSPruningVarLengthExpandPipe {
           traversalCursor,
           nodePredicate,
           relPredicate,
+          if (mode == ExpandInto) to else NO_SUCH_NODE,
           memoryTracker
         )
       case SemanticDirection.BOTH =>
@@ -171,6 +192,7 @@ object BFSPruningVarLengthExpandPipe {
           traversalCursor,
           nodePredicate,
           relPredicate,
+          if (mode == ExpandInto) to else NO_SUCH_NODE,
           memoryTracker
         )
     }

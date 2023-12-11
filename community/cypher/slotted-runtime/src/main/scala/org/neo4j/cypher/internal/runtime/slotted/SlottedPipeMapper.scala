@@ -949,11 +949,12 @@ class SlottedPipeMapper(
           includeStartNode,
           max,
           depthName,
+          mode,
           nodePredicates,
           relationshipPredicates
         ) =>
         val fromSlot = slots(from)
-        val toOffset = slots.getLongOffsetFor(to)
+        val toSlot = slots(to)
         val depthOffset = depthName.map(slots.getReferenceOffsetFor)
 
         // The node/relationship predicates are evaluated on the source pipeline, not the produced one
@@ -975,13 +976,14 @@ class SlottedPipeMapper(
         BFSPruningVarLengthExpandSlottedPipe(
           source,
           fromSlot,
-          toOffset,
+          toSlot,
           depthOffset,
           RelationshipTypes(types.toArray),
           dir,
           includeStartNode,
           max,
           slots,
+          mode,
           nodePredicates = nodeSlottedPredicates,
           relationshipPredicates = relSlottedPredicates
         )(id = id)

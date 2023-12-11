@@ -1839,6 +1839,7 @@ case class LogicalPlan2PlanDescription(
           includeStartNode,
           max,
           depthName,
+          mode,
           nodePredicates,
           relationshipPredicates
         ) =>
@@ -1852,12 +1853,17 @@ case class LogicalPlan2PlanDescription(
           maxLength = Some(max),
           maybeProperties = None
         )
+        val modeDescr = mode match {
+          case ExpandAll  => "All"
+          case ExpandInto => "Into"
+        }
+
         val (expandDescriptionPrefix, predicatesDescription) =
           varExpandPredicateDescriptions(nodePredicates, relationshipPredicates)
         val depthString = depthName.map(d => asPrettyString(s"${d.name}")).getOrElse(asPrettyString(""))
         PlanDescriptionImpl(
           id,
-          s"VarLengthExpand(Pruning,BFS)",
+          s"VarLengthExpand(Pruning,BFS,$modeDescr)",
           children,
           Seq(Details(pretty"$expandDescriptionPrefix$expandInfo$predicatesDescription $depthString")),
           variables,

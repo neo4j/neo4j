@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.VarExpandRewritePolicy.PreferDFS
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
@@ -41,6 +42,7 @@ import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
+import org.neo4j.cypher.internal.logical.plans.Expand.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
@@ -79,8 +81,13 @@ import scala.collection.mutable
  * .allNodeScan(n)
  *
  * Should run after [[TrailToVarExpandRewriter]] in order to rewrite as many VarExpand as possible.
+ *
+ * @param policy Determines whether a VarExpand(Into) should be planned as a BFS or DFS
  */
-case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableNameGenerator) extends Rewriter {
+case class pruningVarExpander(
+  anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
+  policy: VarExpandRewritePolicy
+) extends Rewriter {
 
   sealed private trait HorizonPlan {
     def aggregationExpressions: Map[String, Expression]
@@ -175,6 +182,7 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
     private def canReplaceWithPruning(expand: VarExpand): Boolean = {
       horizonPlan != null &&
       validMaxLength(expand, requireMaxLength = true) &&
+      expand.mode == ExpandAll &&
       !allDependencies(expand.relName.name)
     }
 
@@ -267,7 +275,7 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
           val groupingDependencies = aggPlan.groupingExpressions.values.flatMap(_.dependencies.map(_.name)).toSet
           (DistinctHorizon(groupingDependencies, AggregatingHorizonPlan(aggPlan)), DistinctHorizon.empty)
 
-        case expand: VarExpand if expand.mode == ExpandAll =>
+        case expand: VarExpand if policy.accept(expand) =>
           distinctHorizon.getRewrite(expand) match {
             case RewriteToPruning =>
               pruningExpands += Ref(expand)
@@ -375,7 +383,7 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
                 toId,
                 _,
                 length,
-                _,
+                mode,
                 nodePredicate,
                 relationshipPredicate
               ) =>
@@ -389,6 +397,7 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
                   length.min == 0,
                   length.max.getOrElse(Int.MaxValue),
                   depthName = replacementPlans.bfsPruningExpands(Ref(expand)).map(varFor),
+                  mode,
                   nodePredicate,
                   relationshipPredicate
                 )(SameId(expand.id))
@@ -430,4 +439,29 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
       case _ => input
     }
   }
+}
+
+sealed trait VarExpandRewritePolicy {
+
+  def accept(plan: VarExpand): Boolean =
+    (this, plan.mode) match {
+      case (PreferDFS, ExpandInto) => false
+      case _                       => true
+    }
+}
+
+object VarExpandRewritePolicy {
+
+  /**
+   * Indicates that a VarExpand(Into) should be left as a DFS, which is the default.
+   */
+  case object PreferDFS extends VarExpandRewritePolicy
+
+  /**
+   * Indicates that a VarExpand(Into) should be rewritten to a BFS where possible. This can have a negative impact on
+   * performance in the worst case, so is not enabled by default.
+   */
+  case object PreferBFS extends VarExpandRewritePolicy
+
+  val default: VarExpandRewritePolicy = PreferDFS
 }

@@ -107,7 +107,7 @@ case object PlanRewriter extends LogicalPlanRewriter with StepSequencer.Step wit
           solveds,
           providedOrders
         )),
-        pruningVarExpander(anonymousVariableNameGenerator),
+        pruningVarExpander(anonymousVariableNameGenerator, VarExpandRewritePolicy.default),
         // Only used on read-only queries, until rewriter is tested to work with cleanUpEager
         if (readOnly) bfsAggregationRemover else identity,
         // Only used on read-only queries, until rewriter is tested to work with cleanUpEager

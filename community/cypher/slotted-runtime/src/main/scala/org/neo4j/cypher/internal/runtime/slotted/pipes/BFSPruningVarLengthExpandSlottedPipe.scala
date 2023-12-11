@@ -20,8 +20,12 @@
 package org.neo4j.cypher.internal.runtime.slotted.pipes
 
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
+import org.neo4j.cypher.internal.logical.plans.Expand.ExpandInto
+import org.neo4j.cypher.internal.logical.plans.Expand.ExpansionMode
 import org.neo4j.cypher.internal.physicalplanning.Slot
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration
+import org.neo4j.cypher.internal.physicalplanning.SlotConfigurationUtils.NO_ENTITY_FUNCTION
 import org.neo4j.cypher.internal.physicalplanning.SlotConfigurationUtils.makeGetPrimitiveNodeFromSlotFunctionFor
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
@@ -47,19 +51,25 @@ import java.util.function.Predicate
 case class BFSPruningVarLengthExpandSlottedPipe(
   source: Pipe,
   fromSlot: Slot,
-  toOffset: Int,
+  toSlot: Slot,
   maybeDepthOffset: Option[Int],
   types: RelationshipTypes,
   dir: SemanticDirection,
   includeStartNode: Boolean,
   max: Int,
   slots: SlotConfiguration,
+  mode: ExpansionMode,
   nodePredicates: Seq[SlottedVariablePredicate],
   relationshipPredicates: Seq[SlottedVariablePredicate]
 )(val id: Id = Id.INVALID_ID) extends PipeWithSource(source) with Pipe {
   self =>
 
   private val getFromNodeFunction = makeGetPrimitiveNodeFromSlotFunctionFor(fromSlot, throwOnTypeError = false)
+
+  private val getToNodeFunction =
+    if (mode == ExpandAll) NO_ENTITY_FUNCTION // We only need this getter in the ExpandInto case
+    else makeGetPrimitiveNodeFromSlotFunctionFor(toSlot, throwOnTypeError = false)
+
   private val emitDepth: Boolean = maybeDepthOffset.nonEmpty
   private val depthOffset: Int = maybeDepthOffset.getOrElse(-1)
 
@@ -71,7 +81,8 @@ case class BFSPruningVarLengthExpandSlottedPipe(
       inputRow =>
         {
           val fromNode = getFromNodeFunction.applyAsLong(inputRow)
-          if (entityIsNull(fromNode)) {
+          val toNode = getToNodeFunction.applyAsLong(inputRow)
+          if (entityIsNull(fromNode) || (mode == ExpandInto && entityIsNull(toNode))) {
             ClosingIterator.empty
           } else {
             if (
@@ -97,10 +108,12 @@ case class BFSPruningVarLengthExpandSlottedPipe(
               val expand = bfsIterator(
                 state.query,
                 fromNode,
+                toNode,
                 types,
                 dir,
                 includeStartNode,
                 max,
+                mode,
                 nP,
                 rP,
                 memoryTracker
@@ -111,7 +124,7 @@ case class BFSPruningVarLengthExpandSlottedPipe(
                 endNode => {
                   val outputRow = SlottedRow(slots)
                   outputRow.copyAllFrom(inputRow)
-                  outputRow.setLongAt(toOffset, endNode)
+                  outputRow.setLongAt(toSlot.offset, endNode)
                   if (emitDepth) {
                     outputRow.setRefAt(depthOffset, Values.intValue(expand.currentDepth))
                   }

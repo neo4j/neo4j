@@ -396,6 +396,7 @@ object LogicalPlanToPlanBuilderString {
           includeStartNode,
           maxLength,
           depthName,
+          mode,
           nodePredicates,
           relationshipPredicates
         ) =>
@@ -406,7 +407,8 @@ object LogicalPlanToPlanBuilderString {
         val nPredStr = variablePredicates(nodePredicates, "nodePredicates")
         val rPredStr = variablePredicates(relationshipPredicates, "relationshipPredicates")
         val depthNameStr = depthName.map(d => s""", depthName = Some("${d.name}")""").getOrElse("")
-        s""" "(${from.name})$dirStrA[$typeStr*$lenStr]$dirStrB(${to.name})"$nPredStr$rPredStr$depthNameStr """.trim
+        val modeStr = s", mode = $mode"
+        s""" "(${from.name})$dirStrA[$typeStr*$lenStr]$dirStrB(${to.name})"$nPredStr$rPredStr$depthNameStr$modeStr """.trim
       case Limit(_, count) =>
         integerString(count)
       case ExhaustiveLimit(_, count) =>

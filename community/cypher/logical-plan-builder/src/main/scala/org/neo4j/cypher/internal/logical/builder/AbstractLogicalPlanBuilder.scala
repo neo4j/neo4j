@@ -719,11 +719,14 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     pattern: String,
     depthName: Option[String] = None,
     nodePredicates: Seq[Predicate] = Seq.empty,
-    relationshipPredicates: Seq[Predicate] = Seq.empty
+    relationshipPredicates: Seq[Predicate] = Seq.empty,
+    mode: ExpansionMode = ExpandAll
   ): IMPL = {
     val p = patternParser.parse(pattern)
     newRelationship(varFor(p.relName))
-    newNode(varFor(p.to))
+    if (mode == ExpandAll) {
+      newNode(varFor(p.to))
+    }
     p.length match {
       case VarPatternLength(min, maybeMax) if min <= 1 =>
         appendAtCurrentIndent(UnaryOperator(lp =>
@@ -736,6 +739,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
             min == 0,
             maxLength = maybeMax.getOrElse(Int.MaxValue),
             depthName.map(varFor),
+            mode,
             nodePredicates.map(_.asVariablePredicate),
             relationshipPredicates.map(_.asVariablePredicate)
           )(_)

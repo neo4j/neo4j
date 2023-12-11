@@ -1040,6 +1040,7 @@ case class InterpretedPipeMapper(
           includeStartNode,
           max,
           depthName,
+          mode,
           nodePredicate,
           relationshipPredicate
         ) =>
@@ -1053,6 +1054,7 @@ case class InterpretedPipeMapper(
           dir,
           includeStartNode,
           max,
+          mode,
           predicate
         )(id = id)
 

@@ -41,6 +41,7 @@ import java.util.function.Supplier;
 public final class Predicates {
     public static final IntPredicate ALWAYS_TRUE_INT = v -> true;
     public static final IntPredicate ALWAYS_FALSE_INT = v -> false;
+    public static final LongPredicate ALWAYS_TRUE_LONG = v -> true;
     public static final LongPredicate ALWAYS_FALSE_LONG = v -> false;
 
     private static final int DEFAULT_POLL_INTERVAL = 20;

@@ -122,7 +122,7 @@ case object bfsDepthOrderer extends Rewriter {
           _: UndirectedRelationshipUniqueIndexSeek |
           _: NodeUniqueIndexSeek =>
           sortHorizon.lastCardinalityIncreasingPlan match {
-            case Some(BFSPruningVarExpand(_, _, _, _, _, _, _, Some(depthName), _, _)) =>
+            case Some(BFSPruningVarExpand(_, _, _, _, _, _, _, Some(depthName), _, _, _)) =>
               recordSortPlanForRewriting(sortHorizon, depthName.name)
             case _ => // do nothing
           }

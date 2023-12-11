@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
+import org.neo4j.cypher.internal.logical.plans.Expand.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
@@ -1744,6 +1745,82 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("i", "y").withRows(expected)
+  }
+
+  test("var-length-expand into") {
+    // given
+    val (nodes, _) = givenGraph {
+      gridGraph()
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y", "depth")
+      .bfsPruningVarExpand("(x)-[*]->(y)", mode = ExpandInto, depthName = Some("depth"))
+      .cartesianProduct()
+      .|.nodeByLabelScan("y", "1,1", IndexOrderNone)
+      .nodeByLabelScan("x", "0,0", IndexOrderNone)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    runtimeResult should beColumns("x", "y", "depth").withRows(Array(Array(nodes(0), nodes(6), 2)))
+  }
+
+  test("var-length-expand into self") {
+    // given
+    val (nodes, _) = givenGraph {
+      gridGraph()
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "depth")
+      .bfsPruningVarExpand("(x)-[*0..]->(x)", mode = ExpandInto, depthName = Some("depth"))
+      .nodeByLabelScan("x", "0,0", IndexOrderNone)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    runtimeResult should beColumns("x", "depth").withRows(Array(Array(nodes(0), 0)))
+  }
+
+  test("var-length-expand into self with min length") {
+    // given
+    val (nodes, _) = givenGraph {
+      gridGraph()
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "depth")
+      .bfsPruningVarExpand("(x)-[*]-(x)", mode = ExpandInto, depthName = Some("depth"))
+      .nodeByLabelScan("x", "0,0", IndexOrderNone)
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    runtimeResult should beColumns("x", "depth").withRows(Array(Array(nodes.head, 4)))
+  }
+
+  test("var-length-expand into self via loop with min length") {
+    // given
+    val node = givenGraph {
+      val Seq(node) = nodeGraph(1)
+      node.createRelationshipTo(node, RelationshipType.withName("R"))
+      node
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "depth")
+      .bfsPruningVarExpand("(x)-[*]-(x)", mode = ExpandInto, depthName = Some("depth"))
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    runtimeResult should beColumns("x", "depth").withRows(Array(Array(node, 1)))
   }
 
   // HELPERS

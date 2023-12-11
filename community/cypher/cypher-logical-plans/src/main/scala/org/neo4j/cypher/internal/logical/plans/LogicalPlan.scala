@@ -1828,6 +1828,7 @@ case class BFSPruningVarExpand(
   includeStartNode: Boolean,
   maxLength: Int,
   depthName: Option[LogicalVariable],
+  mode: ExpansionMode,
   override val nodePredicates: Seq[VariablePredicate] = Seq.empty,
   override val relationshipPredicates: Seq[VariablePredicate] = Seq.empty
 )(implicit idGen: IdGen)
