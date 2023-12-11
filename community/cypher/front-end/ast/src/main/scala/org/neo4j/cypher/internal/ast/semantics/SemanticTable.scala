@@ -36,6 +36,8 @@ import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.symbols.TypeSpec
 
+import scala.runtime.ScalaRunTime
+
 object SemanticTable {
 
   /**
@@ -72,6 +74,8 @@ case class SemanticTable(
   resolvedPropertyKeyNames: Map[String, PropertyKeyId] = Map.empty,
   resolvedRelTypeNames: Map[String, RelTypeId] = Map.empty
 ) {
+
+  override lazy val hashCode: Int = ScalaRunTime._hashCode(this)
 
   def id(labelName: LabelName): Option[LabelId] = resolvedLabelNames.get(labelName.name)
 
