@@ -387,6 +387,7 @@ case class CypherPlanner(
       transactionalContextWrapper.cancellationChecker,
       options.materializedEntitiesMode,
       options.queryOptions.eagerAnalyzer,
+      options.queryOptions.labelInference,
       databaseReferenceRepository,
       transactionalContextWrapper.databaseId,
       log,

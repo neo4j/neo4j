@@ -43,6 +43,7 @@ import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.options.LabelInferenceOption
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
@@ -261,7 +262,7 @@ trait MetricsFactory {
   def newQueryGraphCardinalityModel(
     planContext: PlanContext,
     calculator: SelectivityCalculator,
-    labelInference: Boolean
+    labelInference: LabelInferenceOption
   ): QueryGraphCardinalityModel
 
   def newSelectivityCalculator(planContext: PlanContext): SelectivityCalculator =
@@ -271,7 +272,7 @@ trait MetricsFactory {
     planContext: PlanContext,
     expressionEvaluator: ExpressionEvaluator,
     executionModel: ExecutionModel,
-    labelInference: Boolean = false
+    labelInference: LabelInferenceOption = LabelInferenceOption.default
   ): Metrics = {
     val selectivityCalculator = newSelectivityCalculator(planContext)
     val queryGraphCardinalityModel = newQueryGraphCardinalityModel(planContext, selectivityCalculator, labelInference)

@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.ir.NodeConnection
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.SimplePatternLength
+import org.neo4j.cypher.internal.options.LabelInferenceOption
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Cardinality.NumericCardinality
@@ -46,7 +47,7 @@ final class AssumeIndependenceQueryGraphCardinalityModel(
   planContext: PlanContext,
   selectivityCalculator: SelectivityCalculator,
   combiner: SelectivityCombiner,
-  labelInference: Boolean
+  labelInference: LabelInferenceOption
 ) extends QueryGraphCardinalityModel with NodeConnectionCardinalityModel {
 
   private case class SimpleRelationship(startNode: String, endNode: String, relationshipType: RelTypeId) {
@@ -130,7 +131,7 @@ final class AssumeIndependenceQueryGraphCardinalityModel(
   ): (LabelInfo, Cardinality) = {
     val initialPredicates = QueryGraphPredicates.partitionSelections(labelInfo, queryGraph.selections)
 
-    val (predicates, newContext) = if (labelInference) {
+    val (predicates, newContext) = if (labelInference == LabelInferenceOption.enabled) {
       val allInferredLabels = for {
         nodeConnection <- queryGraph.nodeConnections.toSeq
         simpleRelationship <- SimpleRelationship.fromNodeConnection(nodeConnection, context.semanticTable).iterator

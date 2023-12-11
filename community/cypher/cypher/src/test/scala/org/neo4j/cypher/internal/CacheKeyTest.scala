@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.options.CypherQueryOptions
 import org.neo4j.cypher.internal.options.CypherReplanOption
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.options.CypherUpdateStrategy
+import org.neo4j.cypher.internal.options.LabelInferenceOption
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class CacheKeyTest extends CypherFunSuite {
@@ -64,12 +65,13 @@ class CacheKeyTest extends CypherFunSuite {
       connectComponentsPlanner = CypherConnectComponentsPlannerOption.idp,
       debugOptions = CypherDebugOptions(Set(CypherDebugOption.queryGraph, CypherDebugOption.tostring)),
       parallelRuntimeSupportOption = CypherParallelRuntimeSupportOption.disabled,
-      eagerAnalyzer = CypherEagerAnalyzerOption.lp
+      eagerAnalyzer = CypherEagerAnalyzerOption.lp,
+      labelInference = LabelInferenceOption.enabled
     )
 
     options.cacheKey
       .shouldEqual(
-        "PROFILE planner=dp runtime=pipelined updateStrategy=eager expressionEngine=interpreted operatorEngine=interpreted interpretedPipesFallback=all connectComponentsPlanner=idp debug=querygraph debug=tostring parallelRuntimeSupport=disabled eagerAnalyzer=lp"
+        """PROFILE planner=dp runtime=pipelined updateStrategy=eager expressionEngine=interpreted operatorEngine=interpreted interpretedPipesFallback=all connectComponentsPlanner=idp debug=querygraph debug=tostring parallelRuntimeSupport=disabled eagerAnalyzer=lp labelInference=enabled"""
       )
   }
 }

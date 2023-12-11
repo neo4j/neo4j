@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.options.CypherEagerAnalyzerOption
+import org.neo4j.cypher.internal.options.LabelInferenceOption
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
@@ -125,6 +126,7 @@ object PlannerContext {
     cancellationChecker: CancellationChecker,
     materializedEntitiesMode: Boolean,
     eagerAnalyzer: CypherEagerAnalyzerOption,
+    labelInference: LabelInferenceOption,
     databaseReferenceRepository: DatabaseReferenceRepository,
     databaseId: NamedDatabaseId,
     log: Log,
@@ -132,7 +134,7 @@ object PlannerContext {
   ): PlannerContext = {
     val exceptionFactory = Neo4jCypherExceptionFactory(queryText, offset)
 
-    val metrics = metricsFactory.newMetrics(planContext, evaluator, executionModel, config.labelInference())
+    val metrics = metricsFactory.newMetrics(planContext, evaluator, executionModel, labelInference)
 
     new PlannerContext(
       exceptionFactory,

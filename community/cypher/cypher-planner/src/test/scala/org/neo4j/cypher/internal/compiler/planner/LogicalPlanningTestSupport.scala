@@ -96,6 +96,7 @@ import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.options.CypherDebugOptions
+import org.neo4j.cypher.internal.options.LabelInferenceOption
 import org.neo4j.cypher.internal.planner.spi.CostBasedPlannerName
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
@@ -153,7 +154,7 @@ trait LogicalPlanningTestSupport extends AstConstructionTestSupport with Logical
     override def newQueryGraphCardinalityModel(
       planContext: PlanContext,
       selectivityCalculator: SelectivityCalculator,
-      labelInference: Boolean
+      labelInference: LabelInferenceOption
     ): QueryGraphCardinalityModel = {
       SimpleMetricsFactory.newQueryGraphCardinalityModel(planContext, selectivityCalculator, labelInference)
     }

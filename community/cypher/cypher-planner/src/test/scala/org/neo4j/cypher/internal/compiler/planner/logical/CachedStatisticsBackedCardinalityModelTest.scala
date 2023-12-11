@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.UnionQuery
+import org.neo4j.cypher.internal.options.LabelInferenceOption
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -45,7 +46,7 @@ class CachedStatisticsBackedCardinalityModelTest extends CypherFunSuite with Log
       config.planContext,
       selectivityCalculator,
       IndependenceCombiner,
-      false
+      LabelInferenceOption.default
     )
 
   val cardinalityModel: StatisticsBackedCardinalityModel =

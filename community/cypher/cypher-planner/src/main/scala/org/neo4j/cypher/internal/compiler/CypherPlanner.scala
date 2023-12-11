@@ -280,11 +280,4 @@ class CypherPlannerConfiguration(
 
   val queryRouterEnabled: Boolean = config.useQueryRouterForRegularQueries
   val queryRouterForCompositeQueriesEnabled: Boolean = config.allowCompositeQueries
-
-  val labelInference: () => Boolean = {
-    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
-      !GraphDatabaseInternalSettings.label_inference.dynamic()
-    )
-    () => config.labelInference
-  }
 }

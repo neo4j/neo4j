@@ -84,6 +84,7 @@ import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
 import org.neo4j.cypher.internal.options.CypherDebugOptions
+import org.neo4j.cypher.internal.options.LabelInferenceOption
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
@@ -272,7 +273,7 @@ trait LogicalPlanningTestSupport2 extends AstConstructionTestSupport with Logica
       override def newQueryGraphCardinalityModel(
         planContext: PlanContext,
         selectivityCalculator: SelectivityCalculator,
-        labelInference: Boolean
+        labelInference: LabelInferenceOption
       ): QueryGraphCardinalityModel =
         QueryGraphCardinalityModel.default(planContext, selectivityCalculator, labelInference)
     }

@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.options.CypherOperatorEngineOption
 import org.neo4j.cypher.internal.options.CypherParallelRuntimeSupportOption
 import org.neo4j.cypher.internal.options.CypherPlannerOption
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
+import org.neo4j.cypher.internal.options.LabelInferenceOption
 import org.neo4j.graphdb.config.Setting
 
 import java.io.File
@@ -83,7 +84,7 @@ class CypherConfiguration private (val config: Config) {
   val predicatesAsUnionMaxSize: Int = config.get(GraphDatabaseInternalSettings.predicates_as_union_max_size)
   val allowCompositeQueries: Boolean = config.get(GraphDatabaseInternalSettings.composite_queries_with_query_router)
   val useQueryRouterForRegularQueries: Boolean = config.get(GraphDatabaseInternalSettings.query_router_new_stack)
-  val labelInference: Boolean = config.get(GraphDatabaseInternalSettings.label_inference)
+  val labelInference: LabelInferenceOption = LabelInferenceOption.fromConfig(config)
 
   val errorIfShortestPathFallbackUsedAtRuntime: Boolean =
     config.get(GraphDatabaseSettings.forbid_exhaustive_shortestpath)

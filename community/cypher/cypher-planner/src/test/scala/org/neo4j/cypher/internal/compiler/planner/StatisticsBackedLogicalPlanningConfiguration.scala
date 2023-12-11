@@ -61,6 +61,7 @@ import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.options.CypherDebugOption
 import org.neo4j.cypher.internal.options.CypherDebugOptions
+import org.neo4j.cypher.internal.options.LabelInferenceOption
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
@@ -107,6 +108,7 @@ object StatisticsBackedLogicalPlanningConfigurationBuilder {
   case class Options(
     debug: CypherDebugOptions = CypherDebugOptions(Set(CypherDebugOption.verboseEagernessReasons)),
     connectComponentsPlanner: Boolean = true,
+    useLabelInference: LabelInferenceOption = LabelInferenceOption.default,
     executionModel: ExecutionModel = ExecutionModel.default,
     useMinimumGraphStatistics: Boolean = false,
     txStateHasChanges: Boolean = false,
@@ -524,6 +526,11 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
 
   def enableMinimumGraphStatistics(enable: Boolean = true): StatisticsBackedLogicalPlanningConfigurationBuilder = {
     this.copy(options = options.copy(useMinimumGraphStatistics = enable))
+  }
+
+  def enableLabelInference(option: LabelInferenceOption = LabelInferenceOption.enabled)
+    : StatisticsBackedLogicalPlanningConfigurationBuilder = {
+    this.copy(options = options.copy(useLabelInference = option))
   }
 
   def enableDeduplicateNames(enable: Boolean = true): StatisticsBackedLogicalPlanningConfigurationBuilder = {
@@ -1031,7 +1038,7 @@ class StatisticsBackedLogicalPlanningConfiguration(
       planContext,
       simpleExpressionEvaluator,
       options.executionModel,
-      plannerConfiguration.labelInference()
+      options.useLabelInference
     )
 
     val context = ContextHelper.create(

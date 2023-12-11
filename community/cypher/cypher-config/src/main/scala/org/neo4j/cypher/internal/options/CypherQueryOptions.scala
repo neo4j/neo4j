@@ -44,7 +44,8 @@ case class CypherQueryOptions(
   connectComponentsPlanner: CypherConnectComponentsPlannerOption,
   debugOptions: CypherDebugOptions,
   parallelRuntimeSupportOption: CypherParallelRuntimeSupportOption,
-  eagerAnalyzer: CypherEagerAnalyzerOption
+  eagerAnalyzer: CypherEagerAnalyzerOption,
+  labelInference: LabelInferenceOption
 ) {
 
   if (ILLEGAL_EXPRESSION_ENGINE_RUNTIME_COMBINATIONS((expressionEngine, runtime)))
@@ -228,6 +229,28 @@ case object CypherUpdateStrategy extends CypherOptionCompanion[CypherUpdateStrat
   implicit val renderer: OptionRenderer[CypherUpdateStrategy] = OptionRenderer.create(_.render)
   implicit val cacheKey: OptionCacheKey[CypherUpdateStrategy] = OptionCacheKey.create(_.cacheKey)
   implicit val reader: OptionReader[CypherUpdateStrategy] = singleOptionReader()
+}
+
+sealed abstract class LabelInferenceOption(option: String) extends CypherKeyValueOption(option) {
+  override def companion: LabelInferenceOption.type = LabelInferenceOption
+}
+
+case object LabelInferenceOption extends CypherOptionCompanion[LabelInferenceOption](
+      name = "labelInference",
+      setting = Some(GraphDatabaseInternalSettings.label_inference),
+      cypherConfigField = Some(_.labelInference)
+    ) {
+
+  case object enabled extends LabelInferenceOption("enabled")
+  case object disabled extends LabelInferenceOption("disabled")
+  override def default: LabelInferenceOption = disabled
+
+  def values: Set[LabelInferenceOption] = Set(default, enabled, disabled)
+
+  implicit val hasDefault: OptionDefault[LabelInferenceOption] = OptionDefault.create(default)
+  implicit val renderer: OptionRenderer[LabelInferenceOption] = OptionRenderer.create(_.render)
+  implicit val cacheKey: OptionCacheKey[LabelInferenceOption] = OptionCacheKey.create(_.cacheKey)
+  implicit val reader: OptionReader[LabelInferenceOption] = singleOptionReader()
 }
 
 sealed abstract class CypherExpressionEngineOption(engineName: String) extends CypherKeyValueOption(engineName) {

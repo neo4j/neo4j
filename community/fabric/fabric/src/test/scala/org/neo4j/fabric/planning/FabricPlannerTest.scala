@@ -47,6 +47,7 @@ import org.neo4j.cypher.internal.options.CypherQueryOptions
 import org.neo4j.cypher.internal.options.CypherReplanOption
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.options.CypherUpdateStrategy
+import org.neo4j.cypher.internal.options.LabelInferenceOption
 import org.neo4j.cypher.internal.tracing.TimingCompilationTracer
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
@@ -975,7 +976,8 @@ class FabricPlannerTest
           connectComponentsPlanner = CypherConnectComponentsPlannerOption.greedy,
           debugOptions = CypherDebugOptions(Set(CypherDebugOption.tostring)),
           parallelRuntimeSupportOption = CypherParallelRuntimeSupportOption.all,
-          eagerAnalyzer = CypherEagerAnalyzerOption.default
+          eagerAnalyzer = CypherEagerAnalyzerOption.default,
+          labelInference = LabelInferenceOption.default
         )
       )
 

@@ -58,6 +58,7 @@ import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
+import org.neo4j.cypher.internal.options.LabelInferenceOption
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.LabelId
@@ -130,7 +131,7 @@ object CardinalityCalculator {
         planContext,
         SimpleMetricsFactory.newSelectivityCalculator(planContext),
         IndependenceCombiner,
-        false
+        LabelInferenceOption.default
       )
       val expandCardinality =
         qgCardinalityModel(
