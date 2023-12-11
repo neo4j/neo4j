@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
+import org.neo4j.cypher.internal.frontend.phases.Namespacer
 import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
@@ -31,6 +32,8 @@ import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.helpers.NameDeduplicator
+
+import scala.util.matching.Regex
 
 /**
  * On the way from query to plan, we generate a number of anonymous variables. Not all of them are used in the final plan
@@ -54,8 +57,11 @@ case object CompressAnonymousVariables extends Phase[PlannerContext, LogicalPlan
     val anonymousVariables = input.folder.treeCollect {
       case v @ LogicalVariable(NameDeduplicator.UNNAMED_PATTERN(_, _)) => v
     }
+    val namedAnonymousVariables = input.folder.treeCollect {
+      case v @ LogicalVariable(NameDeduplicator.DEDUP_PATTERN(_, _)) => v
+    }
 
-    val compression = anonymousVariables
+    val anonTable = anonymousVariables
       .distinct
       // we need to sort because some plan constructs contain anonymous variables in sets which are otherwise non-deterministic in their order
       .sortBy {
@@ -63,15 +69,28 @@ case object CompressAnonymousVariables extends Phase[PlannerContext, LogicalPlan
         case _                                                           => throw new IllegalStateException()
       }
       .zipWithIndex
-      .map {
-        case (key, value) =>
-          s"${key.name}\\b" -> AnonymousVariableNameGenerator.anonymousVarName(value)
+//
+    val namedAnonTable = namedAnonymousVariables
+      .distinct
+      // we need to sort because some plan constructs contain anonymous variables in sets which are otherwise non-deterministic in their order
+      .sortBy {
+        case LogicalVariable(NameDeduplicator.DEDUP_PATTERN(_, index)) => index.toInt
+        case _                                                         => throw new IllegalStateException()
       }
+      .zipWithIndex
+
+    val compression = (anonTable ++ namedAnonTable).map {
+      case (originalName, index) =>
+        s"${Regex.quote(originalName.name)}\\b".r ->
+          Namespacer.includeName(originalName.name, AnonymousVariableNameGenerator.anonymousVarName(index))
+    }
 
     val rewriter = bottomUp(Rewriter.lift {
       case s: String =>
         // We need string replacement to fix up solved expression string
-        compression.foldLeft(s)((s, replacement) => s.replaceAll(replacement._1, replacement._2))
+        compression.foldLeft(s) {
+          case (s, (regex, replacement)) => regex.replaceAllIn(s, replacement)
+        }
     })
 
     rewriter.apply(input).asInstanceOf[T]

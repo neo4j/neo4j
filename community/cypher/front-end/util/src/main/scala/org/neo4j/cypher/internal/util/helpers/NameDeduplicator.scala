@@ -28,7 +28,7 @@ object NameDeduplicator {
 
     def unapply(variableName: String): Option[String] =
       variableName match {
-        case DEDUP_PATTERN(variableName)                                          => Some(variableName)
+        case DEDUP_PATTERN(variableName, _)                                       => Some(variableName)
         case variableName if AnonymousVariableNameGenerator.isNamed(variableName) => Some(variableName)
         case _                                                                    => None
       }
@@ -42,7 +42,7 @@ object NameDeduplicator {
   }
 
   private val UNNAMED_PARAMS_PATTERN = """ {2}(AUTOINT|AUTODOUBLE|AUTOSTRING|AUTOLIST)(\d+)""".r
-  val DEDUP_PATTERN: Regex = """ {2}((?:(?! {2}).)+?)@\d+""".r
+  val DEDUP_PATTERN: Regex = """ {2}((?:(?! {2}).)+?)@(\d+)""".r
 
   private def transformGeneratedNamesRewriter(transformation: String => String): Rewriter = topDown(Rewriter.lift {
     case s: String => transformation(s)

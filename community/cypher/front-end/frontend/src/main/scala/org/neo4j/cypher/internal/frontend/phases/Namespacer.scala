@@ -133,11 +133,19 @@ case object Namespacer extends Phase[BaseContext, BaseState, BaseState]
    */
   def genName(anonymousVariableNameGenerator: AnonymousVariableNameGenerator, variableName: String): String = {
     val nextName = anonymousVariableNameGenerator.nextName
+    val res = includeName(variableName, nextName)
+    res
+  }
+
+  /**
+   * @param anonVarName a variable name obtained from `AnonymousVariableNameGenerator#nextName`
+   */
+  def includeName(variableName: String, anonVarName: String): String = {
     variableName match {
       case NamedVariable(name) =>
-        nextName.replace(AnonymousVariableNameGenerator.generatorName, name + "@")
+        anonVarName.replace(AnonymousVariableNameGenerator.generatorName, name + "@")
       case _ =>
-        nextName
+        anonVarName
     }
   }
 
