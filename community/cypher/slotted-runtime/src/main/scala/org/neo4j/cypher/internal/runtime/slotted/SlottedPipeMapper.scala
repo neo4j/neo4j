@@ -1114,9 +1114,8 @@ class SlottedPipeMapper(
           nonInlinedPreFilters.map(expressionConverters.toCommandExpression(id, _)).map(_.rewriteAsPredicate(identity))
 
         val intoTargetName = mode match {
-          case ExpandInto                      => Some(slots(targetNode))
-          case ExpandAll if p.isImplicitlyInto => Some(slots(targetNode)) // TODO remove this later
-          case ExpandAll                       => None
+          case ExpandInto => Some(slots(targetNode))
+          case ExpandAll  => None
         }
 
         StatefulShortestPathSlottedPipe(

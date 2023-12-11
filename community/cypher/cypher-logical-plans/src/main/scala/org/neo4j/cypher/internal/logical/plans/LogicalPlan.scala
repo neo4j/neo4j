@@ -2017,25 +2017,6 @@ case class StatefulShortestPath(
     relationshipVariableGroupings.map(_.group)
 
   override val distinctness: Distinctness = NotDistinct
-
-  // hacky workaround while we implement a real ExpandInto check
-  val isImplicitlyInto: Boolean =
-    nfa.transitions.values
-      .flatten
-      .filter(t => nfa.finalState == t.end)
-      .map(t =>
-        t.predicate match {
-          case NFA.NodeJuxtapositionPredicate(pred)                 => pred
-          case NFA.RelationshipExpansionPredicate(_, _, _, _, pred) => pred
-        }
-      )
-      .forall {
-        case Some(VariablePredicate(exprVar, Equals(lhs: LogicalVariable, rhs))) =>
-          rhs == exprVar && source.availableSymbols.map(_.name).contains(lhs.name)
-        case Some(VariablePredicate(exprVar, Equals(lhs, rhs: LogicalVariable))) =>
-          lhs == exprVar && source.availableSymbols.map(_.name).contains(rhs.name)
-        case _ => false
-      }
 }
 
 /**

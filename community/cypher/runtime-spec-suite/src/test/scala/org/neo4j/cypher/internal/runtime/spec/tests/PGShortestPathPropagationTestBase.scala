@@ -1321,7 +1321,7 @@ abstract class PGShortestPathPropagationTestBase[CONTEXT <: RuntimeContext](
       val relPattern = direction match {
         case SemanticDirection.OUTGOING => s"-[${relName}_inner]->"
         case SemanticDirection.INCOMING => s"<-[${relName}_inner]-"
-        case SemanticDirection.BOTH => s"-[${relName}_inner]-"
+        case SemanticDirection.BOTH     => s"-[${relName}_inner]-"
       }
 
       val builder = new TestNFABuilder(0, s"$sourceName")
