@@ -103,7 +103,7 @@ public class HeapTrackingListValueBuilder implements AutoCloseable {
 
     private long payloadSize() {
         // The shallow size should not be transferred to the ListValue (but the ScopedMemoryTracker is)
-        // Note if the scopedMemoryTracker is an EmptyMemoryTracker this we might get a negative value here
+        // Note if the scopedMemoryTracker is an EmptyMemoryTracker then we might get a negative value here
         return Math.max(unAllocatedHeapSize + scopedMemoryTracker.estimatedHeapMemory() - SHALLOW_SIZE, 0L);
     }
 
