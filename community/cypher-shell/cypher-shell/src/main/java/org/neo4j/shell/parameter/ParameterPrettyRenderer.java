@@ -62,7 +62,7 @@ class ParameterPrettyRendererImpl implements ParameterPrettyRenderer {
     private org.neo4j.cypherdsl.core.Expression asCypherDslAst(Object input) {
         if (input instanceof Value driverValue) {
             final var object = driverValue.asObject();
-            if (object.getClass() != input.getClass()) {
+            if (object == null || object.getClass() != input.getClass()) {
                 return asCypherDslAst(object);
             }
         }

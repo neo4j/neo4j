@@ -809,9 +809,11 @@ class MainIntegrationTest {
                 entry("functionCall", "toString(1+1)"),
                 entry("` backticks `", "true"),
                 entry("string_escape", "'\\'yes?\\''"),
-                entry("string_escape2_judgement_day", "\"\\\"mjau\\\"\""));
+                entry("string_escape2_judgement_day", "\"\\\"mjau\\\"\""),
+                entry("nope", "null"));
         // Combine all parameters in a map force online evaluation of all types as well
         final var evalutateOnlineExp = paramExpressions.stream()
+                .filter(e -> !e.getValue().equals("null"))
                 .map(e -> e.getKey() + ":" + e.getValue())
                 .collect(Collectors.joining(",", "{", "}"));
         final var allParams = Stream.concat(paramExpressions.stream(), Stream.of(entry("online", evalutateOnlineExp)))
@@ -820,6 +822,7 @@ class MainIntegrationTest {
                 .map(e -> format(":param {%s:%s}", e.getKey(), e.getValue()))
                 .toList();
         final var verifyQuery = allParams.stream()
+                .filter(e -> !e.getValue().equals("null"))
                 .map(e -> format("{%s: $%s = %s}", e.getKey(), e.getKey(), e.getValue()))
                 .collect(Collectors.joining(",\n", "unwind [", "] as result return result;"));
 
@@ -846,6 +849,7 @@ class MainIntegrationTest {
                                           int: 1,
                                           localdatetime: localdatetime('2023-03-21T11:17:15.1'),
                                           localtime: localtime('02:00:00'),
+                                          nope: NULL,
                                           online: {
                                             ` backticks `: true,
                                             bool: true,
@@ -1003,10 +1007,11 @@ class MainIntegrationTest {
                         ":param when => date('2021-01-12')",
                         ":param repeatAfterMe => 'A' + 'B' + 'C'",
                         ":param easyAs => 1 + 2 + 3",
+                        ":param {nope: null}",
                         ":param {a: {a:[duration('PT1M'), 1*2*3]}, b: toString(23)}",
                         ":param {c: 1.1, d: true}",
                         ":params",
-                        "unwind [$purple,$advice,$when,$repeatAfterMe,$easyAs,$a,$b,$c,$d] as param return param;")
+                        "unwind [$purple,$advice,$when,$repeatAfterMe,$easyAs,$a,$b,$c,$d,$nope] as param return param;")
                 .run()
                 .assertSuccessAndConnected()
                 .assertThatOutput(
@@ -1022,6 +1027,7 @@ class MainIntegrationTest {
                           c: 1.1,
                           d: true,
                           easyAs: 6,
+                          nope: NULL,
                           purple: 'rain',
                           repeatAfterMe: 'ABC',
                           when: date('2021-01-12')
@@ -1029,7 +1035,7 @@ class MainIntegrationTest {
                         """),
                         contains(
                                 """
-                        > unwind [$purple,$advice,$when,$repeatAfterMe,$easyAs,$a,$b,$c,$d] as param return param;
+                        > unwind [$purple,$advice,$when,$repeatAfterMe,$easyAs,$a,$b,$c,$d,$nope] as param return param;
                         param
                         "rain"
                         ["talk", "less", "smile", "more"]
@@ -1039,7 +1045,8 @@ class MainIntegrationTest {
                         {a: [PT1M, 6]}
                         "23"
                         1.1
-                        TRUE"""));
+                        TRUE
+                        NULL"""));
     }
 
     @Test
