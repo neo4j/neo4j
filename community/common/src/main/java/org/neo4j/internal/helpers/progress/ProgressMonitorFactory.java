@@ -37,44 +37,146 @@ public abstract class ProgressMonitorFactory {
         }
     };
 
+    /**
+     * Creates a textual indicator that outputs to the OutputStream passed in.
+     * A textual indicator will output progress using grouped dots and percentages on multiple lines.
+     * The output will look like:<br>
+     * ................... 10%<br>
+     * ................... 20%<br>
+     * <...><br>
+     * ................... 100%<br>
+     * <p>
+     * For more control over how to display progress, look at {@link #textual(OutputStream, boolean, int, int, int)}
+     * </p>
+     * <p>
+     * For a simple indicator that just outputs progress numbers, use {@link #textual textual}
+     * </p>
+     * @param out {@link OutputStream OutputStream} to write to.
+     * @return {@link ProgressMonitorFactory}
+     */
     public static ProgressMonitorFactory textual(final OutputStream out) {
         return textual(
                 new OutputStreamWriter(out, StandardCharsets.UTF_8),
                 false,
-                Indicator.Textual.DEFAULT_DOTS_PER_GROUP,
-                Indicator.Textual.DEFAULT_GROUPS_PER_LINE,
-                Indicator.Textual.DEFAULT_NUM_LINES);
+                TextualIndicator.DEFAULT_DOTS_PER_GROUP,
+                TextualIndicator.DEFAULT_GROUPS_PER_LINE,
+                TextualIndicator.DEFAULT_NUM_LINES);
     }
 
+    /**
+     * Creates a basicTextual indicator that outputs to the OutputStream passed in.
+     * A textual indicator will output progress as a simple percentage.
+     * <p>
+     * For a more advanced indicator, use {@link #textual(OutputStream, boolean, int, int, int)}
+     * </p>
+     * @param out {@link OutputStream OutputStream} to write to.
+     * @return {@link ProgressMonitorFactory}
+     */
+    public static ProgressMonitorFactory basicTextual(final Writer out) {
+        return basicTextual(
+                out,
+                BasicTextualIndicator.DEFAULT_RESOLUTION,
+                BasicTextualIndicator.DEFAULT_DISPLAY_STEP,
+                BasicTextualIndicator.DEFAULT_DISPLAY_TEXT);
+    }
+
+    /**
+     * Creates a textual indicator that outputs to the Writer passed in.
+     * A textual indicator will output progress using grouped dots and percentages on multiple lines.
+     * The output will look like:<br>
+     * ................... 10%<br>
+     * ................... 20%<br>
+     * <...><br>
+     * ................... 100%<br>
+     * <p>
+     * For more control over how to display progress, look at {@link #textual(OutputStream, boolean, int, int, int)}
+     * </p>
+     * <p>
+     * For a simple indicator that just outputs progress numbers, use {@link #textual textual}
+     * </p>
+     * @param out {@link Writer Writer} to write to.
+     * @return {@link ProgressMonitorFactory}
+     */
     public static ProgressMonitorFactory textual(final Writer out) {
         return textual(
                 out,
                 false,
-                Indicator.Textual.DEFAULT_DOTS_PER_GROUP,
-                Indicator.Textual.DEFAULT_GROUPS_PER_LINE,
-                Indicator.Textual.DEFAULT_NUM_LINES);
+                TextualIndicator.DEFAULT_DOTS_PER_GROUP,
+                TextualIndicator.DEFAULT_GROUPS_PER_LINE,
+                TextualIndicator.DEFAULT_NUM_LINES);
     }
 
+    /**
+     * Creates a textual indicator that outputs to the OutputStream passed in.
+     * A textual indicator will output progress using grouped dots and percentages on multiple lines.
+     * Here is an example of output:<br>
+     * ..... ..... ..... 20%<br>
+     * ..... ..... ..... 40%<br>
+     * ..... ..... ..... 60%<br>
+     * ..... ..... ..... 80%<br>
+     * ..... ..... ..... 100%<br>
+     * <p>
+     * For a simple indicator that just outputs progress numbers, use {@link #textual textual}
+     * </p>
+     * @param out {@link OutputStream OutputStream} to write to.
+     * @param deltaTimes Enable/disable timestamps.
+     * @param dotsPerGroup How many dots we have in each group. In the above example, it is 5.
+     * @param groupsPerLine How many groups of dots per line. In the above example, it i 3
+     * @param numLines How many lines, each ending with a percentage. In the above example it is 5.
+     * @return {@link ProgressMonitorFactory}
+     */
     public static ProgressMonitorFactory textual(
             final OutputStream out, boolean deltaTimes, int dotsPerGroup, int groupsPerLine, int numLines) {
         return textual(
                 new OutputStreamWriter(out, StandardCharsets.UTF_8), deltaTimes, dotsPerGroup, groupsPerLine, numLines);
     }
 
+    /**
+     * Creates a textual indicator that outputs to the Writer passed in.
+     * A textual indicator will output progress using grouped dots and percentages on multiple lines.
+     * Here is an example of output:<br>
+     * ..... ..... ..... 20%<br>
+     * ..... ..... ..... 40%<br>
+     * ..... ..... ..... 60%<br>
+     * ..... ..... ..... 80%<br>
+     * ..... ..... ..... 100%<br>
+     * <p>
+     * For a simple indicator that just outputs progress numbers, use {@link #textual textual}
+     * </p>
+     * @param out {@link Writer Writer} to write to.
+     * @param deltaTimes Enable/disable timestamps.
+     * @param dotsPerGroup How many dots we have in each group. In the above example, it is 5.
+     * @param groupsPerLine How many groups of dots per line. In the above example, it i 3
+     * @param numLines How many lines, each ending with a percentage. In the above example it is 5.
+     * @return {@link ProgressMonitorFactory}
+     */
     public static ProgressMonitorFactory textual(
             final Writer out, boolean deltaTimes, int dotsPerGroup, int groupsPerLine, int numLines) {
         return new ProgressMonitorFactory() {
             @Override
             protected Indicator newIndicator(String process) {
-                return new Indicator.Textual(
+                return new TextualIndicator(
                         process,
                         writer(),
                         deltaTimes,
                         Clocks.nanoClock(),
-                        Indicator.Textual.DEFAULT_DELTA_CHARACTER,
+                        TextualIndicator.DEFAULT_DELTA_CHARACTER,
                         dotsPerGroup,
                         groupsPerLine,
                         numLines);
+            }
+
+            private PrintWriter writer() {
+                return out instanceof PrintWriter ? (PrintWriter) out : new PrintWriter(out);
+            }
+        };
+    }
+
+    public static ProgressMonitorFactory basicTextual(final Writer out, int resolution, int step, String displayText) {
+        return new ProgressMonitorFactory() {
+            @Override
+            protected Indicator newIndicator(String process) {
+                return new BasicTextualIndicator(process, writer(), resolution, step, displayText);
             }
 
             private PrintWriter writer() {

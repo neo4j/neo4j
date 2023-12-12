@@ -22,7 +22,6 @@ package org.neo4j.kernel.recovery;
 import static java.util.Collections.emptyList;
 import static org.apache.commons.io.IOUtils.EMPTY_BYTE_ARRAY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
@@ -37,7 +36,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Answers;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-import org.neo4j.common.ProgressReporter;
+import org.neo4j.internal.helpers.progress.Indicator;
+import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
@@ -78,14 +78,14 @@ class RecoveryProgressIndicatorTest {
                 .thenReturn(reverseCommandBatchCursor);
         when(recoveryService.getCommandBatches(transactionLogPosition)).thenReturn(commandBatchCursor);
 
-        AssertableProgressReporter progressReporter = new AssertableProgressReporter(expectedMax);
+        AssertableProgressMonitorFactory factory = new AssertableProgressMonitorFactory(expectedMax);
         var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY_CONTEXT_SUPPLIER);
         TransactionLogsRecovery recovery = new TransactionLogsRecovery(
                 recoveryService,
                 logsTruncator,
                 new LifecycleAdapter(),
                 recoveryMonitor,
-                progressReporter,
+                factory,
                 true,
                 EMPTY_CHECKER,
                 RecoveryPredicate.ALL,
@@ -93,36 +93,34 @@ class RecoveryProgressIndicatorTest {
                 RecoveryMode.FULL);
         recovery.init();
 
-        progressReporter.verify();
+        factory.verify();
     }
 
-    private static class AssertableProgressReporter implements ProgressReporter {
+    private static class AssertableProgressMonitorFactory extends ProgressMonitorFactory {
         private final int expectedMax;
         private int recoveredTransactions;
         private long max;
-        private boolean completed;
 
-        AssertableProgressReporter(int expectedMax) {
+        AssertableProgressMonitorFactory(int expectedMax) {
             this.expectedMax = expectedMax;
         }
 
         @Override
-        public void start(long max) {
-            this.max = max;
-        }
+        protected Indicator newIndicator(String process) {
+            return new Indicator(expectedMax) {
+                @Override
+                public void startProcess(long totalCount) {
+                    max = totalCount;
+                }
 
-        @Override
-        public void progress(long add) {
-            recoveredTransactions += add;
-        }
-
-        @Override
-        public void completed() {
-            completed = true;
+                @Override
+                protected void progress(int from, int to) {
+                    recoveredTransactions += (to - from);
+                }
+            };
         }
 
         public void verify() {
-            assertTrue(completed, "Progress reporting was not completed.");
             assertEquals(expectedMax, max, "Number of max recovered transactions is different.");
             assertEquals(expectedMax, recoveredTransactions, "Number of recovered transactions is different.");
         }

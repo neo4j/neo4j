@@ -39,7 +39,6 @@ import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.counts.CountsUpdater;
@@ -54,6 +53,8 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactories;
 import org.neo4j.internal.counts.CountsBuilder;
 import org.neo4j.internal.counts.GBPTreeCountsStore;
+import org.neo4j.internal.helpers.progress.Indicator;
+import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.kernel.api.TokenWrite;
@@ -151,8 +152,8 @@ class CountsComputerTest {
         long lastCommittedTransactionId = getLastTxId(db);
         managementService.shutdown();
 
-        InvocationTrackingProgressReporter progressReporter = new InvocationTrackingProgressReporter();
-        rebuildCounts(lastCommittedTransactionId, progressReporter);
+        InvocationTrackingProgressMonitorFactory factory = new InvocationTrackingProgressMonitorFactory();
+        rebuildCounts(lastCommittedTransactionId, factory);
 
         try (var store = createCountsStore(matchingBuilder(lastCommittedTransactionId), getDBOpenOptions(db))) {
             store.start(NULL_CONTEXT, INSTANCE);
@@ -160,8 +161,8 @@ class CountsComputerTest {
             store.accept(new AssertEmptyCountStoreVisitor(), NULL_CONTEXT);
         }
 
-        softly.assertThat(progressReporter.isCompleteInvoked()).as("Complete").isTrue();
-        softly.assertThat(progressReporter.isStartInvoked()).as("Start").isFalse();
+        softly.assertThat(factory.isStartInvoked()).as("Start").isFalse();
+        softly.assertThat(factory.isAddInvoked()).as("Add").isFalse();
     }
 
     @Test
@@ -574,10 +575,11 @@ class CountsComputerTest {
     }
 
     private void rebuildCounts(long lastCommittedTransactionId) throws IOException {
-        rebuildCounts(lastCommittedTransactionId, ProgressReporter.SILENT);
+        rebuildCounts(lastCommittedTransactionId, ProgressMonitorFactory.NONE);
     }
 
-    private void rebuildCounts(long lastCommittedTransactionId, ProgressReporter progressReporter) throws IOException {
+    private void rebuildCounts(long lastCommittedTransactionId, ProgressMonitorFactory progressMonitorFactory)
+            throws IOException {
         cleanupCountsForRebuilding();
 
         IdGeneratorFactory idGenFactory = new DefaultIdGeneratorFactory(
@@ -610,7 +612,7 @@ class CountsComputerTest {
                     highLabelId,
                     highRelationshipTypeId,
                     NumberArrayFactories.AUTO_WITHOUT_PAGECACHE,
-                    progressReporter,
+                    progressMonitorFactory,
                     CONTEXT_FACTORY,
                     INSTANCE);
             try (var countsStore = createCountsStore(countsComputer, neoStores.getOpenOptions())) {
@@ -643,29 +645,31 @@ class CountsComputerTest {
                 .getOpenOptions();
     }
 
-    private static class InvocationTrackingProgressReporter implements ProgressReporter {
+    private static class InvocationTrackingProgressMonitorFactory extends ProgressMonitorFactory {
+        private boolean addInvoked;
         private boolean startInvoked;
-        private boolean completeInvoked;
 
-        @Override
-        public void start(long max) {
-            startInvoked = true;
-        }
-
-        @Override
-        public void progress(long add) {}
-
-        @Override
-        public void completed() {
-            completeInvoked = true;
+        boolean isAddInvoked() {
+            return addInvoked;
         }
 
         boolean isStartInvoked() {
             return startInvoked;
         }
 
-        boolean isCompleteInvoked() {
-            return completeInvoked;
+        @Override
+        protected Indicator newIndicator(String process) {
+            return new Indicator(100) {
+                @Override
+                public void startProcess(long totalCount) {
+                    startInvoked = true;
+                }
+
+                @Override
+                protected void progress(int from, int to) {
+                    addInvoked = true;
+                }
+            };
         }
     }
 }

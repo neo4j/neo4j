@@ -20,9 +20,9 @@
 package org.neo4j.internal.helpers.progress;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.internal.helpers.progress.Indicator.Textual.DEFAULT_DOTS_PER_GROUP;
-import static org.neo4j.internal.helpers.progress.Indicator.Textual.DEFAULT_GROUPS_PER_LINE;
-import static org.neo4j.internal.helpers.progress.Indicator.Textual.DEFAULT_NUM_LINES;
+import static org.neo4j.internal.helpers.progress.TextualIndicator.DEFAULT_DOTS_PER_GROUP;
+import static org.neo4j.internal.helpers.progress.TextualIndicator.DEFAULT_GROUPS_PER_LINE;
+import static org.neo4j.internal.helpers.progress.TextualIndicator.DEFAULT_NUM_LINES;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintWriter;
@@ -38,7 +38,7 @@ class IndicatorTest {
         ByteArrayOutputStream bout = new ByteArrayOutputStream();
         PrintWriter out = new PrintWriter(bout);
         FakeClock clock = new FakeClock();
-        Indicator.Textual indicator = new Indicator.Textual(
+        TextualIndicator indicator = new TextualIndicator(
                 "Test", out, true, clock, 'D', DEFAULT_DOTS_PER_GROUP, DEFAULT_GROUPS_PER_LINE, DEFAULT_NUM_LINES);
 
         // when
@@ -76,13 +76,13 @@ class IndicatorTest {
         // given
         ByteArrayOutputStream bout = new ByteArrayOutputStream();
         PrintWriter out = new PrintWriter(bout);
-        int dotsPerLine = 5;
+        int dotsPerGroup = 5;
         int lines = 4;
-        Indicator.Textual indicator =
-                new Indicator.Textual("Test", out, false, Clocks.nanoClock(), ' ', dotsPerLine, 1, lines);
+        TextualIndicator indicator =
+                new TextualIndicator("Test", out, false, Clocks.nanoClock(), ' ', dotsPerGroup, 1, lines);
 
         // when
-        indicator.progress(0, dotsPerLine * lines);
+        indicator.progress(0, dotsPerGroup * lines);
 
         // then
         out.flush();
@@ -101,8 +101,8 @@ class IndicatorTest {
         int dotsPerGroup = 5;
         int groupsPerLine = 3;
         int lines = 5;
-        Indicator.Textual indicator =
-                new Indicator.Textual("Test", out, false, Clocks.nanoClock(), ' ', dotsPerGroup, groupsPerLine, lines);
+        TextualIndicator indicator =
+                new TextualIndicator("Test", out, false, Clocks.nanoClock(), ' ', dotsPerGroup, groupsPerLine, lines);
 
         // when
         indicator.progress(0, groupsPerLine * dotsPerGroup * lines);
@@ -122,7 +122,7 @@ class IndicatorTest {
         // given
         var bout = new ByteArrayOutputStream();
         var out = new PrintWriter(bout);
-        var indicator = new Indicator.Textual("Test", out, false, Clocks.nanoClock(), ' ', 10, 1, 2);
+        var indicator = new TextualIndicator("Test", out, false, Clocks.nanoClock(), ' ', 10, 1, 2);
 
         // when
         indicator.progress(0, 5);

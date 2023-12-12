@@ -25,7 +25,7 @@ import static org.neo4j.collection.PrimitiveLongCollections.range;
 
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.neo4j.collection.PrimitiveLongCollections.RangedLongIterator;
-import org.neo4j.common.ProgressReporter;
+import org.neo4j.internal.helpers.progress.ProgressListener;
 
 /**
  * Returns ids either backwards or forwards. In both directions ids are returned batch-wise, sequentially forwards
@@ -119,7 +119,7 @@ public interface RecordIdIterator {
         }
     }
 
-    static RecordIdIterator withProgress(RecordIdIterator iterator, ProgressReporter reporter) {
+    static RecordIdIterator withProgress(RecordIdIterator iterator, ProgressListener progressListener) {
         return () -> {
             var actual = iterator.nextBatch();
             if (actual == null) {
@@ -138,7 +138,7 @@ public interface RecordIdIterator {
 
                 @Override
                 public long next() {
-                    reporter.progress(1);
+                    progressListener.add(1);
                     return actual.next();
                 }
 

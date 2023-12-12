@@ -26,9 +26,9 @@ import java.nio.file.Path;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import org.neo4j.common.EntityType;
-import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.batchimport.IndexImporterFactory;
+import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -82,7 +82,7 @@ public class TokenIndexMigrator extends AbstractStoreMigrationParticipant {
     public void migrate(
             DatabaseLayout directoryLayout,
             DatabaseLayout migrationLayout,
-            ProgressReporter progressReporter,
+            ProgressListener progressListener,
             StoreVersion fromVersion,
             StoreVersion toVersion,
             IndexImporterFactory indexImporterFactory,

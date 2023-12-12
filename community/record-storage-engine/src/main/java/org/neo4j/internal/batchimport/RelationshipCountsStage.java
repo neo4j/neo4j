@@ -22,7 +22,6 @@ package org.neo4j.internal.batchimport;
 import static org.neo4j.internal.batchimport.RecordIdIterators.allIn;
 
 import java.util.function.Function;
-import org.neo4j.common.ProgressReporter;
 import org.neo4j.counts.CountsUpdater;
 import org.neo4j.internal.batchimport.cache.NodeLabelsCache;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
@@ -30,6 +29,7 @@ import org.neo4j.internal.batchimport.staging.BatchFeedStep;
 import org.neo4j.internal.batchimport.staging.ReadRecordsStep;
 import org.neo4j.internal.batchimport.staging.Stage;
 import org.neo4j.internal.batchimport.staging.Step;
+import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.RelationshipStore;
@@ -51,7 +51,7 @@ public class RelationshipCountsStage extends Stage {
             int highRelationshipTypeId,
             CountsUpdater countsUpdater,
             NumberArrayFactory cacheFactory,
-            ProgressReporter progressReporter,
+            ProgressListener progressListener,
             CursorContextFactory contextFactory,
             Function<CursorContext, StoreCursors> storeCursorsCreator,
             MemoryTracker memoryTracker) {
@@ -66,7 +66,7 @@ public class RelationshipCountsStage extends Stage {
                 highRelationshipTypeId,
                 countsUpdater,
                 cacheFactory,
-                progressReporter,
+                progressListener,
                 contextFactory,
                 storeCursorsCreator,
                 memoryTracker));

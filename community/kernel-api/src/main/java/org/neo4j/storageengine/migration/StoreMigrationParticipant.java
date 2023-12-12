@@ -20,10 +20,10 @@
 package org.neo4j.storageengine.migration;
 
 import java.io.IOException;
-import org.neo4j.common.ProgressReporter;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.UnsatisfiedDependencyException;
 import org.neo4j.internal.batchimport.IndexImporterFactory;
+import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.storageengine.api.StoreVersion;
@@ -37,7 +37,7 @@ public interface StoreMigrationParticipant {
         public void migrate(
                 DatabaseLayout directoryLayout,
                 DatabaseLayout migrationLayout,
-                ProgressReporter progress,
+                ProgressListener progress,
                 StoreVersion fromVersion,
                 StoreVersion toVersion,
                 IndexImporterFactory indexImporterFactory,
@@ -79,7 +79,7 @@ public interface StoreMigrationParticipant {
     void migrate(
             DatabaseLayout directoryLayout,
             DatabaseLayout migrationLayout,
-            ProgressReporter progress,
+            ProgressListener progress,
             StoreVersion fromVersion,
             StoreVersion toVersion,
             IndexImporterFactory indexImporterFactory,
@@ -90,7 +90,7 @@ public interface StoreMigrationParticipant {
      * After a successful migration, move all affected files from {@code upgradeDirectory} over to
      * the {@code workingDirectory}, effectively activating the migration changes.
      *
-     * @param migrationLayout directory where the {@link #migrate(DatabaseLayout, DatabaseLayout, ProgressReporter, StoreVersion,
+     * @param migrationLayout directory where the {@link #migrate(DatabaseLayout, DatabaseLayout, ProgressListener, StoreVersion,
      * StoreVersion, IndexImporterFactory, LogTailMetadata) migration} put its files.
      * @param directoryLayout directory the store directory of the to move the migrated files to.
      * @param versionToMigrateFrom the version we have migrated from

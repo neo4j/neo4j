@@ -42,6 +42,8 @@ import org.neo4j.internal.batchimport.staging.ReadRecordsStep;
 import org.neo4j.internal.batchimport.staging.Stage;
 import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.internal.batchimport.staging.Step;
+import org.neo4j.internal.helpers.progress.ProgressListener;
+import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -52,9 +54,10 @@ import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.kernel.impl.util.monitoring.LogProgressReporter;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
+import org.neo4j.logging.Level;
+import org.neo4j.logging.LoggerPrintWriterAdaptor;
 import org.neo4j.logging.NullLog;
 import org.neo4j.memory.MemoryTracker;
 
@@ -104,17 +107,20 @@ public class DegreesRebuildFromStore implements DegreesRebuilder {
                 NO_MONITOR,
                 NullLog.getInstance(),
                 databaseLayout.getDatabaseName());
+        var loggerPrintWriterAdaptor = new LoggerPrintWriterAdaptor(log, Level.INFO);
+        var totalCount = neoStores.getRelationshipGroupStore().getIdGenerator().getHighId()
+                + neoStores.getRelationshipStore().getIdGenerator().getHighId();
         try (GroupDegreesCache cache = new GroupDegreesCache(
-                numberArrayFactory, neoStores.getNodeStore().getIdGenerator().getHighId(), memoryTracker)) {
-            LogProgressReporter progress = new LogProgressReporter(log);
-            progress.start(
-                    neoStores.getRelationshipGroupStore().getIdGenerator().getHighId()
-                            + neoStores.getRelationshipStore().getIdGenerator().getHighId());
+                        numberArrayFactory,
+                        neoStores.getNodeStore().getIdGenerator().getHighId(),
+                        memoryTracker);
+                var progressListener =
+                        ProgressMonitorFactory.textual(loggerPrintWriterAdaptor).singlePart("rebuild", totalCount); ) {
             superviseDynamicExecution(new PrepareCacheStage(
-                    processingConfig, neoStores.getRelationshipGroupStore(), cache, contextFactory, progress));
+                    processingConfig, neoStores.getRelationshipGroupStore(), cache, contextFactory, progressListener));
             if (cache.hasAnyGroup()) {
                 superviseDynamicExecution(new CalculateDegreesStage(
-                        processingConfig, neoStores.getRelationshipStore(), cache, contextFactory, progress));
+                        processingConfig, neoStores.getRelationshipStore(), cache, contextFactory, progressListener));
             }
             cache.writeTo(updater);
         }
@@ -260,7 +266,7 @@ public class DegreesRebuildFromStore implements DegreesRebuilder {
                 RelationshipGroupStore store,
                 GroupDegreesCache cache,
                 CursorContextFactory cursorContextFactory,
-                LogProgressReporter progress) {
+                ProgressListener progress) {
             super("Prepare cache", null, config, Step.RECYCLE_BATCHES);
             add(new BatchFeedStep(
                     control(),
@@ -310,7 +316,7 @@ public class DegreesRebuildFromStore implements DegreesRebuilder {
                 RelationshipStore store,
                 GroupDegreesCache cache,
                 CursorContextFactory cursorContextFactory,
-                LogProgressReporter progress) {
+                ProgressListener progress) {
             super("Calculate degrees", null, config, Step.RECYCLE_BATCHES);
             add(new BatchFeedStep(
                     control(),

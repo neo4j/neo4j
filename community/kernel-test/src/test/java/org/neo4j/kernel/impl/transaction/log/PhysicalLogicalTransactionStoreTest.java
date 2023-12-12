@@ -41,8 +41,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
+import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -224,7 +224,7 @@ class PhysicalLogicalTransactionStoreTest {
                 logPruner,
                 new LifecycleAdapter(),
                 mock(RecoveryMonitor.class),
-                ProgressReporter.SILENT,
+                ProgressMonitorFactory.NONE,
                 false,
                 EMPTY_CHECKER,
                 RecoveryPredicate.ALL,

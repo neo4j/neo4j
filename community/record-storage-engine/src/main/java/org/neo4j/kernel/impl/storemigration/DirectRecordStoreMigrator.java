@@ -24,11 +24,12 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.internal.helpers.ArrayUtil.contains;
 
 import java.io.IOException;
-import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.helpers.ArrayUtil;
+import org.neo4j.internal.helpers.progress.ProgressListener;
+import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.ScanOnOpenReadOnlyIdGeneratorFactory;
@@ -79,12 +80,11 @@ class DirectRecordStoreMigrator {
             RecordFormats fromFormat,
             RecordDatabaseLayout toDirectoryStructure,
             RecordFormats toFormat,
-            ProgressReporter progressReporter,
+            ProgressListener progressListener,
             StoreType[] types,
             StoreType... additionalTypesToOpen)
             throws IOException {
         StoreType[] storesToOpen = ArrayUtil.concat(types, additionalTypesToOpen);
-        progressReporter.start(storesToOpen.length);
 
         try (NeoStores fromStores = new StoreFactory(
                                 fromDirectoryStructure,
@@ -116,12 +116,14 @@ class DirectRecordStoreMigrator {
                                 immutable.empty())
                         .openNeoStores(storesToOpen);
                 var cursorContext = contextFactory.create(DIRECT_STORE_MIGRATOR_TAG);
-                var toStoreCursors = new CachedStoreCursors(toStores, cursorContext)) {
+                var toStoreCursors = new CachedStoreCursors(toStores, cursorContext);
+                var progress =
+                        ProgressMonitorFactory.mapped(progressListener, 100).singlePart("", storesToOpen.length)) {
             toStores.start(cursorContext);
             for (StoreType type : types) {
                 // This condition will exclude counts store first and foremost.
                 migrate(fromStores.getRecordStore(type), toStores.getRecordStore(type), cursorContext, toStoreCursors);
-                progressReporter.progress(1);
+                progress.add(1);
             }
         }
     }

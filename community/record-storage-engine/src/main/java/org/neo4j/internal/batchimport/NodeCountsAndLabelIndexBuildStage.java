@@ -22,7 +22,6 @@ package org.neo4j.internal.batchimport;
 import static org.neo4j.internal.batchimport.RecordIdIterators.allIn;
 
 import java.util.function.Function;
-import org.neo4j.common.ProgressReporter;
 import org.neo4j.counts.CountsUpdater;
 import org.neo4j.internal.batchimport.cache.NodeLabelsCache;
 import org.neo4j.internal.batchimport.staging.BatchFeedStep;
@@ -30,6 +29,7 @@ import org.neo4j.internal.batchimport.staging.ReadRecordsStep;
 import org.neo4j.internal.batchimport.staging.Stage;
 import org.neo4j.internal.batchimport.staging.Step;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
+import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -50,7 +50,7 @@ public class NodeCountsAndLabelIndexBuildStage extends Stage {
             NodeStore nodeStore,
             int highLabelId,
             CountsUpdater countsUpdater,
-            ProgressReporter progressReporter,
+            ProgressListener progressListener,
             IndexImporterFactory indexImporterFactory,
             long fromNodeId,
             CursorContextFactory contextFactory,
@@ -78,7 +78,7 @@ public class NodeCountsAndLabelIndexBuildStage extends Stage {
                 "COUNT",
                 config,
                 () -> new NodeCountsProcessor(
-                        nodeStore, cache, highLabelId, fromNodeId, countsUpdater, progressReporter),
+                        nodeStore, cache, highLabelId, fromNodeId, countsUpdater, progressListener),
                 true,
                 0,
                 contextFactory,

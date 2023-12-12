@@ -20,9 +20,9 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.io.IOException;
-import org.neo4j.common.ProgressReporter;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.batchimport.IndexImporterFactory;
+import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.storageengine.api.StoreVersion;
@@ -41,7 +41,7 @@ public class NameOverridingStoreMigrationParticipant implements StoreMigrationPa
     public void migrate(
             DatabaseLayout directoryLayout,
             DatabaseLayout migrationLayout,
-            ProgressReporter progress,
+            ProgressListener progress,
             StoreVersion fromVersion,
             StoreVersion toVersion,
             IndexImporterFactory indexImporterFactory,

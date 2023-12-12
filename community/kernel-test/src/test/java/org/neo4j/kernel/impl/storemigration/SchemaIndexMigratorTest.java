@@ -37,9 +37,9 @@ import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.batchimport.IndexImporterFactory;
+import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaRule;
@@ -64,7 +64,6 @@ class SchemaIndexMigratorTest {
     private TestDirectory testDirectory;
 
     private final FileSystemAbstraction fs = mock(FileSystemAbstraction.class);
-    private final ProgressReporter progressReporter = mock(ProgressReporter.class);
     private final PageCache pageCache = mock(PageCache.class);
     private DatabaseLayout databaseLayout;
     private DatabaseLayout migrationLayout;
@@ -113,7 +112,7 @@ class SchemaIndexMigratorTest {
         migrator.migrate(
                 databaseLayout,
                 migrationLayout,
-                progressReporter,
+                ProgressListener.NONE,
                 fromVersion,
                 toVersion,
                 IndexImporterFactory.EMPTY,

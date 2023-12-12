@@ -28,8 +28,9 @@ import static org.neo4j.storageengine.api.TransactionApplicationMode.REVERSE_REC
 
 import java.io.IOException;
 import java.nio.channels.ClosedByInterruptException;
-import org.neo4j.common.ProgressReporter;
 import org.neo4j.dbms.database.DatabaseStartAbortedException;
+import org.neo4j.internal.helpers.progress.ProgressListener;
+import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
@@ -52,19 +53,21 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
     private final RecoveryMonitor monitor;
     private final CorruptedLogsTruncator logsTruncator;
     private final Lifecycle schemaLife;
-    private final ProgressReporter progressReporter;
+    private final ProgressMonitorFactory progressMonitorFactory;
     private final boolean failOnCorruptedLogFiles;
     private final RecoveryStartupChecker recoveryStartupChecker;
     private final CursorContextFactory contextFactory;
     private final RecoveryPredicate recoveryPredicate;
     private final RecoveryMode mode;
 
+    private ProgressListener progressListener;
+
     public TransactionLogsRecovery(
             RecoveryService recoveryService,
             CorruptedLogsTruncator logsTruncator,
             Lifecycle schemaLife,
             RecoveryMonitor monitor,
-            ProgressReporter progressReporter,
+            ProgressMonitorFactory progressMonitorFactory,
             boolean failOnCorruptedLogFiles,
             RecoveryStartupChecker recoveryStartupChecker,
             RecoveryPredicate recoveryPredicate,
@@ -74,12 +77,13 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
         this.monitor = monitor;
         this.logsTruncator = logsTruncator;
         this.schemaLife = schemaLife;
-        this.progressReporter = progressReporter;
+        this.progressMonitorFactory = progressMonitorFactory;
         this.failOnCorruptedLogFiles = failOnCorruptedLogFiles;
         this.recoveryStartupChecker = recoveryStartupChecker;
         this.contextFactory = contextFactory;
         this.recoveryPredicate = recoveryPredicate;
         this.mode = mode;
+        this.progressListener = null;
     }
 
     @Override
@@ -205,7 +209,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
             logsTruncator.truncate(recoveryToPosition);
             recoveryService.rollbackTransactions(recoveryToPosition, transactionIdTracker, lastCommandBatch);
 
-            progressReporter.completed();
+            closeProgress();
         }
 
         try (var cursorContext = contextFactory.create(RECOVERY_COMPLETED_TAG)) {
@@ -271,12 +275,19 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
                 estimateNumberOfTransactionToRecover(recoveryStartInformation, lastReversedBatch);
         // In full mode we will process each transaction twice (doing reverse and direct detour) we need to
         // multiply number of transactions that we want to recover by 2 to be able to report correct progress
-        progressReporter.start(
+        progressListener = progressMonitorFactory.singlePart(
+                "TransactionLogsRecovery",
                 mode == RecoveryMode.FULL ? numberOfTransactionToRecover * 2 : numberOfTransactionToRecover);
     }
 
     private void reportProgress() {
-        progressReporter.progress(1);
+        progressListener.add(1);
+    }
+
+    private void closeProgress() {
+        if (progressListener != null) {
+            progressListener.close();
+        }
     }
 
     private static long estimateNumberOfTransactionToRecover(

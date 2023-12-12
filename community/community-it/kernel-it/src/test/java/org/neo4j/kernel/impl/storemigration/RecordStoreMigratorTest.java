@@ -27,10 +27,10 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.batchimport.BatchImporterFactory;
 import org.neo4j.internal.batchimport.IndexImporterFactory;
+import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -92,7 +92,7 @@ class RecordStoreMigratorTest {
         filesystem.write(databaseLayout.pathForExistsMarker()).close();
 
         // Monitor what happens
-        MyProgressReporter progressReporter = new MyProgressReporter();
+        MyProcessListener progressReporter = new MyProcessListener();
         // Migrate with two storeversions that have the same FORMAT capabilities
         DatabaseLayout migrationLayout = RecordDatabaseLayout.of(neo4jLayout, "migrationDir");
         filesystem.mkdirs(migrationLayout.databaseDirectory());
@@ -127,7 +127,7 @@ class RecordStoreMigratorTest {
                 new EmptyLogTailMetadata(Config.defaults()));
 
         // Should not have started any migration
-        assertThat(progressReporter.started).isFalse();
+        assertThat(progressReporter.added).isFalse();
     }
 
     private RecordStorageMigrator newStoreMigrator() {
@@ -144,18 +144,30 @@ class RecordStoreMigratorTest {
                 false);
     }
 
-    private static class MyProgressReporter implements ProgressReporter {
-        public boolean started;
+    private static class MyProcessListener implements ProgressListener {
+        public boolean added;
 
-        @Override
-        public void start(long max) {
-            started = true;
+        MyProcessListener() {
+            added = false;
         }
 
         @Override
-        public void progress(long add) {}
+        public void add(long progress) {
+            added = true;
+        }
 
         @Override
-        public void completed() {}
+        public void mark(char mark) {}
+
+        @Override
+        public void close() {}
+
+        @Override
+        public void failed(Throwable e) {}
+
+        @Override
+        public ProgressListener threadLocalReporter(int threshold) {
+            return null;
+        }
     }
 }

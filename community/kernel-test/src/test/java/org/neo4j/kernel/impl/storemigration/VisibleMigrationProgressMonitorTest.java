@@ -26,7 +26,7 @@ import java.time.Clock;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.neo4j.common.ProgressReporter;
+import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.storageengine.migration.MigrationProgressMonitor;
@@ -109,12 +109,11 @@ class VisibleMigrationProgressMonitorTest {
     }
 
     private static void monitorSection(MigrationProgressMonitor monitor, String name, int max, int... steps) {
-        ProgressReporter progressReporter = monitor.startSection(name);
-        progressReporter.start(max);
-        for (int step : steps) {
-            progressReporter.progress(step);
+        try (ProgressListener progressListener = monitor.startSection(name, max)) {
+            for (int step : steps) {
+                progressListener.add(step);
+            }
         }
-        progressReporter.completed();
     }
 
     private enum Operation {

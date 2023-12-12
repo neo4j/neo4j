@@ -23,7 +23,6 @@ import static org.neo4j.internal.batchimport.cache.NumberArrayFactories.NO_MONIT
 import static org.neo4j.internal.batchimport.staging.ExecutionSupervisors.superviseDynamicExecution;
 
 import java.util.function.Function;
-import org.neo4j.common.ProgressReporter;
 import org.neo4j.counts.CountsUpdater;
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.NodeCountsStage;
@@ -32,6 +31,8 @@ import org.neo4j.internal.batchimport.cache.NodeLabelsCache;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactories;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
 import org.neo4j.internal.counts.CountsBuilder;
+import org.neo4j.internal.helpers.progress.ProgressListener;
+import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -48,7 +49,7 @@ public class CountsComputer implements CountsBuilder {
     private final int highLabelId;
     private final int highRelationshipTypeId;
     private final long lastCommittedTransactionId;
-    private final ProgressReporter progressMonitor;
+    private final ProgressMonitorFactory progressMonitorFactory;
     private final NumberArrayFactory numberArrayFactory;
     private final CursorContextFactory contextFactory;
     private final MemoryTracker memoryTracker;
@@ -93,7 +94,7 @@ public class CountsComputer implements CountsBuilder {
                         NO_MONITOR,
                         log,
                         databaseLayout.getDatabaseName()),
-                ProgressReporter.SILENT,
+                ProgressMonitorFactory.NONE,
                 contextFactory,
                 memoryTracker);
     }
@@ -106,7 +107,7 @@ public class CountsComputer implements CountsBuilder {
             int highLabelId,
             int highRelationshipTypeId,
             NumberArrayFactory numberArrayFactory,
-            ProgressReporter progressMonitor,
+            ProgressMonitorFactory progressMonitorFactory,
             CursorContextFactory contextFactory,
             MemoryTracker memoryTracker) {
         this.neoStores = stores;
@@ -116,7 +117,7 @@ public class CountsComputer implements CountsBuilder {
         this.highLabelId = highLabelId;
         this.highRelationshipTypeId = highRelationshipTypeId;
         this.numberArrayFactory = numberArrayFactory;
-        this.progressMonitor = progressMonitor;
+        this.progressMonitorFactory = progressMonitorFactory;
         this.contextFactory = contextFactory;
         this.memoryTracker = memoryTracker;
     }
@@ -124,11 +125,13 @@ public class CountsComputer implements CountsBuilder {
     @Override
     public void initialize(CountsUpdater countsUpdater, CursorContext cursorContext, MemoryTracker memoryTracker) {
         if (hasNotEmptyNodesOrRelationshipsStores(cursorContext)) {
-            progressMonitor.start(nodes.getHighestPossibleIdInUse(cursorContext)
-                    + relationships.getHighestPossibleIdInUse(cursorContext));
-            populateCountStore(countsUpdater);
+            var total = nodes.getHighestPossibleIdInUse(cursorContext)
+                    + relationships.getHighestPossibleIdInUse(cursorContext);
+
+            try (var progress = progressMonitorFactory.singlePart("CountsUpdater", total)) {
+                populateCountStore(countsUpdater, progress);
+            }
         }
-        progressMonitor.completed();
     }
 
     private boolean hasNotEmptyNodesOrRelationshipsStores(CursorContext cursorContext) {
@@ -136,7 +139,7 @@ public class CountsComputer implements CountsBuilder {
                 || (relationships.getHighestPossibleIdInUse(cursorContext) != -1);
     }
 
-    private void populateCountStore(CountsUpdater countsUpdater) {
+    private void populateCountStore(CountsUpdater countsUpdater, ProgressListener progress) {
         try (NodeLabelsCache cache = new NodeLabelsCache(
                 numberArrayFactory, nodes.getIdGenerator().getHighId(), highLabelId, memoryTracker)) {
             Configuration configuration = Configuration.defaultConfiguration();
@@ -150,7 +153,7 @@ public class CountsComputer implements CountsBuilder {
                     nodes,
                     highLabelId,
                     countsUpdater,
-                    progressMonitor,
+                    progress,
                     contextFactory,
                     storeCursorsFunction));
             // Count relationships
@@ -162,7 +165,7 @@ public class CountsComputer implements CountsBuilder {
                     highRelationshipTypeId,
                     countsUpdater,
                     numberArrayFactory,
-                    progressMonitor,
+                    progress,
                     contextFactory,
                     storeCursorsFunction,
                     memoryTracker));

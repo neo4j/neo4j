@@ -114,7 +114,7 @@ public class SystemDbUpgrader {
                 .getDatabaseContext(NAMED_SYSTEM_DATABASE_ID)
                 .orElseThrow(() -> new IllegalStateException("Could not start System database for upgrade."));
         var systemDb = systemContext.databaseFacade();
-        bootstrapProgress.completed();
+        bootstrapProgress.close();
 
         // Wait for indexes to come online
         var indexPopulationProgress = progressMonitor.startSection("Index population");
@@ -128,7 +128,7 @@ public class SystemDbUpgrader {
             }
             throw e;
         }
-        indexPopulationProgress.completed();
+        indexPopulationProgress.close();
 
         globalLife.shutdown();
         progressMonitor.completed();

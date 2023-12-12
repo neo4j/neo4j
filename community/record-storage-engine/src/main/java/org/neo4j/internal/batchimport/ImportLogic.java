@@ -598,37 +598,41 @@ public class ImportLogic implements Closeable {
                                 new MemoryUsageStatsProvider(neoStore, nodeLabelsCache);
                         Function<CursorContext, StoreCursors> storeCursorsFactory =
                                 context -> new CachedStoreCursors(neoStore.getNeoStores(), context);
-                        executeStage(new NodeCountsAndLabelIndexBuildStage(
-                                config,
-                                neoStore,
-                                nodeLabelsCache,
-                                neoStore.getNodeStore(),
-                                highLabelId,
-                                updater,
-                                progressMonitor.startSection("Nodes"),
-                                indexImporterFactory,
-                                fromNodeId,
-                                contextFactory,
-                                pageCacheTracer,
-                                storeCursorsFactory,
-                                memoryTracker,
-                                memoryUsageStats));
-                        // Count label-[type]->label
-                        executeStage(new RelationshipCountsAndTypeIndexBuildStage(
-                                config,
-                                neoStore,
-                                nodeLabelsCache,
-                                neoStore.getRelationshipStore(),
-                                highLabelId,
-                                highRelationshipTypeId,
-                                updater,
-                                numberArrayFactory,
-                                progressMonitor.startSection("Relationships"),
-                                indexImporterFactory,
-                                contextFactory,
-                                pageCacheTracer,
-                                storeCursorsFactory,
-                                memoryTracker));
+                        try (var progress = progressMonitor.startSection("Nodes")) {
+                            executeStage(new NodeCountsAndLabelIndexBuildStage(
+                                    config,
+                                    neoStore,
+                                    nodeLabelsCache,
+                                    neoStore.getNodeStore(),
+                                    highLabelId,
+                                    updater,
+                                    progress,
+                                    indexImporterFactory,
+                                    fromNodeId,
+                                    contextFactory,
+                                    pageCacheTracer,
+                                    storeCursorsFactory,
+                                    memoryTracker,
+                                    memoryUsageStats));
+                        }
+                        try (var progress = progressMonitor.startSection("Relationships")) {
+                            // Count label-[type]->label
+                            executeStage(new RelationshipCountsAndTypeIndexBuildStage(
+                                    config,
+                                    neoStore,
+                                    nodeLabelsCache,
+                                    neoStore.getRelationshipStore(),
+                                    highLabelId,
+                                    highRelationshipTypeId,
+                                    updater,
+                                    numberArrayFactory,
+                                    progress,
+                                    indexImporterFactory,
+                                    contextFactory,
+                                    pageCacheTracer,
+                                    storeCursorsFactory,
+                                    memoryTracker));
+                        }
                     }
 
                     @Override

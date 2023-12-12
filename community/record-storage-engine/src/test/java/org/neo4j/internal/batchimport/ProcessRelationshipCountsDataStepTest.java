@@ -30,13 +30,13 @@ import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_C
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import org.junit.jupiter.api.Test;
-import org.neo4j.common.ProgressReporter;
 import org.neo4j.counts.CountsUpdater;
 import org.neo4j.internal.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.internal.batchimport.cache.NodeLabelsCache;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactories;
 import org.neo4j.internal.batchimport.staging.SimpleStageControl;
 import org.neo4j.internal.batchimport.staging.StageControl;
+import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -93,7 +93,7 @@ class ProcessRelationshipCountsDataStepTest {
                 highRelationshipTypeId,
                 mock(CountsUpdater.class),
                 NumberArrayFactories.OFF_HEAP,
-                ProgressReporter.SILENT,
+                ProgressListener.NONE,
                 new CursorContextFactory(PageCacheTracer.NULL, EMPTY_CONTEXT_SUPPLIER),
                 any -> StoreCursors.NULL,
                 INSTANCE);

@@ -23,12 +23,12 @@ import static java.lang.Math.max;
 import static java.lang.Math.toIntExact;
 
 import java.util.function.Function;
-import org.neo4j.common.ProgressReporter;
 import org.neo4j.counts.CountsUpdater;
 import org.neo4j.internal.batchimport.cache.GatheringMemoryStatsVisitor;
 import org.neo4j.internal.batchimport.cache.NodeLabelsCache;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
 import org.neo4j.internal.batchimport.staging.StageControl;
+import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -48,7 +48,7 @@ public class ProcessRelationshipCountsDataStep extends RecordProcessorStep<Relat
             int highRelationshipTypeId,
             CountsUpdater countsUpdater,
             NumberArrayFactory cacheFactory,
-            ProgressReporter progressReporter,
+            ProgressListener progressListener,
             CursorContextFactory contextFactory,
             Function<CursorContext, StoreCursors> storeCursorsCreator,
             MemoryTracker memoryTracker) {

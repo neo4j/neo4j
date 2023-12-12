@@ -23,9 +23,11 @@ import static java.lang.String.format;
 import static org.neo4j.internal.helpers.Format.duration;
 
 import java.time.Clock;
-import org.neo4j.common.ProgressReporter;
-import org.neo4j.kernel.impl.util.monitoring.LogProgressReporter;
+import org.neo4j.internal.helpers.progress.ProgressListener;
+import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.Level;
+import org.neo4j.logging.LoggerPrintWriterAdaptor;
 import org.neo4j.storageengine.migration.MigrationProgressMonitor;
 import org.neo4j.util.VisibleForTesting;
 
@@ -112,9 +114,15 @@ public class VisibleMigrationProgressMonitorFactory {
         }
 
         @Override
-        public ProgressReporter startSection(String name) {
+        public ProgressListener startSection(String name) {
+            return startSection(name, 100);
+        }
+
+        public ProgressListener startSection(String name, int max) {
             log.info(format("%s %s (%d/%d):", operation, name, ++currentStage, numStages));
-            return new LogProgressReporter(log);
+            var loggerPrintWriterAdaptor = new LoggerPrintWriterAdaptor(log, Level.INFO);
+            var progressMonitorFactory = ProgressMonitorFactory.basicTextual(loggerPrintWriterAdaptor);
+            return progressMonitorFactory.singlePart(name, max);
         }
 
         @Override

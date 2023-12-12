@@ -29,7 +29,6 @@ import java.io.PrintStream;
 import java.nio.file.Path;
 import java.util.Set;
 import org.eclipse.collections.api.factory.Sets;
-import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
@@ -42,6 +41,7 @@ import org.neo4j.internal.batchimport.Monitor;
 import org.neo4j.internal.batchimport.ReadBehaviour;
 import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.input.Input;
+import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -104,7 +104,7 @@ public class AcrossEngineMigrationParticipant extends AbstractStoreMigrationPart
     public void migrate(
             DatabaseLayout directoryLayoutArg,
             DatabaseLayout migrationLayoutArg,
-            ProgressReporter progressReporter,
+            ProgressListener progressListener,
             StoreVersion fromVersion,
             StoreVersion toVersion,
             IndexImporterFactory indexImporterFactory,

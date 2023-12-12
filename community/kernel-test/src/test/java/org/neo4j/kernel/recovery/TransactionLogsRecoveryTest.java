@@ -63,11 +63,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.database.DatabaseStartAbortedException;
 import org.neo4j.internal.helpers.collection.Visitor;
+import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.nativeimpl.NativeAccessProvider;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -274,7 +274,7 @@ class TransactionLogsRecoveryTest {
                     logPruner,
                     schemaLife,
                     monitor,
-                    ProgressReporter.SILENT,
+                    ProgressMonitorFactory.NONE,
                     false,
                     EMPTY_CHECKER,
                     RecoveryPredicate.ALL,
@@ -353,7 +353,7 @@ class TransactionLogsRecoveryTest {
                     logPruner,
                     schemaLife,
                     monitor,
-                    ProgressReporter.SILENT,
+                    ProgressMonitorFactory.NONE,
                     false,
                     EMPTY_CHECKER,
                     RecoveryPredicate.ALL,
@@ -561,7 +561,7 @@ class TransactionLogsRecoveryTest {
                 logPruner,
                 schemaLife,
                 monitor,
-                ProgressReporter.SILENT,
+                ProgressMonitorFactory.NONE,
                 true,
                 EMPTY_CHECKER,
                 RecoveryPredicate.ALL,
@@ -652,7 +652,7 @@ class TransactionLogsRecoveryTest {
                     logPruner,
                     schemaLife,
                     monitor,
-                    ProgressReporter.SILENT,
+                    ProgressMonitorFactory.NONE,
                     false,
                     startupChecker,
                     RecoveryPredicate.ALL,

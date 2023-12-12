@@ -44,7 +44,6 @@ import java.util.UUID;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.eclipse.collections.api.factory.Sets;
 import org.eclipse.collections.api.set.ImmutableSet;
-import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.counts.CountsStore;
 import org.neo4j.counts.CountsUpdater;
@@ -73,6 +72,8 @@ import org.neo4j.internal.counts.DegreeStoreProvider;
 import org.neo4j.internal.counts.DegreeUpdater;
 import org.neo4j.internal.counts.DegreesRebuilder;
 import org.neo4j.internal.helpers.collection.Iterables;
+import org.neo4j.internal.helpers.progress.ProgressListener;
+import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.ScanOnOpenOverwritingIdGeneratorFactory;
@@ -183,7 +184,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
     public void migrate(
             DatabaseLayout directoryLayoutArg,
             DatabaseLayout migrationLayoutArg,
-            ProgressReporter progressReporter,
+            ProgressListener progressListener,
             StoreVersion fromVersion,
             StoreVersion toVersion,
             IndexImporterFactory indexImporterFactory,
@@ -232,7 +233,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
                         lastTxLogPosition.getLogVersion(),
                         lastTxLogPosition.getByteOffset(),
                         checkpointLogVersion,
-                        progressReporter,
+                        progressListener,
                         oldFormat,
                         newFormat,
                         requiresDynamicStoreMigration,
@@ -325,7 +326,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
             long lastTxLogVersion,
             long lastTxLogByteOffset,
             long lastCheckpointLogVersion,
-            ProgressReporter progressReporter,
+            ProgressListener progressListener,
             RecordFormats oldFormat,
             RecordFormats newFormat,
             boolean requiresDynamicStoreMigration,
@@ -346,7 +347,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
                     pageCacheTracer,
                     importConfig,
                     logService,
-                    migrationBatchImporterMonitor(legacyStore, progressReporter, importConfig),
+                    migrationBatchImporterMonitor(legacyStore, progressListener, importConfig),
                     additionalInitialIds,
                     new EmptyLogTailMetadata(config),
                     config,
@@ -486,14 +487,14 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
             };
 
             // Migrate these stores silently because they are usually very small
-            ProgressReporter progressReporter = ProgressReporter.SILENT;
+            ProgressListener progressListener = ProgressListener.NONE;
 
             migrator.migrate(
                     sourceDirectoryStructure,
                     oldFormat,
                     migrationStructure,
                     newFormat,
-                    progressReporter,
+                    progressListener,
                     storesToMigrate,
                     StoreType.NODE);
         }
@@ -570,14 +571,14 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
     }
 
     private static ExecutionMonitor migrationBatchImporterMonitor(
-            NeoStores legacyStore, final ProgressReporter progressReporter, Configuration config) {
+            NeoStores legacyStore, final ProgressListener progressListener, Configuration config) {
         var legacyRelStore = legacyStore.getRelationshipStore();
         var legacyNodeStore = legacyStore.getNodeStore();
         return new BatchImporterProgressMonitor(
                 legacyNodeStore.getIdGenerator().getHighId(),
                 legacyRelStore.getIdGenerator().getHighId(),
                 config,
-                progressReporter);
+                progressListener);
     }
 
     private static InputIterator legacyRelationshipsAsInput(
@@ -922,21 +923,22 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
     }
 
     private static class BatchImporterProgressMonitor extends CoarseBoundedProgressExecutionMonitor {
-        private final ProgressReporter progressReporter;
+        private final ProgressListener progressReporter;
 
         BatchImporterProgressMonitor(
                 long highNodeId,
                 long highRelationshipId,
                 Configuration configuration,
-                ProgressReporter progressReporter) {
+                ProgressListener progressReporter) {
             super(highNodeId, highRelationshipId, configuration);
-            this.progressReporter = progressReporter;
-            this.progressReporter.start(total());
+
+            this.progressReporter =
+                    ProgressMonitorFactory.mapped(progressReporter, 100).singlePart("", total());
         }
 
         @Override
         protected void progress(long progress) {
-            progressReporter.progress(progress);
+            progressReporter.add(progress);
         }
     }
 }

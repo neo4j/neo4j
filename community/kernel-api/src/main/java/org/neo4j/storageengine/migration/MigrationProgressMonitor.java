@@ -19,7 +19,7 @@
  */
 package org.neo4j.storageengine.migration;
 
-import org.neo4j.common.ProgressReporter;
+import org.neo4j.internal.helpers.progress.ProgressListener;
 
 public interface MigrationProgressMonitor {
     /**
@@ -32,9 +32,11 @@ public interface MigrationProgressMonitor {
      * Signals that migration goes into section with given {@code name}.
      *
      * @param name descriptive name of the section to migration.
-     * @return {@link ProgressReporter} which should be notified about progress in the given section.
+     * @return {@link ProgressListener} which should be notified about progress in the given section.
      */
-    ProgressReporter startSection(String name);
+    ProgressListener startSection(String name);
+
+    ProgressListener startSection(String name, int max);
 
     /**
      * The migration process has completed successfully.
@@ -58,8 +60,13 @@ public interface MigrationProgressMonitor {
         }
 
         @Override
-        public ProgressReporter startSection(String name) {
-            return ProgressReporter.SILENT;
+        public ProgressListener startSection(String name) {
+            return ProgressListener.NONE;
+        }
+
+        @Override
+        public ProgressListener startSection(String name, int max) {
+            return ProgressListener.NONE;
         }
 
         @Override

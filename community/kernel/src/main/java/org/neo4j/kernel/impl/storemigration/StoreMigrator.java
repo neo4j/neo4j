@@ -26,12 +26,12 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.function.Supplier;
-import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.Suppliers;
 import org.neo4j.internal.batchimport.IndexImporterFactory;
+import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -45,6 +45,7 @@ import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.index.schema.IndexImporterFactoryImpl;
+import org.neo4j.kernel.impl.storemigration.LogsMigrator.CheckResult;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.recovery.LogTailExtractor;
 import org.neo4j.logging.InternalLog;
@@ -491,17 +492,17 @@ public class StoreMigrator {
             MigrationProgressMonitor progressMonitor) {
         try {
             for (StoreMigrationParticipant participant : participants) {
-                ProgressReporter progressReporter = progressMonitor.startSection(participant.getName());
-                IndexImporterFactory indexImporterFactory = new IndexImporterFactoryImpl();
-                participant.migrate(
-                        directoryLayout,
-                        migrationLayout,
-                        progressReporter,
-                        fromVersion,
-                        toVersion,
-                        indexImporterFactory,
-                        logTailSupplier.get());
-                progressReporter.completed();
+                try (ProgressListener processListener = progressMonitor.startSection(participant.getName())) {
+                    IndexImporterFactory indexImporterFactory = new IndexImporterFactoryImpl();
+                    participant.migrate(
+                            directoryLayout,
+                            migrationLayout,
+                            processListener,
+                            fromVersion,
+                            toVersion,
+                            indexImporterFactory,
+                            logTailSupplier.get());
+                }
             }
         } catch (IOException | UncheckedIOException | KernelException e) {
             throw new UnableToMigrateException("A critical failure during migration has occurred", e);

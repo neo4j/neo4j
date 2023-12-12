@@ -21,9 +21,9 @@ package org.neo4j.internal.batchimport;
 
 import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
 
-import org.neo4j.common.ProgressReporter;
 import org.neo4j.counts.CountsUpdater;
 import org.neo4j.internal.batchimport.cache.NodeLabelsCache;
+import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -36,7 +36,7 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 public class NodeCountsProcessor implements RecordProcessor<NodeRecord> {
     private final NodeStore nodeStore;
     private final long[] labelCounts;
-    private final ProgressReporter progressReporter;
+    private final ProgressListener progressListener;
     private final NodeLabelsCache cache;
     private final long fromNodeId;
     private final CountsUpdater counts;
@@ -49,7 +49,7 @@ public class NodeCountsProcessor implements RecordProcessor<NodeRecord> {
             int highLabelId,
             long fromNodeId,
             CountsUpdater counts,
-            ProgressReporter progressReporter) {
+            ProgressListener progressReporter) {
         this.nodeStore = nodeStore;
         this.cache = cache;
         this.anyLabel = highLabelId;
@@ -57,7 +57,7 @@ public class NodeCountsProcessor implements RecordProcessor<NodeRecord> {
         this.counts = counts;
         // Instantiate with high id + 1 since we need that extra slot for the ANY count
         this.labelCounts = new long[highLabelId + 1];
-        this.progressReporter = progressReporter;
+        this.progressListener = progressReporter;
         this.cacheClient = cache.newClient();
     }
 
@@ -75,7 +75,7 @@ public class NodeCountsProcessor implements RecordProcessor<NodeRecord> {
         if (node.getId() >= fromNodeId) {
             labelCounts[anyLabel]++;
         }
-        progressReporter.progress(1);
+        progressListener.add(1);
 
         // No need to update the store, we're just reading things here
         return false;
