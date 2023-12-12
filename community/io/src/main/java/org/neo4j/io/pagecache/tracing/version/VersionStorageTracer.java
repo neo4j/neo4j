@@ -39,7 +39,7 @@ public interface VersionStorageTracer {
         }
 
         @Override
-        public void skipPageFlush(long pageRef) {}
+        public void allowPageFlush(long pageRef, boolean allowFlush) {}
     };
 
     RegionCollectionEvent beginRegionCollection();
@@ -48,5 +48,5 @@ public interface VersionStorageTracer {
 
     FileFlushEvent beginFileFlush();
 
-    void skipPageFlush(long pageRef);
+    void allowPageFlush(long pageRef, boolean allowFlush);
 }

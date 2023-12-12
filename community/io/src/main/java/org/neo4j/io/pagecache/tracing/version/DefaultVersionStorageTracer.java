@@ -49,5 +49,5 @@ public class DefaultVersionStorageTracer implements VersionStorageTracer {
     }
 
     @Override
-    public void skipPageFlush(long pageRef) {}
+    public void allowPageFlush(long pageRef, boolean allowFlush) {}
 }
