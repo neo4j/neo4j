@@ -30,7 +30,15 @@ Apache Software License, Version 2.0
   jansi
   Java Agent for Memory Measurements
   Java Native Access
-  Neo4j Java Driver
+  Neo4j Java Driver (Slim package)
+  Netty/Buffer
+  Netty/Codec
+  Netty/Common
+  Netty/Handler
+  Netty/Resolver
+  Netty/Transport
+  Netty/Transport/Native/Unix/Common
+  Non-Blocking Reactive Foundation for the JVM
 
 BSD License
   JLine JANSI Terminal
