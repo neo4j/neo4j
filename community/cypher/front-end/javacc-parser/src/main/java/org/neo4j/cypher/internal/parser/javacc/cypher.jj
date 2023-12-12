@@ -4689,7 +4689,7 @@ SimpleEither<List<String>, EXPRESSION> stringsOrExpression() throws Exception:
 
 SCHEMA_COMMAND CreateConstraint( Token start, boolean replace ) throws Exception:
 {
-    String name = null;
+    SimpleEither<String, PARAMETER> name = null;
     boolean ifNotExists = false;
     Token label;
     VARIABLE variable = null;
@@ -4709,7 +4709,7 @@ SCHEMA_COMMAND CreateConstraint( Token start, boolean replace ) throws Exception
         LOOKAHEAD (<ON> <LPAREN>) <ON> <LPAREN>
         | LOOKAHEAD (<FOR> <LPAREN>) <FOR> <LPAREN> { containsOn = false; }
         | LOOKAHEAD (<IF> <NOT>) <IF> <NOT> <EXISTS> { ifNotExists = true; } (<ON> | <FOR> { containsOn = false; }) <LPAREN>
-        | ( LOOKAHEAD(2) SymbolicNameString() { name = token.image; } )? ( <IF> <NOT> <EXISTS> { ifNotExists = true; } )? (<ON> | <FOR> { containsOn = false; }) <LPAREN>
+        | ( LOOKAHEAD(2) name=SymbolicNameOrStringParameter() )? ( <IF> <NOT> <EXISTS> { ifNotExists = true; } )? (<ON> | <FOR> { containsOn = false; }) <LPAREN>
     )
     (
         //(variable:LABEL)
@@ -4920,7 +4920,7 @@ ParserCypherTypeName cypherTypeNamePart() throws Exception:
 
 SCHEMA_COMMAND DropConstraint( Token start ) throws Exception:
 {
-        Token name = null;
+        SimpleEither<String, PARAMETER> name = null;
         boolean ifExists = false;
         VARIABLE variable = null;
         Token label = null;
@@ -4979,9 +4979,9 @@ SCHEMA_COMMAND DropConstraint( Token start ) throws Exception:
                 properties );
         }
     |   //DROP CONSTRAINT name IF EXISTS
-        name=SymbolicNameString() ( <IF> <EXISTS> { ifExists = true; } )?
+        name=SymbolicNameOrStringParameter() ( <IF> <EXISTS> { ifExists = true; } )?
         {
-            return astFactory.dropConstraint( pos( start ), name.image, ifExists );
+            return astFactory.dropConstraint( pos( start ), name, ifExists );
         }
     )
 }
@@ -5032,7 +5032,7 @@ SCHEMA_COMMAND createIndex( Token start, boolean replace, CreateIndexTypes index
 {
     boolean ifNotExists = false;
     boolean isNode = false;
-    String indexName = null;
+    SimpleEither<String, PARAMETER> indexName = null;
     VARIABLE variable = null;
     Token label = null;
     List<PROPERTY> properties= new ArrayList<>();
@@ -5044,7 +5044,7 @@ SCHEMA_COMMAND createIndex( Token start, boolean replace, CreateIndexTypes index
         //lookaheads for potential symbolicNames "for", "if"
         LOOKAHEAD(<FOR> <LPAREN>) <FOR> <LPAREN>
         | LOOKAHEAD(<IF> <NOT>) <IF> <NOT> <EXISTS> { ifNotExists = true; }  <FOR> <LPAREN>
-        | (SymbolicNameString() { indexName = token.image; } ) ( <IF> <NOT> <EXISTS> { ifNotExists = true; } )? <FOR> <LPAREN>
+        | indexName=SymbolicNameOrStringParameter() ( <IF> <NOT> <EXISTS> { ifNotExists = true; } )? <FOR> <LPAREN>
     )
     (
         //(n:LABEL)
@@ -5066,7 +5066,7 @@ SCHEMA_COMMAND createFulltextIndex( Token start, boolean replace) throws Excepti
 {
     boolean ifNotExists = false;
     boolean isNode = false;
-    String indexName = null;
+    SimpleEither<String, PARAMETER> indexName = null;
     VARIABLE variable = null;
     VARIABLE propName = null;
     PROPERTY p = null;
@@ -5080,7 +5080,7 @@ SCHEMA_COMMAND createFulltextIndex( Token start, boolean replace) throws Excepti
         //lookaheads for potential symbolicNames "for", "if"
         LOOKAHEAD(<FOR> <LPAREN>) <FOR> <LPAREN>
         | LOOKAHEAD(<IF> <NOT>) ( <IF> <NOT> <EXISTS> { ifNotExists = true; } ) <FOR> <LPAREN>
-        | (SymbolicNameString() { indexName = token.image; } ) ( <IF> <NOT> <EXISTS> { ifNotExists = true; } )? <FOR> <LPAREN>
+        | indexName=SymbolicNameOrStringParameter() ( <IF> <NOT> <EXISTS> { ifNotExists = true; } )? <FOR> <LPAREN>
     )
         (   //(v:L1 | ... | Ln)
             variable=Variable() labels=LabelOrRelTypes() <RPAREN> { isNode = true; }
@@ -5105,7 +5105,7 @@ SCHEMA_COMMAND createLookupIndex( Token start, boolean replace ) throws Exceptio
 {
     boolean ifNotExists = false;
     boolean isNode = false;
-    String indexName = null;
+    SimpleEither<String, PARAMETER> indexName = null;
     VARIABLE variable = null;
     StringPos<POS> funcName = null;
     VARIABLE funcParam = variable;
@@ -5117,7 +5117,7 @@ SCHEMA_COMMAND createLookupIndex( Token start, boolean replace ) throws Exceptio
             //lookaheads for potential symbolicNames "for", "if"
             LOOKAHEAD(<FOR> <LPAREN>) <FOR> <LPAREN>
             | LOOKAHEAD(<IF> <NOT>)( <IF> <NOT> <EXISTS> { ifNotExists = true; } ) <FOR> <LPAREN>
-            | (SymbolicNameString() { indexName = token.image; } ) ( <IF> <NOT> <EXISTS> { ifNotExists = true; } )? <FOR> <LPAREN>
+            | indexName=SymbolicNameOrStringParameter() ( <IF> <NOT> <EXISTS> { ifNotExists = true; } )? <FOR> <LPAREN>
     )
     (   //(v)
         variable=Variable() <RPAREN> <ON> <EACH> { isNode = true; }
@@ -5138,15 +5138,15 @@ SCHEMA_COMMAND DropIndex( Token start ):
 {
     Token nodeLabel;
     List<StringPos<POS>> properties;
-    Token name;
+    SimpleEither<String, PARAMETER> name;
     boolean ifExists = false;
 }
 {
     <INDEX>
     ( LOOKAHEAD(2) <ON> nodeLabel=LabelOrRelType() <LPAREN> properties=SymbolicNamePositions() <RPAREN>
         { return astFactory.dropIndex( pos(start), new StringPos<>(nodeLabel.image, pos(nodeLabel) ), properties ); }
-    | name=SymbolicNameString() ( <IF> <EXISTS> { ifExists = true; } )?
-        { return astFactory.dropIndex( pos(start), name.image, ifExists ); }
+    | name=SymbolicNameOrStringParameter() ( <IF> <EXISTS> { ifExists = true; } )?
+        { return astFactory.dropIndex( pos(start), name, ifExists ); }
     )
 }
 

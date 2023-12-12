@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorBreak
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorContinue
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
+import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.DecimalDoubleLiteral
 import org.neo4j.cypher.internal.expressions.ElementTypeName
@@ -43,6 +44,7 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.NameToken
 import org.neo4j.cypher.internal.expressions.Namespace
+import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.PropertyKeyToken
@@ -102,11 +104,8 @@ import org.neo4j.cypher.internal.logical.plans.ConstraintType
 import org.neo4j.cypher.internal.logical.plans.Create
 import org.neo4j.cypher.internal.logical.plans.CreateConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateFulltextIndex
+import org.neo4j.cypher.internal.logical.plans.CreateIndex
 import org.neo4j.cypher.internal.logical.plans.CreateLookupIndex
-import org.neo4j.cypher.internal.logical.plans.CreatePointIndex
-import org.neo4j.cypher.internal.logical.plans.CreateRangeIndex
-import org.neo4j.cypher.internal.logical.plans.CreateTextIndex
-import org.neo4j.cypher.internal.logical.plans.CreateVectorIndex
 import org.neo4j.cypher.internal.logical.plans.DeleteExpression
 import org.neo4j.cypher.internal.logical.plans.DeleteNode
 import org.neo4j.cypher.internal.logical.plans.DeletePath
@@ -1034,8 +1033,9 @@ case class LogicalPlan2PlanDescription(
           withDistinctness
         )
 
-      case CreateRangeIndex(
+      case CreateIndex(
           _,
+          indexType,
           entityName,
           propertyKeyNames,
           nameOption,
@@ -1045,7 +1045,7 @@ case class LogicalPlan2PlanDescription(
           id,
           "CreateIndex",
           NoChildren,
-          Seq(Details(rangeIndexInfo(nameOption, entityName, propertyKeyNames, options))),
+          Seq(Details(indexInfo(indexType.name(), nameOption, entityName, propertyKeyNames, options))),
           variables,
           withRawCardinalities,
           withDistinctness
@@ -1084,63 +1084,13 @@ case class LogicalPlan2PlanDescription(
           withDistinctness
         )
 
-      case CreateTextIndex(
-          _,
-          entityName,
-          propertyKeyNames,
-          nameOption,
-          options
-        ) => // Can be both a leaf plan and a middle plan so need to be in both places
-        PlanDescriptionImpl(
-          id,
-          "CreateIndex",
-          NoChildren,
-          Seq(Details(textIndexInfo(nameOption, entityName, propertyKeyNames, options))),
-          variables,
-          withRawCardinalities,
-          withDistinctness
-        )
-
-      case CreatePointIndex(
-          _,
-          entityName,
-          propertyKeyNames,
-          nameOption,
-          options
-        ) => // Can be both a leaf plan and a middle plan so need to be in both places
-        PlanDescriptionImpl(
-          id,
-          "CreateIndex",
-          NoChildren,
-          Seq(Details(pointIndexInfo(nameOption, entityName, propertyKeyNames, options))),
-          variables,
-          withRawCardinalities,
-          withDistinctness
-        )
-
-      case CreateVectorIndex(
-          _,
-          entityName,
-          propertyKeyNames,
-          nameOption,
-          options
-        ) => // Can be both a leaf plan and a middle plan so need to be in both places
-        PlanDescriptionImpl(
-          id,
-          "CreateIndex",
-          NoChildren,
-          Seq(Details(vectorIndexInfo(nameOption, entityName, propertyKeyNames, options))),
-          variables,
-          withRawCardinalities,
-          withDistinctness
-        )
-
-      case DropIndexOnName(name, _) =>
+      case DropIndexOnName(name, ifExists) =>
+        val ifExistsString = if (ifExists) pretty" IF EXISTS" else pretty""
         PlanDescriptionImpl(
           id,
           "DropIndex",
           NoChildren,
-          Seq(Details(pretty"INDEX ${asPrettyString(name)}")),
+          Seq(Details(pretty"INDEX ${PrettyString(Prettifier.escapeName(name))}$ifExistsString")),
           variables,
           withRawCardinalities,
           withDistinctness
@@ -1198,13 +1148,14 @@ case class LogicalPlan2PlanDescription(
           withDistinctness
         )
 
-      case DropConstraintOnName(name, _) =>
-        val constraintName = Details(pretty"CONSTRAINT ${asPrettyString(name)}")
+      case DropConstraintOnName(name, ifExists) =>
+        val ifExistsString = if (ifExists) pretty" IF EXISTS" else pretty""
+        val constraintDetails = Details(pretty"CONSTRAINT ${PrettyString(Prettifier.escapeName(name))}$ifExistsString")
         PlanDescriptionImpl(
           id,
           "DropConstraint",
           NoChildren,
-          Seq(constraintName),
+          Seq(constraintDetails),
           variables,
           withRawCardinalities,
           withDistinctness
@@ -2161,8 +2112,9 @@ case class LogicalPlan2PlanDescription(
           withDistinctness
         )
 
-      case CreateRangeIndex(
+      case CreateIndex(
           _,
+          indexType,
           entityName,
           propertyKeyNames,
           nameOption,
@@ -2172,7 +2124,7 @@ case class LogicalPlan2PlanDescription(
           id,
           "CreateIndex",
           children,
-          Seq(Details(rangeIndexInfo(nameOption, entityName, propertyKeyNames, options))),
+          Seq(Details(indexInfo(indexType.name(), nameOption, entityName, propertyKeyNames, options))),
           variables,
           withRawCardinalities,
           withDistinctness
@@ -2206,57 +2158,6 @@ case class LogicalPlan2PlanDescription(
           "CreateIndex",
           children,
           Seq(Details(fulltextIndexInfo(nameOption, entityNames, propertyKeyNames, options))),
-          variables,
-          withRawCardinalities,
-          withDistinctness
-        )
-
-      case CreateTextIndex(
-          _,
-          entityName,
-          propertyKeyNames,
-          nameOption,
-          options
-        ) => // Can be both a leaf plan and a middle plan so need to be in both places
-        PlanDescriptionImpl(
-          id,
-          "CreateIndex",
-          children,
-          Seq(Details(textIndexInfo(nameOption, entityName, propertyKeyNames, options))),
-          variables,
-          withRawCardinalities,
-          withDistinctness
-        )
-
-      case CreatePointIndex(
-          _,
-          entityName,
-          propertyKeyNames,
-          nameOption,
-          options
-        ) => // Can be both a leaf plan and a middle plan so need to be in both places
-        PlanDescriptionImpl(
-          id,
-          "CreateIndex",
-          children,
-          Seq(Details(pointIndexInfo(nameOption, entityName, propertyKeyNames, options))),
-          variables,
-          withRawCardinalities,
-          withDistinctness
-        )
-
-      case CreateVectorIndex(
-          _,
-          entityName,
-          propertyKeyNames,
-          nameOption,
-          options
-        ) => // Can be both a leaf plan and a middle plan so need to be in both places
-        PlanDescriptionImpl(
-          id,
-          "CreateIndex",
-          children,
-          Seq(Details(vectorIndexInfo(nameOption, entityName, propertyKeyNames, options))),
           variables,
           withRawCardinalities,
           withDistinctness
@@ -3186,12 +3087,12 @@ case class LogicalPlan2PlanDescription(
 
   private def indexInfo(
     indexType: String,
-    nameOption: Option[String],
+    nameOption: Option[Either[String, Parameter]],
     entityName: ElementTypeName,
     properties: Seq[PropertyKeyName],
     options: Options
   ): PrettyString = {
-    val name = nameOption.map(n => pretty" ${asPrettyString(n)}").getOrElse(pretty"")
+    val name = nameOption.map(n => pretty" ${PrettyString(Prettifier.escapeName(n))}").getOrElse(pretty"")
     val propertyString = properties.map(asPrettyString(_)).mkPrettyString("(", SEPARATOR, ")")
     val pattern = entityName match {
       case label: LabelName =>
@@ -3204,45 +3105,13 @@ case class LogicalPlan2PlanDescription(
     pretty"${asPrettyString.raw(indexType)} INDEX$name FOR $pattern ON $propertyString${prettyOptions(options)}"
   }
 
-  private def rangeIndexInfo(
-    nameOption: Option[String],
-    entityName: ElementTypeName,
-    properties: Seq[PropertyKeyName],
-    options: Options
-  ): PrettyString =
-    indexInfo("RANGE", nameOption, entityName, properties, options)
-
-  private def textIndexInfo(
-    nameOption: Option[String],
-    entityName: ElementTypeName,
-    properties: Seq[PropertyKeyName],
-    options: Options
-  ): PrettyString =
-    indexInfo("TEXT", nameOption, entityName, properties, options)
-
-  private def pointIndexInfo(
-    nameOption: Option[String],
-    entityName: ElementTypeName,
-    properties: Seq[PropertyKeyName],
-    options: Options
-  ): PrettyString =
-    indexInfo("POINT", nameOption, entityName, properties, options)
-
-  private def vectorIndexInfo(
-    nameOption: Option[String],
-    entityName: ElementTypeName,
-    properties: Seq[PropertyKeyName],
-    options: Options
-  ): PrettyString =
-    indexInfo("VECTOR", nameOption, entityName, properties, options)
-
   private def fulltextIndexInfo(
-    nameOption: Option[String],
+    nameOption: Option[Either[String, Parameter]],
     entityNames: Either[List[LabelName], List[RelTypeName]],
     properties: Seq[PropertyKeyName],
     options: Options
   ): PrettyString = {
-    val name = nameOption.map(n => pretty" ${asPrettyString(n)}").getOrElse(pretty"")
+    val name = nameOption.map(n => pretty" ${PrettyString(Prettifier.escapeName(n))}").getOrElse(pretty"")
     val propertyString = properties.map(asPrettyString(_)).mkPrettyString("[", SEPARATOR, "]")
     val pattern = entityNames match {
       case Left(labels) =>
@@ -3255,8 +3124,12 @@ case class LogicalPlan2PlanDescription(
     pretty"FULLTEXT INDEX$name FOR $pattern ON EACH $propertyString${prettyOptions(options)}"
   }
 
-  private def lookupIndexInfo(nameOption: Option[String], entityType: EntityType, options: Options): PrettyString = {
-    val name = nameOption.map(n => pretty" ${asPrettyString(n)}").getOrElse(pretty"")
+  private def lookupIndexInfo(
+    nameOption: Option[Either[String, Parameter]],
+    entityType: EntityType,
+    options: Options
+  ): PrettyString = {
+    val name = nameOption.map(n => pretty" ${PrettyString(Prettifier.escapeName(n))}").getOrElse(pretty"")
     val (pattern, function) = entityType match {
       case EntityType.NODE         => (pretty"(n)", pretty"${asPrettyString.raw(Labels.name)}(n)")
       case EntityType.RELATIONSHIP => (pretty"()-[r]-()", pretty"${asPrettyString.raw(Type.name)}(r)")
@@ -3265,7 +3138,7 @@ case class LogicalPlan2PlanDescription(
   }
 
   private def constraintInfo(
-    nameOption: Option[String],
+    nameOption: Option[Either[String, Parameter]],
     entity: String,
     entityName: ElementTypeName,
     properties: Seq[Property],
@@ -3273,7 +3146,7 @@ case class LogicalPlan2PlanDescription(
     options: Options = NoOptions,
     useForAndRequire: Boolean = true
   ): PrettyString = {
-    val name = nameOption.map(n => pretty" ${asPrettyString(n)}").getOrElse(pretty"")
+    val name = nameOption.map(n => pretty" ${PrettyString(Prettifier.escapeName(n))}").getOrElse(pretty"")
     val assertion = constraintType match {
       case NodePropertyExistence | RelationshipPropertyExistence => "IS NOT NULL"
       case NodeKey                                               => "IS NODE KEY"

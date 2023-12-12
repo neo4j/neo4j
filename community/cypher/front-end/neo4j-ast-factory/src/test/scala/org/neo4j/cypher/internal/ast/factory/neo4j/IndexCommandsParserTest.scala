@@ -18,6 +18,7 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.Variable
@@ -111,7 +112,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(s"CREATE INDEX my_index FOR $pattern ON (n2.name)") {
         yields(createIndex(
           List(prop("n2", "name")),
-          Some("my_index"),
+          Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions,
@@ -122,7 +123,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(s"CREATE INDEX my_index FOR $pattern ON (n2.name, n3.age)") {
         yields(createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
-          Some("my_index"),
+          Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions,
@@ -159,7 +160,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(s"CREATE OR REPLACE INDEX my_index FOR $pattern ON (n2.name, n3.age)") {
         yields(createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
-          Some("my_index"),
+          Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsReplace,
           ast.NoOptions,
@@ -181,7 +182,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(s"CREATE OR REPLACE INDEX my_index IF NOT EXISTS FOR $pattern ON (n2.name)") {
         yields(createIndex(
           List(prop("n2", "name")),
-          Some("my_index"),
+          Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsInvalidSyntax,
           ast.NoOptions,
@@ -203,7 +204,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(s"CREATE INDEX my_index IF NOT EXISTS FOR $pattern ON (n2.name)") {
         yields(createIndex(
           List(prop("n2", "name")),
-          Some("my_index"),
+          Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsDoNothing,
           ast.NoOptions,
@@ -298,7 +299,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(s"CREATE INDEX my_index FOR $pattern ON (n2.name) OPTIONS {}") {
         yields(createIndex(
           List(prop("n2", "name")),
-          Some("my_index"),
+          Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.OptionsMap(Map.empty),
@@ -307,7 +308,14 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE INDEX $$my_index FOR $pattern ON (n.name)") {
-        assertFailsWithMessageStart(testName, """Invalid input '$': expected "ON" or an identifier""")
+        yields(createIndex(
+          List(prop("n", "name")),
+          Some(stringParam("my_index")),
+          posN2(testName),
+          ast.IfExistsThrowError,
+          ast.NoOptions,
+          true
+        ))
       }
 
       test(s"CREATE INDEX FOR $pattern ON n2.name") {
@@ -324,7 +332,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(s"CREATE INDEX my_index FOR $pattern ON n2.name") {
         assertAst(createIndex(
           List(prop("n2", "name", posN2(testName))),
-          Some("my_index"),
+          Some(Left("my_index")),
           posN1(testName),
           ast.IfExistsThrowError,
           ast.NoOptions,
@@ -398,7 +406,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(s"CREATE RANGE INDEX my_index FOR $pattern ON (n2.name)") {
         yields(createIndex(
           List(prop("n2", "name")),
-          Some("my_index"),
+          Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions,
@@ -409,7 +417,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(s"CREATE RANGE INDEX my_index FOR $pattern ON (n2.name, n3.age)") {
         yields(createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
-          Some("my_index"),
+          Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions,
@@ -435,7 +443,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(s"CREATE OR REPLACE RANGE INDEX my_index FOR $pattern ON (n2.name, n3.age)") {
         yields(createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
-          Some("my_index"),
+          Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsReplace,
           ast.NoOptions,
@@ -457,7 +465,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(s"CREATE OR REPLACE RANGE INDEX my_index IF NOT EXISTS FOR $pattern ON (n2.name)") {
         yields(createIndex(
           List(prop("n2", "name")),
-          Some("my_index"),
+          Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsInvalidSyntax,
           ast.NoOptions,
@@ -479,7 +487,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(s"CREATE RANGE INDEX my_index IF NOT EXISTS FOR $pattern ON (n2.name)") {
         yields(createIndex(
           List(prop("n2", "name")),
-          Some("my_index"),
+          Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsDoNothing,
           ast.NoOptions,
@@ -566,7 +574,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(s"CREATE RANGE INDEX my_index FOR $pattern ON (n2.name) OPTIONS {}") {
         yields(createIndex(
           List(prop("n2", "name")),
-          Some("my_index"),
+          Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.OptionsMap(Map.empty),
@@ -575,7 +583,14 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE RANGE INDEX $$my_index FOR $pattern ON (n2.name)") {
-        assertFailsWithMessageStart(testName, """Invalid input '$': expected "FOR", "IF" or an identifier""")
+        yields(createIndex(
+          List(prop("n2", "name")),
+          Some(stringParam("my_index")),
+          posN2(testName),
+          ast.IfExistsThrowError,
+          ast.NoOptions,
+          false
+        ))
       }
 
       test(s"CREATE RANGE INDEX FOR $pattern ON n2.name") {
@@ -591,7 +606,14 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
       test(s"CREATE RANGE INDEX my_index FOR $pattern ON n2.name") {
         assertAst(
-          createIndex(List(prop("n2", "name")), Some("my_index"), pos, ast.IfExistsThrowError, ast.NoOptions, false),
+          createIndex(
+            List(prop("n2", "name")),
+            Some(Left("my_index")),
+            pos,
+            ast.IfExistsThrowError,
+            ast.NoOptions,
+            false
+          ),
           comparePosition = false
         )
       }
@@ -645,7 +667,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(s"CREATE BTREE INDEX my_index FOR $pattern ON (n2.name)") {
         yields(createIndex(
           List(prop("n2", "name")),
-          Some("my_index"),
+          Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions
@@ -655,7 +677,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(s"CREATE BTREE INDEX my_index FOR $pattern ON (n2.name, n3.age)") {
         yields(createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
-          Some("my_index"),
+          Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions
@@ -679,7 +701,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(s"CREATE OR REPLACE BTREE INDEX my_index FOR $pattern ON (n2.name, n3.age)") {
         yields(createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
-          Some("my_index"),
+          Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsReplace,
           ast.NoOptions
@@ -693,7 +715,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(s"CREATE OR REPLACE BTREE INDEX my_index IF NOT EXISTS FOR $pattern ON (n2.name)") {
         yields(createIndex(
           List(prop("n2", "name")),
-          Some("my_index"),
+          Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsInvalidSyntax,
           ast.NoOptions
@@ -713,7 +735,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(s"CREATE BTREE INDEX my_index IF NOT EXISTS FOR $pattern ON (n2.name)") {
         yields(createIndex(
           List(prop("n2", "name")),
-          Some("my_index"),
+          Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsDoNothing,
           ast.NoOptions
@@ -804,7 +826,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(s"CREATE BTREE INDEX my_index FOR $pattern ON (n2.name) OPTIONS {}") {
         yields(createIndex(
           List(prop("n2", "name")),
-          Some("my_index"),
+          Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.OptionsMap(Map.empty)
@@ -812,7 +834,13 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE BTREE INDEX $$my_index FOR $pattern ON (n2.name)") {
-        assertFailsWithMessageStart(testName, """Invalid input '$': expected "FOR", "IF" or an identifier""")
+        yields(createIndex(
+          List(prop("n2", "name")),
+          Some(stringParam("my_index")),
+          posN2(testName),
+          ast.IfExistsThrowError,
+          ast.NoOptions
+        ))
       }
 
       test(s"CREATE BTREE INDEX FOR $pattern ON n2.name") {
@@ -828,7 +856,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(s"CREATE BTREE INDEX my_index FOR $pattern ON n2.name") {
         assertAst(createIndex(
           List(prop("n2", "name", posN2(testName))),
-          Some("my_index"),
+          Some(Left("my_index")),
           posN1(testName),
           ast.IfExistsThrowError,
           ast.NoOptions
@@ -874,7 +902,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE LOOKUP INDEX my_index FOR $pattern ON EACH $function") {
-        yields(createIndex(Some("my_index"), posN2(testName), ast.IfExistsThrowError, ast.NoOptions))
+        yields(createIndex(Some(Left("my_index")), posN2(testName), ast.IfExistsThrowError, ast.NoOptions))
       }
 
       test(s"CREATE LOOKUP INDEX `$$my_index` FOR $pattern ON EACH $function") {
@@ -886,7 +914,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE OR REPLACE LOOKUP INDEX my_index FOR $pattern ON EACH $function") {
-        yields(createIndex(Some("my_index"), posN2(testName), ast.IfExistsReplace, ast.NoOptions))
+        yields(createIndex(Some(Left("my_index")), posN2(testName), ast.IfExistsReplace, ast.NoOptions))
       }
 
       test(s"CREATE OR REPLACE LOOKUP INDEX IF NOT EXISTS FOR $pattern ON EACH $function") {
@@ -894,7 +922,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE OR REPLACE LOOKUP INDEX my_index IF NOT EXISTS FOR $pattern ON EACH $function") {
-        yields(createIndex(Some("my_index"), posN2(testName), ast.IfExistsInvalidSyntax, ast.NoOptions))
+        yields(createIndex(Some(Left("my_index")), posN2(testName), ast.IfExistsInvalidSyntax, ast.NoOptions))
       }
 
       test(s"CREATE LOOKUP INDEX IF NOT EXISTS FOR $pattern ON EACH $function") {
@@ -902,7 +930,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE LOOKUP INDEX my_index IF NOT EXISTS FOR $pattern ON EACH $function") {
-        yields(createIndex(Some("my_index"), posN2(testName), ast.IfExistsDoNothing, ast.NoOptions))
+        yields(createIndex(Some(Left("my_index")), posN2(testName), ast.IfExistsDoNothing, ast.NoOptions))
       }
 
       test(s"CREATE LOOKUP INDEX FOR $pattern ON EACH $function OPTIONS {anyOption : 42}") {
@@ -915,11 +943,11 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE LOOKUP INDEX my_index FOR $pattern ON EACH $function OPTIONS {}") {
-        yields(createIndex(Some("my_index"), posN2(testName), ast.IfExistsThrowError, ast.OptionsMap(Map.empty)))
+        yields(createIndex(Some(Left("my_index")), posN2(testName), ast.IfExistsThrowError, ast.OptionsMap(Map.empty)))
       }
 
       test(s"CREATE LOOKUP INDEX $$my_index FOR $pattern ON EACH $function") {
-        failsToParse
+        yields(createIndex(Some(stringParam("my_index")), posN2(testName), ast.IfExistsThrowError, ast.NoOptions))
       }
 
       test(s"CREATE LOOKUP INDEX FOR $pattern ON EACH $function {indexProvider : 'range-1.0'}") {
@@ -982,7 +1010,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
           isNodeIndex,
           List(prop("n2", "name")),
           labelsOrTypes,
-          Some("my_index"),
+          Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions
@@ -994,7 +1022,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
           isNodeIndex,
           List(prop("n2", "name"), prop("n3", "age")),
           labelsOrTypes,
-          Some("my_index"),
+          Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions
@@ -1030,7 +1058,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
           isNodeIndex,
           List(prop("n2", "name"), prop("n3", "age")),
           labelsOrTypes,
-          Some("my_index"),
+          Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsReplace,
           ast.NoOptions
@@ -1054,7 +1082,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
           isNodeIndex,
           List(prop("n2", "name")),
           labelsOrTypes,
-          Some("my_index"),
+          Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsInvalidSyntax,
           ast.NoOptions
@@ -1078,7 +1106,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
           isNodeIndex,
           List(prop("n2", "name")),
           labelsOrTypes,
-          Some("my_index"),
+          Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsDoNothing,
           ast.NoOptions
@@ -1165,7 +1193,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
           isNodeIndex,
           List(prop("n2", "name")),
           labelsOrTypes,
-          Some("my_index"),
+          Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.OptionsMap(Map.empty)
@@ -1177,7 +1205,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
           isNodeIndex,
           List(prop("n2", "name")),
           labelsOrTypes,
-          Some("my_index"),
+          Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.OptionsParam(parameter("options", CTMap))
@@ -1185,7 +1213,15 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE FULLTEXT INDEX $$my_index FOR $pattern ON EACH [n2.name]") {
-        failsToParse
+        yields(fulltextIndex(
+          isNodeIndex,
+          List(prop("n2", "name")),
+          labelsOrTypes,
+          Some(stringParam("my_index")),
+          posN2(testName),
+          ast.IfExistsThrowError,
+          ast.NoOptions
+        ))
       }
 
       test(s"CREATE FULLTEXT INDEX FOR $pattern ON EACH [n2.name] {indexProvider : 'fulltext-1.0'}") {
@@ -1261,7 +1297,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(s"CREATE TEXT INDEX my_index FOR $pattern ON (n2.name)") {
         yields(createIndex(
           List(prop("n2", "name")),
-          Some("my_index"),
+          Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions
@@ -1271,7 +1307,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(s"CREATE TEXT INDEX my_index FOR $pattern ON (n2.name, n3.age)") {
         yields(createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
-          Some("my_index"),
+          Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions
@@ -1295,7 +1331,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(s"CREATE OR REPLACE TEXT INDEX my_index FOR $pattern ON (n2.name, n3.age)") {
         yields(createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
-          Some("my_index"),
+          Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsReplace,
           ast.NoOptions
@@ -1309,7 +1345,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(s"CREATE OR REPLACE TEXT INDEX my_index IF NOT EXISTS FOR $pattern ON (n2.name)") {
         yields(createIndex(
           List(prop("n2", "name")),
-          Some("my_index"),
+          Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsInvalidSyntax,
           ast.NoOptions
@@ -1329,7 +1365,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(s"CREATE TEXT INDEX my_index IF NOT EXISTS FOR $pattern ON (n2.name)") {
         yields(createIndex(
           List(prop("n2", "name")),
-          Some("my_index"),
+          Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsDoNothing,
           ast.NoOptions
@@ -1420,7 +1456,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(s"CREATE TEXT INDEX my_index FOR $pattern ON (n2.name) OPTIONS {}") {
         yields(createIndex(
           List(prop("n2", "name")),
-          Some("my_index"),
+          Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.OptionsMap(Map.empty)
@@ -1428,7 +1464,13 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE TEXT INDEX $$my_index FOR $pattern ON (n2.name)") {
-        assertFailsWithMessageStart(testName, """Invalid input '$': expected "FOR", "IF" or an identifier""")
+        yields(createIndex(
+          List(prop("n2", "name")),
+          Some(stringParam("my_index")),
+          posN2(testName),
+          ast.IfExistsThrowError,
+          ast.NoOptions
+        ))
       }
 
       test(s"CREATE TEXT INDEX FOR $pattern ON n2.name") {
@@ -1444,7 +1486,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(s"CREATE TEXT INDEX my_index FOR $pattern ON n2.name") {
         assertAst(createIndex(
           List(prop("n2", "name", posN2(testName))),
-          Some("my_index"),
+          Some(Left("my_index")),
           posN1(testName),
           ast.IfExistsThrowError,
           ast.NoOptions
@@ -1507,7 +1549,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(s"CREATE POINT INDEX my_index FOR $pattern ON (n2.name)") {
         yields(createIndex(
           List(prop("n2", "name")),
-          Some("my_index"),
+          Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions
@@ -1517,7 +1559,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(s"CREATE POINT INDEX my_index FOR $pattern ON (n2.name, n3.age)") {
         yields(createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
-          Some("my_index"),
+          Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions
@@ -1541,7 +1583,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(s"CREATE OR REPLACE POINT INDEX my_index FOR $pattern ON (n2.name, n3.age)") {
         yields(createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
-          Some("my_index"),
+          Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsReplace,
           ast.NoOptions
@@ -1555,7 +1597,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(s"CREATE OR REPLACE POINT INDEX my_index IF NOT EXISTS FOR $pattern ON (n2.name)") {
         yields(createIndex(
           List(prop("n2", "name")),
-          Some("my_index"),
+          Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsInvalidSyntax,
           ast.NoOptions
@@ -1575,7 +1617,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(s"CREATE POINT INDEX my_index IF NOT EXISTS FOR $pattern ON (n2.name)") {
         yields(createIndex(
           List(prop("n2", "name")),
-          Some("my_index"),
+          Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsDoNothing,
           ast.NoOptions
@@ -1666,7 +1708,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(s"CREATE POINT INDEX my_index FOR $pattern ON (n2.name) OPTIONS {}") {
         yields(createIndex(
           List(prop("n2", "name")),
-          Some("my_index"),
+          Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.OptionsMap(Map.empty)
@@ -1674,7 +1716,13 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE POINT INDEX $$my_index FOR $pattern ON (n.name)") {
-        assertFailsWithMessageStart(testName, """Invalid input '$': expected "FOR", "IF" or an identifier""")
+        yields(createIndex(
+          List(prop("n", "name")),
+          Some(stringParam("my_index")),
+          posN2(testName),
+          ast.IfExistsThrowError,
+          ast.NoOptions
+        ))
       }
 
       test(s"CREATE POINT INDEX FOR $pattern ON n2.name") {
@@ -1690,7 +1738,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(s"CREATE POINT INDEX my_index FOR $pattern ON n2.name") {
         assertAst(createIndex(
           List(prop("n2", "name", posN2(testName))),
-          Some("my_index"),
+          Some(Left("my_index")),
           posN1(testName),
           ast.IfExistsThrowError,
           ast.NoOptions
@@ -1752,7 +1800,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(s"CREATE VECTOR INDEX my_index FOR $pattern ON (n2.name)") {
         yields(createIndex(
           List(prop("n2", "name")),
-          Some("my_index"),
+          Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions
@@ -1762,7 +1810,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(s"CREATE VECTOR INDEX my_index FOR $pattern ON (n2.name, n3.age)") {
         yields(createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
-          Some("my_index"),
+          Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.NoOptions
@@ -1786,7 +1834,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(s"CREATE OR REPLACE VECTOR INDEX my_index FOR $pattern ON (n2.name, n3.age)") {
         yields(createIndex(
           List(prop("n2", "name"), prop("n3", "age")),
-          Some("my_index"),
+          Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsReplace,
           ast.NoOptions
@@ -1800,7 +1848,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(s"CREATE OR REPLACE VECTOR INDEX my_index IF NOT EXISTS FOR $pattern ON (n2.name)") {
         yields(createIndex(
           List(prop("n2", "name")),
-          Some("my_index"),
+          Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsInvalidSyntax,
           ast.NoOptions
@@ -1820,7 +1868,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(s"CREATE VECTOR INDEX my_index IF NOT EXISTS FOR $pattern ON (n2.name)") {
         yields(createIndex(
           List(prop("n2", "name")),
-          Some("my_index"),
+          Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsDoNothing,
           ast.NoOptions
@@ -1911,7 +1959,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(s"CREATE VECTOR INDEX my_index FOR $pattern ON (n2.name) OPTIONS {}") {
         yields(createIndex(
           List(prop("n2", "name")),
-          Some("my_index"),
+          Some(Left("my_index")),
           posN2(testName),
           ast.IfExistsThrowError,
           ast.OptionsMap(Map.empty)
@@ -1919,7 +1967,13 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       }
 
       test(s"CREATE VECTOR INDEX $$my_index FOR $pattern ON (n.name)") {
-        assertFailsWithMessageStart(testName, """Invalid input '$': expected "FOR", "IF" or an identifier""")
+        yields(createIndex(
+          List(prop("n", "name")),
+          Some(stringParam("my_index")),
+          posN2(testName),
+          ast.IfExistsThrowError,
+          ast.NoOptions
+        ))
       }
 
       test(s"CREATE VECTOR INDEX FOR $pattern ON n2.name") {
@@ -1935,7 +1989,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(s"CREATE VECTOR INDEX my_index FOR $pattern ON n2.name") {
         assertAst(createIndex(
           List(prop("n2", "name", posN2(testName))),
-          Some("my_index"),
+          Some(Left("my_index")),
           posN1(testName),
           ast.IfExistsThrowError,
           ast.NoOptions
@@ -1963,6 +2017,11 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(s"CREATE VECTOR INDEX FOR $pattern ON (n.name) OPTIONS") {
         failsToParse
       }
+  }
+
+  test("CREATE INDEX $ FOR (n1:Label) ON (n2.name)") {
+    // Missing parameter name (or backticks)
+    failsToParse
   }
 
   test("CREATE LOOKUP INDEX FOR (x1) ON EACH labels(x2)") {
@@ -2485,19 +2544,19 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("DROP INDEX my_index") {
-    yields(ast.DropIndexOnName("my_index", ifExists = false))
+    yields(ast.DropIndexOnName(Left("my_index"), ifExists = false))
   }
 
   test("DROP INDEX `$my_index`") {
-    yields(ast.DropIndexOnName("$my_index", ifExists = false))
+    yields(ast.DropIndexOnName(Left("$my_index"), ifExists = false))
   }
 
   test("DROP INDEX my_index IF EXISTS") {
-    yields(ast.DropIndexOnName("my_index", ifExists = true))
+    yields(ast.DropIndexOnName(Left("my_index"), ifExists = true))
   }
 
   test("DROP INDEX $my_index") {
-    failsToParse
+    yields(ast.DropIndexOnName(stringParam("my_index"), ifExists = false))
   }
 
   test("DROP INDEX my_index ON :Person(name)") {
@@ -2537,11 +2596,11 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("DROP INDEX on IF EXISTS") {
-    yields(ast.DropIndexOnName("on", ifExists = true))
+    yields(ast.DropIndexOnName(Left("on"), ifExists = true))
   }
 
   test("DROP INDEX on") {
-    yields(ast.DropIndexOnName("on", ifExists = false))
+    yields(ast.DropIndexOnName(Left("on"), ifExists = false))
   }
 
   test("DROP INDEX ON :if(exists)") {
@@ -2552,7 +2611,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   type CreateIndexFunction = (
     List[Property],
-    Option[String],
+    Option[Either[String, Parameter]],
     InputPosition,
     ast.IfExistsDo,
     ast.Options
@@ -2560,7 +2619,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   private def btreeNodeIndex(
     props: List[Property],
-    name: Option[String],
+    name: Option[Either[String, Parameter]],
     varPos: InputPosition,
     ifExistsDo: ast.IfExistsDo,
     options: ast.Options
@@ -2576,7 +2635,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   private def btreeRelIndex(
     props: List[Property],
-    name: Option[String],
+    name: Option[Either[String, Parameter]],
     varPos: InputPosition,
     ifExistsDo: ast.IfExistsDo,
     options: ast.Options
@@ -2592,7 +2651,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   type CreateRangeIndexFunction = (
     List[Property],
-    Option[String],
+    Option[Either[String, Parameter]],
     InputPosition,
     ast.IfExistsDo,
     ast.Options,
@@ -2601,7 +2660,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   private def rangeNodeIndex(
     props: List[Property],
-    name: Option[String],
+    name: Option[Either[String, Parameter]],
     varPos: InputPosition,
     ifExistsDo: ast.IfExistsDo,
     options: ast.Options,
@@ -2619,7 +2678,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   private def rangeRelIndex(
     props: List[Property],
-    name: Option[String],
+    name: Option[Either[String, Parameter]],
     varPos: InputPosition,
     ifExistsDo: ast.IfExistsDo,
     options: ast.Options,
@@ -2636,10 +2695,10 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     )
 
   type CreateLookupIndexFunction =
-    (Option[String], InputPosition, ast.IfExistsDo, ast.Options) => InputPosition => ast.CreateIndex
+    (Option[Either[String, Parameter]], InputPosition, ast.IfExistsDo, ast.Options) => InputPosition => ast.CreateIndex
 
   private def lookupNodeIndex(
-    name: Option[String],
+    name: Option[Either[String, Parameter]],
     varPos: InputPosition,
     ifExistsDo: ast.IfExistsDo,
     options: ast.Options
@@ -2654,7 +2713,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     )
 
   private def lookupRelIndex(
-    name: Option[String],
+    name: Option[Either[String, Parameter]],
     varPos: InputPosition,
     ifExistsDo: ast.IfExistsDo,
     options: ast.Options
@@ -2672,7 +2731,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
     isNodeIndex: Boolean,
     props: List[Property],
     labelOrTypes: List[String],
-    name: Option[String],
+    name: Option[Either[String, Parameter]],
     varPos: InputPosition,
     ifExistsDo: ast.IfExistsDo,
     options: ast.Options
@@ -2687,7 +2746,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   private def fulltextNodeIndex(
     props: List[Property],
     labels: List[String],
-    name: Option[String],
+    name: Option[Either[String, Parameter]],
     varPos: InputPosition,
     ifExistsDo: ast.IfExistsDo,
     options: ast.Options
@@ -2697,7 +2756,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
   private def fulltextRelIndex(
     props: List[Property],
     types: List[String],
-    name: Option[String],
+    name: Option[Either[String, Parameter]],
     varPos: InputPosition,
     ifExistsDo: ast.IfExistsDo,
     options: ast.Options
@@ -2713,7 +2772,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   private def textNodeIndex(
     props: List[Property],
-    name: Option[String],
+    name: Option[Either[String, Parameter]],
     varPos: InputPosition,
     ifExistsDo: ast.IfExistsDo,
     options: ast.Options
@@ -2729,7 +2788,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   private def textRelIndex(
     props: List[Property],
-    name: Option[String],
+    name: Option[Either[String, Parameter]],
     varPos: InputPosition,
     ifExistsDo: ast.IfExistsDo,
     options: ast.Options
@@ -2745,7 +2804,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   private def pointNodeIndex(
     props: List[Property],
-    name: Option[String],
+    name: Option[Either[String, Parameter]],
     varPos: InputPosition,
     ifExistsDo: ast.IfExistsDo,
     options: ast.Options
@@ -2761,7 +2820,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   private def pointRelIndex(
     props: List[Property],
-    name: Option[String],
+    name: Option[Either[String, Parameter]],
     varPos: InputPosition,
     ifExistsDo: ast.IfExistsDo,
     options: ast.Options
@@ -2778,7 +2837,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   private def vectorNodeIndex(
     props: List[Property],
-    name: Option[String],
+    name: Option[Either[String, Parameter]],
     varPos: InputPosition,
     ifExistsDo: ast.IfExistsDo,
     options: ast.Options
@@ -2794,7 +2853,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   private def vectorRelIndex(
     props: List[Property],
-    name: Option[String],
+    name: Option[Either[String, Parameter]],
     varPos: InputPosition,
     ifExistsDo: ast.IfExistsDo,
     options: ast.Options

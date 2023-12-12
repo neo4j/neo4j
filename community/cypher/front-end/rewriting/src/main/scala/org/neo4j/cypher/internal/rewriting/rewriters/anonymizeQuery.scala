@@ -69,9 +69,19 @@ case class anonymizeQuery(anonymizer: Anonymizer) extends Rewriter {
     case x: PropertyKeyName      => PropertyKeyName(anonymizer.propertyKey(x.name))(x.position)
     case x: Parameter            => ExplicitParameter(anonymizer.parameter(x.name), x.parameterType)(x.position)
     case x: StringLiteral        => StringLiteral(anonymizer.literal(x.value))(x.position)
-    case x: CreateIndex          => x.withName(x.name.map(anonymizer.indexName))
-    case x: DropIndexOnName      => x.copy(name = anonymizer.indexName(x.name))(x.position)
-    case x: CreateConstraint     => x.withName(x.name.map(anonymizer.constraintName))
-    case x: DropConstraintOnName => x.copy(name = anonymizer.constraintName(x.name))(x.position)
+    case x: CreateIndex          => x.withName(x.name.map(n => anonymizeSchemaName(n, anonymizer.indexName)))
+    case x: DropIndexOnName      => x.copy(name = anonymizeSchemaName(x.name, anonymizer.indexName))(x.position)
+    case x: CreateConstraint     => x.withName(x.name.map(n => anonymizeSchemaName(n, anonymizer.constraintName)))
+    case x: DropConstraintOnName => x.copy(name = anonymizeSchemaName(x.name, anonymizer.constraintName))(x.position)
   })
+
+  private def anonymizeSchemaName(
+    name: Either[String, Parameter],
+    anonymizeStringName: String => String
+  ): Either[String, ExplicitParameter] =
+    name match {
+      case Left(string) => Left(anonymizeStringName(string))
+      case Right(param) =>
+        Right(ExplicitParameter(anonymizer.parameter(param.name), param.parameterType)(param.position))
+    }
 }

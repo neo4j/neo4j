@@ -1663,7 +1663,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     constraintType: ConstraintType,
     replace: Boolean,
     ifNotExists: Boolean,
-    name: String,
+    constraintName: SimpleEither[String, Parameter],
     variable: Variable,
     label: StringPos[InputPosition],
     javaProperties: util.List[Property],
@@ -1679,13 +1679,14 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
       case ConstraintVersion.CONSTRAINT_VERSION_2 => ConstraintVersion2
     }
 
+    val name = Option(constraintName).map(_.asScala)
     val properties = javaProperties.asScala.toSeq
     constraintType match {
       case ConstraintType.NODE_UNIQUE => ast.CreateNodePropertyUniquenessConstraint(
           variable,
           LabelName(label.string)(label.pos),
           properties,
-          Option(name),
+          name,
           ifExistsDo(replace, ifNotExists),
           asOptionsAst(options),
           containsOn,
@@ -1695,7 +1696,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
           variable,
           RelTypeName(label.string)(label.pos),
           properties,
-          Option(name),
+          name,
           ifExistsDo(replace, ifNotExists),
           asOptionsAst(options),
           containsOn,
@@ -1705,7 +1706,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
           variable,
           LabelName(label.string)(label.pos),
           properties,
-          Option(name),
+          name,
           ifExistsDo(replace, ifNotExists),
           asOptionsAst(options),
           containsOn,
@@ -1715,7 +1716,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
           variable,
           RelTypeName(label.string)(label.pos),
           properties,
-          Option(name),
+          name,
           ifExistsDo(replace, ifNotExists),
           asOptionsAst(options),
           containsOn,
@@ -1727,7 +1728,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
           variable,
           LabelName(label.string)(label.pos),
           properties.head,
-          Option(name),
+          name,
           ifExistsDo(replace, ifNotExists),
           asOptionsAst(options),
           containsOn,
@@ -1739,7 +1740,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
           variable,
           RelTypeName(label.string)(label.pos),
           properties.head,
-          Option(name),
+          name,
           ifExistsDo(replace, ifNotExists),
           asOptionsAst(options),
           containsOn,
@@ -1753,7 +1754,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
           LabelName(label.string)(label.pos),
           properties.head,
           scalaPropertyType,
-          Option(name),
+          name,
           ifExistsDo(replace, ifNotExists),
           asOptionsAst(options),
           containsOn,
@@ -1767,7 +1768,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
           RelTypeName(label.string)(label.pos),
           properties.head,
           scalaPropertyTypes,
-          Option(name),
+          name,
           ifExistsDo(replace, ifNotExists),
           asOptionsAst(options),
           containsOn,
@@ -1776,8 +1777,12 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     }
   }
 
-  override def dropConstraint(p: InputPosition, name: String, ifExists: Boolean): DropConstraintOnName =
-    DropConstraintOnName(name, ifExists)(p)
+  override def dropConstraint(
+    p: InputPosition,
+    name: SimpleEither[String, Parameter],
+    ifExists: Boolean
+  ): DropConstraintOnName =
+    DropConstraintOnName(name.asScala, ifExists)(p)
 
   override def dropConstraint(
     p: InputPosition,
@@ -1905,7 +1910,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     replace: Boolean,
     ifNotExists: Boolean,
     isNode: Boolean,
-    indexName: String,
+    indexName: SimpleEither[String, Parameter],
     variable: Variable,
     functionName: StringPos[InputPosition],
     functionParameter: Variable,
@@ -1916,11 +1921,12 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
       distinct = false,
       IndexedSeq(functionParameter)
     )(functionName.pos)
+    val name = Option(indexName).map(_.asScala)
     CreateLookupIndex(
       variable,
       isNode,
       function,
-      Option(indexName),
+      name,
       ifExistsDo(replace, ifNotExists),
       asOptionsAst(options)
     )(p)
@@ -1942,7 +1948,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     replace: Boolean,
     ifNotExists: Boolean,
     isNode: Boolean,
-    indexName: String,
+    indexName: SimpleEither[String, Parameter],
     variable: Variable,
     label: StringPos[InputPosition],
     javaProperties: util.List[Property],
@@ -1950,13 +1956,14 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     indexType: CreateIndexTypes
   ): CreateIndex = {
     val properties = javaProperties.asScala.toList
+    val name = Option(indexName).map(_.asScala)
     (indexType, isNode) match {
       case (CreateIndexTypes.DEFAULT, true) =>
         CreateRangeNodeIndex(
           variable,
           LabelName(label.string)(label.pos),
           properties,
-          Option(indexName),
+          name,
           ifExistsDo(replace, ifNotExists),
           asOptionsAst(options),
           fromDefault = true
@@ -1966,7 +1973,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
           variable,
           RelTypeName(label.string)(label.pos),
           properties,
-          Option(indexName),
+          name,
           ifExistsDo(replace, ifNotExists),
           asOptionsAst(options),
           fromDefault = true
@@ -1976,7 +1983,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
           variable,
           LabelName(label.string)(label.pos),
           properties,
-          Option(indexName),
+          name,
           ifExistsDo(replace, ifNotExists),
           asOptionsAst(options),
           fromDefault = false
@@ -1986,7 +1993,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
           variable,
           RelTypeName(label.string)(label.pos),
           properties,
-          Option(indexName),
+          name,
           ifExistsDo(replace, ifNotExists),
           asOptionsAst(options),
           fromDefault = false
@@ -1996,7 +2003,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
           variable,
           LabelName(label.string)(label.pos),
           properties,
-          Option(indexName),
+          name,
           ifExistsDo(replace, ifNotExists),
           asOptionsAst(options)
         )(p)
@@ -2005,7 +2012,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
           variable,
           RelTypeName(label.string)(label.pos),
           properties,
-          Option(indexName),
+          name,
           ifExistsDo(replace, ifNotExists),
           asOptionsAst(options)
         )(p)
@@ -2014,7 +2021,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
           variable,
           LabelName(label.string)(label.pos),
           properties,
-          Option(indexName),
+          name,
           ifExistsDo(replace, ifNotExists),
           asOptionsAst(options)
         )(p)
@@ -2023,7 +2030,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
           variable,
           RelTypeName(label.string)(label.pos),
           properties,
-          Option(indexName),
+          name,
           ifExistsDo(replace, ifNotExists),
           asOptionsAst(options)
         )(p)
@@ -2032,7 +2039,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
           variable,
           LabelName(label.string)(label.pos),
           properties,
-          Option(indexName),
+          name,
           ifExistsDo(replace, ifNotExists),
           asOptionsAst(options)
         )(p)
@@ -2041,7 +2048,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
           variable,
           RelTypeName(label.string)(label.pos),
           properties,
-          Option(indexName),
+          name,
           ifExistsDo(replace, ifNotExists),
           asOptionsAst(options)
         )(p)
@@ -2050,7 +2057,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
           variable,
           LabelName(label.string)(label.pos),
           properties,
-          Option(indexName),
+          name,
           ifExistsDo(replace, ifNotExists),
           asOptionsAst(options)
         )(p)
@@ -2059,7 +2066,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
           variable,
           RelTypeName(label.string)(label.pos),
           properties,
-          Option(indexName),
+          name,
           ifExistsDo(replace, ifNotExists),
           asOptionsAst(options)
         )(p)
@@ -2073,20 +2080,21 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     replace: Boolean,
     ifNotExists: Boolean,
     isNode: Boolean,
-    indexName: String,
+    indexName: SimpleEither[String, Parameter],
     variable: Variable,
     labels: util.List[StringPos[InputPosition]],
     javaProperties: util.List[Property],
     options: SimpleEither[util.Map[String, Expression], Parameter]
   ): CreateIndex = {
     val properties = javaProperties.asScala.toList
+    val name = Option(indexName).map(_.asScala)
     if (isNode) {
       val labelNames = labels.asScala.toList.map(stringPos => LabelName(stringPos.string)(stringPos.pos))
       CreateFulltextNodeIndex(
         variable,
         labelNames,
         properties,
-        Option(indexName),
+        name,
         ifExistsDo(replace, ifNotExists),
         asOptionsAst(options)
       )(p)
@@ -2096,15 +2104,15 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
         variable,
         relTypeNames,
         properties,
-        Option(indexName),
+        name,
         ifExistsDo(replace, ifNotExists),
         asOptionsAst(options)
       )(p)
     }
   }
 
-  override def dropIndex(p: InputPosition, name: String, ifExists: Boolean): DropIndexOnName =
-    DropIndexOnName(name, ifExists)(p)
+  override def dropIndex(p: InputPosition, name: SimpleEither[String, Parameter], ifExists: Boolean): DropIndexOnName =
+    DropIndexOnName(name.asScala, ifExists)(p)
 
   override def dropIndex(
     p: InputPosition,

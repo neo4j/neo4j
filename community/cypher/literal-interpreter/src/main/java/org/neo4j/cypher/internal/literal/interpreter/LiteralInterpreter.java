@@ -535,7 +535,7 @@ public class LiteralInterpreter
             ConstraintType constraintType,
             boolean replace,
             boolean ifNotExists,
-            String name,
+            SimpleEither<String, Object> name,
             Object o,
             StringPos<NULL> label,
             List<Object> objects,
@@ -547,7 +547,7 @@ public class LiteralInterpreter
     }
 
     @Override
-    public NULL dropConstraint(NULL p, String name, boolean ifExists) {
+    public NULL dropConstraint(NULL p, SimpleEither<String, Object> name, boolean ifExists) {
         throw new UnsupportedOperationException("dropConstraint is not a literal");
     }
 
@@ -568,7 +568,7 @@ public class LiteralInterpreter
             boolean replace,
             boolean ifNotExists,
             boolean isNode,
-            String indexName,
+            SimpleEither<String, Object> indexName,
             Object o,
             StringPos<NULL> functionName,
             Object functionParameter,
@@ -582,7 +582,7 @@ public class LiteralInterpreter
             boolean replace,
             boolean ifNotExists,
             boolean isNode,
-            String indexName,
+            SimpleEither<String, Object> indexName,
             Object o,
             StringPos<NULL> label,
             List<Object> objects,
@@ -597,7 +597,7 @@ public class LiteralInterpreter
             boolean replace,
             boolean ifNotExists,
             boolean isNode,
-            String indexName,
+            SimpleEither<String, Object> indexName,
             Object o,
             List<StringPos<NULL>> labels,
             List<Object> objects,
@@ -606,7 +606,7 @@ public class LiteralInterpreter
     }
 
     @Override
-    public NULL dropIndex(NULL p, String name, boolean ifExists) {
+    public NULL dropIndex(NULL p, SimpleEither<String, Object> name, boolean ifExists) {
         throw new UnsupportedOperationException("dropIndex is not a literal");
     }
 

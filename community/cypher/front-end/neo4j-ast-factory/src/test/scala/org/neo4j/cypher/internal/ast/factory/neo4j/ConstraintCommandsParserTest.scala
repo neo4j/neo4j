@@ -2028,6 +2028,116 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
           ) {
             failsToParse
           }
+
+          // constraint name parameter
+
+          test(s"CREATE CONSTRAINT $$name $forOrOnString (n:L) $requireOrAssertString n.prop IS NODE KEY") {
+            yields(ast.CreateNodeKeyConstraint(
+              varFor("n"),
+              labelName("L"),
+              Seq(prop("n", "prop")),
+              Some(stringParam("name")),
+              ast.IfExistsThrowError,
+              ast.NoOptions,
+              containsOn,
+              constraintVersion
+            ))
+          }
+
+          test(
+            s"CREATE CONSTRAINT $$name $forOrOnString ()-[r:R]-() $requireOrAssertString r.prop IS RELATIONSHIP KEY"
+          ) {
+            yields(ast.CreateRelationshipKeyConstraint(
+              varFor("r"),
+              relTypeName("R"),
+              Seq(prop("r", "prop")),
+              Some(stringParam("name")),
+              ast.IfExistsThrowError,
+              ast.NoOptions,
+              containsOn,
+              constraintVersion
+            ))
+          }
+
+          test(s"CREATE CONSTRAINT $$name $forOrOnString (n:L) $requireOrAssertString n.prop IS UNIQUE") {
+            yields(ast.CreateNodePropertyUniquenessConstraint(
+              varFor("n"),
+              labelName("L"),
+              Seq(prop("n", "prop")),
+              Some(stringParam("name")),
+              ast.IfExistsThrowError,
+              ast.NoOptions,
+              containsOn,
+              constraintVersion
+            ))
+          }
+
+          test(s"CREATE CONSTRAINT $$name $forOrOnString ()-[r:R]-() $requireOrAssertString r.prop IS UNIQUE") {
+            yields(ast.CreateRelationshipPropertyUniquenessConstraint(
+              varFor("r"),
+              relTypeName("R"),
+              Seq(prop("r", "prop")),
+              Some(stringParam("name")),
+              ast.IfExistsThrowError,
+              ast.NoOptions,
+              containsOn,
+              constraintVersion
+            ))
+          }
+
+          test(s"CREATE CONSTRAINT $$name $forOrOnString (n:L) $requireOrAssertString n.prop IS NOT NULL") {
+            yields(ast.CreateNodePropertyExistenceConstraint(
+              varFor("n"),
+              labelName("L"),
+              prop("n", "prop"),
+              Some(stringParam("name")),
+              ast.IfExistsThrowError,
+              ast.NoOptions,
+              containsOn,
+              constraintVersionOneOrTwo
+            ))
+          }
+
+          test(s"CREATE CONSTRAINT $$name $forOrOnString ()-[r:R]-() $requireOrAssertString r.prop IS NOT NULL") {
+            yields(ast.CreateRelationshipPropertyExistenceConstraint(
+              varFor("r"),
+              relTypeName("R"),
+              prop("r", "prop"),
+              Some(stringParam("name")),
+              ast.IfExistsThrowError,
+              ast.NoOptions,
+              containsOn,
+              constraintVersionOneOrTwo
+            ))
+          }
+
+          test(s"CREATE CONSTRAINT $$name $forOrOnString (n:L) $requireOrAssertString n.prop IS TYPED STRING") {
+            yields(ast.CreateNodePropertyTypeConstraint(
+              varFor("n"),
+              labelName("L"),
+              prop("n", "prop"),
+              StringType(isNullable = true)(pos),
+              Some(stringParam("name")),
+              ast.IfExistsThrowError,
+              ast.NoOptions,
+              containsOn,
+              constraintVersion
+            ))
+          }
+
+          test(s"CREATE CONSTRAINT $$name $forOrOnString ()-[r:R]-() $requireOrAssertString r.prop IS TYPED STRING") {
+            yields(ast.CreateRelationshipPropertyTypeConstraint(
+              varFor("r"),
+              relTypeName("R"),
+              prop("r", "prop"),
+              StringType(isNullable = true)(pos),
+              Some(stringParam("name")),
+              ast.IfExistsThrowError,
+              ast.NoOptions,
+              containsOn,
+              constraintVersion
+            ))
+          }
         }
     }
 
@@ -2968,6 +3078,19 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     assertFailsWithMessage(testName, "Constraint type 'EXISTS' does not allow multiple properties")
   }
 
+  test("CREATE CONSTRAINT $my_constraint ON ()-[r:R]-() ASSERT EXISTS (r.prop)") {
+    yields(ast.CreateRelationshipPropertyExistenceConstraint(
+      varFor("r"),
+      relTypeName("R"),
+      prop("r", "prop"),
+      Some(stringParam("my_constraint")),
+      ast.IfExistsThrowError,
+      ast.NoOptions,
+      containsOn = true,
+      ast.ConstraintVersion0
+    ))
+  }
+
   // Edge case tests
 
   test(
@@ -3101,13 +3224,6 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     assertFailsWithMessageStart(
       testName,
       "Invalid input 'IS': expected \"OPTIONS\" or <EOF> (line 1, column 71 (offset: 70))"
-    )
-  }
-
-  test("CREATE CONSTRAINT $my_constraint ON ()-[r:R]-() ASSERT EXISTS (r.prop)") {
-    assertFailsWithMessage(
-      testName,
-      "Invalid input '$': expected \"FOR\", \"IF\", \"ON\" or an identifier (line 1, column 19 (offset: 18))"
     )
   }
 
@@ -3511,7 +3627,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   }
 
   test("DROP CONSTRAINT $my_constraint") {
-    failsToParse
+    yields(ast.DropConstraintOnName(stringParam("my_constraint"), ifExists = false))
   }
 
   test("DROP CONSTRAINT my_constraint IF EXISTS;") {

@@ -901,7 +901,7 @@ public class NullAstFactory
             ConstraintType constraintType,
             boolean replace,
             boolean ifNotExists,
-            String constraintName,
+            SimpleEither<String, NULL> constraintName,
             NULL aNull,
             StringPos<NULL> label,
             List<NULL> nulls,
@@ -913,7 +913,7 @@ public class NullAstFactory
     }
 
     @Override
-    public NULL dropConstraint(NULL p, String name, boolean ifExists) {
+    public NULL dropConstraint(NULL p, SimpleEither<String, NULL> name, boolean ifExists) {
         return null;
     }
 
@@ -934,7 +934,7 @@ public class NullAstFactory
             boolean replace,
             boolean ifNotExists,
             boolean isNode,
-            String indexName,
+            SimpleEither<String, NULL> indexName,
             NULL aNull,
             StringPos<NULL> functionName,
             NULL functionParameter,
@@ -948,7 +948,7 @@ public class NullAstFactory
             boolean replace,
             boolean ifNotExists,
             boolean isNode,
-            String indexName,
+            SimpleEither<String, NULL> indexName,
             NULL aNull,
             StringPos<NULL> label,
             List<NULL> nulls,
@@ -963,7 +963,7 @@ public class NullAstFactory
             boolean replace,
             boolean ifNotExists,
             boolean isNode,
-            String indexName,
+            SimpleEither<String, NULL> indexName,
             NULL aNull,
             List<StringPos<NULL>> labels,
             List<NULL> nulls,
@@ -972,7 +972,7 @@ public class NullAstFactory
     }
 
     @Override
-    public NULL dropIndex(NULL p, String name, boolean ifExists) {
+    public NULL dropIndex(NULL p, SimpleEither<String, NULL> name, boolean ifExists) {
         return null;
     }
 

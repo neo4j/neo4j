@@ -189,15 +189,12 @@ import org.neo4j.cypher.internal.logical.plans.Create
 import org.neo4j.cypher.internal.logical.plans.CreateConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateDatabase
 import org.neo4j.cypher.internal.logical.plans.CreateFulltextIndex
+import org.neo4j.cypher.internal.logical.plans.CreateIndex
 import org.neo4j.cypher.internal.logical.plans.CreateLocalDatabaseAlias
 import org.neo4j.cypher.internal.logical.plans.CreateLookupIndex
-import org.neo4j.cypher.internal.logical.plans.CreatePointIndex
-import org.neo4j.cypher.internal.logical.plans.CreateRangeIndex
 import org.neo4j.cypher.internal.logical.plans.CreateRemoteDatabaseAlias
 import org.neo4j.cypher.internal.logical.plans.CreateRole
-import org.neo4j.cypher.internal.logical.plans.CreateTextIndex
 import org.neo4j.cypher.internal.logical.plans.CreateUser
-import org.neo4j.cypher.internal.logical.plans.CreateVectorIndex
 import org.neo4j.cypher.internal.logical.plans.DeallocateServer
 import org.neo4j.cypher.internal.logical.plans.DeleteExpression
 import org.neo4j.cypher.internal.logical.plans.DeleteNode
@@ -1885,7 +1882,10 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     // RANGE
 
     assertGood(
-      attach(CreateRangeIndex(None, label("Label"), List(key("prop")), Some("$indexName"), NoOptions), 63.2),
+      attach(
+        CreateIndex(None, IndexType.RANGE, label("Label"), List(key("prop")), Some(Left("$indexName")), NoOptions),
+        63.2
+      ),
       planDescription(
         id,
         "CreateIndex",
@@ -1896,17 +1896,18 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
 
     assertGood(
-      attach(CreateRangeIndex(None, label("Label"), List(key("prop")), None, NoOptions), 63.2),
+      attach(CreateIndex(None, IndexType.RANGE, label("Label"), List(key("prop")), None, NoOptions), 63.2),
       planDescription(id, "CreateIndex", NoChildren, Seq(details("RANGE INDEX FOR (:Label) ON (prop)")), Set.empty)
     )
 
     assertGood(
       attach(
-        CreateRangeIndex(
+        CreateIndex(
           None,
+          IndexType.RANGE,
           label("Label"),
           List(key("prop")),
-          Some("$indexName"),
+          Some(Right(parameter("indexName", CTString))),
           OptionsMap(Map("indexProvider" -> stringLiteral("range-1.0")))
         ),
         63.2
@@ -1915,15 +1916,16 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         id,
         "CreateIndex",
         NoChildren,
-        Seq(details("""RANGE INDEX `$indexName` FOR (:Label) ON (prop) OPTIONS {indexProvider: "range-1.0"}""")),
+        Seq(details("""RANGE INDEX $indexName FOR (:Label) ON (prop) OPTIONS {indexProvider: "range-1.0"}""")),
         Set.empty
       )
     )
 
     assertGood(
       attach(
-        CreateRangeIndex(
+        CreateIndex(
           Some(DoNothingIfExistsForIndex(label("Label"), List(key("prop")), IndexType.RANGE, None, NoOptions)),
+          IndexType.RANGE,
           label("Label"),
           List(key("prop")),
           None,
@@ -1949,18 +1951,21 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
 
     assertGood(
-      attach(CreateRangeIndex(None, relType("Label"), List(key("prop")), Some("$indexName"), NoOptions), 63.2),
+      attach(
+        CreateIndex(None, IndexType.RANGE, relType("Label"), List(key("prop")), Some(Left("indexName")), NoOptions),
+        63.2
+      ),
       planDescription(
         id,
         "CreateIndex",
         NoChildren,
-        Seq(details("RANGE INDEX `$indexName` FOR ()-[:Label]-() ON (prop)")),
+        Seq(details("RANGE INDEX indexName FOR ()-[:Label]-() ON (prop)")),
         Set.empty
       )
     )
 
     assertGood(
-      attach(CreateRangeIndex(None, relType("Label"), List(key("prop")), None, NoOptions), 63.2),
+      attach(CreateIndex(None, IndexType.RANGE, relType("Label"), List(key("prop")), None, NoOptions), 63.2),
       planDescription(
         id,
         "CreateIndex",
@@ -1972,11 +1977,12 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        CreateRangeIndex(
+        CreateIndex(
           None,
+          IndexType.RANGE,
           relType("Label"),
           List(key("prop")),
-          Some("$indexName"),
+          Some(Left("indexName")),
           OptionsMap(Map("indexProvider" -> stringLiteral("range-1.0")))
         ),
         63.2
@@ -1985,15 +1991,16 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         id,
         "CreateIndex",
         NoChildren,
-        Seq(details("""RANGE INDEX `$indexName` FOR ()-[:Label]-() ON (prop) OPTIONS {indexProvider: "range-1.0"}""")),
+        Seq(details("""RANGE INDEX indexName FOR ()-[:Label]-() ON (prop) OPTIONS {indexProvider: "range-1.0"}""")),
         Set.empty
       )
     )
 
     assertGood(
       attach(
-        CreateRangeIndex(
+        CreateIndex(
           Some(DoNothingIfExistsForIndex(relType("Label"), List(key("prop")), IndexType.RANGE, None, NoOptions)),
+          IndexType.RANGE,
           relType("Label"),
           List(key("prop")),
           None,
@@ -2020,11 +2027,12 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        CreateRangeIndex(
+        CreateIndex(
           None,
+          IndexType.RANGE,
           label("Label"),
           List(key("prop")),
-          Some("$indexName"),
+          Some(Left("$indexName")),
           OptionsParam(parameter("options", CTMap))
         ),
         63.2
@@ -2041,12 +2049,12 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     // LOOKUP
 
     assertGood(
-      attach(CreateLookupIndex(None, EntityType.NODE, Some("$indexName"), NoOptions), 63.2),
+      attach(CreateLookupIndex(None, EntityType.NODE, Some(Left("indexName")), NoOptions), 63.2),
       planDescription(
         id,
         "CreateIndex",
         NoChildren,
-        Seq(details("LOOKUP INDEX `$indexName` FOR (n) ON EACH labels(n)")),
+        Seq(details("LOOKUP INDEX indexName FOR (n) ON EACH labels(n)")),
         Set.empty
       )
     )
@@ -2083,7 +2091,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         CreateLookupIndex(
           None,
           EntityType.NODE,
-          Some("$indexName"),
+          Some(Left("$indexName")),
           OptionsMap(Map("indexProvider" -> stringLiteral("token-lookup-1.0")))
         ),
         63.2
@@ -2100,12 +2108,12 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
 
     assertGood(
-      attach(CreateLookupIndex(None, EntityType.RELATIONSHIP, Some("$indexName"), NoOptions), 63.2),
+      attach(CreateLookupIndex(None, EntityType.RELATIONSHIP, Some(Left("indexName")), NoOptions), 63.2),
       planDescription(
         id,
         "CreateIndex",
         NoChildren,
-        Seq(details("LOOKUP INDEX `$indexName` FOR ()-[r]-() ON EACH type(r)")),
+        Seq(details("LOOKUP INDEX indexName FOR ()-[r]-() ON EACH type(r)")),
         Set.empty
       )
     )
@@ -2113,9 +2121,13 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(
       attach(
         CreateLookupIndex(
-          Some(DoNothingIfExistsForLookupIndex(EntityType.RELATIONSHIP, None, NoOptions)),
+          Some(DoNothingIfExistsForLookupIndex(
+            EntityType.RELATIONSHIP,
+            Some(Right(parameter("indexName", CTString))),
+            NoOptions
+          )),
           EntityType.RELATIONSHIP,
-          None,
+          Some(Right(parameter("indexName", CTString))),
           NoOptions
         ),
         63.2
@@ -2128,11 +2140,11 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
             id,
             "DoNothingIfExists(INDEX)",
             NoChildren,
-            Seq(details("LOOKUP INDEX FOR ()-[r]-() ON EACH type(r)")),
+            Seq(details("LOOKUP INDEX $indexName FOR ()-[r]-() ON EACH type(r)")),
             Set.empty
           )
         ),
-        Seq(details("LOOKUP INDEX FOR ()-[r]-() ON EACH type(r)")),
+        Seq(details("LOOKUP INDEX $indexName FOR ()-[r]-() ON EACH type(r)")),
         Set.empty
       )
     )
@@ -2142,7 +2154,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         CreateLookupIndex(
           None,
           EntityType.RELATIONSHIP,
-          Some("$indexName"),
+          Some(Left("indexName")),
           OptionsMap(Map("indexConfig" -> MapExpression(Seq.empty)(pos)))
         ),
         63.2
@@ -2151,7 +2163,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         id,
         "CreateIndex",
         NoChildren,
-        Seq(details("LOOKUP INDEX `$indexName` FOR ()-[r]-() ON EACH type(r) OPTIONS {indexConfig: {}}")),
+        Seq(details("LOOKUP INDEX indexName FOR ()-[r]-() ON EACH type(r) OPTIONS {indexConfig: {}}")),
         Set.empty
       )
     )
@@ -2160,14 +2172,14 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        CreateFulltextIndex(None, Left(List(label("Label"))), List(key("prop")), Some("$indexName"), NoOptions),
+        CreateFulltextIndex(None, Left(List(label("Label"))), List(key("prop")), Some(Left("indexName")), NoOptions),
         63.2
       ),
       planDescription(
         id,
         "CreateIndex",
         NoChildren,
-        Seq(details("FULLTEXT INDEX `$indexName` FOR (:Label) ON EACH [prop]")),
+        Seq(details("FULLTEXT INDEX indexName FOR (:Label) ON EACH [prop]")),
         Set.empty
       )
     )
@@ -2192,7 +2204,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           None,
           Left(List(label("Label1"), label("Label2"))),
           List(key("prop")),
-          Some("$indexName"),
+          Some(Right(parameter("$indexName", CTString))),
           OptionsMap(Map("indexProvider" -> stringLiteral("fulltext-1.0")))
         ),
         63.2
@@ -2202,7 +2214,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         "CreateIndex",
         NoChildren,
         Seq(details(
-          """FULLTEXT INDEX `$indexName` FOR (:Label1|Label2) ON EACH [prop] OPTIONS {indexProvider: "fulltext-1.0"}"""
+          """FULLTEXT INDEX $`$indexName` FOR (:Label1|Label2) ON EACH [prop] OPTIONS {indexProvider: "fulltext-1.0"}"""
         )),
         Set.empty
       )
@@ -2238,14 +2250,14 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        CreateFulltextIndex(None, Right(List(relType("Label"))), List(key("prop")), Some("$indexName"), NoOptions),
+        CreateFulltextIndex(None, Right(List(relType("Label"))), List(key("prop")), Some(Left("indexName")), NoOptions),
         63.2
       ),
       planDescription(
         id,
         "CreateIndex",
         NoChildren,
-        Seq(details("FULLTEXT INDEX `$indexName` FOR ()-[:Label]-() ON EACH [prop]")),
+        Seq(details("FULLTEXT INDEX indexName FOR ()-[:Label]-() ON EACH [prop]")),
         Set.empty
       )
     )
@@ -2276,7 +2288,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           None,
           Right(List(relType("Label"))),
           List(key("prop")),
-          Some("$indexName"),
+          Some(Left("indexName")),
           OptionsMap(Map("indexProvider" -> stringLiteral("fulltext-1.0")))
         ),
         63.2
@@ -2286,7 +2298,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         "CreateIndex",
         NoChildren,
         Seq(details(
-          """FULLTEXT INDEX `$indexName` FOR ()-[:Label]-() ON EACH [prop] OPTIONS {indexProvider: "fulltext-1.0"}"""
+          """FULLTEXT INDEX indexName FOR ()-[:Label]-() ON EACH [prop] OPTIONS {indexProvider: "fulltext-1.0"}"""
         )),
         Set.empty
       )
@@ -2326,7 +2338,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           None,
           Left(List(label("Label"))),
           List(key("prop")),
-          Some("$indexName"),
+          Some(Left("indexName")),
           OptionsParam(parameter("ops", CTMap))
         ),
         63.2
@@ -2335,7 +2347,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         id,
         "CreateIndex",
         NoChildren,
-        Seq(details("FULLTEXT INDEX `$indexName` FOR (:Label) ON EACH [prop] OPTIONS $ops")),
+        Seq(details("FULLTEXT INDEX indexName FOR (:Label) ON EACH [prop] OPTIONS $ops")),
         Set.empty
       )
     )
@@ -2343,28 +2355,32 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     // TEXT
 
     assertGood(
-      attach(CreateTextIndex(None, label("Label"), List(key("prop")), Some("$indexName"), NoOptions), 63.2),
+      attach(
+        CreateIndex(None, IndexType.TEXT, label("Label"), List(key("prop")), Some(Left("indexName")), NoOptions),
+        63.2
+      ),
       planDescription(
         id,
         "CreateIndex",
         NoChildren,
-        Seq(details("TEXT INDEX `$indexName` FOR (:Label) ON (prop)")),
+        Seq(details("TEXT INDEX indexName FOR (:Label) ON (prop)")),
         Set.empty
       )
     )
 
     assertGood(
-      attach(CreateTextIndex(None, label("Label"), List(key("prop")), None, NoOptions), 63.2),
+      attach(CreateIndex(None, IndexType.TEXT, label("Label"), List(key("prop")), None, NoOptions), 63.2),
       planDescription(id, "CreateIndex", NoChildren, Seq(details("TEXT INDEX FOR (:Label) ON (prop)")), Set.empty)
     )
 
     assertGood(
       attach(
-        CreateTextIndex(
+        CreateIndex(
           None,
+          IndexType.TEXT,
           label("Label"),
           List(key("prop")),
-          Some("$indexName"),
+          Some(Right(parameter("indexName", CTString))),
           OptionsMap(Map("indexProvider" -> stringLiteral("text-1.0")))
         ),
         63.2
@@ -2373,15 +2389,16 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         id,
         "CreateIndex",
         NoChildren,
-        Seq(details("""TEXT INDEX `$indexName` FOR (:Label) ON (prop) OPTIONS {indexProvider: "text-1.0"}""")),
+        Seq(details("""TEXT INDEX $indexName FOR (:Label) ON (prop) OPTIONS {indexProvider: "text-1.0"}""")),
         Set.empty
       )
     )
 
     assertGood(
       attach(
-        CreateTextIndex(
+        CreateIndex(
           Some(DoNothingIfExistsForIndex(label("Label"), List(key("prop")), IndexType.TEXT, None, NoOptions)),
+          IndexType.TEXT,
           label("Label"),
           List(key("prop")),
           None,
@@ -2407,28 +2424,32 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
 
     assertGood(
-      attach(CreateTextIndex(None, relType("Label"), List(key("prop")), Some("$indexName"), NoOptions), 63.2),
+      attach(
+        CreateIndex(None, IndexType.TEXT, relType("Label"), List(key("prop")), Some(Left("indexName")), NoOptions),
+        63.2
+      ),
       planDescription(
         id,
         "CreateIndex",
         NoChildren,
-        Seq(details("TEXT INDEX `$indexName` FOR ()-[:Label]-() ON (prop)")),
+        Seq(details("TEXT INDEX indexName FOR ()-[:Label]-() ON (prop)")),
         Set.empty
       )
     )
 
     assertGood(
-      attach(CreateTextIndex(None, relType("Label"), List(key("prop")), None, NoOptions), 63.2),
+      attach(CreateIndex(None, IndexType.TEXT, relType("Label"), List(key("prop")), None, NoOptions), 63.2),
       planDescription(id, "CreateIndex", NoChildren, Seq(details("TEXT INDEX FOR ()-[:Label]-() ON (prop)")), Set.empty)
     )
 
     assertGood(
       attach(
-        CreateTextIndex(
+        CreateIndex(
           None,
+          IndexType.TEXT,
           relType("Label"),
           List(key("prop")),
-          Some("$indexName"),
+          Some(Left("indexName")),
           OptionsMap(Map("indexProvider" -> stringLiteral("text-1.0")))
         ),
         63.2
@@ -2437,15 +2458,16 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         id,
         "CreateIndex",
         NoChildren,
-        Seq(details("""TEXT INDEX `$indexName` FOR ()-[:Label]-() ON (prop) OPTIONS {indexProvider: "text-1.0"}""")),
+        Seq(details("""TEXT INDEX indexName FOR ()-[:Label]-() ON (prop) OPTIONS {indexProvider: "text-1.0"}""")),
         Set.empty
       )
     )
 
     assertGood(
       attach(
-        CreateTextIndex(
+        CreateIndex(
           Some(DoNothingIfExistsForIndex(relType("Label"), List(key("prop")), IndexType.TEXT, None, NoOptions)),
+          IndexType.TEXT,
           relType("Label"),
           List(key("prop")),
           None,
@@ -2472,11 +2494,12 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        CreateTextIndex(
+        CreateIndex(
           None,
+          IndexType.TEXT,
           label("Label"),
           List(key("prop")),
-          Some("$indexName"),
+          Some(Left("indexName")),
           OptionsParam(parameter("options", CTMap))
         ),
         63.2
@@ -2485,7 +2508,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         id,
         "CreateIndex",
         NoChildren,
-        Seq(details("TEXT INDEX `$indexName` FOR (:Label) ON (prop) OPTIONS $options")),
+        Seq(details("TEXT INDEX indexName FOR (:Label) ON (prop) OPTIONS $options")),
         Set.empty
       )
     )
@@ -2493,28 +2516,32 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     // POINT
 
     assertGood(
-      attach(CreatePointIndex(None, label("Label"), List(key("prop")), Some("$indexName"), NoOptions), 63.2),
+      attach(
+        CreateIndex(None, IndexType.POINT, label("Label"), List(key("prop")), Some(Left("indexName")), NoOptions),
+        63.2
+      ),
       planDescription(
         id,
         "CreateIndex",
         NoChildren,
-        Seq(details("POINT INDEX `$indexName` FOR (:Label) ON (prop)")),
+        Seq(details("POINT INDEX indexName FOR (:Label) ON (prop)")),
         Set.empty
       )
     )
 
     assertGood(
-      attach(CreatePointIndex(None, label("Label"), List(key("prop")), None, NoOptions), 63.2),
+      attach(CreateIndex(None, IndexType.POINT, label("Label"), List(key("prop")), None, NoOptions), 63.2),
       planDescription(id, "CreateIndex", NoChildren, Seq(details("POINT INDEX FOR (:Label) ON (prop)")), Set.empty)
     )
 
     assertGood(
       attach(
-        CreatePointIndex(
+        CreateIndex(
           None,
+          IndexType.POINT,
           label("Label"),
           List(key("prop")),
-          Some("$indexName"),
+          Some(Left("indexName")),
           OptionsMap(Map("indexProvider" -> stringLiteral("point-1.0")))
         ),
         63.2
@@ -2523,18 +2550,25 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         id,
         "CreateIndex",
         NoChildren,
-        Seq(details("""POINT INDEX `$indexName` FOR (:Label) ON (prop) OPTIONS {indexProvider: "point-1.0"}""")),
+        Seq(details("""POINT INDEX indexName FOR (:Label) ON (prop) OPTIONS {indexProvider: "point-1.0"}""")),
         Set.empty
       )
     )
 
     assertGood(
       attach(
-        CreatePointIndex(
-          Some(DoNothingIfExistsForIndex(label("Label"), List(key("prop")), IndexType.POINT, None, NoOptions)),
+        CreateIndex(
+          Some(DoNothingIfExistsForIndex(
+            label("Label"),
+            List(key("prop")),
+            IndexType.POINT,
+            Some(Right(parameter("indexName", CTString))),
+            NoOptions
+          )),
+          IndexType.POINT,
           label("Label"),
           List(key("prop")),
-          None,
+          Some(Right(parameter("indexName", CTString))),
           NoOptions
         ),
         63.2
@@ -2547,28 +2581,31 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
             id,
             "DoNothingIfExists(INDEX)",
             NoChildren,
-            Seq(details("POINT INDEX FOR (:Label) ON (prop)")),
+            Seq(details("POINT INDEX $indexName FOR (:Label) ON (prop)")),
             Set.empty
           )
         ),
-        Seq(details("POINT INDEX FOR (:Label) ON (prop)")),
+        Seq(details("POINT INDEX $indexName FOR (:Label) ON (prop)")),
         Set.empty
       )
     )
 
     assertGood(
-      attach(CreatePointIndex(None, relType("Label"), List(key("prop")), Some("$indexName"), NoOptions), 63.2),
+      attach(
+        CreateIndex(None, IndexType.POINT, relType("Label"), List(key("prop")), Some(Left("indexName")), NoOptions),
+        63.2
+      ),
       planDescription(
         id,
         "CreateIndex",
         NoChildren,
-        Seq(details("POINT INDEX `$indexName` FOR ()-[:Label]-() ON (prop)")),
+        Seq(details("POINT INDEX indexName FOR ()-[:Label]-() ON (prop)")),
         Set.empty
       )
     )
 
     assertGood(
-      attach(CreatePointIndex(None, relType("Label"), List(key("prop")), None, NoOptions), 63.2),
+      attach(CreateIndex(None, IndexType.POINT, relType("Label"), List(key("prop")), None, NoOptions), 63.2),
       planDescription(
         id,
         "CreateIndex",
@@ -2580,11 +2617,12 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        CreatePointIndex(
+        CreateIndex(
           None,
+          IndexType.POINT,
           relType("Label"),
           List(key("prop")),
-          Some("$indexName"),
+          Some(Left("indexName")),
           OptionsMap(Map("indexProvider" -> stringLiteral("point-1.0")))
         ),
         63.2
@@ -2593,15 +2631,16 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         id,
         "CreateIndex",
         NoChildren,
-        Seq(details("""POINT INDEX `$indexName` FOR ()-[:Label]-() ON (prop) OPTIONS {indexProvider: "point-1.0"}""")),
+        Seq(details("""POINT INDEX indexName FOR ()-[:Label]-() ON (prop) OPTIONS {indexProvider: "point-1.0"}""")),
         Set.empty
       )
     )
 
     assertGood(
       attach(
-        CreatePointIndex(
+        CreateIndex(
           Some(DoNothingIfExistsForIndex(relType("Label"), List(key("prop")), IndexType.POINT, None, NoOptions)),
+          IndexType.POINT,
           relType("Label"),
           List(key("prop")),
           None,
@@ -2628,11 +2667,12 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        CreatePointIndex(
+        CreateIndex(
           None,
+          IndexType.POINT,
           label("Label"),
           List(key("prop")),
-          Some("$indexName"),
+          Some(Left("indexName")),
           OptionsParam(parameter("options", CTMap))
         ),
         63.2
@@ -2641,7 +2681,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         id,
         "CreateIndex",
         NoChildren,
-        Seq(details("POINT INDEX `$indexName` FOR (:Label) ON (prop) OPTIONS $options")),
+        Seq(details("POINT INDEX indexName FOR (:Label) ON (prop) OPTIONS $options")),
         Set.empty
       )
     )
@@ -2649,28 +2689,32 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     // VECTOR
 
     assertGood(
-      attach(CreateVectorIndex(None, label("Label"), List(key("prop")), Some("$indexName"), NoOptions), 63.2),
+      attach(
+        CreateIndex(None, IndexType.VECTOR, label("Label"), List(key("prop")), Some(Left("indexName")), NoOptions),
+        63.2
+      ),
       planDescription(
         id,
         "CreateIndex",
         NoChildren,
-        Seq(details("VECTOR INDEX `$indexName` FOR (:Label) ON (prop)")),
+        Seq(details("VECTOR INDEX indexName FOR (:Label) ON (prop)")),
         Set.empty
       )
     )
 
     assertGood(
-      attach(CreateVectorIndex(None, label("Label"), List(key("prop")), None, NoOptions), 63.2),
+      attach(CreateIndex(None, IndexType.VECTOR, label("Label"), List(key("prop")), None, NoOptions), 63.2),
       planDescription(id, "CreateIndex", NoChildren, Seq(details("VECTOR INDEX FOR (:Label) ON (prop)")), Set.empty)
     )
 
     assertGood(
       attach(
-        CreateVectorIndex(
+        CreateIndex(
           None,
+          IndexType.VECTOR,
           label("Label"),
           List(key("prop")),
-          Some("$indexName"),
+          Some(Right(parameter("indexName", CTString))),
           OptionsMap(Map("indexProvider" -> stringLiteral("vector-1.0")))
         ),
         63.2
@@ -2679,15 +2723,16 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         id,
         "CreateIndex",
         NoChildren,
-        Seq(details("""VECTOR INDEX `$indexName` FOR (:Label) ON (prop) OPTIONS {indexProvider: "vector-1.0"}""")),
+        Seq(details("""VECTOR INDEX $indexName FOR (:Label) ON (prop) OPTIONS {indexProvider: "vector-1.0"}""")),
         Set.empty
       )
     )
 
     assertGood(
       attach(
-        CreateVectorIndex(
+        CreateIndex(
           Some(DoNothingIfExistsForIndex(label("Label"), List(key("prop")), IndexType.VECTOR, None, NoOptions)),
+          IndexType.VECTOR,
           label("Label"),
           List(key("prop")),
           None,
@@ -2713,18 +2758,21 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
 
     assertGood(
-      attach(CreateVectorIndex(None, relType("Label"), List(key("prop")), Some("$indexName"), NoOptions), 63.2),
+      attach(
+        CreateIndex(None, IndexType.VECTOR, relType("Label"), List(key("prop")), Some(Left("indexName")), NoOptions),
+        63.2
+      ),
       planDescription(
         id,
         "CreateIndex",
         NoChildren,
-        Seq(details("VECTOR INDEX `$indexName` FOR ()-[:Label]-() ON (prop)")),
+        Seq(details("VECTOR INDEX indexName FOR ()-[:Label]-() ON (prop)")),
         Set.empty
       )
     )
 
     assertGood(
-      attach(CreateVectorIndex(None, relType("Label"), List(key("prop")), None, NoOptions), 63.2),
+      attach(CreateIndex(None, IndexType.VECTOR, relType("Label"), List(key("prop")), None, NoOptions), 63.2),
       planDescription(
         id,
         "CreateIndex",
@@ -2736,11 +2784,12 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        CreateVectorIndex(
+        CreateIndex(
           None,
+          IndexType.VECTOR,
           relType("Label"),
           List(key("prop")),
-          Some("$indexName"),
+          Some(Left("indexName")),
           OptionsMap(Map("indexProvider" -> stringLiteral("vector-1.0")))
         ),
         63.2
@@ -2750,7 +2799,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         "CreateIndex",
         NoChildren,
         Seq(
-          details("""VECTOR INDEX `$indexName` FOR ()-[:Label]-() ON (prop) OPTIONS {indexProvider: "vector-1.0"}""")
+          details("""VECTOR INDEX indexName FOR ()-[:Label]-() ON (prop) OPTIONS {indexProvider: "vector-1.0"}""")
         ),
         Set.empty
       )
@@ -2758,8 +2807,9 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        CreateVectorIndex(
+        CreateIndex(
           Some(DoNothingIfExistsForIndex(relType("Label"), List(key("prop")), IndexType.VECTOR, None, NoOptions)),
+          IndexType.VECTOR,
           relType("Label"),
           List(key("prop")),
           None,
@@ -2786,11 +2836,12 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        CreateVectorIndex(
+        CreateIndex(
           None,
+          IndexType.VECTOR,
           label("Label"),
           List(key("prop")),
-          Some("$indexName"),
+          Some(Left("indexName")),
           OptionsParam(parameter("options", CTMap))
         ),
         63.2
@@ -2799,7 +2850,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         id,
         "CreateIndex",
         NoChildren,
-        Seq(details("VECTOR INDEX `$indexName` FOR (:Label) ON (prop) OPTIONS $options")),
+        Seq(details("VECTOR INDEX indexName FOR (:Label) ON (prop) OPTIONS $options")),
         Set.empty
       )
     )
@@ -2807,13 +2858,18 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
   test("DropIndexOnName") {
     assertGood(
-      attach(DropIndexOnName("indexName", ifExists = false), 63.2),
+      attach(DropIndexOnName(Left("indexName"), ifExists = false), 63.2),
       planDescription(id, "DropIndex", NoChildren, Seq(details("INDEX indexName")), Set.empty)
     )
 
     assertGood(
-      attach(DropIndexOnName("indexName", ifExists = true), 63.2),
-      planDescription(id, "DropIndex", NoChildren, Seq(details("INDEX indexName")), Set.empty)
+      attach(DropIndexOnName(Left("indexName"), ifExists = true), 63.2),
+      planDescription(id, "DropIndex", NoChildren, Seq(details("INDEX indexName IF EXISTS")), Set.empty)
+    )
+
+    assertGood(
+      attach(DropIndexOnName(Right(parameter("indexName", CTString)), ifExists = false), 63.2),
+      planDescription(id, "DropIndex", NoChildren, Seq(details("INDEX $indexName")), Set.empty)
     )
   }
 
@@ -2894,7 +2950,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           NodeUniqueness,
           label("Label"),
           Seq(prop("x", "prop")),
-          Some("constraintName"),
+          Some(Left("constraintName")),
           NoOptions
         ),
         63.2
@@ -2915,7 +2971,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           NodeUniqueness,
           label("Label"),
           Seq(prop("x", "prop1"), prop("x", "prop2")),
-          Some("constraintName"),
+          Some(Left("constraintName")),
           NoOptions
         ),
         63.2
@@ -2936,7 +2992,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           NodeUniqueness,
           label("Label"),
           List(prop("x", "prop")),
-          Some("$constraintName"),
+          Some(Left("$constraintName")),
           OptionsMap(Map("indexProvider" -> stringLiteral("range-1.0")))
         ),
         63.2
@@ -3031,7 +3087,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           RelationshipUniqueness,
           relType("REL_TYPE"),
           Seq(prop("x", "prop")),
-          Some("constraintName"),
+          Some(Left("constraintName")),
           NoOptions
         ),
         63.2
@@ -3052,7 +3108,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           RelationshipUniqueness,
           relType("REL_TYPE"),
           Seq(prop("x", "prop1"), prop("x", "prop2")),
-          Some("constraintName"),
+          Some(Left("constraintName")),
           NoOptions
         ),
         63.2
@@ -3073,7 +3129,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           RelationshipUniqueness,
           relType("REL_TYPE"),
           List(prop("x", "prop")),
-          Some("$constraintName"),
+          Some(Right(parameter("constraintName", CTString))),
           OptionsMap(Map("indexProvider" -> stringLiteral("range-1.0")))
         ),
         63.2
@@ -3083,7 +3139,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         "CreateConstraint",
         NoChildren,
         Seq(details(
-          """CONSTRAINT `$constraintName` FOR ()-[x:REL_TYPE]-() REQUIRE (x.prop) IS UNIQUE OPTIONS {indexProvider: "range-1.0"}"""
+          """CONSTRAINT $constraintName FOR ()-[x:REL_TYPE]-() REQUIRE (x.prop) IS UNIQUE OPTIONS {indexProvider: "range-1.0"}"""
         )),
         Set.empty
       )
@@ -3165,7 +3221,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           NodeKey,
           label("Label"),
           Seq(prop("x", "prop1"), prop("x", "prop2")),
-          Some("constraintName"),
+          Some(Left("constraintName")),
           NoOptions
         ),
         63.2
@@ -3186,7 +3242,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           NodeKey,
           label("Label"),
           List(prop("x", "prop")),
-          Some("$constraintName"),
+          Some(Right(parameter("constraintName", CTString))),
           OptionsMap(Map("indexProvider" -> stringLiteral("range-1.0")))
         ),
         63.2
@@ -3196,7 +3252,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         "CreateConstraint",
         NoChildren,
         Seq(details(
-          """CONSTRAINT `$constraintName` FOR (x:Label) REQUIRE (x.prop) IS NODE KEY OPTIONS {indexProvider: "range-1.0"}"""
+          """CONSTRAINT $constraintName FOR (x:Label) REQUIRE (x.prop) IS NODE KEY OPTIONS {indexProvider: "range-1.0"}"""
         )),
         Set.empty
       )
@@ -3209,13 +3265,13 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
             label("Label"),
             Seq(prop(" x", "prop")),
             NodeKey,
-            Some("constraintName"),
+            Some(Left("constraintName")),
             NoOptions
           )),
           NodeKey,
           label("Label"),
           Seq(prop(" x", "prop")),
-          Some("constraintName"),
+          Some(Left("constraintName")),
           NoOptions
         ),
         63.2
@@ -3281,7 +3337,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           RelationshipKey,
           relType("REL_TYPE"),
           Seq(prop("x", "prop1"), prop("x", "prop2")),
-          Some("constraintName"),
+          Some(Left("constraintName")),
           NoOptions
         ),
         63.2
@@ -3302,7 +3358,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           RelationshipKey,
           relType("REL_TYPE"),
           List(prop("x", "prop")),
-          Some("$constraintName"),
+          Some(Right(parameter("constraintName", CTString))),
           OptionsMap(Map("indexProvider" -> stringLiteral("range-1.0")))
         ),
         63.2
@@ -3312,7 +3368,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         "CreateConstraint",
         NoChildren,
         Seq(details(
-          """CONSTRAINT `$constraintName` FOR ()-[x:REL_TYPE]-() REQUIRE (x.prop) IS RELATIONSHIP KEY OPTIONS {indexProvider: "range-1.0"}"""
+          """CONSTRAINT $constraintName FOR ()-[x:REL_TYPE]-() REQUIRE (x.prop) IS RELATIONSHIP KEY OPTIONS {indexProvider: "range-1.0"}"""
         )),
         Set.empty
       )
@@ -3325,13 +3381,13 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
             relType("REL_TYPE"),
             Seq(prop(" x", "prop")),
             RelationshipKey,
-            Some("constraintName"),
+            Some(Left("constraintName")),
             NoOptions
           )),
           RelationshipKey,
           relType("REL_TYPE"),
           Seq(prop(" x", "prop")),
-          Some("constraintName"),
+          Some(Left("constraintName")),
           NoOptions
         ),
         63.2
@@ -3397,7 +3453,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           NodePropertyExistence,
           label("Label"),
           Seq(prop("x", "prop")),
-          Some("constraintName"),
+          Some(Left("constraintName")),
           NoOptions
         ),
         63.2
@@ -3469,7 +3525,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           RelationshipPropertyExistence,
           relType("R"),
           Seq(prop(" x", "prop")),
-          Some("constraintName"),
+          Some(Left("constraintName")),
           NoOptions
         ),
         63.2
@@ -3553,7 +3609,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           ),
           label("Label"),
           Seq(prop("x", "prop")),
-          Some("constraintName"),
+          Some(Left("constraintName")),
           NoOptions
         ),
         63.2
@@ -3632,7 +3688,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           RelationshipPropertyType(LocalTimeType(isNullable = true)(pos)),
           relType("R"),
           Seq(prop(" x", "prop")),
-          Some("constraintName"),
+          Some(Left("constraintName")),
           NoOptions
         ),
         63.2
@@ -3694,13 +3750,18 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
   test("DropConstraintOnName") {
     assertGood(
-      attach(DropConstraintOnName("name", ifExists = false), 63.2),
+      attach(DropConstraintOnName(Left("name"), ifExists = false), 63.2),
       planDescription(id, "DropConstraint", NoChildren, Seq(details("CONSTRAINT name")), Set.empty)
     )
 
     assertGood(
-      attach(DropConstraintOnName("name", ifExists = true), 63.2),
-      planDescription(id, "DropConstraint", NoChildren, Seq(details("CONSTRAINT name")), Set.empty)
+      attach(DropConstraintOnName(Left("name"), ifExists = true), 63.2),
+      planDescription(id, "DropConstraint", NoChildren, Seq(details("CONSTRAINT name IF EXISTS")), Set.empty)
+    )
+
+    assertGood(
+      attach(DropConstraintOnName(Right(parameter("name", CTString)), ifExists = false), 63.2),
+      planDescription(id, "DropConstraint", NoChildren, Seq(details("CONSTRAINT $name")), Set.empty)
     )
   }
 

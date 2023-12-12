@@ -324,6 +324,8 @@ class PrettifierIT extends CypherFunSuite {
       "CREATE INDEX foo FOR (n:A) ON (n.p)",
     "create INDEX `$foo` FOR (n:A) ON (n.p1, n.p2, n.p3)" ->
       "CREATE INDEX `$foo` FOR (n:A) ON (n.p1, n.p2, n.p3)",
+    "create INDEX $foo FOR (n:A) ON (n.p1, n.p2, n.p3)" ->
+      "CREATE INDEX $foo FOR (n:A) ON (n.p1, n.p2, n.p3)",
     "CREATE index FOR (n:Person) on (n.name) OPtiONS {indexProvider: 'range-1.0'}" ->
       """CREATE INDEX FOR (n:Person) ON (n.name) OPTIONS {indexProvider: "range-1.0"}""",
     "create INDEX for (n:Person) ON (n.name) OPTIONS {`indexProvider`: 'range-1.0', indexConfig: {}}" ->
@@ -379,6 +381,8 @@ class PrettifierIT extends CypherFunSuite {
       "CREATE RANGE INDEX foo FOR (n:A) ON (n.p)",
     "create RANGE INDEX `$foo` FOR (n:A) ON (n.p1, n.p2, n.p3)" ->
       "CREATE RANGE INDEX `$foo` FOR (n:A) ON (n.p1, n.p2, n.p3)",
+    "create RANGE INDEX $foo FOR (n:A) ON n.p" ->
+      "CREATE RANGE INDEX $foo FOR (n:A) ON (n.p)",
     "CREATE RANGE index FOR (n:Person) on (n.name) OPtiONS {indexProvider: 'range-1.0'}" ->
       """CREATE RANGE INDEX FOR (n:Person) ON (n.name) OPTIONS {indexProvider: "range-1.0"}""",
     "create RANGE INDEX for (n:Person) ON (n.name) OPTIONS {`indexProvider`: 'range-1.0', indexConfig: {}}" ->
@@ -440,6 +444,8 @@ class PrettifierIT extends CypherFunSuite {
       "CREATE LOOKUP INDEX FOR ()-[r]-() ON EACH type(r)",
     "CREATE lookup INDEX foo FOR ()-[r]-() ON type(r)" ->
       "CREATE LOOKUP INDEX foo FOR ()-[r]-() ON EACH type(r)",
+    "CREATE lookup INDEX $foo FOR ()-[r]-() ON type(r)" ->
+      "CREATE LOOKUP INDEX $foo FOR ()-[r]-() ON EACH type(r)",
     "CREATE lookup INDEX IF NOT EXISTS FOR ()-[r]-() ON each type(r)" ->
       "CREATE LOOKUP INDEX IF NOT EXISTS FOR ()-[r]-() ON EACH type(r)",
     "CREATE OR REPLACE lookup INDEX foo FOR ()-[r]-() ON type(r) OPTIONS {}" ->
@@ -483,6 +489,8 @@ class PrettifierIT extends CypherFunSuite {
       "CREATE FULLTEXT INDEX foo FOR ()-[n:R|S|T|U]-() ON EACH [n.p]",
     "create FULLTEXT INDEX `$foo` FOR ()-[n:R]-() ON EACH [n.p1, n.p2,n.p3]" ->
       "CREATE FULLTEXT INDEX `$foo` FOR ()-[n:R]-() ON EACH [n.p1, n.p2, n.p3]",
+    "create FULLTEXT INDEX $foo FOR ()-[n:R]-() ON EACH [n.p1, n.p2,n.p3]" ->
+      "CREATE FULLTEXT INDEX $foo FOR ()-[n:R]-() ON EACH [n.p1, n.p2, n.p3]",
     "CREATE FULLtext index FOR ()-[n:R]->() on EACH [n.name] OPtiONS {indexProvider: 'fulltext-1.0'}" ->
       """CREATE FULLTEXT INDEX FOR ()-[n:R]-() ON EACH [n.name] OPTIONS {indexProvider: "fulltext-1.0"}""",
     "create FULLTEXT INDEX for ()-[n:R]-() ON EACH [n.name] OPTIONS {`indexProvider`: 'fulltext-1.0', indexConfig: {`fulltext.analyzer`: 'some_analyzer', `fulltext.eventually_consistent`: true }}" ->
@@ -514,6 +522,8 @@ class PrettifierIT extends CypherFunSuite {
       "CREATE TEXT INDEX foo FOR (n:A) ON (n.p)",
     "create TEXT INDEX `$foo` FOR (n:A) ON (n.p1, n.p2, n.p3)" ->
       "CREATE TEXT INDEX `$foo` FOR (n:A) ON (n.p1, n.p2, n.p3)",
+    "create TEXT INDEX $foo FOR (n:A) ON (n.p1, n.p2, n.p3)" ->
+      "CREATE TEXT INDEX $foo FOR (n:A) ON (n.p1, n.p2, n.p3)",
     "CREATE TEXT index FOR (n:Person) on (n.name) OPtiONS {indexProvider: 'text-1.0'}" ->
       """CREATE TEXT INDEX FOR (n:Person) ON (n.name) OPTIONS {indexProvider: "text-1.0"}""",
     "create text INDEX for (n:Person) ON (n.name) OPTIONS {`indexProvider`: 'text-1.0', indexConfig: {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}" ->
@@ -601,6 +611,8 @@ class PrettifierIT extends CypherFunSuite {
       "CREATE POINT INDEX foo FOR ()-[n:R]-() ON (n.p)",
     "create POINT INDEX `$foo` FOR ()-[n:R]-() ON (n.p1, n.p2, n.p3)" ->
       "CREATE POINT INDEX `$foo` FOR ()-[n:R]-() ON (n.p1, n.p2, n.p3)",
+    "create POINT INDEX $foo FOR ()-[n:R]-() ON (n.p)" ->
+      "CREATE POINT INDEX $foo FOR ()-[n:R]-() ON (n.p)",
     "CREATE POINT index FOR ()-[n:R]->() on (n.name) OPtiONS {indexProvider: 'point-1.0'}" ->
       """CREATE POINT INDEX FOR ()-[n:R]-() ON (n.name) OPTIONS {indexProvider: "point-1.0"}""",
     "create POINT INDEX for ()-[n:R]-() ON (n.name) OPTIONS {`indexProvider`: 'point-1.0', indexConfig: {`spatial.cartesian.max`: [100.0,100.0], `spatial.cartesian.min`: [-100.0,-100.0] }}" ->
@@ -632,6 +644,8 @@ class PrettifierIT extends CypherFunSuite {
       "CREATE VECTOR INDEX foo FOR (n:A) ON (n.p)",
     "create VECTOR INDEX `$foo` FOR (n:A) ON (n.p1, n.p2, n.p3)" ->
       "CREATE VECTOR INDEX `$foo` FOR (n:A) ON (n.p1, n.p2, n.p3)",
+    "create VECTOR INDEX $foo FOR (n:A) ON (n.p1, n.p2)" ->
+      "CREATE VECTOR INDEX $foo FOR (n:A) ON (n.p1, n.p2)",
     "CREATE VECTOR index FOR (n:Person) on (n.name) OPtiONS {indexProvider: 'vector-1.0'}" ->
       """CREATE VECTOR INDEX FOR (n:Person) ON (n.name) OPTIONS {indexProvider: "vector-1.0"}""",
     "create vector INDEX for (n:Person) ON (n.name) OPTIONS {`indexProvider`: 'vector-1.0', indexConfig: {`vector.dimensions`:50, `vector.similarity_function`: 'cosine' }}" ->
@@ -659,6 +673,8 @@ class PrettifierIT extends CypherFunSuite {
       "DROP INDEX foo",
     "drop INDEX `$foo`" ->
       "DROP INDEX `$foo`",
+    "drop INDEX $foo" ->
+      "DROP INDEX $foo",
     "drop INDEX foo if EXISTS" ->
       "DROP INDEX foo IF EXISTS"
   )
@@ -672,6 +688,8 @@ class PrettifierIT extends CypherFunSuite {
       "CREATE CONSTRAINT foo FOR (n:A) REQUIRE (n.p) IS NODE KEY",
     "create CONSTRAINT `$foo` FOR (n:A) REQUIRE (n.p) IS NODE KEY" ->
       "CREATE CONSTRAINT `$foo` FOR (n:A) REQUIRE (n.p) IS NODE KEY",
+    "create CONSTRAINT $foo FOR (n:A) REQUIRE (n.p) IS NODE KEY" ->
+      "CREATE CONSTRAINT $foo FOR (n:A) REQUIRE (n.p) IS NODE KEY",
     "create OR replace CONSTRAINT FOR (n:A) REQUIRE (n.p) IS NODE KEY" ->
       "CREATE OR REPLACE CONSTRAINT FOR (n:A) REQUIRE (n.p) IS NODE KEY",
     "create CONSTRAINT foo IF NOT EXISTS FOR (n:A) REQUIRE (n.p) IS NODE KEY" ->
@@ -762,6 +780,8 @@ class PrettifierIT extends CypherFunSuite {
       "CREATE CONSTRAINT foo FOR ()-[r:R]-() REQUIRE (r.p) IS UNIQUE",
     "create CONSTRAINT `$foo` FOR ()<-[r:R]->() REQUIRE (r.p) IS RELATIONSHIP UNIQUE" ->
       "CREATE CONSTRAINT `$foo` FOR ()-[r:R]-() REQUIRE (r.p) IS UNIQUE",
+    "create CONSTRAINT $foo FOR ()<-[r:R]->() REQUIRE (r.p) IS RELATIONSHIP UNIQUE" ->
+      "CREATE CONSTRAINT $foo FOR ()-[r:R]-() REQUIRE (r.p) IS UNIQUE",
     "create CONSTRAINT IF NoT ExistS FOR ()-[r:R]-() REQUIRE (r.p) IS REL UNIQUE" ->
       "CREATE CONSTRAINT IF NOT EXISTS FOR ()-[r:R]-() REQUIRE (r.p) IS UNIQUE",
     "create or REPLACE CONSTRAINT foo FOR ()-[r:R]-() REQUIRE r.p IS UNIQUE" ->
@@ -806,6 +826,8 @@ class PrettifierIT extends CypherFunSuite {
       "CREATE CONSTRAINT foo FOR ()-[r:R]-() REQUIRE (r.p) IS NOT NULL",
     "create CONSTRAINT `$foo` FOR ()<-[r:R]->() REQUIRE r.p IS NOT NULL OPTIONS {}" ->
       "CREATE CONSTRAINT `$foo` FOR ()-[r:R]-() REQUIRE (r.p) IS NOT NULL OPTIONS {}",
+    "create CONSTRAINT $foo FOR ()<-[r:R]->() REQUIRE r.p IS NOT NULL OPTIONS {}" ->
+      "CREATE CONSTRAINT $foo FOR ()-[r:R]-() REQUIRE (r.p) IS NOT NULL OPTIONS {}",
     "create CONSTRAINT `$foo` FOR ()-[r:R]-() REQUIRE r.p IS NOT NULL OPtiONS {notAllowedOptions: 'butParseThem', `backticks.stays.when.needed`: 'toThrowNiceError'}" ->
       """CREATE CONSTRAINT `$foo` FOR ()-[r:R]-() REQUIRE (r.p) IS NOT NULL OPTIONS {notAllowedOptions: "butParseThem", `backticks.stays.when.needed`: "toThrowNiceError"}""",
     "create CONSTRAINT IF not exists FOR ()-[r:R]-() REQUIRE r.p IS NOT NULL" ->
@@ -854,6 +876,8 @@ class PrettifierIT extends CypherFunSuite {
       "DROP CONSTRAINT foo",
     "drop CONSTRAINT `$foo`" ->
       "DROP CONSTRAINT `$foo`",
+    "drop CONSTRAINT $foo" ->
+      "DROP CONSTRAINT $foo",
     "drop CONSTRAINT foo IF exists" ->
       "DROP CONSTRAINT foo IF EXISTS"
   )

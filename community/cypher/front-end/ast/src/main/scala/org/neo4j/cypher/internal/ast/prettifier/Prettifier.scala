@@ -332,8 +332,12 @@ case class Prettifier(
       }
     }
 
-    def getStartOfCommand(name: Option[String], ifExistsDo: IfExistsDo, schemaType: String): String = {
-      val nameString = name.map(n => s"${backtick(n)} ").getOrElse("")
+    def getStartOfCommand(
+      name: Option[Either[String, Parameter]],
+      ifExistsDo: IfExistsDo,
+      schemaType: String
+    ): String = {
+      val nameString = name.map(n => s"${Prettifier.escapeName(n)} ").getOrElse("")
       ifExistsDo match {
         case IfExistsDoNothing     => s"CREATE $schemaType ${nameString}IF NOT EXISTS "
         case IfExistsInvalidSyntax => s"CREATE OR REPLACE $schemaType ${nameString}IF NOT EXISTS "
@@ -429,7 +433,7 @@ case class Prettifier(
 
       case DropIndexOnName(name, ifExists, _) =>
         val ifExistsString = if (ifExists) " IF EXISTS" else ""
-        s"DROP INDEX ${backtick(name)}$ifExistsString"
+        s"DROP INDEX ${Prettifier.escapeName(name)}$ifExistsString"
 
       case CreateNodeKeyConstraint(
           Variable(variable),
@@ -571,7 +575,7 @@ case class Prettifier(
 
       case DropConstraintOnName(name, ifExists, _) =>
         val ifExistsString = if (ifExists) " IF EXISTS" else ""
-        s"DROP CONSTRAINT ${backtick(name)}$ifExistsString"
+        s"DROP CONSTRAINT ${Prettifier.escapeName(name)}$ifExistsString"
 
       case _ => throw new IllegalStateException(s"Unknown command: $command")
     }

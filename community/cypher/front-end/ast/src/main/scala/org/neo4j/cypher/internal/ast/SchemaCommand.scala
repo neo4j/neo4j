@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
@@ -114,8 +115,8 @@ abstract class CreateIndex(
     extends SchemaCommand {
 
   // To anonymize the name
-  val name: Option[String]
-  def withName(name: Option[String]): CreateIndex
+  val name: Option[Either[String, Parameter]]
+  def withName(name: Option[Either[String, Parameter]]): CreateIndex
 
   override def semanticCheck: SemanticCheck = ifExistsDo match {
     case IfExistsInvalidSyntax | IfExistsReplace =>
@@ -137,14 +138,14 @@ case class CreateBtreeNodeIndex(
   variable: Variable,
   label: LabelName,
   properties: List[Property],
-  override val name: Option[String],
+  override val name: Option[Either[String, Parameter]],
   ifExistsDo: IfExistsDo,
   options: Options,
   useGraph: Option[GraphSelection] = None
 )(override val position: InputPosition)
     extends CreateIndex(variable, properties, ifExistsDo, true)(position) {
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
-  override def withName(name: Option[String]): CreateBtreeNodeIndex = copy(name = name)(position)
+  override def withName(name: Option[Either[String, Parameter]]): CreateBtreeNodeIndex = copy(name = name)(position)
 
   override def semanticCheck: SemanticCheck =
     error("Invalid index type b-tree, use range, point or text index instead.", position)
@@ -154,14 +155,16 @@ case class CreateBtreeRelationshipIndex(
   variable: Variable,
   relType: RelTypeName,
   properties: List[Property],
-  override val name: Option[String],
+  override val name: Option[Either[String, Parameter]],
   ifExistsDo: IfExistsDo,
   options: Options,
   useGraph: Option[GraphSelection] = None
 )(override val position: InputPosition)
     extends CreateIndex(variable, properties, ifExistsDo, false)(position) {
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
-  override def withName(name: Option[String]): CreateBtreeRelationshipIndex = copy(name = name)(position)
+
+  override def withName(name: Option[Either[String, Parameter]]): CreateBtreeRelationshipIndex =
+    copy(name = name)(position)
 
   override def semanticCheck: SemanticCheck =
     error("Invalid index type b-tree, use range, point or text index instead.", position)
@@ -171,7 +174,7 @@ case class CreateRangeNodeIndex(
   variable: Variable,
   label: LabelName,
   properties: List[Property],
-  override val name: Option[String],
+  override val name: Option[Either[String, Parameter]],
   ifExistsDo: IfExistsDo,
   options: Options,
   fromDefault: Boolean,
@@ -179,7 +182,7 @@ case class CreateRangeNodeIndex(
 )(override val position: InputPosition)
     extends CreateIndex(variable, properties, ifExistsDo, true)(position) {
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
-  override def withName(name: Option[String]): CreateRangeNodeIndex = copy(name = name)(position)
+  override def withName(name: Option[Either[String, Parameter]]): CreateRangeNodeIndex = copy(name = name)(position)
 
   override def semanticCheck: SemanticCheck =
     checkOptionsMap("range node property index", options) chain super.semanticCheck
@@ -189,7 +192,7 @@ case class CreateRangeRelationshipIndex(
   variable: Variable,
   relType: RelTypeName,
   properties: List[Property],
-  override val name: Option[String],
+  override val name: Option[Either[String, Parameter]],
   ifExistsDo: IfExistsDo,
   options: Options,
   fromDefault: Boolean,
@@ -197,7 +200,9 @@ case class CreateRangeRelationshipIndex(
 )(override val position: InputPosition)
     extends CreateIndex(variable, properties, ifExistsDo, false)(position) {
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
-  override def withName(name: Option[String]): CreateRangeRelationshipIndex = copy(name = name)(position)
+
+  override def withName(name: Option[Either[String, Parameter]]): CreateRangeRelationshipIndex =
+    copy(name = name)(position)
 
   override def semanticCheck: SemanticCheck =
     checkOptionsMap("range relationship property index", options) chain super.semanticCheck
@@ -207,14 +212,14 @@ case class CreateLookupIndex(
   variable: Variable,
   isNodeIndex: Boolean,
   function: FunctionInvocation,
-  override val name: Option[String],
+  override val name: Option[Either[String, Parameter]],
   ifExistsDo: IfExistsDo,
   options: Options,
   useGraph: Option[GraphSelection] = None
 )(override val position: InputPosition)
     extends CreateIndex(variable, List.empty, ifExistsDo, isNodeIndex)(position) {
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
-  override def withName(name: Option[String]): CreateLookupIndex = copy(name = name)(position)
+  override def withName(name: Option[Either[String, Parameter]]): CreateLookupIndex = copy(name = name)(position)
 
   private def allowedFunction(name: String): Boolean =
     if (isNodeIndex) name.equalsIgnoreCase(Labels.name) else name.equalsIgnoreCase(Type.name)
@@ -240,14 +245,14 @@ case class CreateFulltextNodeIndex(
   variable: Variable,
   label: List[LabelName],
   properties: List[Property],
-  override val name: Option[String],
+  override val name: Option[Either[String, Parameter]],
   ifExistsDo: IfExistsDo,
   options: Options,
   useGraph: Option[GraphSelection] = None
 )(override val position: InputPosition)
     extends CreateIndex(variable, properties, ifExistsDo, true)(position) {
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
-  override def withName(name: Option[String]): CreateFulltextNodeIndex = copy(name = name)(position)
+  override def withName(name: Option[Either[String, Parameter]]): CreateFulltextNodeIndex = copy(name = name)(position)
 
   override def semanticCheck: SemanticCheck = checkOptionsMap("fulltext node index", options) chain super.semanticCheck
 }
@@ -256,14 +261,16 @@ case class CreateFulltextRelationshipIndex(
   variable: Variable,
   relType: List[RelTypeName],
   properties: List[Property],
-  override val name: Option[String],
+  override val name: Option[Either[String, Parameter]],
   ifExistsDo: IfExistsDo,
   options: Options,
   useGraph: Option[GraphSelection] = None
 )(override val position: InputPosition)
     extends CreateIndex(variable, properties, ifExistsDo, false)(position) {
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
-  override def withName(name: Option[String]): CreateFulltextRelationshipIndex = copy(name = name)(position)
+
+  override def withName(name: Option[Either[String, Parameter]]): CreateFulltextRelationshipIndex =
+    copy(name = name)(position)
 
   override def semanticCheck: SemanticCheck =
     checkOptionsMap("fulltext relationship index", options) chain super.semanticCheck
@@ -273,14 +280,14 @@ case class CreateTextNodeIndex(
   variable: Variable,
   label: LabelName,
   properties: List[Property],
-  override val name: Option[String],
+  override val name: Option[Either[String, Parameter]],
   ifExistsDo: IfExistsDo,
   options: Options,
   useGraph: Option[GraphSelection] = None
 )(override val position: InputPosition)
     extends CreateIndex(variable, properties, ifExistsDo, true)(position) {
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
-  override def withName(name: Option[String]): CreateTextNodeIndex = copy(name = name)(position)
+  override def withName(name: Option[Either[String, Parameter]]): CreateTextNodeIndex = copy(name = name)(position)
 
   override def semanticCheck: SemanticCheck =
     checkOptionsMap("text node index", options) chain
@@ -292,14 +299,16 @@ case class CreateTextRelationshipIndex(
   variable: Variable,
   relType: RelTypeName,
   properties: List[Property],
-  override val name: Option[String],
+  override val name: Option[Either[String, Parameter]],
   ifExistsDo: IfExistsDo,
   options: Options,
   useGraph: Option[GraphSelection] = None
 )(override val position: InputPosition)
     extends CreateIndex(variable, properties, ifExistsDo, false)(position) {
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
-  override def withName(name: Option[String]): CreateTextRelationshipIndex = copy(name = name)(position)
+
+  override def withName(name: Option[Either[String, Parameter]]): CreateTextRelationshipIndex =
+    copy(name = name)(position)
 
   override def semanticCheck: SemanticCheck =
     checkOptionsMap("text relationship index", options) chain
@@ -311,14 +320,14 @@ case class CreatePointNodeIndex(
   variable: Variable,
   label: LabelName,
   properties: List[Property],
-  override val name: Option[String],
+  override val name: Option[Either[String, Parameter]],
   ifExistsDo: IfExistsDo,
   options: Options,
   useGraph: Option[GraphSelection] = None
 )(override val position: InputPosition)
     extends CreateIndex(variable, properties, ifExistsDo, true)(position) {
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
-  override def withName(name: Option[String]): CreatePointNodeIndex = copy(name = name)(position)
+  override def withName(name: Option[Either[String, Parameter]]): CreatePointNodeIndex = copy(name = name)(position)
 
   override def semanticCheck: SemanticCheck =
     checkOptionsMap("point node index", options) chain
@@ -330,14 +339,16 @@ case class CreatePointRelationshipIndex(
   variable: Variable,
   relType: RelTypeName,
   properties: List[Property],
-  override val name: Option[String],
+  override val name: Option[Either[String, Parameter]],
   ifExistsDo: IfExistsDo,
   options: Options,
   useGraph: Option[GraphSelection] = None
 )(override val position: InputPosition)
     extends CreateIndex(variable, properties, ifExistsDo, false)(position) {
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
-  override def withName(name: Option[String]): CreatePointRelationshipIndex = copy(name = name)(position)
+
+  override def withName(name: Option[Either[String, Parameter]]): CreatePointRelationshipIndex =
+    copy(name = name)(position)
 
   override def semanticCheck: SemanticCheck =
     checkOptionsMap("point relationship index", options) chain
@@ -349,14 +360,14 @@ case class CreateVectorNodeIndex(
   variable: Variable,
   label: LabelName,
   properties: List[Property],
-  override val name: Option[String],
+  override val name: Option[Either[String, Parameter]],
   ifExistsDo: IfExistsDo,
   options: Options,
   useGraph: Option[GraphSelection] = None
 )(override val position: InputPosition)
     extends CreateIndex(variable, properties, ifExistsDo, true)(position) {
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
-  override def withName(name: Option[String]): CreateVectorNodeIndex = copy(name = name)(position)
+  override def withName(name: Option[Either[String, Parameter]]): CreateVectorNodeIndex = copy(name = name)(position)
 
   override def semanticCheck: SemanticCheck =
     checkOptionsMap("vector node index", options) chain
@@ -368,14 +379,16 @@ case class CreateVectorRelationshipIndex(
   variable: Variable,
   relType: RelTypeName,
   properties: List[Property],
-  override val name: Option[String],
+  override val name: Option[Either[String, Parameter]],
   ifExistsDo: IfExistsDo,
   options: Options,
   useGraph: Option[GraphSelection] = None
 )(override val position: InputPosition)
     extends CreateIndex(variable, properties, ifExistsDo, false)(position) {
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
-  override def withName(name: Option[String]): CreateVectorRelationshipIndex = copy(name = name)(position)
+
+  override def withName(name: Option[Either[String, Parameter]]): CreateVectorRelationshipIndex =
+    copy(name = name)(position)
 
   override def semanticCheck: SemanticCheck =
     error("Vector indexes are not available on relationships.", relType.position)
@@ -392,7 +405,7 @@ case class DropIndex(label: LabelName, properties: List[PropertyKeyName], useGra
   )
 }
 
-case class DropIndexOnName(name: String, ifExists: Boolean, useGraph: Option[GraphSelection] = None)(
+case class DropIndexOnName(name: Either[String, Parameter], ifExists: Boolean, useGraph: Option[GraphSelection] = None)(
   val position: InputPosition
 ) extends SchemaCommand {
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
@@ -464,8 +477,8 @@ sealed protected trait RelationshipCompositePropertyConstraintCommand extends Co
 
 sealed trait CreateConstraint extends SchemaCommand {
   // To anonymize the name
-  val name: Option[String]
-  def withName(name: Option[String]): CreateConstraint
+  val name: Option[Either[String, Parameter]]
+  def withName(name: Option[Either[String, Parameter]]): CreateConstraint
 
   protected def checkSemantics(
     constraintTypeString: String,
@@ -613,7 +626,7 @@ case class CreateNodeKeyConstraint(
   variable: Variable,
   label: LabelName,
   properties: Seq[Property],
-  override val name: Option[String],
+  override val name: Option[Either[String, Parameter]],
   ifExistsDo: IfExistsDo,
   options: Options,
   containsOn: Boolean,
@@ -621,7 +634,7 @@ case class CreateNodeKeyConstraint(
   useGraph: Option[GraphSelection] = None
 )(val position: InputPosition) extends NodeCompositePropertyConstraintCommand with CreateConstraint {
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
-  override def withName(name: Option[String]): CreateNodeKeyConstraint = copy(name = name)(position)
+  override def withName(name: Option[Either[String, Parameter]]): CreateNodeKeyConstraint = copy(name = name)(position)
 
   override def semanticCheck: SemanticCheck =
     checkSemantics("node key", ifExistsDo, options, containsOn, constraintVersion) chain super.semanticCheck
@@ -631,7 +644,7 @@ case class CreateRelationshipKeyConstraint(
   variable: Variable,
   relType: RelTypeName,
   properties: Seq[Property],
-  override val name: Option[String],
+  override val name: Option[Either[String, Parameter]],
   ifExistsDo: IfExistsDo,
   options: Options,
   containsOn: Boolean,
@@ -640,7 +653,7 @@ case class CreateRelationshipKeyConstraint(
 )(val position: InputPosition) extends RelationshipCompositePropertyConstraintCommand with CreateConstraint {
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
 
-  override def withName(name: Option[String]): CreateRelationshipKeyConstraint =
+  override def withName(name: Option[Either[String, Parameter]]): CreateRelationshipKeyConstraint =
     copy(name = name)(position)
 
   override def semanticCheck: SemanticCheck =
@@ -665,7 +678,7 @@ case class CreateNodePropertyUniquenessConstraint(
   variable: Variable,
   label: LabelName,
   properties: Seq[Property],
-  override val name: Option[String],
+  override val name: Option[Either[String, Parameter]],
   ifExistsDo: IfExistsDo,
   options: Options,
   containsOn: Boolean,
@@ -673,7 +686,9 @@ case class CreateNodePropertyUniquenessConstraint(
   useGraph: Option[GraphSelection] = None
 )(val position: InputPosition) extends NodeCompositePropertyConstraintCommand with CreateConstraint {
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
-  override def withName(name: Option[String]): CreateNodePropertyUniquenessConstraint = copy(name = name)(position)
+
+  override def withName(name: Option[Either[String, Parameter]]): CreateNodePropertyUniquenessConstraint =
+    copy(name = name)(position)
 
   override def semanticCheck: SemanticCheck =
     checkSemantics("uniqueness", ifExistsDo, options, containsOn, constraintVersion) chain super.semanticCheck
@@ -683,7 +698,7 @@ case class CreateRelationshipPropertyUniquenessConstraint(
   variable: Variable,
   relType: RelTypeName,
   properties: Seq[Property],
-  override val name: Option[String],
+  override val name: Option[Either[String, Parameter]],
   ifExistsDo: IfExistsDo,
   options: Options,
   containsOn: Boolean,
@@ -692,7 +707,7 @@ case class CreateRelationshipPropertyUniquenessConstraint(
 )(val position: InputPosition) extends RelationshipCompositePropertyConstraintCommand with CreateConstraint {
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
 
-  override def withName(name: Option[String]): CreateRelationshipPropertyUniquenessConstraint =
+  override def withName(name: Option[Either[String, Parameter]]): CreateRelationshipPropertyUniquenessConstraint =
     copy(name = name)(position)
 
   override def semanticCheck: SemanticCheck =
@@ -723,7 +738,7 @@ case class CreateNodePropertyExistenceConstraint(
   variable: Variable,
   label: LabelName,
   property: Property,
-  override val name: Option[String],
+  override val name: Option[Either[String, Parameter]],
   ifExistsDo: IfExistsDo,
   options: Options,
   containsOn: Boolean,
@@ -731,7 +746,9 @@ case class CreateNodePropertyExistenceConstraint(
   useGraph: Option[GraphSelection] = None
 )(val position: InputPosition) extends NodePropertyConstraintCommand with CreateConstraint {
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
-  override def withName(name: Option[String]): CreateNodePropertyExistenceConstraint = copy(name = name)(position)
+
+  override def withName(name: Option[Either[String, Parameter]]): CreateNodePropertyExistenceConstraint =
+    copy(name = name)(position)
 
   override def semanticCheck: SemanticCheck =
     checkSemanticsExistenceConstraints(
@@ -761,7 +778,7 @@ case class CreateRelationshipPropertyExistenceConstraint(
   variable: Variable,
   relType: RelTypeName,
   property: Property,
-  override val name: Option[String],
+  override val name: Option[Either[String, Parameter]],
   ifExistsDo: IfExistsDo,
   options: Options,
   containsOn: Boolean,
@@ -770,7 +787,7 @@ case class CreateRelationshipPropertyExistenceConstraint(
 )(val position: InputPosition) extends RelationshipPropertyConstraintCommand with CreateConstraint {
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
 
-  override def withName(name: Option[String]): CreateRelationshipPropertyExistenceConstraint =
+  override def withName(name: Option[Either[String, Parameter]]): CreateRelationshipPropertyExistenceConstraint =
     copy(name = name)(position)
 
   override def semanticCheck: SemanticCheck =
@@ -802,7 +819,7 @@ case class CreateNodePropertyTypeConstraint(
   label: LabelName,
   property: Property,
   private val propertyType: CypherType,
-  override val name: Option[String],
+  override val name: Option[Either[String, Parameter]],
   ifExistsDo: IfExistsDo,
   options: Options,
   containsOn: Boolean,
@@ -810,7 +827,9 @@ case class CreateNodePropertyTypeConstraint(
   useGraph: Option[GraphSelection] = None
 )(val position: InputPosition) extends NodePropertyConstraintCommand with CreateConstraint {
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
-  override def withName(name: Option[String]): CreateNodePropertyTypeConstraint = copy(name = name)(position)
+
+  override def withName(name: Option[Either[String, Parameter]]): CreateNodePropertyTypeConstraint =
+    copy(name = name)(position)
 
   val normalizedPropertyType: CypherType = CypherType.normalizeTypes(propertyType)
 
@@ -825,7 +844,7 @@ case class CreateRelationshipPropertyTypeConstraint(
   relType: RelTypeName,
   property: Property,
   private val propertyType: CypherType,
-  override val name: Option[String],
+  override val name: Option[Either[String, Parameter]],
   ifExistsDo: IfExistsDo,
   options: Options,
   containsOn: Boolean,
@@ -834,7 +853,7 @@ case class CreateRelationshipPropertyTypeConstraint(
 )(val position: InputPosition) extends RelationshipPropertyConstraintCommand with CreateConstraint {
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
 
-  override def withName(name: Option[String]): CreateRelationshipPropertyTypeConstraint =
+  override def withName(name: Option[Either[String, Parameter]]): CreateRelationshipPropertyTypeConstraint =
     copy(name = name)(position)
 
   val normalizedPropertyType: CypherType = CypherType.normalizeTypes(propertyType)
@@ -845,9 +864,11 @@ case class CreateRelationshipPropertyTypeConstraint(
       super.semanticCheck
 }
 
-case class DropConstraintOnName(name: String, ifExists: Boolean, useGraph: Option[GraphSelection] = None)(
-  val position: InputPosition
-) extends SchemaCommand {
+case class DropConstraintOnName(
+  name: Either[String, Parameter],
+  ifExists: Boolean,
+  useGraph: Option[GraphSelection] = None
+)(val position: InputPosition) extends SchemaCommand {
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
   def semanticCheck = Seq()
 }

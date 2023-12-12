@@ -358,7 +358,7 @@ public interface ASTFactory<
             ConstraintType constraintType,
             boolean replace,
             boolean ifNotExists,
-            String constraintName,
+            SimpleEither<String, PARAMETER> constraintName,
             VARIABLE variable,
             StringPos<POS> label,
             List<PROPERTY> properties,
@@ -367,7 +367,7 @@ public interface ASTFactory<
             boolean containsOn,
             ConstraintVersion constraintVersion);
 
-    SCHEMA_COMMAND dropConstraint(POS p, String name, boolean ifExists);
+    SCHEMA_COMMAND dropConstraint(POS p, SimpleEither<String, PARAMETER> name, boolean ifExists);
 
     SCHEMA_COMMAND dropConstraint(
             POS p, ConstraintType constraintType, VARIABLE variable, StringPos<POS> label, List<PROPERTY> properties);
@@ -381,7 +381,7 @@ public interface ASTFactory<
             boolean replace,
             boolean ifNotExists,
             boolean isNode,
-            String indexName,
+            SimpleEither<String, PARAMETER> indexName,
             VARIABLE variable,
             StringPos<POS> functionName,
             VARIABLE functionParameter,
@@ -392,7 +392,7 @@ public interface ASTFactory<
             boolean replace,
             boolean ifNotExists,
             boolean isNode,
-            String indexName,
+            SimpleEither<String, PARAMETER> indexName,
             VARIABLE variable,
             StringPos<POS> label,
             List<PROPERTY> properties,
@@ -404,13 +404,13 @@ public interface ASTFactory<
             boolean replace,
             boolean ifNotExists,
             boolean isNode,
-            String indexName,
+            SimpleEither<String, PARAMETER> indexName,
             VARIABLE variable,
             List<StringPos<POS>> labels,
             List<PROPERTY> properties,
             SimpleEither<Map<String, EXPRESSION>, PARAMETER> options);
 
-    SCHEMA_COMMAND dropIndex(POS p, String name, boolean ifExists);
+    SCHEMA_COMMAND dropIndex(POS p, SimpleEither<String, PARAMETER> name, boolean ifExists);
 
     SCHEMA_COMMAND dropIndex(POS p, StringPos<POS> label, List<StringPos<POS>> propertyNames);
 

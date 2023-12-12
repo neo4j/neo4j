@@ -1966,7 +1966,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     relType <- _relTypeName
     types <- _listOfRelTypes
     props <- _listOfProperties
-    name <- option(_identifier)
+    name <- option(_nameAsEither)
     ifExistsDo <- _ifExistsDo
     options <- _optionsMapAsEitherOrNone
     fromDefault <- boolean
@@ -2015,7 +2015,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   } yield command
 
   def _dropIndex: Gen[DropIndexOnName] = for {
-    name <- _identifier
+    name <- _nameAsEither
     ifExists <- boolean
     use <- option(_use)
   } yield DropIndexOnName(name, ifExists, use)(pos)
@@ -2027,7 +2027,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     props <- _listOfProperties
     prop <- _variableProperty
     propType <- _cypherTypeName
-    name <- option(_identifier)
+    name <- option(_nameAsEither)
     ifExistsDo <- _ifExistsDo
     containsOn <- boolean
     options <- _optionsMapAsEitherOrNone
@@ -2147,7 +2147,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   } yield command
 
   def _dropConstraint: Gen[DropConstraintOnName] = for {
-    name <- _identifier
+    name <- _nameAsEither
     ifExists <- boolean
     use <- option(_use)
   } yield DropConstraintOnName(name, ifExists, use)(pos)

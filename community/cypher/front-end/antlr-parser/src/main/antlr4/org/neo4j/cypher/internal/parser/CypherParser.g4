@@ -489,7 +489,7 @@ stringsOrExpression:
    (stringList | expression);
 
 createConstraint:
-   CONSTRAINT (ON LPAREN | FOR LPAREN | IF NOT EXISTS (ON | FOR) LPAREN | symbolicNameString? (IF NOT EXISTS)? (ON | FOR) LPAREN) (
+   CONSTRAINT (ON LPAREN | FOR LPAREN | IF NOT EXISTS (ON | FOR) LPAREN | symbolicNameOrStringParameter? (IF NOT EXISTS)? (ON | FOR) LPAREN) (
        constraintNodePattern | constraintRelPattern
    ) (ASSERT EXISTS propertyList | (REQUIRE | ASSERT) propertyList (COLONCOLON cypherTypeName | IS (UNIQUE | KEY | createConstraintNodeCheck | createConstraintRelCheck | NOT NULL | (TYPED | COLONCOLON) cypherTypeName))) (OPTIONS mapOrParameter)?;
 
@@ -515,7 +515,7 @@ createConstraintRelCheck:
    (RELATIONSHIP | REL) (KEY | UNIQUE);
 
 dropConstraint:
-   CONSTRAINT (ON LPAREN (constraintNodePattern | constraintRelPattern) ASSERT (EXISTS propertyList | propertyList IS (dropConstraintNodeCheck | NOT NULL)) | symbolicNameString (IF EXISTS)?);
+   CONSTRAINT (ON LPAREN (constraintNodePattern | constraintRelPattern) ASSERT (EXISTS propertyList | propertyList IS (dropConstraintNodeCheck | NOT NULL)) | symbolicNameOrStringParameter (IF EXISTS)?);
 
 dropConstraintNodeCheck:
    UNIQUE | NODE KEY;
@@ -527,13 +527,13 @@ oldCreateIndex:
    labelOrRelType LPAREN symbolicNamePositions RPAREN;
 
 createIndex_:
-   (FOR LPAREN | IF NOT EXISTS FOR LPAREN | symbolicNameString (IF NOT EXISTS)? FOR LPAREN) (variable labelOrRelType RPAREN | RPAREN leftArrow? arrowLine LBRACKET variable labelOrRelType RBRACKET arrowLine rightArrow? LPAREN RPAREN) ON propertyList (OPTIONS mapOrParameter)?;
+   (FOR LPAREN | IF NOT EXISTS FOR LPAREN | symbolicNameOrStringParameter (IF NOT EXISTS)? FOR LPAREN) (variable labelOrRelType RPAREN | RPAREN leftArrow? arrowLine LBRACKET variable labelOrRelType RBRACKET arrowLine rightArrow? LPAREN RPAREN) ON propertyList (OPTIONS mapOrParameter)?;
 
 createFulltextIndex:
-   (FOR LPAREN | IF NOT EXISTS FOR LPAREN | symbolicNameString (IF NOT EXISTS)? FOR LPAREN) (variable labelOrRelTypes RPAREN | RPAREN leftArrow? arrowLine LBRACKET variable labelOrRelTypes RBRACKET arrowLine rightArrow? LPAREN RPAREN) ON EACH LBRACKET variable property (COMMA variable property)* RBRACKET (OPTIONS mapOrParameter)?;
+   (FOR LPAREN | IF NOT EXISTS FOR LPAREN | symbolicNameOrStringParameter (IF NOT EXISTS)? FOR LPAREN) (variable labelOrRelTypes RPAREN | RPAREN leftArrow? arrowLine LBRACKET variable labelOrRelTypes RBRACKET arrowLine rightArrow? LPAREN RPAREN) ON EACH LBRACKET variable property (COMMA variable property)* RBRACKET (OPTIONS mapOrParameter)?;
 
 createLookupIndex:
-   (FOR LPAREN | IF NOT EXISTS FOR LPAREN | symbolicNameString (IF NOT EXISTS)? FOR LPAREN)
+   (FOR LPAREN | IF NOT EXISTS FOR LPAREN | symbolicNameOrStringParameter (IF NOT EXISTS)? FOR LPAREN)
         (
             variable RPAREN ON EACH |
             RPAREN leftArrow? arrowLine LBRACKET variable RBRACKET arrowLine rightArrow? LPAREN RPAREN ON EACH?
@@ -544,7 +544,7 @@ lookupIndexFunctionName:
    symbolicNameString;
 
 dropIndex:
-   INDEX (ON labelOrRelType LPAREN symbolicNamePositions RPAREN | symbolicNameString (IF EXISTS)?);
+   INDEX (ON labelOrRelType LPAREN symbolicNamePositions RPAREN | symbolicNameOrStringParameter (IF EXISTS)?);
 
 propertyList:
    (variable property | LPAREN variable property (COMMA variable property)* RPAREN);

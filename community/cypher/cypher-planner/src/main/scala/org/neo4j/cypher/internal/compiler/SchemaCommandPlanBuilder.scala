@@ -47,6 +47,7 @@ import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.expressions.ElementTypeName
 import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
@@ -86,7 +87,7 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
       entityName: ElementTypeName,
       props: List[Property],
       indexType: IndexType,
-      name: Option[String],
+      name: Option[Either[String, Parameter]],
       ifExistsDo: IfExistsDo,
       options: Options
     ): (List[PropertyKeyName], Option[DoNothingIfExistsForIndex]) = {
@@ -101,18 +102,18 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
     def createRangeIndex(
       entityName: ElementTypeName,
       props: List[Property],
-      name: Option[String],
+      name: Option[Either[String, Parameter]],
       ifExistsDo: IfExistsDo,
       options: Options
     ): Option[LogicalPlan] = {
       val (propKeys, source) = handleIfExistsDo(entityName, props, IndexType.RANGE, name, ifExistsDo, options)
-      Some(plans.CreateRangeIndex(source, entityName, propKeys, name, options))
+      Some(plans.CreateIndex(source, IndexType.RANGE, entityName, propKeys, name, options))
     }
 
     def createFulltextIndex(
       entityNames: Either[List[LabelName], List[RelTypeName]],
       props: List[Property],
-      name: Option[String],
+      name: Option[Either[String, Parameter]],
       ifExistsDo: IfExistsDo,
       options: Options
     ): Option[LogicalPlan] = {
@@ -127,34 +128,34 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
     def createTextIndex(
       entityName: ElementTypeName,
       props: List[Property],
-      name: Option[String],
+      name: Option[Either[String, Parameter]],
       ifExistsDo: IfExistsDo,
       options: Options
     ): Option[LogicalPlan] = {
       val (propKeys, source) = handleIfExistsDo(entityName, props, IndexType.TEXT, name, ifExistsDo, options)
-      Some(plans.CreateTextIndex(source, entityName, propKeys, name, options))
+      Some(plans.CreateIndex(source, IndexType.TEXT, entityName, propKeys, name, options))
     }
 
     def createPointIndex(
       entityName: ElementTypeName,
       props: List[Property],
-      name: Option[String],
+      name: Option[Either[String, Parameter]],
       ifExistsDo: IfExistsDo,
       options: Options
     ): Option[LogicalPlan] = {
       val (propKeys, source) = handleIfExistsDo(entityName, props, IndexType.POINT, name, ifExistsDo, options)
-      Some(plans.CreatePointIndex(source, entityName, propKeys, name, options))
+      Some(plans.CreateIndex(source, IndexType.POINT, entityName, propKeys, name, options))
     }
 
     def createVectorIndex(
       entityName: ElementTypeName,
       props: List[Property],
-      name: Option[String],
+      name: Option[Either[String, Parameter]],
       ifExistsDo: IfExistsDo,
       options: Options
     ): Option[LogicalPlan] = {
       val (propKeys, source) = handleIfExistsDo(entityName, props, IndexType.VECTOR, name, ifExistsDo, options)
-      Some(plans.CreateVectorIndex(source, entityName, propKeys, name, options))
+      Some(plans.CreateIndex(source, IndexType.VECTOR, entityName, propKeys, name, options))
     }
 
     val maybeLogicalPlan: Option[LogicalPlan] = from.statement() match {
