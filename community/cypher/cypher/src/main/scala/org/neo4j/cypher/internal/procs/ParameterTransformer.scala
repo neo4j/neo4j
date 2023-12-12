@@ -58,6 +58,10 @@ case class ParameterTransformer(
     ParameterTransformer(genFunc, (tx, mv) => (convFunc(tx, transformFunc(tx, mv)._1), Set.empty))
   }
 
+  def optionallyConvert(convFunc: Option[ParameterConversionFunction]): ParameterTransformer = {
+    convFunc.map(convert).getOrElse(this)
+  }
+
   def generate(generator: ParameterGenerationFunction): ParameterTransformer = {
     val newGenFunc: ParameterGenerationFunction = (tx, sc) => genFunc(tx, sc).updatedWith(generator(tx, sc))
     ParameterTransformer(newGenFunc, transformFunc)
@@ -72,6 +76,11 @@ case class ParameterTransformer(
         (output, notifications ++ newNotifications)
       }
     )
+  }
+
+  def optionallyValidate(validFunc: Option[(Transaction, MapValue) => ParameterTransformerOutput])
+    : ParameterTransformer = {
+    validFunc.map(validate).getOrElse(this)
   }
 
   override def transform(

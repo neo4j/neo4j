@@ -233,10 +233,11 @@ object AdministrationCommandRuntime {
     ) ++ homeDatabaseFields.map(_.nameKey)
     val credentials = getPasswordExpression(password, isEncryptedPassword, nonPasswordParameterNames)(config)
     val homeDatabaseCypher = homeDatabaseFields.map(ddf => s", homeDatabase: $$`${ddf.nameKey}`").getOrElse("")
-    val mapValueConverter: (Transaction, MapValue) => MapValue = (tx, p) => {
-      val newHomeDatabaseFields = homeDatabaseFields.map(_.nameConverter(tx, userNameFields.nameConverter(tx, p)))
-      credentials.mapValueConverter(tx, newHomeDatabaseFields.getOrElse(userNameFields.nameConverter(tx, p)))
-    }
+    val parameterTransformer = ParameterTransformer()
+      .convert(userNameFields.nameConverter)
+      .optionallyConvert(homeDatabaseFields.map(_.nameConverter))
+      .convert(credentials.mapValueConverter)
+      .validate(isHomeDatabasePresent(homeDatabaseFields))
     UpdatingSystemCommandExecutionPlan(
       "CreateUser",
       normalExecutionEngine,
@@ -288,8 +289,7 @@ object AdministrationCommandRuntime {
         initFunction = params => NameValidator.assertValidUsername(runtimeStringValue(userName, params)),
         finallyFunction = p => p.get(credentials.bytesKey).asInstanceOf[ByteArray].zero()
       ),
-      parameterTransformer = ParameterTransformer().convert(mapValueConverter)
-        .validate(isHomeDatabasePresent(homeDatabaseFields))
+      parameterTransformer = parameterTransformer
     )
   }
 
@@ -346,13 +346,11 @@ object AdministrationCommandRuntime {
     }
     val parameterKeys: Seq[String] = (keys ++ maybePw.map(_.bytesKey).toSeq) :+ userNameFields.nameKey
     val parameterValues: Seq[Value] = (values ++ maybePw.map(_.bytesValue).toSeq) :+ userNameFields.nameValue
-    val mapper: (Transaction, MapValue) => MapValue = (tx, p) => {
-      val newHomeDatabaseFields = homeDatabaseFields.map(_.nameConverter(tx, userNameFields.nameConverter(tx, p)))
-      maybePw.map(_.mapValueConverter).getOrElse(IdentityConverter)(
-        tx,
-        newHomeDatabaseFields.getOrElse(userNameFields.nameConverter(tx, p))
-      )
-    }
+    val parameterTransformer = ParameterTransformer()
+      .convert(userNameFields.nameConverter)
+      .optionallyConvert(homeDatabaseFields.map(_.nameConverter))
+      .optionallyConvert(maybePw.map(_.mapValueConverter))
+      .validate(isHomeDatabasePresent(homeDatabaseFields))
     UpdatingSystemCommandExecutionPlan(
       "AlterUser",
       normalExecutionEngine,
@@ -394,7 +392,7 @@ object AdministrationCommandRuntime {
         p => maybePw.foreach(newPw => p.get(newPw.bytesKey).asInstanceOf[ByteArray].zero())
       ),
       parameterTransformer =
-        ParameterTransformer().convert(mapper).validate(isHomeDatabasePresent(homeDatabaseFields))
+        parameterTransformer
     )
   }
 
@@ -428,9 +426,10 @@ object AdministrationCommandRuntime {
   ): ExecutionPlan = {
     val fromNameFields = getNameFields("fromName", fromName)
     val toNameFields = getNameFields("toName", toName)
-    val mapValueConverter: (Transaction, MapValue) => MapValue =
-      (tx, p) => toNameFields.nameConverter(tx, fromNameFields.nameConverter(tx, p))
 
+    val parameterTransformer = ParameterTransformer()
+      .convert(fromNameFields.nameConverter)
+      .convert(toNameFields.nameConverter)
     UpdatingSystemCommandExecutionPlan(
       s"Create$entity",
       normalExecutionEngine,
@@ -472,7 +471,7 @@ object AdministrationCommandRuntime {
         ),
       sourcePlan,
       initAndFinally = InitAndFinallyFunctions(initFunction = initFunction),
-      parameterTransformer = ParameterTransformer().convert(mapValueConverter)
+      parameterTransformer = parameterTransformer
     )
   }
 

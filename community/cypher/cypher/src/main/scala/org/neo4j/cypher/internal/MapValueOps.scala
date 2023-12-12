@@ -60,5 +60,13 @@ object MapValueOps {
 
     override def updated[V1 >: AnyValue](key: String, value: V1): Map[String, V1] =
       mv.updatedWith(VirtualValues.map(Array(key), Array(value.asInstanceOf[AnyValue])))
+
+    def optionallyUpdatedWith(key: String, converterOpt: Option[MapValue => AnyValue]): MapValue = {
+      converterOpt.map(value => mv.updatedWith(key, value(mv))).getOrElse(mv)
+    }
+
+    def optionallyUpdatedWithValue(key: String, valueOpt: Option[AnyValue]): MapValue = {
+      optionallyUpdatedWith(key, valueOpt.map(v => (_: MapValue) => v))
+    }
   }
 }
