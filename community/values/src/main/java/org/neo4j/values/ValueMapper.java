@@ -26,9 +26,9 @@ import java.time.OffsetTime;
 import java.time.ZonedDateTime;
 import java.time.temporal.TemporalAmount;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.eclipse.collections.impl.map.mutable.UnifiedMap;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.values.storable.BooleanArray;
 import org.neo4j.values.storable.BooleanValue;
@@ -240,18 +240,20 @@ public interface ValueMapper<Base> {
 
         @Override
         public Object mapMap(MapValue value) {
-            Map<Object, Object> map = new HashMap<>();
+            final var map = new UnifiedMap<String, Object>(value.size());
             value.foreach((k, v) -> map.put(k, v.map(this)));
             return map;
         }
 
         @Override
         public List<?> mapSequence(SequenceValue value) {
-            // Note, we don't need to copy the list in some cases if
-            // immutable lists are ok (see diff of this commit).
-            // We choose to copy anyway to not break current behaviour.
-            List<Object> list = new ArrayList<>(value.length());
-            value.forEach(v -> list.add(v.map(this)));
+            final var size = value.length();
+            final var list = new ArrayList<>(size);
+            if (value.iterationPreference() == SequenceValue.IterationPreference.RANDOM_ACCESS) {
+                for (int i = 0; i < size; ++i) list.add(value.value(i).map(this));
+            } else {
+                value.forEach(v -> list.add(v.map(this)));
+            }
             return list;
         }
 
@@ -323,6 +325,16 @@ public interface ValueMapper<Base> {
         @Override
         public ZonedDateTime mapDateTime(DateTimeValue value) {
             return value.asObjectCopy();
+        }
+
+        @Override
+        public Number mapDouble(DoubleValue value) {
+            return value.doubleValue();
+        }
+
+        @Override
+        public Number mapLong(LongValue value) {
+            return value.longValue();
         }
 
         @Override
