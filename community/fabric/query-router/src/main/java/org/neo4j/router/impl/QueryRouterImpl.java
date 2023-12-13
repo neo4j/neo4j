@@ -47,6 +47,7 @@ import org.neo4j.router.QueryRouterException;
 import org.neo4j.router.impl.query.CompositeTargetService;
 import org.neo4j.router.impl.query.StandardTargetService;
 import org.neo4j.router.impl.query.StatementType;
+import org.neo4j.router.impl.query.TransactionTargetService;
 import org.neo4j.router.impl.transaction.RouterTransactionContextImpl;
 import org.neo4j.router.impl.transaction.RouterTransactionImpl;
 import org.neo4j.router.impl.transaction.RouterTransactionManager;
@@ -128,7 +129,7 @@ public class QueryRouterImpl implements QueryRouter {
                 transactionInfo,
                 routingInfo,
                 routerTransaction,
-                queryTargetService,
+                new TransactionTargetService(queryTargetService),
                 locationService,
                 transactionBookmarkManager);
     }
