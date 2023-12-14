@@ -26,6 +26,23 @@
         <moduleName>org.neo4j.cypher.internal.ast.generator</moduleName>
     </properties>
 
+    <build>
+        <plugins>
+            <plugin>
+                <!-- disable only the ban-test-dependencies-in-compile enforcer rule
+                since this project creates test utilities -->
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>ban-test-dependencies-in-compile</id>
+                        <phase></phase>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
     <dependencies>
 
         <!-- compile -->
