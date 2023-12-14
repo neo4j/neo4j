@@ -111,8 +111,8 @@ object LogicalPlanGenerator extends AstConstructionTestSupport {
   object State {
 
     def apply(labelsWithIds: Map[String, Int], relTypesWithIds: Map[String, Int]): State = {
-      val resolvedLabelTypes = Map(labelsWithIds.mapValues(LabelId).toSeq: _*)
-      val resolvedRelTypes = Map(relTypesWithIds.mapValues(RelTypeId).toSeq: _*)
+      val resolvedLabelTypes = Map(labelsWithIds.view.mapValues(LabelId).toSeq: _*)
+      val resolvedRelTypes = Map(relTypesWithIds.view.mapValues(RelTypeId).toSeq: _*)
       State(
         new SemanticTable(
           resolvedLabelNames = resolvedLabelTypes,
