@@ -26,9 +26,8 @@ import java.time.OffsetTime;
 import java.time.ZonedDateTime;
 import java.time.temporal.TemporalAmount;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import org.eclipse.collections.impl.map.mutable.UnifiedMap;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.values.storable.BooleanArray;
 import org.neo4j.values.storable.BooleanValue;
@@ -240,7 +239,7 @@ public interface ValueMapper<Base> {
 
         @Override
         public Object mapMap(MapValue value) {
-            final var map = new UnifiedMap<String, Object>(value.size());
+            final var map = new HashMap<String, Object>(value.size());
             value.foreach((k, v) -> map.put(k, v.map(this)));
             return map;
         }
