@@ -112,7 +112,7 @@
         </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-cypher-logical-plan-generator</artifactId>
+            <artifactId>neo4j-cypher-logical-plan-generator-test-util</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>

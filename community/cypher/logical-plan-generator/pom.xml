@@ -11,7 +11,7 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>neo4j-cypher-logical-plan-generator</artifactId>
+  <artifactId>neo4j-cypher-logical-plan-generator-test-util</artifactId>
   <packaging>jar</packaging>
   <version>5.16.0-SNAPSHOT</version>
   <name>Neo4j - Cypher Logical Plan Generator</name>
@@ -75,7 +75,7 @@
 
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-ast-generator</artifactId>
+      <artifactId>neo4j-ast-generator-test-util</artifactId>
       <version>${project.version}</version>
     </dependency>
 

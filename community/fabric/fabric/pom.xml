@@ -59,7 +59,7 @@
         </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-ast-generator</artifactId>
+            <artifactId>neo4j-ast-generator-test-util</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>

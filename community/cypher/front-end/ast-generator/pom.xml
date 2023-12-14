@@ -9,7 +9,7 @@
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>neo4j-ast-generator</artifactId>
+    <artifactId>neo4j-ast-generator-test-util</artifactId>
     <packaging>jar</packaging>
     <name>Neo4j - Cypher AST generator</name>
 
