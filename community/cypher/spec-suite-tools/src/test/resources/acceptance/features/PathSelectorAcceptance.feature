@@ -1173,3 +1173,108 @@ Feature: PathSelectorAcceptance
       | ANY               |
       | ANY 1             |
       | ANY 2             |
+
+
+  Scenario Outline: PathSelector should handle pre-filter predicates on the whole path
+    And having executed:
+      """
+        CREATE ()-[:R]->()-[:R]->()-[:R]->()-[:R]->()
+      """
+    When executing query:
+      """
+        MATCH <pathSelector> (p = ((start)((a)-[r:R]->(b))+(end)) WHERE length(p) > 3) RETURN p
+      """
+    Then the result should be, in any order:
+      | p                 |
+      | <()-[:R]->()-[:R]->()-[:R]->()-[:R]->()>  |
+    Examples:
+      | pathSelector      |
+      | ANY SHORTEST      |
+      | SHORTEST 1        |
+      | SHORTEST 2        |
+      | ALL SHORTEST      |
+      | SHORTEST GROUP    |
+      | SHORTEST 1 GROUP  |
+      | SHORTEST 2 GROUPS |
+      | ANY               |
+      | ANY 1             |
+      | ANY 2             |
+
+  Scenario Outline: PathSelector should handle legacy var-length
+    And having executed:
+      """
+        CREATE ()-[:R]->()-[:T]->()
+      """
+    When executing query:
+      """
+        MATCH <pathSelector> (p=()-[*1]->()) RETURN p
+      """
+    Then the result should be, in any order:
+      | p                |
+      | <()-[:T {}]->()> |
+      | <()-[:R {}]->()> |
+    Examples:
+      | pathSelector      |
+      | ANY SHORTEST      |
+      | SHORTEST 1        |
+      | SHORTEST 2        |
+      | ALL SHORTEST      |
+      | SHORTEST GROUP    |
+      | SHORTEST 1 GROUP  |
+      | SHORTEST 2 GROUPS |
+      | ANY               |
+      | ANY 1             |
+      | ANY 2             |
+
+  Scenario Outline: PathSelector should handle a previously bound boundary node
+    And having executed:
+      """
+        CREATE (:L)-[:R]->()-[:R]->()
+      """
+    When executing query:
+      """
+        MATCH (start)
+        MATCH <pathSelector> (p = (start:L)((a)-[r:R]->(b))+(end)) RETURN p
+      """
+    Then the result should be, in any order:
+      | p                              |
+      | <(:L)-[:R {}]->()>             |
+      | <(:L)-[:R {}]->()-[:R {}]->()> |
+    Examples:
+      | pathSelector      |
+      | ANY SHORTEST      |
+      | SHORTEST 1        |
+      | SHORTEST 2        |
+      | ALL SHORTEST      |
+      | SHORTEST GROUP    |
+      | SHORTEST 1 GROUP  |
+      | SHORTEST 2 GROUPS |
+      | ANY               |
+      | ANY 1             |
+      | ANY 2             |
+
+  Scenario Outline: PathSelector should handle a previously bound relationship
+    And having executed:
+      """
+        CREATE ()-[:R]->()-[:T]->()
+      """
+    When executing query:
+      """
+        MATCH ()-[r]->()
+        MATCH <pathSelector> (p = (start)-[r:R]->(a)((b)-[]->(c))+(end)) RETURN p
+      """
+    Then the result should be, in any order:
+      | p                              |
+      | <()-[:R {}]->()-[:T {}]->()>   |
+    Examples:
+      | pathSelector      |
+      | ANY SHORTEST      |
+      | SHORTEST 1        |
+      | SHORTEST 2        |
+      | ALL SHORTEST      |
+      | SHORTEST GROUP    |
+      | SHORTEST 1 GROUP  |
+      | SHORTEST 2 GROUPS |
+      | ANY               |
+      | ANY 1             |
+      | ANY 2             |
