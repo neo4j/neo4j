@@ -197,13 +197,14 @@ class RelationshipCreatorTest {
                 newRelGroupGetter(givenState),
                 null,
                 denseNodeThreshold,
-                false,
+                ResourceLocker.IGNORE,
+                LockTracer.NONE,
                 CursorContext.NULL_CONTEXT,
                 EmptyMemoryTracker.INSTANCE);
 
         FlatRelationshipModifications data = new FlatRelationshipModifications(
                 new FlatRelationshipModifications.RelationshipData(nextRelId(givenState), 0, fromNode, toNode));
-        logic.modifyRelationships(data, changeset, mock(DegreeUpdater.class), ResourceLocker.IGNORE, LockTracer.NONE);
+        logic.modifyRelationships(data, changeset, mock(DegreeUpdater.class));
     }
 
     private static long nextRelId(AbstractBaseRecord[] existingRecords) {

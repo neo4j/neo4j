@@ -40,7 +40,6 @@ import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.store.record.Record.isNull;
 import static org.neo4j.lock.LockTracer.NONE;
 import static org.neo4j.lock.LockType.EXCLUSIVE;
-import static org.neo4j.lock.ResourceLocker.IGNORE;
 import static org.neo4j.lock.ResourceType.NODE;
 import static org.neo4j.lock.ResourceType.RELATIONSHIP;
 import static org.neo4j.lock.ResourceType.RELATIONSHIP_DELETE;
@@ -55,7 +54,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
@@ -82,6 +80,8 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.lock.ActiveLock;
+import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.LockType;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.lock.ResourceType;
@@ -110,19 +110,21 @@ class RelationshipModifierTest {
 
     private final Supplier<RelationshipDirection> RANDOM_DIRECTION = () -> random.among(DIRECTIONS);
     private RelationshipModifier modifier;
-    private TrackingResourceLocker locks;
+    private TrackingResourceLocker lockTracking;
     private MapRecordStore store;
     private GroupUpdater groupUpdater;
     private long nextNodeId;
     private long nextRelationshipId;
     private Monitors monitors;
     private ReadableTransactionState txState;
+    private RelationshipGroupGetter relationshipGroupGetter;
+    private PropertyDeleter propertyDeleter;
+    private RelationshipModifierTestLocker relationshipModifierTestLocker;
 
     @BeforeEach
     void setUp() {
-        RelationshipGroupGetter relationshipGroupGetter =
-                new RelationshipGroupGetter(idSequence(), CursorContext.NULL_CONTEXT);
-        PropertyDeleter propertyDeleter = new PropertyDeleter(
+        relationshipGroupGetter = new RelationshipGroupGetter(idSequence(), CursorContext.NULL_CONTEXT);
+        propertyDeleter = new PropertyDeleter(
                 new PropertyTraverser(),
                 null,
                 null,
@@ -130,22 +132,24 @@ class RelationshipModifierTest {
                 Config.defaults(),
                 CursorContext.NULL_CONTEXT,
                 StoreCursors.NULL);
-        modifier = new RelationshipModifier(
-                relationshipGroupGetter,
-                propertyDeleter,
-                DENSE_THRESHOLD - 1 /*because the trigger happens on > */,
-                false,
-                CursorContext.NULL_CONTEXT,
-                EmptyMemoryTracker.INSTANCE);
         monitors = new Monitors(null, (t, m) -> {
             Exceptions.throwIfUnchecked(t);
             throw new RuntimeException(t);
         });
-        locks = new TrackingResourceLocker(
+        lockTracking = new TrackingResourceLocker(
                 random, monitors.newMonitor(TrackingResourceLocker.LockAcquisitionMonitor.class));
+        relationshipModifierTestLocker = new RelationshipModifierTestLocker(lockTracking);
+        modifier = new RelationshipModifier(
+                relationshipGroupGetter,
+                propertyDeleter,
+                DENSE_THRESHOLD - 1 /*because the trigger happens on > */,
+                relationshipModifierTestLocker,
+                NONE,
+                CursorContext.NULL_CONTEXT,
+                EmptyMemoryTracker.INSTANCE);
         txState = mock(ReadableTransactionState.class);
         store = new MapRecordStore();
-        monitors.addMonitorListener(new LockVerificationMonitor(locks, txState, store));
+        monitors.addMonitorListener(new LockVerificationMonitor(lockTracking, txState, store));
         groupUpdater = new GroupUpdater(store);
     }
 
@@ -159,10 +163,10 @@ class RelationshipModifierTest {
         modify(singleCreate(99, 1, node1, node2));
 
         // then
-        locks.assertHasLock(NODE, EXCLUSIVE, node1);
-        locks.assertHasLock(RELATIONSHIP_GROUP, EXCLUSIVE, node1);
-        locks.assertHasLock(NODE, EXCLUSIVE, node2);
-        locks.assertHasLock(RELATIONSHIP_GROUP, EXCLUSIVE, node2);
+        lockTracking.assertHasLock(NODE, EXCLUSIVE, node1);
+        lockTracking.assertHasLock(RELATIONSHIP_GROUP, EXCLUSIVE, node1);
+        lockTracking.assertHasLock(NODE, EXCLUSIVE, node2);
+        lockTracking.assertHasLock(RELATIONSHIP_GROUP, EXCLUSIVE, node2);
     }
 
     @Test
@@ -183,9 +187,9 @@ class RelationshipModifierTest {
         modify(singleCreate(99, 1, node1, node2));
 
         // then
-        locks.assertNoLock(NODE, EXCLUSIVE, node1);
-        locks.assertNoLock(RELATIONSHIP_GROUP, EXCLUSIVE, node1);
-        locks.assertHasLock(NODE, EXCLUSIVE, node2);
+        lockTracking.assertNoLock(NODE, EXCLUSIVE, node1);
+        lockTracking.assertNoLock(RELATIONSHIP_GROUP, EXCLUSIVE, node1);
+        lockTracking.assertHasLock(NODE, EXCLUSIVE, node2);
         assertThat(store.loadNode(node1).isDense()).isTrue();
     }
 
@@ -201,10 +205,10 @@ class RelationshipModifierTest {
         modify(singleDelete(relationship));
 
         // then
-        locks.assertHasLock(NODE, EXCLUSIVE, node1);
-        locks.assertNoLock(RELATIONSHIP_GROUP, EXCLUSIVE, node1);
-        locks.assertHasLock(NODE, EXCLUSIVE, node2);
-        locks.assertNoLock(RELATIONSHIP_GROUP, EXCLUSIVE, node2);
+        lockTracking.assertHasLock(NODE, EXCLUSIVE, node1);
+        lockTracking.assertNoLock(RELATIONSHIP_GROUP, EXCLUSIVE, node1);
+        lockTracking.assertHasLock(NODE, EXCLUSIVE, node2);
+        lockTracking.assertNoLock(RELATIONSHIP_GROUP, EXCLUSIVE, node2);
     }
 
     @Test
@@ -218,8 +222,8 @@ class RelationshipModifierTest {
         modify(singleCreate(relationship(nextRelationshipId(), 2, node, createEmptyNode())));
 
         // then
-        locks.assertHasLock(NODE, EXCLUSIVE, node);
-        locks.assertHasLock(RELATIONSHIP_GROUP, EXCLUSIVE, node);
+        lockTracking.assertHasLock(NODE, EXCLUSIVE, node);
+        lockTracking.assertHasLock(RELATIONSHIP_GROUP, EXCLUSIVE, node);
     }
 
     @Test
@@ -236,8 +240,8 @@ class RelationshipModifierTest {
                 relationship(nextRelationshipId(), 3, node, createEmptyNode())));
 
         // then
-        locks.assertHasLock(NODE, EXCLUSIVE, node);
-        locks.assertHasLock(RELATIONSHIP_GROUP, EXCLUSIVE, node);
+        lockTracking.assertHasLock(NODE, EXCLUSIVE, node);
+        lockTracking.assertHasLock(RELATIONSHIP_GROUP, EXCLUSIVE, node);
     }
 
     @Test
@@ -254,8 +258,8 @@ class RelationshipModifierTest {
                 relationship(nextRelationshipId(), 2, node, createEmptyNode())));
 
         // then
-        locks.assertNoLock(NODE, EXCLUSIVE, node);
-        locks.assertNoLock(RELATIONSHIP_GROUP, EXCLUSIVE, node);
+        lockTracking.assertNoLock(NODE, EXCLUSIVE, node);
+        lockTracking.assertNoLock(RELATIONSHIP_GROUP, EXCLUSIVE, node);
     }
 
     @Test
@@ -268,8 +272,8 @@ class RelationshipModifierTest {
         modify(singleCreate(relationship(nextRelationshipId(), 1, createEmptyNode(), node)));
 
         // then
-        locks.assertNoLock(NODE, EXCLUSIVE, node);
-        locks.assertHasLock(RELATIONSHIP_GROUP, EXCLUSIVE, node);
+        lockTracking.assertNoLock(NODE, EXCLUSIVE, node);
+        lockTracking.assertHasLock(RELATIONSHIP_GROUP, EXCLUSIVE, node);
     }
 
     @Test
@@ -283,8 +287,8 @@ class RelationshipModifierTest {
         modify(singleCreate(relationship(nextRelationshipId(), 1, createEmptyNode(), node)));
 
         // then
-        locks.assertNoLock(NODE, EXCLUSIVE, node);
-        locks.assertHasLock(RELATIONSHIP_GROUP, EXCLUSIVE, node);
+        lockTracking.assertNoLock(NODE, EXCLUSIVE, node);
+        lockTracking.assertHasLock(RELATIONSHIP_GROUP, EXCLUSIVE, node);
     }
 
     @Test
@@ -300,8 +304,8 @@ class RelationshipModifierTest {
 
         // then
         assertThat(groupUpdater.degree(node, 1, OUTGOING)).isEqualTo(numRelationships + 1);
-        locks.assertNoLock(NODE, EXCLUSIVE, node);
-        locks.assertNoLock(RELATIONSHIP_GROUP, EXCLUSIVE, node);
+        lockTracking.assertNoLock(NODE, EXCLUSIVE, node);
+        lockTracking.assertNoLock(RELATIONSHIP_GROUP, EXCLUSIVE, node);
     }
 
     @Test
@@ -318,8 +322,8 @@ class RelationshipModifierTest {
                 relationships(findRelationship(initialRelationships, node, false))));
 
         // then
-        locks.assertNoLock(NODE, EXCLUSIVE, node);
-        locks.assertNoLock(RELATIONSHIP_GROUP, EXCLUSIVE, node);
+        lockTracking.assertNoLock(NODE, EXCLUSIVE, node);
+        lockTracking.assertNoLock(RELATIONSHIP_GROUP, EXCLUSIVE, node);
     }
 
     @Test
@@ -329,6 +333,7 @@ class RelationshipModifierTest {
         Collection<RelationshipData> initialRelationships =
                 generateRelationshipData(DENSE_THRESHOLD * 2, node, type(1), this::createEmptyNode, OUT);
         createRelationships(initialRelationships);
+
         assertThat(groupUpdater.degree(node, 1, OUTGOING)).isEqualTo(initialRelationships.size());
 
         // when
@@ -336,8 +341,8 @@ class RelationshipModifierTest {
 
         // then
         assertThat(groupUpdater.degree(node, 1, OUTGOING)).isEqualTo(initialRelationships.size() - 1);
-        locks.assertNoLock(NODE, EXCLUSIVE, node);
-        locks.assertHasLock(RELATIONSHIP_GROUP, EXCLUSIVE, node);
+        lockTracking.assertNoLock(NODE, EXCLUSIVE, node);
+        lockTracking.assertHasLock(RELATIONSHIP_GROUP, EXCLUSIVE, node);
     }
 
     // ... other known cases ...
@@ -441,7 +446,7 @@ class RelationshipModifierTest {
     }
 
     private boolean relationshipIsLocked(long id) {
-        return locks.hasLock(RELATIONSHIP, id) || locks.hasLock(RELATIONSHIP_DELETE, id);
+        return lockTracking.hasLock(RELATIONSHIP, id) || lockTracking.hasLock(RELATIONSHIP_DELETE, id);
     }
 
     private void modify(
@@ -451,7 +456,7 @@ class RelationshipModifierTest {
             ResourceLocker locks) {
         // Acquire the "external" locks that the RelationshipModifier rely on when making decisions internally
         StorageLocks context = new RecordStorageLocks(locks);
-        this.locks.preModify(true);
+        this.lockTracking.preModify(true);
         modifications
                 .creations()
                 .forEach((id, type, start, end, addedProperties) ->
@@ -460,10 +465,10 @@ class RelationshipModifierTest {
                 .deletions()
                 .forEach((id, type, start, end, noProperties) ->
                         context.acquireRelationshipDeletionLock(NONE, start, end, id, false, false, false));
-        this.locks.preModify(false);
+        this.lockTracking.preModify(false);
 
         RecordAccessSet changes = store.newRecordChanges(loadMonitor, readMonitor);
-        modifier.modifyRelationships(modifications, changes, groupUpdater, locks, NONE);
+        modifier.modifyRelationships(modifications, changes, groupUpdater);
         // Apply those changes back to our map store
         changes.getNodeRecords().changes().forEach(change -> store.write(change.forReadingLinkage()));
         changes.getRelRecords().changes().forEach(change -> store.write(change.forReadingLinkage()));
@@ -475,15 +480,17 @@ class RelationshipModifierTest {
                 modifications,
                 monitors.newMonitor(RecordAccess.LoadMonitor.class),
                 monitors.newMonitor(MapRecordStore.Monitor.class),
-                locks);
+                lockTracking);
     }
 
     private void createRelationships(Collection<RelationshipData> relationships) {
+        relationshipModifierTestLocker.setIgnoreLocks(true);
         modify(
                 creations(relationships.toArray(RelationshipData[]::new)),
                 NULL_MONITOR,
                 MapRecordStore.Monitor.NULL,
-                IGNORE);
+                lockTracking);
+        relationshipModifierTestLocker.setIgnoreLocks(false);
     }
 
     private List<RelationshipData> generateRelationshipData(
@@ -609,32 +616,68 @@ class RelationshipModifierTest {
                 ResourceType resourceType, LockType lockType, long resourceId, boolean wasTheLastOne) {}
     }
 
-    private static class ResourceKey {
-        private final ResourceType resourceType;
-        private final LockType lockType;
-        private final long resourceId;
+    private record ResourceKey(ResourceType resourceType, LockType lockType, long resourceId) {}
 
-        ResourceKey(ResourceType resourceType, LockType lockType, long resourceId) {
-            this.resourceType = resourceType;
-            this.lockType = lockType;
-            this.resourceId = resourceId;
+    private static class RelationshipModifierTestLocker implements ResourceLocker {
+        private final ResourceLocker locker;
+        private volatile boolean ignoreLocks;
+
+        public RelationshipModifierTestLocker(ResourceLocker locker) {
+            this.locker = locker;
         }
 
         @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass()) {
+        public boolean tryExclusiveLock(ResourceType resourceType, long resourceId) {
+            if (ignoreLocks) {
                 return false;
             }
-            ResourceKey that = (ResourceKey) o;
-            return resourceId == that.resourceId && resourceType.equals(that.resourceType) && lockType == that.lockType;
+            return locker.tryExclusiveLock(resourceType, resourceId);
         }
 
         @Override
-        public int hashCode() {
-            return Objects.hash(resourceType, lockType, resourceId);
+        public void acquireExclusive(LockTracer tracer, ResourceType resourceType, long... resourceIds) {
+            if (ignoreLocks) {
+                return;
+            }
+            locker.acquireExclusive(tracer, resourceType, resourceIds);
+        }
+
+        @Override
+        public void releaseExclusive(ResourceType resourceType, long... resourceIds) {
+            if (ignoreLocks) {
+                return;
+            }
+            locker.releaseExclusive(resourceType, resourceIds);
+        }
+
+        @Override
+        public void acquireShared(LockTracer tracer, ResourceType resourceType, long... resourceIds) {
+            if (ignoreLocks) {
+                return;
+            }
+            locker.acquireShared(tracer, resourceType, resourceIds);
+        }
+
+        @Override
+        public void releaseShared(ResourceType resourceType, long... resourceIds) {
+            if (ignoreLocks) {
+                return;
+            }
+            locker.releaseShared(resourceType, resourceIds);
+        }
+
+        @Override
+        public Collection<ActiveLock> activeLocks() {
+            return locker.activeLocks();
+        }
+
+        @Override
+        public boolean holdsLock(long id, ResourceType resource, LockType lockType) {
+            return locker.holdsLock(id, resource, lockType);
+        }
+
+        public void setIgnoreLocks(boolean ignoreLocks) {
+            this.ignoreLocks = ignoreLocks;
         }
     }
 
@@ -741,7 +784,8 @@ class RelationshipModifierTest {
         }
 
         private void changeTheWorldWithinTheBoundsOfWhatWeAreAllowedTo() {
-            if (locks.hasLock(NODE, EXCLUSIVE, node) || locks.hasLock(RELATIONSHIP_GROUP, EXCLUSIVE, node)) {
+            if (lockTracking.hasLock(NODE, EXCLUSIVE, node)
+                    || lockTracking.hasLock(RELATIONSHIP_GROUP, EXCLUSIVE, node)) {
                 return;
             }
             int numChanges = random.nextInt(0, 3);
@@ -767,7 +811,9 @@ class RelationshipModifierTest {
                     // Also we don't want the locks acquired to be registered in our lock tracker, which we will assert
                     // on later on.
                     try {
-                        modify(modifications, NULL_MONITOR, NULL, locks.sortOfReadOnlyView());
+                        relationshipModifierTestLocker.setIgnoreLocks(true);
+                        modify(modifications, NULL_MONITOR, NULL, lockTracking.sortOfReadOnlyView());
+                        relationshipModifierTestLocker.setIgnoreLocks(false);
                         applyModificationsToExpectedRelationships(modifications, expectedRelationships);
                     } catch (TrackingResourceLocker.AlreadyLockedException e) {
                         // We tried. This is thrown from the sort-of-read-only view of the locker when doing creations

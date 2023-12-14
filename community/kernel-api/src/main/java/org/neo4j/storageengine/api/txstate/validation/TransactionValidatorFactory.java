@@ -22,17 +22,10 @@ package org.neo4j.storageengine.api.txstate.validation;
 import org.neo4j.kernel.impl.monitoring.TransactionMonitor;
 import org.neo4j.memory.MemoryTracker;
 
-public interface TransactionValidatorFactory extends AutoCloseable {
-    TransactionValidatorFactory EMPTY_VALIDATOR_FACTORY = new TransactionValidatorFactory() {
-        @Override
-        public TransactionValidator createTransactionValidator(
-                MemoryTracker memoryTracker, TransactionMonitor transactionMonitor) {
-            return TransactionValidator.EMPTY_VALIDATOR;
-        }
-
-        @Override
-        public void close() {}
-    };
+@FunctionalInterface
+public interface TransactionValidatorFactory {
+    TransactionValidatorFactory EMPTY_VALIDATOR_FACTORY =
+            (memoryTracker, transactionMonitor) -> TransactionValidator.EMPTY_VALIDATOR;
 
     TransactionValidator createTransactionValidator(MemoryTracker memoryTracker, TransactionMonitor transactionMonitor);
 }

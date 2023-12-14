@@ -243,7 +243,7 @@ class RelationshipLockHelperTest {
         // When
         RecordAccess.RecordProxy<RelationshipRecord, Void> entrypoint =
                 RelationshipLockHelper.findAndLockInsertionPoint(
-                        chain.get(0).getId(), nodeId, relRecords, false, locks, LockTracer.NONE);
+                        chain.get(0).getId(), nodeId, relRecords, locks, LockTracer.NONE);
 
         // Then
         long[] actualLocks = locks.getExclusiveLocks(ResourceType.RELATIONSHIP).toArray();

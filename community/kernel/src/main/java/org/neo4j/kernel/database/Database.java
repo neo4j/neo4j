@@ -27,7 +27,6 @@ import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.id.BufferingIdGeneratorFactory.PAGED_ID_BUFFER_FILE_NAME;
 import static org.neo4j.internal.schema.IndexType.LOOKUP;
 import static org.neo4j.kernel.extension.ExtensionFailureStrategies.fail;
-import static org.neo4j.kernel.impl.locking.LockManager.NO_LOCKS_LOCK_MANAGER;
 import static org.neo4j.kernel.impl.transaction.log.TransactionAppenderFactory.createTransactionAppender;
 import static org.neo4j.kernel.recovery.Recovery.context;
 import static org.neo4j.kernel.recovery.Recovery.validateStoreId;
@@ -125,6 +124,7 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.KernelTransactionFactory;
 import org.neo4j.kernel.impl.index.DatabaseIndexStats;
 import org.neo4j.kernel.impl.locking.LockManager;
+import org.neo4j.kernel.impl.locking.multiversion.MultiVersionLockManager;
 import org.neo4j.kernel.impl.pagecache.IOControllerService;
 import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
 import org.neo4j.kernel.impl.pagecache.VersionStorageFactory;
@@ -317,9 +317,10 @@ public class Database extends AbstractDatabase {
     @Override
     protected void specificInit() throws IOException {
         this.storageEngineFactory = storageEngineFactorySupplier.create();
+        var storageLockManager = storageEngineFactory.createLockManager(databaseConfig, this.clock);
         this.databaseLockManager = isNotMultiVersioned(databaseConfig)
-                ? storageEngineFactory.createLockManager(databaseConfig, this.clock)
-                : NO_LOCKS_LOCK_MANAGER;
+                ? storageLockManager
+                : new MultiVersionLockManager(storageLockManager);
         this.databaseLayout = storageEngineFactory.formatSpecificDatabaseLayout(databaseLayout);
         new DatabaseDirectoriesCreator(fs, databaseLayout).createDirectories();
         ioController = ioControllerService.createIOController(databaseConfig, clock);
@@ -949,8 +950,7 @@ public class Database extends AbstractDatabase {
                 readOnlyDatabaseChecker,
                 databaseConfig.get(GraphDatabaseInternalSettings.out_of_disk_space_protection));
         var transactionValidatorFactory =
-                storageEngine.createTransactionValidatorFactory(storageEngineFactory, databaseConfig, clock);
-        life.add(onShutdown(transactionValidatorFactory::close));
+                storageEngine.createTransactionValidatorFactory(databaseLockManager, databaseConfig);
 
         /*
          * This is used by explicit indexes and constraint indexes whenever a transaction is to be spawned

@@ -189,14 +189,10 @@ class TrackingResourceLocker implements ResourceLocker {
     }
 
     private HashMap<ResourceType, MutableSortedBag<Long>> locksMap(LockType lockType) {
-        switch (lockType) {
-            case EXCLUSIVE:
-                return exclusiveLocks;
-            case SHARED:
-                return sharedLocks;
-            default:
-                throw new UnsupportedOperationException();
-        }
+        return switch (lockType) {
+            case EXCLUSIVE -> exclusiveLocks;
+            case SHARED -> sharedLocks;
+        };
     }
 
     ResourceLocker sortOfReadOnlyView() {

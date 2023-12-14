@@ -60,7 +60,8 @@ public class RelationshipModifier {
 
     private final RelationshipGroupGetter relGroupGetter;
     private final int denseNodeThreshold;
-    private final boolean multiVersioned;
+    private final ResourceLocker locks;
+    private final LockTracer lockTracer;
     private final MemoryTracker memoryTracker;
     private final RelationshipCreator creator;
     private final RelationshipDeleter deleter;
@@ -69,12 +70,14 @@ public class RelationshipModifier {
             RelationshipGroupGetter relGroupGetter,
             PropertyDeleter propertyChainDeleter,
             int denseNodeThreshold,
-            boolean multiVersioned,
+            ResourceLocker locks,
+            LockTracer lockTracer,
             CursorContext cursorContext,
             MemoryTracker memoryTracker) {
         this.relGroupGetter = relGroupGetter;
         this.denseNodeThreshold = denseNodeThreshold;
-        this.multiVersioned = multiVersioned;
+        this.locks = locks;
+        this.lockTracer = lockTracer;
         this.memoryTracker = memoryTracker;
 
         this.creator =
@@ -88,11 +91,7 @@ public class RelationshipModifier {
      * @param modifications The modifications to process. Assumed to be sorted by id & type
      */
     public void modifyRelationships(
-            RelationshipModifications modifications,
-            RecordAccessSet recordChanges,
-            DegreeUpdater groupDegreesUpdater,
-            ResourceLocker locks,
-            LockTracer lockTracer) {
+            RelationshipModifications modifications, RecordAccessSet recordChanges, DegreeUpdater groupDegreesUpdater) {
         /*
          * The general idea here is to do granular locking (only lock the resources/records that we need to change) in a way that minimizes deadlocks
          * First we figure out all the locks we need by looking at the changes we need to do in combination with that is already stored
@@ -104,10 +103,9 @@ public class RelationshipModifier {
                     new MappedNodeDataLookup(contexts, relGroupGetter, recordChanges, memoryTracker);
             // Acquire most locks
             // First we take Node and Group locks (sorted by node id)
-            acquireMostOfTheNodeAndGroupsLocks(
-                    modifications, recordChanges, locks, lockTracer, contexts, nodeDataLookup);
+            acquireMostOfTheNodeAndGroupsLocks(modifications, recordChanges, contexts, nodeDataLookup);
             // Then we take all the Relationship locks (sorted by relationship id, per relationship chain)
-            acquireRelationshipLocksAndSomeOthers(modifications, recordChanges, locks, lockTracer, contexts);
+            acquireRelationshipLocksAndSomeOthers(modifications, recordChanges, contexts);
 
             // Do the modifications
             creator.relationshipCreate(modifications.creations(), recordChanges, groupDegreesUpdater, nodeDataLookup);
@@ -124,8 +122,6 @@ public class RelationshipModifier {
     private void acquireMostOfTheNodeAndGroupsLocks(
             RelationshipModifications modifications,
             RecordAccessSet recordChanges,
-            ResourceLocker locks,
-            LockTracer lockTracer,
             MutableLongObjectMap<NodeContext> contexts,
             MappedNodeDataLookup nodeDataLookup) {
         /* Here we're going to figure out if we need to make changes to any node and/or relationship group records and lock them if we do. */
@@ -336,8 +332,6 @@ public class RelationshipModifier {
     private void acquireRelationshipLocksAndSomeOthers(
             RelationshipModifications modifications,
             RecordAccessSet recordChanges,
-            ResourceLocker locks,
-            LockTracer lockTracer,
             MutableLongObjectMap<NodeContext> contexts) {
         /*
          * Here we're mostly going to figure out which relationships to lock.
@@ -358,7 +352,7 @@ public class RelationshipModifier {
                     recordChanges.getNodeRecords().getOrLoad(nodeId, null).forReadingLinkage();
             if (!node.isDense()) {
                 // Since it is a sparse node we know that it is exclusively locked
-                if (!checkAndLockRelationshipsIfNodeIsGoingToBeDense(node, byNode, relRecords, locks, lockTracer)) {
+                if (!checkAndLockRelationshipsIfNodeIsGoingToBeDense(node, byNode, relRecords)) {
                     // We're not turning this node into dense
                     if (byNode.hasDeletions()) {
                         // Lock all relationships we're deleting, including the first in chain to update degrees
@@ -422,8 +416,6 @@ public class RelationshipModifier {
                                         byType.out(),
                                         context.insertionPoint(DIR_OUT),
                                         relRecords,
-                                        locks,
-                                        lockTracer,
                                         group,
                                         DirectionWrapper.OUTGOING,
                                         nodeId));
@@ -433,8 +425,6 @@ public class RelationshipModifier {
                                         byType.in(),
                                         context.insertionPoint(DIR_IN),
                                         relRecords,
-                                        locks,
-                                        lockTracer,
                                         group,
                                         DirectionWrapper.INCOMING,
                                         nodeId));
@@ -444,8 +434,6 @@ public class RelationshipModifier {
                                         byType.loop(),
                                         context.insertionPoint(DIR_LOOP),
                                         relRecords,
-                                        locks,
-                                        lockTracer,
                                         group,
                                         DirectionWrapper.LOOP,
                                         nodeId));
@@ -465,9 +453,7 @@ public class RelationshipModifier {
     private boolean checkAndLockRelationshipsIfNodeIsGoingToBeDense(
             NodeRecord node,
             RelationshipModifications.NodeRelationshipIds byNode,
-            RecordAccess<RelationshipRecord, Void> relRecords,
-            ResourceLocker locks,
-            LockTracer lockTracer) {
+            RecordAccess<RelationshipRecord, Void> relRecords) {
         // We have an exclusively locked sparse not that may turn dense
         long nextRel = node.getNextRel();
         if (!isNull(nextRel)) {
@@ -505,8 +491,6 @@ public class RelationshipModifier {
             RelationshipBatch creations,
             RecordProxy<RelationshipRecord, Void> potentialInsertionPointFromDeletion,
             RecordAccess<RelationshipRecord, Void> relRecords,
-            ResourceLocker locks,
-            LockTracer lockTracer,
             RelationshipGroupRecord group,
             DirectionWrapper direction,
             long nodeId) {
@@ -524,7 +508,7 @@ public class RelationshipModifier {
                     locks.acquireExclusive(lockTracer, RELATIONSHIP, firstInChain);
                 }
                 // and a good insertion point by walking the chain with try-locks
-                return findAndLockInsertionPoint(firstInChain, nodeId, relRecords, multiVersioned, locks, lockTracer);
+                return findAndLockInsertionPoint(firstInChain, nodeId, relRecords, locks, lockTracer);
             }
         }
         return null;

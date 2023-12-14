@@ -87,7 +87,6 @@ final class RelationshipLockHelper {
             long firstInChain,
             long nodeId,
             RecordAccess<RelationshipRecord, Void> relRecords,
-            boolean multiVersioned,
             ResourceLocker locks,
             LockTracer lockTracer) {
         long nextRel = firstInChain;
@@ -95,39 +94,36 @@ final class RelationshipLockHelper {
 
         // Start walking the relationship chain and see where we can insert it
         if (!isNull(nextRel)) {
-            if (!multiVersioned) {
-                while (!isNull(nextRel)) {
-                    boolean r1Locked = locks.tryExclusiveLock(RELATIONSHIP, nextRel);
-                    RecordAccess.RecordProxy<RelationshipRecord, Void> r1 = relRecords.getOrLoad(nextRel, null, ALWAYS);
-                    RelationshipRecord r1Record = r1.forReadingLinkage();
-                    if (!r1Locked || !r1Record.inUse()) {
-                        nextRel = r1Record.getNextRel(nodeId);
-                        if (r1Locked) {
-                            locks.releaseExclusive(RELATIONSHIP, r1.getKey());
+            while (!isNull(nextRel)) {
+                boolean r1Locked = locks.tryExclusiveLock(RELATIONSHIP, nextRel);
+                RecordAccess.RecordProxy<RelationshipRecord, Void> r1 = relRecords.getOrLoad(nextRel, null, ALWAYS);
+                RelationshipRecord r1Record = r1.forReadingLinkage();
+                if (!r1Locked || !r1Record.inUse()) {
+                    nextRel = r1Record.getNextRel(nodeId);
+                    if (r1Locked) {
+                        locks.releaseExclusive(RELATIONSHIP, r1.getKey());
+                    }
+                    continue;
+                }
+
+                long r2Id = r1Record.getNextRel(nodeId);
+                if (!isNull(r2Id)) {
+                    boolean r2Locked = locks.tryExclusiveLock(RELATIONSHIP, r2Id);
+                    RecordAccess.RecordProxy<RelationshipRecord, Void> r2 = relRecords.getOrLoad(r2Id, null, ALWAYS);
+                    RelationshipRecord r2Record = r2.forReadingLinkage();
+                    if (!r2Locked || !r2Record.inUse()) {
+                        nextRel = r2Record.getNextRel(nodeId);
+                        locks.releaseExclusive(RELATIONSHIP, r1.getKey());
+                        if (r2Locked) {
+                            locks.releaseExclusive(RELATIONSHIP, r2.getKey());
                         }
                         continue;
                     }
-
-                    long r2Id = r1Record.getNextRel(nodeId);
-                    if (!isNull(r2Id)) {
-                        boolean r2Locked = locks.tryExclusiveLock(RELATIONSHIP, r2Id);
-                        RecordAccess.RecordProxy<RelationshipRecord, Void> r2 =
-                                relRecords.getOrLoad(r2Id, null, ALWAYS);
-                        RelationshipRecord r2Record = r2.forReadingLinkage();
-                        if (!r2Locked || !r2Record.inUse()) {
-                            nextRel = r2Record.getNextRel(nodeId);
-                            locks.releaseExclusive(RELATIONSHIP, r1.getKey());
-                            if (r2Locked) {
-                                locks.releaseExclusive(RELATIONSHIP, r2.getKey());
-                            }
-                            continue;
-                        }
-                        // We can insert in between r1 and r2 here
-                    }
-                    // We can insert at the end here
-                    rBefore = r1;
-                    break;
+                    // We can insert in between r1 and r2 here
                 }
+                // We can insert at the end here
+                rBefore = r1;
+                break;
             }
 
             if (rBefore == null) {

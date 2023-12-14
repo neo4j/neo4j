@@ -344,8 +344,7 @@ public class TransactionRecordState implements RecordState {
     }
 
     void relModify(RelationshipModifications modifications) {
-        relationshipModifier.modifyRelationships(
-                modifications, recordChangeSet, groupDegreesUpdater, locks, lockTracer);
+        relationshipModifier.modifyRelationships(modifications, recordChangeSet, groupDegreesUpdater);
     }
 
     private static void addFiltered(Collection<StorageCommand> target, Mode mode, Command[]... commands) {

@@ -30,6 +30,7 @@ import org.neo4j.io.pagecache.OutOfDiskSpaceException;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.kernel.impl.store.stats.StoreEntityCounters;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.lock.LockGroup;
@@ -45,7 +46,6 @@ import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TransactionStateBehaviour;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor.Decorator;
 import org.neo4j.storageengine.api.txstate.validation.TransactionValidatorFactory;
-import org.neo4j.time.SystemNanoClock;
 
 /**
  * A StorageEngine provides the functionality to durably store data, and read it back.
@@ -71,8 +71,7 @@ public interface StorageEngine extends ReadableStorageEngine, Lifecycle {
     /**
      * Create multi versioned stores transaction validator factory. Validator factory produces noop validators in all other engines.
      */
-    TransactionValidatorFactory createTransactionValidatorFactory(
-            StorageEngineFactory storageEngineFactory, Config config, SystemNanoClock clock);
+    TransactionValidatorFactory createTransactionValidatorFactory(LockManager lockManager, Config config);
 
     StorageLocks createStorageLocks(ResourceLocker locker);
 

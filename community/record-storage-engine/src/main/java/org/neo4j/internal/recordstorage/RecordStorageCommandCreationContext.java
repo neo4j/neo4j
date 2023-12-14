@@ -163,11 +163,14 @@ class RecordStorageCommandCreationContext implements CommandCreationContext {
             MemoryTracker memoryTracker,
             LoadMonitor monitor) {
         RecordChangeSet recordChangeSet = new RecordChangeSet(loaders, memoryTracker, monitor, storeCursors);
+        var relationshipLocker =
+                multiVersioned ? new MultiversionResourceLocker(locks, neoStores.getRelationshipStore()) : locks;
         RelationshipModifier relationshipModifier = new RelationshipModifier(
                 relationshipGroupGetter,
                 propertyDeleter,
                 denseNodeThreshold,
-                multiVersioned,
+                relationshipLocker,
+                lockTracer,
                 cursorContext,
                 memoryTracker);
         return new TransactionRecordState(

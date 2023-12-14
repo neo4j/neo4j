@@ -62,6 +62,7 @@ import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
+import static org.neo4j.lock.LockTracer.NONE;
 import static org.neo4j.lock.LockType.EXCLUSIVE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
@@ -136,7 +137,6 @@ import org.neo4j.kernel.impl.transaction.log.EmptyLogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.InMemoryVersionableReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.lock.LockService;
-import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.EmptyMemoryTracker;
@@ -1874,12 +1874,13 @@ class TransactionRecordStateTest {
                 recordChangeSet,
                 neoStores,
                 ResourceLocker.IGNORE,
-                LockTracer.NONE,
+                NONE,
                 new RelationshipModifier(
                         relationshipGroupGetter,
                         propertyDeleter,
                         neoStores.getRelationshipGroupStore().getStoreHeaderInt(),
-                        false,
+                        ResourceLocker.IGNORE,
+                        NONE,
                         NULL_CONTEXT,
                         EmptyMemoryTracker.INSTANCE),
                 new PropertyCreator(

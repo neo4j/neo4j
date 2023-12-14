@@ -47,6 +47,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.kernel.impl.store.stats.StoreEntityCounters;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
@@ -70,7 +71,6 @@ import org.neo4j.storageengine.api.InternalErrorTracer;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
-import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StoreFileMetadata;
@@ -83,7 +83,6 @@ import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor.Decorator;
 import org.neo4j.storageengine.api.txstate.validation.TransactionValidatorFactory;
 import org.neo4j.test.Barrier;
-import org.neo4j.time.SystemNanoClock;
 
 class ParallelRecoveryVisitorTest {
     private final CursorContextFactory contextFactory = new CursorContextFactory(NULL, EMPTY_CONTEXT_SUPPLIER);
@@ -338,8 +337,7 @@ class ParallelRecoveryVisitorTest {
         }
 
         @Override
-        public TransactionValidatorFactory createTransactionValidatorFactory(
-                StorageEngineFactory storageEngineFactory, Config config, SystemNanoClock clock) {
+        public TransactionValidatorFactory createTransactionValidatorFactory(LockManager lockManager, Config config) {
             return TransactionValidatorFactory.EMPTY_VALIDATOR_FACTORY;
         }
 
