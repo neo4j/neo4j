@@ -146,7 +146,8 @@ class WebURLAccessRuleTest {
                 .validate(url, securityAuthorizationHandler, fullSecurityContext()));
 
         // assert that the validation fails
-        assertThat(error.getMessage()).contains("always.invalid: Name or service not known");
+        // The error message is OS specific so only check that it fails on the expected host
+        assertThat(error.getMessage()).contains("always.invalid");
     }
 
     @Test

@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.io.File;
 import java.net.URL;
 import java.nio.file.Paths;
+import org.apache.commons.lang3.SystemUtils;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -41,10 +42,13 @@ public class URLAccessRulesTest {
         File file = File.createTempFile("test", "csv");
         URLAccessRules rules = new URLAccessRules(new CommunitySecurityLog(NullLog.getInstance()), Config.defaults());
 
+        // Windows needs triple-slashes...
+        String slashes = SystemUtils.IS_OS_WINDOWS ? "///" : "//";
+
         rules.validateAndOpen(
-                SecurityContext.AUTH_DISABLED, new URL(String.format("file://%s", file.getAbsolutePath())));
+                SecurityContext.AUTH_DISABLED, new URL(String.format("file:%s%s", slashes, file.getAbsolutePath())));
         rules.validateAndOpen(
-                SecurityContext.AUTH_DISABLED, new URL(String.format("FILE://%s", file.getAbsolutePath())));
+                SecurityContext.AUTH_DISABLED, new URL(String.format("FILE:%s%s", slashes, file.getAbsolutePath())));
 
         file.delete();
     }
@@ -67,9 +71,13 @@ public class URLAccessRulesTest {
                 new CommunitySecurityLog(NullLog.getInstance()),
                 Config.defaults(GraphDatabaseSettings.load_csv_file_url_root, Paths.get("/import")));
 
+        // Windows needs triple-slashes...
+        String slashes = SystemUtils.IS_OS_WINDOWS ? "///" : "//";
+
         assertThrows(
                 LoadExternalResourceException.class,
                 () -> rules.validateAndOpen(
-                        SecurityContext.AUTH_DISABLED, new URL(String.format("file://%s", file.getAbsolutePath()))));
+                        SecurityContext.AUTH_DISABLED,
+                        new URL(String.format("file:%s%s", slashes, file.getAbsolutePath()))));
     }
 }
