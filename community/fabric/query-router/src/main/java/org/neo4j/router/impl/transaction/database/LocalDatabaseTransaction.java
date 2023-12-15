@@ -34,6 +34,7 @@ import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.query.ConstituentTransactionFactory;
 import org.neo4j.kernel.impl.query.QueryExecution;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor;
@@ -54,6 +55,7 @@ public class LocalDatabaseTransaction implements DatabaseTransaction {
     private final QueryExecutionEngine queryExecutionEngine;
     private final TransactionBookmarkManager bookmarkManager;
     private final LocalGraphTransactionIdTracker transactionIdTracker;
+    private final ConstituentTransactionFactory constituentTransactionFactory;
     private final Set<TransactionalContext> openExecutionContexts = ConcurrentHashMap.newKeySet();
 
     public LocalDatabaseTransaction(
@@ -63,7 +65,8 @@ public class LocalDatabaseTransaction implements DatabaseTransaction {
             TransactionalContextFactory transactionalContextFactory,
             QueryExecutionEngine queryExecutionEngine,
             TransactionBookmarkManager bookmarkManager,
-            LocalGraphTransactionIdTracker transactionIdTracker) {
+            LocalGraphTransactionIdTracker transactionIdTracker,
+            ConstituentTransactionFactory constituentTransactionFactory) {
         this.location = location;
         this.transactionInfo = transactionInfo;
         this.internalTransaction = internalTransaction;
@@ -71,6 +74,7 @@ public class LocalDatabaseTransaction implements DatabaseTransaction {
         this.queryExecutionEngine = queryExecutionEngine;
         this.bookmarkManager = bookmarkManager;
         this.transactionIdTracker = transactionIdTracker;
+        this.constituentTransactionFactory = constituentTransactionFactory;
     }
 
     @Override
@@ -126,7 +130,8 @@ public class LocalDatabaseTransaction implements DatabaseTransaction {
             var transactionalContext = transactionalContextFactory.newContextForQuery(
                     internalTransaction,
                     statementLifecycle.getMonitoredQuery(),
-                    transactionInfo.queryExecutionConfiguration());
+                    transactionInfo.queryExecutionConfiguration(),
+                    constituentTransactionFactory);
             statementLifecycle.startExecution(true);
             openExecutionContexts.add(transactionalContext);
             var execution = queryExecutionEngine.executeQuery(

@@ -41,4 +41,10 @@ public interface TransactionalContextFactory {
             InternalTransaction tx,
             ExecutingQuery executingQuery,
             QueryExecutionConfiguration queryExecutionConfiguration);
+
+    TransactionalContext newContextForQuery(
+            InternalTransaction tx,
+            ExecutingQuery executingQuery,
+            QueryExecutionConfiguration queryExecutionConfiguration,
+            ConstituentTransactionFactory constituentTransactionFactory);
 }

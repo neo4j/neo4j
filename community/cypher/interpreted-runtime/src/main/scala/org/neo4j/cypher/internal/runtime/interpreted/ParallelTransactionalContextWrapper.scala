@@ -48,6 +48,7 @@ import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.impl.api.SchemaStateKey
 import org.neo4j.kernel.impl.api.parallel.ExecutionContextValueMapper
 import org.neo4j.kernel.impl.factory.DbmsInfo
+import org.neo4j.kernel.impl.query.ConstituentTransactionFactory
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.kernel.impl.query.statistic.StatisticProvider
 import org.neo4j.memory.MemoryTracker
@@ -177,4 +178,6 @@ class ParallelTransactionalContextWrapper(
   override def createValueMapper: ValueMapper[AnyRef] = {
     new ExecutionContextValueMapper(_kernelExecutionContext)
   }
+
+  override def constituentTransactionFactory: ConstituentTransactionFactory = ConstituentTransactionFactory.throwing()
 }

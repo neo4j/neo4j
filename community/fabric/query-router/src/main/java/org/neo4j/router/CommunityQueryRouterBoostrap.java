@@ -142,7 +142,7 @@ public class CommunityQueryRouterBoostrap extends CommonQueryRouterBoostrap {
 
     protected DatabaseTransactionFactory<Location.Remote> createRemoteDatabaseTransactionFactory() {
         // If a piece of code tries to use this in Community edition, it means a bug
-        return (location, transactionInfo, bookmarkManager, terminationCallback) -> {
+        return (location, transactionInfo, bookmarkManager, terminationCallback, constituentTransactionFactory) -> {
             throw new IllegalStateException("Remote transactions are not supported in Community Edition");
         };
     }

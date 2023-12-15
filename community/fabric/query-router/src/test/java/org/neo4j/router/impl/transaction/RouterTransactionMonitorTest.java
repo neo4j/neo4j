@@ -188,6 +188,7 @@ class RouterTransactionMonitorTest {
                 AccessMode.READ,
                 Map.of(),
                 new RoutingContext(true, Map.of()),
-                QueryExecutionConfiguration.DEFAULT_CONFIG);
+                QueryExecutionConfiguration.DEFAULT_CONFIG,
+                false); // Currently we only test query router for non-composite databases.
     }
 }

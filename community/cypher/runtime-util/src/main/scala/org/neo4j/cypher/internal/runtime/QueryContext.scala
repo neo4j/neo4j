@@ -73,6 +73,7 @@ import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.index.IndexUsageStats
 import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.impl.factory.DbmsInfo
+import org.neo4j.kernel.impl.query.ConstituentTransactionFactory
 import org.neo4j.kernel.impl.query.FunctionInformation
 import org.neo4j.kernel.impl.query.statistic.StatisticProvider
 import org.neo4j.logging.InternalLogProvider
@@ -800,6 +801,8 @@ trait QueryTransactionalContext extends CloseableResource {
   def kernelExecutingQuery: org.neo4j.kernel.api.query.ExecutingQuery
 
   def createValueMapper: ValueMapper[AnyRef]
+
+  def constituentTransactionFactory: ConstituentTransactionFactory
 }
 
 trait KernelPredicate[T] {

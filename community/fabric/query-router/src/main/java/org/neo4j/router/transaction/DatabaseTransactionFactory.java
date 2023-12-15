@@ -23,6 +23,7 @@ import java.util.function.Consumer;
 import org.neo4j.fabric.bookmark.TransactionBookmarkManager;
 import org.neo4j.fabric.executor.Location;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.query.ConstituentTransactionFactory;
 
 /**
  * A factory for starting database transactions at given locations
@@ -33,5 +34,6 @@ public interface DatabaseTransactionFactory<LOC extends Location> {
             LOC location,
             TransactionInfo transactionInfo,
             TransactionBookmarkManager bookmarkManager,
-            Consumer<Status> terminationCallback);
+            Consumer<Status> terminationCallback,
+            ConstituentTransactionFactory constituentTransactionFactory);
 }

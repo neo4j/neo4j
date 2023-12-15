@@ -20,6 +20,7 @@
 package org.neo4j.fabric.transaction;
 
 import org.neo4j.bolt.protocol.common.message.AccessMode;
+import org.neo4j.cypher.internal.options.CypherExecutionMode;
 
 /**
  * An indication of a type of a statement and what types of statement might be coming later in the same transaction.
@@ -52,5 +53,19 @@ public enum TransactionMode {
 
     public AccessMode concreteAccessMode() {
         return concreteAccessMode;
+    }
+
+    public static TransactionMode from(
+            AccessMode accessMode, CypherExecutionMode executionMode, boolean isReadQuery, boolean isComposite) {
+
+        if (accessMode == AccessMode.READ || isComposite) {
+            return TransactionMode.DEFINITELY_READ;
+        } else if (isReadQuery || executionMode.isExplain()) {
+            // Even if this query is a read query, there might be other queries running in the same transaction which
+            // are write queries.
+            return TransactionMode.MAYBE_WRITE;
+        } else {
+            return TransactionMode.DEFINITELY_WRITE;
+        }
     }
 }

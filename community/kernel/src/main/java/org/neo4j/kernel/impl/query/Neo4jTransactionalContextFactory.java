@@ -102,4 +102,15 @@ public class Neo4jTransactionalContextFactory implements TransactionalContextFac
         initialStatement.queryRegistry().bindExecutingQuery(executingQuery);
         return contextCreator.create(tx, initialStatement, executingQuery, queryExecutionConfiguration);
     }
+
+    @Override
+    public TransactionalContext newContextForQuery(
+            InternalTransaction tx,
+            ExecutingQuery executingQuery,
+            QueryExecutionConfiguration queryExecutionConfiguration,
+            ConstituentTransactionFactory
+                    constituentTransactionFactory // Ignore as you only have constituents on composite databases.
+            ) {
+        return newContextForQuery(tx, executingQuery, queryExecutionConfiguration);
+    }
 }

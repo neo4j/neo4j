@@ -46,6 +46,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.transaction.trace.TraceProvider;
 import org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.query.ConstituentTransactionFactory;
 import org.neo4j.router.QueryRouterException;
 import org.neo4j.router.impl.query.StatementType;
 import org.neo4j.router.impl.transaction.database.LocalDatabaseTransaction;
@@ -65,6 +66,7 @@ public class RouterTransactionImpl implements CompoundTransaction<DatabaseTransa
     private final RouterTransactionManager transactionManager;
     private final SystemNanoClock clock;
     private final ErrorReporter errorReporter;
+    private ConstituentTransactionFactory constituentTransactionFactory;
 
     // Concurrency note:
     // Transaction termination is the only modification operation that can be invoked
@@ -122,13 +124,25 @@ public class RouterTransactionImpl implements CompoundTransaction<DatabaseTransa
                 ref -> registerNewChildTransaction(location, mode, () -> createTransactionFor(location)));
     }
 
+    public void setConstituentTransactionFactory(ConstituentTransactionFactory constituentTransactionFactory) {
+        this.constituentTransactionFactory = constituentTransactionFactory;
+    }
+
     private DatabaseTransaction createTransactionFor(Location location) {
         if (location instanceof Location.Local local) {
             return localDatabaseTransactionFactory.beginTransaction(
-                    local, transactionInfo, transactionBookmarkManager, this::childTransactionTerminated);
+                    local,
+                    transactionInfo,
+                    transactionBookmarkManager,
+                    this::childTransactionTerminated,
+                    constituentTransactionFactory);
         } else if (location instanceof Location.Remote remote) {
             return remoteDatabaseTransactionFactory.beginTransaction(
-                    remote, transactionInfo, transactionBookmarkManager, this::childTransactionTerminated);
+                    remote,
+                    transactionInfo,
+                    transactionBookmarkManager,
+                    this::childTransactionTerminated,
+                    constituentTransactionFactory);
         } else {
             throw new IllegalArgumentException("Unexpected Location type: " + location);
         }

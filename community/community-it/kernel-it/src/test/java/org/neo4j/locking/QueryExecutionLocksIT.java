@@ -83,6 +83,7 @@ import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.api.ClockContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.query.ConstituentTransactionFactory;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
 import org.neo4j.kernel.impl.query.QueryExecutionConfiguration;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
@@ -425,6 +426,11 @@ class QueryExecutionLocksIT {
         @Override
         public boolean isTopLevelTx() {
             return delegate.isTopLevelTx();
+        }
+
+        @Override
+        public ConstituentTransactionFactory constituentTransactionFactory() {
+            return delegate.constituentTransactionFactory();
         }
 
         @Override

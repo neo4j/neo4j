@@ -138,6 +138,11 @@ public class Neo4jTransactionalContext implements TransactionalContext {
     }
 
     @Override
+    public ConstituentTransactionFactory constituentTransactionFactory() {
+        return ConstituentTransactionFactory.throwing();
+    }
+
+    @Override
     public void close() {
         if (isOpen) {
             try {

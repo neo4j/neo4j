@@ -50,6 +50,7 @@ public final class TransactionInfo {
     private Map<String, Object> txMetadata;
     private final RoutingContext routingContext;
     private final QueryExecutionConfiguration queryExecutionConfiguration;
+    private final boolean isComposite;
 
     public TransactionInfo(
             NormalizedDatabaseName sessionDatabaseName,
@@ -61,7 +62,8 @@ public final class TransactionInfo {
             AccessMode accessMode,
             Map<String, Object> txMetadata,
             RoutingContext routingContext,
-            QueryExecutionConfiguration queryExecutionConfiguration) {
+            QueryExecutionConfiguration queryExecutionConfiguration,
+            boolean isComposite) {
         this.sessionDatabaseName = sessionDatabaseName;
         this.type = type;
         this.loginContext = loginContext;
@@ -72,6 +74,7 @@ public final class TransactionInfo {
         this.txMetadata = txMetadata;
         this.routingContext = routingContext;
         this.queryExecutionConfiguration = queryExecutionConfiguration;
+        this.isComposite = isComposite;
     }
 
     public TransactionInfo withDefaults(Config config) {
@@ -85,7 +88,8 @@ public final class TransactionInfo {
                 accessMode,
                 txMetadata != null ? txMetadata : emptyMap(),
                 routingContext,
-                queryExecutionConfiguration);
+                queryExecutionConfiguration,
+                isComposite);
     }
 
     public StatementLifecycleTransactionInfo statementLifecycleTransactionInfo() {
@@ -134,6 +138,10 @@ public final class TransactionInfo {
 
     public QueryExecutionConfiguration queryExecutionConfiguration() {
         return queryExecutionConfiguration;
+    }
+
+    public boolean isComposite() {
+        return isComposite;
     }
 
     @Override

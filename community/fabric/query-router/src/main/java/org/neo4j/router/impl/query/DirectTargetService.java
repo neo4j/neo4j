@@ -22,16 +22,16 @@ package org.neo4j.router.impl.query;
 import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.router.query.TargetService;
 
-public class CompositeTargetService implements TargetService {
+public class DirectTargetService implements TargetService {
 
-    private final DatabaseReference sessionDatabase;
+    private final DatabaseReference database;
 
-    public CompositeTargetService(DatabaseReference sessionDatabase) {
-        this.sessionDatabase = sessionDatabase;
+    public DirectTargetService(DatabaseReference database) {
+        this.database = database;
     }
 
     @Override
     public DatabaseReference target(CatalogInfo catalogInfo) {
-        return sessionDatabase;
+        return database;
     }
 }

@@ -96,9 +96,10 @@ public class QueryProcessorImpl implements QueryProcessor {
             Query query,
             TargetService targetService,
             LocationService locationService,
-            CancellationChecker cancellationChecker) {
+            CancellationChecker cancellationChecker,
+            boolean targetsComposite) {
 
-        var cachedValue = getFromCache(query, cancellationChecker, targetService instanceof CompositeTargetService);
+        var cachedValue = getFromCache(query, cancellationChecker, targetsComposite);
 
         var databaseReference = targetService.target(cachedValue.catalogInfo());
 

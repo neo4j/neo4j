@@ -41,6 +41,11 @@ public interface TransactionalContext {
     boolean isTopLevelTx();
 
     /**
+     * Returns a factory to create or get transaction for a constituent database.
+     */
+    ConstituentTransactionFactory constituentTransactionFactory();
+
+    /**
      * This should be called once the query is finished, either successfully or not.
      * Should be called from the same thread the query was executing in.
      *

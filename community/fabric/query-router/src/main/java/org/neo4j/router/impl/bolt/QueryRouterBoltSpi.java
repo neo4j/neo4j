@@ -130,7 +130,8 @@ public class QueryRouterBoltSpi {
                     accessMode,
                     txMetadata,
                     TestOverrides.routingContext(routingContext),
-                    queryExecutionConfiguration);
+                    queryExecutionConfiguration,
+                    sessionDatabaseReference.isComposite());
 
             return new Transaction(queryRouter, queryRouter.beginTransaction(transactionInfo));
         }

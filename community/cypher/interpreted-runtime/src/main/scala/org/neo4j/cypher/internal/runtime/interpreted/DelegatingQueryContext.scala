@@ -86,6 +86,7 @@ import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.index.IndexUsageStats
 import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.impl.factory.DbmsInfo
+import org.neo4j.kernel.impl.query.ConstituentTransactionFactory
 import org.neo4j.kernel.impl.query.FunctionInformation
 import org.neo4j.kernel.impl.query.statistic.StatisticProvider
 import org.neo4j.logging.InternalLogProvider
@@ -814,4 +815,6 @@ class DelegatingQueryTransactionalContext(val inner: QueryTransactionalContext) 
   override def kernelExecutionContext: ExecutionContext = inner.kernelExecutionContext
 
   override def createValueMapper: ValueMapper[AnyRef] = inner.createValueMapper
+
+  override def constituentTransactionFactory: ConstituentTransactionFactory = inner.constituentTransactionFactory
 }

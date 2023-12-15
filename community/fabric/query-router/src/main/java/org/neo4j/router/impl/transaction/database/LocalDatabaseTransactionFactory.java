@@ -34,6 +34,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.availability.UnavailableException;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.KernelTransactionFactory;
+import org.neo4j.kernel.impl.query.ConstituentTransactionFactory;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
@@ -58,7 +59,8 @@ public class LocalDatabaseTransactionFactory implements DatabaseTransactionFacto
             Location.Local location,
             TransactionInfo transactionInfo,
             TransactionBookmarkManager bookmarkManager,
-            Consumer<Status> terminationCallback) {
+            Consumer<Status> terminationCallback,
+            ConstituentTransactionFactory constituentTransactionFactory) {
         var databaseContext = databaseContextProvider
                 .getDatabaseContext(location.databaseReference().databaseId())
                 .orElseThrow(databaseNotFound(location.getDatabaseName()));
@@ -90,7 +92,8 @@ public class LocalDatabaseTransactionFactory implements DatabaseTransactionFacto
                 transactionalContextFactory,
                 queryExecutionEngine,
                 bookmarkManager,
-                transactionIdTracker);
+                transactionIdTracker,
+                constituentTransactionFactory);
     }
 
     protected TransactionalContextFactory getTransactionalContextFactory(
