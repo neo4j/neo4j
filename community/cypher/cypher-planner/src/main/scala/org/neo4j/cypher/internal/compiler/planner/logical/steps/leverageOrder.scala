@@ -20,8 +20,10 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.ir.ordering.ColumnOrder
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Asc
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Desc
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
@@ -30,6 +32,7 @@ object leverageOrder {
 
   final case class OrderToLeverageWithAliases(
     orderToLeverage: Seq[Expression],
+    aggregationOrder: Option[ColumnOrder],
     groupingExpressionsMap: Map[LogicalVariable, Expression]
   )
 
@@ -46,6 +49,7 @@ object leverageOrder {
   def apply(
     inputProvidedOrder: ProvidedOrder,
     groupingExpressionsMap: Map[LogicalVariable, Expression],
+    aggregations: Map[LogicalVariable, Expression],
     availableSymbols: Set[LogicalVariable]
   ): OrderToLeverageWithAliases = {
     // Collect aliases for all grouping expressions which project a variable that is already an available symbol
@@ -60,7 +64,7 @@ object leverageOrder {
       case (k, expr)                   => (k, aliasMap.getOrElse(expr, expr))
     }
 
-    val orderToLeverage = {
+    val (orderToLeverage, aggregationOrder) = {
 
       val aliasesForProvidedOrder = {
         val newGroupingVariablesAliases = newGroupingExpressionsMap.collect {
@@ -75,24 +79,45 @@ object leverageOrder {
         case c @ Desc(expression, _) => c.copy(aliasesForProvidedOrder.getOrElse(expression, expression))
       }
 
-      providedOrderPrefix(aliasedInputProvidedOrder, newGroupingExpressionsMap.values.toSet)
+      providedOrderPrefix(aliasedInputProvidedOrder, newGroupingExpressionsMap.values.toSet, aggregations.values)
     }
 
-    OrderToLeverageWithAliases(orderToLeverage, newGroupingExpressionsMap)
+    OrderToLeverageWithAliases(orderToLeverage, aggregationOrder, newGroupingExpressionsMap)
   }
 
   private def providedOrderPrefix(
     inputProvidedOrder: ProvidedOrder,
-    groupingExpressions: Set[Expression]
-  ): Seq[Expression] = {
+    groupingExpressions: Set[Expression],
+    aggregations: Iterable[Expression]
+  ): (Seq[Expression], Option[ColumnOrder]) = {
+    var aggregationOrderCandidate: Option[ColumnOrder] = None
     // We use the instances of expressions from the groupingExpressions (instead of the instance of expressions from the ProvidedOrder).
     // This is important because some rewriters will rewrite expressions based on reference equality
     // and we need to make sure that orderToLeverage expressions are equal to grouping expressions, even after those rewriters.
-    inputProvidedOrder.columns.map(_.expression)
-      .map { exp =>
-        groupingExpressions.find(_ == exp)
+    // Likewise, we do the same for the aggregation order expression.
+    val groupingOrderPrefix = inputProvidedOrder.columns
+      .map { column =>
+        (column, groupingExpressions.find(_ == column.expression))
       }
-      .takeWhile(_.isDefined)
-      .flatten
+      .takeWhile {
+        case (_, _: Some[_]) => true
+        case (column, None) =>
+          aggregationOrderCandidate = Some(column)
+          false
+      }.flatMap(_._2)
+
+    // NOTE: currently the expression to aggregate is always at offset 0, but checking them all for future proofing
+    val aggregationArgs = aggregations.collect {
+      case FunctionInvocation(_, _, _, args) => args
+    }.flatten
+      .filter(_.isInstanceOf[LogicalVariable])
+
+    val aggregationOrder = aggregationOrderCandidate.collect(order =>
+      (order, aggregationArgs.find(_ == order.expression)) match {
+        case (asc: Asc, Some(e))   => asc.copy(expression = e)
+        case (desc: Desc, Some(e)) => desc.copy(expression = e)
+      }
+    )
+    (groupingOrderPrefix, aggregationOrder)
   }
 }

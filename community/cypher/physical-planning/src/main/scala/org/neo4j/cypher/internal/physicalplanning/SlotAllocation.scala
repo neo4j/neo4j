@@ -737,7 +737,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
   ): Unit = {
     lp match {
 
-      case Aggregation(_, groupingExpressions, aggregationExpressions) =>
+      case Aggregation(_, groupingExpressions, aggregationExpressions, _) =>
         recordArgument(lp)
         addGroupingSlots(groupingExpressions, source, slots)
         aggregationExpressions foreach {
@@ -745,7 +745,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
             slots.newReference(key, nullable = true, CTAny)
         }
 
-      case OrderedAggregation(_, groupingExpressions, aggregationExpressions, _) =>
+      case OrderedAggregation(_, groupingExpressions, aggregationExpressions, _, _) =>
         addGroupingSlots(groupingExpressions, source, slots)
         aggregationExpressions foreach {
           case (key, _) =>

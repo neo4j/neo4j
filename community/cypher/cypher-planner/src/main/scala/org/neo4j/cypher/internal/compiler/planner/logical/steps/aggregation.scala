@@ -28,6 +28,8 @@ import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Asc
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Desc
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
+import org.neo4j.cypher.internal.logical.plans.Ascending
+import org.neo4j.cypher.internal.logical.plans.Descending
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 object aggregation {
@@ -52,7 +54,7 @@ object aggregation {
     val rewrittenPlan = solver.rewrittenPlan()
 
     val projectionMapForLimit: Map[LogicalVariable, Expression] =
-      if (groupingExpressionsMap.isEmpty && aggregations.size == 1) {
+      if (AggregationHelper.isOnlyMinOrMaxAggregation(groupingExpressionsMap, aggregations)) {
         val key = aggregations.keys.head // just checked that there is only one key
         val value: Expression = aggregations(key)
         val providedOrder = context.staticComponents.planningAttributes.providedOrders.get(rewrittenPlan.id)
@@ -97,8 +99,16 @@ object aggregation {
       )
     } else {
       val inputProvidedOrder = context.staticComponents.planningAttributes.providedOrders(plan.id)
-      val OrderToLeverageWithAliases(orderToLeverage, newGroupingExpressionsMap) =
-        leverageOrder(inputProvidedOrder, groupingExpressionsMap, plan.availableSymbols)
+      val OrderToLeverageWithAliases(orderToLeverage, aggregationOrder, newGroupingExpressionsMap) =
+        leverageOrder(inputProvidedOrder, groupingExpressionsMap, aggregations, plan.availableSymbols)
+
+      val aggregationOrderOnVariable = aggregationOrder.collect {
+        case Asc(v: LogicalVariable, _)  => Ascending(v)
+        case Desc(v: LogicalVariable, _) => Descending(v)
+        case order                       =>
+          // NOTE: at time of writing leveragedOrder should return an aggregationOrder that is always LogicalVariable
+          throw new IllegalStateException(s"Expected expression to be LogicalVariable but was: ${order.expression}")
+      }
 
       if (orderToLeverage.isEmpty) {
         context.staticComponents.logicalPlanProducer.planAggregation(
@@ -108,7 +118,8 @@ object aggregation {
           aggregation.groupingExpressions,
           aggregation.aggregationExpressions,
           previousInterestingOrder,
-          context
+          context,
+          aggregationOrderOnVariable
         )
       } else {
         context.staticComponents.logicalPlanProducer.planOrderedAggregation(
@@ -118,7 +129,8 @@ object aggregation {
           orderToLeverage,
           aggregation.groupingExpressions,
           aggregation.aggregationExpressions,
-          context
+          context,
+          aggregationOrderOnVariable
         )
       }
     }

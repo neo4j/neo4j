@@ -491,7 +491,8 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       Aggregation(
         nodeIndexSeek("n:Awesome(prop = 42)", _ => GetValue),
         Map(v"nums" -> prop("n", "foo")),
-        Map(v"sum(n.prop)" -> sum(cachedNodeProp("n", "prop")))
+        Map(v"sum(n.prop)" -> sum(cachedNodeProp("n", "prop"))),
+        None
       )
     )
   }
@@ -509,7 +510,8 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
         Aggregation(
           nodeIndexSeek("n:Awesome(prop = 'foo')", _ => GetValue),
           Map(cachedNodePropertyProj("n.prop", "n", "prop")),
-          Map(v"sum(n.foo)" -> sum(prop("n", "foo")))
+          Map(v"sum(n.foo)" -> sum(prop("n", "foo"))),
+          None
         ),
         Seq(Ascending(v"n.prop"))
       )
@@ -1496,7 +1498,8 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
           supportPartitionedScan = true
         ),
         Map.empty,
-        Map(v"avg(n.prop)" -> avg(cachedNodeProp("n", "prop")))
+        Map(v"avg(n.prop)" -> avg(cachedNodeProp("n", "prop"))),
+        None
       )
     )
   }
@@ -1539,7 +1542,8 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
           supportPartitionedScan = true
         ),
         Map.empty,
-        Map(v"avg(n.prop)" -> avg(prop("n", "prop")))
+        Map(v"avg(n.prop)" -> avg(prop("n", "prop"))),
+        None
       )
     )
   }
@@ -1582,7 +1586,8 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
           supportPartitionedScan = true
         ),
         Map.empty,
-        Map(v"sum(n.prop)" -> sum(cachedNodeProp("n", "prop")))
+        Map(v"sum(n.prop)" -> sum(cachedNodeProp("n", "prop"))),
+        None
       )
     )
   }
@@ -1625,7 +1630,8 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
           supportPartitionedScan = true
         ),
         Map.empty,
-        Map(v"sum(n.prop)" -> sum(prop("n", "prop")))
+        Map(v"sum(n.prop)" -> sum(prop("n", "prop"))),
+        None
       )
     )
   }

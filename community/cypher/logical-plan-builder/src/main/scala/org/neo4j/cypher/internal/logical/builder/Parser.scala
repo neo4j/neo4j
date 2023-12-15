@@ -126,7 +126,11 @@ object Parser {
   private val sortRegex = "(.+) (?i)(ASC|DESC)".r
 
   def parseSort(text: Seq[String]): Seq[ColumnOrder] = {
-    text.map {
+    text.map(parseSort)
+  }
+
+  def parseSort(text: String): ColumnOrder = {
+    text match {
       case sortRegex(VariableParser(variable), direction) =>
         if ("ASC".equalsIgnoreCase(direction)) Ascending(varFor(variable))
         else if ("DESC".equalsIgnoreCase(direction)) Descending(varFor(variable))

@@ -262,9 +262,9 @@ object LogicalPlanToPlanBuilderString {
    */
   private def par(logicalPlan: LogicalPlan): String = {
     val plansWithContent: PartialFunction[LogicalPlan, String] = {
-      case Aggregation(_, groupingExpressions, aggregationExpression) =>
+      case Aggregation(_, groupingExpressions, aggregationExpression, _) =>
         s"Seq(${projectVars(groupingExpressions)}), Seq(${projectVars(aggregationExpression)})"
-      case OrderedAggregation(_, groupingExpressions, aggregationExpression, orderToLeverage) =>
+      case OrderedAggregation(_, groupingExpressions, aggregationExpression, orderToLeverage, _) =>
         s"Seq(${projectVars(groupingExpressions)}), Seq(${projectVars(aggregationExpression)}), Seq(${wrapInQuotationsAndMkString(orderToLeverage.map(expressionStringifier(_)))})"
       case Distinct(_, groupingExpressions) =>
         projectVars(groupingExpressions)

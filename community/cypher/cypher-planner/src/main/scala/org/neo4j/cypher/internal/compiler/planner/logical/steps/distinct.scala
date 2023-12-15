@@ -43,8 +43,8 @@ object distinct {
     val rewrittenPlan = solver.rewrittenPlan()
 
     val inputProvidedOrder = context.staticComponents.planningAttributes.providedOrders(plan.id)
-    val OrderToLeverageWithAliases(orderToLeverage, newGroupingExpressionsMap) =
-      leverageOrder(inputProvidedOrder, groupingExpressionsMap, plan.availableSymbols)
+    val OrderToLeverageWithAliases(orderToLeverage, _, newGroupingExpressionsMap) =
+      leverageOrder(inputProvidedOrder, groupingExpressionsMap, Map.empty, plan.availableSymbols)
 
     val previousDistinctness = rewrittenPlan.distinctness
 

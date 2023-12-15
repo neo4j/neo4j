@@ -84,7 +84,8 @@ class GroupPercentileFunctionsTest extends CypherFunSuite with LogicalPlanningTe
       .projection(s"`$mapName`.p1 AS p1", s"`$mapName`.p2 AS p2")
       .aggregation(
         Map.empty[String, Expression],
-        Map(mapName -> percentiles(v"n", Seq(0.5, 0.6), Seq("p1", "p2"), Seq(true, true)))
+        Map(mapName -> percentiles(v"n", Seq(0.5, 0.6), Seq("p1", "p2"), Seq(true, true))),
+        None
       )
       .projection("from.number AS n")
       .allNodeScan("from")
@@ -106,7 +107,8 @@ class GroupPercentileFunctionsTest extends CypherFunSuite with LogicalPlanningTe
       .projection(s"`$mapName`.p1 AS p1", s"`$mapName`.p2 AS p2")
       .aggregation(
         Map.empty[String, Expression],
-        Map(mapName -> percentiles(v"n", Seq(0.5, 0.6), Seq("p1", "p2"), Seq(true, true)))
+        Map(mapName -> percentiles(v"n", Seq(0.5, 0.6), Seq("p1", "p2"), Seq(true, true))),
+        None
       )
       .projection("from.number AS n")
       .allNodeScan("from")
@@ -128,7 +130,8 @@ class GroupPercentileFunctionsTest extends CypherFunSuite with LogicalPlanningTe
       .projection(s"`$mapName`.p1 AS p1", s"`$mapName`.p2 AS p2")
       .aggregation(
         Map.empty[String, Expression],
-        Map(mapName -> percentiles(v"n", Seq(0.5, 0.6), Seq("p1", "p2"), Seq(false, false)))
+        Map(mapName -> percentiles(v"n", Seq(0.5, 0.6), Seq("p1", "p2"), Seq(false, false))),
+        None
       )
       .projection("from.number AS n")
       .allNodeScan("from")
@@ -155,7 +158,8 @@ class GroupPercentileFunctionsTest extends CypherFunSuite with LogicalPlanningTe
       .orderedAggregation(
         Map("from" -> v"from"),
         Map(mapName -> percentiles(v"n", Seq(0.5, 0.6), Seq("p1", "p2"), Seq(true, true))),
-        Seq("from")
+        Seq("from"),
+        None
       )
       .projection("from.number AS n")
       .allNodeScan("from")
@@ -177,7 +181,8 @@ class GroupPercentileFunctionsTest extends CypherFunSuite with LogicalPlanningTe
       .projection(s"`$mapName`.p1 AS p1", s"`$mapName`.p2 AS p2")
       .aggregation(
         Map.empty[String, Expression],
-        Map(mapName -> percentiles(v"n", Seq(0.5, 0.6), Seq("p1", "p2"), Seq(true, true), distinct = true))
+        Map(mapName -> percentiles(v"n", Seq(0.5, 0.6), Seq("p1", "p2"), Seq(true, true), distinct = true)),
+        None
       )
       .projection("from.number AS n")
       .allNodeScan("from")
@@ -205,7 +210,8 @@ class GroupPercentileFunctionsTest extends CypherFunSuite with LogicalPlanningTe
         Map(
           mapName -> percentiles(v"n", Seq(0.5, 0.6), Seq("p1", "p2"), Seq(true, true)),
           "p3" -> distinctFunction(PercentileDisc.name, v"n", literalFloat(0.6))
-        )
+        ),
+        None
       )
       .projection("from.number AS n")
       .allNodeScan("from")
@@ -227,7 +233,8 @@ class GroupPercentileFunctionsTest extends CypherFunSuite with LogicalPlanningTe
       .projection(s"`$mapName`.p1 AS p1", s"`$mapName`.p2 AS p2")
       .aggregation(
         Map.empty[String, Expression],
-        Map(mapName -> percentiles(v"n", Seq(0.5, 0.6), Seq("p1", "p2"), Seq(false, true)))
+        Map(mapName -> percentiles(v"n", Seq(0.5, 0.6), Seq("p1", "p2"), Seq(false, true))),
+        None
       )
       .projection("from.number AS n")
       .allNodeScan("from")
@@ -249,7 +256,8 @@ class GroupPercentileFunctionsTest extends CypherFunSuite with LogicalPlanningTe
       .projection(s"`$mapName`.p1 AS p1", s"`$mapName`.p2 AS p2")
       .aggregation(
         Map.empty[String, Expression],
-        Map(mapName -> percentiles(v"n", Seq(0.5, 0.6), Seq("p1", "p2"), Seq(false, true), distinct = true))
+        Map(mapName -> percentiles(v"n", Seq(0.5, 0.6), Seq("p1", "p2"), Seq(false, true), distinct = true)),
+        None
       )
       .projection("from.number AS n")
       .allNodeScan("from")
@@ -270,7 +278,8 @@ class GroupPercentileFunctionsTest extends CypherFunSuite with LogicalPlanningTe
       .projection(s"`$mapName`.p1 AS p1", s"`$mapName`.p2 AS p2")
       .aggregation(
         Map.empty[String, Expression],
-        Map(mapName -> percentiles(prop("from", "number1"), Seq(0.5, 0.6), Seq("p1", "p2"), Seq(true, true)))
+        Map(mapName -> percentiles(prop("from", "number1"), Seq(0.5, 0.6), Seq("p1", "p2"), Seq(true, true))),
+        None
       )
       .allNodeScan("from")
       .build()
@@ -299,7 +308,8 @@ class GroupPercentileFunctionsTest extends CypherFunSuite with LogicalPlanningTe
           Seq("p1", "p2"),
           Seq(true, true),
           distinct = true
-        ))
+        )),
+        None
       )
       .allNodeScan("from")
       .build()
@@ -326,7 +336,8 @@ class GroupPercentileFunctionsTest extends CypherFunSuite with LogicalPlanningTe
         Map(
           mapName -> percentiles(v"n1", Seq(0.5, 0.6), Seq("p1", "p2"), Seq(true, true)),
           "p3" -> function(PercentileDisc.name, v"n2", literalFloat(0.7))
-        )
+        ),
+        None
       )
       .projection("from.n1 AS n1", "from.n2 AS n2")
       .allNodeScan("from")
@@ -375,7 +386,8 @@ class GroupPercentileFunctionsTest extends CypherFunSuite with LogicalPlanningTe
           map0 -> percentiles(v"n1", Seq(0.6, 0.5), Seq("p3", "p2"), Seq(true, true)),
           "p4" -> distinctFunction(PercentileDisc.name, v"n2", literalFloat(0.7)),
           map2 -> percentiles(v"n2", Seq(0.8, 0.7, 0.8), Seq("p6", "p5", "p7"), Seq(true, true, false))
-        )
+        ),
+        None
       )
       .projection("from.n1 AS n1", "from.n2 AS n2")
       .allNodeScan("from")

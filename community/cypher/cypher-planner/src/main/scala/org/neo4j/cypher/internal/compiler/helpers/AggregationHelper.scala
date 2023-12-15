@@ -22,10 +22,13 @@ package org.neo4j.cypher.internal.compiler.helpers
 import org.neo4j.cypher.internal.compiler.helpers.PropertyAccessHelper.PropertyAccess
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.expressions.functions.Max
+import org.neo4j.cypher.internal.expressions.functions.Min
 
 import java.util.Locale
 
@@ -42,6 +45,20 @@ object AggregationHelper {
         result(variable)
       case _ =>
         otherResult
+    }
+  }
+
+  def isOnlyMinOrMaxAggregation(
+    groupingExpressions: Map[LogicalVariable, Expression],
+    aggregationExpressions: Map[LogicalVariable, Expression]
+  ): Boolean = {
+    groupingExpressions.isEmpty &&
+    aggregationExpressions.size == 1 &&
+    aggregationExpressions.values.exists {
+      case FunctionInvocation(_, FunctionName(name), _, _) =>
+        val nameLower = name.toLowerCase(Locale.ROOT)
+        nameLower == Min.name.toLowerCase(Locale.ROOT) || nameLower == Max.name.toLowerCase(Locale.ROOT)
+      case _ => false
     }
   }
 

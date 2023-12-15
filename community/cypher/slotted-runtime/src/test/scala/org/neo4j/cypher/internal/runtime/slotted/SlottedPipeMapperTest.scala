@@ -901,7 +901,7 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
       varFor("x4") -> varFor("x"),
       varFor("x5") -> varFor("x")
     )
-    val plan = Aggregation(expand, groupingExpressions, aggregationExpressions = Map.empty)
+    val plan = Aggregation(expand, groupingExpressions, aggregationExpressions = Map.empty, None)
 
     // when
     val pipe = build(plan).asInstanceOf[EagerAggregationPipe]

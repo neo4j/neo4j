@@ -1915,16 +1915,18 @@ case class LogicalPlanProducer(
     reportedGrouping: Map[LogicalVariable, Expression],
     reportedAggregation: Map[LogicalVariable, Expression],
     previousInterestingOrder: Option[InterestingOrder],
-    context: LogicalPlanningContext
+    context: LogicalPlanningContext,
+    aggregationOrder: Option[ColumnOrder]
   ): LogicalPlan = {
     val solved = solveds.get(left.id).asSinglePlannerQuery.updateTailOrSelf(_.withHorizon(
       AggregatingQueryProjection(groupingExpressions = reportedGrouping, aggregationExpressions = reportedAggregation)
     ))
 
+    // NOTE: aggregation order is not used here as it is lost after aggregation
     val trimmedAndRenamed = trimAndRenameProvidedOrder(providedOrders.get(left.id), grouping)
 
     val plan = annotate(
-      Aggregation(left, grouping, aggregation),
+      Aggregation(left, grouping, aggregation, aggregationOrder),
       solved,
       context.providedOrderFactory.providedOrder(trimmedAndRenamed, ProvidedOrder.Left),
       context
@@ -1950,16 +1952,18 @@ case class LogicalPlanProducer(
     orderToLeverage: Seq[Expression],
     reportedGrouping: Map[LogicalVariable, Expression],
     reportedAggregation: Map[LogicalVariable, Expression],
-    context: LogicalPlanningContext
+    context: LogicalPlanningContext,
+    aggregationOrder: Option[ColumnOrder]
   ): LogicalPlan = {
     val solved = solveds.get(left.id).asSinglePlannerQuery.updateTailOrSelf(_.withHorizon(
       AggregatingQueryProjection(groupingExpressions = reportedGrouping, aggregationExpressions = reportedAggregation)
     ))
 
+    // NOTE: aggregation order is not used here as it is lost after aggregation
     val trimmedAndRenamed = trimAndRenameProvidedOrder(providedOrders.get(left.id), grouping)
 
     val plan = annotate(
-      OrderedAggregation(left, grouping, aggregation, orderToLeverage),
+      OrderedAggregation(left, grouping, aggregation, orderToLeverage, aggregationOrder),
       solved,
       context.providedOrderFactory.providedOrder(trimmedAndRenamed, ProvidedOrder.Left),
       context

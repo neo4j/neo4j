@@ -866,7 +866,8 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
         Aggregation(
           Selection(Seq(equals(nProp1, literalInt(2))), Argument(Set(v"n"))),
           Map(v"n" -> n),
-          Map(v"count(1)" -> count(literalInt(1)))
+          Map(v"count(1)" -> count(literalInt(1))),
+          None
         ),
         Map(v"nProp" -> nProp2)
       )
@@ -877,7 +878,8 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
         Aggregation(
           Selection(Seq(equals(cp1, literalInt(2))), Argument(Set(v"n"))),
           Map(v"n" -> n),
-          Map(v"count(1)" -> count(literalInt(1)))
+          Map(v"count(1)" -> count(literalInt(1))),
+          None
         ),
         Map(v"nProp" -> cachedNProp2)
       )
@@ -895,7 +897,8 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
         Aggregation(
           Selection(Seq(equals(nProp1, literalInt(2))), Argument(Set(v"n"))),
           Map(v"x" -> n),
-          Map(v"count(1)" -> count(literalInt(1)))
+          Map(v"count(1)" -> count(literalInt(1))),
+          None
         ),
         Map(v"xProp" -> xProp)
       )
@@ -906,7 +909,8 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
         Aggregation(
           Selection(Seq(equals(cp1, literalInt(2))), Argument(Set(v"n"))),
           Map(v"x" -> n),
-          Map(v"count(1)" -> count(literalInt(1)))
+          Map(v"count(1)" -> count(literalInt(1))),
+          None
         ),
         Map(v"xProp" -> cachedNProp1.copy(entityVariable = n.copy("x")(n.position))(cachedNProp1.position))
       )

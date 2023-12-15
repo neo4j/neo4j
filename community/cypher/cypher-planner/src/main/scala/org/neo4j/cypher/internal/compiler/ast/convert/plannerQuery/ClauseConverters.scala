@@ -59,6 +59,8 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.helpers.AggregationHelper
 import org.neo4j.cypher.internal.compiler.planner.ProcedureCallProjection
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.IsAggregate
@@ -80,6 +82,8 @@ import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.expressions.functions.PercentileCont
+import org.neo4j.cypher.internal.expressions.functions.PercentileDisc
 import org.neo4j.cypher.internal.frontend.phases.ResolvedCall
 import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
 import org.neo4j.cypher.internal.ir.CommandProjection
@@ -145,6 +149,9 @@ import org.neo4j.cypher.rendering.QueryRenderer
 import org.neo4j.exceptions.InternalException
 import org.neo4j.exceptions.SyntaxException
 
+import java.util.Locale
+
+import scala.collection.immutable.Seq
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
@@ -265,7 +272,7 @@ object ClauseConverters {
         throw new InternalException("AST needs to be rewritten before it can be used for planning. Got: " + clause)
     }
 
-  def findRequiredOrder(horizon: QueryHorizon, optOrderBy: Option[OrderBy]): InterestingOrder = {
+  private def findRequiredOrder(horizon: QueryHorizon, optOrderBy: Option[OrderBy]): InterestingOrder = {
 
     val sortItems = if (optOrderBy.isDefined) optOrderBy.get.sortItems else Seq.empty
     val (requiredOrderCandidate, interestingOrderCandidates: Seq[InterestingOrderCandidate]) = horizon match {
@@ -278,7 +285,7 @@ object ClauseConverters {
           extractColumnOrderFromOrderBy(sortItems, groupingExpressions)
         val interestingCandidates =
           interestingOrderCandidatesForGroupingExpressions(groupingExpressions) ++
-            interestingOrderCandidateForMinOrMax(groupingExpressions, aggregationExpressions)
+            interestingOrderCandidateForAggregations(groupingExpressions, aggregationExpressions)
         (requiredOrderCandidate, interestingCandidates)
       case DistinctQueryProjection(groupingExpressions, _, _, _) =>
         val requiredOrderCandidate =
@@ -292,21 +299,41 @@ object ClauseConverters {
     InterestingOrder(requiredOrderCandidate, interestingOrderCandidates)
   }
 
-  private def interestingOrderCandidateForMinOrMax(
+  private def interestingOrderCandidateForAggregations(
     groupingExpressions: Map[LogicalVariable, Expression],
     aggregationExpressions: Map[LogicalVariable, Expression]
-  ): Option[InterestingOrderCandidate] = {
-    if (groupingExpressions.isEmpty && aggregationExpressions.size == 1) {
+  ): Seq[InterestingOrderCandidate] = {
+    if (AggregationHelper.isOnlyMinOrMaxAggregation(groupingExpressions, aggregationExpressions)) {
       // just checked that there is only one key
       val value = aggregationExpressions(aggregationExpressions.keys.head)
       val columns: Seq[ColumnOrder] =
         AggregationHelper.checkMinOrMax(value, e => Seq(Asc(e)), e => Seq(Desc(e)), Seq.empty)
       if (columns.nonEmpty)
-        Some(InterestingOrderCandidate(columns))
+        Seq(InterestingOrderCandidate(columns))
       else
-        None
+        Seq.empty
     } else {
-      None
+      def indexOrder(variableToAggregate: Expression): Seq[Seq[ColumnOrder]] = {
+        variableToAggregate match {
+          case e: Property => Seq(Seq(Asc(e, Map.empty)), Seq(Desc(e, Map.empty)))
+          case v: Variable => Seq(Seq(Asc(v, Map.empty)), Seq(Desc(v, Map.empty)))
+          case _           => Seq.empty[Seq[ColumnOrder]]
+        }
+      }
+
+      aggregationExpressions.values.flatMap {
+        case FunctionInvocation(_, _, true, args) =>
+          indexOrder(args(0)).map(InterestingOrderCandidate(_))
+        case FunctionInvocation(_, FunctionName(name), _, args)
+          if {
+            val nameLower = name.toLowerCase(Locale.ROOT)
+            nameLower == PercentileCont.name.toLowerCase(Locale.ROOT) ||
+            nameLower == PercentileDisc.name.toLowerCase(Locale.ROOT)
+          } =>
+          indexOrder(args(0)).map(InterestingOrderCandidate(_))
+        case _ =>
+          Seq.empty[InterestingOrderCandidate]
+      }.toSeq
     }
   }
 

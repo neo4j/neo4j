@@ -2180,29 +2180,41 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     appendAtCurrentIndent(LeafOperator(planBuilder))
   }
 
-  def aggregation(groupingExpressions: Seq[String], aggregationExpression: Seq[String]): IMPL = {
+  def aggregation(
+    groupingExpressions: Seq[String],
+    aggregationExpression: Seq[String],
+    aggregationOrder: Option[String] = None
+  ): IMPL = {
     appendAtCurrentIndent(UnaryOperator(lp => {
       Aggregation(
         lp,
         toVarMap(Parser.parseProjections(groupingExpressions: _*)),
-        parseProjections(aggregationExpression: _*)
+        parseProjections(aggregationExpression: _*),
+        aggregationOrder.map(Parser.parseSort)
       )(_)
     }))
   }
 
   def aggregation(
     groupingExpressions: Map[String, Expression],
-    aggregationExpressions: Map[String, Expression]
+    aggregationExpressions: Map[String, Expression],
+    aggregationOrder: Option[String]
   ): IMPL = {
     appendAtCurrentIndent(UnaryOperator(lp => {
-      Aggregation(lp, toVarMap(groupingExpressions), toVarMap(aggregationExpressions))(_)
+      Aggregation(
+        lp,
+        toVarMap(groupingExpressions),
+        toVarMap(aggregationExpressions),
+        aggregationOrder.map(Parser.parseSort)
+      )(_)
     }))
   }
 
   def orderedAggregation(
     groupingExpressions: Seq[String],
     aggregationExpression: Seq[String],
-    orderToLeverage: Seq[String]
+    orderToLeverage: Seq[String],
+    aggregationOrder: Option[String] = None
   ): IMPL = {
     val order = orderToLeverage.map(parseExpression)
     appendAtCurrentIndent(UnaryOperator(lp =>
@@ -2210,7 +2222,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         lp,
         toVarMap(Parser.parseProjections(groupingExpressions: _*)),
         toVarMap(Parser.parseProjections(aggregationExpression: _*)),
-        order
+        order,
+        aggregationOrder.map(Parser.parseSort)
       )(_)
     ))
   }
@@ -2218,11 +2231,18 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   def orderedAggregation(
     groupingExpressions: Map[String, Expression],
     aggregationExpressions: Map[String, Expression],
-    orderToLeverage: Seq[String]
+    orderToLeverage: Seq[String],
+    aggregationOrder: Option[String]
   ): IMPL = {
     val order = orderToLeverage.map(parseExpression)
     appendAtCurrentIndent(UnaryOperator(lp => {
-      OrderedAggregation(lp, toVarMap(groupingExpressions), toVarMap(aggregationExpressions), order)(_)
+      OrderedAggregation(
+        lp,
+        toVarMap(groupingExpressions),
+        toVarMap(aggregationExpressions),
+        order,
+        aggregationOrder.map(Parser.parseSort)
+      )(_)
     }))
   }
 

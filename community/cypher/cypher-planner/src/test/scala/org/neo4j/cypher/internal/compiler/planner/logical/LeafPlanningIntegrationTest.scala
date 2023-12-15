@@ -141,7 +141,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         |WITH p, count(follow) as fc
         |RETURN 1
       """.stripMargin)._1 should beLike {
-      case Projection(Aggregation(_: OptionalExpand, _, _), _) => ()
+      case Projection(Aggregation(_: OptionalExpand, _, _, _), _) => ()
     }
   }
 
@@ -1152,7 +1152,8 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
           NodeByIdSeek(v"n", ManySeekableArgs(v"arr"), Set(v"arr"))
         ),
         Map(),
-        Map(v"count(*)" -> CountStar() _)
+        Map(v"count(*)" -> CountStar() _),
+        None
       )
     )
   }

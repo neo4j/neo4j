@@ -1243,10 +1243,10 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
     // Planning this query will lead to compaction in IDP and the exact shape of the plan will be different sometimes.
 
     volcanoPlan.stripProduceResults should beLike {
-      case Aggregation(Apply(_, _: Optional), _, _) => ()
+      case Aggregation(Apply(_, _: Optional), _, _, _) => ()
     }
     batchedPlan.stripProduceResults should beLike {
-      case Aggregation(_: CartesianProduct, _, _) => ()
+      case Aggregation(_: CartesianProduct, _, _, _) => ()
     }
   }
 

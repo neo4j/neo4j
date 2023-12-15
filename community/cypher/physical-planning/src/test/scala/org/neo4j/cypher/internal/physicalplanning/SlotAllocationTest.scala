@@ -571,7 +571,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
   test("aggregation used for distinct") {
     // given
     val leaf = NodeByLabelScan(varFor("x"), LABEL, Set.empty, IndexOrderNone)
-    val distinct = Aggregation(leaf, Map(varFor("x") -> varFor("x")), Map.empty)
+    val distinct = Aggregation(leaf, Map(varFor("x") -> varFor("x")), Map.empty, None)
 
     // when
     val allocations = allocateSlots(
@@ -627,7 +627,8 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     val countStar = Aggregation(
       optional,
       groupingExpressions = Map(varFor("x") -> varFor("x"), varFor("x.propertyKey") -> prop("x", "propertyKey")),
-      aggregationExpressions = Map(varFor("count(*)") -> CountStar()(pos))
+      aggregationExpressions = Map(varFor("count(*)") -> CountStar()(pos)),
+      None
     )
 
     // when
@@ -1244,7 +1245,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
       varFor("x.prop") -> prop("x", "prop")
     )
     val aggregations = Map[LogicalVariable, Expression](varFor("count(r.prop)") -> count(prop("r", "prop")))
-    val aggregation = Aggregation(expand, grouping, aggregations)
+    val aggregation = Aggregation(expand, grouping, aggregations, None)
 
     // when
     val allocations = allocateSlots(

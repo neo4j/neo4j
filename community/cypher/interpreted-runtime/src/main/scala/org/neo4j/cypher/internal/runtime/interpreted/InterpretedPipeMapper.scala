@@ -1319,7 +1319,7 @@ case class InterpretedPipeMapper(
       case ExhaustiveLimit(_, count) =>
         ExhaustiveLimitPipe(source, buildExpression(count))(id = id)
 
-      case Aggregation(_, groupingExpressions, aggregatingExpressions) if aggregatingExpressions.isEmpty =>
+      case Aggregation(_, groupingExpressions, aggregatingExpressions, _) if aggregatingExpressions.isEmpty =>
         val projection = groupingExpressions.map {
           case (key, value) => DistinctPipe.GroupingCol(key.name, buildExpression(value))
         }.toArray
@@ -1342,7 +1342,7 @@ case class InterpretedPipeMapper(
           OrderedDistinctPipe(source, projection)(id = id)
         }
 
-      case OrderedAggregation(_, groupingExpressions, aggregatingExpressions, orderToLeverage)
+      case OrderedAggregation(_, groupingExpressions, aggregatingExpressions, orderToLeverage, _)
         if aggregatingExpressions.isEmpty =>
         val projection = groupingExpressions.map {
           case (key, value) =>
@@ -1350,7 +1350,7 @@ case class InterpretedPipeMapper(
         }.toArray
         OrderedDistinctPipe(source, projection)(id = id)
 
-      case Aggregation(_, groupingExpressions, aggregatingExpressions) =>
+      case Aggregation(_, groupingExpressions, aggregatingExpressions, aggregationOrder) =>
         val aggregationColumns = aggregatingExpressions.map {
           case (key, value) =>
             AggregationPipe.AggregatingCol(key.name, buildExpression(value).asInstanceOf[AggregationExpression])
@@ -1369,7 +1369,7 @@ case class InterpretedPipeMapper(
           }
         EagerAggregationPipe(source, tableFactory)(id = id)
 
-      case OrderedAggregation(_, groupingExpressions, aggregatingExpressions, orderToLeverage) =>
+      case OrderedAggregation(_, groupingExpressions, aggregatingExpressions, orderToLeverage, aggregationOrder) =>
         val aggregationColumns = aggregatingExpressions.map {
           case (key, value) =>
             AggregationPipe.AggregatingCol(key.name, buildExpression(value).asInstanceOf[AggregationExpression])

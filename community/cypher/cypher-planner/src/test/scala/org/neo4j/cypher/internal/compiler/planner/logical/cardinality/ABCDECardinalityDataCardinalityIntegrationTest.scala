@@ -735,7 +735,7 @@ class ABCDECardinalityDataCardinalityIntegrationTest extends CypherFunSuite with
     expectCardinality(A)
     expectPlanCardinality(
       {
-        case Aggregation(_, _, _) => true
+        case Aggregation(_, _, _, _) => true
       },
       A
     )

@@ -76,7 +76,7 @@ case class groupPercentileFunctions(
   private val pos: InputPosition = InputPosition.NONE
 
   private val instance: Rewriter = bottomUp(Rewriter.lift {
-    case aggregation @ OrderedAggregation(_, _, aggregations: Map[LogicalVariable, Expression], _) =>
+    case aggregation @ OrderedAggregation(_, _, aggregations: Map[LogicalVariable, Expression], _, _) =>
       val groupedFunctions = groupFunctions(aggregations)
       if (groupedFunctions.isEmpty) {
         aggregation
@@ -86,7 +86,7 @@ case class groupPercentileFunctions(
         val id = attributes.copy(aggregation.id).id()
         Projection(newAggregation, projectExpressions)(SameId(id))
       }
-    case aggregation @ Aggregation(_, _, aggregations: Map[LogicalVariable, Expression]) =>
+    case aggregation @ Aggregation(_, _, aggregations: Map[LogicalVariable, Expression], _) =>
       val groupedFunctions = groupFunctions(aggregations)
       if (groupedFunctions.isEmpty) {
         aggregation
