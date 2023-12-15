@@ -14,9 +14,11 @@ Apache Software License, Version 2.0
   Apache Lucene (module: core)
   Apache Lucene (module: queryparser)
   Caffeine cache
+  FindBugs-jsr305
   IPAddress
   Java Concurrency Tools Core Library
   Java Native Access
+  Javassist
   Jettison
   magnolia
   mercator
@@ -24,6 +26,7 @@ Apache Software License, Version 2.0
   openCypher TCK Features and Graphs
   org.apiguardian:apiguardian-api
   org.opentest4j:opentest4j
+  Reflections
   Scala Reflect
   scala-collection-compat
   scala-collection-contrib
@@ -714,6 +717,7 @@ MIT License
   DataTable
   fastparse_2.13
   geny_2.13
+  SLF4J API Module
   sourcecode_2.13
 ------------------------------------------------------------------------------
 
