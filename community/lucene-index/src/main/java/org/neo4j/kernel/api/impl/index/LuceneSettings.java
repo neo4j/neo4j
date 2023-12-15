@@ -55,8 +55,15 @@ public class LuceneSettings implements SettingsDeclaration {
 
     @Internal
     @Description("Setting for the matching lucene IndexWriterConfig config")
-    public static final Setting<Integer> vector_merge_factor =
-            newBuilder("internal.dbms.index.vector.merge_factor", INT, 1000).build();
+    public static final Setting<Integer> vector_standard_merge_factor = newBuilder(
+                    "internal.dbms.index.vector.standard_merge_factor", INT, 50)
+            .build();
+
+    @Internal
+    @Description("Setting for the matching lucene IndexWriterConfig config")
+    public static final Setting<Integer> vector_population_merge_factor = newBuilder(
+                    "internal.dbms.index.vector.population_merge_factor", INT, 1000)
+            .build();
 
     @Internal
     @Description("Setting for the matching lucene IndexWriterConfig config")

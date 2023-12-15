@@ -24,10 +24,12 @@ import static org.neo4j.kernel.api.impl.index.LuceneSettings.lucene_min_merge;
 import static org.neo4j.kernel.api.impl.index.LuceneSettings.lucene_nocfs_ratio;
 import static org.neo4j.kernel.api.impl.index.LuceneSettings.lucene_population_max_buffered_docs;
 import static org.neo4j.kernel.api.impl.index.LuceneSettings.lucene_population_ram_buffer_size;
+import static org.neo4j.kernel.api.impl.index.LuceneSettings.lucene_population_serial_merge_scheduler;
 import static org.neo4j.kernel.api.impl.index.LuceneSettings.lucene_standard_ram_buffer_size;
 import static org.neo4j.kernel.api.impl.index.LuceneSettings.lucene_writer_max_buffered_docs;
-import static org.neo4j.kernel.api.impl.index.LuceneSettings.vector_merge_factor;
+import static org.neo4j.kernel.api.impl.index.LuceneSettings.vector_population_merge_factor;
 import static org.neo4j.kernel.api.impl.index.LuceneSettings.vector_population_ram_buffer_size;
+import static org.neo4j.kernel.api.impl.index.LuceneSettings.vector_standard_merge_factor;
 import static org.neo4j.kernel.api.impl.schema.LuceneIndexType.VECTOR;
 import static org.neo4j.kernel.api.impl.schema.vector.VectorUtils.vectorDimensionsFrom;
 
@@ -36,6 +38,7 @@ import org.apache.lucene.analysis.core.KeywordAnalyzer;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.KeepOnlyLastCommitDeletionPolicy;
 import org.apache.lucene.index.LogByteSizeMergePolicy;
+import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.SnapshotDeletionPolicy;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.schema.IndexConfig;
@@ -65,6 +68,7 @@ public final class IndexWriterConfigs {
         writerConfig.setUseCompoundFile(true);
         writerConfig.setMaxFullFlushMergeWaitMillis(0);
         writerConfig.setRAMBufferSizeMB(config.get(lucene_standard_ram_buffer_size));
+
         if (index == VECTOR) {
             writerConfig.setCodec(new VectorV1Codec(vectorDimensionsFrom(indexConfig)));
         }
@@ -72,7 +76,7 @@ public final class IndexWriterConfigs {
         final var mergePolicy = new LogByteSizeMergePolicy();
         mergePolicy.setNoCFSRatio(config.get(lucene_nocfs_ratio));
         mergePolicy.setMinMergeMB(config.get(lucene_min_merge));
-        mergePolicy.setMergeFactor(config.get(index == VECTOR ? vector_merge_factor : lucene_merge_factor));
+        mergePolicy.setMergeFactor(config.get(index == VECTOR ? vector_standard_merge_factor : lucene_merge_factor));
         writerConfig.setMergePolicy(mergePolicy);
 
         return writerConfig;
@@ -88,14 +92,19 @@ public final class IndexWriterConfigs {
         writerConfig.setMaxBufferedDocs(config.get(lucene_population_max_buffered_docs));
         writerConfig.setRAMBufferSizeMB(
                 config.get(index == VECTOR ? vector_population_ram_buffer_size : lucene_population_ram_buffer_size));
-        if (config.get(LuceneSettings.lucene_population_serial_merge_scheduler)) {
+
+        if (index == VECTOR && writerConfig.getMergePolicy() instanceof final LogMergePolicy mergePolicy) {
+            mergePolicy.setMergeFactor(config.get(vector_population_merge_factor));
+        }
+
+        if (config.get(lucene_population_serial_merge_scheduler)) {
             // With this setting 'true' we respect the GraphDatabaseInternalSettings.index_population_workers setting
-            // and
-            // don't use separate lucene threads for merging during population.
+            // and don't use separate lucene threads for merging during population.
             // Population is a background task, and it is probably more important to limit CPU usage
             // than be as fast as possible here.
             writerConfig.setMergeScheduler(new OnThreadConcurrentMergeScheduler());
         }
+
         return writerConfig;
     }
 
