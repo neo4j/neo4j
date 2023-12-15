@@ -908,7 +908,7 @@ abstract class OrderedDistinctTestBase[CONTEXT <: RuntimeContext](
       .|.sort("y ASC")
       .|.allNodeScan("y", "Y")
       .sort("x ASC")
-      .allNodeScan("x", "X")
+      .allNodeScan("x")
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)

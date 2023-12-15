@@ -343,25 +343,7 @@ class InterpretedProfileDbHitsTest
     with ProcedureCallDbHitsTestBase[CommunityRuntimeContext]
     with NestedPlanDbHitsTestBase[CommunityRuntimeContext]
     with NonFusedWriteOperatorsDbHitsTestBase[CommunityRuntimeContext]
-    with TransactionForeachDbHitsTestBase[CommunityRuntimeContext] {
-
-  test("DEBUG should profile dbHits of all nodes scan") {
-    givenGraph { nodeGraph(sizeHint) }
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("x")
-      .allNodeScan("x")
-      .build()
-
-    val runtimeResult = profile(logicalQuery, runtime)
-    consume(runtimeResult)
-
-    // then
-    val queryProfile = runtimeResult.runtimeResult.queryProfile()
-    queryProfile.operatorProfile(1).dbHits() should (be(sizeHint) or be(sizeHint + 1)) // all nodes scan
-  }
-}
+    with TransactionForeachDbHitsTestBase[CommunityRuntimeContext]
 
 class InterpretedProfileRowsTest extends ProfileRowsTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT, 1)
     with EagerLimitProfileRowsTestBase[CommunityRuntimeContext]

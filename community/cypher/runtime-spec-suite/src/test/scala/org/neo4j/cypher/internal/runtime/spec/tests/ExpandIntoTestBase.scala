@@ -697,7 +697,7 @@ trait ExpandIntoWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
       .produceResults("a", "b")
       .expandInto("(a)-[r:T]->(b)")
       .cartesianProduct()
-      .|.nodeByLabelScan("b", "B", "a")
+      .|.nodeByLabelScan("b", "B")
       .nodeByLabelScan("a", "A")
       .build()
 
@@ -725,7 +725,7 @@ trait ExpandIntoWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
       .produceResults("a", "b")
       .expandInto("(a)-[r:T]->(b)")
       .cartesianProduct()
-      .|.nodeByLabelScan("b", "B", "a")
+      .|.nodeByLabelScan("b", "B")
       .nodeByLabelScan("a", "A")
       .build()
 
@@ -756,7 +756,7 @@ trait ExpandIntoWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
       .produceResults("a", "b")
       .expandInto("(a)-[r:T]->(b)")
       .cartesianProduct()
-      .|.nodeByLabelScan("b", "B", "a")
+      .|.nodeByLabelScan("b", "B")
       .nodeByLabelScan("a", "A")
       .build()
 
@@ -783,7 +783,7 @@ trait ExpandIntoWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
       .produceResults("a", "b")
       .expandInto("(a)-[r:T]->(b)")
       .cartesianProduct()
-      .|.nodeByLabelScan("b", "B", "a")
+      .|.nodeByLabelScan("b", "B")
       .nodeByLabelScan("a", "A")
       .build()
 
@@ -810,7 +810,7 @@ trait ExpandIntoWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
       .produceResults("a", "b")
       .expandInto("(a)-[r:T]->(b)")
       .cartesianProduct()
-      .|.nodeByLabelScan("b", "B", "a")
+      .|.nodeByLabelScan("b", "B")
       .nodeByLabelScan("a", "A")
       .build()
 
@@ -840,7 +840,7 @@ trait ExpandIntoWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
       .produceResults("a", "b")
       .expandInto("(a)-[r:T]->(b)")
       .cartesianProduct()
-      .|.nodeByLabelScan("b", "B", "a")
+      .|.nodeByLabelScan("b", "B")
       .nodeByLabelScan("a", "A")
       .build()
 
@@ -866,7 +866,7 @@ trait ExpandIntoWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
       .produceResults("a", "b")
       .expandInto("(a)-[r:T]->(b)")
       .cartesianProduct()
-      .|.nodeByLabelScan("b", "B", "a")
+      .|.nodeByLabelScan("b", "B")
       .nodeByLabelScan("a", "A")
       .build()
 
@@ -893,7 +893,7 @@ trait ExpandIntoWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
       .produceResults("a", "b")
       .expandInto("(a)-[r:T]->(b)")
       .cartesianProduct()
-      .|.nodeByLabelScan("b", "B", "a")
+      .|.nodeByLabelScan("b", "B")
       .nodeByLabelScan("a", "A")
       .build()
 
@@ -922,7 +922,7 @@ trait ExpandIntoWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
       .produceResults("a", "b")
       .expandInto("(a)-[r:T]->(b)")
       .cartesianProduct()
-      .|.nodeByLabelScan("b", "B", "a")
+      .|.nodeByLabelScan("b", "B")
       .nodeByLabelScan("a", "A")
       .build()
 
@@ -947,7 +947,7 @@ trait ExpandIntoWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
       .produceResults("a", "b")
       .expandInto("(a)-[r:T]->(b)")
       .cartesianProduct()
-      .|.nodeByLabelScan("b", "B", "a")
+      .|.nodeByLabelScan("b", "B")
       .nodeByLabelScan("a", "A")
       .build()
 
@@ -973,7 +973,7 @@ trait ExpandIntoWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
       .produceResults("a", "b")
       .expandInto("(a)-[r:T]->(b)")
       .cartesianProduct()
-      .|.nodeByLabelScan("b", "B", "a")
+      .|.nodeByLabelScan("b", "B")
       .nodeByLabelScan("a", "A")
       .build()
 
@@ -1001,7 +1001,7 @@ trait ExpandIntoWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
       .produceResults("a", "b")
       .expandInto("(a)-[r:T]->(b)")
       .cartesianProduct()
-      .|.nodeByLabelScan("b", "B", "a")
+      .|.nodeByLabelScan("b", "B")
       .nodeByLabelScan("a", "A")
       .build()
 
@@ -1029,7 +1029,7 @@ trait ExpandIntoWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
       .produceResults("a", "b")
       .expandInto("(a)-[r:T]->(b)")
       .cartesianProduct()
-      .|.nodeByLabelScan("b", "B", "a")
+      .|.nodeByLabelScan("b", "B")
       .nodeByLabelScan("a", "A")
       .build()
 

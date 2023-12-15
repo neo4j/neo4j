@@ -230,7 +230,7 @@ abstract class IntersectionLabelScanTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x", "y")
       .cartesianProduct()
       .|.filter("true")
-      .|.intersectionNodeByLabelsScan("y", Seq("C", "D"), IndexOrderNone, "x")
+      .|.intersectionNodeByLabelsScan("y", Seq("C", "D"), IndexOrderNone)
       .filter("true")
       .intersectionNodeByLabelsScan("x", Seq("A", "B"), IndexOrderNone)
       .build()

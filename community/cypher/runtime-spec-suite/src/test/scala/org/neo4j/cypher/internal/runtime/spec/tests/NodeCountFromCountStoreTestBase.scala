@@ -251,7 +251,7 @@ abstract class NodeCountFromCountStoreTestBase[CONTEXT <: RuntimeContext](
       .projection("1 % j AS r1", "j ^ j AS r2")
       .optional()
       .cartesianProduct()
-      .|.nodeCountFromCountStore("j", List(None), "i")
+      .|.nodeCountFromCountStore("j", List(None))
       .unwind("[] AS i")
       .argument()
       .build()

@@ -108,7 +108,7 @@ abstract class RollupApplyTestBase[CONTEXT <: RuntimeContext](
       .rollUpApply("list", "y")
       .|.sort("y ASC") // to get consistent order in the produced lists
       .|.optionalExpandAll("(x)-->(y)")
-      .|.argument("y")
+      .|.argument("x")
       .allNodeScan("x")
       .build()
 

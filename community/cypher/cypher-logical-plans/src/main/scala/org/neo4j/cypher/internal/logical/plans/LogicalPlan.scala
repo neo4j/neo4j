@@ -317,12 +317,19 @@ sealed abstract class LogicalPlan(idGen: IdGen)
 sealed trait AggregatingPlan extends LogicalPlan {
   def groupingExpressions: Map[LogicalVariable, Expression]
   def aggregationExpressions: Map[LogicalVariable, Expression]
+  def orderToLeverage: Seq[Expression]
 
   /**
    * Adds grouping expressions to this plan.
    * If the plan already has grouping expressions with the same keys, they are overridden.
    */
   def addGroupingExpressions(newGroupingExpressions: Map[LogicalVariable, Expression]): AggregatingPlan
+
+  def withNewExpressions(
+    newGroupingExpressions: Map[LogicalVariable, Expression],
+    newAggregationExpressions: Map[LogicalVariable, Expression] = Map.empty[LogicalVariable, Expression],
+    newOrderToLeverage: Seq[Expression] = Seq.empty[Expression]
+  )(idGen: IdGen): AggregatingPlan
 }
 
 // Marker interface for all plans that performs updates
@@ -670,6 +677,19 @@ case class Aggregation(
 
   override val distinctness: Distinctness = Distinctness.distinctColumnsOfAggregation(groupingKeys)
 
+  def orderToLeverage: Seq[Expression] = Seq.empty[Expression]
+
+  override def withNewExpressions(
+    newGroupingExpressions: Map[LogicalVariable, Expression],
+    newAggregationExpressions: Map[LogicalVariable, Expression],
+    newOrderToLeverage: Seq[Expression]
+  )(idGen: IdGen): AggregatingPlan = {
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+      newOrderToLeverage.isEmpty,
+      s"Order to leverage expressions are not allowed in ${getClass.getSimpleName}."
+    )
+    copy(groupingExpressions = newGroupingExpressions, aggregationExpressions = newAggregationExpressions)(idGen)
+  }
 }
 
 /**
@@ -1636,6 +1656,24 @@ case class Distinct(
   override val distinctness: Distinctness = Distinctness.distinctColumnsOfDistinct(source, groupingExpressions)
 
   override def aggregationExpressions: Map[LogicalVariable, Expression] = Map.empty
+
+  def orderToLeverage: Seq[Expression] = Seq.empty[Expression]
+
+  override def withNewExpressions(
+    newGroupingExpressions: Map[LogicalVariable, Expression],
+    newAggregationExpressions: Map[LogicalVariable, Expression],
+    newOrderToLeverage: Seq[Expression]
+  )(idGen: IdGen): AggregatingPlan = {
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+      newAggregationExpressions.isEmpty,
+      s"Aggregation expressions are not allowed in ${getClass.getSimpleName}."
+    )
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+      newOrderToLeverage.isEmpty,
+      s"Order to leverage expressions are not allowed in ${getClass.getSimpleName}."
+    )
+    copy(groupingExpressions = newGroupingExpressions)(idGen)
+  }
 }
 
 /**
@@ -2707,7 +2745,7 @@ case class OrderedAggregation(
   override val source: LogicalPlan,
   override val groupingExpressions: Map[LogicalVariable, Expression],
   override val aggregationExpressions: Map[LogicalVariable, Expression],
-  orderToLeverage: Seq[Expression]
+  override val orderToLeverage: Seq[Expression]
 )(implicit idGen: IdGen)
     extends LogicalUnaryPlan(idGen) with AggregatingPlan with ProjectingPlan {
 
@@ -2716,6 +2754,17 @@ case class OrderedAggregation(
   override def addGroupingExpressions(newGroupingExpressions: Map[LogicalVariable, Expression]): AggregatingPlan =
     copy(groupingExpressions = groupingExpressions ++ newGroupingExpressions)
 
+  override def withNewExpressions(
+    newGroupingExpressions: Map[LogicalVariable, Expression],
+    newAggregationExpressions: Map[LogicalVariable, Expression],
+    newOrderToLeverage: Seq[Expression]
+  )(idGen: IdGen): AggregatingPlan = {
+    copy(
+      groupingExpressions = newGroupingExpressions,
+      aggregationExpressions = newAggregationExpressions,
+      orderToLeverage = newOrderToLeverage
+    )(idGen)
+  }
   override val projectExpressions: Map[LogicalVariable, Expression] = groupingExpressions
 
   val groupingKeys: Set[LogicalVariable] = groupingExpressions.keySet
@@ -2741,7 +2790,7 @@ case class OrderedAggregation(
 case class OrderedDistinct(
   override val source: LogicalPlan,
   override val groupingExpressions: Map[LogicalVariable, Expression],
-  orderToLeverage: Seq[Expression]
+  override val orderToLeverage: Seq[Expression]
 )(implicit idGen: IdGen) extends LogicalUnaryPlan(idGen) with ProjectingPlan with AggregatingPlan {
 
   override val projectExpressions: Map[LogicalVariable, Expression] = groupingExpressions
@@ -2755,6 +2804,18 @@ case class OrderedDistinct(
 
   override def addGroupingExpressions(newGroupingExpressions: Map[LogicalVariable, Expression]): AggregatingPlan =
     copy(groupingExpressions = groupingExpressions ++ newGroupingExpressions)
+
+  override def withNewExpressions(
+    newGroupingExpressions: Map[LogicalVariable, Expression],
+    newAggregationExpressions: Map[LogicalVariable, Expression],
+    newOrderToLeverage: Seq[Expression]
+  )(idGen: IdGen): AggregatingPlan = {
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+      newAggregationExpressions.isEmpty,
+      s"Aggregation expressions are not allowed in ${getClass.getSimpleName}."
+    )
+    copy(groupingExpressions = newGroupingExpressions, orderToLeverage = newOrderToLeverage)(idGen)
+  }
 
   AssertMacros.checkOnlyWhenAssertionsAreEnabled(
     orderToLeverage.forall(exp => groupingExpressions.values.exists(_ == exp)),

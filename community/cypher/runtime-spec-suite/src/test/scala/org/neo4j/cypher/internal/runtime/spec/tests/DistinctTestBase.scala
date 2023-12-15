@@ -214,7 +214,7 @@ abstract class DistinctTestBase[CONTEXT <: RuntimeContext](
       .|.unwind(s"[${bs.mkString(",")}] AS b")
       .|.argument()
       .unwind(s"[${as.mkString(",")}] AS a")
-      .argument("x")
+      .argument()
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -238,7 +238,7 @@ abstract class DistinctTestBase[CONTEXT <: RuntimeContext](
       .|.unwind(s"[${bs.mkString(",")}] AS b")
       .|.argument()
       .unwind(s"[${as.mkString(",")}] AS a")
-      .argument("x")
+      .argument()
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)

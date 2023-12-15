@@ -161,7 +161,7 @@ abstract class SubqueryForeachTestBase[CONTEXT <: RuntimeContext](
       .|.|.create(createNode("m", "M"))
       .|.|.argument()
       .|.argument()
-      .allNodeScan("n", "N")
+      .allNodeScan("n")
       .build(readOnly = false)
 
     val runtimeResult: RecordingRuntimeResult = execute(query, runtime)

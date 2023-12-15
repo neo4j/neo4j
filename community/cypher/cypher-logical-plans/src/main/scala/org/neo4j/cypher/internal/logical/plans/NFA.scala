@@ -48,7 +48,7 @@ object NFA {
    * A predicate that dictates whether a transition may be applied.
    */
   sealed trait Predicate {
-    def variablePredicates: Seq[VariablePredicate]
+    def variables: Seq[LogicalVariable]
 
     def toDotString: String
   }
@@ -62,7 +62,7 @@ object NFA {
    * then the variablePredicate should contain `b:B`
    */
   case class NodeJuxtapositionPredicate(variablePredicate: Option[VariablePredicate]) extends Predicate {
-    override def variablePredicates: Seq[VariablePredicate] = variablePredicate.toSeq
+    override def variables: Seq[LogicalVariable] = variablePredicate.toSeq.map(_.variable)
 
     override def toDotString: String =
       variablePredicate.map(vp => State.expressionStringifier(vp.predicate)).getOrElse("")
@@ -91,7 +91,8 @@ object NFA {
     nodePred: Option[VariablePredicate]
   ) extends Predicate {
 
-    override def variablePredicates: Seq[VariablePredicate] = Seq(relPred, nodePred).flatten
+    override def variables: Seq[LogicalVariable] =
+      relationshipVariable +: Seq(relPred, nodePred).flatten.map(_.variable)
 
     override def toDotString: String = {
       val (dirStrA, dirStrB) = LogicalPlanToPlanBuilderString.arrows(dir)
@@ -128,8 +129,9 @@ case class NFA(
   finalState: State
 ) extends Rewritable with Foldable {
 
-  def predicateVariables: Set[LogicalVariable] =
-    transitions.values.flatten.toSeq.flatMap(_.predicate.variablePredicates).map(_.variable).toSet
+  def predicateVariables: Set[LogicalVariable] = {
+    transitions.values.flatten.toSeq.flatMap(_.predicate.variables).toSet
+  }
 
   def nodes: Set[LogicalVariable] =
     states.map(_.variable) ++ transitionPredicates.flatMap {

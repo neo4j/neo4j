@@ -112,7 +112,7 @@ abstract class ApplyTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("y")
       .apply()
-      .|.nodeByLabelScan("y", "RHS", IndexOrderNone, "x")
+      .|.nodeByLabelScan("y", "RHS", IndexOrderNone)
       .argument()
       .build()
 

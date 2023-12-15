@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NFA
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
 import org.neo4j.cypher.internal.logical.plans.PruningVarExpand
+import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
 import org.neo4j.cypher.internal.logical.plans.VarExpand
 import org.neo4j.cypher.internal.runtime.ast.ConstantExpressionVariable
 import org.neo4j.cypher.internal.runtime.ast.ExpressionVariable
@@ -122,6 +123,20 @@ object expressionVariableAllocation {
         outerVars =>
           val innerVars =
             allocateVariables(outerVars, (x.perStepNodePredicates ++ x.perStepRelPredicates).map(_.variable).toSet)
+          TraverseChildrenNewAccForSiblings(innerVars, _ => outerVars)
+
+      case x: StatefulShortestPath =>
+        outerVars =>
+          val innerVars =
+            allocateVariables(
+              outerVars,
+              (
+                x.singletonNodeVariables.map(_.nfaExprVar) ++
+                  x.singletonRelationshipVariables.map(_.nfaExprVar) ++
+                  x.nodeVariableGroupings.map(_.singleton) ++
+                  x.relationshipVariableGroupings.map(_.singleton)
+              )
+            )
           TraverseChildrenNewAccForSiblings(innerVars, _ => outerVars)
 
       case x: NFA =>

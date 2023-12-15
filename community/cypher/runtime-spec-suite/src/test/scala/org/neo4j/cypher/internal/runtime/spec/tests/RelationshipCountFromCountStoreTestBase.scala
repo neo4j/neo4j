@@ -293,7 +293,7 @@ abstract class RelationshipCountFromCountStoreTestBase[CONTEXT <: RuntimeContext
       .projection("1 % j AS r1", "j ^ j AS r2")
       .optional()
       .cartesianProduct()
-      .|.relationshipCountFromCountStore("j", None, List("R"), None, "i")
+      .|.relationshipCountFromCountStore("j", None, List("R"), None)
       .unwind("[] AS i")
       .argument()
       .build()

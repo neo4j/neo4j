@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.expressions.HasTypes
 import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.IsNull
 import org.neo4j.cypher.internal.expressions.IsRepeatTrailUnique
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Or
@@ -59,11 +60,12 @@ import org.neo4j.cypher.internal.logical.plans.NestedPlanCollectExpression
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
 import org.neo4j.cypher.internal.logical.plans.NestedPlanGetByNameExpression
-import org.neo4j.cypher.internal.logical.plans.Projection
+import org.neo4j.cypher.internal.logical.plans.RollUpApply
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreEnabled
 import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes.SlotConfigurations
 import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes.TrailPlans
+import org.neo4j.cypher.internal.physicalplanning.SlottedRewriter.rewriteVariable
 import org.neo4j.cypher.internal.physicalplanning.ast.ElementIdFromSlot
 import org.neo4j.cypher.internal.physicalplanning.ast.GetDegreePrimitive
 import org.neo4j.cypher.internal.physicalplanning.ast.HasALabelFromSlot
@@ -117,73 +119,84 @@ import org.neo4j.exceptions.InternalException
  */
 class SlottedRewriter(tokenContext: ReadTokenContext) {
 
-  private def rewriteUsingIncoming(oldPlan: LogicalPlan): Boolean = oldPlan match {
-    case _: AggregatingPlan => true
-    case _                  => false
-  }
-
   def apply(in: LogicalPlan, slotConfigurations: SlotConfigurations, trailPlans: TrailPlans): LogicalPlan = {
 
-    val rewritePlanWithSlots = topDown(Rewriter.lift {
-      /*
-      Projection means executing expressions and writing the result to a row. Since any expression of Variable-type
-      would just write to the row the data that is already in it, we can just skip them
-       */
-      case oldPlan @ Projection(_, expressions) =>
-        val slotConfiguration = slotConfigurations(oldPlan.id)
-        val rewriter = rewriteCreator(slotConfiguration, oldPlan, slotConfigurations, trailPlans)
-
-        val newExpressions = expressions collect {
-          case (column, expression) => column -> expression.endoRewrite(rewriter)
-        }
-
-        val newPlan = oldPlan.copy(projectExpressions = newExpressions)(SameId(oldPlan.id))
-
-        newPlan
-
-      case oldPlan: AbstractVarExpand =>
-        /*
+    val rewritePlanWithSlots =
+      topDown(Rewriter.lift {
+        case oldPlan: AbstractVarExpand =>
+          /*
         The node and edge predicates will be set and evaluated on the incoming rows, not on the outgoing ones.
         We need to use the incoming slot configuration for predicate rewriting
-         */
-        val incomingSlotConfiguration = slotConfigurations(oldPlan.source.id)
-        val rewriter = rewriteCreator(incomingSlotConfiguration, oldPlan, slotConfigurations, trailPlans)
+           */
+          val incomingSlotConfiguration = slotConfigurations(oldPlan.source.id)
+          val incomingRewriter = rewriteCreator(incomingSlotConfiguration, oldPlan, slotConfigurations, trailPlans)
 
-        val newNodePredicates =
-          oldPlan.nodePredicates.map(x => VariablePredicate(x.variable, x.predicate.endoRewrite(rewriter)))
-        val newRelationshipPredicates =
-          oldPlan.relationshipPredicates.map(x => VariablePredicate(x.variable, x.predicate.endoRewrite(rewriter)))
+          val newNodePredicates =
+            oldPlan.nodePredicates.map(x => VariablePredicate(x.variable, x.predicate.endoRewrite(incomingRewriter)))
+          val newRelationshipPredicates =
+            oldPlan.relationshipPredicates.map(x =>
+              VariablePredicate(x.variable, x.predicate.endoRewrite(incomingRewriter))
+            )
 
-        val newPlan = oldPlan.withNewPredicates(newNodePredicates, newRelationshipPredicates)(SameId(oldPlan.id))
+          val oldPlanWithNewPredicates =
+            oldPlan.withNewPredicates(newNodePredicates, newRelationshipPredicates)(SameId(oldPlan.id))
 
-        newPlan
+          val slotConfiguration = slotConfigurations(oldPlan.id)
+          val rewriter = rewriteCreator(slotConfiguration, oldPlan, slotConfigurations, trailPlans)
+          val newPlan = oldPlanWithNewPredicates.endoRewrite(rewriter)
 
-      case plan @ ValueHashJoin(lhs, rhs, e @ Equals(lhsExp, rhsExp)) =>
-        val lhsRewriter = rewriteCreator(slotConfigurations(lhs.id), plan, slotConfigurations, trailPlans)
-        val rhsRewriter = rewriteCreator(slotConfigurations(rhs.id), plan, slotConfigurations, trailPlans)
-        val lhsExpAfterRewrite = lhsExp.endoRewrite(lhsRewriter)
-        val rhsExpAfterRewrite = rhsExp.endoRewrite(rhsRewriter)
-        plan.copy(join = Equals(lhsExpAfterRewrite, rhsExpAfterRewrite)(e.position))(SameId(plan.id))
+          newPlan
 
-      case oldPlan: LogicalPlan if rewriteUsingIncoming(oldPlan) =>
-        val leftPlan = oldPlan.lhs.getOrElse(throw new InternalException("Leaf plans cannot be rewritten this way"))
-        val incomingSlotConfiguration = slotConfigurations(leftPlan.id)
-        val rewriter = rewriteCreator(incomingSlotConfiguration, oldPlan, slotConfigurations, trailPlans)
-        val newPlan = oldPlan.endoRewrite(rewriter)
+        case plan @ ValueHashJoin(lhs, rhs, e @ Equals(lhsExp, rhsExp)) =>
+          val lhsRewriter = rewriteCreator(slotConfigurations(lhs.id), plan, slotConfigurations, trailPlans)
+          val rhsRewriter = rewriteCreator(slotConfigurations(rhs.id), plan, slotConfigurations, trailPlans)
+          val lhsExpAfterRewrite = lhsExp.endoRewrite(lhsRewriter)
+          val rhsExpAfterRewrite = rhsExp.endoRewrite(rhsRewriter)
+          plan.copy(join = Equals(lhsExpAfterRewrite, rhsExpAfterRewrite)(e.position))(SameId(plan.id))
 
-        newPlan
+        case oldPlan: AggregatingPlan =>
+          // Grouping and aggregation expressions needs to be rewritten using the incoming slot configuration
+          // as these slots are not available on the outgoing rows
+          val leftPlan = oldPlan.lhs.getOrElse(throw new InternalException("Leaf plans cannot be rewritten this way"))
+          val slotConfiguration = slotConfigurations(oldPlan.id)
+          val incomingSlotConfiguration = slotConfigurations(leftPlan.id)
+          val incomingRewriter = rewriteCreator(incomingSlotConfiguration, oldPlan, slotConfigurations, trailPlans)
+          val newGroupingExpressions = oldPlan.groupingExpressions collect {
+            case (column, expression) =>
+              rewriteVariable(oldPlan, column, slotConfiguration) -> expression.endoRewrite(incomingRewriter)
+          }
+          val newAggregationExpressions = oldPlan.aggregationExpressions collect {
+            case (column, expression) =>
+              rewriteVariable(oldPlan, column, slotConfiguration) -> expression.endoRewrite(incomingRewriter)
+          }
+          val newOrderToLeverage = oldPlan.orderToLeverage collect {
+            case expression => expression.endoRewrite(incomingRewriter)
+          }
+          val newPlan = oldPlan.withNewExpressions(
+            newGroupingExpressions,
+            newAggregationExpressions,
+            newOrderToLeverage
+          )(SameId(oldPlan.id))
+          newPlan
 
-      case oldPlan: LogicalPlan =>
-        val slotConfiguration = slotConfigurations(oldPlan.id)
-        val rewriter = rewriteCreator(slotConfiguration, oldPlan, slotConfigurations, trailPlans)
-        val newPlan = oldPlan.endoRewrite(rewriter)
+        case plan @ RollUpApply(lhs, rhs, collectionName, variableToCollect) =>
+          val lhsSlotConfiguration = slotConfigurations(lhs.id)
+          val rhsSlotConfiguration = slotConfigurations(rhs.id)
+          val newCollectionName = rewriteVariable(plan, collectionName, lhsSlotConfiguration)
+          val newVariableToCollect = rewriteVariable(plan, variableToCollect, rhsSlotConfiguration)
 
-        newPlan
-    })
+          plan.copy(collectionName = newCollectionName, variableToCollect = newVariableToCollect)(SameId(plan.id))
+
+        case oldPlan: LogicalPlan =>
+          val slotConfiguration = slotConfigurations(oldPlan.id)
+          val rewriter = rewriteCreator(slotConfiguration, oldPlan, slotConfigurations, trailPlans)
+          val newPlan = oldPlan.endoRewrite(rewriter)
+
+          newPlan
+      })
 
     // Rewrite plan and note which logical plans are rewritten to something else
     val resultPlan = in
-      .endoRewrite(VariableRefRewriter)
       .endoRewrite(rewritePlanWithSlots)
       .endoRewrite(PostSlottedRewriter)
 
@@ -314,22 +327,8 @@ class SlottedRewriter(tokenContext: ReadTokenContext) {
           case _ => original
         }
 
-      case Variable(k) =>
-        slotConfiguration.get(k) match {
-          case Some(slot) => slot match {
-              case LongSlot(offset, false, CTNode)         => NodeFromSlot(offset, k)
-              case LongSlot(offset, true, CTNode)          => NullCheckVariable(offset, NodeFromSlot(offset, k))
-              case LongSlot(offset, false, CTRelationship) => RelationshipFromSlot(offset, k)
-              case LongSlot(offset, true, CTRelationship)  => NullCheckVariable(offset, RelationshipFromSlot(offset, k))
-              case RefSlot(offset, _, _)                   => ReferenceFromSlot(offset, k)
-              case _ =>
-                throw new CantCompileQueryException("Unknown type for `" + k + "` in the slot configuration")
-            }
-          case _ =>
-            throw new CantCompileQueryException(
-              s"Did not find `$k` in the slot configuration of ${thisPlan.getClass.getSimpleName} (${thisPlan.id})"
-            )
-        }
+      case v: Variable =>
+        rewriteVariable(thisPlan, v, slotConfiguration)
 
       case idFunction: FunctionInvocation if idFunction.function == expressions.functions.Id =>
         idFunction.args.head match {
@@ -731,6 +730,35 @@ object SlottedRewriter {
    * itself can assume the slot to not be nullable.
    */
   val DEFAULT_NULLABLE = false
+
+  def rewriteVariable(
+    thisPlan: LogicalPlan,
+    v: LogicalVariable,
+    slotConfiguration: SlotConfiguration
+  ): LogicalVariable = {
+    v match {
+      case Variable(k) =>
+        slotConfiguration.get(k) match {
+          case Some(slot) => slot match {
+              case LongSlot(offset, false, CTNode)         => NodeFromSlot(offset, k)
+              case LongSlot(offset, true, CTNode)          => NullCheckVariable(offset, NodeFromSlot(offset, k))
+              case LongSlot(offset, false, CTRelationship) => RelationshipFromSlot(offset, k)
+              case LongSlot(offset, true, CTRelationship)  => NullCheckVariable(offset, RelationshipFromSlot(offset, k))
+              case RefSlot(offset, _, _)                   => ReferenceFromSlot(offset, k)
+              case _ =>
+                throw new CantCompileQueryException("Unknown type for `" + k + "` in the slot configuration")
+            }
+          case _ =>
+            throw new CantCompileQueryException(
+              s"Did not find `$k` in the slot configuration of ${thisPlan.getClass.getSimpleName} (${thisPlan.id})"
+            )
+        }
+      case _ =>
+        throw new CantCompileQueryException(
+          s"Don't know how to rewrite variable $v in ${thisPlan.getClass.getSimpleName} (${thisPlan.id})"
+        )
+    }
+  }
 }
 
 /**

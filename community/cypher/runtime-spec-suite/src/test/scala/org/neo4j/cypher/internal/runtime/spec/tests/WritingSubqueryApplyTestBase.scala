@@ -701,8 +701,8 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
       .apply()
       .|.create(createNode("n"))
       .|.cartesianProduct()
-      .|.|.argument("z", "x")
-      .|.argument("y", "x")
+      .|.|.argument()
+      .|.argument()
       .allNodeScan("x")
       .build(readOnly = false)
 

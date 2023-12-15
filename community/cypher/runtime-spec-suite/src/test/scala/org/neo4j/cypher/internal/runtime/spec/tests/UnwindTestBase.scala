@@ -245,7 +245,7 @@ abstract class UnwindTestBase[CONTEXT <: RuntimeContext](
       .|.apply()
       .|.|.argument("x")
       .|.unwind("[1,2,3] AS x")
-      .|.argument("two")
+      .|.argument()
       .input(variables = Seq("two"))
       .build()
 

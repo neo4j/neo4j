@@ -394,7 +394,7 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
       .|.apply()
       .|.|.argument("x")
       .|.procedureCall("cardinalityIncreasingProc(3) YIELD i AS x")
-      .|.argument("two")
+      .|.argument()
       .input(variables = Seq("two"))
       .build()
 
