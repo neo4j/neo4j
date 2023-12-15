@@ -667,7 +667,7 @@ case class Aggregation(
 
   override val availableSymbols: Set[LogicalVariable] = groupingKeys ++ aggregationExpressions.keySet
 
-  override val distinctness: Distinctness = DistinctColumns(groupingKeys)
+  override val distinctness: Distinctness = Distinctness.distinctColumnsOfAggregation(groupingKeys)
 
 }
 
@@ -2732,7 +2732,7 @@ case class OrderedAggregation(
        |   """.stripMargin
   )
 
-  override val distinctness: Distinctness = DistinctColumns(groupingKeys)
+  override val distinctness: Distinctness = Distinctness.distinctColumnsOfAggregation(groupingKeys)
 
 }
 

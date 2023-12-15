@@ -61,6 +61,15 @@ object Distinctness {
     }
   }
 
+  def distinctColumnsOfAggregation(groupingKeys: Set[LogicalVariable]): Distinctness = {
+    if (groupingKeys.isEmpty) {
+      // Aggregation without grouping outputs at most 1 row
+      AtMostOneRow
+    } else {
+      DistinctColumns(groupingKeys)
+    }
+  }
+
   def distinctColumnsOfLimit(limitExpr: Expression, source: LogicalPlan): Distinctness = {
     limitExpr match {
       case i: IntegerLiteral if i.value == 0 || i.value == 1 => AtMostOneRow

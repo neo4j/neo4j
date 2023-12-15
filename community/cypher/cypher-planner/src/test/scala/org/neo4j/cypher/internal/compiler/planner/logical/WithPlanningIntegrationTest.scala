@@ -973,4 +973,21 @@ class WithPlanningIntegrationTest extends CypherFunSuite
         .build()
     )
   }
+
+  test("count gives distinct column") {
+    val plan = planner.plan(
+      """UNWIND range(0,100) AS i
+        |WITH count(i) AS n
+        |RETURN DISTINCT n""".stripMargin
+    )
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("n")
+        .aggregation(Seq(), Seq("count(i) AS n"))
+        .unwind("range(0, 100) AS i")
+        .argument()
+        .build()
+    )
+  }
 }
