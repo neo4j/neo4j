@@ -16,35 +16,30 @@ set timeout 20
 set stty_init "rows 1000 cols 200"
 set send_human {.1 .3 1 .05 2}
 
-# ANSI Codes
-# ----------
-set bold "\033\[\[1m"
-set color_reset "\033\[\[0m"
-
 # Cypher Shell Related
 # ---------------------
-set prompt "${bold}neo4j@neo4j${color_reset}> "
+set prompt {> }
 
 # Procedures
 # ----------
 
 proc sendQuery { query } {
-    expect "\033\[\[1mneo4j@neo4j\033\[\[0m> " {
-        # We "should" not need to sleep here, but input and output gets out of sync if we don't
-        sleep 0.5
-        send "${query}\r"
+    expect {neo4j@neo4j} {
+        expect {> } {
+            send "${query}\r"
+        }
     }
 }
 
 
 proc expectPrompt {} {
-    expect "\033\[\[1mneo4j@neo4j\033\[\[0m> "
-    # We "should" not need to sleep here, but input and output gets out of sync if we don't
-    sleep 0.1
+    expect {neo4j@neo4j} {
+        expect {> }
+    }
 }
 
 proc expectCleanExit {} {
-    expect "Bye!"
+    expect {Bye!}
     expect eof { exit 0 }
 }
 
@@ -58,4 +53,4 @@ expect_after {
     timeout { puts stderr "\rError: Timeout!\r"; exit 2 }
 }
 
-expect "Connected"
+expect {Connected}

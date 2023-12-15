@@ -49,6 +49,7 @@ import org.testcontainers.images.builder.ImageFromDockerfile;
  * Extension to run tests using expect. Will start docker containers with neo4j and expect. Use runTestCase to run expect scenarios.
  */
 public class ExpectTestExtension implements BeforeAllCallback, AfterAllCallback {
+    private static final boolean DEBUG = false;
     static String CYPHER_SHELL_PATH = "/cypher-shell/bin/cypher-shell";
     private final String neo4jDockerTag;
     private NeoContainer neo4jContainer;
@@ -85,7 +86,10 @@ public class ExpectTestExtension implements BeforeAllCallback, AfterAllCallback 
         final var expected =
                 resourceToString(expectedPathString, UTF_8, getClass().getClassLoader());
         final var expectScriptFilename = expectResourcePath.getFileName().toString();
-        final var execution = expectContainer.execInContainer("expect", expectScriptFilename);
+        final var args = DEBUG
+                ? new String[] {"expect", "-d", expectScriptFilename}
+                : new String[] {"expect", expectScriptFilename};
+        final var execution = expectContainer.execInContainer(args);
         if (execution.getExitCode() != 0 || !execution.getStderr().isEmpty()) {
             final var message =
                     """
