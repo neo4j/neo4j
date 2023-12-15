@@ -24,12 +24,135 @@ import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringIn
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.leverageOrder.OrderToLeverageWithAliases
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.functions.Count
+import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Asc
+import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Desc
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
+import scala.collection.immutable.Seq
 import scala.collection.immutable.SortedMap
 
 class LeverageOrderTest extends CypherFunSuite with AstConstructionTestSupport {
+
+  test("should leverage order for exact match on grouping column and exact match on aggregation expression") {
+    val po = ProvidedOrder.asc(varFor("a")).asc(varFor("b"))
+    val grouping = Map[LogicalVariable, Expression](v"newA" -> varFor("a"))
+    val aggregation = Map[LogicalVariable, Expression](v"agg" -> distinctFunction(Count.name, varFor("b")))
+    leverageOrder(po, grouping, aggregation, Set.empty) should be(OrderToLeverageWithAliases(
+      Seq(varFor("a")),
+      Some(Asc(varFor("b"))),
+      grouping
+    ))
+  }
+
+  // NOTE: this would be a dumb query to write, only asserting on expected behavior of leverageOrder - there is little to gain here
+  test(
+    "should leverage order for exact match on grouping column but not on aggregation expression when they are on same ordered column"
+  ) {
+    val po = ProvidedOrder.asc(varFor("a"))
+    val grouping = Map[LogicalVariable, Expression](v"newA" -> varFor("a"))
+    val aggregation = Map[LogicalVariable, Expression](v"agg" -> distinctFunction(Count.name, varFor("a")))
+    leverageOrder(po, grouping, aggregation, Set.empty) should be(OrderToLeverageWithAliases(
+      Seq(varFor("a")),
+      None,
+      grouping
+    ))
+  }
+
+  test("should leverage order for exact match on grouping column and no match on aggregation expression") {
+    val po = ProvidedOrder.asc(varFor("a")).asc(varFor("b"))
+    val grouping = Map[LogicalVariable, Expression](v"newA" -> varFor("a"))
+    val aggregation = Map[LogicalVariable, Expression](v"agg" -> distinctFunction(Count.name, varFor("c")))
+    leverageOrder(po, grouping, aggregation, Set.empty) should be(OrderToLeverageWithAliases(
+      Seq(varFor("a")),
+      None,
+      grouping
+    ))
+  }
+
+  test("should leverage order for exact match on aggregation expression when there are no groups") {
+    val po = ProvidedOrder.desc(varFor("a"))
+    val grouping = Map.empty[LogicalVariable, Expression]
+    val aggregation = Map[LogicalVariable, Expression](v"agg" -> distinctFunction(Count.name, varFor("a")))
+    leverageOrder(po, grouping, aggregation, Set.empty) should be(OrderToLeverageWithAliases(
+      Seq.empty,
+      Some(Desc(varFor("a"))),
+      grouping
+    ))
+  }
+
+  test("should leverage order for exact match on aggregation expression when there is no match on group") {
+    val po = ProvidedOrder.desc(varFor("a"))
+    val grouping = Map[LogicalVariable, Expression](v"newX" -> varFor("x"))
+    val aggregation = Map[LogicalVariable, Expression](v"agg" -> distinctFunction(Count.name, varFor("a")))
+    leverageOrder(po, grouping, aggregation, Set.empty) should be(OrderToLeverageWithAliases(
+      Seq.empty,
+      Some(Desc(varFor("a"))),
+      grouping
+    ))
+  }
+
+  test(
+    "should leverage order for exact match on aggregation expression when aggregation ordered column is a prefix of grouping ordered columns"
+  ) {
+    val po = ProvidedOrder.desc(varFor("a")).desc(varFor("b"))
+    val grouping = Map[LogicalVariable, Expression](v"newB" -> varFor("b"))
+    val aggregation = Map[LogicalVariable, Expression](v"agg" -> distinctFunction(Count.name, varFor("a")))
+    leverageOrder(po, grouping, aggregation, Set.empty) should be(OrderToLeverageWithAliases(
+      Seq.empty,
+      Some(Desc(varFor("a"))),
+      grouping
+    ))
+  }
+
+  test(
+    "should not leverage order for exact match on aggregation expression if there is an unused provided order prefix"
+  ) {
+    val po = ProvidedOrder.asc(varFor("a")).desc(varFor("b"))
+    val grouping = Map.empty[LogicalVariable, Expression]
+    val aggregation = Map[LogicalVariable, Expression](v"agg" -> distinctFunction(Count.name, varFor("b")))
+    leverageOrder(po, grouping, aggregation, Set.empty) should be(OrderToLeverageWithAliases(Seq.empty, None, grouping))
+  }
+
+  test(
+    "should leverage order for prefix match with one of grouping columns, and leverage next ordered column when it matches on aggregation column"
+  ) {
+    val po = ProvidedOrder.asc(varFor("a")).desc(varFor("b"))
+    val grouping = Map[LogicalVariable, Expression](v"newA" -> varFor("a"), v"newC" -> varFor("c"))
+    val aggregation = Map[LogicalVariable, Expression](v"agg" -> distinctFunction(Count.name, varFor("b")))
+    leverageOrder(po, grouping, aggregation, Set.empty) should be(OrderToLeverageWithAliases(
+      Seq(varFor("a")),
+      Some(Desc(varFor("b"))),
+      grouping
+    ))
+  }
+
+  test(
+    "should leverage order for prefix match with one of grouping columns, and not leverage next ordered column when it does not match on aggregation column"
+  ) {
+    val po = ProvidedOrder.asc(varFor("a")).desc(varFor("b"))
+    val grouping = Map[LogicalVariable, Expression](v"newA" -> varFor("a"), v"newC" -> varFor("c"))
+    val aggregation = Map[LogicalVariable, Expression](v"agg" -> distinctFunction(Count.name, varFor("c")))
+    leverageOrder(po, grouping, aggregation, Set.empty) should be(OrderToLeverageWithAliases(
+      Seq(varFor("a")),
+      None,
+      grouping
+    ))
+  }
+
+  test(
+    "should leverage order for prefix match with one of grouping columns as prefix and one as suffix, and leverage next ordered column when it matches on aggregation column"
+  ) {
+    val po = ProvidedOrder.asc(varFor("a")).desc(varFor("b")).asc(varFor("c")).asc(varFor("d"))
+    val grouping = Map[LogicalVariable, Expression](v"newA" -> varFor("a"), v"newC" -> varFor("c"))
+    val aggregation = Map[LogicalVariable, Expression](v"agg" -> distinctFunction(Count.name, varFor("b")))
+    leverageOrder(po, grouping, aggregation, Set.empty) should be(OrderToLeverageWithAliases(
+      Seq(varFor("a")),
+      Some(Desc(varFor("b"))),
+      grouping
+    ))
+  }
 
   test("should leverage ASC order for exact match with grouping column") {
     val po = ProvidedOrder.asc(v"a")
