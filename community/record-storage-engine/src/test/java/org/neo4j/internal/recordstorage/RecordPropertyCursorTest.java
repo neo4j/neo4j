@@ -173,6 +173,19 @@ public class RecordPropertyCursorTest {
     }
 
     @Test
+    void shouldReturnNothingAfterReset() {
+        // given
+        long firstPropertyId = storeValuesAsPropertyChain(owner, createValues());
+
+        // then
+        try (RecordPropertyCursor cursor = createCursor()) {
+            cursor.initNodeProperties(longReference(firstPropertyId), ALL_PROPERTIES, owner.getId());
+            cursor.reset();
+            assertThat(cursor.next()).isFalse();
+        }
+    }
+
+    @Test
     void shouldAbortChainTraversalOnLikelyCycle() {
         // given
         Value[] values = createValues(20, 20); // many enough to create multiple records in the chain

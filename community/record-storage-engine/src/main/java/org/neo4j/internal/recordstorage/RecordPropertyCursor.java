@@ -204,9 +204,12 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
             loadMode = RecordLoadOverride.none();
             clear();
             numSeenPropertyRecords = 0;
+            block = Integer.MAX_VALUE;
+            next = NO_ID;
             first = NO_ID;
             ownerReference = NO_ID;
             cycleDetection = null;
+            selection = PropertySelection.NO_PROPERTIES;
         }
     }
 
@@ -355,9 +358,9 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
     @Override
     public String toString() {
         if (!open) {
-            return "PropertyCursor[closed state]";
+            return "RecordPropertyCursor[closed state]";
         } else {
-            return "PropertyCursor[id=" + getId() + ", open state with: block=" + block + ", next=" + next
+            return "RecordPropertyCursor[id=" + getId() + ", open state with: block=" + block + ", next=" + next
                     + ", underlying record=" + super.toString() + "]";
         }
     }
