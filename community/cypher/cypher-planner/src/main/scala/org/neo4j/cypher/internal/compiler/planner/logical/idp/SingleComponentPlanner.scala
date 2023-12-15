@@ -165,7 +165,7 @@ case class SingleComponentPlanner(
   ): Seed[NodeConnection, LogicalPlan] = {
     for (pattern <- qg.nodeConnections)
       yield {
-        val plans = planSinglePattern(qg, pattern, bestLeafPlansPerAvailableSymbol, qppInnerPlanner, context)
+        val plans = planSinglePattern(qg, kit, pattern, bestLeafPlansPerAvailableSymbol, qppInnerPlanner, context)
           .map(plan => kit.select(plan, qg))
         // From _all_ plans (even if they are sorted), put the best into the seed
         // with `false`. We don't want to compare just the ones that are unsorted
@@ -237,6 +237,7 @@ object SingleComponentPlanner {
    */
   def planSinglePattern(
     qg: QueryGraph,
+    kit: QueryPlannerKit,
     patternToSolve: NodeConnection,
     bestLeafPlansPerAvailableSymbol: Map[Set[String], BestPlans],
     qppInnerPlanner: QPPInnerPlanner,
@@ -286,6 +287,7 @@ object SingleComponentPlanner {
 
         val cartesianProducts = planSinglePatternCartesianProducts(
           qg,
+          kit,
           patternToSolve,
           start.name,
           maybeStartBestPlans,
@@ -318,6 +320,7 @@ object SingleComponentPlanner {
 
   private def planSinglePatternCartesianProducts(
     qg: QueryGraph,
+    kit: QueryPlannerKit,
     pattern: NodeConnection,
     start: String,
     maybeStartBestPlans: Option[BestPlans],
@@ -341,10 +344,12 @@ object SingleComponentPlanner {
 
       (startLHSEndRHS ++ endLHSStartRHS).flatMap {
         case (lhsPlan, rhsPlan) =>
+          val cp = context.staticComponents.logicalPlanProducer.planCartesianProduct(lhsPlan, rhsPlan, context)
+          val cpPlusFilter = kit.select(cp, qg)
           planSinglePatternSide(
             qg,
             pattern,
-            context.staticComponents.logicalPlanProducer.planCartesianProduct(lhsPlan, rhsPlan, context),
+            cpPlusFilter,
             start,
             qppInnerPlanner,
             context

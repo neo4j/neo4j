@@ -453,4 +453,33 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
       .allNodeScan("a")
       .build())
   }
+
+  test("Plans predicates on top of CartesianProduct before ExpandInto") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(10)
+      .setAllRelationshipsCardinality(100)
+      .build()
+
+    val query =
+      """MATCH (a)-[*1..2]-(b)
+        |WHERE id(a) = 0 AND id(b) = 0 AND labels(a) = labels(b)
+        |RETURN *
+        |""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+    plan should (equal(planner.subPlanBuilder()
+      .expandInto("(a)-[anon_0*1..2]-(b)")
+      .filter("labels(a) = labels(b)")
+      .cartesianProduct()
+      .|.nodeByIdSeek("b", Set(), 0)
+      .nodeByIdSeek("a", Set(), 0)
+      .build()) or
+      equal(planner.subPlanBuilder()
+        .expandInto("(a)-[anon_0*1..2]-(b)")
+        .filter("labels(a) = labels(b)")
+        .cartesianProduct()
+        .|.nodeByIdSeek("a", Set(), 0)
+        .nodeByIdSeek("b", Set(), 0)
+        .build()))
+  }
 }

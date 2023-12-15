@@ -1521,7 +1521,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .addTransition(0, 1, "(u) (n)")
       .addTransition(1, 2, "(n)-[r]->(m)")
       .addTransition(2, 1, "(m) (n)")
-      .addTransition(2, 3, "(m) (v WHERE v.prop = cache[u.prop])")
+      .addTransition(2, 3, "(m) (v)")
       .setFinalState(3)
       .build()
 
@@ -1531,7 +1531,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "u",
           "v",
-          "SHORTEST 1 ((u) ((n)-[r]->(m)){1, } (v) WHERE unique(`r`) AND v.prop = u.prop)",
+          "SHORTEST 1 ((u) ((n)-[r]->(m)){1, } (v) WHERE unique(`r`))",
           None,
           groupNodes = Set(("n", "n"), ("m", "m")),
           groupRelationships = Set(("r", "r")),
@@ -1541,6 +1541,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           nfa,
           ExpandInto
         )
+        .filter("v.prop = cacheN[u.prop]")
         .cartesianProduct()
         .|.allNodeScan("v")
         .nodeIndexOperator("u:User(prop > 5)", getValue = Map("prop" -> GetValue))
