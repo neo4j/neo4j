@@ -19,7 +19,6 @@
  */
 package org.neo4j.consistency;
 
-import java.io.PrintStream;
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.archive.CheckDatabase;
@@ -28,6 +27,7 @@ import org.neo4j.io.IOUtils.AutoCloseables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 
 @ServiceProvider
@@ -62,7 +62,8 @@ public class CheckNativeDatabase implements CheckDatabase {
             DatabaseLayout targetLayout,
             Source source,
             NormalizedDatabaseName database,
-            PrintStream out,
+            InternalLogProvider logProvider,
+            boolean verbose,
             boolean force) {
         Source.expected(DataTxnSource.class, source);
         // no-op

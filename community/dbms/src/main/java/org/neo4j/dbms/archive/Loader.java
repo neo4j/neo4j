@@ -40,12 +40,14 @@ import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.neo4j.commandline.dbms.StoreVersionLoader;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.archive.printer.OutputProgressPrinter;
+import org.neo4j.dbms.archive.printer.ProgressPrinters;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.util.VisibleForTesting;
 
@@ -65,6 +67,10 @@ public class Loader {
     public Loader(FileSystemAbstraction filesystem, OutputProgressPrinter progressPrinter) {
         this.filesystem = filesystem;
         this.progressPrinter = new ArchiveProgressPrinter(progressPrinter, Instant::now);
+    }
+
+    public Loader(FileSystemAbstraction filesystem, InternalLogProvider logProvider) {
+        this(filesystem, ProgressPrinters.logProviderPrinter(logProvider.getLog(Loader.class)));
     }
 
     public void load(DatabaseLayout databaseLayout, ThrowingSupplier<InputStream, IOException> streamSupplier)

@@ -25,7 +25,6 @@ import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 
 import java.io.IOException;
-import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -40,6 +39,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
+import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.service.Services;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 
@@ -53,10 +53,11 @@ public interface CheckDatabase {
             FileSystemAbstraction fs,
             Source source,
             NormalizedDatabaseName database,
-            PrintStream out,
+            InternalLogProvider logProvider,
+            boolean verbose,
             Config config,
             boolean force,
-            AutoCloseables autoCloseables)
+            AutoCloseables<?> autoCloseables)
             throws IOException {
 
         for (final var checkDatabase : all()) {
@@ -66,7 +67,7 @@ public interface CheckDatabase {
 
             try {
                 final var targetLayout = checkDatabase.targetLayoutFrom(fs, source, database, autoCloseables);
-                checkDatabase.tryExtract(fs, config, targetLayout, source, database, out, force);
+                checkDatabase.tryExtract(fs, config, targetLayout, source, database, logProvider, verbose, force);
 
                 final var storageEngineFactory = StorageEngineFactory.selectStorageEngine(fs, targetLayout)
                         .orElseThrow(() ->
@@ -102,7 +103,8 @@ public interface CheckDatabase {
             DatabaseLayout targetLayout,
             Source source,
             NormalizedDatabaseName database,
-            PrintStream out,
+            InternalLogProvider logProvider,
+            boolean verbose,
             boolean force)
             throws Exception;
 

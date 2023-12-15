@@ -166,11 +166,12 @@ public class CheckCommand extends AbstractAdminCommand {
     }
 
     protected Result checkWith(Config config, MemoryTracker memoryTracker) {
-        try (var autoClosables = new AutoCloseables<>(IOException::new)) {
+        try (var autoClosables = new AutoCloseables<>(IOException::new);
+                var logProvider = Util.configuredLogProvider(ctx.out(), verbose)) {
             final DatabaseLayout layout;
             try {
                 layout = CheckDatabase.selectAndExtract(
-                        ctx.fs(), source, database, ctx.out(), config, force, autoClosables);
+                        ctx.fs(), source, database, logProvider, verbose, config, force, autoClosables);
             } catch (IOException e) {
                 throw new CommandFailedException(
                         "Failed to prepare for consistency check: " + e.getMessage(), e, ExitCode.IOERR);
@@ -183,7 +184,7 @@ public class CheckCommand extends AbstractAdminCommand {
 
             try (var ignored = LockChecker.checkDatabaseLock(layout)) {
                 checkDbState(ctx.fs(), layout, config, memoryTracker);
-                try (var logProvider = Util.configuredLogProvider(ctx.out(), verbose)) {
+                try {
                     return consistencyCheckService
                             .with(layout)
                             .with(config)

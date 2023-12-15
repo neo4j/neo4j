@@ -22,7 +22,6 @@ package org.neo4j.dbms.archive;
 import static org.neo4j.dbms.archive.Dumper.DUMP_EXTENSION;
 
 import java.io.IOException;
-import java.io.PrintStream;
 import java.nio.file.FileSystemException;
 import java.nio.file.Path;
 import org.neo4j.annotations.service.ServiceProvider;
@@ -35,6 +34,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
+import org.neo4j.logging.InternalLogProvider;
 
 @ServiceProvider
 public class CheckDump implements CheckDatabase {
@@ -67,18 +67,21 @@ public class CheckDump implements CheckDatabase {
             DatabaseLayout targetLayout,
             Source source,
             NormalizedDatabaseName database,
-            PrintStream out,
+            InternalLogProvider logProvider,
+            boolean verbose,
             boolean force)
             throws IOException, IncorrectFormat {
         final var pathSource = Source.expected(PathSource.class, source);
 
         final var dump = dumpFile(pathSource.path, database);
-        final var loader = new Loader(fs, out);
+        final var loader = verbose ? new Loader(fs, logProvider) : new Loader(fs);
         checkDiskSpace(fs, dump, loader, force);
 
-        out.printf(
+        final var log = logProvider.getLog(getClass());
+        log.info(
                 "Loading dump from: %s%ninto: %s%n",
                 dump, targetLayout.getNeo4jLayout().dataDirectory());
+
         loader.load(dump, targetLayout, false, false, DumpFormatSelector::decompress);
     }
 
