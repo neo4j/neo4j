@@ -37,5 +37,29 @@ public record CheckpointInfo(
         KernelVersion kernelVersion,
         byte kernelVersionByte,
         TransactionId transactionId,
-        String reason)
-        implements KernelVersionProvider {}
+        String reason,
+        boolean consensusIndexInCheckpoint)
+        implements KernelVersionProvider {
+    public CheckpointInfo(
+            LogPosition transactionLogPosition,
+            StoreId storeId,
+            LogPosition checkpointEntryPosition,
+            LogPosition channelPositionAfterCheckpoint,
+            LogPosition checkpointFilePostReadPosition,
+            KernelVersion kernelVersion,
+            byte kernelVersionByte,
+            TransactionId transactionId,
+            String reason) {
+        this(
+                transactionLogPosition,
+                storeId,
+                checkpointEntryPosition,
+                channelPositionAfterCheckpoint,
+                checkpointFilePostReadPosition,
+                kernelVersion,
+                kernelVersionByte,
+                transactionId,
+                reason,
+                true);
+    }
+}

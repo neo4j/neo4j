@@ -133,7 +133,13 @@ public class DetachedCheckpointLogEntrySerializerV5_0 extends LogEntrySerializer
         String reason = new String(bytes, 0, reasonBytesLength, UTF_8);
         channel.endChecksumAndValidate();
         return new LogEntryDetachedCheckpointV5_0(
-                version, transactionId, new LogPosition(logVersion, byteOffset), checkpointTimeMillis, storeId, reason);
+                version,
+                transactionId,
+                new LogPosition(logVersion, byteOffset),
+                checkpointTimeMillis,
+                storeId,
+                reason,
+                false);
     }
 
     @Override

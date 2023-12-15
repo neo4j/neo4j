@@ -31,6 +31,8 @@ import static org.neo4j.kernel.impl.transaction.log.files.checkpoint.DetachedLog
 import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
 import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
+import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TRANSACTION_ID;
 import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
 
@@ -51,9 +53,11 @@ import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.LogIndexEncoding;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
@@ -116,17 +120,15 @@ class DetachedLogTailScannerTest {
                 .build();
     }
 
-    void writeCheckpoint(CheckpointFile separateCheckpointFile, TransactionId transactionId, LogPosition logPosition)
+    void writeCheckpoint(
+            CheckpointFile separateCheckpointFile,
+            TransactionId transactionId,
+            LogPosition logPosition,
+            KernelVersion kernelVersion)
             throws IOException {
         separateCheckpointFile
                 .getCheckpointAppender()
-                .checkPoint(
-                        LogCheckPointEvent.NULL,
-                        transactionId,
-                        LATEST_KERNEL_VERSION,
-                        logPosition,
-                        Instant.now(),
-                        "test");
+                .checkPoint(LogCheckPointEvent.NULL, transactionId, kernelVersion, logPosition, Instant.now(), "test");
     }
 
     @Test
@@ -535,6 +537,148 @@ class DetachedLogTailScannerTest {
         assertEquals(chunkTxId, ((LogTailInformation) tailMetadata).firstTxIdAfterLastCheckPoint);
     }
 
+    @Test
+    void parseConsensusIndexFromCheckpoint() throws Exception {
+        // given
+        long transactionId = 4;
+        long consensusIndex = 999;
+        setupLogFiles(
+                13,
+                logFile(
+                        KernelVersion.V5_7,
+                        start(),
+                        commit(transactionId - 2),
+                        start(),
+                        commit(transactionId - 1),
+                        start(),
+                        commit(transactionId),
+                        checkPoint(new TransactionId(
+                                transactionId, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP, consensusIndex))));
+
+        // when
+        var logTailInformation = logFiles.getTailMetadata();
+
+        assertThat(logTailInformation
+                        .getLastCheckPoint()
+                        .orElseThrow()
+                        .transactionId()
+                        .consensusIndex())
+                .isEqualTo(consensusIndex);
+    }
+
+    @Test
+    void doNotParseConsensusIndexFromTransactionHeaderFor57PlusCheckpoint() throws Exception {
+        // given
+        long transactionId = 4;
+        setupLogFiles(
+                13,
+                logFile(
+                        KernelVersion.V5_7,
+                        start(666),
+                        commit(transactionId - 2),
+                        start(666),
+                        commit(transactionId - 1),
+                        start(999),
+                        commit(transactionId),
+                        checkPoint(new TransactionId(
+                                transactionId, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP, UNKNOWN_CONSENSUS_INDEX))));
+
+        // when
+        var logTailInformation = logFiles.getTailMetadata();
+
+        assertThat(logTailInformation
+                        .getLastCheckPoint()
+                        .orElseThrow()
+                        .transactionId()
+                        .consensusIndex())
+                .isEqualTo(UNKNOWN_CONSENSUS_INDEX);
+    }
+
+    @Test
+    void parseConsensusIndexFromTransactionHeaderFor50Checkpoint() throws Exception {
+        // given
+        long transactionId = 4;
+        long consensusIndex = 999;
+        setupLogFiles(
+                13,
+                logFile(
+                        KernelVersion.V5_0,
+                        start(666),
+                        commit(transactionId - 2),
+                        start(666),
+                        commit(transactionId - 1),
+                        start(consensusIndex),
+                        commit(transactionId),
+                        checkPoint(new TransactionId(
+                                transactionId, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP, UNKNOWN_CONSENSUS_INDEX))));
+
+        // when
+        var logTailInformation = logFiles.getTailMetadata();
+
+        assertThat(logTailInformation
+                        .getLastCheckPoint()
+                        .orElseThrow()
+                        .transactionId()
+                        .consensusIndex())
+                .isEqualTo(consensusIndex);
+    }
+
+    @Test
+    void parseConsensusIndexFromTransactionHeaderWhenInPreviousLog() throws Exception {
+        // given
+        long transactionId = 7;
+        long consensusIndex = 999;
+        setupLogFiles(
+                13,
+                logFile(
+                        KernelVersion.V5_0,
+                        start(555),
+                        commit(transactionId - 1),
+                        start(consensusIndex),
+                        commit(transactionId)),
+                logFile(
+                        KernelVersion.V5_0,
+                        checkPoint(new TransactionId(
+                                transactionId, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP, UNKNOWN_CONSENSUS_INDEX))));
+
+        // when
+        var logTailInformation = logFiles.getTailMetadata();
+
+        assertThat(logTailInformation
+                        .getLastCheckPoint()
+                        .orElseThrow()
+                        .transactionId()
+                        .consensusIndex())
+                .isEqualTo(consensusIndex);
+    }
+
+    @Test
+    void parseConsensusIndexFromTransactionHeaderWhenHasMoreTransactionsAfterCheckpoint() throws Exception {
+        // given
+        long transactionId = 1;
+        long consensusIndex = 999;
+        setupLogFiles(
+                13,
+                logFile(
+                        KernelVersion.V5_0,
+                        start(consensusIndex),
+                        commit(transactionId),
+                        checkPoint(new TransactionId(
+                                transactionId, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP, UNKNOWN_CONSENSUS_INDEX)),
+                        start(1001),
+                        commit(transactionId + 1)));
+
+        // when
+        var logTailInformation = logFiles.getTailMetadata();
+
+        assertThat(logTailInformation
+                        .getLastCheckPoint()
+                        .orElseThrow()
+                        .transactionId()
+                        .consensusIndex())
+                .isEqualTo(consensusIndex);
+    }
+
     // === Below is code for helping the tests above ===
 
     void setupLogFiles(long endLogVersion, LogCreator... logFiles) throws Exception {
@@ -548,6 +692,10 @@ class DetachedLogTailScannerTest {
     }
 
     LogCreator logFile(Entry... entries) {
+        return logFile(LATEST_KERNEL_VERSION, entries);
+    }
+
+    LogCreator logFile(KernelVersion kernelVersion, Entry... entries) {
         return (logVersion, positions) -> {
             try {
                 AtomicLong lastTxId = new AtomicLong();
@@ -565,18 +713,20 @@ class DetachedLogTailScannerTest {
                     for (Entry entry : entries) {
                         LogPosition currentPosition = logWriter.getCurrentPosition();
                         positions.put(entry, currentPosition);
-                        if (entry instanceof StartEntry) {
-                            writer.writeStartEntry(LATEST_KERNEL_VERSION, 0, 0, previousChecksum, EMPTY_BYTE_ARRAY);
+                        if (entry instanceof StartEntry startEntry) {
+                            writer.writeStartEntry(
+                                    kernelVersion, 0, 0, previousChecksum, startEntry.additionalHeader());
                         } else if (entry instanceof CommitEntry commitEntry) {
-                            previousChecksum = writer.writeCommitEntry(LATEST_KERNEL_VERSION, commitEntry.txId, 0);
+                            previousChecksum = writer.writeCommitEntry(kernelVersion, commitEntry.txId, 0);
                             lastTxId.set(commitEntry.txId);
                         } else if (entry instanceof ChunkEndEntry chunkEntry) {
-                            previousChecksum = writer.writeChunkEndEntry(LATEST_KERNEL_VERSION, chunkEntry.txId, 1);
+                            previousChecksum = writer.writeChunkEndEntry(kernelVersion, chunkEntry.txId, 1);
                         } else if (entry instanceof CheckPointEntry checkPointEntry) {
                             Entry target = checkPointEntry.withPositionOfEntry;
                             LogPosition logPosition = target != null ? positions.get(target) : currentPosition;
                             assert logPosition != null : "No registered log position for " + target;
-                            writeCheckpoint(checkpointFile, UNKNOWN_TRANSACTION_ID, logPosition);
+                            writeCheckpoint(
+                                    checkpointFile, checkPointEntry.transactionId(), logPosition, kernelVersion);
                         } else if (entry instanceof PositionEntry) {
                             // Don't write anything, this entry is just for registering a position so that
                             // another CheckPointEntry can refer to it
@@ -599,59 +749,53 @@ class DetachedLogTailScannerTest {
     }
 
     // Marker interface, helping compilation/test creation
-    interface Entry {}
+    sealed interface Entry {}
 
-    static StartEntry start() {
-        return new StartEntry();
+    private record StartEntry(byte[] additionalHeader) implements Entry {}
+
+    private record CommitEntry(long txId) implements Entry {}
+
+    private record ChunkEndEntry(long txId) implements Entry {}
+
+    private record CheckPointEntry(Entry withPositionOfEntry, TransactionId transactionId) implements Entry {}
+
+    private record PositionEntry() implements Entry {}
+
+    private static StartEntry start() {
+        return new StartEntry(EMPTY_BYTE_ARRAY);
     }
 
-    static CommitEntry commit(long txId) {
+    private static StartEntry start(long consensusIndex) {
+        return new StartEntry(LogIndexEncoding.encodeLogIndex(consensusIndex));
+    }
+
+    private static CommitEntry commit(long txId) {
         return new CommitEntry(txId);
     }
 
-    static ChunkEndEntry chunkEnd(long txId) {
+    private static ChunkEndEntry chunkEnd(long txId) {
         return new ChunkEndEntry(txId);
     }
 
-    static CheckPointEntry checkPoint() {
-        return checkPoint(null /*means self-position*/);
+    private static CheckPointEntry checkPoint() {
+        return checkPoint(null /*means self-position*/, UNKNOWN_TRANSACTION_ID);
     }
 
-    static CheckPointEntry checkPoint(Entry forEntry) {
-        return new CheckPointEntry(forEntry);
+    private static CheckPointEntry checkPoint(Entry forEntry) {
+        return checkPoint(forEntry, UNKNOWN_TRANSACTION_ID);
     }
 
-    static PositionEntry position() {
+    private static CheckPointEntry checkPoint(TransactionId transactionId) {
+        return checkPoint(null, transactionId);
+    }
+
+    private static CheckPointEntry checkPoint(Entry forEntry, TransactionId transactionId) {
+        return new CheckPointEntry(forEntry, transactionId);
+    }
+
+    private static PositionEntry position() {
         return new PositionEntry();
     }
-
-    private static class StartEntry implements Entry {}
-
-    private static class CommitEntry implements Entry {
-        final long txId;
-
-        CommitEntry(long txId) {
-            this.txId = txId;
-        }
-    }
-
-    private static class ChunkEndEntry implements Entry {
-        final long txId;
-
-        ChunkEndEntry(long txId) {
-            this.txId = txId;
-        }
-    }
-
-    private static class CheckPointEntry implements Entry {
-        final Entry withPositionOfEntry;
-
-        CheckPointEntry(Entry withPositionOfEntry) {
-            this.withPositionOfEntry = withPositionOfEntry;
-        }
-    }
-
-    static class PositionEntry implements Entry {}
 
     private static void assertLatestCheckPoint(
             boolean hasCheckPointEntry,

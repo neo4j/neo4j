@@ -29,11 +29,12 @@ import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
 
 public class LogEntryDetachedCheckpointV5_0 extends AbstractVersionAwareLogEntry {
-    protected final TransactionId transactionId;
-    protected final LogPosition logPosition;
-    protected final long checkpointTime;
-    protected final StoreId storeId;
-    protected final String reason;
+    private final TransactionId transactionId;
+    private final LogPosition logPosition;
+    private final long checkpointTime;
+    private final StoreId storeId;
+    private final String reason;
+    private final boolean consensusIndexInCheckpoint;
 
     public LogEntryDetachedCheckpointV5_0(
             KernelVersion kernelVersion,
@@ -42,12 +43,24 @@ public class LogEntryDetachedCheckpointV5_0 extends AbstractVersionAwareLogEntry
             long checkpointMillis,
             StoreId storeId,
             String reason) {
+        this(kernelVersion, transactionId, logPosition, checkpointMillis, storeId, reason, true);
+    }
+
+    public LogEntryDetachedCheckpointV5_0(
+            KernelVersion kernelVersion,
+            TransactionId transactionId,
+            LogPosition logPosition,
+            long checkpointMillis,
+            StoreId storeId,
+            String reason,
+            boolean consensusIndexInCheckpoint) {
         super(kernelVersion, DETACHED_CHECK_POINT_V5_0);
         this.transactionId = transactionId;
         this.logPosition = logPosition;
         this.checkpointTime = checkpointMillis;
         this.storeId = storeId;
         this.reason = reason;
+        this.consensusIndexInCheckpoint = consensusIndexInCheckpoint;
     }
 
     @Override
@@ -90,6 +103,10 @@ public class LogEntryDetachedCheckpointV5_0 extends AbstractVersionAwareLogEntry
 
     public long getCheckpointTime() {
         return checkpointTime;
+    }
+
+    public boolean consensusIndexInCheckpoint() {
+        return consensusIndexInCheckpoint;
     }
 
     @Override

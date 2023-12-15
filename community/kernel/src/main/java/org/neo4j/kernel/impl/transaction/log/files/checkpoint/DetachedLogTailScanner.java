@@ -27,6 +27,7 @@ import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.fs.FileUtils.getCanonicalFile;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.files.RangeLogVersionVisitor.UNKNOWN;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -44,6 +45,7 @@ import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.transaction.log.CheckpointInfo;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
+import org.neo4j.kernel.impl.transaction.log.LogIndexEncoding;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
@@ -63,6 +65,7 @@ import org.neo4j.kernel.recovery.LogTailScannerMonitor;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.TransactionId;
 
 public class DetachedLogTailScanner {
     static final long NO_TRANSACTION_ID = -1;
@@ -156,7 +159,7 @@ public class DetachedLogTailScanner {
             throws IOException {
         var entries = getFirstTransactionIdAfterCheckpoint(logFile, checkpoint.transactionLogPosition());
         return new LogTailInformation(
-                checkpoint,
+                loadConsensusIndexIfNeeded(logFile, checkpoint),
                 entries.isPresent(),
                 entries.getTransactionId(),
                 lowestLogVersion == UNKNOWN,
@@ -262,6 +265,77 @@ public class DetachedLogTailScanner {
             }
         }
         return new StartCommitEntries(start, commit, chunkEnd, corruptedTransactionLogs);
+    }
+
+    private CheckpointInfo loadConsensusIndexIfNeeded(LogFile logFile, CheckpointInfo checkpoint) throws IOException {
+        if (checkpoint.consensusIndexInCheckpoint()) {
+            return checkpoint;
+        }
+
+        // this supports special case when upgrading from pre 5.7 to 5.10+
+        // we can have 5.0 checkpoint without consensus index and need to parse it from transaction itself, if it is
+        // available
+        long requiredTransactionId = checkpoint.transactionId().transactionId();
+        long consensusIndex =
+                findConsensusIndexForTransactionId(logFile, requiredTransactionId, checkpoint.transactionLogPosition());
+        if (consensusIndex == UNKNOWN_CONSENSUS_INDEX) {
+            // can't find consensus index from transaction logs
+            return checkpoint;
+        }
+        // create new CheckpointInfo with new TransactionId which has proper consensus index
+        return new CheckpointInfo(
+                checkpoint.transactionLogPosition(),
+                checkpoint.storeId(),
+                checkpoint.checkpointEntryPosition(),
+                checkpoint.channelPositionAfterCheckpoint(),
+                checkpoint.checkpointFilePostReadPosition(),
+                checkpoint.kernelVersion(),
+                checkpoint.kernelVersionByte(),
+                new TransactionId(
+                        checkpoint.transactionId().transactionId(),
+                        checkpoint.transactionId().checksum(),
+                        checkpoint.transactionId().commitTimestamp(),
+                        consensusIndex),
+                checkpoint.reason());
+    }
+
+    private long findConsensusIndexForTransactionId(
+            LogFile logFile, long requiredTransactionId, LogPosition checkpointTransactionPosition) throws IOException {
+        long logVersion = checkpointTransactionPosition.getLogVersion();
+        var logEntryReader = new VersionAwareLogEntryReader(commandReaderFactory, binarySupportedKernelVersions);
+        try {
+            while (logFile.versionExists(logVersion)) {
+                var logHeader = logFile.extractHeader(logVersion);
+                if (logHeader != null) {
+                    var logHeaderStart = logHeader.getStartPosition();
+                    if (logHeaderStart.compareTo(checkpointTransactionPosition) < 0) {
+                        try (var reader = logFile.getReader(logHeaderStart, NO_MORE_CHANNELS);
+                                var cursor = new LogEntryCursor(logEntryReader, reader)) {
+                            LogEntryStart start = null;
+
+                            while (cursor.next()) {
+                                LogEntry entry = cursor.get();
+                                if (entry instanceof LogEntryStart e) {
+                                    start = e;
+                                } else if (entry instanceof LogEntryCommit commit) {
+                                    if (start != null && commit.getTxId() == requiredTransactionId) {
+                                        return LogIndexEncoding.decodeLogIndex(start.getAdditionalHeader());
+                                    }
+                                    start = null;
+                                }
+                            }
+                        }
+                    }
+                }
+                logVersion--;
+            }
+        } catch (Error | ClosedByInterruptException e) {
+            // These should not be parsing errors
+            throw e;
+        } catch (Throwable t) {
+            // ignore any parsing errors here, we only do our best to recover consensus index here
+        }
+        return UNKNOWN_CONSENSUS_INDEX;
     }
 
     private void verifyReaderPosition(long version, LogPosition logPosition) throws IOException {

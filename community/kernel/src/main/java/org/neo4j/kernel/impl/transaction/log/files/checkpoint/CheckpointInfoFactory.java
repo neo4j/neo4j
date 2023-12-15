@@ -86,7 +86,8 @@ public class CheckpointInfoFactory {
                     checkpoint50.kernelVersion(),
                     checkpoint50.kernelVersion().version(),
                     checkpoint50.getTransactionId(),
-                    checkpoint50.getReason());
+                    checkpoint50.getReason(),
+                    checkpoint50.consensusIndexInCheckpoint());
         } else {
             throw new UnsupportedOperationException(
                     "Expected to observe only checkpoint entries, but: `" + entry + "` was found.");
