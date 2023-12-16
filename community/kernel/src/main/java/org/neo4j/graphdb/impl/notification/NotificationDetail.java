@@ -34,11 +34,11 @@ public class NotificationDetail {
     }
 
     public static String deprecatedName(final String oldName) {
-        return String.format(": `%s`.", oldName);
+        return ": `" + oldName + "`.";
     }
 
     public static String deprecatedName(final String oldName, final String newName) {
-        return String.format(". ('%s' has been replaced by '%s')", oldName, newName);
+        return ". ('" + oldName + "' has been replaced by '" + newName + "')";
     }
 
     public static String index(
@@ -131,7 +131,7 @@ public class NotificationDetail {
     }
 
     public static String deprecatedField(final String procedure, final String field) {
-        return String.format("'%s' returned by '%s' is deprecated.", field, procedure);
+        return "'" + field + "' returned by '" + procedure + "' is deprecated.";
     }
 
     private static String createNotificationDetail(Set<String> elements, String singularTerm, String pluralTerm) {
@@ -149,7 +149,7 @@ public class NotificationDetail {
     }
 
     private static String createNotificationDetail(final String name, final String value, final boolean singular) {
-        return String.format("%s %s %s", name, singular ? "is:" : "are:", value);
+        return name + " " + (singular ? "is:" : "are:") + " " + value;
     }
 
     private static String labelOrRelationshipType(final String labelName) {
@@ -157,16 +157,15 @@ public class NotificationDetail {
     }
 
     public static String deprecationNotificationDetail(final String replacement) {
-        return String.format("Please use '%s' instead", replacement);
+        return "Please use '" + replacement + "' instead";
     }
 
     public static String unsatisfiableRelTypeExpression(String expression) {
-        return String.format(
-                "`%s` can never be satisfied by any relationship. Relationships must have exactly one relationship type.",
-                expression);
+        return "`" + expression
+                + "` can never be satisfied by any relationship. Relationships must have exactly one relationship type.";
     }
 
     public static String repeatedRelationship(String relationshipName) {
-        return String.format("Relationship `%s` was repeated", relationshipName);
+        return "Relationship `" + relationshipName + "` was repeated";
     }
 }
