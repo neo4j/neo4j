@@ -22,6 +22,7 @@ package org.neo4j.consistency.store.synthetic;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+import org.neo4j.storageengine.api.Mask;
 
 import static java.lang.String.format;
 
@@ -55,7 +56,7 @@ public class IndexEntry extends AbstractBaseRecord
     }
 
     @Override
-    public String toString()
+    public String toString( Mask mask )
     {
         return format( "IndexEntry[nodeId=%d, index=%s]", getId(), indexDescriptor.userDescription( tokenNameLookup ) );
     }

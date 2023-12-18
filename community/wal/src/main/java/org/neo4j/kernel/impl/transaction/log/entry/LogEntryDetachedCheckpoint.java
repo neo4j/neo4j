@@ -23,6 +23,7 @@ import java.util.Objects;
 
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.storageengine.api.Mask;
 import org.neo4j.storageengine.api.StoreId;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.DETACHED_CHECK_POINT;
@@ -76,7 +77,7 @@ public class LogEntryDetachedCheckpoint extends AbstractLogEntry
     }
 
     @Override
-    public String toString()
+    public String toString( Mask mask )
     {
         return "LogEntryDetachedCheckpoint{" + "logPosition=" + logPosition + ", checkpointTime=" + checkpointTime + ", storeId=" + storeId + ", reason='" +
                 reason + '\'' + '}';

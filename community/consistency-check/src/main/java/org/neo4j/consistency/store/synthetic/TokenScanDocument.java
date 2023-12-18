@@ -21,6 +21,7 @@ package org.neo4j.consistency.store.synthetic;
 
 import org.neo4j.kernel.impl.index.schema.EntityTokenRange;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+import org.neo4j.storageengine.api.Mask;
 
 /**
  * Synthetic record type that stands in for a real record to fit in conveniently
@@ -56,7 +57,7 @@ public class TokenScanDocument extends AbstractBaseRecord
     }
 
     @Override
-    public String toString()
+    public String toString( Mask mask )
     {
         return entityTokenRange.toString();
     }

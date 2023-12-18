@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 import java.util.Objects;
 
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.storageengine.api.Mask;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_COMMIT;
 
@@ -60,7 +61,7 @@ public class LogEntryCommit extends AbstractLogEntry
     }
 
     @Override
-    public String toString()
+    public String toString( Mask mask )
     {
         return "Commit[txId=" + getTxId() + ", " + timestamp( getTimeWritten() ) + ", checksum=" + checksum + "]";
     }

@@ -24,6 +24,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
+import org.neo4j.storageengine.api.Mask;
 import org.neo4j.storageengine.api.ReadTracer;
 import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
@@ -353,7 +354,7 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
     }
 
     @Override
-    public String toString()
+    public String toString( Mask mask )
     {
         if ( !open )
         {
@@ -365,7 +366,7 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
             return "RelationshipTraversalCursor[id=" + getId() +
                     ", open state with: " + dense +
                     ", next=" + next + ", " +
-                    ", underlying record=" + super.toString() + "]";
+                    ", underlying record=" + super.toString( mask ) + "]";
         }
     }
 }

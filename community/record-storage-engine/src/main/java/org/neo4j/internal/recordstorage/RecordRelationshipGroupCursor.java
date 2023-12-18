@@ -28,6 +28,7 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RecordLoadOverride;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.storageengine.api.Mask;
 import org.neo4j.storageengine.api.RelationshipDirection;
 
 import static org.neo4j.kernel.impl.store.record.RecordLoad.ALWAYS;
@@ -140,7 +141,7 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements A
     }
 
     @Override
-    public String toString()
+    public String toString( Mask mask )
     {
         if ( !open )
         {
@@ -148,7 +149,7 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements A
         }
         else
         {
-            return "RelationshipGroupCursor[id=" + getId() + ", open state with: underlying record=" + super.toString() + "]";
+            return "RelationshipGroupCursor[id=" + getId() + ", open state with: underlying record=" + super.toString( mask ) + "]";
         }
     }
 

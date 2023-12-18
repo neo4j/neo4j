@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.store.record;
 
 import java.util.Objects;
 
+import org.neo4j.storageengine.api.Mask;
 import org.neo4j.util.Preconditions;
 
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
@@ -244,7 +245,7 @@ public class RelationshipRecord extends PrimitiveRecord
     }
 
     @Override
-    public String toString()
+    public String toString( Mask mask )
     {
         return "Relationship[" + getId() +
                ",used=" + inUse() +

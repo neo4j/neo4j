@@ -24,6 +24,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.AllRelationshipsScan;
+import org.neo4j.storageengine.api.Mask;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 
 import static java.lang.Math.min;
@@ -186,7 +187,7 @@ public class RecordRelationshipScanCursor extends RecordRelationshipCursor imple
     }
 
     @Override
-    public String toString()
+    public String toString( Mask mask )
     {
         if ( !open )
         {
@@ -195,7 +196,7 @@ public class RecordRelationshipScanCursor extends RecordRelationshipCursor imple
         else
         {
             return "RelationshipScanCursor[id=" + getId() + ", open state with: highMark=" + highMark + ", next=" + next +
-                   ", underlying record=" + super.toString() + "]";
+                   ", underlying record=" + super.toString( mask ) + "]";
         }
     }
 

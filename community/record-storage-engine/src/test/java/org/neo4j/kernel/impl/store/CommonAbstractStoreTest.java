@@ -53,6 +53,7 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogAssertions;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.api.Mask;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -314,6 +315,12 @@ class CommonAbstractStoreTest
         public AbstractBaseRecord copy()
         {
             return super.copy();
+        }
+
+        @Override
+        public String toString( Mask mask )
+        {
+            return String.format( "TheRecord[%d]", getId() );
         }
     }
 }

@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.store.record;
 
 import java.util.Objects;
 
+import org.neo4j.storageengine.api.Mask;
+
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 public class SchemaRecord extends PrimitiveRecord
@@ -63,7 +65,7 @@ public class SchemaRecord extends PrimitiveRecord
     }
 
     @Override
-    public String toString()
+    public String toString( Mask mask )
     {
         return "SchemaRecord[" + getId() + ",used=" + inUse() + ",nextProp=" + nextProp + ",constraint=" + constraint + "]";
     }

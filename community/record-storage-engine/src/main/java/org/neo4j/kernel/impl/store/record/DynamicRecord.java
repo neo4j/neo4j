@@ -24,6 +24,7 @@ import java.util.Objects;
 
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
+import org.neo4j.storageengine.api.Mask;
 
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
@@ -133,13 +134,13 @@ public class DynamicRecord extends AbstractBaseRecord
     }
 
     @Override
-    public String toString()
+    public String toString( Mask mask )
     {
         StringBuilder buf = new StringBuilder();
         buf.append( "DynamicRecord[" )
-                .append( getId() )
-                .append( ",used=" ).append( inUse() ).append( ',' )
-                .append( '(' ).append( data.length ).append( "),type=" );
+           .append( getId() )
+           .append( ",used=" ).append( inUse() ).append( ',' )
+           .append( '(' ).append( mask.filter( data.length ) ).append( "),type=" );
         PropertyType type = getType();
         if ( type == null )
         {
@@ -150,11 +151,19 @@ public class DynamicRecord extends AbstractBaseRecord
             buf.append( type.name() );
         }
         buf.append( ",data=" );
-        if ( type == PropertyType.STRING && data.length <= MAX_CHARS_IN_TO_STRING )
+        mask.build( buf, this::buildDataString );
+        buf.append( ",start=" ).append( startRecord );
+        buf.append( ",next=" ).append( nextBlock ).append( ']' );
+        return buf.toString();
+    }
+
+    private void buildDataString( StringBuilder buf )
+    {
+        if ( getType() == PropertyType.STRING && data.length <= MAX_CHARS_IN_TO_STRING )
         {
             buf.append( '"' );
             buf.append( PropertyStore.decodeString( data ) );
-            buf.append( "\"," );
+            buf.append( "\"" );
         }
         else
         {
@@ -174,11 +183,8 @@ public class DynamicRecord extends AbstractBaseRecord
             {
                 buf.append( "size=" ).append( data.length );
             }
-            buf.append( "]," );
+            buf.append( "]" );
         }
-        buf.append( "start=" ).append( startRecord );
-        buf.append( ",next=" ).append( nextBlock ).append( ']' );
-        return buf.toString();
     }
 
     @Override

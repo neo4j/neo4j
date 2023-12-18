@@ -23,6 +23,7 @@ import java.util.Arrays;
 
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.storageengine.api.Mask;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_START;
 
@@ -73,7 +74,7 @@ public class LogEntryStart extends AbstractLogEntry
     }
 
     @Override
-    public String toString()
+    public String toString( Mask mask )
     {
         return "Start[" +
                 "kernelVersion=" + getVersion() + "," +

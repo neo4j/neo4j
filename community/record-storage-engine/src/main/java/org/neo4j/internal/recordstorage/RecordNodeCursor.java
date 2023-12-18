@@ -34,6 +34,7 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RecordLoadOverride;
 import org.neo4j.storageengine.api.AllNodeScan;
 import org.neo4j.storageengine.api.Degrees;
+import org.neo4j.storageengine.api.Mask;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.RelationshipDirection;
@@ -454,7 +455,7 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
     }
 
     @Override
-    public String toString()
+    public String toString( Mask mask )
     {
         if ( !open )
         {
@@ -465,7 +466,7 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
             return "RecordNodeCursor[id=" + getId() +
                     ", open state with: highMark=" + highMark +
                     ", next=" + next +
-                    ", underlying record=" + super.toString() + "]";
+                    ", underlying record=" + super.toString( mask ) + "]";
         }
     }
 

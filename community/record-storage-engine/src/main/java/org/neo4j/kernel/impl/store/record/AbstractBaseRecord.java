@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.store.record;
 
 import java.util.Objects;
 
+import org.neo4j.storageengine.api.Mask;
+
 /**
  * {@link AbstractBaseRecord records} are intended to be reusable. Created with a zero-arg constructor
  * and initialized with the public {@code initialize} method exposed by the specific record implementations,
@@ -250,4 +252,17 @@ public abstract class AbstractBaseRecord
         }
         return String.format( ",%ssecondaryUnitId=%d", requiresSecondaryUnit() ? (createdSecondaryUnit ? "+" : "") : "-", getSecondaryUnitId() );
     }
+
+    public final String toString()
+    {
+        return toString( Mask.NO );
+    }
+
+    /**
+     * Returns a string representation whose user data fields are optionally masked out.
+     *
+     * @param mask whether to mask data fields
+     * @return string representation
+     */
+    public abstract String toString( Mask mask );
 }

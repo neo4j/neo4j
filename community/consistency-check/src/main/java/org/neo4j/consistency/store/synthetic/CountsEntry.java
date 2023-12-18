@@ -21,6 +21,7 @@ package org.neo4j.consistency.store.synthetic;
 
 import org.neo4j.internal.counts.CountsKey;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+import org.neo4j.storageengine.api.Mask;
 
 /**
  * Synthetic record type that stands in for a real record to fit in conveniently
@@ -48,7 +49,7 @@ public class CountsEntry extends AbstractBaseRecord
     }
 
     @Override
-    public String toString()
+    public String toString( Mask mask )
     {
         return "CountsEntry[" + key + ": " + count + "]";
     }

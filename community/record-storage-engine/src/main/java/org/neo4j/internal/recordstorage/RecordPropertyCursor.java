@@ -41,6 +41,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoadOverride;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.LongReference;
+import org.neo4j.storageengine.api.Mask;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
@@ -434,7 +435,7 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
     }
 
     @Override
-    public String toString()
+    public String toString( Mask mask )
     {
         if ( !open )
         {
@@ -443,7 +444,7 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
         else
         {
             return "PropertyCursor[id=" + getId() + ", open state with: block=" + block + ", next=" + next +
-                   ", underlying record=" + super.toString() + "]";
+                   ", underlying record=" + super.toString( mask ) + "]";
         }
     }
 

@@ -23,6 +23,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import org.neo4j.storageengine.api.Mask;
+
 import static java.util.Collections.emptyList;
 import static org.neo4j.internal.helpers.collection.Iterables.filter;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
@@ -140,7 +142,7 @@ public class NodeRecord extends PrimitiveRecord
     }
 
     @Override
-    public String toString()
+    public String toString( Mask mask )
     {
         String denseInfo = (dense ? "group" : "rel") + "=" + nextRel;
         String lightHeavyInfo = isLight ? "light" :

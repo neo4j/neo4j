@@ -41,6 +41,7 @@ import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.lock.LockGroup;
 import org.neo4j.lock.LockService;
 import org.neo4j.lock.LockType;
+import org.neo4j.storageengine.api.Mask;
 import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
@@ -129,9 +130,15 @@ public abstract class Command implements StorageCommand
         return keyHash;
     }
 
-    // Force implementors to implement toString
     @Override
-    public abstract String toString();
+    public final String toString()
+    {
+        return toString( Mask.NO );
+    }
+
+    // Force implementors to implement toString( mask )
+    @Override
+    public abstract String toString( Mask mask );
 
     public long getKey()
     {
@@ -156,9 +163,9 @@ public abstract class Command implements StorageCommand
         // most commands does not need this locking
     }
 
-    protected static String beforeAndAfterToString( AbstractBaseRecord before, AbstractBaseRecord after )
+    protected static String beforeAndAfterToString( AbstractBaseRecord before, AbstractBaseRecord after, Mask mask )
     {
-        return format( "\t-%s%n\t+%s", before, after );
+        return format( "\t-%s%n\t+%s", before.toString( mask ), after.toString( mask ) );
     }
 
     public abstract static class BaseCommand<RECORD extends AbstractBaseRecord> extends Command
@@ -180,9 +187,9 @@ public abstract class Command implements StorageCommand
         }
 
         @Override
-        public String toString()
+        public String toString( Mask mask )
         {
-            return beforeAndAfterToString( before, after );
+            return beforeAndAfterToString( before, after, mask );
         }
 
         public RECORD getBefore()
@@ -465,9 +472,9 @@ public abstract class Command implements StorageCommand
         }
 
         @Override
-        public String toString()
+        public String toString( Mask mask )
         {
-            return beforeAndAfterToString( before, after );
+            return beforeAndAfterToString( before, after, mask );
         }
     }
 
@@ -570,9 +577,9 @@ public abstract class Command implements StorageCommand
         }
 
         @Override
-        public String toString()
+        public String toString( Mask mask )
         {
-            String beforeAndAfterRecords = super.toString();
+            String beforeAndAfterRecords = super.toString( mask );
             if ( schemaRule != null )
             {
                 return beforeAndAfterRecords + " : " + schemaRule;
@@ -620,7 +627,7 @@ public abstract class Command implements StorageCommand
         }
 
         @Override
-        public String toString()
+        public String toString( Mask mask )
         {
             return String.format( "UpdateCounts[(%s) %s %d]",
                     label( labelId ), delta < 0 ? "-" : "+", Math.abs( delta ) );
@@ -676,7 +683,7 @@ public abstract class Command implements StorageCommand
         }
 
         @Override
-        public String toString()
+        public String toString( Mask mask )
         {
             return String.format( "UpdateCounts[(%s)-%s->(%s) %s %d]",
                     label( startLabelId ), relationshipType( typeId ), label( endLabelId ),
@@ -734,7 +741,7 @@ public abstract class Command implements StorageCommand
         }
 
         @Override
-        public String toString()
+        public String toString( Mask mask )
         {
             return String.format( "GroupDegree[(group:%s, %s) %s %d]", groupId, direction, delta < 0 ? "-" : "+", Math.abs( delta ) );
         }

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log.entry;
 
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.storageengine.api.Mask;
 
 public interface LogEntry
 {
@@ -28,4 +29,12 @@ public interface LogEntry
     byte getType();
 
     String timestamp( long timeWritten );
+
+    /**
+     * Returns a string representation whose user data fields are optionally masked out.
+     *
+     * @param mask whether to mask data fields
+     * @return string representation
+     */
+    String toString( Mask mask );
 }

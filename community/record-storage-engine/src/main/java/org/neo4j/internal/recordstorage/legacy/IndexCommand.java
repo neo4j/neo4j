@@ -28,6 +28,7 @@ import org.neo4j.internal.recordstorage.CommandVisitor;
 import org.neo4j.internal.recordstorage.NeoCommandType;
 import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.storageengine.api.Mask;
 
 import static java.lang.String.format;
 import static org.neo4j.io.fs.IoPrimitiveUtils.write2bLengthAndString;
@@ -244,9 +245,9 @@ public abstract class IndexCommand extends Command
         }
 
         @Override
-        public String toString()
+        public String toString( Mask mask )
         {
-            return "AddNode[index:" + indexNameId + ", id:" + entityId + ", key:" + keyId + ", value:" + value + "]";
+            return "AddNode[index:" + indexNameId + ", id:" + entityId + ", key:" + keyId + ", value:" + mask.filter( value ) + "]";
         }
 
         @Override
@@ -330,10 +331,10 @@ public abstract class IndexCommand extends Command
         }
 
         @Override
-        public String toString()
+        public String toString( Mask mask )
         {
             return "AddRelationship[index:" + indexNameId + ", id:" + entityId + ", key:" + keyId +
-                    ", value:" + value + "(" + (value != null ? value.getClass().getSimpleName() : "null") + ")" +
+                    ", value:" + mask.filter( value + "(" + (value != null ? value.getClass().getSimpleName() : "null") + ")" ) +
                     ", startNode:" + startNode +
                     ", endNode:" + endNode +
                     "]";
@@ -363,10 +364,10 @@ public abstract class IndexCommand extends Command
         }
 
         @Override
-        public String toString()
+        public String toString( Mask mask )
         {
             return format( "Remove%s[index:%d, id:%d, key:%d, value:%s]",
-                    IndexEntityType.byId( entityType ).nameToLowerCase(), indexNameId, entityId, keyId, value );
+                    IndexEntityType.byId( entityType ).nameToLowerCase(), indexNameId, entityId, keyId, mask.filter( value ) );
         }
 
         @Override
@@ -391,7 +392,7 @@ public abstract class IndexCommand extends Command
         }
 
         @Override
-        public String toString()
+        public String toString( Mask mask )
         {
             return "Delete[index:" + indexNameId + ", type:" + IndexEntityType.byId( entityType ).nameToLowerCase() + "]";
         }
@@ -451,7 +452,7 @@ public abstract class IndexCommand extends Command
         }
 
         @Override
-        public String toString()
+        public String toString( Mask mask )
         {
             return format( "Create%sIndex[index:%d, config:%s]",
                     IndexEntityType.byId( entityType ).nameToLowerCase(), indexNameId, config );

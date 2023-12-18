@@ -23,6 +23,7 @@ import java.util.Objects;
 
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.storageengine.api.Mask;
 
 public class LogEntryInlinedCheckPoint extends AbstractLogEntry
 {
@@ -66,7 +67,7 @@ public class LogEntryInlinedCheckPoint extends AbstractLogEntry
     }
 
     @Override
-    public String toString()
+    public String toString( Mask mask )
     {
         return "CheckPoint{logPosition=" + logPosition + '}';
     }

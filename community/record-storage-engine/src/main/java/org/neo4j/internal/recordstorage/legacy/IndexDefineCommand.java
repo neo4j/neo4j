@@ -36,6 +36,7 @@ import org.neo4j.internal.recordstorage.CommandVisitor;
 import org.neo4j.internal.recordstorage.NeoCommandType;
 import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.storageengine.api.Mask;
 import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;
@@ -186,7 +187,7 @@ public class IndexDefineCommand extends Command
     }
 
     @Override
-    public String toString()
+    public String toString( Mask mask )
     {
         return getClass().getSimpleName() + "[names:" + indexNameIdRange + ", keys:" + keyIdRange + "]";
     }

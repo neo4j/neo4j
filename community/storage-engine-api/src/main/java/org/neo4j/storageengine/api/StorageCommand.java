@@ -53,6 +53,17 @@ public interface StorageCommand
 
     KernelVersion version();
 
+    /**
+     * Returns a string representation whose user data fields are optionally masked out.
+     *
+     * @param mask whether to mask data fields
+     * @return string representation
+     */
+    default String toString( Mask mask )
+    {
+        return toString();
+    }
+
     interface TokenCommand extends StorageCommand
     {
         /**

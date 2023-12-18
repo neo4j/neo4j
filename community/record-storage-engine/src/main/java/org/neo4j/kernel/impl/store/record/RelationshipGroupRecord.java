@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.store.record;
 
 import java.util.Objects;
 
+import org.neo4j.storageengine.api.Mask;
+
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
@@ -197,7 +199,7 @@ public class RelationshipGroupRecord extends AbstractBaseRecord
     }
 
     @Override
-    public String toString()
+    public String toString( Mask mask )
     {
         return "RelationshipGroup[" + getId() +
                ",type=" + type +
