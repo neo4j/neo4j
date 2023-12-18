@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAUL
 import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_TYPE_SELECTIVITY
 import org.neo4j.cypher.internal.compiler.planner.logical.SimpleMetricsFactory
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ExpressionSelectivityCalculator.probLognormalGreaterThan1
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ExpressionSelectivityCalculator.subqueryCardinalityToExistsSelectivity
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ExpressionSelectivityCalculatorTest.IndexDescriptorHelper
 import org.neo4j.cypher.internal.compiler.planner.logical.simpleExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProviderContext
@@ -2423,5 +2424,9 @@ class RangeExpressionSelectivityCalculatorTest extends ExpressionSelectivityCalc
         }
       case _ => sys.error("the impossible happened")
     }
+  }
+
+  test("subqueryCardinalityToExistsSelectivity should not return 0") {
+    subqueryCardinalityToExistsSelectivity(Cardinality(0d)).factor should be > 0d
   }
 }

@@ -887,7 +887,12 @@ object ExpressionSelectivityCalculator {
    * of that function being greater than 1.0.
    */
   def subqueryCardinalityToExistsSelectivity(subqueryCardinality: Cardinality): Selectivity = {
-    Selectivity(probLognormalGreaterThan1(subqueryCardinality.amount))
+    val selectivity = Selectivity(probLognormalGreaterThan1(subqueryCardinality.amount))
+    if (selectivity > Selectivity.ZERO)
+      selectivity
+    else {
+      Selectivity(0.01)
+    }
   }
 
   /**
