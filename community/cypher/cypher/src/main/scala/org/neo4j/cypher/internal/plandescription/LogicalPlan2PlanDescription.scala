@@ -182,6 +182,7 @@ import org.neo4j.cypher.internal.logical.plans.OrderedDistinct
 import org.neo4j.cypher.internal.logical.plans.OrderedUnion
 import org.neo4j.cypher.internal.logical.plans.PartialSort
 import org.neo4j.cypher.internal.logical.plans.PartialTop
+import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
 import org.neo4j.cypher.internal.logical.plans.PathPropagatingBFS
 import org.neo4j.cypher.internal.logical.plans.PointBoundingBoxRange
 import org.neo4j.cypher.internal.logical.plans.PointBoundingBoxSeekRangeWrapper
@@ -2072,6 +2073,18 @@ case class LogicalPlan2PlanDescription(
       case UnwindCollection(_, variable, expression) =>
         val details = Details(projectedExpressionInfo(Map(variable -> expression)).mkPrettyString(SEPARATOR))
         PlanDescriptionImpl(id, "Unwind", children, Seq(details), variables, withRawCardinalities, withDistinctness)
+
+      case PartitionedUnwindCollection(_, variable, expression) =>
+        val details = Details(projectedExpressionInfo(Map(variable -> expression)).mkPrettyString(SEPARATOR))
+        PlanDescriptionImpl(
+          id,
+          "PartitionedUnwind",
+          children,
+          Seq(details),
+          variables,
+          withRawCardinalities,
+          withDistinctness
+        )
 
       case VarExpand(
           _,

@@ -288,6 +288,7 @@ import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
 import org.neo4j.cypher.internal.logical.plans.OrderedDistinct
 import org.neo4j.cypher.internal.logical.plans.PartialSort
 import org.neo4j.cypher.internal.logical.plans.PartialTop
+import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
 import org.neo4j.cypher.internal.logical.plans.PointBoundingBoxRange
 import org.neo4j.cypher.internal.logical.plans.PointBoundingBoxSeekRangeWrapper
 import org.neo4j.cypher.internal.logical.plans.PointDistanceRange
@@ -6166,6 +6167,13 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(
       attach(UnwindCollection(lhsLP, varFor("x"), varFor("list")), 1.0),
       planDescription(id, "Unwind", SingleChild(lhsPD), Seq(details("list AS x")), Set("a", "x"))
+    )
+  }
+
+  test("PartitionedUnwind") {
+    assertGood(
+      attach(PartitionedUnwindCollection(lhsLP, varFor("x"), varFor("list")), 1.0),
+      planDescription(id, "PartitionedUnwind", SingleChild(lhsPD), Seq(details("list AS x")), Set("a", "x"))
     )
   }
 

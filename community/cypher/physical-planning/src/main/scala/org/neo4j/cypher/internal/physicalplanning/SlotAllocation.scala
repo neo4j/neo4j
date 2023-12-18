@@ -100,6 +100,7 @@ import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
 import org.neo4j.cypher.internal.logical.plans.OrderedUnion
 import org.neo4j.cypher.internal.logical.plans.PartialSort
 import org.neo4j.cypher.internal.logical.plans.PartialTop
+import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
 import org.neo4j.cypher.internal.logical.plans.PreserveOrder
 import org.neo4j.cypher.internal.logical.plans.Prober
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
@@ -855,19 +856,9 @@ class SingleQuerySlotAllocator private[physicalplanning] (
         _: ErrorPlan |
         _: Eager =>
 
-      case UnwindCollection(_, variable, expression) =>
-        val nullableExpression = expression match {
-          case ListLiteral(expressions) => expressions.exists {
-              case Null()             => true
-              case _: Literal         => false
-              case v: LogicalVariable => slots.get(v.name).exists(_.nullable)
-              case _                  => true
-            }
-          case v: LogicalVariable => slots.get(v.name).forall(_.nullable)
-          case _                  => true
-        }
+      case UnwindCollection(_, variable, expression) => allocateUnwind(variable, nullable, expression, slots)
 
-        slots.newReference(variable, nullableExpression || nullable, CTAny)
+      case PartitionedUnwindCollection(_, variable, expression) => allocateUnwind(variable, nullable, expression, slots)
 
       case _: DeleteNode |
         _: DeleteRelationship |
@@ -1354,6 +1345,26 @@ class SingleQuerySlotAllocator private[physicalplanning] (
       case DiscardFromLhs => doDiscard(lhs)
       case DiscardFromRhs => doDiscard(rhs.getOrElse(throw new IllegalStateException(s"Expected plan to ha $lp")))
     }
+  }
+
+  private def allocateUnwind(
+    variable: LogicalVariable,
+    nullable: Boolean,
+    expression: Expression,
+    slots: SlotConfiguration
+  ): Unit = {
+    val nullableExpression = expression match {
+      case ListLiteral(expressions) => expressions.exists {
+          case Null()             => true
+          case _: Literal         => false
+          case v: LogicalVariable => slots.get(v.name).exists(_.nullable)
+          case _                  => true
+        }
+      case v: LogicalVariable => slots.get(v.name).forall(_.nullable)
+      case _                  => true
+    }
+
+    slots.newReference(variable, nullableExpression || nullable, CTAny)
   }
 }
 

@@ -178,6 +178,7 @@ import org.neo4j.cypher.internal.logical.plans.OrderedDistinct
 import org.neo4j.cypher.internal.logical.plans.OrderedUnion
 import org.neo4j.cypher.internal.logical.plans.PartialSort
 import org.neo4j.cypher.internal.logical.plans.PartialTop
+import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
 import org.neo4j.cypher.internal.logical.plans.PathPropagatingBFS
 import org.neo4j.cypher.internal.logical.plans.PointBoundingBoxRange
 import org.neo4j.cypher.internal.logical.plans.PointBoundingBoxSeekRangeWrapper
@@ -1022,6 +1023,12 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   def unwind(projectionString: String): IMPL = {
     val (name, expression) = toVarMap(Parser.parseProjections(projectionString)).head
     appendAtCurrentIndent(UnaryOperator(lp => UnwindCollection(lp, name, expression)(_)))
+    self
+  }
+
+  def partitionedUnwind(projectionString: String): IMPL = {
+    val (name, expression) = toVarMap(Parser.parseProjections(projectionString)).head
+    appendAtCurrentIndent(UnaryOperator(lp => PartitionedUnwindCollection(lp, name, expression)(_)))
     self
   }
 

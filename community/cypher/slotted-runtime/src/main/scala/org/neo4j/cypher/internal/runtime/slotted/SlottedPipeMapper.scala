@@ -102,6 +102,7 @@ import org.neo4j.cypher.internal.logical.plans.OrderedDistinct
 import org.neo4j.cypher.internal.logical.plans.OrderedUnion
 import org.neo4j.cypher.internal.logical.plans.PartialSort
 import org.neo4j.cypher.internal.logical.plans.PartialTop
+import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
 import org.neo4j.cypher.internal.logical.plans.Prober
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
 import org.neo4j.cypher.internal.logical.plans.Projection
@@ -1301,6 +1302,12 @@ class SlottedPipeMapper(
         EmptyResultPipe(source)(id)
 
       case UnwindCollection(_, name, expression) =>
+        val offset = slots.getReferenceOffsetFor(name)
+        UnwindSlottedPipe(source, convertExpressions(expression), offset, slots)(id)
+
+      // Note: this plan shouldn't really be used here, but having it mapped here helps
+      //      fallback and makes testing easier
+      case PartitionedUnwindCollection(_, name, expression) =>
         val offset = slots.getReferenceOffsetFor(name)
         UnwindSlottedPipe(source, convertExpressions(expression), offset, slots)(id)
 

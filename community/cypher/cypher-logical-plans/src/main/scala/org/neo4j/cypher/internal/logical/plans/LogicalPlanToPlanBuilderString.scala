@@ -154,6 +154,7 @@ object LogicalPlanToPlanBuilderString {
       case _: Selection                     => "filter"
       case _: SimulatedSelection            => "simulatedFilter"
       case _: UnwindCollection              => "unwind"
+      case _: PartitionedUnwindCollection   => "partitionedUnwind"
       case _: FindShortestPaths             => "shortestPath"
       case _: NodeIndexScan                 => "nodeIndexOperator"
       case _: DirectedRelationshipIndexScan => "relationshipIndexOperator"
@@ -256,6 +257,8 @@ object LogicalPlanToPlanBuilderString {
           )} """.trim
       case Projection(_, projectExpressions) => projectVars(projectExpressions)
       case UnwindCollection(_, variable, expression) =>
+        projectVars(Map(variable -> expression))
+      case PartitionedUnwindCollection(_, variable, expression) =>
         projectVars(Map(variable -> expression))
       case AllNodesScan(idName, argumentIds) =>
         wrapVarsInQuotationsAndMkString(idName +: argumentIds.toSeq)

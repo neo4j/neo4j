@@ -127,6 +127,7 @@ import org.neo4j.cypher.internal.logical.plans.OrderedDistinct
 import org.neo4j.cypher.internal.logical.plans.OrderedUnion
 import org.neo4j.cypher.internal.logical.plans.PartialSort
 import org.neo4j.cypher.internal.logical.plans.PartialTop
+import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
 import org.neo4j.cypher.internal.logical.plans.PathPropagatingBFS
 import org.neo4j.cypher.internal.logical.plans.PhysicalPlanningPlan
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
@@ -839,6 +840,7 @@ object ReadFinder {
         SubqueryForeach(_, _) |
         Union(_, _) |
         UnwindCollection(_, _, _) |
+        PartitionedUnwindCollection(_, _, _) |
         ValueHashJoin(_, _, _) |
         Sort(_, _) |
         PartialSort(_, _, _, _) |

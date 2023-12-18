@@ -95,6 +95,7 @@ import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.OptionalExpand
 import org.neo4j.cypher.internal.logical.plans.OrderedUnion
 import org.neo4j.cypher.internal.logical.plans.PartialSort
+import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
 import org.neo4j.cypher.internal.logical.plans.ProjectEndpoints
 import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
@@ -576,6 +577,7 @@ object CardinalityCostModel {
         _: Union |
         _: ValueHashJoin |
         _: UnwindCollection |
+        _: PartitionedUnwindCollection |
         _: ProcedureCall => DEFAULT_COST_PER_ROW
 
       case _: Sort =>

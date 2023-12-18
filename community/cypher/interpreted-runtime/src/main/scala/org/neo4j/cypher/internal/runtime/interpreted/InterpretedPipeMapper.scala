@@ -117,6 +117,7 @@ import org.neo4j.cypher.internal.logical.plans.OrderedDistinct
 import org.neo4j.cypher.internal.logical.plans.OrderedUnion
 import org.neo4j.cypher.internal.logical.plans.PartialSort
 import org.neo4j.cypher.internal.logical.plans.PartialTop
+import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
 import org.neo4j.cypher.internal.logical.plans.Prober
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
@@ -1313,6 +1314,11 @@ case class InterpretedPipeMapper(
         )(id = id)
 
       case UnwindCollection(_, variable, collection) =>
+        UnwindPipe(source, buildExpression(collection), variable.name)(id = id)
+
+      // Note: this plan shouldn't really be used here, but having it mapped here helps
+      //      fallback and makes testing easier
+      case PartitionedUnwindCollection(_, variable, collection) =>
         UnwindPipe(source, buildExpression(collection), variable.name)(id = id)
 
       case ProcedureCall(_, call @ ResolvedCall(signature, callArguments, _, _, _, _)) =>

@@ -4264,6 +4264,23 @@ case class UnwindCollection(override val source: LogicalPlan, variable: LogicalV
 }
 
 /**
+ * Partitioned version of the Unwind operator, should only be used for parallel runtime.
+ */
+case class PartitionedUnwindCollection(
+  override val source: LogicalPlan,
+  variable: LogicalVariable,
+  expression: Expression
+)(
+  implicit idGen: IdGen
+) extends LogicalUnaryPlan(idGen) with PhysicalPlanningPlan {
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
+
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols + variable
+
+  override val distinctness: Distinctness = NotDistinct
+}
+
+/**
  * The definition of a value join is an equality predicate between two expressions that
  * have different, non-empty variable-dependency sets.
  */

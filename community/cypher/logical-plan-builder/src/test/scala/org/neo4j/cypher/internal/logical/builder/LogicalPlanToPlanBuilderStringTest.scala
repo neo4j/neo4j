@@ -1080,6 +1080,15 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName wi
   )
 
   testPlan(
+    "partitionedUnwind",
+    new TestPlanBuilder()
+      .produceResults("x", "y")
+      .partitionedUnwind("[x, 42, y.prop] AS y")
+      .argument()
+      .build()
+  )
+
+  testPlan(
     "union",
     new TestPlanBuilder()
       .produceResults("x", "y")
