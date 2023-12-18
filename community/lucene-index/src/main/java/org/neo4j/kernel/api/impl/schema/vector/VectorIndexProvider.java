@@ -40,7 +40,9 @@ import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.memory.ByteBufferFactory;
+import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
+import org.neo4j.kernel.api.impl.index.LuceneSettings;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.schema.AbstractLuceneIndexProvider;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -131,6 +133,7 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
         }
         final var luceneIndex = builder.build();
         luceneIndex.open();
+        forceMergeSegments(luceneIndex);
 
         final var indexConfig = descriptor.getIndexConfig();
         final var ignoreStrategy = new IgnoreStrategy(vectorDimensionsFrom(indexConfig));
@@ -154,6 +157,29 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
         @Override
         public boolean ignore(Value[] values) {
             return !(values[0] instanceof final FloatingPointArray vector && vector.length() == dimensions);
+        }
+    }
+
+    /**
+     * {@link LuceneSettings#vector_population_merge_factor} should be larger than {@link LuceneSettings#vector_standard_merge_factor}
+     * to enable faster population, but at the cost of more segment files.
+     * This coerces the index to merge the segments to the {@link LuceneSettings#vector_standard_merge_factor}
+     */
+    private static void forceMergeSegments(DatabaseIndex<?> luceneIndex) throws IOException {
+        IOException exception = null;
+        for (final var partition : luceneIndex.getPartitions()) {
+            try {
+                partition.getIndexWriter().forceMerge(Integer.MAX_VALUE);
+            } catch (IOException e) {
+                if (exception != null) {
+                    exception.addSuppressed(e);
+                } else {
+                    exception = e;
+                }
+            }
+        }
+        if (exception != null) {
+            throw exception;
         }
     }
 }
