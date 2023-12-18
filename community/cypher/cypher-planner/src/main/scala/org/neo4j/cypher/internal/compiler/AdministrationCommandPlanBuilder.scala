@@ -162,6 +162,7 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.PRIMARY_PROPERTY
+import org.neo4j.exceptions.InvalidSemanticsException
 
 /**
  * This planner takes on queries that run at the DBMS level for multi-database administration.
@@ -1320,7 +1321,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
           case _ => List.empty
         }
         if (unsupportedCommandClauses.nonEmpty) {
-          throw new RuntimeException(
+          throw new InvalidSemanticsException(
             s"The following commands are not allowed on a system database: ${unsupportedCommandClauses.sorted.mkString(", ")}."
           )
         }
@@ -1332,7 +1333,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
           case c: Clause     => acc => SkipChildren(acc :+ c.name)
         }
         if (unsupportedClauses.nonEmpty) {
-          throw new RuntimeException(
+          throw new InvalidSemanticsException(
             s"The following unsupported clauses were used: ${unsupportedClauses.sorted.mkString(", ")}. \n" + systemDbProcedureRules
           )
         }
@@ -1341,7 +1342,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
           case _: CallClause => ()
         }
         if (callCount > 1) {
-          throw new RuntimeException(
+          throw new InvalidSemanticsException(
             s"The given query uses $callCount CALL clauses (${callCount - 1} too many). \n" + systemDbProcedureRules
           )
         }
@@ -1364,6 +1365,6 @@ case object UnsupportedSystemCommand extends Phase[PlannerContext, BaseState, Lo
   override def postConditions: Set[StepSequencer.Condition] = Set.empty
 
   override def process(from: BaseState, context: PlannerContext): LogicalPlanState =
-    throw new RuntimeException(s"Not a recognised system command or procedure. " +
+    throw new InvalidSemanticsException(s"Not a recognised system command or procedure. " +
       s"This Cypher command can only be executed in a user database: ${from.queryText}")
 }
