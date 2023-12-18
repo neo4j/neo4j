@@ -41,6 +41,7 @@ import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.impl.schema.vector.VectorIndexProvider;
 import org.neo4j.kernel.api.impl.schema.vector.VectorSimilarityFunction;
+import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
 class VectorIndexProviderTest {
     abstract static class VectorIndexProviderTestBase extends IndexProviderTests {
@@ -54,7 +55,13 @@ class VectorIndexProviderTest {
                         databaseLayout,
                         contextFactory,
                         pageCacheTracer) -> new VectorIndexProvider(
-                        fs, directoryFactory(fs), dir, monitors, Config.defaults(), readOnlyChecker);
+                        fs,
+                        directoryFactory(fs),
+                        dir,
+                        monitors,
+                        Config.defaults(),
+                        readOnlyChecker,
+                        new ThreadPoolJobScheduler(VectorIndexProviderTest.class.getSimpleName()));
 
         private final IndexConfig validIndexConfig;
 

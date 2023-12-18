@@ -52,6 +52,7 @@ import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.IndexUpdateIgnoreStrategy;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.values.storable.FloatingPointArray;
 import org.neo4j.values.storable.Value;
 
@@ -59,6 +60,7 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
     public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor("vector", "1.0");
 
     private final FileSystemAbstraction fileSystem;
+    private final JobScheduler scheduler;
 
     public VectorIndexProvider(
             FileSystemAbstraction fileSystem,
@@ -66,7 +68,8 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
             IndexDirectoryStructure.Factory directoryStructureFactory,
             Monitors monitors,
             Config config,
-            DatabaseReadOnlyChecker readOnlyChecker) {
+            DatabaseReadOnlyChecker readOnlyChecker,
+            JobScheduler scheduler) {
         super(
                 IndexType.VECTOR,
                 DESCRIPTOR,
@@ -77,6 +80,7 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
                 config,
                 readOnlyChecker);
         this.fileSystem = fileSystem;
+        this.scheduler = scheduler;
     }
 
     @Override

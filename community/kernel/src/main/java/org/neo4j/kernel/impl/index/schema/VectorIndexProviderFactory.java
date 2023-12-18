@@ -71,6 +71,7 @@ public class VectorIndexProviderFactory extends AbstractIndexProviderFactory<Vec
                 directoriesByProvider(databaseLayout.databaseDirectory()),
                 monitors,
                 config,
-                readOnlyDatabaseChecker);
+                readOnlyDatabaseChecker,
+                scheduler);
     }
 }
