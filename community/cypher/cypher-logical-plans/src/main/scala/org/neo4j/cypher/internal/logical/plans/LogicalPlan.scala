@@ -713,6 +713,23 @@ case class AllNodesScan(idName: LogicalVariable, argumentIds: Set[LogicalVariabl
 }
 
 /**
+* Partitioned version of the AllNodesScan operator, should only be used for parallel runtime.
+*/
+case class PartitionedAllNodesScan(idName: LogicalVariable, argumentIds: Set[LogicalVariable])(implicit idGen: IdGen)
+    extends NodeLogicalLeafPlan(idGen) with StableLeafPlan with PhysicalPlanningPlan {
+
+  override val availableSymbols: Set[LogicalVariable] = argumentIds + idName
+
+  override def usedVariables: Set[LogicalVariable] = Set.empty
+
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): PartitionedAllNodesScan =
+    copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def addArgumentIds(argsToAdd: Set[LogicalVariable]): LogicalLeafPlan =
+    copy(argumentIds = argumentIds ++ argsToAdd)(SameId(this.id))
+}
+
+/**
  * Produces exactly one row, if its source produces zero rows. Otherwise produces zero rows.
  * If a row is produced, that row will only contain values in the argument columns.
  * Anti can only be planned on the RHS of an Apply.

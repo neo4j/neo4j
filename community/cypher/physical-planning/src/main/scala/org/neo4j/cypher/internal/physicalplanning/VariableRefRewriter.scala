@@ -99,6 +99,7 @@ import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.OptionalExpand
 import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
 import org.neo4j.cypher.internal.logical.plans.OrderedDistinct
+import org.neo4j.cypher.internal.logical.plans.PartitionedAllNodesScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
 import org.neo4j.cypher.internal.logical.plans.PathPropagatingBFS
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
@@ -186,6 +187,8 @@ object VariableRefRewriter extends Rewriter {
                   s.copy(idName = varRef(node), argumentIds = args.map(varRef))(SameId(s.id))
               }
             case s @ AllNodesScan(node, args) =>
+              s.copy(idName = varRef(node), argumentIds = args.map(varRef))(SameId(s.id))
+            case s @ PartitionedAllNodesScan(node, args) =>
               s.copy(idName = varRef(node), argumentIds = args.map(varRef))(SameId(s.id))
             case s @ IntersectionNodeByLabelsScan(node, _, args, _) =>
               s.copy(idName = varRef(node), argumentIds = args.map(varRef))(SameId(s.id))
@@ -353,6 +356,8 @@ object VariableRefRewriter extends Rewriter {
               )(SameId(s.id))
           }
         case p @ AllNodesScan(node, args) =>
+          p.copy(idName = varRef(node), argumentIds = args.map(varRef))(SameId(p.id))
+        case p @ PartitionedAllNodesScan(node, args) =>
           p.copy(idName = varRef(node), argumentIds = args.map(varRef))(SameId(p.id))
         case p @ AntiConditionalApply(_, _, items) =>
           p.copy(items = items.map(varRef))(SameId(p.id))

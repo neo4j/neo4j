@@ -127,6 +127,7 @@ import org.neo4j.cypher.internal.logical.plans.OrderedDistinct
 import org.neo4j.cypher.internal.logical.plans.OrderedUnion
 import org.neo4j.cypher.internal.logical.plans.PartialSort
 import org.neo4j.cypher.internal.logical.plans.PartialTop
+import org.neo4j.cypher.internal.logical.plans.PartitionedAllNodesScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
 import org.neo4j.cypher.internal.logical.plans.PathPropagatingBFS
 import org.neo4j.cypher.internal.logical.plans.PhysicalPlanningPlan
@@ -315,6 +316,9 @@ object ReadFinder {
     // Match on plans
     val planReads = plan match {
       case AllNodesScan(varName, _) =>
+        PlanReads()
+          .withIntroducedNodeVariable(varName)
+      case PartitionedAllNodesScan(varName, _) =>
         PlanReads()
           .withIntroducedNodeVariable(varName)
 

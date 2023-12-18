@@ -178,6 +178,7 @@ import org.neo4j.cypher.internal.logical.plans.OrderedDistinct
 import org.neo4j.cypher.internal.logical.plans.OrderedUnion
 import org.neo4j.cypher.internal.logical.plans.PartialSort
 import org.neo4j.cypher.internal.logical.plans.PartialTop
+import org.neo4j.cypher.internal.logical.plans.PartitionedAllNodesScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
 import org.neo4j.cypher.internal.logical.plans.PathPropagatingBFS
 import org.neo4j.cypher.internal.logical.plans.PointBoundingBoxRange
@@ -1087,6 +1088,15 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     val n = VariableParser.unescaped(node)
     newNode(varFor(n))
     appendAtCurrentIndent(LeafOperator(AllNodesScan(
+      varFor(n),
+      args.map(a => varFor(VariableParser.unescaped(a))).toSet
+    )(_)))
+  }
+
+  def partitionedAllNodeScan(node: String, args: String*): IMPL = {
+    val n = VariableParser.unescaped(node)
+    newNode(varFor(n))
+    appendAtCurrentIndent(LeafOperator(PartitionedAllNodesScan(
       varFor(n),
       args.map(a => varFor(VariableParser.unescaped(a))).toSet
     )(_)))

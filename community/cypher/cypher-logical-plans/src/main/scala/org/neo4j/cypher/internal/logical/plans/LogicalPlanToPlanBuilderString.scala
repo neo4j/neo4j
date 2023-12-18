@@ -146,6 +146,7 @@ object LogicalPlanToPlanBuilderString {
     val specialCases: PartialFunction[LogicalPlan, String] = {
       case _: ProduceResult                 => "produceResults"
       case _: AllNodesScan                  => "allNodeScan"
+      case _: PartitionedAllNodesScan       => "partitionedAllNodeScan"
       case e: Expand                        => if (e.mode == ExpandAll) "expandAll" else "expandInto"
       case _: VarExpand                     => "expand"
       case _: BFSPruningVarExpand           => "bfsPruningVarExpand"
@@ -261,6 +262,8 @@ object LogicalPlanToPlanBuilderString {
       case PartitionedUnwindCollection(_, variable, expression) =>
         projectVars(Map(variable -> expression))
       case AllNodesScan(idName, argumentIds) =>
+        wrapVarsInQuotationsAndMkString(idName +: argumentIds.toSeq)
+      case PartitionedAllNodesScan(idName, argumentIds) =>
         wrapVarsInQuotationsAndMkString(idName +: argumentIds.toSeq)
       case Argument(argumentIds) =>
         wrapVarsInQuotationsAndMkString(argumentIds.toSeq)

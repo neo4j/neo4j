@@ -117,6 +117,7 @@ import org.neo4j.cypher.internal.logical.plans.OrderedDistinct
 import org.neo4j.cypher.internal.logical.plans.OrderedUnion
 import org.neo4j.cypher.internal.logical.plans.PartialSort
 import org.neo4j.cypher.internal.logical.plans.PartialTop
+import org.neo4j.cypher.internal.logical.plans.PartitionedAllNodesScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
 import org.neo4j.cypher.internal.logical.plans.Prober
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
@@ -359,6 +360,11 @@ case class InterpretedPipeMapper(
         ArgumentPipe()(id)
 
       case AllNodesScan(ident, _) =>
+        AllNodesScanPipe(ident.name)(id = id)
+
+      // Note: this plan shouldn't really be used here, but having it mapped here helps
+      //      fallback and makes testing easier
+      case PartitionedAllNodesScan(ident, _) =>
         AllNodesScanPipe(ident.name)(id = id)
 
       case NodeCountFromCountStore(ident, labels, _) =>

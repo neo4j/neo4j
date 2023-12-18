@@ -95,6 +95,7 @@ import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.OptionalExpand
 import org.neo4j.cypher.internal.logical.plans.OrderedUnion
 import org.neo4j.cypher.internal.logical.plans.PartialSort
+import org.neo4j.cypher.internal.logical.plans.PartitionedAllNodesScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
 import org.neo4j.cypher.internal.logical.plans.ProjectEndpoints
@@ -262,7 +263,7 @@ case class CardinalityCostModel(executionModel: ExecutionModel) extends CostMode
      */
     object AllNodesScanIsh {
       def unapply(v: LogicalPlan): Boolean = v match {
-        case _: AllNodesScan                                                                                   => true
+        case _: AllNodesScan | _: PartitionedAllNodesScan                                                      => true
         case lup @ LogicalUnaryPlan(ans @ AllNodesScanIsh()) if cardinalities(lup.id) == cardinalities(ans.id) => true
         case _                                                                                                 => false
       }
@@ -505,7 +506,7 @@ object CardinalityCostModel {
 
       case Selection(predicate, _) => costPerRowFor(predicate, semanticTable)
 
-      case _: AllNodesScan => ALL_SCAN_COST_PER_ROW
+      case _: AllNodesScan | _: PartitionedAllNodesScan => ALL_SCAN_COST_PER_ROW
 
       case e: OptionalExpand if e.mode == ExpandInto => EXPAND_INTO_COST
 

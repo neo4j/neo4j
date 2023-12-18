@@ -288,6 +288,7 @@ import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
 import org.neo4j.cypher.internal.logical.plans.OrderedDistinct
 import org.neo4j.cypher.internal.logical.plans.PartialSort
 import org.neo4j.cypher.internal.logical.plans.PartialTop
+import org.neo4j.cypher.internal.logical.plans.PartitionedAllNodesScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
 import org.neo4j.cypher.internal.logical.plans.PointBoundingBoxRange
 import org.neo4j.cypher.internal.logical.plans.PointBoundingBoxSeekRangeWrapper
@@ -599,6 +600,49 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       planDescription(
         id,
         "AllNodesScan",
+        NoChildren,
+        Seq(details("b"), Order(asPrettyString.raw("b ASC, b.foo DESC"))),
+        Set("b")
+      )
+    )
+  }
+
+  test("PartitionedAllNodesScan") {
+    assertGood(
+      attach(PartitionedAllNodesScan(varFor("a"), Set.empty), 1.0, providedOrder = ProvidedOrder.asc(varFor("a"))),
+      planDescription(
+        id,
+        "PartitionedAllNodesScan",
+        NoChildren,
+        Seq(details("a"), Order(asPrettyString.raw("a ASC"))),
+        Set("a")
+      )
+    )
+
+    assertGood(
+      attach(
+        PartitionedAllNodesScan(varFor("  UNNAMED111"), Set.empty),
+        1.0,
+        providedOrder = ProvidedOrder.asc(varFor("  UNNAMED111"))
+      ),
+      planDescription(
+        id,
+        "PartitionedAllNodesScan",
+        NoChildren,
+        Seq(details(anonVar("111")), Order(asPrettyString.raw(s"${anonVar("111")} ASC"))),
+        Set(anonVar("111"))
+      )
+    )
+
+    assertGood(
+      attach(
+        PartitionedAllNodesScan(varFor("b"), Set.empty),
+        42.0,
+        providedOrder = ProvidedOrder.asc(varFor("b")).desc(prop("b", "foo"))
+      ),
+      planDescription(
+        id,
+        "PartitionedAllNodesScan",
         NoChildren,
         Seq(details("b"), Order(asPrettyString.raw("b ASC, b.foo DESC"))),
         Set("b")
