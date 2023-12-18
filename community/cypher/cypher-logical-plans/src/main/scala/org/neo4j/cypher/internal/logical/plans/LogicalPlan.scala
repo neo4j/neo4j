@@ -289,6 +289,8 @@ sealed abstract class LogicalPlan(idGen: IdGen)
         acc => acc ++ indexPlans.flatMap(_.indexUsage())
       case NodeByLabelScan(idName, _, _, _) =>
         acc => acc :+ SchemaIndexLookupUsage(idName, EntityType.NODE)
+      case PartitionedNodeByLabelScan(idName, _, _) =>
+        acc => acc :+ SchemaIndexLookupUsage(idName, EntityType.NODE)
       case DirectedRelationshipTypeScan(idName, _, _, _, _, _) =>
         acc => acc :+ SchemaIndexLookupUsage(idName, EntityType.RELATIONSHIP)
       case UndirectedRelationshipTypeScan(idName, _, _, _, _, _) =>
@@ -2459,6 +2461,26 @@ case class NodeByLabelScan(
   override def usedVariables: Set[LogicalVariable] = Set.empty
 
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): NodeByLabelScan =
+    copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def addArgumentIds(argsToAdd: Set[LogicalVariable]): LogicalLeafPlan =
+    copy(argumentIds = argumentIds ++ argsToAdd)(SameId(this.id))
+}
+
+/**
+ * Partitioned version of the NodeByLabelsScan operator, should only be used for parallel runtime.
+ */
+case class PartitionedNodeByLabelScan(
+  idName: LogicalVariable,
+  label: LabelName,
+  argumentIds: Set[LogicalVariable]
+)(implicit idGen: IdGen) extends NodeLogicalLeafPlan(idGen) with StableLeafPlan with PhysicalPlanningPlan {
+
+  override val availableSymbols: Set[LogicalVariable] = argumentIds + idName
+
+  override def usedVariables: Set[LogicalVariable] = Set.empty
+
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): PartitionedNodeByLabelScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
   override def addArgumentIds(argsToAdd: Set[LogicalVariable]): LogicalLeafPlan =

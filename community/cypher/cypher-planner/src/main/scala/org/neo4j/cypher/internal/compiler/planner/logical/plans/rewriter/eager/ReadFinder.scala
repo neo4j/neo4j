@@ -128,6 +128,7 @@ import org.neo4j.cypher.internal.logical.plans.OrderedUnion
 import org.neo4j.cypher.internal.logical.plans.PartialSort
 import org.neo4j.cypher.internal.logical.plans.PartialTop
 import org.neo4j.cypher.internal.logical.plans.PartitionedAllNodesScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedNodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
 import org.neo4j.cypher.internal.logical.plans.PathPropagatingBFS
 import org.neo4j.cypher.internal.logical.plans.PhysicalPlanningPlan
@@ -323,6 +324,13 @@ object ReadFinder {
           .withIntroducedNodeVariable(varName)
 
       case NodeByLabelScan(variable, labelName, _, _) =>
+        val hasLabels = HasLabels(variable, Seq(labelName))(InputPosition.NONE)
+        PlanReads()
+          .withLabelRead(AccessedLabel(labelName, Some(variable)))
+          .withIntroducedNodeVariable(variable)
+          .withAddedNodeFilterExpression(variable, hasLabels)
+
+      case PartitionedNodeByLabelScan(variable, labelName, _) =>
         val hasLabels = HasLabels(variable, Seq(labelName))(InputPosition.NONE)
         PlanReads()
           .withLabelRead(AccessedLabel(labelName, Some(variable)))

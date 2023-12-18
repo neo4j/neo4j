@@ -289,6 +289,7 @@ import org.neo4j.cypher.internal.logical.plans.OrderedDistinct
 import org.neo4j.cypher.internal.logical.plans.PartialSort
 import org.neo4j.cypher.internal.logical.plans.PartialTop
 import org.neo4j.cypher.internal.logical.plans.PartitionedAllNodesScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedNodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
 import org.neo4j.cypher.internal.logical.plans.PointBoundingBoxRange
 import org.neo4j.cypher.internal.logical.plans.PointBoundingBoxSeekRangeWrapper
@@ -659,6 +660,24 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(
       attach(NodeByLabelScan(varFor("  UNNAMED123"), label("X"), Set.empty, IndexOrderNone), 33.0),
       planDescription(id, "NodeByLabelScan", NoChildren, Seq(details(s"${anonVar("123")}:X")), Set(anonVar("123")))
+    )
+  }
+
+  test("PartitionedNodeByLabelScan") {
+    assertGood(
+      attach(PartitionedNodeByLabelScan(varFor("node"), label("X"), Set.empty), 33.0),
+      planDescription(id, "PartitionedNodeByLabelScan", NoChildren, Seq(details("node:X")), Set("node"))
+    )
+
+    assertGood(
+      attach(PartitionedNodeByLabelScan(varFor("  UNNAMED123"), label("X"), Set.empty), 33.0),
+      planDescription(
+        id,
+        "PartitionedNodeByLabelScan",
+        NoChildren,
+        Seq(details(s"${anonVar("123")}:X")),
+        Set(anonVar("123"))
+      )
     )
   }
 

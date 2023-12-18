@@ -283,6 +283,14 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName wi
   )
 
   testPlan(
+    "partitionedNodeByLabelScan",
+    new TestPlanBuilder()
+      .produceResults("x")
+      .partitionedNodeByLabelScan("x", "X")
+      .build()
+  )
+
+  testPlan(
     "nodeByLabelScan anonymous variable",
     new TestPlanBuilder()
       .produceResults("x")

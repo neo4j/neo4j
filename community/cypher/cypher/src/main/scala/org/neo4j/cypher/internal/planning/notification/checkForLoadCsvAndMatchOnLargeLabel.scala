@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.planning.notification
 import org.neo4j.cypher.internal.logical.plans.LoadCSV
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedNodeByLabelScan
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
@@ -49,6 +50,8 @@ case class checkForLoadCsvAndMatchOnLargeLabel(planContext: PlanContext, nonInde
         case e                          => SkipChildren(e)
       }
       case NodeByLabelScan(_, label, _, _) if cardinality(label.name) > threshold =>
+        _ => TraverseChildren(LargeLabelFound(label.name))
+      case PartitionedNodeByLabelScan(_, label, _) if cardinality(label.name) > threshold =>
         _ => TraverseChildren(LargeLabelFound(label.name))
     }
 

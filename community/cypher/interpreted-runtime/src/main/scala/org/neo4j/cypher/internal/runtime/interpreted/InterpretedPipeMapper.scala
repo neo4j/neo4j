@@ -85,6 +85,7 @@ import org.neo4j.cypher.internal.logical.plans.FindShortestPaths
 import org.neo4j.cypher.internal.logical.plans.FindShortestPaths.AllowSameNode
 import org.neo4j.cypher.internal.logical.plans.Foreach
 import org.neo4j.cypher.internal.logical.plans.ForeachApply
+import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.InjectCompilationError
 import org.neo4j.cypher.internal.logical.plans.Input
 import org.neo4j.cypher.internal.logical.plans.IntersectionNodeByLabelsScan
@@ -118,6 +119,7 @@ import org.neo4j.cypher.internal.logical.plans.OrderedUnion
 import org.neo4j.cypher.internal.logical.plans.PartialSort
 import org.neo4j.cypher.internal.logical.plans.PartialTop
 import org.neo4j.cypher.internal.logical.plans.PartitionedAllNodesScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedNodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
 import org.neo4j.cypher.internal.logical.plans.Prober
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
@@ -381,6 +383,12 @@ case class InterpretedPipeMapper(
       case NodeByLabelScan(ident, label, _, indexOrder) =>
         indexRegistrator.registerLabelScan()
         NodeByLabelScanPipe(ident.name, LazyLabel(label), indexOrder)(id = id)
+
+      // Note: this plan shouldn't really be used here, but having it mapped here helps
+      //      fallback and makes testing easier
+      case PartitionedNodeByLabelScan(ident, label, _) =>
+        indexRegistrator.registerLabelScan()
+        NodeByLabelScanPipe(ident.name, LazyLabel(label), IndexOrderNone)(id = id)
 
       case UnionNodeByLabelsScan(ident, labels, _, indexOrder) =>
         indexRegistrator.registerLabelScan()

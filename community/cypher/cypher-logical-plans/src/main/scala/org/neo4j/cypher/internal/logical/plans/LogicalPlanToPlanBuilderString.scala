@@ -426,6 +426,10 @@ object LogicalPlanToPlanBuilderString {
         val args = Seq(escapeIdentifier(idName.name), label.name).map(wrapInQuotations) ++
           Seq(objectName(indexOrder)) ++ argumentIds.map(wrapInQuotations)
         args.mkString(", ")
+      case PartitionedNodeByLabelScan(idName, label, argumentIds) =>
+        val args = Seq(escapeIdentifier(idName.name), label.name).map(wrapInQuotations) ++
+          argumentIds.map(wrapInQuotations)
+        args.mkString(", ")
       case UnionNodeByLabelsScan(idName, labels, argumentIds, indexOrder) =>
         val labelNames = labels.map(l => wrapInQuotations(l.name)).mkString(", ")
         val args = Seq(wrapInQuotations(idName), s"Seq($labelNames)") ++ Seq(objectName(indexOrder)) ++
