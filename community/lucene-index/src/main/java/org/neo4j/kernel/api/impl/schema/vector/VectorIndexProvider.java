@@ -38,6 +38,7 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
+import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
@@ -52,6 +53,8 @@ import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.IndexUpdateIgnoreStrategy;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
+import org.neo4j.scheduler.Group;
+import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.values.storable.FloatingPointArray;
 import org.neo4j.values.storable.Value;
@@ -137,7 +140,7 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
         }
         final var luceneIndex = builder.build();
         luceneIndex.open();
-        forceMergeSegments(luceneIndex);
+        forceMergeSegments(scheduler, luceneIndex);
 
         final var indexConfig = descriptor.getIndexConfig();
         final var ignoreStrategy = new IgnoreStrategy(vectorDimensionsFrom(indexConfig));
@@ -162,6 +165,17 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
         public boolean ignore(Value[] values) {
             return !(values[0] instanceof final FloatingPointArray vector && vector.length() == dimensions);
         }
+    }
+
+    /**
+     * Use given {@link JobScheduler} to force the segment merges
+     * @see #forceMergeSegments(DatabaseIndex)
+     */
+    private static void forceMergeSegments(JobScheduler scheduler, DatabaseIndex<?> luceneIndex) {
+        scheduler.schedule(
+                Group.INDEX_POPULATION,
+                JobMonitoringParams.systemJob("Merging vector index segments"),
+                IOUtils.uncheckedRunnable(() -> forceMergeSegments(luceneIndex)));
     }
 
     /**

@@ -32,6 +32,7 @@ import java.util.function.LongSupplier;
 import java.util.function.Predicate;
 import org.eclipse.collections.api.factory.Lists;
 import org.eclipse.collections.api.list.MutableList;
+import org.neo4j.function.ThrowingAction;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.function.ThrowingPredicate;
@@ -255,6 +256,16 @@ public final class IOUtils {
         public void close() throws E {
             IOUtils.close(constructor, autoCloseables);
         }
+    }
+
+    public static Runnable uncheckedRunnable(ThrowingAction<IOException> runnable) {
+        return () -> {
+            try {
+                runnable.apply();
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        };
     }
 
     public static <T> Predicate<T> uncheckedPredicate(ThrowingPredicate<T, IOException> predicate) {
