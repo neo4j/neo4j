@@ -36,7 +36,7 @@ class OptionReaderTest extends CypherFunSuite {
     )
 
     options
-      .shouldEqual(CypherQueryOptions.default)
+      .shouldEqual(CypherQueryOptions.defaultOptions)
   }
 
   test("Can read options from config") {
@@ -51,7 +51,7 @@ class OptionReaderTest extends CypherFunSuite {
     )
 
     options
-      .shouldEqual(CypherQueryOptions.default.copy(
+      .shouldEqual(CypherQueryOptions.defaultOptions.copy(
         runtime = CypherRuntimeOption.interpreted
       ))
   }
@@ -78,7 +78,7 @@ class OptionReaderTest extends CypherFunSuite {
     )
 
     options
-      .shouldEqual(CypherQueryOptions.default.copy(
+      .shouldEqual(CypherQueryOptions.defaultOptions.copy(
         debugOptions = CypherDebugOptions(Set( /*CypherDebugOption.useLPEagerAnalyzer*/ ))
       ))
   }
@@ -97,7 +97,7 @@ class OptionReaderTest extends CypherFunSuite {
     )
 
     options
-      .shouldEqual(CypherQueryOptions.default.copy(
+      .shouldEqual(CypherQueryOptions.defaultOptions.copy(
         debugOptions = CypherDebugOptions(Set( /*CypherDebugOption.useLPEagerAnalyzer,*/ CypherDebugOption.tostring))
       ))
   }
@@ -110,7 +110,7 @@ class OptionReaderTest extends CypherFunSuite {
     )
 
     options
-      .shouldEqual(CypherQueryOptions.default.copy(
+      .shouldEqual(CypherQueryOptions.defaultOptions.copy(
         planner = CypherPlannerOption.dp,
         debugOptions = CypherDebugOptions(Set(CypherDebugOption.tostring, CypherDebugOption.ast))
       ))
@@ -129,7 +129,7 @@ class OptionReaderTest extends CypherFunSuite {
     )
 
     options
-      .shouldEqual(CypherQueryOptions.default.copy(
+      .shouldEqual(CypherQueryOptions.defaultOptions.copy(
         planner = CypherPlannerOption.dp,
         runtime = CypherRuntimeOption.slotted,
         debugOptions = CypherDebugOptions(Set(CypherDebugOption.tostring, CypherDebugOption.ast))
@@ -144,7 +144,7 @@ class OptionReaderTest extends CypherFunSuite {
     )
 
     options
-      .shouldEqual(CypherQueryOptions.default.copy(
+      .shouldEqual(CypherQueryOptions.defaultOptions.copy(
         planner = CypherPlannerOption.dp,
         debugOptions = CypherDebugOptions(Set(CypherDebugOption.tostring, CypherDebugOption.ast))
       ))

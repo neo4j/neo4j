@@ -24,6 +24,7 @@ import static org.neo4j.fabric.executor.FabricExecutor.WRITING_IN_READ_NOT_ALLOW
 import java.util.function.Function;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.configuration.Config;
+import org.neo4j.cypher.internal.QueryOptions;
 import org.neo4j.cypher.internal.options.CypherExecutionMode;
 import org.neo4j.cypher.internal.util.CancellationChecker;
 import org.neo4j.fabric.bookmark.BookmarkFormat;
@@ -129,9 +130,6 @@ public class QueryRouterImpl implements QueryRouter {
         var locationService = createLocationService(routingInfo);
         var routerTransaction = createRouterTransaction(transactionInfo, transactionBookmarkManager);
         transactionManager.registerTransaction(routerTransaction);
-        var constituentTransactionFactory =
-                getConstituentTransactionFactory(transactionInfo, routerTransaction, locationService);
-        routerTransaction.setConstituentTransactionFactory(constituentTransactionFactory);
         return new RouterTransactionContextImpl(
                 transactionInfo,
                 routingInfo,
@@ -182,29 +180,36 @@ public class QueryRouterImpl implements QueryRouter {
 
     @Override
     public QueryExecution executeQuery(RouterTransactionContext context, Query query, QuerySubscriber subscriber) {
+        TransactionInfo transactionInfo = context.transactionInfo();
         var statementLifecycle = statementLifecycles.create(
-                context.transactionInfo().statementLifecycleTransactionInfo(), query.text(), query.parameters(), null);
+                transactionInfo.statementLifecycleTransactionInfo(), query.text(), query.parameters(), null);
         statementLifecycle.startProcessing();
         try {
+            LocationService locationService = context.locationService();
             var processedQueryInfo = queryProcessor.processQuery(
                     query,
                     context.targetService(),
-                    context.locationService(),
+                    locationService,
                     cancellationChecker(context.routerTransaction()),
                     context.transactionInfo().isComposite());
             StatementType statementType = processedQueryInfo.statementType();
-            CypherExecutionMode executionMode = processedQueryInfo.cypherExecutionMode();
-            AccessMode accessMode = context.transactionInfo().accessMode();
+            QueryOptions queryOptions = processedQueryInfo.queryOptions();
+            CypherExecutionMode executionMode = queryOptions.queryOptions().executionMode();
+            AccessMode accessMode = transactionInfo.accessMode();
             context.verifyStatementType(statementType);
             var target = processedQueryInfo.target();
             verifyAccessModeWithStatementType(executionMode, accessMode, statementType, target);
-            var location = context.locationService().locationOf(target);
+            var location = locationService.locationOf(target);
             updateQueryRouterMetric(location);
             var databaseTransaction = context.transactionFor(
                     location,
                     TransactionMode.from(accessMode, executionMode, statementType.isReadQuery(), target.isComposite()));
             statementLifecycle.doneRouterProcessing(
                     processedQueryInfo.obfuscationMetadata().get(), target.isComposite());
+            RouterTransaction routerTransaction = context.routerTransaction();
+            var constituentTransactionFactory =
+                    getConstituentTransactionFactory(transactionInfo, routerTransaction, locationService, queryOptions);
+            routerTransaction.setConstituentTransactionFactory(constituentTransactionFactory);
             return databaseTransaction.executeQuery(
                     processedQueryInfo.rewrittenQuery(), subscriber, statementLifecycle);
         } catch (RuntimeException e) {
@@ -220,7 +225,10 @@ public class QueryRouterImpl implements QueryRouter {
     }
 
     private ConstituentTransactionFactory getConstituentTransactionFactory(
-            TransactionInfo transactionInfo, RouterTransaction routerTransaction, LocationService locationService) {
+            TransactionInfo transactionInfo,
+            RouterTransaction routerTransaction,
+            LocationService locationService,
+            QueryOptions queryOptions) {
         if (!(transactionInfo.isComposite())) {
             return ConstituentTransactionFactory.throwing();
         }
@@ -230,7 +238,8 @@ public class QueryRouterImpl implements QueryRouter {
                 locationService,
                 statementLifecycles,
                 transactionInfo,
-                cancellationChecker(routerTransaction));
+                cancellationChecker(routerTransaction),
+                queryOptions);
     }
 
     private void verifyAccessModeWithStatementType(

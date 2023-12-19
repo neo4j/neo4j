@@ -1024,7 +1024,7 @@ class FabricPlannerTest
 
       val expectedInner = QueryOptions(
         offset = InputPosition.NONE,
-        queryOptions = CypherQueryOptions.default
+        queryOptions = CypherQueryOptions.defaultOptions
       )
 
       val expectedLast = QueryOptions.default.copy(

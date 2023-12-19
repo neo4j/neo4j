@@ -156,7 +156,7 @@ object QueryOptions {
 
   val default: QueryOptions = QueryOptions(
     offset = InputPosition.NONE,
-    queryOptions = CypherQueryOptions.default
+    queryOptions = CypherQueryOptions.defaultOptions
   )
 
 }

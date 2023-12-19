@@ -20,7 +20,7 @@
 package org.neo4j.router.query;
 
 import java.util.Optional;
-import org.neo4j.cypher.internal.options.CypherExecutionMode;
+import org.neo4j.cypher.internal.QueryOptions;
 import org.neo4j.cypher.internal.util.CancellationChecker;
 import org.neo4j.cypher.internal.util.ObfuscationMetadata;
 import org.neo4j.kernel.database.DatabaseReference;
@@ -39,7 +39,7 @@ public interface QueryProcessor {
             Query rewrittenQuery,
             Optional<ObfuscationMetadata> obfuscationMetadata,
             StatementType statementType,
-            CypherExecutionMode cypherExecutionMode) {}
+            QueryOptions queryOptions) {}
 
     ProcessedQueryInfo processQuery(
             Query query,

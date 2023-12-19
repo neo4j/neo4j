@@ -20,7 +20,9 @@
 package org.neo4j.router.impl.query;
 
 import java.util.function.BiFunction;
+import org.neo4j.cypher.internal.QueryOptions;
 import org.neo4j.cypher.internal.util.CancellationChecker;
+import org.neo4j.cypher.rendering.QueryRenderer;
 import org.neo4j.fabric.executor.Location;
 import org.neo4j.fabric.executor.QueryStatementLifecycles;
 import org.neo4j.fabric.transaction.TransactionMode;
@@ -41,10 +43,12 @@ public class ConstituentTransactionFactoryImpl implements ConstituentTransaction
 
     private final QueryStatementLifecycles statementLifecycles;
     private final CancellationChecker cancellationChecker;
+    private final QueryOptions queryOptions;
     private final QueryProcessor queryProcessor;
     private final TransactionInfo transactionInfo;
     private final BiFunction<Location, TransactionMode, DatabaseTransaction> transactionFor;
     private final LocationService locationService;
+    private final String NL = System.lineSeparator();
 
     public ConstituentTransactionFactoryImpl(
             QueryProcessor queryProcessor,
@@ -52,13 +56,15 @@ public class ConstituentTransactionFactoryImpl implements ConstituentTransaction
             LocationService locationService,
             QueryStatementLifecycles queryStatementLifecycles,
             TransactionInfo transactionInfo,
-            CancellationChecker cancellationChecker) {
+            CancellationChecker cancellationChecker,
+            QueryOptions queryOptions) {
         this.queryProcessor = queryProcessor;
         this.transactionInfo = transactionInfo;
         this.transactionFor = transactionFor;
         this.locationService = locationService;
         this.statementLifecycles = queryStatementLifecycles;
         this.cancellationChecker = cancellationChecker;
+        this.queryOptions = queryOptions;
     }
 
     @Override
@@ -84,14 +90,14 @@ public class ConstituentTransactionFactoryImpl implements ConstituentTransaction
             var statementLifecycle = statementLifecycles.create(
                     transactionInfo.statementLifecycleTransactionInfo(), queryString, parameters, null);
             statementLifecycle.startProcessing();
-            Query query = Query.of(queryString, parameters);
+            var query = Query.of(QueryRenderer.addOptions(queryString, queryOptions), parameters);
             var processedQuery =
                     queryProcessor.processQuery(query, targetService, (dbRef) -> location, cancellationChecker, false);
             statementLifecycle.doneRouterProcessing(
                     processedQuery.obfuscationMetadata().get(), reference.isComposite());
             TransactionMode mode = TransactionMode.from(
                     transactionInfo.accessMode(),
-                    processedQuery.cypherExecutionMode(),
+                    queryOptions.queryOptions().executionMode(),
                     processedQuery.statementType().isReadQuery(),
                     reference.isComposite());
             return transactionFor.apply(location, mode).executeQuery(query, querySubscriber, statementLifecycle);

@@ -124,6 +124,7 @@ public class RouterTransactionImpl implements CompoundTransaction<DatabaseTransa
                 ref -> registerNewChildTransaction(location, mode, () -> createTransactionFor(location)));
     }
 
+    @Override
     public void setConstituentTransactionFactory(ConstituentTransactionFactory constituentTransactionFactory) {
         this.constituentTransactionFactory = constituentTransactionFactory;
     }

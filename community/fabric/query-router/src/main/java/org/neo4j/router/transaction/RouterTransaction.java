@@ -26,6 +26,7 @@ import org.neo4j.fabric.executor.Location;
 import org.neo4j.fabric.transaction.TransactionMode;
 import org.neo4j.fabric.transaction.parent.CompoundTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.query.ConstituentTransactionFactory;
 import org.neo4j.router.impl.query.StatementType;
 
 public interface RouterTransaction extends CompoundTransaction<DatabaseTransaction> {
@@ -38,4 +39,6 @@ public interface RouterTransaction extends CompoundTransaction<DatabaseTransacti
     void setMetaData(Map<String, Object> txMeta);
 
     void throwIfTerminatedOrClosed(Supplier<String> closedExceptionMessage);
+
+    void setConstituentTransactionFactory(ConstituentTransactionFactory constituentTransactionFactory);
 }

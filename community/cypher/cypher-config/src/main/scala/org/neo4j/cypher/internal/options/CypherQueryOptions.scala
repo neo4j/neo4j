@@ -81,7 +81,7 @@ object CypherQueryOptions {
   private val cacheKey = OptionCacheKey.derive[CypherQueryOptions]
   private val reader = OptionReader.derive[CypherQueryOptions]
 
-  val default: CypherQueryOptions = hasDefault.default
+  val defaultOptions: CypherQueryOptions = hasDefault.default
 
   def fromValues(config: CypherConfiguration, keyValues: Set[(String, String)]): CypherQueryOptions = {
     reader.read(OptionReader.Input(config, keyValues)) match {

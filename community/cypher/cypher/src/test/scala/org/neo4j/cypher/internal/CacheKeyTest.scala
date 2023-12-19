@@ -39,14 +39,14 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 class CacheKeyTest extends CypherFunSuite {
 
   test("For default options,the cache key should be empty") {
-    val options = CypherQueryOptions.default
+    val options = CypherQueryOptions.defaultOptions
 
     options.cacheKey
       .shouldEqual("")
   }
 
   test("EXPLAIN does not appear in cache key") {
-    val options = CypherQueryOptions.default.copy(executionMode = CypherExecutionMode.explain)
+    val options = CypherQueryOptions.defaultOptions.copy(executionMode = CypherExecutionMode.explain)
 
     options.cacheKey
       .shouldEqual("")
