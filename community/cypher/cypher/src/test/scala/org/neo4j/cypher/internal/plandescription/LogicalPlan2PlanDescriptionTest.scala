@@ -1877,10 +1877,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
   }
 
-  test("CreateIndex") {
-
-    // RANGE
-
+  test("CreateRangeIndex") {
     assertGood(
       attach(
         CreateIndex(None, IndexType.RANGE, label("Label"), List(key("prop")), Some(Left("$indexName")), NoOptions),
@@ -2045,9 +2042,9 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         Set.empty
       )
     )
+  }
 
-    // LOOKUP
-
+  test("CreateLookupIndex") {
     assertGood(
       attach(CreateLookupIndex(None, EntityType.NODE, Some(Left("indexName")), NoOptions), 63.2),
       planDescription(
@@ -2167,9 +2164,9 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         Set.empty
       )
     )
+  }
 
-    // FULLTEXT
-
+  test("CreateFulltextIndex") {
     assertGood(
       attach(
         CreateFulltextIndex(None, Left(List(label("Label"))), List(key("prop")), Some(Left("indexName")), NoOptions),
@@ -2351,9 +2348,9 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         Set.empty
       )
     )
+  }
 
-    // TEXT
-
+  test("CreateTextIndex") {
     assertGood(
       attach(
         CreateIndex(None, IndexType.TEXT, label("Label"), List(key("prop")), Some(Left("indexName")), NoOptions),
@@ -2512,9 +2509,9 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         Set.empty
       )
     )
+  }
 
-    // POINT
-
+  test("CreatPointIndex") {
     assertGood(
       attach(
         CreateIndex(None, IndexType.POINT, label("Label"), List(key("prop")), Some(Left("indexName")), NoOptions),
@@ -2685,9 +2682,9 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         Set.empty
       )
     )
+  }
 
-    // VECTOR
-
+  test("CreateVectorIndex") {
     assertGood(
       attach(
         CreateIndex(None, IndexType.VECTOR, label("Label"), List(key("prop")), Some(Left("indexName")), NoOptions),
