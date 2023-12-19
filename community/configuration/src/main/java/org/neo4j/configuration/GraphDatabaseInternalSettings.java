@@ -1193,7 +1193,7 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     @Internal
     @Description("A feature toggle behind which the new query router stack is developed")
     public static final Setting<Boolean> query_router_new_stack =
-            newBuilder("internal.dbms.query_router.new_stack", BOOL, false).build();
+            newBuilder("internal.dbms.query_router.new_stack", BOOL, true).build();
 
     @Internal
     @Description("A feature toggle behind which CALL IN TRANSACTIONS for composite databases is developed")
