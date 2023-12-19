@@ -1236,7 +1236,7 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     @Internal
     @Description("Enable online compaction of multiversioned countstore.")
     public static final Setting<Boolean> multi_version_countstore_compaction = newBuilder(
-                    "internal.dbms.multiversion_countstore_compaction", BOOL, false)
+                    "internal.dbms.multiversion_countstore_compaction", BOOL, true)
             .build();
 
     @Internal
