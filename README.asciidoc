@@ -12,7 +12,7 @@ Neo4j is available both as a standalone server, or an embeddable component. You 
 
 We encourage experimentation with Neo4j. You can build extensions to Neo4j, develop library or drivers atop the product, or make contributions directly to the product core. You'll need to sign a Contributor License Agreement in order for us to accept your patches.
 
-NOTE: This GitHub repository contains mixed GPL and AGPL code. Our Community edition (in the link:community/[community/] directory) is GPLv3. Our Enterprise edition (link:enterprise/[enterprise/]) is differently licensed under the AGPLv3.
+NOTE: This GitHub repository contains mixed licenses. Our Community edition (in the link:community/[community/] directory) is GPLv3. Our Enterprise edition (link:enterprise/[enterprise/]) is differently licensed under the Neo4j Sweden Software License.
 
 == Dependencies ==
 
