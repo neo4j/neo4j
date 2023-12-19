@@ -129,7 +129,7 @@ public enum Group {
     CLUSTER_STATUS_CHECK_SERVICE("ClusterStatusService"),
     TOPOLOGY_LOGGER("TopologyLogger"),
     TOPOLOGY_MAINTENANCE("TopologyMaintenance"),
-    TOPOLOGY_GRAPH_WRITE_SUPPORT("TopologyGraphWriteSupport"),
+    TOPOLOGY_GRAPH_DBMS_MODEL("TopologyGraphDbmsModel", ExecutorServiceFactory.singleThread()),
     CONNECTIVITY_CHECKS("ConnectivityChecks"),
     RAFTED_STATUS_CHECKS("RaftedStatusChecks"),
     COMMIT_COORDINATOR("CommitCoordinator"),
