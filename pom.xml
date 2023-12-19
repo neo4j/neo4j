@@ -25,8 +25,7 @@
 
   <licenses>
     <license>
-      <name>GNU Affero General Public License, Version 3 with the Commons Clause</name>
-      <url>http://www.gnu.org/licenses/agpl-3.0-standalone.html</url>
+      <name>Neo4j Sweden Software License</name>
     </license>
   </licenses>
 
@@ -64,7 +63,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
-    <licensing.prepend.text>licensing/notice-agpl-prefix.txt</licensing.prepend.text>
+    <licensing.prepend.text>licensing/notice-nssl-prefix.txt</licensing.prepend.text>
     <lucene.version>5.5.5</lucene.version>
     <bouncycastle.version>1.64</bouncycastle.version>
     <generate-config-docs-phase>prepare-package</generate-config-docs-phase>
@@ -85,7 +84,7 @@
     <forkCounts>0</forkCounts>
     <maven.build.timestamp.format>yyMMddHHmmssSSS</maven.build.timestamp.format>
 
-    <license-text.header>headers/AGPL-3-header.txt</license-text.header>
+    <license-text.header>headers/NSSL-header.txt</license-text.header>
 
     <scala-maven-plugin.version>3.3.2</scala-maven-plugin.version>
     <scala.version>2.11.12</scala.version>

@@ -15,7 +15,7 @@
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <properties>
-    <license-text.header>headers/AGPL-3-header.txt</license-text.header>
+    <license-text.header>headers/NSSL-header.txt</license-text.header>
     <moduleName>org.neo4j.cluster</moduleName>
   </properties>
 
@@ -27,20 +27,7 @@
 
   <licenses>
     <license>
-      <name>GNU Affero General Public License, Version 3 with the Commons Clause</name>
-      <url>http://www.gnu.org/licenses/agpl-3.0-standalone.html</url>
-      <comments>The software ("Software") developed and owned by Neo4j Sweden AB (referred to in this notice as "Neo4j") is
-        licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3 with the Commons Clause to all
-        third parties and that license is included below.
-
-        However, if you have executed an End User Software License and Services
-        Agreement or an OEM Software License and Support Services Agreement, or
-        another commercial license agreement with Neo4j or one of its
-        affiliates (each, a "Commercial Agreement"), the terms of the license in
-        such Commercial Agreement will supersede the GNU AFFERO GENERAL PUBLIC
-        LICENSE Version 3 and you may use the Software solely pursuant to the
-        terms of the relevant Commercial Agreement.
-      </comments>
+      <name>Neo4j Sweden Software License</name>
     </license>
   </licenses>
 

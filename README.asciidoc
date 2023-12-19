@@ -73,6 +73,7 @@ Neo4j Community Edition is an open source product licensed under GPLv3.
 
 Neo4j Enterprise Edition expands the functionality of Community Edition with Enterprise-grade features.
 
-Neo4j Enterprise consists of modules from Neo4j Community Edition and modules licensed under AGPLv3 with the Commons Clause in this repository, and other closed source components not present in this repository.
+Neo4j Enterprise consists of modules from Neo4j Community Edition and modules licensed under the Neo4j Sweden Software Licence in this repository, and other closed source components not present in this repository.
+Please note that the Neo4j Sweden Software License is not open source.
 
 When packaged as a binary, Enterprise Edition includes additional closed-source components _not available in this repository_ and requires a commercial license from Neo4j Sweden AB or one of its affiliates.

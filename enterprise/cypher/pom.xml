@@ -18,8 +18,8 @@
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <properties>
-    <licensing.prepend.text>licensing/notice-agpl-prefix.txt</licensing.prepend.text>
-    <license-text.header>headers/AGPL-3-header.txt</license-text.header>
+    <licensing.prepend.text>licensing/notice-nssl-prefix.txt</licensing.prepend.text>
+    <license-text.header>headers/NSSL-header.txt</license-text.header>
     <opencypher.version>1.0.0-M12</opencypher.version>
     <junit-plattform-runner.version>1.1.0</junit-plattform-runner.version>
     <junit-jupiter.version>5.1.0</junit-jupiter.version>
