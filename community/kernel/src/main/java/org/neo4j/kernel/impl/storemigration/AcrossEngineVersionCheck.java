@@ -60,18 +60,6 @@ public class AcrossEngineVersionCheck implements MigrationStoreVersionCheck {
             return new MigrationCheckResult(MigrationOutcome.STORE_VERSION_RETRIEVAL_FAILURE, null, null, e);
         }
 
-        // We don't want to handle all the special cases of the 4 -> 5 migration when going over storage engines
-        // Just disallow switching engine when on a migration only format, maybe not always what we want
-        // since we can have other only-migration formats but it's a start
-        if (!srcVersionCheck.isStoreVersionFullySupported(currentVersion, cursorContext)) {
-            return new MigrationCheckResult(
-                    MigrationOutcome.UNSUPPORTED_MIGRATION_PATH,
-                    currentVersion,
-                    null,
-                    new UnableToMigrateException("Migration directly from " + currentVersion.getStoreVersionUserString()
-                            + " not possible. Migrate to a supported replacement first."));
-        }
-
         StoreVersionIdentifier targetVersion;
         try {
             targetVersion = targetVersionCheck.findLatestVersion(formatToMigrateTo);

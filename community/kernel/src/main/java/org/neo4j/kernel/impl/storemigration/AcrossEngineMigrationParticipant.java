@@ -55,6 +55,7 @@ import org.neo4j.memory.MemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreVersion;
+import org.neo4j.storageengine.api.format.Index44Compatibility;
 import org.neo4j.storageengine.migration.AbstractStoreMigrationParticipant;
 
 /**
@@ -75,6 +76,7 @@ public class AcrossEngineMigrationParticipant extends AbstractStoreMigrationPart
     private final MemoryTracker memoryTracker;
     private final StorageEngineFactory srcStorageEngine;
     private final StorageEngineFactory targetStorageEngine;
+    private final boolean forceBtreeIndexesToRange;
 
     public AcrossEngineMigrationParticipant(
             FileSystemAbstraction fileSystem,
@@ -86,7 +88,8 @@ public class AcrossEngineMigrationParticipant extends AbstractStoreMigrationPart
             CursorContextFactory contextFactory,
             MemoryTracker memoryTracker,
             StorageEngineFactory srcStorageEngine,
-            StorageEngineFactory targetStorageEngine) {
+            StorageEngineFactory targetStorageEngine,
+            boolean forceBtreeIndexesToRange) {
         super(NAME);
         this.fileSystem = fileSystem;
         this.pageCache = pageCache;
@@ -98,6 +101,7 @@ public class AcrossEngineMigrationParticipant extends AbstractStoreMigrationPart
         this.memoryTracker = memoryTracker;
         this.srcStorageEngine = srcStorageEngine;
         this.targetStorageEngine = targetStorageEngine;
+        this.forceBtreeIndexesToRange = forceBtreeIndexesToRange;
     }
 
     @Override
@@ -171,7 +175,10 @@ public class AcrossEngineMigrationParticipant extends AbstractStoreMigrationPart
                 localConfig,
                 directoryLayoutArg,
                 migrationLayoutArg,
-                contextFactory);
+                fromVersion.hasCapability(Index44Compatibility.INSTANCE),
+                contextFactory,
+                tailMetadata,
+                forceBtreeIndexesToRange);
     }
 
     @Override

@@ -106,7 +106,8 @@ public class StorageEngineMigrationAbstraction {
                     contextFactory,
                     memoryTracker,
                     storageEngineFactory,
-                    targetStorageEngineFactory));
+                    targetStorageEngineFactory,
+                    forceBtreeIndexesToRange));
         } else {
             // Get all the participants from the storage engine and add them where they want to be
             storeParticipants.addAll(storageEngineFactory.migrationParticipants(

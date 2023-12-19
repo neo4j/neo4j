@@ -36,14 +36,12 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
-import org.neo4j.internal.schema.AnyTokenSchemaDescriptor;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.PropertySchemaType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorImplementation;
-import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -59,6 +57,7 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
+import org.neo4j.kernel.impl.storemigration.SchemaStore44MigrationUtil;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.storageengine.api.PropertyKeyValue;
 import org.neo4j.storageengine.api.SchemaRule44;
@@ -72,10 +71,6 @@ import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 
 public class SchemaStore44Reader implements AutoCloseable {
-    public static final AnyTokenSchemaDescriptor FORMER_LABEL_SCAN_STORE_SCHEMA =
-            SchemaDescriptors.ANY_TOKEN_NODE_SCHEMA_DESCRIPTOR;
-    public static final String FORMER_LABEL_SCAN_STORE_GENERATED_NAME =
-            "__org_neo4j_schema_index_label_scan_store_converted_to_token_index";
 
     private static final String PROP_SCHEMA_RULE_PREFIX = "__org.neo4j.SchemaRule.";
     private static final String PROP_SCHEMA_RULE_TYPE =
@@ -100,9 +95,9 @@ public class SchemaStore44Reader implements AutoCloseable {
     private static final Function<Long, SchemaRule44.Index> FORMER_LABEL_SCAN_STORE_SCHEMA_RULE_FACTORY =
             id -> new SchemaRule44.Index(
                     id,
-                    FORMER_LABEL_SCAN_STORE_SCHEMA,
+                    SchemaStore44MigrationUtil.FORMER_LABEL_SCAN_STORE_SCHEMA,
                     false,
-                    FORMER_LABEL_SCAN_STORE_GENERATED_NAME,
+                    SchemaStore44MigrationUtil.FORMER_LABEL_SCAN_STORE_GENERATED_NAME,
                     SchemaRule44.IndexType.LOOKUP,
                     new IndexProviderDescriptor("token-lookup", "1.0"),
                     IndexConfig.empty(),

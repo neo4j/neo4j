@@ -19,20 +19,28 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
+import static org.neo4j.kernel.impl.storemigration.SchemaStore44MigrationUtil.asRangeBackedConstraint;
+import static org.neo4j.kernel.impl.storemigration.SchemaStore44MigrationUtil.asRangeIndex;
+import static org.neo4j.token.api.TokenConstants.NO_TOKEN;
+
 import java.io.IOException;
+import java.util.List;
 import java.util.OptionalLong;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.UnderlyingStorageException;
+import org.neo4j.internal.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
+import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -45,6 +53,7 @@ import org.neo4j.kernel.impl.newapi.ReadOnlyTokenRead;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.recovery.LogTailExtractor;
 import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.storageengine.api.SchemaRule44;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.migration.SchemaRuleMigrationAccessExtended;
 import org.neo4j.token.TokenHolders;
@@ -62,7 +71,10 @@ public class SchemaMigrator {
             Config config,
             DatabaseLayout from,
             DatabaseLayout toLayout,
-            CursorContextFactory contextFactory)
+            boolean from44store,
+            CursorContextFactory contextFactory,
+            LogTailMetadata fromTailMetadata,
+            boolean forceBtreeIndexesToRange)
             throws IOException, KernelException {
         // Need to start the stores with the correct logTail since some stores depend on tx-id.
         LogTailExtractor logTailExtractor =
@@ -87,8 +99,18 @@ public class SchemaMigrator {
             LongObjectHashMap<ConstraintToConnect> constraintsToConnect = new LongObjectHashMap<>();
             // Write the rules to the new store.
             //  - Translating the tokens since their ids might be different
-            for (var schemaRule : fromStorage.loadSchemaRules(
-                    fs, pageCache, pageCacheTracer, config, from, true, Function.identity(), contextFactory)) {
+            for (var schemaRule : getSrcSchemaRules(
+                    fromStorage,
+                    fs,
+                    pageCache,
+                    pageCacheTracer,
+                    config,
+                    from,
+                    contextFactory,
+                    from44store,
+                    fromTailMetadata,
+                    forceBtreeIndexesToRange,
+                    tokenHolders)) {
                 if (schemaRule instanceof IndexDescriptor indexDescriptor) {
                     if (indexDescriptor.isTokenIndex()) {
                         // Skip since they have already been created by the copy operation
@@ -185,6 +207,69 @@ public class SchemaMigrator {
                         indexToConnect.prototype.materialise(schemaRuleMigrationAccess.nextId()));
             }
         }
+    }
+
+    private static List<SchemaRule> getSrcSchemaRules(
+            StorageEngineFactory fromStorage,
+            FileSystemAbstraction fs,
+            PageCache pageCache,
+            PageCacheTracer pageCacheTracer,
+            Config config,
+            DatabaseLayout from,
+            CursorContextFactory contextFactory,
+            boolean from44store,
+            LogTailMetadata fromTailMetadata,
+            boolean forceBtreeIndexesToRange,
+            TokenHolders srcTokenHolders) {
+        if (from44store) {
+            List<SchemaRule44> schemaRule44s = fromStorage.load44SchemaRules(
+                    fs, pageCache, pageCacheTracer, config, from, contextFactory, fromTailMetadata);
+
+            SchemaStore44MigrationUtil.SchemaInfo44 schemaInfo44 =
+                    SchemaStore44MigrationUtil.extractRuleInfo(true, schemaRule44s);
+
+            // Throw on any non-converted rules if we haven't been asked to do a force migration
+            SchemaStore44MigrationUtil.assertCanMigrate(
+                    forceBtreeIndexesToRange,
+                    schemaInfo44.nonReplacedIndexes(),
+                    schemaInfo44.nonReplacedConstraints(),
+                    srcTokenHolders);
+
+            // Any non-converted left here should be converted and created
+            // The actual ids here don't matter, we just need to use some unique ids to be able to connect indexes and
+            // constraints.
+            // Real ids will be allocated when writing the rules to the destination.
+            AtomicLong highestExistingId = new AtomicLong(getHighestExistingId(schemaInfo44));
+            for (SchemaRule44.Index index : schemaInfo44.nonReplacedIndexes()) {
+                IndexDescriptor rangeIndex = asRangeIndex(index, highestExistingId::incrementAndGet);
+                schemaInfo44.toCreate().add(rangeIndex);
+            }
+            for (Pair<SchemaRule44.Constraint, SchemaRule44.Index> constraintPair :
+                    schemaInfo44.nonReplacedConstraints()) {
+                var oldConstraint = constraintPair.first();
+                var oldIndex = constraintPair.other();
+                var rangeIndex = asRangeIndex(oldIndex, highestExistingId::incrementAndGet);
+                var rangeBackedConstraint = asRangeBackedConstraint(
+                        oldConstraint, rangeIndex, highestExistingId::incrementAndGet, srcTokenHolders);
+                rangeIndex = rangeIndex.withOwningConstraintId(rangeBackedConstraint.getId());
+                schemaInfo44.toCreate().add(rangeIndex);
+                schemaInfo44.toCreate().add(rangeBackedConstraint);
+            }
+            return schemaInfo44.toCreate();
+        }
+        return fromStorage.loadSchemaRules(
+                fs, pageCache, pageCacheTracer, config, from, true, Function.identity(), contextFactory);
+    }
+
+    private static long getHighestExistingId(SchemaStore44MigrationUtil.SchemaInfo44 schemaInfo44) {
+        long highestExistingId = NO_TOKEN;
+        for (SchemaRule schemaRule : schemaInfo44.toCreate()) {
+            long id = schemaRule.getId();
+            if (id > highestExistingId) {
+                highestExistingId = id;
+            }
+        }
+        return highestExistingId;
     }
 
     record IndexToConnect(long oldId, OptionalLong oldConstraintId, IndexPrototype prototype) {}

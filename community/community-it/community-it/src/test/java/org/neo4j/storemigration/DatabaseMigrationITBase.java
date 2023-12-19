@@ -139,7 +139,7 @@ public abstract class DatabaseMigrationITBase {
 
         try {
             GraphDatabaseService db = dbms.database(DEFAULT_DATABASE_NAME);
-            verifyContents(db, zippedStore.statistics());
+            verifyContents(db, zippedStore.statistics(), toRecordFormat);
             verifyStoreFormat(db, expectedFormat(db, toRecordFormat));
             verifyTokenIndexes(db);
             verifyKernelVersion(db);
@@ -229,9 +229,12 @@ public abstract class DatabaseMigrationITBase {
         consistencyCheck(targetDirectory, SYSTEM_DATABASE_NAME, true);
     }
 
-    protected void verifyContents(GraphDatabaseService db, DbStatistics statistics) {
+    protected void verifyContents(GraphDatabaseService db, DbStatistics statistics, String toFormat) {
         verifyContents(
-                db, statistics, expectedIndexesAfterUpgrade(statistics), expectedConstraintsAfterUpgrade(statistics));
+                db,
+                statistics,
+                expectedIndexesAfterUpgrade(statistics, toFormat),
+                expectedConstraintsAfterUpgrade(statistics));
     }
 
     protected void verifyContents(
@@ -273,15 +276,22 @@ public abstract class DatabaseMigrationITBase {
         }
     }
 
-    private static int expectedIndexesAfterUpgrade(DbStatistics statistics) {
-        return statistics.indexes() + additionalIndexAfterUpgrade(statistics) - statistics.btreeIndexes();
+    private static int expectedIndexesAfterUpgrade(DbStatistics statistics, String toFormat) {
+        return statistics.indexes() + additionalIndexAfterUpgrade(statistics, toFormat) - statistics.btreeIndexes();
     }
 
     private static int expectedConstraintsAfterUpgrade(DbStatistics statistics) {
         return statistics.constraints() - statistics.btreeConstraints();
     }
 
-    private static int additionalIndexAfterUpgrade(DbStatistics statistics) {
+    private static int additionalIndexAfterUpgrade(DbStatistics statistics, String toFormat) {
+        boolean acrossEngineMigration =
+                toFormat.equals("block") != statistics.storeVersion().contains("block");
+        if (acrossEngineMigration) {
+            // When migrating across engine we always add both of the token indexes.
+            return 2 - statistics.lookupIndexes();
+        }
+
         return statistics.kernelVersion().isLessThan(KernelVersion.VERSION_IN_WHICH_TOKEN_INDEXES_ARE_INTRODUCED)
                 ? 1
                 : 0;
