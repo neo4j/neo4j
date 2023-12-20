@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.cardinality
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.SelectivityCalculator
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.AssumeIndependenceQueryGraphCardinalityModel
-import org.neo4j.cypher.internal.options.LabelInferenceOption
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.LabelInferenceStrategy
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 
 object QueryGraphCardinalityModel {
@@ -30,12 +30,12 @@ object QueryGraphCardinalityModel {
   def default(
     planContext: PlanContext,
     selectivityCalculator: SelectivityCalculator,
-    labelInference: LabelInferenceOption
+    labelInferenceStrategy: LabelInferenceStrategy
   ): QueryGraphCardinalityModel =
     new AssumeIndependenceQueryGraphCardinalityModel(
       planContext,
       selectivityCalculator,
       IndependenceCombiner,
-      labelInference
+      labelInferenceStrategy
     )
 }

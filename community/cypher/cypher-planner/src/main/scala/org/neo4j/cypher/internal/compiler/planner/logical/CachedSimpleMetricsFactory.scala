@@ -27,9 +27,9 @@ import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CostModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.SelectivityCalculator
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.LabelInferenceStrategy
 import org.neo4j.cypher.internal.ir.helpers.CachedFunction
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.options.LabelInferenceOption
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
@@ -105,10 +105,10 @@ object CachedSimpleMetricsFactory extends MetricsFactory {
   override def newQueryGraphCardinalityModel(
     planContext: PlanContext,
     selectivityCalculator: SelectivityCalculator,
-    labelInference: LabelInferenceOption
+    labelInferenceStrategy: LabelInferenceStrategy
   ): QueryGraphCardinalityModel = {
     val wrapped: QueryGraphCardinalityModel =
-      SimpleMetricsFactory.newQueryGraphCardinalityModel(planContext, selectivityCalculator, labelInference)
+      SimpleMetricsFactory.newQueryGraphCardinalityModel(planContext, selectivityCalculator, labelInferenceStrategy)
     new CachedQueryGraphCardinalityModel(wrapped)
   }
 }

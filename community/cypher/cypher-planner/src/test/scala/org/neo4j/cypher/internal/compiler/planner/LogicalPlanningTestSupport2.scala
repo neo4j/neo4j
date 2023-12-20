@@ -54,6 +54,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.SelectivityCal
 import org.neo4j.cypher.internal.compiler.planner.logical.MetricsFactory
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryGraphSolver
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.QueryGraphCardinalityModel
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.LabelInferenceStrategy
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.ComponentConnectorPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.DefaultIDPSolverConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPQueryGraphSolver
@@ -84,7 +85,6 @@ import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
 import org.neo4j.cypher.internal.options.CypherDebugOptions
-import org.neo4j.cypher.internal.options.LabelInferenceOption
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
@@ -273,9 +273,9 @@ trait LogicalPlanningTestSupport2 extends AstConstructionTestSupport with Logica
       override def newQueryGraphCardinalityModel(
         planContext: PlanContext,
         selectivityCalculator: SelectivityCalculator,
-        labelInference: LabelInferenceOption
+        labelInferenceStrategy: LabelInferenceStrategy
       ): QueryGraphCardinalityModel =
-        QueryGraphCardinalityModel.default(planContext, selectivityCalculator, labelInference)
+        QueryGraphCardinalityModel.default(planContext, selectivityCalculator, labelInferenceStrategy)
     }
 
     def planContext: NotImplementedPlanContext = new NotImplementedPlanContext {

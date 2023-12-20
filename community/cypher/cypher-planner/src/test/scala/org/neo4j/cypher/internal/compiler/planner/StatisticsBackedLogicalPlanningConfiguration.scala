@@ -49,6 +49,7 @@ import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlannin
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.getWithValues
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryGraphSolver
 import org.neo4j.cypher.internal.compiler.planner.logical.SimpleMetricsFactory
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.LabelInferenceStrategy
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.ConfigurableIDPSolverConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.simpleExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
@@ -1038,7 +1039,7 @@ class StatisticsBackedLogicalPlanningConfiguration(
       planContext,
       simpleExpressionEvaluator,
       options.executionModel,
-      options.useLabelInference
+      LabelInferenceStrategy.fromConfig(planContext, options.useLabelInference)
     )
 
     val context = ContextHelper.create(

@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics
 import org.neo4j.cypher.internal.compiler.planner.logical.MetricsFactory
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryGraphSolver
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.LabelInferenceStrategy
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.Monitors
@@ -134,7 +135,12 @@ object PlannerContext {
   ): PlannerContext = {
     val exceptionFactory = Neo4jCypherExceptionFactory(queryText, offset)
 
-    val metrics = metricsFactory.newMetrics(planContext, evaluator, executionModel, labelInference)
+    val metrics = metricsFactory.newMetrics(
+      planContext,
+      evaluator,
+      executionModel,
+      LabelInferenceStrategy.fromConfig(planContext, labelInference)
+    )
 
     new PlannerContext(
       exceptionFactory,

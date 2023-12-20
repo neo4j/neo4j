@@ -40,7 +40,8 @@ case class QueryGraphCardinalityContext(
   semanticTable: SemanticTable,
   indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
   cardinalityModel: CardinalityModel,
-  allNodesCardinality: Cardinality
+  allNodesCardinality: Cardinality,
+  labelInferenceStrategy: LabelInferenceStrategy
 ) {
 
   def predicatesSelectivity(labelInfo: LabelInfo, predicates: Set[Predicate]): Selectivity =

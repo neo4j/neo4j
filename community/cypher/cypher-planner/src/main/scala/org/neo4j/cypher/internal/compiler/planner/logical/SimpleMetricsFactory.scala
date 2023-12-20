@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CostModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.SelectivityCalculator
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.QueryGraphCardinalityModel
-import org.neo4j.cypher.internal.options.LabelInferenceOption
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.LabelInferenceStrategy
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 
 object SimpleMetricsFactory extends MetricsFactory {
@@ -40,7 +40,7 @@ object SimpleMetricsFactory extends MetricsFactory {
   override def newQueryGraphCardinalityModel(
     planContext: PlanContext,
     selectivityCalculator: SelectivityCalculator,
-    labelInference: LabelInferenceOption = LabelInferenceOption.default
+    labelInferenceStrategy: LabelInferenceStrategy = LabelInferenceStrategy.NoInference
   ): QueryGraphCardinalityModel =
-    QueryGraphCardinalityModel.default(planContext, selectivityCalculator, labelInference)
+    QueryGraphCardinalityModel.default(planContext, selectivityCalculator, labelInferenceStrategy)
 }

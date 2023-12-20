@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.util.Multiplier
 import org.neo4j.cypher.internal.util.Selectivity
 
 import scala.annotation.tailrec
+import scala.util.chaining.scalaUtilChainingOps
 
 trait PatternRelationshipCardinalityModel extends NodeCardinalityModel {
 
@@ -70,41 +71,50 @@ trait PatternRelationshipCardinalityModel extends NodeCardinalityModel {
               )
             case i =>
               if (context.allNodesCardinality > Cardinality.EMPTY) {
+
+                val inferLabels: LabelInfo => (LabelInfo, QueryGraphCardinalityContext) =
+                  context.labelInferenceStrategy.inferLabels(
+                    context,
+                    _,
+                    Seq(relationship.copy(length = SimplePatternLength))
+                  )
+
                 val firstRelationshipCardinality =
-                  getSimpleRelationshipCardinality(
-                    context = context,
-                    labelInfo = labelInfo.removed(relationship.right),
-                    leftNode = relationship.left.name,
-                    rightNode = relationship.right.name,
-                    relationshipTypes = relationship.types,
-                    relationshipDirection = relationship.dir
-                  )
+                  inferLabels(labelInfo.updated(relationship.right, Set.empty)) pipe {
+                    case (labelInfo, context) =>
+                      getSimpleRelationshipCardinality(
+                        context = context,
+                        labelInfo = labelInfo,
+                        leftNode = relationship.left.name,
+                        rightNode = relationship.right.name,
+                        relationshipTypes = relationship.types,
+                        relationshipDirection = relationship.dir
+                      )
+                  }
 
-                val intermediateRelationshipCardinality =
-                  getSimpleRelationshipCardinality(
-                    context = context,
-                    labelInfo = Map.empty,
-                    leftNode = relationship.left.name,
-                    rightNode = relationship.right.name,
-                    relationshipTypes = relationship.types,
-                    relationshipDirection = relationship.dir
-                  )
                 val intermediateRelationshipMultiplier =
-                  Multiplier.ofDivision(intermediateRelationshipCardinality, context.allNodesCardinality)
-                    .getOrElse(Multiplier.ZERO)
+                  inferLabels(LabelInfo(relationship.left -> Set.empty, relationship.right -> Set.empty)) pipe {
+                    case (labelInfo, context) =>
+                      getIntermediateRelationshipMultiplier(
+                        context = context,
+                        labelInfo = labelInfo,
+                        relationship = relationship
+                      )
+                  }
 
-                val lastRelationshipCardinality =
-                  getSimpleRelationshipCardinality(
-                    context = context,
-                    labelInfo = labelInfo.removed(relationship.left),
-                    leftNode = relationship.left.name,
-                    rightNode = relationship.right.name,
-                    relationshipTypes = relationship.types,
-                    relationshipDirection = relationship.dir
+                val lastRelationshipMultiplier = {
+                  val labelInfoForEndPoints = inferLabels(labelInfo.updated(relationship.left, Set.empty))
+
+                  // we either divide by allNodesCardinality to calculate the multiplier,
+                  // or by inferred most-common label
+                  val labelInfoForNodeCardinality = inferLabels(LabelInfo(relationship.right -> Set.empty))
+
+                  getLastRelationshipMultiplier(
+                    labelInfoAndContextForEndPoints = labelInfoForEndPoints,
+                    labelInfoAndContextForNodeCardinality = labelInfoForNodeCardinality,
+                    relationship = relationship
                   )
-                val lastRelationshipMultiplier =
-                  Multiplier.ofDivision(lastRelationshipCardinality, context.allNodesCardinality)
-                    .getOrElse(Multiplier.ZERO)
+                }
 
                 val uniqueness =
                   if (isUnique) {
@@ -173,6 +183,56 @@ trait PatternRelationshipCardinalityModel extends NodeCardinalityModel {
           ).sum(NumericCardinality)
       }
     cardinality.getOrElse(Cardinality.EMPTY)
+  }
+
+  private def getIntermediateRelationshipMultiplier(
+    context: QueryGraphCardinalityContext,
+    labelInfo: LabelInfo,
+    relationship: PatternRelationship
+  ): Multiplier = {
+    val relCardinality =
+      getSimpleRelationshipCardinality(
+        context = context,
+        labelInfo = labelInfo,
+        leftNode = relationship.left.name,
+        rightNode = relationship.right.name,
+        relationshipTypes = relationship.types,
+        relationshipDirection = relationship.dir
+      )
+
+    val nodeCardinality =
+      getNodeCardinality(context, labelInfo, relationship.right.name)
+        .getOrElse(context.allNodesCardinality)
+
+    Multiplier.ofDivision(relCardinality, nodeCardinality)
+      .getOrElse(Multiplier.ZERO)
+  }
+
+  private def getLastRelationshipMultiplier(
+    labelInfoAndContextForEndPoints: (LabelInfo, QueryGraphCardinalityContext),
+    labelInfoAndContextForNodeCardinality: (LabelInfo, QueryGraphCardinalityContext),
+    relationship: PatternRelationship
+  ): Multiplier = {
+    val relCardinality =
+      getSimpleRelationshipCardinality(
+        context = labelInfoAndContextForEndPoints._2,
+        labelInfo = labelInfoAndContextForEndPoints._1,
+        leftNode = relationship.left.name,
+        rightNode = relationship.right.name,
+        relationshipTypes = relationship.types,
+        relationshipDirection = relationship.dir
+      )
+
+    val nodeCardinality =
+      getNodeCardinality(
+        labelInfoAndContextForNodeCardinality._2,
+        labelInfoAndContextForNodeCardinality._1,
+        relationship.right.name
+      )
+        .getOrElse(labelInfoAndContextForNodeCardinality._2.allNodesCardinality)
+
+    Multiplier.ofDivision(relCardinality, nodeCardinality)
+      .getOrElse(Multiplier.ZERO)
   }
 
   private def getDissectedRelationshipCardinality(

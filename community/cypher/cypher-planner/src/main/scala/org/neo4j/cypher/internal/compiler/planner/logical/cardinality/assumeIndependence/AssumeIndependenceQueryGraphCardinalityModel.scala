@@ -28,64 +28,20 @@ import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.RelTypeInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.SelectivityCalculator
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.SelectivityCombiner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProviderContext
-import org.neo4j.cypher.internal.expressions.LabelName
-import org.neo4j.cypher.internal.expressions.SemanticDirection
-import org.neo4j.cypher.internal.ir.NodeConnection
-import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QueryGraph
-import org.neo4j.cypher.internal.ir.SimplePatternLength
-import org.neo4j.cypher.internal.options.LabelInferenceOption
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Cardinality.NumericCardinality
-import org.neo4j.cypher.internal.util.InputPosition
-import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.Multiplier.NumericMultiplier
-import org.neo4j.cypher.internal.util.RelTypeId
+
+import scala.util.chaining.scalaUtilChainingOps
 
 final class AssumeIndependenceQueryGraphCardinalityModel(
   planContext: PlanContext,
   selectivityCalculator: SelectivityCalculator,
   combiner: SelectivityCombiner,
-  labelInference: LabelInferenceOption
+  labelInferenceStrategy: LabelInferenceStrategy
 ) extends QueryGraphCardinalityModel with NodeConnectionCardinalityModel {
-
-  private case class SimpleRelationship(startNode: String, endNode: String, relationshipType: RelTypeId) {
-
-    def nodesWithSameCardinalityWhenAddingLabel(labelId: LabelId): List[String] = {
-      val relationshipCardinality = planContext.statistics.patternStepCardinality(None, Some(relationshipType), None)
-
-      def hasSameCardinalityWhenAddingLabel(fromLabel: Option[LabelId], toLabel: Option[LabelId]): Boolean =
-        planContext.statistics.patternStepCardinality(fromLabel, Some(relationshipType), toLabel).amount ==
-          relationshipCardinality.amount
-
-      List(
-        Option.when(hasSameCardinalityWhenAddingLabel(Some(labelId), None))(startNode),
-        Option.when(hasSameCardinalityWhenAddingLabel(None, Some(labelId)))(endNode)
-      ).flatten
-    }
-
-    def inferLabels: Seq[SimpleRelationship.InferredLabel] = {
-      for {
-        mostCommonLabelId <- planContext.statistics.mostCommonLabelGivenRelationshipType(this.relationshipType.id)
-        nodeName <- this.nodesWithSameCardinalityWhenAddingLabel(LabelId(mostCommonLabelId))
-        labelName = planContext.getLabelName(mostCommonLabelId)
-      } yield SimpleRelationship.InferredLabel(nodeName, labelName, LabelId(mostCommonLabelId))
-    }
-  }
-
-  private object SimpleRelationship {
-    case class InferredLabel(nodeName: String, labelName: String, labelId: LabelId)
-
-    def fromNodeConnection(nodeConnection: NodeConnection, semanticTable: SemanticTable): Option[SimpleRelationship] =
-      nodeConnection match {
-        case relationship @ PatternRelationship(_, _, dir, Seq(relationshipTypeName), SimplePatternLength)
-          if dir == SemanticDirection.OUTGOING || dir == SemanticDirection.INCOMING =>
-          val (startNode, endNode) = relationship.inOrder
-          semanticTable.id(relationshipTypeName).map(SimpleRelationship(startNode.name, endNode.name, _))
-        case _ => None
-      }
-  }
 
   override def apply(
     queryGraph: QueryGraph,
@@ -105,7 +61,8 @@ final class AssumeIndependenceQueryGraphCardinalityModel(
       semanticTable,
       indexPredicateProviderContext,
       cardinalityModel,
-      allNodesCardinality
+      allNodesCardinality,
+      labelInferenceStrategy
     )
     // First calculate the cardinality of the "top-level" match query graph while keeping track of newly encountered node labels
     val (moreLabelInfo, matchCardinality) = getBaseQueryGraphCardinality(context, labelInfo, queryGraph)
@@ -129,49 +86,24 @@ final class AssumeIndependenceQueryGraphCardinalityModel(
     labelInfo: LabelInfo,
     queryGraph: QueryGraph
   ): (LabelInfo, Cardinality) = {
-    val initialPredicates = QueryGraphPredicates.partitionSelections(labelInfo, queryGraph.selections)
+    val predicates = QueryGraphPredicates.partitionSelections(labelInfo, queryGraph.selections)
 
-    val (predicates, newContext) = if (labelInference == LabelInferenceOption.enabled) {
-      val allInferredLabels = for {
-        nodeConnection <- queryGraph.nodeConnections.toSeq
-        simpleRelationship <- SimpleRelationship.fromNodeConnection(nodeConnection, context.semanticTable).iterator
-        inferredLabel <- simpleRelationship.inferLabels
-      } yield inferredLabel
+    val inferLabels: (QueryGraphCardinalityContext, LabelInfo) => (LabelInfo, QueryGraphCardinalityContext) =
+      context.labelInferenceStrategy.inferLabels(_, _, queryGraph.nodeConnections.toSeq)
 
-      val inferredLabels = allInferredLabels
-        .sequentiallyGroupBy(_.nodeName)
-        .map { case (key, value) =>
-          key -> value.minBy(x => planContext.statistics.nodesWithLabelCardinality(Some(x.labelId)))
-        }.toMap
-
-      // Update the semantic table with newly resolved label names.
-      // Note that the new context is not propagated further than this method.
-      // This means that any newly resolved label names will not be known
-      // to any later query graphs.
-      val newContext = context.copy(
-        semanticTable = context.semanticTable.addResolvedLabelNames(
-          inferredLabels.values.map(il => il.labelName -> il.labelId)
-        )
-      )
-
-      def addInferredLabelOnlyIfNoOtherLabel(labelInfo: LabelInfo): LabelInfo = {
-        labelInfo.map {
-          case (node, labelNames) if labelNames.isEmpty => // only infer if node has no labels
-            node -> Set(inferredLabels.get(node.name).map(x => LabelName(x.labelName)(InputPosition.NONE))).flatten
-          case (nodeName, labelNames) =>
-            nodeName -> labelNames
-        }
-      }
-
-      val allLabelInfo = addInferredLabelOnlyIfNoOtherLabel(initialPredicates.allLabelInfo)
-      val localLabelInfo = addInferredLabelOnlyIfNoOtherLabel(initialPredicates.localLabelInfo)
-
-      (initialPredicates.copy(allLabelInfo = allLabelInfo, localLabelInfo = localLabelInfo), newContext)
-    } else {
-      (initialPredicates, context)
+    inferLabels(context, predicates.allLabelInfo) pipe {
+      case (allLabelInfo, context) =>
+        (allLabelInfo, inferLabels(context, predicates.localLabelInfo))
+    } pipe {
+      case (allLabelInfo, (localLabelInfo, context)) =>
+        (predicates.copy(allLabelInfo = allLabelInfo, localLabelInfo = localLabelInfo), context)
+    } pipe {
+      case (predicates, context) =>
+        // Note that the new context is not propagated further than this method.
+        // This means that any newly resolved label names will not be known
+        // to any later query graphs.
+        getBaseQueryGraphCardinalityWithInferredLabelContext(queryGraph, predicates, context)
     }
-
-    getBaseQueryGraphCardinalityWithInferredLabelContext(queryGraph, predicates, newContext)
   }
 
   /**

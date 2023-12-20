@@ -55,6 +55,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.SelectivityCal
 import org.neo4j.cypher.internal.compiler.planner.logical.MetricsFactory
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryGraphSolver
 import org.neo4j.cypher.internal.compiler.planner.logical.SimpleMetricsFactory
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.LabelInferenceStrategy
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.BestResults
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.CostComparisonListener
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.LogicalPlanProducer
@@ -96,7 +97,6 @@ import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.options.CypherDebugOptions
-import org.neo4j.cypher.internal.options.LabelInferenceOption
 import org.neo4j.cypher.internal.planner.spi.CostBasedPlannerName
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
@@ -154,9 +154,9 @@ trait LogicalPlanningTestSupport extends AstConstructionTestSupport with Logical
     override def newQueryGraphCardinalityModel(
       planContext: PlanContext,
       selectivityCalculator: SelectivityCalculator,
-      labelInference: LabelInferenceOption
+      labelInferenceStrategy: LabelInferenceStrategy
     ): QueryGraphCardinalityModel = {
-      SimpleMetricsFactory.newQueryGraphCardinalityModel(planContext, selectivityCalculator, labelInference)
+      SimpleMetricsFactory.newQueryGraphCardinalityModel(planContext, selectivityCalculator, labelInferenceStrategy)
     }
   }
 

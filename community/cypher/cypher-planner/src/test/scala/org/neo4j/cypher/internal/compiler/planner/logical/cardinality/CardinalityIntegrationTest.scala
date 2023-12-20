@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.cardinality
 
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.RepetitionCardinalityModel
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.frontend.phases.FieldSignature
 import org.neo4j.cypher.internal.frontend.phases.ProcedureReadOnlyAccess
@@ -34,14 +35,12 @@ import org.neo4j.graphdb.schema.IndexType
 
 import scala.math.sqrt
 
-abstract class CardinalityIntegrationTest extends CypherFunSuite with CardinalityIntegrationTestSupport {
+class CardinalityIntegrationTest extends CypherFunSuite with CardinalityIntegrationTestSupport {
 
-  val allNodes = 733.0
-  val personCount = 324.0
-  val relCount = 50.0
-  val rel2Count = 78.0
-
-  def getIndexType: IndexType
+  private val allNodes = 733.0
+  private val personCount = 324.0
+  private val relCount = 50.0
+  private val rel2Count = 78.0
 
   test("should agree between QPP with 2 relationships and its expansion") {
     val config = plannerBuilder()
@@ -203,7 +202,7 @@ abstract class CardinalityIntegrationTest extends CypherFunSuite with Cardinalit
     val config = plannerBuilder()
       .setAllNodesCardinality(allNodes)
       .setLabelCardinality("Person", i)
-      .addNodeIndex("Person", Seq("age"), 0.3, 0.2, indexType = getIndexType)
+      .addNodeIndex("Person", Seq("age"), 0.3, 0.2)
       .build()
     queryShouldHaveCardinality(config, "MATCH (a:Person) WITH a, 1 AS x WHERE a.age = 20", i * 0.3 * 0.2)
   }
@@ -462,7 +461,7 @@ abstract class CardinalityIntegrationTest extends CypherFunSuite with Cardinalit
     val config = plannerBuilder()
       .setAllNodesCardinality(nodes)
       .setLabelCardinality("Foo", inboundCardinality)
-      .addNodeIndex("Foo", Seq("bar"), 1.0, whereSelectivity, indexType = getIndexType)
+      .addNodeIndex("Foo", Seq("bar"), 1.0, whereSelectivity)
       .build()
 
     queryShouldHaveCardinality(
@@ -479,7 +478,7 @@ abstract class CardinalityIntegrationTest extends CypherFunSuite with Cardinalit
     val config = plannerBuilder()
       .setAllNodesCardinality(500)
       .setLabelCardinality("Foo", inboundCardinality)
-      .addNodeIndex("Foo", Seq("bar"), 1.0, whereSelectivity, indexType = getIndexType)
+      .addNodeIndex("Foo", Seq("bar"), 1.0, whereSelectivity)
       .build()
 
     queryShouldHaveCardinality(
@@ -498,7 +497,7 @@ abstract class CardinalityIntegrationTest extends CypherFunSuite with Cardinalit
       .setRelationshipCardinality("(:A)-[:R]->()", inboundCardinality)
       .setRelationshipCardinality("()-[:R]->()", inboundCardinality)
       .setAllRelationshipsCardinality(10)
-      .addRelationshipIndex("R", Seq("prop"), whereSelectivity, whereSelectivity, indexType = getIndexType)
+      .addRelationshipIndex("R", Seq("prop"), whereSelectivity, whereSelectivity)
       .build()
 
     queryShouldHaveCardinality(
@@ -517,7 +516,7 @@ abstract class CardinalityIntegrationTest extends CypherFunSuite with Cardinalit
       .setRelationshipCardinality("(:A)-[:R]->()", inboundCardinality)
       .setRelationshipCardinality("()-[:R]->()", inboundCardinality)
       .setAllRelationshipsCardinality(10)
-      .addRelationshipIndex("R", Seq("prop"), whereSelectivity, whereSelectivity, indexType = getIndexType)
+      .addRelationshipIndex("R", Seq("prop"), whereSelectivity, whereSelectivity)
       .build()
 
     queryShouldHaveCardinality(
@@ -534,7 +533,7 @@ abstract class CardinalityIntegrationTest extends CypherFunSuite with Cardinalit
     val config = plannerBuilder()
       .setAllNodesCardinality(100)
       .setLabelCardinality("Person", labelCardinality)
-      .addNodeIndex("Person", Seq("prop1", "prop2"), existsSelectivity, uniqueSelectivity, indexType = getIndexType)
+      .addNodeIndex("Person", Seq("prop1", "prop2"), existsSelectivity, uniqueSelectivity)
       .build()
 
     val query = "MATCH (n:Person) WHERE n.prop1 > 0 AND n.prop2 = 0"
@@ -885,8 +884,163 @@ abstract class CardinalityIntegrationTest extends CypherFunSuite with Cardinalit
       knowsRelationships * hasMemberRelationships / personNodes
     )
   }
-}
 
-class RangeCardinalityIntegrationTest extends CardinalityIntegrationTest {
-  override def getIndexType = IndexType.RANGE
+  test("should infer label of intermediate varlength expand nodes, 3..3 length") {
+    val allNodes: Double = 3000
+    val personNodes: Double = 500
+    val entityNodes: Double = 1000
+    val knowsRelationships: Double = 300
+
+    val config = plannerBuilder()
+      .enableLabelInference()
+      .enableMinimumGraphStatistics()
+      .setAllNodesCardinality(allNodes)
+      .setLabelCardinality("Person", personNodes)
+      .setLabelCardinality("Entity", entityNodes)
+      .setRelationshipCardinality("()-[:KNOWS]->()", knowsRelationships)
+      .setRelationshipCardinality("(:Person)-[:KNOWS]->()", knowsRelationships)
+      .setRelationshipCardinality("()-[:KNOWS]->(:Person)", knowsRelationships)
+      .build()
+
+    val queries = Seq(
+      "MATCH (a)-[:KNOWS]->(b)-[:KNOWS]->(c)-[:KNOWS]->(d)",
+      "MATCH (a:Person)-[:KNOWS]->(b:Person)-[:KNOWS]->(c:Person)-[:KNOWS]->(d:Person)",
+      "MATCH (a)-[:KNOWS*3..3]->(d)",
+      "MATCH (a:Person)-[:KNOWS*3..3]->(d:Person)"
+    )
+
+    val expectedCardinality = {
+      val personKnowsPersonSel = knowsRelationships / (personNodes * personNodes)
+
+      math.pow(personNodes, 4) *
+        math.pow(personKnowsPersonSel, 3) *
+        uniquenessSelectivityForNRels(3)
+    }
+
+    for (query <- queries) withClue(query) {
+      queryShouldHaveCardinality(config, query, expectedCardinality)
+    }
+  }
+
+  test("should infer label of intermediate varlength expand nodes, 2..3 length") {
+    val allNodes: Double = 3000
+    val personNodes: Double = 500
+    val entityNodes: Double = 1000
+    val knowsRelationships: Double = 300
+
+    val config = plannerBuilder()
+      .enableLabelInference()
+      .enableMinimumGraphStatistics()
+      .setAllNodesCardinality(allNodes)
+      .setLabelCardinality("Person", personNodes)
+      .setLabelCardinality("Entity", entityNodes)
+      .setRelationshipCardinality("()-[:KNOWS]->()", knowsRelationships)
+      .setRelationshipCardinality("(:Person)-[:KNOWS]->()", knowsRelationships)
+      .setRelationshipCardinality("()-[:KNOWS]->(:Person)", knowsRelationships)
+      .build()
+
+    val queries = Seq(
+      """CALL {
+        |  MATCH (a)-[:KNOWS]->(b)-[:KNOWS]->(c) RETURN 1 AS one
+        |  UNION ALL
+        |  MATCH (a)-[:KNOWS]->(b)-[:KNOWS]->(c)-[:KNOWS]->(d) RETURN 1 AS one
+        |}
+        |""".stripMargin,
+      """CALL {
+        |  MATCH (a:Person)-[:KNOWS]->(b:Person)-[:KNOWS]->(c:Person) RETURN 1 AS one
+        |  UNION ALL
+        |  MATCH (a:Person)-[:KNOWS]->(b:Person)-[:KNOWS]->(c:Person)-[:KNOWS]->(d:Person) RETURN 1 AS one
+        |}
+        |""".stripMargin,
+      "MATCH (a)-[:KNOWS*2..3]->(d)",
+      "MATCH (a:Person)-[:KNOWS*2..3]->(d:Person)"
+    )
+
+    val expected = {
+      val personKnowsPersonSel = knowsRelationships / (personNodes * personNodes)
+
+      val cardinality2_2 =
+        math.pow(personNodes, 3) *
+          math.pow(personKnowsPersonSel, 2) *
+          uniquenessSelectivityForNRels(2)
+
+      val cardinality3_3 =
+        math.pow(personNodes, 4) *
+          math.pow(personKnowsPersonSel, 3) *
+          uniquenessSelectivityForNRels(3)
+
+      cardinality2_2 + cardinality3_3
+    }
+
+    for (query <- queries) withClue(query) {
+      queryShouldHaveCardinality(config, query, expected)
+    }
+  }
+
+  test("should infer label of intermediate varlength expand nodes with a narrower end label, 2..3 length") {
+    val allNodes: Double = 3000
+    val personNodes: Double = 500
+    val entityNodes: Double = 1000
+    val lastNodes: Double = 200
+    val knowsRelationships: Double = 300
+
+    val config = plannerBuilder()
+      .enableLabelInference()
+      .enableMinimumGraphStatistics()
+      .setAllNodesCardinality(allNodes)
+      .setLabelCardinality("Person", personNodes)
+      .setLabelCardinality("Entity", entityNodes)
+      .setLabelCardinality("Last", lastNodes)
+      .setRelationshipCardinality("()-[:KNOWS]->()", knowsRelationships)
+      .setRelationshipCardinality("(:Person)-[:KNOWS]->()", knowsRelationships)
+      .setRelationshipCardinality("()-[:KNOWS]->(:Person)", knowsRelationships)
+      .setRelationshipCardinality("()-[:KNOWS]->(:Last)", lastNodes)
+      .build()
+
+    val queries = Seq(
+      """CALL {
+        |  MATCH (a)-[:KNOWS]->(b)-[:KNOWS]->(c:Last) RETURN 1 AS one
+        |  UNION ALL
+        |  MATCH (a)-[:KNOWS]->(b)-[:KNOWS]->(c)-[:KNOWS]->(d:Last) RETURN 1 AS one
+        |}
+        |""".stripMargin,
+      """CALL {
+        |  MATCH (a:Person)-[:KNOWS]->(b:Person)-[:KNOWS]->(c:Last) RETURN 1 AS one
+        |  UNION ALL
+        |  MATCH (a:Person)-[:KNOWS]->(b:Person)-[:KNOWS]->(c:Person)-[:KNOWS]->(d:Last) RETURN 1 AS one
+        |}
+        |""".stripMargin,
+      "MATCH (a)-[:KNOWS*2..3]->(d:Last)",
+      "MATCH (a:Person)-[:KNOWS*2..3]->(d:Last)"
+    )
+
+    val expected = {
+      val personKnowsPersonSel = knowsRelationships / (personNodes * personNodes)
+      val lastMul = lastNodes / knowsRelationships
+
+      val cardinality2_2 =
+        math.pow(personNodes, 3) *
+          math.pow(personKnowsPersonSel, 2) *
+          uniquenessSelectivityForNRels(2)
+
+      val cardinality3_3 =
+        math.pow(personNodes, 4) *
+          math.pow(personKnowsPersonSel, 3) *
+          uniquenessSelectivityForNRels(3)
+
+      (cardinality2_2 + cardinality3_3) * lastMul
+    }
+
+    for (query <- queries) withClue(query) {
+      queryShouldHaveCardinality(config, query, expected)
+    }
+  }
+
+  private def uniquenessSelectivityForNRels(n: Int): Double = {
+    RepetitionCardinalityModel.relationshipUniquenessSelectivity(
+      differentRelationships = 0,
+      uniqueRelationships = 1,
+      repetitions = n
+    ).factor
+  }
 }

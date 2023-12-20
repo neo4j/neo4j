@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CostModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.SelectivityCalculator
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.CompositeExpressionSelectivityCalculator
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.LabelInferenceStrategy
 import org.neo4j.cypher.internal.compiler.planner.logical.limit.LimitSelectivityConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProviderContext
 import org.neo4j.cypher.internal.evaluator.SimpleInternalExpressionEvaluator
@@ -43,7 +44,6 @@ import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.options.LabelInferenceOption
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
@@ -262,7 +262,7 @@ trait MetricsFactory {
   def newQueryGraphCardinalityModel(
     planContext: PlanContext,
     calculator: SelectivityCalculator,
-    labelInference: LabelInferenceOption
+    labelInferenceStrategy: LabelInferenceStrategy
   ): QueryGraphCardinalityModel
 
   def newSelectivityCalculator(planContext: PlanContext): SelectivityCalculator =
@@ -272,10 +272,11 @@ trait MetricsFactory {
     planContext: PlanContext,
     expressionEvaluator: ExpressionEvaluator,
     executionModel: ExecutionModel,
-    labelInference: LabelInferenceOption = LabelInferenceOption.default
+    labelInferenceStrategy: LabelInferenceStrategy = LabelInferenceStrategy.NoInference
   ): Metrics = {
     val selectivityCalculator = newSelectivityCalculator(planContext)
-    val queryGraphCardinalityModel = newQueryGraphCardinalityModel(planContext, selectivityCalculator, labelInference)
+    val queryGraphCardinalityModel =
+      newQueryGraphCardinalityModel(planContext, selectivityCalculator, labelInferenceStrategy)
     val cardinality = newCardinalityEstimator(queryGraphCardinalityModel, selectivityCalculator, expressionEvaluator)
     Metrics(newCostModel(executionModel), cardinality)
   }
