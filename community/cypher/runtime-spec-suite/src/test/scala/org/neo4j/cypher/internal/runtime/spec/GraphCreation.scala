@@ -422,6 +422,52 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
     (globalCenter, nNodes)
   }
 
+  /**
+   * Same as a nestedStarGraphCenterOnly, but with more connections.
+   * The nodes in a ring are also connected to two of its neighbours within the same ring, like a circle formation.
+   * Every relationship is doubled by a relationship in the other direction.
+   * Every node has a self-loop relationship.
+   */
+  def connectedNestedStarGraph(depth: Int, ringSize: Int, labelCenter: String, labelRing: String): (Node, Int) = {
+    val globalCenter = runtimeTestSupport.tx.createNode(Label.label(labelCenter))
+    globalCenter.createRelationshipTo(globalCenter, RelationshipType.withName("SELF"))
+
+    val nodes = new ArrayBuffer[Node]
+    val rels = new ArrayBuffer[Relationship]
+
+    def recurse(depth: Int, localCenter: Node): Unit = {
+      def star(center: Node): Seq[Node] = {
+        val ring =
+          for (_ <- 0 until ringSize) yield {
+            runtimeTestSupport.tx.createNode(Label.label(labelRing))
+          }
+        val rType = RelationshipType.withName("R")
+        val rTypeRing = RelationshipType.withName("RR")
+        var prevRingNode = ring(ringSize - 1)
+        for (i <- 0 until ringSize) {
+          val a = ring(i)
+          rels += a.createRelationshipTo(center, rType)
+          rels += center.createRelationshipTo(a, rType)
+          rels += a.createRelationshipTo(prevRingNode, rTypeRing)
+          rels += prevRingNode.createRelationshipTo(a, rTypeRing)
+          rels += a.createRelationshipTo(a, RelationshipType.withName("SELF"))
+          prevRingNode = a
+        }
+        ring
+      }
+
+      if (depth > 0) {
+        val ring = star(localCenter)
+        nodes ++= ring
+        ring.foreach(recurse(depth - 1, _))
+      }
+    }
+    nodes += globalCenter
+    recurse(depth, globalCenter)
+    val nNodes = nodes.size
+    (globalCenter, nNodes)
+  }
+
   case class Connectivity(atLeast: Int, atMost: Int, relType: String)
 
   /**

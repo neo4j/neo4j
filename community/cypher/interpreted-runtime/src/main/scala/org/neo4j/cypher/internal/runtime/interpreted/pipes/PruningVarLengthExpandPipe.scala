@@ -330,6 +330,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
              expandMap: MutableLongObjectMap[NodeState],
              prevLocalRelIndex: Int,
              prevNodeState: NodeState): VirtualNodeValue = {
+      queryState.query.transactionalContext.assertTransactionOpen() // Check transaction termination/timeout in case this is long running
       depth += 1
       nodeState(depth) =
         new PruningDFS(this, node, path, pathLength, queryState, inputRow, expandMap, prevLocalRelIndex, prevNodeState)

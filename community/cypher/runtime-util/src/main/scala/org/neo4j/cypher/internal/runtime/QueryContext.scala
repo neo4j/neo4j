@@ -532,6 +532,8 @@ trait QueryTransactionalContext extends CloseableResource {
 
   def securityAuthorizationHandler: SecurityAuthorizationHandler
 
+  def assertTransactionOpen(): Unit
+
   def isTopLevelTx: Boolean
 
   def close(): Unit

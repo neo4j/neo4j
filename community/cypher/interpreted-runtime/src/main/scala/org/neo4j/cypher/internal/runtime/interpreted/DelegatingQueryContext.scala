@@ -549,6 +549,8 @@ class DelegatingQueryTransactionalContext(val inner: QueryTransactionalContext) 
 
   override def securityAuthorizationHandler: SecurityAuthorizationHandler = inner.securityAuthorizationHandler
 
+  override def assertTransactionOpen(): Unit = inner.assertTransactionOpen()
+
   override def memoryTracker: MemoryTracker = inner.memoryTracker
 
   override def freezeLocks(): Unit = inner.freezeLocks()
