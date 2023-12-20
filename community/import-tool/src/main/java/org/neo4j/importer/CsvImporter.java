@@ -58,6 +58,7 @@ import org.neo4j.internal.batchimport.AdditionalInitialIds;
 import org.neo4j.internal.batchimport.BatchImporter;
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.cache.idmapping.string.DuplicateInputIdException;
+import org.neo4j.internal.batchimport.input.BadCollector;
 import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.input.IdType;
 import org.neo4j.internal.batchimport.input.Input;
@@ -267,7 +268,7 @@ class CsvImporter implements Importer {
             throw andPrintError(databaseLayout.getDatabaseName(), ex, incremental, stdErr);
         } finally {
             long numberOfBadEntries = badCollector.badEntries();
-            if (numberOfBadEntries > badTolerance) {
+            if (badTolerance != BadCollector.UNLIMITED_TOLERANCE && numberOfBadEntries > badTolerance) {
                 stdOut.println("Neo4j-admin aborted the import because " + numberOfBadEntries + " bad entries were "
                         + "found, which exceeds the set fault tolerance ("
                         + badTolerance + "). Import is optimized to import fault-free data.");
