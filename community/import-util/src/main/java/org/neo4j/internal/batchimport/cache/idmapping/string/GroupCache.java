@@ -113,4 +113,17 @@ public interface GroupCache extends AutoCloseable {
         }
         throw new IllegalArgumentException("Max allowed groups is " + 0xFFFF + ", but wanted " + numberOfGroups);
     }
+
+    static int numberOfBytesPerGroup(int numberOfGroups) {
+        if (numberOfGroups == 0) {
+            return 0;
+        }
+        if (numberOfGroups <= 0x100) {
+            return Byte.BYTES;
+        }
+        if (numberOfGroups <= 0x10000) {
+            return Short.BYTES;
+        }
+        throw new IllegalArgumentException("Max allowed groups is " + 0xFFFF + ", but wanted " + numberOfGroups);
+    }
 }

@@ -913,10 +913,13 @@ public class EncodingIdMapper implements IdMapper {
 
     @Override
     public MemoryStatsVisitor.Visitable memoryEstimation(long numberOfNodes) {
-        return visitor -> {
-            int trackerSize = numberOfNodes > IntTracker.MAX_ID ? BigIdTracker.SIZE : IntTracker.SIZE;
-            visitor.offHeapUsage(numberOfNodes * (Long.BYTES /*data*/ + trackerSize /*tracker*/));
-        };
+        return visitor -> visitor.offHeapUsage(estimateMemory(numberOfNodes, groups.size()));
+    }
+
+    public static long estimateMemory(long numberOfNodes, int numberOfGroups) {
+        int trackerSize = numberOfNodes > IntTracker.MAX_ID ? BigIdTracker.SIZE : IntTracker.SIZE;
+        int groupSize = GroupCache.numberOfBytesPerGroup(numberOfGroups);
+        return numberOfNodes * (Long.BYTES /*data*/ + groupSize /*group*/ + trackerSize /*tracker*/);
     }
 
     @Override
