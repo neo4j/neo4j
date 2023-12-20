@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.atLeast;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -35,7 +35,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.collection.PrimitiveLongCollections.count;
 import static org.neo4j.internal.batchimport.cache.idmapping.string.EncodingIdMapper.NO_MONITOR;
-import static org.neo4j.internal.helpers.progress.ProgressListener.NONE;
+import static org.neo4j.internal.helpers.progress.ProgressMonitorFactory.NONE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.util.ArrayList;
@@ -65,6 +65,7 @@ import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.input.Group;
 import org.neo4j.internal.batchimport.input.Groups;
 import org.neo4j.internal.helpers.progress.ProgressListener;
+import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.test.Race;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
@@ -156,11 +157,12 @@ public class EncodingIdMapperTest {
 
     @ParameterizedTest(name = "processors:{0}")
     @MethodSource("data")
-    public void shouldReportyProgressForSortAndDetect(int processors) {
+    public void shouldReportProgressForSortAndDetect(int processors) {
         // GIVEN
         IdMapper idMapper = mapper(new StringEncoder(), Radix.STRING, EncodingIdMapper.NO_MONITOR, processors);
-        ProgressListener progress = mock(ProgressListener.class);
-        idMapper.prepare(values(), mock(Collector.class), progress);
+        ProgressMonitorFactory progressMonitorFactory = mock(ProgressMonitorFactory.class);
+        when(progressMonitorFactory.singlePart(anyString(), anyLong())).thenReturn(mock(ProgressListener.class));
+        idMapper.prepare(values(), mock(Collector.class), progressMonitorFactory);
 
         // WHEN
         long id;
@@ -170,7 +172,7 @@ public class EncodingIdMapperTest {
 
         // THEN
         assertEquals(IdMapper.ID_NOT_FOUND, id);
-        verify(progress, times(3)).close();
+        verify(progressMonitorFactory).singlePart(anyString(), anyLong());
     }
 
     @ParameterizedTest(name = "processors:{0}")
@@ -310,11 +312,8 @@ public class EncodingIdMapperTest {
         }
 
         // WHEN
-        ProgressListener progress = mock(ProgressListener.class);
-        ProgressListener threadLocalProgress = mock(ProgressListener.class);
-        when(progress.threadLocalReporter()).thenReturn(threadLocalProgress);
         Collector collector = mock(Collector.class);
-        mapper.prepare(ids, collector, progress);
+        mapper.prepare(ids, collector, NONE);
 
         // THEN
         verifyNoMoreInteractions(collector);
@@ -323,9 +322,6 @@ public class EncodingIdMapperTest {
             assertEquals(0L, getter.get("10", globalGroup));
             assertEquals(1L, getter.get("9", globalGroup));
         }
-        // 7 times since SPLIT+SORT+DETECT+RESOLVE+SPLIT+SORT,DEDUPLICATE
-        verify(progress, times(7)).close();
-        verify(threadLocalProgress, atLeast(1)).close();
     }
 
     @ParameterizedTest(name = "processors:{0}")
@@ -647,7 +643,7 @@ public class EncodingIdMapperTest {
 
         // WHEN
         race.go();
-        idMapper.prepare(inputIdLookup, mock(Collector.class), ProgressListener.NONE);
+        idMapper.prepare(inputIdLookup, mock(Collector.class), NONE);
 
         // THEN
         int count = processors * countPerThread;
@@ -725,7 +721,7 @@ public class EncodingIdMapperTest {
         }
 
         // when
-        idMapper.prepare(FAILING_LOOKUP, Collector.EMPTY, ProgressListener.NONE);
+        idMapper.prepare(FAILING_LOOKUP, Collector.EMPTY, NONE);
 
         // then before making the fix where the IdMapper would skip "null" values this test would have taken multiple
         // weeks. We can also assert this by checking how many comparisons have been made when sorting

@@ -23,13 +23,13 @@ import org.eclipse.collections.api.iterator.LongIterator;
 import org.neo4j.internal.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.staging.Stage;
-import org.neo4j.internal.helpers.progress.ProgressListener;
+import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.storageengine.util.IdGeneratorUpdatesWorkSync;
 
 /**
- * After {@link IdMapper#prepare(PropertyValueLookup, Collector, ProgressListener)} any duplicate input ids have been
+ * After {@link IdMapper#prepare(PropertyValueLookup, Collector, ProgressMonitorFactory)} any duplicate input ids have been
  * detected, i.e. also duplicate imported nodes. This stage makes one pass over those duplicate node ids
  * and deletes from from the store(s).
  */

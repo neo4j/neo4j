@@ -37,7 +37,7 @@ import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.input.Group;
 import org.neo4j.internal.batchimport.input.Groups;
 import org.neo4j.internal.batchimport.input.ReadableGroups;
-import org.neo4j.internal.helpers.progress.ProgressListener;
+import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.memory.MemoryTracker;
 
 /**
@@ -58,7 +58,7 @@ public class IdMappers {
         public void prepare(
                 PropertyValueLookup inputIdLookup,
                 Collector collector,
-                ProgressListener progress) { // No need to prepare anything
+                ProgressMonitorFactory progressMonitorFactory) { // No need to prepare anything
         }
 
         @Override

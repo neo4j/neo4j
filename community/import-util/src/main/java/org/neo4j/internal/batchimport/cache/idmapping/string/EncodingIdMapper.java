@@ -57,16 +57,17 @@ import org.neo4j.internal.batchimport.input.ReadableGroups;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.helpers.MathUtil;
 import org.neo4j.internal.helpers.progress.ProgressListener;
+import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.concurrent.Futures;
 
 /**
  * Maps arbitrary values to long ids. The values can be {@link #put(Object, long, Group) added} in any order,
- * but {@link #needsPreparation() needs} {@link IdMapper#prepare(PropertyValueLookup, Collector, ProgressListener) preparation}
+ * but {@link #needsPreparation() needs} {@link IdMapper#prepare(PropertyValueLookup, Collector, ProgressMonitorFactory) preparation}
  *
  * in order to {@link Getter#get(Object, Group) get} ids back later.
  *
- * In the {@link IdMapper#prepare(PropertyValueLookup, Collector, ProgressListener) preparation phase} the added entries are
+ * In the {@link IdMapper#prepare(PropertyValueLookup, Collector, ProgressMonitorFactory) preparation phase} the added entries are
  * sorted according to a number representation of each input value and {@link Getter#get(Object, Group)} does simple
  * binary search to find the correct one.
  *
@@ -283,7 +284,8 @@ public class EncodingIdMapper implements IdMapper {
      * </ol>
      */
     @Override
-    public void prepare(PropertyValueLookup inputIdLookup, Collector collector, ProgressListener progress) {
+    public void prepare(
+            PropertyValueLookup inputIdLookup, Collector collector, ProgressMonitorFactory progressMonitorFactory) {
         highestSetIndex = candidateHighestSetIndex.get();
         updateRadix(dataCache, radix, highestSetIndex);
         highestSetTrackerIndex = highestSetIndex - radix.getNullCount();
@@ -292,7 +294,8 @@ public class EncodingIdMapper implements IdMapper {
         trackerCache = trackerFactory.create(cacheFactory, highestSetIndex + 1);
         monitor.preparing(highestSetIndex, highestSetTrackerIndex);
 
-        try {
+        var numNodes = highestSetIndex + 1;
+        try (var progress = progressMonitorFactory.singlePart("Prepare ID mapper", numNodes * 3)) {
             sortBuckets = new ParallelSort(
                             radix,
                             dataCache,
@@ -494,7 +497,6 @@ public class EncodingIdMapper implements IdMapper {
             numberOfCollisions += detectWorker.numberOfCollisions;
         }
 
-        progress.close();
         if (numberOfCollisions > Integer.MAX_VALUE) {
             throw new InputException("Too many collisions: " + numberOfCollisions);
         }
@@ -560,7 +562,6 @@ public class EncodingIdMapper implements IdMapper {
             }
             progress.add(1);
         }
-        progress.close();
 
         // Detect input id duplicates within the same group, with source information, line number and the works
         detectDuplicateInputIds(radix, collector, progress);

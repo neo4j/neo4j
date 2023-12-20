@@ -35,6 +35,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Consumer;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.ImmutableSet;
@@ -50,7 +51,7 @@ import org.neo4j.internal.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.input.Group;
 import org.neo4j.internal.batchimport.input.ReadableGroups;
-import org.neo4j.internal.helpers.progress.ProgressListener;
+import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -94,6 +95,7 @@ public class IndexIdMapper implements IdMapper {
     private final ByteBufferFactory bufferFactory;
     private final StorageEngineIndexingBehaviour indexingBehaviour;
     private final MutableLongSet duplicateNodeIds = LongSets.mutable.empty().asSynchronized();
+    private final LongAdder numAdded = new LongAdder();
 
     // key is groupName, and for some reason accessors doesn't expose which descriptor they're for, so pass that in too
     public IndexIdMapper(
@@ -147,6 +149,7 @@ public class IndexIdMapper implements IdMapper {
         try {
             populator.populator.add(Collections.singleton(update), CursorContext.NULL_CONTEXT);
             populator.populator.includeSample(update);
+            numAdded.increment();
         } catch (IndexEntryConflictException e) {
             throw new RuntimeException(e);
         }
@@ -202,7 +205,7 @@ public class IndexIdMapper implements IdMapper {
     /**
      * Validates all added entries from {@link #put(Object, long, Group)} and collects duplicates into
      * the {@code collector}, also returning the IDs of violating nodes.
-     * Must be run before {@link #prepare(PropertyValueLookup, Collector, ProgressListener)}.
+     * Must be run before {@link IdMapper#prepare(PropertyValueLookup, Collector, ProgressMonitorFactory)}.
      *
      * @param collector {@link Collector} to report violations into.
      * @return the IDs of the violating nodes.
@@ -237,17 +240,19 @@ public class IndexIdMapper implements IdMapper {
     }
 
     @Override
-    public void prepare(PropertyValueLookup inputIdLookup, Collector collector, ProgressListener progress) {
+    public void prepare(
+            PropertyValueLookup inputIdLookup, Collector collector, ProgressMonitorFactory progressMonitorFactory) {
         for (var entry : populators.entrySet()) {
             try {
                 var descriptor = entry.getValue().descriptor;
                 var indexProvider = tempIndexes.lookup(descriptor.getIndexProvider());
                 try (var newNodesIndex = indexProvider.getOnlineAccessor(
-                        descriptor,
-                        new IndexSamplingConfig(Config.defaults()),
-                        tokenNameLookup,
-                        openOptions,
-                        indexingBehaviour)) {
+                                descriptor,
+                                new IndexSamplingConfig(Config.defaults()),
+                                tokenNameLookup,
+                                openOptions,
+                                indexingBehaviour);
+                        var progress = progressMonitorFactory.singlePart("Prepare ID mapper", numAdded.sum())) {
                     var accessor = accessors.get(entry.getKey());
                     accessor.insertFrom(
                             newNodesIndex,

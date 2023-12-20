@@ -23,10 +23,10 @@ import org.neo4j.internal.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.staging.Stage;
 import org.neo4j.internal.batchimport.stats.StatsProvider;
-import org.neo4j.internal.helpers.progress.ProgressListener;
+import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 
 /**
- * Performs {@link IdMapper#prepare(PropertyValueLookup, Collector, ProgressListener)}
+ * Performs {@link IdMapper#prepare(PropertyValueLookup, Collector, ProgressMonitorFactory)}
  * embedded in a {@link Stage} as to take advantage of statistics and monitoring provided by that framework.
  */
 public class IdMapperPreparationStage extends Stage {

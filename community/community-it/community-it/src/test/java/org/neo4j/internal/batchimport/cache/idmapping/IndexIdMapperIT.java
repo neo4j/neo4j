@@ -52,7 +52,7 @@ import org.neo4j.internal.batchimport.PropertyValueLookup;
 import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.input.Group;
 import org.neo4j.internal.batchimport.input.Groups;
-import org.neo4j.internal.helpers.progress.ProgressListener;
+import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptors;
@@ -297,7 +297,7 @@ class IndexIdMapperIT {
     private void prepare(Collector collector) {
         idMapper.completeBuild(collector, Runnable::run);
         idMapper.validate(collector);
-        idMapper.prepare(ID_LOOKUP, collector, ProgressListener.NONE);
+        idMapper.prepare(ID_LOOKUP, collector, ProgressMonitorFactory.NONE);
     }
 
     private void put(long nodeId, Group group) {

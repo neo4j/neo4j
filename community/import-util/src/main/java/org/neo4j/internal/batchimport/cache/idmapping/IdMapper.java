@@ -25,7 +25,7 @@ import org.neo4j.internal.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.input.Group;
 import org.neo4j.internal.batchimport.input.InputEntityVisitor;
-import org.neo4j.internal.helpers.progress.ProgressListener;
+import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 
 /**
  * Maps input node ids as specified by data read into {@link InputEntityVisitor} into actual node ids.
@@ -46,7 +46,7 @@ public interface IdMapper extends MemoryStatsVisitor.Visitable, AutoCloseable {
     void put(Object inputId, long actualId, Group group);
 
     /**
-     * @return whether a call to {@link #prepare(PropertyValueLookup, Collector, ProgressListener)} needs to commence after all calls to
+     * @return whether a call to {@link #prepare(PropertyValueLookup, Collector, ProgressMonitorFactory)} needs to commence after all calls to
      * {@link #put(Object, long, Group)} and before any call to {@link Getter#get(Object, Group)}. I.e. whether all ids
      * need to be put before making any call to {@link Getter#get(Object, Group)}.
      */
@@ -59,9 +59,9 @@ public interface IdMapper extends MemoryStatsVisitor.Visitable, AutoCloseable {
      * so that more information have to be read from the input data again, data that normally isn't necessary
      * and hence discarded.
      * @param collector {@link Collector} for bad entries, such as duplicate node ids.
-     * @param progress reports preparation progress.
+     * @param progressMonitorFactory reports preparation progress.
      */
-    void prepare(PropertyValueLookup inputIdLookup, Collector collector, ProgressListener progress);
+    void prepare(PropertyValueLookup inputIdLookup, Collector collector, ProgressMonitorFactory progressMonitorFactory);
 
     /**
      * @return a {@link Getter} for the current thread to do lookups in.
@@ -87,7 +87,7 @@ public interface IdMapper extends MemoryStatsVisitor.Visitable, AutoCloseable {
     interface Getter extends AutoCloseable {
         /**
          * Returns an actual node id representing {@code inputId}.
-         * For this call to work {@link #prepare(PropertyValueLookup, Collector, ProgressListener)} must have
+         * For this call to work {@link #prepare(PropertyValueLookup, Collector, ProgressMonitorFactory)} must have
          * been called after all calls to {@link #put(Object, long, Group)} have been made,
          * iff {@link #needsPreparation()} returns {@code true}. Otherwise ids can be retrieved right after
          * {@link #put(Object, long, Group) being put}

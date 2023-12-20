@@ -25,10 +25,12 @@ import org.neo4j.internal.batchimport.staging.LonelyProcessingStep;
 import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.internal.batchimport.staging.Step;
 import org.neo4j.internal.batchimport.stats.StatsProvider;
+import org.neo4j.internal.helpers.progress.Indicator;
 import org.neo4j.internal.helpers.progress.ProgressListener;
+import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 
 /**
- * Preparation of an {@link IdMapper}, {@link IdMapper#prepare(PropertyValueLookup, Collector, ProgressListener)}
+ * Preparation of an {@link IdMapper}, {@link IdMapper#prepare(PropertyValueLookup, Collector, ProgressMonitorFactory)}
  * under running as a normal {@link Step} so that normal execution monitoring can be applied.
  * Useful since preparing an {@link IdMapper} can take a significant amount of time.
  */
@@ -52,21 +54,26 @@ public class IdMapperPreparationStep extends LonelyProcessingStep {
 
     @Override
     protected void process() {
-        idMapper.prepare(allIds, collector, new ProgressListener.Adapter() {
+        idMapper.prepare(allIds, collector, new ProgressMonitorFactory() {
+            private long totalCount;
+
             @Override
-            public void failed(Throwable e) {
-                issuePanic(e);
+            protected Indicator newIndicator(String process) {
+                int reportResolution = 100;
+                return new Indicator(reportResolution) {
+                    @Override
+                    protected void progress(int from, int to) {
+                        int steps = to - from;
+                        IdMapperPreparationStep.this.progress(
+                                (long) (totalCount * (steps / (double) reportResolution)));
+                    }
+                };
             }
 
             @Override
-            public synchronized void add(long progress) { // Directly feed into the progress of this step.
-                // Expected to be called by multiple threads, although quite rarely,
-                // so synchronization overhead should be negligible.
-                progress(progress);
-            }
-
-            @Override
-            public void close() { // Nothing to do
+            public ProgressListener singlePart(String process, long totalCount) {
+                this.totalCount = totalCount;
+                return super.singlePart(process, totalCount);
             }
         });
     }

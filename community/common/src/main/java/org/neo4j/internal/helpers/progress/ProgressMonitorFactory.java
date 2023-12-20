@@ -213,11 +213,11 @@ public abstract class ProgressMonitorFactory {
         };
     }
 
-    public final MultiPartBuilder multipleParts(String process) {
+    public MultiPartBuilder multipleParts(String process) {
         return new MultiPartBuilder(newIndicator(process));
     }
 
-    public final ProgressListener singlePart(String process, long totalCount) {
+    public ProgressListener singlePart(String process, long totalCount) {
         return new ProgressListener.SinglePartProgressListener(newIndicator(process), totalCount);
     }
 
