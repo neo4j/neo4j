@@ -92,7 +92,7 @@ public class NodeImporter extends EntityImporter {
         this.nodeStore = stores.getNodeStore();
         this.badCollector = badCollector;
         this.nodeRecord = nodeStore.newRecord();
-        this.nodeIds = new BatchingIdGetter(nodeStore);
+        this.nodeIds = batchingIdGetter(nodeStore);
         this.idPropertyStore = stores.getTemporaryPropertyStore();
         this.idPropertyRecord = idPropertyStore.newRecord();
         this.nodeUpdateCursor = nodeStore.openPageCursorForWriting(0, cursorContext);
@@ -234,6 +234,6 @@ public class NodeImporter extends EntityImporter {
     @Override
     void freeUnusedIds() {
         super.freeUnusedIds();
-        freeUnusedIds(nodeStore, nodeIds, cursorContext);
+        nodeIds.markUnusedIdsAsDeleted(cursorContext);
     }
 }

@@ -86,7 +86,7 @@ public class RelationshipImporter extends EntityImporter {
         this.validateRelationshipData = validateRelationshipData;
         this.relationshipStore = stores.getRelationshipStore();
         this.relationshipRecord = relationshipStore.newRecord();
-        this.relationshipIds = new BatchingIdGetter(relationshipStore);
+        this.relationshipIds = batchingIdGetter(relationshipStore);
         this.typeCounts = typeDistribution.newClient();
         this.prepareIdSequence = PrepareIdSequence.of(doubleRecordUnits)
                 .apply(stores.getRelationshipStore().getIdGenerator());
@@ -259,6 +259,6 @@ public class RelationshipImporter extends EntityImporter {
     @Override
     void freeUnusedIds() {
         super.freeUnusedIds();
-        freeUnusedIds(relationshipStore, relationshipIds, cursorContext);
+        relationshipIds.markUnusedIdsAsDeleted(cursorContext);
     }
 }

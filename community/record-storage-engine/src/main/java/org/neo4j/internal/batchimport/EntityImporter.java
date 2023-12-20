@@ -38,6 +38,7 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.StandardDynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -94,14 +95,18 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter {
             propertyBlocks[i] = new PropertyBlock();
         }
         this.propertyRecord = propertyStore.newRecord();
-        this.propertyIds = new BatchingIdGetter(propertyStore);
-        this.stringPropertyIds = new BatchingIdGetter(propertyStore.getStringStore());
+        this.propertyIds = batchingIdGetter(propertyStore);
+        this.stringPropertyIds = batchingIdGetter(propertyStore.getStringStore());
         this.dynamicStringRecordAllocator = new StandardDynamicRecordAllocator(
                 stringPropertyIds, propertyStore.getStringStore().getRecordDataSize());
-        this.arrayPropertyIds = new BatchingIdGetter(propertyStore.getArrayStore());
+        this.arrayPropertyIds = batchingIdGetter(propertyStore.getArrayStore());
         this.dynamicArrayRecordAllocator = new StandardDynamicRecordAllocator(
                 arrayPropertyIds, propertyStore.getStringStore().getRecordDataSize());
         this.propertyUpdateCursor = propertyStore.openPageCursorForWriting(0, cursorContext);
+    }
+
+    static BatchingIdGetter batchingIdGetter(CommonAbstractStore<? extends AbstractBaseRecord, ?> store) {
+        return new BatchingIdGetter(store.getIdGenerator(), store.getRecordsPerPage());
     }
 
     @Override
@@ -227,16 +232,9 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter {
     }
 
     void freeUnusedIds() {
-        freeUnusedIds(propertyStore, propertyIds, cursorContext);
-        freeUnusedIds(propertyStore.getStringStore(), stringPropertyIds, cursorContext);
-        freeUnusedIds(propertyStore.getArrayStore(), arrayPropertyIds, cursorContext);
-    }
-
-    static void freeUnusedIds(CommonAbstractStore<?, ?> store, BatchingIdGetter idBatch, CursorContext cursorContext) {
-        // Free unused property ids still in the last pre-allocated batch
-        try (var marker = store.getIdGenerator().transactionalMarker(cursorContext)) {
-            idBatch.visitUnused(marker::markDeleted);
-        }
+        propertyIds.markUnusedIdsAsDeleted(cursorContext);
+        stringPropertyIds.markUnusedIdsAsDeleted(cursorContext);
+        arrayPropertyIds.markUnusedIdsAsDeleted(cursorContext);
     }
 
     static void freeUnusedId(CommonAbstractStore<?, ?> store, long id, CursorContext cursorContext) {
