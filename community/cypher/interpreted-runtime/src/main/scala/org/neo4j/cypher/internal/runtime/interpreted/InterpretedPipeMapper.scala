@@ -120,6 +120,7 @@ import org.neo4j.cypher.internal.logical.plans.PartialSort
 import org.neo4j.cypher.internal.logical.plans.PartialTop
 import org.neo4j.cypher.internal.logical.plans.PartitionedAllNodesScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeByLabelScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
 import org.neo4j.cypher.internal.logical.plans.Prober
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
@@ -723,13 +724,22 @@ case class InterpretedPipeMapper(
           indexOrder
         )(id = id)
 
-      case NodeIndexScan(ident, label, properties, _, indexOrder, indexType) =>
+      case NodeIndexScan(ident, label, properties, _, indexOrder, indexType, _) =>
         NodeIndexScanPipe(
           ident.name,
           label,
           properties,
           indexRegistrator.registerQueryIndex(indexType, label, properties),
           indexOrder
+        )(id = id)
+
+      case PartitionedNodeIndexScan(ident, label, properties, _, indexType) =>
+        NodeIndexScanPipe(
+          ident.name,
+          label,
+          properties,
+          indexRegistrator.registerQueryIndex(indexType, label, properties),
+          IndexOrderNone
         )(id = id)
 
       case NodeIndexContainsScan(ident, label, property, valueExpr, _, indexOrder, indexType) =>

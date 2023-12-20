@@ -2622,7 +2622,8 @@ case class NodeIndexScan(
   properties: Seq[IndexedProperty],
   argumentIds: Set[LogicalVariable],
   indexOrder: IndexOrder,
-  override val indexType: IndexType
+  override val indexType: IndexType,
+  supportPartitionedScan: Boolean = true
 )(implicit idGen: IdGen)
     extends NodeIndexLeafPlan(idGen) with StableLeafPlan {
 
@@ -2637,6 +2638,35 @@ case class NodeIndexScan(
     copy(properties = properties.map(_.copy(getValueFromIndex = DoNotGetValue)))(SameId(this.id))
 
   override def withMappedProperties(f: IndexedProperty => IndexedProperty): NodeIndexLeafPlan =
+    copy(properties = properties.map(f))(SameId(this.id))
+
+  override def addArgumentIds(argsToAdd: Set[LogicalVariable]): LogicalLeafPlan =
+    copy(argumentIds = argumentIds ++ argsToAdd)(SameId(this.id))
+}
+
+/**
+ * Partitioned version of the NodeIndexScan operator, should only be used for parallel runtime.
+ */
+case class PartitionedNodeIndexScan(
+  idName: LogicalVariable,
+  override val label: LabelToken,
+  properties: Seq[IndexedProperty],
+  argumentIds: Set[LogicalVariable],
+  override val indexType: IndexType
+)(implicit idGen: IdGen)
+    extends NodeIndexLeafPlan(idGen) with StableLeafPlan with PhysicalPlanningPlan {
+
+  override val availableSymbols: Set[LogicalVariable] = argumentIds + idName
+
+  override def usedVariables: Set[LogicalVariable] = Set.empty
+
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): PartitionedNodeIndexScan =
+    copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def copyWithoutGettingValues: PartitionedNodeIndexScan =
+    copy(properties = properties.map(_.copy(getValueFromIndex = DoNotGetValue)))(SameId(this.id))
+
+  override def withMappedProperties(f: IndexedProperty => IndexedProperty): PartitionedNodeIndexScan =
     copy(properties = properties.map(f))(SameId(this.id))
 
   override def addArgumentIds(argsToAdd: Set[LogicalVariable]): LogicalLeafPlan =

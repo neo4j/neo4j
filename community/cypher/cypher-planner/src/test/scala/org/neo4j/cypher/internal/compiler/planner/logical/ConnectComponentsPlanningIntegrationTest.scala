@@ -87,7 +87,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
     plan.stripProduceResults shouldBe a[CartesianProduct]
     // Sorted index should be placed on the left of the cartesian products
     plan.leftmostLeaf should beLike {
-      case NodeIndexScan(LogicalVariable(name), _, _, _, _, _) if name == orderedNode => ()
+      case NodeIndexScan(LogicalVariable(name), _, _, _, _, _, _) if name == orderedNode => ()
     }
   }
 
@@ -115,7 +115,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
     plan.stripProduceResults shouldBe a[Sort]
     // Sorted index should not be placed on the left of the cartesian products
     plan.leftmostLeaf shouldNot beLike {
-      case NodeIndexScan(LogicalVariable(node), _, _, _, _, _) if node == orderedNode => ()
+      case NodeIndexScan(LogicalVariable(node), _, _, _, _, _, _) if node == orderedNode => ()
     }
   }
 

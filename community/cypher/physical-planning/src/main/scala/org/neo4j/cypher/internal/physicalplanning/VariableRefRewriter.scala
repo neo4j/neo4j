@@ -101,6 +101,7 @@ import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
 import org.neo4j.cypher.internal.logical.plans.OrderedDistinct
 import org.neo4j.cypher.internal.logical.plans.PartitionedAllNodesScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeByLabelScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
 import org.neo4j.cypher.internal.logical.plans.PathPropagatingBFS
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
@@ -184,7 +185,9 @@ object VariableRefRewriter extends Rewriter {
                   s.copy(idName = varRef(node), argumentIds = args.map(varRef))(SameId(s.id))
                 case s @ NodeIndexEndsWithScan(node, _, _, _, args, _, _) =>
                   s.copy(idName = varRef(node), argumentIds = args.map(varRef))(SameId(s.id))
-                case s @ NodeIndexScan(node, _, _, args, _, _) =>
+                case s @ NodeIndexScan(node, _, _, args, _, _, _) =>
+                  s.copy(idName = varRef(node), argumentIds = args.map(varRef))(SameId(s.id))
+                case s @ PartitionedNodeIndexScan(node, _, _, args, _) =>
                   s.copy(idName = varRef(node), argumentIds = args.map(varRef))(SameId(s.id))
               }
             case s @ AllNodesScan(node, args) =>

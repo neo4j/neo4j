@@ -105,6 +105,7 @@ import org.neo4j.cypher.internal.logical.plans.PartialSort
 import org.neo4j.cypher.internal.logical.plans.PartialTop
 import org.neo4j.cypher.internal.logical.plans.PartitionedAllNodesScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeByLabelScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
 import org.neo4j.cypher.internal.logical.plans.Prober
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
@@ -337,13 +338,23 @@ class SlottedPipeMapper(
       case PartitionedAllNodesScan(column, _) =>
         AllNodesScanSlottedPipe(column.name, slots)(id)
 
-      case NodeIndexScan(column, label, properties, _, indexOrder, indexType) =>
+      case NodeIndexScan(column, label, properties, _, indexOrder, indexType, _) =>
         NodeIndexScanSlottedPipe(
           column.name,
           label,
           properties.map(SlottedIndexedProperty(column, _, slots)),
           indexRegistrator.registerQueryIndex(indexType, label, properties),
           indexOrder,
+          slots
+        )(id)
+
+      case PartitionedNodeIndexScan(column, label, properties, _, indexType) =>
+        NodeIndexScanSlottedPipe(
+          column.name,
+          label,
+          properties.map(SlottedIndexedProperty(column, _, slots)),
+          indexRegistrator.registerQueryIndex(indexType, label, properties),
+          IndexOrderNone,
           slots
         )(id)
 

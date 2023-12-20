@@ -340,7 +340,8 @@ class IndexSeekTest extends CypherFunSuite {
           Seq(prop("name", getValue("name"), NODE_TYPE, 0), prop("dogs", getValue("dogs"), NODE_TYPE, 1)),
           args.map(varFor),
           indexOrder,
-          indexType
+          indexType,
+          supportPartitionedScan = true
         )
       ),
     (getValue, args, indexOrder, indexType) =>
@@ -373,7 +374,8 @@ class IndexSeekTest extends CypherFunSuite {
           Seq(prop("name", getValue("name"), NODE_TYPE, 0), prop("dogs", getValue("dogs"), NODE_TYPE, 1)),
           args.map(varFor),
           indexOrder,
-          indexType
+          indexType,
+          supportPartitionedScan = true
         )
       ),
     (getValue, args, indexOrder, indexType) =>
@@ -384,7 +386,8 @@ class IndexSeekTest extends CypherFunSuite {
           Seq(prop("name", getValue("name"), NODE_TYPE)),
           args.map(varFor),
           indexOrder,
-          indexType
+          indexType,
+          supportPartitionedScan = true
         )
       ),
     (getValue, args, indexOrder, indexType) =>
@@ -395,7 +398,8 @@ class IndexSeekTest extends CypherFunSuite {
           Seq(prop("name", getValue("name"), NODE_TYPE, 0), prop("dogs", getValue("dogs"), NODE_TYPE, 1)),
           args.map(varFor),
           indexOrder,
-          indexType
+          indexType,
+          supportPartitionedScan = true
         )
       ),
     (getValue, args, indexOrder, indexType) =>
@@ -406,7 +410,8 @@ class IndexSeekTest extends CypherFunSuite {
           Seq(prop("name", getValue("name"), NODE_TYPE, 0), prop("dogs", getValue("dogs"), NODE_TYPE, 1)),
           args.map(varFor),
           indexOrder,
-          indexType
+          indexType,
+          supportPartitionedScan = true
         )
       )
   )

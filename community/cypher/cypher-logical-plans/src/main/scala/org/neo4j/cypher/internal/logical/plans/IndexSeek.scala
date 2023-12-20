@@ -122,7 +122,8 @@ object IndexSeek {
     labelId: Int = 0,
     unique: Boolean = false,
     customQueryExpression: Option[QueryExpression[Expression]] = None,
-    indexType: IndexType = IndexType.RANGE
+    indexType: IndexType = IndexType.RANGE,
+    supportPartitionedScan: Boolean = true
   )(implicit idGen: IdGen): NodeIndexLeafPlan = {
 
     val (node, labelStr, predicateStr) =
@@ -149,7 +150,86 @@ object IndexSeek {
     }
 
     def createScan(properties: Seq[IndexedProperty]): NodeIndexLeafPlan = {
-      NodeIndexScan(varFor(node), label, properties, argumentIds.map(varFor), indexOrder, indexType)
+      NodeIndexScan(
+        varFor(node),
+        label,
+        properties,
+        argumentIds.map(varFor),
+        indexOrder,
+        indexType,
+        supportPartitionedScan
+      )
+    }
+
+    createPlan[NodeIndexLeafPlan](
+      predicates,
+      NODE_TYPE,
+      getValue,
+      paramExpr,
+      propIds,
+      customQueryExpression,
+      createSeek,
+      createScan,
+      createEndsWithScan,
+      createContainsScan
+    )
+  }
+
+  /**
+   * Construct a node index seek/scan operator by parsing a string.
+   */
+  def partitionedNodeIndexSeek(
+    indexSeekString: String,
+    getValue: String => GetValueFromIndexBehavior = _ => DoNotGetValue,
+    paramExpr: Iterable[Expression] = Seq.empty,
+    argumentIds: Set[String] = Set.empty,
+    propIds: Option[PartialFunction[String, Int]] = None,
+    labelId: Int = 0,
+    customQueryExpression: Option[QueryExpression[Expression]] = None,
+    indexType: IndexType = IndexType.RANGE
+  )(implicit idGen: IdGen): NodeIndexLeafPlan = {
+
+    val (node, labelStr, predicateStr) =
+      indexSeekString.trim match {
+        case NODE_INDEX_SEEK_PATTERN(node, labelStr, predicateStr) => (node, labelStr, predicateStr)
+        case _ => throw new IllegalStateException("Expected index seek string, got " + indexSeekString)
+      }
+    val label = LabelToken(labelStr, LabelId(labelId))
+    val predicates = predicateStr.split(',').map(_.trim)
+
+    def createSeek(properties: Seq[IndexedProperty], valueExpr: QueryExpression[Expression]): NodeIndexSeekLeafPlan = {
+      // TODO: partitioned variant
+      NodeIndexSeek(varFor(node), label, properties, valueExpr, argumentIds.map(varFor), IndexOrderNone, indexType)
+    }
+
+    def createEndsWithScan(property: IndexedProperty, valueExpr: Expression): NodeIndexLeafPlan = {
+      // NOTE: no partitioned variant of this one
+      NodeIndexEndsWithScan(
+        varFor(node),
+        label,
+        property,
+        valueExpr,
+        argumentIds.map(varFor),
+        IndexOrderNone,
+        indexType
+      )
+    }
+
+    def createContainsScan(property: IndexedProperty, valueExpr: Expression): NodeIndexLeafPlan = {
+      // NOTE: no partitioned variant of this one
+      NodeIndexContainsScan(
+        varFor(node),
+        label,
+        property,
+        valueExpr,
+        argumentIds.map(varFor),
+        IndexOrderNone,
+        indexType
+      )
+    }
+
+    def createScan(properties: Seq[IndexedProperty]): NodeIndexLeafPlan = {
+      PartitionedNodeIndexScan(varFor(node), label, properties, argumentIds.map(varFor), indexType)
     }
 
     createPlan[NodeIndexLeafPlan](

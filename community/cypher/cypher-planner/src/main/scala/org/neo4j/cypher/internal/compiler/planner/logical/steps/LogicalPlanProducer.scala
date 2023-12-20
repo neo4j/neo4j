@@ -1363,7 +1363,8 @@ case class LogicalPlanProducer(
     providedOrder: ProvidedOrder,
     indexOrder: IndexOrder,
     context: LogicalPlanningContext,
-    indexType: IndexType
+    indexType: IndexType,
+    supportPartitionedScan: Boolean
   ): LogicalPlan = {
     val solved = RegularSinglePlannerQuery(queryGraph =
       QueryGraph.empty
@@ -1373,7 +1374,15 @@ case class LogicalPlanProducer(
         .addArgumentIds(argumentIds.toIndexedSeq)
     )
     annotate(
-      NodeIndexScan(variable, label, properties, argumentIds, indexOrder, indexType.toPublicApi),
+      NodeIndexScan(
+        variable,
+        label,
+        properties,
+        argumentIds,
+        indexOrder,
+        indexType.toPublicApi,
+        supportPartitionedScan
+      ),
       solved,
       providedOrder,
       context

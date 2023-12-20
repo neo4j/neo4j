@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.internal.kernel.api.PropertyIndexQuery.allEntries
 
 object nodeIndexScanPlanProvider extends NodeIndexPlanProvider {
 
@@ -43,7 +44,8 @@ object nodeIndexScanPlanProvider extends NodeIndexPlanProvider {
     token: LabelToken,
     properties: Seq[IndexedProperty],
     argumentIds: Set[LogicalVariable],
-    indexOrder: IndexOrder
+    indexOrder: IndexOrder,
+    supportPartitionedScan: Boolean
   )
 
   override def createPlans(
@@ -72,7 +74,8 @@ object nodeIndexScanPlanProvider extends NodeIndexPlanProvider {
         providedOrder = solution.providedOrder,
         indexOrder = solution.indexScanParameters.indexOrder,
         context = context,
-        indexType = solution.indexType
+        indexType = solution.indexType,
+        solution.indexScanParameters.supportPartitionedScan
       )
     )
   }
@@ -99,7 +102,8 @@ object nodeIndexScanPlanProvider extends NodeIndexPlanProvider {
         token = indexMatch.labelToken,
         properties = predicateSet.indexedProperties(context),
         argumentIds = argumentIds,
-        indexOrder = indexMatch.indexOrder
+        indexOrder = indexMatch.indexOrder,
+        indexMatch.indexDescriptor.maybeKernelIndexCapability.exists(_.supportPartitionedScan(allEntries()))
       ),
       solvedPredicates = predicateSet.allSolvedPredicates,
       solvedHint = hint,

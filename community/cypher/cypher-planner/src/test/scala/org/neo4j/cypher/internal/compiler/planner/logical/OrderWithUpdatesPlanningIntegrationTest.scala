@@ -326,5 +326,5 @@ class OrderWithUpdatesPlanningIntegrationTestBase(useIDPConnectComponents: Boole
   private def containsPlan(plan: LogicalPlan, f: PartialFunction[Any, Boolean]) = plan.folder.treeExists(f)
 
   private def providesOrder(plan: LogicalPlan) =
-    plan.folder.treeExists { case NodeIndexScan(_, _, _, _, IndexOrderAscending, _) => true }
+    plan.folder.treeExists { case NodeIndexScan(_, _, _, _, IndexOrderAscending, _, _) => true }
 }

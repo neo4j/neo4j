@@ -1265,7 +1265,7 @@ class IndexPlanningIntegrationTest
 
     val plan = cfg.plan(s"MATCH (a:A) WHERE a.prop IS NOT NULL RETURN *").stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
-      .nodeIndexOperator(s"a:A(prop)", indexType = IndexType.TEXT)
+      .nodeIndexOperator(s"a:A(prop)", indexType = IndexType.TEXT, supportPartitionedScan = false)
       .build()
   }
 
@@ -1306,7 +1306,7 @@ class IndexPlanningIntegrationTest
 
     val plan = cfg.plan(s"MATCH (a:A) WHERE a.prop IS NOT NULL RETURN *").stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
-      .nodeIndexOperator(s"a:A(prop)", indexType = IndexType.POINT)
+      .nodeIndexOperator(s"a:A(prop)", indexType = IndexType.POINT, supportPartitionedScan = false)
       .build()
   }
 
@@ -1331,7 +1331,7 @@ class IndexPlanningIntegrationTest
     plan shouldEqual cfg.subPlanBuilder()
       .filter("a.prop = b.prop")
       .expandAll("(a)-[r]->(b)")
-      .nodeIndexOperator(s"a:A(prop)", indexType = IndexType.TEXT)
+      .nodeIndexOperator(s"a:A(prop)", indexType = IndexType.TEXT, supportPartitionedScan = false)
       .build()
   }
 
@@ -1825,7 +1825,7 @@ class IndexPlanningIntegrationTest
     val plan = planner.plan("MATCH (a:A) WHERE a.prop IS :: POINT NOT NULL RETURN a, a.prop").stripProduceResults
     plan shouldEqual planner.subPlanBuilder()
       .projection("a.prop AS `a.prop`")
-      .nodeIndexOperator("a:A(prop)", indexType = IndexType.POINT)
+      .nodeIndexOperator("a:A(prop)", indexType = IndexType.POINT, supportPartitionedScan = false)
       .build()
   }
 
@@ -2192,7 +2192,7 @@ class IndexPlanningIntegrationTest
       val plan = planner.plan(q).stripProduceResults
       plan shouldEqual planner.subPlanBuilder()
         .filter(s"NOT $pred")
-        .nodeIndexOperator("a:A(prop)", indexType = IndexType.TEXT)
+        .nodeIndexOperator("a:A(prop)", indexType = IndexType.TEXT, supportPartitionedScan = false)
         .build()
     }
   }
@@ -2232,7 +2232,7 @@ class IndexPlanningIntegrationTest
       val plan = planner.plan(q).stripProduceResults
       plan shouldEqual planner.subPlanBuilder()
         .filter(s"NOT $pred")
-        .nodeIndexOperator("a:A(prop)", indexType = IndexType.POINT)
+        .nodeIndexOperator("a:A(prop)", indexType = IndexType.POINT, supportPartitionedScan = false)
         .build()
     }
   }
@@ -2268,7 +2268,7 @@ class IndexPlanningIntegrationTest
     val plan = planner.plan(q).stripProduceResults
     plan shouldEqual planner.subPlanBuilder()
       .filter("a.prop CONTAINS a.otherProp")
-      .nodeIndexOperator("a:A(prop)", indexType = IndexType.TEXT)
+      .nodeIndexOperator("a:A(prop)", indexType = IndexType.TEXT, supportPartitionedScan = false)
       .build()
   }
 
@@ -2293,7 +2293,9 @@ class IndexPlanningIntegrationTest
     val expected = planner.planBuilder()
       .produceResults("a")
       .filter("a.prop < 'hello'")
-      .nodeIndexOperator("a:A(prop)", indexType = IndexType.TEXT).withCardinality(labelCardinality * existsSelectivity)
+      .nodeIndexOperator("a:A(prop)", indexType = IndexType.TEXT, supportPartitionedScan = false).withCardinality(
+        labelCardinality * existsSelectivity
+      )
 
     planState should haveSamePlanAndCardinalitiesAsBuilder(
       expected,
@@ -2322,7 +2324,9 @@ class IndexPlanningIntegrationTest
     val expected = planner.planBuilder()
       .produceResults("a")
       .filter("a.prop < point({x:1, y:2})")
-      .nodeIndexOperator("a:A(prop)", indexType = IndexType.POINT).withCardinality(labelCardinality * existsSelectivity)
+      .nodeIndexOperator("a:A(prop)", indexType = IndexType.POINT, supportPartitionedScan = false).withCardinality(
+        labelCardinality * existsSelectivity
+      )
 
     planState should haveSamePlanAndCardinalitiesAsBuilder(
       expected,

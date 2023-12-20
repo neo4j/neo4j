@@ -92,7 +92,8 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
       Seq(IndexedProperty(PropertyKeyToken("prop", PropertyKeyId(0)), DoNotGetValue, NODE_TYPE)),
       Set.empty,
       IndexOrderAscending,
-      IndexType.RANGE
+      IndexType.RANGE,
+      supportPartitionedScan = true
     )
     setPlanningAttributes(QueryGraph(patternNodes = Set(varFor(n))), plan, cardinality, planningAttributes)
     plan

@@ -1006,7 +1006,8 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
           Seq(indexedProperty("prop", 0, GetValue, NODE_TYPE)),
           Set.empty,
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = true
         ),
         Map(cachedNodePropertyProj("n", "prop"))
       )
@@ -1072,7 +1073,8 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
           Seq(indexedProperty("prop", 0, DoNotGetValue, NODE_TYPE)),
           Set.empty,
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = true
         ),
         Map(propertyProj("n", "prop"))
       )
@@ -1116,7 +1118,8 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
           Seq(indexedProperty("prop", 0, GetValue, NODE_TYPE)),
           Set.empty,
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = true
         ),
         Map(cachedNodePropertyProj("n", "prop"))
       )
@@ -1159,7 +1162,8 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
           Seq(indexedProperty("prop", 0, DoNotGetValue, NODE_TYPE)),
           Set.empty,
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = true
         ),
         Map(propertyProj("n", "prop"))
       )
@@ -1204,7 +1208,8 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
           Seq(indexedProperty("prop2", 0, GetValue, NODE_TYPE)),
           Set.empty,
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = true
         ),
         Map(cachedNodePropertyProj("n", "prop2"))
       )
@@ -1284,7 +1289,8 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
           Seq(indexedProperty("prop2", 0, DoNotGetValue, NODE_TYPE)),
           Set.empty,
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = true
         ),
         Map(propertyProj("n", "prop2"))
       )
@@ -1480,7 +1486,8 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
           Seq(indexedProperty("prop", 0, GetValue, NODE_TYPE)),
           Set.empty,
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = true
         ),
         Map.empty,
         Map(v"avg(n.prop)" -> avg(cachedNodeProp("n", "prop")))
@@ -1522,7 +1529,8 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
           Seq(indexedProperty("prop", 0, DoNotGetValue, NODE_TYPE)),
           Set.empty,
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = true
         ),
         Map.empty,
         Map(v"avg(n.prop)" -> avg(prop("n", "prop")))
@@ -1564,7 +1572,8 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
           Seq(indexedProperty("prop", 0, GetValue, NODE_TYPE)),
           Set.empty,
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = true
         ),
         Map.empty,
         Map(v"sum(n.prop)" -> sum(cachedNodeProp("n", "prop")))
@@ -1606,7 +1615,8 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
           Seq(indexedProperty("prop", 0, DoNotGetValue, NODE_TYPE)),
           Set.empty,
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = true
         ),
         Map.empty,
         Map(v"sum(n.prop)" -> sum(prop("n", "prop")))

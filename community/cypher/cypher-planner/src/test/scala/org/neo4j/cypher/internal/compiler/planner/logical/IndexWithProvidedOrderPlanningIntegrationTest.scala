@@ -3701,7 +3701,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
                 Seq(indexedProperty("prop", 0, GetValue, NODE_TYPE)),
                 Set.empty,
                 plannedOrder,
-                IndexType.RANGE
+                IndexType.RANGE,
+                supportPartitionedScan = true
               ),
               Map(v"$functionName(n.prop)" -> cachedNodeProp("n", "prop"))
             ),
@@ -3727,7 +3728,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             Seq(indexedProperty("prop", 0, GetValue, NODE_TYPE)),
             Set.empty,
             IndexOrderNone,
-            IndexType.RANGE
+            IndexType.RANGE,
+            supportPartitionedScan = true
           ),
           Map.empty,
           Map(v"$functionName(n.prop)" -> function(functionName, cachedNodeProp("n", "prop")))

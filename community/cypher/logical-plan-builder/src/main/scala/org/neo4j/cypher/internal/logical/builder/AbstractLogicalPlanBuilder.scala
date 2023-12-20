@@ -1501,7 +1501,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     argumentIds: Set[String] = Set.empty,
     unique: Boolean = false,
     customQueryExpression: Option[QueryExpression[Expression]] = None,
-    indexType: IndexType = IndexType.RANGE
+    indexType: IndexType = IndexType.RANGE,
+    supportPartitionedScan: Boolean = true
   ): IMPL = {
     val planBuilder = (idGen: IdGen) => {
       val plan = nodeIndexSeek(
@@ -1511,6 +1512,29 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         paramExpr.iterator.toSeq,
         argumentIds,
         unique,
+        customQueryExpression,
+        indexType,
+        supportPartitionedScan
+      )(idGen)
+      plan
+    }
+    appendAtCurrentIndent(LeafOperator(planBuilder))
+  }
+
+  def partitionedNodeIndexOperator(
+    indexSeekString: String,
+    getValue: String => GetValueFromIndexBehavior = _ => DoNotGetValue,
+    paramExpr: IterableOnce[Expression] = None,
+    argumentIds: Set[String] = Set.empty,
+    customQueryExpression: Option[QueryExpression[Expression]] = None,
+    indexType: IndexType = IndexType.RANGE
+  ): IMPL = {
+    val planBuilder = (idGen: IdGen) => {
+      val plan = partitionedNodeIndexSeek(
+        indexSeekString,
+        getValue,
+        paramExpr.iterator.toSeq,
+        argumentIds,
         customQueryExpression,
         indexType
       )(idGen)
@@ -1553,7 +1577,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     argumentIds: Set[String] = Set.empty,
     unique: Boolean = false,
     customQueryExpression: Option[QueryExpression[Expression]] = None,
-    indexType: IndexType = IndexType.RANGE
+    indexType: IndexType = IndexType.RANGE,
+    supportPartitionedScan: Boolean = true
   ): IdGen => NodeIndexLeafPlan = {
     val label = resolver.getLabelId(IndexSeek.labelFromIndexSeekString(indexSeekString))
     val propIds: PartialFunction[String, Int] = {
@@ -1569,6 +1594,36 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         Some(propIds),
         label,
         unique,
+        customQueryExpression,
+        indexType,
+        supportPartitionedScan
+      )(idGen)
+      newNode(varFor(plan.idName.name))
+      plan
+    }
+    planBuilder
+  }
+
+  def partitionedNodeIndexSeek(
+    indexSeekString: String,
+    getValue: String => GetValueFromIndexBehavior = _ => DoNotGetValue,
+    paramExpr: Iterable[Expression] = Seq.empty,
+    argumentIds: Set[String] = Set.empty,
+    customQueryExpression: Option[QueryExpression[Expression]] = None,
+    indexType: IndexType = IndexType.RANGE
+  ): IdGen => NodeIndexLeafPlan = {
+    val label = resolver.getLabelId(IndexSeek.labelFromIndexSeekString(indexSeekString))
+    val propIds: PartialFunction[String, Int] = {
+      case x => resolver.getPropertyKeyId(x)
+    }
+    val planBuilder = (idGen: IdGen) => {
+      val plan = IndexSeek.partitionedNodeIndexSeek(
+        indexSeekString,
+        getValue,
+        paramExpr,
+        argumentIds,
+        Some(propIds),
+        label,
         customQueryExpression,
         indexType
       )(idGen)

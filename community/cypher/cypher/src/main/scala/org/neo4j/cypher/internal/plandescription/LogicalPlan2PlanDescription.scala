@@ -184,6 +184,7 @@ import org.neo4j.cypher.internal.logical.plans.PartialSort
 import org.neo4j.cypher.internal.logical.plans.PartialTop
 import org.neo4j.cypher.internal.logical.plans.PartitionedAllNodesScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeByLabelScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
 import org.neo4j.cypher.internal.logical.plans.PathPropagatingBFS
 import org.neo4j.cypher.internal.logical.plans.PointBoundingBoxRange
@@ -972,7 +973,7 @@ case class LogicalPlan2PlanDescription(
           withDistinctness
         )
 
-      case p @ NodeIndexScan(idName, label, properties, _, _, indexType) =>
+      case p @ NodeIndexScan(idName, label, properties, _, _, indexType, _) =>
         val tokens = properties.map(_.propertyKeyToken)
         val props = tokens.map(x => asPrettyString(x.name))
         val predicates = props.map(p => pretty"$p IS NOT NULL").mkPrettyString(" AND ")
@@ -981,6 +982,22 @@ case class LogicalPlan2PlanDescription(
         PlanDescriptionImpl(
           id,
           "NodeIndexScan",
+          NoChildren,
+          Seq(Details(info)),
+          variables,
+          withRawCardinalities,
+          withDistinctness
+        )
+
+      case p @ PartitionedNodeIndexScan(idName, label, properties, _, indexType) =>
+        val tokens = properties.map(_.propertyKeyToken)
+        val props = tokens.map(x => asPrettyString(x.name))
+        val predicates = props.map(p => pretty"$p IS NOT NULL").mkPrettyString(" AND ")
+        val info =
+          nodeIndexInfoString(idName.name, unique = false, label, tokens, indexType, predicates, p.cachedProperties)
+        PlanDescriptionImpl(
+          id,
+          "PartitionedNodeIndexScan",
           NoChildren,
           Seq(Details(info)),
           variables,

@@ -145,6 +145,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
             SingleQueryExpression(`lit42`),
             _,
             _,
+            _,
             _
           )) => ()
       }
@@ -435,6 +436,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
             _,
             _,
             _,
+            _,
             _
           )) =>
           ()
@@ -459,6 +461,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
             `n`,
             _,
             Seq(IndexedProperty(_, CanGetValue, NODE_TYPE)),
+            _,
             _,
             _,
             _,
@@ -566,6 +569,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
             CompositeQueryExpression(vals @ Seq(_*)),
             _,
             _,
+            _,
             _
           )) if assertPropsAndValuesMatch(propertyNames, values, props, vals.flatMap(_.expressions)) => ()
       }
@@ -600,7 +604,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
       // then
       resultPlans should beLike {
-        case SetExtractor(NodeIndexSeek(`n`, _, _, SingleQueryExpression(`x`), _, _, _)) => ()
+        case SetExtractor(NodeIndexSeek(`n`, _, _, SingleQueryExpression(`x`), _, _, _, _)) => ()
       }
     }
   }
@@ -955,7 +959,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
       // then
       resultPlans should beLike {
-        case SetExtractor(NodeIndexSeek(`n`, _, _, SingleQueryExpression(`lit42`), _, _, _)) => ()
+        case SetExtractor(NodeIndexSeek(`n`, _, _, SingleQueryExpression(`lit42`), _, _, _, _)) => ()
       }
 
       resultPlans.map(p =>
@@ -1375,6 +1379,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
             CompositeQueryExpression(Seq(SingleQueryExpression(`lit42`), ExistenceQueryExpression())),
             _,
             _,
+            _,
             _
           )) =>
           val plannedQG = ctx.staticComponents.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.queryGraph
@@ -1416,6 +1421,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
             CompositeQueryExpression(Seq(SingleQueryExpression(`lit42`), ExistenceQueryExpression())),
             _,
             _,
+            _,
             _
           )) =>
       }
@@ -1442,6 +1448,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
             CompositeQueryExpression(Seq(SingleQueryExpression(`lit42`), ExistenceQueryExpression())),
             _,
             _,
+            _,
             _
           )) =>
       }
@@ -1466,6 +1473,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
             _,
             _,
             CompositeQueryExpression(Seq(SingleQueryExpression(`lit42`), ExistenceQueryExpression())),
+            _,
             _,
             _,
             _

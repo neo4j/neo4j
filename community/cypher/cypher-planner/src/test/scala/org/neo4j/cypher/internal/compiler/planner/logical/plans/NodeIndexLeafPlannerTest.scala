@@ -356,7 +356,8 @@ class NodeIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
           Seq(IndexedProperty(propToken, DoNotGetValue, NODE_TYPE)),
           Set(v"x"),
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = true
         ),
         NodeIndexScan(
           v"n",
@@ -364,7 +365,8 @@ class NodeIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
           Seq(IndexedProperty(propToken, DoNotGetValue, NODE_TYPE)),
           Set(v"x"),
           IndexOrderNone,
-          IndexType.TEXT
+          IndexType.TEXT,
+          supportPartitionedScan = false
         ),
         // oPropIsNotNull
         NodeIndexScan(
@@ -373,7 +375,8 @@ class NodeIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
           Seq(IndexedProperty(propToken, DoNotGetValue, NODE_TYPE)),
           Set(v"x"),
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = true
         ),
         // oFooEqualsLit6, oBarEqualsLit42,
         NodeIndexScan(
@@ -382,7 +385,8 @@ class NodeIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
           Seq(IndexedProperty(fooToken, DoNotGetValue, NODE_TYPE), IndexedProperty(barToken, DoNotGetValue, NODE_TYPE)),
           Set(v"x"),
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = true
         ),
         // oAaaEqualsLit42, oBbbLessThan6, oCccLessThan6
         NodeIndexScan(
@@ -395,7 +399,8 @@ class NodeIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
           ),
           Set(v"x"),
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = true
         )
       )
     }

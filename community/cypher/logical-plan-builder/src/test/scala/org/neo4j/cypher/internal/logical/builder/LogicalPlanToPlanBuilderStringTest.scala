@@ -1599,6 +1599,68 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName wi
     }
   )
 
+  testPlan(
+    "partitionedNodeIndexOperator", {
+      val builder = new TestPlanBuilder().produceResults("x", "y")
+
+      // NodeIndexSeek
+      builder
+        .apply()
+        .|.partitionedNodeIndexOperator("x:Honey(prop = 20)", indexType = IndexType.RANGE)
+        .apply()
+        .|.partitionedNodeIndexOperator("x:Honey(prop = 20 OR 30)", indexType = IndexType.RANGE)
+        .apply()
+        .|.partitionedNodeIndexOperator("x:Honey(prop > 20)", indexType = IndexType.RANGE)
+        .apply()
+        .|.partitionedNodeIndexOperator("x:Honey(10 < prop < 20)", indexType = IndexType.RANGE)
+        .apply()
+        .|.partitionedNodeIndexOperator("x:Honey(10 < prop <= 20)", indexType = IndexType.RANGE)
+        .apply()
+        .|.partitionedNodeIndexOperator("x:Honey(10 <= prop < 20)", indexType = IndexType.RANGE)
+        .apply()
+        .|.partitionedNodeIndexOperator("x:Honey(10 <= prop <= 20)", indexType = IndexType.RANGE)
+        .apply()
+        .|.partitionedNodeIndexOperator("x:Honey(prop >= 20)", indexType = IndexType.RANGE)
+        .apply()
+        .|.partitionedNodeIndexOperator(
+          "x:Honey(prop < 20)",
+          getValue = _ => DoNotGetValue,
+          indexType = IndexType.RANGE
+        )
+        .apply()
+        .|.partitionedNodeIndexOperator(
+          "x:Honey(prop <= 20)",
+          getValue = Map("prop" -> GetValue),
+          indexType = IndexType.RANGE
+        )
+        .apply()
+        .|.partitionedNodeIndexOperator(
+          "x:Honey(prop = 10, prop2 = '20')",
+          getValue = Map("prop" -> GetValue, "prop2" -> DoNotGetValue),
+          indexType = IndexType.RANGE
+        )
+        .apply()
+        .|.partitionedNodeIndexOperator(
+          "x:Honey(prop = 10 OR 20, prop2 = '10' OR '30')",
+          argumentIds = Set("a", "b"),
+          indexType = IndexType.RANGE
+        )
+        .apply()
+        .|.partitionedNodeIndexOperator(
+          "x:Label(text STARTS WITH 'as')",
+          indexType = IndexType.TEXT
+        )
+        .apply()
+        .|.partitionedNodeIndexOperator("x:Honey(prop2 = 10, prop)", indexType = IndexType.RANGE)
+        .partitionedNodeIndexOperator(
+          "x:Honey(prop = variable)",
+          argumentIds = Set("variable"),
+          indexType = IndexType.RANGE
+        )
+        .build()
+    }
+  )
+
   // Split into 2 tests to avoid StackOverflow exceptions on too long method call chains.
   testPlan(
     "nodeIndexOperator 2", {

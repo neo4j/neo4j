@@ -97,6 +97,7 @@ import org.neo4j.cypher.internal.logical.plans.OrderedUnion
 import org.neo4j.cypher.internal.logical.plans.PartialSort
 import org.neo4j.cypher.internal.logical.plans.PartitionedAllNodesScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeByLabelScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
 import org.neo4j.cypher.internal.logical.plans.ProjectEndpoints
@@ -494,7 +495,9 @@ object CardinalityCostModel {
       case _: NodeByLabelScan |
         _: PartitionedNodeByLabelScan |
         _: UnionNodeByLabelsScan |
-        _: NodeIndexScan => INDEX_SCAN_COST_PER_ROW
+        _: NodeIndexScan |
+        _: PartitionedNodeIndexScan =>
+        INDEX_SCAN_COST_PER_ROW
 
       case plan: IntersectionNodeByLabelsScan =>
         // A workaround for cases where we might get value from an index scan instead. Using the same cost means we will use leaf plan heuristic to decide.
