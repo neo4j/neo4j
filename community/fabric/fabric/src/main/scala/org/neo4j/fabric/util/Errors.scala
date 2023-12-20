@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticErrorDef
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.messages.MessageUtilProvider
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.exceptions.EntityNotFoundException
 import org.neo4j.exceptions.InvalidSemanticsException
@@ -96,8 +97,7 @@ object Errors {
   def semantic(message: String) = throw new InvalidSemanticsException(message)
 
   private def dynamicGraphNotAllowedMessage(use: String) =
-    s"""Dynamic graph lookup not allowed here. This feature is only available on composite databases.
-       |Attempted to access graph $use""".stripMargin
+    MessageUtilProvider.createDynamicGraphReferenceUnsupportedError(use).stripMargin
 
   def dynamicGraphNotAllowed(use: Use, queryString: String): Nothing =
     syntax(dynamicGraphNotAllowedMessage(Use.show(use)), queryString, use.position)

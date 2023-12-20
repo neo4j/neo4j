@@ -478,14 +478,16 @@ final case class UseGraph(expression: Expression)(val position: InputPosition) e
       SemanticCheck.fromFunctionWithContext { (semanticState, context) =>
         SemanticCheckResult.error(
           semanticState,
-          context.errorMessageProvider.createDynamicGraphReferenceUnsupportedError(),
+          context.errorMessageProvider.createDynamicGraphReferenceUnsupportedError(
+            ExpressionStringifier.apply(_.asCanonicalStringVal).apply(expression)
+          ),
           position
         )
       }
 
     graphReference.foldSemanticCheck {
       case _: GraphRef => success
-      case _           => dynamicGraphReferenceError()
+      case _           => dynamicGraphReferenceError
     }
   }
 

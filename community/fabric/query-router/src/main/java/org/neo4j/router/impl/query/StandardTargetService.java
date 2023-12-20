@@ -21,6 +21,7 @@ package org.neo4j.router.impl.query;
 
 import java.util.Optional;
 import org.neo4j.cypher.internal.ast.CatalogName;
+import org.neo4j.cypher.messages.MessageUtilProvider;
 import org.neo4j.exceptions.InvalidSemanticsException;
 import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
@@ -78,9 +79,8 @@ public class StandardTargetService implements TargetService {
                 var normalizedDatabaseName =
                         new NormalizedDatabaseName(catalogName.get().qualifiedNameString());
                 if (!sessionDatabase.fullName().name().equals(normalizedDatabaseName.name())) {
-                    throw new InvalidSemanticsException(
-                            "Using multiple graphs in the same query is not supported on standard databases. "
-                                    + "This capability is supported on composite databases only.");
+                    throw new InvalidSemanticsException(MessageUtilProvider.createMultipleGraphReferencesError(
+                            normalizedDatabaseName.name(), false));
                 }
             }
             return catalogName;

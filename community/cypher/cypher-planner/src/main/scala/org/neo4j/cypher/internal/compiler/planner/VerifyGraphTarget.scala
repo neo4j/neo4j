@@ -39,6 +39,7 @@ import org.neo4j.cypher.internal.frontend.phases.VisitorPhase
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
+import org.neo4j.cypher.messages.MessageUtilProvider
 import org.neo4j.dbms.api.DatabaseNotFoundException
 import org.neo4j.exceptions.InvalidSemanticsException
 import org.neo4j.kernel.database.DatabaseReferenceRepository
@@ -110,9 +111,9 @@ case object VerifyGraphTarget extends VisitorPhase[PlannerContext, BaseState] wi
             graphNameWithContext match {
               // If an explicit graph selection is combined with ambient one and both target different graphs,
               // it makes the query effectively a composite one.
-              case GraphNameWithContext(_, true) =>
+              case GraphNameWithContext(graphName, true) =>
                 throw new InvalidSemanticsException(
-                  "Using multiple graphs in the same query is not supported on standard databases. This capability is supported on composite databases only."
+                  MessageUtilProvider.createMultipleGraphReferencesError(graphName.qualifiedNameString)
                 )
               // If we are here it means that the query came from the Core API, because Query router would send
               // the query to the correct database if it came from Bolt or HTTP API

@@ -163,7 +163,8 @@ trait ErrorMessageProviderAdapter extends ErrorMessageProvider {
 
   override def createUseClauseUnsupportedError(): String = ???
 
-  override def createDynamicGraphReferenceUnsupportedError(): String = ???
+  override def createDynamicGraphReferenceUnsupportedError(graphName: String): String = ???
 
-  override def createMultipleGraphReferencesError(): String = ???
+  override def createMultipleGraphReferencesError(graphName: String, transactionalDefault: Boolean = false): String =
+    ???
 }

@@ -37,9 +37,9 @@ trait ErrorMessageProvider {
 
   def createUseClauseUnsupportedError(): String
 
-  def createDynamicGraphReferenceUnsupportedError(): String
+  def createDynamicGraphReferenceUnsupportedError(graphName: String): String
 
-  def createMultipleGraphReferencesError(): String
+  def createMultipleGraphReferencesError(graphName: String, transactionalDefault: Boolean = false): String
 }
 
 object NotImplementedErrorMessageProvider extends ErrorMessageProvider {
@@ -60,9 +60,9 @@ object NotImplementedErrorMessageProvider extends ErrorMessageProvider {
 
   override def createUseClauseUnsupportedError(): String = ???
 
-  override def createDynamicGraphReferenceUnsupportedError(): String = ???
+  override def createDynamicGraphReferenceUnsupportedError(graphName: String): String = ???
 
-  override def createMultipleGraphReferencesError(): String = ???
+  override def createMultipleGraphReferencesError(graphName: String, transactionalDefault: Boolean): String = ???
 }
 
 object EmptyErrorMessageProvider extends ErrorMessageProvider {
@@ -83,7 +83,7 @@ object EmptyErrorMessageProvider extends ErrorMessageProvider {
 
   override def createUseClauseUnsupportedError(): String = ""
 
-  override def createDynamicGraphReferenceUnsupportedError(): String = ""
+  override def createDynamicGraphReferenceUnsupportedError(graphName: String): String = ""
 
-  override def createMultipleGraphReferencesError(): String = ""
+  override def createMultipleGraphReferencesError(graphName: String, transactionalDefault: Boolean): String = ""
 }

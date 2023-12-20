@@ -55,6 +55,6 @@ public class DefaultDatabaseReferenceResolver implements DatabaseReferenceResolv
     }
 
     private static Supplier<DatabaseNotFoundException> databaseNotFound(NormalizedDatabaseName databaseNameRaw) {
-        return () -> new DatabaseNotFoundException("Database " + databaseNameRaw.name() + " not found");
+        return () -> new DatabaseNotFoundException("Graph not found: " + databaseNameRaw.name());
     }
 }

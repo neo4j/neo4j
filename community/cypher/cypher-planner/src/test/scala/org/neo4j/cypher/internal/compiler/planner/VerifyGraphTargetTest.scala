@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.messages.MessageUtilProvider
 import org.neo4j.dbms.api.DatabaseNotFoundException
 import org.neo4j.exceptions.InvalidSemanticsException
 import org.neo4j.kernel.database.DatabaseReference
@@ -126,7 +127,9 @@ class VerifyGraphTargetTest extends CypherFunSuite {
         |""".stripMargin
 
     mockReferenceRepository(graphReference(mock[NamedDatabaseId]))
-    the[InvalidSemanticsException] thrownBy verifyGraphTarget(query) should have message "Using multiple graphs in the same query is not supported on standard databases. This capability is supported on composite databases only."
+    the[InvalidSemanticsException] thrownBy verifyGraphTarget(
+      query
+    ) should have message MessageUtilProvider.createMultipleGraphReferencesError("foo")
   }
 
   test("should accept a combination of ambient and explicit graph selection in UNION targeting the session graph") {
@@ -150,7 +153,9 @@ class VerifyGraphTargetTest extends CypherFunSuite {
         |RETURN 1 AS x
         |""".stripMargin
     mockReferenceRepository(graphReference(mock[NamedDatabaseId]))
-    the[InvalidSemanticsException] thrownBy verifyGraphTarget(query) should have message "Using multiple graphs in the same query is not supported on standard databases. This capability is supported on composite databases only."
+    the[InvalidSemanticsException] thrownBy verifyGraphTarget(
+      query
+    ) should have message MessageUtilProvider.createMultipleGraphReferencesError("foo")
   }
 
   test("should not accept constituent if allowCompositeQueries not set to true") {

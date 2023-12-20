@@ -39,6 +39,7 @@ import org.neo4j.cypher.internal.expressions.SensitiveParameter
 import org.neo4j.cypher.internal.rewriting.rewriters.sensitiveLiteralReplacement
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.cypher.messages.MessageUtilProvider
 import org.neo4j.cypher.rendering.QueryRenderer
 import org.neo4j.exceptions.SyntaxException
 import org.neo4j.fabric.eval.UseEvaluation
@@ -201,16 +202,14 @@ case class FabricStitcher(
 
   private def failDynamicGraph(use: Use): Nothing =
     throw new SyntaxException(
-      s"""Dynamic graph lookup not allowed here. This feature is only available on composite databases.
-         |Attempted to access graph ${Use.show(use)}""".stripMargin,
+      MessageUtilProvider.createDynamicGraphReferenceUnsupportedError(Use.show(use)).stripMargin,
       queryString,
       use.position.offset
     )
 
   private def failMultipleGraphs(use: Use): Nothing =
     throw new SyntaxException(
-      s"""Multiple graphs in the same query not allowed here. This feature is only available on composite databases.
-         |Attempted to access graph ${Use.show(use)}""".stripMargin,
+      MessageUtilProvider.createMultipleGraphReferencesError(Use.show(use)),
       queryString,
       use.position.offset
     )

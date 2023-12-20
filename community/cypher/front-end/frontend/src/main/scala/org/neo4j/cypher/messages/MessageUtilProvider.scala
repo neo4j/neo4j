@@ -51,10 +51,13 @@ object MessageUtilProvider extends ErrorMessageProvider {
   override def createUseClauseUnsupportedError(): String =
     "The USE clause is not available in embedded sessions. Try running the query using a Neo4j driver or the HTTP API."
 
-  override def createDynamicGraphReferenceUnsupportedError(): String =
-    "Dynamic graph references are supported only in composite databases."
+  override def createDynamicGraphReferenceUnsupportedError(graphName: String): String =
+    s"""Dynamic graph lookup not allowed here. This feature is only available on composite databases.
+       |Attempted to access graph $graphName""".stripMargin
 
-  override def createMultipleGraphReferencesError(): String = {
-    "Multiple graph references in the same query is not supported on standard databases. This capability is supported on composite databases only."
+  override def createMultipleGraphReferencesError(graphName: String, transactionalDefault: Boolean = false): String = {
+    val graphPostfix = if (transactionalDefault) " (transaction default)" else ""
+    s"""Multiple graphs in the same query not allowed here. This feature is only available on composite databases.
+       |Attempted to access graph $graphName$graphPostfix""".stripMargin
   }
 }

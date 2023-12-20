@@ -376,9 +376,12 @@ class SemanticCheckableTest extends CypherFunSuite with SemanticAnalysisTooling 
 
         override def createUseClauseUnsupportedError(): String = missingMsg
 
-        override def createDynamicGraphReferenceUnsupportedError(): String = missingMsg
+        override def createDynamicGraphReferenceUnsupportedError(graphName: String): String = missingMsg
 
-        override def createMultipleGraphReferencesError(): String = missingMsg
+        override def createMultipleGraphReferencesError(
+          graphName: String,
+          transactionalDefault: Boolean = false
+        ): String = missingMsg
       }
     }
 

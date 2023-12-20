@@ -468,7 +468,10 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
     expectErrorsFrom(
       query,
       Set(
-        SemanticError(messageProvider.createDynamicGraphReferenceUnsupportedError(), InputPosition(1, 2, 1))
+        SemanticError(
+          messageProvider.createDynamicGraphReferenceUnsupportedError("v($g, w($k))"),
+          InputPosition(1, 2, 1)
+        )
       ),
       pipelineWithUseAsSingleGraphSelector
     )
@@ -557,7 +560,7 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
       query,
       Set(
         SemanticError(
-          messageProvider.createMultipleGraphReferencesError(),
+          messageProvider.createMultipleGraphReferencesError("y"),
           InputPosition(22, 5, 1)
         )
       ),
@@ -1687,10 +1690,10 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
   override def messageProvider: ErrorMessageProvider = new ErrorMessageProviderAdapter {
     override def createUseClauseUnsupportedError(): String = "A very nice message explaining why USE is not allowed"
 
-    override def createDynamicGraphReferenceUnsupportedError(): String =
-      "A very nice message explaining why dynamic graph references are not allowed"
+    override def createDynamicGraphReferenceUnsupportedError(graphName: String): String =
+      "A very nice message explaining why dynamic graph references are not allowed: " + graphName
 
-    override def createMultipleGraphReferencesError(): String =
-      "A very nice message explaining why multiple graph references are not allowed"
+    override def createMultipleGraphReferencesError(graphName: String, transactioinalDefault: Boolean = false): String =
+      "A very nice message explaining why multiple graph references are not allowed: " + graphName
   }
 }

@@ -24,6 +24,7 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.messages.MessageUtilProvider
 import org.neo4j.cypher.testing.api.CypherExecutorException
 import org.neo4j.cypher.testing.impl.FeatureDatabaseManagementService
 import org.neo4j.dbms.api.DatabaseManagementService
@@ -31,13 +32,17 @@ import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
 import org.scalatest.BeforeAndAfterAll
 
-class CommunityQueryRoutingBoltAcceptanceTest extends CommunityQueryRoutingAcceptanceTest
+class CommunityQueryRoutingBoltAcceptanceTest extends CommunityQueryRoutingAcceptanceTest(java.lang.Boolean.TRUE)
     with FeatureDatabaseManagementService.TestUsingBolt
 
-class CommunityQueryRoutingHttpAcceptanceTest extends CommunityQueryRoutingAcceptanceTest
+class CommunityQueryRoutingHttpAcceptanceTest extends CommunityQueryRoutingAcceptanceTest(java.lang.Boolean.TRUE)
     with FeatureDatabaseManagementService.TestUsingHttp
 
-abstract class CommunityQueryRoutingAcceptanceTest extends CypherFunSuite
+class CommunityQueryRoutingBoltOldStackAcceptanceTest
+    extends CommunityQueryRoutingAcceptanceTest(java.lang.Boolean.FALSE)
+    with FeatureDatabaseManagementService.TestUsingBolt
+
+abstract class CommunityQueryRoutingAcceptanceTest(newStackEnabled: java.lang.Boolean) extends CypherFunSuite
     with FeatureDatabaseManagementService.TestBase
     with BeforeAndAfterAll {
 
@@ -74,13 +79,24 @@ abstract class CommunityQueryRoutingAcceptanceTest extends CypherFunSuite
         |RETURN 1 AS x
         |""".stripMargin
 
-    Seq(DEFAULT_DATABASE_NAME, SYSTEM_DATABASE_NAME).foreach { sessionDbName =>
-      failWithError(
-        sessionDbName,
-        query,
-        Status.Database.DatabaseNotFound,
-        "Database nonexistent not found"
-      )
+    if (newStackEnabled) {
+      Seq(DEFAULT_DATABASE_NAME, SYSTEM_DATABASE_NAME).foreach { sessionDbName =>
+        failWithError(
+          sessionDbName,
+          query,
+          Status.Database.DatabaseNotFound,
+          "Graph not found: nonexistent"
+        )
+      }
+    } else {
+      Seq(DEFAULT_DATABASE_NAME, SYSTEM_DATABASE_NAME).foreach { sessionDbName =>
+        failWithError(
+          sessionDbName,
+          query,
+          Status.Statement.EntityNotFound,
+          "Graph not found: nonexistent"
+        )
+      }
     }
   }
 
@@ -91,12 +107,22 @@ abstract class CommunityQueryRoutingAcceptanceTest extends CypherFunSuite
         |USE v(g)
         |RETURN 1
         |""".stripMargin
-    failWithError(
-      SYSTEM_DATABASE_NAME,
-      query,
-      Status.Statement.SyntaxError,
-      "Dynamic graph references are supported only in composite databases"
-    )
+
+    if (newStackEnabled) {
+      failWithError(
+        SYSTEM_DATABASE_NAME,
+        query,
+        Status.Statement.SyntaxError,
+        MessageUtilProvider.createDynamicGraphReferenceUnsupportedError("v(g)")
+      )
+    } else {
+      failWithError(
+        SYSTEM_DATABASE_NAME,
+        query,
+        Status.Statement.SyntaxError,
+        "USE clause must be either the first clause in a (sub-)query or preceded by an importing WITH clause in a sub-query."
+      )
+    }
   }
 
   test("should route a query with multiple USE targeting the same graph") {
@@ -134,7 +160,7 @@ abstract class CommunityQueryRoutingAcceptanceTest extends CypherFunSuite
         sessionDbName,
         query,
         Status.Statement.SyntaxError,
-        "Multiple graph references in the same query is not supported on standard databases. This capability is supported on composite databases only."
+        MessageUtilProvider.createMultipleGraphReferencesError("foo")
       )
     }
   }
@@ -162,12 +188,22 @@ abstract class CommunityQueryRoutingAcceptanceTest extends CypherFunSuite
         |}
         |RETURN x, 1 AS y
         |""".stripMargin
-    failWithError(
-      DEFAULT_DATABASE_NAME,
-      query,
-      Status.Database.DatabaseNotFound,
-      "Database foo not found"
-    )
+
+    if (newStackEnabled) {
+      failWithError(
+        DEFAULT_DATABASE_NAME,
+        query,
+        Status.Database.DatabaseNotFound,
+        "Database foo not found"
+      )
+    } else {
+      failWithError(
+        DEFAULT_DATABASE_NAME,
+        query,
+        Status.Statement.SyntaxError,
+        MessageUtilProvider.createMultipleGraphReferencesError("foo")
+      )
+    }
   }
 
   test("should route Administration command to System database") {
@@ -193,7 +229,7 @@ abstract class CommunityQueryRoutingAcceptanceTest extends CypherFunSuite
   }
 
   override def baseConfig: Config.Builder = super.baseConfig
-    .set(GraphDatabaseInternalSettings.query_router_new_stack, java.lang.Boolean.TRUE)
+    .set(GraphDatabaseInternalSettings.query_router_new_stack, newStackEnabled)
 
   override def createBackingDbms(config: Config): DatabaseManagementService =
     new TestDatabaseManagementServiceBuilder().impermanent.setConfig(config).build()

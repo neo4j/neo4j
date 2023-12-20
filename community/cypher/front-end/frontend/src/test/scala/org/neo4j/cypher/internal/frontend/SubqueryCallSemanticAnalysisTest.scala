@@ -351,7 +351,7 @@ class SubqueryCallSemanticAnalysisTest
       query,
       Set(
         SemanticError(
-          messageProvider.createMultipleGraphReferencesError(),
+          messageProvider.createMultipleGraphReferencesError("y"),
           InputPosition(28, 5, 3)
         )
       ),
@@ -385,7 +385,10 @@ class SubqueryCallSemanticAnalysisTest
     expectErrorsFrom(
       query,
       Set(
-        SemanticError(messageProvider.createDynamicGraphReferenceUnsupportedError(), InputPosition(30, 4, 3))
+        SemanticError(
+          messageProvider.createDynamicGraphReferenceUnsupportedError("v(g, w(k))"),
+          InputPosition(30, 4, 3)
+        )
       ),
       pipelineWithUseAsSingleGraphSelector
     )
@@ -632,10 +635,10 @@ class SubqueryCallSemanticAnalysisTest
 
   override def messageProvider: ErrorMessageProvider = new ErrorMessageProviderAdapter {
 
-    override def createDynamicGraphReferenceUnsupportedError(): String =
-      "A very nice message explaining why dynamic graph references are not allowed"
+    override def createDynamicGraphReferenceUnsupportedError(graphName: String): String =
+      "A very nice message explaining why dynamic graph references are not allowed" + graphName
 
-    override def createMultipleGraphReferencesError(): String =
-      "A very nice message explaining why multiple graph references are not allowed"
+    override def createMultipleGraphReferencesError(graphName: String, transactionalDefault: Boolean = false): String =
+      "A very nice message explaining why multiple graph references are not allowed: " + graphName
   }
 }

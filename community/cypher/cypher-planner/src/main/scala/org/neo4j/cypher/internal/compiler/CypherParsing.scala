@@ -26,7 +26,11 @@ import org.neo4j.cypher.internal.compiler.phases.BaseContextImpl
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.ParsingConfig
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.defaultSemanticFeatures
-import org.neo4j.cypher.internal.frontend.phases._
+import org.neo4j.cypher.internal.frontend.phases.BaseState
+import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
+import org.neo4j.cypher.internal.frontend.phases.InitialState
+import org.neo4j.cypher.internal.frontend.phases.Monitors
+import org.neo4j.cypher.internal.frontend.phases.ProcedureSignatureResolver
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.spi.PlannerNameFor
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
