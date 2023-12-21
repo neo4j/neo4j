@@ -89,7 +89,6 @@ import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaState;
-import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -1151,7 +1150,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     };
 
                     AutoCloseable storageRollback = () -> storageEngine.rollback(txState, cursorContext);
-                    IOUtils.close((s, throwable) -> throwable, constraintDropper, storageRollback);
+                    //noinspection EmptyTryBlock
+                    try (constraintDropper;
+                            storageRollback) {
+                        // close those things safely
+                    }
                 }
             }
         } catch (KernelException | RuntimeException | Error e) {
