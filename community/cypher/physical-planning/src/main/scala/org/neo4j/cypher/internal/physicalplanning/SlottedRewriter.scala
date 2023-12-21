@@ -217,8 +217,7 @@ class SlottedRewriter(tokenContext: ReadTokenContext) {
   ): Rewriter = {
     val innerRewriter = Rewriter.lift {
       case e: NestedPlanExpression =>
-        // Rewrite expressions within the nested plan
-        val rewrittenPlan = this.apply(e.plan, slotConfigurations, trailPlans)
+        // NOTE: The top-down rewriter will descend into the nested plan, so no need to explicitly rewrite it here
         val innerSlotConf = slotConfigurations.getOrElse(
           e.plan.id,
           throw new InternalException(s"Missing slot configuration for plan with ${e.plan.id}")
@@ -227,11 +226,11 @@ class SlottedRewriter(tokenContext: ReadTokenContext) {
         e match {
           case ce @ NestedPlanCollectExpression(_, projection, _) =>
             val rewrittenProjection = projection.endoRewrite(rewriter)
-            ce.copy(plan = rewrittenPlan, projection = rewrittenProjection)(e.position)
-          case ee: NestedPlanExistsExpression =>
-            ee.copy(plan = rewrittenPlan)(e.position)
+            ce.copy(projection = rewrittenProjection)(e.position)
+          case _: NestedPlanExistsExpression =>
+            e
           case ee: NestedPlanGetByNameExpression =>
-            ee.copy(plan = rewrittenPlan)(e.position)
+            ee.copy(columnNameToGet = VariableRef(ee.columnNameToGet.name))(e.position)
         }
 
       case prop @ Property(Variable(key), PropertyKeyName(propKey)) =>
@@ -714,9 +713,6 @@ class SlottedRewriter(tokenContext: ReadTokenContext) {
     // Do not traverse into slotted runtime variables or properties
     case _: RuntimeVariable | _: RuntimeProperty =>
       true
-
-    // NestedPlanGetByNameExpression can't be rewritten because slot is not known
-    case _: NestedPlanGetByNameExpression => true
 
     case _ =>
       false

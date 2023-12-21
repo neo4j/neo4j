@@ -142,8 +142,12 @@ class LogicalPlanStringTest extends CypherFunSuite {
              |
              |- You did use a String to reference a variable.
              |    1. Change it to LogicalVariable, test should now pass.
-             |    2. You also probably want to make sure to rewrite this variable
-             |       in VariableRefRewriter.
+             |    2. You may need to update SlottedRewriter if the variable does not get rewritten:
+             |       - If the variable is allocated in the incoming slot configuration you may need to add a case for it.
+             |       - If the variable should use an expression variable you may need to add a case for it in expressionVariableAllocation.
+             |       - If the variable should not allocate a slot or an expression variable for some reason,
+             |         you may need to add a case where you rewrite it to a VariableRef.
+             |
              |- You did not use a String to reference a variable.
              |    1. Modify one of the white lists in object WhiteList.
              |       Try to be specific to keep the test working for future plans.
