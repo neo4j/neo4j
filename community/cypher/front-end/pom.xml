@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.neo4j</groupId>
         <artifactId>cypher-parent</artifactId>
-        <version>4.4.29-SNAPSHOT</version>
+        <version>4.4.30-SNAPSHOT</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
