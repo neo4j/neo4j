@@ -16,4 +16,9 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-class Neo4jASTConstructionException(msg: String) extends RuntimeException(msg)
+import org.neo4j.kernel.api.exceptions.Status
+import org.neo4j.kernel.api.exceptions.Status.HasStatus
+
+class Neo4jASTConstructionException(msg: String) extends RuntimeException(msg) with HasStatus {
+  override def status(): Status = Status.Statement.SyntaxError
+}

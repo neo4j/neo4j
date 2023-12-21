@@ -306,6 +306,6 @@ public class BasicOperationIT {
             throws IOException {
         connection.send(wire.run("MATCH (:Movie{title:'"));
 
-        assertThat(connection).receivesFailureFuzzy(Status.Database.General.UnknownError, "Lexical error");
+        assertThat(connection).receivesFailureFuzzy(Status.Statement.SyntaxError, "Failed to parse string literal");
     }
 }
