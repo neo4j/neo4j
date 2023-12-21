@@ -24,9 +24,8 @@ import static java.util.Objects.requireNonNullElse;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.utf8Value;
 
+import java.util.Arrays;
 import java.util.Objects;
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import org.neo4j.internal.schema.IndexQuery;
@@ -210,17 +209,21 @@ public abstract class PropertyIndexQuery implements IndexQuery {
         this.propertyKeyId = propertyKeyId;
     }
 
-    @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
     @Override
-    public final boolean equals(Object other) {
-        // equals() and hashcode() are only used for testing so we don't care that they are a bit slow.
-        return EqualsBuilder.reflectionEquals(this, other);
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        PropertyIndexQuery that = (PropertyIndexQuery) o;
+        return propertyKeyId == that.propertyKeyId;
     }
 
     @Override
-    public final int hashCode() {
-        // equals() and hashcode() are only used for testing so we don't care that they are a bit slow.
-        return HashCodeBuilder.reflectionHashCode(this, false);
+    public int hashCode() {
+        return propertyKeyId + getClass().hashCode();
     }
 
     @Override
@@ -332,6 +335,26 @@ public abstract class PropertyIndexQuery implements IndexQuery {
         public Value value() {
             return exactValue;
         }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            if (!super.equals(o)) {
+                return false;
+            }
+            ExactPredicate that = (ExactPredicate) o;
+            return Objects.equals(exactValue, that.exactValue);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(super.hashCode(), exactValue);
+        }
     }
 
     public static class RangePredicate<T extends Value> extends PropertyIndexQuery {
@@ -393,6 +416,30 @@ public abstract class PropertyIndexQuery implements IndexQuery {
 
         public boolean toInclusive() {
             return toInclusive;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            if (!super.equals(o)) {
+                return false;
+            }
+            RangePredicate<?> that = (RangePredicate<?>) o;
+            return fromInclusive == that.fromInclusive
+                    && toInclusive == that.toInclusive
+                    && Objects.equals(from, that.from)
+                    && Objects.equals(to, that.to)
+                    && valueGroup == that.valueGroup;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(super.hashCode(), from, fromInclusive, to, toInclusive, valueGroup);
         }
     }
 
@@ -494,6 +541,29 @@ public abstract class PropertyIndexQuery implements IndexQuery {
         public IndexQueryType type() {
             return IndexQueryType.BOUNDING_BOX;
         }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            if (!super.equals(o)) {
+                return false;
+            }
+            BoundingBoxPredicate that = (BoundingBoxPredicate) o;
+            return inclusive == that.inclusive
+                    && crs == that.crs
+                    && Objects.equals(from, that.from)
+                    && Objects.equals(to, that.to);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(super.hashCode(), crs, from, to, inclusive);
+        }
     }
 
     /**
@@ -582,6 +652,26 @@ public abstract class PropertyIndexQuery implements IndexQuery {
         public TextValue prefix() {
             return prefix;
         }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            if (!super.equals(o)) {
+                return false;
+            }
+            StringPrefixPredicate that = (StringPrefixPredicate) o;
+            return Objects.equals(prefix, that.prefix);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(super.hashCode(), prefix);
+        }
     }
 
     public static final class StringContainsPredicate extends StringPredicate {
@@ -606,6 +696,26 @@ public abstract class PropertyIndexQuery implements IndexQuery {
         public TextValue contains() {
             return contains;
         }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            if (!super.equals(o)) {
+                return false;
+            }
+            StringContainsPredicate that = (StringContainsPredicate) o;
+            return Objects.equals(contains, that.contains);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(super.hashCode(), contains);
+        }
     }
 
     public static final class StringSuffixPredicate extends StringPredicate {
@@ -629,6 +739,26 @@ public abstract class PropertyIndexQuery implements IndexQuery {
 
         public TextValue suffix() {
             return suffix;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            if (!super.equals(o)) {
+                return false;
+            }
+            StringSuffixPredicate that = (StringSuffixPredicate) o;
+            return Objects.equals(suffix, that.suffix);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(super.hashCode(), suffix);
         }
     }
 
@@ -664,6 +794,26 @@ public abstract class PropertyIndexQuery implements IndexQuery {
         public String queryAnalyzer() {
             return queryAnalyzer;
         }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            if (!super.equals(o)) {
+                return false;
+            }
+            FulltextSearchPredicate that = (FulltextSearchPredicate) o;
+            return Objects.equals(query, that.query) && Objects.equals(queryAnalyzer, that.queryAnalyzer);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(super.hashCode(), query, queryAnalyzer);
+        }
     }
 
     public static final class NearestNeighborsPredicate extends PropertyIndexQuery {
@@ -698,6 +848,28 @@ public abstract class PropertyIndexQuery implements IndexQuery {
 
         public float[] query() {
             return query;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            if (!super.equals(o)) {
+                return false;
+            }
+            NearestNeighborsPredicate that = (NearestNeighborsPredicate) o;
+            return k == that.k && Arrays.equals(query, that.query);
+        }
+
+        @Override
+        public int hashCode() {
+            int result = Objects.hash(super.hashCode(), k);
+            result = 31 * result + Arrays.hashCode(query);
+            return result;
         }
     }
 }
