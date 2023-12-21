@@ -275,4 +275,20 @@ abstract class UndirectedRelationshipByIdSeekTestBase[CONTEXT <: RuntimeContext]
       Array(relToFind, relToFind.getStartNode, relToFind.getEndNode)
     ))
   }
+
+  test(s"should produce all expected rows from single undirectedRelationByIdSeek") {
+    val (_, _, abs, bas) = givenGraph(bidirectionalBipartiteGraph(5, "A", "B", "AB", "BA"))
+    val expected = (abs ++ abs ++ bas ++ bas).map(r => Array(r))
+
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("r")
+      .semiApply()
+      .|.expand("(c)-[:BA]->(d)")
+      .|.undirectedRelationshipByIdSeek("unused1", "unused2", "c", Set(), 28)
+      .allRelationshipsScan("(a)-[r]-(b)")
+      .build()
+
+    val actual = execute(query, runtime)
+    actual should beColumns("r").withRows(inAnyOrder(expected))
+  }
 }
