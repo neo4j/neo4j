@@ -119,9 +119,11 @@ import org.neo4j.cypher.internal.logical.plans.OrderedUnion
 import org.neo4j.cypher.internal.logical.plans.PartialSort
 import org.neo4j.cypher.internal.logical.plans.PartialTop
 import org.neo4j.cypher.internal.logical.plans.PartitionedAllNodesScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedAllRelationshipsScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexSeek
+import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedAllRelationshipsScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
 import org.neo4j.cypher.internal.logical.plans.Prober
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
@@ -444,6 +446,12 @@ case class InterpretedPipeMapper(
         DirectedAllRelationshipsScanPipe(ident.name, fromNode.name, toNode.name)(id = id)
 
       case UndirectedAllRelationshipsScan(ident, fromNode, toNode, _) =>
+        UndirectedAllRelationshipsScanPipe(ident.name, fromNode.name, toNode.name)(id = id)
+
+      case PartitionedDirectedAllRelationshipsScan(ident, fromNode, toNode, _) =>
+        DirectedAllRelationshipsScanPipe(ident.name, fromNode.name, toNode.name)(id = id)
+
+      case PartitionedUndirectedAllRelationshipsScan(ident, fromNode, toNode, _) =>
         UndirectedAllRelationshipsScanPipe(ident.name, fromNode.name, toNode.name)(id = id)
 
       case DirectedRelationshipTypeScan(ident, fromNode, typ, toNode, _, indexOrder) =>

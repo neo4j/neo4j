@@ -183,9 +183,13 @@ import org.neo4j.cypher.internal.logical.plans.OrderedUnion
 import org.neo4j.cypher.internal.logical.plans.PartialSort
 import org.neo4j.cypher.internal.logical.plans.PartialTop
 import org.neo4j.cypher.internal.logical.plans.PartitionedAllNodesScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedAllRelationshipsScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexSeek
+import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedAllRelationshipsScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
 import org.neo4j.cypher.internal.logical.plans.PathPropagatingBFS
 import org.neo4j.cypher.internal.logical.plans.PointBoundingBoxRange
@@ -891,12 +895,38 @@ case class LogicalPlan2PlanDescription(
           withDistinctness
         )
 
+      case PartitionedDirectedAllRelationshipsScan(idName, start, end, _) =>
+        val prettyDetails =
+          pretty"(${asPrettyString(start)})-[${asPrettyString(idName)}]->(${asPrettyString(end)})"
+        PlanDescriptionImpl(
+          id,
+          "PartitionedDirectedAllRelationshipsScan",
+          NoChildren,
+          Seq(Details(prettyDetails)),
+          variables,
+          withRawCardinalities,
+          withDistinctness
+        )
+
       case UndirectedAllRelationshipsScan(idName, start, end, _) =>
         val prettyDetails =
           pretty"(${asPrettyString(start)})-[${asPrettyString(idName)}]-(${asPrettyString(end)})"
         PlanDescriptionImpl(
           id,
           "UndirectedAllRelationshipsScan",
+          NoChildren,
+          Seq(Details(prettyDetails)),
+          variables,
+          withRawCardinalities,
+          withDistinctness
+        )
+
+      case PartitionedUndirectedAllRelationshipsScan(idName, start, end, _) =>
+        val prettyDetails =
+          pretty"(${asPrettyString(start)})-[${asPrettyString(idName)}]-(${asPrettyString(end)})"
+        PlanDescriptionImpl(
+          id,
+          "PartitionedUndirectedAllRelationshipsScan",
           NoChildren,
           Seq(Details(prettyDetails)),
           variables,

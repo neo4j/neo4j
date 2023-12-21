@@ -99,6 +99,8 @@ import org.neo4j.cypher.internal.logical.plans.PartitionedAllNodesScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexSeek
+import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedAllRelationshipsScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedAllRelationshipsScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
 import org.neo4j.cypher.internal.logical.plans.ProjectEndpoints
@@ -539,9 +541,9 @@ object CardinalityCostModel {
         // Only every second row needs to access the store
         => STORE_LOOKUP_COST_PER_ROW / 2
 
-      case _: DirectedAllRelationshipsScan => ALL_SCAN_COST_PER_ROW
+      case _: DirectedAllRelationshipsScan | _: PartitionedDirectedAllRelationshipsScan => ALL_SCAN_COST_PER_ROW
 
-      case _: UndirectedAllRelationshipsScan => ALL_SCAN_COST_PER_ROW / 2
+      case _: UndirectedAllRelationshipsScan | _: PartitionedUndirectedAllRelationshipsScan => ALL_SCAN_COST_PER_ROW / 2
 
       case plan: DirectedRelationshipTypeScan =>
         hackyRelTypeScanCost(propertyAccess, plan.idName, directed = true)

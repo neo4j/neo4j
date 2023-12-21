@@ -1277,6 +1277,33 @@ case class DirectedAllRelationshipsScan(
     copy(argumentIds = argumentIds ++ argsToAdd)(SameId(this.id))
 }
 
+case class PartitionedDirectedAllRelationshipsScan(
+  idName: LogicalVariable,
+  startNode: LogicalVariable,
+  endNode: LogicalVariable,
+  argumentIds: Set[LogicalVariable]
+)(implicit idGen: IdGen)
+    extends RelationshipLogicalLeafPlan(idGen) with StableLeafPlan with PhysicalPlanningPlan {
+
+  override val availableSymbols: Set[LogicalVariable] = argumentIds ++ Set(idName, leftNode, rightNode)
+
+  override def usedVariables: Set[LogicalVariable] = Set.empty
+
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): PartitionedDirectedAllRelationshipsScan =
+    copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def leftNode: LogicalVariable = startNode
+
+  override def rightNode: LogicalVariable = endNode
+
+  override def directed: Boolean = true
+
+  override val distinctness: Distinctness = DistinctColumns(idName)
+
+  override def addArgumentIds(argsToAdd: Set[LogicalVariable]): LogicalLeafPlan =
+    copy(argumentIds = argumentIds ++ argsToAdd)(SameId(this.id))
+}
+
 /**
  * For each relationship element id in 'relIds', fetch the corresponding relationship. For each relationship,
  * produce one row containing:
@@ -3955,6 +3982,27 @@ case class UndirectedAllRelationshipsScan(
   override def usedVariables: Set[LogicalVariable] = Set.empty
 
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): UndirectedAllRelationshipsScan =
+    copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def directed: Boolean = false
+
+  override def addArgumentIds(argsToAdd: Set[LogicalVariable]): LogicalLeafPlan =
+    copy(argumentIds = argumentIds ++ argsToAdd)(SameId(this.id))
+}
+
+case class PartitionedUndirectedAllRelationshipsScan(
+  idName: LogicalVariable,
+  leftNode: LogicalVariable,
+  rightNode: LogicalVariable,
+  argumentIds: Set[LogicalVariable]
+)(implicit idGen: IdGen)
+    extends RelationshipLogicalLeafPlan(idGen) with StableLeafPlan with PhysicalPlanningPlan {
+
+  override val availableSymbols: Set[LogicalVariable] = argumentIds ++ Set(idName, leftNode, rightNode)
+
+  override def usedVariables: Set[LogicalVariable] = Set.empty
+
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): PartitionedUndirectedAllRelationshipsScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
   override def directed: Boolean = false

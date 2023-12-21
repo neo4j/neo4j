@@ -219,20 +219,22 @@ object LogicalPlanToPlanBuilderString {
           _
         ) =>
         "pointBoundingBoxRelationshipIndexSeek"
-      case _: UndirectedRelationshipIndexSeek         => "relationshipIndexOperator"
-      case _: DirectedRelationshipIndexContainsScan   => "relationshipIndexOperator"
-      case _: UndirectedRelationshipIndexContainsScan => "relationshipIndexOperator"
-      case _: DirectedRelationshipIndexEndsWithScan   => "relationshipIndexOperator"
-      case _: UndirectedRelationshipIndexEndsWithScan => "relationshipIndexOperator"
-      case _: UndirectedRelationshipIndexScan         => "relationshipIndexOperator"
-      case _: UndirectedRelationshipUniqueIndexSeek   => "relationshipIndexOperator"
-      case _: DirectedRelationshipUniqueIndexSeek     => "relationshipIndexOperator"
-      case _: DirectedRelationshipTypeScan            => "relationshipTypeScan"
-      case _: UndirectedRelationshipTypeScan          => "relationshipTypeScan"
-      case _: DirectedAllRelationshipsScan            => "allRelationshipsScan"
-      case _: UndirectedAllRelationshipsScan          => "allRelationshipsScan"
-      case _: DirectedUnionRelationshipTypesScan      => "unionRelationshipTypesScan"
-      case _: UndirectedUnionRelationshipTypesScan    => "unionRelationshipTypesScan"
+      case _: UndirectedRelationshipIndexSeek           => "relationshipIndexOperator"
+      case _: DirectedRelationshipIndexContainsScan     => "relationshipIndexOperator"
+      case _: UndirectedRelationshipIndexContainsScan   => "relationshipIndexOperator"
+      case _: DirectedRelationshipIndexEndsWithScan     => "relationshipIndexOperator"
+      case _: UndirectedRelationshipIndexEndsWithScan   => "relationshipIndexOperator"
+      case _: UndirectedRelationshipIndexScan           => "relationshipIndexOperator"
+      case _: UndirectedRelationshipUniqueIndexSeek     => "relationshipIndexOperator"
+      case _: DirectedRelationshipUniqueIndexSeek       => "relationshipIndexOperator"
+      case _: DirectedRelationshipTypeScan              => "relationshipTypeScan"
+      case _: UndirectedRelationshipTypeScan            => "relationshipTypeScan"
+      case _: DirectedAllRelationshipsScan              => "allRelationshipsScan"
+      case _: UndirectedAllRelationshipsScan            => "allRelationshipsScan"
+      case _: PartitionedDirectedAllRelationshipsScan   => "partitionedAllRelationshipsScan"
+      case _: PartitionedUndirectedAllRelationshipsScan => "partitionedAllRelationshipsScan"
+      case _: DirectedUnionRelationshipTypesScan        => "unionRelationshipTypesScan"
+      case _: UndirectedUnionRelationshipTypesScan      => "unionRelationshipTypesScan"
     }
     specialCases.applyOrElse(logicalPlan, classNameFormat)
   }
@@ -683,6 +685,14 @@ object LogicalPlanToPlanBuilderString {
         val argString = if (args.isEmpty) "" else args.mkString(", ", ", ", "")
         s""" "(${start.name})-[${idName.name}]->(${end.name})"$argString """.trim
       case UndirectedAllRelationshipsScan(idName, start, end, argumentIds) =>
+        val args = argumentIds.map(wrapInQuotations)
+        val argString = if (args.isEmpty) "" else args.mkString(", ", ", ", "")
+        s""" "(${start.name})-[${idName.name}]-(${end.name})"$argString """.trim
+      case PartitionedDirectedAllRelationshipsScan(idName, start, end, argumentIds) =>
+        val args = argumentIds.map(wrapInQuotations)
+        val argString = if (args.isEmpty) "" else args.mkString(", ", ", ", "")
+        s""" "(${start.name})-[${idName.name}]->(${end.name})"$argString """.trim
+      case PartitionedUndirectedAllRelationshipsScan(idName, start, end, argumentIds) =>
         val args = argumentIds.map(wrapInQuotations)
         val argString = if (args.isEmpty) "" else args.mkString(", ", ", ", "")
         s""" "(${start.name})-[${idName.name}]-(${end.name})"$argString """.trim
