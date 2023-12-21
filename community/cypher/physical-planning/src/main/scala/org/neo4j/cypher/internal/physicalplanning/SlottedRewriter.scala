@@ -56,6 +56,7 @@ import org.neo4j.cypher.internal.logical.plans.AbstractVarExpand
 import org.neo4j.cypher.internal.logical.plans.AggregatingPlan
 import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.NFA
 import org.neo4j.cypher.internal.logical.plans.NestedPlanCollectExpression
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
@@ -101,6 +102,7 @@ import org.neo4j.cypher.internal.physicalplanning.ast.RelationshipTypeFromSlot
 import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.runtime.ast.RuntimeProperty
 import org.neo4j.cypher.internal.runtime.ast.RuntimeVariable
+import org.neo4j.cypher.internal.runtime.ast.VariableRef
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.RewriterStopper
 import org.neo4j.cypher.internal.util.attribution.Id
@@ -517,6 +519,13 @@ class SlottedRewriter(tokenContext: ReadTokenContext) {
           throw new InternalException("Expected IsRepeatTrailUnique to be under Trail")
         )
         ast.TrailRelationshipUniqueness(SlotAllocation.TRAIL_STATE_METADATA_KEY, trailId.x, innerRel)
+
+      // Inside an NFA there are cases where we need to use a VariableRef
+      case state @ NFA.State(_, Variable(name)) =>
+        state.copy(variable = VariableRef(name))
+
+      case re: NFA.RelationshipExpansionPredicate =>
+        re.copy(relationshipVariable = VariableRef(re.relationshipVariable))
     }
     topDown(rewriter = innerRewriter, stopper = stopAtOtherLogicalPlans(thisPlan))
   }

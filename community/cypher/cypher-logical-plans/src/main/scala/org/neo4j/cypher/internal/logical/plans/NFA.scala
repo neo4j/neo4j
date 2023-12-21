@@ -92,7 +92,7 @@ object NFA {
   ) extends Predicate {
 
     override def variables: Seq[LogicalVariable] =
-      relationshipVariable +: Seq(relPred, nodePred).flatten.map(_.variable)
+      Seq(relPred, nodePred).flatten.map(_.variable)
 
     override def toDotString: String = {
       val (dirStrA, dirStrB) = LogicalPlanToPlanBuilderString.arrows(dir)
