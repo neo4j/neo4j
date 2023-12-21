@@ -156,7 +156,7 @@ public class SimpleMetaDataProvider implements MetadataProvider {
             long commitTimestamp,
             long consensusIndex) {
         transactionIdStore.resetLastClosedTransaction(
-                transactionId, logVersion, byteOffset, checksum, commitTimestamp, consensusIndex);
+                transactionId, byteOffset, logVersion, checksum, commitTimestamp, consensusIndex);
     }
 
     @Override

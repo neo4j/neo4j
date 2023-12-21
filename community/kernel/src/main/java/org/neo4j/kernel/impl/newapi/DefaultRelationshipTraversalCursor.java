@@ -224,6 +224,7 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Defau
         return read == null;
     }
 
+    @Override
     public void release() {
         if (storeCursor != null) {
             storeCursor.close();

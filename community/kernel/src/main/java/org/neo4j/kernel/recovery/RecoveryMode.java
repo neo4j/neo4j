@@ -19,11 +19,13 @@
  */
 package org.neo4j.kernel.recovery;
 
+import java.util.Locale;
+
 public enum RecoveryMode {
     FORWARD,
     FULL;
 
     public String description() {
-        return this.name().toLowerCase();
+        return this.name().toLowerCase(Locale.ROOT);
     }
 }

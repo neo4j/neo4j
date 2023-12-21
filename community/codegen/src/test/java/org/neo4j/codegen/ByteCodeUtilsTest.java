@@ -36,6 +36,7 @@ import static org.neo4j.codegen.TypeReference.typeReference;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import org.junit.jupiter.api.Test;
 import org.neo4j.values.storable.Values;
 
@@ -246,7 +247,10 @@ class ByteCodeUtilsTest {
         TypeReference owner = typeReference(Tester.class);
         for (Class<?> type : types) {
             assertMethodExists(methodReference(
-                    owner, typeReference(type), type.getSimpleName().toLowerCase() + "Method", typeReference(type)));
+                    owner,
+                    typeReference(type),
+                    type.getSimpleName().toLowerCase(Locale.ROOT) + "Method",
+                    typeReference(type)));
         }
     }
 

@@ -54,6 +54,7 @@ abstract class DefaultEntityTokenIndexCursor<SELF extends DefaultEntityTokenInde
         this.entity = NO_ID;
     }
 
+    @Override
     public abstract void release();
 
     protected abstract boolean innerNext();

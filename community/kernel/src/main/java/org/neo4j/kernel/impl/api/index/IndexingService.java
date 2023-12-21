@@ -767,6 +767,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
                 tag, descriptor.getId(), descriptor.schema().userDescription(tokenNameLookup), state.name());
     }
 
+    @SuppressWarnings("DurationToLongTimeUnit")
     private void logIndexStateSummary(
             String method,
             Map<InternalIndexState, List<IndexLogRecord>> indexStates,

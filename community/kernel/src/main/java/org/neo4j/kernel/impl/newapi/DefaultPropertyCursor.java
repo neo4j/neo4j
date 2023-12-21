@@ -353,6 +353,7 @@ public class DefaultPropertyCursor extends TraceableCursorImpl<DefaultPropertyCu
         return type;
     }
 
+    @Override
     public void release() {
         if (storeCursor != null) {
             storeCursor.close();

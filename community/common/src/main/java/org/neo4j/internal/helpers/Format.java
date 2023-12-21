@@ -139,7 +139,7 @@ public final class Format {
             }
         }
 
-        if (builder.length() == 0) {
+        if (builder.isEmpty()) {
             // The value is too low to extract any meaningful numbers with the given unit brackets.
             // So we append a zero of the lowest unit.
             builder.append('0').append(unitFormat.apply(lowestGranularity));
@@ -153,7 +153,7 @@ public final class Format {
             case NANOSECONDS -> "ns";
             case MICROSECONDS -> "μs";
             case MILLISECONDS -> "ms";
-            default -> unit.name().substring(0, 1).toLowerCase();
+            default -> unit.name().substring(0, 1).toLowerCase(Locale.ROOT);
         };
     }
 
@@ -166,7 +166,7 @@ public final class Format {
             durationMillis -= millisPerUnit;
         }
         if (count > 0) {
-            target.append(target.length() > 0 ? " " : "").append(count).append(unitFormat.apply(unit));
+            target.append(!target.isEmpty() ? " " : "").append(count).append(unitFormat.apply(unit));
         }
         return durationMillis;
     }

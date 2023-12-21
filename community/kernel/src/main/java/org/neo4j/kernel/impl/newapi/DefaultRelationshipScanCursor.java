@@ -169,6 +169,7 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor implements
         }
     }
 
+    @Override
     public void release() {
         if (storeCursor != null) {
             storeCursor.close();

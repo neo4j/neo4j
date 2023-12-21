@@ -453,6 +453,7 @@ public class RouterTransactionImpl implements CompoundTransaction<DatabaseTransa
         throwIfTerminatedOrClosed(() -> "Trying to execute query in a closed transaction");
     }
 
+    @Override
     public void throwIfTerminatedOrClosed(Supplier<String> closedExceptionMessage) {
         if (terminationMark != null) {
             throw new TransactionTerminatedException(terminationMark.getReason());

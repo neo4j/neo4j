@@ -62,6 +62,7 @@ public interface ConnectionHandle extends Connection {
      *
      * @return a login context or null if no authentication has been performed on this connection.
      */
+    @Override
     LoginContext loginContext();
 
     /**
@@ -69,6 +70,7 @@ public interface ConnectionHandle extends Connection {
      *
      * @return a routing context.
      */
+    @Override
     RoutingContext routingContext();
 
     /**
@@ -80,13 +82,16 @@ public interface ConnectionHandle extends Connection {
      * @throws AuthenticationException when the given token is invalid or authentication fails.
      * @see AuthenticationFlag for detailed information on the available authentication flags.
      */
+    @Override
     AuthenticationFlag logon(Map<String, Object> token) throws AuthenticationException;
 
+    @Override
     void impersonate(String userToImpersonate) throws AuthenticationException;
 
     /**
      * Logs off this connection, so it is ready to accept new authentication.
      */
+    @Override
     void logoff();
 
     Transaction beginTransaction(

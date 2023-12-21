@@ -112,7 +112,7 @@ public class LocalDatabaseTransactionFactory implements DatabaseTransactionFacto
                 transactionInfo.clientInfo(),
                 transactionInfo.txTimeout().toMillis(),
                 TimeUnit.MILLISECONDS,
-                terminationCallback::accept,
+                terminationCallback,
                 this::transformTerminalOperationError);
 
         internalTransaction.setMetaData(transactionInfo.txMetadata());

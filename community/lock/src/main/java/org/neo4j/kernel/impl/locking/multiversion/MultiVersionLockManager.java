@@ -38,14 +38,17 @@ public class MultiVersionLockManager implements LockManager {
         this.storageLockManager = storageLockManager;
     }
 
+    @Override
     public Client newClient() {
         return new MultiversionLockClient(storageLockManager.newClient());
     }
 
+    @Override
     public void accept(Visitor visitor) {
         storageLockManager.accept(visitor);
     }
 
+    @Override
     public void close() {
         storageLockManager.close();
     }
