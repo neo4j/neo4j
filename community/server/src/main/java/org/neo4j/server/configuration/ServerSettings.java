@@ -37,7 +37,6 @@ import java.util.List;
 import java.util.Set;
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Description;
-import org.neo4j.configuration.DocumentedDefaultValue;
 import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.SettingValueParser;
 import org.neo4j.configuration.SettingValueParsers;
@@ -65,8 +64,9 @@ public class ServerSettings implements SettingsDeclaration {
                     + "It sets the amount of worker threads for the Jetty server used by neo4j-server. "
                     + "This option can be tuned when you plan to execute multiple, concurrent REST requests, "
                     + "with the aim of getting more throughput from the database. "
+                    + "By default, it is set to the number of available processors, or to 500 for machines "
+                    + "with more than 500 processors. "
                     + "Your OS might enforce a lower limit than the maximum value specified here.")
-    @DocumentedDefaultValue("Number of available processors, or 500 for machines which have more than 500 processors.")
     public static final Setting<Integer> webserver_max_threads = newBuilder(
                     "server.threads.worker_count",
                     INT,
@@ -153,9 +153,8 @@ public class ServerSettings implements SettingsDeclaration {
     @Internal
     @Description("Publicly discoverable bolt:// URI to use for Neo4j Drivers wanting to access the data in this "
             + "particular database instance. Normally this is the same as the advertised address configured for the "
-            + "connector, but this allows manually overriding that default.")
-    @DocumentedDefaultValue(
-            "Defaults to a bolt://-schemed version of the advertised address of the first found bolt connector.")
+            + "connector, but this allows manually overriding that default. "
+            + "Defaults to a bolt://-schemed version of the advertised address of the first found bolt connector.")
     public static final Setting<URI> bolt_discoverable_address = newBuilder(
                     "internal.dbms.discoverable_bolt_address",
                     SettingValueParsers.URI,
@@ -164,9 +163,9 @@ public class ServerSettings implements SettingsDeclaration {
 
     @Internal
     @Description(
-            "Publicly discoverable neo4j:// URI to use for Neo4j Drivers wanting to access a cluster or a single instance.")
-    @DocumentedDefaultValue("Defaults to empty on any deployment that is not a causal cluster core, and a "
-            + "neo4j://-schemed URI of the advertised address of the bolt connector.")
+            "Publicly discoverable neo4j:// URI to use for Neo4j Drivers wanting to access a cluster or a single instance. "
+                    + "Defaults to empty on any deployment that is not a cluster core, and a "
+                    + "neo4j://-schemed URI of the advertised address of the bolt connector.")
     public static final Setting<URI> bolt_routing_discoverable_address = newBuilder(
                     "internal.dbms.discoverable_bolt_routing_address",
                     SettingValueParsers.URI,

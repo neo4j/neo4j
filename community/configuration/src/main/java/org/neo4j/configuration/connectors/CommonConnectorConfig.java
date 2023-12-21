@@ -25,7 +25,6 @@ import static org.neo4j.configuration.SettingValueParsers.BOOL;
 import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Description;
-import org.neo4j.configuration.DocumentedDefaultValue;
 import org.neo4j.configuration.SettingsDeclaration;
 import org.neo4j.graphdb.config.Setting;
 
@@ -36,7 +35,6 @@ import org.neo4j.graphdb.config.Setting;
 @PublicApi
 public class CommonConnectorConfig implements SettingsDeclaration {
     @Description("Enable server OCSP stapling for bolt and http connectors.")
-    @DocumentedDefaultValue("false")
     public static final Setting<Boolean> ocsp_stapling_enabled =
             newBuilder("server.bolt.ocsp_stapling_enabled", BOOL, false).build();
 }

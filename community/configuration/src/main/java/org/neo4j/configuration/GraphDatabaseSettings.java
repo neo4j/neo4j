@@ -98,8 +98,9 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
 
     public static final int DEFAULT_ROUTING_CONNECTOR_PORT = 7688;
 
-    @Description("Root relative to which directory settings are resolved. Calculated and set by the server on startup.")
-    @DocumentedDefaultValue("Defaults to current working directory")
+    @Description(
+            "Root relative to which directory settings are resolved. Calculated and set by the server on startup.\n"
+                    + "Defaults to the current working directory.")
     public static final Setting<Path> neo4j_home = newBuilder(
                     "server.directories.neo4j_home", PATH, Path.of("").toAbsolutePath())
             .addConstraint(ABSOLUTE_PATH)
@@ -268,7 +269,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             .build();
 
     @Description(
-            "Set this to change the behavior for Cypher create relationship when the start or end node is missing. "
+            "Set this to change the behavior for Cypher create relationship when the start or end node is missing.\n"
                     + "By default this fails the query and stops execution, but by setting this flag the create operation is "
                     + "simply not performed and execution continues.")
     public static final Setting<Boolean> cypher_lenient_create_relationship =
@@ -542,14 +543,14 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
 
     @Description(
             "On serialization of transaction logs, they will be temporary stored in the byte buffer that will be flushed at the end of the transaction "
-                    + "or at any moment when buffer will be full.")
-    @DocumentedDefaultValue("By default the size of byte buffer is based on number of available cpu's with "
-            + "minimal buffer size of 512KB. Every another 4 cpu's will add another 512KB into the buffer size. "
-            + "Maximal buffer size in this default scheme is 4MB taking into account "
-            + "that we can have one transaction log writer per database in multi-database env."
-            + "For example, runtime with 4 cpus will have buffer size of 1MB; "
-            + "runtime with 8 cpus will have buffer size of 1MB 512KB; "
-            + "runtime with 12 cpus will have buffer size of 2MB.")
+                    + "or at any moment when buffer will be full.\n"
+                    + "By default, the size of byte buffer is based on the number of available CPUs, with "
+                    + "a minimum of 512KB. Every additional 4 CPUs add another 512KB into the buffer size. "
+                    + "The maximal buffer size in this default scheme is 4MB taking into account "
+                    + "that there can be one transaction log writer per database in a multi-database env."
+                    + "For example, runtimes with 4 CPUs will have a buffer size of 1MB; "
+                    + "runtimes with 8 CPUs will have buffer size of 1.5MB; "
+                    + "runtimes with 12 CPUs will have buffer size of 2MB.")
     public static final Setting<Long> transaction_log_buffer_size = newBuilder(
                     "db.tx_log.buffer.size",
                     LONG,
@@ -575,10 +576,9 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             + "then it is generally recommended to leave about 2-4 gigabytes for the operating system, give the "
             + "JVM enough heap to hold all your transaction state and query context, and then leave the rest for "
             + "the page cache. If no page cache memory is configured, then a heuristic setting is computed based "
-            + "on available system resources.")
-    @DocumentedDefaultValue(
-            "By default the size of page cache will be 50% of available RAM minus the max heap size."
-                    + "The size of the page cache will also not be larger than 70x the max heap size (due to some overhead of the page cache in the heap.")
+            + "on available system resources.\n"
+            + "By default, the size of page cache is 50% of available RAM minus the max heap size "
+            + "(but not larger than 70x the max heap size, due to some overhead of the page cache in the heap).")
     public static final Setting<Long> pagecache_memory =
             newBuilder("server.memory.pagecache.size", BYTES, null).build();
 
@@ -800,7 +800,6 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             .build();
 
     @Description("Log query plan description table, useful for debugging purposes.")
-    @DocumentedDefaultValue("false")
     public static final Setting<Boolean> log_queries_query_plan = newBuilder(
                     "db.logs.query.plan_description_enabled", BOOL, false)
             .dynamic()
@@ -808,13 +807,11 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
 
     // Security settings
 
-    @Description("Enable auth requirement to access Neo4j.")
-    @DocumentedDefaultValue("true") // Should document server defaults.
+    @Description("Enable auth requirement to access Neo4j.\n" + "Defaults to `true`.")
     public static final Setting<Boolean> auth_enabled =
             newBuilder("dbms.security.auth_enabled", BOOL, false).build();
 
     @Description("The minimum number of characters required in a password.")
-    @DocumentedDefaultValue("8")
     public static final Setting<Integer> auth_minimum_password_length = newBuilder(
                     "dbms.security.auth_minimum_password_length", INT, 8)
             .addConstraint(min(1))
@@ -889,8 +886,8 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
 
     @Description(
             "Limit the amount of memory that all of the running transactions can consume, in bytes (or kibibytes with the 'k' "
-                    + "suffix, mebibytes with 'm' and gibibytes with 'g'). Zero means 'unlimited'.")
-    @DocumentedDefaultValue("The default value is 70% of the heap size limit.")
+                    + "suffix, mebibytes with 'm' and gibibytes with 'g'). Zero means 'unlimited'.\n"
+                    + "Defaults to 70% of the heap size limit.")
     public static final Setting<Long> memory_transaction_global_max_size = newBuilder(
                     "dbms.memory.transaction.total.max", BYTES, calculateDefaultMaxGlobalTransactionMemorySize())
             .addConstraint(any(min(mebiBytes(10)), is(0L)))
@@ -983,9 +980,9 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             .build();
 
     @Description("Maximum total number of connections to be managed by a connection pool.\n"
-            + "The limit is enforced for a combination of a host and user. Negative values are allowed and result in unlimited pool. Value of 0"
-            + "is not allowed.")
-    @DocumentedDefaultValue("Unlimited")
+            + "The limit is enforced for a combination of a host and user. Negative values are allowed and result in unlimited pool. Value of `0`"
+            + "is not allowed.\n"
+            + "Defaults to `-1` (unlimited).")
     public static final Setting<Integer> routing_driver_max_connection_pool_size =
             newBuilder("dbms.routing.driver.connection.pool.max_size", INT, -1).build();
 
@@ -993,10 +990,10 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             + "will be tested before they are used again, to ensure they are still alive.\n"
             + "If this option is set too low, an additional network call will be incurred when acquiring a connection, which causes a performance hit.\n"
             + "If this is set high, no longer live connections might be used which might lead to errors.\n"
-            + "Hence, this parameter tunes a balance between the likelihood of experiencing connection problems and performance\n"
+            + "Hence, this parameter tunes a balance between the likelihood of experiencing connection problems and performance.\n"
             + "Normally, this parameter should not need tuning.\n"
-            + "Value 0 means connections will always be tested for validity")
-    @DocumentedDefaultValue("No connection liveliness check is done by default.")
+            + "Value 0 means connections will always be tested for validity.\n"
+            + "No connection liveliness check is done by default.")
     public static final Setting<Duration> routing_driver_idle_time_before_connection_test = newBuilder(
                     "dbms.routing.driver.connection.pool.idle_test", DURATION, null)
             .build();

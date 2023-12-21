@@ -41,7 +41,6 @@ public final class SettingImpl<T> implements Setting<T> {
     private boolean internal;
     private String description;
     private boolean deprecated;
-    private String documentedDefaultValue;
     private String sourceLocation;
 
     private SettingImpl(
@@ -201,10 +200,6 @@ public final class SettingImpl<T> implements Setting<T> {
         return deprecated;
     }
 
-    public String documentedDefaultValue() {
-        return documentedDefaultValue;
-    }
-
     public String sourceLocation() {
         return sourceLocation;
     }
@@ -219,10 +214,6 @@ public final class SettingImpl<T> implements Setting<T> {
 
     void setDeprecated() {
         deprecated = true;
-    }
-
-    void setDocumentedDefaultValue(String documentedDefaultValue) {
-        this.documentedDefaultValue = documentedDefaultValue;
     }
 
     void setSourceLocation(String sourceLocation) {

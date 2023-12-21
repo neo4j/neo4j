@@ -744,8 +744,8 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
 
     @Internal
     @Description(
-            "Number of event loops used by drivers. Event loops are shared between drivers, so this is the total number of event loops created.")
-    @DocumentedDefaultValue("Number of available processors")
+            "Number of event loops used by drivers. Event loops are shared between drivers, so this is the total number of event loops created.\n"
+                    + " Defaults to the number of available processors.")
     public static final Setting<Integer> routing_driver_event_loop_count = newBuilder(
                     "internal.dbms.routing.driver.event_loop_count",
                     INT,

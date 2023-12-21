@@ -38,7 +38,6 @@ import java.time.Duration;
 import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Description;
-import org.neo4j.configuration.DocumentedDefaultValue;
 import org.neo4j.configuration.SettingsDeclaration;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.graphdb.config.Setting;
@@ -52,11 +51,9 @@ public final class BoltConnector implements SettingsDeclaration {
     public static final String INTERNAL_NAME = "bolt-internal";
 
     @Description("Enable the bolt connector")
-    @DocumentedDefaultValue("true") // Should document server defaults.
     public static final Setting<Boolean> enabled = ConnectorDefaults.bolt_enabled;
 
     @Description("Enable the collection of driver telemetry.")
-    @DocumentedDefaultValue("false")
     public static final Setting<Boolean> server_bolt_telemetry_enabled =
             newBuilder("server.bolt.telemetry.enabled", BOOL, false).build();
 
@@ -78,7 +75,6 @@ public final class BoltConnector implements SettingsDeclaration {
             .setDependency(default_advertised_address)
             .build();
 
-    @DocumentedDefaultValue("STREAMING")
     @Description("The type of messages to enable keep-alive messages for (ALL, STREAMING or OFF)")
     public static final Setting<KeepAliveRequestType> connection_keep_alive_type = newBuilder(
                     "server.bolt.connection_keep_alive_for_requests",
@@ -86,7 +82,6 @@ public final class BoltConnector implements SettingsDeclaration {
                     KeepAliveRequestType.ALL)
             .build();
 
-    @DocumentedDefaultValue("1m")
     @Description(
             "The maximum time to wait before sending a NOOP on connections waiting for responses from active ongoing queries. "
                     + "The minimum value is 1 millisecond.")
@@ -95,7 +90,6 @@ public final class BoltConnector implements SettingsDeclaration {
             .addConstraint(min(ofMillis(1)))
             .build();
 
-    @DocumentedDefaultValue("1m")
     @Description("The interval between every scheduled keep-alive check on all connections with active queries. "
             + "Zero duration turns off keep-alive service.")
     public static final Setting<Duration> connection_keep_alive_streaming_scheduling_interval = newBuilder(
@@ -103,7 +97,6 @@ public final class BoltConnector implements SettingsDeclaration {
             .addConstraint(min(ofSeconds(0)))
             .build();
 
-    @DocumentedDefaultValue("2")
     @Description("The total amount of probes to be missed before a connection is considered stale."
             + "The minimum for this value is 1.")
     public static final Setting<Integer> connection_keep_alive_probes = newBuilder(
