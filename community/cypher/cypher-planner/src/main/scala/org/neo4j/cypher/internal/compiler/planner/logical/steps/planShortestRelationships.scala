@@ -139,7 +139,9 @@ case object planShortestRelationships {
 
     val argumentNodes = shortestRelationship.rel.boundaryNodesSet
     val otherDependencies =
-      pathPredicates.flatMap(_.dependencies) -- shortestRelationship.maybePathVar ++
+      pathPredicates.flatMap(_.dependencies) -- shortestRelationship.maybePathVar -- Set(
+        shortestRelationship.rel.variable
+      ) ++
         Set(nodePredicates, relPredicates).flatMap(_.flatMap { varPred =>
           varPred.predicate.dependencies - varPred.variable
         })
