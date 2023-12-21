@@ -162,7 +162,11 @@ class IndexPlanningIntegrationTest
 
           plan shouldEqual cfg.planBuilder()
             .produceResults("a")
-            .nodeIndexOperator(s"a:Label(prop1 $op1 1, prop2 $op2 2)", indexType = IndexType.RANGE)
+            .nodeIndexOperator(
+              s"a:Label(prop1 $op1 1, prop2 $op2 2)",
+              indexType = IndexType.RANGE,
+              supportPartitionedScan = false
+            )
             .build()
         }
       }
@@ -179,7 +183,11 @@ class IndexPlanningIntegrationTest
           plan shouldEqual cfg.planBuilder()
             .produceResults("a")
             .filter(s"a.prop2 $op2 2")
-            .nodeIndexOperator(s"a:Label(prop1 $op1 1, prop2)", indexType = IndexType.RANGE)
+            .nodeIndexOperator(
+              s"a:Label(prop1 $op1 1, prop2)",
+              indexType = IndexType.RANGE,
+              supportPartitionedScan = false
+            )
             .build()
         }
       }
@@ -358,7 +366,7 @@ class IndexPlanningIntegrationTest
         "x:Preference"
       )
       .expandAll("(p)-[r]->(x)")
-      .nodeIndexOperator("p:Place(location)", indexType = IndexType.POINT)
+      .nodeIndexOperator("p:Place(location)", indexType = IndexType.POINT, supportPartitionedScan = false)
       .build()
   }
 
@@ -1184,7 +1192,7 @@ class IndexPlanningIntegrationTest
     val plan = planner.plan("MATCH (a:A) WHERE a.prop IS :: STRING NOT NULL RETURN a, a.prop").stripProduceResults
     plan shouldEqual planner.subPlanBuilder()
       .projection("a.prop AS `a.prop`")
-      .nodeIndexOperator("a:A(prop)", indexType = IndexType.TEXT)
+      .nodeIndexOperator("a:A(prop)", indexType = IndexType.TEXT, supportPartitionedScan = false)
       .build()
   }
 
@@ -1227,7 +1235,7 @@ class IndexPlanningIntegrationTest
       val plan = cfg.plan(s"MATCH (a:A) WHERE a.prop $op 'hello' RETURN a, a.prop").stripProduceResults
       plan shouldEqual cfg.subPlanBuilder()
         .projection("a.prop AS `a.prop`")
-        .nodeIndexOperator(s"a:A(prop $op 'hello')", indexType = IndexType.TEXT)
+        .nodeIndexOperator(s"a:A(prop $op 'hello')", indexType = IndexType.TEXT, supportPartitionedScan = false)
         .build()
     }
 
@@ -1235,7 +1243,12 @@ class IndexPlanningIntegrationTest
       val plan = cfg.plan(s"MATCH (a:A) WHERE a.prop $op 'hello' RETURN a, a.prop").stripProduceResults
       plan shouldEqual cfg.subPlanBuilder()
         .projection("cacheN[a.prop] AS `a.prop`")
-        .nodeIndexOperator(s"a:A(prop $op 'hello')", getValue = Map("prop" -> GetValue), indexType = IndexType.TEXT)
+        .nodeIndexOperator(
+          s"a:A(prop $op 'hello')",
+          getValue = Map("prop" -> GetValue),
+          indexType = IndexType.TEXT,
+          supportPartitionedScan = false
+        )
         .build()
     }
     for (op <- List("<", "<=", ">", ">=")) {
@@ -1243,7 +1256,7 @@ class IndexPlanningIntegrationTest
       plan shouldEqual cfg.subPlanBuilder()
         .projection("cacheN[a.prop] AS `a.prop`")
         .filter(s"cacheNFromStore[a.prop] $op 'hello'")
-        .nodeIndexOperator("a:A(prop)", indexType = IndexType.TEXT)
+        .nodeIndexOperator("a:A(prop)", indexType = IndexType.TEXT, supportPartitionedScan = false)
         .build()
     }
   }
@@ -1286,7 +1299,12 @@ class IndexPlanningIntegrationTest
 
     val plan = cfg.plan("MATCH (a:A) WHERE a.prop = $param RETURN *").stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
-      .nodeIndexOperator("a:A(prop = ???)", paramExpr = List(parameter("param", CTAny)), indexType = IndexType.TEXT)
+      .nodeIndexOperator(
+        "a:A(prop = ???)",
+        paramExpr = List(parameter("param", CTAny)),
+        indexType = IndexType.TEXT,
+        supportPartitionedScan = false
+      )
       .build()
   }
 
@@ -1431,7 +1449,7 @@ class IndexPlanningIntegrationTest
       val plan = cfg.plan(s"MATCH (a:A) WHERE a.prop $op 'hello' RETURN a, a.prop").stripProduceResults
       plan shouldEqual cfg.subPlanBuilder()
         .projection("a.prop AS `a.prop`")
-        .nodeIndexOperator(s"a:A(prop $op 'hello')", indexType = IndexType.TEXT)
+        .nodeIndexOperator(s"a:A(prop $op 'hello')", indexType = IndexType.TEXT, supportPartitionedScan = false)
         .build()
     }
 
@@ -1440,7 +1458,7 @@ class IndexPlanningIntegrationTest
       plan shouldEqual cfg.subPlanBuilder()
         .projection("cacheN[a.prop] AS `a.prop`")
         .filter(s"cacheNFromStore[a.prop] $op 'hello'")
-        .nodeIndexOperator("a:A(prop)", indexType = IndexType.TEXT)
+        .nodeIndexOperator("a:A(prop)", indexType = IndexType.TEXT, supportPartitionedScan = false)
         .build()
     }
 
@@ -1448,7 +1466,12 @@ class IndexPlanningIntegrationTest
       val plan = cfg.plan(s"MATCH (a:A) WHERE a.prop $op 'hello' RETURN a, a.prop").stripProduceResults
       plan shouldEqual cfg.subPlanBuilder()
         .projection("cacheN[a.prop] AS `a.prop`")
-        .nodeIndexOperator(s"a:A(prop $op 'hello')", getValue = Map("prop" -> GetValue), indexType = IndexType.TEXT)
+        .nodeIndexOperator(
+          s"a:A(prop $op 'hello')",
+          getValue = Map("prop" -> GetValue),
+          indexType = IndexType.TEXT,
+          supportPartitionedScan = false
+        )
         .build()
     }
   }
@@ -1495,7 +1518,12 @@ class IndexPlanningIntegrationTest
     val indexPlan = cfg.plan(queryStr("=", "'string'")).stripProduceResults
     indexPlan shouldEqual cfg.subPlanBuilder()
       .projection("cacheN[a.prop] AS `a.prop`")
-      .nodeIndexOperator("a:A(prop = 'string')", getValue = Map("prop" -> GetValue), indexType = IndexType.TEXT)
+      .nodeIndexOperator(
+        "a:A(prop = 'string')",
+        getValue = Map("prop" -> GetValue),
+        indexType = IndexType.TEXT,
+        supportPartitionedScan = false
+      )
       .build()
 
     for (arg <- List("3", "a.prop2", "[\"a\", \"b\", \"c\"]", "$param")) {
@@ -1768,7 +1796,8 @@ class IndexPlanningIntegrationTest
         s"a:A(prop = ???)",
         paramExpr = Some(point(1.0, 2.0)),
         getValue = Map("prop" -> GetValue),
-        indexType = IndexType.POINT
+        indexType = IndexType.POINT,
+        supportPartitionedScan = false
       )
       .build()
   }
@@ -1803,7 +1832,7 @@ class IndexPlanningIntegrationTest
       plan shouldEqual cfg.subPlanBuilder()
         .projection("cacheN[a.prop] AS `a.prop`")
         .filter(s"cacheNFromStore[a.prop] $op point({x:1, y:2})")
-        .nodeIndexOperator("a:A(prop)", indexType = IndexType.POINT)
+        .nodeIndexOperator("a:A(prop)", indexType = IndexType.POINT, supportPartitionedScan = false)
         .build()
     }
   }
@@ -2345,7 +2374,7 @@ class IndexPlanningIntegrationTest
         |RETURN a""".stripMargin
     ).asLogicalPlanBuilderString() should equal(
       """.produceResults("a")
-        |.nodeIndexOperator("a:Label(prop > datetime('2021-01-01'))", indexOrder = IndexOrderNone, argumentIds = Set(), getValue = Map("prop" -> DoNotGetValue), unique = false, indexType = IndexType.RANGE)
+        |.nodeIndexOperator("a:Label(prop > datetime('2021-01-01'))", indexOrder = IndexOrderNone, argumentIds = Set(), getValue = Map("prop" -> DoNotGetValue), unique = false, indexType = IndexType.RANGE, supportPartitionedScan = true)
         |.build()""".stripMargin
     )
   }

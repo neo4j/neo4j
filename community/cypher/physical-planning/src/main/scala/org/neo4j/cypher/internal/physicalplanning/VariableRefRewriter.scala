@@ -102,6 +102,7 @@ import org.neo4j.cypher.internal.logical.plans.OrderedDistinct
 import org.neo4j.cypher.internal.logical.plans.PartitionedAllNodesScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
 import org.neo4j.cypher.internal.logical.plans.PathPropagatingBFS
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
@@ -176,7 +177,9 @@ object VariableRefRewriter extends Rewriter {
         case leaf: NodeLogicalLeafPlan => leaf match {
             case plan: NodeIndexLeafPlan => plan match {
                 case plan: NodeIndexSeekLeafPlan => plan match {
-                    case s @ NodeIndexSeek(node, _, _, _, args, _, _) =>
+                    case s @ NodeIndexSeek(node, _, _, _, args, _, _, _) =>
+                      s.copy(idName = varRef(node), argumentIds = args.map(varRef))(SameId(s.id))
+                    case s @ PartitionedNodeIndexSeek(node, _, _, _, args, _) =>
                       s.copy(idName = varRef(node), argumentIds = args.map(varRef))(SameId(s.id))
                     case s @ NodeUniqueIndexSeek(node, _, _, _, args, _, _) =>
                       s.copy(idName = varRef(node), argumentIds = args.map(varRef))(SameId(s.id))

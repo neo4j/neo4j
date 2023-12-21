@@ -185,6 +185,7 @@ import org.neo4j.cypher.internal.logical.plans.PartialTop
 import org.neo4j.cypher.internal.logical.plans.PartitionedAllNodesScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
 import org.neo4j.cypher.internal.logical.plans.PathPropagatingBFS
 import org.neo4j.cypher.internal.logical.plans.PointBoundingBoxRange
@@ -479,7 +480,7 @@ case class LogicalPlan2PlanDescription(
           withDistinctness
         )
 
-      case p @ NodeIndexSeek(idName, label, properties, valueExpr, _, _, indexType) =>
+      case p @ NodeIndexSeek(idName, label, properties, valueExpr, _, _, indexType, _) =>
         val (indexMode, indexDesc) = getNodeIndexDescriptions(
           idName.name,
           label,
@@ -493,6 +494,27 @@ case class LogicalPlan2PlanDescription(
         PlanDescriptionImpl(
           id,
           indexMode,
+          NoChildren,
+          Seq(Details(indexDesc)),
+          variables,
+          withRawCardinalities,
+          withDistinctness
+        )
+
+      case p @ PartitionedNodeIndexSeek(idName, label, properties, valueExpr, _, indexType) =>
+        val (indexMode, indexDesc) = getNodeIndexDescriptions(
+          idName.name,
+          label,
+          properties.map(_.propertyKeyToken),
+          indexType,
+          valueExpr,
+          unique = false,
+          readOnly,
+          p.cachedProperties
+        )
+        PlanDescriptionImpl(
+          id,
+          "Partitioned" + indexMode,
           NoChildren,
           Seq(Details(indexDesc)),
           variables,

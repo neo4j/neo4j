@@ -160,15 +160,16 @@ object LogicalPlanToPlanBuilderString {
       case _: NodeIndexScan                 => "nodeIndexOperator"
       case _: PartitionedNodeIndexScan      => "partitionedNodeIndexOperator"
       case _: DirectedRelationshipIndexScan => "relationshipIndexOperator"
-      case NodeIndexSeek(_, _, _, RangeQueryExpression(PointDistanceSeekRangeWrapper(_)), _, _, _) =>
+      case NodeIndexSeek(_, _, _, RangeQueryExpression(PointDistanceSeekRangeWrapper(_)), _, _, _, _) =>
         "pointDistanceNodeIndexSeek"
-      case NodeIndexSeek(_, _, _, RangeQueryExpression(PointBoundingBoxSeekRangeWrapper(_)), _, _, _) =>
+      case NodeIndexSeek(_, _, _, RangeQueryExpression(PointBoundingBoxSeekRangeWrapper(_)), _, _, _, _) =>
         "pointBoundingBoxNodeIndexSeek"
-      case _: NodeIndexSeek         => "nodeIndexOperator"
-      case _: NodeUniqueIndexSeek   => "nodeIndexOperator"
-      case _: NodeIndexContainsScan => "nodeIndexOperator"
-      case _: NodeIndexEndsWithScan => "nodeIndexOperator"
-      case _: MultiNodeIndexSeek    => "multiNodeIndexSeekOperator"
+      case _: NodeIndexSeek            => "nodeIndexOperator"
+      case _: PartitionedNodeIndexSeek => "partitionedNodeIndexOperator"
+      case _: NodeUniqueIndexSeek      => "nodeIndexOperator"
+      case _: NodeIndexContainsScan    => "nodeIndexOperator"
+      case _: NodeIndexEndsWithScan    => "nodeIndexOperator"
+      case _: MultiNodeIndexSeek       => "multiNodeIndexSeekOperator"
       case DirectedRelationshipIndexSeek(
           _,
           _,
@@ -751,7 +752,8 @@ object LogicalPlanToPlanBuilderString {
           ))),
           argumentIds,
           indexOrder,
-          indexType
+          indexType,
+          _
         ) =>
         pointDistanceNodeIndexSeek(
           idName,
@@ -773,7 +775,8 @@ object LogicalPlanToPlanBuilderString {
           )),
           argumentIds,
           indexOrder,
-          indexType
+          indexType,
+          _
         ) =>
         pointBoundingBoxNodeIndexSeek(
           idName,
@@ -785,10 +788,14 @@ object LogicalPlanToPlanBuilderString {
           indexOrder,
           indexType
         )
-      case NodeIndexSeek(idName, labelToken, properties, valueExpr, argumentIds, indexOrder, indexType) =>
+      case NodeIndexSeek(idName, labelToken, properties, valueExpr, argumentIds, indexOrder, indexType, _) =>
         val propNames = properties.map(_.propertyKeyToken.name)
         val queryStr = queryExpressionStr(valueExpr, propNames)
         nodeIndexOperator(idName, labelToken, properties, argumentIds, indexOrder, unique = false, queryStr, indexType, false)
+      case PartitionedNodeIndexSeek(idName, labelToken, properties, valueExpr, argumentIds, indexType) =>
+        val propNames = properties.map(_.propertyKeyToken.name)
+        val queryStr = queryExpressionStr(valueExpr, propNames)
+        partitionedNodeIndexOperator(idName, labelToken, properties, argumentIds, queryStr, indexType)
       case NodeUniqueIndexSeek(idName, labelToken, properties, valueExpr, argumentIds, indexOrder, indexType) =>
         val propNames = properties.map(_.propertyKeyToken.name)
         val queryStr = queryExpressionStr(valueExpr, propNames)

@@ -33,7 +33,10 @@ import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.QueryExpression
+import org.neo4j.cypher.internal.logical.plans.RangeQueryExpression
+import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
+import org.neo4j.internal.kernel.api.PropertyIndexQuery.allEntries
 
 abstract class AbstractNodeIndexSeekPlanProvider extends NodeIndexPlanProvider {
 
@@ -48,7 +51,8 @@ abstract class AbstractNodeIndexSeekPlanProvider extends NodeIndexPlanProvider {
     providedOrder: ProvidedOrder,
     indexOrder: IndexOrder,
     solvedPredicates: Seq[Expression],
-    indexType: IndexType
+    indexType: IndexType,
+    supportPartitionedScan: Boolean
   )
 
   protected def constructPlan(solution: Solution, context: LogicalPlanningContext): LogicalPlan
@@ -76,6 +80,14 @@ abstract class AbstractNodeIndexSeekPlanProvider extends NodeIndexPlanProvider {
         .fulfilledHints(hints, indexMatch.indexDescriptor.indexType, planIsScan = false)
         .headOption
 
+      val supportsPartitionedScans = queryExpression match {
+        case _: SingleQueryExpression[_] | _: RangeQueryExpression[_] =>
+          // NOTE: we still need to check at runtime if we can use a partitioned scan since it is dependent on
+          // values etc
+          indexMatch.indexDescriptor.maybeKernelIndexCapability.exists(_.supportPartitionedScan(allEntries()))
+        case _ => false
+      }
+
       Some(Solution(
         indexMatch.variable,
         indexMatch.labelToken,
@@ -87,7 +99,8 @@ abstract class AbstractNodeIndexSeekPlanProvider extends NodeIndexPlanProvider {
         indexMatch.providedOrder,
         indexMatch.indexOrder,
         predicateSet.allSolvedPredicates,
-        indexMatch.indexDescriptor.indexType
+        indexMatch.indexDescriptor.indexType,
+        supportsPartitionedScans
       ))
     }
   }

@@ -174,7 +174,8 @@ class NodeIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
           ManyQueryExpression(listOf(lit6, lit42)),
           Set(v"x"),
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = false
         ),
         // nPropInLitFooLitBar
         NodeIndexSeek(
@@ -184,7 +185,8 @@ class NodeIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
           ManyQueryExpression(listOf(litFoo, litBar)),
           Set(v"x"),
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = false
         ),
         NodeIndexSeek(
           v"n",
@@ -193,7 +195,8 @@ class NodeIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
           ManyQueryExpression(listOf(litFoo, litBar)),
           Set(v"x"),
           IndexOrderNone,
-          IndexType.TEXT
+          IndexType.TEXT,
+          supportPartitionedScan = false
         ),
         // nPropLessThanLit6
         NodeIndexSeek(
@@ -203,7 +206,8 @@ class NodeIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
           RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(ExclusiveBound(lit6))))(pos)),
           Set(v"x"),
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = true
         ),
         // nPropLessThanLitFoo
         NodeIndexSeek(
@@ -213,7 +217,8 @@ class NodeIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
           RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(ExclusiveBound(litFoo))))(pos)),
           Set(v"x"),
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = true
         ),
         // nPropEqualsLit42
         NodeIndexSeek(
@@ -223,7 +228,8 @@ class NodeIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
           SingleQueryExpression(lit42),
           Set(v"x"),
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = true
         ),
         // nPropEqualsLitFoo
         NodeIndexSeek(
@@ -233,7 +239,8 @@ class NodeIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
           SingleQueryExpression(litFoo),
           Set(v"x"),
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = true
         ),
         NodeIndexSeek(
           v"n",
@@ -242,7 +249,8 @@ class NodeIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
           SingleQueryExpression(litFoo),
           Set(v"x"),
           IndexOrderNone,
-          IndexType.TEXT
+          IndexType.TEXT,
+          supportPartitionedScan = false
         ),
         // nPropStartsWithLitFoo
         NodeIndexSeek(
@@ -252,7 +260,8 @@ class NodeIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
           RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(litFoo))(pos)),
           Set(v"x"),
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = true
         ),
         NodeIndexSeek(
           v"n",
@@ -261,7 +270,8 @@ class NodeIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
           RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(litFoo))(pos)),
           Set(v"x"),
           IndexOrderNone,
-          IndexType.TEXT
+          IndexType.TEXT,
+          supportPartitionedScan = false
         ),
         // nPropEqualsXProp
         NodeIndexSeek(
@@ -271,7 +281,8 @@ class NodeIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
           SingleQueryExpression(xProp),
           Set(v"x"),
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = true
         ),
         // mPropEqualsXProp
         NodeIndexSeek(
@@ -281,7 +292,8 @@ class NodeIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
           SingleQueryExpression(xProp),
           Set(v"x"),
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = true
         ),
         // oFooEqualsLit6, oBarEqualsLit42
         NodeIndexSeek(
@@ -291,7 +303,8 @@ class NodeIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
           CompositeQueryExpression(Seq(SingleQueryExpression(lit6), SingleQueryExpression(lit42))),
           Set(v"x"),
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = false
         ),
         // oAaaEqualsLit42, oBbbLessThan6, oCccLessThan6
         NodeIndexSeek(
@@ -309,7 +322,8 @@ class NodeIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
           )),
           Set(v"x"),
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = false
         ),
         // nPropContainsLitFoo
         NodeIndexContainsScan(

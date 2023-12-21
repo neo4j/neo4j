@@ -111,7 +111,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       textIndexOn("Person", "name")
       cost = nodeIndexScanCost
     } getLogicalPlanFor "MATCH (a:Person) WHERE a.name STARTS WITH 'prefix' RETURN a")._1 should equal(
-      nodeIndexSeek("a:Person(name STARTS WITH 'prefix')", indexType = IndexType.TEXT)
+      nodeIndexSeek("a:Person(name STARTS WITH 'prefix')", indexType = IndexType.TEXT, supportPartitionedScan = false)
     )
   }
 
@@ -234,7 +234,8 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
           ManyQueryExpression(listOfString("prefix1", "prefix2")),
           Set.empty,
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = false
         )
       )
     )
@@ -270,7 +271,8 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         ),
         Set.empty,
         IndexOrderNone,
-        IndexType.RANGE
+        IndexType.RANGE,
+        supportPartitionedScan = true
       )
     )
   }
@@ -549,6 +551,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
           SingleQueryExpression(SignedDecimalIntegerLiteral("42")),
           _,
           _,
+          _,
           _
         ) => ()
     }
@@ -584,7 +587,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop = 42 AND n.prop2 = 'foo' RETURN n"
 
     plan._1 should equal(
-      nodeIndexSeek("n:Awesome(prop = 42, prop2 = 'foo')")
+      nodeIndexSeek("n:Awesome(prop = 42, prop2 = 'foo')", supportPartitionedScan = false)
     )
   }
 
@@ -597,7 +600,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop2 = 'foo' AND n.prop = 42 RETURN n"
 
     plan._1 should equal(
-      nodeIndexSeek("n:Awesome(prop = 42, prop2 = 'foo')")
+      nodeIndexSeek("n:Awesome(prop = 42, prop2 = 'foo')", supportPartitionedScan = false)
     )
   }
 
@@ -610,7 +613,10 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop2 = 'foo' AND n.name IS NOT NULL AND n.prop = 42 RETURN n"
 
     plan._1 should equal(
-      Selection(ands(isNotNull(prop(v"n", "name"))), nodeIndexSeek("n:Awesome(prop = 42, prop2 = 'foo')"))
+      Selection(
+        ands(isNotNull(prop(v"n", "name"))),
+        nodeIndexSeek("n:Awesome(prop = 42, prop2 = 'foo')", supportPartitionedScan = false)
+      )
     )
   }
 
@@ -679,7 +685,8 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         ManyQueryExpression(listOfInt(42, 1337)),
         Set.empty,
         IndexOrderNone,
-        IndexType.RANGE
+        IndexType.RANGE,
+        supportPartitionedScan = false
       )
     )
   }
@@ -854,7 +861,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
           .produceResults("a")
           .filter("a:A")
           .expandAll("(b)<-[r:R]-(a)")
-          .nodeIndexOperator("b:B(prop STARTS WITH 'x')", indexType = IndexType.TEXT)
+          .nodeIndexOperator("b:B(prop STARTS WITH 'x')", indexType = IndexType.TEXT, supportPartitionedScan = false)
           .build()
       )
   }
@@ -893,7 +900,8 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
           .nodeIndexOperator(
             "b:B(prop)",
             indexType = IndexType.POINT,
-            customQueryExpression = nodePointIndexHints.pointQueryExpression
+            customQueryExpression = nodePointIndexHints.pointQueryExpression,
+            supportPartitionedScan = false
           )
           .build()
       )
@@ -912,7 +920,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
           .produceResults("a")
           .filter("a:A")
           .expandAll("(b)<-[r:R]-(a)")
-          .nodeIndexOperator("b:B(prop STARTS WITH 'x')", indexType = IndexType.TEXT)
+          .nodeIndexOperator("b:B(prop STARTS WITH 'x')", indexType = IndexType.TEXT, supportPartitionedScan = false)
           .build()
       )
   }
@@ -1198,7 +1206,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       indexOn("Person", "name")
       cost = nodeIndexSeekCost
     } getLogicalPlanFor "MATCH (a:Person)-->(b) WHERE a.name = b.prop AND b.prop = 42 RETURN b")._1 should beLike {
-      case Selection(_, Expand(NodeIndexSeek(LogicalVariable("a"), _, _, _, _, _, _), _, _, _, _, _, _)) => ()
+      case Selection(_, Expand(NodeIndexSeek(LogicalVariable("a"), _, _, _, _, _, _, _), _, _, _, _, _, _)) => ()
     }
   }
 
@@ -1207,7 +1215,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       indexOn("Person", "name")
       cost = nodeIndexSeekCost
     } getLogicalPlanFor "MATCH (a:Person)-->(b) WHERE b.prop = a.name AND b.prop = 42 RETURN b")._1 should beLike {
-      case Selection(_, Expand(NodeIndexSeek(LogicalVariable("a"), _, _, _, _, _, _), _, _, _, _, _, _)) => ()
+      case Selection(_, Expand(NodeIndexSeek(LogicalVariable("a"), _, _, _, _, _, _, _), _, _, _, _, _, _)) => ()
     }
   }
 

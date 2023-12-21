@@ -1755,7 +1755,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         e,
         argumentIds.map(varFor),
         indexOrder,
-        indexType
+        indexType,
+        supportPartitionedScan = false
       )(idGen)
       newNode(plan.idName)
       plan
@@ -1795,7 +1796,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         e,
         argumentIds.map(varFor),
         indexOrder,
-        indexType
+        indexType,
+        supportPartitionedScan = false
       )(idGen)
       newNode(plan.idName)
       plan

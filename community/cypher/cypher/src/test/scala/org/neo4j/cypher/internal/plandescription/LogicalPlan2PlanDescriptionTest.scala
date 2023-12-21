@@ -1177,7 +1177,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           ))(pos)),
           Set.empty,
           IndexOrderNone,
-          IndexType.POINT
+          IndexType.POINT,
+          supportPartitionedScan = false
         ),
         95.0
       ),
@@ -1216,7 +1217,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           ))(pos)),
           Set.empty,
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = true
         ),
         95.0
       ),

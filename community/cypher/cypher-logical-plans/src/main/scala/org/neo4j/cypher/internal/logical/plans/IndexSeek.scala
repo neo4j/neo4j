@@ -138,7 +138,16 @@ object IndexSeek {
       if (unique) {
         NodeUniqueIndexSeek(varFor(node), label, properties, valueExpr, argumentIds.map(varFor), indexOrder, indexType)
       } else {
-        NodeIndexSeek(varFor(node), label, properties, valueExpr, argumentIds.map(varFor), indexOrder, indexType)
+        NodeIndexSeek(
+          varFor(node),
+          label,
+          properties,
+          valueExpr,
+          argumentIds.map(varFor),
+          indexOrder,
+          indexType,
+          supportPartitionedScan
+        )
       }
 
     def createEndsWithScan(property: IndexedProperty, valueExpr: Expression): NodeIndexLeafPlan = {
@@ -198,8 +207,7 @@ object IndexSeek {
     val predicates = predicateStr.split(',').map(_.trim)
 
     def createSeek(properties: Seq[IndexedProperty], valueExpr: QueryExpression[Expression]): NodeIndexSeekLeafPlan = {
-      // TODO: partitioned variant
-      NodeIndexSeek(varFor(node), label, properties, valueExpr, argumentIds.map(varFor), IndexOrderNone, indexType)
+      PartitionedNodeIndexSeek(varFor(node), label, properties, valueExpr, argumentIds.map(varFor), indexType)
     }
 
     def createEndsWithScan(property: IndexedProperty, valueExpr: Expression): NodeIndexLeafPlan = {

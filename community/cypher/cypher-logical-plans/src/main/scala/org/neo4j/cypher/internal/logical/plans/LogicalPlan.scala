@@ -2623,7 +2623,7 @@ case class NodeIndexScan(
   argumentIds: Set[LogicalVariable],
   indexOrder: IndexOrder,
   override val indexType: IndexType,
-  supportPartitionedScan: Boolean = true
+  supportPartitionedScan: Boolean
 )(implicit idGen: IdGen)
     extends NodeIndexLeafPlan(idGen) with StableLeafPlan {
 
@@ -2683,7 +2683,8 @@ case class NodeIndexSeek(
   valueExpr: QueryExpression[Expression],
   argumentIds: Set[LogicalVariable],
   indexOrder: IndexOrder,
-  override val indexType: IndexType
+  override val indexType: IndexType,
+  supportPartitionedScan: Boolean
 )(implicit idGen: IdGen) extends NodeIndexSeekLeafPlan(idGen) with StableLeafPlan {
 
   override val availableSymbols: Set[LogicalVariable] = argumentIds + idName
@@ -2697,6 +2698,34 @@ case class NodeIndexSeek(
     copy(properties = properties.map(_.copy(getValueFromIndex = DoNotGetValue)))(SameId(this.id))
 
   override def withMappedProperties(f: IndexedProperty => IndexedProperty): NodeIndexSeek =
+    copy(properties = properties.map(f))(SameId(this.id))
+
+  override def addArgumentIds(argsToAdd: Set[LogicalVariable]): LogicalLeafPlan =
+    copy(argumentIds = argumentIds ++ argsToAdd)(SameId(this.id))
+}
+
+case class PartitionedNodeIndexSeek(
+  idName: LogicalVariable,
+  override val label: LabelToken,
+  properties: Seq[IndexedProperty],
+  valueExpr: QueryExpression[Expression],
+  argumentIds: Set[LogicalVariable],
+  override val indexType: IndexType
+)(implicit idGen: IdGen) extends NodeIndexSeekLeafPlan(idGen) with StableLeafPlan with PhysicalPlanningPlan {
+
+  override def indexOrder: IndexOrder = IndexOrderNone
+
+  override val availableSymbols: Set[LogicalVariable] = argumentIds + idName
+
+  override def usedVariables: Set[LogicalVariable] = valueExpr.expressions.flatMap(_.dependencies).toSet
+
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): PartitionedNodeIndexSeek =
+    copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def copyWithoutGettingValues: PartitionedNodeIndexSeek =
+    copy(properties = properties.map(_.copy(getValueFromIndex = DoNotGetValue)))(SameId(this.id))
+
+  override def withMappedProperties(f: IndexedProperty => IndexedProperty): PartitionedNodeIndexSeek =
     copy(properties = properties.map(f))(SameId(this.id))
 
   override def addArgumentIds(argsToAdd: Set[LogicalVariable]): LogicalLeafPlan =

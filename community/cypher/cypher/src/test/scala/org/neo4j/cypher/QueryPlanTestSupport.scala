@@ -39,6 +39,8 @@ import org.neo4j.values.virtual.MapValue
 import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
 
+import scala.util.matching.Regex
+
 trait QueryPlanTestSupport {
 
   /**
@@ -68,6 +70,8 @@ trait QueryPlanTestSupport {
 
     def aPlan(name: String): PlanMatcher = PlanInTree(ExactPlan()).withName(name)
 
+    def aPlan(name: Regex): PlanMatcher = PlanInTree(ExactPlan()).withName(name)
+
     def nTimes(n: Int, aPlan: PlanMatcher): PlanMatcher = CountInTree(n, aPlan)
 
     def atLeastNTimes(n: Int, aPlan: PlanMatcher): PlanMatcher = CountInTree(n, aPlan, atLeast = true)
@@ -84,6 +88,8 @@ trait QueryPlanTestSupport {
     def apply(): PlanMatcher = haveAsRoot.aPlan
 
     def apply(name: String): PlanMatcher = haveAsRoot.aPlan(name)
+
+    def apply(name: Regex): PlanMatcher = haveAsRoot.aPlan.withName(name)
   }
 
   /**

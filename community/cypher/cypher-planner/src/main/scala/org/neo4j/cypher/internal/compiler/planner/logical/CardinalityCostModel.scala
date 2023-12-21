@@ -98,6 +98,7 @@ import org.neo4j.cypher.internal.logical.plans.PartialSort
 import org.neo4j.cypher.internal.logical.plans.PartitionedAllNodesScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
 import org.neo4j.cypher.internal.logical.plans.ProjectEndpoints
@@ -525,6 +526,7 @@ object CardinalityCostModel {
 
       case _: NodeUniqueIndexSeek |
         _: NodeIndexSeek |
+        _: PartitionedNodeIndexSeek |
         _: NodeIndexContainsScan |
         _: NodeIndexEndsWithScan => INDEX_SEEK_COST_PER_ROW
 

@@ -183,7 +183,8 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           prop1Predicate1Expr,
           Set(),
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = true
         ),
         NodeIndexSeek(
           n,
@@ -192,7 +193,8 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           prop1Predicate2Expr,
           Set(),
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = true
         )
       )
 
@@ -250,7 +252,8 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           CompositeQueryExpression(Seq(prop1Predicate1Expr, prop2Predicate1Expr)),
           Set(),
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = false
         ),
         NodeIndexSeek(
           n,
@@ -262,7 +265,8 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           CompositeQueryExpression(Seq(prop1Predicate1Expr, prop2Predicate2Expr)),
           Set(),
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = false
         ),
         NodeIndexSeek(
           n,
@@ -271,7 +275,8 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           CompositeQueryExpression(Seq(prop1Predicate2Expr, prop2Predicate1Expr)),
           Set(),
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = false
         ),
         NodeIndexSeek(
           n,
@@ -283,7 +288,8 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           CompositeQueryExpression(Seq(prop1Predicate2Expr, prop2Predicate2Expr)),
           Set(),
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = false
         ),
         NodeIndexSeek(
           n,
@@ -292,7 +298,8 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           CompositeQueryExpression(Seq(prop1Predicate3Expr, prop2Predicate1Expr)),
           Set(),
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = false
         ),
         NodeIndexSeek(
           n,
@@ -304,7 +311,8 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           CompositeQueryExpression(Seq(prop1Predicate3Expr, prop2Predicate2Expr)),
           Set(),
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = false
         )
       )
 
@@ -350,7 +358,8 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           CompositeQueryExpression(Seq(prop1Predicate1Expr, prop2Predicate1Expr)),
           Set(),
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = false
         ),
         NodeIndexSeek(
           n,
@@ -359,7 +368,8 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           CompositeQueryExpression(Seq(prop1Predicate2Expr, prop2Predicate1Expr)),
           Set(),
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = false
         ),
         NodeIndexSeek(
           n,
@@ -368,7 +378,8 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           CompositeQueryExpression(Seq(prop2Predicate1Expr, prop1Predicate1Expr)),
           Set(),
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = false
         ),
         NodeIndexSeek(
           n,
@@ -377,7 +388,8 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           CompositeQueryExpression(Seq(prop2Predicate1Expr, prop1Predicate2Expr)),
           Set(),
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = false
         )
       )
 
@@ -487,7 +499,8 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       val expectedPlans = Set(
         new LogicalPlanBuilder(wholePlan = false).nodeIndexOperator(
           "n:Awesome(prop = 42, prop2 = 6)",
-          getValue = Map("prop" -> CanGetValue, "prop2" -> CanGetValue)
+          getValue = Map("prop" -> CanGetValue, "prop2" -> CanGetValue),
+          supportPartitionedScan = false
         ).build()
       )
 
@@ -529,7 +542,8 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       val expectedPlans = Set(
         new LogicalPlanBuilder(wholePlan = false).nodeIndexOperator(
           "n:Awesome(prop = 42, prop2 = 6)",
-          getValue = Map("prop" -> CanGetValue, "prop2" -> CanGetValue)
+          getValue = Map("prop" -> CanGetValue, "prop2" -> CanGetValue),
+          supportPartitionedScan = false
         ).build()
       )
       // then
@@ -659,7 +673,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
       val restriction = LeafPlanRestrictions.OnlyIndexSeekPlansFor(v"n", Set(v"x"))
-      val resultPlans = indexSeekLeafPlanner(restriction)(cfg.qg, InterestingOrderConfig.empty, ctx).toSet
+      val resultPlans = indexSeekLeafPlanner(restriction)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
       val labelToken = LabelToken("Awesome", LabelId(0))
@@ -673,7 +687,8 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           xPropExpr,
           Set(v"x"),
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = true
         )
       )
 
@@ -738,7 +753,8 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           CompositeQueryExpression(Seq(xPropExpr, lit42Expr)),
           Set(v"x", v"y"),
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = false
         ),
         NodeIndexSeek(
           n,
@@ -747,7 +763,8 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           CompositeQueryExpression(Seq(xPropExpr, yPropExpr)),
           Set(v"x", v"y"),
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = false
         ),
         NodeIndexSeek(
           n,
@@ -756,7 +773,8 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           CompositeQueryExpression(Seq(lit42Expr, yPropExpr)),
           Set(v"x", v"y"),
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = false
         )
       )
 
@@ -821,7 +839,8 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           ManyQueryExpression(listOf(lit6, lit42)),
           Set(v"x"),
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = false
         ),
         NodeIndexSeek(
           n,
@@ -830,7 +849,8 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(ExclusiveBound(lit6))))(pos)),
           Set(v"x"),
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = true
         ),
         NodeIndexSeek(
           n,
@@ -839,7 +859,8 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           SingleQueryExpression(lit42),
           Set(v"x"),
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = true
         ),
         NodeIndexSeek(
           n,
@@ -848,7 +869,8 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(literalFoo))(pos)),
           Set(v"x"),
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = true
         ),
         NodeIndexSeek(
           n,
@@ -857,7 +879,8 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           xPropExpr,
           Set(v"x"),
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = true
         )
       )
 

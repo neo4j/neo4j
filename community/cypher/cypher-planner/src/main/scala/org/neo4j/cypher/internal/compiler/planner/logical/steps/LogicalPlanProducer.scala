@@ -1325,7 +1325,8 @@ case class LogicalPlanProducer(
     providedOrder: ProvidedOrder,
     indexOrder: IndexOrder,
     context: LogicalPlanningContext,
-    indexType: IndexType
+    indexType: IndexType,
+    supportPartitionedScan: Boolean
   ): LogicalPlan = {
     val queryGraph = QueryGraph.empty
       .addPatternNodes(variable)
@@ -1346,7 +1347,8 @@ case class LogicalPlanProducer(
       rewrittenValueExpr,
       argumentIds ++ newArguments,
       indexOrder,
-      indexType.toPublicApi
+      indexType.toPublicApi,
+      supportPartitionedScan
     )
     val annotatedPlan = annotate(plan, solved, providedOrder, context)
 

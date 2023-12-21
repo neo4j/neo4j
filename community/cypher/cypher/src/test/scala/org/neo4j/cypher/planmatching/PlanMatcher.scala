@@ -240,7 +240,7 @@ case class PlanInTree(inner: PlanMatcher) extends PlanMatcher {
 /**
  * Tries to find a matching plan a certain amount of times in the tree.
  *
- * @param expectedCount the expected cound
+ * @param expectedCount the expected count
  * @param inner         a PlanMatcher for the plan to find.
  * @param atLeast       if `expectedValue` is a lower bound or an expact expectation
  */

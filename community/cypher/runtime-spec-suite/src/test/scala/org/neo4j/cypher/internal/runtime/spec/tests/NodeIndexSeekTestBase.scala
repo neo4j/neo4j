@@ -1325,6 +1325,9 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
   }
 
   testWithIndex(_.supportsOrderAsc(EXACT), "should handle order in multiple index seek, int ascending") { index =>
+    // parallel does not maintain order
+    assume(!isParallel)
+
     val propertyType = randomAmong(index.orderAscSupport(EXACT))
     val nodes = givenGraph(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
     val someValues =
@@ -1353,6 +1356,9 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
   }
 
   testWithIndex(_.supportsOrderDesc(EXACT), "should handle order in multiple index seek, int descending") { index =>
+    // parallel does not maintain order
+    assume(!isParallel)
+
     val propertyType = randomAmong(index.orderDescSupport(EXACT))
     val nodes = givenGraph(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
     val someProps =
@@ -1384,6 +1390,9 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     _.supportsOrderDesc(EXACT, ValueType.STRING),
     "should handle order in multiple index seek, string descending"
   ) { index =>
+    // parallel does not maintain order
+    assume(!isParallel)
+
     val nodes = givenGraph {
       nodeGraph(5, "Milk")
       indexedNodeGraph(index.indexType, "Honey", "prop") {

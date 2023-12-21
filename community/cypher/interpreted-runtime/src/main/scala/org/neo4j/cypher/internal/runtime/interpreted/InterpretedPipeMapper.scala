@@ -121,6 +121,7 @@ import org.neo4j.cypher.internal.logical.plans.PartialTop
 import org.neo4j.cypher.internal.logical.plans.PartitionedAllNodesScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
 import org.neo4j.cypher.internal.logical.plans.Prober
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
@@ -700,7 +701,7 @@ case class InterpretedPipeMapper(
           indexOrder
         )(id = id)
 
-      case NodeIndexSeek(ident, label, properties, valueExpr, _, indexOrder, indexType) =>
+      case NodeIndexSeek(ident, label, properties, valueExpr, _, indexOrder, indexType, _) =>
         val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
         NodeIndexSeekPipe(
           ident.name,
@@ -710,6 +711,18 @@ case class InterpretedPipeMapper(
           valueExpr.map(buildExpression),
           indexSeekMode,
           indexOrder
+        )(id = id)
+
+      case PartitionedNodeIndexSeek(ident, label, properties, valueExpr, _, indexType) =>
+        val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
+        NodeIndexSeekPipe(
+          ident.name,
+          label,
+          properties.toArray,
+          indexRegistrator.registerQueryIndex(indexType, label, properties),
+          valueExpr.map(buildExpression),
+          indexSeekMode,
+          IndexOrderNone
         )(id = id)
 
       case NodeUniqueIndexSeek(ident, label, properties, valueExpr, _, indexOrder, indexType) =>

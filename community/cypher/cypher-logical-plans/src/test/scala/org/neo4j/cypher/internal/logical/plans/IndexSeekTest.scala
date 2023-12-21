@@ -62,7 +62,16 @@ class IndexSeekTest extends CypherFunSuite {
     if (unique) {
       NodeUniqueIndexSeek(varFor(idName), label, properties, valueExpr, argumentIds.map(varFor), indexOrder, indexType)
     } else {
-      NodeIndexSeek(varFor(idName), label, properties, valueExpr, argumentIds.map(varFor), indexOrder, indexType)
+      NodeIndexSeek(
+        varFor(idName),
+        label,
+        properties,
+        valueExpr,
+        argumentIds.map(varFor),
+        indexOrder,
+        indexType,
+        supportPartitionedScan = true
+      )
     }
   }
 
@@ -523,7 +532,8 @@ class IndexSeekTest extends CypherFunSuite {
         exactString("101"),
         Set.empty,
         IndexOrderNone,
-        IndexType.RANGE
+        IndexType.RANGE,
+        supportPartitionedScan = true
       )
     )
   }
@@ -537,7 +547,8 @@ class IndexSeekTest extends CypherFunSuite {
         exactInts(1, 2, 3),
         Set.empty,
         IndexOrderNone,
-        IndexType.RANGE
+        IndexType.RANGE,
+        supportPartitionedScan = true
       )
     )
   }

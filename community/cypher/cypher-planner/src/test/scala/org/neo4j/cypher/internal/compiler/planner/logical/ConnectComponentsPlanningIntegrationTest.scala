@@ -545,7 +545,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
     )
 
     plan.stripProduceResults shouldNot beLike {
-      case Selection(_, Apply(_, NodeIndexSeek(_, _, _, _, args, _, _))) if args.isEmpty => ()
+      case Selection(_, Apply(_, NodeIndexSeek(_, _, _, _, args, _, _, _))) if args.isEmpty => ()
     }
   }
 
@@ -570,15 +570,15 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
       case Selection(
           _,
           Apply(
-            NodeIndexSeek(_, _, _, RangeQueryExpression(_), _, _, _),
-            NodeIndexSeek(_, _, _, SingleQueryExpression(_), _, _, _)
+            NodeIndexSeek(_, _, _, RangeQueryExpression(_), _, _, _, _),
+            NodeIndexSeek(_, _, _, SingleQueryExpression(_), _, _, _, _)
           )
         ) => ()
     }
     val beSolvedByJoin = beLike {
       case ValueHashJoin(
-          NodeIndexSeek(_, _, _, RangeQueryExpression(_), _, _, _),
-          NodeIndexSeek(_, _, _, RangeQueryExpression(_), _, _, _),
+          NodeIndexSeek(_, _, _, RangeQueryExpression(_), _, _, _, _),
+          NodeIndexSeek(_, _, _, RangeQueryExpression(_), _, _, _, _),
           _
         ) => ()
     }

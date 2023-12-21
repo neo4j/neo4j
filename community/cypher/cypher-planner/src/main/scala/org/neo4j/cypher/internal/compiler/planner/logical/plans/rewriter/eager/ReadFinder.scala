@@ -130,6 +130,7 @@ import org.neo4j.cypher.internal.logical.plans.PartialTop
 import org.neo4j.cypher.internal.logical.plans.PartitionedAllNodesScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
 import org.neo4j.cypher.internal.logical.plans.PathPropagatingBFS
 import org.neo4j.cypher.internal.logical.plans.PhysicalPlanningPlan
@@ -394,7 +395,10 @@ object ReadFinder {
       case PartitionedNodeIndexScan(node, LabelToken(labelName, _), properties, _, _) =>
         processNodeIndexPlan(node, labelName, properties)
 
-      case NodeIndexSeek(node, LabelToken(labelName, _), properties, _, _, _, _) =>
+      case NodeIndexSeek(node, LabelToken(labelName, _), properties, _, _, _, _, _) =>
+        processNodeIndexPlan(node, labelName, properties)
+
+      case PartitionedNodeIndexSeek(node, LabelToken(labelName, _), properties, _, _, _) =>
         processNodeIndexPlan(node, labelName, properties)
 
       case NodeUniqueIndexSeek(node, LabelToken(labelName, _), properties, _, _, _, _) =>

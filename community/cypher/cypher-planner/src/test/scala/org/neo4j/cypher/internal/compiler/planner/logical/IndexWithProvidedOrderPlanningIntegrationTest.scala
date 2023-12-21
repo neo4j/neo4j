@@ -1993,7 +1993,12 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
           // Then
           val leafPlan =
-            nodeIndexSeek("n:Label(prop1 >= 42, prop2 <= 3)", indexOrder = indexOrder, getValue = _ => GetValue)
+            nodeIndexSeek(
+              "n:Label(prop1 >= 42, prop2 <= 3)",
+              indexOrder = indexOrder,
+              getValue = _ => GetValue,
+              supportPartitionedScan = false
+            )
           plan._1 should equal {
             if (shouldPartialSort)
               PartialSort(Projection(Selection(expr, leafPlan), projectionBoth), alreadySorted, sortItems)
@@ -2125,7 +2130,12 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             Projection(
               Selection(
                 ands(lessThanOrEqual(cachedNodeProp("n", "prop2"), literalInt(3))),
-                nodeIndexSeek("n:Label(prop1 >= 42, prop2)", indexOrder = indexOrder, getValue = _ => GetValue)
+                nodeIndexSeek(
+                  "n:Label(prop1 >= 42, prop2)",
+                  indexOrder = indexOrder,
+                  getValue = _ => GetValue,
+                  supportPartitionedScan = false
+                )
               ),
               Map(
                 v"n.prop1" -> cachedNodeProp("n", "prop1"),
@@ -2434,7 +2444,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         val leafPlan = nodeIndexSeek(
           "n:Label(prop1 >= 42, prop2 <= 3, prop3 > 'a', prop4 < 'f')",
           indexOrder = indexOrder,
-          getValue = _ => GetValue
+          getValue = _ => GetValue,
+          supportPartitionedScan = false
         )
         plan._1 should equal {
           if (fullSort)
@@ -2619,7 +2630,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         val leafPlan = nodeIndexSeek(
           "n:Label(prop1 >= 42, prop2 <= 3, prop3 > 'a', prop4 < 'f')",
           indexOrder = indexOrder,
-          getValue = _ => GetValue
+          getValue = _ => GetValue,
+          supportPartitionedScan = false
         )
         plan._1 should equal {
           if (sort)
@@ -3215,7 +3227,11 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           } getLogicalPlanFor query
 
         // Then
-        val leafPlan = nodeIndexSeek("n:Label(prop1 >= 42, prop2 <= 3, prop3 > '')", indexOrder = indexOrder)
+        val leafPlan = nodeIndexSeek(
+          "n:Label(prop1 >= 42, prop2 <= 3, prop3 > '')",
+          indexOrder = indexOrder,
+          supportPartitionedScan = false
+        )
         withClue(query) {
           plan._1 should equal {
             if (fullSort)
@@ -3371,7 +3387,12 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
           // Then
           val leafPlan =
-            nodeIndexSeek("n:Label(prop1 = 42, prop2 <= 3)", indexOrder = indexOrder, getValue = _ => GetValue)
+            nodeIndexSeek(
+              "n:Label(prop1 = 42, prop2 <= 3)",
+              indexOrder = indexOrder,
+              getValue = _ => GetValue,
+              supportPartitionedScan = false
+            )
           plan._1 should equal {
             if (shouldSort)
               PartialSort(Projection(leafPlan, projection), alreadySorted, toBeSorted)
@@ -3506,7 +3527,12 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           // Then
           val leafPlan = Selection(
             ands(equals(cachedNodeProp("n", "prop2"), literalInt(3))),
-            nodeIndexSeek("n:Label(prop1 <= 42, prop2 = 3)", indexOrder = indexOrder, getValue = _ => GetValue)
+            nodeIndexSeek(
+              "n:Label(prop1 <= 42, prop2 = 3)",
+              indexOrder = indexOrder,
+              getValue = _ => GetValue,
+              supportPartitionedScan = false
+            )
           )
           plan._1 should equal {
             if (shouldSort)
@@ -3606,7 +3632,12 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             } getLogicalPlanFor query
 
           plan._1 should equal(Projection(
-            nodeIndexSeek("n:Label(prop1 = 42, prop2 = 3)", indexOrder = indexOrder, getValue = _ => GetValue),
+            nodeIndexSeek(
+              "n:Label(prop1 = 42, prop2 = 3)",
+              indexOrder = indexOrder,
+              getValue = _ => GetValue,
+              supportPartitionedScan = false
+            ),
             projection
           ))
         }

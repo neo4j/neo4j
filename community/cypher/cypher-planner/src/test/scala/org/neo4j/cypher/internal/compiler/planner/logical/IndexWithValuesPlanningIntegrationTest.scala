@@ -319,7 +319,8 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
               SingleQueryExpression(literalInt(42)),
               Set.empty,
               IndexOrderNone,
-              IndexType.RANGE
+              IndexType.RANGE,
+              supportPartitionedScan = true
             ),
             Map(v"m" -> v"n")
           ),
@@ -406,7 +407,8 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
               SingleQueryExpression(literalInt(42)),
               Set.empty,
               IndexOrderNone,
-              IndexType.RANGE
+              IndexType.RANGE,
+              supportPartitionedScan = true
             ),
             Map(v"m" -> v"n")
           ),
@@ -814,7 +816,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._1 should equal(
       Projection(
-        nodeIndexSeek("n:Awesome(prop = 42, foo = 21)", _ => GetValue),
+        nodeIndexSeek("n:Awesome(prop = 42, foo = 21)", _ => GetValue, supportPartitionedScan = false),
         Map(cachedNodePropertyProj("n", "prop"), cachedNodePropertyProj("n", "foo"))
       )
     )
@@ -830,7 +832,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._1 should equal(
       Projection(
-        nodeIndexSeek("n:Awesome(prop = 42, foo = 21)", _ => GetValue),
+        nodeIndexSeek("n:Awesome(prop = 42, foo = 21)", _ => GetValue, supportPartitionedScan = false),
         Map(cachedNodePropertyProj("n", "prop"), cachedNodePropertyProj("n", "foo"))
       )
     )
@@ -846,7 +848,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._1 should equal(
       Projection(
-        nodeIndexSeek("n:Awesome(prop = 42, foo = 21)", _ => DoNotGetValue),
+        nodeIndexSeek("n:Awesome(prop = 42, foo = 21)", _ => DoNotGetValue, supportPartitionedScan = false),
         Map(v"n.bar" -> prop("n", "bar"))
       )
     )
@@ -860,7 +862,11 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._1 should equal(
       Projection(
-        nodeIndexSeek("n:Awesome(prop = 42, foo = 21)", Map("prop" -> GetValue, "foo" -> DoNotGetValue)),
+        nodeIndexSeek(
+          "n:Awesome(prop = 42, foo = 21)",
+          Map("prop" -> GetValue, "foo" -> DoNotGetValue),
+          supportPartitionedScan = false
+        ),
         Map(cachedNodePropertyProj("n", "prop"))
       )
     )

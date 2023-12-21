@@ -78,7 +78,8 @@ object nodeIndexSeekPlanProvider extends AbstractNodeIndexSeekPlanProvider {
         solution.providedOrder,
         solution.indexOrder,
         context,
-        solution.indexType
+        solution.indexType,
+        solution.supportPartitionedScan
       )
     }
 }

@@ -43,6 +43,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexEndsWithScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
+import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexEndsWithScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexSeek
@@ -601,7 +602,9 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
    */
   def containsDependentIndexSeeks(plan: LogicalPlan): Boolean =
     plan.leaves.exists {
-      case NodeIndexSeek(_, _, _, valueExpr, _, _, _) =>
+      case NodeIndexSeek(_, _, _, valueExpr, _, _, _, _) =>
+        valueExpr.expressions.exists(_.dependencies.nonEmpty)
+      case PartitionedNodeIndexSeek(_, _, _, valueExpr, _, _) =>
         valueExpr.expressions.exists(_.dependencies.nonEmpty)
       case NodeUniqueIndexSeek(_, _, _, valueExpr, _, _, _) =>
         valueExpr.expressions.exists(_.dependencies.nonEmpty)
