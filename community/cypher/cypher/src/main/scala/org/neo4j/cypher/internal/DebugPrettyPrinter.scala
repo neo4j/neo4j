@@ -47,7 +47,7 @@ trait DebugPrettyPrinter {
       println(s"\u001b[32m[QUERY]\n\n${logicalQuery.queryText}") // Green
     if (PRINT_LOGICAL_PLAN) {
       println(s"\n\u001b[35m[LOGICAL PLAN]\n") // Magenta
-      prettyPrintLogicalPlan(logicalQuery.logicalPlan)
+      println(logicalQuery.logicalPlan)
     }
     println("\u001b[0m") // Reset
   }
@@ -55,7 +55,7 @@ trait DebugPrettyPrinter {
   protected def printRewrittenPlanInfo(logicalPlan: LogicalPlan): Unit = {
     if (PRINT_REWRITTEN_LOGICAL_PLAN) {
       println(s"\n\u001b[35m[REWRITTEN LOGICAL PLAN]\n") // Magenta
-      prettyPrintLogicalPlan(logicalPlan)
+      println(logicalPlan)
     }
     println("\u001b[0m") // Reset
   }
