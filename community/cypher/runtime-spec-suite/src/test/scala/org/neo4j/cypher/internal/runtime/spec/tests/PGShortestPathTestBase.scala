@@ -3148,7 +3148,14 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
           "row_2_inner" -> "row",
           "row_3_inner" -> "row",
           "row_4_inner" -> "row",
-          "rowEnd_inner" -> "rowEnd"
+          "rowEnd_inner" -> "rowEnd",
+          // TODO: Anonymous grouping variables are currently being added by the planner, see https://trello.com/c/fsucxJdb/
+          //       Collecting and projecting them is a waste of resources.
+          "anon1_1_inner" -> "anon1_1",
+          "anon1_2_inner" -> "anon1_2",
+          "anon1_3_inner" -> "anon1_3",
+          "anon1_4_inner" -> "anon1_4",
+          "anon2_inner" -> "anon2"
         ),
         Set(
           "r1_1_inner" -> "r1",
