@@ -120,10 +120,12 @@ import org.neo4j.cypher.internal.logical.plans.PartialSort
 import org.neo4j.cypher.internal.logical.plans.PartialTop
 import org.neo4j.cypher.internal.logical.plans.PartitionedAllNodesScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedAllRelationshipsScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedAllRelationshipsScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
 import org.neo4j.cypher.internal.logical.plans.Prober
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
@@ -472,6 +474,26 @@ case class InterpretedPipeMapper(
           LazyType(typ)(semanticTable),
           toNode.name,
           indexOrder
+        )(id = id)
+
+      case PartitionedDirectedRelationshipTypeScan(ident, fromNode, typ, toNode, _) =>
+        indexRegistrator.registerTypeScan()
+        DirectedRelationshipTypeScanPipe(
+          ident.name,
+          fromNode.name,
+          LazyType(typ)(semanticTable),
+          toNode.name,
+          IndexOrderNone
+        )(id = id)
+
+      case PartitionedUndirectedRelationshipTypeScan(ident, fromNode, typ, toNode, _) =>
+        indexRegistrator.registerTypeScan()
+        UndirectedRelationshipTypeScanPipe(
+          ident.name,
+          fromNode.name,
+          LazyType(typ)(semanticTable),
+          toNode.name,
+          IndexOrderNone
         )(id = id)
 
       case DirectedUnionRelationshipTypesScan(ident, fromNode, types, endNode, _, indexOrder) =>

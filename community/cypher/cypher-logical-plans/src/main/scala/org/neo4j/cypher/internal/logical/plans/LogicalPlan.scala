@@ -295,6 +295,10 @@ sealed abstract class LogicalPlan(idGen: IdGen)
         acc => acc :+ SchemaIndexLookupUsage(idName, EntityType.RELATIONSHIP)
       case UndirectedRelationshipTypeScan(idName, _, _, _, _, _) =>
         acc => acc :+ SchemaIndexLookupUsage(idName, EntityType.RELATIONSHIP)
+      case PartitionedDirectedRelationshipTypeScan(idName, _, _, _, _) =>
+        acc => acc :+ SchemaIndexLookupUsage(idName, EntityType.RELATIONSHIP)
+      case PartitionedUndirectedRelationshipTypeScan(idName, _, _, _, _) =>
+        acc => acc :+ SchemaIndexLookupUsage(idName, EntityType.RELATIONSHIP)
       case relIndexScan: RelationshipIndexLeafPlan =>
         acc =>
           acc :+
@@ -1584,6 +1588,32 @@ case class DirectedRelationshipTypeScan(
   override def usedVariables: Set[LogicalVariable] = Set.empty
 
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): DirectedRelationshipTypeScan =
+    copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def leftNode: LogicalVariable = startNode
+
+  override def rightNode: LogicalVariable = endNode
+
+  override def directed: Boolean = true
+
+  override def addArgumentIds(argsToAdd: Set[LogicalVariable]): LogicalLeafPlan =
+    copy(argumentIds = argumentIds ++ argsToAdd)(SameId(this.id))
+}
+
+case class PartitionedDirectedRelationshipTypeScan(
+  idName: LogicalVariable,
+  startNode: LogicalVariable,
+  relType: RelTypeName,
+  endNode: LogicalVariable,
+  argumentIds: Set[LogicalVariable]
+)(implicit idGen: IdGen)
+    extends RelationshipLogicalLeafPlan(idGen) with RelationshipTypeScan with StableLeafPlan with PhysicalPlanningPlan {
+
+  override val availableSymbols: Set[LogicalVariable] = argumentIds ++ Set(idName, leftNode, rightNode)
+
+  override def usedVariables: Set[LogicalVariable] = Set.empty
+
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): PartitionedDirectedRelationshipTypeScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
   override def leftNode: LogicalVariable = startNode
@@ -4269,6 +4299,28 @@ case class UndirectedRelationshipTypeScan(
   override def usedVariables: Set[LogicalVariable] = Set.empty
 
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): UndirectedRelationshipTypeScan =
+    copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def directed: Boolean = false
+
+  override def addArgumentIds(argsToAdd: Set[LogicalVariable]): LogicalLeafPlan =
+    copy(argumentIds = argumentIds ++ argsToAdd)(SameId(this.id))
+}
+
+case class PartitionedUndirectedRelationshipTypeScan(
+  idName: LogicalVariable,
+  leftNode: LogicalVariable,
+  relType: RelTypeName,
+  rightNode: LogicalVariable,
+  argumentIds: Set[LogicalVariable]
+)(implicit idGen: IdGen)
+    extends RelationshipLogicalLeafPlan(idGen) with RelationshipTypeScan with StableLeafPlan with PhysicalPlanningPlan {
+
+  override val availableSymbols: Set[LogicalVariable] = argumentIds ++ Set(idName, leftNode, rightNode)
+
+  override def usedVariables: Set[LogicalVariable] = Set.empty
+
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): PartitionedUndirectedRelationshipTypeScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
   override def directed: Boolean = false

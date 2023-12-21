@@ -960,6 +960,32 @@ case class LogicalPlan2PlanDescription(
           withDistinctness
         )
 
+      case PartitionedDirectedRelationshipTypeScan(idName, start, typeName, end, _) =>
+        val prettyDetails =
+          pretty"(${asPrettyString(start)})-[${asPrettyString(idName)}:${asPrettyString(typeName.name)}]->(${asPrettyString(end)})"
+        PlanDescriptionImpl(
+          id,
+          "DirectedRelationshipTypeScan",
+          NoChildren,
+          Seq(Details(prettyDetails)),
+          variables,
+          withRawCardinalities,
+          withDistinctness
+        )
+
+      case PartitionedUndirectedRelationshipTypeScan(idName, start, typeName, end, _) =>
+        val prettyDetails =
+          pretty"(${asPrettyString(start)})-[${asPrettyString(idName)}:${asPrettyString(typeName.name)}]-(${asPrettyString(end)})"
+        PlanDescriptionImpl(
+          id,
+          "UndirectedRelationshipTypeScan",
+          NoChildren,
+          Seq(Details(prettyDetails)),
+          variables,
+          withRawCardinalities,
+          withDistinctness
+        )
+
       case Input(nodes, rels, inputVars, _) =>
         PlanDescriptionImpl(
           id,

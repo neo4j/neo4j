@@ -229,6 +229,8 @@ object LogicalPlanToPlanBuilderString {
       case _: DirectedRelationshipUniqueIndexSeek       => "relationshipIndexOperator"
       case _: DirectedRelationshipTypeScan              => "relationshipTypeScan"
       case _: UndirectedRelationshipTypeScan            => "relationshipTypeScan"
+      case _: PartitionedDirectedRelationshipTypeScan   => "partitionedRelationshipTypeScan"
+      case _: PartitionedUndirectedRelationshipTypeScan => "partitionedRelationshipTypeScan"
       case _: DirectedAllRelationshipsScan              => "allRelationshipsScan"
       case _: UndirectedAllRelationshipsScan            => "allRelationshipsScan"
       case _: PartitionedDirectedAllRelationshipsScan   => "partitionedAllRelationshipsScan"
@@ -702,6 +704,12 @@ object LogicalPlanToPlanBuilderString {
       case UndirectedRelationshipTypeScan(idName, start, typ, end, argumentIds, indexOrder) =>
         val args = Seq(objectName(indexOrder)) ++ argumentIds.map(wrapInQuotations)
         s""" "(${start.name})-[${idName.name}:${typ.name}]-(${end.name})", ${args.mkString(", ")} """.trim
+      case PartitionedDirectedRelationshipTypeScan(idName, start, typ, end, argumentIds) =>
+        val args = if (argumentIds.isEmpty) "" else argumentIds.map(wrapInQuotations).mkString(", ", ", ", "")
+        s""" "(${start.name})-[${idName.name}:${typ.name}]->(${end.name})"${args} """.trim
+      case PartitionedUndirectedRelationshipTypeScan(idName, start, typ, end, argumentIds) =>
+        val args = if (argumentIds.isEmpty) "" else argumentIds.map(wrapInQuotations).mkString(", ", ", ", "")
+        s""" "(${start.name})-[${idName.name}:${typ.name}]-(${end.name})"${args} """.trim
       case NodeIndexScan(idName, labelToken, properties, argumentIds, indexOrder, indexType, supportPartitionedScan) =>
         val propNames = properties.map(_.propertyKeyToken.name)
         nodeIndexOperator(

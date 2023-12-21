@@ -100,7 +100,9 @@ import org.neo4j.cypher.internal.logical.plans.PartitionedNodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedAllRelationshipsScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedAllRelationshipsScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
 import org.neo4j.cypher.internal.logical.plans.ProjectEndpoints
@@ -550,6 +552,12 @@ object CardinalityCostModel {
 
       case plan: UndirectedRelationshipTypeScan =>
         hackyRelTypeScanCost(propertyAccess, plan.idName, directed = false)
+
+      case plan: PartitionedDirectedRelationshipTypeScan =>
+        hackyRelTypeScanCost(propertyAccess, plan.idName.name, directed = true)
+
+      case plan: PartitionedUndirectedRelationshipTypeScan =>
+        hackyRelTypeScanCost(propertyAccess, plan.idName.name, directed = false)
 
       case plan: DirectedUnionRelationshipTypesScan =>
         hackyRelTypeScanCost(propertyAccess, plan.idName, directed = true)

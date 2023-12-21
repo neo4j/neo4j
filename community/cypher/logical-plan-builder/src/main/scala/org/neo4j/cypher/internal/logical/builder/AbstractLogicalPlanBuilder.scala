@@ -180,8 +180,10 @@ import org.neo4j.cypher.internal.logical.plans.PartialSort
 import org.neo4j.cypher.internal.logical.plans.PartialTop
 import org.neo4j.cypher.internal.logical.plans.PartitionedAllNodesScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedAllRelationshipsScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedAllRelationshipsScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
 import org.neo4j.cypher.internal.logical.plans.PathPropagatingBFS
 import org.neo4j.cypher.internal.logical.plans.PointBoundingBoxRange
@@ -1495,6 +1497,44 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
           varFor(p.to),
           args.map(varFor).toSet,
           indexOrder
+        )(_)))
+    }
+  }
+
+  def partitionedRelationshipTypeScan(pattern: String, args: String*): IMPL = {
+    val p = patternParser.parse(pattern)
+    newRelationship(varFor(p.relName))
+    newNode(varFor(p.from))
+    newNode(varFor(p.to))
+    if (!p.length.isSimple) throw new UnsupportedOperationException("Cannot do a scan from a variable pattern")
+    val typ =
+      if (p.relTypes.size == 1) p.relTypes.head
+      else throw new UnsupportedOperationException("Cannot do a scan with multiple types")
+
+    p.dir match {
+      case SemanticDirection.OUTGOING =>
+        appendAtCurrentIndent(LeafOperator(PartitionedDirectedRelationshipTypeScan(
+          varFor(p.relName),
+          varFor(p.from),
+          typ,
+          varFor(p.to),
+          args.map(varFor).toSet
+        )(_)))
+      case SemanticDirection.INCOMING =>
+        appendAtCurrentIndent(LeafOperator(PartitionedDirectedRelationshipTypeScan(
+          varFor(p.relName),
+          varFor(p.to),
+          typ,
+          varFor(p.from),
+          args.map(varFor).toSet
+        )(_)))
+      case SemanticDirection.BOTH =>
+        appendAtCurrentIndent(LeafOperator(PartitionedUndirectedRelationshipTypeScan(
+          varFor(p.relName),
+          varFor(p.from),
+          typ,
+          varFor(p.to),
+          args.map(varFor).toSet
         )(_)))
     }
   }

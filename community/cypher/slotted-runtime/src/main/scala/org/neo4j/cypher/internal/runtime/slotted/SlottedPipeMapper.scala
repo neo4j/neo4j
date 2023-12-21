@@ -105,10 +105,12 @@ import org.neo4j.cypher.internal.logical.plans.PartialSort
 import org.neo4j.cypher.internal.logical.plans.PartialTop
 import org.neo4j.cypher.internal.logical.plans.PartitionedAllNodesScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedAllRelationshipsScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedAllRelationshipsScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
 import org.neo4j.cypher.internal.logical.plans.Prober
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
@@ -636,6 +638,26 @@ class SlottedPipeMapper(
           LazyType(typ),
           slots.getLongOffsetFor(end),
           indexOrder
+        )(id)
+
+      case PartitionedDirectedRelationshipTypeScan(name, start, typ, end, _) =>
+        indexRegistrator.registerTypeScan()
+        DirectedRelationshipTypeScanSlottedPipe(
+          slots.getLongOffsetFor(name),
+          slots.getLongOffsetFor(start),
+          LazyType(typ),
+          slots.getLongOffsetFor(end),
+          IndexOrderNone
+        )(id)
+
+      case PartitionedUndirectedRelationshipTypeScan(name, start, typ, end, _) =>
+        indexRegistrator.registerTypeScan()
+        UndirectedRelationshipTypeScanSlottedPipe(
+          slots.getLongOffsetFor(name),
+          slots.getLongOffsetFor(start),
+          LazyType(typ),
+          slots.getLongOffsetFor(end),
+          IndexOrderNone
         )(id)
 
       case DirectedUnionRelationshipTypesScan(name, start, types, end, _, indexOrder) =>
