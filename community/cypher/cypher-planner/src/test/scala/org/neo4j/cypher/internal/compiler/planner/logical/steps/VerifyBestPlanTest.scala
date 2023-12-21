@@ -32,8 +32,6 @@ import org.neo4j.cypher.internal.ast.UsingJoinHint
 import org.neo4j.cypher.internal.ast.UsingRangeIndexType
 import org.neo4j.cypher.internal.ast.UsingTextIndexType
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.compiler.IndexHintUnfulfillableNotification
-import org.neo4j.cypher.internal.compiler.JoinHintUnfulfillableNotification
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
@@ -62,6 +60,8 @@ import org.neo4j.exceptions.IndexHintException
 import org.neo4j.exceptions.InternalException
 import org.neo4j.exceptions.InvalidHintException
 import org.neo4j.exceptions.JoinHintException
+import org.neo4j.notifications.IndexHintUnfulfillableNotification
+import org.neo4j.notifications.JoinHintUnfulfillableNotification
 
 class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport {
 

@@ -45,7 +45,6 @@ import org.neo4j.cypher.internal.compiler.CypherPlannerFactory
 import org.neo4j.cypher.internal.compiler.ExecutionModel.BatchedParallel
 import org.neo4j.cypher.internal.compiler.ExecutionModel.BatchedSingleThreaded
 import org.neo4j.cypher.internal.compiler.ExecutionModel.Volcano
-import org.neo4j.cypher.internal.compiler.MissingParametersNotification
 import org.neo4j.cypher.internal.compiler.UpdateStrategy
 import org.neo4j.cypher.internal.compiler.defaultUpdateStrategy
 import org.neo4j.cypher.internal.compiler.eagerUpdateStrategy
@@ -105,6 +104,7 @@ import org.neo4j.kernel.impl.api.SchemaStateKey
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.logging.InternalLog
 import org.neo4j.monitoring
+import org.neo4j.notifications.MissingParametersNotification
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.MapValueBuilder
 

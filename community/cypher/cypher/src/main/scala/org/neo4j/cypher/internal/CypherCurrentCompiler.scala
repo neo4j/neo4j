@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.CypherCurrentCompiler.getTerminationStatus
-import org.neo4j.cypher.internal.NotificationWrapping.asKernelNotification
 import org.neo4j.cypher.internal.cache.CypherQueryCaches
 import org.neo4j.cypher.internal.cache.CypherQueryCaches.CachedExecutionPlan
 import org.neo4j.cypher.internal.cache.CypherQueryCaches.ExecutionPlanCacheKey
@@ -75,7 +74,6 @@ import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.exceptions.InternalException
 import org.neo4j.graphdb.ExecutionPlanDescription
-import org.neo4j.graphdb.impl.notification.NotificationImplementation
 import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.exceptions.Status.HasStatus
 import org.neo4j.kernel.api.query.CompilerInfo
@@ -89,6 +87,8 @@ import org.neo4j.kernel.impl.query.QueryExecutionMonitor
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.monitoring.Monitors
+import org.neo4j.notifications.NotificationImplementation
+import org.neo4j.notifications.NotificationWrapping.asKernelNotification
 import org.neo4j.values.virtual.MapValue
 
 import java.util.function.Supplier

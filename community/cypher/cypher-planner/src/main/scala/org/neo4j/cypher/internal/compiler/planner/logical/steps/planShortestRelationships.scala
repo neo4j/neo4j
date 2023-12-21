@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
-import org.neo4j.cypher.internal.compiler.ExhaustiveShortestPathForbiddenNotification
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.extractShortestPathPredicates
@@ -48,6 +47,7 @@ import org.neo4j.cypher.internal.util.Rewritable.RewritableAny
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.topDown
 import org.neo4j.exceptions.ExhaustiveShortestPathForbiddenException
+import org.neo4j.notifications.ExhaustiveShortestPathForbiddenNotification
 
 case object planShortestRelationships {
 

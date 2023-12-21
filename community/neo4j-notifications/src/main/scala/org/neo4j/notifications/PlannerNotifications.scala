@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler
+package org.neo4j.notifications
 
 import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.ast.UsingIndexHintType

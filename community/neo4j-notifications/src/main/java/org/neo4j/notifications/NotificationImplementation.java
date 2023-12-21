@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb.impl.notification;
+package org.neo4j.notifications;
 
 import java.util.Objects;
 import org.neo4j.graphdb.InputPosition;

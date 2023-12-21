@@ -20,9 +20,6 @@
 package org.neo4j.cypher.internal.compiler.planner
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
-import org.neo4j.cypher.internal.compiler.MissingLabelNotification
-import org.neo4j.cypher.internal.compiler.MissingPropertyNameNotification
-import org.neo4j.cypher.internal.compiler.MissingRelTypeNotification
 import org.neo4j.cypher.internal.compiler.phases.CompilationContains
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.expressions.Expression
@@ -41,6 +38,9 @@ import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
+import org.neo4j.notifications.MissingLabelNotification
+import org.neo4j.notifications.MissingPropertyNameNotification
+import org.neo4j.notifications.MissingRelTypeNotification
 
 /**
  * Find labels, relationships types and property keys that do not exist in the db and issue warnings.

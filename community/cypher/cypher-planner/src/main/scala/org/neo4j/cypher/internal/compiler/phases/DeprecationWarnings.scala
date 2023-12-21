@@ -22,9 +22,6 @@ package org.neo4j.cypher.internal.compiler.phases
 import org.neo4j.cypher.internal.ast.ProcedureResultItem
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.UnresolvedCall
-import org.neo4j.cypher.internal.compiler.DeprecatedFieldNotification
-import org.neo4j.cypher.internal.compiler.DeprecatedProcedureNotification
-import org.neo4j.cypher.internal.compiler.ProcedureWarningNotification
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.DEPRECATION_WARNINGS
@@ -38,6 +35,9 @@ import org.neo4j.cypher.internal.util.DeprecatedFunctionNotification
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.exceptions.InternalException
+import org.neo4j.notifications.DeprecatedFieldNotification
+import org.neo4j.notifications.DeprecatedProcedureNotification
+import org.neo4j.notifications.ProcedureWarningNotification
 
 /**
  * Find calls to deprecated procedures and functions and generate warnings for them.

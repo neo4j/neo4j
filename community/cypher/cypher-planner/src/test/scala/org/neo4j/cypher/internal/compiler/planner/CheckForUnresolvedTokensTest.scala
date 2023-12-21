@@ -26,9 +26,6 @@ import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
 import org.neo4j.cypher.internal.ast.semantics.ExpressionTypeInfo
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.compiler.MissingLabelNotification
-import org.neo4j.cypher.internal.compiler.MissingPropertyNameNotification
-import org.neo4j.cypher.internal.compiler.MissingRelTypeNotification
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
@@ -52,6 +49,9 @@ import org.neo4j.cypher.internal.util.symbols.CTDuration
 import org.neo4j.cypher.internal.util.symbols.CTMap
 import org.neo4j.cypher.internal.util.symbols.CTPoint
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.notifications.MissingLabelNotification
+import org.neo4j.notifications.MissingPropertyNameNotification
+import org.neo4j.notifications.MissingRelTypeNotification
 import org.neo4j.values.storable.DurationFields
 import org.neo4j.values.storable.PointFields
 import org.neo4j.values.storable.TemporalValue.TemporalFields

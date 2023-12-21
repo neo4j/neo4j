@@ -17,28 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal
+package org.neo4j.notifications
 
 import org.neo4j.cypher.internal.ast.UsingAnyIndexType
 import org.neo4j.cypher.internal.ast.UsingPointIndexType
 import org.neo4j.cypher.internal.ast.UsingRangeIndexType
 import org.neo4j.cypher.internal.ast.UsingTextIndexType
-import org.neo4j.cypher.internal.compiler.CodeGenerationFailedNotification
-import org.neo4j.cypher.internal.compiler.DeprecatedFieldNotification
-import org.neo4j.cypher.internal.compiler.DeprecatedProcedureNotification
-import org.neo4j.cypher.internal.compiler.EagerLoadCsvNotification
-import org.neo4j.cypher.internal.compiler.ExhaustiveShortestPathForbiddenNotification
-import org.neo4j.cypher.internal.compiler.IndexHintUnfulfillableNotification
-import org.neo4j.cypher.internal.compiler.JoinHintUnfulfillableNotification
-import org.neo4j.cypher.internal.compiler.LargeLabelWithLoadCsvNotification
-import org.neo4j.cypher.internal.compiler.MissingLabelNotification
-import org.neo4j.cypher.internal.compiler.MissingParametersNotification
-import org.neo4j.cypher.internal.compiler.MissingPropertyNameNotification
-import org.neo4j.cypher.internal.compiler.MissingRelTypeNotification
-import org.neo4j.cypher.internal.compiler.NodeIndexLookupUnfulfillableNotification
-import org.neo4j.cypher.internal.compiler.ProcedureWarningNotification
-import org.neo4j.cypher.internal.compiler.RelationshipIndexLookupUnfulfillableNotification
-import org.neo4j.cypher.internal.compiler.RuntimeUnsupportedNotification
 import org.neo4j.cypher.internal.util.AssignPrivilegeCommandHasNoEffectNotification
 import org.neo4j.cypher.internal.util.CartesianProductNotification
 import org.neo4j.cypher.internal.util.CordonedServersExistedDuringAllocation
@@ -72,9 +56,6 @@ import org.neo4j.cypher.internal.util.UnionReturnItemsInDifferentOrder
 import org.neo4j.cypher.internal.util.UnsatisfiableRelationshipTypeExpression
 import org.neo4j.exceptions.IndexHintException.IndexHintIndexType
 import org.neo4j.graphdb
-import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription
-import org.neo4j.graphdb.impl.notification.NotificationDetail
-import org.neo4j.graphdb.impl.notification.NotificationImplementation
 
 import scala.jdk.CollectionConverters.SeqHasAsJava
 import scala.jdk.CollectionConverters.SetHasAsJava

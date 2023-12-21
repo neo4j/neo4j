@@ -32,9 +32,9 @@ import org.neo4j.exceptions.IndexHintException.IndexHintIndexType;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription;
-import org.neo4j.graphdb.impl.notification.NotificationDetail;
 import org.neo4j.internal.helpers.collection.Iterables;
+import org.neo4j.notifications.NotificationCodeWithDescription;
+import org.neo4j.notifications.NotificationDetail;
 
 class NotificationAcceptanceTest extends NotificationTestSupport {
 

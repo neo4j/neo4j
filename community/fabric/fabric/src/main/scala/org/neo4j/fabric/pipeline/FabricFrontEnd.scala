@@ -21,7 +21,6 @@ package org.neo4j.fabric.pipeline
 
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.CachingPreParser
-import org.neo4j.cypher.internal.NotificationWrapping
 import org.neo4j.cypher.internal.PreParsedQuery
 import org.neo4j.cypher.internal.QueryOptions
 import org.neo4j.cypher.internal.ast.Statement
@@ -56,6 +55,7 @@ import org.neo4j.fabric.planning.FabricPlan
 import org.neo4j.fabric.util.Errors
 import org.neo4j.graphdb.Notification
 import org.neo4j.monitoring
+import org.neo4j.notifications.NotificationWrapping
 import org.neo4j.values.virtual.MapValue
 
 case class FabricFrontEnd(

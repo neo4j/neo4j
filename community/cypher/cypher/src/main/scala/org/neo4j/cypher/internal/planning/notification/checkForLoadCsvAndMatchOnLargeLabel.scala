@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.planning.notification
 
-import org.neo4j.cypher.internal.compiler.LargeLabelWithLoadCsvNotification
 import org.neo4j.cypher.internal.logical.plans.LoadCSV
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
@@ -29,6 +28,7 @@ import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.LabelId
+import org.neo4j.notifications.LargeLabelWithLoadCsvNotification
 
 case class checkForLoadCsvAndMatchOnLargeLabel(planContext: PlanContext, nonIndexedLabelWarningThreshold: Long)
     extends NotificationChecker {

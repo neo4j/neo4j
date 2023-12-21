@@ -78,6 +78,7 @@
     <module>capabilities</module>
     <module>storage-engine-util</module>
     <module>bootcheck</module>
+    <module>neo4j-notifications</module>
   </modules>
 
   <profiles>

@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.compiler.RuntimeUnsupportedNotification
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.options.CypherInterpretedPipesFallbackOption
@@ -40,6 +39,7 @@ import org.neo4j.exceptions.RuntimeUnsupportedException
 import org.neo4j.internal.kernel.api.Procedures
 import org.neo4j.internal.kernel.api.SchemaRead
 import org.neo4j.logging.InternalLog
+import org.neo4j.notifications.RuntimeUnsupportedNotification
 
 import java.time.Clock
 

@@ -27,9 +27,6 @@ import org.neo4j.cypher.internal.QueryCache.NOT_PRESENT
 import org.neo4j.cypher.internal.cache.CacheSize
 import org.neo4j.cypher.internal.cache.CacheTracer
 import org.neo4j.cypher.internal.cache.CaffeineCacheFactory
-import org.neo4j.cypher.internal.compiler.MissingLabelNotification
-import org.neo4j.cypher.internal.compiler.MissingPropertyNameNotification
-import org.neo4j.cypher.internal.compiler.MissingRelTypeNotification
 import org.neo4j.cypher.internal.compiler.helpers.ParameterValueTypeHelper
 import org.neo4j.cypher.internal.options.CypherReplanOption
 import org.neo4j.cypher.internal.util.InternalNotification
@@ -37,6 +34,9 @@ import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 import org.neo4j.internal.kernel.api.TokenRead
 import org.neo4j.kernel.api.query.ExecutingQuery
 import org.neo4j.kernel.impl.query.TransactionalContext
+import org.neo4j.notifications.MissingLabelNotification
+import org.neo4j.notifications.MissingPropertyNameNotification
+import org.neo4j.notifications.MissingRelTypeNotification
 import org.neo4j.values.virtual.MapValue
 
 import scala.jdk.CollectionConverters.MapHasAsScala

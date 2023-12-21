@@ -17,58 +17,59 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb.impl.notification;
+package org.neo4j.notifications;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.SideEffectVisibility;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.codeGenerationFailed;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.commandHasNoEffectAssignPrivilege;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.commandHasNoEffectGrantRole;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.commandHasNoEffectRevokePrivilege;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.commandHasNoEffectRevokeRole;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.cordonedServersExist;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedConnectComponentsPlannerPreParserOption;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedDatabaseName;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedFormat;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedFunctionWithReplacement;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedFunctionWithoutReplacement;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedIdentifierUnicode;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedIdentifierWhitespaceUnicode;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedNodeOrRelationshipOnRhsSetClause;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedProcedureReturnField;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedProcedureWithReplacement;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedProcedureWithoutReplacement;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedPropertyReferenceInCreate;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedRelationshipTypeSeparator;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedRuntimeOption;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedShortestPathWithFixedLengthRelationship;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.deprecatedTextIndexProvider;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.eagerLoadCsv;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.exhaustiveShortestPath;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.homeDatabaseNotPresent;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.impossibleRevokeCommand;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.indexHintUnfulfillable;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.indexLookupForDynamicProperty;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.joinHintUnfulfillable;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.largeLabelLoadCsv;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.missingLabel;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.missingParameterForExplain;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.missingPropertyName;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.missingRelType;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.noDatabasesReallocated;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.procedureWarning;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.repeatedRelationshipReference;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.repeatedVarLengthRelationshipReference;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.runtimeUnsupported;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.serverAlreadyCordoned;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.serverAlreadyEnabled;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.subqueryVariableShadowing;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.unboundedShortestPath;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.unionReturnOrder;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.unsatisfiableRelationshipTypeExpression;
-import static org.neo4j.graphdb.impl.notification.NotificationDetail.repeatedRelationship;
-import static org.neo4j.graphdb.impl.notification.NotificationDetail.unsatisfiableRelTypeExpression;
+import static org.neo4j.notifications.NotificationCodeWithDescription.SideEffectVisibility;
+import static org.neo4j.notifications.NotificationCodeWithDescription.cartesianProduct;
+import static org.neo4j.notifications.NotificationCodeWithDescription.codeGenerationFailed;
+import static org.neo4j.notifications.NotificationCodeWithDescription.commandHasNoEffectAssignPrivilege;
+import static org.neo4j.notifications.NotificationCodeWithDescription.commandHasNoEffectGrantRole;
+import static org.neo4j.notifications.NotificationCodeWithDescription.commandHasNoEffectRevokePrivilege;
+import static org.neo4j.notifications.NotificationCodeWithDescription.commandHasNoEffectRevokeRole;
+import static org.neo4j.notifications.NotificationCodeWithDescription.cordonedServersExist;
+import static org.neo4j.notifications.NotificationCodeWithDescription.deprecatedConnectComponentsPlannerPreParserOption;
+import static org.neo4j.notifications.NotificationCodeWithDescription.deprecatedDatabaseName;
+import static org.neo4j.notifications.NotificationCodeWithDescription.deprecatedFormat;
+import static org.neo4j.notifications.NotificationCodeWithDescription.deprecatedFunctionWithReplacement;
+import static org.neo4j.notifications.NotificationCodeWithDescription.deprecatedFunctionWithoutReplacement;
+import static org.neo4j.notifications.NotificationCodeWithDescription.deprecatedIdentifierUnicode;
+import static org.neo4j.notifications.NotificationCodeWithDescription.deprecatedIdentifierWhitespaceUnicode;
+import static org.neo4j.notifications.NotificationCodeWithDescription.deprecatedNodeOrRelationshipOnRhsSetClause;
+import static org.neo4j.notifications.NotificationCodeWithDescription.deprecatedProcedureReturnField;
+import static org.neo4j.notifications.NotificationCodeWithDescription.deprecatedProcedureWithReplacement;
+import static org.neo4j.notifications.NotificationCodeWithDescription.deprecatedProcedureWithoutReplacement;
+import static org.neo4j.notifications.NotificationCodeWithDescription.deprecatedPropertyReferenceInCreate;
+import static org.neo4j.notifications.NotificationCodeWithDescription.deprecatedRelationshipTypeSeparator;
+import static org.neo4j.notifications.NotificationCodeWithDescription.deprecatedRuntimeOption;
+import static org.neo4j.notifications.NotificationCodeWithDescription.deprecatedShortestPathWithFixedLengthRelationship;
+import static org.neo4j.notifications.NotificationCodeWithDescription.deprecatedTextIndexProvider;
+import static org.neo4j.notifications.NotificationCodeWithDescription.eagerLoadCsv;
+import static org.neo4j.notifications.NotificationCodeWithDescription.exhaustiveShortestPath;
+import static org.neo4j.notifications.NotificationCodeWithDescription.homeDatabaseNotPresent;
+import static org.neo4j.notifications.NotificationCodeWithDescription.impossibleRevokeCommand;
+import static org.neo4j.notifications.NotificationCodeWithDescription.indexHintUnfulfillable;
+import static org.neo4j.notifications.NotificationCodeWithDescription.indexLookupForDynamicProperty;
+import static org.neo4j.notifications.NotificationCodeWithDescription.joinHintUnfulfillable;
+import static org.neo4j.notifications.NotificationCodeWithDescription.largeLabelLoadCsv;
+import static org.neo4j.notifications.NotificationCodeWithDescription.missingLabel;
+import static org.neo4j.notifications.NotificationCodeWithDescription.missingParameterForExplain;
+import static org.neo4j.notifications.NotificationCodeWithDescription.missingPropertyName;
+import static org.neo4j.notifications.NotificationCodeWithDescription.missingRelType;
+import static org.neo4j.notifications.NotificationCodeWithDescription.noDatabasesReallocated;
+import static org.neo4j.notifications.NotificationCodeWithDescription.procedureWarning;
+import static org.neo4j.notifications.NotificationCodeWithDescription.repeatedRelationshipReference;
+import static org.neo4j.notifications.NotificationCodeWithDescription.repeatedVarLengthRelationshipReference;
+import static org.neo4j.notifications.NotificationCodeWithDescription.runtimeUnsupported;
+import static org.neo4j.notifications.NotificationCodeWithDescription.serverAlreadyCordoned;
+import static org.neo4j.notifications.NotificationCodeWithDescription.serverAlreadyEnabled;
+import static org.neo4j.notifications.NotificationCodeWithDescription.subqueryVariableShadowing;
+import static org.neo4j.notifications.NotificationCodeWithDescription.unboundedShortestPath;
+import static org.neo4j.notifications.NotificationCodeWithDescription.unionReturnOrder;
+import static org.neo4j.notifications.NotificationCodeWithDescription.unsatisfiableRelationshipTypeExpression;
+import static org.neo4j.notifications.NotificationDetail.repeatedRelationship;
+import static org.neo4j.notifications.NotificationDetail.unsatisfiableRelTypeExpression;
 
 import java.util.Arrays;
 import java.util.List;
@@ -178,8 +179,8 @@ class NotificationCodeWithDescriptionTest {
         idents.add("n");
         idents.add("node2");
         String identifierDetail = NotificationDetail.cartesianProductDescription(idents);
-        NotificationImplementation notification = NotificationCodeWithDescription.cartesianProduct(
-                InputPosition.empty, identifierDetail, "(node1), (node)--(node2)");
+        NotificationImplementation notification =
+                cartesianProduct(InputPosition.empty, identifierDetail, "(node1), (node)--(node2)");
 
         verifyNotification(
                 notification,

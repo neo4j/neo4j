@@ -31,8 +31,6 @@ import org.neo4j.cypher.internal.ast.UsingTextIndexType
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.compiler.IndexHintUnfulfillableNotification
-import org.neo4j.cypher.internal.compiler.JoinHintUnfulfillableNotification
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexLeafPlanner.IndexCompatiblePredicate
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProvider
@@ -58,6 +56,8 @@ import org.neo4j.exceptions.JoinHintException
 import org.neo4j.exceptions.Neo4jException
 import org.neo4j.messages.MessageUtil
 import org.neo4j.messages.MessageUtil.Numerus
+import org.neo4j.notifications.IndexHintUnfulfillableNotification
+import org.neo4j.notifications.JoinHintUnfulfillableNotification
 
 import scala.jdk.CollectionConverters.SeqHasAsJava
 
