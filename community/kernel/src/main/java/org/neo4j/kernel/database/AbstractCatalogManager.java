@@ -17,24 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.fabric.eval
+package org.neo4j.kernel.database;
 
-import org.neo4j.bolt.protocol.common.message.request.connection.RoutingContext
-import org.neo4j.fabric.executor.Location
-import org.neo4j.kernel.database.AbstractCatalogManager
-import org.neo4j.kernel.database.DatabaseReference
-import org.neo4j.kernel.database.NamedDatabaseId
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-trait CatalogManager extends AbstractCatalogManager {
-
-  def isVirtualDatabase(databaseId: NamedDatabaseId): Boolean
-
-  def currentCatalog(): Catalog
-
-  def locationOf(
-    sessionDatabase: DatabaseReference,
-    graph: Catalog.Graph,
-    requireWritable: Boolean,
-    routingContext: RoutingContext
-  ): Location
-}
+public abstract class AbstractCatalogManager extends LifecycleAdapter {}

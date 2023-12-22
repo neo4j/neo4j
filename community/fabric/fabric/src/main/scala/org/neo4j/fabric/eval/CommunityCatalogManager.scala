@@ -28,7 +28,6 @@ import org.neo4j.fabric.executor.Location
 import org.neo4j.kernel.database.DatabaseReference
 import org.neo4j.kernel.database.DatabaseReferenceImpl
 import org.neo4j.kernel.database.NamedDatabaseId
-import org.neo4j.kernel.lifecycle.LifecycleAdapter
 import org.neo4j.storageengine.api.TransactionIdStore
 
 import java.util.function.Supplier
@@ -38,13 +37,13 @@ import scala.jdk.CollectionConverters.ListHasAsScala
 class CommunityCatalogManager(
   databaseLookup: DatabaseLookup,
   systemDbTransactionIdStoreSupplier: Supplier[TransactionIdStore]
-) extends LifecycleAdapter with CatalogManager {
+) extends CatalogManager {
 
   private val cachedCatalogLock = new Object()
   @volatile private var cachedCatalog: Catalog = _
   @volatile private var cachedCatalogTxId: Long = 0
 
-  private lazy val systemDbTransactionIdStore = systemDbTransactionIdStoreSupplier.get()
+  @volatile private var systemDbTransactionIdStore: TransactionIdStore = _
 
   final override def currentCatalog(): Catalog = {
     val lastTxId = systemDbTransactionIdStore.getLastClosedTransactionId
@@ -120,6 +119,11 @@ class CommunityCatalogManager(
 
   override def isVirtualDatabase(databaseId: NamedDatabaseId): Boolean =
     databaseLookup.databaseClassifier.isVirtualDatabase(databaseId)
+
+  override def start(): Unit = {
+    systemDbTransactionIdStore = systemDbTransactionIdStoreSupplier.get()
+  }
+
 }
 
 class IdProvider(startingFrom: Long = 0) {

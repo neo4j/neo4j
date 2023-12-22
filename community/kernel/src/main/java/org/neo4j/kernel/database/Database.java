@@ -387,6 +387,13 @@ public class Database extends AbstractDatabase {
         DatabaseLayoutWatcher watcherService = watcherServiceFactory.apply(databaseLayout);
         life.add(watcherService);
         databaseDependencies.satisfyDependency(watcherService);
+
+        // The CatalogManager has to update the dependency on TransactionIdStore when the system database is started
+        // Note: CatalogManager does not exist in community edition if we use the new query router stack
+        if (databaseDependencies.containsDependency(AbstractCatalogManager.class)) {
+            var catalogManager = databaseDependencies.resolveDependency(AbstractCatalogManager.class);
+            life.add(catalogManager);
+        }
     }
 
     /**

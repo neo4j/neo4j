@@ -128,7 +128,7 @@ public abstract class FabricServicesBootstrap extends CommonQueryRouterBoostrap 
                 TransactionMonitorScheduler.class);
 
         var errorReporter = new ErrorReporter(logService);
-        var catalogManager = register(createCatalogManger(fabricDatabaseManager), CatalogManager.class);
+        var catalogManager = register(createCatalogManager(fabricDatabaseManager), CatalogManager.class);
 
         var globalProcedures = resolve(GlobalProcedures.class);
 
@@ -190,7 +190,7 @@ public abstract class FabricServicesBootstrap extends CommonQueryRouterBoostrap 
 
     protected abstract FabricDatabaseManager createFabricDatabaseManager(FabricConfig fabricConfig);
 
-    protected abstract CatalogManager createCatalogManger(FabricDatabaseManager fabricDatabaseManager);
+    protected abstract CatalogManager createCatalogManager(FabricDatabaseManager fabricDatabaseManager);
 
     protected abstract FabricRemoteExecutor bootstrapRemoteStack();
 
@@ -219,7 +219,7 @@ public abstract class FabricServicesBootstrap extends CommonQueryRouterBoostrap 
         }
 
         @Override
-        protected CatalogManager createCatalogManger(FabricDatabaseManager fabricDatabaseManager) {
+        protected CatalogManager createCatalogManager(FabricDatabaseManager fabricDatabaseManager) {
             return new CommunityCatalogManager(
                     createDatabaseLookup(fabricDatabaseManager), this::getSystemDbTransactionIdStore);
         }
