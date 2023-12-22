@@ -99,9 +99,9 @@ case object JavaCCParser {
     // Return position to unmatched quotes
     currentDelimiter match {
       case Some(('/', index)) =>
-        Some("Failed to parse comment. A comment starting on `/*` must have a closing `*/`.", index)
+        Some(("Failed to parse comment. A comment starting on `/*` must have a closing `*/`.", index))
       case Some((_, index)) =>
-        Some("Failed to parse string literal. The query must contain an even number of non-escaped quotes.", index)
+        Some(("Failed to parse string literal. The query must contain an even number of non-escaped quotes.", index))
       case None => None
     }
   }
