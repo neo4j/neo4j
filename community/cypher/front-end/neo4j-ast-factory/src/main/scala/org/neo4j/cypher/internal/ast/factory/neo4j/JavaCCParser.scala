@@ -48,18 +48,10 @@ case object JavaCCParser {
       try {
         new Cypher(astFactory, astExceptionFactory, charStream).Statements()
       } catch {
-        case _: TokenMgrException if findMismatchedComments(queryText).nonEmpty =>
-          throw new SyntaxException(
-            "Failed to parse comment. A comment starting on `/*` must have a closing `*/`.",
-            queryText,
-            findMismatchedComments(queryText).get
-          )
-        case _: TokenMgrException if findMismatchedQuotes(queryText).nonEmpty =>
-          throw new SyntaxException(
-            "Failed to parse string literal. The query must contain an even number of non-escaped quotes.",
-            queryText,
-            findMismatchedQuotes(queryText).get
-          )
+        // Specific error message for unclosed string literals and comments
+        case _: TokenMgrException if findMismatchedDelimiters(queryText).nonEmpty =>
+          val (errorMessage, position) = findMismatchedDelimiters(queryText).get
+          throw new SyntaxException(errorMessage, queryText, position)
 
         // These are our own errors with Neo4j status codes so are safe to re-throw
         case e: OpenCypherExceptionFactory.SyntaxException => throw e
@@ -79,46 +71,38 @@ case object JavaCCParser {
     }
   }
 
-  private def findMismatchedQuotes(input: String): Option[Int] = {
-    var currentQuote: Option[(Char, Int)] = None
+  private def findMismatchedDelimiters(input: String): Option[(String, Int)] = {
+    var currentDelimiter: Option[(Char, Int)] = None
 
     for ((char, index) <- input.zipWithIndex) {
-      def updateCurrentQuote(): Unit = {
-        currentQuote = currentQuote match {
-          case None              => Some((char, index)) // string literal opened
-          case Some((`char`, _)) => None // string literal closed
-          case _                 => currentQuote // ongoing string with different quoting => ignore quote
+      def updateCurrentDelimiter(): Unit = {
+        currentDelimiter = currentDelimiter match {
+          case None              => Some((char, index)) // string literal or comment opened
+          case Some((`char`, _)) => None // string literal or comment closed
+          case _                 => currentDelimiter // other delimiter in progress, ignore this one
         }
       }
 
       char match {
         case '"' if (index == 0) || (input.charAt(index - 1) != '\\') => // Unescaped double quote
-          updateCurrentQuote()
+          updateCurrentDelimiter()
 
         case '\'' if (index == 0) || (input.charAt(index - 1) != '\\') => // Unescaped single quote
-          updateCurrentQuote()
+          updateCurrentDelimiter()
+
+        case '/' if (index < input.length - 1) || (input.charAt(index + 1) == '*') => // Start of comment
+          updateCurrentDelimiter()
+
         case _ =>
       }
     }
     // Return position to unmatched quotes
-    if (currentQuote.isEmpty) None else Some(currentQuote.get._2)
-  }
-
-  private def findMismatchedComments(input: String): Option[Int] = {
-    var currentComment: Option[Int] = None
-
-    for ((char, index) <- input.zipWithIndex) {
-      char match {
-        case '*' if (index > 0) || (input.charAt(index - 1) == '/') => // Start of comment
-          currentComment = currentComment match {
-            case None    => Some(index - 1) // comment opened
-            case Some(_) => None // comment closed
-          }
-
-        case _ =>
-      }
+    currentDelimiter match {
+      case Some(('/', index)) =>
+        Some("Failed to parse comment. A comment starting on `/*` must have a closing `*/`.", index)
+      case Some((_, index)) =>
+        Some("Failed to parse string literal. The query must contain an even number of non-escaped quotes.", index)
+      case None => None
     }
-    // Return position to unmatched comment
-    currentComment
   }
 }
