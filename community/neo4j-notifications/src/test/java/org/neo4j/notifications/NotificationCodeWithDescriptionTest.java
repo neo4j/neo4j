@@ -929,7 +929,7 @@ class NotificationCodeWithDescriptionTest {
                 "Neo.ClientNotification.Cluster.CordonedServersExistedDuringAllocation",
                 "Server(s) `server-1,server-2,server-3` are cordoned. This can impact allocation decisions.",
                 NotificationCategory.TOPOLOGY,
-                null);
+                "Cordoned servers existed when making an allocation decision. Server(s) `server-1,server-2,server-3` are cordoned. This can impact allocation decisions.");
     }
 
     private void verifyNotification(
@@ -979,6 +979,7 @@ class NotificationCodeWithDescriptionTest {
             // Covers all notification information except NotificationDetail and position, which are query dependent
             notificationBuilder.append(notificationCode.description()); // Title
             notificationBuilder.append(notification.getDescription()); // Description
+            notificationBuilder.append(notification.getMessage());
             notificationBuilder.append(notificationCode.serialize());
             notificationBuilder.append(notificationCode.getSeverity());
             notificationBuilder.append(notificationCode.getNotificationCategory());
@@ -987,8 +988,8 @@ class NotificationCodeWithDescriptionTest {
         byte[] notificationHash = DigestUtils.sha256(notificationBuilder.toString());
 
         byte[] expectedHash = new byte[] {
-            -28, -71, 38, 54, 97, -112, -5, 12, 103, -124, 85, -73, 94, 31, -10, -92, 23, 87, -3, -79, -8, -16, -128,
-            90, -88, 126, -63, -34, -48, 95, 20, -83
+            -96, 62, -70, -67, -57, 55, 38, 64, -126, 101, -2, 48, 99, 58, 51, 82, 114, 21, -20, -103, 44, 90, 13, 1,
+            78, 126, 17, -118, -114, 42, 84, -5
         };
 
         if (!Arrays.equals(notificationHash, expectedHash)) {

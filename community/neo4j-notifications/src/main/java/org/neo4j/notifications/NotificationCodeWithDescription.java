@@ -277,17 +277,12 @@ public enum NotificationCodeWithDescription {
                     + " To overcome this, extract the subquery expression into a preceding WITH and potentially wrap the mutating statement into a CALL subquery."),
     CORDONED_SERVERS_EXISTED_DURING_ALLOCATION(
             Status.Cluster.CordonedServersExistedDuringAllocation,
-            "Server(s) `%s` are cordoned. This can impact allocation decisions.");
+            "Server(s) `%s` are cordoned. This can impact allocation decisions.",
+            "Cordoned servers existed when making an allocation decision. Server(s) `%s` are cordoned. This can impact allocation decisions.");
 
     private final Status status;
     private final String description;
     private final String message;
-
-    NotificationCodeWithDescription(Status status, String description) {
-        this.status = status;
-        this.description = description;
-        this.message = null;
-    }
 
     NotificationCodeWithDescription(Status status, String description, String message) {
         this.status = status;
@@ -309,101 +304,101 @@ public enum NotificationCodeWithDescription {
 
     public static NotificationImplementation cartesianProduct(
             InputPosition position, String oldDetail, String pattern) {
-        return CARTESIAN_PRODUCT.notificationWithMessage(position, new String[] {oldDetail}, new String[] {pattern});
+        return CARTESIAN_PRODUCT.notificationWithParameters(position, new String[] {oldDetail}, new String[] {pattern});
     }
 
     public static NotificationImplementation runtimeUnsupported(
             InputPosition position, String failingRuntimeConf, String fallbackRuntimeConf, String cause) {
         final var oldDetails = new String[] {cause};
         final var params = new String[] {failingRuntimeConf, fallbackRuntimeConf, cause};
-        return RUNTIME_UNSUPPORTED.notificationWithMessage(position, oldDetails, params);
+        return RUNTIME_UNSUPPORTED.notificationWithParameters(position, oldDetails, params);
     }
 
     public static NotificationImplementation indexHintUnfulfillable(
             InputPosition position, String oldDetail, String indexes) {
-        return INDEX_HINT_UNFULFILLABLE.notificationWithMessage(
+        return INDEX_HINT_UNFULFILLABLE.notificationWithParameters(
                 position, new String[] {oldDetail}, new String[] {indexes});
     }
 
     public static NotificationImplementation joinHintUnfulfillable(
             InputPosition position, String oldDetail, String variableNames) {
-        return JOIN_HINT_UNFULFILLABLE.notificationWithMessage(
+        return JOIN_HINT_UNFULFILLABLE.notificationWithParameters(
                 position, new String[] {oldDetail}, new String[] {variableNames});
     }
 
     public static NotificationImplementation indexLookupForDynamicProperty(
             InputPosition position, String oldDetails, String parameters) {
-        return INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY.notificationWithMessage(
+        return INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY.notificationWithParameters(
                 position, new String[] {oldDetails}, new String[] {parameters});
     }
 
     public static NotificationImplementation deprecatedFunctionWithoutReplacement(
             InputPosition position, String param, String oldName) {
-        return DEPRECATED_FUNCTION_WITHOUT_REPLACEMENT.notificationWithMessage(
+        return DEPRECATED_FUNCTION_WITHOUT_REPLACEMENT.notificationWithParameters(
                 position, new String[] {param}, new String[] {oldName});
     }
 
     public static NotificationImplementation deprecatedFunctionWithReplacement(
             InputPosition position, String param, String oldName, String newName) {
-        return DEPRECATED_FUNCTION_WITH_REPLACEMENT.notificationWithMessage(
+        return DEPRECATED_FUNCTION_WITH_REPLACEMENT.notificationWithParameters(
                 position, new String[] {param}, new String[] {oldName, newName});
     }
 
     public static NotificationImplementation deprecatedProcedureWithoutReplacement(
             InputPosition position, String param, String oldName) {
-        return DEPRECATED_PROCEDURE_WITHOUT_REPLACEMENT.notificationWithMessage(
+        return DEPRECATED_PROCEDURE_WITHOUT_REPLACEMENT.notificationWithParameters(
                 position, new String[] {param}, new String[] {oldName});
     }
 
     public static NotificationImplementation deprecatedProcedureWithReplacement(
             InputPosition position, String param, String oldName, String newName) {
-        return DEPRECATED_PROCEDURE_WITH_REPLACEMENT.notificationWithMessage(
+        return DEPRECATED_PROCEDURE_WITH_REPLACEMENT.notificationWithParameters(
                 position, new String[] {param}, new String[] {oldName, newName});
     }
 
     public static NotificationImplementation deprecatedRuntimeOption(
             InputPosition position, String param, String oldOption, String newOption) {
-        return DEPRECATED_RUNTIME_OPTION.notificationWithMessage(
+        return DEPRECATED_RUNTIME_OPTION.notificationWithParameters(
                 position, new String[] {param}, new String[] {oldOption, newOption});
     }
 
     public static NotificationImplementation procedureWarning(
             InputPosition position, String parameter, String warning, String procedure) {
-        return PROCEDURE_WARNING.notificationWithMessage(
+        return PROCEDURE_WARNING.notificationWithParameters(
                 position, new String[] {parameter}, new String[] {procedure, warning});
     }
 
     public static NotificationImplementation deprecatedProcedureReturnField(
             InputPosition position, String param, String procedure, String field) {
-        return DEPRECATED_PROCEDURE_RETURN_FIELD.notificationWithMessage(
+        return DEPRECATED_PROCEDURE_RETURN_FIELD.notificationWithParameters(
                 position, new String[] {param}, new String[] {field, procedure});
     }
 
     public static NotificationImplementation deprecatedRelationshipTypeSeparator(
             InputPosition position, String param, String deprecated, String replacement) {
-        return DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR.notificationWithMessage(
+        return DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR.notificationWithParameters(
                 position, new String[] {param}, new String[] {deprecated, replacement});
     }
 
     public static NotificationImplementation deprecatedNodeOrRelationshipOnRhsSetClause(
             InputPosition position, String deprecated, String replacement) {
-        return DEPRECATED_NODE_OR_RELATIONSHIP_ON_RHS_SET_CLAUSE.notificationWithMessage(
+        return DEPRECATED_NODE_OR_RELATIONSHIP_ON_RHS_SET_CLAUSE.notificationWithParameters(
                 position, new String[] {}, new String[] {deprecated, replacement});
     }
 
     public static NotificationImplementation deprecatedPropertyReferenceInCreate(InputPosition position, String param) {
-        return DEPRECATED_PROPERTY_REFERENCE_IN_CREATE.notificationWithMessage(
+        return DEPRECATED_PROPERTY_REFERENCE_IN_CREATE.notificationWithParameters(
                 position, new String[] {param}, new String[] {param});
     }
 
     public static NotificationImplementation deprecatedShortestPathWithFixedLengthRelationship(
             InputPosition position, String deprecated, String replacement) {
-        return DEPRECATED_SHORTEST_PATH_WITH_FIXED_LENGTH_RELATIONSHIP.notificationWithMessage(
+        return DEPRECATED_SHORTEST_PATH_WITH_FIXED_LENGTH_RELATIONSHIP.notificationWithParameters(
                 position, new String[] {}, new String[] {deprecated, replacement});
     }
 
     public static NotificationImplementation deprecatedTextIndexProvider(InputPosition position) {
-        return DEPRECATED_TEXT_INDEX_PROVIDER.notificationWithMessage(position, new String[] {}, new String[] {
+        return DEPRECATED_TEXT_INDEX_PROVIDER.notificationWithParameters(position, new String[] {}, new String[] {
             TextIndexProvider.DESCRIPTOR.name(), TrigramIndexProvider.DESCRIPTOR.name()
         });
     }
@@ -411,57 +406,57 @@ public enum NotificationCodeWithDescription {
     public static NotificationImplementation deprecatedIdentifierWhitespaceUnicode(
             InputPosition position, Character unicode, String identifier) {
         String formattedUnicode = String.format("\\u%04x", (int) unicode);
-        return DEPRECATED_IDENTIFIER_WHITESPACE_UNICODE.notificationWithMessage(
+        return DEPRECATED_IDENTIFIER_WHITESPACE_UNICODE.notificationWithParameters(
                 position, new String[] {formattedUnicode, identifier}, new String[] {formattedUnicode, identifier});
     }
 
     public static NotificationImplementation deprecatedIdentifierUnicode(
             InputPosition position, Character unicode, String identifier) {
         String formattedUnicode = String.format("\\u%04x", (int) unicode);
-        return DEPRECATED_IDENTIFIER_UNICODE.notificationWithMessage(
+        return DEPRECATED_IDENTIFIER_UNICODE.notificationWithParameters(
                 position, new String[] {formattedUnicode, identifier}, new String[] {formattedUnicode, identifier});
     }
 
     public static NotificationImplementation eagerLoadCsv(InputPosition position) {
-        return EAGER_LOAD_CSV.notificationWithMessage(position, new String[] {}, new String[] {});
+        return EAGER_LOAD_CSV.notification(position);
     }
 
     public static NotificationImplementation deprecatedFormat(
             InputPosition position, String oldDetail, String deprecatedFormat, String newFormat) {
-        return DEPRECATED_FORMAT.notificationWithMessage(
+        return DEPRECATED_FORMAT.notificationWithParameters(
                 position, new String[] {oldDetail}, new String[] {deprecatedFormat, newFormat});
     }
 
     public static NotificationImplementation largeLabelLoadCsv(InputPosition position, String labelName) {
-        return LARGE_LABEL_LOAD_CSV.notificationWithMessage(position, new String[] {}, new String[] {labelName});
+        return LARGE_LABEL_LOAD_CSV.notificationWithParameters(position, new String[] {}, new String[] {labelName});
     }
 
     public static NotificationImplementation missingLabel(InputPosition position, String oldDetail, String labelName) {
-        return MISSING_LABEL.notificationWithMessage(position, new String[] {oldDetail}, new String[] {labelName});
+        return MISSING_LABEL.notificationWithParameters(position, new String[] {oldDetail}, new String[] {labelName});
     }
 
     public static NotificationImplementation missingRelType(InputPosition position, String oldDetail, String relType) {
-        return MISSING_REL_TYPE.notificationWithMessage(position, new String[] {oldDetail}, new String[] {relType});
+        return MISSING_REL_TYPE.notificationWithParameters(position, new String[] {oldDetail}, new String[] {relType});
     }
 
     public static NotificationImplementation missingPropertyName(
             InputPosition position, String oldDetails, String property) {
-        return MISSING_PROPERTY_NAME.notificationWithMessage(
+        return MISSING_PROPERTY_NAME.notificationWithParameters(
                 position, new String[] {oldDetails}, new String[] {property});
     }
 
     public static NotificationImplementation unboundedShortestPath(InputPosition position, String pattern) {
-        return UNBOUNDED_SHORTEST_PATH.notificationWithMessage(position, new String[] {}, new String[] {pattern});
+        return UNBOUNDED_SHORTEST_PATH.notificationWithParameters(position, new String[] {}, new String[] {pattern});
     }
 
     public static NotificationImplementation exhaustiveShortestPath(InputPosition position, String pathPredicates) {
-        return EXHAUSTIVE_SHORTEST_PATH.notificationWithMessage(
+        return EXHAUSTIVE_SHORTEST_PATH.notificationWithParameters(
                 position, new String[] {}, new String[] {pathPredicates});
     }
 
     public static NotificationImplementation missingParameterForExplain(
             InputPosition position, String oldDetails, String parameters) {
-        return MISSING_PARAMETERS_FOR_EXPLAIN.notificationWithMessage(
+        return MISSING_PARAMETERS_FOR_EXPLAIN.notificationWithParameters(
                 position, new String[] {oldDetails}, new String[] {parameters});
     }
 
@@ -469,12 +464,12 @@ public enum NotificationCodeWithDescription {
             InputPosition position, String failingRuntimeConf, String fallbackRuntimeConf, String cause) {
         final var oldDetails = new String[] {cause};
         final var params = new String[] {failingRuntimeConf, fallbackRuntimeConf, cause};
-        return CODE_GENERATION_FAILED.notificationWithMessage(position, oldDetails, params);
+        return CODE_GENERATION_FAILED.notificationWithParameters(position, oldDetails, params);
     }
 
     public static NotificationImplementation subqueryVariableShadowing(
             InputPosition position, String oldDetail, String variable) {
-        return SUBQUERY_VARIABLE_SHADOWING.notificationWithMessage(
+        return SUBQUERY_VARIABLE_SHADOWING.notificationWithParameters(
                 position, new String[] {oldDetail}, new String[] {variable, variable});
     }
 
@@ -484,34 +479,35 @@ public enum NotificationCodeWithDescription {
 
     public static NotificationImplementation homeDatabaseNotPresent(
             InputPosition position, String oldDetail, String missingDb) {
-        return HOME_DATABASE_NOT_PRESENT.notificationWithMessage(
+        return HOME_DATABASE_NOT_PRESENT.notificationWithParameters(
                 position, new String[] {oldDetail}, new String[] {missingDb});
     }
 
     public static NotificationImplementation deprecatedDatabaseName(InputPosition position, String param) {
-        return DEPRECATED_DATABASE_NAME.notificationWithMessage(position, new String[] {param}, new String[] {param});
+        return DEPRECATED_DATABASE_NAME.notificationWithParameters(
+                position, new String[] {param}, new String[] {param});
     }
 
     public static NotificationImplementation unsatisfiableRelationshipTypeExpression(
             InputPosition position, String param, String expression) {
-        return UNSATISFIABLE_RELATIONSHIP_TYPE_EXPRESSION.notificationWithMessage(
+        return UNSATISFIABLE_RELATIONSHIP_TYPE_EXPRESSION.notificationWithParameters(
                 position, new String[] {param}, new String[] {expression});
     }
 
     public static NotificationImplementation repeatedRelationshipReference(
             InputPosition position, String param, String relName, String pattern) {
-        return REPEATED_RELATIONSHIP_REFERENCE.notificationWithMessage(
+        return REPEATED_RELATIONSHIP_REFERENCE.notificationWithParameters(
                 position, new String[] {param}, new String[] {relName, pattern});
     }
 
     public static NotificationImplementation repeatedVarLengthRelationshipReference(
             InputPosition position, String param, String relName, String pattern) {
-        return REPEATED_VAR_LENGTH_RELATIONSHIP_REFERENCE.notificationWithMessage(
+        return REPEATED_VAR_LENGTH_RELATIONSHIP_REFERENCE.notificationWithParameters(
                 position, new String[] {param}, new String[] {relName, pattern});
     }
 
     public static NotificationImplementation deprecatedConnectComponentsPlannerPreParserOption(InputPosition position) {
-        return DEPRECATED_CONNECT_COMPONENTS_PLANNER_PRE_PARSER_OPTION.notificationWithMessage(
+        return DEPRECATED_CONNECT_COMPONENTS_PLANNER_PRE_PARSER_OPTION.notificationWithParameters(
                 position, new String[] {}, new String[] {"connectComponentsPlanner"});
     }
 
@@ -544,11 +540,13 @@ public enum NotificationCodeWithDescription {
     }
 
     public static NotificationImplementation serverAlreadyEnabled(InputPosition position, String server) {
-        return SERVER_ALREADY_ENABLED.notificationWithMessage(position, new String[] {server}, new String[] {server});
+        return SERVER_ALREADY_ENABLED.notificationWithParameters(
+                position, new String[] {server}, new String[] {server});
     }
 
     public static NotificationImplementation serverAlreadyCordoned(InputPosition position, String server) {
-        return SERVER_ALREADY_CORDONED.notificationWithMessage(position, new String[] {server}, new String[] {server});
+        return SERVER_ALREADY_CORDONED.notificationWithParameters(
+                position, new String[] {server}, new String[] {server});
     }
 
     public static NotificationImplementation noDatabasesReallocated(InputPosition position) {
@@ -560,17 +558,15 @@ public enum NotificationCodeWithDescription {
     }
 
     public static NotificationImplementation cordonedServersExist(InputPosition position, String servers) {
-        return CORDONED_SERVERS_EXISTED_DURING_ALLOCATION.notification(position, servers);
+        return CORDONED_SERVERS_EXISTED_DURING_ALLOCATION.notificationWithParameters(
+                position, new String[] {servers}, new String[] {servers});
     }
 
-    private NotificationImplementation notification(InputPosition position, String... details) {
-        return new NotificationImplementation.NotificationBuilder(this)
-                .setPosition(position)
-                .setNotificationDetails(details)
-                .build();
+    private NotificationImplementation notification(InputPosition position) {
+        return notificationWithParameters(position, new String[] {}, new String[] {});
     }
 
-    private NotificationImplementation notificationWithMessage(
+    private NotificationImplementation notificationWithParameters(
             InputPosition position, String[] oldDetails, String[] parameters) {
         return new NotificationImplementation.NotificationBuilder(this)
                 .setPosition(position)
