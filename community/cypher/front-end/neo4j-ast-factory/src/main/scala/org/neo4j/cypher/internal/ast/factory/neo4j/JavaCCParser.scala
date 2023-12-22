@@ -48,9 +48,15 @@ case object JavaCCParser {
       try {
         new Cypher(astFactory, astExceptionFactory, charStream).Statements()
       } catch {
+        case _: TokenMgrException if findMismatchedComments(queryText).nonEmpty =>
+          throw new SyntaxException(
+            "Failed to parse comment. A comment starting on `/*` must have a closing `*/`.",
+            queryText,
+            findMismatchedComments(queryText).get
+          )
         case _: TokenMgrException if findMismatchedQuotes(queryText).nonEmpty =>
           throw new SyntaxException(
-            s"Failed to parse string literal. The query must contain an even number of non-escaped quotes.",
+            "Failed to parse string literal. The query must contain an even number of non-escaped quotes.",
             queryText,
             findMismatchedQuotes(queryText).get
           )
@@ -60,7 +66,7 @@ case object JavaCCParser {
         case e: HasStatus                                  => throw e
 
         // Other errors which come from the underlying Javacc framework should not be exposed to the user
-        case e: Throwable => throw new CypherExecutionException(s"Failed to parse query `$queryText`.", e)
+        case e: Exception => throw new CypherExecutionException(s"Failed to parse query `$queryText`.", e)
       }
 
     if (statements.size() == 1) {
@@ -96,5 +102,23 @@ case object JavaCCParser {
     }
     // Return position to unmatched quotes
     if (currentQuote.isEmpty) None else Some(currentQuote.get._2)
+  }
+
+  private def findMismatchedComments(input: String): Option[Int] = {
+    var currentComment: Option[Int] = None
+
+    for ((char, index) <- input.zipWithIndex) {
+      char match {
+        case '*' if (index > 0) || (input.charAt(index - 1) == '/') => // Start of comment
+          currentComment = currentComment match {
+            case None    => Some(index - 1) // comment opened
+            case Some(_) => None // comment closed
+          }
+
+        case _ =>
+      }
+    }
+    // Return position to unmatched comment
+    currentComment
   }
 }
