@@ -33,7 +33,6 @@ import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
 import org.neo4j.server.bind.ComponentsBinder;
 import org.neo4j.server.http.error.MediaTypeExceptionMapper;
-import org.neo4j.server.http.error.Neo4jHttpExceptionMapper;
 import org.neo4j.server.modules.ServerModule;
 
 /**
@@ -48,7 +47,6 @@ public class JaxRsServletHolderFactory {
 
     public JaxRsServletHolderFactory() {
         // add classes common to all mount points
-        classes.add(Neo4jHttpExceptionMapper.class);
         classes.add(MediaTypeExceptionMapper.class);
         classes.add(JacksonJsonProvider.class);
     }

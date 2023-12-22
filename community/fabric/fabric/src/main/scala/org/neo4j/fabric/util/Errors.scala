@@ -75,12 +75,6 @@ object Errors {
   def openCypherUnexpected(exp: String, pos: InputPosition): Nothing =
     openCypherInvalid(SemanticError(s"Expected: $exp", pos))
 
-  def openCypherUnexpected(exp: String, got: String, pos: InputPosition): Nothing =
-    openCypherInvalid(SemanticError(s"Expected: $exp, got: $got", pos))
-
-  def openCypherUnexpected(exp: String, got: String, in: String, pos: InputPosition): Nothing =
-    openCypherInvalid(SemanticError(s"Expected: $exp, got: $got, in: $in", pos))
-
   def openCypherUnexpected(exp: String, got: ASTNode): Nothing = openCypherUnexpected(exp, got.position)
 
   def wrongType(exp: String, got: String): Nothing =
