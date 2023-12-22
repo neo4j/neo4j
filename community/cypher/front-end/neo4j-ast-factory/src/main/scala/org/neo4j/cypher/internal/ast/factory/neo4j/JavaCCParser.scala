@@ -22,9 +22,11 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.parser.javacc.Cypher
 import org.neo4j.cypher.internal.parser.javacc.CypherCharStream
+import org.neo4j.cypher.internal.parser.javacc.TokenMgrException
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.exceptions.SyntaxException
 
 case object JavaCCParser {
 
@@ -51,11 +53,58 @@ case object JavaCCParser {
     val astFactory = new Neo4jASTFactory(queryText, anonymousVariableNameGenerator)
     val astExceptionFactory = new Neo4jASTExceptionFactory(cypherExceptionFactory)
 
-    val statements = new Cypher(astFactory, astExceptionFactory, charStream).Statements()
+    val statements =
+      try {
+        new Cypher(astFactory, astExceptionFactory, charStream).Statements()
+      } catch {
+        // Specific error message for unclosed string literals and comments
+        case _: TokenMgrException if findMismatchedDelimiters(queryText).nonEmpty =>
+          val (errorMessage, index) = findMismatchedDelimiters(queryText).get
+          throw new SyntaxException(errorMessage, queryText, index)
+
+        case e =>
+          throw e
+      }
+
     if (statements.size() == 1) {
       statements.get(0)
     } else {
       throw cypherExceptionFactory.syntaxException(s"Expected exactly one statement per query but got: ${statements.size}", InputPosition.NONE)
+    }
+  }
+
+  private def findMismatchedDelimiters(input: String): Option[(String, Int)] = {
+    var currentDelimiter: Option[(Char, Int)] = None
+
+    for ((char, index) <- input.zipWithIndex) {
+      def updateCurrentDelimiter(): Unit = {
+        currentDelimiter = currentDelimiter match {
+          case None => Some((char, index)) // string literal or comment opened
+          case Some((`char`, _)) => None // string literal or comment closed
+          case _ => currentDelimiter // other delimiter in progress, ignore this one
+        }
+      }
+
+      char match {
+        case '"' if (index == 0) || (input.charAt(index - 1) != '\\') => // Unescaped double quote
+          updateCurrentDelimiter()
+
+        case '\'' if (index == 0) || (input.charAt(index - 1) != '\\') => // Unescaped single quote
+          updateCurrentDelimiter()
+
+        case '/' if (index < input.length - 1) || (input.charAt(index + 1) == '*') => // Start of comment
+          updateCurrentDelimiter()
+
+        case _ =>
+      }
+    }
+    // Return position to unmatched quotes
+    currentDelimiter match {
+      case Some(('/', index)) =>
+        Some(("Failed to parse comment. A comment starting on `/*` must have a closing `*/`.", index))
+      case Some((_, index)) =>
+        Some(("Failed to parse string literal. The query must contain an even number of non-escaped quotes.", index))
+      case None => None
     }
   }
 }

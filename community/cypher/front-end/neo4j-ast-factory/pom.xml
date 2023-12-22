@@ -75,6 +75,11 @@
             <artifactId>neo4j-parser</artifactId>
             <version>${project.version}</version>
         </dependency>
+       <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-exceptions</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <!-- test dependencies -->
 
