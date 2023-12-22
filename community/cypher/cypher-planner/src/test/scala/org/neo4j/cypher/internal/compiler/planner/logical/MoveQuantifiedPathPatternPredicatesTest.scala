@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.NodeBinding
@@ -38,6 +39,10 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class MoveQuantifiedPathPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTestSupport
     with AstConstructionTestSupport {
+
+  override val semanticFeatures: List[SemanticFeature] = List(
+    SemanticFeature.GpmShortestPath
+  )
 
   private def buildSinglePlannerQueryAndRewrite(query: String): SinglePlannerQuery = {
     val q = buildSinglePlannerQuery(query)
@@ -99,5 +104,51 @@ class MoveQuantifiedPathPatternPredicatesTest extends CypherFunSuite with Logica
 
     q.queryGraph.quantifiedPathPatterns shouldEqual Set(qpp)
     q.queryGraph.selections.flatPredicates should contain(pred)
+  }
+
+  test("should move QPP predicate with singleton variable within a Selective Path Pattern") {
+    val q = buildSinglePlannerQueryAndRewrite(
+      "MATCH ANY SHORTEST (start) ((a)-[r]->(b) WHERE b.prop > 123)+ (end) RETURN 1 AS one"
+    )
+
+    val pred = ForAllRepetitions(
+      varFor("b"),
+      Set(variableGrouping("a", "a"), variableGrouping("b", "b"), variableGrouping("r", "r")),
+      greaterThan(prop("b", "prop"), literal(123))
+    )(pos)
+
+    q.queryGraph.selectivePathPatterns.flatMap(_.allQuantifiedPathPatterns) shouldEqual Set(qpp)
+    q.queryGraph.selectivePathPatterns.flatMap(_.selections.flatPredicates) should contain(pred)
+  }
+
+  test("should move QPP predicate with multiple singleton variable within a Selective Path Pattern") {
+    val q =
+      buildSinglePlannerQueryAndRewrite(
+        "MATCH ANY SHORTEST (start) ((a)-[r]->(b) WHERE b.prop > r.prop)+ (end) RETURN 1 AS one"
+      )
+
+    val pred = ForAllRepetitions(
+      varFor("b"),
+      Set(variableGrouping("a", "a"), variableGrouping("b", "b"), variableGrouping("r", "r")),
+      greaterThan(prop("b", "prop"), prop("r", "prop"))
+    )(pos)
+
+    q.queryGraph.selectivePathPatterns.flatMap(_.allQuantifiedPathPatterns) shouldEqual Set(qpp)
+    q.queryGraph.selectivePathPatterns.flatMap(_.selections.flatPredicates) should contain(pred)
+  }
+
+  test("should move QPP predicate without dependencies within a Selective Path Pattern") {
+    val q = buildSinglePlannerQueryAndRewrite(
+      "MATCH ANY SHORTEST (start) ((a)-[r]->(b) WHERE 123 > $param)+ (end) RETURN 1 AS one"
+    )
+
+    val pred = ForAllRepetitions(
+      varFor("a"),
+      Set(variableGrouping("a", "a"), variableGrouping("b", "b"), variableGrouping("r", "r")),
+      greaterThan(literal(123), parameter("param", CTAny))
+    )(pos)
+
+    q.queryGraph.selectivePathPatterns.flatMap(_.allQuantifiedPathPatterns) shouldEqual Set(qpp)
+    q.queryGraph.selectivePathPatterns.flatMap(_.selections.flatPredicates) should contain(pred)
   }
 }

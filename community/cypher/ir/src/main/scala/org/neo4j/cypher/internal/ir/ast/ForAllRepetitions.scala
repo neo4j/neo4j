@@ -25,9 +25,9 @@ import org.neo4j.cypher.internal.expressions.BooleanExpression
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.Subtract
 import org.neo4j.cypher.internal.expressions.UnPositionedVariable
-import org.neo4j.cypher.internal.expressions.UnsignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.VariableGrouping
 import org.neo4j.cypher.internal.expressions.functions
 import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
@@ -77,10 +77,10 @@ case class ForAllRepetitions(
     AllIterablePredicate(
       iterVar,
       functions.Range.asInvocation(
-        UnsignedDecimalIntegerLiteral("0")(pos),
+        SignedDecimalIntegerLiteral("0")(pos),
         Subtract(
           functions.Size(groupVariableAnchor.copyId)(pos),
-          UnsignedDecimalIntegerLiteral("1")(pos)
+          SignedDecimalIntegerLiteral("1")(pos)
         )(pos)
       )(pos),
       Some(rewrittenPredicate)

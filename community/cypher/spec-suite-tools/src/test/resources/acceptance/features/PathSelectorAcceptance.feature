@@ -1278,3 +1278,53 @@ Feature: PathSelectorAcceptance
       | ANY               |
       | ANY 1             |
       | ANY 2             |
+
+  Scenario Outline: Should support a shortest path pattern with a predicate on several entities inside a QPP
+    And having executed:
+      """
+        CREATE (:User {prop: 4})-[:R]->(:B)-[:R]->({prop: 5})
+      """
+    When executing query:
+      """
+        MATCH p = <pathSelector> (u:User)(((n)-[r]->(c:B)-->(m)) WHERE n.prop <= m.prop)+ (v) RETURN p
+      """
+    Then the result should be, in any order:
+      | p                                                      |
+      | <(:User {prop: 4})-[:R {}]->(:B)-[:R {}]->({prop: 5})> |
+    Examples:
+      | pathSelector      |
+      | ANY SHORTEST      |
+      | SHORTEST 1        |
+      | SHORTEST 2        |
+      | ALL SHORTEST      |
+      | SHORTEST GROUP    |
+      | SHORTEST 1 GROUP  |
+      | SHORTEST 2 GROUPS |
+      | ANY               |
+      | ANY 1             |
+      | ANY 2             |
+
+  Scenario Outline: PathSelector should handle multiple references to the same variable in a pattern
+    And having executed:
+      """
+        CREATE (a:A:B)-[:R]->()-[:S]->(a)
+      """
+    When executing query:
+      """
+        MATCH <pathSelector> (p = (start)((a:A)-[]->()-[]->(a:B))+(end)) RETURN p
+      """
+    Then the result should be, in any order:
+      | p                                    |
+      | <(:A:B)-[:R {}]->()-[:S {}]->(:A:B)> |
+    Examples:
+      | pathSelector      |
+      | ANY SHORTEST      |
+      | SHORTEST 1        |
+      | SHORTEST 2        |
+      | ALL SHORTEST      |
+      | SHORTEST GROUP    |
+      | SHORTEST 1 GROUP  |
+      | SHORTEST 2 GROUPS |
+      | ANY               |
+      | ANY 1             |
+      | ANY 2             |

@@ -74,10 +74,10 @@ class ForAllRepetitionsTest extends CypherFunSuite with AstConstructionTestSuppo
   private def rangeForGroupVariable(groupVar: String): FunctionInvocation = {
     function(
       "range",
-      literalUnsignedInt(0),
+      literalInt(0),
       subtract(
         size(varFor(groupVar)),
-        literalUnsignedInt(1)
+        literalInt(1)
       )
     )
   }

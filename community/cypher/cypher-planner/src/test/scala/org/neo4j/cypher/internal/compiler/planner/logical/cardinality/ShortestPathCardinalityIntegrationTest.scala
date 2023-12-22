@@ -29,6 +29,7 @@ class ShortestPathCardinalityIntegrationTest extends CypherFunSuite with Cardina
   private val allNodes: Double = 10
   private val stopNodes: Double = 7
   private val nextRelationships: Double = 11
+  private val allRelationships: Double = nextRelationships
   private val stopNameExistsSelectivity: Double = 0.9
   private val nextServiceIdSelectivity: Double = 0.8
 
@@ -37,6 +38,7 @@ class ShortestPathCardinalityIntegrationTest extends CypherFunSuite with Cardina
       .addSemanticFeature(SemanticFeature.GpmShortestPath)
       .setAllNodesCardinality(allNodes)
       .setLabelCardinality("Stop", stopNodes)
+      .setAllRelationshipsCardinality(allRelationships)
       .setRelationshipCardinality("()-[:NEXT]->()", nextRelationships)
       .setRelationshipCardinality("(:Stop)-[:NEXT]->()", nextRelationships)
       .setRelationshipCardinality("()-[:NEXT]->(:Stop)", nextRelationships)
@@ -47,6 +49,8 @@ class ShortestPathCardinalityIntegrationTest extends CypherFunSuite with Cardina
 
   private val relationshipUniqueness: Double = PlannerDefaults.DEFAULT_REL_UNIQUENESS_SELECTIVITY.factor
   private val distinctRelationships: Double = PlannerDefaults.DEFAULT_PREDICATE_SELECTIVITY.factor
+  private val defaultPropertySelectivity: Double = PlannerDefaults.DEFAULT_PROPERTY_SELECTIVITY.factor
+  private val defaultEqualitySelectivity: Double = PlannerDefaults.DEFAULT_EQUALITY_SELECTIVITY.factor
 
   // Cardinalities for the various iterations of the following pattern: (:Stop)((:Stop)-[:NEXT {serviceId: $value}]->(:Stop)){n}(:Stop)
   private val iteration_0: Double =
@@ -202,5 +206,97 @@ class ShortestPathCardinalityIntegrationTest extends CypherFunSuite with Cardina
         |WHERE via.name IS NOT NULL)""".stripMargin,
       iterations_0_4 * iterations_0_2 / stopNodes * distinctRelationships * stopNameExistsSelectivity
     )
+  }
+
+  // The resulting cardinality should be the same as in the following test: "SHORTEST with inlined property predicate referencing two nodes within the qpp"
+  test("SHORTEST should inline predicates with source node references but currently does not do that") {
+
+    val query = """MATCH (a) MATCH ANY SHORTEST ((u)((n WHERE a.prop = n.prop)-[r]->(m)){0,2}(v))"""
+
+    // (a)
+    val match1 = allNodes
+
+    // (u)((n)-[r]->(m)){0}(v) -- for illustration purposes, not a legal pattern
+    val qpp0 = allNodes // technically: (u) * (v) / ()
+
+    // (u)((n)-[r]->(m)){1}(v)
+    val qpp1 = allRelationships
+
+    // (u)((n)-[r]->(m)){2}(v)
+    val qpp2 = allRelationships * allRelationships / allNodes * relationshipUniqueness
+
+    // (u)((n)-[r]->(m)){0,2}(v)
+    val qpp = qpp0 + qpp1 + qpp2
+
+    /**
+     * This is the crux, the pattern:
+     *   {{{ (u)((n WHERE a.prop = n.prop)-[r]->(m)){0,2}(v) }}}
+     * gets rewritten to:
+     *   {{{ (u)((n)-[r]->(m)){0,2}(v) WHERE all(i IN range(0, size(n) - 1) WHERE a.prop = n[i].prop) }}}
+     *
+     * We should turn it back into its original form for cardinality estimation, but we don't in this case because of the dependency on node `a`.
+     * Note that `all(…)` here is a special expression, a [[org.neo4j.cypher.internal.ir.ast.ForAllRepetitions]], and has a selectivity of 1.
+     *
+     * This means that our pattern:
+     *   {{{ (u)((n WHERE a.prop = n.prop)-[r]->(m)){0,2}(v) }}}
+     * gets estimated, incorrectly, as:
+     *   {{{ (u)((n)-[r]->(m)){0,2}(v) }}}
+     */
+    val spp = qpp
+
+    // (u), (v)
+    val sppEndpoints = allNodes * allNodes
+
+    // ANY SHORTEST ((u)((n)-[r]->(m)){0,2}(v) WHERE all(i IN range(0, size(n) - 1) WHERE a.prop = n[i].prop))
+    val match2 = math.min(spp, sppEndpoints)
+
+    val expectedCardinality = match1 * match2
+
+    queryShouldHaveCardinality(configuration, query, expectedCardinality)
+  }
+
+  test("SHORTEST with inlined property predicate referencing two nodes within the qpp") {
+
+    val query = """MATCH (a) MATCH ANY SHORTEST (u)((n)-[r]->(m) WHERE n.prop = m.prop){0,2}(v)"""
+
+    // (a)
+    val match1 = allNodes
+
+    // WHERE n.prop = m.prop
+    val propertyEqualitySelectivity = defaultPropertySelectivity * defaultEqualitySelectivity
+
+    // (n)-[r]->(m) WHERE n.prop = m.prop
+    val relationshipPattern = allRelationships * propertyEqualitySelectivity
+
+    // (u)((n)-[r]->(m) WHERE n.prop = m.prop){0}(v) -- for illustration purposes, not a legal pattern
+    val qpp0 = allNodes // technically: (u) * (v) / ()
+
+    // (u)((n)-[r]->(m) WHERE n.prop = m.prop){1}(v)
+    val qpp1 = relationshipPattern
+
+    // (u)((n)-[r]->(m) WHERE n.prop = m.prop){2}(v)
+    val qpp2 = relationshipPattern * relationshipPattern / allNodes * relationshipUniqueness
+
+    // (u)((n)-[r]->(m) WHERE n.prop = m.prop){0,2}(v)
+    val qpp = qpp0 + qpp1 + qpp2
+
+    /**
+     * The pattern:
+     *   {{{ (u)((n)-[r]->(m) WHERE n.prop = m.prop){0,2}(v) }}}
+     * gets rewritten to:
+     *   {{{ (u)((n)-[r]->(m)){0,2}(v) WHERE all(i IN range(0, size(n) - 1) WHERE n[i].prop = m[i].prop) }}}
+     * however it gets turned back into its original form for cardinality estimation.
+     */
+    val spp = qpp
+
+    // (u), (v)
+    val sppEndpoints = allNodes * allNodes
+
+    // ANY SHORTEST (u)((n)-[r]->(m) WHERE n.prop = m.prop){0,2}(v)
+    val match2 = math.min(spp, sppEndpoints)
+
+    val expectedCardinality = match1 * match2
+
+    queryShouldHaveCardinality(configuration, query, expectedCardinality)
   }
 }

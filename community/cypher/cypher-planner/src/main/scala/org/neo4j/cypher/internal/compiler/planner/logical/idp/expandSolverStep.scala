@@ -30,12 +30,15 @@ import org.neo4j.cypher.internal.expressions.Disjoint
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.NoneOfRelationships
+import org.neo4j.cypher.internal.expressions.RelationshipUniquenessPredicate
+import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.UnPositionedVariable
 import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.Unique
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.VariableGrouping
 import org.neo4j.cypher.internal.frontend.phases.Namespacer
+import org.neo4j.cypher.internal.ir.ExhaustiveNodeConnection
 import org.neo4j.cypher.internal.ir.NodeConnection
 import org.neo4j.cypher.internal.ir.NodePathVariable
 import org.neo4j.cypher.internal.ir.PatternRelationship
@@ -46,6 +49,7 @@ import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SelectivePathPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
+import org.neo4j.cypher.internal.ir.ast.ForAllRepetitions
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
@@ -54,6 +58,7 @@ import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath.Mapping
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.topDown
@@ -356,6 +361,63 @@ object expandSolverStep {
     )
   }
 
+  /**
+   * Predicates that were extracted from Quantified Path Patterns within a Selective Path Pattern during [[MoveQuantifiedPathPatternPredicates]] gets
+   * inlined back into the QPP here and changed back into its original form.
+   * @param spp SelectivePathPattern to update
+   * @param availableSymbols Symbols available from source
+   * @return Updated SelectivePathPattern with extracted QPP Predicates inlined and reverted back to its original form
+   */
+  def inlineQPPPredicates(spp: SelectivePathPattern, availableSymbols: Set[String]): SelectivePathPattern = {
+    // We need to collect the updated updated node connections as well as the inlined predicates so we can remove them from the SPP Selections.
+    val (newConnections, liftedPredicates) =
+      spp.pathPattern.connections.foldLeft((Seq[ExhaustiveNodeConnection](), Set[Expression]())) {
+        case ((updatedNodeConnections, inlinedQppPredicates), nodeConnection) => nodeConnection match {
+            case pr: PatternRelationship    => (updatedNodeConnections.appended(pr), inlinedQppPredicates)
+            case qpp: QuantifiedPathPattern =>
+              // We need to collect the variable groupings by pattern relationship since we can only inline a predicate if the state contains
+              // all nodes and relationships that are referenced in the predicate. We also cannot inline predicates in undirected patterns.
+              val variableGroupingsByDirectedPattern: Set[Set[VariableGrouping]] =
+                qpp.patternRelationships.toSet[PatternRelationship]
+                  .filterNot(_.dir == BOTH)
+                  .map(pr => pr.boundaryNodesSet + pr.variable)
+                  .map(boundaryNodes =>
+                    qpp.variableGroupings
+                      .filter(variableGrouping => boundaryNodes.contains(variableGrouping.singleton))
+                  )
+              val extractedPredicates = variableGroupingsByDirectedPattern.map { patternGroupVariables =>
+                val extracted = extractQPPPredicates(
+                  spp.selections.flatPredicates,
+                  patternGroupVariables,
+                  availableSymbols.map(UnPositionedVariable.varFor)
+                )
+                val currentlyAvailableSymbols =
+                  patternGroupVariables.map(_.singleton) -- availableSymbols.map(varFor)
+                val filteredPredicates = extracted.predicates
+                  .filter(extractedPredicate =>
+                    ConvertToNFA.canBeInlined(extractedPredicate.extracted, currentlyAvailableSymbols)
+                  )
+
+                extracted.copy(predicates = filteredPredicates)
+              }
+              val inlinedPredicates = extractedPredicates.flatMap(_.predicates.map(_.extracted))
+              val originalPredicates = extractedPredicates.flatMap(_.predicates.map(_.original))
+
+              (
+                updatedNodeConnections.appended(
+                  qpp.copy(selections = qpp.selections ++ Selections.from(inlinedPredicates))
+                ),
+                inlinedQppPredicates ++ originalPredicates
+              )
+          }
+      }
+
+    spp.copy(
+      pathPattern = spp.pathPattern.copy(connections = NonEmptyList.from(newConnections)),
+      selections = spp.selections -- Selections.from(liftedPredicates)
+    )
+  }
+
   private def produceStatefulShortestLogicalPlan(
     spp: SelectivePathPattern,
     sourcePlan: LogicalPlan,
@@ -364,8 +426,9 @@ object expandSolverStep {
     queryGraphSelections: Selections,
     context: LogicalPlanningContext
   ) = {
-    val fromLeft = startNode == spp.left.name
-    val endNode = if (fromLeft) spp.right.name else spp.left.name
+    val sppWithInlinedQppPredicates = inlineQPPPredicates(spp, availableSymbols)
+    val fromLeft = startNode == sppWithInlinedQppPredicates.left.name
+    val endNode = if (fromLeft) sppWithInlinedQppPredicates.right.name else sppWithInlinedQppPredicates.left.name
 
     val unsolvedPredicatesOnEndNode = queryGraphSelections
       .predicatesGiven((availableSymbols + endNode).map(varFor))
@@ -384,14 +447,17 @@ object expandSolverStep {
         case Variable(`endNode`) => newEndNodeVar
       })
 
-      val newSpp = (if (fromLeft) spp.withRight(newEndNodeVar) else spp.withLeft(newEndNodeVar)).copy(
-        selections = Selections.from(spp.selections.flatPredicatesSet + hiddenFilter)
-      )
+      val newSpp = (if (fromLeft) {
+                      sppWithInlinedQppPredicates.withRight(newEndNodeVar)
+                    } else {
+                      sppWithInlinedQppPredicates.withLeft(newEndNodeVar)
+                    })
+        .copy(selections = Selections.from(sppWithInlinedQppPredicates.selections.flatPredicatesSet + hiddenFilter))
       val newUnsolvedPredicatesOnEndNode = unsolvedPredicatesOnEndNode.endoRewrite(rewriter)
 
       (newEndNodeVar.name, newSpp, newUnsolvedPredicatesOnEndNode)
     } else {
-      (endNode, spp, unsolvedPredicatesOnEndNode)
+      (endNode, sppWithInlinedQppPredicates, unsolvedPredicatesOnEndNode)
     }
 
     convertToNFAAndPlan(
@@ -407,6 +473,13 @@ object expandSolverStep {
       reverseGroupVariableProjections = !fromLeft
     )
   }
+
+  private def selectionsWithOriginalPredicates(spp: SelectivePathPattern): Selections =
+    Selections.from(spp.selections.flatPredicates.map {
+      case far: ForAllRepetitions =>
+        far.originalInnerPredicate
+      case expr: Expression => expr
+    })
 
   private def convertToNFAAndPlan(
     spp: SelectivePathPattern,
@@ -438,7 +511,7 @@ object expandSolverStep {
         }
       }
 
-    val (nfa, nonInlinedSelections, syntheticVarLengthSingletons) =
+    val (nfa, nonInlinedSelections, syntheticVarLengthSingletons) = {
       ConvertToNFA.convertToNfa(
         spp,
         fromLeft,
@@ -446,13 +519,22 @@ object expandSolverStep {
         unsolvedPredicatesOnTargetNode,
         context.staticComponents.anonymousVariableNameGenerator
       )
+    }
+    val nonInlinedSelectionsWithoutUniqPreds = nonInlinedSelections.filter(_.expr match {
+      case far: ForAllRepetitions =>
+        far.originalInnerPredicate match {
+          case _: RelationshipUniquenessPredicate => false
+          case _                                  => true
+        }
+      case _: RelationshipUniquenessPredicate => false
+      case _                                  => true
+    })
 
     val rewrittenNfa = nfa.endoRewrite(bottomUp(Rewriter.lift {
       case variable: LogicalVariable => rewriteLookup.getOrElse(variable, variable)
     }))
-
     val solvedExpressionAsString =
-      spp.copy(selections = spp.selections ++ unsolvedPredicatesOnTargetNode)
+      spp.copy(selections = selectionsWithOriginalPredicates(spp) ++ unsolvedPredicatesOnTargetNode)
         .solvedString
 
     val selector = convertSelectorFromIr(spp.selector)
@@ -464,7 +546,9 @@ object expandSolverStep {
           VariableGrouping(varFor(entry._2), varFor(entry._1))(InputPosition.NONE)
         )
     val nonInlinedPreFilters =
-      Option.when(nonInlinedSelections.nonEmpty)(Ands.create(nonInlinedSelections.flatPredicates.to(ListSet)))
+      Option.when(nonInlinedSelectionsWithoutUniqPreds.nonEmpty)(
+        Ands.create(nonInlinedSelectionsWithoutUniqPreds.flatPredicates.to(ListSet))
+      )
 
     context.staticComponents.logicalPlanProducer.planStatefulShortest(
       sourcePlan,

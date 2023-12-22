@@ -41,7 +41,6 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.exceptions.InternalException
 
 import scala.collection.immutable.ListSet
 
@@ -143,7 +142,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .statefulShortestPath(
           "s",
           "t",
-          "SHORTEST 1 ((s) ((anon_0)-[anon_1:R]->(anon_2)-[anon_3:T]-(anon_4)-[anon_5:T]-(anon_6)-[anon_7:T]-(anon_8)-[anon_9:R]->(anon_10) WHERE NOT `anon_9` = `anon_1` AND NOT `anon_7` = `anon_5` AND NOT `anon_7` = `anon_3` AND NOT `anon_5` = `anon_3`){1, } (t) WHERE unique((((`anon_20` + `anon_12`) + `anon_15`) + `anon_16`) + `anon_19`))",
+          "SHORTEST 1 ((s) ((anon_0)-[anon_1:R]->(anon_2)-[anon_3:T]-(anon_4)-[anon_5:T]-(anon_6)-[anon_7:T]-(anon_8)-[anon_9:R]->(anon_10)){1, } (t) WHERE NOT `anon_5` = `anon_3` AND NOT `anon_7` = `anon_3` AND NOT `anon_7` = `anon_5` AND NOT `anon_9` = `anon_1` AND unique((((`anon_20` + `anon_12`) + `anon_15`) + `anon_16`) + `anon_19`))",
           None,
           groupNodes = Set(
             ("anon_0", "anon_13"),
@@ -1136,20 +1135,74 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     )
   }
 
-  test("Should not support a strict interior node of a shortest path pattern to be repeated, inside QPP") {
+  test("Should support a strict interior node of a shortest path pattern to be repeated, inside QPP") {
     val query =
       """MATCH ANY SHORTEST (a) ((b)--(b))* (c)
         |RETURN *""".stripMargin
 
-    an[InternalException] should be thrownBy planner.plan(query)
+    val nfa = new TestNFABuilder(0, "a")
+      .addTransition(0, 1, "(a) (b)")
+      .addTransition(0, 3, "(a) (c)")
+      .addTransition(1, 2, "(b)-[anon_0]-(b)")
+      .addTransition(2, 1, "(b) (b)")
+      .addTransition(2, 3, "(b) (c)")
+      .setFinalState(3)
+      .build()
+
+    val plan = planner.plan(query).stripProduceResults
+    val expected = planner.subPlanBuilder()
+      .statefulShortestPath(
+        "a",
+        "c",
+        "SHORTEST 1 ((a) ((b)-[anon_0]-(b)){0, } (c) WHERE `b` = `b` AND unique(`anon_6`))",
+        Some("all(anon_1 IN range(0, size(b) - 1) WHERE b[anon_1] = b[anon_1])"),
+        Set(("b", "b")),
+        Set(),
+        Set(("c", "c")),
+        Set(),
+        StatefulShortestPath.Selector.Shortest(1),
+        nfa,
+        ExpandAll,
+        false
+      )
+      .allNodeScan("a")
+      .build()
+    plan should equal(expected)
   }
 
-  test("Should not support a shortest path pattern with a predicate on several entities inside a QPP") {
+  test("Should support a shortest path pattern with a predicate on several entities inside a QPP") {
     val query =
       """MATCH ANY SHORTEST (a) ((b)--(c) WHERE b.prop < c.prop)* (d)
         |RETURN *""".stripMargin
 
-    an[InternalException] should be thrownBy planner.plan(query)
+    val nfa = new TestNFABuilder(0, "a")
+      .addTransition(0, 1, "(a) (b)")
+      .addTransition(0, 3, "(a) (d)")
+      .addTransition(1, 2, "(b)-[anon_0]-(c)")
+      .addTransition(2, 1, "(c) (b)")
+      .addTransition(2, 3, "(c) (d)")
+      .setFinalState(3)
+      .build()
+
+    val plan = planner.plan(query).stripProduceResults
+    val expected = planner.subPlanBuilder()
+      .statefulShortestPath(
+        "a",
+        "d",
+        "SHORTEST 1 ((a) ((b)-[anon_0]-(c)){0, } (d) WHERE `b`.prop < `c`.prop AND unique(`anon_5`))",
+        Some("all(anon_1 IN range(0, size(b) - 1) WHERE (b[anon_1]).prop < (c[anon_1]).prop)"),
+        Set(("b", "b"), ("c", "c")),
+        Set(),
+        Set(("d", "d")),
+        Set(),
+        StatefulShortestPath.Selector.Shortest(1),
+        nfa,
+        ExpandAll,
+        false
+      )
+      .allNodeScan("a")
+      .build()
+    plan should equal(expected)
   }
 
   test(
@@ -2117,7 +2170,41 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     )
   }
 
-  test("Should plan shortest with dependencies to previous match in inlined predicate") {
+  test(
+    "Should support a shortest path pattern with a predicate on several entities in different pattern parts inside a QPP"
+  ) {
+    val query = "MATCH ANY SHORTEST (u:User)(((n)-[r]->(c:B)-->(m)) WHERE n.prop <= m.prop)+ (v) RETURN *"
+
+    val nfa = new TestNFABuilder(0, "u")
+      .addTransition(0, 1, "(u) (n)")
+      .addTransition(1, 2, "(n)-[r]->(c:B)")
+      .addTransition(2, 3, "(c)-[anon_0]->(m)")
+      .addTransition(3, 1, "(m) (n)")
+      .addTransition(3, 4, "(m) (v)")
+      .setFinalState(4)
+      .build()
+
+    val plan = planner.plan(query).stripProduceResults
+    val expected = planner.subPlanBuilder()
+      .statefulShortestPath(
+        "u",
+        "v",
+        "SHORTEST 1 ((u) ((n)-[r]->(c)-[anon_0]->(m) WHERE `c`:B){1, } (v) WHERE NOT `anon_0` = `r` AND `n`.prop <= `m`.prop AND unique(`r` + `anon_7`))",
+        Some("all(anon_1 IN range(0, size(m) - 1) WHERE (n[anon_1]).prop <= (m[anon_1]).prop)"),
+        Set(("n", "n"), ("c", "c"), ("m", "m")),
+        Set(("r", "r")),
+        Set(("v", "v")),
+        Set(),
+        StatefulShortestPath.Selector.Shortest(1),
+        nfa,
+        ExpandAll
+      )
+      .nodeByLabelScan("u", "User")
+      .build()
+    plan should equal(expected)
+  }
+
+  test("Should plan shortest with dependencies to previous match in inlined relationship predicate") {
     val query = "MATCH (n) MATCH ANY SHORTEST ()-[r WHERE r.prop = n.prop]->() RETURN *"
 
     val nfa = new TestNFABuilder(0, "anon_0")
@@ -2145,6 +2232,115 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .|.allNodeScan("anon_0", "n")
         .cacheProperties("cacheNFromStore[n.prop]")
         .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test(
+    "Should plan shortest with dependencies to previous match in inlined node predicate"
+  ) {
+    val query = "MATCH (a) MATCH ANY SHORTEST ((u)((n WHERE a.prop = n.prop)-[r]->(m))+(v)) RETURN *"
+
+    val nfa = new TestNFABuilder(0, "u")
+      .addTransition(0, 1, "(u) (n WHERE cacheN[a.prop] = cacheNFromStore[n.prop])")
+      .addTransition(1, 2, "(n)-[r]->(m)")
+      .addTransition(2, 1, "(m) (n WHERE cacheN[a.prop] = cacheNFromStore[n.prop])")
+      .addTransition(2, 3, "(m) (v)")
+      .setFinalState(3)
+      .build()
+
+    val plan = planner.plan(query).stripProduceResults
+    plan should equal(
+      planner.subPlanBuilder()
+        .statefulShortestPath(
+          "u",
+          "v",
+          "SHORTEST 1 ((u) ((n)-[r]->(m) WHERE a.prop = `n`.prop){1, } (v) WHERE unique(`r`))",
+          None,
+          Set(("n", "n"), ("m", "m")),
+          Set(("r", "r")),
+          Set(("v", "v")),
+          Set(),
+          StatefulShortestPath.Selector.Shortest(1),
+          nfa,
+          ExpandAll,
+          false
+        )
+        .filter("cacheN[a.prop] = u.prop")
+        .apply()
+        .|.allNodeScan("u", "a")
+        .cacheProperties("cacheNFromStore[a.prop]")
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test(
+    "should plan SHORTEST with predicate depending on no path variables as a filter inside the QPP"
+  ) {
+    val query = "MATCH ANY SHORTEST ((u:User)((n)-[r]->(m) WHERE $param)+(v)) RETURN *"
+
+    val nfa = new TestNFABuilder(0, "u")
+      .addTransition(0, 1, "(u) (n)")
+      .addTransition(1, 2, "(n)-[r]->(m)")
+      .addTransition(2, 1, "(m) (n)")
+      .addTransition(2, 3, "(m) (v)")
+      .setFinalState(3)
+      .build()
+
+    val plan = planner.plan(query).stripProduceResults
+    plan should equal(
+      planner.subPlanBuilder()
+        .statefulShortestPath(
+          "u",
+          "v",
+          "SHORTEST 1 ((u) ((n)-[r]->(m)){1, } (v) WHERE $param AND unique(`r`))",
+          Some("all(anon_0 IN range(0, size(m) - 1) WHERE $param)"),
+          Set(("n", "n"), ("m", "m")),
+          Set(("r", "r")),
+          Set(("v", "v")),
+          Set(),
+          StatefulShortestPath.Selector.Shortest(1),
+          nfa,
+          ExpandAll,
+          false
+        )
+        .nodeByLabelScan("u", "User")
+        .build()
+    )
+  }
+
+  test(
+    "should plan SHORTEST with node property comparison with parameter inlined in NFA"
+  ) {
+    val query = "MATCH ANY SHORTEST ((u:User)((n)-[r]->(m) WHERE m.prop = $param)+(v)) RETURN *"
+
+    val nfa = new TestNFABuilder(0, "u")
+      .addTransition(0, 1, "(u) (n)")
+      .addTransition(1, 2, "(n)-[r]->(m WHERE m.prop = $param)")
+      .addTransition(2, 1, "(m) (n)")
+      .addTransition(2, 3, "(m) (v WHERE v.prop = $param)")
+      .setFinalState(3)
+      .build()
+
+    val plan = planner.plan(query).stripProduceResults
+    plan should equal(
+      planner.subPlanBuilder()
+        .statefulShortestPath(
+          "u",
+          "v",
+          "SHORTEST 1 ((u) ((n)-[r]->(m) WHERE `m`.prop IN [$param]){1, } (v) WHERE unique(`r`) AND v.prop IN [$param])",
+          None,
+          Set(("n", "n"), ("m", "m")),
+          Set(("r", "r")),
+          Set(("v", "v")),
+          Set(),
+          StatefulShortestPath.Selector.Shortest(1),
+          nfa,
+          ExpandAll,
+          false
+        )
+        .nodeByLabelScan("u", "User")
         .build()
     )
   }

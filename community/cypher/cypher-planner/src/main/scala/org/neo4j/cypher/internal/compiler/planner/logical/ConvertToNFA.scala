@@ -101,6 +101,14 @@ object ConvertToNFA {
   }
 
   /**
+   * Return True if the given expression is only depend on availableSymbols and entity names, but also use
+   * at least one entityName. Therefor being able to be inlined
+   */
+  def canBeInlined(expression: Expression, entityNames: Set[LogicalVariable]): Boolean =
+    expression.folder.treeFindByClass[IRExpression].isEmpty &&
+      (expression.dependencies intersect entityNames).nonEmpty
+
+  /**
    *
    * @return the selections that could not be inlined
    */
@@ -130,12 +138,10 @@ object ConvertToNFA {
      * Return the subset of the given predicates that only depend on availableSymbols and entity names, but also use
      * at least one entityName.
      */
-    def getPredicates(selections: Selections, entityNames: Set[String]): ListSet[Expression] = {
+    def getPredicates(selections: Selections, entityNames: Set[String]): ListSet[Expression] =
       selections.predicatesGiven((availableSymbols ++ entityNames).map(varFor))
-        .filterNot(_.isInstanceOf[IRExpression])
+        .filter(canBeInlined(_, entityNames.map(varFor)))
         .to(ListSet)
-        .filter(p => (p.dependencies.map(_.name) intersect entityNames).nonEmpty)
-    }
 
     def getVariablePredicates(entityName: String): (ListSet[Expression], Option[VariablePredicate]) = {
       val entityPredicates = getTopLevelPredicates(Set(entityName))

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence
 
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep
 import org.neo4j.cypher.internal.ir.ExhaustiveNodeConnection
 import org.neo4j.cypher.internal.ir.ExhaustivePathPattern.NodeConnections
 import org.neo4j.cypher.internal.ir.PatternRelationship
@@ -47,14 +48,16 @@ trait SelectivePathPatternCardinalityModel
       getNodeCardinality(context, labelInfo, selectivePathPattern.left.name).getOrElse(Cardinality.EMPTY)
     val rightNodeCardinality =
       getNodeCardinality(context, labelInfo, selectivePathPattern.right.name).getOrElse(Cardinality.EMPTY)
+    // Here we need to inline back the predicates to the QPPs since we cannot handle ForAllRepetitions in cardinality estimation.
+    val sppWithInlinedPredicates = expandSolverStep.inlineQPPPredicates(selectivePathPattern, Set.empty)
 
-    selectivePathPattern.selector match {
+    sppWithInlinedPredicates.selector match {
       case Selector.Any(k) =>
         anyPathPatternCardinality(
           context = context,
           labelInfo = labelInfo,
-          pathPattern = selectivePathPattern.pathPattern,
-          selections = selectivePathPattern.selections,
+          pathPattern = sppWithInlinedPredicates.pathPattern,
+          selections = sppWithInlinedPredicates.selections,
           leftNodeCardinality = leftNodeCardinality,
           rightNodeCardinality = rightNodeCardinality,
           k = k
@@ -64,8 +67,8 @@ trait SelectivePathPatternCardinalityModel
         anyPathPatternCardinality(
           context = context,
           labelInfo = labelInfo,
-          pathPattern = selectivePathPattern.pathPattern,
-          selections = selectivePathPattern.selections,
+          pathPattern = sppWithInlinedPredicates.pathPattern,
+          selections = sppWithInlinedPredicates.selections,
           leftNodeCardinality = leftNodeCardinality,
           rightNodeCardinality = rightNodeCardinality,
           k = k
@@ -74,8 +77,8 @@ trait SelectivePathPatternCardinalityModel
         shortestGroupsPathPatternCardinality(
           context = context,
           labelInfo = labelInfo,
-          pathPattern = selectivePathPattern.pathPattern,
-          selections = selectivePathPattern.selections,
+          pathPattern = sppWithInlinedPredicates.pathPattern,
+          selections = sppWithInlinedPredicates.selections,
           leftNodeCardinality = leftNodeCardinality,
           rightNodeCardinality = rightNodeCardinality,
           k = k

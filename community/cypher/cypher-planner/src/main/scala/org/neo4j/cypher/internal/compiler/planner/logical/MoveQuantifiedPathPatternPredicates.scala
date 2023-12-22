@@ -25,17 +25,23 @@ import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
+import org.neo4j.cypher.internal.ir.ExhaustiveNodeConnection
+import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.PlannerQuery
+import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.Selections
+import org.neo4j.cypher.internal.ir.SelectivePathPattern
 import org.neo4j.cypher.internal.ir.ast.ForAllRepetitions
+import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.PredicateConverter
+import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
 import org.neo4j.cypher.internal.util.topDown
 
 /**
- * Move QPP predicates into QueryGraph Selections.
+ * Move QPP predicates into Selections in QueryGraph or Selective Path Pattern.
  */
 case object MoveQuantifiedPathPatternPredicates extends PlannerQueryRewriter with StepSequencer.Step
     with DefaultPostCondition
@@ -55,6 +61,25 @@ case object MoveQuantifiedPathPatternPredicates extends PlannerQueryRewriter wit
         qg
           .withQuantifiedPathPatterns(fixedQpps)
           .addPredicates(liftedQppPredicates.toSeq: _*)
+
+      case spp: SelectivePathPattern if spp.allQuantifiedPathPatterns.nonEmpty =>
+        val (newConnections, liftedPredicates) =
+          spp.pathPattern.connections.foldLeft((Set[ExhaustiveNodeConnection](), Set[ForAllRepetitions]())) {
+            case ((newNodeConnections, extractedPredicates), nodeConnection) => nodeConnection match {
+                case pr: PatternRelationship => (newNodeConnections + pr, extractedPredicates)
+                case qpp: QuantifiedPathPattern =>
+                  val foo = for {
+                    predicate <- qpp.selections.predicates
+                  } yield ForAllRepetitions(qpp, predicate.expr)
+                  (newNodeConnections + qpp.copy(selections = Selections.empty), extractedPredicates ++ foo)
+              }
+          }
+        val newSelections = Selections(liftedPredicates.flatMap(_.asPredicates))
+
+        spp.copy(
+          pathPattern = spp.pathPattern.copy(connections = NonEmptyList.from(newConnections)),
+          selections = spp.selections ++ newSelections
+        )
     }
   )
 
