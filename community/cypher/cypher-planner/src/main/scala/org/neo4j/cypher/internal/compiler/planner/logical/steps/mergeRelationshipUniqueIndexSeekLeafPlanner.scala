@@ -177,7 +177,8 @@ object relationshipSingleUniqueIndexSeekPlanProvider extends RelationshipIndexPl
         providedOrder = providedOrder,
         context = context,
         indexType = indexType,
-        unique = true
+        unique = true,
+        supportPartitionedScan = false
       )
 
     planHiddenSelectionAndRelationshipLeafPlan(

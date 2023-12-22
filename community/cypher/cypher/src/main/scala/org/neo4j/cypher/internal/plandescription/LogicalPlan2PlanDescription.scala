@@ -184,11 +184,13 @@ import org.neo4j.cypher.internal.logical.plans.PartialSort
 import org.neo4j.cypher.internal.logical.plans.PartialTop
 import org.neo4j.cypher.internal.logical.plans.PartitionedAllNodesScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedAllRelationshipsScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedAllRelationshipsScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
 import org.neo4j.cypher.internal.logical.plans.PathPropagatingBFS
@@ -618,7 +620,7 @@ case class LogicalPlan2PlanDescription(
           withRawCardinalities,
           withDistinctness
         )
-      case p @ DirectedRelationshipIndexSeek(idName, start, end, typ, properties, valueExpr, _, _, indexType) =>
+      case p @ DirectedRelationshipIndexSeek(idName, start, end, typ, properties, valueExpr, _, _, indexType, _) =>
         val (indexMode, indexDesc) = getRelIndexDescriptions(
           idName.name,
           start.name,
@@ -633,7 +635,7 @@ case class LogicalPlan2PlanDescription(
           p.cachedProperties
         )
         PlanDescriptionImpl(id, indexMode, NoChildren, Seq(Details(indexDesc)), variables)
-      case p @ UndirectedRelationshipIndexSeek(idName, start, end, typ, properties, valueExpr, _, _, indexType) =>
+      case p @ UndirectedRelationshipIndexSeek(idName, start, end, typ, properties, valueExpr, _, _, indexType, _) =>
         val (indexMode, indexDesc) = getRelIndexDescriptions(
           idName.name,
           start.name,
@@ -650,6 +652,53 @@ case class LogicalPlan2PlanDescription(
         PlanDescriptionImpl(
           id,
           indexMode,
+          NoChildren,
+          Seq(Details(indexDesc)),
+          variables,
+          withRawCardinalities,
+          withDistinctness
+        )
+      case p @ PartitionedDirectedRelationshipIndexSeek(idName, start, end, typ, properties, valueExpr, _, indexType) =>
+        val (indexMode, indexDesc) = getRelIndexDescriptions(
+          idName.name,
+          start.name,
+          typ,
+          end.name,
+          isDirected = true,
+          properties.map(_.propertyKeyToken),
+          indexType,
+          valueExpr,
+          unique = false,
+          readOnly = readOnly,
+          p.cachedProperties
+        )
+        PlanDescriptionImpl(id, "Partitioned" + indexMode, NoChildren, Seq(Details(indexDesc)), variables)
+      case p @ PartitionedUndirectedRelationshipIndexSeek(
+          idName,
+          start,
+          end,
+          typ,
+          properties,
+          valueExpr,
+          _,
+          indexType
+        ) =>
+        val (indexMode, indexDesc) = getRelIndexDescriptions(
+          idName.name,
+          start.name,
+          typ,
+          end.name,
+          isDirected = false,
+          properties.map(_.propertyKeyToken),
+          indexType,
+          valueExpr,
+          unique = false,
+          readOnly = readOnly,
+          p.cachedProperties
+        )
+        PlanDescriptionImpl(
+          id,
+          "Partitioned" + indexMode,
           NoChildren,
           Seq(Details(indexDesc)),
           variables,

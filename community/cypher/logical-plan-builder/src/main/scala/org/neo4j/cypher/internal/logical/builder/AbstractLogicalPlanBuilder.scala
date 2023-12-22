@@ -1625,7 +1625,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     argumentIds: Set[String] = Set.empty,
     unique: Boolean = false,
     customQueryExpression: Option[QueryExpression[Expression]] = None,
-    indexType: IndexType = IndexType.RANGE
+    indexType: IndexType = IndexType.RANGE,
+    supportPartitionedScan: Boolean = true
   ): IMPL = {
     val planBuilder = (idGen: IdGen) => {
       val plan = relationshipIndexSeek(
@@ -1635,6 +1636,29 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         paramExpr,
         argumentIds,
         unique,
+        customQueryExpression,
+        indexType,
+        supportPartitionedScan
+      )(idGen)
+      plan
+    }
+    appendAtCurrentIndent(LeafOperator(planBuilder))
+  }
+
+  def partitionedRelationshipIndexOperator(
+    indexSeekString: String,
+    getValue: String => GetValueFromIndexBehavior = _ => DoNotGetValue,
+    paramExpr: Iterable[Expression] = Seq.empty,
+    argumentIds: Set[String] = Set.empty,
+    customQueryExpression: Option[QueryExpression[Expression]] = None,
+    indexType: IndexType = IndexType.RANGE
+  ): IMPL = {
+    val planBuilder = (idGen: IdGen) => {
+      val plan = partitionedRelationshipIndexSeek(
+        indexSeekString,
+        getValue,
+        paramExpr,
+        argumentIds,
         customQueryExpression,
         indexType
       )(idGen)
@@ -1715,7 +1739,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     argumentIds: Set[String] = Set.empty,
     unique: Boolean = false,
     customQueryExpression: Option[QueryExpression[Expression]] = None,
-    indexType: IndexType = IndexType.RANGE
+    indexType: IndexType = IndexType.RANGE,
+    supportPartitionedScan: Boolean = true
   ): IdGen => RelationshipIndexLeafPlan = {
     val relType = resolver.getRelTypeId(IndexSeek.relTypeFromIndexSeekString(indexSeekString))
     val propIds: PartialFunction[String, Int] = {
@@ -1731,6 +1756,38 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         Some(propIds),
         relType,
         unique,
+        customQueryExpression,
+        indexType,
+        supportPartitionedScan
+      )(idGen)
+      newRelationship(varFor(plan.idName.name))
+      newNode(varFor(plan.leftNode.name))
+      newNode(varFor(plan.rightNode.name))
+      plan
+    }
+    planBuilder
+  }
+
+  def partitionedRelationshipIndexSeek(
+    indexSeekString: String,
+    getValue: String => GetValueFromIndexBehavior = _ => DoNotGetValue,
+    paramExpr: Iterable[Expression] = Seq.empty,
+    argumentIds: Set[String] = Set.empty,
+    customQueryExpression: Option[QueryExpression[Expression]] = None,
+    indexType: IndexType = IndexType.RANGE
+  ): IdGen => RelationshipIndexLeafPlan = {
+    val relType = resolver.getRelTypeId(IndexSeek.relTypeFromIndexSeekString(indexSeekString))
+    val propIds: PartialFunction[String, Int] = {
+      case x => resolver.getPropertyKeyId(x)
+    }
+    val planBuilder = (idGen: IdGen) => {
+      val plan = IndexSeek.partitionedRelationshipIndexSeek(
+        indexSeekString,
+        getValue,
+        paramExpr,
+        argumentIds,
+        Some(propIds),
+        relType,
         customQueryExpression,
         indexType
       )(idGen)
@@ -1949,7 +2006,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
             e,
             argumentIds.map(varFor),
             indexOrder,
-            indexType
+            indexType,
+            supportPartitionedScan = false
           )(idGen)
         } else {
           UndirectedRelationshipIndexSeek(
@@ -1961,7 +2019,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
             e,
             argumentIds.map(varFor),
             indexOrder,
-            indexType
+            indexType,
+            supportPartitionedScan = false
           )(idGen)
         }
       plan
@@ -2039,7 +2098,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
             e,
             argumentIds.map(varFor),
             indexOrder,
-            indexType
+            indexType,
+            supportPartitionedScan = false
           )(idGen)
         } else {
           UndirectedRelationshipIndexSeek(
@@ -2051,7 +2111,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
             e,
             argumentIds.map(varFor),
             indexOrder,
-            indexType
+            indexType,
+            supportPartitionedScan = false
           )(idGen)
         }
       plan

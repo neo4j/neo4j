@@ -1805,7 +1805,8 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
         .relationshipIndexOperator(
           "(a)-[r:REL(prop1 > 123, prop2)]-(b)",
           getValue = Map("prop1" -> DoNotGetValue, "prop2" -> GetValue),
-          indexType = IndexType.RANGE
+          indexType = IndexType.RANGE,
+          supportPartitionedScan = false
         )
         .build()
     }
@@ -1827,7 +1828,8 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .relationshipIndexOperator(
         "(a)-[r:REL(prop1 = 123, prop2)]-(b)",
         getValue = _ => DoNotGetValue,
-        indexType = IndexType.RANGE
+        indexType = IndexType.RANGE,
+        supportPartitionedScan = false
       )
       .build())
   }
@@ -1842,7 +1844,8 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .relationshipIndexOperator(
         "(a)-[r:REL(prop1 = 42, prop2 = 21)]->(b)",
         getValue = _ => GetValue,
-        indexType = IndexType.RANGE
+        indexType = IndexType.RANGE,
+        supportPartitionedScan = false
       )
       .build()
   }
@@ -1859,7 +1862,8 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .relationshipIndexOperator(
         "(a)-[r:REL(prop1 = 42, prop2 = 21)]->(b)",
         getValue = _ => GetValue,
-        indexType = IndexType.RANGE
+        indexType = IndexType.RANGE,
+        supportPartitionedScan = false
       )
       .build()
   }
@@ -1876,7 +1880,8 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       .relationshipIndexOperator(
         "(a)-[r:REL(prop1 = 42, prop2 = 21)]->(b)",
         getValue = _ => DoNotGetValue,
-        indexType = IndexType.RANGE
+        indexType = IndexType.RANGE,
+        supportPartitionedScan = false
       )
       .build()
   }

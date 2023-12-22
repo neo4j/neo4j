@@ -437,7 +437,8 @@ class IndexSeekTest extends CypherFunSuite {
         exactInt(1),
         args.map(varFor),
         indexOrder,
-        indexType
+        indexType,
+        supportPartitionedScan = true
       ),
     (getValue, args, indexOrder, indexType) =>
       "(a)<-[r:R(prop = 1)]-(b)" -> DirectedRelationshipIndexSeek(
@@ -449,7 +450,8 @@ class IndexSeekTest extends CypherFunSuite {
         exactInt(1),
         args.map(varFor),
         indexOrder,
-        indexType
+        indexType,
+        supportPartitionedScan = true
       ),
     (getValue, args, indexOrder, indexType) =>
       "(a)-[r:R(prop = 1)]-(b)" -> UndirectedRelationshipIndexSeek(
@@ -461,7 +463,8 @@ class IndexSeekTest extends CypherFunSuite {
         exactInt(1),
         args.map(varFor),
         indexOrder,
-        indexType
+        indexType,
+        supportPartitionedScan = true
       ),
     (getValue, args, indexOrder, indexType) =>
       "(a)-[r:REL_ABC(id)]-(b)" -> UndirectedRelationshipIndexScan(

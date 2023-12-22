@@ -53,16 +53,16 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
   }
 
   for {
-    (pred, indexStr) <- Seq(
-      "r.prop = 123" -> "prop = 123",
-      "r.prop > 123" -> "prop > 123",
-      "r.prop < 123" -> "prop < 123",
-      "123 < r.prop" -> "prop > 123",
-      "10 <= r.prop < 123" -> "10 <= prop < 123",
-      "123 >= r.prop > 10" -> "10 < prop <= 123",
-      "r.prop IN [1, 2]" -> "prop = 1 OR 2"
-    )
     isUnique <- Seq(true, false)
+    (pred, indexStr, supportPartitionedScan) <- Seq(
+      ("r.prop = 123", "prop = 123", !isUnique),
+      ("r.prop > 123", "prop > 123", !isUnique),
+      ("r.prop < 123", "prop < 123", !isUnique),
+      ("123 < r.prop", "prop > 123", !isUnique),
+      ("10 <= r.prop < 123", "10 <= prop < 123", !isUnique),
+      ("123 >= r.prop > 10", "10 < prop <= 123", !isUnique),
+      ("r.prop IN [1, 2]", "prop = 1 OR 2", false)
+    )
   } {
 
     test(s"should plan undirected relationship index seek for $pred (isUnique = $isUnique)") {
@@ -71,7 +71,12 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
       planner.plan(s"MATCH (a)-[r:REL]-(b) WHERE $pred RETURN r") should equal(
         planner.planBuilder()
           .produceResults("r")
-          .relationshipIndexOperator(s"(a)-[r:REL($indexStr)]-(b)", indexType = IndexType.RANGE, unique = isUnique)
+          .relationshipIndexOperator(
+            s"(a)-[r:REL($indexStr)]-(b)",
+            indexType = IndexType.RANGE,
+            unique = isUnique,
+            supportPartitionedScan = supportPartitionedScan
+          )
           .build()
       )
     }
@@ -82,7 +87,12 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
       planner.plan(s"MATCH (a)-[r:REL]->(b) WHERE $pred RETURN r") should equal(
         planner.planBuilder()
           .produceResults("r")
-          .relationshipIndexOperator(s"(a)-[r:REL($indexStr)]->(b)", indexType = IndexType.RANGE, unique = isUnique)
+          .relationshipIndexOperator(
+            s"(a)-[r:REL($indexStr)]->(b)",
+            indexType = IndexType.RANGE,
+            unique = isUnique,
+            supportPartitionedScan = supportPartitionedScan
+          )
           .build()
       )
     }
@@ -93,7 +103,12 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
       planner.plan(s"MATCH (a)<-[r:REL]-(b) WHERE $pred RETURN r") should equal(
         planner.planBuilder()
           .produceResults("r")
-          .relationshipIndexOperator(s"(a)<-[r:REL($indexStr)]-(b)", indexType = IndexType.RANGE, unique = isUnique)
+          .relationshipIndexOperator(
+            s"(a)<-[r:REL($indexStr)]-(b)",
+            indexType = IndexType.RANGE,
+            unique = isUnique,
+            supportPartitionedScan = supportPartitionedScan
+          )
           .build()
       )
     }
@@ -123,7 +138,8 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
             s"(a)-[r:REL($indexStr)]-(b)",
             argumentIds = Set("n"),
             indexType = IndexType.RANGE,
-            unique = isUnique
+            unique = isUnique,
+            supportPartitionedScan = supportPartitionedScan
           )
           .allNodeScan("n")
           .build()
@@ -142,7 +158,12 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
         planner.planBuilder()
           .produceResults("r")
           .filterExpression(hasLabels("a", "A"))
-          .relationshipIndexOperator(s"(a)-[r:REL($indexStr)]-(b)", indexType = IndexType.RANGE, unique = isUnique)
+          .relationshipIndexOperator(
+            s"(a)-[r:REL($indexStr)]-(b)",
+            indexType = IndexType.RANGE,
+            unique = isUnique,
+            supportPartitionedScan = supportPartitionedScan
+          )
           .build()
       )
     }
@@ -164,7 +185,8 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
             s"(anon_0)-[r:REL($indexStr)]-(b)",
             argumentIds = Set("a"),
             indexType = IndexType.RANGE,
-            unique = isUnique
+            unique = isUnique,
+            supportPartitionedScan = supportPartitionedScan
           )
           .skip(0)
           .allNodeScan("a")
@@ -189,7 +211,8 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
             s"(a)-[r:REL($indexStr)]-(anon_0)",
             argumentIds = Set("b"),
             indexType = IndexType.RANGE,
-            unique = isUnique
+            unique = isUnique,
+            supportPartitionedScan = supportPartitionedScan
           )
           .skip(0)
           .allNodeScan("b")
@@ -212,7 +235,8 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
             s"(anon_0)-[r:REL($indexStr)]-(anon_1)",
             argumentIds = Set("a", "b"),
             indexType = IndexType.RANGE,
-            unique = isUnique
+            unique = isUnique,
+            supportPartitionedScan = supportPartitionedScan
           )
           .skip(0)
           .cartesianProduct()
@@ -324,7 +348,11 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
     val plan = planner.plan(query).stripProduceResults
 
     plan shouldBe planner.subPlanBuilder()
-      .relationshipIndexOperator("(a)-[r:REL(prop1 = 42, prop2 = 'foo')]->(b)", indexType = IndexType.RANGE)
+      .relationshipIndexOperator(
+        "(a)-[r:REL(prop1 = 42, prop2 = 'foo')]->(b)",
+        indexType = IndexType.RANGE,
+        supportPartitionedScan = false
+      )
       .build()
   }
 
@@ -336,7 +364,11 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
     val plan = planner.plan(query).stripProduceResults
 
     plan shouldBe planner.subPlanBuilder()
-      .relationshipIndexOperator("(a)-[r:REL(prop1 = 42, prop2 = 'foo')]->(b)", indexType = IndexType.RANGE)
+      .relationshipIndexOperator(
+        "(a)-[r:REL(prop1 = 42, prop2 = 'foo')]->(b)",
+        indexType = IndexType.RANGE,
+        supportPartitionedScan = false
+      )
       .build()
   }
 
@@ -349,7 +381,11 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
 
     plan shouldBe planner.subPlanBuilder()
       .filter("r.name IS NOT NULL")
-      .relationshipIndexOperator("(a)-[r:REL(prop1 = 42, prop2 = 'foo')]->(b)", indexType = IndexType.RANGE)
+      .relationshipIndexOperator(
+        "(a)-[r:REL(prop1 = 42, prop2 = 'foo')]->(b)",
+        indexType = IndexType.RANGE,
+        supportPartitionedScan = false
+      )
       .build()
   }
 

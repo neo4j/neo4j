@@ -210,7 +210,11 @@ class IndexPlanningIntegrationTest
 
           plan shouldEqual cfg.planBuilder()
             .produceResults("r")
-            .relationshipIndexOperator(s"(a)-[r:Type(prop1 $op1 1, prop2 $op2 2)]->(b)", indexType = IndexType.RANGE)
+            .relationshipIndexOperator(
+              s"(a)-[r:Type(prop1 $op1 1, prop2 $op2 2)]->(b)",
+              indexType = IndexType.RANGE,
+              supportPartitionedScan = false
+            )
             .build()
         }
       }
@@ -227,7 +231,11 @@ class IndexPlanningIntegrationTest
           plan shouldEqual cfg.planBuilder()
             .produceResults("r")
             .filter(s"r.prop2 $op2 2")
-            .relationshipIndexOperator(s"(a)-[r:Type(prop1 $op1 1, prop2)]->(b)", indexType = IndexType.RANGE)
+            .relationshipIndexOperator(
+              s"(a)-[r:Type(prop1 $op1 1, prop2)]->(b)",
+              indexType = IndexType.RANGE,
+              supportPartitionedScan = false
+            )
             .build()
         }
       }
@@ -1558,7 +1566,11 @@ class IndexPlanningIntegrationTest
       val plan = cfg.plan(s"MATCH (a)-[r:REL]->(b) WHERE r.prop $op 'hello' RETURN r, r.prop").stripProduceResults
       plan shouldEqual cfg.subPlanBuilder()
         .projection("r.prop AS `r.prop`")
-        .relationshipIndexOperator(s"(a)-[r:REL(prop $op 'hello')]->(b)", indexType = IndexType.TEXT)
+        .relationshipIndexOperator(
+          s"(a)-[r:REL(prop $op 'hello')]->(b)",
+          indexType = IndexType.TEXT,
+          supportPartitionedScan = false
+        )
         .build()
     }
 
@@ -1569,7 +1581,8 @@ class IndexPlanningIntegrationTest
         .relationshipIndexOperator(
           s"(a)-[r:REL(prop $op 'hello')]->(b)",
           getValue = Map("prop" -> GetValue),
-          indexType = IndexType.TEXT
+          indexType = IndexType.TEXT,
+          supportPartitionedScan = false
         )
         .build()
     }
@@ -1603,7 +1616,11 @@ class IndexPlanningIntegrationTest
       val plan = cfg.plan(s"MATCH (a)-[r:REL]->(b) WHERE r.prop $op 'hello' RETURN r, r.prop").stripProduceResults
       plan shouldEqual cfg.subPlanBuilder()
         .projection("r.prop AS `r.prop`")
-        .relationshipIndexOperator(s"(a)-[r:REL(prop $op 'hello')]->(b)", indexType = IndexType.TEXT)
+        .relationshipIndexOperator(
+          s"(a)-[r:REL(prop $op 'hello')]->(b)",
+          indexType = IndexType.TEXT,
+          supportPartitionedScan = false
+        )
         .build()
     }
 
@@ -1623,7 +1640,8 @@ class IndexPlanningIntegrationTest
         .relationshipIndexOperator(
           s"(a)-[r:REL(prop $op 'hello')]->(b)",
           getValue = Map("prop" -> GetValue),
-          indexType = IndexType.TEXT
+          indexType = IndexType.TEXT,
+          supportPartitionedScan = false
         )
         .build()
     }
@@ -1701,7 +1719,8 @@ class IndexPlanningIntegrationTest
       .relationshipIndexOperator(
         "(a)-[r:R(prop = 'string')]->(b)",
         getValue = Map("prop" -> GetValue),
-        indexType = IndexType.TEXT
+        indexType = IndexType.TEXT,
+        supportPartitionedScan = false
       )
       .build()
 
@@ -1891,7 +1910,8 @@ class IndexPlanningIntegrationTest
         "(a)-[r:REL(prop = ???)]->(b)",
         paramExpr = Some(point(1.0, 2.0)),
         getValue = Map("prop" -> GetValue),
-        indexType = IndexType.POINT
+        indexType = IndexType.POINT,
+        supportPartitionedScan = false
       )
       .build()
   }

@@ -202,7 +202,8 @@ class RelationshipIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanni
           ManyQueryExpression(listOf(lit6, lit42)),
           Set(v"x"),
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = false
         ),
         // nPropLessThanLit6
         DirectedRelationshipIndexSeek(
@@ -214,7 +215,8 @@ class RelationshipIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanni
           RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(ExclusiveBound(lit6))))(pos)),
           Set(v"x"),
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = true
         ),
         // nPropEqualsLit42
         DirectedRelationshipIndexSeek(
@@ -226,7 +228,8 @@ class RelationshipIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanni
           SingleQueryExpression(lit42),
           Set(v"x"),
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = true
         ),
         // nPropStartsWithLitFoo
         DirectedRelationshipIndexSeek(
@@ -238,7 +241,8 @@ class RelationshipIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanni
           RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(litFoo))(pos)),
           Set(v"x"),
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = true
         ),
         DirectedRelationshipIndexSeek(
           v"n",
@@ -249,7 +253,8 @@ class RelationshipIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanni
           RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(litFoo))(pos)),
           Set(v"x"),
           IndexOrderNone,
-          IndexType.TEXT
+          IndexType.TEXT,
+          supportPartitionedScan = false
         ),
         // nPropEqualsXProp
         DirectedRelationshipIndexSeek(
@@ -261,7 +266,8 @@ class RelationshipIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanni
           SingleQueryExpression(xProp),
           Set(v"x"),
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = true
         ),
         // mPropEqualsXProp
         UndirectedRelationshipIndexSeek(
@@ -273,7 +279,8 @@ class RelationshipIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanni
           SingleQueryExpression(xProp),
           Set(v"x"),
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = true
         ),
         // oFooEqualsLit6, oBarEqualsLit42
         DirectedRelationshipIndexSeek(
@@ -288,7 +295,8 @@ class RelationshipIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanni
           CompositeQueryExpression(Seq(SingleQueryExpression(lit6), SingleQueryExpression(lit42))),
           Set(v"x"),
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = false
         ),
         // oAaaEqualsLit42, oBbbLessThan6, oCccLessThan6
         DirectedRelationshipIndexSeek(
@@ -308,7 +316,8 @@ class RelationshipIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanni
           )),
           Set(v"x"),
           IndexOrderNone,
-          IndexType.RANGE
+          IndexType.RANGE,
+          supportPartitionedScan = false
         ),
         // nPropContainsLitFoo
         DirectedRelationshipIndexContainsScan(

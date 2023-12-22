@@ -2201,6 +2201,56 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName wi
   )
 
   testPlan(
+    "partitionedRelationshipIndexOperator", {
+      val builder = new TestPlanBuilder().produceResults("r")
+
+      builder.apply()
+        .|.partitionedRelationshipIndexOperator("(x)-[r:Honey(prop = 20)]->(y)", indexType = IndexType.RANGE)
+        .apply()
+        .|.partitionedRelationshipIndexOperator("(x)-[r:Honey(prop = 20 OR 30)]-(y)", indexType = IndexType.RANGE)
+        .apply()
+        .|.partitionedRelationshipIndexOperator("(x)-[r:Honey(prop > 20)]->(y)", indexType = IndexType.RANGE)
+        .apply()
+        .|.partitionedRelationshipIndexOperator("(x)-[r:Honey(10 < prop < 20)]-(y)", indexType = IndexType.RANGE)
+        .apply()
+        .|.partitionedRelationshipIndexOperator("(x)-[r:Honey(10 < prop <= 20)]->(y)", indexType = IndexType.RANGE)
+        .apply()
+        .|.partitionedRelationshipIndexOperator("(x)-[r:Honey(10 <= prop < 20)]-(y)", indexType = IndexType.RANGE)
+        .apply()
+        .|.partitionedRelationshipIndexOperator("(x)-[r:Honey(10 <= prop <= 20)->(y)", indexType = IndexType.RANGE)
+        .apply()
+        .|.partitionedRelationshipIndexOperator(
+          "(x)-[r:Honey(prop >= 20)]-(y)",
+          indexType = IndexType.RANGE
+        ).apply()
+        .|.partitionedRelationshipIndexOperator(
+          "(x)-[r:Honey(prop < 20)->(y)",
+          getValue = _ => DoNotGetValue,
+          indexType = IndexType.RANGE
+        ).apply()
+        .|.partitionedRelationshipIndexOperator(
+          "(x)-[r:Honey(prop <= 20)->(y)",
+          getValue = _ => GetValue,
+          indexType = IndexType.RANGE
+        ).apply()
+        .|.partitionedRelationshipIndexOperator(
+          "(x)-[r:Honey(prop = 10, prop2 = '20')->(y)",
+          indexType = IndexType.RANGE
+        ).apply()
+        .|.partitionedRelationshipIndexOperator(
+          "(x)-[r:Honey(prop = 10 OR 20, prop2 = '10' OR '30')->(y)",
+          argumentIds = Set("a", "b"),
+          indexType = IndexType.RANGE
+        )
+        .partitionedRelationshipIndexOperator(
+          "(x)-[r:Label(text STARTS WITH 'as')->(y)",
+          indexType = IndexType.RANGE
+        )
+        .build()
+    }
+  )
+
+  testPlan(
     "multiNodeIndexSeekOperator",
     new TestPlanBuilder()
       .produceResults("n", "m")

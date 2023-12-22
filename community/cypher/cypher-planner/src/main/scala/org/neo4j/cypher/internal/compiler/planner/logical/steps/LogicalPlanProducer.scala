@@ -670,7 +670,8 @@ case class LogicalPlanProducer(
     providedOrder: ProvidedOrder,
     context: LogicalPlanningContext,
     indexType: IndexType,
-    unique: Boolean
+    unique: Boolean,
+    supportPartitionedScan: Boolean
   ): LogicalPlan = {
 
     def planLeaf = {
@@ -680,41 +681,63 @@ case class LogicalPlanProducer(
 
       val leafPlan =
         if (patternForLeafPlan.dir == SemanticDirection.BOTH) {
-          val makeUndirected =
+          def makeUndirected() =
             if (unique)
-              UndirectedRelationshipUniqueIndexSeek.apply _
+              UndirectedRelationshipUniqueIndexSeek(
+                variable,
+                patternForLeafPlan.left,
+                patternForLeafPlan.right,
+                typeToken,
+                properties,
+                rewrittenValueExpr,
+                argumentIds ++ newArguments,
+                indexOrder,
+                indexType.toPublicApi
+              )
             else
-              UndirectedRelationshipIndexSeek.apply _
+              UndirectedRelationshipIndexSeek(
+                variable,
+                patternForLeafPlan.left,
+                patternForLeafPlan.right,
+                typeToken,
+                properties,
+                rewrittenValueExpr,
+                argumentIds ++ newArguments,
+                indexOrder,
+                indexType.toPublicApi,
+                supportPartitionedScan
+              )
 
-          makeUndirected(
-            variable,
-            patternForLeafPlan.left,
-            patternForLeafPlan.right,
-            typeToken,
-            properties,
-            rewrittenValueExpr,
-            argumentIds ++ newArguments,
-            indexOrder,
-            indexType.toPublicApi
-          )
+          makeUndirected()
         } else {
-          val makeDirected =
+          def makeDirected() =
             if (unique)
-              DirectedRelationshipUniqueIndexSeek.apply _
+              DirectedRelationshipUniqueIndexSeek(
+                variable,
+                patternForLeafPlan.inOrder._1,
+                patternForLeafPlan.inOrder._2,
+                typeToken,
+                properties,
+                rewrittenValueExpr,
+                argumentIds ++ newArguments,
+                indexOrder,
+                indexType.toPublicApi
+              )
             else
-              DirectedRelationshipIndexSeek.apply _
+              DirectedRelationshipIndexSeek(
+                variable,
+                patternForLeafPlan.inOrder._1,
+                patternForLeafPlan.inOrder._2,
+                typeToken,
+                properties,
+                rewrittenValueExpr,
+                argumentIds ++ newArguments,
+                indexOrder,
+                indexType.toPublicApi,
+                supportPartitionedScan
+              )
 
-          makeDirected(
-            variable,
-            patternForLeafPlan.inOrder._1,
-            patternForLeafPlan.inOrder._2,
-            typeToken,
-            properties,
-            rewrittenValueExpr,
-            argumentIds ++ newArguments,
-            indexOrder,
-            indexType.toPublicApi
-          )
+          makeDirected()
         }
 
       solver.rewriteLeafPlan {

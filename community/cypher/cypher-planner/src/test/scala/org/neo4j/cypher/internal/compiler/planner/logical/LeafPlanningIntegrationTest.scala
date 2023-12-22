@@ -1127,7 +1127,8 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
           .relationshipIndexOperator(
             "(a)-[r:R(prop)]->(b)",
             indexType = IndexType.POINT,
-            customQueryExpression = nodePointIndexHints.pointQueryExpression
+            customQueryExpression = nodePointIndexHints.pointQueryExpression,
+            supportPartitionedScan = false
           )
           .build()
       )

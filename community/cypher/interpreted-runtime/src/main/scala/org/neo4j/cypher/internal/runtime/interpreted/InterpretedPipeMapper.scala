@@ -120,11 +120,13 @@ import org.neo4j.cypher.internal.logical.plans.PartialSort
 import org.neo4j.cypher.internal.logical.plans.PartialTop
 import org.neo4j.cypher.internal.logical.plans.PartitionedAllNodesScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedAllRelationshipsScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedAllRelationshipsScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
 import org.neo4j.cypher.internal.logical.plans.Prober
@@ -549,7 +551,8 @@ case class InterpretedPipeMapper(
           valueExpr,
           _,
           indexOrder,
-          indexType
+          indexType,
+          _
         ) =>
         val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
         DirectedRelationshipIndexSeekPipe(
@@ -562,6 +565,29 @@ case class InterpretedPipeMapper(
           valueExpr.map(buildExpression),
           indexSeekMode,
           indexOrder
+        )(id = id)
+
+      case PartitionedDirectedRelationshipIndexSeek(
+          idName,
+          startNode,
+          endNode,
+          typeToken,
+          properties,
+          valueExpr,
+          _,
+          indexType
+        ) =>
+        val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
+        DirectedRelationshipIndexSeekPipe(
+          idName.name,
+          startNode.name,
+          endNode.name,
+          typeToken,
+          properties.toArray,
+          indexRegistrator.registerQueryIndex(indexType, typeToken, properties),
+          valueExpr.map(buildExpression),
+          indexSeekMode,
+          IndexOrderNone
         )(id = id)
 
       case UndirectedRelationshipUniqueIndexSeek(
@@ -597,7 +623,8 @@ case class InterpretedPipeMapper(
           valueExpr,
           _,
           indexOrder,
-          indexType
+          indexType,
+          _
         ) =>
         val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
         UndirectedRelationshipIndexSeekPipe(
@@ -610,6 +637,29 @@ case class InterpretedPipeMapper(
           valueExpr.map(buildExpression),
           indexSeekMode,
           indexOrder
+        )(id = id)
+
+      case PartitionedUndirectedRelationshipIndexSeek(
+          idName,
+          startNode,
+          endNode,
+          typeToken,
+          properties,
+          valueExpr,
+          _,
+          indexType
+        ) =>
+        val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
+        UndirectedRelationshipIndexSeekPipe(
+          idName.name,
+          startNode.name,
+          endNode.name,
+          typeToken,
+          properties.toArray,
+          indexRegistrator.registerQueryIndex(indexType, typeToken, properties),
+          valueExpr.map(buildExpression),
+          indexSeekMode,
+          IndexOrderNone
         )(id = id)
 
       case DirectedRelationshipIndexScan(idName, startNode, endNode, typeToken, properties, _, indexOrder, indexType) =>

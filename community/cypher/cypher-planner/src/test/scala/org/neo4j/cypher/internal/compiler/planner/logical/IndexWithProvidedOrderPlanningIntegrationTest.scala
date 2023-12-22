@@ -2082,7 +2082,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
                 "(a)-[r:REL(prop1 >= 42, prop2 <= 3)]->(b)",
                 indexOrder = indexOrder,
                 getValue = _ => GetValue,
-                indexType = IndexType.RANGE
+                indexType = IndexType.RANGE,
+                supportPartitionedScan = false
               )
               .build()
           }
@@ -2183,7 +2184,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
               "(a)-[r:REL(prop1 >= 42, prop2)]->(b)",
               indexOrder = indexOrder,
               getValue = _ => GetValue,
-              indexType = IndexType.RANGE
+              indexType = IndexType.RANGE,
+              supportPartitionedScan = false
             )
             .build()
         }
@@ -2501,7 +2503,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
               "(a)-[r:REL(prop1 >= 42, prop2 <= 3, prop3 > 'a', prop4 < 'f')]->(b)",
               indexOrder = indexOrder,
               getValue = _ => GetValue,
-              indexType = IndexType.RANGE
+              indexType = IndexType.RANGE,
+              supportPartitionedScan = false
             )
             .build()
         }
@@ -2705,7 +2708,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
               "(a)-[r:REL(prop1 >= 42, prop2 <= 3, prop3 > 'a', prop4 < 'f')]->(b)",
               indexOrder = indexOrder,
               getValue = _ => GetValue,
-              indexType = IndexType.RANGE
+              indexType = IndexType.RANGE,
+              supportPartitionedScan = false
             )
             .build()
         }
@@ -3319,7 +3323,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
               .relationshipIndexOperator(
                 "(a)-[r:REL(prop1 >= 42, prop2 <= 3, prop3 > '')]->(b)",
                 indexOrder = indexOrder,
-                indexType = IndexType.RANGE
+                indexType = IndexType.RANGE,
+                supportPartitionedScan = false
               )
               .build()
           }
@@ -3441,7 +3446,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
                 "(a)-[r:REL(prop1 = 42, prop2 <= 3)]->(b)",
                 indexOrder = indexOrder,
                 getValue = _ => GetValue,
-                indexType = IndexType.RANGE
+                indexType = IndexType.RANGE,
+                supportPartitionedScan = false
               )
               .build()
           }
@@ -3588,7 +3594,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
                 "(a)-[r:REL(prop1 <= 42, prop2 = 3)]->(b)",
                 indexOrder = indexOrder,
                 getValue = _ => GetValue,
-                indexType = IndexType.RANGE
+                indexType = IndexType.RANGE,
+                supportPartitionedScan = false
               )
               .build()
           }
@@ -3677,7 +3684,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
                 "(a)-[r:REL(prop1 = 42, prop2 = 3)]->(b)",
                 indexOrder = indexOrder,
                 getValue = _ => GetValue,
-                indexType = IndexType.RANGE
+                indexType = IndexType.RANGE,
+                supportPartitionedScan = false
               )
               .build()
           }

@@ -101,11 +101,13 @@ import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
 import org.neo4j.cypher.internal.logical.plans.OrderedDistinct
 import org.neo4j.cypher.internal.logical.plans.PartitionedAllNodesScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedAllRelationshipsScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedAllRelationshipsScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
 import org.neo4j.cypher.internal.logical.plans.PathPropagatingBFS
@@ -219,7 +221,14 @@ object VariableRefRewriter extends Rewriter {
         case leaf: RelationshipLogicalLeafPlan => leaf match {
             case plan: RelationshipIndexLeafPlan => plan match {
                 case plan: RelationshipIndexSeekLeafPlan => plan match {
-                    case s @ DirectedRelationshipIndexSeek(rel, start, end, _, _, _, args, _, _) =>
+                    case s @ DirectedRelationshipIndexSeek(rel, start, end, _, _, _, args, _, _, _) =>
+                      s.copy(
+                        idName = varRef(rel),
+                        startNode = varRef(start),
+                        endNode = varRef(end),
+                        argumentIds = args.map(varRef)
+                      )(SameId(s.id))
+                    case s @ PartitionedDirectedRelationshipIndexSeek(rel, start, end, _, _, _, args, _) =>
                       s.copy(
                         idName = varRef(rel),
                         startNode = varRef(start),
@@ -233,7 +242,14 @@ object VariableRefRewriter extends Rewriter {
                         endNode = varRef(end),
                         argumentIds = args.map(varRef)
                       )(SameId(s.id))
-                    case s @ UndirectedRelationshipIndexSeek(rel, left, right, _, _, _, args, _, _) =>
+                    case s @ UndirectedRelationshipIndexSeek(rel, left, right, _, _, _, args, _, _, _) =>
+                      s.copy(
+                        idName = varRef(rel),
+                        leftNode = varRef(left),
+                        rightNode = varRef(right),
+                        argumentIds = args.map(varRef)
+                      )(SameId(s.id))
+                    case s @ PartitionedUndirectedRelationshipIndexSeek(rel, left, right, _, _, _, args, _) =>
                       s.copy(
                         idName = varRef(rel),
                         leftNode = varRef(left),

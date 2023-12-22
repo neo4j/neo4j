@@ -391,7 +391,8 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
             paramExpr = Some(yProp),
             argumentIds = Set("x", "y"),
             getValue = _ => CanGetValue,
-            indexType = IndexType.RANGE
+            indexType = IndexType.RANGE,
+            supportPartitionedScan = false
           )
           .build(),
         new LogicalPlanBuilder(wholePlan = false)
@@ -400,7 +401,8 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
             paramExpr = Some(xProp),
             argumentIds = Set("x", "y"),
             getValue = _ => CanGetValue,
-            indexType = IndexType.RANGE
+            indexType = IndexType.RANGE,
+            supportPartitionedScan = false
           )
           .build(),
         new LogicalPlanBuilder(wholePlan = false)
@@ -409,7 +411,8 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
             paramExpr = Seq(xProp, yProp),
             argumentIds = Set("x", "y"),
             getValue = _ => CanGetValue,
-            indexType = IndexType.RANGE
+            indexType = IndexType.RANGE,
+            supportPartitionedScan = false
           )
           .build()
       ))
@@ -490,7 +493,8 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
           .relationshipIndexOperator(
             v"($startNode)-[$relVar:$relTypeName($prop = 6 OR 42)]-($endNode)".name,
             getValue = _ => CanGetValue,
-            argumentIds = Set(x.name)
+            argumentIds = Set(x.name),
+            supportPartitionedScan = false
           )
           .build(),
         new LogicalPlanBuilder(wholePlan = false)
@@ -596,7 +600,8 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
         new LogicalPlanBuilder(wholePlan = false)
           .relationshipIndexOperator(
             v"($startNode)-[$relVar:$relTypeName($prop < 42, foo)]-($endNode)".name,
-            indexType = IndexType.RANGE
+            indexType = IndexType.RANGE,
+            supportPartitionedScan = false
           )
           .build()
       ))
@@ -627,7 +632,8 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
         new LogicalPlanBuilder(wholePlan = false)
           .relationshipIndexOperator(
             v"($startNode)-[$relVar:$relTypeName($foo < 42, prop)]-($endNode)".name,
-            indexType = IndexType.RANGE
+            indexType = IndexType.RANGE,
+            supportPartitionedScan = false
           )
           .build()
       ))
@@ -654,7 +660,8 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
         new LogicalPlanBuilder(wholePlan = false)
           .relationshipIndexOperator(
             v"($startNode)-[$relVar:$relTypeName($foo < 42, prop)]-($endNode)".name,
-            indexType = IndexType.RANGE
+            indexType = IndexType.RANGE,
+            supportPartitionedScan = false
           )
           .build()
       ))
@@ -682,7 +689,8 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
         new LogicalPlanBuilder(wholePlan = false)
           .relationshipIndexOperator(
             v"($startNode)-[$relVar:$relTypeName($foo < 42, prop)]-($endNode)".name,
-            indexType = IndexType.RANGE
+            indexType = IndexType.RANGE,
+            supportPartitionedScan = false
           )
           .build()
       ))

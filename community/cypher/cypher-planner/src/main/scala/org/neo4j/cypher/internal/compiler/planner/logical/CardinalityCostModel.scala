@@ -96,12 +96,14 @@ import org.neo4j.cypher.internal.logical.plans.OptionalExpand
 import org.neo4j.cypher.internal.logical.plans.OrderedUnion
 import org.neo4j.cypher.internal.logical.plans.PartialSort
 import org.neo4j.cypher.internal.logical.plans.PartitionedAllNodesScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedAllRelationshipsScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipIndexSeek
+import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexSeek
-import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedAllRelationshipsScan
-import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedAllRelationshipsScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
@@ -572,10 +574,12 @@ object CardinalityCostModel {
         => DIRECTED_RELATIONSHIP_INDEX_SCAN_COST_PER_ROW / 2
 
       case _: DirectedRelationshipIndexSeek |
+        _: PartitionedDirectedRelationshipIndexSeek |
         _: DirectedRelationshipIndexContainsScan |
         _: DirectedRelationshipIndexEndsWithScan => INDEX_SEEK_COST_PER_ROW + STORE_LOOKUP_COST_PER_ROW
 
       case _: UndirectedRelationshipIndexSeek |
+        _: PartitionedUndirectedRelationshipIndexSeek |
         _: UndirectedRelationshipIndexContainsScan |
         _: UndirectedRelationshipIndexEndsWithScan
         // Only every second row needs to access the index and the store

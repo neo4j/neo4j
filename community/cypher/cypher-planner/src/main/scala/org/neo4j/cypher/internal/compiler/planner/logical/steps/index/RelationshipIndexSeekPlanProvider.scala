@@ -32,6 +32,9 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.QueryExpression
+import org.neo4j.cypher.internal.logical.plans.RangeQueryExpression
+import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
+import org.neo4j.internal.kernel.api.PropertyIndexQuery.allEntries
 
 object RelationshipIndexSeekPlanProvider extends RelationshipIndexPlanProvider {
 
@@ -79,6 +82,13 @@ object RelationshipIndexSeekPlanProvider extends RelationshipIndexPlanProvider {
     val hint = predicateSet
       .fulfilledHints(hints, indexMatch.indexDescriptor.indexType, planIsScan = false)
       .headOption
+    val supportsPartitionedScans = queryExpression match {
+      case _: SingleQueryExpression[_] | _: RangeQueryExpression[_] =>
+        // NOTE: we still need to check at runtime if we can use a partitioned scan since it is dependent on
+        // values etc
+        indexMatch.indexDescriptor.maybeKernelIndexCapability.exists(_.supportPartitionedScan(allEntries()))
+      case _ => false
+    }
 
     def getRelationshipLeafPlan(
       patternForLeafPlan: PatternRelationship,
@@ -99,7 +109,8 @@ object RelationshipIndexSeekPlanProvider extends RelationshipIndexPlanProvider {
       providedOrder = indexMatch.providedOrder,
       context = context,
       indexType = indexMatch.indexDescriptor.indexType,
-      unique = indexMatch.indexDescriptor.isUnique
+      unique = indexMatch.indexDescriptor.isUnique,
+      supportsPartitionedScans
     )
 
     planHiddenSelectionAndRelationshipLeafPlan(
