@@ -417,7 +417,8 @@ object IndexSeek {
           properties,
           argumentIds.map(varFor),
           indexOrder,
-          indexType
+          indexType,
+          supportPartitionedScan
         )
       } else {
         UndirectedRelationshipIndexScan(
@@ -428,7 +429,8 @@ object IndexSeek {
           properties,
           argumentIds.map(varFor),
           indexOrder,
-          indexType
+          indexType,
+          supportPartitionedScan
         )
       }
     }
@@ -560,28 +562,25 @@ object IndexSeek {
       }
     }
 
-    // TODO
     def createScan(properties: Seq[IndexedProperty]): RelationshipIndexLeafPlan = {
       if (directed) {
-        DirectedRelationshipIndexScan(
+        PartitionedDirectedRelationshipIndexScan(
           varFor(rel),
           varFor(startNode),
           varFor(endNode),
           typeToken,
           properties,
           argumentIds.map(varFor),
-          IndexOrderNone,
           indexType
         )
       } else {
-        UndirectedRelationshipIndexScan(
+        PartitionedUndirectedRelationshipIndexScan(
           varFor(rel),
           varFor(startNode),
           varFor(endNode),
           typeToken,
           properties,
           argumentIds.map(varFor),
-          IndexOrderNone,
           indexType
         )
       }

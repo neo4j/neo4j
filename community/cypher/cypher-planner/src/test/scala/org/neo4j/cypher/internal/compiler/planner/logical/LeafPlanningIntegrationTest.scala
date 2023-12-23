@@ -1067,7 +1067,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         planner.planBuilder()
           .produceResults("a")
           .filter("b:B")
-          .relationshipIndexOperator("(a)-[r:R(prop)]->(b)", indexType = IndexType.TEXT)
+          .relationshipIndexOperator("(a)-[r:R(prop)]->(b)", indexType = IndexType.TEXT, supportPartitionedScan = false)
           .build()
       )
   }

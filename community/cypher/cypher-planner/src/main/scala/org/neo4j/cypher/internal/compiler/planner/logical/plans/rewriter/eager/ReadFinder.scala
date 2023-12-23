@@ -129,12 +129,14 @@ import org.neo4j.cypher.internal.logical.plans.PartialSort
 import org.neo4j.cypher.internal.logical.plans.PartialTop
 import org.neo4j.cypher.internal.logical.plans.PartitionedAllNodesScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedAllRelationshipsScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipIndexScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedAllRelationshipsScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipIndexScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
@@ -501,6 +503,18 @@ object ReadFinder {
           properties,
           _,
           _,
+          _,
+          _
+        ) =>
+        processRelationshipIndexPlan(relationship, typeName, properties, leftNode, rightNode)
+
+      case PartitionedDirectedRelationshipIndexScan(
+          relationship,
+          leftNode,
+          rightNode,
+          RelationshipTypeToken(typeName, _),
+          properties,
+          _,
           _
         ) =>
         processRelationshipIndexPlan(relationship, typeName, properties, leftNode, rightNode)
@@ -526,6 +540,18 @@ object ReadFinder {
           RelationshipTypeToken(typeName, _),
           properties,
           _,
+          _,
+          _,
+          _
+        ) =>
+        processRelationshipIndexPlan(relationship, typeName, properties, leftNode, rightNode)
+
+      case PartitionedUndirectedRelationshipIndexScan(
+          relationship,
+          leftNode,
+          rightNode,
+          RelationshipTypeToken(typeName, _),
+          properties,
           _,
           _
         ) =>

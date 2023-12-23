@@ -1382,7 +1382,7 @@ class IndexPlanningIntegrationTest
 
     val plan = cfg.plan(s"MATCH (a)-[r:REL]->(b) WHERE r.prop IS NOT NULL RETURN *").stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
-      .relationshipIndexOperator(s"(a)-[r:REL(prop)]->(b)", indexType = IndexType.TEXT)
+      .relationshipIndexOperator(s"(a)-[r:REL(prop)]->(b)", indexType = IndexType.TEXT, supportPartitionedScan = false)
       .build()
   }
 
@@ -1408,7 +1408,7 @@ class IndexPlanningIntegrationTest
     val plan = cfg.plan(s"MATCH (a)-[r:REL]->(b) WHERE r.prop = a.prop RETURN *").stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
       .filter("r.prop = a.prop")
-      .relationshipIndexOperator(s"(a)-[r:REL(prop)]->(b)", indexType = IndexType.TEXT)
+      .relationshipIndexOperator(s"(a)-[r:REL(prop)]->(b)", indexType = IndexType.TEXT, supportPartitionedScan = false)
       .build()
   }
 
@@ -1433,7 +1433,7 @@ class IndexPlanningIntegrationTest
     val plan = cfg.plan(s"MATCH (a)-[r:REL]->(b) WHERE r.prop = a.prop RETURN *").stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
       .filter("r.prop = a.prop")
-      .relationshipIndexOperator(s"(a)-[r:REL(prop)]->(b)", indexType = IndexType.POINT)
+      .relationshipIndexOperator(s"(a)-[r:REL(prop)]->(b)", indexType = IndexType.POINT, supportPartitionedScan = false)
       .build()
   }
 
@@ -1591,7 +1591,7 @@ class IndexPlanningIntegrationTest
       plan shouldEqual cfg.subPlanBuilder()
         .projection("cacheR[r.prop] AS `r.prop`")
         .filter(s"cacheRFromStore[r.prop] $op 'hello'")
-        .relationshipIndexOperator("(a)-[r:REL(prop)]->(b)", indexType = IndexType.TEXT)
+        .relationshipIndexOperator("(a)-[r:REL(prop)]->(b)", indexType = IndexType.TEXT, supportPartitionedScan = false)
         .build()
     }
   }
@@ -1629,7 +1629,7 @@ class IndexPlanningIntegrationTest
       plan shouldEqual cfg.subPlanBuilder()
         .projection("cacheR[r.prop] AS `r.prop`")
         .filter(s"cacheRFromStore[r.prop] $op 'hello'")
-        .relationshipIndexOperator("(a)-[r:REL(prop)]->(b)", indexType = IndexType.TEXT)
+        .relationshipIndexOperator("(a)-[r:REL(prop)]->(b)", indexType = IndexType.TEXT, supportPartitionedScan = false)
         .build()
     }
 
@@ -1979,7 +1979,11 @@ class IndexPlanningIntegrationTest
       plan shouldEqual cfg.subPlanBuilder()
         .projection("cacheR[r.prop] AS `r.prop`")
         .filter(s"cacheRFromStore[r.prop] $op point({x:1, y:2})")
-        .relationshipIndexOperator("(a)-[r:REL(prop)]->(b)", indexType = IndexType.POINT)
+        .relationshipIndexOperator(
+          "(a)-[r:REL(prop)]->(b)",
+          indexType = IndexType.POINT,
+          supportPartitionedScan = false
+        )
         .build()
     }
   }
@@ -2264,7 +2268,7 @@ class IndexPlanningIntegrationTest
       val plan = planner.plan(q).stripProduceResults
       plan shouldEqual planner.subPlanBuilder()
         .filter(s"NOT $pred")
-        .relationshipIndexOperator("(a)-[r:REL(prop)]->(b)", indexType = IndexType.TEXT)
+        .relationshipIndexOperator("(a)-[r:REL(prop)]->(b)", indexType = IndexType.TEXT, supportPartitionedScan = false)
         .build()
     }
   }
@@ -2304,7 +2308,11 @@ class IndexPlanningIntegrationTest
       val plan = planner.plan(q).stripProduceResults
       plan shouldEqual planner.subPlanBuilder()
         .filter(s"NOT $pred")
-        .relationshipIndexOperator("(a)-[r:REL(prop)]->(b)", indexType = IndexType.POINT)
+        .relationshipIndexOperator(
+          "(a)-[r:REL(prop)]->(b)",
+          indexType = IndexType.POINT,
+          supportPartitionedScan = false
+        )
         .build()
     }
   }

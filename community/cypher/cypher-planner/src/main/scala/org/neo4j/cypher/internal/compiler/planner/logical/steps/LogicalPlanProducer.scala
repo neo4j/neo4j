@@ -552,7 +552,8 @@ case class LogicalPlanProducer(
     providedOrder: ProvidedOrder,
     indexOrder: IndexOrder,
     context: LogicalPlanningContext,
-    indexType: IndexType
+    indexType: IndexType,
+    supportPartitionedScan: Boolean
   ): LogicalPlan = {
     def planLeaf: LogicalPlan = {
       val leafPlan =
@@ -565,7 +566,8 @@ case class LogicalPlanProducer(
             properties,
             argumentIds,
             indexOrder,
-            indexType.toPublicApi
+            indexType.toPublicApi,
+            supportPartitionedScan
           )
         } else {
           DirectedRelationshipIndexScan(
@@ -576,7 +578,8 @@ case class LogicalPlanProducer(
             properties,
             argumentIds,
             indexOrder,
-            indexType.toPublicApi
+            indexType.toPublicApi,
+            supportPartitionedScan: Boolean
           )
         }
 

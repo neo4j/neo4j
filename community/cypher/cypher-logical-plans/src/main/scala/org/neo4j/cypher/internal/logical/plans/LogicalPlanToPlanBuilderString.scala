@@ -160,6 +160,7 @@ object LogicalPlanToPlanBuilderString {
       case _: NodeIndexScan                 => "nodeIndexOperator"
       case _: PartitionedNodeIndexScan      => "partitionedNodeIndexOperator"
       case _: DirectedRelationshipIndexScan => "relationshipIndexOperator"
+      case _: PartitionedDirectedRelationshipIndexScan => "partitionedRelationshipIndexOperator"
       case NodeIndexSeek(_, _, _, RangeQueryExpression(PointDistanceSeekRangeWrapper(_)), _, _, _, _) =>
         "pointDistanceNodeIndexSeek"
       case NodeIndexSeek(_, _, _, RangeQueryExpression(PointBoundingBoxSeekRangeWrapper(_)), _, _, _, _) =>
@@ -231,6 +232,7 @@ object LogicalPlanToPlanBuilderString {
       case _: DirectedRelationshipIndexEndsWithScan      => "relationshipIndexOperator"
       case _: UndirectedRelationshipIndexEndsWithScan    => "relationshipIndexOperator"
       case _: UndirectedRelationshipIndexScan            => "relationshipIndexOperator"
+      case _: PartitionedUndirectedRelationshipIndexScan => "partitionedRelationshipIndexOperator"
       case _: UndirectedRelationshipUniqueIndexSeek      => "relationshipIndexOperator"
       case _: DirectedRelationshipUniqueIndexSeek        => "relationshipIndexOperator"
       case _: DirectedRelationshipTypeScan               => "relationshipTypeScan"
@@ -812,10 +814,29 @@ object LogicalPlanToPlanBuilderString {
           indexOrder,
           indexType
         )
-      case NodeIndexSeek(idName, labelToken, properties, valueExpr, argumentIds, indexOrder, indexType, supportPartitionedScan) =>
+      case NodeIndexSeek(
+          idName,
+          labelToken,
+          properties,
+          valueExpr,
+          argumentIds,
+          indexOrder,
+          indexType,
+          supportPartitionedScan
+        ) =>
         val propNames = properties.map(_.propertyKeyToken.name)
         val queryStr = queryExpressionStr(valueExpr, propNames)
-        nodeIndexOperator(idName, labelToken, properties, argumentIds, indexOrder, unique = false, queryStr, indexType, supportPartitionedScan)
+        nodeIndexOperator(
+          idName,
+          labelToken,
+          properties,
+          argumentIds,
+          indexOrder,
+          unique = false,
+          queryStr,
+          indexType,
+          supportPartitionedScan
+        )
       case PartitionedNodeIndexSeek(idName, labelToken, properties, valueExpr, argumentIds, indexType) =>
         val propNames = properties.map(_.propertyKeyToken.name)
         val queryStr = queryExpressionStr(valueExpr, propNames)
@@ -823,7 +844,17 @@ object LogicalPlanToPlanBuilderString {
       case NodeUniqueIndexSeek(idName, labelToken, properties, valueExpr, argumentIds, indexOrder, indexType) =>
         val propNames = properties.map(_.propertyKeyToken.name)
         val queryStr = queryExpressionStr(valueExpr, propNames)
-        nodeIndexOperator(idName, labelToken, properties, argumentIds, indexOrder, unique = true, queryStr, indexType, supportPartitionedScan = false)
+        nodeIndexOperator(
+          idName,
+          labelToken,
+          properties,
+          argumentIds,
+          indexOrder,
+          unique = true,
+          queryStr,
+          indexType,
+          supportPartitionedScan = false
+        )
       case DirectedRelationshipIndexSeek(
           idName,
           start,
@@ -973,7 +1004,7 @@ object LogicalPlanToPlanBuilderString {
           indexOrder,
           indexType,
           supportPartitionedScan
-      ) =>
+        ) =>
         val propNames = properties.map(_.propertyKeyToken.name)
         val queryStr = queryExpressionStr(valueExpr, propNames)
         relationshipIndexOperator(
@@ -1044,7 +1075,8 @@ object LogicalPlanToPlanBuilderString {
           properties,
           argumentIds,
           indexOrder,
-          indexType
+          indexType,
+          supportPartitionedScan
         ) =>
         val propNames = properties.map(_.propertyKeyToken.name)
         relationshipIndexOperator(
@@ -1059,7 +1091,7 @@ object LogicalPlanToPlanBuilderString {
           unique = false,
           propNames.mkString(", "),
           indexType,
-          false
+          supportPartitionedScan
         )
       case UndirectedRelationshipIndexScan(
           idName,
@@ -1069,7 +1101,8 @@ object LogicalPlanToPlanBuilderString {
           properties,
           argumentIds,
           indexOrder,
-          indexType
+          indexType,
+          supportPartitionedScan
         ) =>
         val propNames = properties.map(_.propertyKeyToken.name)
         relationshipIndexOperator(
@@ -1084,7 +1117,49 @@ object LogicalPlanToPlanBuilderString {
           unique = false,
           propNames.mkString(", "),
           indexType,
-          false
+          supportPartitionedScan
+        )
+      case PartitionedDirectedRelationshipIndexScan(
+          idName,
+          start,
+          end,
+          typeToken,
+          properties,
+          argumentIds,
+          indexType
+        ) =>
+        val propNames = properties.map(_.propertyKeyToken.name)
+        partitionedRelationshipIndexOperator(
+          idName,
+          start,
+          end,
+          typeToken,
+          properties,
+          argumentIds,
+          directed = true,
+          propNames.mkString(", "),
+          indexType
+        )
+      case PartitionedUndirectedRelationshipIndexScan(
+          idName,
+          start,
+          end,
+          typeToken,
+          properties,
+          argumentIds,
+          indexType
+        ) =>
+        val propNames = properties.map(_.propertyKeyToken.name)
+        partitionedRelationshipIndexOperator(
+          idName,
+          start,
+          end,
+          typeToken,
+          properties,
+          argumentIds,
+          directed = false,
+          propNames.mkString(", "),
+          indexType
         )
       case DirectedRelationshipIndexContainsScan(
           idName,
@@ -1110,7 +1185,7 @@ object LogicalPlanToPlanBuilderString {
           unique = false,
           s"$propName CONTAINS ${expressionStringifier(valueExpr)}",
           indexType,
-          false
+          supportPartitionedScan = false
         )
       case UndirectedRelationshipIndexContainsScan(
           idName,
@@ -1136,7 +1211,7 @@ object LogicalPlanToPlanBuilderString {
           unique = false,
           s"$propName CONTAINS ${expressionStringifier(valueExpr)}",
           indexType,
-          false
+          supportPartitionedScan = false
         )
       case DirectedRelationshipIndexEndsWithScan(
           idName,
@@ -1162,7 +1237,7 @@ object LogicalPlanToPlanBuilderString {
           unique = false,
           s"$propName ENDS WITH ${expressionStringifier(valueExpr)}",
           indexType,
-          false
+          supportPartitionedScan = false
         )
       case UndirectedRelationshipIndexEndsWithScan(
           idName,
@@ -1188,7 +1263,7 @@ object LogicalPlanToPlanBuilderString {
           unique = false,
           s"$propName ENDS WITH ${expressionStringifier(valueExpr)}",
           indexType,
-          false
+          supportPartitionedScan = false
         )
       case DirectedRelationshipUniqueIndexSeek(
           idName,

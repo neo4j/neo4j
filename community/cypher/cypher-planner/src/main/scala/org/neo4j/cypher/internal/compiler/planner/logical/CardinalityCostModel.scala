@@ -97,12 +97,14 @@ import org.neo4j.cypher.internal.logical.plans.OrderedUnion
 import org.neo4j.cypher.internal.logical.plans.PartialSort
 import org.neo4j.cypher.internal.logical.plans.PartitionedAllNodesScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedAllRelationshipsScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipIndexScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedAllRelationshipsScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipIndexScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
@@ -567,9 +569,10 @@ object CardinalityCostModel {
       case plan: UndirectedUnionRelationshipTypesScan =>
         hackyRelTypeScanCost(propertyAccess, plan.idName, directed = false)
 
-      case _: DirectedRelationshipIndexScan => DIRECTED_RELATIONSHIP_INDEX_SCAN_COST_PER_ROW
+      case _: DirectedRelationshipIndexScan | _: PartitionedDirectedRelationshipIndexScan =>
+        DIRECTED_RELATIONSHIP_INDEX_SCAN_COST_PER_ROW
 
-      case _: UndirectedRelationshipIndexScan
+      case _: UndirectedRelationshipIndexScan | _: PartitionedUndirectedRelationshipIndexScan
         // Only every second row needs to access the index and the store
         => DIRECTED_RELATIONSHIP_INDEX_SCAN_COST_PER_ROW / 2
 

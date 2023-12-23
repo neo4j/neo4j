@@ -1480,7 +1480,8 @@ case class DirectedRelationshipIndexScan(
   properties: Seq[IndexedProperty],
   argumentIds: Set[LogicalVariable],
   indexOrder: IndexOrder,
-  override val indexType: IndexType
+  override val indexType: IndexType,
+  supportPartitionedScan: Boolean
 )(implicit idGen: IdGen)
     extends RelationshipIndexLeafPlan(idGen) with StableLeafPlan {
 
@@ -1495,6 +1496,40 @@ case class DirectedRelationshipIndexScan(
     copy(properties = properties.map(_.copy(getValueFromIndex = DoNotGetValue)))(SameId(this.id))
 
   override def withMappedProperties(f: IndexedProperty => IndexedProperty): DirectedRelationshipIndexScan =
+    copy(properties = properties.map(f))(SameId(this.id))
+
+  override def leftNode: LogicalVariable = startNode
+
+  override def rightNode: LogicalVariable = endNode
+
+  override def directed: Boolean = true
+
+  override def addArgumentIds(argsToAdd: Set[LogicalVariable]): LogicalLeafPlan =
+    copy(argumentIds = argumentIds ++ argsToAdd)(SameId(this.id))
+}
+
+case class PartitionedDirectedRelationshipIndexScan(
+  idName: LogicalVariable,
+  startNode: LogicalVariable,
+  endNode: LogicalVariable,
+  override val typeToken: RelationshipTypeToken,
+  properties: Seq[IndexedProperty],
+  argumentIds: Set[LogicalVariable],
+  override val indexType: IndexType
+)(implicit idGen: IdGen)
+    extends RelationshipIndexLeafPlan(idGen) with StableLeafPlan with PhysicalPlanningPlan {
+
+  override val availableSymbols: Set[LogicalVariable] = argumentIds ++ Set(idName, leftNode, rightNode)
+
+  override def usedVariables: Set[LogicalVariable] = Set.empty
+
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): PartitionedDirectedRelationshipIndexScan =
+    copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def copyWithoutGettingValues: PartitionedDirectedRelationshipIndexScan =
+    copy(properties = properties.map(_.copy(getValueFromIndex = DoNotGetValue)))(SameId(this.id))
+
+  override def withMappedProperties(f: IndexedProperty => IndexedProperty): PartitionedDirectedRelationshipIndexScan =
     copy(properties = properties.map(f))(SameId(this.id))
 
   override def leftNode: LogicalVariable = startNode
@@ -4242,7 +4277,8 @@ case class UndirectedRelationshipIndexScan(
   properties: Seq[IndexedProperty],
   argumentIds: Set[LogicalVariable],
   indexOrder: IndexOrder,
-  override val indexType: IndexType
+  override val indexType: IndexType,
+  supportPartitionedScan: Boolean
 )(implicit idGen: IdGen)
     extends RelationshipIndexLeafPlan(idGen) with StableLeafPlan {
 
@@ -4257,6 +4293,36 @@ case class UndirectedRelationshipIndexScan(
     copy(properties = properties.map(_.copy(getValueFromIndex = DoNotGetValue)))(SameId(this.id))
 
   override def withMappedProperties(f: IndexedProperty => IndexedProperty): UndirectedRelationshipIndexScan =
+    copy(properties = properties.map(f))(SameId(this.id))
+
+  override def directed: Boolean = false
+
+  override def addArgumentIds(argsToAdd: Set[LogicalVariable]): LogicalLeafPlan =
+    copy(argumentIds = argumentIds ++ argsToAdd)(SameId(this.id))
+}
+
+case class PartitionedUndirectedRelationshipIndexScan(
+  idName: LogicalVariable,
+  leftNode: LogicalVariable,
+  rightNode: LogicalVariable,
+  override val typeToken: RelationshipTypeToken,
+  properties: Seq[IndexedProperty],
+  argumentIds: Set[LogicalVariable],
+  override val indexType: IndexType
+)(implicit idGen: IdGen)
+    extends RelationshipIndexLeafPlan(idGen) with StableLeafPlan with PhysicalPlanningPlan {
+
+  override val availableSymbols: Set[LogicalVariable] = argumentIds ++ Set(idName, leftNode, rightNode)
+
+  override def usedVariables: Set[LogicalVariable] = Set.empty
+
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): PartitionedUndirectedRelationshipIndexScan =
+    copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def copyWithoutGettingValues: PartitionedUndirectedRelationshipIndexScan =
+    copy(properties = properties.map(_.copy(getValueFromIndex = DoNotGetValue)))(SameId(this.id))
+
+  override def withMappedProperties(f: IndexedProperty => IndexedProperty): PartitionedUndirectedRelationshipIndexScan =
     copy(properties = properties.map(f))(SameId(this.id))
 
   override def directed: Boolean = false

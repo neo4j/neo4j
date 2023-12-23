@@ -475,7 +475,8 @@ class IndexSeekTest extends CypherFunSuite {
         Seq(prop("id", getValue("id"), RELATIONSHIP_TYPE)),
         args.map(varFor),
         indexOrder,
-        indexType
+        indexType,
+        supportPartitionedScan = true
       )
   )
 

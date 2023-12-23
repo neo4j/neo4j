@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.internal.kernel.api.PropertyIndexQuery.allEntries
 
 object RelationshipIndexScanPlanProvider extends RelationshipIndexPlanProvider {
 
@@ -47,7 +48,8 @@ object RelationshipIndexScanPlanProvider extends RelationshipIndexPlanProvider {
     patternRelationship: PatternRelationship,
     properties: Seq[IndexedProperty],
     argumentIds: Set[LogicalVariable],
-    indexOrder: IndexOrder
+    indexOrder: IndexOrder,
+    supportPartitionedScan: Boolean
   )
 
   override def createPlans(
@@ -81,7 +83,8 @@ object RelationshipIndexScanPlanProvider extends RelationshipIndexPlanProvider {
         providedOrder = solution.providedOrder,
         indexOrder = solution.indexScanParameters.indexOrder,
         context = context,
-        indexType = solution.indexType
+        indexType = solution.indexType,
+        supportPartitionedScan = solution.indexScanParameters.supportPartitionedScan
       )
 
     mergeSolutions(solutions) map { solution =>
@@ -117,7 +120,9 @@ object RelationshipIndexScanPlanProvider extends RelationshipIndexPlanProvider {
         patternRelationship = indexMatch.patternRelationship,
         properties = predicateSet.indexedProperties(context),
         argumentIds = argumentIds,
-        indexOrder = indexMatch.indexOrder
+        indexOrder = indexMatch.indexOrder,
+        supportPartitionedScan =
+          indexMatch.indexDescriptor.maybeKernelIndexCapability.exists(_.supportPartitionedScan(allEntries()))
       ),
       solvedPredicates = predicateSet.allSolvedPredicates,
       solvedHint = hint,

@@ -184,12 +184,14 @@ import org.neo4j.cypher.internal.logical.plans.PartialSort
 import org.neo4j.cypher.internal.logical.plans.PartialTop
 import org.neo4j.cypher.internal.logical.plans.PartitionedAllNodesScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedAllRelationshipsScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipIndexScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedAllRelationshipsScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipIndexScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
@@ -743,7 +745,7 @@ case class LogicalPlan2PlanDescription(
           withRawCardinalities,
           withDistinctness
         )
-      case p @ DirectedRelationshipIndexScan(idName, start, end, typ, properties, _, _, indexType) =>
+      case p @ DirectedRelationshipIndexScan(idName, start, end, typ, properties, _, _, indexType, _) =>
         val tokens = properties.map(_.propertyKeyToken)
         val props = tokens.map(x => asPrettyString(x.name))
         val predicates = props.map(p => pretty"$p IS NOT NULL").mkPrettyString(" AND ")
@@ -767,7 +769,7 @@ case class LogicalPlan2PlanDescription(
           withRawCardinalities,
           withDistinctness
         )
-      case p @ UndirectedRelationshipIndexScan(idName, start, end, typ, properties, _, _, indexType) =>
+      case p @ UndirectedRelationshipIndexScan(idName, start, end, typ, properties, _, _, indexType, _) =>
         val tokens = properties.map(_.propertyKeyToken)
         val props = tokens.map(x => asPrettyString(x.name))
         val predicates = props.map(p => pretty"$p IS NOT NULL").mkPrettyString(" AND ")
@@ -785,6 +787,54 @@ case class LogicalPlan2PlanDescription(
         PlanDescriptionImpl(
           id,
           "UndirectedRelationshipIndexScan",
+          NoChildren,
+          Seq(Details(info)),
+          variables,
+          withRawCardinalities,
+          withDistinctness
+        )
+      case p @ PartitionedDirectedRelationshipIndexScan(idName, start, end, typ, properties, _, indexType) =>
+        val tokens = properties.map(_.propertyKeyToken)
+        val props = tokens.map(x => asPrettyString(x.name))
+        val predicates = props.map(p => pretty"$p IS NOT NULL").mkPrettyString(" AND ")
+        val info = relIndexInfoString(
+          idName.name,
+          start.name,
+          typ,
+          end.name,
+          isDirected = true,
+          tokens,
+          indexType,
+          predicates,
+          p.cachedProperties
+        )
+        PlanDescriptionImpl(
+          id,
+          "PartitionedDirectedRelationshipIndexScan",
+          NoChildren,
+          Seq(Details(info)),
+          variables,
+          withRawCardinalities,
+          withDistinctness
+        )
+      case p @ PartitionedUndirectedRelationshipIndexScan(idName, start, end, typ, properties, _, indexType) =>
+        val tokens = properties.map(_.propertyKeyToken)
+        val props = tokens.map(x => asPrettyString(x.name))
+        val predicates = props.map(p => pretty"$p IS NOT NULL").mkPrettyString(" AND ")
+        val info = relIndexInfoString(
+          idName.name,
+          start.name,
+          typ,
+          end.name,
+          isDirected = false,
+          tokens,
+          indexType,
+          predicates,
+          p.cachedProperties
+        )
+        PlanDescriptionImpl(
+          id,
+          "PartitionedUndirectedRelationshipIndexScan",
           NoChildren,
           Seq(Details(info)),
           variables,

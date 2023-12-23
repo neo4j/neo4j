@@ -105,12 +105,14 @@ import org.neo4j.cypher.internal.logical.plans.PartialSort
 import org.neo4j.cypher.internal.logical.plans.PartialTop
 import org.neo4j.cypher.internal.logical.plans.PartitionedAllNodesScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedAllRelationshipsScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipIndexScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedAllRelationshipsScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipIndexScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
@@ -610,7 +612,8 @@ class SlottedPipeMapper(
           properties,
           _,
           indexOrder,
-          indexType
+          indexType,
+          _
         ) =>
         DirectedRelationshipIndexScanSlottedPipe(
           column.name,
@@ -631,7 +634,8 @@ class SlottedPipeMapper(
           properties,
           _,
           indexOrder,
-          indexType
+          indexType,
+          _
         ) =>
         UndirectedRelationshipIndexScanSlottedPipe(
           column.name,
@@ -641,6 +645,46 @@ class SlottedPipeMapper(
           properties.map(SlottedIndexedProperty(column, _, slots)).toIndexedSeq,
           indexRegistrator.registerQueryIndex(indexType, typeToken, properties),
           indexOrder,
+          slots
+        )(id)
+
+      case PartitionedDirectedRelationshipIndexScan(
+          column,
+          leftNode,
+          rightNode,
+          typeToken,
+          properties,
+          _,
+          indexType
+        ) =>
+        DirectedRelationshipIndexScanSlottedPipe(
+          column.name,
+          leftNode.name,
+          rightNode.name,
+          typeToken,
+          properties.map(SlottedIndexedProperty(column, _, slots)).toIndexedSeq,
+          indexRegistrator.registerQueryIndex(indexType, typeToken, properties),
+          IndexOrderNone,
+          slots
+        )(id)
+
+      case PartitionedUndirectedRelationshipIndexScan(
+          column,
+          leftNode,
+          rightNode,
+          typeToken,
+          properties,
+          _,
+          indexType
+        ) =>
+        UndirectedRelationshipIndexScanSlottedPipe(
+          column.name,
+          leftNode.name,
+          rightNode.name,
+          typeToken,
+          properties.map(SlottedIndexedProperty(column, _, slots)).toIndexedSeq,
+          indexRegistrator.registerQueryIndex(indexType, typeToken, properties),
+          IndexOrderNone,
           slots
         )(id)
 

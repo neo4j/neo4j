@@ -1414,6 +1414,8 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     _.supportsOrderAsc(EXACT),
     "should handle order in multiple directed index seek, ascending"
   ) { index =>
+    // parallel does not maintain order
+    assume(!isParallel)
     val propertyType = randomAmong(index.orderAscSupport(EXACT))
     val relationships = givenGraph(indexedRandomCircleGraph(index.indexType, propertyType))
     val someProps = Seq(randomAmong(relationships), randomAmong(relationships), randomAmong(relationships))
@@ -1445,6 +1447,8 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     _.supportsOrderAsc(EXACT),
     "should handle order in multiple undirected index seek, ascending"
   ) { index =>
+    // parallel does not maintain order
+    assume(!isParallel)
     val propertyType = randomAmong(index.orderAscSupport(EXACT))
     val relationships = givenGraph(indexedRandomCircleGraph(index.indexType, propertyType))
     val someProps = Seq(randomAmong(relationships), randomAmong(relationships), randomAmong(relationships))
@@ -1477,6 +1481,8 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     _.supportsOrderDesc(EXACT),
     "should handle order in multiple directed index seek, descending"
   ) { index =>
+    // parallel does not maintain order
+    assume(!isParallel)
     val propertyType = randomAmong(index.orderDescSupport(EXACT))
     val relationships = givenGraph(indexedRandomCircleGraph(index.indexType, propertyType))
     val someProps = Seq(randomAmong(relationships), randomAmong(relationships), randomAmong(relationships))
@@ -1508,6 +1514,8 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     _.supportsOrderDesc(EXACT),
     "should handle order in multiple undirected index seek, descending"
   ) { index =>
+    // parallel does not maintain order
+    assume(!isParallel)
     val propertyType = randomAmong(index.orderDescSupport(EXACT))
     val relationships = givenGraph(indexedRandomCircleGraph(index.indexType, propertyType))
     val someProps = Seq(randomAmong(relationships), randomAmong(relationships), randomAmong(relationships))
