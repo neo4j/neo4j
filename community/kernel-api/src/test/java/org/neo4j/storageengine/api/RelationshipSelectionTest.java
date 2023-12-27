@@ -36,7 +36,7 @@ class RelationshipSelectionTest {
     private RandomSupport random;
 
     @Test
-    void shouldCloneAndSortMultiTypeSelection() {
+    void shouldProvideHighestTypeForMultiTypeSelection() {
         // given
         var typesReference = new int[] {0, 1, 2, 3, 4, 5};
         var types = typesReference.clone();
@@ -49,9 +49,6 @@ class RelationshipSelectionTest {
         Arrays.fill(types, -1);
 
         // then
-        assertThat(selection.numberOfCriteria()).isEqualTo(typesReference.length);
-        for (var i = 0; i < typesReference.length; i++) {
-            assertThat(selection.criterionType(i)).isEqualTo(typesReference[i]);
-        }
+        assertThat(selection.highestType()).isEqualTo(typesReference[typesReference.length - 1]);
     }
 }

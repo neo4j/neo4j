@@ -242,11 +242,20 @@ public abstract class RelationshipSelection {
 
     private static class DirectionalMultipleTypes extends Directional {
         private final int[] types;
+        private final int highestType;
 
         DirectionalMultipleTypes(int[] types, Direction direction) {
             super(direction);
             this.types = types.clone();
-            Arrays.sort(this.types);
+            this.highestType = findHighestType(this.types);
+        }
+
+        private static int findHighestType(int[] types) {
+            int highest = -1;
+            for (int type : types) {
+                highest = Math.max(highest, type);
+            }
+            return highest;
         }
 
         @Override
@@ -283,7 +292,7 @@ public abstract class RelationshipSelection {
 
         @Override
         public int highestType() {
-            return types[types.length - 1];
+            return highestType;
         }
 
         @Override
