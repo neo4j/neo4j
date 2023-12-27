@@ -24,7 +24,6 @@ import static scala.jdk.javaapi.CollectionConverters.asJava;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
@@ -35,23 +34,15 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.cypher.internal.FullyParsedQuery;
-import org.neo4j.cypher.internal.ast.GraphSelection;
 import org.neo4j.cypher.internal.compiler.helpers.SignatureResolver;
 import org.neo4j.cypher.internal.evaluator.StaticEvaluation;
-import org.neo4j.cypher.internal.expressions.AutoExtractedParameter;
-import org.neo4j.cypher.internal.expressions.Expression;
-import org.neo4j.cypher.internal.runtime.CypherRow;
 import org.neo4j.exceptions.InvalidSemanticsException;
 import org.neo4j.fabric.config.FabricConfig;
-import org.neo4j.fabric.eval.Catalog;
 import org.neo4j.fabric.eval.UseEvaluation;
 import org.neo4j.fabric.executor.QueryStatementLifecycles.StatementLifecycle;
 import org.neo4j.fabric.planning.FabricPlan;
 import org.neo4j.fabric.planning.FabricPlanner;
-import org.neo4j.fabric.planning.FabricQuery;
 import org.neo4j.fabric.planning.Fragment;
-import org.neo4j.fabric.planning.QueryType;
-import org.neo4j.fabric.stream.CompletionDelegatingOperator;
 import org.neo4j.fabric.stream.Prefetcher;
 import org.neo4j.fabric.stream.Record;
 import org.neo4j.fabric.stream.Records;
@@ -61,25 +52,15 @@ import org.neo4j.fabric.stream.summary.MergedQueryStatistics;
 import org.neo4j.fabric.stream.summary.MergedSummary;
 import org.neo4j.fabric.stream.summary.Summary;
 import org.neo4j.fabric.transaction.FabricTransaction;
-import org.neo4j.fabric.transaction.TransactionMode;
-import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionType;
-import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.kernel.impl.query.NotificationConfiguration;
 import org.neo4j.kernel.impl.query.QueryRoutingMonitor;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.monitoring.Monitors;
-import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.MapValue;
-import org.neo4j.values.virtual.MapValueBuilder;
-import org.neo4j.values.virtual.PathValue;
-import org.neo4j.values.virtual.VirtualNodeValue;
-import org.neo4j.values.virtual.VirtualRelationshipValue;
-import org.neo4j.values.virtual.VirtualValues;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -257,14 +238,15 @@ public class FabricExecutor {
                 Flux<Record> records;
                 if (query.producesResults()) {
                     columns = asJava(query.outputColumns());
-                    records = fragmentResult.records;
+                    records = fragmentResult.records();
                 } else {
                     columns = Collections.emptyList();
-                    records = fragmentResult.records.then(Mono.<Record>empty()).flux();
+                    records =
+                            fragmentResult.records().then(Mono.<Record>empty()).flux();
                 }
 
                 Mono<Summary> summary =
-                        Mono.just(new MergedSummary(fragmentResult.planDescription, statistics, notifications));
+                        Mono.just(new MergedSummary(fragmentResult.planDescription(), statistics, notifications));
 
                 return StatementResults.create(
                         columns,
@@ -272,7 +254,7 @@ public class FabricExecutor {
                                 .doOnCancel(lifecycle::endSuccess)
                                 .doOnError(lifecycle::endFailure),
                         summary,
-                        fragmentResult.executionType);
+                        fragmentResult.executionType());
             }
         }
 
@@ -303,7 +285,7 @@ public class FabricExecutor {
                             ? (Record record) -> runAndProduceOnlyRecord(apply.inner(), record) // Unit subquery
                             : (Record record) -> runAndProduceJoinedResult(apply.inner(), record); // Returning subquery
 
-            Flux<Record> resultRecords = input.records.flatMap(runInner, dataStreamConfig.getConcurrency(), 1);
+            Flux<Record> resultRecords = input.records().flatMap(runInner, dataStreamConfig.getConcurrency(), 1);
 
             // TODO: merge executionType here for subqueries
             // For now, just return global value as seen by fabric
@@ -313,18 +295,18 @@ public class FabricExecutor {
         }
 
         private Flux<Record> runAndProduceJoinedResult(Fragment fragment, Record record) {
-            return run(fragment, record).records.map(outputRecord -> Records.join(record, outputRecord));
+            return run(fragment, record).records().map(outputRecord -> Records.join(record, outputRecord));
         }
 
         private Mono<Record> runAndProduceOnlyRecord(Fragment fragment, Record record) {
-            return run(fragment, record).records.then(Mono.just(record));
+            return run(fragment, record).records().then(Mono.just(record));
         }
 
         FragmentResult runUnion(Fragment.Union union, Record argument) {
             FragmentResult lhs = run(union.lhs(), argument);
             FragmentResult rhs = run(union.rhs(), argument);
-            Flux<Record> merged = Flux.merge(lhs.records, rhs.records);
-            Mono<QueryExecutionType> executionType = mergeExecutionType(lhs.executionType, rhs.executionType);
+            Flux<Record> merged = Flux.merge(lhs.records(), rhs.records());
+            Mono<QueryExecutionType> executionType = mergeExecutionType(lhs.executionType(), rhs.executionType());
             if (union.distinct()) {
                 return new FragmentResult(merged.distinct(), Mono.empty(), executionType);
             } else {
@@ -333,208 +315,40 @@ public class FabricExecutor {
         }
 
         FragmentResult runExec(Fragment.Exec fragment, Record argument) {
-            ctx.validateStatementType(fragment.statementType());
-            Map<String, AnyValue> argumentValues = argumentValues(fragment, argument);
-
-            Catalog.Graph graph =
-                    evalUse(fragment.use().graphSelection(), argumentValues, ctx.getSessionDatabaseReference());
-
-            validateCanUseGraph(graph, ctx.getSessionDatabaseReference());
-
-            var transactionMode =
-                    getTransactionMode(fragment.queryType(), graph.reference().toPrettyString());
-
-            MapValue parameters = addParamsFromRecord(queryParams, argumentValues, asJava(fragment.parameters()));
-
-            var location = this.ctx.locationOf(graph, transactionMode.requiresWrite());
-
-            if (location instanceof Location.Local local) {
-                FragmentResult input = run(fragment.input(), argument);
-                if (fragment.executable()) {
-                    FabricQuery.LocalQuery localQuery = plannerInstance.asLocal(fragment);
-                    var targetsComposite = plannerInstance.targetsComposite(fragment);
-                    FragmentResult fragmentResult = runLocalQueryAt(
-                            local, transactionMode, localQuery.query(), parameters, targetsComposite, input.records);
-                    Mono<QueryExecutionType> executionType =
-                            mergeExecutionType(input.executionType, fragmentResult.executionType);
-                    return new FragmentResult(fragmentResult.records, fragmentResult.planDescription, executionType);
-                } else {
-                    return input;
-                }
-            } else if (location instanceof Location.Remote remote) {
-                FabricQuery.RemoteQuery remoteQuery = plannerInstance.asRemote(fragment);
-                var extracted = asJava(remoteQuery.extractedLiterals());
-                var builder = new MapValueBuilder();
-                var evaluator = useEvaluator.evaluator();
-                for (Map.Entry<AutoExtractedParameter, Expression> entry : extracted.entrySet()) {
-                    builder.add(
-                            entry.getKey().name(),
-                            evaluator.evaluate(entry.getValue(), VirtualValues.EMPTY_MAP, CypherRow.empty()));
-                }
-                MapValue fullParams = parameters.updatedWith(builder.build());
-
-                return runRemoteQueryAt(remote, transactionMode, remoteQuery.query(), fullParams);
-            } else {
-                throw notImplemented("Invalid graph location", location);
-            }
-        }
-
-        private void validateCanUseGraph(Catalog.Graph accessedGraph, DatabaseReference sessionDatabaseReference) {
-            var sessionGraph = useEvaluator.resolveGraph(sessionDatabaseReference.alias());
-
-            if (sessionGraph instanceof Catalog.Composite) {
-                if (!useEvaluator.isConstituentOrSelf(accessedGraph, sessionGraph)) {
-                    if (!useEvaluator.isSystem(accessedGraph)) {
-                        throw new InvalidSemanticsException(
-                                cantAccessOutsideCompositeMessage(sessionGraph, accessedGraph));
-                    }
-                }
-            } else {
-                if (!useEvaluator.isDatabaseOrAliasInRoot(accessedGraph)) {
-                    throw new InvalidSemanticsException(
-                            cantAccessCompositeConstituentsMessage(sessionGraph, accessedGraph));
-                }
-            }
-        }
-
-        private String cantAccessOutsideCompositeMessage(Catalog.Graph sessionDatabase, Catalog.Graph accessed) {
-            return "When connected to a composite database, access is allowed only to its constituents. "
-                    + "Attempted to access '%s' while connected to '%s'"
-                            .formatted(
-                                    useEvaluator.qualifiedNameString(accessed),
-                                    useEvaluator.qualifiedNameString(sessionDatabase));
-        }
-
-        private String cantAccessCompositeConstituentsMessage(Catalog.Graph sessionDatabase, Catalog.Graph accessed) {
-            return "Accessing a composite database and its constituents is only allowed when connected to it. "
-                    + "Attempted to access '%s' while connected to '%s'"
-                            .formatted(
-                                    useEvaluator.qualifiedNameString(accessed),
-                                    useEvaluator.qualifiedNameString(sessionDatabase));
-        }
-
-        FragmentResult runLocalQueryAt(
-                Location.Local location,
-                TransactionMode transactionMode,
-                FullyParsedQuery query,
-                MapValue parameters,
-                boolean targetsComposite,
-                Flux<Record> input) {
-
-            ExecutionOptions executionOptions = plan.inCompositeContext() && !targetsComposite
-                    ? new ExecutionOptions(location.graphId())
-                    : new ExecutionOptions();
-
-            StatementResult localStatementResult = ctx.getLocal()
-                    .run(
-                            location,
-                            transactionMode,
+            return new StandardQueryExecutor(
+                            fragment,
+                            plannerInstance,
+                            fabricWorkerExecutor,
+                            ctx,
+                            useEvaluator,
+                            plan,
+                            queryParams,
+                            accessMode,
+                            notifications,
                             lifecycle,
-                            query,
-                            parameters,
-                            input,
-                            executionOptions,
-                            targetsComposite);
-            Flux<Record> records = localStatementResult
-                    .records()
-                    .doOnComplete(() -> localStatementResult.summary().subscribe(this::updateSummary));
-
-            Mono<ExecutionPlanDescription> planDescription = localStatementResult
-                    .summary()
-                    .map(Summary::executionPlanDescription)
-                    .map(pd -> new TaggingPlanDescriptionWrapper(pd, location.getDatabaseName()));
-
-            queryRoutingMonitor.queryRoutedLocal();
-
-            return new FragmentResult(records, planDescription, localStatementResult.executionType());
+                            prefetcher,
+                            queryRoutingMonitor,
+                            statistics,
+                            tracer(),
+                            FabricStatementExecution.this::run)
+                    .run(argument);
         }
 
-        FragmentResult runRemoteQueryAt(
-                Location.Remote location, TransactionMode transactionMode, String queryString, MapValue parameters) {
-            ExecutionOptions executionOptions =
-                    plan.inCompositeContext() ? new ExecutionOptions(location.graphId()) : new ExecutionOptions();
+        SingleQueryFragmentExecutor.Tracer tracer() {
+            return new SingleQueryFragmentExecutor.Tracer() {
 
-            lifecycle.startExecution(true);
-            Mono<StatementResult> statementResult =
-                    ctx.getRemote().run(location, executionOptions, queryString, transactionMode, parameters);
-            Flux<Record> records = statementResult.flatMapMany(
-                    sr -> sr.records().doOnComplete(() -> sr.summary().subscribe(this::updateSummary)));
+                @Override
+                public SingleQueryFragmentExecutor.RecordTracer remoteQueryStart(
+                        Location.Remote location, String queryString) {
+                    return fragmentResult -> fragmentResult;
+                }
 
-            // 'onComplete' signal coming from an inner stream might cause more data being requested from an upstream
-            // operator
-            // and the request will be done using the thread that invoked 'onComplete'.
-            // Since 'onComplete' is invoked by driver IO thread ( Netty event loop ), this might cause the driver
-            // thread to block
-            // or perform a computationally intensive operation in an upstream operator if the upstream operator is
-            // Cypher local execution
-            // that produces records directly in 'request' call.
-            Flux<Record> recordsWithCompletionDelegation =
-                    new CompletionDelegatingOperator(records, fabricWorkerExecutor);
-            Flux<Record> prefetchedRecords = prefetcher.addPrefetch(recordsWithCompletionDelegation);
-            Mono<ExecutionPlanDescription> planDescription =
-                    statementResult.flatMap(StatementResult::summary).map(Summary::executionPlanDescription);
-
-            // TODO: We currently need to override here since we can't get it from remote properly
-            // but our result here is not as accurate as what the remote might report.
-            Mono<QueryExecutionType> executionType = Mono.just(EffectiveQueryType.queryExecutionType(plan, accessMode));
-
-            if (location instanceof Location.Remote.Internal) {
-                queryRoutingMonitor.queryRoutedRemoteInternal();
-            } else if (location instanceof Location.Remote.External) {
-                queryRoutingMonitor.queryRoutedRemoteExternal();
-            }
-
-            return new FragmentResult(prefetchedRecords, planDescription, executionType);
-        }
-
-        private Map<String, AnyValue> argumentValues(Fragment fragment, Record argument) {
-            if (argument == null) {
-                return Map.of();
-            } else {
-                return Records.asMap(argument, asJava(fragment.argumentColumns()));
-            }
-        }
-
-        private Catalog.Graph evalUse(
-                GraphSelection selection, Map<String, AnyValue> record, DatabaseReference sessionDb) {
-            return useEvaluator.evaluate(selection, queryParams, record, sessionDb);
-        }
-
-        private MapValue addParamsFromRecord(
-                MapValue params, Map<String, AnyValue> record, Map<String, String> bindings) {
-            int resultSize = params.size() + bindings.size();
-            if (resultSize == 0) {
-                return VirtualValues.EMPTY_MAP;
-            }
-            MapValueBuilder builder = new MapValueBuilder(resultSize);
-            params.foreach(builder::add);
-            bindings.forEach((var, par) -> builder.add(par, validateValue(record.get(var))));
-            return builder.build();
-        }
-
-        private AnyValue validateValue(AnyValue value) {
-            if (value instanceof VirtualNodeValue) {
-                throw new FabricException(
-                        Status.Statement.TypeError,
-                        "Importing node values in remote subqueries is currently not supported");
-            } else if (value instanceof VirtualRelationshipValue) {
-                throw new FabricException(
-                        Status.Statement.TypeError,
-                        "Importing relationship values in remote subqueries is currently not supported");
-            } else if (value instanceof PathValue) {
-                throw new FabricException(
-                        Status.Statement.TypeError,
-                        "Importing path values in remote subqueries is currently not supported");
-            } else {
-                return value;
-            }
-        }
-
-        private void updateSummary(Summary summary) {
-            if (summary != null) {
-                this.statistics.add(summary.getQueryStatistics());
-                this.notifications.addAll(summary.getNotifications());
-            }
+                @Override
+                public SingleQueryFragmentExecutor.RecordTracer localQueryStart(
+                        Location.Local location, FullyParsedQuery query) {
+                    return fragmentResult -> fragmentResult;
+                }
+            };
         }
 
         private Mono<QueryExecutionType> mergeExecutionType(
@@ -551,43 +365,6 @@ public class FabricExecutor {
 
         private RuntimeException notImplemented(String msg, String info) {
             return new InvalidSemanticsException(msg + ": " + info);
-        }
-
-        private TransactionMode getTransactionMode(QueryType queryType, String graph) {
-            var executionType = plan.executionType();
-            var queryMode = EffectiveQueryType.effectiveAccessMode(accessMode, executionType, queryType);
-
-            if (accessMode == AccessMode.WRITE) {
-                if (queryMode == AccessMode.WRITE) {
-                    return TransactionMode.DEFINITELY_WRITE;
-                } else {
-                    return TransactionMode.MAYBE_WRITE;
-                }
-            } else {
-                if (queryMode == AccessMode.WRITE) {
-                    throw new FabricException(
-                            Status.Statement.AccessMode,
-                            WRITING_IN_READ_NOT_ALLOWED_MSG + ". Attempted write to %s",
-                            graph);
-                } else {
-                    return TransactionMode.DEFINITELY_READ;
-                }
-            }
-        }
-    }
-
-    private static class FragmentResult {
-        private final Flux<Record> records;
-        private final Mono<ExecutionPlanDescription> planDescription;
-        private final Mono<QueryExecutionType> executionType;
-
-        FragmentResult(
-                Flux<Record> records,
-                Mono<ExecutionPlanDescription> planDescription,
-                Mono<QueryExecutionType> executionType) {
-            this.records = records;
-            this.planDescription = planDescription;
-            this.executionType = executionType;
         }
     }
 
@@ -620,26 +397,27 @@ public class FabricExecutor {
             this.log = log;
         }
 
-        @Override
-        FragmentResult runLocalQueryAt(
-                Location.Local location,
-                TransactionMode transactionMode,
-                FullyParsedQuery query,
-                MapValue parameters,
-                boolean targetsComposite,
-                Flux<Record> input) {
-            String id = executionId();
-            trace(id, "local " + nameString(location), compact(query.description()));
-            return traceRecords(
-                    id, super.runLocalQueryAt(location, transactionMode, query, parameters, targetsComposite, input));
-        }
+        SingleQueryFragmentExecutor.Tracer tracer() {
+            return new SingleQueryFragmentExecutor.Tracer() {
 
-        @Override
-        FragmentResult runRemoteQueryAt(
-                Location.Remote location, TransactionMode transactionMode, String queryString, MapValue parameters) {
-            String id = executionId();
-            trace(id, "remote " + nameString(location), compact(queryString));
-            return traceRecords(id, super.runRemoteQueryAt(location, transactionMode, queryString, parameters));
+                @Override
+                public SingleQueryFragmentExecutor.RecordTracer remoteQueryStart(
+                        Location.Remote location, String queryString) {
+                    String id = executionId();
+                    trace(id, "remote " + nameString(location), compact(queryString));
+
+                    return fragmentResult -> doTraceRecords(id, fragmentResult);
+                }
+
+                @Override
+                public SingleQueryFragmentExecutor.RecordTracer localQueryStart(
+                        Location.Local location, FullyParsedQuery query) {
+                    String id = executionId();
+                    trace(id, "local " + nameString(location), compact(query.description()));
+
+                    return fragmentResult -> doTraceRecords(id, fragmentResult);
+                }
+            };
         }
 
         private static String nameString(Location location) {
@@ -652,9 +430,9 @@ public class FabricExecutor {
             return in.replaceAll("\\r?\\n", " ").replaceAll("\\s+", " ");
         }
 
-        private FragmentResult traceRecords(String id, FragmentResult fragmentResult) {
+        private FragmentResult doTraceRecords(String id, FragmentResult fragmentResult) {
             var records = fragmentResult
-                    .records
+                    .records()
                     .doOnNext(record -> {
                         String rec = IntStream.range(0, record.size())
                                 .mapToObj(i -> record.getValue(i).toString())
@@ -667,7 +445,7 @@ public class FabricExecutor {
                     })
                     .doOnCancel(() -> trace(id, "cancel", "cancel"))
                     .doOnComplete(() -> trace(id, "complete", "complete"));
-            return new FragmentResult(records, fragmentResult.planDescription, fragmentResult.executionType);
+            return new FragmentResult(records, fragmentResult.planDescription(), fragmentResult.executionType());
         }
 
         private void trace(String id, String event, String data) {
