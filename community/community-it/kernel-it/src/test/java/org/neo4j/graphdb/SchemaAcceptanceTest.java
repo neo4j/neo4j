@@ -19,6 +19,7 @@
  */
 package org.neo4j.graphdb;
 
+import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -34,6 +35,7 @@ import static org.neo4j.graphdb.schema.IndexType.POINT;
 import static org.neo4j.graphdb.schema.IndexType.RANGE;
 import static org.neo4j.graphdb.schema.Schema.IndexState.FAILED;
 import static org.neo4j.graphdb.schema.Schema.IndexState.ONLINE;
+import static org.neo4j.graphdb.schema.Schema.IndexState.POPULATING;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
 import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
@@ -87,8 +89,10 @@ import org.neo4j.kernel.api.exceptions.schema.EquivalentSchemaRuleAlreadyExistsE
 import org.neo4j.kernel.api.exceptions.schema.IndexWithNameAlreadyExistsException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchConstraintException;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.IndexEntryTestUtil;
 import org.neo4j.kernel.impl.index.schema.IndexFiles;
@@ -941,7 +945,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
             // THEN
             assertThat(count(tx.schema().getIndexes(label))).isEqualTo(3L);
             assertThat(getIndexState(tx, indexA)).isEqualTo(ONLINE);
-            assertThat(getIndexState(tx, indexC)).isEqualTo(Schema.IndexState.POPULATING);
+            assertThat(getIndexState(tx, indexC)).isEqualTo(POPULATING);
             assertThat(tx.schema().getIndexPopulationProgress(indexA).getCompletedPercentage())
                     .isGreaterThan(0f);
             assertThat(tx.schema().getIndexPopulationProgress(indexC).getCompletedPercentage())
@@ -2452,6 +2456,10 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
      *
      * A better behaviour would be that the index is never created and is not
      * present after crash.
+     *
+     * UPDATE: this problem sort of remains, except that we upon startup no longer
+     * set the index as online; it will forever remain in a tentative "POPULATING"
+     * state so that it won't be queried by an unsuspecting Cypher planner.
      */
     @Test
     void crashDuringIndexPopulationOfConstraint() throws InterruptedException {
@@ -2481,17 +2489,25 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
             builder.setFileSystem(crash);
             return builder;
         });
-        // the index is online but constraint is missing... which is sub-optimal
-        try (Transaction tx = db.beginTx()) {
-            tx.schema().awaitIndexesOnline(1, TimeUnit.HOURS);
-            tx.commit();
-        }
+        // the index exists but constraint is missing... which is sub-optimal
+        final IndexingService indexingService =
+                ((GraphDatabaseFacade) db).getDependencyResolver().resolveDependency(IndexingService.class);
         try (Transaction tx = db.beginTx()) {
             Iterable<ConstraintDefinition> constraints = tx.schema().getConstraints();
             Iterable<IndexDefinition> indexes = tx.schema().getIndexes();
             assertThat(count(constraints)).isEqualTo(0);
             assertThat(count(indexes)).isEqualTo(1);
-            indexes.forEach(index -> assertThat(getIndexState(tx, index)).isEqualTo(ONLINE));
+            indexes.forEach(index -> {
+                // Await index population job, but not necessarily that the index has come online.
+                final IndexDescriptor descriptor = ((IndexDefinitionImpl) index).getIndexReference();
+                try {
+                    indexingService.getIndexProxy(descriptor).awaitStoreScanCompleted(1, HOURS);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+                final Schema.IndexState expectedState = index.getName().equals(nameA) ? POPULATING : ONLINE;
+                assertThat(getIndexState(tx, index)).isEqualTo(expectedState);
+            });
             tx.commit();
         }
         // and we cannot drop the constraint because it was never created

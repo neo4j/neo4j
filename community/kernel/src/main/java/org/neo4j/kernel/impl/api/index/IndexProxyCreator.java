@@ -77,7 +77,7 @@ class IndexProxyCreator {
     }
 
     IndexProxy createPopulatingIndexProxy(
-            IndexDescriptor index, boolean flipToTentative, IndexMonitor monitor, IndexPopulationJob populationJob) {
+            IndexDescriptor index, IndexMonitor monitor, IndexPopulationJob populationJob) {
         final FlippableIndexProxy flipper = new FlippableIndexProxy();
 
         IndexPopulator populator = populatorFromProvider(
@@ -100,7 +100,7 @@ class IndexProxyCreator {
             IndexAccessor accessor = onlineAccessorFromProvider(index, samplingConfig);
             OnlineIndexProxy onlineProxy =
                     new OnlineIndexProxy(indexProxyStrategy, accessor, true, usageTracking, indexCounters);
-            if (flipToTentative) {
+            if (requiresTentativeState(index)) {
                 // This TentativeConstraintIndexProxy will exist between flipping the index to online and the constraint
                 // transaction
                 // activating the index - which flips to a regular OnlineIndexProxy. The index is activated in the
@@ -127,8 +127,16 @@ class IndexProxyCreator {
             var usageTracking = createIndexUsageTracking();
             IndexAccessor onlineAccessor = onlineAccessorFromProvider(descriptor, samplingConfig);
             IndexProxyStrategy indexProxyStrategy = createIndexProxyStrategy(descriptor);
-            IndexProxy proxy =
+            OnlineIndexProxy onlineProxy =
                     new OnlineIndexProxy(indexProxyStrategy, onlineAccessor, false, usageTracking, indexCounters);
+
+            IndexProxy proxy = onlineProxy;
+            if (requiresTentativeState(descriptor)) {
+                final var flipper = new FlippableIndexProxy();
+                flipper.flipTo(new TentativeConstraintIndexProxy(flipper, onlineProxy));
+                proxy = flipper;
+            }
+
             // it will be started later, when recovery is completed
             return new ContractCheckingIndexProxy(proxy);
         } catch (IOException | RuntimeException e) {
@@ -185,5 +193,16 @@ class IndexProxyCreator {
 
     private IndexUsageTracking createIndexUsageTracking() {
         return new DefaultIndexUsageTracking(clock);
+    }
+
+    private static boolean requiresTentativeState(IndexDescriptor index) {
+        // Indexes that back uniqueness constraints but whose constraint has not
+        // yet been created should pass through a tentative state (see TentativeConstraintIndexProxy).
+        //
+        // Note for future reference: descriptors in a running IndexingService will not be updated
+        // to reference their owning constraint when the constraint is created - it will just
+        // get written to the schema store - but this should only be relevant on startup.
+
+        return index.isUnique() && index.getOwningConstraintId().isEmpty();
     }
 }

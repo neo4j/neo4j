@@ -19,11 +19,17 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
+import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
+import static org.neo4j.internal.schema.IndexPrototype.uniqueForSchema;
+import static org.neo4j.internal.schema.SchemaDescriptors.forLabel;
 import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
 import static org.neo4j.values.storable.Values.longValue;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -48,11 +54,18 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
+import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -74,13 +87,16 @@ public class IndexingServiceIntegrationTest {
     @Inject
     private TestDirectory directory;
 
+    @Inject
+    private FileSystemAbstraction fs;
+
     private GraphDatabaseService database;
+    private DatabaseLayout layout;
     private DatabaseManagementService managementService;
 
     @BeforeEach
     void setUp() {
-        managementService = new TestDatabaseManagementServiceBuilder(directory.homePath()).build();
-        database = managementService.database(DEFAULT_DATABASE_NAME);
+        startDbms();
         createData(database);
     }
 
@@ -146,7 +162,7 @@ public class IndexingServiceIntegrationTest {
         IndexProxy indexProxy = indexingService.getIndexProxy(index);
 
         waitIndexOnline(indexProxy);
-        assertEquals(InternalIndexState.ONLINE, indexProxy.getState());
+        assertEquals(ONLINE, indexProxy.getState());
         PopulationProgress progress = indexProxy.getIndexPopulationProgress();
         assertEquals(progress.getCompleted(), progress.getTotal());
     }
@@ -173,7 +189,7 @@ public class IndexingServiceIntegrationTest {
         IndexProxy indexProxy = indexingService.getIndexProxy(index);
 
         waitIndexOnline(indexProxy);
-        assertEquals(InternalIndexState.ONLINE, indexProxy.getState());
+        assertEquals(ONLINE, indexProxy.getState());
         PopulationProgress progress = indexProxy.getIndexPopulationProgress();
         assertEquals(progress.getCompleted(), progress.getTotal());
     }
@@ -213,8 +229,8 @@ public class IndexingServiceIntegrationTest {
 
         IndexProxy clothesIndex = indexingService.getIndexProxy(getIndexByName(constraintName));
         IndexProxy weatherIndex = indexingService.getIndexProxy(getIndexByName(indexName));
-        assertEquals(InternalIndexState.ONLINE, clothesIndex.getState());
-        assertEquals(InternalIndexState.ONLINE, weatherIndex.getState());
+        assertEquals(ONLINE, clothesIndex.getState());
+        assertEquals(ONLINE, weatherIndex.getState());
     }
 
     @ParameterizedTest
@@ -292,8 +308,89 @@ public class IndexingServiceIntegrationTest {
         race.go();
     }
 
+    @Test
+    void testOnlineOrphanUniquenessIndexOnRestart() throws Exception {
+        IndexDescriptor index = createOrphanUniquenessConstraintIndex();
+
+        // Should end up in tentative state after population.
+        IndexingService indexingService = getIndexingService(database);
+        awaitStoreScan(indexingService, index);
+        assertThat(getIndexState(indexingService, index)).isEqualTo(POPULATING);
+
+        // Should still be in tentative state after restart.
+        stopDbms();
+        startDbms();
+        indexingService = getIndexingService(database);
+        assertThat(getIndexState(indexingService, index)).isEqualTo(POPULATING);
+
+        // Should be brought online on activation.
+        indexingService.activateIndex(index);
+        assertThat(getIndexState(indexingService, index)).isEqualTo(ONLINE);
+    }
+
+    @Test
+    void testRebuildingOrphanUniquenessIndexOnRestart() throws Exception {
+        IndexDescriptor index = createOrphanUniquenessConstraintIndex();
+
+        stopDbms();
+        deleteIndexFiles(index);
+        startDbms();
+
+        // Should end up in tentative state after re-population.
+        IndexingService indexingService = getIndexingService(database);
+        awaitStoreScan(indexingService, index);
+        assertThat(getIndexState(indexingService, index)).isEqualTo(POPULATING);
+
+        // Should be brought online on activation.
+        indexingService.activateIndex(index);
+        assertThat(getIndexState(indexingService, index)).isEqualTo(ONLINE);
+    }
+
+    private IndexDescriptor createOrphanUniquenessConstraintIndex() throws KernelException {
+        IndexDescriptor index;
+        try (Transaction tx = database.beginTx()) {
+            final var ktx = ((InternalTransaction) tx).kernelTransaction();
+            final int labelId = ktx.tokenRead().nodeLabel(FOOD_LABEL);
+            final int propertyKeyId = ktx.tokenRead().propertyKey(PROPERTY_NAME);
+
+            final IndexPrototype uniqueIndex = uniqueForSchema(forLabel(labelId, propertyKeyId))
+                    .withIndexProvider(RangeIndexProvider.DESCRIPTOR)
+                    .withName("constraint");
+            index = ktx.indexUniqueCreate(uniqueIndex);
+            tx.commit();
+        }
+        return index;
+    }
+
+    private void deleteIndexFiles(IndexDescriptor index) throws IOException {
+        final var directoryStructure = IndexDirectoryStructure.directoriesByProvider(layout.databaseDirectory())
+                .forProvider(index.getIndexProvider());
+        final var path = directoryStructure.directoryForIndex(index.getId());
+        fs.deleteRecursively(path);
+    }
+
+    private void stopDbms() {
+        managementService.shutdown();
+    }
+
+    private void startDbms() {
+        managementService = new TestDatabaseManagementServiceBuilder(directory.homePath()).build();
+        database = managementService.database(DEFAULT_DATABASE_NAME);
+        layout = ((GraphDatabaseFacade) database).databaseLayout();
+    }
+
+    private InternalIndexState getIndexState(IndexingService service, IndexDescriptor index)
+            throws IndexNotFoundKernelException {
+        return service.getIndexProxy(index).getState();
+    }
+
+    private void awaitStoreScan(IndexingService service, IndexDescriptor index)
+            throws IndexNotFoundKernelException, IndexPopulationFailedKernelException, InterruptedException {
+        service.getIndexProxy(index).awaitStoreScanCompleted(10, TimeUnit.MINUTES);
+    }
+
     private static void waitIndexOnline(IndexProxy indexProxy) throws InterruptedException {
-        while (InternalIndexState.ONLINE != indexProxy.getState()) {
+        while (ONLINE != indexProxy.getState()) {
             Thread.sleep(10);
         }
     }

@@ -392,9 +392,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
             IndexMap indexMap,
             IndexPopulationJob populationJob) {
         rebuildingDescriptors.forEachKeyValue((indexId, descriptor) -> {
-            boolean flipToTentative = false; // Never pass through a tentative online state during recovery.
-            IndexProxy proxy =
-                    indexProxyCreator.createPopulatingIndexProxy(descriptor, flipToTentative, monitor, populationJob);
+            IndexProxy proxy = indexProxyCreator.createPopulatingIndexProxy(descriptor, monitor, populationJob);
             proxy.start();
             indexMap.putIndexProxy(proxy);
         });
@@ -827,14 +825,12 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
                 }
 
                 final var completeDescriptor = completeConfiguration(descriptor);
-                boolean flipToTentative = completeDescriptor.isUnique();
                 if (state == State.RUNNING) {
                     var populationJob = populationJobs.computeIfAbsent(
                             new IndexPopulationCategory(completeDescriptor, storageEngineIndexingBehaviour),
                             category -> newIndexPopulationJob(
                                     completeDescriptor.schema().entityType(), subject));
-                    index = indexProxyCreator.createPopulatingIndexProxy(
-                            completeDescriptor, flipToTentative, monitor, populationJob);
+                    index = indexProxyCreator.createPopulatingIndexProxy(completeDescriptor, monitor, populationJob);
                     index.start();
                 } else {
                     index = indexProxyCreator.createRecoveringIndexProxy(completeDescriptor);
