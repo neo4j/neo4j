@@ -82,6 +82,8 @@ public class TestDirectory {
     private boolean keepDirectoryAfterSuccessfulTest;
     private Path directory;
     private int additionalRefs;
+    // Only really used in "per class" and nested scenarios
+    private boolean anyFailure;
 
     private TestDirectory(FileSystemAbstraction fileSystem) {
         this.fileSystem = fileSystem;
@@ -194,6 +196,7 @@ public class TestDirectory {
     }
 
     public void complete(boolean success) throws IOException {
+        anyFailure |= !success;
         if (isInitialised()) {
             if (additionalRefs > 0) {
                 additionalRefs--;
@@ -202,7 +205,7 @@ public class TestDirectory {
 
             Path directory = this.directory;
             this.directory = null;
-            if (success && !keepDirectoryAfterSuccessfulTest) {
+            if (!anyFailure && !keepDirectoryAfterSuccessfulTest) {
                 fileSystem.deleteRecursively(directory);
             } else if (!fileSystem.isPersistent()) {
                 // We want to keep the files, make sure they actually exist on disk, not only in memory (like in
