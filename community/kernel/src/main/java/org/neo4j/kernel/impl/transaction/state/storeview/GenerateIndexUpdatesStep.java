@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
 import java.util.function.LongFunction;
 import org.apache.commons.lang3.ArrayUtils;
@@ -55,6 +56,7 @@ public class GenerateIndexUpdatesStep<CURSOR extends StorageEntityScanCursor<?>>
     private final boolean gatherPropertyUpdates;
     private final LongFunction<Lock> lockFunction;
     private final boolean alsoWrite;
+    private final LongAdder completedEntities = new LongAdder();
     private final MemoryTracker memoryTracker;
     private final long maxBatchSizeBytes;
 
@@ -93,27 +95,31 @@ public class GenerateIndexUpdatesStep<CURSOR extends StorageEntityScanCursor<?>>
     @Override
     protected void process(long[] entityIds, BatchSender sender, CursorContext cursorContext) throws Exception {
         GeneratedIndexUpdates updates = new GeneratedIndexUpdates(gatherPropertyUpdates, gatherTokenUpdates);
+        int numEntities = 0;
         try (var storeCursors = storeCursorsFactory.apply(cursorContext);
                 CURSOR entityCursor = entityCursorBehaviour.allocateEntityScanCursor(cursorContext, storeCursors);
                 StoragePropertyCursor propertyCursor =
                         reader.allocatePropertyCursor(cursorContext, storeCursors, memoryTracker)) {
             for (long entityId : entityIds) {
+                numEntities++;
                 try (Lock ignored = lockFunction.apply(entityId)) {
                     entityCursor.single(entityId);
                     while (entityCursor.next()) {
                         generateUpdates(updates, entityCursor, propertyCursor);
                         if (updates.propertiesByteSize > maxBatchSizeBytes) {
-                            batchDone(updates, sender);
+                            batchDone(updates, sender, numEntities);
+                            numEntities = 0;
                             updates = new GeneratedIndexUpdates(gatherPropertyUpdates, gatherTokenUpdates);
                         }
                     }
                 }
             }
         }
-        batchDone(updates, sender);
+        batchDone(updates, sender, numEntities);
     }
 
-    private void batchDone(GeneratedIndexUpdates updates, BatchSender sender) {
+    private void batchDone(GeneratedIndexUpdates updates, BatchSender sender, int numEntities) {
+        updates.setNumberOfEntities(numEntities);
         if (alsoWrite) {
             updates.completeBatch();
         } else {
@@ -167,6 +173,10 @@ public class GenerateIndexUpdatesStep<CURSOR extends StorageEntityScanCursor<?>>
         return TRACER_TAG_PREFIX + name();
     }
 
+    long numberOfCompletedEntities() {
+        return completedEntities.sum();
+    }
+
     static boolean containsAnyEntityToken(int[] entityTokenFilter, int... entityTokens) {
         for (int candidate : entityTokens) {
             if (ArrayUtils.contains(entityTokenFilter, candidate)) {
@@ -180,6 +190,7 @@ public class GenerateIndexUpdatesStep<CURSOR extends StorageEntityScanCursor<?>>
         private final PropertyScanConsumer.Batch propertyUpdates;
         private final TokenScanConsumer.Batch tokenUpdates;
         private long propertiesByteSize;
+        private volatile int numberOfEntities;
 
         GeneratedIndexUpdates(boolean gatherPropertyUpdates, boolean gatherTokenUpdates) {
             propertyUpdates = gatherPropertyUpdates ? propertyScanConsumer.newBatch() : null;
@@ -194,6 +205,11 @@ public class GenerateIndexUpdatesStep<CURSOR extends StorageEntityScanCursor<?>>
             if (gatherTokenUpdates) {
                 tokenUpdates.process();
             }
+            completedEntities.add(numberOfEntities);
+        }
+
+        void setNumberOfEntities(int numEntities) {
+            this.numberOfEntities = numEntities;
         }
     }
 }

@@ -133,7 +133,7 @@ public class StoreScanStage<CURSOR extends StorageEntityScanCursor<?>> extends S
         }
     }
 
-    long numberOfIteratedEntities() {
-        return feedStep.position();
+    long numberOfCompletedEntities() {
+        return generatorStep.numberOfCompletedEntities();
     }
 }

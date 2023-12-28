@@ -35,7 +35,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.LongFunction;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -85,7 +84,7 @@ class StoreScanStageTest {
     private final JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
 
     @AfterEach
-    void tearDown() throws Exception {
+    void tearDown() {
         jobScheduler.close();
     }
 
@@ -180,7 +179,7 @@ class StoreScanStageTest {
                 new ControlledExternalUpdatesCheck(config.batchSize(), 2, numBatchesProcessed, true);
         var writer = new PropertyConsumer(numBatchesProcessed::incrementAndGet);
 
-        StoreScanStage<StorageNodeCursor> scan = new StoreScanStage(
+        StoreScanStage<StorageNodeCursor> scan = new StoreScanStage<>(
                 dbConfig,
                 config,
                 (ct, sc) -> entityIdIterator,
@@ -217,7 +216,7 @@ class StoreScanStageTest {
         AtomicBoolean continueScanning = new AtomicBoolean(true);
         AbortingExternalUpdatesCheck externalUpdatesCheck = new AbortingExternalUpdatesCheck(1, continueScanning);
         var writer = new PropertyConsumer(numBatchesProcessed::incrementAndGet);
-        StoreScanStage<StorageNodeCursor> scan = new StoreScanStage(
+        StoreScanStage<StorageNodeCursor> scan = new StoreScanStage<>(
                 dbConfig,
                 config,
                 (ct, sc) -> entityIdIterator,
@@ -245,23 +244,12 @@ class StoreScanStageTest {
     }
 
     @Test
-    void shouldReportCorrectNumberOfEntitiesProcessed() {
+    void shouldReportCorrectNumberOfCompletedEntities() {
         // given
         StubStorageCursors data = someData();
-        AtomicReference<StoreScanStage<StorageNodeCursor>> stage = new AtomicReference<>();
         EntityIdIterator entityIdIterator =
-                new CursorEntityIdIterator<>(data.allocateNodeCursor(NULL_CONTEXT, StoreCursors.NULL)) {
-                    private long manualCounter;
-
-                    @Override
-                    protected boolean fetchNext() {
-                        assertThat(stage.get().numberOfIteratedEntities())
-                                .isEqualTo((manualCounter / config.batchSize()) * config.batchSize());
-                        manualCounter++;
-                        return super.fetchNext();
-                    }
-                };
-        StoreScanStage<StorageNodeCursor> scan = new StoreScanStage(
+                new CursorEntityIdIterator<>(data.allocateNodeCursor(NULL_CONTEXT, StoreCursors.NULL));
+        StoreScanStage<StorageNodeCursor> scan = new StoreScanStage<>(
                 dbConfig,
                 config,
                 (ct, sc) -> entityIdIterator,
@@ -280,13 +268,12 @@ class StoreScanStageTest {
                 CONTEXT_FACTORY,
                 EmptyMemoryTracker.INSTANCE,
                 true);
-        stage.set(scan);
 
         // when
         runScan(scan);
 
         // then
-        assertThat(scan.numberOfIteratedEntities()).isEqualTo((long) config.batchSize() * NUMBER_OF_BATCHES);
+        assertThat(scan.numberOfCompletedEntities()).isEqualTo((long) config.batchSize() * NUMBER_OF_BATCHES);
     }
 
     @Test
