@@ -115,13 +115,6 @@ public class MemoryRecommendationsCommand extends AbstractAdminCommand {
         print("# data indexed, then it might advantageous to leave more memory for the");
         print("# operating system.");
         print("#");
-        print("# Tip: Depending on the workload type you may want to increase the amount");
-        print("# of off-heap memory available for storing transaction state.");
-        print("# For instance, in case of large write-intensive transactions");
-        print("# increasing it can lower GC overhead and thus improve performance.");
-        print("# On the other hand, if vast majority of transactions are small or read-only");
-        print("# then you can decrease it and increase page cache instead.");
-        print("#");
         print("# Tip: The more concurrent transactions your workload has and the more updates");
         print("# they do, the more heap memory you will need. However, don't allocate more");
         print("# than 31g of heap, since this will disable pointer compression, also known as");
