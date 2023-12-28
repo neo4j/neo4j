@@ -71,15 +71,15 @@ trait FrontEndCompilationPhases {
     resolver: Option[ProcedureSignatureResolver] = None
   ): Transformer[BaseContext, BaseState, BaseState] = {
     parsingBase(config) andThen
+      AstRewriting(parameterTypeMapping = config.parameterTypeMapping) andThen
+      LiteralExtraction(config.literalExtractionStrategy) andThen
       /*
        * With query router we log the query early and therefore need to resolve
        * procedure calls early in order to obfuscate sensitive procedure params
        * in the query log.
        */
       If((_: BaseState) => resolver.isDefined)(TryRewriteProcedureCalls(resolver.orNull)) andThen
-      ObfuscationMetadataCollection andThen
-      AstRewriting(parameterTypeMapping = config.parameterTypeMapping) andThen
-      LiteralExtraction(config.literalExtractionStrategy)
+      ObfuscationMetadataCollection
   }
 
   // Phase 1 (Fabric)
