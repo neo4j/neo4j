@@ -115,6 +115,7 @@ public enum Group {
     LIGHTHOUSE("Lighthouse"),
     LIGHTHOUSE_RECEIVER("LighthouseReceiver", ExecutorServiceFactory.singleThread()),
     LIGHTHOUSE_JOIN_LEAVE("LighthouseJoinLeave", ExecutorServiceFactory.singleThread()),
+    LIGHTHOUSE_MEMBER_STATE_TRANSITION_SCHEDULER("LighthouseMemberStateScheduler", ExecutorServiceFactory.singleThread()),
     DOWNLOAD_SNAPSHOT("DownloadSnapshot"),
     CATCHUP_CHANNEL_POOL("CatchupChannelPool"),
     CATCHUP_CLIENT("CatchupClient"),
