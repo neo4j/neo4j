@@ -62,6 +62,7 @@ import org.neo4j.cypher.internal.frontend.phases.ResolvedCall
 import org.neo4j.cypher.internal.frontend.phases.ResolvedFunctionInvocation
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.PlannerQuery
+import org.neo4j.cypher.internal.ir.RunQueryAtHorizon
 import org.neo4j.cypher.internal.label_expressions.LabelExpression
 import org.neo4j.cypher.internal.logical.plans.LogicalPlanStringTest.WhiteList
 import org.neo4j.cypher.internal.util.IdentityMap
@@ -256,7 +257,9 @@ object LogicalPlanStringTest {
       classOf[HasMappableExpressions[_]] -> "identity",
       classOf[RunQueryAt] -> "query",
       classOf[RunQueryAt] -> "graphReference",
-      classOf[RunQueryAt] -> "parameters"
+      classOf[RunQueryAt] -> "parameters",
+      classOf[RunQueryAtHorizon] -> "graphReference",
+      classOf[RunQueryAtHorizon] -> "queryString"
     )
 
     val whiteListedClasses: Set[Class[_]] = Set[Class[_]](

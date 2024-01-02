@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.ir.DistinctQueryProjection
 import org.neo4j.cypher.internal.ir.LoadCSVProjection
 import org.neo4j.cypher.internal.ir.PassthroughAllHorizon
 import org.neo4j.cypher.internal.ir.RegularQueryProjection
+import org.neo4j.cypher.internal.ir.RunQueryAtHorizon
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.UnwindProjection
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
@@ -244,6 +245,14 @@ case object PlanEventHorizon extends EventHorizonPlanner {
       case CommandProjection(clause) =>
         val commandPlan = context.staticComponents.logicalPlanProducer.planCommand(plan, clause, context)
         SortPlanner.ensureSortedPlanWithSolved(commandPlan, interestingOrderConfig, context, updateSolvedOrdering)
+
+      case RunQueryAtHorizon(graphReference, queryString, parameters, columns) =>
+        val runQueryAt =
+          context
+            .staticComponents
+            .logicalPlanProducer
+            .planRunQueryAt(plan, graphReference, queryString, parameters, columns, context)
+        SortPlanner.ensureSortedPlanWithSolved(runQueryAt, interestingOrderConfig, context, updateSolvedOrdering)
 
       case _ =>
         throw new InternalException(s"Received QG with unknown horizon type: ${query.horizon}")

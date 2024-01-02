@@ -51,6 +51,7 @@ import org.neo4j.cypher.internal.ir.QueryHorizon
 import org.neo4j.cypher.internal.ir.QueryPagination
 import org.neo4j.cypher.internal.ir.QueryProjection
 import org.neo4j.cypher.internal.ir.RegularQueryProjection
+import org.neo4j.cypher.internal.ir.RunQueryAtHorizon
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.UnionQuery
@@ -211,6 +212,10 @@ class StatisticsBackedCardinalityModel(
 
     case CallSubqueryHorizon(_, _, false, _) =>
       // Unit subquery call does not affect the driving table
+      cardinalityAndInput
+
+    case RunQueryAtHorizon(_, _, _, _) =>
+      // As it stands, a composite DB doesn't have access to the statistics of its constituent DBs
       cardinalityAndInput
   }
 

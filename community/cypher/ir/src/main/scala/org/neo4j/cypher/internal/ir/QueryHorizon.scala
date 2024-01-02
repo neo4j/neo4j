@@ -21,10 +21,12 @@ package org.neo4j.cypher.internal.ir
 
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.CommandClause
+import org.neo4j.cypher.internal.ast.GraphReference
 import org.neo4j.cypher.internal.ast.Hint
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsParameters
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.ast.IRExpression
@@ -131,6 +133,27 @@ case class LoadCSVProjection(
 
   override def withoutHints(hintsToIgnore: Set[Hint]): QueryHorizon = this
 
+  override def isTerminatingProjection: Boolean = false
+}
+
+/**
+ * Query fragment, part of a composite query.
+ *
+ * @param graphReference the graph on which to execute the query fragment
+ * @param queryString the query to execute, serialised as a standalone Cypher query string
+ * @param parameters a mapping from the parameters in the inner query to the variables in the outer query
+ * @param columns the variables returned by the query fragment
+ */
+case class RunQueryAtHorizon(
+  graphReference: GraphReference,
+  queryString: String,
+  parameters: Map[Parameter, LogicalVariable],
+  columns: Set[LogicalVariable]
+) extends QueryHorizon {
+  override def exposedSymbols(coveredIds: Set[LogicalVariable]): Set[LogicalVariable] = coveredIds ++ columns
+  override def dependingExpressions: Iterable[Expression] = Nil
+  override def allHints: Set[Hint] = Set.empty
+  override def withoutHints(hintsToIgnore: Set[Hint]): QueryHorizon = this
   override def isTerminatingProjection: Boolean = false
 }
 
