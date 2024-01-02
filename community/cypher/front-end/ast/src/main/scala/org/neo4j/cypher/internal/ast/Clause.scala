@@ -70,6 +70,7 @@ import org.neo4j.cypher.internal.expressions.NonPrefixedPatternPart
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Or
 import org.neo4j.cypher.internal.expressions.Ors
+import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.ParenthesizedPath
 import org.neo4j.cypher.internal.expressions.PathConcatenation
 import org.neo4j.cypher.internal.expressions.PathPatternPart
@@ -1658,6 +1659,35 @@ case class SubqueryCall(innerQuery: Query, inTransactionsParameters: Option[Subq
       error("CALL { ... } IN TRANSACTIONS nested in a regular CALL is not supported", nestedCallInTransactions.position)
     }
   }
+}
+
+/**
+ * Query fragment, part of a composite query.
+ * Arguments may be passed from the main query to the fragment via parameters.
+ *
+ * @param graphReference the graph on which to execute the query fragment
+ * @param innerQuery the query to execute
+ * @param parameters a mapping from the parameters in the inner query to the variables in the outer query
+ */
+case class RunQueryAt(
+  graphReference: GraphReference,
+  innerQuery: SingleQuery,
+  parameters: Map[Parameter, LogicalVariable]
+)(val position: InputPosition) extends HorizonClause {
+  override def name: String = "RUN QUERY AT"
+
+  override def semanticCheckContinuation(previousScope: Scope, outerScope: Option[Scope]): SemanticCheck = success
+
+  override def clauseSpecificSemanticCheck: SemanticCheck = for {
+    currentState <- SemanticCheck.getState
+    _ <- SemanticCheck.setState(SemanticState.clean)
+    innerQueryState <- innerQuery.semanticCheck
+    _ <- SemanticCheck.setState(currentState.state)
+    // Surface variables declared in the inner query, ignoring errors.
+    // The original query was validated before being rewritten, there should be no errors.
+    // If the rewriter introduced some errors, they wouldn't make sense to the end user.
+    finalState <- declareVariables(innerQuery.finalScope(innerQueryState.state.currentScope.scope).symbolTable.values)
+  } yield finalState
 }
 
 // Show and terminate command clauses
