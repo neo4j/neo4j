@@ -91,6 +91,7 @@ import org.neo4j.internal.schema.IndexType.RANGE
 import org.neo4j.internal.schema.IndexType.TEXT
 import org.neo4j.internal.schema.IndexType.VECTOR
 import org.neo4j.internal.schema.constraints.SchemaValueType
+import org.neo4j.kernel.database.DatabaseReferenceRepository
 
 trait StatisticsBackedLogicalPlanningSupport {
 
@@ -114,7 +115,8 @@ object StatisticsBackedLogicalPlanningConfigurationBuilder {
     useMinimumGraphStatistics: Boolean = false,
     txStateHasChanges: Boolean = false,
     deduplicateNames: Boolean = true,
-    semanticFeatures: Seq[SemanticFeature] = Seq.empty
+    semanticFeatures: Seq[SemanticFeature] = Seq.empty,
+    databaseReferenceRepository: DatabaseReferenceRepository = ContextHelper.mockDatabaseReferenceRepository
   )
 
   case class Cardinalities(
@@ -658,6 +660,11 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
     withSetting(GraphDatabaseInternalSettings.planning_intersection_scans_enabled, Boolean.box(enabled))
   }
 
+  def setDatabaseReferenceRepository(
+    databaseReferenceRepository: DatabaseReferenceRepository
+  ): StatisticsBackedLogicalPlanningConfigurationBuilder =
+    this.copy(options = options.copy(databaseReferenceRepository = databaseReferenceRepository))
+
   def build(): StatisticsBackedLogicalPlanningConfiguration = {
     require(cardinalities.allNodes.isDefined, "Please specify allNodesCardinality using `setAllNodesCardinality`.")
     cardinalities.allNodes.foreach(anc =>
@@ -1052,7 +1059,8 @@ class StatisticsBackedLogicalPlanningConfiguration(
       debugOptions = options.debug,
       executionModel = options.executionModel,
       eagerAnalyzer = plannerConfiguration.eagerAnalyzer(),
-      statefulShortestPlanningMode = plannerConfiguration.statefulShortestPlanningMode()
+      statefulShortestPlanningMode = plannerConfiguration.statefulShortestPlanningMode(),
+      databaseReferenceRepository = options.databaseReferenceRepository
     )
     val state = InitialState(queryString, None, IDPPlannerName, new AnonymousVariableNameGenerator)
     val parsingConfig = {

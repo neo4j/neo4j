@@ -74,7 +74,7 @@ object ContextHelper extends MockitoSugar {
     eagerAnalyzer: CypherEagerAnalyzerOption = CypherEagerAnalyzerOption.default,
     statefulShortestPlanningMode: CypherStatefulShortestPlanningModeOption =
       CypherStatefulShortestPlanningModeOption.default,
-    databaseReferenceRepository: DatabaseReferenceRepository = mock[DatabaseReferenceRepository],
+    databaseReferenceRepository: DatabaseReferenceRepository = mockDatabaseReferenceRepository,
     databaseId: NamedDatabaseId = mock[NamedDatabaseId],
     internalNotificationStats: InternalNotificationStats = new InternalNotificationStats
   ): PlannerContext = {
@@ -103,6 +103,9 @@ object ContextHelper extends MockitoSugar {
       internalNotificationStats
     )
   }
+
+  def mockDatabaseReferenceRepository: DatabaseReferenceRepository =
+    mock[DatabaseReferenceRepository]
 
   object MockedMonitors extends Monitors {
     override def addMonitorListener[T](monitor: T, tags: String*): Unit = {}

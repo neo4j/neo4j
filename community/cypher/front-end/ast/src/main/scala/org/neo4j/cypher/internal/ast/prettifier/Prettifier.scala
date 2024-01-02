@@ -160,6 +160,7 @@ import org.neo4j.cypher.internal.ast.ReturnItem
 import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.RevokePrivilege
 import org.neo4j.cypher.internal.ast.RevokeRolesFromUsers
+import org.neo4j.cypher.internal.ast.RunQueryAt
 import org.neo4j.cypher.internal.ast.SchemaCommand
 import org.neo4j.cypher.internal.ast.SeekOnly
 import org.neo4j.cypher.internal.ast.SetClause
@@ -1051,6 +1052,7 @@ case class Prettifier(
       case m: Merge                       => asString(m)
       case l: LoadCSV                     => asString(l)
       case f: Foreach                     => asString(f)
+      case r: RunQueryAt                  => asString(r)
       case c =>
         val ext = extension.asString(this)
         ext.applyOrElse(c, fallback)
@@ -1364,6 +1366,11 @@ case class Prettifier(
       val updates = foreach.updates.map(dispatch).mkString(s"$NL  ", s"$NL  ", NL)
       s"${INDENT}FOREACH ( $varName IN $list |$updates)"
     }
+
+    def asString(runQueryAt: RunQueryAt): String =
+      s"""${INDENT}RUN {
+         |${indented().query(runQueryAt.innerQuery)}
+         |$INDENT} @ ${runQueryAt.graphReference.print}""".stripMargin
   }
 }
 

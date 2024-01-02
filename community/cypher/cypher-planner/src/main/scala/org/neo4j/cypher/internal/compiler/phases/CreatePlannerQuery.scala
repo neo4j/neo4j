@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.StatementConv
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
+import org.neo4j.cypher.internal.frontend.phases.FragmentCompositeQueries
 import org.neo4j.cypher.internal.frontend.phases.Namespacer
 import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.frontend.phases.StatementCondition
@@ -73,7 +74,8 @@ case object CreatePlannerQuery extends Phase[BaseContext, BaseState, LogicalPlan
     Namespacer.completed,
     // and we want to take advantage of isolated aggregations in the planner
     StatementCondition(aggregationsAreIsolated),
-    collapseMultipleInPredicates.completed
+    collapseMultipleInPredicates.completed,
+    FragmentCompositeQueries.completed
   ) ++
     // The PlannerQuery should be created based on normalised predicates
     PredicatesInCNF ++

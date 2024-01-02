@@ -895,6 +895,9 @@ trait AstConstructionTestSupport {
   def returnDistinct(items: ReturnItem*): Return =
     Return(distinct = true, ReturnItems(includeExisting = false, items)(pos), None, None, None)(pos)
 
+  def returnDistinct(ob: OrderBy, skip: Skip, limit: Limit, items: ReturnItem*): Return =
+    Return(distinct = true, ReturnItems(includeExisting = false, items)(pos), Some(ob), Some(skip), Some(limit))(pos)
+
   def returnAll: Return = Return(returnAllItems)(pos)
 
   def returnAllItems: ReturnItems = ReturnItems(includeExisting = true, Seq.empty)(pos)
