@@ -94,6 +94,7 @@ public class BatchedTransactionIdSequenceProvider implements IdSequenceProvider 
                 return;
             }
             idGenerator.releasePageRange(range, cursorContext);
+            range = PageIdRange.EMPTY;
         }
     }
 }

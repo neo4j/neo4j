@@ -19,17 +19,22 @@
  */
 package org.neo4j.internal.recordstorage.id;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.impl.store.StoreType.NODE;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.neo4j.internal.id.IdGenerator;
+import org.neo4j.internal.id.range.ContinuousIdRange;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordStore;
-import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
 class BatchedTransactionIdSequenceProviderTest {
@@ -40,16 +45,22 @@ class BatchedTransactionIdSequenceProviderTest {
     void setUp() {
         neoStores = mock(NeoStores.class);
         RecordStore<AbstractBaseRecord> nodeStore = mock(RecordStore.class);
-        when(neoStores.getRecordStore(StoreType.NODE)).thenReturn(nodeStore);
+        IdGenerator idGenerator = mock(IdGenerator.class);
+
+        when(neoStores.getRecordStore(NODE)).thenReturn(nodeStore);
+        when(nodeStore.getIdGenerator()).thenReturn(idGenerator);
+        when(idGenerator.nextPageRange(any(), anyInt()))
+                .thenReturn(new ContinuousIdRange(100, 10))
+                .thenReturn(new ContinuousIdRange(200, 10));
     }
 
     @Test
     void createAndReuseBatchSequences() {
         var sequenceProvider = new BatchedTransactionIdSequenceProvider(neoStores);
-        var idSequence1 = sequenceProvider.getIdSequence(StoreType.NODE);
-        var idSequence2 = sequenceProvider.getIdSequence(StoreType.NODE);
-        var idSequence3 = sequenceProvider.getIdSequence(StoreType.NODE);
-        var idSequence4 = sequenceProvider.getIdSequence(StoreType.NODE);
+        var idSequence1 = sequenceProvider.getIdSequence(NODE);
+        var idSequence2 = sequenceProvider.getIdSequence(NODE);
+        var idSequence3 = sequenceProvider.getIdSequence(NODE);
+        var idSequence4 = sequenceProvider.getIdSequence(NODE);
 
         assertSame(idSequence1, idSequence2);
         assertSame(idSequence2, idSequence3);
@@ -60,12 +71,24 @@ class BatchedTransactionIdSequenceProviderTest {
     @Test
     void releaseIdSequencesOnRelease() {
         var sequenceProvider = new BatchedTransactionIdSequenceProvider(neoStores);
-        var idSequence1 = sequenceProvider.getIdSequence(StoreType.NODE);
+        var idSequence1 = sequenceProvider.getIdSequence(NODE);
 
         sequenceProvider.release(CursorContext.NULL_CONTEXT);
 
-        var idSequence2 = sequenceProvider.getIdSequence(StoreType.NODE);
+        var idSequence2 = sequenceProvider.getIdSequence(NODE);
 
         assertNotSame(idSequence1, idSequence2);
+    }
+
+    @Test
+    void rangeIsEmptyAfterReleaseAndNewRequestedOnNextCall() {
+        var sequenceProvider = new BatchedTransactionIdSequenceProvider(neoStores);
+        var idSequence = sequenceProvider.getIdSequence(NODE);
+
+        assertEquals(100, idSequence.nextId(CursorContext.NULL_CONTEXT));
+
+        sequenceProvider.release(CursorContext.NULL_CONTEXT);
+
+        assertEquals(200, idSequence.nextId(CursorContext.NULL_CONTEXT));
     }
 }
