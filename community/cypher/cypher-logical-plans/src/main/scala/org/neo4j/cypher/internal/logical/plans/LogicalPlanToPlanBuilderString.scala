@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.logical.plans
 
+import org.apache.commons.text.StringEscapeUtils
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.expressions.CachedHasProperty
 import org.neo4j.cypher.internal.expressions.CachedProperty
@@ -1166,6 +1167,22 @@ object LogicalPlanToPlanBuilderString {
         val params =
           Seq(expressionStringifier(batchSize), onErrorBehaviour.toString) ++ maybeReportAs.map(_.name)
         params.mkString(", ")
+      case RunQueryAt(_, query, graphReference, parameters, columns) =>
+        val escapedQuery = StringEscapeUtils.escapeJava(query)
+        val parametersString =
+          Option
+            .when(parameters.nonEmpty) {
+              parameters.map { case (parameter, variable) =>
+                val parameterName = wrapInQuotations(parameter.asCanonicalStringVal)
+                val variableName = wrapInQuotations(variable)
+                s"$parameterName -> $variableName"
+              }.mkString(", parameters = Map(", ", ", ")")
+            }.getOrElse("")
+        val columnsString =
+          Option
+            .when(columns.nonEmpty)(s", columns = Set(${wrapInQuotationsAndMkString(columns.map(_.name))})")
+            .getOrElse("")
+        s"query = \"$escapedQuery\", graphReference = \"${graphReference.print}\"$parametersString$columnsString"
       case SimulatedNodeScan(idName, numberOfRows) =>
         s"${wrapInQuotations(idName)}, $numberOfRows"
       case SimulatedExpand(_, from, rel, to, factor) =>

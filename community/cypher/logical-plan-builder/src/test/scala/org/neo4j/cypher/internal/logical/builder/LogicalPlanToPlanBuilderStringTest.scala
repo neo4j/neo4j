@@ -2408,6 +2408,22 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName wi
       .build()
   )
 
+  testPlan(
+    "runQueryAt",
+    new TestPlanBuilder()
+      .produceResults("article")
+      .runQueryAt(
+        query =
+          """MATCH (`article`)
+            |  WHERE (`article`):`Article`
+            |RETURN `article` AS `article`""".stripMargin,
+        graphReference = "db.articles",
+        columns = Set("article")
+      )
+      .argument()
+      .build()
+  )
+
   private def interpretPlanBuilder(code: String): LogicalPlan = {
     val completeCode =
       s"""

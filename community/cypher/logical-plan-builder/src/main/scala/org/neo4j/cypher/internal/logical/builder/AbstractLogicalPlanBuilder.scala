@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.AndsReorderable
 import org.neo4j.cypher.internal.expressions.DecimalDoubleLiteral
 import org.neo4j.cypher.internal.expressions.Equals
+import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
@@ -41,6 +42,7 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.PropertyKeyToken
 import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
@@ -195,6 +197,7 @@ import org.neo4j.cypher.internal.logical.plans.RemoveLabels
 import org.neo4j.cypher.internal.logical.plans.RepeatOptions
 import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.RollUpApply
+import org.neo4j.cypher.internal.logical.plans.RunQueryAt
 import org.neo4j.cypher.internal.logical.plans.SelectOrAntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.SelectOrSemiApply
 import org.neo4j.cypher.internal.logical.plans.Selection
@@ -1020,6 +1023,21 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     val (name, expression) = toVarMap(Parser.parseProjections(projectionString)).head
     appendAtCurrentIndent(UnaryOperator(lp => UnwindCollection(lp, name, expression)(_)))
     self
+  }
+
+  def runQueryAt(
+    query: String,
+    graphReference: String,
+    parameters: Map[String, String] = Map.empty,
+    columns: Set[String] = Set.empty
+  ): IMPL = {
+    val properParameters = parameters.map[Parameter, LogicalVariable] {
+      case (parameterName, variableName) =>
+        ExplicitParameter(parameterName.stripPrefix("$"), CTAny)(pos) -> varFor(variableName)
+    }
+    appendAtCurrentIndent(UnaryOperator(source =>
+      RunQueryAt(source, query, Parser.parseGraphReference(graphReference), properParameters, columns.map(varFor))(_)
+    ))
   }
 
   def projection(projectionStrings: String*): IMPL = {

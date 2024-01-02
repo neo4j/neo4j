@@ -253,7 +253,10 @@ object LogicalPlanStringTest {
       classOf[PatternElement] -> "identity",
       classOf[RelationshipPattern] -> "identity",
       classOf[NonPrefixedPatternPart] -> "identity",
-      classOf[HasMappableExpressions[_]] -> "identity"
+      classOf[HasMappableExpressions[_]] -> "identity",
+      classOf[RunQueryAt] -> "query",
+      classOf[RunQueryAt] -> "graphReference",
+      classOf[RunQueryAt] -> "parameters"
     )
 
     val whiteListedClasses: Set[Class[_]] = Set[Class[_]](

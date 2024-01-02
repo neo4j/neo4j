@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.logical.builder
 
+import org.neo4j.cypher.internal.ast.GraphReference
 import org.neo4j.cypher.internal.ast.UnresolvedCall
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaccRule
 import org.neo4j.cypher.internal.expressions.CachedHasProperty
@@ -133,6 +134,9 @@ object Parser {
       case x => throw new IllegalArgumentException(s"'$x' cannot be parsed as a sort item")
     }
   }
+
+  def parseGraphReference(text: String): GraphReference =
+    JavaccRule.UseClause.apply(s"USE $text").graphReference
 
   def unapply(arg: String): Option[Expression] = Some(parseExpression(arg))
 }
