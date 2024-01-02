@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.rendering
 
-import org.neo4j.cypher.internal.QueryOptions
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Statement
@@ -61,19 +60,11 @@ object QueryRenderer {
 
   private val pos = InputPosition.NONE
 
-  private val NL = System.lineSeparator()
-
   def render(clauses: Seq[Clause]): String =
     render(SingleQuery(clauses)(pos))
 
   def render(statement: Statement): String =
     renderStrict.asString(statement)
-
-  def addOptions(statement: String, options: QueryOptions): String =
-    renderOptions(options) + statement
-
-  def renderOptions(options: QueryOptions): String =
-    options.render.map(_ + NL).getOrElse("")
 
   def pretty(expression: Expression): String =
     renderPretty.expr.apply(expression)

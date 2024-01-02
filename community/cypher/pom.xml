@@ -52,6 +52,7 @@
                 <module>cypher-cache</module>
                 <module>literal-interpreter</module>
                 <module>graph-counts</module>
+                <module>cypher-rendering</module>
             </modules>
         </profile>
         <profile>

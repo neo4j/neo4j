@@ -22,7 +22,7 @@ package org.neo4j.router.impl.query;
 import java.util.function.BiFunction;
 import org.neo4j.cypher.internal.QueryOptions;
 import org.neo4j.cypher.internal.util.CancellationChecker;
-import org.neo4j.cypher.rendering.QueryRenderer;
+import org.neo4j.cypher.rendering.QueryOptionsRenderer;
 import org.neo4j.fabric.executor.Location;
 import org.neo4j.fabric.executor.QueryStatementLifecycles;
 import org.neo4j.fabric.transaction.TransactionMode;
@@ -90,7 +90,7 @@ public class ConstituentTransactionFactoryImpl implements ConstituentTransaction
             var statementLifecycle = statementLifecycles.create(
                     transactionInfo.statementLifecycleTransactionInfo(), queryString, parameters, null);
             statementLifecycle.startProcessing();
-            var query = Query.of(QueryRenderer.addOptions(queryString, queryOptions), parameters);
+            var query = Query.of(QueryOptionsRenderer.addOptions(queryString, queryOptions), parameters);
             var processedQuery =
                     queryProcessor.processQuery(query, targetService, (dbRef) -> location, cancellationChecker, false);
             statementLifecycle.doneRouterProcessing(

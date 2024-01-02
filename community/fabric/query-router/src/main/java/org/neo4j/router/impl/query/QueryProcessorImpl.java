@@ -44,6 +44,7 @@ import org.neo4j.cypher.internal.tracing.CompilationTracer;
 import org.neo4j.cypher.internal.util.CancellationChecker;
 import org.neo4j.cypher.internal.util.InternalNotification;
 import org.neo4j.cypher.internal.util.RecordingNotificationLogger;
+import org.neo4j.cypher.rendering.QueryOptionsRenderer;
 import org.neo4j.cypher.rendering.QueryRenderer;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.dbms.database.DatabaseContext;
@@ -193,7 +194,7 @@ public class QueryProcessorImpl implements QueryProcessor {
                 .apply(RemoveUseRewriter.instance().apply(parsedQuery.statement()));
         var rewrittenStatementString = QueryRenderer.render((Statement) rewrittenStatement);
 
-        return QueryRenderer.addOptions(rewrittenStatementString, queryOptions);
+        return QueryOptionsRenderer.addOptions(rewrittenStatementString, queryOptions);
     }
 
     private static MapValue formatMaybeExtractedParams(BaseState parsedQuery) {

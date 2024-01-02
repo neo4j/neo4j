@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.RecordingNotificationLogger
-import org.neo4j.cypher.rendering.QueryRenderer
+import org.neo4j.cypher.rendering.QueryOptionsRenderer
 import org.neo4j.fabric.cache.FabricQueryCache
 import org.neo4j.fabric.config.FabricConfig
 import org.neo4j.fabric.eval.Catalog
@@ -175,7 +175,7 @@ case class FabricPlanner(
     )
 
     def asRemote(fragment: Fragment.Exec): RemoteQuery = RemoteQuery(
-      QueryRenderer.addOptions(fragment.remoteQuery.query, optionsFor(fragment)),
+      QueryOptionsRenderer.addOptions(fragment.remoteQuery.query, optionsFor(fragment)),
       fragment.queryType,
       fragment.remoteQuery.extractedLiterals
     )
