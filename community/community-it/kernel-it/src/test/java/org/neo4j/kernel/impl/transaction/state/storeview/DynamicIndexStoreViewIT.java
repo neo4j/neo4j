@@ -140,13 +140,7 @@ public class DynamicIndexStoreViewIT {
 
     @Test
     void shouldHandleDeletionOfRelationshipTokenIndexBeforeScan() {
-        shouldHandleDeletionOfTokenIndexBeforeScan(
-                () -> {
-                    long relations = populateRelationships();
-                    long nodes = 2 * relations;
-                    return storageEngine.indexingBehaviour().useNodeIdsInRelationshipTokenIndex() ? nodes : relations;
-                },
-                this::relationshipStoreScan);
+        shouldHandleDeletionOfTokenIndexBeforeScan(this::populateRelationships, this::relationshipStoreScan);
     }
 
     private void shouldHandleDeletionOfTokenIndexBeforeScan(

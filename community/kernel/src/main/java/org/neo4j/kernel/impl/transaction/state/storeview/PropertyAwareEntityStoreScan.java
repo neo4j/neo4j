@@ -68,6 +68,7 @@ public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityS
     protected final TokenScanConsumer tokenScanConsumer;
     protected final PropertyScanConsumer propertyScanConsumer;
     private volatile StoreScanStage<CURSOR> stage;
+    private volatile boolean closed;
 
     protected PropertyAwareEntityStoreScan(
             Config config,
@@ -137,10 +138,14 @@ public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityS
     @Override
     public void close() {
         storageReader.close();
+        closed = true;
     }
 
     @Override
     public PopulationProgress getProgress() {
+        if (closed) {
+            return PopulationProgress.DONE;
+        }
         StoreScanStage<CURSOR> observedStage = stage;
         if (totalCount > 0 || observedStage == null) {
             return PopulationProgress.single(
