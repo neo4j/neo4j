@@ -900,12 +900,14 @@ object ExpressionSelectivityCalculator {
    * return the probability that a sample of that function is greater than 1.
    *
    * {{{
+   *   cdf: Cumulative distribution function
+   *
    *   lognormal_cdf_σ_µ(x) = (1 + erf((ln(x)-µ) / (σ * Math.sqrt(2)) )) * 0.5
    *
-   *   median(lognormal_cdf_σ_µ(x)) = e^µ // solving for µ
+   *   median(lognormal_σ_µ(x)) = e^µ // solving for µ
    *   µ = ln(median(...))
    *
-   *   P(lognormal_2.0_µ(x)) >= 1 = 1 - P(lognormal_2.0_µ(x) < 1)
+   *   P(lognormal_2.0_µ(x) >= 1) = 1 - P(lognormal_2.0_µ(x) < 1)
    *                              = 1 - lognormal_cdf_2.0_µ(1.0)
    *                              = 1 - (1 + erf((ln(1.0)-µ) / (2.0 * Math.sqrt(2)) )) * 0.5
    *                              = 1 - (1 + erf((-µ) / (2.0 * Math.sqrt(2)) )) * 0.5
