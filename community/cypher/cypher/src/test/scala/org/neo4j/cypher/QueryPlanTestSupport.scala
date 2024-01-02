@@ -69,6 +69,7 @@ trait QueryPlanTestSupport {
     def aPlan: PlanMatcher = PlanInTree(ExactPlan())
 
     def aPlan(name: String): PlanMatcher = PlanInTree(ExactPlan()).withName(name)
+    def aPlanEndingWith(name: String): PlanMatcher = aPlan(s"\\w*$name".r)
 
     def aPlan(name: Regex): PlanMatcher = PlanInTree(ExactPlan()).withName(name)
 
@@ -90,6 +91,10 @@ trait QueryPlanTestSupport {
     def apply(name: String): PlanMatcher = haveAsRoot.aPlan(name)
 
     def apply(name: Regex): PlanMatcher = haveAsRoot.aPlan.withName(name)
+  }
+
+  object aPlanEndingWith {
+    def apply(name: String): PlanMatcher = aPlan(s"\\w*$name".r)
   }
 
   /**
