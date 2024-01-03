@@ -120,7 +120,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
     test(s"USE db SHOW $transactionKeyword") {
       assertAst(
         singleQuery(
-          use(varFor("db")),
+          use(List("db")),
           ast.ShowTransactionsClause(Left(List.empty), None, List.empty, yieldAll = false)(pos)
         ),
         comparePosition = false
@@ -278,7 +278,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   test("USE db SHOW TRANSACTIONS YIELD transactionId, activeLockCount AS pp WHERE pp < 50 RETURN transactionId") {
     assertAst(
       singleQuery(
-        use(varFor("db")),
+        use(List("db")),
         ast.ShowTransactionsClause(
           Left(List.empty),
           None,
@@ -303,7 +303,7 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   ) {
     assertAst(
       singleQuery(
-        use(varFor("db")),
+        use(List("db")),
         ast.ShowTransactionsClause(
           Left(List.empty),
           None,

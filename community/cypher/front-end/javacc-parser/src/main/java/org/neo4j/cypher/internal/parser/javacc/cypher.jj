@@ -87,6 +87,7 @@ public class Cypher<STATEMENT,
                     HINT,
                     EXPRESSION,
                     LABEL_EXPRESSION,
+                    FUNCTION_INVOCATION extends EXPRESSION,
                     PARAMETER extends EXPRESSION,
                     VARIABLE extends EXPRESSION,
                     PROPERTY extends EXPRESSION,
@@ -136,6 +137,7 @@ public class Cypher<STATEMENT,
                HINT,
                EXPRESSION,
                LABEL_EXPRESSION,
+               FUNCTION_INVOCATION,
                PARAMETER,
                VARIABLE,
                PROPERTY,
@@ -186,6 +188,7 @@ public class Cypher<STATEMENT,
                              HINT,
                              EXPRESSION,
                              LABEL_EXPRESSION,
+                             FUNCTION_INVOCATION,
                              PARAMETER,
                              VARIABLE,
                              PROPERTY,
@@ -1717,16 +1720,28 @@ CLAUSE Clause() throws Exception:
 USE_CLAUSE UseClause() throws Exception:
 {
     Token t;
-    EXPRESSION e;
+    USE_CLAUSE useClause;
 }
 {
     t=<USE> (
-        LOOKAHEAD( 2 ) <GRAPH> e=Expression()
-        | e=Expression()
+        LOOKAHEAD( 2 ) <GRAPH> (useClause=graphReference(t))
+        | useClause=graphReference(t)
         )
     {
-        return astFactory.useClause(  pos( t ), e );
+        return useClause;
     }
+}
+
+USE_CLAUSE graphReference(Token t) throws Exception:
+{
+    AliasName<DATABASE_NAME, PARAMETER> aliasName;
+    FUNCTION_INVOCATION functionInvocation;
+    USE_CLAUSE useClause;
+}
+{
+    <LPAREN> useClause=graphReference(t) <RPAREN> { return useClause; }
+    | LOOKAHEAD(FunctionInvocation()) functionInvocation = FunctionInvocation()  { return astFactory.functionUseClause(pos(t), functionInvocation); }
+    | aliasName = SymbolicAliasName()  { return astFactory.directUseClause(pos(t), aliasName.getLocalAliasName(astFactory));}
 }
 
 // RETURN
@@ -3806,7 +3821,7 @@ PARAMETER Parameter( ParameterType type ) :
     )
 }
 
-EXPRESSION FunctionInvocation()  throws Exception:
+FUNCTION_INVOCATION FunctionInvocation()  throws Exception:
 {
     Token before = token;
     Token nameSpaceToken;
@@ -5632,7 +5647,7 @@ Optional<DATABASE_NAME> HomeDatabase( Token start, Optional<DATABASE_NAME> homeD
     AliasName<DATABASE_NAME, PARAMETER> home = null;
 }
 {
-    <HOME> <DATABASE> home=SymbolicAliasName()
+    <HOME> <DATABASE> home=SymbolicAliasNameOrParameter()
     {
         assertNotAlreadySet( homeDatabase.orElse(null), start, errorMessage );
         return Optional.of( home.getLocalAliasName(astFactory) );
@@ -6328,7 +6343,7 @@ ADMINISTRATION_COMMAND CreateDatabase( Token start, boolean replace ) throws Exc
     String topologyMultipleSecondaryError = "Duplicate SECONDARY clause";
 }
 {
-    <DATABASE> databaseName=SymbolicAliasName()
+    <DATABASE> databaseName=SymbolicAliasNameOrParameter()
     ( <IF> <NOT> <EXISTS> { ifNotExists = true; } )?
     ( <TOPOLOGY>
             ( count=<UNSIGNED_DECIMAL_INTEGER>
@@ -6372,7 +6387,7 @@ ADMINISTRATION_COMMAND CreateCompositeDatabase( Token start, boolean replace ) t
 }
 {
     <COMPOSITE> <DATABASE>
-    compositeDatabaseName=SymbolicAliasName()
+    compositeDatabaseName=SymbolicAliasNameOrParameter()
     ( <IF> <NOT> <EXISTS> { ifNotExists = true; } )?
     ( options=Options() )?
     ( wait = WaitClause() )?
@@ -6391,7 +6406,7 @@ ADMINISTRATION_COMMAND DropDatabase( Token start ):
 }
 {
     ( <COMPOSITE> { composite = true; } )?
-    <DATABASE> databaseName=SymbolicAliasName()
+    <DATABASE> databaseName=SymbolicAliasNameOrParameter()
     ( <IF> <EXISTS> { ifExists = true; } )?
     ( ( <DUMP> { dumpData = true; } | <DESTROY> ) <DATA> )?
     ( wait = WaitClause() )?
@@ -6423,7 +6438,7 @@ ADMINISTRATION_COMMAND AlterDatabase( Token start ) throws Exception:
 }
 {
     <DATABASE>
-    databaseName=SymbolicAliasName()
+    databaseName=SymbolicAliasNameOrParameter()
     ( <IF> <EXISTS> { ifExists = true; } )?
     (
       (set=<SET> (
@@ -6475,7 +6490,7 @@ ADMINISTRATION_COMMAND StartDatabase():
     WAIT_CLAUSE wait = astFactory.wait( false, -1 );
 }
 {
-    start=<START> <DATABASE> databaseName=SymbolicAliasName() ( wait=WaitClause() )?
+    start=<START> <DATABASE> databaseName=SymbolicAliasNameOrParameter() ( wait=WaitClause() )?
     {
       return astFactory.startDatabase( pos( start ), databaseName.getLocalAliasName(astFactory), wait );
     }
@@ -6488,7 +6503,7 @@ ADMINISTRATION_COMMAND StopDatabase():
     WAIT_CLAUSE wait = astFactory.wait( false, -1 );
 }
 {
-    start=<STOP> <DATABASE> databaseName=SymbolicAliasName() ( wait=WaitClause() )?
+    start=<STOP> <DATABASE> databaseName=SymbolicAliasNameOrParameter() ( wait=WaitClause() )?
     {
       return astFactory.stopDatabase( pos( start ), databaseName.getLocalAliasName(astFactory), wait );
     }
@@ -6528,13 +6543,13 @@ STATEMENT_WITH_GRAPH ShowDatabase( Token start, USE_CLAUSE useClause ) throws Ex
     // Due to allowing both DATABASE and DATABASES with and without name we need to lookahead for potential YIELD/WHERE to not consider those database names
    (
         (scopeStart=<DATABASES> | scopeStart=<DATABASE>) (
-            LOOKAHEAD(SymbolicAliasName() (WhereClause() | YieldClause())) name=SymbolicAliasName() (
+            LOOKAHEAD(SymbolicAliasNameOrParameter() (WhereClause() | YieldClause())) name=SymbolicAliasNameOrParameter() (
                 ( yield = YieldClause() ( returnClause = ReturnClause() )? )
                 | ( where=WhereClause() )
             )
             | LOOKAHEAD(YieldClause()) yield=YieldClause() ( returnClause=ReturnClause() ) ?
             | LOOKAHEAD(WhereClause()) where=WhereClause()
-            | name=SymbolicAliasName()
+            | name=SymbolicAliasNameOrParameter()
         )?
         | (scopeStart=<DEFAULT_TOKEN> <DATABASE> { isDefault = true; }
             | scopeStart=<HOME> <DATABASE> { isHome = true; }
@@ -6596,9 +6611,9 @@ ADMINISTRATION_COMMAND CreateAlias( Token start, boolean replace ) throws Except
 }
 {
     <ALIAS>
-    aliasName=SymbolicAliasName()
+    aliasName=SymbolicAliasNameOrParameter()
     ( <IF> <NOT> <EXISTS> { ifNotExists = true; } )?
-    <FOR> <DATABASE> targetName=SymbolicAliasName()
+    <FOR> <DATABASE> targetName=SymbolicAliasNameOrParameter()
     (
         <AT> url=StringOrParameter()
         <USER> username=SymbolicNameOrStringParameter()
@@ -6624,7 +6639,7 @@ ADMINISTRATION_COMMAND DropAlias( Token start ):
     boolean ifExists = false;
 }
 {
-    <ALIAS> aliasName=SymbolicAliasName()
+    <ALIAS> aliasName=SymbolicAliasNameOrParameter()
     (<IF> <EXISTS> { ifExists = true; })?
     <FOR> <DATABASE>
     {
@@ -6647,11 +6662,11 @@ ADMINISTRATION_COMMAND AlterAlias( Token start ) throws Exception:
     String alreadySet = "Duplicate SET DATABASE %s clause";
 }
 {
-    <ALIAS> aliasName=SymbolicAliasName()
+    <ALIAS> aliasName=SymbolicAliasNameOrParameter()
     (<IF> <EXISTS> { ifExists = true; })?
     <SET> <DATABASE>
     (
-        errorStart=<TARGET> { assertNotAlreadySet( targetName, errorStart, String.format(alreadySet, errorStart.image) ); } targetName=SymbolicAliasName()  ( <AT> url=StringOrParameter() )?
+        errorStart=<TARGET> { assertNotAlreadySet( targetName, errorStart, String.format(alreadySet, errorStart.image) ); } targetName=SymbolicAliasNameOrParameter()  ( <AT> url=StringOrParameter() )?
         | errorStart=<USER> { assertNotAlreadySet( username, errorStart, String.format(alreadySet, errorStart.image) ); } username=SymbolicNameOrStringParameter()
         | errorStart=<PASSWORD> { assertNotAlreadySet( password, errorStart, String.format(alreadySet, errorStart.image) ); } password=passwordExpression()
         | errorStart=<DRIVER> { assertNotAlreadySet( driverSettings, errorStart, String.format(alreadySet, errorStart.image) ); } driverSettings=MapOrParameter()
@@ -6679,7 +6694,7 @@ STATEMENT ShowAliases( Token start, USE_CLAUSE useClause ) throws Exception:
 }
 {
     ( <ALIAS> | <ALIASES> )
-    ( LOOKAHEAD(SymbolicAliasName() <FOR>) aliasName=SymbolicAliasName() )?
+    ( LOOKAHEAD(SymbolicAliasNameOrParameter() <FOR>) aliasName=SymbolicAliasNameOrParameter() )?
     ( <FOR> ( <DATABASE> | <DATABASES> ))
     (
         ( yieldClause=YieldClause() ( returnClause=ReturnClause() )? )
@@ -6697,18 +6712,27 @@ List<DATABASE_NAME> SymbolicAliasNameList():
     List<DATABASE_NAME> databases = new ArrayList<>();
 }
 {
-    dbSymbol=SymbolicAliasName() { databases.add(dbSymbol.getLocalAliasName(astFactory)); }
-    (<COMMA> dbSymbol=SymbolicAliasName() { databases.add(dbSymbol.getLocalAliasName(astFactory)); } )*
+    dbSymbol=SymbolicAliasNameOrParameter() { databases.add(dbSymbol.getLocalAliasName(astFactory)); }
+    (<COMMA> dbSymbol=SymbolicAliasNameOrParameter() { databases.add(dbSymbol.getLocalAliasName(astFactory)); } )*
     {
         return databases;
     }
+}
+
+AliasName<DATABASE_NAME, PARAMETER> SymbolicAliasNameOrParameter():
+{
+    AliasName<DATABASE_NAME, PARAMETER> name = null;
+    PARAMETER parameter;
+}
+{
+    name=SymbolicAliasName() { return name; }
+    | parameter=Parameter(ParameterType.STRING) { return new AliasName<DATABASE_NAME, PARAMETER>( exceptionFactory, parameter ); }
 }
 
 AliasName<DATABASE_NAME, PARAMETER> SymbolicAliasName():
 {
     Token token;
     AliasName<DATABASE_NAME, PARAMETER> name = null;
-    PARAMETER parameter;
 }
 {
     token=SymbolicNameString() { name = new AliasName<DATABASE_NAME, PARAMETER>( exceptionFactory, token ); }
@@ -6716,7 +6740,6 @@ AliasName<DATABASE_NAME, PARAMETER> SymbolicAliasName():
         {
             return name;
         }
-    | parameter=Parameter(ParameterType.STRING) { return new AliasName<DATABASE_NAME, PARAMETER>( exceptionFactory, parameter ); }
 }
 
 List<SimpleEither<String, PARAMETER>> SymbolicNameOrStringParameterList() :

@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.ast.AssignImmutablePrivilegeAction
 import org.neo4j.cypher.internal.ast.AssignPrivilegeAction
 import org.neo4j.cypher.internal.ast.AssignRoleAction
 import org.neo4j.cypher.internal.ast.CallClause
+import org.neo4j.cypher.internal.ast.CatalogName
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.ClauseAllowedOnSystem
 import org.neo4j.cypher.internal.ast.CollectExpression
@@ -73,6 +74,7 @@ import org.neo4j.cypher.internal.ast.EnableServer
 import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.ast.GrantPrivilege
 import org.neo4j.cypher.internal.ast.GrantRolesToUsers
+import org.neo4j.cypher.internal.ast.GraphDirectReference
 import org.neo4j.cypher.internal.ast.GraphPrivilege
 import org.neo4j.cypher.internal.ast.GraphScope
 import org.neo4j.cypher.internal.ast.HomeDatabaseScope
@@ -144,7 +146,6 @@ import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.SubqueryExpression
 import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
-import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
@@ -1267,7 +1268,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         Some(planSystemProcedureCall(resolved, Some(returns)))
 
       case SingleQuery(Seq(
-          UseGraph(Variable(SYSTEM_DATABASE_NAME)),
+          UseGraph(GraphDirectReference(CatalogName(List(SYSTEM_DATABASE_NAME)))),
           resolved @ ResolvedCall(signature, _, _, _, _, _),
           returns @ Return(_, _, _, _, _, _, _)
         )) if signature.systemProcedure =>
@@ -1277,7 +1278,10 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         Some(planSystemProcedureCall(resolved, None))
 
       case SingleQuery(
-          Seq(UseGraph(Variable(SYSTEM_DATABASE_NAME)), resolved @ ResolvedCall(signature, _, _, _, _, _))
+          Seq(
+            UseGraph(GraphDirectReference(CatalogName(List(SYSTEM_DATABASE_NAME)))),
+            resolved @ ResolvedCall(signature, _, _, _, _, _)
+          )
         ) if signature.systemProcedure =>
         Some(planSystemProcedureCall(resolved, None))
 

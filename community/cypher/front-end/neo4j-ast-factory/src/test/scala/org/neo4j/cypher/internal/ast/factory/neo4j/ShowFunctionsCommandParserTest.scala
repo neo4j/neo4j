@@ -111,7 +111,7 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
       test(s"USE db SHOW $typeString $funcKeyword") {
         assertAst(
           singleQuery(
-            use(varFor("db")),
+            use(List("db")),
             ast.ShowFunctionsClause(functionType, None, None, List.empty, yieldAll = false)(defaultPos)
           ),
           comparePosition = false
@@ -180,7 +180,7 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
   test("USE db SHOW BUILT IN FUNCTIONS YIELD name, description AS pp WHERE pp < 50.0 RETURN name") {
     assertAst(
       singleQuery(
-        use(varFor("db")),
+        use(List("db")),
         ast.ShowFunctionsClause(
           ast.BuiltInFunctions,
           None,
@@ -206,7 +206,7 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
   ) {
     assertAst(
       singleQuery(
-        use(varFor("db")),
+        use(List("db")),
         ast.ShowFunctionsClause(
           ast.AllFunctions,
           Some(ast.CurrentUser),

@@ -60,6 +60,7 @@ public class NullAstFactory
                 NULL, // HINT,
                 NULL, // EXPRESSION,
                 NULL, // LABEL_EXPRESSION,
+                NULL, // FUNCTION_INVOCATION extends EXPRESSION,
                 NULL, // PARAMETER extends EXPRESSION,
                 NULL, // VARIABLE extends EXPRESSION,
                 NULL, // PROPERTY extends EXPRESSION,
@@ -504,7 +505,12 @@ public class NullAstFactory
     }
 
     @Override
-    public NULL useClause(NULL p, NULL e) {
+    public NULL directUseClause(NULL p, NULL aNull) {
+        return null;
+    }
+
+    @Override
+    public NULL functionUseClause(NULL p, NULL function) {
         return null;
     }
 

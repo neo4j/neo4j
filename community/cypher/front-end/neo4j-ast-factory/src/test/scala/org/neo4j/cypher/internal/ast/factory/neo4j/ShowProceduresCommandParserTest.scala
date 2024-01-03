@@ -69,7 +69,7 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
     test(s"USE db SHOW $procKeyword") {
       assertAst(SingleQuery(
         List(
-          use(varFor("db", (1, 5, 4))),
+          use(List("db")),
           ShowProceduresClause(None, None, List.empty, yieldAll = false)((1, 8, 7))
         )
       )((1, 8, 7)))
@@ -131,7 +131,7 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
   test("USE db SHOW PROCEDURES YIELD name, description AS pp WHERE pp < 50.0 RETURN name") {
     assertAst(
       singleQuery(
-        use(varFor("db")),
+        use(List.apply("db")),
         ShowProceduresClause(
           None,
           None,
@@ -156,7 +156,7 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
   ) {
     assertAst(
       singleQuery(
-        use(varFor("db")),
+        use(List("db")),
         ShowProceduresClause(
           Some(CurrentUser),
           None,

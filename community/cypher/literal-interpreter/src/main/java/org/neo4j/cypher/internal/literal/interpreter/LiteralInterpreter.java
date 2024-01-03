@@ -79,6 +79,7 @@ public class LiteralInterpreter
                 NULL, // HINT,
                 Object, // EXPRESSION,
                 NULL, // LABEL_EXPRESSION,
+                Object, // FUNCTION_INVOCATION extends EXPRESSION,
                 Object, // PARAMETER extends EXPRESSION,
                 Object, // VARIABLE extends EXPRESSION,
                 Object, // PROPERTY extends EXPRESSION,
@@ -136,8 +137,13 @@ public class LiteralInterpreter
     }
 
     @Override
-    public NULL useClause(NULL p, Object e) {
-        throw new UnsupportedOperationException("useClause is not a literal");
+    public NULL directUseClause(NULL p, NULL o) {
+        throw new UnsupportedOperationException("directUseClause is not a literal");
+    }
+
+    @Override
+    public NULL functionUseClause(NULL p, Object function) {
+        throw new UnsupportedOperationException("directUseClause is not a literal");
     }
 
     @Override

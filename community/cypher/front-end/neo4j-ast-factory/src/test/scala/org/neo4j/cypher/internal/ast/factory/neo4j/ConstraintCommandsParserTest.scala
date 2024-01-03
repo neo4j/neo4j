@@ -1036,7 +1036,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
                 ast.NoOptions,
                 containsOn,
                 constraintVersion,
-                Some(use(varFor("neo4j")))
+                Some(use(List("neo4j")))
               ))
             }
 
@@ -1052,7 +1052,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
                 ast.NoOptions,
                 containsOn,
                 constraintVersion,
-                Some(use(varFor("neo4j")))
+                Some(use(List("neo4j")))
               ))
             }
 

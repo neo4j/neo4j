@@ -21,7 +21,6 @@ package org.neo4j.fabric.planning
 
 import org.neo4j.cypher.internal.ast.GraphSelection
 import org.neo4j.cypher.internal.util.InputPosition
-import org.neo4j.cypher.rendering.QueryRenderer
 
 sealed trait Use {
   def graphSelection: GraphSelection
@@ -50,8 +49,7 @@ object Use {
     case i: Inherited => show(root(i))
   }
 
-  def show(graphSelection: GraphSelection): String =
-    QueryRenderer.pretty(graphSelection.expression)
+  def show(graphSelection: GraphSelection): String = graphSelection.graphReference.print
 
   @scala.annotation.tailrec
   private def root(use: Use): Use = use match {

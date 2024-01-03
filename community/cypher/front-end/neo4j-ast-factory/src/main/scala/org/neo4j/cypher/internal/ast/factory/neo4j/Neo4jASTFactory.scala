@@ -56,6 +56,7 @@ import org.neo4j.cypher.internal.ast.AssignPrivilegeAction
 import org.neo4j.cypher.internal.ast.AssignRoleAction
 import org.neo4j.cypher.internal.ast.BtreeIndexes
 import org.neo4j.cypher.internal.ast.BuiltInFunctions
+import org.neo4j.cypher.internal.ast.CatalogName
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.CollectExpression
 import org.neo4j.cypher.internal.ast.CommandClause
@@ -152,6 +153,8 @@ import org.neo4j.cypher.internal.ast.FunctionQualifier
 import org.neo4j.cypher.internal.ast.GrantPrivilege
 import org.neo4j.cypher.internal.ast.GrantRolesToUsers
 import org.neo4j.cypher.internal.ast.GraphAction
+import org.neo4j.cypher.internal.ast.GraphDirectReference
+import org.neo4j.cypher.internal.ast.GraphFunctionReference
 import org.neo4j.cypher.internal.ast.GraphPrivilege
 import org.neo4j.cypher.internal.ast.GraphScope
 import org.neo4j.cypher.internal.ast.HomeDatabaseScope
@@ -551,6 +554,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
       UsingHint,
       Expression,
       LabelExpression,
+      FunctionInvocation,
       Parameter,
       Variable,
       Property,
@@ -611,7 +615,20 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     else UnionDistinct(lhs, rhsQuery)(p)
   }
 
-  override def useClause(p: InputPosition, e: Expression): UseGraph = UseGraph(e)(p)
+  override def directUseClause(p: InputPosition, name: DatabaseName): UseGraph = {
+    name match {
+      case NamespacedName(nameComponents, namespace) =>
+        namespace match {
+          case Some(pattern) => UseGraph(GraphDirectReference(CatalogName(pattern +: nameComponents))(name.position))(p)
+          case None          => UseGraph(GraphDirectReference(CatalogName(nameComponents))(name.position))(p)
+        }
+      case ParameterName(_) => throw new Neo4jASTConstructionException("invalid graph reference")
+    }
+  }
+
+  override def functionUseClause(p: InputPosition, function: FunctionInvocation): UseGraph = {
+    UseGraph(GraphFunctionReference(function)(function.position))(p)
+  }
 
   override def newReturnClause(
     p: InputPosition,
@@ -1299,7 +1316,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     name: String,
     distinct: Boolean,
     arguments: util.List[Expression]
-  ): Expression = {
+  ): FunctionInvocation = {
     FunctionInvocation(
       Namespace(namespace.asScala.toList)(p),
       FunctionName(name)(functionNamePosition),

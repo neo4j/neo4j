@@ -53,6 +53,7 @@ public interface ASTFactory<
                 HINT,
                 EXPRESSION,
                 LABEL_EXPRESSION,
+                FUNCTION_INVOCATION extends EXPRESSION,
                 PARAMETER extends EXPRESSION,
                 VARIABLE extends EXPRESSION,
                 PROPERTY extends EXPRESSION,
@@ -91,6 +92,7 @@ public interface ASTFactory<
                 WHERE,
                 VARIABLE,
                 PROPERTY,
+                FUNCTION_INVOCATION,
                 MAP_PROJECTION_ITEM,
                 POS,
                 ENTITY_TYPE,
@@ -119,7 +121,9 @@ public interface ASTFactory<
 
     QUERY newUnion(POS p, QUERY lhs, QUERY rhs, boolean all);
 
-    USE_GRAPH useClause(POS p, EXPRESSION e);
+    USE_GRAPH directUseClause(POS p, DATABASE_NAME name);
+
+    USE_GRAPH functionUseClause(POS p, FUNCTION_INVOCATION function);
 
     RETURN_CLAUSE newReturnClause(
             POS p,

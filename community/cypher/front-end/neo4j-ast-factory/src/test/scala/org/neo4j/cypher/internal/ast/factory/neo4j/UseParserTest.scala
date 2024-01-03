@@ -33,11 +33,27 @@ class UseParserTest extends ParserSyntaxTreeBase[Cst.Statement, Statement] {
     failsToParse
   }
 
+  test("USE 1 RETURN 1") {
+    failsToParse
+  }
+
+  test("USE 'a' RETURN 1") {
+    failsToParse
+  }
+
+  test("USE [x] RETURN 1") {
+    failsToParse
+  }
+
+  test("USE 1 + 2 RETURN 1") {
+    failsToParse
+  }
+
   test("CALL { USE neo4j RETURN 1 AS y } RETURN y") {
     gives {
       singleQuery(
         subqueryCall(
-          use(varFor("neo4j")),
+          use(List("neo4j")),
           returnLit(1 -> "y")
         ),
         return_(variableReturnItem("y"))
@@ -51,7 +67,7 @@ class UseParserTest extends ParserSyntaxTreeBase[Cst.Statement, Statement] {
         with_(literal(1) as "x"),
         subqueryCall(
           with_(variableReturnItem("x")),
-          use(varFor("neo4j")),
+          use(List("neo4j")),
           return_(varFor("x") as "y")
         ),
         return_(variableReturnItem("x"), variableReturnItem("y"))
@@ -62,7 +78,7 @@ class UseParserTest extends ParserSyntaxTreeBase[Cst.Statement, Statement] {
   test("USE foo UNION ALL RETURN 1") {
     gives {
       union(
-        singleQuery(use(varFor("foo"))),
+        singleQuery(use(List("foo"))),
         singleQuery(return_(returnItem(literal(1), "1")))
       ).all
     }

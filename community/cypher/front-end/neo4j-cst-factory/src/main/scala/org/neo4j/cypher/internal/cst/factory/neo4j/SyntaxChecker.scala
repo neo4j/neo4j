@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.parser.CypherParser.CreateConstraintRelCheckCon
 import org.neo4j.cypher.internal.parser.CypherParser.DropConstraintNodeCheckContext
 import org.neo4j.cypher.internal.parser.CypherParser.GlobContext
 import org.neo4j.cypher.internal.parser.CypherParser.GlobRecursiveContext
-import org.neo4j.cypher.internal.parser.CypherParser.SymbolicAliasNameContext
+import org.neo4j.cypher.internal.parser.CypherParser.SymbolicAliasNameOrParameterContext
 import org.neo4j.cypher.internal.parser.CypherParserBaseListener
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
@@ -77,13 +77,14 @@ class SyntaxChecker extends CypherParserBaseListener {
     }
   }
 
-  private def errorOnAliasNameContainingDots(aliasesNames: java.util.List[SymbolicAliasNameContext]): Unit = {
+  private def errorOnAliasNameContainingDots(aliasesNames: java.util.List[SymbolicAliasNameOrParameterContext])
+    : Unit = {
     if (aliasesNames.size() > 0) {
       val aliasName = aliasesNames.get(0)
-      if (aliasName.symbolicNameString().size() > 2) {
-        val start = aliasName.symbolicNameString().get(0).getStart
+      if (aliasName.symbolicAliasName() != null && aliasName.symbolicAliasName().symbolicNameString().size() > 2) {
+        val start = aliasName.symbolicAliasName().symbolicNameString().get(0).getStart
         errors :+= exceptionFactory.syntaxException(
-          s"'.' is not a valid character in the remote alias name '${aliasName.symbolicNameString().asScala.map(_.getText).mkString}'. Remote alias names using '.' must be quoted with backticks e.g. `remote.alias`.",
+          s"'.' is not a valid character in the remote alias name '${aliasName.symbolicAliasName().symbolicNameString().asScala.map(_.getText).mkString}'. Remote alias names using '.' must be quoted with backticks e.g. `remote.alias`.",
           inputPosition(start)
         )
       }
@@ -135,11 +136,11 @@ class SyntaxChecker extends CypherParserBaseListener {
   }
 
   override def exitCreateAlias(ctx: CypherParser.CreateAliasContext): Unit = {
-    errorOnAliasNameContainingDots(ctx.symbolicAliasName())
+    errorOnAliasNameContainingDots(ctx.symbolicAliasNameOrParameter())
   }
 
   override def exitAlterAlias(ctx: CypherParser.AlterAliasContext): Unit = {
-    errorOnAliasNameContainingDots(ctx.symbolicAliasName())
+    errorOnAliasNameContainingDots(ctx.symbolicAliasNameOrParameter())
     errorOnDuplicated(ctx.DRIVER(), "DRIVER")
     errorOnDuplicated(ctx.AT(), "AT")
     errorOnDuplicated(ctx.USER(), "USER")

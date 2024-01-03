@@ -123,7 +123,7 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
     test(s"USE db TERMINATE $transactionKeyword 'db1-transaction-123'") {
       assertAst(
         singleQuery(
-          use(varFor("db")),
+          use(List("db")),
           ast.TerminateTransactionsClause(
             Right(literalString("db1-transaction-123")),
             List.empty,
@@ -249,7 +249,7 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
   ) {
     assertAst(
       singleQuery(
-        use(varFor("db")),
+        use(List("db")),
         ast.TerminateTransactionsClause(
           Right(literalString("db1-transaction-123")),
           List(commandResultItem("transactionId"), commandResultItem("username", Some("pp"))),

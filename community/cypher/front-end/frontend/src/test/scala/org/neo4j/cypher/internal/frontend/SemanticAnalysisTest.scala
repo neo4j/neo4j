@@ -486,24 +486,6 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
     expectNoErrorsFrom(query, pipelineWithUseAsMultipleGraphsSelector)
   }
 
-  test("Do not allow arbitrary expressions in USE") {
-    val invalidQueries = Seq(
-      ("USE 1 RETURN 1", InputPosition(4, 1, 5)),
-      ("USE 'a' RETURN 1", InputPosition(4, 1, 5)),
-      ("USE [x] RETURN 1", InputPosition(4, 1, 5)),
-      ("USE 1 + 2 RETURN 1", InputPosition(6, 1, 7))
-    )
-
-    invalidQueries.foreach {
-      case (query, pos) =>
-        expectErrorsFrom(
-          query,
-          Set(SemanticError("Invalid graph reference", pos)),
-          pipelineWithUseAsMultipleGraphsSelector
-        )
-    }
-  }
-
   test("Allow expressions in view invocations (with feature flag)") {
     val query = "USE v(2, 'x', $x, $x+3) RETURN 1"
     expectNoErrorsFrom(query, pipelineWithUseAsMultipleGraphsSelector)

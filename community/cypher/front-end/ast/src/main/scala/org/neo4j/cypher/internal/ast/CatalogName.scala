@@ -37,16 +37,24 @@ object CatalogName {
   val separatorString: String = separatorChar.toString
   val quoteChar = "`"
 
-  def quote(str: String): String = quoteChar ++ str ++ quoteChar
+  def quote(str: String): String = quoteChar ++ str.replace("`", "``") ++ quoteChar
 }
 
-/**
- * A qualified graph name is used in a Cypher query to address a specific graph in the catalog.
- */
 case class CatalogName(parts: List[String]) {
 
+  /**
+   * @return the catalog name used in catalog lookups
+   */
   def qualifiedNameString: String =
     parts
       .map(part => if (part.contains(separatorChar)) quote(part) else part)
+      .mkString(separatorString)
+
+  /**
+   * @return the catalog name guaranteed to be parsed in a Cypher statement
+   */
+  def asCanonicalNameString: String =
+    parts
+      .map(quote)
       .mkString(separatorString)
 }

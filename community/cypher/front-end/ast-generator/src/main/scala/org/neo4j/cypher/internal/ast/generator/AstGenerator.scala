@@ -54,6 +54,7 @@ import org.neo4j.cypher.internal.ast.AscSortItem
 import org.neo4j.cypher.internal.ast.AssignPrivilegeAction
 import org.neo4j.cypher.internal.ast.AssignRoleAction
 import org.neo4j.cypher.internal.ast.BuiltInFunctions
+import org.neo4j.cypher.internal.ast.CatalogName
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.CollectExpression
 import org.neo4j.cypher.internal.ast.CommandClause
@@ -143,6 +144,8 @@ import org.neo4j.cypher.internal.ast.FunctionQualifier
 import org.neo4j.cypher.internal.ast.GrantPrivilege
 import org.neo4j.cypher.internal.ast.GrantRolesToUsers
 import org.neo4j.cypher.internal.ast.GraphAction
+import org.neo4j.cypher.internal.ast.GraphDirectReference
+import org.neo4j.cypher.internal.ast.GraphFunctionReference
 import org.neo4j.cypher.internal.ast.GraphPrivilegeQualifier
 import org.neo4j.cypher.internal.ast.HomeDatabaseScope
 import org.neo4j.cypher.internal.ast.HomeGraphScope
@@ -1408,8 +1411,13 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   // ----------------------------------
 
   def _use: Gen[UseGraph] = for {
-    expression <- _expression
-  } yield UseGraph(expression)(pos)
+    names <- listOfN(1, _identifier)
+    function <- _functionInvocation
+    graphRef <- oneOf(
+      GraphDirectReference(CatalogName(names))(pos),
+      GraphFunctionReference(function)(pos)
+    )
+  } yield UseGraph(graphRef)(pos)
 
   def _subqueryCall: Gen[SubqueryCall] = for {
     innerQuery <- _query

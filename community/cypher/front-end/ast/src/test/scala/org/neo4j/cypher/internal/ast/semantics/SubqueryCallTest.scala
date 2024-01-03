@@ -599,7 +599,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
     singleQuery(
       with_(literal(1).as("x")),
       subqueryCall(
-        use(varFor("g")),
+        use(List("g")),
         with_(varFor("x").aliased),
         return_(varFor("x").as("y"))
       ),
@@ -844,7 +844,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
       .shouldEqual(Seq("x"))
 
     singleQuery(
-      use(varFor("foo")),
+      use(List("foo")),
       with_(varFor("x").aliased),
       return_(varFor("x").as("y"))
     ).importColumns

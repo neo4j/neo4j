@@ -81,7 +81,7 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
     test(s"USE db SHOW $settingKeyword") {
       assertAst(SingleQuery(
         List(
-          use(varFor("db", (1, 5, 4))),
+          use(List("db")),
           ShowSettingsClause(Left(List.empty[String]), None, List.empty, yieldAll = false)((1, 8, 7))
         )
       )((1, 8, 7)))
@@ -230,7 +230,7 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
   test("USE db SHOW SETTINGS YIELD name, description AS pp WHERE pp < 50.0 RETURN name") {
     assertAst(
       singleQuery(
-        use(varFor("db")),
+        use(List("db")),
         ShowSettingsClause(
           Left(List.empty[String]),
           None,

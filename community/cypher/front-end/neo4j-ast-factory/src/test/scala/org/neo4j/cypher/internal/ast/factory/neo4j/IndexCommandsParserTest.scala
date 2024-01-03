@@ -94,7 +94,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
             ast.IfExistsThrowError,
             ast.NoOptions,
             true
-          ).withGraph(Some(use(varFor("neo4j"))))
+          ).withGraph(Some(use(List("neo4j"))))
         )
       }
 
@@ -388,7 +388,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
             ast.IfExistsThrowError,
             ast.NoOptions,
             false
-          ).withGraph(Some(use(varFor("neo4j"))))
+          ).withGraph(Some(use(List("neo4j"))))
         )
       }
 
@@ -649,7 +649,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(s"USE neo4j CREATE BTREE INDEX FOR $pattern ON (n2.name)") {
         yields(_ =>
           createIndex(List(prop("n2", "name")), None, posN2(testName), ast.IfExistsThrowError, ast.NoOptions).withGraph(
-            Some(use(varFor("neo4j")))
+            Some(use(List("neo4j")))
           )
         )
       }
@@ -897,7 +897,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(s"USE neo4j CREATE LOOKUP INDEX FOR $pattern ON EACH $function") {
         yields(_ =>
           createIndex(None, posN2(testName), ast.IfExistsThrowError, ast.NoOptions)
-            .withGraph(Some(use(varFor("neo4j"))))
+            .withGraph(Some(use(List("neo4j"))))
         )
       }
 
@@ -989,7 +989,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
             posN2(testName),
             ast.IfExistsThrowError,
             ast.NoOptions
-          ).withGraph(Some(use(varFor("neo4j"))))
+          ).withGraph(Some(use(List("neo4j"))))
         )
       }
 
@@ -1279,7 +1279,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(s"USE neo4j CREATE TEXT INDEX FOR $pattern ON (n2.name)") {
         yields(_ =>
           createIndex(List(prop("n2", "name")), None, posN2(testName), ast.IfExistsThrowError, ast.NoOptions).withGraph(
-            Some(use(varFor("neo4j")))
+            Some(use(List("neo4j")))
           )
         )
       }
@@ -1531,7 +1531,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(s"USE neo4j CREATE POINT INDEX FOR $pattern ON (n2.name)") {
         yields(_ =>
           createIndex(List(prop("n2", "name")), None, posN2(testName), ast.IfExistsThrowError, ast.NoOptions).withGraph(
-            Some(use(varFor("neo4j")))
+            Some(use(List("neo4j")))
           )
         )
       }
@@ -1782,7 +1782,7 @@ class IndexCommandsParserTest extends AdministrationAndSchemaCommandParserTestBa
       test(s"USE neo4j CREATE VECTOR INDEX FOR $pattern ON (n2.name)") {
         yields(_ =>
           createIndex(List(prop("n2", "name")), None, posN2(testName), ast.IfExistsThrowError, ast.NoOptions).withGraph(
-            Some(use(varFor("neo4j")))
+            Some(use(List("neo4j")))
           )
         )
       }

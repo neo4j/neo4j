@@ -21,9 +21,10 @@ package org.neo4j.fabric.planning
 
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.CatalogName
+import org.neo4j.cypher.internal.ast.GraphDirectReference
 import org.neo4j.cypher.internal.ast.UseGraph
 import org.neo4j.cypher.internal.ast.semantics.Scope
-import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.fabric.planning.Fragment.Apply
 import org.neo4j.fabric.planning.Fragment.Init
@@ -127,7 +128,7 @@ class FabricFragmenter(
   }
 
   private def makeDefaultUse(graphName: String, pos: InputPosition) =
-    Use.Inherited(Use.Default(UseGraph(Variable(graphName)(pos))(pos)))(pos)
+    Use.Inherited(Use.Default(UseGraph(GraphDirectReference(CatalogName(graphName))(pos))(pos)))(pos)
 
   private def produced(clauses: Seq[ast.Clause]): Seq[String] =
     produced(clauses.last)

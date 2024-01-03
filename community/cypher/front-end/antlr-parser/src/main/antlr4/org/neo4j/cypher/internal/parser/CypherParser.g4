@@ -50,7 +50,10 @@ clause:
    (useClause | returnClause | createClause | deleteClause | setClause | removeClause | matchClause | mergeClause | withClause | unwindClause | callClause | subqueryClause | loadCSVClause | foreachClause);
 
 useClause:
-   USE (GRAPH expression | expression);
+   USE (GRAPH graphReference | graphReference);
+
+graphReference:
+    LPAREN graphReference RPAREN | functionInvocation | symbolicAliasName;
 
 returnClause:
    RETURN returnBody;
@@ -628,7 +631,7 @@ userStatus:
    STATUS (SUSPENDED | ACTIVE);
 
 homeDatabase:
-   HOME DATABASE symbolicAliasName;
+   HOME DATABASE symbolicAliasNameOrParameter;
 
 showUsers:
    (yieldClause returnClause? | whereClause)?;
@@ -736,31 +739,31 @@ graphQualifier:
    ((RELATIONSHIP | RELATIONSHIPS) (TIMES | symbolicNameString (COMMA symbolicNameString)*) | (NODE | NODES) (TIMES | symbolicNameString (COMMA symbolicNameString)*) | (ELEMENT | ELEMENTS) (TIMES | symbolicNameString (COMMA symbolicNameString)*) | FOR LPAREN variable? labelOrRelTypes? (RPAREN WHERE expression | WHERE expression RPAREN | mapLiteral RPAREN))?;
 
 createDatabase:
-   DATABASE symbolicAliasName (IF NOT EXISTS)? (TOPOLOGY (UNSIGNED_DECIMAL_INTEGER ((PRIMARY | PRIMARIES) | (SECONDARY | SECONDARIES)))+)? options_? waitClause?;
+   DATABASE symbolicAliasNameOrParameter (IF NOT EXISTS)? (TOPOLOGY (UNSIGNED_DECIMAL_INTEGER ((PRIMARY | PRIMARIES) | (SECONDARY | SECONDARIES)))+)? options_? waitClause?;
 
 options_:
    OPTIONS mapOrParameter;
 
 createCompositeDatabase:
-   COMPOSITE DATABASE symbolicAliasName (IF NOT EXISTS)? options_? waitClause?;
+   COMPOSITE DATABASE symbolicAliasNameOrParameter (IF NOT EXISTS)? options_? waitClause?;
 
 dropDatabase:
-   COMPOSITE? DATABASE symbolicAliasName (IF EXISTS)? ((DUMP | DESTROY) DATA)? waitClause?;
+   COMPOSITE? DATABASE symbolicAliasNameOrParameter (IF EXISTS)? ((DUMP | DESTROY) DATA)? waitClause?;
 
 alterDatabase:
-   DATABASE symbolicAliasName (IF EXISTS)? ((SET (ACCESS READ (ONLY | WRITE) | TOPOLOGY (UNSIGNED_DECIMAL_INTEGER ((PRIMARY | PRIMARIES) | (SECONDARY | SECONDARIES)))+ | OPTION symbolicNameString expression))+ | (REMOVE OPTION symbolicNameString)+) waitClause?;
+   DATABASE symbolicAliasNameOrParameter (IF EXISTS)? ((SET (ACCESS READ (ONLY | WRITE) | TOPOLOGY (UNSIGNED_DECIMAL_INTEGER ((PRIMARY | PRIMARIES) | (SECONDARY | SECONDARIES)))+ | OPTION symbolicNameString expression))+ | (REMOVE OPTION symbolicNameString)+) waitClause?;
 
 startDatabase:
-   START DATABASE symbolicAliasName waitClause?;
+   START DATABASE symbolicAliasNameOrParameter waitClause?;
 
 stopDatabase:
-   STOP DATABASE symbolicAliasName waitClause?;
+   STOP DATABASE symbolicAliasNameOrParameter waitClause?;
 
 waitClause:
    (WAIT (UNSIGNED_DECIMAL_INTEGER (SEC | SECOND | SECONDS)?)? | NOWAIT);
 
 showDatabase:
-   ((DATABASES | DATABASE) (symbolicAliasName (yieldClause returnClause? | whereClause) | yieldClause returnClause? | whereClause | symbolicAliasName)? | (DEFAULT DATABASE | HOME DATABASE) (yieldClause returnClause? | whereClause)?);
+   ((DATABASES | DATABASE) (symbolicAliasNameOrParameter (yieldClause returnClause? | whereClause) | yieldClause returnClause? | whereClause | symbolicAliasNameOrParameter)? | (DEFAULT DATABASE | HOME DATABASE) (yieldClause returnClause? | whereClause)?);
 
 databaseScope:
    ((DATABASE | DATABASES) (TIMES | symbolicAliasNameList) | DEFAULT DATABASE | HOME DATABASE);
@@ -769,22 +772,25 @@ graphScope:
    ((GRAPH | GRAPHS) (TIMES | symbolicAliasNameList) | DEFAULT GRAPH | HOME GRAPH);
 
 createAlias:
-   ALIAS symbolicAliasName (IF NOT EXISTS)? FOR DATABASE symbolicAliasName (AT stringOrParameter USER symbolicNameOrStringParameter PASSWORD passwordExpression (DRIVER mapOrParameter)?)? (PROPERTIES mapOrParameter)?;
+   ALIAS symbolicAliasNameOrParameter (IF NOT EXISTS)? FOR DATABASE symbolicAliasNameOrParameter (AT stringOrParameter USER symbolicNameOrStringParameter PASSWORD passwordExpression (DRIVER mapOrParameter)?)? (PROPERTIES mapOrParameter)?;
 
 dropAlias:
-   ALIAS symbolicAliasName (IF EXISTS)? FOR DATABASE;
+   ALIAS symbolicAliasNameOrParameter (IF EXISTS)? FOR DATABASE;
 
 alterAlias:
-   ALIAS symbolicAliasName (IF EXISTS)? SET DATABASE (TARGET symbolicAliasName (AT stringOrParameter)? | USER symbolicNameOrStringParameter | PASSWORD passwordExpression | DRIVER mapOrParameter | PROPERTIES mapOrParameter)+;
+   ALIAS symbolicAliasNameOrParameter (IF EXISTS)? SET DATABASE (TARGET symbolicAliasNameOrParameter (AT stringOrParameter)? | USER symbolicNameOrStringParameter | PASSWORD passwordExpression | DRIVER mapOrParameter | PROPERTIES mapOrParameter)+;
 
 showAliases:
-   (ALIAS | ALIASES) symbolicAliasName? FOR (DATABASE | DATABASES) (yieldClause returnClause? | whereClause)?;
+   (ALIAS | ALIASES) symbolicAliasNameOrParameter? FOR (DATABASE | DATABASES) (yieldClause returnClause? | whereClause)?;
 
 symbolicAliasNameList:
-   symbolicAliasName (COMMA symbolicAliasName)*;
+   symbolicAliasNameOrParameter (COMMA symbolicAliasNameOrParameter)*;
+
+symbolicAliasNameOrParameter:
+   symbolicAliasName | parameter;
 
 symbolicAliasName:
-   (symbolicNameString (DOT symbolicNameString)* | parameter);
+   symbolicNameString (DOT symbolicNameString)*;
 
 symbolicNameOrStringParameterList:
    symbolicNameOrStringParameter (COMMA symbolicNameOrStringParameter)*;

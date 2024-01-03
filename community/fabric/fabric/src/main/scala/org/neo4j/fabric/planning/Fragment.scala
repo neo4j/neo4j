@@ -377,8 +377,8 @@ object Fragment {
     }
 
     private def use(u: Use) = u match {
-      case d: Use.Declared  => "declared " + expr(d.graphSelection.expression)
-      case i: Use.Inherited => "inherited " + expr(i.graphSelection.expression)
+      case d: Use.Declared  => "declared " + d.graphSelection.graphReference
+      case i: Use.Inherited => "inherited " + i.graphSelection.graphReference
     }
   }
 }

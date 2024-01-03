@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner
 
 import org.neo4j.cypher.internal.ast.CatalogName
+import org.neo4j.cypher.internal.ast.GraphDirectReference
 import org.neo4j.cypher.internal.ast.GraphSelection
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Statement
@@ -28,9 +29,6 @@ import org.neo4j.cypher.internal.ast.UseGraph
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
-import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.Property
-import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.frontend.phases.BaseContains
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
@@ -156,26 +154,11 @@ case object VerifyGraphTarget extends VisitorPhase[PlannerContext, BaseState] wi
   }
 
   private def evaluateGraphSelection(graphSelection: PositionalGraphSelection): GraphNameWithContext =
-    graphSelection.graphSelection.expression match {
-      case v: Variable => GraphNameWithContext(nameFromVar(v), !graphSelection.leading)
-      case p: Property => GraphNameWithContext(nameFromProp(p), !graphSelection.leading)
+    graphSelection.graphSelection.graphReference match {
+      case direct: GraphDirectReference => GraphNameWithContext(direct.catalogName, !graphSelection.leading)
       // Semantic analysis should make sure we don't end up here, so the error does not have to be super descriptive
       case _ => throw new InvalidSemanticsException("Expected static graph selection")
     }
-
-  private def nameFromVar(variable: Variable): CatalogName =
-    CatalogName(variable.name)
-
-  private def nameFromProp(property: Property): CatalogName = {
-    def parts(expr: Expression): List[String] = expr match {
-      case p: Property    => parts(p.map) :+ p.propertyKey.name
-      case Variable(name) => List(name)
-      // Semantic analysis should make sure we don't end up here, so the error does not have to be super descriptive
-      case _ => throw new InvalidSemanticsException("Expected graph name segment")
-    }
-
-    CatalogName(parts(property))
-  }
 
   @tailrec
   private def leftmostSingleQuery(statement: Statement): Option[SingleQuery] =

@@ -525,7 +525,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
       test(s"USE db $firstCommand $secondCommand") {
         assertAst(
           singleQuery(
-            use(varFor("db")),
+            use(List("db")),
             firstClause(None, false, List.empty)(pos),
             secondClause(None, false, List.empty)(pos)
           ),
@@ -1227,7 +1227,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
   }
 
   test(
-    """USE -4.918690900648941E76
+    """USE test
       |SHOW TRANSACTIONS ""
       |YIELD *
       |SHOW TRANSACTIONS "", "", ""
@@ -1246,7 +1246,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
     // but now I have already added the test to check that so it can stay :shrug:
     assertAst(
       singleQuery(
-        use(literalFloat(-4.918690900648941E76)),
+        use(List("test")),
         ast.ShowTransactionsClause(Right(literalString("")), None, List.empty, yieldAll = true)(pos),
         withFromYield(returnAllItems),
         ast.ShowTransactionsClause(Left(List("", "", "")), None, List.empty, yieldAll = true)(pos),

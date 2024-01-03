@@ -33,9 +33,8 @@ class StaticUseEvaluation {
     topQueriesGraphSelections(statement).map(maybeGraphSelection => maybeGraphSelection.map(evaluateStatic))
 
   private def evaluateStaticOption(graphSelection: GraphSelection): Option[CatalogName] =
-    graphSelection.expression match {
-      case v: Variable => Some(nameFromVar(v))
-      case p: Property => Some(nameFromProp(p))
+    graphSelection.graphReference match {
+      case s: GraphDirectReference => Some(s.catalogName)
       case _           => None
     }
 

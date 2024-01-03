@@ -70,7 +70,6 @@ import org.neo4j.cypher.internal.expressions.NonPrefixedPatternPart
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Or
 import org.neo4j.cypher.internal.expressions.Ors
-import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.ParenthesizedPath
 import org.neo4j.cypher.internal.expressions.PathConcatenation
 import org.neo4j.cypher.internal.expressions.PathPatternPart
@@ -430,10 +429,10 @@ case class InputDataStream(variables: Seq[Variable])(val position: InputPosition
 }
 
 sealed trait GraphSelection extends Clause with SemanticAnalysisTooling {
-  def expression: Expression
+  def graphReference: GraphReference
 }
 
-final case class UseGraph(expression: Expression)(val position: InputPosition) extends GraphSelection
+final case class UseGraph(graphReference: GraphReference)(val position: InputPosition) extends GraphSelection
     with ClauseAllowedOnSystem {
   override def name = "USE GRAPH"
 
@@ -452,13 +451,9 @@ final case class UseGraph(expression: Expression)(val position: InputPosition) e
   }
 
   private def checkDynamicGraphSelector: SemanticCheck =
-    checkGraphReference chain checkDynamicGraphReference
-
-  private def checkDynamicGraphReference: SemanticCheck =
-    graphReference.foldSemanticCheck {
-      case ViewRef(_, arguments)        => checkExpressions(arguments)
-      case GraphRefParameter(parameter) => checkExpressions(Seq(parameter))
-      case _                            => success
+    graphReference match {
+      case gr: GraphFunctionReference => checkExpressions(gr.functionInvocation.args)
+      case _: GraphDirectReference    => success
     }
 
   private def checkExpressions(expressions: Seq[Expression]): SemanticCheck =
@@ -466,78 +461,35 @@ final case class UseGraph(expression: Expression)(val position: InputPosition) e
       SemanticExpressionCheck.check(Expression.SemanticContext.Results, expr)
     )
 
-  private def checkStaticGraphSelector: SemanticCheck =
-    checkGraphReference chain checkStaticGraphReference
-
-  private def checkGraphReference: SemanticCheck =
-    GraphReference.checkNotEmpty(graphReference, expression.position)
-
-  private def checkStaticGraphReference: SemanticCheck = {
-
-    def dynamicGraphReferenceError(): SemanticCheck =
-      SemanticCheck.fromFunctionWithContext { (semanticState, context) =>
-        SemanticCheckResult.error(
-          semanticState,
-          context.errorMessageProvider.createDynamicGraphReferenceUnsupportedError(
-            ExpressionStringifier.apply(_.asCanonicalStringVal).apply(expression)
-          ),
-          position
-        )
-      }
-
-    graphReference.foldSemanticCheck {
-      case _: GraphRef => success
-      case _           => dynamicGraphReferenceError
+  private def checkStaticGraphSelector: SemanticCheck = {
+    graphReference match {
+      case _: GraphDirectReference => success
+      case _: GraphFunctionReference =>
+        SemanticCheck.fromFunctionWithContext { (semanticState, context) =>
+          SemanticCheckResult.error(
+            semanticState,
+            context.errorMessageProvider.createDynamicGraphReferenceUnsupportedError(graphReference.print),
+            position
+          )
+        }
     }
   }
-
-  private def graphReference: Option[GraphReference] =
-    GraphReference.from(expression)
-
-}
-
-object GraphReference extends SemanticAnalysisTooling {
-
-  def from(expression: Expression): Option[GraphReference] = {
-
-    def fqn(expr: Expression): Option[List[String]] = expr match {
-      case p: Property           => fqn(p.map).map(_ :+ p.propertyKey.name)
-      case v: Variable           => Some(List(v.name))
-      case f: FunctionInvocation => Some(f.namespace.parts :+ f.functionName.name)
-      case _                     => None
-    }
-
-    (expression, fqn(expression)) match {
-      case (f: FunctionInvocation, Some(name)) => Some(ViewRef(CatalogName(name), f.args)(f.position))
-      case (p: Parameter, _)                   => Some(GraphRefParameter(p)(p.position))
-      case (e, Some(name))                     => Some(GraphRef(CatalogName(name))(e.position))
-      case _                                   => None
-    }
-  }
-
-  def checkNotEmpty(gr: Option[GraphReference], pos: InputPosition): SemanticCheck =
-    when(gr.isEmpty)(error("Invalid graph reference", pos))
 }
 
 sealed trait GraphReference extends ASTNode with SemanticCheckable {
   override def semanticCheck: SemanticCheck = success
+  def print: String
 }
 
-final case class GraphRef(name: CatalogName)(val position: InputPosition) extends GraphReference
-
-final case class ViewRef(name: CatalogName, arguments: Seq[Expression])(val position: InputPosition)
-    extends GraphReference with SemanticAnalysisTooling {
-
-  override def semanticCheck: SemanticCheck =
-    arguments.zip(argumentsAsGraphReferences).foldSemanticCheck { case (arg, gr) =>
-      GraphReference.checkNotEmpty(gr, arg.position)
-    }
-
-  def argumentsAsGraphReferences: Seq[Option[GraphReference]] =
-    arguments.map(GraphReference.from)
+final case class GraphDirectReference(catalogName: CatalogName)(val position: InputPosition) extends GraphReference {
+  override def print: String = catalogName.qualifiedNameString
 }
 
-final case class GraphRefParameter(parameter: Parameter)(val position: InputPosition) extends GraphReference
+final case class GraphFunctionReference(functionInvocation: FunctionInvocation)(
+  val position: InputPosition
+) extends GraphReference with SemanticAnalysisTooling {
+  override def print: String = ExpressionStringifier(_.asCanonicalStringVal).apply(functionInvocation)
+}
 
 trait SingleRelTypeCheck {
   self: Clause =>
@@ -1058,16 +1010,6 @@ case class Create(pattern: Pattern.ForUpdate)(val position: InputPosition) exten
       SemanticState.recordCurrentScope(pattern)
 
   override protected def shouldRunQPPChecks: Boolean = false
-
-  override def mapExpressions(f: Expression => Expression): UpdateClause =
-    copy(pattern.mapExpressions(f))(this.position)
-}
-
-case class CreateUnique(pattern: Pattern.ForUpdate)(val position: InputPosition) extends UpdateClause {
-  override def name = "CREATE UNIQUE"
-
-  override def clauseSpecificSemanticCheck: SemanticCheck =
-    SemanticError("CREATE UNIQUE is no longer supported. Please use MERGE instead", position)
 
   override def mapExpressions(f: Expression => Expression): UpdateClause =
     copy(pattern.mapExpressions(f))(this.position)

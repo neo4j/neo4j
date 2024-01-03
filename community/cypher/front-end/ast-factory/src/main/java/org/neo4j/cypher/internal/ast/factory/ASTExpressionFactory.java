@@ -38,6 +38,7 @@ public interface ASTExpressionFactory<
         WHERE,
         VARIABLE extends EXPRESSION,
         PROPERTY extends EXPRESSION,
+        FUNCTION_INVOCATION extends EXPRESSION,
         MAP_PROJECTION_ITEM,
         POS,
         ENTITY_TYPE,
@@ -160,7 +161,7 @@ public interface ASTExpressionFactory<
 
     EXPRESSION newCountStar(POS p);
 
-    EXPRESSION functionInvocation(
+    FUNCTION_INVOCATION functionInvocation(
             POS p,
             POS functionNamePosition,
             List<String> namespace,

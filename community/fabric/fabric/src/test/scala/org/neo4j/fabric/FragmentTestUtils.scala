@@ -133,7 +133,7 @@ trait FragmentTestUtils {
 
   private object AstUtils extends AstConstructionTestSupport
 
-  def use(name: String): UseGraph = AstUtils.use(AstUtils.varFor(name))
+  def use(name: String): UseGraph = AstUtils.use(List(name))
 
   val defaultGraphName: String = "default"
   val defaultGraph: UseGraph = use(defaultGraphName)

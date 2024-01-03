@@ -178,7 +178,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
     test(s"USE db SHOW $indexKeyword") {
       assertAst(
         singleQuery(
-          use(varFor("db")),
+          use(List("db")),
           ShowIndexesClause(AllIndexes, brief = false, verbose = false, None, List.empty, yieldAll = false)(pos)
         ),
         comparePosition = false
@@ -377,7 +377,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
   test("USE db SHOW FULLTEXT INDEXES YIELD name, populationPercent AS pp WHERE pp < 50.0 RETURN name") {
     assertAst(
       singleQuery(
-        use(varFor("db")),
+        use(List("db")),
         ShowIndexesClause(
           FulltextIndexes,
           brief = false,
@@ -401,7 +401,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
   ) {
     assertAst(
       singleQuery(
-        use(varFor("db")),
+        use(List("db")),
         ShowIndexesClause(
           VectorIndexes,
           brief = false,
@@ -872,7 +872,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
           test(s"USE db SHOW $constraintTypeKeyword $constraintKeyword") {
             assertAst(
               singleQuery(
-                use(varFor("db")),
+                use(List("db")),
                 ShowConstraintsClause(
                   constraintType,
                   brief = false,
@@ -1008,7 +1008,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
   test("USE db SHOW NODE KEY CONSTRAINTS YIELD name, properties AS pp WHERE size(pp) > 1 RETURN name") {
     assertAst(
       singleQuery(
-        use(varFor("db")),
+        use(List("db")),
         ShowConstraintsClause(
           NodeKeyConstraints,
           brief = false,
@@ -1035,7 +1035,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
   ) {
     assertAst(
       singleQuery(
-        use(varFor("db")),
+        use(List("db")),
         ShowConstraintsClause(
           AllConstraints,
           brief = false,

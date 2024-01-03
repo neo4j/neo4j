@@ -18,7 +18,6 @@ package org.neo4j.cypher.internal.ast
 
 import org.neo4j.cypher.internal.ast.ReturnItems.ReturnVariables
 import org.neo4j.cypher.internal.ast.Union.UnionMapping
-import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.semantics.Scope
 import org.neo4j.cypher.internal.ast.semantics.SemanticAnalysisTooling
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
@@ -89,14 +88,12 @@ sealed trait Query extends Statement with SemanticCheckable with SemanticAnalysi
     whenState(_.features(SemanticFeature.UseAsSingleGraphSelector))(
       thenBranch = {
         val useClauses = folder.findAllByClass[UseGraph]
-        val distinctGraphs = useClauses.map(_.expression).distinct
+        val distinctGraphs = useClauses.map(_.graphReference).distinct
         if (distinctGraphs.size > 1)
           SemanticCheck.fromFunctionWithContext { (semanticState, context) =>
             SemanticCheckResult.error(
               semanticState,
-              context.errorMessageProvider.createMultipleGraphReferencesError(
-                ExpressionStringifier.apply(_.asCanonicalStringVal).apply(distinctGraphs(1))
-              ),
+              context.errorMessageProvider.createMultipleGraphReferencesError(distinctGraphs(1).print),
               useClauses(1).position
             )
           }

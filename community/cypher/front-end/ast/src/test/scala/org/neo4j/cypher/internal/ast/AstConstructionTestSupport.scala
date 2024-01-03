@@ -968,8 +968,17 @@ trait AstConstructionTestSupport {
       yields.map(vs => ProcedureResult(vs.toIndexedSeq.map(ProcedureResultItem(_)(pos)))(pos))
     )(pos)
 
-  def use(e: Expression): UseGraph =
-    UseGraph(e)(defaultPos)
+  def use(names: List[String]): UseGraph = {
+    UseGraph(GraphDirectReference(CatalogName(names))(pos))(pos)
+  }
+
+  def use(function: FunctionInvocation): UseGraph = {
+    UseGraph(GraphFunctionReference(function)(pos))(pos)
+  }
+
+  def use(graphReference: GraphReference): UseGraph = {
+    UseGraph(graphReference)(pos)
+  }
 
   def union(lhs: Query, rhs: SingleQuery): UnionDistinct = UnionDistinct(lhs, rhs)(pos)
 

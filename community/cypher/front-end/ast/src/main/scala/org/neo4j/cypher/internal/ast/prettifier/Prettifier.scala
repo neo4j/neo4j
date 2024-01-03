@@ -93,6 +93,8 @@ import org.neo4j.cypher.internal.ast.FunctionQualifier
 import org.neo4j.cypher.internal.ast.GrantPrivilege
 import org.neo4j.cypher.internal.ast.GrantRolesToUsers
 import org.neo4j.cypher.internal.ast.GraphAction
+import org.neo4j.cypher.internal.ast.GraphDirectReference
+import org.neo4j.cypher.internal.ast.GraphFunctionReference
 import org.neo4j.cypher.internal.ast.GraphPrivilege
 import org.neo4j.cypher.internal.ast.GraphScope
 import org.neo4j.cypher.internal.ast.GraphSelection
@@ -232,6 +234,7 @@ import org.neo4j.cypher.internal.expressions.CoerceTo
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.GreaterThan
 import org.neo4j.cypher.internal.expressions.GreaterThanOrEqual
 import org.neo4j.cypher.internal.expressions.ImplicitProcedureArgument
@@ -1054,8 +1057,13 @@ case class Prettifier(
     private def fallback(clause: Clause): String =
       clause.asCanonicalStringVal
 
-    def asString(u: UseGraph): String =
-      s"${INDENT}USE ${expr(u.expression)}"
+    def asString(u: UseGraph): String = {
+      u.graphReference match {
+        case GraphDirectReference(catalogName) => s"${INDENT}USE ${catalogName.asCanonicalNameString}"
+        case GraphFunctionReference(functionInvocation: FunctionInvocation) =>
+          s"${INDENT}USE ${expr(functionInvocation)}"
+      }
+    }
 
     def asString(m: Match): String = {
       val o = if (m.optional) "OPTIONAL " else ""
