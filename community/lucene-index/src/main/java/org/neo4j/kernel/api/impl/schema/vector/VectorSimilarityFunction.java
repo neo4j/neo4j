@@ -23,7 +23,7 @@ import java.util.EnumSet;
 import java.util.Locale;
 import org.neo4j.kernel.api.vector.VectorCandidate;
 
-public enum VectorSimilarityFunction {
+public enum VectorSimilarityFunction implements org.neo4j.kernel.api.vector.VectorSimilarityFunction {
     // TODO VECTOR: perhaps some unrolling and/or vector api (when available) could be used here
     //              perhaps investigate some more accurate normalisation techniques
 
@@ -87,12 +87,7 @@ public enum VectorSimilarityFunction {
         }
     }
 
-    public final float[] maybeToValidVector(Object candidate) {
-        return maybeToValidVector(VectorCandidate.maybeFrom(candidate));
-    }
-
-    public abstract float[] maybeToValidVector(VectorCandidate candidate);
-
+    @Override
     public float compare(float[] vector1, float[] vector2) {
         return toLucene().compare(vector1, vector2);
     }
