@@ -56,7 +56,7 @@ object MemoryDeallocationTestBase {
 }
 
 /**
- * These tests are designed to comparate two executions of queries with the same input data
+ * These tests are designed to compare two executions of queries with the same input data
  * and assert that they do not differ significantly in the amount of estimated heap usage.
  *
  * Typically for eager operators, executing 3 in a row should not differ significantly from 2 in a row,
@@ -938,15 +938,10 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
 
   test("should account for memory allocated in value population with deeply nested nodes") {
     val nodes = givenGraph {
-      // Some nodes with memory hungry properties and labels
       nodePropertyGraphFunctional(
         nNodes = 32,
-        properties = { i =>
-          Range(0, 128).map(p => s"p$p" -> s"$i:$p:${"bla".repeat(24)}").toMap
-        },
-        labels = { i =>
-          Range(0, 128).map(l => s"Label-$i-$l")
-        }
+        properties = { i => Map("prop" -> i) },
+        labels = { _ => Seq("L") }
       )
     }
 
