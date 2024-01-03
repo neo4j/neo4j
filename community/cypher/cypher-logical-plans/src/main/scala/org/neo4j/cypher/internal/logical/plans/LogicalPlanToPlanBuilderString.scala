@@ -451,11 +451,20 @@ object LogicalPlanToPlanBuilderString {
         val args = Seq(wrapInQuotations(idName), s"Seq($labelNames)") ++ Seq(objectName(indexOrder)) ++
           argumentIds.map(wrapInQuotations)
         args.mkString(", ")
+      case PartitionedUnionNodeByLabelsScan(idName, labels, argumentIds) =>
+        val labelNames = labels.map(l => wrapInQuotations(l.name)).mkString(", ")
+        val args = Seq(wrapInQuotations(idName), s"Seq($labelNames)") ++ argumentIds.map(wrapInQuotations)
+        args.mkString(", ")
 
       case IntersectionNodeByLabelsScan(idName, labels, argumentIds, indexOrder) =>
         val labelNames = labels.map(l => wrapInQuotations(l.name)).mkString(", ")
         val args = Seq(wrapInQuotations(idName), s"Seq($labelNames)") ++ Seq(objectName(indexOrder)) ++
           argumentIds.map(wrapInQuotations)
+        args.mkString(", ")
+
+      case PartitionedIntersectionNodeByLabelsScan(idName, labels, argumentIds) =>
+        val labelNames = labels.map(l => wrapInQuotations(l.name)).mkString(", ")
+        val args = Seq(wrapInQuotations(idName), s"Seq($labelNames)") ++ argumentIds.map(wrapInQuotations)
         args.mkString(", ")
 
       case DirectedUnionRelationshipTypesScan(idName, start, types, end, argumentIds, indexOrder) =>

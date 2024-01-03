@@ -188,6 +188,7 @@ import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipIn
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedUnionRelationshipTypesScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedIntersectionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexSeek
@@ -196,6 +197,7 @@ import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationship
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedUnionRelationshipTypesScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedUnionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
 import org.neo4j.cypher.internal.logical.plans.PathPropagatingBFS
 import org.neo4j.cypher.internal.logical.plans.PointBoundingBoxRange
@@ -417,12 +419,38 @@ case class LogicalPlan2PlanDescription(
           withDistinctness
         )
 
+      case PartitionedUnionNodeByLabelsScan(idName, labels, _) =>
+        val prettyDetails =
+          pretty"${asPrettyString(idName)}:${labels.map(l => asPrettyString(l.name)).mkPrettyString("|")}"
+        PlanDescriptionImpl(
+          id,
+          "PartitionedUnionNodeByLabelsScan",
+          NoChildren,
+          Seq(Details(prettyDetails)),
+          variables,
+          withRawCardinalities,
+          withDistinctness
+        )
+
       case IntersectionNodeByLabelsScan(idName, labels, _, _) =>
         val prettyDetails =
           pretty"${asPrettyString(idName)}:${labels.map(l => asPrettyString(l.name)).mkPrettyString("&")}"
         PlanDescriptionImpl(
           id,
           "IntersectionNodeByLabelsScan",
+          NoChildren,
+          Seq(Details(prettyDetails)),
+          variables,
+          withRawCardinalities,
+          withDistinctness
+        )
+
+      case PartitionedIntersectionNodeByLabelsScan(idName, labels, _) =>
+        val prettyDetails =
+          pretty"${asPrettyString(idName)}:${labels.map(l => asPrettyString(l.name)).mkPrettyString("&")}"
+        PlanDescriptionImpl(
+          id,
+          "PartitionedIntersectionNodeByLabelsScan",
           NoChildren,
           Seq(Details(prettyDetails)),
           variables,

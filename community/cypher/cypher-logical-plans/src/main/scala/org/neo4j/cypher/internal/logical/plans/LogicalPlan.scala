@@ -2357,6 +2357,24 @@ case class IntersectionNodeByLabelsScan(
     copy(argumentIds = argumentIds ++ argsToAdd)(SameId(this.id))
 }
 
+case class PartitionedIntersectionNodeByLabelsScan(
+  idName: LogicalVariable,
+  labels: Seq[LabelName],
+  argumentIds: Set[LogicalVariable]
+)(implicit idGen: IdGen)
+    extends NodeLogicalLeafPlan(idGen) with StableLeafPlan with PhysicalPlanningPlan {
+
+  override val availableSymbols: Set[LogicalVariable] = argumentIds + idName
+
+  override def usedVariables: Set[LogicalVariable] = Set.empty
+
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): PartitionedIntersectionNodeByLabelsScan =
+    copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def addArgumentIds(argsToAdd: Set[LogicalVariable]): LogicalLeafPlan =
+    copy(argumentIds = argumentIds ++ argsToAdd)(SameId(this.id))
+}
+
 /**
  * Variant of NodeHashJoin. Also builds a hash table using 'left' and produces merged left and right rows using this
  * table. In addition, also produces left rows with missing key values, and left rows that were not matched
@@ -4644,6 +4662,24 @@ case class UnionNodeByLabelsScan(
   override def usedVariables: Set[LogicalVariable] = Set.empty
 
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): UnionNodeByLabelsScan =
+    copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def addArgumentIds(argsToAdd: Set[LogicalVariable]): LogicalLeafPlan =
+    copy(argumentIds = argumentIds ++ argsToAdd)(SameId(this.id))
+}
+
+case class PartitionedUnionNodeByLabelsScan(
+  idName: LogicalVariable,
+  labels: Seq[LabelName],
+  argumentIds: Set[LogicalVariable]
+)(implicit idGen: IdGen)
+    extends NodeLogicalLeafPlan(idGen) with StableLeafPlan with PhysicalPlanningPlan {
+
+  override val availableSymbols: Set[LogicalVariable] = argumentIds + idName
+
+  override def usedVariables: Set[LogicalVariable] = Set.empty
+
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): PartitionedUnionNodeByLabelsScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
   override def addArgumentIds(argsToAdd: Set[LogicalVariable]): LogicalLeafPlan =

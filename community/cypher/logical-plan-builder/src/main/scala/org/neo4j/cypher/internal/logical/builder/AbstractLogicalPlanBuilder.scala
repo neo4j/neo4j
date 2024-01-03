@@ -182,10 +182,12 @@ import org.neo4j.cypher.internal.logical.plans.PartitionedAllNodesScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedAllRelationshipsScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedUnionRelationshipTypesScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedIntersectionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedAllRelationshipsScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedUnionRelationshipTypesScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedUnionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
 import org.neo4j.cypher.internal.logical.plans.PathPropagatingBFS
 import org.neo4j.cypher.internal.logical.plans.PointBoundingBoxRange
@@ -1158,6 +1160,16 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     )(_)))
   }
 
+  def partitionedUnionNodeByLabelsScan(node: String, labels: Seq[String], args: String*): IMPL = {
+    val n = VariableParser.unescaped(node)
+    newNode(varFor(n))
+    appendAtCurrentIndent(LeafOperator(PartitionedUnionNodeByLabelsScan(
+      varFor(n),
+      labels.map(labelName),
+      args.map(a => varFor(VariableParser.unescaped(a))).toSet
+    )(_)))
+  }
+
   def intersectionNodeByLabelsScan(node: String, labels: Seq[String], args: String*): IMPL = {
     intersectionNodeByLabelsScan(node, labels, IndexOrderNone, args: _*)
   }
@@ -1170,6 +1182,16 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       labels.map(labelName),
       args.map(a => varFor(VariableParser.unescaped(a))).toSet,
       indexOrder
+    )(_)))
+  }
+
+  def partitionedIntersectionNodeByLabelsScan(node: String, labels: Seq[String], args: String*): IMPL = {
+    val n = VariableParser.unescaped(node)
+    newNode(varFor(n))
+    appendAtCurrentIndent(LeafOperator(PartitionedIntersectionNodeByLabelsScan(
+      varFor(n),
+      labels.map(labelName),
+      args.map(a => varFor(VariableParser.unescaped(a))).toSet
     )(_)))
   }
 

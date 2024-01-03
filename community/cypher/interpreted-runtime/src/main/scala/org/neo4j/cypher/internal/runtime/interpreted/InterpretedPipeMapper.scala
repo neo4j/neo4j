@@ -124,6 +124,7 @@ import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipIn
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedUnionRelationshipTypesScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedIntersectionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexSeek
@@ -132,6 +133,7 @@ import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationship
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedUnionRelationshipTypesScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedUnionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
 import org.neo4j.cypher.internal.logical.plans.Prober
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
@@ -406,9 +408,17 @@ case class InterpretedPipeMapper(
         indexRegistrator.registerLabelScan()
         UnionNodeByLabelsScanPipe(ident.name, labels.map(l => LazyLabel(l)), indexOrder)(id = id)
 
+      case PartitionedUnionNodeByLabelsScan(ident, labels, _) =>
+        indexRegistrator.registerLabelScan()
+        UnionNodeByLabelsScanPipe(ident.name, labels.map(l => LazyLabel(l)), IndexOrderNone)(id = id)
+
       case IntersectionNodeByLabelsScan(ident, labels, _, indexOrder) =>
         indexRegistrator.registerLabelScan()
         IntersectionNodeByLabelsScanPipe(ident.name, labels.map(l => LazyLabel(l)), indexOrder)(id = id)
+
+      case PartitionedIntersectionNodeByLabelsScan(ident, labels, _) =>
+        indexRegistrator.registerLabelScan()
+        IntersectionNodeByLabelsScanPipe(ident.name, labels.map(l => LazyLabel(l)), IndexOrderNone)(id = id)
 
       case NodeByIdSeek(ident, nodeIdExpr, _) =>
         NodeByIdSeekPipe(ident.name, expressionConverters.toCommandSeekArgs(id, nodeIdExpr))(id = id)

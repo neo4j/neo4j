@@ -101,6 +101,7 @@ import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipIn
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedUnionRelationshipTypesScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedIntersectionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexSeek
@@ -109,6 +110,7 @@ import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationship
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedUnionRelationshipTypesScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedUnionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
 import org.neo4j.cypher.internal.logical.plans.ProjectEndpoints
@@ -506,6 +508,7 @@ object CardinalityCostModel {
       case _: NodeByLabelScan |
         _: PartitionedNodeByLabelScan |
         _: UnionNodeByLabelsScan |
+        _: PartitionedUnionNodeByLabelsScan |
         _: NodeIndexScan |
         _: PartitionedNodeIndexScan =>
         INDEX_SCAN_COST_PER_ROW
@@ -513,6 +516,14 @@ object CardinalityCostModel {
       case plan: IntersectionNodeByLabelsScan =>
         // A workaround for cases where we might get value from an index scan instead. Using the same cost means we will use leaf plan heuristic to decide.
         if (propertyAccess.exists(_.variable == plan.idName)) {
+          INDEX_SCAN_COST_PER_ROW + STORE_LOOKUP_COST_PER_ROW
+        } else {
+          INDEX_SCAN_COST_PER_ROW
+        }
+
+      case plan: PartitionedIntersectionNodeByLabelsScan =>
+        // A workaround for cases where we might get value from an index scan instead. Using the same cost means we will use leaf plan heuristic to decide.
+        if (propertyAccess.exists(_.variableName == plan.idName.name)) {
           INDEX_SCAN_COST_PER_ROW + STORE_LOOKUP_COST_PER_ROW
         } else {
           INDEX_SCAN_COST_PER_ROW

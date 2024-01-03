@@ -105,6 +105,7 @@ import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipIn
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedUnionRelationshipTypesScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedIntersectionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexSeek
@@ -113,6 +114,7 @@ import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationship
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedUnionRelationshipTypesScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedUnionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
 import org.neo4j.cypher.internal.logical.plans.PathPropagatingBFS
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
@@ -209,6 +211,8 @@ object VariableRefRewriter extends Rewriter {
               s.copy(idName = varRef(node), argumentIds = args.map(varRef))(SameId(s.id))
             case s @ IntersectionNodeByLabelsScan(node, _, args, _) =>
               s.copy(idName = varRef(node), argumentIds = args.map(varRef))(SameId(s.id))
+            case s @ PartitionedIntersectionNodeByLabelsScan(node, _, args) =>
+              s.copy(idName = varRef(node), argumentIds = args.map(varRef))(SameId(s.id))
             case s @ NodeByElementIdSeek(node, _, args) =>
               s.copy(idName = varRef(node), argumentIds = args.map(varRef))(SameId(s.id))
             case s @ NodeByIdSeek(node, _, args) =>
@@ -218,6 +222,8 @@ object VariableRefRewriter extends Rewriter {
             case s @ PartitionedNodeByLabelScan(node, _, args) =>
               s.copy(idName = varRef(node), argumentIds = args.map(varRef))(SameId(s.id))
             case s @ UnionNodeByLabelsScan(node, _, args, _) =>
+              s.copy(idName = varRef(node), argumentIds = args.map(varRef))(SameId(s.id))
+            case s @ PartitionedUnionNodeByLabelsScan(node, _, args) =>
               s.copy(idName = varRef(node), argumentIds = args.map(varRef))(SameId(s.id))
             case s @ SimulatedNodeScan(node, _) =>
               s.copy(idName = varRef(node))(SameId(s.id))
