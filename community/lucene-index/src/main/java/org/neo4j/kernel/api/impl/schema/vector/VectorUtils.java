@@ -32,7 +32,6 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 public class VectorUtils {
-    public static final int MAX_DIMENSIONS = 2048;
 
     public static int vectorDimensionsFrom(IndexConfig config) {
         final var setting = IndexSetting.vector_Dimensions();
@@ -47,9 +46,10 @@ public class VectorUtils {
         return dimensions;
     }
 
-    public static VectorSimilarityFunction vectorSimilarityFunctionFrom(IndexConfig config) {
+    public static VectorSimilarityFunction vectorSimilarityFunctionFrom(
+            VectorIndexVersion version, IndexConfig config) {
         try {
-            return VectorSimilarityFunctions.fromName(
+            return version.similarityFunction(
                     VectorUtils.<TextValue>getExpectedFrom(config, IndexSetting.vector_Similarity_Function())
                             .stringValue());
         } catch (IllegalArgumentException e) {

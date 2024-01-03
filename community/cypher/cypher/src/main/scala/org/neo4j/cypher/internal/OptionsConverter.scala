@@ -49,8 +49,7 @@ import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexType
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
-import org.neo4j.kernel.api.impl.schema.vector.VectorSimilarityFunctions
-import org.neo4j.kernel.api.impl.schema.vector.VectorUtils
+import org.neo4j.kernel.api.impl.schema.vector.VectorIndexVersion
 import org.neo4j.kernel.database.NormalizedDatabaseName
 import org.neo4j.storageengine.api.StorageEngineFactory
 import org.neo4j.storageengine.api.StorageEngineFactory.allAvailableStorageEngines
@@ -73,7 +72,6 @@ import java.util.Collections
 import java.util.Locale
 import java.util.Objects
 import java.util.UUID
-
 import scala.jdk.CollectionConverters.IterableHasAsScala
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 import scala.jdk.CollectionConverters.MapHasAsJava
@@ -211,6 +209,7 @@ case object ServerOptionsConverter extends OptionsConverter[ServerOptions] {
 trait OptionValidator[T] {
 
   val KEY: String
+
   protected def validate(value: AnyValue, config: Option[Config])(implicit operation: String): T
 
   def findIn(optionsMap: MapValue, config: Option[Config])(implicit operation: String): Option[T] = {
@@ -848,14 +847,15 @@ case class CreateVectorIndexOptionsConverter(context: QueryContext)
   // so only looking at the top error would not give you the reason for the failure
   private def assertValidConfigValues(dimensionValue: AnyRef, similarityFunctionValue: AnyRef): Unit = {
     // Check dimension
+    val maxDimensions = VectorIndexVersion.V1_0.maxDimensions
     Objects.requireNonNull(dimensionValue, s"'$dimensionsSetting' must not be null")
     val vectorDimensionCheck = dimensionValue match {
       case l: java.lang.Long =>
         val vectorDimension = l.longValue()
-        1 <= vectorDimension && vectorDimension <= VectorUtils.MAX_DIMENSIONS
+        1 <= vectorDimension && vectorDimension <= maxDimensions
       case i: Integer =>
         val vectorDimension = i.intValue()
-        1 <= vectorDimension && vectorDimension <= VectorUtils.MAX_DIMENSIONS
+        1 <= vectorDimension && vectorDimension <= maxDimensions
       case _ =>
         throw new InvalidArgumentsException(
           s"Could not create $schemaType with specified index config '$dimensionsSetting'. Expected an Integer."
@@ -863,14 +863,14 @@ case class CreateVectorIndexOptionsConverter(context: QueryContext)
     }
     Preconditions.checkArgument(
       vectorDimensionCheck,
-      "'%s' must be between %d and %d inclusively".formatted(dimensionsSetting, 1, VectorUtils.MAX_DIMENSIONS)
+      "'%s' must be between %d and %d inclusively".formatted(dimensionsSetting, 1, maxDimensions)
     )
 
     // Check similarity function
     Objects.requireNonNull(similarityFunctionValue, s"'$similarityFunctionSetting' must not be null")
     similarityFunctionValue match {
       case s: String =>
-        VectorSimilarityFunctions.fromName(s)
+        VectorIndexVersion.V1_0.similarityFunction(s)
       case _ =>
         throw new InvalidArgumentsException(
           s"Could not create $schemaType with specified index config '$similarityFunctionSetting'. Expected a String."
@@ -882,7 +882,9 @@ case class CreateVectorIndexOptionsConverter(context: QueryContext)
 }
 
 case class CreateWithNoOptions()
+
 case class CreateIndexProviderOnlyOptions(provider: Option[IndexProviderDescriptor])
+
 case class CreateIndexWithFullOptions(provider: Option[IndexProviderDescriptor], config: IndexConfig)
 
 case class CreateDatabaseOptions(

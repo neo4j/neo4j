@@ -31,12 +31,14 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueCategory;
 
 public class VectorIndexCapability implements IndexCapability {
+    private final VectorIndexVersion version;
     private final int dimensions;
     private final VectorSimilarityFunction similarityFunction;
 
-    VectorIndexCapability(IndexConfig config) {
+    VectorIndexCapability(VectorIndexVersion version, IndexConfig config) {
+        this.version = version;
         this.dimensions = VectorUtils.vectorDimensionsFrom(config);
-        this.similarityFunction = VectorUtils.vectorSimilarityFunctionFrom(config);
+        this.similarityFunction = VectorUtils.vectorSimilarityFunctionFrom(version, config);
     }
 
     @Override
@@ -53,10 +55,18 @@ public class VectorIndexCapability implements IndexCapability {
     public boolean areValuesAccepted(Value... values) {
         Preconditions.requireNonEmpty(values);
         Preconditions.requireNoNullElements(values);
-        return values.length == 1
-                && values[0] instanceof final FloatingPointArray array
-                && array.length() == dimensions
-                && similarityFunction.maybeToValidVector(array) != null;
+        if (values.length != 1) {
+            return false;
+        }
+
+        final var value = values[0];
+        if (!version.acceptsValueInstanceType(value)) {
+            return false;
+        }
+
+        return value instanceof final FloatingPointArray candidate
+                && candidate.length() == dimensions
+                && similarityFunction.maybeToValidVector(candidate) != null;
     }
 
     @Override

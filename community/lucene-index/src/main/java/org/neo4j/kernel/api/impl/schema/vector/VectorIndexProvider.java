@@ -30,7 +30,6 @@ import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
-import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.IOUtils;
@@ -57,12 +56,12 @@ import org.neo4j.values.storable.FloatingPointArray;
 import org.neo4j.values.storable.Value;
 
 public class VectorIndexProvider extends AbstractLuceneIndexProvider {
-    public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor("vector", "1.0");
-
+    private final VectorIndexVersion version;
     private final FileSystemAbstraction fileSystem;
     private final JobScheduler scheduler;
 
     public VectorIndexProvider(
+            VectorIndexVersion version,
             FileSystemAbstraction fileSystem,
             DirectoryFactory directoryFactory,
             IndexDirectoryStructure.Factory directoryStructureFactory,
@@ -72,13 +71,14 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
             JobScheduler scheduler) {
         super(
                 IndexType.VECTOR,
-                DESCRIPTOR,
+                version.descriptor(),
                 fileSystem,
                 directoryFactory,
                 directoryStructureFactory,
                 monitors,
                 config,
                 readOnlyChecker);
+        this.version = version;
         this.fileSystem = fileSystem;
         this.scheduler = scheduler;
     }
@@ -89,11 +89,16 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
         final var config = prototype.getIndexConfig();
 
         final var dimensions = VectorUtils.vectorDimensionsFrom(config);
-        if (dimensions > VectorUtils.MAX_DIMENSIONS) {
-            throw new UnsupportedOperationException("'%s' set greater than %d is unsupported"
-                    .formatted(IndexSetting.vector_Dimensions().getSettingName(), VectorUtils.MAX_DIMENSIONS));
+        final var maxDimensions = version.maxDimensions();
+        if (dimensions > maxDimensions) {
+            throw new UnsupportedOperationException(
+                    "'%s' set greater than %d is unsupported for index with provider '%s'."
+                            .formatted(
+                                    IndexSetting.vector_Dimensions().getSettingName(),
+                                    maxDimensions,
+                                    getProviderDescriptor().name()));
         }
-        VectorUtils.vectorSimilarityFunctionFrom(config);
+        VectorUtils.vectorSimilarityFunctionFrom(version, config);
     }
 
     @Override
@@ -116,7 +121,7 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
             throw new UnsupportedOperationException("Can't create populator for read only index");
         }
 
-        final var ignoreStrategy = new IgnoreStrategy(VectorUtils.vectorDimensionsFrom(indexConfig));
+        final var ignoreStrategy = new IgnoreStrategy(version, VectorUtils.vectorDimensionsFrom(indexConfig));
         final var similarityFunction = vectorSimilarityFunctionFrom(indexConfig);
         return new VectorIndexPopulator(luceneIndex, ignoreStrategy, similarityFunction);
     }
@@ -140,7 +145,7 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
         forceMergeSegments(scheduler, luceneIndex);
 
         final var indexConfig = descriptor.getIndexConfig();
-        final var ignoreStrategy = new IgnoreStrategy(VectorUtils.vectorDimensionsFrom(indexConfig));
+        final var ignoreStrategy = new IgnoreStrategy(version, VectorUtils.vectorDimensionsFrom(indexConfig));
         final var similarityFunction = vectorSimilarityFunctionFrom(indexConfig);
         return new VectorIndexAccessor(luceneIndex, descriptor, ignoreStrategy, similarityFunction);
     }
@@ -149,23 +154,32 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
     public IndexDescriptor completeConfiguration(
             IndexDescriptor index, StorageEngineIndexingBehaviour indexingBehaviour) {
         return index.getCapability().equals(IndexCapability.NO_CAPABILITY)
-                ? index.withIndexCapability(capability(index.getIndexConfig()))
+                ? index.withIndexCapability(capability(version, index.getIndexConfig()))
                 : index;
     }
 
-    public static IndexCapability capability(IndexConfig config) {
-        return new VectorIndexCapability(config);
+    public static IndexCapability capability(VectorIndexVersion version, IndexConfig config) {
+        return new VectorIndexCapability(version, config);
     }
 
-    private record IgnoreStrategy(int dimensions) implements IndexUpdateIgnoreStrategy {
+    private record IgnoreStrategy(VectorIndexVersion version, int dimensions) implements IndexUpdateIgnoreStrategy {
         @Override
-        public boolean ignore(Value[] values) {
-            return !(values[0] instanceof final FloatingPointArray vector && vector.length() == dimensions);
+        public boolean ignore(Value... values) {
+            if (values.length != 1) {
+                return true;
+            }
+
+            final var value = values[0];
+            if (!version.acceptsValueInstanceType(value)) {
+                return true;
+            }
+
+            return !(value instanceof final FloatingPointArray candidate && candidate.length() == dimensions);
         }
     }
 
-    private static LuceneVectorSimilarityFunction vectorSimilarityFunctionFrom(IndexConfig config) {
-        final var vectorSimilarityFunction = VectorUtils.vectorSimilarityFunctionFrom(config);
+    private LuceneVectorSimilarityFunction vectorSimilarityFunctionFrom(IndexConfig config) {
+        final var vectorSimilarityFunction = VectorUtils.vectorSimilarityFunctionFrom(version, config);
         if (!(vectorSimilarityFunction instanceof final LuceneVectorSimilarityFunction luceneSimilarityFunction)) {
             throw new IllegalArgumentException(
                     "'%s' vector similarity function is expected to be compatible with Lucene. Provided: %s"

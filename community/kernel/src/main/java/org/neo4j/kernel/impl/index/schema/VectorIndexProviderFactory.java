@@ -33,12 +33,19 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.impl.schema.vector.VectorIndexProvider;
+import org.neo4j.kernel.api.impl.schema.vector.VectorIndexVersion;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.token.TokenHolders;
 
 public class VectorIndexProviderFactory extends AbstractIndexProviderFactory<VectorIndexProvider> {
+    private final VectorIndexVersion version;
+
+    public VectorIndexProviderFactory(VectorIndexVersion version) {
+        this.version = version;
+    }
+
     @Override
     protected Class<?> loggingClass() {
         return VectorIndexProvider.class;
@@ -46,7 +53,7 @@ public class VectorIndexProviderFactory extends AbstractIndexProviderFactory<Vec
 
     @Override
     public IndexProviderDescriptor descriptor() {
-        return VectorIndexProvider.DESCRIPTOR;
+        return version.descriptor();
     }
 
     @Override
@@ -66,6 +73,7 @@ public class VectorIndexProviderFactory extends AbstractIndexProviderFactory<Vec
             PageCacheTracer pageCacheTracer,
             DependencyResolver dependencyResolver) {
         return new VectorIndexProvider(
+                version,
                 fs,
                 directoryFactory(fs),
                 directoriesByProvider(databaseLayout.databaseDirectory()),

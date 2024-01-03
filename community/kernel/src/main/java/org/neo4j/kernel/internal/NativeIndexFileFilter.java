@@ -23,7 +23,7 @@ import java.nio.file.Path;
 import java.util.function.Predicate;
 import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
 import org.neo4j.kernel.api.impl.schema.trigram.TrigramIndexProvider;
-import org.neo4j.kernel.api.impl.schema.vector.VectorIndexProvider;
+import org.neo4j.kernel.api.impl.schema.vector.VectorIndexVersion;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory;
 
@@ -62,7 +62,7 @@ public class NativeIndexFileFilter implements Predicate<Path> {
         String schemaBaseName = schemaPath.getName(0).toString();
         boolean isLuceneBackedTextIndex = schemaBaseName.equals(TextIndexProvider.DESCRIPTOR.name())
                 || schemaBaseName.equals(TrigramIndexProvider.DESCRIPTOR.name())
-                || schemaBaseName.equals(VectorIndexProvider.DESCRIPTOR.name())
+                || schemaBaseName.equals(VectorIndexVersion.V1_0.descriptor().name())
                 || schemaBaseName.equals(FulltextIndexProviderFactory.DESCRIPTOR.name());
 
         return !isLuceneBackedTextIndex;

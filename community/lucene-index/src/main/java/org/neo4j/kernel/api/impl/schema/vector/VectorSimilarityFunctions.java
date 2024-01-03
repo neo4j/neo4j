@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.schema.vector;
 
-import java.util.Locale;
-import java.util.Set;
 import org.neo4j.kernel.api.vector.VectorCandidate;
 import org.neo4j.kernel.api.vector.VectorSimilarityFunction;
 
@@ -130,17 +128,4 @@ public class VectorSimilarityFunctions {
             return vector;
         }
     };
-
-    public static final Set<VectorSimilarityFunction> SUPPORTED = Set.of(EUCLIDEAN, COSINE);
-
-    public static VectorSimilarityFunction fromName(String name) {
-        final var normalizedName = name.toUpperCase(Locale.ROOT);
-        for (final var similarityFunction : SUPPORTED) {
-            if (similarityFunction.name().equals(normalizedName)) {
-                return similarityFunction;
-            }
-        }
-        throw new IllegalArgumentException(
-                "'%s' is an unsupported vector similarity function. Supported: %s".formatted(name, SUPPORTED));
-    }
 }

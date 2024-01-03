@@ -26,7 +26,7 @@ import org.apache.lucene.codecs.KnnVectorsWriter;
 import org.apache.lucene.codecs.lucene95.Lucene95HnswVectorsFormat;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
-import org.neo4j.kernel.api.impl.schema.vector.VectorUtils;
+import org.neo4j.kernel.api.impl.schema.vector.VectorIndexVersion;
 
 public class LuceneKnnVectorFormatV1 extends KnnVectorsFormat {
     private static final String LUCENE_VECTOR_FORMAT_V1_NAME = "LuceneKnnVectorFormatV1";
@@ -34,7 +34,7 @@ public class LuceneKnnVectorFormatV1 extends KnnVectorsFormat {
     private final int maxDimensions;
 
     public LuceneKnnVectorFormatV1() {
-        this(VectorUtils.MAX_DIMENSIONS);
+        this(VectorIndexVersion.V1_0.maxDimensions());
     }
 
     public LuceneKnnVectorFormatV1(int maxDimensions) {

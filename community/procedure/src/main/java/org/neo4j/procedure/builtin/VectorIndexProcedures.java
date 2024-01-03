@@ -48,7 +48,10 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexType;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.impl.schema.vector.VectorIndexVersion;
+import org.neo4j.kernel.api.impl.schema.vector.VectorSimilarityFunction;
 import org.neo4j.kernel.api.impl.schema.vector.VectorSimilarityFunctions;
 import org.neo4j.kernel.api.impl.schema.vector.VectorUtils;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
@@ -76,6 +79,9 @@ public class VectorIndexProcedures {
     public KernelTransaction ktx;
 
     @Context
+    public KernelVersion kernelVersion;
+
+    @Context
     public ProcedureCallContext callContext;
 
     @Description(
@@ -95,10 +101,12 @@ public class VectorIndexProcedures {
         Objects.requireNonNull(label, "'label' must not be null");
         Objects.requireNonNull(propertyKey, "'propertyKey' must not be null");
         Objects.requireNonNull(vectorDimension, "'vectorDimension' must not be null");
+
+        final var version = VectorIndexVersion.latestSupportedVersion(kernelVersion);
         Preconditions.checkArgument(
-                1 <= vectorDimension && vectorDimension <= VectorUtils.MAX_DIMENSIONS,
-                "'vectorDimension' must be between %d and %d inclusively".formatted(1, VectorUtils.MAX_DIMENSIONS));
-        VectorSimilarityFunctions.fromName(
+                1 <= vectorDimension && vectorDimension <= version.maxDimensions(),
+                "'vectorDimension' must be between %d and %d inclusively".formatted(1, version.maxDimensions()));
+        version.similarityFunction(
                 Objects.requireNonNull(vectorSimilarityFunction, "'vectorSimilarityFunction' must not be null"));
 
         final var indexCreator = tx.schema()
@@ -189,6 +197,7 @@ public class VectorIndexProcedures {
     }
 
     private float[] validateAndConvertQuery(IndexDescriptor index, List<Double> query) {
+        final var version = VectorIndexVersion.fromDescriptor(index.getIndexProvider());
         final var config = index.getIndexConfig();
         final var dimensions = vectorDimensionsFrom(config);
         if (dimensions != query.size()) {
@@ -196,7 +205,7 @@ public class VectorIndexProcedures {
                     .formatted(query.size(), dimensions));
         }
 
-        final var similarityFunction = vectorSimilarityFunctionFrom(config);
+        final var similarityFunction = vectorSimilarityFunctionFrom(version, config);
         return similarityFunction.toValidVector(query);
     }
 
