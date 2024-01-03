@@ -60,7 +60,6 @@ import org.neo4j.cypher.internal.compiler.helpers.AggregationHelper
 import org.neo4j.cypher.internal.compiler.planner.ProcedureCallProjection
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
-import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.IsAggregate
@@ -82,8 +81,6 @@ import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.expressions.functions.PercentileCont
-import org.neo4j.cypher.internal.expressions.functions.PercentileDisc
 import org.neo4j.cypher.internal.frontend.phases.ResolvedCall
 import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
 import org.neo4j.cypher.internal.ir.CommandProjection
@@ -148,8 +145,6 @@ import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.rendering.QueryRenderer
 import org.neo4j.exceptions.InternalException
 import org.neo4j.exceptions.SyntaxException
-
-import java.util.Locale
 
 import scala.collection.immutable.Seq
 import scala.collection.mutable
@@ -313,24 +308,14 @@ object ClauseConverters {
       else
         Seq.empty
     } else {
-      def indexOrder(variableToAggregate: Expression): Seq[Seq[ColumnOrder]] = {
-        variableToAggregate match {
-          case e: Property => Seq(Seq(Asc(e, Map.empty)), Seq(Desc(e, Map.empty)))
-          case v: Variable => Seq(Seq(Asc(v, Map.empty)), Seq(Desc(v, Map.empty)))
-          case _           => Seq.empty[Seq[ColumnOrder]]
-        }
-      }
-
       aggregationExpressions.values.flatMap {
-        case FunctionInvocation(_, _, true, args) =>
-          indexOrder(args(0)).map(InterestingOrderCandidate(_))
-        case FunctionInvocation(_, FunctionName(name), _, args)
-          if {
-            val nameLower = name.toLowerCase(Locale.ROOT)
-            nameLower == PercentileCont.name.toLowerCase(Locale.ROOT) ||
-            nameLower == PercentileDisc.name.toLowerCase(Locale.ROOT)
-          } =>
-          indexOrder(args(0)).map(InterestingOrderCandidate(_))
+        case f: FunctionInvocation if AggregationHelper.hasInterestingOrder(f) =>
+          val orders = f.args(0) match {
+            case e: Property => Seq(Seq(Asc(e, Map.empty)), Seq(Desc(e, Map.empty)))
+            case v: Variable => Seq(Seq(Asc(v, Map.empty)), Seq(Desc(v, Map.empty)))
+            case _           => Seq.empty[Seq[ColumnOrder]]
+          }
+          orders.map(InterestingOrderCandidate(_))
         case _ =>
           Seq.empty[InterestingOrderCandidate]
       }.toSeq

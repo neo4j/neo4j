@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
+import org.neo4j.cypher.internal.compiler.helpers.AggregationHelper
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.LogicalVariable
@@ -108,7 +109,7 @@ object leverageOrder {
 
     // NOTE: currently the expression to aggregate is always at offset 0, but checking them all for future proofing
     val aggregationArgs = aggregations.collect {
-      case FunctionInvocation(_, _, _, args) => args
+      case f: FunctionInvocation if AggregationHelper.hasInterestingOrder(f) => f.args
     }.flatten
       .filter(_.isInstanceOf[LogicalVariable])
 

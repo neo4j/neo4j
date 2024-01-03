@@ -29,6 +29,8 @@ import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions.Max
 import org.neo4j.cypher.internal.expressions.functions.Min
+import org.neo4j.cypher.internal.expressions.functions.PercentileCont
+import org.neo4j.cypher.internal.expressions.functions.PercentileDisc
 
 import java.util.Locale
 
@@ -45,6 +47,19 @@ object AggregationHelper {
         result(variable)
       case _ =>
         otherResult
+    }
+  }
+
+  def hasInterestingOrder(function: FunctionInvocation): Boolean = {
+    function match {
+      case FunctionInvocation(_, _, true, _) => true
+      case FunctionInvocation(_, FunctionName(name), _, _)
+        if {
+          val nameLower = name.toLowerCase(Locale.ROOT)
+          nameLower == PercentileCont.name.toLowerCase(Locale.ROOT) ||
+          nameLower == PercentileDisc.name.toLowerCase(Locale.ROOT)
+        } => true
+      case _ => false
     }
   }
 
