@@ -104,6 +104,7 @@ import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedAllRelationshi
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipIndexScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipTypeScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedUnionRelationshipTypesScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexSeek
@@ -111,6 +112,7 @@ import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedAllRelations
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipIndexScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipTypeScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedUnionRelationshipTypesScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
 import org.neo4j.cypher.internal.logical.plans.PathPropagatingBFS
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
@@ -378,6 +380,13 @@ object VariableRefRewriter extends Rewriter {
                 endNode = varRef(end),
                 argumentIds = args.map(varRef)
               )(SameId(s.id))
+            case s @ PartitionedDirectedUnionRelationshipTypesScan(rel, start, _, end, args) =>
+              s.copy(
+                idName = varRef(rel),
+                startNode = varRef(start),
+                endNode = varRef(end),
+                argumentIds = args.map(varRef)
+              )(SameId(s.id))
             case s @ UndirectedAllRelationshipsScan(rel, left, right, args) =>
               s.copy(
                 idName = varRef(rel),
@@ -421,6 +430,13 @@ object VariableRefRewriter extends Rewriter {
                 argumentIds = args.map(varRef)
               )(SameId(s.id))
             case s @ UndirectedUnionRelationshipTypesScan(rel, start, _, end, args, _) =>
+              s.copy(
+                idName = varRef(rel),
+                startNode = varRef(start),
+                endNode = varRef(end),
+                argumentIds = args.map(varRef)
+              )(SameId(s.id))
+            case s @ PartitionedUndirectedUnionRelationshipTypesScan(rel, start, _, end, args) =>
               s.copy(
                 idName = varRef(rel),
                 startNode = varRef(start),

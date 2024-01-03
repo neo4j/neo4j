@@ -181,9 +181,11 @@ import org.neo4j.cypher.internal.logical.plans.PartialTop
 import org.neo4j.cypher.internal.logical.plans.PartitionedAllNodesScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedAllRelationshipsScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipTypeScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedUnionRelationshipTypesScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedAllRelationshipsScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipTypeScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedUnionRelationshipTypesScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
 import org.neo4j.cypher.internal.logical.plans.PathPropagatingBFS
 import org.neo4j.cypher.internal.logical.plans.PointBoundingBoxRange
@@ -1209,6 +1211,41 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
           varFor(p.to),
           args.map(varFor).toSet,
           indexOrder
+        )(_)))
+    }
+  }
+
+  def partitionedUnionRelationshipTypesScan(pattern: String, args: String*): IMPL = {
+    val p = patternParser.parse(pattern)
+    newRelationship(varFor(p.relName))
+    newNode(varFor(p.from))
+    newNode(varFor(p.to))
+    if (!p.length.isSimple) throw new UnsupportedOperationException("Cannot do a scan from a variable pattern")
+
+    p.dir match {
+      case SemanticDirection.OUTGOING =>
+        appendAtCurrentIndent(LeafOperator(PartitionedDirectedUnionRelationshipTypesScan(
+          varFor(p.relName),
+          varFor(p.from),
+          p.relTypes,
+          varFor(p.to),
+          args.map(varFor).toSet
+        )(_)))
+      case SemanticDirection.INCOMING =>
+        appendAtCurrentIndent(LeafOperator(PartitionedDirectedUnionRelationshipTypesScan(
+          varFor(p.relName),
+          varFor(p.to),
+          p.relTypes,
+          varFor(p.from),
+          args.map(varFor).toSet
+        )(_)))
+      case SemanticDirection.BOTH =>
+        appendAtCurrentIndent(LeafOperator(PartitionedUndirectedUnionRelationshipTypesScan(
+          varFor(p.relName),
+          varFor(p.from),
+          p.relTypes,
+          varFor(p.to),
+          args.map(varFor).toSet
         )(_)))
     }
   }

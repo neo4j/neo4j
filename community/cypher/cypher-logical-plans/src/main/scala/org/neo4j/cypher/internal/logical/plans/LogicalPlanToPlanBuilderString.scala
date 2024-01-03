@@ -225,26 +225,28 @@ object LogicalPlanToPlanBuilderString {
           _
         ) =>
         "pointBoundingBoxRelationshipIndexSeek"
-      case _: UndirectedRelationshipIndexSeek            => "relationshipIndexOperator"
-      case _: PartitionedUndirectedRelationshipIndexSeek => "partitionedRelationshipIndexOperator"
-      case _: DirectedRelationshipIndexContainsScan      => "relationshipIndexOperator"
-      case _: UndirectedRelationshipIndexContainsScan    => "relationshipIndexOperator"
-      case _: DirectedRelationshipIndexEndsWithScan      => "relationshipIndexOperator"
-      case _: UndirectedRelationshipIndexEndsWithScan    => "relationshipIndexOperator"
-      case _: UndirectedRelationshipIndexScan            => "relationshipIndexOperator"
-      case _: PartitionedUndirectedRelationshipIndexScan => "partitionedRelationshipIndexOperator"
-      case _: UndirectedRelationshipUniqueIndexSeek      => "relationshipIndexOperator"
-      case _: DirectedRelationshipUniqueIndexSeek        => "relationshipIndexOperator"
-      case _: DirectedRelationshipTypeScan               => "relationshipTypeScan"
-      case _: UndirectedRelationshipTypeScan             => "relationshipTypeScan"
-      case _: PartitionedDirectedRelationshipTypeScan    => "partitionedRelationshipTypeScan"
-      case _: PartitionedUndirectedRelationshipTypeScan  => "partitionedRelationshipTypeScan"
-      case _: DirectedAllRelationshipsScan               => "allRelationshipsScan"
-      case _: UndirectedAllRelationshipsScan             => "allRelationshipsScan"
-      case _: PartitionedDirectedAllRelationshipsScan    => "partitionedAllRelationshipsScan"
-      case _: PartitionedUndirectedAllRelationshipsScan  => "partitionedAllRelationshipsScan"
-      case _: DirectedUnionRelationshipTypesScan         => "unionRelationshipTypesScan"
-      case _: UndirectedUnionRelationshipTypesScan       => "unionRelationshipTypesScan"
+      case _: UndirectedRelationshipIndexSeek                 => "relationshipIndexOperator"
+      case _: PartitionedUndirectedRelationshipIndexSeek      => "partitionedRelationshipIndexOperator"
+      case _: DirectedRelationshipIndexContainsScan           => "relationshipIndexOperator"
+      case _: UndirectedRelationshipIndexContainsScan         => "relationshipIndexOperator"
+      case _: DirectedRelationshipIndexEndsWithScan           => "relationshipIndexOperator"
+      case _: UndirectedRelationshipIndexEndsWithScan         => "relationshipIndexOperator"
+      case _: UndirectedRelationshipIndexScan                 => "relationshipIndexOperator"
+      case _: PartitionedUndirectedRelationshipIndexScan      => "partitionedRelationshipIndexOperator"
+      case _: UndirectedRelationshipUniqueIndexSeek           => "relationshipIndexOperator"
+      case _: DirectedRelationshipUniqueIndexSeek             => "relationshipIndexOperator"
+      case _: DirectedRelationshipTypeScan                    => "relationshipTypeScan"
+      case _: UndirectedRelationshipTypeScan                  => "relationshipTypeScan"
+      case _: PartitionedDirectedRelationshipTypeScan         => "partitionedRelationshipTypeScan"
+      case _: PartitionedUndirectedRelationshipTypeScan       => "partitionedRelationshipTypeScan"
+      case _: DirectedAllRelationshipsScan                    => "allRelationshipsScan"
+      case _: UndirectedAllRelationshipsScan                  => "allRelationshipsScan"
+      case _: PartitionedDirectedAllRelationshipsScan         => "partitionedAllRelationshipsScan"
+      case _: PartitionedUndirectedAllRelationshipsScan       => "partitionedAllRelationshipsScan"
+      case _: DirectedUnionRelationshipTypesScan              => "unionRelationshipTypesScan"
+      case _: UndirectedUnionRelationshipTypesScan            => "unionRelationshipTypesScan"
+      case _: PartitionedDirectedUnionRelationshipTypesScan   => "partitionedUnionRelationshipTypesScan"
+      case _: PartitionedUndirectedUnionRelationshipTypesScan => "partitionedUnionRelationshipTypesScan"
     }
     specialCases.applyOrElse(logicalPlan, classNameFormat)
   }
@@ -465,6 +467,16 @@ object LogicalPlanToPlanBuilderString {
         val typeNames = types.map(l => l.name).mkString("|")
         val args = Seq(objectName(indexOrder)) ++ argumentIds.map(wrapInQuotations)
         s""" "(${start.name})-[${idName.name}:$typeNames]-(${end.name})", ${args.mkString(", ")} """.trim
+
+      case PartitionedDirectedUnionRelationshipTypesScan(idName, start, types, end, argumentIds) =>
+        val typeNames = types.map(l => l.name).mkString("|")
+        val args = if (argumentIds.isEmpty) "" else argumentIds.map(wrapInQuotations).mkString(", ", ", ", "")
+        s""" "(${start.name})-[${idName.name}:$typeNames]->(${end.name})"$args """.trim
+
+      case PartitionedUndirectedUnionRelationshipTypesScan(idName, start, types, end, argumentIds) =>
+        val typeNames = types.map(l => l.name).mkString("|")
+        val args = if (argumentIds.isEmpty) "" else argumentIds.map(wrapInQuotations).mkString(", ", ", ", "")
+        s""" "(${start.name})-[${idName.name}:$typeNames]-(${end.name})"$args """.trim
 
       case Optional(_, protectedSymbols) =>
         wrapVarsInQuotationsAndMkString(protectedSymbols)

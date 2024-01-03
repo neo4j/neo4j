@@ -187,6 +187,7 @@ import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedAllRelationshi
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipIndexScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipTypeScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedUnionRelationshipTypesScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexSeek
@@ -194,6 +195,7 @@ import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedAllRelations
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipIndexScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipTypeScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedUnionRelationshipTypesScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
 import org.neo4j.cypher.internal.logical.plans.PathPropagatingBFS
 import org.neo4j.cypher.internal.logical.plans.PointBoundingBoxRange
@@ -455,6 +457,40 @@ case class LogicalPlan2PlanDescription(
         PlanDescriptionImpl(
           id,
           "UndirectedUnionRelationshipTypesScan",
+          NoChildren,
+          Seq(Details(prettyDetails)),
+          variables,
+          withRawCardinalities,
+          withDistinctness
+        )
+
+      case PartitionedDirectedUnionRelationshipTypesScan(idName, start, types, end, _) =>
+        val prettyTypes = types
+          .map(_.name)
+          .map(asPrettyString(_))
+          .mkPrettyString("|")
+        val prettyDetails =
+          pretty"(${asPrettyString(start)})-[${asPrettyString(idName)}:$prettyTypes]->(${asPrettyString(end)})"
+        PlanDescriptionImpl(
+          id,
+          "PartitionedDirectedUnionRelationshipTypesScan",
+          NoChildren,
+          Seq(Details(prettyDetails)),
+          variables,
+          withRawCardinalities,
+          withDistinctness
+        )
+
+      case PartitionedUndirectedUnionRelationshipTypesScan(idName, start, types, end, _) =>
+        val prettyTypes = types
+          .map(_.name)
+          .map(asPrettyString(_))
+          .mkPrettyString("|")
+        val prettyDetails =
+          pretty"(${asPrettyString(start)})-[${asPrettyString(idName)}:$prettyTypes]-(${asPrettyString(end)})"
+        PlanDescriptionImpl(
+          id,
+          "PartitionedUndirectedUnionRelationshipTypesScan",
           NoChildren,
           Seq(Details(prettyDetails)),
           variables,

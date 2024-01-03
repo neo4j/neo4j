@@ -108,6 +108,7 @@ import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedAllRelationshi
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipIndexScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipTypeScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedUnionRelationshipTypesScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexSeek
@@ -115,6 +116,7 @@ import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedAllRelations
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipIndexScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipTypeScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedUnionRelationshipTypesScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
 import org.neo4j.cypher.internal.logical.plans.Prober
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
@@ -774,6 +776,26 @@ class SlottedPipeMapper(
           types.map(t => LazyType(t)(semanticTable)),
           slots.getLongOffsetFor(end),
           indexOrder
+        )(id)
+
+      case PartitionedDirectedUnionRelationshipTypesScan(name, start, types, end, _) =>
+        indexRegistrator.registerTypeScan()
+        DirectedUnionRelationshipTypesScanSlottedPipe(
+          slots.getLongOffsetFor(name),
+          slots.getLongOffsetFor(start),
+          types.map(t => LazyType(t)(semanticTable)),
+          slots.getLongOffsetFor(end),
+          IndexOrderNone
+        )(id)
+
+      case PartitionedUndirectedUnionRelationshipTypesScan(name, start, types, end, _) =>
+        indexRegistrator.registerTypeScan()
+        UndirectedUnionRelationshipTypesScanSlottedPipe(
+          slots.getLongOffsetFor(name),
+          slots.getLongOffsetFor(start),
+          types.map(t => LazyType(t)(semanticTable)),
+          slots.getLongOffsetFor(end),
+          IndexOrderNone
         )(id)
 
       case DirectedRelationshipIndexContainsScan(

@@ -132,6 +132,7 @@ import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedAllRelationshi
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipIndexScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipTypeScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedUnionRelationshipTypesScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexSeek
@@ -139,6 +140,7 @@ import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedAllRelations
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipIndexScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipTypeScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedUnionRelationshipTypesScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
 import org.neo4j.cypher.internal.logical.plans.PathPropagatingBFS
 import org.neo4j.cypher.internal.logical.plans.PhysicalPlanningPlan
@@ -689,6 +691,12 @@ object ReadFinder {
         processUnionRelTypeScan(relationship, leftNode, relTypes, rightNode)
 
       case DirectedUnionRelationshipTypesScan(relationship, leftNode, relTypes, rightNode, _, _) =>
+        processUnionRelTypeScan(relationship, leftNode, relTypes, rightNode)
+
+      case PartitionedUndirectedUnionRelationshipTypesScan(relationship, leftNode, relTypes, rightNode, _) =>
+        processUnionRelTypeScan(relationship, leftNode, relTypes, rightNode)
+
+      case PartitionedDirectedUnionRelationshipTypesScan(relationship, leftNode, relTypes, rightNode, _) =>
         processUnionRelTypeScan(relationship, leftNode, relTypes, rightNode)
 
       case Selection(predicate, _) =>

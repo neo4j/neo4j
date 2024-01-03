@@ -1791,6 +1791,32 @@ case class DirectedUnionRelationshipTypesScan(
     copy(argumentIds = argumentIds ++ argsToAdd)(SameId(this.id))
 }
 
+case class PartitionedDirectedUnionRelationshipTypesScan(
+  idName: LogicalVariable,
+  startNode: LogicalVariable,
+  types: Seq[RelTypeName],
+  endNode: LogicalVariable,
+  argumentIds: Set[LogicalVariable]
+)(implicit idGen: IdGen)
+    extends RelationshipLogicalLeafPlan(idGen) with StableLeafPlan with PhysicalPlanningPlan {
+
+  override val availableSymbols: Set[LogicalVariable] = argumentIds ++ Set(idName, leftNode, rightNode)
+
+  override def usedVariables: Set[LogicalVariable] = Set.empty
+
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): PartitionedDirectedUnionRelationshipTypesScan =
+    copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def leftNode: LogicalVariable = startNode
+
+  override def rightNode: LogicalVariable = endNode
+
+  override def directed: Boolean = true
+
+  override def addArgumentIds(argsToAdd: Set[LogicalVariable]): LogicalLeafPlan =
+    copy(argumentIds = argumentIds ++ argsToAdd)(SameId(this.id))
+}
+
 /**
  * Distinct produces source rows without changing them, but omitting rows
  * which have been produced before. That is, the order of rows is unchanged, but each
@@ -4549,6 +4575,33 @@ case class UndirectedUnionRelationshipTypesScan(
   override def usedVariables: Set[LogicalVariable] = Set.empty
 
   override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): UndirectedUnionRelationshipTypesScan =
+    copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+
+  override def leftNode: LogicalVariable = startNode
+
+  override def rightNode: LogicalVariable = endNode
+
+  override def directed: Boolean = false
+
+  override def addArgumentIds(argsToAdd: Set[LogicalVariable]): LogicalLeafPlan =
+    copy(argumentIds = argumentIds ++ argsToAdd)(SameId(this.id))
+}
+
+case class PartitionedUndirectedUnionRelationshipTypesScan(
+  idName: LogicalVariable,
+  startNode: LogicalVariable,
+  types: Seq[RelTypeName],
+  endNode: LogicalVariable,
+  argumentIds: Set[LogicalVariable]
+)(implicit idGen: IdGen)
+    extends RelationshipLogicalLeafPlan(idGen) with StableLeafPlan with PhysicalPlanningPlan {
+
+  override val availableSymbols: Set[LogicalVariable] = argumentIds ++ Set(idName, leftNode, rightNode)
+
+  override def usedVariables: Set[LogicalVariable] = Set.empty
+
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable])
+    : PartitionedUndirectedUnionRelationshipTypesScan =
     copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
 
   override def leftNode: LogicalVariable = startNode

@@ -123,6 +123,7 @@ import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedAllRelationshi
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipIndexScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipTypeScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedUnionRelationshipTypesScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexSeek
@@ -130,6 +131,7 @@ import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedAllRelations
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipIndexScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipTypeScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedUnionRelationshipTypesScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
 import org.neo4j.cypher.internal.logical.plans.Prober
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
@@ -518,6 +520,26 @@ case class InterpretedPipeMapper(
           types.map(l => LazyType(l)(semanticTable)),
           endNode.name,
           indexOrder
+        )(id = id)
+
+      case PartitionedDirectedUnionRelationshipTypesScan(ident, fromNode, types, endNode, _) =>
+        indexRegistrator.registerTypeScan()
+        DirectedUnionRelationshipTypesScanPipe(
+          ident.name,
+          fromNode.name,
+          types.map(l => LazyType(l)(semanticTable)),
+          endNode.name,
+          IndexOrderNone
+        )(id = id)
+
+      case PartitionedUndirectedUnionRelationshipTypesScan(ident, fromNode, types, endNode, _) =>
+        indexRegistrator.registerTypeScan()
+        UndirectedUnionRelationshipTypesScanPipe(
+          ident.name,
+          fromNode.name,
+          types.map(l => LazyType(l)(semanticTable)),
+          endNode.name,
+          IndexOrderNone
         )(id = id)
 
       case DirectedRelationshipUniqueIndexSeek(
