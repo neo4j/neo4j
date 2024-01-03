@@ -284,7 +284,7 @@ abstract class UndirectedRelationshipByIdSeekTestBase[CONTEXT <: RuntimeContext]
       .produceResults("r")
       .semiApply()
       .|.expand("(c)-[:BA]->(d)")
-      .|.undirectedRelationshipByIdSeek("unused1", "unused2", "c", Set(), 28)
+      .|.undirectedRelationshipByIdSeek("unused1", "unused2", "c", Set(), abs.head.getId)
       .allRelationshipsScan("(a)-[r]-(b)")
       .build()
 
