@@ -48,6 +48,7 @@ import org.neo4j.graphdb.schema.IndexSettingUtil
 import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexType
+import org.neo4j.kernel.KernelVersion
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
 import org.neo4j.kernel.api.impl.schema.vector.VectorIndexVersion
 import org.neo4j.kernel.database.NormalizedDatabaseName
@@ -481,15 +482,19 @@ trait IndexOptionsConverter[T] extends OptionsConverter[T] {
     val maybeIndexProvider = options.getOption("indexprovider")
     val maybeConfig = options.getOption("indexconfig")
 
-    val indexProvider = maybeIndexProvider.map(p => assertValidIndexProvider(p, schemaType, indexType))
+    val indexProvider = maybeIndexProvider.map(assertValidIndexProvider(_, schemaType, indexType))
     val configMap: java.util.Map[String, Object] =
-      maybeConfig.map(assertValidAndTransformConfig(_, schemaType)).getOrElse(Collections.emptyMap())
+      maybeConfig.map(assertValidAndTransformConfig(_, schemaType, indexProvider)).getOrElse(Collections.emptyMap())
     val indexConfig = IndexSettingUtil.toIndexConfigFromStringObjectMap(configMap)
 
     (indexProvider, indexConfig)
   }
 
-  protected def assertValidAndTransformConfig(config: AnyValue, schemaType: String): java.util.Map[String, Object]
+  protected def assertValidAndTransformConfig(
+    config: AnyValue,
+    schemaType: String,
+    indexProvider: Option[IndexProviderDescriptor]
+  ): java.util.Map[String, Object]
 
   private def assertValidIndexProvider(
     indexProvider: AnyValue,
@@ -600,8 +605,11 @@ case class PropertyExistenceOrTypeConstraintOptionsConverter(
   }
 
   // No options available, this method doesn't get called
-  override def assertValidAndTransformConfig(config: AnyValue, entity: String): java.util.Map[String, Object] =
-    Collections.emptyMap()
+  override protected def assertValidAndTransformConfig(
+    config: AnyValue,
+    entity: String,
+    indexProvider: Option[IndexProviderDescriptor]
+  ): java.util.Map[String, Object] = Collections.emptyMap()
 
   override def operation: String = s"create $entity property $constraintType constraint"
 }
@@ -621,7 +629,11 @@ abstract class CreateRangeOptionsConverter(schemaType: String)
   }
 
   // RANGE indexes has no available config settings
-  override def assertValidAndTransformConfig(config: AnyValue, schemaType: String): java.util.Map[String, Object] =
+  override protected def assertValidAndTransformConfig(
+    config: AnyValue,
+    schemaType: String,
+    indexProvider: Option[IndexProviderDescriptor]
+  ): java.util.Map[String, Object] =
     assertEmptyConfig(config, schemaType, "range")
 
   override def operation: String = s"create $schemaType"
@@ -637,7 +649,11 @@ case class CreateLookupIndexOptionsConverter(context: QueryContext)
   }
 
   // LOOKUP indexes has no available config settings
-  override def assertValidAndTransformConfig(config: AnyValue, schemaType: String): java.util.Map[String, Object] =
+  override protected def assertValidAndTransformConfig(
+    config: AnyValue,
+    schemaType: String,
+    indexProvider: Option[IndexProviderDescriptor]
+  ): java.util.Map[String, Object] =
     assertEmptyConfig(config, schemaType, "lookup")
 
   override def operation: String = s"create $schemaType"
@@ -655,7 +671,11 @@ case class CreateFulltextIndexOptionsConverter(context: QueryContext)
   // FULLTEXT indexes have two config settings:
   //    current keys: fulltext.analyzer and fulltext.eventually_consistent
   //    current values: string and boolean
-  override def assertValidAndTransformConfig(config: AnyValue, schemaType: String): java.util.Map[String, Object] = {
+  override protected def assertValidAndTransformConfig(
+    config: AnyValue,
+    schemaType: String,
+    indexProvider: Option[IndexProviderDescriptor]
+  ): java.util.Map[String, Object] = {
 
     def exceptionWrongType(suppliedValue: AnyValue): InvalidArgumentsException = {
       val pp = new PrettyPrinter()
@@ -697,7 +717,11 @@ case class CreateTextIndexOptionsConverter(context: QueryContext)
   }
 
   // TEXT indexes has no available config settings
-  override def assertValidAndTransformConfig(config: AnyValue, schemaType: String): java.util.Map[String, Object] =
+  override protected def assertValidAndTransformConfig(
+    config: AnyValue,
+    schemaType: String,
+    indexProvider: Option[IndexProviderDescriptor]
+  ): java.util.Map[String, Object] =
     assertEmptyConfig(config, schemaType, "text")
 
   override def operation: String = s"create $schemaType"
@@ -713,7 +737,11 @@ case class CreatePointIndexOptionsConverter(context: QueryContext)
   }
 
   // POINT indexes has point config settings
-  override def assertValidAndTransformConfig(config: AnyValue, schemaType: String): java.util.Map[String, Object] = {
+  override protected def assertValidAndTransformConfig(
+    config: AnyValue,
+    schemaType: String,
+    indexProvider: Option[IndexProviderDescriptor]
+  ): java.util.Map[String, Object] = {
     // current keys: spatial.* (cartesian.|cartesian-3d.|wgs-84.|wgs-84-3d.) + (min|max)
     // current values: Double[]
 
@@ -767,7 +795,11 @@ case class CreateVectorIndexOptionsConverter(context: QueryContext)
   }
 
   // VECTOR indexes has vector config settings
-  override def assertValidAndTransformConfig(config: AnyValue, schemaType: String): java.util.Map[String, Object] = {
+  override protected def assertValidAndTransformConfig(
+    config: AnyValue,
+    schemaType: String,
+    indexProvider: Option[IndexProviderDescriptor]
+  ): java.util.Map[String, Object] = {
     // current keys: vector.(dimensions|similarity_function)
     // current values: Long, String
 
@@ -801,6 +833,7 @@ case class CreateVectorIndexOptionsConverter(context: QueryContext)
         // Need to validate config settings here in the same way that is done in the procedure
         // since the exceptions given on procedure level is nicer than the ones down in kernel
         assertValidConfigValues(
+          indexProvider,
           hm.get(VECTOR_DIMENSIONS.getSettingName),
           hm.get(VECTOR_SIMILARITY_FUNCTION.getSettingName)
         )
@@ -846,9 +879,17 @@ case class CreateVectorIndexOptionsConverter(context: QueryContext)
   // Do the same checks as in the procedure + check for correct type
   // The checks would still be done and errors thrown otherwise but they'd be wrapped in less helpful errors,
   // so only looking at the top error would not give you the reason for the failure
-  private def assertValidConfigValues(dimensionValue: AnyRef, similarityFunctionValue: AnyRef): Unit = {
+  private def assertValidConfigValues(
+    maybeIndexProvider: Option[IndexProviderDescriptor],
+    dimensionValue: AnyRef,
+    similarityFunctionValue: AnyRef
+  ): Unit = {
+    val version = maybeIndexProvider.map(VectorIndexVersion.fromDescriptor).getOrElse(
+      VectorIndexVersion.latestSupportedVersion(KernelVersion.getLatestVersion(context.getConfig))
+    )
+
     // Check dimension
-    val maxDimensions = VectorIndexVersion.V1_0.maxDimensions
+    val maxDimensions = version.maxDimensions
     Objects.requireNonNull(dimensionValue, s"'$dimensionsSetting' must not be null")
     val vectorDimensionCheck = dimensionValue match {
       case l: java.lang.Long =>
@@ -871,7 +912,7 @@ case class CreateVectorIndexOptionsConverter(context: QueryContext)
     Objects.requireNonNull(similarityFunctionValue, s"'$similarityFunctionSetting' must not be null")
     similarityFunctionValue match {
       case s: String =>
-        VectorIndexVersion.V1_0.similarityFunction(s)
+        version.similarityFunction(s)
       case _ =>
         throw new InvalidArgumentsException(
           s"Could not create $schemaType with specified index config '$similarityFunctionSetting'. Expected a String."
