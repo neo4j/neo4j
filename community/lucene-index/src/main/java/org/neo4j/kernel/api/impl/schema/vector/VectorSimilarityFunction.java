@@ -45,6 +45,15 @@ public enum VectorSimilarityFunction implements org.neo4j.kernel.api.vector.Vect
             }
             return vector;
         }
+
+        @Override
+        public float[] toValidVector(VectorCandidate candidate) {
+            final var vector = maybeToValidVector(candidate);
+            if (vector == null) {
+                throw new IllegalArgumentException("Vector must contain finite values. Provided: " + candidate);
+            }
+            return vector;
+        }
     },
 
     COSINE {
@@ -70,6 +79,17 @@ public enum VectorSimilarityFunction implements org.neo4j.kernel.api.vector.Vect
                 return null;
             }
 
+            return vector;
+        }
+
+        @Override
+        public float[] toValidVector(VectorCandidate candidate) {
+            final var vector = maybeToValidVector(candidate);
+            if (vector == null) {
+                throw new IllegalArgumentException(
+                        "Vector must contain finite values, and have positive and finite l2-norm. Provided: "
+                                + candidate);
+            }
             return vector;
         }
     };

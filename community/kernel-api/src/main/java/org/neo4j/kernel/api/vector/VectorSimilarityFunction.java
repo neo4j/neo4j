@@ -26,7 +26,13 @@ public interface VectorSimilarityFunction {
         return maybeToValidVector(VectorCandidate.maybeFrom(candidate));
     }
 
+    default float[] toValidVector(Object candidate) {
+        return toValidVector(VectorCandidate.from(candidate));
+    }
+
     float[] maybeToValidVector(VectorCandidate candidate);
+
+    float[] toValidVector(VectorCandidate candidate);
 
     float compare(float[] vector1, float[] vector2);
 }

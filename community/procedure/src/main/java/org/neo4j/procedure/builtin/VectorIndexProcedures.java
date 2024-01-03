@@ -185,21 +185,7 @@ public class VectorIndexProcedures {
 
     private void setVectorProperty(Entity entity, String propKey, List<Double> vector) {
         // assume EUCLIDEAN as the bare minimum invariant
-        entity.setProperty(propKey, validVector(VectorSimilarityFunction.EUCLIDEAN, vector));
-    }
-
-    private float[] validVector(VectorSimilarityFunction similarityFunction, List<Double> candidate) {
-        final var vector = similarityFunction.maybeToValidVector(candidate);
-        if (vector == null) {
-            throw switch (similarityFunction) {
-                case EUCLIDEAN -> new IllegalArgumentException(
-                        "Index query vector must contain finite values. Provided: " + candidate);
-                case COSINE -> new IllegalArgumentException(
-                        "Index query vector must contain finite values, and have positive and finite l2-norm."
-                                + " Provided: " + candidate);
-            };
-        }
-        return vector;
+        entity.setProperty(propKey, VectorSimilarityFunction.EUCLIDEAN.toValidVector(vector));
     }
 
     private float[] validateAndConvertQuery(IndexDescriptor index, List<Double> query) {
@@ -211,7 +197,7 @@ public class VectorIndexProcedures {
         }
 
         final var similarityFunction = vectorSimilarityFunctionFrom(config);
-        return validVector(similarityFunction, query);
+        return similarityFunction.toValidVector(query);
     }
 
     private IndexDescriptor getValidIndex(String name) {
