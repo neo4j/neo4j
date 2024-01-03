@@ -73,40 +73,40 @@ object ValidateAvailableSymbols extends ValidatingCondition {
    * Note! Current implementation is not really correct,
    * but a quick way to cover a lot of cases without much effort.
    */
-  private def availableVariables(plan: LogicalPlan): Set[String] = {
-    plan.availableSymbols.map(_.name) ++
-      plan.lhs.map(_.availableSymbols.map(_.name)).getOrElse(Set.empty) ++
-      plan.rhs.map(_.availableSymbols.map(_.name)).getOrElse(Set.empty)
+  private def availableVariables(plan: LogicalPlan): Set[LogicalVariable] = {
+    plan.availableSymbols ++
+      plan.lhs.map(_.availableSymbols).getOrElse(Set.empty) ++
+      plan.rhs.map(_.availableSymbols).getOrElse(Set.empty)
   }
 
-  private def readVariables(plan: LogicalPlan): Set[String] = readVariables(plan, plan.id)
+  private def readVariables(plan: LogicalPlan): Set[LogicalVariable] = readVariables(plan, plan.id)
 
   /*
    * Returns variables that are read in the specified plan.
    * Note! This implementation is not complete.
    */
-  private def readVariables(plan: LogicalPlan, id: Id): Set[String] = {
-    plan.folder.treeFold(Set.empty[String]) {
+  private def readVariables(plan: LogicalPlan, id: Id): Set[LogicalVariable] = {
+    plan.folder.treeFold(Set.empty[LogicalVariable]) {
       case otherPlan: LogicalPlan if otherPlan.id != id => acc => SkipChildren(acc)
       case v: LogicalVariable => acc =>
-          SkipChildren(acc + v.name)
+          SkipChildren(acc + v)
       case expression: ScopeExpression => acc =>
-          TraverseChildrenNewAccForSiblings[Set[String]](acc, _ -- expression.introducedVariables.map(_.name))
+          TraverseChildrenNewAccForSiblings[Set[LogicalVariable]](acc, _ -- expression.introducedVariables)
       case predicate: VariablePredicate => acc =>
-          TraverseChildrenNewAccForSiblings[Set[String]](acc, _ - predicate.variable.name)
+          TraverseChildrenNewAccForSiblings[Set[LogicalVariable]](acc, _ - predicate.variable)
       case foreach: Foreach =>
-        val createVariables = foreach.mutations.foldLeft(Set.empty[String]) {
-          case (vars, CreatePattern(commands)) => vars ++ commands.map(_.variable.name)
+        val createVariables = foreach.mutations.foldLeft(Set.empty[LogicalVariable]) {
+          case (vars, CreatePattern(commands)) => vars ++ commands.map(_.variable)
           case (vars, _)                       => vars
         }
-        val excluded = createVariables + foreach.variable.name
-        acc => TraverseChildrenNewAccForSiblings[Set[String]](acc, _ -- excluded)
+        val excluded = createVariables + foreach.variable
+        acc => TraverseChildrenNewAccForSiblings[Set[LogicalVariable]](acc, _ -- excluded)
       case foreach: ForeachApply => acc =>
-          TraverseChildrenNewAccForSiblings[Set[String]](acc, _ - foreach.variable.name)
+          TraverseChildrenNewAccForSiblings[Set[LogicalVariable]](acc, _ - foreach.variable)
       case rc: RuntimeConstant => acc =>
-          TraverseChildrenNewAccForSiblings[Set[String]](acc, _ - rc.variable.name)
+          TraverseChildrenNewAccForSiblings[Set[LogicalVariable]](acc, _ - rc.variable)
       case cachedProp: CachedProperty => acc =>
-          SkipChildren(acc + cachedProp.entityVariable.name)
+          SkipChildren(acc + cachedProp.entityVariable)
 
       // No special reason to skip the following, other than to save time
       case _: StatefulShortestPath => acc =>

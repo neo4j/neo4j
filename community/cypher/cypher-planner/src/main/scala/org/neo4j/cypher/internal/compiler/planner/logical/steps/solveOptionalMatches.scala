@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.BestResults
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.unnestOptional
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.logical.plans.AggregatingPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlan
@@ -106,7 +107,7 @@ case object applyOptional extends OptionalSolver {
 
         val rhs = context.staticComponents.logicalPlanProducer.planOptional(
           innerWithFixedArguments,
-          lhsSymbols.map(_.name),
+          lhsSymbols,
           innerContext,
           optionalQg
         )
@@ -138,7 +139,7 @@ case object outerHashJoin extends OptionalSolver {
       )
     ) {
       val solvedHints = optionalQg.joinHints.filter { hint =>
-        val hintVariables = hint.variables.map(_.name).toSet
+        val hintVariables = hint.variables.toSet[LogicalVariable]
         hintVariables.subsetOf(joinNodes)
       }
       val rhsQG = optionalQg.removeArguments().removeHints(solvedHints.map(_.asInstanceOf[Hint]))
@@ -147,7 +148,7 @@ case object outerHashJoin extends OptionalSolver {
         context.staticComponents.queryGraphSolver.plan(rhsQG, interestingOrderConfig, context)
 
       (side1Plan: LogicalPlan) => {
-        if (joinNodes.forall(side1Plan.availableSymbols.map(_.name))) {
+        if (joinNodes.subsetOf(side1Plan.availableSymbols)) {
           Iterator(
             leftOuterJoin(context, joinNodes, side1Plan, side2Plan, solvedHints),
             rightOuterJoin(context, joinNodes, side1Plan, side2Plan, solvedHints)
@@ -163,7 +164,7 @@ case object outerHashJoin extends OptionalSolver {
 
   private def leftOuterJoin(
     context: LogicalPlanningContext,
-    joinNodes: Set[String],
+    joinNodes: Set[LogicalVariable],
     lhs: LogicalPlan,
     rhs: LogicalPlan,
     solvedHints: Set[UsingJoinHint]
@@ -172,7 +173,7 @@ case object outerHashJoin extends OptionalSolver {
 
   private def rightOuterJoin(
     context: LogicalPlanningContext,
-    joinNodes: Set[String],
+    joinNodes: Set[LogicalVariable],
     rhs: LogicalPlan,
     lhs: LogicalPlan,
     solvedHints: Set[UsingJoinHint]

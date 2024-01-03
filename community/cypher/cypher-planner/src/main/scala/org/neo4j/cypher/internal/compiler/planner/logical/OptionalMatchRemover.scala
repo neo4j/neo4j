@@ -121,15 +121,15 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
     queryInput: Option[Seq[Variable]],
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): RegularSinglePlannerQuery = {
-    val updateDeps = graph.mutatingPatterns.flatMap(_.dependencies.map(_.name))
-    val dependencies: Set[String] = projectionDeps.map(_.name).toSet ++ updateDeps
+    val updateDeps = graph.mutatingPatterns.flatMap(_.dependencies)
+    val dependencies = projectionDeps.toSet ++ updateDeps
 
     val optionalMatches = graph.optionalMatches.flatMapWithTail {
       (original: QueryGraph, tail: Seq[QueryGraph]) =>
         // The dependencies on an optional match are:
         val allDeps =
           // dependencies from optional matches listed later in the query
-          tail.flatMap(g => g.argumentIds ++ g.selections.variableDependencies.map(_.name)).toSet ++
+          tail.flatMap(g => g.argumentIds ++ g.selections.variableDependencies).toSet ++
             // any dependencies from the next horizon
             dependencies --
             // But we don't need to solve variables already present by the non-optional part of the QG
@@ -154,7 +154,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
             // Here, we keep the adjacent nodes, and in the next step we add the relationship itself
             val elementsToKeep2 =
               elementsToKeep1 ++ overlappingRels(original.patternRelationships, elementsToKeep1).flatMap(r =>
-                Seq(r.left, r.right).map(_.name)
+                Seq(r.left, r.right)
               )
 
             // We must (again) keep all variables connecting the so far elementsToKeep
@@ -164,7 +164,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
           }
 
           val (patternsToKeep, patternsToFilter) =
-            original.patternRelationships.partition(r => elementsToKeep(r.variable.name))
+            original.patternRelationships.partition(r => elementsToKeep(r.variable))
           val patternNodes = original.patternNodes.filter(elementsToKeep.apply)
 
           val patternPredicates = patternsToFilter.map(toAst(
@@ -191,12 +191,15 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
    * Given a set of relationships of the original query graph and a set of so-far elements to keep, return all relationships that must be kept.
    * These are all so-far kept relationships plus all other relationships that have an overlap, unless the overlap is on an elementToKeep.
    */
-  private def overlappingRels(rels: Set[PatternRelationship], elementsToKeep: Set[String]): Set[PatternRelationship] = {
-    val (keptRels, notYetKeptRels) = rels.partition(r => elementsToKeep(r.variable.name))
+  private def overlappingRels(
+    rels: Set[PatternRelationship],
+    elementsToKeep: Set[LogicalVariable]
+  ): Set[PatternRelationship] = {
+    val (keptRels, notYetKeptRels) = rels.partition(r => elementsToKeep(r.variable))
     val alsoKeptRels = notYetKeptRels.filter { rel =>
-      val relIds = rel.coveredIds.map(_.name) -- elementsToKeep
+      val relIds = rel.coveredIds -- elementsToKeep
       (notYetKeptRels - rel).exists { rel2 =>
-        val rel2Ids = rel2.coveredIds.map(_.name) -- elementsToKeep
+        val rel2Ids = rel2.coveredIds -- elementsToKeep
         relIds.intersect(rel2Ids).nonEmpty
       }
     }
@@ -211,17 +214,20 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
    * @param elementsToKeep             node and relationship variables that cannot be moved into [[ExistsIRExpression]]s.
    */
   case class ExtractionResult(
-    predicatesForIRExpressions: Map[String, Expression],
+    predicatesForIRExpressions: Map[LogicalVariable, Expression],
     predicatesToKeep: Set[Expression],
-    elementsToKeep: Set[String]
+    elementsToKeep: Set[LogicalVariable]
   )
 
   @tailrec
-  private def extractElementsAndPatterns(original: QueryGraph, elementsToKeepInitial: Set[String]): ExtractionResult = {
+  private def extractElementsAndPatterns(
+    original: QueryGraph,
+    elementsToKeepInitial: Set[LogicalVariable]
+  ): ExtractionResult = {
     val PartitionedPredicates(predicatesForIRExpressions, predicatesToKeep) =
       partitionPredicates(original.selections.predicates, elementsToKeepInitial)
 
-    val variablesNeededForPredicates = predicatesToKeep.flatMap(expression => expression.dependencies.map(_.name))
+    val variablesNeededForPredicates = predicatesToKeep.flatMap(expression => expression.dependencies)
     val elementsToKeep = smallestGraphIncluding(original, elementsToKeepInitial ++ variablesNeededForPredicates)
 
     if (elementsToKeep.equals(elementsToKeepInitial)) {
@@ -238,16 +244,16 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
    * @param predicatesToKeep           predicate expressions that cannot be moved into [[ExistsIRExpression]]s.
    */
   case class PartitionedPredicates(
-    predicatesForIRExpressions: Map[String, Expression],
+    predicatesForIRExpressions: Map[LogicalVariable, Expression],
     predicatesToKeep: Set[Expression]
   )
 
   /**
    * Checks if an Expression is a composition of HasLabels on the same variable.
    */
-  def checkLabelExpression(expression: Expression, variable: String): TailRec[Boolean] = {
+  def checkLabelExpression(expression: Expression, variable: LogicalVariable): TailRec[Boolean] = {
     expression match {
-      case HasLabels(Variable(varName), labels) if variable == varName =>
+      case HasLabels(varName: Variable, labels) if variable == varName =>
         require(labels.size == 1) // We know there is only a single label here because AST rewriting
         TailCalls.done(true)
 
@@ -268,26 +274,26 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
    * @return Map of label predicates to move to [[ExistsIRExpression]]s,
    *         and the set of remaining predicates.
    */
-  private def partitionPredicates(predicates: Set[Predicate], kept: Set[String]): PartitionedPredicates = {
+  private def partitionPredicates(predicates: Set[Predicate], kept: Set[LogicalVariable]): PartitionedPredicates = {
 
-    val predicatesForIRExpressions = mutable.Map.empty[String, Expression]
+    val predicatesForIRExpressions = mutable.Map.empty[LogicalVariable, Expression]
     val predicatesToKeep = mutable.Set.empty[Expression]
 
-    def addLabel(idName: String, newLabelExpression: Expression): Unit = {
-      val current = predicatesForIRExpressions.get(idName)
+    def addLabel(variable: LogicalVariable, newLabelExpression: Expression): Unit = {
+      val current = predicatesForIRExpressions.get(variable)
       val labelExpression = current match {
         case None =>
           newLabelExpression
         case Some(labelExpression) =>
           Ands(ListSet(labelExpression, newLabelExpression))(InputPosition.NONE)
       }
-      predicatesForIRExpressions += idName -> labelExpression
+      predicatesForIRExpressions += variable -> labelExpression
     }
 
     predicates.foreach {
       case Predicate(deps, predicate)
-        if deps.size == 1 && !kept(deps.head.name) && checkLabelExpression(predicate, deps.head.name).result =>
-        addLabel(deps.head.name, predicate)
+        if deps.size == 1 && !kept(deps.head) && checkLabelExpression(predicate, deps.head).result =>
+        addLabel(deps.head, predicate)
 
       case Predicate(_, expr) =>
         predicatesToKeep += expr
@@ -311,20 +317,20 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
   }
 
   private def toAst(
-    elementsToKeep: Set[String],
-    predicates: Map[String, Expression],
+    elementsToKeep: Set[LogicalVariable],
+    predicates: Map[LogicalVariable, Expression],
     pattern: PatternRelationship,
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): Expression = {
 
-    val innerVars = pattern.boundaryNodesSet.map(_.name)
+    val innerVars = pattern.boundaryNodesSet
     val innerPreds = innerVars.flatMap(predicates.get)
 
     val arguments = innerVars.intersect(elementsToKeep)
     val query = RegularSinglePlannerQuery(
       queryGraph = QueryGraph(
         argumentIds = arguments,
-        patternNodes = pattern.boundaryNodesSet.map(_.name),
+        patternNodes = pattern.boundaryNodesSet,
         patternRelationships = Set(pattern),
         selections = Selections.from(innerPreds)
       ),
@@ -344,7 +350,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
     )(
       InputPosition.NONE,
       None, // There is no reasonable way of calculating introduced variables, so IRExpressions should not be accessing it and it can be left blank
-      Some(arguments.map(Variable(_)(InputPosition.NONE)))
+      Some(arguments)
     )
   }
 
@@ -375,18 +381,18 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
   /**
    * Return all variables in the smallest graph that includes all of `mustInclude`.
    */
-  def smallestGraphIncluding(qg: QueryGraph, mustInclude: Set[String]): Set[String] = {
+  def smallestGraphIncluding(qg: QueryGraph, mustInclude: Set[LogicalVariable]): Set[LogicalVariable] = {
     if (mustInclude.size < 2)
       mustInclude intersect qg.allCoveredIds
     else {
-      val mustIncludeRels = qg.patternRelationships.filter(r => mustInclude(r.variable.name))
+      val mustIncludeRels = qg.patternRelationships.filter(r => mustInclude(r.variable))
       val mustIncludeNodes =
-        mustInclude.intersect(qg.patternNodes) ++ mustIncludeRels.flatMap(r => Seq(r.left, r.right).map(_.name))
+        mustInclude.intersect(qg.patternNodes) ++ mustIncludeRels.flatMap(r => Seq(r.left, r.right))
       var accumulatedElements = mustIncludeNodes
       for {
         lhs <- mustIncludeNodes
         rhs <- mustIncludeNodes
-        if lhs < rhs
+        if lhs.name < rhs.name
       } {
         accumulatedElements ++= findPathBetween(qg, lhs, rhs)
       }
@@ -394,28 +400,32 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
     }
   }
 
-  private case class PathSoFar(end: String, alreadyVisited: Set[PatternRelationship])
+  private case class PathSoFar(end: LogicalVariable, alreadyVisited: Set[PatternRelationship])
 
-  private def hasExpandedInto(from: Seq[PathSoFar], into: Seq[PathSoFar]): Seq[Set[String]] =
+  private def hasExpandedInto(from: Seq[PathSoFar], into: Seq[PathSoFar]): Seq[Set[LogicalVariable]] =
     for {
       lhs <- from
       rhs <- into
-      if rhs.alreadyVisited.exists(p => p.coveredIds.map(_.name).contains(lhs.end))
+      if rhs.alreadyVisited.exists(p => p.coveredIds.contains(lhs.end))
     } yield {
-      (lhs.alreadyVisited ++ rhs.alreadyVisited).flatMap(_.coveredIds.map(_.name))
+      (lhs.alreadyVisited ++ rhs.alreadyVisited).flatMap(_.coveredIds)
     }
 
   private def expand(queryGraph: QueryGraph, from: Seq[PathSoFar]): Seq[PathSoFar] = {
     from.flatMap {
       case PathSoFar(end, alreadyVisited) =>
         queryGraph.patternRelationships.collect {
-          case pr if !alreadyVisited(pr) && pr.coveredIds.map(_.name)(end) =>
-            PathSoFar(pr.otherSide(varFor(end)).name, alreadyVisited + pr)
+          case pr if !alreadyVisited(pr) && pr.coveredIds(end) =>
+            PathSoFar(pr.otherSide(end), alreadyVisited + pr)
         }
     }
   }
 
-  private def findPathBetween(qg: QueryGraph, startFromL: String, startFromR: String): Set[String] = {
+  private def findPathBetween(
+    qg: QueryGraph,
+    startFromL: LogicalVariable,
+    startFromR: LogicalVariable
+  ): Set[LogicalVariable] = {
     var l = Seq(PathSoFar(startFromL, Set.empty))
     var r = Seq(PathSoFar(startFromR, Set.empty))
 
@@ -436,7 +446,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
     }
 
     // Did not find any path. Let's do the safe thing and return everything
-    qg.patternRelationships.flatMap(_.coveredIds).map(_.name)
+    qg.patternRelationships.flatMap(_.coveredIds)
   }
 
   override def preConditions: Set[StepSequencer.Condition] = Set(

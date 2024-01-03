@@ -59,8 +59,8 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
   private val subqueryExp = ExistsIRExpression(
     RegularSinglePlannerQuery(
       QueryGraph(
-        argumentIds = Set(arg.name),
-        patternNodes = Set(arg, nodeName).map(_.name),
+        argumentIds = Set(arg),
+        patternNodes = Set(arg, nodeName),
         patternRelationships =
           Set(patternRel)
       )
@@ -72,8 +72,8 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
   private val subqueryExp2 = ExistsIRExpression(
     RegularSinglePlannerQuery(
       QueryGraph(
-        argumentIds = Set(arg.name),
-        patternNodes = Set(arg, nodeName2).map(_.name),
+        argumentIds = Set(arg),
+        patternNodes = Set(arg, nodeName2),
         patternRelationships =
           Set(PatternRelationship(relName2, (arg, nodeName2), dir, types, SimplePatternLength))
       )
@@ -88,7 +88,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val selections = Selections(Set(predicate))
 
     val qg = QueryGraph(
-      patternNodes = Set(arg.name),
+      patternNodes = Set(arg),
       selections = selections
     )
 
@@ -119,7 +119,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val selections = Selections(Set(predicate))
 
     val qg = QueryGraph(
-      patternNodes = Set(arg.name),
+      patternNodes = Set(arg),
       selections = selections
     )
 
@@ -151,7 +151,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val selections = Selections(Set(orPredicate))
 
     val qg = QueryGraph(
-      patternNodes = Set(arg.name),
+      patternNodes = Set(arg),
       selections = selections
     )
 
@@ -178,7 +178,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val selections = Selections(Set(orPredicate))
 
     val qg = QueryGraph(
-      patternNodes = Set(arg.name),
+      patternNodes = Set(arg),
       selections = selections
     )
 
@@ -210,7 +210,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val selections = Selections(Set(orPredicate))
 
     val qg = QueryGraph(
-      patternNodes = Set(arg.name),
+      patternNodes = Set(arg),
       selections = selections
     )
 
@@ -255,7 +255,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val selections = Selections(Set(orPredicate))
 
     val qg = QueryGraph(
-      patternNodes = Set(arg.name),
+      patternNodes = Set(arg),
       selections = selections
     )
 
@@ -300,7 +300,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val selections = Selections(Set(orPredicate))
 
     val qg = QueryGraph(
-      patternNodes = Set(arg.name),
+      patternNodes = Set(arg),
       selections = selections
     )
 
@@ -348,7 +348,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val selections = Selections(Set(orPredicate))
 
     val qg = QueryGraph(
-      patternNodes = Set(arg.name),
+      patternNodes = Set(arg),
       selections = selections
     )
 
@@ -400,7 +400,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val selections = Selections(Set(orPredicate))
 
     val qg = QueryGraph(
-      patternNodes = Set(arg.name),
+      patternNodes = Set(arg),
       selections = selections
     )
 

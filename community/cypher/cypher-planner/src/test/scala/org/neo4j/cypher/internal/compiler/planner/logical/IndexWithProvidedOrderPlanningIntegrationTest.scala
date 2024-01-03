@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
@@ -1052,10 +1053,10 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
      */
     def byPredicateSelectivity(
       baseCardinality: Double,
-      patternNodesPredicateSelectivity: Map[Set[String], Map[Expression, Double]]
+      patternNodesPredicateSelectivity: Map[Set[LogicalVariable], Map[Expression, Double]]
     ): PartialFunction[PlannerQuery, Double] = {
-      def mapsPatternNodes(patternNodes: Set[String]) = patternNodesPredicateSelectivity.contains(patternNodes)
-      def mapsPredicate(patternNodes: Set[String], predicate: Predicate) =
+      def mapsPatternNodes(patternNodes: Set[LogicalVariable]) = patternNodesPredicateSelectivity.contains(patternNodes)
+      def mapsPredicate(patternNodes: Set[LogicalVariable], predicate: Predicate) =
         patternNodesPredicateSelectivity(patternNodes).contains(predicate.expr)
 
       {
@@ -1077,7 +1078,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           cardinality = mapCardinality(byPredicateSelectivity(
             10000,
             Map(
-              Set("a") -> Map(
+              Set[LogicalVariable](v"a") -> Map(
                 // 50% have :A
                 hasLabels("a", "A") -> 0.5,
                 // 10% have .prop > 'foo'
@@ -1089,7 +1090,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
                 // 1% have .prop = <given value>
                 Equals(prop("a", "prop"), prop("b", "prop"))(pos) -> 0.01
               ),
-              Set("b") -> Map(
+              Set[LogicalVariable](v"b") -> Map(
                 // 50% have :B
                 hasLabels("b", "B") -> 0.5,
                 // 0.01% have .prop = <given value>
@@ -1286,8 +1287,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           indexOn("A", "prop").providesOrder(orderCapability)
           cardinality = mapCardinality {
             // Force the planner to start at a
-            case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a") => 100.0
-            case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("b") => 2000.0
+            case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set(v"a") => 100.0
+            case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set(v"b") => 2000.0
           }
         } getLogicalPlanFor s"MATCH (a:A)-[r]->(b) WHERE a.prop > 'foo' RETURN a.prop, count(b) ORDER BY a.prop $cypherToken"
 
@@ -1319,8 +1320,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           indexOn("A", "prop").providesOrder(orderCapability)
           cardinality = mapCardinality {
             // Force the planner to start at a
-            case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a") => 100.0
-            case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("b") => 2000.0
+            case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set(v"a") => 100.0
+            case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set(v"b") => 2000.0
           }
         } getLogicalPlanFor s"MATCH (a:A)-[r]->(b) WHERE a.prop > 'foo' RETURN a.prop ORDER BY a.prop $cypherToken, b.prop"
 
@@ -1357,12 +1358,14 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           indexOn("A", "prop").providesOrder(orderCapability)
           cardinality = mapCardinality {
             // Force the planner to start at a
-            case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a")      => 1.0
-            case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("b")      => 2000.0
-            case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("c")      => 2000.0
-            case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a", "b") => 50.0
-            case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("b", "c") => 500.0
-            case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a", "b", "c") =>
+            case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set(v"a") => 1.0
+            case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set(v"b") => 2000.0
+            case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set(v"c") => 2000.0
+            case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set(v"a", v"b") => 50.0
+            case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set(v"b", v"c") =>
+              500.0
+            case RegularSinglePlannerQuery(queryGraph, _, _, _, _)
+              if queryGraph.patternNodes == Set(v"a", v"b", v"c") =>
               1000.0
           }
         } getLogicalPlanFor s"MATCH (a:A)-[r]->(b)-[q]->(c) WHERE a.prop > 'foo' RETURN a.prop ORDER BY a.prop $cypherToken, b.prop"
@@ -1408,8 +1411,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           indexOn("A", "prop").providesOrder(orderCapability)
           cardinality = mapCardinality {
             // Force the planner to start at a
-            case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a") => 100.0
-            case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("b") => 2000.0
+            case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set(v"a") => 100.0
+            case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set(v"b") => 2000.0
           }
         } getLogicalPlanFor s"MATCH (a:A)-[r]->(b) WHERE a.prop > 'foo' RETURN DISTINCT a.prop ORDER BY a.prop $cypherToken"
 
@@ -1488,8 +1491,9 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           indexOn("A", "prop").providesOrder(orderCapability)
           cardinality = mapCardinality {
             // Force the planner to start at b
-            case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a", "b") => 100.0
-            case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("b")      => 20.0
+            case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set(v"a", v"b") =>
+              100.0
+            case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set(v"b") => 20.0
           }
         } getLogicalPlanFor s"MATCH (b) OPTIONAL MATCH (a:A)-[r]->(b) USING JOIN ON b WHERE a.prop > 'foo' RETURN a.prop ORDER BY a.prop $cypherToken"
 

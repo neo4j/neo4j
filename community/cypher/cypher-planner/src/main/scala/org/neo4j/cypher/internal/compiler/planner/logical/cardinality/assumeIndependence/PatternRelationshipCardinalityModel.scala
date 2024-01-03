@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence
 
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.PatternRelationship
@@ -48,8 +49,8 @@ trait PatternRelationshipCardinalityModel extends NodeCardinalityModel {
         getSimpleRelationshipCardinality(
           context = context,
           labelInfo = labelInfo,
-          leftNode = relationship.left.name,
-          rightNode = relationship.right.name,
+          leftNode = relationship.left,
+          rightNode = relationship.right,
           relationshipTypes = relationship.types,
           relationshipDirection = relationship.dir
         )
@@ -60,12 +61,12 @@ trait PatternRelationshipCardinalityModel extends NodeCardinalityModel {
           .view
           .map {
             case 0 =>
-              getEmptyPathPatternCardinality(context, labelInfo, relationship.left.name, relationship.right.name)
+              getEmptyPathPatternCardinality(context, labelInfo, relationship.left, relationship.right)
             case 1 => getSimpleRelationshipCardinality(
                 context = context,
                 labelInfo = labelInfo,
-                leftNode = relationship.left.name,
-                rightNode = relationship.right.name,
+                leftNode = relationship.left,
+                rightNode = relationship.right,
                 relationshipTypes = relationship.types,
                 relationshipDirection = relationship.dir
               )
@@ -85,8 +86,8 @@ trait PatternRelationshipCardinalityModel extends NodeCardinalityModel {
                       getSimpleRelationshipCardinality(
                         context = context,
                         labelInfo = labelInfo,
-                        leftNode = relationship.left.name,
-                        rightNode = relationship.right.name,
+                        leftNode = relationship.left,
+                        rightNode = relationship.right,
                         relationshipTypes = relationship.types,
                         relationshipDirection = relationship.dir
                       )
@@ -141,8 +142,8 @@ trait PatternRelationshipCardinalityModel extends NodeCardinalityModel {
   def getEmptyPathPatternCardinality(
     context: QueryGraphCardinalityContext,
     labelInfo: LabelInfo,
-    left: String,
-    right: String
+    left: LogicalVariable,
+    right: LogicalVariable
   ): Cardinality = {
     val labels = for {
       labelsOnLeft <- getResolvedNodeLabels(context, labelInfo, left)
@@ -154,8 +155,8 @@ trait PatternRelationshipCardinalityModel extends NodeCardinalityModel {
   def getSimpleRelationshipCardinality(
     context: QueryGraphCardinalityContext,
     labelInfo: LabelInfo,
-    leftNode: String,
-    rightNode: String,
+    leftNode: LogicalVariable,
+    rightNode: LogicalVariable,
     relationshipTypes: Seq[RelTypeName],
     relationshipDirection: SemanticDirection
   ): Cardinality = {
@@ -194,14 +195,14 @@ trait PatternRelationshipCardinalityModel extends NodeCardinalityModel {
       getSimpleRelationshipCardinality(
         context = context,
         labelInfo = labelInfo,
-        leftNode = relationship.left.name,
-        rightNode = relationship.right.name,
+        leftNode = relationship.left,
+        rightNode = relationship.right,
         relationshipTypes = relationship.types,
         relationshipDirection = relationship.dir
       )
 
     val nodeCardinality =
-      getNodeCardinality(context, labelInfo, relationship.right.name)
+      getNodeCardinality(context, labelInfo, relationship.right)
         .getOrElse(context.allNodesCardinality)
 
     Multiplier.ofDivision(relCardinality, nodeCardinality)
@@ -217,8 +218,8 @@ trait PatternRelationshipCardinalityModel extends NodeCardinalityModel {
       getSimpleRelationshipCardinality(
         context = labelInfoAndContextForEndPoints._2,
         labelInfo = labelInfoAndContextForEndPoints._1,
-        leftNode = relationship.left.name,
-        rightNode = relationship.right.name,
+        leftNode = relationship.left,
+        rightNode = relationship.right,
         relationshipTypes = relationship.types,
         relationshipDirection = relationship.dir
       )
@@ -227,7 +228,7 @@ trait PatternRelationshipCardinalityModel extends NodeCardinalityModel {
       getNodeCardinality(
         labelInfoAndContextForNodeCardinality._2,
         labelInfoAndContextForNodeCardinality._1,
-        relationship.right.name
+        relationship.right
       )
         .getOrElse(labelInfoAndContextForNodeCardinality._2.allNodesCardinality)
 

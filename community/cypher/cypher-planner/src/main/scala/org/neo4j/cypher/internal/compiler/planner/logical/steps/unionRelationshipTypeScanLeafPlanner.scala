@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrderin
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.RelationshipLeafPlanner.planHiddenSelectionAndRelationshipLeafPlan
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QueryGraph
@@ -34,7 +35,7 @@ import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 
-case class unionRelationshipTypeScanLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
+case class unionRelationshipTypeScanLeafPlanner(skipIDs: Set[LogicalVariable]) extends LeafPlanner {
 
   override def apply(
     queryGraph: QueryGraph,
@@ -42,10 +43,10 @@ case class unionRelationshipTypeScanLeafPlanner(skipIDs: Set[String]) extends Le
     context: LogicalPlanningContext
   ): Set[LogicalPlan] = {
     def shouldIgnore(pattern: PatternRelationship) =
-      queryGraph.argumentIds.contains(pattern.variable.name) ||
-        skipIDs.contains(pattern.variable.name) ||
-        skipIDs.contains(pattern.left.name) ||
-        skipIDs.contains(pattern.right.name)
+      queryGraph.argumentIds.contains(pattern.variable) ||
+        skipIDs.contains(pattern.variable) ||
+        skipIDs.contains(pattern.left) ||
+        skipIDs.contains(pattern.right)
 
     queryGraph.patternRelationships.flatMap {
       case relationship @ PatternRelationship(rel, (_, _), _, types, SimplePatternLength)
@@ -58,7 +59,7 @@ case class unionRelationshipTypeScanLeafPlanner(skipIDs: Set[String]) extends Le
               relationship,
               context,
               planUnionRelationshipTypeScan(
-                rel.name,
+                rel,
                 types,
                 _,
                 _,
@@ -79,7 +80,7 @@ case class unionRelationshipTypeScanLeafPlanner(skipIDs: Set[String]) extends Le
   }
 
   private def planUnionRelationshipTypeScan(
-    name: String,
+    variable: LogicalVariable,
     types: Seq[RelTypeName],
     patternForLeafPlan: PatternRelationship,
     originalPattern: PatternRelationship,
@@ -96,14 +97,14 @@ case class unionRelationshipTypeScanLeafPlanner(skipIDs: Set[String]) extends Le
       context.providedOrderFactory
     )
     context.staticComponents.logicalPlanProducer.planUnionRelationshipByTypeScan(
-      name,
+      variable,
       types,
       patternForLeafPlan,
       originalPattern,
       hiddenSelections,
       hints(queryGraph, originalPattern),
       queryGraph.argumentIds,
-      providedOrderFor(name),
+      providedOrderFor(variable),
       context
     )
   }

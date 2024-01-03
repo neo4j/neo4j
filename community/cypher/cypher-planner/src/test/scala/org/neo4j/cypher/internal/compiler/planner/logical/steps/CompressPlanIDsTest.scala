@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
@@ -99,7 +100,7 @@ class CompressPlanIDsTest extends CypherFunSuite with AstConstructionTestSupport
       if (p.id.x != GapIdGen.start + GapIdGen.inc) {
         state.planningAttributes.solveds.set(
           p.id,
-          RegularSinglePlannerQuery(QueryGraph(patternNodes = Set(s"n${p.id.x}")))
+          RegularSinglePlannerQuery(QueryGraph(patternNodes = Set(v"n${p.id.x}")))
         )
       }
       state.planningAttributes.cardinalities.set(p.id, Cardinality(p.id.x + 1))

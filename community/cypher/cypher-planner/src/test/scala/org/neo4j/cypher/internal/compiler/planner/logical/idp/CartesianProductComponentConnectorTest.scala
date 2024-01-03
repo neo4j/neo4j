@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.ir.QueryGraph
@@ -37,8 +38,8 @@ class CartesianProductComponentConnectorTest extends CypherFunSuite with Logical
     new givenConfig().withLogicalPlanningContext { (cfg, ctx) =>
       val order = InterestingOrderConfig.empty
       val kit = ctx.plannerState.config.toKit(order, ctx)
-      val nQg = QueryGraph(patternNodes = Set("n"))
-      val mQg = QueryGraph(patternNodes = Set("m"))
+      val nQg = QueryGraph(patternNodes = Set(v"n"))
+      val mQg = QueryGraph(patternNodes = Set(v"m"))
       val fullQg = nQg ++ mQg
 
       val nPlan = fakeLogicalPlanFor(ctx.staticComponents.planningAttributes, "n")
@@ -61,8 +62,8 @@ class CartesianProductComponentConnectorTest extends CypherFunSuite with Logical
     new givenConfig().withLogicalPlanningContext { (cfg, ctx) =>
       val order = InterestingOrderConfig.empty
       val kit = ctx.plannerState.config.toKit(order, ctx)
-      val nQg = QueryGraph(patternNodes = Set("n"))
-      val mQg = QueryGraph(patternNodes = Set("m"))
+      val nQg = QueryGraph(patternNodes = Set(v"n"))
+      val mQg = QueryGraph(patternNodes = Set(v"m"))
       val fullQg = nQg ++ mQg
 
       // extra-symbol is used to make `nPlan != nPlanSort`

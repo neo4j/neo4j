@@ -80,7 +80,7 @@ trait QPPInnerPlanner {
   def updateQpp(
     qpp: QuantifiedPathPattern,
     fromLeft: Boolean,
-    availableSymbols: Set[String]
+    availableSymbols: Set[LogicalVariable]
   ): QuantifiedPathPattern
 }
 
@@ -133,7 +133,7 @@ class CacheBackedQPPInnerPlanner(planner: => QPPInnerPlanner) extends QPPInnerPl
   override def updateQpp(
     qpp: QuantifiedPathPattern,
     fromLeft: Boolean,
-    availableSymbols: Set[String]
+    availableSymbols: Set[LogicalVariable]
   ): QuantifiedPathPattern =
     planner.updateQpp(qpp, fromLeft, availableSymbols)
 
@@ -155,8 +155,8 @@ case class IDPQPPInnerPlanner(context: LogicalPlanningContext) extends QPPInnerP
     extractedPredicates: ExtractedPredicates
   ): LogicalPlan = {
     val argumentsIntroducedByExtractedPredicates =
-      extractedPredicates.requiredSymbols.map(_.name) -- qpp.argumentIds.map(_.name)
-    val additionalArguments = argumentsIntroducedByExtractedPredicates + getQPPStartNode(qpp, fromLeft).name
+      extractedPredicates.requiredSymbols -- qpp.argumentIds
+    val additionalArguments = argumentsIntroducedByExtractedPredicates + getQPPStartNode(qpp, fromLeft)
     val additionalPredicates = extractedPredicates.predicates.map(_.extracted) ++ additionalTrailPredicates(qpp)
     val qg = qpp.asQueryGraph
       .addArgumentIds(additionalArguments)
@@ -184,11 +184,11 @@ case class IDPQPPInnerPlanner(context: LogicalPlanningContext) extends QPPInnerP
   override def updateQpp(
     qpp: QuantifiedPathPattern,
     fromLeft: Boolean,
-    availableSymbols: Set[String]
+    availableSymbols: Set[LogicalVariable]
   ): QuantifiedPathPattern = {
     val updated = updateQPPStartNodeArgument(qpp, fromLeft)
 
-    val endNode = if (fromLeft) qpp.right.name else qpp.left.name
+    val endNode = if (fromLeft) qpp.right else qpp.left
     val overlapping = availableSymbols.contains(endNode)
     if (overlapping) {
       updateQppForTrailInto(updated, fromLeft, context)

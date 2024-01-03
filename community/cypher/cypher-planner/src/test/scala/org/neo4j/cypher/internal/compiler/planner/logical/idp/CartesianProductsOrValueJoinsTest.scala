@@ -19,12 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.ExecutionModel.Batched
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.cartesianProductsOrValueJoins.JoinPredicate
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelToken
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.PropertyKeyToken
 import org.neo4j.cypher.internal.ir.QueryGraph
@@ -74,7 +76,7 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
     planningAttributes: PlanningAttributes = PlanningAttributes.newAttributes
   ): LogicalPlan = {
     val plan = AllNodesScan(varFor(n), Set.empty)
-    setPlanningAttributes(QueryGraph(patternNodes = Set(n)), plan, 0.0, planningAttributes)
+    setPlanningAttributes(QueryGraph(patternNodes = Set(varFor(n))), plan, 0.0, planningAttributes)
     plan
   }
 
@@ -92,7 +94,7 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
       IndexOrderAscending,
       IndexType.RANGE
     )
-    setPlanningAttributes(QueryGraph(patternNodes = Set(n)), plan, cardinality, planningAttributes)
+    setPlanningAttributes(QueryGraph(patternNodes = Set(varFor(n))), plan, cardinality, planningAttributes)
     plan
   }
 
@@ -103,7 +105,7 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
     planningAttributes: PlanningAttributes
   ): LogicalPlan = {
     val plan = NodeByLabelScan(varFor(n), LabelName(label)(pos), Set.empty, IndexOrderNone)
-    setPlanningAttributes(QueryGraph(patternNodes = Set(n)), plan, cardinality, planningAttributes)
+    setPlanningAttributes(QueryGraph(patternNodes = Set(varFor(n))), plan, cardinality, planningAttributes)
     plan
   }
 
@@ -117,15 +119,15 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
     }.toSeq
 
     testThis(
-      graph = QueryGraph(patternNodes = Set("a", "b")),
+      graph = QueryGraph(patternNodes = Set(v"a", v"b")),
       input = (planningAttributes: PlanningAttributes) =>
         Set(
           PlannedComponent(
-            QueryGraph(patternNodes = Set("a")),
+            QueryGraph(patternNodes = Set(v"a")),
             BestResults(allNodesScan("a", planningAttributes), None)
           ),
           PlannedComponent(
-            QueryGraph(patternNodes = Set("b")),
+            QueryGraph(patternNodes = Set(v"b")),
             BestResults(allNodesScan("b", planningAttributes), None)
           )
         ),
@@ -135,19 +137,19 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
 
   test("should plan cartesian product between 3 pattern nodes") {
     testThis(
-      graph = QueryGraph(patternNodes = Set("a", "b", "c")),
+      graph = QueryGraph(patternNodes = Set(v"a", v"b", v"c")),
       input = (planningAttributes: PlanningAttributes) =>
         Set(
           PlannedComponent(
-            QueryGraph(patternNodes = Set("a")),
+            QueryGraph(patternNodes = Set(v"a")),
             BestResults(allNodesScan("a", planningAttributes), None)
           ),
           PlannedComponent(
-            QueryGraph(patternNodes = Set("b")),
+            QueryGraph(patternNodes = Set(v"b")),
             BestResults(allNodesScan("b", planningAttributes), None)
           ),
           PlannedComponent(
-            QueryGraph(patternNodes = Set("c")),
+            QueryGraph(patternNodes = Set(v"c")),
             BestResults(allNodesScan("c", planningAttributes), None)
           )
         ),
@@ -167,11 +169,11 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
   test("should plan cartesian product between lots of pattern nodes") {
     val chars = 'a' to 'z'
     testThis(
-      graph = QueryGraph(patternNodes = Set("a", "b", "c")),
+      graph = QueryGraph(patternNodes = Set(v"a", v"b", v"c")),
       input = (planningAttributes: PlanningAttributes) =>
         (chars map { x =>
           PlannedComponent(
-            QueryGraph(patternNodes = Set(x.toString)),
+            QueryGraph(patternNodes = Set(varFor(x.toString))),
             BestResults(allNodesScan(x.toString, planningAttributes), None)
           )
         }).toSet,
@@ -185,28 +187,29 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
 
   test("should plan cartesian product between lots of pattern nodes where one node ordered") {
     val nodesWithCardinality = (0 until 3).map(i => (s"n$i", Batched.default.bigBatchSize * (3 - i))).toSet
-    val orderedNode = "n3"
+    val orderedNode = v"n3"
     val graph = QueryGraph()
 
     new givenConfig {
       qg = graph
     }.withLogicalPlanningContext { (cfg, context) =>
       val interestingOrder =
-        InterestingOrderConfig(InterestingOrder.required(RequiredOrderCandidate.asc(varFor(orderedNode))))
+        InterestingOrderConfig(InterestingOrder.required(RequiredOrderCandidate.asc(orderedNode)))
       val kit = context.plannerState.config.toKit(interestingOrder, context)
-      val nodeIndexScanPlan = nodeIndexScan(orderedNode, "MANY", 10000.0, context.staticComponents.planningAttributes)
+      val nodeIndexScanPlan =
+        nodeIndexScan(orderedNode.name, "MANY", 10000.0, context.staticComponents.planningAttributes)
 
       val bestSortedPlanComponent = PlannedComponent(
         QueryGraph(patternNodes = Set(orderedNode)),
         BestResults(
-          nodeByLabelScan(orderedNode, "MANY", 10000.0, context.staticComponents.planningAttributes),
+          nodeByLabelScan(orderedNode.name, "MANY", 10000.0, context.staticComponents.planningAttributes),
           Some(nodeIndexScanPlan)
         )
       )
       val bestPlanComponents = nodesWithCardinality
         .map { case (n, c) => nodeByLabelScan(n, "FEW", c, context.staticComponents.planningAttributes) }
         .map(plan =>
-          PlannedComponent(QueryGraph(patternNodes = plan.availableSymbols.map(_.name)), BestResults(plan, None))
+          PlannedComponent(QueryGraph(patternNodes = plan.availableSymbols), BestResults(plan, None))
         )
       val plans: Set[PlannedComponent] = bestPlanComponents + bestSortedPlanComponent
 
@@ -242,17 +245,17 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
   test("should plan hash join between 2 pattern nodes") {
     testThis(
       graph = QueryGraph(
-        patternNodes = Set("a", "b"),
+        patternNodes = Set(v"a", v"b"),
         selections = Selections.from(equals(prop("a", "id"), prop("b", "id")))
       ),
       input = (planningAttributes: PlanningAttributes) =>
         Set(
           PlannedComponent(
-            QueryGraph(patternNodes = Set("a")),
+            QueryGraph(patternNodes = Set(v"a")),
             BestResults(allNodesScan("a", planningAttributes), None)
           ),
           PlannedComponent(
-            QueryGraph(patternNodes = Set("b")),
+            QueryGraph(patternNodes = Set(v"b")),
             BestResults(allNodesScan("b", planningAttributes), None)
           )
         ),
@@ -271,21 +274,21 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
 
     testThis(
       graph = QueryGraph(
-        patternNodes = Set("a", "b", "c"),
+        patternNodes = Set(v"a", v"b", v"c"),
         selections = Selections.from(Seq(eq1, eq2, eq3))
       ),
       input = (planningAttributes: PlanningAttributes) =>
         Set(
           PlannedComponent(
-            QueryGraph(patternNodes = Set("a")),
+            QueryGraph(patternNodes = Set(v"a")),
             BestResults(allNodesScan("a", planningAttributes), None)
           ),
           PlannedComponent(
-            QueryGraph(patternNodes = Set("b")),
+            QueryGraph(patternNodes = Set(v"b")),
             BestResults(allNodesScan("b", planningAttributes), None)
           ),
           PlannedComponent(
-            QueryGraph(patternNodes = Set("c")),
+            QueryGraph(patternNodes = Set(v"c")),
             BestResults(allNodesScan("c", planningAttributes), None)
           )
         ),
@@ -370,11 +373,11 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
     val nProp = prop("n", "prop")
     val xProp = prop("x", "prop")
 
-    val predicate1 = contains(nProp, xProp) -> Array("n", "x")
-    val predicate2 = propEquality("n", "prop", 42) -> Array("n")
+    val predicate1 = contains(nProp, xProp) -> Array[LogicalVariable](v"n", v"x")
+    val predicate2 = propEquality("n", "prop", 42) -> Array[LogicalVariable](v"n")
 
-    val idsFromLeft = Set("n")
-    val idsFromRight = Set("x")
+    val idsFromLeft = Set[LogicalVariable](v"n")
+    val idsFromRight = Set[LogicalVariable](v"x")
 
     // when
     val result = cartesianProductsOrValueJoins.predicatesDependendingOnBothSides(
@@ -395,10 +398,10 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
     new givenConfig {
       qg = graph
       cardinality = mapCardinality {
-        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("a") => 1000.0
-        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("b") => 2000.0
-        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set("c") => 3000.0
-        case _                                                                                        => 100.0
+        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set(v"a") => 1000.0
+        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set(v"b") => 2000.0
+        case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set(v"c") => 3000.0
+        case _                                                                                         => 100.0
       }
       addTypeToSemanticTable(varFor("a"), CTNode)
       addTypeToSemanticTable(varFor("b"), CTNode)

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence
 
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.extractQPPPredicates
-import org.neo4j.cypher.internal.expressions.UnPositionedVariable
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.ir.NodeConnection
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
@@ -41,13 +41,13 @@ trait NodeConnectionCardinalityModel
   ): (BoundNodesAndArguments, Multiplier) =
     nodeConnection match {
       case relationship: PatternRelationship =>
-        if (boundNodesAndArguments.argumentIds.contains(relationship.variable.name)) {
+        if (boundNodesAndArguments.argumentIds.contains(relationship.variable)) {
           val additionalLabelsSelectivity =
             // arguably we should check whether the two nodes are the same instead of applying the selectivity twice
-            getArgumentSelectivity(context, predicates.localLabelInfo, relationship.left.name) *
-              getArgumentSelectivity(context, predicates.localLabelInfo, relationship.right.name)
+            getArgumentSelectivity(context, predicates.localLabelInfo, relationship.left) *
+              getArgumentSelectivity(context, predicates.localLabelInfo, relationship.right)
           val newBoundNodesAndArguments =
-            boundNodesAndArguments.addArgumentIdsMarkedAsBound(Set(relationship.left.name, relationship.right.name))
+            boundNodesAndArguments.addArgumentIdsMarkedAsBound(Set(relationship.left, relationship.right))
           val multiplier = Multiplier(additionalLabelsSelectivity.factor)
           (newBoundNodesAndArguments, multiplier)
         } else {
@@ -56,7 +56,7 @@ trait NodeConnectionCardinalityModel
               context,
               predicates.allLabelInfo,
               relationship,
-              predicates.uniqueRelationships.contains(relationship.variable.name)
+              predicates.uniqueRelationships.contains(relationship.variable)
             )
           boundNodesAndArguments.bindEndpoints(context, predicates, relationship, cardinality)
         }
@@ -67,7 +67,7 @@ trait NodeConnectionCardinalityModel
             extractQPPPredicates(
               predicates.otherPredicates.map(_.expr).toSeq,
               quantifiedPathPattern.variableGroupings,
-              (boundNodesAndArguments.boundNodes ++ boundNodesAndArguments.argumentIds).map(UnPositionedVariable.varFor)
+              boundNodesAndArguments.boundNodes ++ boundNodesAndArguments.argumentIds
             )
 
           quantifiedPathPattern.copy(selections =
@@ -92,12 +92,13 @@ trait NodeConnectionCardinalityModel
     }
 }
 
-case class BoundNodesAndArguments(boundNodes: Set[String], argumentIds: Set[String]) extends NodeCardinalityModel {
+case class BoundNodesAndArguments(boundNodes: Set[LogicalVariable], argumentIds: Set[LogicalVariable])
+    extends NodeCardinalityModel {
 
   /**
    * Adds new arguments ids both to the list of arguments ids and to the list of bound nodes
    */
-  def addArgumentIdsMarkedAsBound(newArgumentIds: Set[String]): BoundNodesAndArguments =
+  def addArgumentIdsMarkedAsBound(newArgumentIds: Set[LogicalVariable]): BoundNodesAndArguments =
     copy(boundNodes = boundNodes.union(newArgumentIds), argumentIds = boundNodes.union(newArgumentIds))
 
   /**
@@ -110,23 +111,23 @@ case class BoundNodesAndArguments(boundNodes: Set[String], argumentIds: Set[Stri
     nodeConnectionCardinality: Cardinality
   ): (BoundNodesAndArguments, Multiplier) = {
     // First calculate the cardinality of the left node
-    val leftNodeCardinality = getBoundEndpointCardinality(context, predicates, nodeConnection.left.name)
+    val leftNodeCardinality = getBoundEndpointCardinality(context, predicates, nodeConnection.left)
     // Then calculate the cardinality of the right node, having marked the left node as bound, in cases both endpoints are the same node
     val rightNodeCardinality =
-      copy(boundNodes = boundNodes.incl(nodeConnection.left.name))
-        .getBoundEndpointCardinality(context, predicates, nodeConnection.right.name)
+      copy(boundNodes = boundNodes.incl(nodeConnection.left))
+        .getBoundEndpointCardinality(context, predicates, nodeConnection.right)
     val multiplier =
       Multiplier.ofDivision(
         dividend = nodeConnectionCardinality,
         divisor = leftNodeCardinality * rightNodeCardinality
       ).getOrElse(Multiplier.ZERO)
-    (copy(boundNodes = boundNodes.union(Set(nodeConnection.left.name, nodeConnection.right.name))), multiplier)
+    (copy(boundNodes = boundNodes.union(Set(nodeConnection.left, nodeConnection.right))), multiplier)
   }
 
   private def getBoundEndpointCardinality(
     context: QueryGraphCardinalityContext,
     predicates: QueryGraphPredicates,
-    node: String
+    node: LogicalVariable
   ): Cardinality =
     if (boundNodes.contains(node))
       getNodeCardinality(context, predicates.allLabelInfo, node).getOrElse(Cardinality.EMPTY)
@@ -139,6 +140,6 @@ case class BoundNodesAndArguments(boundNodes: Set[String], argumentIds: Set[Stri
 
 object BoundNodesAndArguments {
 
-  def withArguments(argumentIds: Set[String]): BoundNodesAndArguments =
+  def withArguments(argumentIds: Set[LogicalVariable]): BoundNodesAndArguments =
     BoundNodesAndArguments(boundNodes = Set.empty, argumentIds = argumentIds)
 }

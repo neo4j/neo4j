@@ -165,13 +165,6 @@ final case class PatternRelationship(
   }
 }
 
-object PatternRelationship {
-
-  implicit val byName: Ordering[PatternRelationship] = Ordering.by { (patternRel: PatternRelationship) =>
-    patternRel.variable.name
-  }
-}
-
 sealed trait PatternLength {
   def isSimple: Boolean
 
@@ -299,8 +292,8 @@ final case class QuantifiedPathPattern(
     QueryGraph
       .empty
       .addPatternRelationships(patternRelationships.toSet)
-      .addPatternNodes(patternNodes.toList.map(_.name): _*)
-      .addArgumentIds(argumentIds.toList.map(_.name))
+      .addPatternNodes(patternNodes.toList: _*)
+      .addArgumentIds(argumentIds.toList)
       .addSelections(selections)
 }
 
@@ -444,7 +437,7 @@ final case class SelectivePathPattern(
           // We do not need to take the outer nodes into consideration here
           acc.addPatternRelationships(innerQppAsQueryGraph.patternRelationships)
             // since they are added in the pattern relationship part of the selective path pattern or are considered for analysis in the outer QueryGraph
-            .addPatternNodes(innerQppAsQueryGraph.patternNodes.diff(boundaryNodesSet.map(_.name)).toList: _*)
+            .addPatternNodes(innerQppAsQueryGraph.patternNodes.diff(boundaryNodesSet).toList: _*)
             .addSelections(innerQppAsQueryGraph.selections)
             .addArgumentIds(innerQppAsQueryGraph.argumentIds.toSeq)
       }
@@ -517,11 +510,4 @@ final case class ShortestRelationshipPattern(
   override def allQuantifiedPathPatterns: Set[QuantifiedPathPattern] = Set.empty
 
   override def allNodeConnections: Set[NodeConnection] = Set.empty
-}
-
-object ShortestRelationshipPattern {
-
-  implicit val byRelName: Ordering[ShortestRelationshipPattern] = Ordering.by { (sp: ShortestRelationshipPattern) =>
-    sp.rel
-  }
 }

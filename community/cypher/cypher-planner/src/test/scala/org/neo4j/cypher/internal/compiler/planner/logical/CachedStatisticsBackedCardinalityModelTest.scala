@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.CompositeExpressionSelectivityCalculator
@@ -59,7 +60,7 @@ class CachedStatisticsBackedCardinalityModelTest extends CypherFunSuite with Log
     val depth: Int = 4_500
 
     def singlePlannerQuery(i: Int): SinglePlannerQuery =
-      RegularSinglePlannerQuery(queryGraph = QueryGraph(patternNodes = Set(s"n_$i")))
+      RegularSinglePlannerQuery(queryGraph = QueryGraph(patternNodes = Set(v"n_$i")))
 
     val plannerQuery = 1.until(depth).foldLeft[PlannerQuery](singlePlannerQuery(0)) {
       case (lhs, i) => UnionQuery(lhs, singlePlannerQuery(i), distinct = false, Nil)

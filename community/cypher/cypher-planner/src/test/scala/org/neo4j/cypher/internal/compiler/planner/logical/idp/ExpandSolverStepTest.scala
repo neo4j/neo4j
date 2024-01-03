@@ -65,7 +65,7 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSuppor
       val plan1 = fakeLogicalPlanFor(ctx.staticComponents.planningAttributes, "a", "r1", "b")
       ctx.staticComponents.planningAttributes.solveds.set(
         plan1.id,
-        RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes("a", "b"))
+        RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes(v"a", v"b"))
       )
       table.put(register(pattern1), sorted = false, plan1)
 
@@ -82,7 +82,7 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSuppor
       val plan1 = fakeLogicalPlanFor(ctx.staticComponents.planningAttributes, "a", "r1", "b")
       ctx.staticComponents.planningAttributes.solveds.set(
         plan1.id,
-        RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes("a", "b"))
+        RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes(v"a", v"b"))
       )
       table.put(register(pattern1), sorted = false, plan1) // a - [r1] - b
 
@@ -108,7 +108,7 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSuppor
       val plan1 = fakeLogicalPlanFor(ctx.staticComponents.planningAttributes, "a", "r1", "b")
       ctx.staticComponents.planningAttributes.solveds.set(
         plan1.id,
-        RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes("a", "b"))
+        RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes(v"a", v"b"))
       )
       table.put(register(pattern1), sorted = false, plan1)
 
@@ -127,7 +127,7 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSuppor
       val plan1 = fakeLogicalPlanFor(ctx.staticComponents.planningAttributes, "a", "r1", "b", "c", "r2", "d")
       ctx.staticComponents.planningAttributes.solveds.set(
         plan1.id,
-        RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes("a", "b", "c", "d"))
+        RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes(v"a", v"b", v"c", v"d"))
       )
       table.put(register(pattern1, pattern2), sorted = false, plan1)
 
@@ -153,7 +153,7 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSuppor
       val plan1 = fakeLogicalPlanFor(ctx.staticComponents.planningAttributes, "a", "r1", "b")
       ctx.staticComponents.planningAttributes.solveds.set(
         plan1.id,
-        RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes("a", "b"))
+        RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes(v"a", v"b"))
       )
 
       val compactedPattern1 = Goal(BitSet(registry.compact(register(pattern1).bitSet)))

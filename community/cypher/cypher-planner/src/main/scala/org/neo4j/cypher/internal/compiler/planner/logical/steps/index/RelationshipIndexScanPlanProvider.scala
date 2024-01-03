@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityInde
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexScanPlanProvider.predicatesForIndexScan
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.RelationshipIndexLeafPlanner.RelationshipIndexMatch
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.RelationshipTypeToken
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
@@ -41,25 +42,25 @@ object RelationshipIndexScanPlanProvider extends RelationshipIndexPlanProvider {
    * Container for all values that define a RelationshipIndexScan plan
    */
   case class RelationshipIndexScanParameters(
-    idName: String,
+    variable: LogicalVariable,
     token: RelationshipTypeToken,
     patternRelationship: PatternRelationship,
     properties: Seq[IndexedProperty],
-    argumentIds: Set[String],
+    argumentIds: Set[LogicalVariable],
     indexOrder: IndexOrder
   )
 
   override def createPlans(
     indexMatches: Set[RelationshipIndexMatch],
     hints: Set[Hint],
-    argumentIds: Set[String],
+    argumentIds: Set[LogicalVariable],
     restrictions: LeafPlanRestrictions,
     context: LogicalPlanningContext
   ): Set[LogicalPlan] = {
 
     val solutions = for {
       indexMatch <- indexMatches
-      if isAllowedByRestrictions(indexMatch.variableName, restrictions)
+      if isAllowedByRestrictions(indexMatch.variable, restrictions)
     } yield createSolution(indexMatch, hints, argumentIds, context)
 
     def provideRelationshipLeafPlan(solution: Solution[RelationshipIndexScanParameters])(
@@ -68,7 +69,7 @@ object RelationshipIndexScanPlanProvider extends RelationshipIndexPlanProvider {
       hiddenSelections: Seq[Expression]
     ): LogicalPlan =
       context.staticComponents.logicalPlanProducer.planRelationshipIndexScan(
-        idName = solution.indexScanParameters.idName,
+        variable = solution.indexScanParameters.variable,
         relationshipType = solution.indexScanParameters.token,
         patternForLeafPlan = patternForLeafPlan,
         originalPattern = originalPattern,
@@ -96,7 +97,7 @@ object RelationshipIndexScanPlanProvider extends RelationshipIndexPlanProvider {
   private def createSolution(
     indexMatch: RelationshipIndexMatch,
     hints: Set[Hint],
-    argumentIds: Set[String],
+    argumentIds: Set[LogicalVariable],
     context: LogicalPlanningContext
   ): Solution[RelationshipIndexScanParameters] = {
     val predicateSet =
@@ -111,7 +112,7 @@ object RelationshipIndexScanPlanProvider extends RelationshipIndexPlanProvider {
 
     Solution(
       RelationshipIndexScanParameters(
-        idName = indexMatch.variableName,
+        variable = indexMatch.variable,
         token = indexMatch.relationshipTypeToken,
         patternRelationship = indexMatch.patternRelationship,
         properties = predicateSet.indexedProperties(context),

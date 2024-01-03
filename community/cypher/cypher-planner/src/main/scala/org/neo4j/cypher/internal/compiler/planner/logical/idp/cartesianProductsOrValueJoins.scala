@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.ListLiteral
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexEndsWithScan
@@ -111,7 +112,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
         // If we have optional matches left to solve - start with that
         val firstOptionalMatch = optionalMatches.head
         val applicablePlan =
-          plans.find(p => firstOptionalMatch.argumentIds subsetOf p.plan.bestResult.availableSymbols.map(_.name))
+          plans.find(p => firstOptionalMatch.argumentIds subsetOf p.plan.bestResult.availableSymbols)
 
         applicablePlan match {
           case Some(t @ PlannedComponent(solvedQg, p)) =>
@@ -354,10 +355,10 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
     kit: QueryPlannerKit,
     singleComponentPlanner: SingleComponentPlannerTrait
   ): Map[PlannedComponent, (PlannedComponent, PlannedComponent)] = {
-    val predicatesWithDependencies: Array[(Expression, Array[String])] =
-      qg.selections.flatPredicates.toArray.map(pred => (pred, pred.dependencies.map(_.name).toArray))
+    val predicatesWithDependencies: Array[(Expression, Array[LogicalVariable])] =
+      qg.selections.flatPredicates.toArray.map(pred => (pred, pred.dependencies.toArray))
     val planArray = plans.toArray
-    val allCoveredIds: Array[Set[String]] = planArray.map(_.queryGraph.allCoveredIds)
+    val allCoveredIds: Array[Set[LogicalVariable]] = planArray.map(_.queryGraph.allCoveredIds)
 
     val result = Map.newBuilder[PlannedComponent, (PlannedComponent, PlannedComponent)]
 
@@ -542,7 +543,6 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
     val (leftSymbols, rightSymbols) = predicates
       .view
       .flatMap(_.dependencies)
-      .map(_.name)
       .to(Set)
       .partition(lhsQG.idsWithoutOptionalMatchesOrUpdates.contains)
 
@@ -657,9 +657,9 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
    * Imperative implementation style for performance. See produceNIJVariations.
    */
   def predicatesDependendingOnBothSides(
-    predicateDependencies: Array[(Expression, Array[String])],
-    idsFromLeft: Set[String],
-    idsFromRight: Set[String]
+    predicateDependencies: Array[(Expression, Array[LogicalVariable])],
+    idsFromLeft: Set[LogicalVariable],
+    idsFromRight: Set[LogicalVariable]
   ): Seq[Expression] =
     predicateDependencies.filter {
       case (_, deps) =>

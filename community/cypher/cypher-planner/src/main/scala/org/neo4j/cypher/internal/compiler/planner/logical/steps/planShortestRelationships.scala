@@ -61,8 +61,8 @@ case object planShortestRelationships {
   ): LogicalPlan = {
 
     val patternRelationship = shortestRelationship.rel
-    val relName = patternRelationship.variable.name
-    val pathNameOpt = shortestRelationship.maybePathVar.map(_.name)
+    val rel = patternRelationship.variable
+    val pathOpt = shortestRelationship.maybePathVar
 
     val variables = Set(shortestRelationship.maybePathVar, Some(shortestRelationship.rel.variable)).flatten
 
@@ -82,7 +82,7 @@ case object planShortestRelationships {
       relPredicates: Set[VariablePredicate],
       nonExtractedPerStepPredicates: Set[Expression]
     ) =
-      extractShortestPathPredicates(solvedPredicates, pathNameOpt, Some(relName))
+      extractShortestPathPredicates(solvedPredicates, pathOpt, Some(rel))
 
     val pathPredicates = solvedPredicates.diff(nonExtractedPerStepPredicates)
 
@@ -137,11 +137,11 @@ case object planShortestRelationships {
 
     val lpp = context.staticComponents.logicalPlanProducer
 
-    val argumentNodes = shortestRelationship.rel.boundaryNodesSet.map(_.name)
+    val argumentNodes = shortestRelationship.rel.boundaryNodesSet
     val otherDependencies =
-      pathPredicates.flatMap(_.dependencies.map(_.name)) -- shortestRelationship.maybePathVar.map(_.name) ++
+      pathPredicates.flatMap(_.dependencies) -- shortestRelationship.maybePathVar ++
         Set(nodePredicates, relPredicates).flatMap(_.flatMap { varPred =>
-          varPred.predicate.dependencies.map(_.name) - varPred.variable.name
+          varPred.predicate.dependencies - varPred.variable
         })
     // Plan FindShortestPaths within an Apply with an Optional so we get null rows when
     // the graph algorithm does not find anything (left-hand-side)
@@ -163,7 +163,7 @@ case object planShortestRelationships {
       disallowSameNode = context.settings.errorIfShortestPathHasCommonNodesAtRuntime,
       context = context
     )
-    val lhsOption = lpp.planOptional(lhsSp, lhsArgument.availableSymbols.map(_.name), context, QueryGraph.empty)
+    val lhsOption = lpp.planOptional(lhsSp, lhsArgument.availableSymbols, context, QueryGraph.empty)
     val lhs = lpp.planApply(inner, lhsOption, context)
 
     val rhsArgument = context.staticComponents.logicalPlanProducer.planArgument(
@@ -191,7 +191,7 @@ case object planShortestRelationships {
       _.addShortestRelationship(shortestRelationship).addPredicates(solvedPredicates.toSeq: _*)
     )
 
-    lpp.planAntiConditionalApply(lhs, rhs, Seq(shortestRelationship.maybePathVar.get.name), context, Some(solved))
+    lpp.planAntiConditionalApply(lhs, rhs, Seq(shortestRelationship.maybePathVar.get), context, Some(solved))
   }
 
   private def buildPlanShortestRelationshipsFallbackPlans(
@@ -217,7 +217,7 @@ case object planShortestRelationships {
 
     // Rewriter for path name to path expression
     val rewriter = topDown(Rewriter.lift {
-      case Variable(name) if name == pathVariable.name => createPathExpression(shortestRelationship.expr.element)
+      case v: Variable if v == pathVariable => createPathExpression(shortestRelationship.expr.element)
     })
 
     // Rewrite query graph to match during inlining of predicates in var expand
@@ -233,10 +233,10 @@ case object planShortestRelationships {
       expandSolverStep.produceExpandLogicalPlan(
         rewrittenQg,
         pattern,
-        pattern.variable.name,
+        pattern.variable,
         rhsArgument,
-        from.name,
-        rhsArgument.availableSymbols.map(_.name),
+        from,
+        rhsArgument.availableSymbols,
         context
       )
 

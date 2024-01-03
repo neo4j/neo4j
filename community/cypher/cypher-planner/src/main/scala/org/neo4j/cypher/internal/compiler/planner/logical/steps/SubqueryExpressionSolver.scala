@@ -34,7 +34,6 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.ScopeExpression
-import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.functions.Coalesce
 import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.expressions.functions.Head
@@ -109,14 +108,14 @@ object SubqueryExpressionSolver {
    *
    * @param argumentIds the argument IDs of the leaf plan that is about to be planned
    */
-  def solverForLeafPlan(argumentIds: Set[String], context: LogicalPlanningContext): SolverForLeafPlan =
+  def solverForLeafPlan(argumentIds: Set[LogicalVariable], context: LogicalPlanningContext): SolverForLeafPlan =
     new SolverForLeafPlan(argumentIds, context)
 
   abstract class Solver(initialPlan: LogicalPlan, context: LogicalPlanningContext) {
     protected var resultPlan: LogicalPlan = initialPlan
-    protected var arguments: mutable.Builder[String, Set[String]] = Set.newBuilder[String]
+    protected var arguments: mutable.Builder[LogicalVariable, Set[LogicalVariable]] = Set.newBuilder[LogicalVariable]
 
-    def solve(expression: Expression, maybeKey: Option[String] = None): Expression = {
+    def solve(expression: Expression, maybeKey: Option[LogicalVariable] = None): Expression = {
       if (resultPlan == null) {
         throw new IllegalArgumentException("You cannot solve more expressions after obtaining the rewritten plan.")
       }
@@ -125,22 +124,22 @@ object SubqueryExpressionSolver {
           case expression: ListIRExpression =>
             val (newPlan, newVar) =
               solveUsingRollUpApply(resultPlan, expression, maybeKey, context)
-            RewriteResult(newPlan, newVar, Set(newVar.name))
+            RewriteResult(newPlan, newVar, Set(newVar))
 
           case expression: CountIRExpression =>
             val (newPlan, newVar) =
               solveUsingApply(resultPlan, expression, maybeKey, context)
-            RewriteResult(newPlan, newVar, Set(newVar.name))
+            RewriteResult(newPlan, newVar, Set(newVar))
 
           case expression: ExistsIRExpression =>
             val (newPlan, newVar) =
               solveUsingLetSemiApply(resultPlan, expression, maybeKey, context)
-            RewriteResult(newPlan, newVar, Set(newVar.name))
+            RewriteResult(newPlan, newVar, Set(newVar))
 
           case Not(expression: ExistsIRExpression) =>
             val (newPlan, newVar) =
               solveUsingLetAntiSemiApply(resultPlan, expression, maybeKey, context)
-            RewriteResult(newPlan, newVar, Set(newVar.name))
+            RewriteResult(newPlan, newVar, Set(newVar))
 
           case inExpression =>
             // Any remaining IRExpressions are rewritten with RollupApply/Apply/LetSemiApply/... or NestedPlanExpression
@@ -166,7 +165,7 @@ object SubqueryExpressionSolver {
     }
   }
 
-  class SolverForLeafPlan(argumentIds: Set[String], context: LogicalPlanningContext)
+  class SolverForLeafPlan(argumentIds: Set[LogicalVariable], context: LogicalPlanningContext)
       extends Solver(
         context.staticComponents.logicalPlanProducer.ForSubqueryExpressionSolver.planArgument(
           argumentIds,
@@ -176,7 +175,7 @@ object SubqueryExpressionSolver {
         context
       ) {
 
-    def newArguments: Set[String] = {
+    def newArguments: Set[LogicalVariable] = {
       arguments.result()
     }
 
@@ -200,7 +199,7 @@ object SubqueryExpressionSolver {
   private case class RewriteResult(
     currentPlan: LogicalPlan,
     currentExpression: Expression,
-    introducedVariables: Set[String]
+    introducedVariables: Set[LogicalVariable]
   )
 
   /**
@@ -214,16 +213,16 @@ object SubqueryExpressionSolver {
   private def solveUsingRollUpApply(
     source: LogicalPlan,
     expr: ListIRExpression,
-    maybeKey: Option[String],
+    maybeKey: Option[LogicalVariable],
     context: LogicalPlanningContext
   ): (LogicalPlan, LogicalVariable) = {
-    val collection = maybeKey.map(varFor).getOrElse(expr.collection)
+    val collection = maybeKey.getOrElse(expr.collection)
     val subQueryPlan = plannerQueryPlanner.planSubqueryWithLabelInfo(source, expr, context)
     val producedPlan = context.staticComponents.logicalPlanProducer.ForSubqueryExpressionSolver.planRollup(
       source,
       subQueryPlan,
-      collection.name,
-      expr.variableToCollect.name,
+      collection,
+      expr.variableToCollect,
       context
     )
 
@@ -233,12 +232,12 @@ object SubqueryExpressionSolver {
   private def solveUsingApply(
     source: LogicalPlan,
     expr: CountIRExpression,
-    maybeKey: Option[String],
+    maybeKey: Option[LogicalVariable],
     context: LogicalPlanningContext
   ): (LogicalPlan, LogicalVariable) = {
-    val countVariable = maybeKey.map(varFor).getOrElse(expr.countVariable)
+    val countVariable = maybeKey.getOrElse(expr.countVariable)
     val subQueryPlan = {
-      val exprToPlan = maybeKey.map(varFor).fold(expr)(expr.renameCountVariable)
+      val exprToPlan = maybeKey.fold(expr)(expr.renameCountVariable)
       plannerQueryPlanner.planSubqueryWithLabelInfo(source, exprToPlan, context)
     }
     val producedPlan =
@@ -254,13 +253,13 @@ object SubqueryExpressionSolver {
   private def solveUsingLetSemiApplyVariant(
     source: LogicalPlan,
     expr: ExistsIRExpression,
-    maybeKey: Option[String],
-    fn: (LogicalPlan, LogicalPlan, String, LogicalPlanningContext) => LogicalPlan,
+    maybeKey: Option[LogicalVariable],
+    fn: (LogicalPlan, LogicalPlan, LogicalVariable, LogicalPlanningContext) => LogicalPlan,
     context: LogicalPlanningContext
   ): (LogicalPlan, LogicalVariable) = {
-    val variable = maybeKey.map(varFor).getOrElse(expr.existsVariable)
+    val variable = maybeKey.getOrElse(expr.existsVariable)
     val subQueryPlan = plannerQueryPlanner.planSubqueryWithLabelInfo(source, expr, context)
-    val producedPlan = fn(source, subQueryPlan, variable.name, context)
+    val producedPlan = fn(source, subQueryPlan, variable, context)
 
     (producedPlan, variable)
   }
@@ -268,7 +267,7 @@ object SubqueryExpressionSolver {
   private def solveUsingLetSemiApply(
     source: LogicalPlan,
     expr: ExistsIRExpression,
-    maybeKey: Option[String],
+    maybeKey: Option[LogicalVariable],
     context: LogicalPlanningContext
   ): (LogicalPlan, LogicalVariable) =
     solveUsingLetSemiApplyVariant(
@@ -282,7 +281,7 @@ object SubqueryExpressionSolver {
   private def solveUsingLetAntiSemiApply(
     source: LogicalPlan,
     expr: ExistsIRExpression,
-    maybeKey: Option[String],
+    maybeKey: Option[LogicalVariable],
     context: LogicalPlanningContext
   ): (LogicalPlan, LogicalVariable) =
     solveUsingLetSemiApplyVariant(
@@ -296,7 +295,7 @@ object SubqueryExpressionSolver {
   private def solveUsingLetSelectOrSemiApply(
     source: LogicalPlan,
     expr: ExistsIRExpression,
-    maybeKey: Option[String],
+    maybeKey: Option[LogicalVariable],
     orExpression: Expression,
     context: LogicalPlanningContext
   ): (LogicalPlan, LogicalVariable) =
@@ -311,7 +310,7 @@ object SubqueryExpressionSolver {
   private def solveUsingLetSelectOrAntiSemiApply(
     source: LogicalPlan,
     expr: ExistsIRExpression,
-    maybeKey: Option[String],
+    maybeKey: Option[LogicalVariable],
     orExpression: Expression,
     context: LogicalPlanningContext
   ): (LogicalPlan, LogicalVariable) =
@@ -434,7 +433,7 @@ object SubqueryExpressionSolver {
               introducedVariables
             )
           } else {
-            RewriteResult(newPlan, rewrittenExpression, introducedVariables + newVariable.name)
+            RewriteResult(newPlan, rewrittenExpression, introducedVariables + newVariable)
           }
       }
     }

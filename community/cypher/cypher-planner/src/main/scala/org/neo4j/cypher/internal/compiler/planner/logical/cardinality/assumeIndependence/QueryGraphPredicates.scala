@@ -44,7 +44,7 @@ case class QueryGraphPredicates(
   localLabelInfo: LabelInfo,
   allLabelInfo: LabelInfo,
   externalLabelInfo: LabelInfo,
-  uniqueRelationships: Set[String],
+  uniqueRelationships: Set[LogicalVariable],
   otherPredicates: Set[Predicate]
 )
 
@@ -52,7 +52,7 @@ object QueryGraphPredicates {
 
   def partitionSelections(labelInfo: LabelInfo, selections: Selections): QueryGraphPredicates = {
     val allLabelInfoBuilder = mutable.Map.empty[LogicalVariable, mutable.Set[LabelName]]
-    val uniqueRelationshipsBuilder = Set.newBuilder[String]
+    val uniqueRelationshipsBuilder = Set.newBuilder[LogicalVariable]
     val otherPredicatesBuilder = Set.newBuilder[Predicate]
     selections.predicates.foreach {
       case Predicate(_, HasLabels(v: Variable, labels)) =>

@@ -43,7 +43,7 @@ case object selectHasLabelWithJoin extends SelectionCandidateGenerator {
       case Some(nodeTokenIndex) =>
         unsolvedPredicates.iterator.filterNot(containsExistsSubquery).collect {
           case s @ HasLabels(variable: Variable, Seq(labelName))
-            if queryGraph.patternNodes.contains(variable.name) && !queryGraph.argumentIds.contains(variable.name) =>
+            if queryGraph.patternNodes.contains(variable) && !queryGraph.argumentIds.contains(variable) =>
             val providedOrder = ResultOrdering.providedOrderForLabelScan(
               interestingOrderConfig.orderToSolve,
               variable,
@@ -61,7 +61,7 @@ case object selectHasLabelWithJoin extends SelectionCandidateGenerator {
             )
             val plan =
               context.staticComponents.logicalPlanProducer.planNodeHashJoin(
-                Set(variable.name),
+                Set(variable),
                 input,
                 labelScan,
                 Set.empty,

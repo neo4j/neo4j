@@ -61,8 +61,8 @@ class NestedIndexJoinComponentConnectorTest extends CypherFunSuite with LogicalP
     }.withLogicalPlanningContext { (_, ctx) =>
       val order = InterestingOrderConfig.empty
       val kit = ctx.plannerState.config.toKit(order, ctx)
-      val nQg = QueryGraph(patternNodes = Set("n")).addPredicates(labelNPred)
-      val mQg = QueryGraph(patternNodes = Set("m")).addPredicates(labelMPred)
+      val nQg = QueryGraph(patternNodes = Set(v"n")).addPredicates(labelNPred)
+      val mQg = QueryGraph(patternNodes = Set(v"m")).addPredicates(labelMPred)
       val fullQg = (nQg ++ mQg).addPredicates(joinPred)
 
       val nPlan = fakeLogicalPlanFor(ctx.staticComponents.planningAttributes, "n")
@@ -195,10 +195,10 @@ class NestedIndexJoinComponentConnectorTest extends CypherFunSuite with LogicalP
     }.withLogicalPlanningContext { (_, ctx) =>
       val order = InterestingOrderConfig.empty
       val kit = ctx.plannerState.config.toKit(order, ctx)
-      val nQg = QueryGraph(patternNodes = Set("n")).addPredicates(labelNPred)
-      val mQg = QueryGraph(patternNodes = Set("m")).addPredicates(labelMPred)
-      val oQg = QueryGraph(patternNodes = Set("o")).addPredicates(labelOPred)
-      val pQg = QueryGraph(patternNodes = Set("p")).addPredicates(labelPPred)
+      val nQg = QueryGraph(patternNodes = Set(v"n")).addPredicates(labelNPred)
+      val mQg = QueryGraph(patternNodes = Set(v"m")).addPredicates(labelMPred)
+      val oQg = QueryGraph(patternNodes = Set(v"o")).addPredicates(labelOPred)
+      val pQg = QueryGraph(patternNodes = Set(v"p")).addPredicates(labelPPred)
       val fullQg = (nQg ++ mQg ++ oQg ++ pQg).addPredicates(joinPred)
 
       val noPlan = fakeLogicalPlanFor(ctx.staticComponents.planningAttributes, "n", "o")
@@ -249,10 +249,10 @@ class NestedIndexJoinComponentConnectorTest extends CypherFunSuite with LogicalP
     }.withLogicalPlanningContext { (_, ctx) =>
       val order = InterestingOrderConfig.empty
       val kit = ctx.plannerState.config.toKit(order, ctx)
-      val nQg = QueryGraph(patternNodes = Set("n")).addPredicates(labelNPred)
+      val nQg = QueryGraph(patternNodes = Set(v"n")).addPredicates(labelNPred)
       val mQg = QueryGraph(
-        patternNodes = Set("m"),
-        optionalMatches = IndexedSeq(QueryGraph(patternNodes = Set("o")))
+        patternNodes = Set(v"m"),
+        optionalMatches = IndexedSeq(QueryGraph(patternNodes = Set(v"o")))
       ).addPredicates(labelMPred)
       val fullQg = (nQg ++ mQg).addPredicates(joinPred)
 

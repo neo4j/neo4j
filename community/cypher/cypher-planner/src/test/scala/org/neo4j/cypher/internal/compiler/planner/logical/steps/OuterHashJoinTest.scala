@@ -68,9 +68,9 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
   test("solve optional match with outer joins") {
     // MATCH a OPTIONAL MATCH a-->b
     val optionalQg = QueryGraph(
-      patternNodes = Set(aNode, bNode).map(_.name),
+      patternNodes = Set(aNode, bNode),
       patternRelationships = Set(r1Rel),
-      argumentIds = Set(aNode.name)
+      argumentIds = Set(aNode)
     )
     val enclosingQg = QueryGraph(optionalMatches = IndexedSeq(optionalQg))
 
@@ -113,10 +113,10 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
     val theHint: Set[Hint] = Set(UsingJoinHint(Seq(aNode))(pos))
     // MATCH a OPTIONAL MATCH a-->b
     val optionalQg = QueryGraph(
-      patternNodes = Set(aNode, bNode).map(_.name),
+      patternNodes = Set(aNode, bNode),
       patternRelationships = Set(r1Rel),
       hints = theHint,
-      argumentIds = Set(aNode.name)
+      argumentIds = Set(aNode)
     )
     val enclosingQg = QueryGraph(optionalMatches = IndexedSeq(optionalQg))
 
@@ -162,9 +162,9 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
   test("solve optional match with interesting order with outer joins") {
     // MATCH a OPTIONAL MATCH a-->b
     val optionalQg = QueryGraph(
-      patternNodes = Set(aNode, bNode).map(_.name),
+      patternNodes = Set(aNode, bNode),
       patternRelationships = Set(r1Rel),
-      argumentIds = Set(aNode.name)
+      argumentIds = Set(aNode)
     )
     val enclosingQg = QueryGraph(optionalMatches = IndexedSeq(optionalQg))
 

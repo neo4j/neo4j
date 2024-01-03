@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery
 
 import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.Create
 import org.neo4j.cypher.internal.ast.ProjectingUnionAll
@@ -33,6 +34,7 @@ import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.ClauseConverters.addToLogicalPlanInput
 import org.neo4j.cypher.internal.expressions.And
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.NonPrefixedPatternPart
 import org.neo4j.cypher.internal.expressions.Or
 import org.neo4j.cypher.internal.expressions.Pattern
@@ -61,11 +63,11 @@ object StatementConverters {
     semanticTable: SemanticTable,
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
     cancellationChecker: CancellationChecker,
-    importedVariables: Set[String],
+    importedVariables: Set[LogicalVariable],
     nonTerminating: Boolean
   ): SinglePlannerQuery = {
     val allImportedVars = importedVariables ++ q.importWith.map((wth: With) =>
-      wth.returnItems.items.map(_.name).toSet
+      wth.returnItems.items.map(_.asInstanceOf[AliasedReturnItem].variable).toSet
     ).getOrElse(Set.empty)
 
     val builder = PlannerQueryBuilder(semanticTable, allImportedVars)
@@ -132,7 +134,7 @@ object StatementConverters {
     semanticTable: SemanticTable,
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
     cancellationChecker: CancellationChecker,
-    importedVariables: Set[String] = Set.empty,
+    importedVariables: Set[LogicalVariable] = Set.empty,
     rewrite: Boolean = true,
     nonTerminating: Boolean = false
   ): PlannerQuery = {

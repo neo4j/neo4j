@@ -383,7 +383,7 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
     ConvertToNFA.convertToNfa(
       spp,
       fromLeft = true,
-      Set("foo"),
+      Set(v"foo"),
       Seq(equals(prop("end", "prop"), varFor("foo"))),
       new AnonymousVariableNameGenerator
     ) should equal((
@@ -458,7 +458,7 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
       Selections.from(
         CoerceToPredicate(parameter("param", CTBoolean))
       ),
-      Map("r3" -> "  r3@0")
+      Map(v"r3" -> v"  r3@0")
     ))
   }
 
@@ -686,7 +686,7 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
       Set.empty,
       Seq.empty,
       new AnonymousVariableNameGenerator
-    ) should equal((expectedNfa, Selections.empty, Map("r" -> "  r@0")))
+    ) should equal((expectedNfa, Selections.empty, Map(v"r" -> v"  r@0")))
   }
 
   test("(start)-[r:R*1..]->(end)") {
@@ -719,7 +719,7 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
       Set.empty,
       Seq.empty,
       new AnonymousVariableNameGenerator
-    ) should equal((expectedNfa, Selections.empty, Map("r" -> "  r@0")))
+    ) should equal((expectedNfa, Selections.empty, Map(v"r" -> v"  r@0")))
   }
 
   test("(start)-[r:R*2..]->(end)") {
@@ -753,7 +753,7 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
       Set.empty,
       Seq.empty,
       new AnonymousVariableNameGenerator
-    ) should equal((expectedNfa, Selections.empty, Map("r" -> "  r@0")))
+    ) should equal((expectedNfa, Selections.empty, Map(v"r" -> v"  r@0")))
   }
 
   test("(start)-[r:R*3..]->(end)") {
@@ -788,7 +788,7 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
       Set.empty,
       Seq.empty,
       new AnonymousVariableNameGenerator
-    ) should equal((expectedNfa, Selections.empty, Map("r" -> "  r@0")))
+    ) should equal((expectedNfa, Selections.empty, Map(v"r" -> v"  r@0")))
   }
 
   test("(start)-[r:R*2..3]->(end)") {
@@ -823,7 +823,7 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
       Set.empty,
       Seq.empty,
       new AnonymousVariableNameGenerator
-    ) should equal((expectedNfa, Selections.empty, Map("r" -> "  r@0")))
+    ) should equal((expectedNfa, Selections.empty, Map(v"r" -> v"  r@0")))
   }
 
   test("(start)-[r:R*0..3]->(end)") {
@@ -860,7 +860,7 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
       Set.empty,
       Seq.empty,
       new AnonymousVariableNameGenerator
-    ) should equal((expectedNfa, Selections.empty, Map("r" -> "  r@0")))
+    ) should equal((expectedNfa, Selections.empty, Map(v"r" -> v"  r@0")))
   }
 
   // with predicates
@@ -909,7 +909,7 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
     ) should equal((
       expectedNfa,
       Selections.from(Seq(startNodePredicate, relationshipPredicate)),
-      Map("r" -> "  r@0")
+      Map(v"r" -> v"  r@0")
     ))
   }
 }

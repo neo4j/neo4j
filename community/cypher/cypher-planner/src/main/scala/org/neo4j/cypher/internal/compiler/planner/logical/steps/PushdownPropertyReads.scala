@@ -239,14 +239,14 @@ case object PushdownPropertyReads {
                 // NOTE: as we pushdown before inserting cached properties
                 //       the getValue behaviour will still be CanGetValue
                 //       instead of GetValue
-                .map(asProperty(indexPlan.idName.name))
+                .map(asProperty(indexPlan.idName))
             case indexPlan: RelationshipIndexLeafPlan =>
               indexPlan.properties
                 .filter(_.getValueFromIndex == CanGetValue)
                 // NOTE: as we pushdown before inserting cached properties
                 //       the getValue behaviour will still be CanGetValue
                 //       instead of GetValue
-                .map(asProperty(indexPlan.idName.name))
+                .map(asProperty(indexPlan.idName))
 
             case SetProperty(_, variable: LogicalVariable, propertyKey, _) =>
               Seq(PushableProperty(variable, propertyKey))
@@ -267,10 +267,10 @@ case object PushdownPropertyReads {
               items.map { case (p, _) => PushableProperty(idName, p) }
 
             case SetNodePropertiesFromMap(_, idName, map: MapExpression, false) =>
-              propertiesFromMap(idName.name, map)
+              propertiesFromMap(idName, map)
 
             case SetRelationshipPropertiesFromMap(_, idName, map: MapExpression, false) =>
-              propertiesFromMap(idName.name, map)
+              propertiesFromMap(idName, map)
 
             case _ => Seq.empty
           }
@@ -459,8 +459,8 @@ case object PushdownPropertyReads {
     propertyReadOptima
   }
 
-  private def asProperty(idName: String)(indexedProperty: IndexedProperty): PushDownProperty = {
-    PushableProperty(idName, PropertyKeyName(indexedProperty.propertyKeyToken.name)(InputPosition.NONE))
+  private def asProperty(variable: LogicalVariable)(indexedProperty: IndexedProperty): PushDownProperty = {
+    PushableProperty(variable, PropertyKeyName(indexedProperty.propertyKeyToken.name)(InputPosition.NONE))
   }
 
   private def propertyWithName(idName: String, p: PushDownProperty): PushDownProperty = {
@@ -472,9 +472,9 @@ case object PushdownPropertyReads {
     }
   }
 
-  private def propertiesFromMap(idName: String, map: MapExpression): Seq[PushDownProperty] = {
+  private def propertiesFromMap(variable: LogicalVariable, map: MapExpression): Seq[PushDownProperty] = {
     map.items.map {
-      case (prop, _) => PushableProperty(idName, prop)
+      case (prop, _) => PushableProperty(variable, prop)
     }
   }
 }
@@ -485,9 +485,6 @@ object PushableProperty {
 
   def apply(variable: LogicalVariable, propertyKey: PropertyKeyName): PushDownProperty =
     PushDownProperty(Property(variable, propertyKey)(InputPosition.NONE))(variable)
-
-  def apply(variable: String, propertyKey: PropertyKeyName): PushDownProperty =
-    apply(Variable(variable)(InputPosition.NONE), propertyKey)
 
   def unapply(property: Property): Option[PushDownProperty] = property match {
     case Property(v: LogicalVariable, _) => Some(PushDownProperty(property)(v))

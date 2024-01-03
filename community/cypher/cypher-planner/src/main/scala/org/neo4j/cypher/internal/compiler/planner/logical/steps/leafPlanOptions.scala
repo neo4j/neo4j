@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.SelectorHeuristic
 import org.neo4j.cypher.internal.compiler.planner.logical.SortPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.BestResults
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexEndsWithScan
@@ -51,7 +52,7 @@ object leafPlanOptions extends LeafPlanFinder {
     queryGraph: QueryGraph,
     interestingOrderConfig: InterestingOrderConfig,
     context: LogicalPlanningContext
-  ): Map[Set[String], BestPlans] = {
+  ): Map[Set[LogicalVariable], BestPlans] = {
     val leafPlanCandidates =
       config.leafPlanners.candidates(queryGraph, interestingOrderConfig = interestingOrderConfig, context = context)
     apply(leafPlanCandidates, config, queryGraph, interestingOrderConfig, context)
@@ -63,7 +64,7 @@ object leafPlanOptions extends LeafPlanFinder {
     queryGraph: QueryGraph,
     interestingOrderConfig: InterestingOrderConfig,
     context: LogicalPlanningContext
-  ): Map[Set[String], BestPlans] = {
+  ): Map[Set[LogicalVariable], BestPlans] = {
     val queryPlannerKit = config.toKit(interestingOrderConfig, context)
     val pickBest = config.pickBestCandidate(context)
 
@@ -71,7 +72,7 @@ object leafPlanOptions extends LeafPlanFinder {
 
     leafPlanCandidatesWithSelections
       .toSeq
-      .sequentiallyGroupBy(_.availableSymbols.map(_.name).intersect(queryGraph.idsWithoutOptionalMatchesOrUpdates))
+      .sequentiallyGroupBy(_.availableSymbols.intersect(queryGraph.idsWithoutOptionalMatchesOrUpdates))
       .map { case (availableSymbols, bucket) =>
         val bestPlan = pickBest(
           bucket,
@@ -101,13 +102,13 @@ object leafPlanOptions extends LeafPlanFinder {
 class LeafPlanSelectorHeuristic(context: LogicalPlanningContext) extends SelectorHeuristic {
 
   final override def tieBreaker(plan: LogicalPlan): Int = plan.leftmostLeaf match {
-    case p: NodeIndexLeafPlan if hasAggregatingProperties(p.idName.name, p.properties, context) =>
+    case p: NodeIndexLeafPlan if hasAggregatingProperties(p.idName, p.properties, context) =>
       30 + indexTypeModifier(p, p.indexType)
-    case p: RelationshipIndexLeafPlan if hasAggregatingProperties(p.idName.name, p.properties, context) =>
+    case p: RelationshipIndexLeafPlan if hasAggregatingProperties(p.idName, p.properties, context) =>
       30 + indexTypeModifier(p, p.indexType)
-    case p: NodeIndexLeafPlan if hasAccessedProperties(p.idName.name, p.properties, context) =>
+    case p: NodeIndexLeafPlan if hasAccessedProperties(p.idName, p.properties, context) =>
       20 + indexTypeModifier(p, p.indexType)
-    case p: RelationshipIndexLeafPlan if hasAccessedProperties(p.idName.name, p.properties, context) =>
+    case p: RelationshipIndexLeafPlan if hasAccessedProperties(p.idName, p.properties, context) =>
       20 + indexTypeModifier(p, p.indexType)
     case _: NodeByLabelScan      => 10
     case _: RelationshipTypeScan => 10
@@ -141,23 +142,23 @@ class LeafPlanSelectorHeuristic(context: LogicalPlanningContext) extends Selecto
   }
 
   private def hasAggregatingProperties(
-    varName: String,
+    variable: LogicalVariable,
     properties: Seq[IndexedProperty],
     context: LogicalPlanningContext
   ): Boolean =
     properties.exists(prop =>
       context.plannerState.indexCompatiblePredicatesProviderContext.aggregatingProperties.contains(PropertyAccess(
-        varName,
+        variable,
         prop.propertyKeyToken.name
       ))
     )
 
   private def hasAccessedProperties(
-    varName: String,
+    variable: LogicalVariable,
     properties: Seq[IndexedProperty],
     context: LogicalPlanningContext
   ): Boolean =
     properties.exists(prop =>
-      context.plannerState.accessedProperties.contains(PropertyAccess(varName, prop.propertyKeyToken.name))
+      context.plannerState.accessedProperties.contains(PropertyAccess(variable, prop.propertyKeyToken.name))
     )
 }

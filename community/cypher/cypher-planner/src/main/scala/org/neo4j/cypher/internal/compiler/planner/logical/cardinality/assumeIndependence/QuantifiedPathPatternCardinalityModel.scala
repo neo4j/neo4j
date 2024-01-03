@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.expressions.DifferentRelationships
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LogicalVariable
-import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.Predicate
@@ -46,19 +45,19 @@ trait QuantifiedPathPatternCardinalityModel extends NodeCardinalityModel with Pa
     context: QueryGraphCardinalityContext,
     labelInfo: LabelInfo,
     quantifiedPathPattern: QuantifiedPathPattern,
-    uniqueRelationships: Set[String]
+    uniqueRelationships: Set[LogicalVariable]
   ): Cardinality = {
     val predicates = QuantifiedPathPatternPredicates.partitionSelections(labelInfo, quantifiedPathPattern.selections)
 
     lazy val labelsOnFirstNode =
       predicates.labelsOnNodes(
-        quantifiedPathPattern.leftBinding.outer.name,
-        quantifiedPathPattern.leftBinding.inner.name
+        quantifiedPathPattern.leftBinding.outer,
+        quantifiedPathPattern.leftBinding.inner
       )
     lazy val labelsOnLastNode =
       predicates.labelsOnNodes(
-        quantifiedPathPattern.rightBinding.outer.name,
-        quantifiedPathPattern.rightBinding.inner.name
+        quantifiedPathPattern.rightBinding.outer,
+        quantifiedPathPattern.rightBinding.inner
       )
 
     lazy val otherPredicatesSelectivity: Selectivity =
@@ -79,8 +78,8 @@ trait QuantifiedPathPatternCardinalityModel extends NodeCardinalityModel with Pa
             getEmptyPathPatternCardinality(
               context,
               predicates.allLabelInfo,
-              quantifiedPathPattern.left.name,
-              quantifiedPathPattern.right.name
+              quantifiedPathPattern.left,
+              quantifiedPathPattern.right
             )
 
           case 1 =>
@@ -99,8 +98,8 @@ trait QuantifiedPathPatternCardinalityModel extends NodeCardinalityModel with Pa
 
           case i =>
             val labelsOnJunctionNode = predicates.labelsOnNodes(
-              quantifiedPathPattern.leftBinding.inner.name,
-              quantifiedPathPattern.rightBinding.inner.name
+              quantifiedPathPattern.leftBinding.inner,
+              quantifiedPathPattern.rightBinding.inner
             )
 
             val junctionNodeCardinality =
@@ -148,7 +147,7 @@ trait QuantifiedPathPatternCardinalityModel extends NodeCardinalityModel with Pa
                 .getOrElse(Multiplier.ZERO)
 
             val uniqueRelationshipsInPattern =
-              uniqueRelationships.intersect(quantifiedPathPattern.relationshipVariableGroupings.map(_.group.name))
+              uniqueRelationships.intersect(quantifiedPathPattern.relationshipVariableGroupings.map(_.group))
             val uniquenessSelectivity =
               RepetitionCardinalityModel.relationshipUniquenessSelectivity(
                 differentRelationships = predicates.differentRelationships.size,
@@ -175,8 +174,8 @@ trait QuantifiedPathPatternCardinalityModel extends NodeCardinalityModel with Pa
     val firstRelationshipCardinality = getSimpleRelationshipCardinality(
       context = context,
       labelInfo = labelInfo,
-      leftNode = firstRelationship.left.name,
-      rightNode = firstRelationship.right.name,
+      leftNode = firstRelationship.left,
+      rightNode = firstRelationship.right,
       relationshipTypes = firstRelationship.types,
       relationshipDirection = firstRelationship.dir
     )
@@ -185,12 +184,12 @@ trait QuantifiedPathPatternCardinalityModel extends NodeCardinalityModel with Pa
         dividend = getSimpleRelationshipCardinality(
           context = context,
           labelInfo = labelInfo,
-          leftNode = relationship.left.name,
-          rightNode = relationship.right.name,
+          leftNode = relationship.left,
+          rightNode = relationship.right,
           relationshipTypes = relationship.types,
           relationshipDirection = relationship.dir
         ),
-        divisor = getNodeCardinality(context, labelInfo, relationship.left.name).getOrElse(Cardinality.EMPTY)
+        divisor = getNodeCardinality(context, labelInfo, relationship.left).getOrElse(Cardinality.EMPTY)
       ).getOrElse(Multiplier.ZERO)
     }.product(NumericMultiplier)
     firstRelationshipCardinality * otherRelationshipsMultiplier
@@ -202,9 +201,9 @@ case class QuantifiedPathPatternPredicates(
   differentRelationships: Set[DifferentRelationships],
   otherPredicates: Set[Predicate]
 ) {
-  def labelsOnNode(nodeName: String): Set[LabelName] = allLabelInfo.getOrElse(varFor(nodeName), Set.empty)
+  def labelsOnNode(nodeName: LogicalVariable): Set[LabelName] = allLabelInfo.getOrElse(nodeName, Set.empty)
 
-  def labelsOnNodes(nodeNames: String*): Set[LabelName] = nodeNames.foldLeft(Set.empty[LabelName]) {
+  def labelsOnNodes(nodeNames: LogicalVariable*): Set[LabelName] = nodeNames.foldLeft(Set.empty[LabelName]) {
     case (labels, nodeName) => labels.union(labelsOnNode(nodeName))
   }
 }

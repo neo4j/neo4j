@@ -135,8 +135,8 @@ class SelectorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val subqueryExpression = ExistsIRExpression(
       RegularSinglePlannerQuery(
         QueryGraph(
-          argumentIds = Set("a"),
-          patternNodes = Set("a", "  UNNAMED2"),
+          argumentIds = Set(v"a"),
+          patternNodes = Set(v"a", v"  UNNAMED2"),
           patternRelationships =
             Set(PatternRelationship(
               v"  UNNAMED1",
@@ -155,7 +155,7 @@ class SelectorTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val selections = Selections(Set(predicate))
 
     val qg = QueryGraph(
-      patternNodes = Set("b"),
+      patternNodes = Set(v"b"),
       selections = selections
     )
 

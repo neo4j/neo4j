@@ -167,8 +167,8 @@ class irExpressionRewriterTest extends CypherFunSuite with LogicalPlanningTestSu
     ListIRExpression(
       RegularSinglePlannerQuery(
         QueryGraph(
-          argumentIds = argumentIds,
-          patternNodes = patternNodes
+          argumentIds = argumentIds.map(varFor),
+          patternNodes = patternNodes.map(varFor)
         )
       ),
       varFor("anon_0"),
@@ -181,8 +181,8 @@ class irExpressionRewriterTest extends CypherFunSuite with LogicalPlanningTestSu
     ExistsIRExpression(
       RegularSinglePlannerQuery(
         QueryGraph(
-          argumentIds = argumentIds,
-          patternNodes = patternNodes
+          argumentIds = argumentIds.map(varFor),
+          patternNodes = patternNodes.map(varFor)
         )
       ),
       varFor("anon_0"),

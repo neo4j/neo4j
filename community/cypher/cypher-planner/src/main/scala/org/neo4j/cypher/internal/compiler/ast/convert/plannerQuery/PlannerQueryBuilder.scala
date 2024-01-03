@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.PlannerQueryB
 import org.neo4j.cypher.internal.compiler.helpers.SeqSupport.RichSeq
 import org.neo4j.cypher.internal.expressions.AssertIsNode
 import org.neo4j.cypher.internal.expressions.LogicalVariable
-import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.CallSubqueryHorizon
 import org.neo4j.cypher.internal.ir.PlannerQuery
@@ -47,7 +46,7 @@ case class PlannerQueryBuilder(q: SinglePlannerQuery, semanticTable: SemanticTab
   def withHorizon(horizon: QueryHorizon): PlannerQueryBuilder =
     copy(q = q.updateTailOrSelf(_.withHorizon(horizon)))
 
-  def withInitialArguments(arguments: Set[String]): PlannerQueryBuilder =
+  def withInitialArguments(arguments: Set[LogicalVariable]): PlannerQueryBuilder =
     copy(q.amendQueryGraph(_.withArgumentIds(arguments)))
 
   def withCallSubquery(
@@ -64,7 +63,7 @@ case class PlannerQueryBuilder(q: SinglePlannerQuery, semanticTable: SemanticTab
   def withTail(newTail: SinglePlannerQuery): PlannerQueryBuilder = {
     copy(q =
       q.updateTailOrSelf(
-        _.withTail(newTail.amendQueryGraph(_.addArgumentIds(currentlyExposedSymbols.toIndexedSeq.map(_.name))))
+        _.withTail(newTail.amendQueryGraph(_.addArgumentIds(currentlyExposedSymbols.toIndexedSeq)))
       )
     )
   }
@@ -87,7 +86,7 @@ case class PlannerQueryBuilder(q: SinglePlannerQuery, semanticTable: SemanticTab
   }
 
   private def currentlyExposedSymbols: Set[LogicalVariable] = {
-    q.lastQueryHorizon.exposedSymbols(q.lastQueryGraph.allCoveredIds.map(varFor))
+    q.lastQueryHorizon.exposedSymbols(q.lastQueryGraph.allCoveredIds)
   }
 
   def currentlyAvailableVariables: Set[LogicalVariable] = {
@@ -95,16 +94,16 @@ case class PlannerQueryBuilder(q: SinglePlannerQuery, semanticTable: SemanticTab
     val previousAvailableSymbols =
       if (allPlannerQueries.length > 1) {
         val current = allPlannerQueries(allPlannerQueries.length - 2)
-        current.horizon.exposedSymbols(current.queryGraph.allCoveredIds.map(varFor))
+        current.horizon.exposedSymbols(current.queryGraph.allCoveredIds)
       } else Set.empty
 
     // for the last planner query we should not consider the return projection
-    previousAvailableSymbols ++ q.lastQueryGraph.allCoveredIds.map(varFor)
+    previousAvailableSymbols ++ q.lastQueryGraph.allCoveredIds
   }
 
   def currentQueryGraph: QueryGraph = q.lastQueryGraph
 
-  def lastQGNodesAndArguments: collection.Set[String] = {
+  def lastQGNodesAndArguments: Set[LogicalVariable] = {
     val qg = q.lastQueryGraph
     qg.allPatternNodes ++ qg.argumentIds
   }
@@ -121,15 +120,15 @@ object PlannerQueryBuilder {
   def apply(semanticTable: SemanticTable): PlannerQueryBuilder =
     PlannerQueryBuilder(SinglePlannerQuery.empty, semanticTable)
 
-  def apply(semanticTable: SemanticTable, argumentIds: Set[String]): PlannerQueryBuilder =
+  def apply(semanticTable: SemanticTable, argumentIds: Set[LogicalVariable]): PlannerQueryBuilder =
     PlannerQueryBuilder(RegularSinglePlannerQuery(queryGraph = QueryGraph(argumentIds = argumentIds)), semanticTable)
 
   def finalizeQuery(q: SinglePlannerQuery): SinglePlannerQuery = {
 
     def fixArgumentIds(plannerQuery: SinglePlannerQuery): SinglePlannerQuery = plannerQuery.foldMap {
       case (head, tail) =>
-        val symbols = head.horizon.exposedSymbols(head.queryGraph.allCoveredIds.map(varFor))
-        val newTailGraph = tail.queryGraph.withArgumentIds(symbols.map(_.name))
+        val symbols = head.horizon.exposedSymbols(head.queryGraph.allCoveredIds)
+        val newTailGraph = tail.queryGraph.withArgumentIds(symbols)
         tail.withQueryGraph(newTailGraph)
     }
 
@@ -151,7 +150,7 @@ object PlannerQueryBuilder {
 
       // A QPP can currently only refer to variables from previous clauses,
       // so we can use the arguments of the current QG
-      val qppsWithArguments = qpps.map(qpp => qpp.copy(argumentIds = arguments.map(varFor)))
+      val qppsWithArguments = qpps.map(qpp => qpp.copy(argumentIds = arguments))
       plannerQuery
         .amendQueryGraph(_.withQuantifiedPathPatterns(qppsWithArguments))
         .updateTail(fixArgumentIdsOnQPPs)
@@ -172,7 +171,7 @@ object PlannerQueryBuilder {
 
       def addPredicates(qg: QueryGraph): QueryGraph = {
         val preds = qg.standaloneArgumentPatternNodes.map { n =>
-          AssertIsNode(Variable(n)(InputPosition.NONE))(InputPosition.NONE)
+          AssertIsNode(n)(InputPosition.NONE)
         }
         qg.addPredicates(preds.toSeq: _*)
       }

@@ -360,7 +360,7 @@ trait LogicalPlanningTestSupport extends AstConstructionTestSupport with Logical
   def newMockedLogicalPlanWithProjections(planningAttributes: PlanningAttributes, ids: String*): LogicalPlan = {
     val projections = RegularQueryProjection(projections = ids.map(id => varFor(id) -> varFor(id)).toMap)
     val solved = RegularSinglePlannerQuery(
-      queryGraph = QueryGraph.empty.addPatternNodes(ids: _*),
+      queryGraph = QueryGraph.empty.addPatternNodes(ids.map(varFor): _*),
       horizon = projections
     )
     val res = FakeLeafPlan(ids.toSet)
@@ -381,7 +381,7 @@ trait LogicalPlanningTestSupport extends AstConstructionTestSupport with Logical
     selections: Selections = Selections()
   ): LogicalPlan = {
     val solved = RegularSinglePlannerQuery(
-      QueryGraph.empty.addPatternNodes(idNames.toSeq: _*).addHints(hints).addSelections(selections)
+      QueryGraph.empty.addPatternNodes(idNames.map(varFor).toSeq: _*).addHints(hints).addSelections(selections)
     )
     newMockedLogicalPlanWithSolved(
       planningAttributes,
@@ -412,9 +412,10 @@ trait LogicalPlanningTestSupport extends AstConstructionTestSupport with Logical
     hints: Set[Hint] = Set[Hint](),
     selections: Selections = Selections()
   ): LogicalPlan = {
-    val solved = RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes(idNames.toSeq: _*).addPatternRelationships(
-      patterns
-    ).addHints(hints).addSelections(selections))
+    val solved =
+      RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes(idNames.map(varFor).toSeq: _*).addPatternRelationships(
+        patterns
+      ).addHints(hints).addSelections(selections))
     newMockedLogicalPlanWithSolved(
       planningAttributes,
       idNames,

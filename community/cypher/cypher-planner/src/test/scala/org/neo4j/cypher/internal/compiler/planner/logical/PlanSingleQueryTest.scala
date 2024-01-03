@@ -42,7 +42,7 @@ class PlanSingleQueryTest extends CypherFunSuite with LogicalPlanningTestSupport
   test("should use Selectivity.ONE in the absence of LIMIT") {
     // MATCH (n) RETURN n
     val q = RegularSinglePlannerQuery(
-      queryGraph = QueryGraph(patternNodes = Set("n"))
+      queryGraph = QueryGraph(patternNodes = Set(v"n"))
     )
 
     planSingleQuery(q) shouldEqual Vector(
@@ -54,7 +54,7 @@ class PlanSingleQueryTest extends CypherFunSuite with LogicalPlanningTestSupport
   test("horizon with LIMIT should not reduce its own cardinality") {
     // MATCH (n) RETURN n LIMIT 1000
     val q = RegularSinglePlannerQuery(
-      queryGraph = QueryGraph(patternNodes = Set("n")),
+      queryGraph = QueryGraph(patternNodes = Set(v"n")),
       horizon = RegularQueryProjection(
         queryPagination = QueryPagination(
           limit = Some(literalInt(1000))
@@ -71,7 +71,7 @@ class PlanSingleQueryTest extends CypherFunSuite with LogicalPlanningTestSupport
   test("horizon with LIMIT should not reduce its own cardinality, with tail") {
     // MATCH (n) WITH n AS m LIMIT 1000 RETURN m
     val q = RegularSinglePlannerQuery(
-      queryGraph = QueryGraph(patternNodes = Set("n")),
+      queryGraph = QueryGraph(patternNodes = Set(v"n")),
       horizon = RegularQueryProjection(
         projections = Map(v"m" -> varFor("n")),
         queryPagination = QueryPagination(
@@ -80,8 +80,8 @@ class PlanSingleQueryTest extends CypherFunSuite with LogicalPlanningTestSupport
       ),
       tail = Some(RegularSinglePlannerQuery(
         queryGraph = QueryGraph(
-          patternNodes = Set("m"),
-          argumentIds = Set("m")
+          patternNodes = Set(v"m"),
+          argumentIds = Set(v"m")
         )
       ))
     )
@@ -97,7 +97,7 @@ class PlanSingleQueryTest extends CypherFunSuite with LogicalPlanningTestSupport
   test("horizon that contains LIMIT should not reduce its own cardinality, but should affect earlier horizons") {
     // MATCH (n) WITH n AS m LIMIT 1000 RETURN m LIMIT 500
     val q = RegularSinglePlannerQuery(
-      queryGraph = QueryGraph(patternNodes = Set("n")),
+      queryGraph = QueryGraph(patternNodes = Set(v"n")),
       horizon = RegularQueryProjection(
         projections = Map(v"m" -> varFor("n")),
         queryPagination = QueryPagination(
@@ -106,8 +106,8 @@ class PlanSingleQueryTest extends CypherFunSuite with LogicalPlanningTestSupport
       ),
       tail = Some(RegularSinglePlannerQuery(
         queryGraph = QueryGraph(
-          patternNodes = Set("m"),
-          argumentIds = Set("m")
+          patternNodes = Set(v"m"),
+          argumentIds = Set(v"m")
         ),
         horizon = RegularQueryProjection(
           queryPagination = QueryPagination(

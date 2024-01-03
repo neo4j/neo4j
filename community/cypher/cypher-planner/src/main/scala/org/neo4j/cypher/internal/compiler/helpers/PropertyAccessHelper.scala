@@ -34,7 +34,7 @@ import scala.annotation.tailrec
 
 object PropertyAccessHelper {
 
-  case class PropertyAccess(variableName: String, propertyName: String)
+  case class PropertyAccess(variable: LogicalVariable, propertyName: String)
 
   /*
    * Find all direct property accesses in the head of this planner query. Used when selecting between index plans.
@@ -47,8 +47,8 @@ object PropertyAccessHelper {
     )
 
     propertyAccessLocations.folder.treeFold(Set[PropertyAccess]()) {
-      case Property(Variable(varName), PropertyKeyName(propName)) => set =>
-          SkipChildren(set + PropertyAccess(varName, propName))
+      case Property(v: Variable, PropertyKeyName(propName)) => set =>
+          SkipChildren(set + PropertyAccess(v, propName))
     }
   }
 

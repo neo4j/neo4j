@@ -265,7 +265,7 @@ class countStorePlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     val plannerQuery = {
       val plannerQuery = producePlannerQuery("MATCH (n:Label)", "n")
       val qg = plannerQuery.queryGraph
-      plannerQuery.withQueryGraph(qg.addArgumentId("n"))
+      plannerQuery.withQueryGraph(qg.addArgumentId(v"n"))
     }
 
     countStorePlanner(plannerQuery, context) should notBeCountPlan
@@ -276,7 +276,7 @@ class countStorePlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     val plannerQuery = {
       val plannerQuery = producePlannerQuery("MATCH (n)-[r:REL]->(m)", "r")
       val qg = plannerQuery.queryGraph
-      plannerQuery.withQueryGraph(qg.addArgumentId("r"))
+      plannerQuery.withQueryGraph(qg.addArgumentId(v"r"))
     }
 
     countStorePlanner(plannerQuery, context) should notBeCountPlan

@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.idp.cartesianProductsO
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.QuerySolvableByGetDegree.SetExtractor
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
@@ -39,9 +40,9 @@ case class NestedIndexJoinComponentConnector(singleComponentPlanner: SingleCompo
     kit: QueryPlannerKit,
     context: LogicalPlanningContext
   ): ComponentConnectorSolverStep = {
-    val predicatesWithDependencies: Array[(Expression, Array[String])] =
+    val predicatesWithDependencies: Array[(Expression, Array[LogicalVariable])] =
       queryGraph.selections.flatPredicates
-        .map(pred => (pred, pred.dependencies.map(_.name).toArray))
+        .map(pred => (pred, pred.dependencies.toArray))
         // A predicate can only join two components if it has at least 2 dependencies.
         .filter { case (_, deps) => deps.length > 1 }
         .toArray
@@ -77,7 +78,7 @@ case class NestedIndexJoinComponentConnector(singleComponentPlanner: SingleCompo
 
             // Group predicates that have the same dependencies on the RHS, and try to solve them together.
             // This can make it possible to use composite indexes.
-            predicates <- allPredicates.groupBy(_.dependencies.map(_.name).intersect(rightCovered)).values
+            predicates <- allPredicates.groupBy(_.dependencies.intersect(rightCovered)).values
 
             plan <- planNIJ(
               leftPlan,

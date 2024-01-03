@@ -88,21 +88,21 @@ class QueryGraphConnectedComponentsTest
   }
 
   test("single node") {
-    val singleNodeQG = QueryGraph(patternNodes = Set(A.name))
+    val singleNodeQG = QueryGraph(patternNodes = Set(A))
 
     singleNodeQG.connectedComponents shouldBe Seq(singleNodeQG)
   }
 
   test("two disconnected nodes") {
-    QueryGraph(patternNodes = Set(A.name, B.name)).connectedComponents should equal(Seq(
-      QueryGraph(patternNodes = Set(A.name)),
-      QueryGraph(patternNodes = Set(B.name))
+    QueryGraph(patternNodes = Set(A, B)).connectedComponents should equal(Seq(
+      QueryGraph(patternNodes = Set(A)),
+      QueryGraph(patternNodes = Set(B))
     ))
   }
 
   test("two nodes connected through one rel") {
     val graph = QueryGraph(
-      patternNodes = Set(A.name, B.name),
+      patternNodes = Set(A, B),
       patternRelationships = Set(A_to_B)
     )
 
@@ -111,34 +111,34 @@ class QueryGraphConnectedComponentsTest
 
   test("two disconnected relationships") {
     val graph = QueryGraph(
-      patternNodes = Set(A.name, B.name, C.name, X.name),
+      patternNodes = Set(A, B, C, X),
       patternRelationships = Set(A_to_B, C_to_X)
     )
 
     graph.connectedComponents should equal(Seq(
-      QueryGraph(patternNodes = Set(A.name, B.name), patternRelationships = Set(A_to_B)),
-      QueryGraph(patternNodes = Set(C.name, X.name), patternRelationships = Set(C_to_X))
+      QueryGraph(patternNodes = Set(A, B), patternRelationships = Set(A_to_B)),
+      QueryGraph(patternNodes = Set(C, X), patternRelationships = Set(C_to_X))
     ))
   }
 
   test("two disconnected relationships with one argument") {
     val graph = QueryGraph(
-      patternNodes = Set(A.name, B.name, C.name, X.name),
+      patternNodes = Set(A, B, C, X),
       patternRelationships = Set(A_to_B, C_to_X),
-      argumentIds = Set(A.name)
+      argumentIds = Set(A)
     )
 
     graph.connectedComponents should equal(Seq(
-      QueryGraph(patternNodes = Set(A.name, B.name), patternRelationships = Set(A_to_B), argumentIds = Set(A.name)),
-      QueryGraph(patternNodes = Set(C.name, X.name), patternRelationships = Set(C_to_X), argumentIds = Set(A.name))
+      QueryGraph(patternNodes = Set(A, B), patternRelationships = Set(A_to_B), argumentIds = Set(A)),
+      QueryGraph(patternNodes = Set(C, X), patternRelationships = Set(C_to_X), argumentIds = Set(A))
     ))
   }
 
   test("two disconnected relationships with each one argument") {
     val graph = QueryGraph(
-      patternNodes = Set(A.name, B.name, C.name, X.name),
+      patternNodes = Set(A, B, C, X),
       patternRelationships = Set(A_to_B, C_to_X),
-      argumentIds = Set(A.name, C.name)
+      argumentIds = Set(A, C)
     )
 
     graph.connectedComponents should equal(Seq(graph))
@@ -146,25 +146,25 @@ class QueryGraphConnectedComponentsTest
 
   test("two nodes connected through an optional QG") {
     val graph = QueryGraph(
-      patternNodes = Set(A.name, B.name),
+      patternNodes = Set(A, B),
       optionalMatches = Vector(
         QueryGraph(
-          patternNodes = Set(A.name, B.name),
-          argumentIds = Set(A.name, B.name),
+          patternNodes = Set(A, B),
+          argumentIds = Set(A, B),
           patternRelationships = Set(A_to_B)
         )
       )
     )
 
     graph.connectedComponents should equal(Seq(
-      QueryGraph(patternNodes = Set(A.name)),
-      QueryGraph(patternNodes = Set(B.name))
+      QueryGraph(patternNodes = Set(A)),
+      QueryGraph(patternNodes = Set(B))
     ))
   }
 
   test("two disconnected pattern nodes with each one predicate") {
     val graph = QueryGraph(
-      patternNodes = Set(A.name, B.name),
+      patternNodes = Set(A, B),
       selections = Selections.from(Seq(
         hasLabels(A, "Label"),
         hasLabels(B, "Label")
@@ -172,19 +172,19 @@ class QueryGraphConnectedComponentsTest
     )
 
     graph.connectedComponents should equal(Seq(
-      QueryGraph(patternNodes = Set(A.name), selections = Selections.from(hasLabels(A, "Label"))),
-      QueryGraph(patternNodes = Set(B.name), selections = Selections.from(hasLabels(B, "Label")))
+      QueryGraph(patternNodes = Set(A), selections = Selections.from(hasLabels(A, "Label"))),
+      QueryGraph(patternNodes = Set(B), selections = Selections.from(hasLabels(B, "Label")))
     ))
   }
 
   test("two disconnected pattern nodes with one predicate connecting them") {
     val predicate = equals(prop(A, "prop"), prop(B, "prop"))
 
-    val graph = QueryGraph(patternNodes = Set(A.name, B.name), selections = Selections.from(predicate))
+    val graph = QueryGraph(patternNodes = Set(A, B), selections = Selections.from(predicate))
 
     graph.connectedComponents should equal(Seq(
-      QueryGraph(patternNodes = Set(A.name)),
-      QueryGraph(patternNodes = Set(B.name))
+      QueryGraph(patternNodes = Set(A)),
+      QueryGraph(patternNodes = Set(B))
     ))
   }
 
@@ -192,28 +192,28 @@ class QueryGraphConnectedComponentsTest
     val predicate = equals(prop(A_to_B.variable, "prop"), literalString("something"))
 
     val graph = QueryGraph(
-      patternNodes = Set(A.name, B.name, C.name, X.name),
+      patternNodes = Set(A, B, C, X),
       patternRelationships = Set(A_to_B, C_to_X),
       selections = Selections.from(predicate)
     )
 
     graph.connectedComponents should equal(Seq(
       QueryGraph(
-        patternNodes = Set(A.name, B.name),
+        patternNodes = Set(A, B),
         patternRelationships = Set(A_to_B),
         selections = Selections.from(predicate)
       ),
-      QueryGraph(patternNodes = Set(C.name, X.name), patternRelationships = Set(C_to_X))
+      QueryGraph(patternNodes = Set(C, X), patternRelationships = Set(C_to_X))
     ))
   }
 
   test("two disconnected pattern relationships with hints on one side") {
     val usingScanHint = UsingScanHint(A, labelOrRelTypeName("A"))(pos)
-    val graph = QueryGraph(patternNodes = Set(A.name, B.name), hints = Set(usingScanHint))
+    val graph = QueryGraph(patternNodes = Set(A, B), hints = Set(usingScanHint))
 
     graph.connectedComponents should equal(Seq(
-      QueryGraph(patternNodes = Set(A.name), hints = Set(usingScanHint)),
-      QueryGraph(patternNodes = Set(B.name))
+      QueryGraph(patternNodes = Set(A), hints = Set(usingScanHint)),
+      QueryGraph(patternNodes = Set(B))
     ))
   }
 
@@ -221,11 +221,11 @@ class QueryGraphConnectedComponentsTest
     val shortestPath: ShortestRelationshipPattern =
       ShortestRelationshipPattern(Some(v"r"), A_to_B, single = true)(null)
 
-    val graph = QueryGraph(patternNodes = Set(A.name, B.name), shortestRelationshipPatterns = Set(shortestPath))
+    val graph = QueryGraph(patternNodes = Set(A, B), shortestRelationshipPatterns = Set(shortestPath))
 
     graph.connectedComponents should equal(Seq(
-      QueryGraph(patternNodes = Set(A.name)),
-      QueryGraph(patternNodes = Set(B.name))
+      QueryGraph(patternNodes = Set(A)),
+      QueryGraph(patternNodes = Set(B))
     ))
   }
 
@@ -235,7 +235,7 @@ class QueryGraphConnectedComponentsTest
       ShortestRelationshipPattern(Some(v"r"), A_to_B, single = true)(null)
 
     val graph = QueryGraph(
-      patternNodes = Set(A.name, B.name),
+      patternNodes = Set(A, B),
       patternRelationships = Set(B_to_A),
       shortestRelationshipPatterns = Set(shortestPath)
     )
@@ -244,16 +244,16 @@ class QueryGraphConnectedComponentsTest
   }
 
   test("two disconnected pattern relationships with arguments") {
-    val graph = QueryGraph(patternNodes = Set(A.name, B.name), argumentIds = Set(C.name))
+    val graph = QueryGraph(patternNodes = Set(A, B), argumentIds = Set(C))
 
     graph.connectedComponents should equal(Seq(
-      QueryGraph(patternNodes = Set(A.name), argumentIds = Set(C.name)),
-      QueryGraph(patternNodes = Set(B.name), argumentIds = Set(C.name))
+      QueryGraph(patternNodes = Set(A), argumentIds = Set(C)),
+      QueryGraph(patternNodes = Set(B), argumentIds = Set(C))
     ))
   }
 
   test("nodes solved by argument should be in the same component") {
-    val graph = QueryGraph.empty.addPatternNodes(A.name, B.name).addArgumentIds(Seq(A.name, B.name))
+    val graph = QueryGraph.empty.addPatternNodes(A, B).addArgumentIds(Seq(A, B))
 
     graph.connectedComponents should equal(Seq(graph))
   }
@@ -263,13 +263,13 @@ class QueryGraphConnectedComponentsTest
     // WITH x MATCH (a), (b)-->(x)
     // OPTIONAL MATCH (a)-->(b)
     val graph = QueryGraph(
-      argumentIds = Set(X.name),
-      patternNodes = Set(A, B, X).map(_.name),
+      argumentIds = Set(X),
+      patternNodes = Set(A, B, X),
       patternRelationships = Set(B_to_X),
       optionalMatches = Vector(
         QueryGraph(
-          patternNodes = Set(A.name, B.name),
-          argumentIds = Set(A.name, B.name),
+          patternNodes = Set(A, B),
+          argumentIds = Set(A, B),
           patternRelationships = Set(A_to_B)
         )
       )
@@ -277,16 +277,16 @@ class QueryGraphConnectedComponentsTest
 
     val components = graph.connectedComponents
     components.toSet should equal(Set(
-      QueryGraph(patternNodes = Set(A.name), argumentIds = Set(X.name)),
-      QueryGraph(patternNodes = Set(B, X).map(_.name), patternRelationships = Set(B_to_X), argumentIds = Set(X.name))
+      QueryGraph(patternNodes = Set(A), argumentIds = Set(X)),
+      QueryGraph(patternNodes = Set(B, X), patternRelationships = Set(B_to_X), argumentIds = Set(X))
     ))
   }
 
   test("should pick the predicates correctly on relationships when they depend on arguments") {
     //  UNWIND [0] as x match (a)-[r]->(b) where id(r) = x
     val graph = QueryGraph(
-      argumentIds = Set(X.name),
-      patternNodes = Set(A.name, B.name),
+      argumentIds = Set(X),
+      patternNodes = Set(A, B),
       patternRelationships = Set(A_to_B),
       selections = Selections.from(equals(A_to_B.variable, X))
     )
@@ -302,7 +302,7 @@ class QueryGraphConnectedComponentsTest
 
     // MATCH (d)-[r]->(y), (b)-[r]->(x)
     val graph = QueryGraph(
-      patternNodes = Set(B, X, D, Y).map(_.name),
+      patternNodes = Set(B, X, D, Y),
       patternRelationships = Set(B_to_X, D_to_Y)
     )
 
@@ -311,8 +311,8 @@ class QueryGraphConnectedComponentsTest
 
   test("query parts not connected to the arguments should not be pulled in by mistake") {
     val graph = QueryGraph(
-      patternNodes = Set(A, B, C).map(_.name),
-      argumentIds = Set(A.name),
+      patternNodes = Set(A, B, C),
+      argumentIds = Set(A),
       patternRelationships = Set(A_to_B),
       selections = Selections.from(equals(prop(A, "foo"), prop(C, "bar")))
     )
@@ -323,7 +323,7 @@ class QueryGraphConnectedComponentsTest
   test("single quantified path pattern") {
     // (a) ((a_inner)-[r1]->(b_inner))* (b)
     val singleQuantifiedPathPatternQG =
-      QueryGraph(patternNodes = Set(A.name, B.name), quantifiedPathPatterns = Set(qpp(A, B)))
+      QueryGraph(patternNodes = Set(A, B), quantifiedPathPatterns = Set(qpp(A, B)))
 
     singleQuantifiedPathPatternQG.connectedComponents shouldBe Seq(singleQuantifiedPathPatternQG)
   }
@@ -343,7 +343,7 @@ class QueryGraphConnectedComponentsTest
     // (a)-[r]->(b) ((b_inner)-[r1]->(c_inner))* (c)
     val singleQuantifiedPathPatternQG =
       QueryGraph(
-        patternNodes = Set(A, B, C).map(_.name),
+        patternNodes = Set(A, B, C),
         patternRelationships = Set(A_to_B),
         quantifiedPathPatterns = Set(qpp(B, C))
       )
@@ -355,13 +355,13 @@ class QueryGraphConnectedComponentsTest
     // (a)-[r1]->(b), (c) ((c_inner)-[]->(d_inner))+ (d)
     val singleQuantifiedPathPatternQG =
       QueryGraph(
-        patternNodes = Set(A, B, C, D).map(_.name),
+        patternNodes = Set(A, B, C, D),
         patternRelationships = Set(A_to_B),
         quantifiedPathPatterns = Set(qpp(C, D))
       )
 
-    val qq1 = QueryGraph(patternNodes = Set(A, B).map(_.name), patternRelationships = Set(A_to_B))
-    val qq2 = QueryGraph(patternNodes = Set(C, D).map(_.name), quantifiedPathPatterns = Set(qpp(C, D)))
+    val qq1 = QueryGraph(patternNodes = Set(A, B), patternRelationships = Set(A_to_B))
+    val qq2 = QueryGraph(patternNodes = Set(C, D), quantifiedPathPatterns = Set(qpp(C, D)))
 
     singleQuantifiedPathPatternQG.connectedComponents.toSet shouldBe Set(qq1, qq2)
   }
@@ -369,26 +369,26 @@ class QueryGraphConnectedComponentsTest
   test("two consecutive quantified path patterns connecting three nodes") {
     val quantifiedPathPatternQG =
       QueryGraph(
-        patternNodes = Set(A, B, C, D).map(_.name),
+        patternNodes = Set(A, B, C, D),
         patternRelationships = Set.empty,
         quantifiedPathPatterns = Set(qpp(A, B), qpp(C, B))
       )
 
     val connectedPart =
       QueryGraph(
-        patternNodes = Set(A, B, C).map(_.name),
+        patternNodes = Set(A, B, C),
         patternRelationships = Set.empty,
         quantifiedPathPatterns = Set(qpp(A, B), qpp(C, B))
       )
-    val otherNode = QueryGraph(patternNodes = Set(D.name))
+    val otherNode = QueryGraph(patternNodes = Set(D))
     quantifiedPathPatternQG.connectedComponents.toSet shouldBe Set(connectedPart, otherNode)
   }
 
   test("should pick the predicates correctly on quantified path patterns when they depend on arguments") {
     //  UNWIND [[0]] AS x MATCH (a) ((a_inner)-[]->(b_inner))* (b) WHERE a_inner = x
     val graph = QueryGraph(
-      argumentIds = Set(X.name),
-      patternNodes = Set(A, B).map(_.name),
+      argumentIds = Set(X),
+      patternNodes = Set(A, B),
       quantifiedPathPatterns = Set(qpp(A, B)),
       selections = Selections.from(equals(varFor("a_inner_group"), X))
     )
@@ -402,18 +402,18 @@ class QueryGraphConnectedComponentsTest
 
     val sppQG =
       QueryGraph(
-        patternNodes = Set(A, B, C).map(_.name),
+        patternNodes = Set(A, B, C),
         patternRelationships = Set.empty,
         selectivePathPatterns = spps
       )
 
     val connectedPart =
       QueryGraph(
-        patternNodes = Set(A, B).map(_.name),
+        patternNodes = Set(A, B),
         patternRelationships = Set.empty,
         selectivePathPatterns = spps
       )
-    val otherNode = QueryGraph(patternNodes = Set(C.name))
+    val otherNode = QueryGraph(patternNodes = Set(C))
     sppQG.connectedComponents.toSet shouldBe Set(connectedPart, otherNode)
   }
 
@@ -426,18 +426,18 @@ class QueryGraphConnectedComponentsTest
 
     val sppQG =
       QueryGraph(
-        patternNodes = Set(A, C, D).map(_.name),
+        patternNodes = Set(A, C, D),
         patternRelationships = Set.empty,
         selectivePathPatterns = spps
       )
 
     val connectedPart =
       QueryGraph(
-        patternNodes = Set(A, C).map(_.name),
+        patternNodes = Set(A, C),
         patternRelationships = Set.empty,
         selectivePathPatterns = spps
       )
-    val otherNode = QueryGraph(patternNodes = Set(D.name))
+    val otherNode = QueryGraph(patternNodes = Set(D))
     sppQG.connectedComponents.toSet shouldBe Set(connectedPart, otherNode)
   }
 
@@ -448,19 +448,19 @@ class QueryGraphConnectedComponentsTest
 
     val sppQG =
       QueryGraph(
-        patternNodes = Set(A, B, C, D).map(_.name),
+        patternNodes = Set(A, B, C, D),
         patternRelationships = Set.empty,
         selectivePathPatterns = spps
       )
 
     val connectedParts = Set(
       QueryGraph(
-        patternNodes = Set(A, B).map(_.name),
+        patternNodes = Set(A, B),
         patternRelationships = Set.empty,
         selectivePathPatterns = Set(sppAB)
       ),
       QueryGraph(
-        patternNodes = Set(C, D).map(_.name),
+        patternNodes = Set(C, D),
         patternRelationships = Set.empty,
         selectivePathPatterns = Set(sppCD)
       )
@@ -475,7 +475,7 @@ class QueryGraphConnectedComponentsTest
 
     val sppQG =
       QueryGraph(
-        patternNodes = Set(A, B, C, D).map(_.name),
+        patternNodes = Set(A, B, C, D),
         patternRelationships = Set(rel(B, C)),
         selectivePathPatterns = spps
       )
@@ -485,8 +485,8 @@ class QueryGraphConnectedComponentsTest
 
   test("should pick the predicates correctly on selective path patterns when they depend on arguments") {
     val graph = QueryGraph(
-      argumentIds = Set(X.name),
-      patternNodes = Set(A, C).map(_.name),
+      argumentIds = Set(X),
+      patternNodes = Set(A, C),
       selectivePathPatterns = Set(SelectivePathPattern(
         ExhaustivePathPattern.NodeConnections(NonEmptyList(qpp(A, B), qpp(B, C))),
         Selections.empty,
@@ -501,7 +501,7 @@ class QueryGraphConnectedComponentsTest
 
   test("selective path pattern should pull in predicates without dependency on arguments") {
     val graph = QueryGraph(
-      patternNodes = Set(A, C).map(_.name),
+      patternNodes = Set(A, C),
       selectivePathPatterns = Set(SelectivePathPattern(
         ExhaustivePathPattern.NodeConnections(NonEmptyList(qpp(A, B), qpp(B, C))),
         Selections.empty,

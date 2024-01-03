@@ -37,7 +37,7 @@ object projection {
     val stillToSolveProjection =
       projectionsLeft(in, projectionsToPlan, context.staticComponents.planningAttributes.solveds)
     val solver = SubqueryExpressionSolver.solverFor(in, context)
-    val projectionsMap = stillToSolveProjection.map { case (k, v) => (k, solver.solve(v, Some(k.name))) }
+    val projectionsMap = stillToSolveProjection.map { case (k, v) => (k, solver.solve(v, Some(k))) }
     val plan = solver.rewrittenPlan()
 
     val ids = plan.availableSymbols

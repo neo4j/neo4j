@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.CandidateSelector
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanner
@@ -51,12 +52,12 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
   private val labelScanLeafPlanner: LeafPlanner = (qg, _, context) =>
     qg.patternNodes.map(node =>
       context.staticComponents.logicalPlanProducer.planNodeByLabelScan(
-        varFor(node),
-        LabelName(node.toUpperCase())(pos),
+        node,
+        LabelName(node.name.toUpperCase())(pos),
         Seq.empty,
         None,
         Set.empty,
-        ProvidedOrder.asc(varFor(node)),
+        ProvidedOrder.asc(node),
         context
       )
     )
@@ -108,12 +109,12 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
     new givenConfig().withLogicalPlanningContext { (_, ctx) =>
       val options = leafPlanOptions(
         queryPlanConfig(IndexedSeq(allNodesScanLeafPlanner)),
-        QueryGraph(patternNodes = Set("a")),
+        QueryGraph(patternNodes = Set(v"a")),
         InterestingOrderConfig.empty,
         ctx
       )
 
-      options.shouldEqual(Map(Set("a") -> BestResults(AllNodesScan(varFor("a"), Set.empty), None)))
+      options.shouldEqual(Map(Set(v"a") -> BestResults(AllNodesScan(varFor("a"), Set.empty), None)))
     }
   }
 
@@ -121,14 +122,14 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
     new givenConfig().withLogicalPlanningContext { (_, ctx) =>
       val options = leafPlanOptions(
         queryPlanConfig(IndexedSeq(allNodesScanLeafPlanner)),
-        QueryGraph(patternNodes = Set("a")),
+        QueryGraph(patternNodes = Set(v"a")),
         InterestingOrderConfig(
           InterestingOrder.required(RequiredOrderCandidate.asc(varFor("a")))
         ),
         ctx
       )
 
-      options.shouldEqual(Map(Set("a") -> BestResults(
+      options.shouldEqual(Map(Set(v"a") -> BestResults(
         AllNodesScan(varFor("a"), Set.empty),
         Some(Sort(AllNodesScan(varFor("a"), Set.empty), List(Ascending(varFor("a")))))
       )))
@@ -139,12 +140,12 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
     new givenConfig().withLogicalPlanningContext { (_, ctx) =>
       val options = leafPlanOptions(
         queryPlanConfig(IndexedSeq(allNodesScanLeafPlanner, labelScanLeafPlanner)),
-        QueryGraph(patternNodes = Set("a")),
+        QueryGraph(patternNodes = Set(v"a")),
         InterestingOrderConfig.empty,
         ctx
       )
 
-      options.shouldEqual(Map(Set("a") -> BestResults(AllNodesScan(varFor("a"), Set.empty), None)))
+      options.shouldEqual(Map(Set(v"a") -> BestResults(AllNodesScan(varFor("a"), Set.empty), None)))
     }
   }
 
@@ -152,14 +153,14 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
     new givenConfig().withLogicalPlanningContext { (_, ctx) =>
       val options = leafPlanOptions(
         queryPlanConfig(IndexedSeq(allNodesScanLeafPlanner, labelScanLeafPlanner)),
-        QueryGraph(patternNodes = Set("a")),
+        QueryGraph(patternNodes = Set(v"a")),
         InterestingOrderConfig(
           InterestingOrder.required(RequiredOrderCandidate.asc(varFor("a")))
         ),
         ctx
       )
 
-      options.shouldEqual(Map(Set("a") ->
+      options.shouldEqual(Map(Set(v"a") ->
         BestResults(
           AllNodesScan(varFor("a"), Set.empty),
           Some(NodeByLabelScan(varFor("a"), LabelName("A")(pos), Set.empty, IndexOrderAscending))
@@ -171,14 +172,14 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
     new givenConfig().withLogicalPlanningContext { (_, ctx) =>
       val options = leafPlanOptions(
         queryPlanConfig(IndexedSeq(allNodesScanLeafPlanner, labelScanLeafPlanner)),
-        QueryGraph(patternNodes = Set("a", "b")),
+        QueryGraph(patternNodes = Set(v"a", v"b")),
         InterestingOrderConfig.empty,
         ctx
       )
 
       options.shouldEqual(Map(
-        Set("a") -> BestResults(AllNodesScan(varFor("a"), Set.empty), None),
-        Set("b") -> BestResults(AllNodesScan(varFor("b"), Set.empty), None)
+        Set(v"a") -> BestResults(AllNodesScan(varFor("a"), Set.empty), None),
+        Set(v"b") -> BestResults(AllNodesScan(varFor("b"), Set.empty), None)
       ))
     }
   }
@@ -187,7 +188,7 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
     new givenConfig().withLogicalPlanningContext { (_, ctx) =>
       val options = leafPlanOptions(
         queryPlanConfig(IndexedSeq(allNodesScanLeafPlanner, labelScanLeafPlanner)),
-        QueryGraph(patternNodes = Set("a", "b")),
+        QueryGraph(patternNodes = Set(v"a", v"b")),
         InterestingOrderConfig(
           InterestingOrder.required(RequiredOrderCandidate.asc(varFor("a")))
         ),
@@ -195,11 +196,11 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
       )
 
       options.shouldEqual(Map(
-        Set("a") -> BestResults(
+        Set(v"a") -> BestResults(
           AllNodesScan(varFor("a"), Set.empty),
           Some(NodeByLabelScan(varFor("a"), LabelName("A")(pos), Set.empty, IndexOrderAscending))
         ),
-        Set("b") -> BestResults(AllNodesScan(varFor("b"), Set.empty), None)
+        Set(v"b") -> BestResults(AllNodesScan(varFor("b"), Set.empty), None)
       ))
     }
   }
@@ -226,13 +227,13 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
     new givenConfig().withLogicalPlanningContext { (_, ctx) =>
       val options = leafPlanOptions(
         queryPlanConfig,
-        QueryGraph(patternNodes = Set("a")),
+        QueryGraph(patternNodes = Set(v"a")),
         InterestingOrderConfig.empty,
         ctx
       )
 
       options.shouldEqual(Map(
-        Set("a") -> BestResults(plan, None)
+        Set(v"a") -> BestResults(plan, None)
       ))
     }
   }
@@ -265,13 +266,13 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
     new givenConfig().withLogicalPlanningContext { (_, ctx) =>
       val options = leafPlanOptions(
         queryPlanConfig,
-        QueryGraph(patternNodes = Set("a")),
+        QueryGraph(patternNodes = Set(v"a")),
         InterestingOrderConfig.empty,
         ctx
       )
 
       options.shouldEqual(Map(
-        Set("a") -> BestResults(plans.head, None)
+        Set(v"a") -> BestResults(plans.head, None)
       ))
     }
   }
@@ -280,11 +281,11 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
     "should group plans with same available symbols considering generated variables that are part of the queryGraph"
   ) {
     val anonymousVariableNameGenerator = new AnonymousVariableNameGenerator
-    val fresh1 = anonymousVariableNameGenerator.nextName
-    val fresh2 = anonymousVariableNameGenerator.nextName
+    val fresh1 = varFor(anonymousVariableNameGenerator.nextName)
+    val fresh2 = varFor(anonymousVariableNameGenerator.nextName)
     val plans = Set[LogicalPlan](
-      Argument(Set(varFor("a"), varFor(fresh1))),
-      Argument(Set(varFor("a"), varFor(fresh2)))
+      Argument(Set(varFor("a"), fresh1)),
+      Argument(Set(varFor("a"), fresh2))
     )
     val customLeafPlanner: LeafPlanner = (_, _, _) => plans
     val queryPlanConfig = QueryPlannerConfiguration(
@@ -306,13 +307,13 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
     new givenConfig().withLogicalPlanningContext { (_, ctx) =>
       val options = leafPlanOptions(
         queryPlanConfig,
-        QueryGraph(patternNodes = Set("a", fresh1, fresh2)),
+        QueryGraph(patternNodes = Set(v"a", fresh1, fresh2)),
         InterestingOrderConfig.empty,
         ctx
       )
 
       options should contain theSameElementsAs plans.map(p =>
-        p.availableSymbols.map(_.name) -> BestResults(p, None)
+        p.availableSymbols -> BestResults(p, None)
       ).toMap
     }
   }

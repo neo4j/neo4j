@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanRestrictions
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexSeekPlanProvider.isAllowedByRestrictions
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.NodeIndexLeafPlanner.NodeIndexMatch
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 object nodeIndexSeekPlanProvider extends AbstractNodeIndexSeekPlanProvider {
@@ -31,7 +32,7 @@ object nodeIndexSeekPlanProvider extends AbstractNodeIndexSeekPlanProvider {
   override def createPlans(
     indexMatches: Set[NodeIndexMatch],
     hints: Set[Hint],
-    argumentIds: Set[String],
+    argumentIds: Set[LogicalVariable],
     restrictions: LeafPlanRestrictions,
     context: LogicalPlanningContext
   ): Set[LogicalPlan] = for {
@@ -41,7 +42,7 @@ object nodeIndexSeekPlanProvider extends AbstractNodeIndexSeekPlanProvider {
   private def createSolutions(
     indexMatches: Set[NodeIndexMatch],
     hints: Set[Hint],
-    argumentIds: Set[String],
+    argumentIds: Set[LogicalVariable],
     restrictions: LeafPlanRestrictions,
     context: LogicalPlanningContext
   ): Set[Solution] = for {
@@ -53,7 +54,7 @@ object nodeIndexSeekPlanProvider extends AbstractNodeIndexSeekPlanProvider {
   override protected def constructPlan(solution: Solution, context: LogicalPlanningContext): LogicalPlan =
     if (solution.isUnique) {
       context.staticComponents.logicalPlanProducer.planNodeUniqueIndexSeek(
-        solution.idName,
+        solution.variable,
         solution.label,
         solution.properties,
         solution.valueExpr,
@@ -67,7 +68,7 @@ object nodeIndexSeekPlanProvider extends AbstractNodeIndexSeekPlanProvider {
       )
     } else {
       context.staticComponents.logicalPlanProducer.planNodeIndexSeek(
-        solution.idName,
+        solution.variable,
         solution.label,
         solution.properties,
         solution.valueExpr,

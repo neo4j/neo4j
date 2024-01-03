@@ -43,7 +43,7 @@ case object SelectPatternPredicates extends SelectionCandidateGenerator {
   ): Iterator[SelectionCandidate] = {
     for {
       pattern <- unsolvedPredicates.iterator.filter(containsExistsSubquery)
-      if queryGraph.argumentIds.subsetOf(lhs.availableSymbols.map(_.name))
+      if queryGraph.argumentIds.subsetOf(lhs.availableSymbols)
     } yield {
       val plan = pattern match {
         case p: ExistsIRExpression =>
@@ -136,19 +136,19 @@ case object SelectPatternPredicates extends SelectionCandidateGenerator {
     letExpression: Option[Expression],
     context: LogicalPlanningContext
   ) = {
-    val (idName, ident) = freshId(existsExpression, context.staticComponents.anonymousVariableNameGenerator)
+    val variable = freshId(existsExpression, context.staticComponents.anonymousVariableNameGenerator)
     if (expressions.isEmpty && letExpression.isEmpty)
-      (context.staticComponents.logicalPlanProducer.planLetSemiApply(lhs, rhs, idName, context), ident)
+      (context.staticComponents.logicalPlanProducer.planLetSemiApply(lhs, rhs, variable, context), variable)
     else
       (
         context.staticComponents.logicalPlanProducer.planLetSelectOrSemiApply(
           lhs,
           rhs,
-          idName,
+          variable,
           onePredicate(expressions ++ letExpression.toSet),
           context
         ),
-        ident
+        variable
       )
   }
 
@@ -160,19 +160,19 @@ case object SelectPatternPredicates extends SelectionCandidateGenerator {
     letExpression: Option[Expression],
     context: LogicalPlanningContext
   ) = {
-    val (idName, ident) = freshId(existsExpression, context.staticComponents.anonymousVariableNameGenerator)
+    val variable = freshId(existsExpression, context.staticComponents.anonymousVariableNameGenerator)
     if (expressions.isEmpty && letExpression.isEmpty)
-      (context.staticComponents.logicalPlanProducer.planLetAntiSemiApply(lhs, rhs, idName, context), ident)
+      (context.staticComponents.logicalPlanProducer.planLetAntiSemiApply(lhs, rhs, variable, context), variable)
     else
       (
         context.staticComponents.logicalPlanProducer.planLetSelectOrAntiSemiApply(
           lhs,
           rhs,
-          idName,
+          variable,
           onePredicate(expressions ++ letExpression.toSet),
           context
         ),
-        ident
+        variable
       )
   }
 
@@ -199,6 +199,6 @@ case object SelectPatternPredicates extends SelectionCandidateGenerator {
 
   private def freshId(existsExpression: Expression, anonymousVariableNameGenerator: AnonymousVariableNameGenerator) = {
     val name = anonymousVariableNameGenerator.nextName
-    (name, Variable(name)(existsExpression.position))
+    Variable(name)(existsExpression.position)
   }
 }

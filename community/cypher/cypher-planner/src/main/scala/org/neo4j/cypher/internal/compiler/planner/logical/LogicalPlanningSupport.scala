@@ -20,12 +20,13 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.Hint
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.util.NonEmptyList
 
 object LogicalPlanningSupport {
 
   implicit class RichHint(val hint: Hint) extends AnyVal {
-    def ids: NonEmptyList[String] = hint.variables.map { variable => variable.name }
-    def coveredBy(overlappingIds: Set[String]): Boolean = ids.toSet.subsetOf(overlappingIds)
+    def ids: NonEmptyList[LogicalVariable] = hint.variables.map { variable => variable }
+    def coveredBy(overlappingIds: Set[LogicalVariable]): Boolean = ids.toSet.subsetOf(overlappingIds)
   }
 }

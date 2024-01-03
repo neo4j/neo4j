@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolv
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.CostComparisonListener
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.VerifyBestPlan
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 import org.neo4j.cypher.internal.frontend.phases.CopyQuantifiedPathPatternPredicatesToJuxtaposedNodes
 import org.neo4j.cypher.internal.frontend.phases.Phase
@@ -64,7 +65,7 @@ case object QueryPlanner
     // Not using from.returnColumns, since they are the original ones given by the user,
     // whereas the one in the statement might have been rewritten and contain the variables
     // that will actually be available to ProduceResults
-    val produceResultColumns = from.statement().returnColumns.map(_.name)
+    val produceResultColumns = from.statement().returnColumns
     val logicalPlan = plan(from.query, logicalPlanningContext, produceResultColumns)
 
     from.copy(
@@ -127,7 +128,11 @@ case object QueryPlanner
       context.metrics
     }
 
-  def plan(query: PlannerQuery, context: LogicalPlanningContext, produceResultColumns: Seq[String]): LogicalPlan = {
+  def plan(
+    query: PlannerQuery,
+    context: LogicalPlanningContext,
+    produceResultColumns: Seq[LogicalVariable]
+  ): LogicalPlan = {
     val plan = plannerQueryPlanner.plan(query, context)
 
     val lastInterestingOrder = query match {

@@ -43,7 +43,6 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.PartialPredicate.PartialDistanceSeekWrapper
 import org.neo4j.cypher.internal.expressions.Property
-import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.logical.plans.ExistenceQueryExpression
 import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
@@ -66,18 +65,17 @@ trait IndexCompatiblePredicatesProvider {
    * implicitly inferred (e.g. through constraints, see implicitIndexCompatiblePredicates)
    *
    * @param predicates            selection predicates from the where clause
-   * @param argumentIds           argument ids provided to this sub-plan
+   * @param arguments           arguments provided to this sub-plan
    * @param semanticTable         semantic table
    * @param planContext           planContext to ask for indexes
    */
   private[index] def findIndexCompatiblePredicates(
     predicates: Set[Expression],
-    argumentIds: Set[String],
+    arguments: Set[LogicalVariable],
     semanticTable: SemanticTable,
     planContext: PlanContext,
     indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext
   ): Set[IndexCompatiblePredicate] = {
-    val arguments: Set[LogicalVariable] = argumentIds.map(varFor)
 
     val explicitCompatiblePredicates = findExplicitCompatiblePredicates(arguments, predicates, semanticTable)
 

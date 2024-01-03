@@ -548,7 +548,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       values.foreach(addTypeToSemanticTable(_, CTInteger.invariant))
       qg = QueryGraph(
         selections = Selections(predicates.toSet + Predicate(Set(n), hasLabel("Awesome"))),
-        patternNodes = Set(n.name)
+        patternNodes = Set(n)
       )
 
       indexOn("Awesome", propertyNames: _*)
@@ -588,7 +588,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       addTypeToSemanticTable(lit42, CTInteger.invariant)
       // GIVEN 42 as x MATCH a WHERE a.prop IN [x]
       val x: Expression = varFor("x")
-      qg = queryGraph(in(nProp, listOf(x)), hasLabel("Awesome")).addArgumentIds(Seq("x"))
+      qg = queryGraph(in(nProp, listOf(x)), hasLabel("Awesome")).addArgumentIds(Seq(v"x"))
 
       addTypeToSemanticTable(x, CTNode.invariant)
       indexOn("Awesome", "prop")
@@ -647,14 +647,14 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
       qg = QueryGraph(
         selections = Selections(predicates.flatMap(_.asPredicates)),
-        patternNodes = Set("n", "x"),
-        argumentIds = Set("x")
+        patternNodes = Set(v"n", v"x"),
+        argumentIds = Set(v"x")
       )
 
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val restriction = LeafPlanRestrictions.OnlyIndexSeekPlansFor("n", Set("x"))
+      val restriction = LeafPlanRestrictions.OnlyIndexSeekPlansFor(v"n", Set(v"x"))
       val resultPlans = indexSeekLeafPlanner(restriction)(cfg.qg, InterestingOrderConfig.empty, ctx).toSet
 
       // then
@@ -708,14 +708,14 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
       qg = QueryGraph(
         selections = Selections(predicates.flatMap(_.asPredicates)),
-        patternNodes = Set("n", "x", "y"),
-        argumentIds = Set("x", "y")
+        patternNodes = Set(v"n", v"x", v"y"),
+        argumentIds = Set(v"x", v"y")
       )
 
       indexOn("Awesome", "prop", "foo")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val restriction = LeafPlanRestrictions.OnlyIndexSeekPlansFor("n", Set("x", "y"))
+      val restriction = LeafPlanRestrictions.OnlyIndexSeekPlansFor(v"n", Set(v"x", v"y"))
       val resultPlans = indexSeekLeafPlanner(restriction)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
@@ -795,14 +795,14 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
       qg = QueryGraph(
         selections = Selections(predicates.flatMap(_.asPredicates)),
-        patternNodes = Set("n", "m", "x"),
-        argumentIds = Set("x")
+        patternNodes = Set(v"n", v"m", v"x"),
+        argumentIds = Set(v"x")
       )
 
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val restriction = LeafPlanRestrictions.OnlyIndexSeekPlansFor("m", Set("x"))
+      val restriction = LeafPlanRestrictions.OnlyIndexSeekPlansFor(v"m", Set(v"x"))
       val resultPlans = indexSeekLeafPlanner(restriction)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
@@ -1477,6 +1477,6 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   private def queryGraph(predicates: Expression*) =
     QueryGraph(
       selections = Selections(predicates.map(Predicate(Set(n), _)).toSet),
-      patternNodes = Set(n.name)
+      patternNodes = Set(n)
     )
 }

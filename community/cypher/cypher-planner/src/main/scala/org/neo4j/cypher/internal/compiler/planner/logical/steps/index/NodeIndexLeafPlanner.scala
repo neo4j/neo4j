@@ -37,7 +37,6 @@ import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
-import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.ordering.NoProvidedOrderFactory
@@ -88,7 +87,7 @@ case class NodeIndexLeafPlanner(planProviders: Seq[NodeIndexPlanProvider], restr
 object NodeIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
 
   case class NodeIndexMatch(
-    variableName: String,
+    variable: LogicalVariable,
     labelPredicate: HasLabels,
     labelName: LabelName,
     labelId: LabelId,
@@ -105,7 +104,7 @@ object NodeIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
       exactPredicatesCanGetValue: Boolean
     ): PredicateSet =
       NodePredicateSet(
-        variableName,
+        variable,
         labelPredicate,
         labelName,
         newPredicates,
@@ -114,7 +113,7 @@ object NodeIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
   }
 
   case class NodePredicateSet(
-    variableName: String,
+    variable: LogicalVariable,
     labelPredicate: HasLabels,
     symbolicName: LabelName,
     propertyPredicates: Seq[IndexCompatiblePredicate],
@@ -153,11 +152,11 @@ object NodeIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
       )
 
       val matches = for {
-        propertyPredicates <- compatiblePropertyPredicates.groupBy(_.name)
-        variableName = propertyPredicates._1
-        labelPredicates = allLabelPredicatesMap.getOrElse(varFor(variableName), Set.empty)
+        propertyPredicates <- compatiblePropertyPredicates.groupBy(_.variable)
+        variable = propertyPredicates._1
+        labelPredicates = allLabelPredicatesMap.getOrElse(variable, Set.empty)
         indexMatch <- findIndexMatches(
-          variableName,
+          variable,
           propertyPredicates._2,
           labelPredicates,
           interestingOrderConfig,
@@ -174,7 +173,7 @@ object NodeIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
   }
 
   private def findIndexMatches(
-    variableName: String,
+    variable: LogicalVariable,
     indexCompatiblePredicates: Set[IndexCompatiblePredicate],
     labelPredicates: Set[HasLabels],
     interestingOrderConfig: InterestingOrderConfig,
@@ -204,7 +203,7 @@ object NodeIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
       providedOrderFactory
     )
     indexMatch = NodeIndexMatch(
-      variableName,
+      variable,
       labelPredicate,
       labelName,
       labelId,

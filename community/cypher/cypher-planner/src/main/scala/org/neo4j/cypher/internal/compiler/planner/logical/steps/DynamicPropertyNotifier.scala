@@ -48,7 +48,7 @@ object DynamicPropertyNotifier {
 
     val indexedLabelOrRelTypes = variables.flatMap { variable =>
       val labels = qg.selections.labelsOnNode(variable)
-      val relTypes = qg.inlinedRelTypes(variable.name) ++ qg.selections.typesOnRel(variable)
+      val relTypes = qg.inlinedRelTypes(variable) ++ qg.selections.typesOnRel(variable)
 
       val indexedLabels = labels.filter(withNodeIndex(_, context))
       val indexedRelTypes = relTypes.filter(withRelIndex(_, context))

@@ -48,11 +48,11 @@ case object OptionalMatchConnector
     (registry: IdRegistry[QueryGraph], goal: Goal, table: IDPCache[LogicalPlan], context: LogicalPlanningContext) => {
       val optionalsGoal = goalBitAllocation.optionalMatchesGoal(goal)
       for {
-        id <- optionalsGoal.bitSet.toIterator
-        optionalQg <- registry.lookup(id).toIterator
+        id <- optionalsGoal.bitSet.iterator
+        optionalQg <- registry.lookup(id).iterator
         leftGoal = Goal(goal.bitSet - id)
         leftPlan <- table(leftGoal).iterator
-        canPlan = optionalQg.argumentIds subsetOf leftPlan.availableSymbols.map(_.name)
+        canPlan = optionalQg.argumentIds subsetOf leftPlan.availableSymbols
         if canPlan
         optionalSolver <- optionalSolvers(optionalQg)
         plan <- optionalSolver.connect(leftPlan)

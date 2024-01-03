@@ -574,10 +574,10 @@ class InterestingOrderTest extends CypherFunSuite with AstConstructionTestSuppor
   test("forQueryGraph should keep only the column with dependencies met") {
     val io = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("a")).asc(varFor("b")))
 
-    io.forQueryGraph(QueryGraph(patternNodes = Set("a"))) should equal(
+    io.forQueryGraph(QueryGraph(patternNodes = Set(v"a"))) should equal(
       InterestingOrder.required(RequiredOrderCandidate.asc(varFor("a")))
     )
-    io.forQueryGraph(QueryGraph(patternNodes = Set("b"))) should equal(
+    io.forQueryGraph(QueryGraph(patternNodes = Set(v"b"))) should equal(
       InterestingOrder.required(RequiredOrderCandidate.asc(varFor("b")))
     )
   }
@@ -585,7 +585,7 @@ class InterestingOrderTest extends CypherFunSuite with AstConstructionTestSuppor
   test("forQueryGraph should be empty if no column with dependencies met") {
     val io = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("a")).asc(varFor("b")))
 
-    io.forQueryGraph(QueryGraph(patternNodes = Set("c"))) should equal(
+    io.forQueryGraph(QueryGraph(patternNodes = Set(v"c"))) should equal(
       InterestingOrder.empty
     )
   }
@@ -597,16 +597,16 @@ class InterestingOrderTest extends CypherFunSuite with AstConstructionTestSuppor
       .asc(varFor("c"))
       .asc(varFor("d")))
 
-    io.forQueryGraph(QueryGraph(patternNodes = Set("a", "b"))) should equal(
+    io.forQueryGraph(QueryGraph(patternNodes = Set(v"a", v"b"))) should equal(
       InterestingOrder.required(RequiredOrderCandidate.asc(varFor("a")).asc(varFor("b")))
     )
-    io.forQueryGraph(QueryGraph(patternNodes = Set("a", "c"))) should equal(
+    io.forQueryGraph(QueryGraph(patternNodes = Set(v"a", v"c"))) should equal(
       InterestingOrder.required(RequiredOrderCandidate.asc(varFor("a")))
     )
-    io.forQueryGraph(QueryGraph(patternNodes = Set("b", "c"))) should equal(
+    io.forQueryGraph(QueryGraph(patternNodes = Set(v"b", v"c"))) should equal(
       InterestingOrder.required(RequiredOrderCandidate.asc(varFor("b")).asc(varFor("c")))
     )
-    io.forQueryGraph(QueryGraph(patternNodes = Set("b", "d"))) should equal(
+    io.forQueryGraph(QueryGraph(patternNodes = Set(v"b", v"d"))) should equal(
       InterestingOrder.required(RequiredOrderCandidate.asc(varFor("b")))
     )
   }

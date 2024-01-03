@@ -191,7 +191,7 @@ class NodeConnectionTest extends CypherFunSuite with AstConstructionTestSupport 
 
     spp.asQueryGraph should equal(QueryGraph(
       patternRelationships = Set(`(foo)-[x]->(start)`, `(a)-[r]->(b)`, `(b)-[s]->(c)`),
-      patternNodes = Set("a", "b", "c", "start", "foo"),
+      patternNodes = Set(v"a", v"b", v"c", v"start", v"foo"),
       selections = selections
     ))
   }

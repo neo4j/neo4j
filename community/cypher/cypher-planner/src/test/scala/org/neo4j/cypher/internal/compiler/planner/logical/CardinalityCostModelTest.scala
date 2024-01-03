@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.ExecutionModel.BatchedSingleThreaded
@@ -725,7 +726,7 @@ class CardinalityCostModelTest extends CypherFunSuite with AstConstructionTestSu
       builder.getSemanticTable,
       builder.cardinalities,
       builder.providedOrders,
-      propertyAccess = Set(PropertyAccess("r", "prop"))
+      propertyAccess = Set(PropertyAccess(v"r", "prop"))
     )
 
     lowCost should be < highCost
@@ -751,7 +752,7 @@ class CardinalityCostModelTest extends CypherFunSuite with AstConstructionTestSu
       builder.getSemanticTable,
       builder.cardinalities,
       builder.providedOrders,
-      propertyAccess = Set(PropertyAccess("r", "prop"))
+      propertyAccess = Set(PropertyAccess(v"r", "prop"))
     )
 
     lowCost should be < highCost

@@ -97,7 +97,7 @@ case class InterestingOrder(
    */
   def forQueryGraph(queryGraph: QueryGraph): InterestingOrder = {
     def columnHasDependencies(co: ColumnOrder): Boolean =
-      co.dependencies.map(_.name).subsetOf(queryGraph.allCoveredIds -- queryGraph.argumentIds)
+      co.dependencies.subsetOf(queryGraph.allCoveredIds -- queryGraph.argumentIds)
     this.mapOrderCandidates { _.dropWhile(!columnHasDependencies(_)).takeWhile(columnHasDependencies) }
   }
 

@@ -45,7 +45,6 @@ import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.PropertyKeyToken
 import org.neo4j.cypher.internal.expressions.SymbolicName
-import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.frontend.helpers.SeqCombiner
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrderFactory
@@ -83,7 +82,7 @@ object EntityIndexLeafPlanner {
   ): Set[IndexCompatiblePredicate] = {
     // Can't currently handle aggregation on more than one variable
     val aggregatedPropNames: Set[String] =
-      if (aggregatingProperties.forall(prop => prop.variableName.equals(variable.name))) {
+      if (aggregatingProperties.forall(prop => prop.variable.equals(variable))) {
         aggregatingProperties.map { prop => prop.propertyName }
       } else {
         Set.empty
@@ -228,8 +227,6 @@ object EntityIndexLeafPlanner {
     indexRequirements: Set[IndexRequirement],
     cypherType: CypherType
   ) {
-    def name: String = variable.name
-
     def propertyKeyName: PropertyKeyName = property.propertyKey
 
     def isExists: Boolean = queryExpression match {
@@ -361,14 +358,14 @@ trait IndexMatch {
   def propertyPredicates: Seq[IndexCompatiblePredicate]
   def indexDescriptor: IndexDescriptor
   def predicateSet(newPredicates: Seq[IndexCompatiblePredicate], exactPredicatesCanGetValue: Boolean): PredicateSet
-  def variableName: String
+  def variable: LogicalVariable
 }
 
 /**
  * Information needed to create a index leaf plan.
  */
 trait PredicateSet {
-  def variableName: String
+  def variable: LogicalVariable
   def symbolicName: SymbolicName
   def propertyPredicates: Seq[IndexCompatiblePredicate]
   def getValueBehaviors: Seq[GetValueFromIndexBehavior]
@@ -392,11 +389,11 @@ trait PredicateSet {
 
   private def matchingHints(hints: Set[Hint]): Set[UsingIndexHint] = {
     val propertyNames = propertyPredicates.map(_.propertyKeyName.name)
-    val localVariableName = variableName
+    val localVariableName = variable
     val entityTypeName = symbolicName.name
     hints.collect {
       case hint @ UsingIndexHint(
-          Variable(`localVariableName`),
+          `localVariableName`,
           LabelOrRelTypeName(`entityTypeName`),
           propertyKeyNames,
           _,

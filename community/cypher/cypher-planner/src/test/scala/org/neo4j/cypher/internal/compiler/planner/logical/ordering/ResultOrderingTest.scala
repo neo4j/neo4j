@@ -337,40 +337,42 @@ abstract class ResultOrderingTest[OC <: OrderCandidate[OC]](
   // RelType scan
 
   test("RelType scan: Empty order results in empty provided order") {
-    providedOrderForRelationshipTypeScan(InterestingOrder.empty, "x", IndexOrderCapability.BOTH) should be(
+    providedOrderForRelationshipTypeScan(InterestingOrder.empty, v"x", IndexOrderCapability.BOTH) should be(
       ProvidedOrder.empty
     )
   }
 
   test("RelType scan: No order capability results in empty provided order") {
-    providedOrderForRelationshipTypeScan(ascX, "x", IndexOrderCapability.NONE) should be(ProvidedOrder.empty)
+    providedOrderForRelationshipTypeScan(ascX, v"x", IndexOrderCapability.NONE) should be(ProvidedOrder.empty)
   }
 
   test("RelType scan: Simple order results in matching provided order") {
-    providedOrderForRelationshipTypeScan(ascX, "x", IndexOrderCapability.BOTH) should be(ProvidedOrder.asc(x))
-    providedOrderForRelationshipTypeScan(descX, "x", IndexOrderCapability.BOTH) should be(ProvidedOrder.desc(x))
+    providedOrderForRelationshipTypeScan(ascX, v"x", IndexOrderCapability.BOTH) should be(ProvidedOrder.asc(x))
+    providedOrderForRelationshipTypeScan(descX, v"x", IndexOrderCapability.BOTH) should be(ProvidedOrder.desc(x))
   }
 
   test("RelType scan: Simple order with projected variable results in matching provided order") {
     val interestingAsc = toInterestingOrder(orderCandidateFactory.asc(varFor("blob"), Map(v"blob" -> x)))
-    providedOrderForRelationshipTypeScan(interestingAsc, "x", IndexOrderCapability.BOTH) should be(ProvidedOrder.asc(x))
+    providedOrderForRelationshipTypeScan(interestingAsc, v"x", IndexOrderCapability.BOTH) should be(
+      ProvidedOrder.asc(x)
+    )
 
     val interestingDesc = toInterestingOrder(orderCandidateFactory.desc(varFor("blob"), Map(v"blob" -> x)))
-    providedOrderForRelationshipTypeScan(interestingDesc, "x", IndexOrderCapability.BOTH) should be(
+    providedOrderForRelationshipTypeScan(interestingDesc, v"x", IndexOrderCapability.BOTH) should be(
       ProvidedOrder.desc(x)
     )
   }
 
   test("RelType scan: Multi variable order results in matching provided order") {
     val interestingOrder = toInterestingOrder(orderCandidateFactory.asc(x).asc(y))
-    providedOrderForRelationshipTypeScan(interestingOrder, "x", IndexOrderCapability.BOTH) should be(
+    providedOrderForRelationshipTypeScan(interestingOrder, v"x", IndexOrderCapability.BOTH) should be(
       ProvidedOrder.asc(x)
     )
   }
 
   test("RelType scan: Multi variable order results in empty provided order if variable order does not match") {
     val interestingOrder = toInterestingOrder(orderCandidateFactory.asc(y).asc(x))
-    providedOrderForRelationshipTypeScan(interestingOrder, "x", IndexOrderCapability.BOTH) should be(
+    providedOrderForRelationshipTypeScan(interestingOrder, v"x", IndexOrderCapability.BOTH) should be(
       ProvidedOrder.empty
     )
   }
@@ -378,14 +380,14 @@ abstract class ResultOrderingTest[OC <: OrderCandidate[OC]](
   test("RelType scan: results in empty provided order when it can't be fulfilled") {
     providedOrderForRelationshipTypeScan(
       toInterestingOrder(orderCandidateFactory.asc(xFoo)),
-      "x",
+      v"x",
       IndexOrderCapability.BOTH
     ) should be(
       ProvidedOrder.empty
     )
     providedOrderForRelationshipTypeScan(
       toInterestingOrder(orderCandidateFactory.desc(xFoo)),
-      "x",
+      v"x",
       IndexOrderCapability.BOTH
     ) should be(
       ProvidedOrder.empty

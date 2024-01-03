@@ -62,8 +62,8 @@ class PatternRelationshipCardinalityModelTest extends CypherFunSuite with Patter
     val cardinality = getSimpleRelationshipCardinality(
       context = context,
       labelInfo = labelInfo,
-      leftNode = "a",
-      rightNode = "b",
+      leftNode = v"a",
+      rightNode = v"b",
       relationshipTypes = Nil,
       relationshipDirection = SemanticDirection.OUTGOING
     )
@@ -94,8 +94,8 @@ class PatternRelationshipCardinalityModelTest extends CypherFunSuite with Patter
     val cardinality = getSimpleRelationshipCardinality(
       context = context,
       labelInfo = labelInfo,
-      leftNode = "a",
-      rightNode = "b",
+      leftNode = v"a",
+      rightNode = v"b",
       relationshipTypes = Nil,
       relationshipDirection = SemanticDirection.OUTGOING
     )
@@ -154,16 +154,16 @@ class PatternRelationshipCardinalityModelTest extends CypherFunSuite with Patter
       val unknownRelCardinality = getSimpleRelationshipCardinality(
         context = context,
         labelInfo = Map.empty,
-        leftNode = "a",
-        rightNode = "b",
+        leftNode = v"a",
+        rightNode = v"b",
         relationshipTypes = List(RelTypeName("UNKNOWN")(InputPosition.NONE)),
         relationshipDirection = direction
       )
       val knownRelCardinality = getSimpleRelationshipCardinality(
         context = context,
         labelInfo = Map.empty,
-        leftNode = "a",
-        rightNode = "b",
+        leftNode = v"a",
+        rightNode = v"b",
         relationshipTypes = List(RelTypeName("KNOWN")(InputPosition.NONE)),
         relationshipDirection = direction
       )

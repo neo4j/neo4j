@@ -65,7 +65,7 @@ class SelectSubQueryPredicatesTest extends CypherFunSuite with LogicalPlanningTe
   test("should not solve exists sub-query predicates") {
     // Given
     val subQuery = RegularSinglePlannerQuery(QueryGraph.empty
-      .addArgumentId("a")
+      .addArgumentId(v"a")
       .addPatternRelationship(PatternRelationship(
         v"r",
         (v"a", v"b"),
@@ -85,7 +85,7 @@ class SelectSubQueryPredicatesTest extends CypherFunSuite with LogicalPlanningTe
     )
 
     val qg = QueryGraph(
-      patternNodes = Set("a"),
+      patternNodes = Set(v"a"),
       selections = Selections.from(existsPredicate)
     )
 
@@ -111,7 +111,7 @@ class SelectSubQueryPredicatesTest extends CypherFunSuite with LogicalPlanningTe
     val predicate = propEquality(variable = "n", propKey = "prop", intValue = 42)
 
     val qg = QueryGraph(
-      patternNodes = Set("n"),
+      patternNodes = Set(v"n"),
       selections = Selections.from(predicate)
     )
 
@@ -137,7 +137,7 @@ class SelectSubQueryPredicatesTest extends CypherFunSuite with LogicalPlanningTe
     val labelPredicate = hasLabels("a", "A")
     val singlePredicate = buildSingleIterablePredicate("a", "r", "b")
 
-    val qg = QueryGraph(patternNodes = Set("a"), selections = Selections.from(List(labelPredicate, singlePredicate)))
+    val qg = QueryGraph(patternNodes = Set(v"a"), selections = Selections.from(List(labelPredicate, singlePredicate)))
 
     val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext())
 
@@ -163,7 +163,8 @@ class SelectSubQueryPredicatesTest extends CypherFunSuite with LogicalPlanningTe
     val singlePredicate1 = buildSingleIterablePredicate("a", "r", "b")
     val singlePredicate2 = buildSingleIterablePredicate("a", "s", "c")
 
-    val qg = QueryGraph(patternNodes = Set("a"), selections = Selections.from(List(singlePredicate1, singlePredicate2)))
+    val qg =
+      QueryGraph(patternNodes = Set(v"a"), selections = Selections.from(List(singlePredicate1, singlePredicate2)))
 
     val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext())
 
@@ -195,7 +196,7 @@ class SelectSubQueryPredicatesTest extends CypherFunSuite with LogicalPlanningTe
   ): SingleIterablePredicate = {
     val subQueryGraph =
       QueryGraph.empty
-        .addArgumentId(argumentName)
+        .addArgumentId(varFor(argumentName))
         .addPatternRelationship(PatternRelationship(
           varFor(relationshipName),
           (varFor(argumentName), varFor(otherNodeName)),

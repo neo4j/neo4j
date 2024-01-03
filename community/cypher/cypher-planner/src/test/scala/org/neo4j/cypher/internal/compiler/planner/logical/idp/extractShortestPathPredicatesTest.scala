@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.FilterScope
 import org.neo4j.cypher.internal.expressions.NoneIterablePredicate
@@ -32,7 +33,7 @@ class extractShortestPathPredicatesTest extends CypherFunSuite with AstConstruct
 
   test("p=shortestPath((a)-[*]->(b))") {
     val (nodePredicates, relationshipPredicates, solvedPredicates) =
-      extractShortestPathPredicates(Set(), Some("p"), None)
+      extractShortestPathPredicates(Set(), Some(v"p"), None)
 
     nodePredicates shouldBe empty
     relationshipPredicates shouldBe empty
@@ -46,7 +47,7 @@ class extractShortestPathPredicatesTest extends CypherFunSuite with AstConstruct
     )(pos)
 
     val (nodePredicates, relationshipPredicates, solvedPredicates) =
-      extractShortestPathPredicates(Set(rewrittenPredicate), None, Some("rs"))
+      extractShortestPathPredicates(Set(rewrittenPredicate), None, Some(v"rs"))
 
     nodePredicates shouldBe empty
     relationshipPredicates shouldBe ListSet(VariablePredicate(
@@ -63,7 +64,7 @@ class extractShortestPathPredicatesTest extends CypherFunSuite with AstConstruct
     )(pos)
 
     val (nodePredicates, relationshipPredicates, solvedPredicates) =
-      extractShortestPathPredicates(Set(rewrittenPredicate), None, Some("x"))
+      extractShortestPathPredicates(Set(rewrittenPredicate), None, Some(v"x"))
 
     nodePredicates shouldBe empty
     relationshipPredicates shouldBe ListSet(VariablePredicate(varFor("r"), propLessThan("r", "prop", 4)))
@@ -90,7 +91,7 @@ class extractShortestPathPredicatesTest extends CypherFunSuite with AstConstruct
     )(pos)
 
     val (nodePredicates, relationshipPredicates, solvedPredicates) =
-      extractShortestPathPredicates(Set(rewrittenRelPredicate, rewrittenNodePredicate), Some("p"), Some("x"))
+      extractShortestPathPredicates(Set(rewrittenRelPredicate, rewrittenNodePredicate), Some(v"p"), Some(v"x"))
 
     nodePredicates shouldBe ListSet(VariablePredicate(varFor("m"), isNotNull(prop("m", "prop"))))
     relationshipPredicates shouldBe ListSet(VariablePredicate(varFor("r"), not(propLessThan("r", "prop", 4))))
@@ -105,7 +106,7 @@ class extractShortestPathPredicatesTest extends CypherFunSuite with AstConstruct
     )(pos)
 
     val (nodePredicates, relationshipPredicates, solvedPredicates) =
-      extractShortestPathPredicates(Set(rewrittenPredicate), Some("p"), Some("r"))
+      extractShortestPathPredicates(Set(rewrittenPredicate), Some(v"p"), Some(v"r"))
 
     nodePredicates shouldBe ListSet(VariablePredicate(varFor("x"), equals(prop("x", "prop"), prop("n", "prop"))))
     relationshipPredicates shouldBe empty
@@ -119,7 +120,7 @@ class extractShortestPathPredicatesTest extends CypherFunSuite with AstConstruct
     )(pos)
 
     val (nodePredicates, relationshipPredicates, solvedPredicates) =
-      extractShortestPathPredicates(Set(rewrittenPredicate), Some("p"), Some("r"))
+      extractShortestPathPredicates(Set(rewrittenPredicate), Some(v"p"), Some(v"r"))
 
     nodePredicates shouldBe empty
     relationshipPredicates shouldBe empty
@@ -133,7 +134,7 @@ class extractShortestPathPredicatesTest extends CypherFunSuite with AstConstruct
     )(pos)
 
     val (nodePredicates, relationshipPredicates, solvedPredicates) =
-      extractShortestPathPredicates(Set(rewrittenPredicate), Some("p"), Some("rel"))
+      extractShortestPathPredicates(Set(rewrittenPredicate), Some(v"p"), Some(v"rel"))
 
     nodePredicates shouldBe ListSet(
       VariablePredicate(varFor("x"), ors(equals(varFor("x"), varFor("n")), equals(varFor("x"), varFor("m"))))
@@ -149,7 +150,7 @@ class extractShortestPathPredicatesTest extends CypherFunSuite with AstConstruct
     )(pos)
 
     val (nodePredicates, relationshipPredicates, solvedPredicates) =
-      extractShortestPathPredicates(Set(rewrittenPredicate), Some("p"), Some("r"))
+      extractShortestPathPredicates(Set(rewrittenPredicate), Some(v"p"), Some(v"r"))
 
     nodePredicates shouldBe empty
     relationshipPredicates shouldBe empty
@@ -163,7 +164,7 @@ class extractShortestPathPredicatesTest extends CypherFunSuite with AstConstruct
     )(pos)
 
     val (nodePredicates, relationshipPredicates, solvedPredicates) =
-      extractShortestPathPredicates(Set(rewrittenPredicate), Some("p"), Some("r"))
+      extractShortestPathPredicates(Set(rewrittenPredicate), Some(v"p"), Some(v"r"))
 
     nodePredicates shouldBe empty
     relationshipPredicates shouldBe empty
@@ -177,7 +178,7 @@ class extractShortestPathPredicatesTest extends CypherFunSuite with AstConstruct
     )(pos)
 
     val (nodePredicates, relationshipPredicates, solvedPredicates) =
-      extractShortestPathPredicates(Set(rewrittenPredicate), Some("p"), Some("r"))
+      extractShortestPathPredicates(Set(rewrittenPredicate), Some(v"p"), Some(v"r"))
 
     nodePredicates shouldBe empty
     relationshipPredicates shouldBe empty
@@ -201,7 +202,7 @@ class extractShortestPathPredicatesTest extends CypherFunSuite with AstConstruct
     )(pos)
 
     val (nodePredicates, relationshipPredicates, solvedPredicates) =
-      extractShortestPathPredicates(Set(rewrittenPredicate), Some("p"), Some("r"))
+      extractShortestPathPredicates(Set(rewrittenPredicate), Some(v"p"), Some(v"r"))
 
     nodePredicates shouldBe empty
     relationshipPredicates shouldBe ListSet(
@@ -244,8 +245,8 @@ class extractShortestPathPredicatesTest extends CypherFunSuite with AstConstruct
           solvableAllPredicate,
           dependingAllPredicate
         ),
-        Some("p"),
-        Some("r")
+        Some(v"p"),
+        Some(v"r")
       )
 
     nodePredicates shouldBe empty
@@ -284,8 +285,8 @@ class extractShortestPathPredicatesTest extends CypherFunSuite with AstConstruct
           solvableAllPredicate,
           otherPathPredicate
         ),
-        Some("p2"),
-        Some("r")
+        Some(v"p2"),
+        Some(v"r")
       )
 
     nodePredicates shouldBe empty
@@ -319,8 +320,8 @@ class extractShortestPathPredicatesTest extends CypherFunSuite with AstConstruct
       val (nodePredicates, relationshipPredicates, solvedPredicates) =
         extractShortestPathPredicates(
           Set(allNode, allRel, noneNode, noneRel),
-          pathName = Some("path"),
-          relsName = Some("r")
+          path = Some(v"path"),
+          rels = Some(v"r")
         )
 
       nodePredicates shouldBe ListSet(allSolvedNode, noneSolvedNode)

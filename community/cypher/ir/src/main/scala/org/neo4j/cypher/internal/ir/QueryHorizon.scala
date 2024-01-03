@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsParameters
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.StringLiteral
-import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.ast.IRExpression
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.PredicateConverter
@@ -81,7 +80,6 @@ sealed trait QueryHorizon extends Foldable {
   protected def getQueryGraphFromDependingExpressions: QueryGraph = {
     val dependencies = dependingExpressions
       .flatMap(_.dependencies)
-      .map(_.name)
       .toSet
 
     QueryGraph(
@@ -145,7 +143,7 @@ case class CallSubqueryHorizon(
 
   override def exposedSymbols(coveredIds: Set[LogicalVariable]): Set[LogicalVariable] = {
     val maybeReportAs = inTransactionsParameters.flatMap(_.reportParams.map(_.reportAs))
-    coveredIds ++ callSubquery.returns.map(varFor) ++ maybeReportAs.toSeq
+    coveredIds ++ callSubquery.returns ++ maybeReportAs.toSeq
   }
 
   override def dependingExpressions: Seq[Expression] = Seq.empty
@@ -196,9 +194,9 @@ sealed abstract class QueryProjection extends QueryHorizon {
 object QueryProjection {
   def empty: RegularQueryProjection = RegularQueryProjection()
 
-  def forIds(coveredIds: Set[LogicalVariable]): Seq[AliasedReturnItem] =
-    coveredIds.toIndexedSeq.map(idName =>
-      AliasedReturnItem(idName, idName)(InputPosition.NONE)
+  def forVariables(variables: Set[LogicalVariable]): Seq[AliasedReturnItem] =
+    variables.toIndexedSeq.map(variable =>
+      AliasedReturnItem(variable, variable)(InputPosition.NONE)
     )
 
   def combine(lhs: QueryProjection, rhs: QueryProjection): QueryProjection = (lhs, rhs) match {

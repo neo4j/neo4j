@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.argumentLeafPlanner
@@ -33,7 +34,7 @@ class ArgumentLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
 
     val qg = QueryGraph(
       argumentIds = Set(),
-      patternNodes = Set("a", "b")
+      patternNodes = Set(v"a", v"b")
     )
 
     argumentLeafPlanner(Set.empty)(qg, InterestingOrderConfig.empty, context) shouldBe empty
@@ -43,7 +44,7 @@ class ArgumentLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     val context = newMockedLogicalPlanningContext(newMockedPlanContext())
 
     val qg = QueryGraph(
-      argumentIds = Set("a", "b"),
+      argumentIds = Set(v"a", v"b"),
       patternNodes = Set()
     )
 
@@ -54,8 +55,8 @@ class ArgumentLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     val context = newMockedLogicalPlanningContext(newMockedPlanContext())
 
     val qg = QueryGraph(
-      argumentIds = Set("a", "b", "c"),
-      patternNodes = Set("a", "b", "d")
+      argumentIds = Set(v"a", v"b", v"c"),
+      patternNodes = Set(v"a", v"b", v"d")
     )
 
     argumentLeafPlanner(Set.empty)(qg, InterestingOrderConfig.empty, context) should equal(
@@ -67,12 +68,12 @@ class ArgumentLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     // given
     val context = newMockedLogicalPlanningContext(newMockedPlanContext())
     val queryGraph = QueryGraph(
-      argumentIds = Set("n"),
-      patternNodes = Set("n")
+      argumentIds = Set(v"n"),
+      patternNodes = Set(v"n")
     )
 
     // when
-    val resultPlans = argumentLeafPlanner(Set("n"))(queryGraph, InterestingOrderConfig.empty, context)
+    val resultPlans = argumentLeafPlanner(Set(v"n"))(queryGraph, InterestingOrderConfig.empty, context)
 
     // then
     resultPlans should be(empty)
@@ -82,11 +83,11 @@ class ArgumentLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     val context = newMockedLogicalPlanningContext(newMockedPlanContext())
 
     val qg = QueryGraph(
-      argumentIds = Set("a", "b", "c"),
-      patternNodes = Set("a", "b", "d")
+      argumentIds = Set(v"a", v"b", v"c"),
+      patternNodes = Set(v"a", v"b", v"d")
     )
 
-    argumentLeafPlanner(Set("b"))(qg, InterestingOrderConfig.empty, context) should equal(
+    argumentLeafPlanner(Set(v"b"))(qg, InterestingOrderConfig.empty, context) should equal(
       Set(Argument(Set(varFor("a"), varFor("b"), varFor("c"))))
     )
   }

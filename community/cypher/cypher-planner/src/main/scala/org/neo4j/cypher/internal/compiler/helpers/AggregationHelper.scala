@@ -70,7 +70,7 @@ object AggregationHelper {
   ): Set[PropertyAccess] = {
     aggregationExpressions.values.flatMap {
       extractPropertyForValue(_, renamings).map {
-        case Property(Variable(varName), PropertyKeyName(propName)) => PropertyAccess(varName, propName)
+        case Property(v: Variable, PropertyKeyName(propName)) => PropertyAccess(v, propName)
         case _ => throw new IllegalStateException("expression must be a property value")
       }
     }.toSet

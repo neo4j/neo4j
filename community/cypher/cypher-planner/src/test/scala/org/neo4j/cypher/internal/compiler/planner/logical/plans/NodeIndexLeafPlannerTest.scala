@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanRestrictions
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
@@ -142,8 +143,8 @@ class NodeIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
       qg = QueryGraph(
         selections = Selections(predicates.flatMap(_.asPredicates)),
-        patternNodes = Set("n", "m", "o", "x"),
-        argumentIds = Set("x")
+        patternNodes = Set(v"n", v"m", v"o", v"x"),
+        argumentIds = Set(v"x")
       )
 
       indexOn("Awesome", "prop")
@@ -152,7 +153,7 @@ class NodeIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       indexOn("Awesome", "aaa", "bbb", "ccc")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val restriction = LeafPlanRestrictions.OnlyIndexSeekPlansFor("m", Set("x"))
+      val restriction = LeafPlanRestrictions.OnlyIndexSeekPlansFor(v"m", Set(v"x"))
       val resultPlans = nodeIndexLeafPlanner(restriction)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then

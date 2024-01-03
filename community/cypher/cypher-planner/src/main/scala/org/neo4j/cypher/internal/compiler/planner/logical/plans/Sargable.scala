@@ -301,8 +301,6 @@ object AsBoundingBoxSeekable {
 sealed trait Sargable[+T <: Expression] {
   def expr: T
   def ident: LogicalVariable
-
-  def name: String = ident.name
 }
 
 /**

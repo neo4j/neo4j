@@ -97,7 +97,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
 
   test("overlap when reading all labels and creating a specific label") {
     // MATCH (a) CREATE (:L)
-    val qg = QueryGraph(patternNodes = Set("a"))
+    val qg = QueryGraph(patternNodes = Set(v"a"))
     val ug = QueryGraph(mutatingPatterns = IndexedSeq(createNode("b", "L")))
 
     ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg), noLeafPlanProvider) shouldBe ListSet(EagernessReason.Unknown)
@@ -106,7 +106,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
   test("no overlap when reading all labels and not setting any label") {
     // ... WITH a, labels(a) as myLabels SET a.prop=[]
     val qg = QueryGraph(
-      argumentIds = Set("a"),
+      argumentIds = Set(v"a"),
       selections =
         Selections(Set(Predicate(Set(v"a"), Variable("a")(pos)), Predicate(Set(v"a"), Labels(Variable("a")(pos))(pos))))
     )
@@ -118,7 +118,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
   test("overlap when reading all labels and removing a label") {
     // ... WITH a, labels(a) as myLabels REMOVE a:Label
     val qg = QueryGraph(
-      argumentIds = Set("a"),
+      argumentIds = Set(v"a"),
       selections =
         Selections(Set(Predicate(Set(v"a"), Variable("a")(pos)), Predicate(Set(v"a"), Labels(Variable("a")(pos))(pos))))
     )
@@ -132,7 +132,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
   test("overlap when reading and creating the same label") {
     // MATCH (a:L) CREATE (b:L)
     val selections = Selections.from(HasLabels(Variable("a")(pos), Seq(LabelName("L")(pos)))(pos))
-    val qg = QueryGraph(patternNodes = Set("a"), selections = selections)
+    val qg = QueryGraph(patternNodes = Set(v"a"), selections = selections)
     val ug = QueryGraph(mutatingPatterns = IndexedSeq(createNode("b", "L")))
 
     ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg), noLeafPlanProvider) shouldBe ListSet(EagernessReason.Unknown)
@@ -142,7 +142,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
     // MATCH (a:L1:L2) CREATE (b:L3)
     val selections =
       Selections.from(HasLabels(Variable("a")(pos), Seq(LabelName("L1")(pos), LabelName("L2")(pos)))(pos))
-    val qg = QueryGraph(patternNodes = Set("a"), selections = selections)
+    val qg = QueryGraph(patternNodes = Set(v"a"), selections = selections)
     val ug = QueryGraph(mutatingPatterns = IndexedSeq(createNode("b", "L3")))
 
     ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg), noLeafPlanProvider) shouldBe empty
@@ -154,7 +154,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
       Property(Variable("a")(pos), PropertyKeyName("foo")(pos))(pos),
       ListLiteral(List(SignedDecimalIntegerLiteral("42")(pos)))(pos)
     )(pos))
-    val qg = QueryGraph(patternNodes = Set("a"), selections = selections)
+    val qg = QueryGraph(patternNodes = Set(v"a"), selections = selections)
     val ug = QueryGraph(mutatingPatterns = IndexedSeq(createNode("b", "L")))
 
     ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg), noLeafPlanProvider) shouldBe empty
@@ -169,7 +169,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
       )(pos),
       HasLabels(Variable("a")(pos), Seq(LabelName("L")(pos)))(pos)
     ))
-    val qg = QueryGraph(patternNodes = Set("a"), selections = selections)
+    val qg = QueryGraph(patternNodes = Set(v"a"), selections = selections)
     val ug = QueryGraph(mutatingPatterns = IndexedSeq(createNode("b", "L")))
 
     ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg), noLeafPlanProvider) shouldBe empty
@@ -184,7 +184,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
       AndedPropertyInequalities(variable, property, NonEmptyList(lessThan)),
       HasLabels(Variable("a")(pos), Seq(LabelName("L")(pos)))(pos)
     ))
-    val qg = QueryGraph(patternNodes = Set("a"), selections = selections)
+    val qg = QueryGraph(patternNodes = Set(v"a"), selections = selections)
     val ug = QueryGraph(mutatingPatterns = IndexedSeq(createNode("b", "L")))
 
     ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg), noLeafPlanProvider) shouldBe ListSet(EagernessReason.Unknown)
@@ -301,7 +301,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
     // MATCH (a:L1:L2) DELETE a CREATE (b:L3)
     val selections =
       Selections.from(HasLabels(Variable("a")(pos), Seq(LabelName("L1")(pos), LabelName("L2")(pos)))(pos))
-    val qg = QueryGraph(patternNodes = Set("a"), selections = selections)
+    val qg = QueryGraph(patternNodes = Set(v"a"), selections = selections)
     val ug = QueryGraph(mutatingPatterns =
       IndexedSeq(
         DeleteExpression(Variable("a")(pos), detachDelete = false),
@@ -321,7 +321,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
 
   test("overlap when reading and deleting with collections") {
     // ... WITH collect(a) as col DELETE col[0]
-    val qg = QueryGraph(argumentIds = Set("col"))
+    val qg = QueryGraph(argumentIds = Set(v"col"))
     val ug = QueryGraph(mutatingPatterns =
       IndexedSeq(
         DeleteExpression(Variable("col")(pos), detachDelete = false)
@@ -375,7 +375,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
     val selections = Selections.from(Seq(
       in(prop("a", propName), listOfInt(42))
     ))
-    val qg = QueryGraph(patternNodes = Set("a"), selections = selections)
+    val qg = QueryGraph(patternNodes = Set(v"a"), selections = selections)
 
     forAll(tests) {
       case (pattern, expected) =>
@@ -455,7 +455,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
       in(prop("q", propName), listOfInt(42))
     ))
     val pr = PatternRelationship(v"q", (v"a", v"b"), BOTH, Seq.empty, SimplePatternLength)
-    val qg = QueryGraph(patternNodes = Set("a", "b"), patternRelationships = Set(pr), selections = selections)
+    val qg = QueryGraph(patternNodes = Set(v"a", v"b"), patternRelationships = Set(pr), selections = selections)
 
     // Test with bare SET
     forAll(tests) {
@@ -513,7 +513,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
       hasLabels("a", "Label"),
       in(prop("a", "prop"), listOfInt(42))
     ))
-    val qg = QueryGraph(patternNodes = Set("a"), selections = selections)
+    val qg = QueryGraph(patternNodes = Set(v"a"), selections = selections)
     val ug = QueryGraph(mutatingPatterns =
       IndexedSeq(
         MergeNodePattern(
@@ -533,7 +533,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
     val selections = Selections.from(Seq(
       in(prop("a", "prop"), listOfInt(42))
     ))
-    val qg = QueryGraph(patternNodes = Set("a"), selections = selections)
+    val qg = QueryGraph(patternNodes = Set(v"a"), selections = selections)
     val ug = QueryGraph(mutatingPatterns =
       IndexedSeq(
         MergeNodePattern(
@@ -554,7 +554,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
       hasLabels("a", "Label"),
       in(prop("a", "prop"), listOfInt(42))
     ))
-    val qg = QueryGraph(patternNodes = Set("a"), selections = selections)
+    val qg = QueryGraph(patternNodes = Set(v"a"), selections = selections)
     val ug = QueryGraph(mutatingPatterns =
       IndexedSeq(
         MergeNodePattern(
@@ -570,8 +570,8 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
   }
 
   test("allQueryGraphs should include IRExpressions recursively") {
-    val innerQg1 = QueryGraph(patternNodes = Set("a"))
-    val innerQg2 = QueryGraph(patternNodes = Set("b"))
+    val innerQg1 = QueryGraph(patternNodes = Set(v"a"))
+    val innerQg2 = QueryGraph(patternNodes = Set(v"b"))
     val qg = QueryGraph(
       selections = Selections.from(Seq(
         ExistsIRExpression(RegularSinglePlannerQuery(innerQg1), varFor(""), "")(pos, Some(Set.empty), Some(Set.empty)),
@@ -587,8 +587,8 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
   }
 
   test("allQueryGraphs in horizon should include IRExpressions recursively") {
-    val innerQg1 = QueryGraph(patternNodes = Set("a"))
-    val innerQg2 = QueryGraph(patternNodes = Set("b"))
+    val innerQg1 = QueryGraph(patternNodes = Set(v"a"))
+    val innerQg2 = QueryGraph(patternNodes = Set(v"b"))
     val horizon = RegularQueryProjection(
       Map(
         v"a" -> ExistsIRExpression(RegularSinglePlannerQuery(innerQg1), varFor(""), "")(
@@ -658,7 +658,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
       )
     )
 
-    val qgWithLeafInfo = QgWithLeafInfo(queryGraph, Set.empty, Set.empty, Some(StableIdentifier("start")), false)
+    val qgWithLeafInfo = QgWithLeafInfo(queryGraph, Set.empty, Set.empty, Some(StableIdentifier(v"start")), false)
 
     ug.overlaps(qgWithLeafInfo, noLeafPlanProvider) shouldBe ListSet()
   }

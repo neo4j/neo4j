@@ -66,13 +66,13 @@ object ConvertToNFA {
   def convertToNfa(
     spp: SelectivePathPattern,
     fromLeft: Boolean,
-    availableSymbols: Set[String],
+    availableSymbols: Set[LogicalVariable],
     predicatesOnTargetNode: Seq[Expression],
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator
-  ): (NFA, Selections, Map[String, String]) = {
-    val firstNodeName = if (fromLeft) spp.left else spp.right
+  ): (NFA, Selections, Map[LogicalVariable, LogicalVariable]) = {
+    val firstNode = if (fromLeft) spp.left else spp.right
 
-    val builder = new NFABuilder(firstNodeName)
+    val builder = new NFABuilder(firstNode)
     val connections = spp.pathPattern.connections
     val directedConnections = if (fromLeft) connections else connections.reverse
 
@@ -81,7 +81,7 @@ object ConvertToNFA {
         anonymousVariableNameGenerator,
         rel.name
       )
-      rel.name -> singletonRelName
+      rel -> varFor(singletonRelName)
     }.toMap
 
     val nonInlinedSelections =
@@ -101,12 +101,12 @@ object ConvertToNFA {
   }
 
   /**
-   * Return True if the given expression is only depend on availableSymbols and entity names, but also use
-   * at least one entityName. Therefor being able to be inlined
+   * Return True if the given expression is only depend on availableSymbols and entities, but also use
+   * at least one entity. Therefore being able to be inlined.
    */
-  def canBeInlined(expression: Expression, entityNames: Set[LogicalVariable]): Boolean =
+  def canBeInlined(expression: Expression, entities: Set[LogicalVariable]): Boolean =
     expression.folder.treeFindByClass[IRExpression].isEmpty &&
-      (expression.dependencies intersect entityNames).nonEmpty
+      (expression.dependencies intersect entities).nonEmpty
 
   /**
    *
@@ -117,9 +117,9 @@ object ConvertToNFA {
     connections: NonEmptyList[ExhaustiveNodeConnection],
     selections: Selections,
     fromLeft: Boolean,
-    availableSymbols: Set[String],
+    availableSymbols: Set[LogicalVariable],
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
-    syntheticVarLengthSingleton: Map[String, String]
+    syntheticVarLengthSingleton: Map[LogicalVariable, LogicalVariable]
   ): Selections = {
     // we cannot inline uniqueness predicates but we do not have to solve them as the algorithm for finding shortest paths will do that.
     val selectionsWithoutUniquenessPredicates = selections.filter(_.expr match {
@@ -128,24 +128,24 @@ object ConvertToNFA {
     })
 
     /**
-     * Return the top level predicates that only depend on availableSymbols and entity names, but also use
-     * at least one entityName.
+     * Return the top level predicates that only depend on availableSymbols and entities, but also use
+     * at least one entity.
      */
-    def getTopLevelPredicates(entityNames: Set[String]): ListSet[Expression] =
-      getPredicates(selectionsWithoutUniquenessPredicates, entityNames)
+    def getTopLevelPredicates(entities: Set[LogicalVariable]): ListSet[Expression] =
+      getPredicates(selectionsWithoutUniquenessPredicates, entities)
 
     /**
-     * Return the subset of the given predicates that only depend on availableSymbols and entity names, but also use
-     * at least one entityName.
+     * Return the subset of the given predicates that only depend on availableSymbols and entities, but also use
+     * at least one entity.
      */
-    def getPredicates(selections: Selections, entityNames: Set[String]): ListSet[Expression] =
-      selections.predicatesGiven((availableSymbols ++ entityNames).map(varFor))
-        .filter(canBeInlined(_, entityNames.map(varFor)))
+    def getPredicates(selections: Selections, entities: Set[LogicalVariable]): ListSet[Expression] =
+      selections.predicatesGiven((availableSymbols ++ entities))
+        .filter(canBeInlined(_, entities))
         .to(ListSet)
 
-    def getVariablePredicates(entityName: String): (ListSet[Expression], Option[VariablePredicate]) = {
-      val entityPredicates = getTopLevelPredicates(Set(entityName))
-      val entityVariablePredicates = toVariablePredicates(entityName, entityPredicates)
+    def getVariablePredicates(entity: LogicalVariable): (ListSet[Expression], Option[VariablePredicate]) = {
+      val entityPredicates = getTopLevelPredicates(Set(entity))
+      val entityVariablePredicates = toVariablePredicates(entity, entityPredicates)
       (entityPredicates, entityVariablePredicates)
     }
 
@@ -187,9 +187,9 @@ object ConvertToNFA {
       }))
 
       val allPredicatesGiven = getTopLevelPredicates(Set(
-        sourceVariable.name,
-        relationshipVariable.name,
-        targetVariable.name
+        sourceVariable,
+        relationshipVariable,
+        targetVariable
       ))
         // We cannot rewrite IRExpressions, since they contain Variables as strings
         .filter(_.folder.treeFindByClass[IRExpression].isEmpty)
@@ -204,19 +204,18 @@ object ConvertToNFA {
     val (_, inlinedSelections) = connections.foldLeft((builder, Selections.empty)) {
       case ((builder, inlinedSelections), nodeConnection) =>
         def addRelationshipBetweenStates(
-          relationshipName: String,
+          relationshipVariable: LogicalVariable,
           dir: SemanticDirection,
           types: Seq[RelTypeName],
           sourceState: NFABuilder.State,
           targetState: NFABuilder.State
-        ) = {
+        ): Selections = {
           val directionToPlan = if (fromLeft) dir else dir.reversed
 
-          val relationshipVariable = varFor(relationshipName)
-          val targetName = targetState.variable.name
+          val target = targetState.variable
 
-          val relPredicates = getTopLevelPredicates(Set(relationshipName))
-          val nodePredicates = getTopLevelPredicates(Set(targetName))
+          val relPredicates = getTopLevelPredicates(Set(relationshipVariable))
+          val nodePredicates = getTopLevelPredicates(Set(target))
 
           val extraRelPredicates = getExtraRelationshipPredicates(
             dir,
@@ -227,8 +226,8 @@ object ConvertToNFA {
           )
 
           val relVariablePredicates =
-            toVariablePredicates(relationshipName, relPredicates ++ extraRelPredicates.map(_._2))
-          val nodeVariablePredicates = toVariablePredicates(targetName, nodePredicates)
+            toVariablePredicates(relationshipVariable, relPredicates ++ extraRelPredicates.map(_._2))
+          val nodeVariablePredicates = toVariablePredicates(target, nodePredicates)
 
           builder.addTransition(
             sourceState,
@@ -245,20 +244,20 @@ object ConvertToNFA {
         }
 
         def addRelationship(
-          relationshipName: String,
-          targetName: String,
+          relationship: LogicalVariable,
+          target: LogicalVariable,
           dir: SemanticDirection,
           types: Seq[RelTypeName]
-        ) = {
+        ): Selections = {
           val sourceState = builder.getLastState
-          val targetState = builder.addAndGetState(varFor(targetName))
-          addRelationshipBetweenStates(relationshipName, dir, types, sourceState, targetState)
+          val targetState = builder.addAndGetState(target)
+          addRelationshipBetweenStates(relationship, dir, types, sourceState, targetState)
         }
 
         val newlyInlinedSelections = nodeConnection match {
-          case PatternRelationship(relationshipName, (left, right), dir, types, SimplePatternLength) =>
-            val targetName = if (fromLeft) right else left
-            addRelationship(relationshipName.name, targetName.name, dir, types)
+          case PatternRelationship(relationship, (left, right), dir, types, SimplePatternLength) =>
+            val target = if (fromLeft) right else left
+            addRelationship(relationship, target, dir, types)
 
           case PatternRelationship(relationship, (left, right), dir, types, VarPatternLength(lowerBound, max)) =>
             /*
@@ -289,7 +288,7 @@ object ConvertToNFA {
              *
              * (kudos to https://github.com/ggerganov/dot-to-ascii)
              */
-            val singletonRelationshipName = syntheticVarLengthSingleton(relationship.name)
+            val singletonRelationship = syntheticVarLengthSingleton(relationship)
             val sourceState = builder.getLastState
 
             val innerState = builder.addAndGetState(varFor(anonymousVariableNameGenerator.nextName))
@@ -300,20 +299,25 @@ object ConvertToNFA {
             )
 
             for (_ <- 1 to lowerBound) {
-              addRelationship(singletonRelationshipName, anonymousVariableNameGenerator.nextName, dir, types)
+              addRelationship(singletonRelationship, varFor(anonymousVariableNameGenerator.nextName), dir, types)
             }
 
             val exitableState = builder.getLastState
             val furtherExitableStates = max match {
               case Some(upperBound) =>
                 for (_ <- lowerBound until upperBound) yield {
-                  addRelationship(singletonRelationshipName, anonymousVariableNameGenerator.nextName, dir, types)
+                  addRelationship(
+                    singletonRelationship,
+                    varFor(anonymousVariableNameGenerator.nextName),
+                    dir,
+                    types
+                  )
                   builder.getLastState
                 }
               case None =>
                 val targetState = exitableState
                 addRelationshipBetweenStates(
-                  singletonRelationshipName,
+                  singletonRelationship,
                   dir,
                   types,
                   exitableState,
@@ -324,7 +328,7 @@ object ConvertToNFA {
 
             val target = if (fromLeft) right else left
             val targetState = builder.addAndGetState(target)
-            val (predicatesOnTargetNode, variablePredicateOnTargetNode) = getVariablePredicates(target.name)
+            val (predicatesOnTargetNode, variablePredicateOnTargetNode) = getVariablePredicates(target)
             (exitableState +: furtherExitableStates).foreach { exitableState =>
               builder.addTransition(
                 exitableState,
@@ -388,9 +392,9 @@ object ConvertToNFA {
             // var because it will get overwritten if the lower bound is > 1
             var lastSourceInnerState = builder.addAndGetState(sourceInner)
             val predicatesOnSourceInner =
-              getPredicates(qppSelections, availableSymbols + sourceInner.name)
+              getPredicates(qppSelections, availableSymbols + sourceInner)
             val variablePredicateOnSourceInner =
-              toVariablePredicates(sourceInner.name, predicatesOnSourceInner.to(ListSet))
+              toVariablePredicates(sourceInner, predicatesOnSourceInner.to(ListSet))
             builder.addTransition(
               sourceOuterState,
               lastSourceInnerState,
@@ -458,10 +462,10 @@ object ConvertToNFA {
             val targetBinding = if (fromLeft) rightBinding else leftBinding
             val targetOuter = targetBinding.outer
             val targetOuterState = builder.addAndGetState(targetOuter)
-            val predicatesOnTargetOuter = getTopLevelPredicates(Set(targetOuter.name))
+            val predicatesOnTargetOuter = getTopLevelPredicates(Set(targetOuter))
 
             val variablePredicateOnTargetOuter =
-              toVariablePredicates(targetOuter.name, predicatesOnTargetOuter.to(ListSet))
+              toVariablePredicates(targetOuter, predicatesOnTargetOuter.to(ListSet))
             exitableTargetInnerStates.foreach { targetInnerState =>
               builder.addTransition(
                 targetInnerState,
@@ -485,7 +489,10 @@ object ConvertToNFA {
     selectionsWithoutUniquenessPredicates -- inlinedSelections
   }
 
-  private def toVariablePredicates(variableName: String, predicates: ListSet[Expression]): Option[VariablePredicate] = {
-    Option.when(predicates.nonEmpty)(VariablePredicate(varFor(variableName), Ands.create(predicates)))
+  private def toVariablePredicates(
+    variable: LogicalVariable,
+    predicates: ListSet[Expression]
+  ): Option[VariablePredicate] = {
+    Option.when(predicates.nonEmpty)(VariablePredicate(variable, Ands.create(predicates)))
   }
 }

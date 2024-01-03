@@ -200,13 +200,13 @@ class GoalBitAllocationTest extends CypherFunSuite with AstConstructionTestSuppo
     // 0: Sorted
     val components = ListSet(
       QueryGraph(
-        patternNodes = Set("a", "b"),
+        patternNodes = Set(v"a", v"b"),
         patternRelationships =
           Set(PatternRelationship(v"r", (v"a", v"b"), OUTGOING, Seq(relTypeName("R")), SimplePatternLength))
       ), // 1
-      QueryGraph(patternNodes = Set("c", "d")), // 2
+      QueryGraph(patternNodes = Set(v"c", v"d")), // 2
       QueryGraph(
-        patternNodes = Set("e", "f", "g"),
+        patternNodes = Set(v"e", v"f", v"g"),
         shortestRelationshipPatterns = Set(ShortestRelationshipPattern(
           Some(v"p"),
           PatternRelationship(v"p_r", (v"e", v"f"), OUTGOING, Seq(relTypeName("R")), SimplePatternLength),
@@ -215,21 +215,21 @@ class GoalBitAllocationTest extends CypherFunSuite with AstConstructionTestSuppo
       ) // 3
     )
     val optionalMatches = IndexedSeq(
-      QueryGraph(patternNodes = Set("a", "a0"), argumentIds = Set("a")), // 4
-      QueryGraph(patternNodes = Set("noDeps"), argumentIds = Set()), // 5
-      QueryGraph(patternNodes = Set("a", "b", "c", "a1", "c1"), argumentIds = Set("a", "b", "c")), // 6
-      QueryGraph(patternNodes = Set("a", "g", "a2", "g1"), argumentIds = Set("a", "g")), // 7
-      QueryGraph(patternNodes = Set("a0", "a3"), argumentIds = Set("a0")), // 8
-      QueryGraph(patternNodes = Set("d", "g1", "boo"), argumentIds = Set("d", "g1")), // 9
+      QueryGraph(patternNodes = Set(v"a", v"a0"), argumentIds = Set(v"a")), // 4
+      QueryGraph(patternNodes = Set(v"noDeps"), argumentIds = Set()), // 5
+      QueryGraph(patternNodes = Set(v"a", v"b", v"c", v"a1", v"c1"), argumentIds = Set(v"a", v"b", v"c")), // 6
+      QueryGraph(patternNodes = Set(v"a", v"g", v"a2", v"g1"), argumentIds = Set(v"a", v"g")), // 7
+      QueryGraph(patternNodes = Set(v"a0", v"a3"), argumentIds = Set(v"a0")), // 8
+      QueryGraph(patternNodes = Set(v"d", v"g1", v"boo"), argumentIds = Set(v"d", v"g1")), // 9
       QueryGraph(
-        patternNodes = Set("c"),
+        patternNodes = Set(v"c"),
         selections = Selections.from(notEquals(prop("c", "prop"), prop("r", "prop"))),
-        argumentIds = Set("c", "r")
+        argumentIds = Set(v"c", v"r")
       ), // 10
       QueryGraph(
-        patternNodes = Set("c"),
+        patternNodes = Set(v"c"),
         selections = Selections.from(notEquals(prop("c", "prop"), Length(varFor("p"))(pos))),
-        argumentIds = Set("c", "p")
+        argumentIds = Set(v"c", v"p")
       ) // 10
     )
 

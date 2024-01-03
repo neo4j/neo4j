@@ -32,7 +32,6 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.NoneOfRelationships
 import org.neo4j.cypher.internal.expressions.RelationshipUniquenessPredicate
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
-import org.neo4j.cypher.internal.expressions.UnPositionedVariable
 import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.Unique
 import org.neo4j.cypher.internal.expressions.Variable
@@ -92,7 +91,7 @@ case class expandSolverStep(qg: QueryGraph, qppInnerPlanner: QPPInnerPlanner)
                 qg,
                 pattern,
                 plan,
-                pattern.left.name,
+                pattern.left,
                 qppInnerPlanner,
                 context
               ),
@@ -100,7 +99,7 @@ case class expandSolverStep(qg: QueryGraph, qppInnerPlanner: QPPInnerPlanner)
                 qg,
                 pattern,
                 plan,
-                pattern.right.name,
+                pattern.right,
                 qppInnerPlanner,
                 context
               )
@@ -128,9 +127,9 @@ object expandSolverStep {
 
     context.staticComponents.logicalPlanProducer.planProjectEndpoints(
       plan,
-      start.name,
+      start,
       isStartInScope,
-      end.name,
+      end,
       isEndInScope,
       patternRel,
       context
@@ -150,19 +149,19 @@ object expandSolverStep {
     qg: QueryGraph,
     nodeConnection: NodeConnection,
     sourcePlan: LogicalPlan,
-    nodeId: String,
+    nodeId: LogicalVariable,
     qppInnerPlanner: QPPInnerPlanner,
     context: LogicalPlanningContext
   ): Option[LogicalPlan] = {
     val availableSymbols = sourcePlan.availableSymbols
 
-    if (availableSymbols(varFor(nodeId))) {
+    if (availableSymbols(nodeId)) {
       Some(produceLogicalPlan(
         qg,
         nodeConnection,
         sourcePlan,
         nodeId,
-        availableSymbols.map(_.name),
+        availableSymbols,
         context,
         qppInnerPlanner
       ))
@@ -175,14 +174,14 @@ object expandSolverStep {
     qg: QueryGraph,
     patternRel: NodeConnection,
     sourcePlan: LogicalPlan,
-    nodeId: String,
-    availableSymbols: Set[String],
+    nodeId: LogicalVariable,
+    availableSymbols: Set[LogicalVariable],
     context: LogicalPlanningContext,
     qppInnerPlanner: QPPInnerPlanner
   ): LogicalPlan = {
     patternRel match {
       case rel: PatternRelationship =>
-        produceExpandLogicalPlan(qg, rel, rel.variable.name, sourcePlan, nodeId, availableSymbols, context)
+        produceExpandLogicalPlan(qg, rel, rel.variable, sourcePlan, nodeId, availableSymbols, context)
       case qpp: QuantifiedPathPattern =>
         produceTrailLogicalPlan(
           qpp,
@@ -216,18 +215,18 @@ object expandSolverStep {
    * @param qg                  the [[QueryGraph]] that is currently being planned.
    * @param patternRelationship the [[PatternRelationship]] to plan
    * @param sourcePlan          the plan to plan on top of
-   * @param nodeId              the node to start the expansion from.
+   * @param node              the node to start the expansion from.
    */
   def produceExpandLogicalPlan(
     qg: QueryGraph,
     patternRelationship: PatternRelationship,
-    patternName: String,
+    pattern: LogicalVariable,
     sourcePlan: LogicalPlan,
-    nodeId: String,
-    availableSymbols: Set[String],
+    node: LogicalVariable,
+    availableSymbols: Set[LogicalVariable],
     context: LogicalPlanningContext
   ): LogicalPlan = {
-    val otherSide = patternRelationship.otherSide(varFor(nodeId)).name
+    val otherSide = patternRelationship.otherSide(node)
     val overlapping = availableSymbols.contains(otherSide)
     val mode = if (overlapping) ExpandInto else ExpandAll
 
@@ -235,7 +234,7 @@ object expandSolverStep {
       case pr @ PatternRelationship(_, _, _, _, SimplePatternLength) =>
         context.staticComponents.logicalPlanProducer.planSimpleExpand(
           sourcePlan,
-          nodeId,
+          node,
           otherSide,
           pr,
           mode,
@@ -243,7 +242,7 @@ object expandSolverStep {
         )
       case PatternRelationship(_, _, _, _, varLength: VarPatternLength) =>
         val availablePredicates: collection.Seq[Expression] =
-          qg.selections.predicatesGiven((availableSymbols + patternName + otherSide).map(varFor))
+          qg.selections.predicatesGiven(availableSymbols + pattern + otherSide)
         val (
           nodePredicates: ListSet[VariablePredicate],
           relationshipPredicates: ListSet[VariablePredicate],
@@ -251,16 +250,16 @@ object expandSolverStep {
         ) =
           extractPredicates(
             availablePredicates,
-            originalRelationshipName = patternName,
-            originalNodeName = nodeId,
-            targetNodeName = otherSide,
+            originalRelationship = pattern,
+            originalNode = node,
+            targetNode = otherSide,
             targetNodeIsBound = mode.equals(ExpandInto),
             varLength = varLength
           )
 
         context.staticComponents.logicalPlanProducer.planVarExpand(
           source = sourcePlan,
-          from = nodeId,
+          from = node,
           to = otherSide,
           patternRelationship = patternRelationship,
           nodePredicates = nodePredicates,
@@ -274,8 +273,8 @@ object expandSolverStep {
 
   object VariableList {
 
-    def unapply(arg: Any): Option[Set[String]] = arg match {
-      case Variable(name)    => Some(Set(name))
+    def unapply(arg: Any): Option[Set[LogicalVariable]] = arg match {
+      case v: Variable       => Some(Set(v))
       case Add(part1, part2) => unapply(part1).map(_ ++ unapply(part2).getOrElse(Set.empty))
       case _                 => None
     }
@@ -284,22 +283,21 @@ object expandSolverStep {
   private def produceTrailLogicalPlan(
     quantifiedPathPattern: QuantifiedPathPattern,
     sourcePlan: LogicalPlan,
-    startNode: String,
-    availableSymbols: Set[String],
+    startNode: LogicalVariable,
+    availableVars: Set[LogicalVariable],
     context: LogicalPlanningContext,
     qppInnerPlanner: QPPInnerPlanner,
     predicates: Seq[Expression]
   ): LogicalPlan = {
-    val fromLeft = startNode == quantifiedPathPattern.left.name
+    val fromLeft = startNode == quantifiedPathPattern.left
 
     // Get the QPP inner plan
-    val availableVars = availableSymbols.map(UnPositionedVariable.varFor)
     val extractedPredicates = extractQPPPredicates(predicates, quantifiedPathPattern.variableGroupings, availableVars)
     val innerPlan = qppInnerPlanner.planQPP(quantifiedPathPattern, fromLeft, extractedPredicates)
     val innerPlanPredicates = extractedPredicates.predicates.map(_.original)
 
     // Update the QPP for Trail planning
-    val updatedQpp = qppInnerPlanner.updateQpp(quantifiedPathPattern, fromLeft, availableSymbols)
+    val updatedQpp = qppInnerPlanner.updateQpp(quantifiedPathPattern, fromLeft, availableVars)
 
     val startBinding = if (fromLeft) updatedQpp.leftBinding else updatedQpp.rightBinding
     val endBinding = if (fromLeft) updatedQpp.rightBinding else updatedQpp.leftBinding
@@ -313,38 +311,38 @@ object expandSolverStep {
         None
       }
 
-    val groupingRelationshipNames = quantifiedPathPattern.relationshipVariableGroupings.map(_.group.name)
+    val groupingRelationships = quantifiedPathPattern.relationshipVariableGroupings.map(_.group)
 
-    def isBound(variable: String): Boolean = {
-      sourcePlan.availableSymbols.contains(varFor(variable))
+    def isBound(variable: LogicalVariable): Boolean = {
+      sourcePlan.availableSymbols.contains(variable)
     }
 
     /**
      * A solved predicate that expresses some relationship uniqueness.
      *
      * @param solvedPredicate                   the predicate to mark as solved.
-     * @param previouslyBoundRelationships      previously bound relationship variable names that are used by Trail to solve the predicate.
-     * @param previouslyBoundRelationshipGroups previously bound relationship group variable names that are used by Trail to solve the predicate.
+     * @param previouslyBoundRelationships      previously bound relationship variables that are used by Trail to solve the predicate.
+     * @param previouslyBoundRelationshipGroups previously bound relationship group variables that are used by Trail to solve the predicate.
      */
     case class SolvedUniquenessPredicate(
       solvedPredicate: Expression,
-      previouslyBoundRelationships: Option[String] = None,
-      previouslyBoundRelationshipGroups: Set[String] = Set.empty
+      previouslyBoundRelationships: Option[LogicalVariable] = None,
+      previouslyBoundRelationshipGroups: Set[LogicalVariable] = Set.empty
     )
 
     val uniquenessPredicates = predicates.collect {
-      case uniquePred @ Unique(VariableList(list)) if list.subsetOf(groupingRelationshipNames) =>
+      case uniquePred @ Unique(VariableList(list)) if list.subsetOf(groupingRelationships) =>
         SolvedUniquenessPredicate(uniquePred)
 
       case disjointPred @ Disjoint(VariableList(list1), VariableList(list2))
-        if list1.subsetOf(groupingRelationshipNames) && list2.forall(isBound) =>
+        if list1.subsetOf(groupingRelationships) && list2.forall(isBound) =>
         SolvedUniquenessPredicate(disjointPred, previouslyBoundRelationshipGroups = list2)
       case disjointPred @ Disjoint(VariableList(list1), VariableList(list2))
-        if list2.subsetOf(groupingRelationshipNames) && list1.forall(isBound) =>
+        if list2.subsetOf(groupingRelationships) && list1.forall(isBound) =>
         SolvedUniquenessPredicate(disjointPred, previouslyBoundRelationshipGroups = list1)
 
-      case noneOfPred @ NoneOfRelationships(Variable(singletonVariable), VariableList(groupedVariables))
-        if groupedVariables.subsetOf(groupingRelationshipNames) && isBound(singletonVariable) =>
+      case noneOfPred @ NoneOfRelationships(singletonVariable: Variable, VariableList(groupedVariables))
+        if groupedVariables.subsetOf(groupingRelationships) && isBound(singletonVariable) =>
         SolvedUniquenessPredicate(noneOfPred, previouslyBoundRelationships = Some(singletonVariable))
     }
 
@@ -374,7 +372,7 @@ object expandSolverStep {
    * @param availableSymbols Symbols available from source
    * @return Updated SelectivePathPattern with extracted QPP Predicates inlined and reverted back to its original form
    */
-  def inlineQPPPredicates(spp: SelectivePathPattern, availableSymbols: Set[String]): SelectivePathPattern = {
+  def inlineQPPPredicates(spp: SelectivePathPattern, availableSymbols: Set[LogicalVariable]): SelectivePathPattern = {
     // We need to collect the updated updated node connections as well as the inlined predicates so we can remove them from the SPP Selections.
     val (newConnections, liftedPredicates) =
       spp.pathPattern.connections.foldLeft((Seq[ExhaustiveNodeConnection](), Set[Expression]())) {
@@ -395,10 +393,10 @@ object expandSolverStep {
                 val extracted = extractQPPPredicates(
                   spp.selections.flatPredicates,
                   patternGroupVariables,
-                  availableSymbols.map(UnPositionedVariable.varFor)
+                  availableSymbols
                 )
                 val currentlyAvailableSymbols =
-                  patternGroupVariables.map(_.singleton) -- availableSymbols.map(varFor)
+                  patternGroupVariables.map(_.singleton) -- availableSymbols
                 val filteredPredicates = extracted.predicates
                   .filter(extractedPredicate =>
                     ConvertToNFA.canBeInlined(extractedPredicate.extracted, currentlyAvailableSymbols)
@@ -427,17 +425,17 @@ object expandSolverStep {
   private def produceStatefulShortestLogicalPlan(
     originalSpp: SelectivePathPattern,
     sourcePlan: LogicalPlan,
-    startNode: String,
-    availableSymbols: Set[String],
+    startNode: LogicalVariable,
+    availableSymbols: Set[LogicalVariable],
     queryGraph: QueryGraph,
     context: LogicalPlanningContext
   ) = {
     val spp = inlineQPPPredicates(originalSpp, availableSymbols)
-    val fromLeft = startNode == spp.left.name
-    val endNode = if (fromLeft) spp.right.name else spp.left.name
+    val fromLeft = startNode == spp.left
+    val endNode = if (fromLeft) spp.right else spp.left
 
     val unsolvedPredicatesOnEndNode = queryGraph.selections
-      .predicatesGiven((availableSymbols + endNode).map(varFor))
+      .predicatesGiven(availableSymbols + endNode)
       .filterNot(predicate =>
         context.staticComponents.planningAttributes.solveds
           .get(sourcePlan.id)
@@ -459,8 +457,8 @@ object expandSolverStep {
     val nonSingletons =
       spp.allQuantifiedPathPatterns.flatMap(_.groupVariables) ++
         spp.varLengthRelationships +
-        varFor(startNode) ++
-        Option.when(mode == ExpandInto)(varFor(endNode))
+        startNode ++
+        Option.when(mode == ExpandInto)(endNode)
 
     val singletonNodeVariables = Set.newBuilder[Mapping]
     val singletonRelVariables = Set.newBuilder[Mapping]
@@ -510,7 +508,7 @@ object expandSolverStep {
     val relationshipVariableGroupings =
       spp.allQuantifiedPathPatterns.flatMap(_.relationshipVariableGroupings) ++
         syntheticVarLengthSingletons.map(entry =>
-          VariableGrouping(varFor(entry._2), varFor(entry._1))(InputPosition.NONE)
+          VariableGrouping(entry._2, entry._1)(InputPosition.NONE)
         )
     val nonInlinedPreFilters =
       Option.when(nonInlinedSelectionsWithoutUniqPreds.nonEmpty)(

@@ -32,7 +32,6 @@ import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
-import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions
 import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
@@ -51,7 +50,7 @@ case object countStorePlanner {
       case AggregatingQueryProjection(groupingKeys, aggregatingExpressions, queryPagination, selections, _)
         if groupingKeys.isEmpty && query.queryInput.isEmpty && aggregatingExpressions.size == 1 && queryPagination.isEmpty =>
         val (column, exp) = aggregatingExpressions.head
-        val countStorePlan = checkForValidQueryGraph(query, column.name, exp, context)
+        val countStorePlan = checkForValidQueryGraph(query, column, exp, context)
         countStorePlan.map { plan =>
           val projectionPlan = projection(plan, groupingKeys, Some(groupingKeys), context)
           context.staticComponents.logicalPlanProducer.planHorizonSelection(
@@ -68,13 +67,13 @@ case object countStorePlanner {
 
   private def checkForValidQueryGraph(
     query: SinglePlannerQuery,
-    columnName: String,
+    columnName: LogicalVariable,
     exp: Expression,
     context: LogicalPlanningContext
   ): Option[LogicalPlan] = {
     def patternHasNoDependencies: Boolean = {
       val qg = query.queryGraph
-      (qg.patternNodes ++ qg.patternRelationships.map(_.variable.name)).intersect(qg.argumentIds).isEmpty
+      (qg.patternNodes ++ qg.patternRelationships.map(_.variable)).intersect(qg.argumentIds).isEmpty
     }
 
     query.queryGraph match {
@@ -107,11 +106,11 @@ case object countStorePlanner {
 
   private def checkForValidAggregations(
     query: SinglePlannerQuery,
-    columnName: String,
+    columnName: LogicalVariable,
     exp: Expression,
     patternRelationships: Set[PatternRelationship],
-    patternNodes: Set[String],
-    argumentIds: Set[String],
+    patternNodes: Set[LogicalVariable],
+    argumentIds: Set[LogicalVariable],
     selections: Selections,
     context: LogicalPlanningContext
   ): Option[LogicalPlan] =
@@ -166,11 +165,11 @@ case object countStorePlanner {
    */
   private def trySolveNodeOrRelationshipAggregation(
     query: SinglePlannerQuery,
-    columnName: String,
+    columnName: LogicalVariable,
     variableName: Option[LogicalVariable],
     patternRelationships: Set[PatternRelationship],
-    patternNodes: Set[String],
-    argumentIds: Set[String],
+    patternNodes: Set[LogicalVariable],
+    argumentIds: Set[LogicalVariable],
     selections: Selections,
     context: LogicalPlanningContext,
     propertyKeyName: Option[PropertyKeyName] = None
@@ -178,14 +177,14 @@ case object countStorePlanner {
     if (
       patternRelationships.isEmpty &&
       patternNodes.nonEmpty &&
-      variableName.map(_.name).forall(patternNodes.contains) &&
-      noWrongPredicates(patternNodes.map(varFor), selections)
+      variableName.forall(patternNodes.contains) &&
+      noWrongPredicates(patternNodes, selections)
     ) { // MATCH (n), MATCH (n:A)
 
       if (couldPlanCountStoreLookupOnAllLabels(variableName, selections, propertyKeyName, context)) {
         // this is the case where the count can be answered using the counts of the provided labels
 
-        val allLabels = patternNodes.toList.map(n => findLabel(varFor(n), selections))
+        val allLabels = patternNodes.toList.map(n => findLabel(n, selections))
         Some(context.staticComponents.logicalPlanProducer.planCountStoreNodeAggregation(
           query,
           columnName,
@@ -258,10 +257,10 @@ case object countStorePlanner {
 
   private def trySolveRelationshipAggregation(
     query: SinglePlannerQuery,
-    columnName: String,
+    columnName: LogicalVariable,
     variableName: Option[LogicalVariable],
     patternRelationship: PatternRelationship,
-    argumentIds: Set[String],
+    argumentIds: Set[LogicalVariable],
     selections: Selections,
     context: LogicalPlanningContext
   ): Option[LogicalPlan] = {

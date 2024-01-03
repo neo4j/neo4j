@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.Relationsh
 import org.neo4j.cypher.internal.expressions.Contains
 import org.neo4j.cypher.internal.expressions.EndsWith
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.exceptions.InternalException
@@ -36,7 +37,7 @@ object RelationshipIndexStringSearchScanPlanProvider extends RelationshipIndexPl
   override def createPlans(
     indexMatches: Set[RelationshipIndexMatch],
     hints: Set[Hint],
-    argumentIds: Set[String],
+    argumentIds: Set[LogicalVariable],
     restrictions: LeafPlanRestrictions,
     context: LogicalPlanningContext
   ): Set[LogicalPlan] = for {
@@ -53,7 +54,7 @@ object RelationshipIndexStringSearchScanPlanProvider extends RelationshipIndexPl
   private def doCreatePlans(
     indexMatch: RelationshipIndexMatch,
     hints: Set[Hint],
-    argumentIds: Set[String],
+    argumentIds: Set[LogicalVariable],
     context: LogicalPlanningContext
   ): Set[LogicalPlan] = {
     indexMatch.propertyPredicates.flatMap { indexPredicate =>
@@ -79,7 +80,7 @@ object RelationshipIndexStringSearchScanPlanProvider extends RelationshipIndexPl
               .headOption
 
             context.staticComponents.logicalPlanProducer.planRelationshipIndexStringSearchScan(
-              idName = indexMatch.variableName,
+              variable = indexMatch.variable,
               relationshipType = indexMatch.relationshipTypeToken,
               patternForLeafPlan = patternForLeafPlan,
               originalPattern = originalPattern,

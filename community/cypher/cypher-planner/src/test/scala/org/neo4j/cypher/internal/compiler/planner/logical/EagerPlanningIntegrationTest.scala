@@ -1218,14 +1218,6 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
     val query =
       "MATCH ANY SHORTEST ((start:!Label {prop: 5})((a:!Label)-[r:!R]->(b:!Label))+(end:!Label)) MERGE (start)-[t:R]-(end) RETURN end"
 
-    val reason: ListSet[EagernessReason] = impl match {
-      case EagerAnalysisImplementation.IR =>
-        ListSet(Unknown)
-      case EagerAnalysisImplementation.LP =>
-        ListSet(EagernessReason.TypeReadSetConflict(relTypeName("R"))
-          .withConflict(EagernessReason.Conflict(Id(2), Id(6))))
-    }
-
     val plan = planner.plan(query)
     plan should equal(
       planner.planBuilder()
@@ -1234,7 +1226,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
         .|.merge(Seq(), Seq(createRelationship("t", "start", "R", "end", BOTH)), Seq(), Seq(), Set("start", "end"))
         .|.expandInto("(start)-[t:R]-(end)")
         .|.argument("start", "end")
-        .eager(reason)
+        .irEager()
         .statefulShortestPath(
           "start",
           "end",

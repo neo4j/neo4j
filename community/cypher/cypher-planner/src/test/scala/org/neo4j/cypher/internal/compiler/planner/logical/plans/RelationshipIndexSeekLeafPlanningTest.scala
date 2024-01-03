@@ -236,7 +236,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
     new givenConfig {
       addTypeToSemanticTable(lit42, CTInteger.invariant)
       val x: Expression = varFor("x")
-      qg = queryGraph(Seq(relTypeName), BOTH, in(rProp, listOf(x))).addArgumentIds(Seq("x"))
+      qg = queryGraph(Seq(relTypeName), BOTH, in(rProp, listOf(x))).addArgumentIds(Seq(v"x"))
 
       addTypeToSemanticTable(x, CTNode.invariant)
       relationshipIndexOn(relTypeName, prop)
@@ -315,13 +315,13 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
             SimplePatternLength
           )
         ),
-        argumentIds = Set(x.name)
+        argumentIds = Set(x)
       )
 
       relationshipIndexOn(relTypeName, prop)
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val restriction = LeafPlanRestrictions.OnlyIndexSeekPlansFor(relVar.name, Set(x.name))
+      val restriction = LeafPlanRestrictions.OnlyIndexSeekPlansFor(relVar, Set(x))
       val resultPlans = indexSeekLeafPlanner(restriction)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
@@ -373,13 +373,13 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
             SimplePatternLength
           )
         ),
-        argumentIds = Set("x", "y")
+        argumentIds = Set(v"x", v"y")
       )
 
       relationshipIndexOn(relTypeName, prop, foo)
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val restriction = LeafPlanRestrictions.OnlyIndexSeekPlansFor(relVar.name, Set("x", "y"))
+      val restriction = LeafPlanRestrictions.OnlyIndexSeekPlansFor(relVar, Set(v"x", v"y"))
       val resultPlans = indexSeekLeafPlanner(restriction)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then
@@ -468,13 +468,13 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
             SimplePatternLength
           )
         ),
-        argumentIds = Set(x.name)
+        argumentIds = Set(x)
       )
 
       relationshipIndexOn(relTypeName, prop)
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val restriction = LeafPlanRestrictions.OnlyIndexSeekPlansFor("m", Set(x.name))
+      val restriction = LeafPlanRestrictions.OnlyIndexSeekPlansFor(v"m", Set(x))
       val resultPlans = indexSeekLeafPlanner(restriction)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then

@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.BestPlans
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -61,7 +62,7 @@ trait LeafPlanFinder {
     queryGraph: QueryGraph,
     interestingOrderConfig: InterestingOrderConfig,
     context: LogicalPlanningContext
-  ): Map[Set[String], BestPlans]
+  ): Map[Set[LogicalVariable], BestPlans]
 
   def apply(
     leafPlanCandidates: Set[LogicalPlan],
@@ -69,25 +70,26 @@ trait LeafPlanFinder {
     queryGraph: QueryGraph,
     interestingOrderConfig: InterestingOrderConfig,
     context: LogicalPlanningContext
-  ): Map[Set[String], BestPlans]
+  ): Map[Set[LogicalVariable], BestPlans]
 }
 
 sealed trait LeafPlanRestrictions {
-  def symbolsThatShouldOnlyUseIndexSeekLeafPlanners: Set[String]
+  def symbolsThatShouldOnlyUseIndexSeekLeafPlanners: Set[LogicalVariable]
 }
 
 object LeafPlanRestrictions {
 
   case object NoRestrictions extends LeafPlanRestrictions {
-    override def symbolsThatShouldOnlyUseIndexSeekLeafPlanners: Set[String] = Set.empty
+    override def symbolsThatShouldOnlyUseIndexSeekLeafPlanners: Set[LogicalVariable] = Set.empty
   }
 
   /**
    * For `variable`, only plan IndexSeek, IndexContainsScan and IndexEndsWithScan.
    */
-  case class OnlyIndexSeekPlansFor(variable: String, dependencies: Set[String]) extends LeafPlanRestrictions {
+  case class OnlyIndexSeekPlansFor(variable: LogicalVariable, dependencies: Set[LogicalVariable])
+      extends LeafPlanRestrictions {
     AssertMacros.checkOnlyWhenAssertionsAreEnabled(dependencies.nonEmpty, "Dependencies must not be empty")
-    override def symbolsThatShouldOnlyUseIndexSeekLeafPlanners: Set[String] = Set(variable)
+    override def symbolsThatShouldOnlyUseIndexSeekLeafPlanners: Set[LogicalVariable] = Set(variable)
   }
 
 }

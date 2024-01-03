@@ -31,14 +31,12 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.PartialPredicate
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
-import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.ir.ast.IRExpression
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.PredicateConverter
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
-import scala.math.Ordering.Implicits
 import scala.runtime.ScalaRunTime
 
 /**
@@ -64,8 +62,8 @@ import scala.runtime.ScalaRunTime
 final case class QueryGraph private (
   patternRelationships: Set[PatternRelationship] = Set.empty,
   quantifiedPathPatterns: Set[QuantifiedPathPattern] = Set.empty,
-  patternNodes: Set[String] = Set.empty,
-  argumentIds: Set[String] = Set.empty,
+  patternNodes: Set[LogicalVariable] = Set.empty,
+  argumentIds: Set[LogicalVariable] = Set.empty,
   selections: Selections = Selections(),
   optionalMatches: IndexedSeq[QueryGraph] = Vector.empty,
   hints: Set[Hint] = Set.empty,
@@ -79,8 +77,8 @@ final case class QueryGraph private (
   protected def copy(
     patternRelationships: Set[PatternRelationship] = patternRelationships,
     quantifiedPathPatterns: Set[QuantifiedPathPattern] = quantifiedPathPatterns,
-    patternNodes: Set[String] = patternNodes,
-    argumentIds: Set[String] = argumentIds,
+    patternNodes: Set[LogicalVariable] = patternNodes,
+    argumentIds: Set[LogicalVariable] = argumentIds,
     selections: Selections = selections,
     optionalMatches: IndexedSeq[QueryGraph] = optionalMatches,
     hints: Set[Hint] = hints,
@@ -124,9 +122,9 @@ final case class QueryGraph private (
   // Override elements
   // -----------------
 
-  def withPatternNodes(nodes: Set[String]): QueryGraph = copy(patternNodes = nodes)
+  def withPatternNodes(nodes: Set[LogicalVariable]): QueryGraph = copy(patternNodes = nodes)
 
-  def withArgumentIds(newArgumentIds: Set[String]): QueryGraph = copy(argumentIds = newArgumentIds)
+  def withArgumentIds(newArgumentIds: Set[LogicalVariable]): QueryGraph = copy(argumentIds = newArgumentIds)
 
   def withOptionalMatches(optionalMatches: IndexedSeq[QueryGraph]): QueryGraph = copy(optionalMatches = optionalMatches)
 
@@ -142,7 +140,7 @@ final case class QueryGraph private (
    */
   def withPattern(pattern: PatternRelationship): QueryGraph =
     copy(
-      patternNodes = pattern.boundaryNodesSet.map(_.name),
+      patternNodes = pattern.boundaryNodesSet,
       patternRelationships = Set(pattern)
     )
 
@@ -152,7 +150,7 @@ final case class QueryGraph private (
    */
   def withPatternRelationships(patterns: Set[PatternRelationship]): QueryGraph =
     copy(
-      patternNodes = patternNodes ++ patterns.flatMap(_.boundaryNodesSet).map(_.name),
+      patternNodes = patternNodes ++ patterns.flatMap(_.boundaryNodesSet),
       patternRelationships = patterns
     )
 
@@ -162,7 +160,7 @@ final case class QueryGraph private (
    */
   def withQuantifiedPathPatterns(patterns: Set[QuantifiedPathPattern]): QueryGraph =
     copy(
-      patternNodes = patternNodes ++ patterns.flatMap(_.boundaryNodesSet).map(_.name),
+      patternNodes = patternNodes ++ patterns.flatMap(_.boundaryNodesSet),
       quantifiedPathPatterns = patterns
     )
 
@@ -187,16 +185,16 @@ final case class QueryGraph private (
 
   private def addExhaustivePathPattern(pathPattern: ExhaustivePathPattern[_]): QueryGraph =
     pathPattern match {
-      case ExhaustivePathPattern.SingleNode(name)             => addPatternNodes(name.name)
+      case ExhaustivePathPattern.SingleNode(variable)         => addPatternNodes(variable)
       case ExhaustivePathPattern.NodeConnections(connections) => addNodeConnections(connections.toIterable)
     }
 
-  def addPatternNodes(nodes: String*): QueryGraph =
+  def addPatternNodes(nodes: LogicalVariable*): QueryGraph =
     copy(patternNodes = patternNodes ++ nodes)
 
   def addPatternRelationship(rel: PatternRelationship): QueryGraph =
     copy(
-      patternNodes = patternNodes ++ rel.boundaryNodesSet.map(_.name),
+      patternNodes = patternNodes ++ rel.boundaryNodesSet,
       patternRelationships = patternRelationships + rel
     )
 
@@ -218,14 +216,14 @@ final case class QueryGraph private (
 
   def addQuantifiedPathPattern(pattern: QuantifiedPathPattern): QueryGraph =
     copy(
-      patternNodes = patternNodes ++ pattern.boundaryNodesSet.map(_.name),
+      patternNodes = patternNodes ++ pattern.boundaryNodesSet,
       quantifiedPathPatterns = quantifiedPathPatterns + pattern
     )
 
   def addShortestRelationship(shortestRelationship: ShortestRelationshipPattern): QueryGraph = {
     val rel = shortestRelationship.rel
     copy(
-      patternNodes = patternNodes ++ rel.boundaryNodesSet.map(_.name),
+      patternNodes = patternNodes ++ rel.boundaryNodesSet,
       shortestRelationshipPatterns = shortestRelationshipPatterns + shortestRelationship
     )
   }
@@ -238,13 +236,13 @@ final case class QueryGraph private (
    */
   def addSelectivePathPattern(selectivePathPattern: SelectivePathPattern): QueryGraph =
     copy(
-      patternNodes = patternNodes ++ selectivePathPattern.boundaryNodesSet.map(_.name),
+      patternNodes = patternNodes ++ selectivePathPattern.boundaryNodesSet,
       selectivePathPatterns = selectivePathPatterns + selectivePathPattern
     )
 
-  def addArgumentId(newId: String): QueryGraph = copy(argumentIds = argumentIds + newId)
+  def addArgumentId(newId: LogicalVariable): QueryGraph = copy(argumentIds = argumentIds + newId)
 
-  def addArgumentIds(newIds: Iterable[String]): QueryGraph = copy(argumentIds = argumentIds ++ newIds)
+  def addArgumentIds(newIds: Iterable[LogicalVariable]): QueryGraph = copy(argumentIds = argumentIds ++ newIds)
 
   def addSelections(selections: Selections): QueryGraph =
     copy(selections = Selections(selections.predicates ++ this.selections.predicates))
@@ -259,8 +257,8 @@ final case class QueryGraph private (
     copy(selections = newSelections)
   }
 
-  def addPredicates(outerScope: Set[String], predicates: Expression*): QueryGraph = {
-    val newSelections = Selections(predicates.flatMap(_.asPredicates(outerScope.map(varFor))).toSet)
+  def addPredicates(outerScope: Set[LogicalVariable], predicates: Expression*): QueryGraph = {
+    val newSelections = Selections(predicates.flatMap(_.asPredicates(outerScope)).toSet)
     copy(selections = selections ++ newSelections)
   }
 
@@ -292,7 +290,8 @@ final case class QueryGraph private (
   // Remove elements
   // ---------------
 
-  def removeArgumentIds(idsToRemove: Iterable[String]): QueryGraph = copy(argumentIds = argumentIds -- idsToRemove)
+  def removeArgumentIds(idsToRemove: Iterable[LogicalVariable]): QueryGraph =
+    copy(argumentIds = argumentIds -- idsToRemove)
 
   def removePredicates(predicates: Set[Predicate]): QueryGraph = {
     val newSelections = Selections(selections.predicates -- predicates)
@@ -320,12 +319,12 @@ final case class QueryGraph private (
   /**
    * Dependencies from this QG to variables - from WHERE predicates and update clauses using expressions
    */
-  def dependencies: Set[String] =
+  def dependencies: Set[LogicalVariable] =
     optionalMatches.flatMap(_.dependencies).toSet ++
-      selections.predicates.flatMap(_.dependencies).map(_.name) ++
-      mutatingPatterns.flatMap(_.dependencies.map(_.name)) ++
-      quantifiedPathPatterns.flatMap(_.dependencies).map(_.name) ++
-      selectivePathPatterns.flatMap(_.dependencies).map(_.name) ++
+      selections.predicates.flatMap(_.dependencies) ++
+      mutatingPatterns.flatMap(_.dependencies) ++
+      quantifiedPathPatterns.flatMap(_.dependencies) ++
+      selectivePathPatterns.flatMap(_.dependencies) ++
       argumentIds
 
   /**
@@ -349,24 +348,24 @@ final case class QueryGraph private (
    * All unconditional singleton nodes of this query graph.
    * This includes not only the MATCH but also pattern nodes from CREATE and MERGE.
    */
-  def allPatternNodes: collection.Set[String] = {
-    val nodes = mutable.Set[String]()
+  def allPatternNodes: Set[LogicalVariable] = {
+    val nodes = mutable.Set[LogicalVariable]()
     collectAllPatternNodes(nodes.add)
-    nodes
+    nodes.toSet
   }
 
-  private def collectAllPatternNodes(f: String => Unit): Unit = {
+  private def collectAllPatternNodes(f: LogicalVariable => Unit): Unit = {
     patternNodes.foreach(f)
-    selectivePathPatterns.foreach(_.pathPattern.connections.foreach(_.boundaryNodesSet.map(_.name).foreach(f)))
+    selectivePathPatterns.foreach(_.pathPattern.connections.iterator.foreach(_.boundaryNodesSet.foreach(f)))
     optionalMatches.foreach(m => m.allPatternNodes.foreach(f))
     for {
       create <- createPatterns
       createNode <- create.nodes
     } {
-      f(createNode.variable.name)
+      f(createNode.variable)
     }
-    mergeNodePatterns.foreach(p => f(p.createNode.variable.name))
-    mergeRelationshipPatterns.foreach(p => p.createNodes.foreach(pp => f(pp.variable.name)))
+    mergeNodePatterns.foreach(p => f(p.createNode.variable))
+    mergeRelationshipPatterns.foreach(p => p.createNodes.foreach(pp => f(pp.variable)))
   }
 
   def allPatternRelationshipsRead: Set[PatternRelationship] =
@@ -376,39 +375,39 @@ final case class QueryGraph private (
       quantifiedPathPatterns.flatMap(_.asQueryGraph.allPatternRelationshipsRead) ++
       selectivePathPatterns.flatMap(_.asQueryGraph.allPatternRelationshipsRead)
 
-  def allPatternNodesRead: Set[String] =
+  def allPatternNodesRead: Set[LogicalVariable] =
     patternNodes ++
       optionalMatches.flatMap(_.allPatternNodesRead) ++
       quantifiedPathPatterns.flatMap(_.asQueryGraph.allPatternNodesRead) ++
       selectivePathPatterns.flatMap(_.asQueryGraph.allPatternNodesRead)
 
-  private def knownProperties(idName: String): Set[PropertyKeyName] =
-    selections.allPropertyPredicatesInvolving.getOrElse(varFor(idName), Set.empty).map(_.propertyKey)
+  private def knownProperties(entity: LogicalVariable): Set[PropertyKeyName] =
+    selections.allPropertyPredicatesInvolving.getOrElse(entity, Set.empty).map(_.propertyKey)
 
-  private def possibleLabelsOnNode(node: String): Set[LabelName] = {
+  private def possibleLabelsOnNode(node: LogicalVariable): Set[LabelName] = {
     val label = selections
-      .allHasLabelsInvolving.getOrElse(varFor(node), Set.empty)
+      .allHasLabelsInvolving.getOrElse(node, Set.empty)
       .flatMap(_.labels)
     val labelOrType = selections
-      .allHasLabelsOrTypesInvolving.getOrElse(varFor(node), Set.empty)
+      .allHasLabelsOrTypesInvolving.getOrElse(node, Set.empty)
       .flatMap(_.labelsOrTypes).map(_.asLabelName)
     label ++ labelOrType
   }
 
-  def inlinedRelTypes(rel: String): Set[RelTypeName] = {
+  def inlinedRelTypes(rel: LogicalVariable): Set[RelTypeName] = {
     patternRelationships
-      .find(_.variable.name == rel)
+      .find(_.variable == rel)
       .toSet[PatternRelationship]
       .flatMap(_.types.toSet)
   }
 
-  private def possibleTypesOnRel(rel: String): Set[RelTypeName] = {
+  private def possibleTypesOnRel(rel: LogicalVariable): Set[RelTypeName] = {
     val whereClauseTypes = selections
-      .allHasTypesInvolving.getOrElse(varFor(rel), Set.empty)
+      .allHasTypesInvolving.getOrElse(rel, Set.empty)
       .flatMap(_.types)
 
     val whereClauseLabelOrTypes = selections
-      .allHasLabelsOrTypesInvolving.getOrElse(varFor(rel), Set.empty)
+      .allHasLabelsOrTypesInvolving.getOrElse(rel, Set.empty)
       .flatMap(_.labelsOrTypes).map(lblOrType => RelTypeName(lblOrType.name)(lblOrType.position))
 
     inlinedRelTypes(rel) ++ whereClauseTypes ++ whereClauseLabelOrTypes
@@ -420,20 +419,20 @@ final case class QueryGraph private (
       quantifiedPathPatterns.flatMap(_.asQueryGraph.traverseAllQueryGraphs(f)) ++
       selectivePathPatterns.flatMap(_.asQueryGraph.traverseAllQueryGraphs(f))
 
-  def allPossibleLabelsOnNode(node: String): Set[LabelName] =
+  def allPossibleLabelsOnNode(node: LogicalVariable): Set[LabelName] =
     traverseAllQueryGraphs(_.possibleLabelsOnNode(node))
 
-  def allPossibleTypesOnRel(rel: String): Set[RelTypeName] =
+  def allPossibleTypesOnRel(rel: LogicalVariable): Set[RelTypeName] =
     traverseAllQueryGraphs(_.possibleTypesOnRel(rel))
 
-  def allKnownPropertiesOnIdentifier(idName: String): Set[PropertyKeyName] =
-    traverseAllQueryGraphs(_.knownProperties(idName))
+  def allKnownPropertiesOnIdentifier(variable: LogicalVariable): Set[PropertyKeyName] =
+    traverseAllQueryGraphs(_.knownProperties(variable))
 
   def allSelections: Selections =
     Selections(traverseAllQueryGraphs(_.selections.predicates))
 
-  def coveredIdsForPatterns: Set[String] = {
-    val patternRelIds = nodeConnections.flatMap(_.coveredIds).map(_.name)
+  def coveredIdsForPatterns: Set[LogicalVariable] = {
+    val patternRelIds = nodeConnections.flatMap(_.coveredIds)
     patternNodes ++ patternRelIds
   }
 
@@ -441,16 +440,16 @@ final case class QueryGraph private (
    * Variables that are bound after matching this QG, but before optional
    * matches and updates have been applied
    */
-  def idsWithoutOptionalMatchesOrUpdates: Set[String] =
+  def idsWithoutOptionalMatchesOrUpdates: Set[LogicalVariable] =
     coveredIdsForPatterns ++
       argumentIds ++
-      shortestRelationshipPatterns.flatMap(_.maybePathVar).map(_.name)
+      shortestRelationshipPatterns.flatMap(_.maybePathVar)
 
   /**
    * All variables that are bound after this QG has been matched
    */
-  def allCoveredIds: Set[String] = {
-    val otherSymbols = optionalMatches.flatMap(_.allCoveredIds) ++ mutatingPatterns.flatMap(_.coveredIds.map(_.name))
+  def allCoveredIds: Set[LogicalVariable] = {
+    val otherSymbols = optionalMatches.flatMap(_.allCoveredIds) ++ mutatingPatterns.flatMap(_.coveredIds)
     idsWithoutOptionalMatchesOrUpdates ++ otherSymbols
   }
 
@@ -491,7 +490,7 @@ final case class QueryGraph private (
   def patternNodeLabels: Map[LogicalVariable, Set[LabelName]] = {
     // Node label predicates are extracted from the pattern nodes to predicates in LabelPredicateNormalizer.
     // Therefore, we only need to look in selections.
-    val labelsOnPatternNodes = patternNodes.toVector.map(node => varFor(node) -> selections.labelsOnNode(varFor(node)))
+    val labelsOnPatternNodes = patternNodes.toVector.map(node => node -> selections.labelsOnNode(node))
 
     val labelsOnSelectivePathPatternNodes =
       for {
@@ -530,23 +529,23 @@ final case class QueryGraph private (
    * connected query graphs.
    */
   def connectedComponents: Seq[QueryGraph] = {
-    val visited = mutable.Set.empty[String]
+    val visited = mutable.Set.empty[LogicalVariable]
 
     val (predicatesWithLocalDependencies, strayPredicates) = selections.predicates.partition {
-      p => (p.dependencies.map(_.name) -- argumentIds).nonEmpty
+      p => (p.dependencies -- argumentIds).nonEmpty
     }
 
-    def createComponentQueryGraphStartingFrom(patternNode: String) = {
+    def createComponentQueryGraphStartingFrom(patternNode: LogicalVariable): QueryGraph = {
       val qg = connectedComponentFor(patternNode, visited)
       val coveredIds = qg.idsWithoutOptionalMatchesOrUpdates
       val shortestRelationships = shortestRelationshipPatterns.filter {
-        _.rel.boundaryNodesSet.map(_.name).forall(coveredIds.contains)
+        _.rel.boundaryNodesSet.forall(coveredIds.contains)
       }
-      val shortestPathIds = shortestRelationships.flatMap(p => Set(p.rel.variable) ++ p.maybePathVar).map(_.name)
+      val shortestPathIds = shortestRelationships.flatMap(p => Set(p.rel.variable) ++ p.maybePathVar)
       val allIds = coveredIds ++ argumentIds ++ shortestPathIds
 
-      val predicates = predicatesWithLocalDependencies.filter(_.dependencies.map(_.name).subsetOf(allIds))
-      val filteredHints = hints.filter(_.variables.forall(variable => coveredIds.contains(variable.name)))
+      val predicates = predicatesWithLocalDependencies.filter(_.dependencies.subsetOf(allIds))
+      val filteredHints = hints.filter(_.variables.forall(coveredIds.contains))
       qg.withSelections(Selections(predicates))
         .withArgumentIds(argumentIds)
         .addHints(filteredHints)
@@ -583,7 +582,7 @@ final case class QueryGraph private (
   def statefulShortestPathAllHints: Set[UsingStatefulShortestPathHint] =
     hints.collect { case hint: UsingStatefulShortestPathAll => hint }
 
-  private def connectedComponentFor(startNode: String, visited: mutable.Set[String]): QueryGraph = {
+  private def connectedComponentFor(startNode: LogicalVariable, visited: mutable.Set[LogicalVariable]): QueryGraph = {
     val queue = mutable.Queue(startNode)
     var connectedComponent = QueryGraph.empty
     while (queue.nonEmpty) {
@@ -616,16 +615,16 @@ final case class QueryGraph private (
   }
 
   private def findConnectedEntities(
-    node: String,
+    node: LogicalVariable,
     connectedComponent: QueryGraph
-  ): (Set[NodeConnection], Set[String]) = {
+  ): (Set[NodeConnection], Set[LogicalVariable]) = {
 
     // All node connections that either have `node` as the left or the right node.
     val nodeConnectionsOfNode = nodeConnections.filter { nc =>
-      nc.boundaryNodesSet.map(_.name).contains(node) && !connectedComponent.nodeConnections.contains(nc)
+      nc.boundaryNodesSet.contains(node) && !connectedComponent.nodeConnections.contains(nc)
     }
     // All nodes that get connected through `nodeConnectionsOfNode`
-    val nodesConnectedThroughOneConnection = nodeConnectionsOfNode.map(_.otherSide(varFor(node)))
+    val nodesConnectedThroughOneConnection = nodeConnectionsOfNode.map(_.otherSide(node))
 
     // `(a)-[r]->(b), (c)-[r]->(d)` are connected through both relationships being named `r`.
     val patternRelationshipsWithSameName =
@@ -640,28 +639,28 @@ final case class QueryGraph private (
 
     (
       nodeConnectionsOfNode ++ patternRelationshipsWithSameName,
-      (nodesConnectedThroughOneConnection ++ patternRelationshipsWithSameNameNodes).map(_.name)
+      (nodesConnectedThroughOneConnection ++ patternRelationshipsWithSameNameNodes)
     )
   }
 
-  private def argumentsOverLapsWith(coveredIds: Set[String]) = (argumentIds intersect coveredIds).nonEmpty
+  private def argumentsOverLapsWith(coveredIds: Set[LogicalVariable]): Boolean =
+    (argumentIds intersect coveredIds).nonEmpty
 
-  private def predicatePullsInArguments(node: String) = selections.flatPredicates.exists { p =>
-    val dependencies = p.dependencies.map(_.name)
+  private def predicatePullsInArguments(node: LogicalVariable): Boolean = selections.flatPredicates.exists { p =>
+    val dependencies = p.dependencies
     dependencies(node) && (dependencies intersect argumentIds).nonEmpty
   }
 
-  def standaloneArgumentPatternNodes: Set[String] = {
+  def standaloneArgumentPatternNodes: Set[LogicalVariable] = {
     patternNodes
       .intersect(argumentIds)
-      .diff(nodeConnections.flatMap(_.coveredIds).map(_.name))
-      .diff(shortestRelationshipPatterns.flatMap(_.rel.coveredIds).map(_.name))
+      .diff(nodeConnections.flatMap(_.coveredIds))
+      .diff(shortestRelationshipPatterns.flatMap(_.rel.coveredIds))
   }
 
   override def toString: String = {
     var added = false
     val builder = new StringBuilder("QueryGraph {")
-    def addSetIfNonEmptyS(s: Iterable[String], name: String): Unit = addSetIfNonEmpty(s, name, (x: String) => x)
     def addSetIfNonEmpty[T](s: Iterable[T], name: String, f: T => String): Unit = {
       if (s.nonEmpty) {
         if (added)
@@ -674,10 +673,10 @@ final case class QueryGraph private (
       }
     }
 
-    addSetIfNonEmptyS(patternNodes, "Nodes")
+    addSetIfNonEmpty(patternNodes, "Nodes", (_: LogicalVariable).name)
     addSetIfNonEmpty(patternRelationships, "Rels", (_: PatternRelationship).toString)
     addSetIfNonEmpty(quantifiedPathPatterns, "Quantified path patterns", (_: QuantifiedPathPattern).toString)
-    addSetIfNonEmptyS(argumentIds, "Arguments")
+    addSetIfNonEmpty(argumentIds, "Arguments", (_: LogicalVariable).name)
     addSetIfNonEmpty(selections.flatPredicates, "Predicates", (e: Expression) => QueryGraph.stringifier.apply(e))
     addSetIfNonEmpty(shortestRelationshipPatterns, "Shortest relationships", (_: ShortestRelationshipPattern).toString)
     addSetIfNonEmpty(optionalMatches, "Optional Matches: ", (_: QueryGraph).toString)
@@ -756,8 +755,8 @@ object QueryGraph {
   def apply(
     patternRelationships: Set[PatternRelationship] = Set.empty,
     quantifiedPathPatterns: Set[QuantifiedPathPattern] = Set.empty,
-    patternNodes: Set[String] = Set.empty,
-    argumentIds: Set[String] = Set.empty,
+    patternNodes: Set[LogicalVariable] = Set.empty,
+    argumentIds: Set[LogicalVariable] = Set.empty,
     selections: Selections = Selections(),
     optionalMatches: IndexedSeq[QueryGraph] = Vector.empty,
     hints: Set[Hint] = Set.empty,
@@ -766,10 +765,10 @@ object QueryGraph {
     selectivePathPatterns: Set[SelectivePathPattern] = Set.empty
   ): QueryGraph = {
     val allPatternNodes = patternNodes ++
-      patternRelationships.flatMap(_.boundaryNodesSet).map(_.name) ++
-      quantifiedPathPatterns.flatMap(_.boundaryNodesSet).map(_.name) ++
-      selectivePathPatterns.flatMap(_.boundaryNodesSet).map(_.name) ++
-      shortestRelationshipPatterns.flatMap(_.rel.boundaryNodesSet).map(_.name)
+      patternRelationships.flatMap(_.boundaryNodesSet) ++
+      quantifiedPathPatterns.flatMap(_.boundaryNodesSet) ++
+      selectivePathPatterns.flatMap(_.boundaryNodesSet) ++
+      shortestRelationshipPatterns.flatMap(_.rel.boundaryNodesSet)
 
     new QueryGraph(
       patternRelationships,
@@ -798,14 +797,4 @@ object QueryGraph {
     preferSingleQuotes = false,
     sensitiveParamsAsParams = false
   )
-
-  implicit object byCoveredIds extends Ordering[QueryGraph] {
-
-    def compare(x: QueryGraph, y: QueryGraph): Int = {
-      val xs = x.idsWithoutOptionalMatchesOrUpdates.toIndexedSeq.sorted
-      val ys = y.idsWithoutOptionalMatchesOrUpdates.toIndexedSeq.sorted
-      Implicits.seqOrdering[Seq, String].compare(xs, ys)
-    }
-  }
-
 }

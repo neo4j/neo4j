@@ -87,7 +87,7 @@ case class RelationshipsPattern(element: RelationshipChain)(val position: InputP
 sealed abstract class PatternPart extends ASTNode {
   def allVariables: Set[LogicalVariable]
   def element: PatternElement
-  def dependencies: Set[String]
+  def dependencies: Set[LogicalVariable]
 
   def isBounded: Boolean
   def isFixedLength: Boolean
@@ -101,7 +101,7 @@ case class PatternPartWithSelector(selector: Selector, part: NonPrefixedPatternP
   override def element: PatternElement = part.element
   override def isBounded: Boolean = part.isBounded || selector.isBounded
   override def isFixedLength: Boolean = part.isFixedLength
-  override def dependencies: Set[String] = part.dependencies
+  override def dependencies: Set[LogicalVariable] = part.dependencies
 
   def isSelective: Boolean = selector.isBounded
 
@@ -136,7 +136,7 @@ case class NamedPatternPart(variable: Variable, patternPart: AnonymousPatternPar
   override def mapExpressions(f: Expression => Expression): NonPrefixedPatternPart =
     copy(patternPart = patternPart.mapExpressions(f).asInstanceOf[AnonymousPatternPart])(this.position)
 
-  override def dependencies: Set[String] = patternPart.dependencies
+  override def dependencies: Set[LogicalVariable] = patternPart.dependencies
 }
 
 sealed trait AnonymousPatternPart extends NonPrefixedPatternPart {
@@ -147,7 +147,7 @@ case class PathPatternPart(element: PatternElement) extends AnonymousPatternPart
   override def position: InputPosition = element.position
   override def isBounded: Boolean = element.isBounded
   override def isFixedLength: Boolean = element.isFixedLength
-  override def dependencies: Set[String] = element.dependencies
+  override def dependencies: Set[LogicalVariable] = element.dependencies
 
   override def dup(children: Seq[AnyRef]): this.type = {
     PathPatternPart(children.head.asInstanceOf[PatternElement]).asInstanceOf[this.type]
@@ -172,7 +172,7 @@ case class ShortestPathsPatternPart(element: PatternElement, single: Boolean)(va
   override def mapExpressions(f: Expression => Expression): NonPrefixedPatternPart =
     copy(element.mapExpressions(f))(this.position)
 
-  override def dependencies: Set[String] = element.dependencies
+  override def dependencies: Set[LogicalVariable] = element.dependencies
 }
 
 object PatternPart {
@@ -243,7 +243,7 @@ case class PathConcatenation(factors: Seq[PathFactor])(val position: InputPositi
   override def mapExpressions(f: Expression => Expression): PatternElement =
     copy(factors.map(_.mapExpressions(f)).asInstanceOf[Seq[PathFactor]])(this.position)
 
-  override def dependencies: Set[String] = factors.view.flatMap(_.dependencies).toSet
+  override def dependencies: Set[LogicalVariable] = factors.view.flatMap(_.dependencies).toSet
 }
 
 /**
@@ -287,8 +287,8 @@ case class QuantifiedPath(
     variableGroupings.map(_.mapExpressions(f))
   )(this.position)
 
-  override def dependencies: Set[String] = part.dependencies ++
-    optionalWhereExpression.toSet[Expression].flatMap(_.dependencies.map(_.name))
+  override def dependencies: Set[LogicalVariable] = part.dependencies ++
+    optionalWhereExpression.toSet[Expression].flatMap(_.dependencies)
 }
 
 object QuantifiedPath {
@@ -352,8 +352,8 @@ case class ParenthesizedPath(
   override def mapExpressions(f: Expression => Expression): PatternElement =
     copy(part.mapExpressions(f), optionalWhereClause.map(f))(this.position)
 
-  override def dependencies: Set[String] = part.dependencies ++
-    optionalWhereClause.toSet[Expression].flatMap(_.dependencies.map(_.name))
+  override def dependencies: Set[LogicalVariable] = part.dependencies ++
+    optionalWhereClause.toSet[Expression].flatMap(_.dependencies)
 }
 
 object ParenthesizedPath {
@@ -372,7 +372,7 @@ sealed abstract class PatternElement extends ASTNode with HasMappableExpressions
   def variable: Option[LogicalVariable]
   def isBounded: Boolean
   def isFixedLength: Boolean
-  def dependencies: Set[String]
+  def dependencies: Set[LogicalVariable]
 
   def isSingleNode = false
 }
@@ -426,7 +426,8 @@ case class RelationshipChain(
 
   override def isFixedLength: Boolean = relationship.isSingleLength && element.isFixedLength && rightNode.isFixedLength
 
-  override def dependencies: Set[String] = element.dependencies ++ relationship.dependencies ++ rightNode.dependencies
+  override def dependencies: Set[LogicalVariable] =
+    element.dependencies ++ relationship.dependencies ++ rightNode.dependencies
 
   @tailrec
   final def leftNode: NodePattern = element match {
@@ -479,7 +480,7 @@ case class NodePattern(
     )(this.position)
   }
 
-  override def dependencies: Set[String] = (properties.toSet ++ predicate).flatMap(_.dependencies.map(_.name))
+  override def dependencies: Set[LogicalVariable] = (properties.toSet ++ predicate).flatMap(_.dependencies)
 
 }
 
@@ -505,8 +506,8 @@ case class RelationshipPattern(
     case _                             => false
   }
 
-  def dependencies: Set[String] =
-    (predicate.toSet ++ properties).flatMap(_.dependencies.map(_.name))
+  def dependencies: Set[LogicalVariable] =
+    (predicate.toSet ++ properties).flatMap(_.dependencies)
 
   override def mapExpressions(f: Expression => Expression): RelationshipPattern = {
     // The parser only allows parameters and Map literals in the properties position of a pattern.

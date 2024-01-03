@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeInd
 
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.ir.ExhaustiveNodeConnection
 import org.neo4j.cypher.internal.ir.ExhaustivePathPattern.NodeConnections
 import org.neo4j.cypher.internal.ir.PatternRelationship
@@ -45,9 +46,9 @@ trait SelectivePathPatternCardinalityModel
     selectivePathPattern: SelectivePathPattern
   ): Cardinality = {
     val leftNodeCardinality =
-      getNodeCardinality(context, labelInfo, selectivePathPattern.left.name).getOrElse(Cardinality.EMPTY)
+      getNodeCardinality(context, labelInfo, selectivePathPattern.left).getOrElse(Cardinality.EMPTY)
     val rightNodeCardinality =
-      getNodeCardinality(context, labelInfo, selectivePathPattern.right.name).getOrElse(Cardinality.EMPTY)
+      getNodeCardinality(context, labelInfo, selectivePathPattern.right).getOrElse(Cardinality.EMPTY)
     // Here we need to inline back the predicates to the QPPs since we cannot handle ForAllRepetitions in cardinality estimation.
     val sppWithInlinedPredicates = expandSolverStep.inlineQPPPredicates(selectivePathPattern, Set.empty)
 
@@ -135,7 +136,7 @@ trait SelectivePathPatternCardinalityModel
           val connectionCardinality =
             getExhaustiveNodeConnectionCardinality(context, labelInfo, predicates.uniqueRelationships, connection)
           val leftNodeCardinality =
-            getNodeCardinality(context, labelInfo, connection.left.name).getOrElse(Cardinality.EMPTY)
+            getNodeCardinality(context, labelInfo, connection.left).getOrElse(Cardinality.EMPTY)
           val connectionMultiplier =
             Multiplier.ofDivision(
               dividend = connectionCardinality,
@@ -155,7 +156,7 @@ trait SelectivePathPatternCardinalityModel
   private def getExhaustiveNodeConnectionCardinality(
     context: QueryGraphCardinalityContext,
     labelInfo: LabelInfo,
-    uniqueRelationships: Set[String],
+    uniqueRelationships: Set[LogicalVariable],
     exhaustiveNodeConnection: ExhaustiveNodeConnection
   ): Cardinality =
     exhaustiveNodeConnection match {
@@ -164,7 +165,7 @@ trait SelectivePathPatternCardinalityModel
           context,
           labelInfo,
           relationship,
-          uniqueRelationships.contains(relationship.variable.name)
+          uniqueRelationships.contains(relationship.variable)
         )
       case quantifiedPathPattern: QuantifiedPathPattern =>
         getQuantifiedPathPatternCardinality(context, labelInfo, quantifiedPathPattern, uniqueRelationships)

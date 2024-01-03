@@ -23,12 +23,13 @@ import org.neo4j.cypher.internal.compiler.planner.logical.LeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.RelationshipLeafPlanner.planHiddenSelectionAndRelationshipLeafPlan
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
-case class allRelationshipsScanLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
+case class allRelationshipsScanLeafPlanner(skipIDs: Set[LogicalVariable]) extends LeafPlanner {
 
   override def apply(
     queryGraph: QueryGraph,
@@ -36,10 +37,10 @@ case class allRelationshipsScanLeafPlanner(skipIDs: Set[String]) extends LeafPla
     context: LogicalPlanningContext
   ): Set[LogicalPlan] = {
     def shouldIgnore(pattern: PatternRelationship): Boolean =
-      queryGraph.argumentIds.contains(pattern.variable.name) ||
-        skipIDs.contains(pattern.variable.name) ||
-        skipIDs.contains(pattern.left.name) ||
-        skipIDs.contains(pattern.right.name)
+      queryGraph.argumentIds.contains(pattern.variable) ||
+        skipIDs.contains(pattern.variable) ||
+        skipIDs.contains(pattern.left) ||
+        skipIDs.contains(pattern.right)
     queryGraph.patternRelationships.flatMap {
 
       case relationship @ PatternRelationship(rel, (_, _), _, types, SimplePatternLength)
@@ -49,7 +50,7 @@ case class allRelationshipsScanLeafPlanner(skipIDs: Set[String]) extends LeafPla
           relationship,
           context,
           context.staticComponents.logicalPlanProducer.planAllRelationshipsScan(
-            rel.name,
+            rel,
             _,
             _,
             _,

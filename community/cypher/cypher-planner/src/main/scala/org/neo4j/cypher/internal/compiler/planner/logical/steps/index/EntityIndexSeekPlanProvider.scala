@@ -52,9 +52,9 @@ object EntityIndexSeekPlanProvider {
       case LeafPlanRestrictions.NoRestrictions => true
 
       case LeafPlanRestrictions.OnlyIndexSeekPlansFor(variable, dependencyRestrictions) =>
-        val isRestrictedVariable = predicate.variable.name == variable
+        val isRestrictedVariable = predicate.variable == variable
         if (isRestrictedVariable) {
-          val dependencies = predicate.dependencies.map(_.name)
+          val dependencies = predicate.dependencies
           dependencies.nonEmpty && dependencies.subsetOf(dependencyRestrictions)
         } else {
           true

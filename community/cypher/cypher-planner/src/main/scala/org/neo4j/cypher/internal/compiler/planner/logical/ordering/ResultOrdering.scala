@@ -39,7 +39,6 @@ import org.neo4j.cypher.internal.logical.plans.IndexOrderDescending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability.NONE
-import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.exceptions.InternalException
 
 import scala.annotation.tailrec
@@ -211,13 +210,13 @@ object ResultOrdering {
 
   def providedOrderForRelationshipTypeScan(
     interestingOrder: InterestingOrder,
-    name: String,
+    variable: LogicalVariable,
     indexOrderCapability: IndexOrderCapability,
     providedOrderFactory: ProvidedOrderFactory = DefaultProvidedOrderFactory
   ): ProvidedOrder = {
     providedOrderForScan(
       interestingOrder,
-      Variable(name)(InputPosition.NONE),
+      variable,
       indexOrderCapability,
       providedOrderFactory
     )
@@ -225,7 +224,7 @@ object ResultOrdering {
 
   private def providedOrderForScan(
     interestingOrder: InterestingOrder,
-    variable: Variable,
+    variable: LogicalVariable,
     indexOrderCapability: IndexOrderCapability,
     providedOrderFactory: ProvidedOrderFactory
   ): ProvidedOrder = {

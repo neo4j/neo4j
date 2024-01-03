@@ -1487,8 +1487,8 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
 
     plan shouldEqual planner.subPlanBuilder()
       .apply()
-      .|.projectEndpoints("(i)-[r]->(j)", startInScope = false, endInScope = false)
       .|.projectEndpoints("(g)-[r]->(h)", startInScope = false, endInScope = false)
+      .|.projectEndpoints("(i)-[r]->(j)", startInScope = false, endInScope = false)
       .|.projectEndpoints("(k)-[r]->(l)", startInScope = false, endInScope = false)
       .|.argument("e", "d", "r", "b", "f", "a", "c")
       .projectEndpoints("(e)-[r]->(f)", startInScope = false, endInScope = false)

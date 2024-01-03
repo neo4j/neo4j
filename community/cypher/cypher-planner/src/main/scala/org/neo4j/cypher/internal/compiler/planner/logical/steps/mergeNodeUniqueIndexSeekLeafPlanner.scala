@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.AbstractNo
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexSeekPlanProvider.isAllowedByRestrictions
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.NodeIndexLeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.NodeIndexLeafPlanner.NodeIndexMatch
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.logical.plans.CompositeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -59,7 +60,7 @@ object mergeNodeUniqueIndexSeekLeafPlanner
 
     val resultPlans: Set[LogicalPlan] = super.apply(qg, interestingOrderConfig, context)
 
-    val grouped: Map[String, Set[LogicalPlan]] = resultPlans.groupBy { p =>
+    val grouped: Map[LogicalVariable, Set[LogicalPlan]] = resultPlans.groupBy { p =>
       val solvedQG = solvedQueryGraph(p)
       val patternNodes = solvedQG.patternNodes
 
@@ -84,7 +85,7 @@ object nodeSingleUniqueIndexSeekPlanProvider extends AbstractNodeIndexSeekPlanPr
   override def createPlans(
     indexMatches: Set[NodeIndexMatch],
     hints: Set[Hint],
-    argumentIds: Set[String],
+    argumentIds: Set[LogicalVariable],
     restrictions: LeafPlanRestrictions,
     context: LogicalPlanningContext
   ): Set[LogicalPlan] = for {
@@ -102,7 +103,7 @@ object nodeSingleUniqueIndexSeekPlanProvider extends AbstractNodeIndexSeekPlanPr
 
   override def constructPlan(solution: Solution, context: LogicalPlanningContext): LogicalPlan = {
     context.staticComponents.logicalPlanProducer.planNodeUniqueIndexSeek(
-      solution.idName,
+      solution.variable,
       solution.label,
       solution.properties,
       solution.valueExpr,

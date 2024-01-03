@@ -78,7 +78,6 @@ import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
-import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.frontend.phases.ResolvedCall
 import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
@@ -368,7 +367,7 @@ object ClauseConverters {
 
     // We need this locally to avoid creating nodes twice if they occur
     // multiple times in this clause, but haven't occured before
-    val seenPatternNodes = mutable.Set[String]()
+    val seenPatternNodes = mutable.Set[LogicalVariable]()
     // If the variable is both an argument and appears in a CREATE pattern it has to be a node,
     // otherwise SemanticAnalysis would already have failed.
     seenPatternNodes ++= builder.lastQGNodesAndArguments
@@ -378,14 +377,14 @@ object ClauseConverters {
       case PathPatternPart(NodePattern(Some(id), labelExpression, props, None)) =>
         val labels = getLabelNameSet(labelExpression)
         commands += CreateNode(id, labels, props)
-        seenPatternNodes += id.name
+        seenPatternNodes += id
         ()
 
       // CREATE (n)-[r: R]->(m)
       case PathPatternPart(pattern: RelationshipChain) =>
         allCreatePatternsInOrderAndDeduped(pattern).foreach {
           case CreateNodeCommand(create, _) =>
-            if (seenPatternNodes.add(create.variable.name)) {
+            if (seenPatternNodes.add(create.variable)) {
               commands += create
             } else if (create.labels.nonEmpty || create.properties.nonEmpty) {
               throw new SyntaxException(
@@ -476,7 +475,7 @@ object ClauseConverters {
 
   private def asReturnItems(current: QueryGraph, returnItems: ReturnItems): Seq[AliasedReturnItem] = returnItems match {
     case ReturnItems(star, items, _) if star =>
-      (QueryProjection.forIds(current.allCoveredIds.map(varFor)) ++ items).asInstanceOf[Seq[AliasedReturnItem]]
+      (QueryProjection.forVariables(current.allCoveredIds) ++ items).asInstanceOf[Seq[AliasedReturnItem]]
     case ReturnItems(_, items, _) =>
       items.asInstanceOf[Seq[AliasedReturnItem]]
     case _ =>
@@ -504,15 +503,15 @@ object ClauseConverters {
     def hasPatternOverlapOnInteriorVars: Boolean = {
       // MATCH SHORTEST (()--())+ ()-[r]-() (()--())+ MATCH (a)-[r]-(b)
       val previousStrictInteriorVars =
-        acc.currentQueryGraph.selectivePathPatterns.flatMap(spp => spp.coveredIds -- spp.boundaryNodesSet).map(_.name)
-      val currentPatternVars = clause.pattern.patternParts.flatMap(_.allVariables.map(_.name)).toSet
+        acc.currentQueryGraph.selectivePathPatterns.flatMap(spp => spp.coveredIds -- spp.boundaryNodesSet)
+      val currentPatternVars = clause.pattern.patternParts.flatMap(_.allVariables).toSet
       val hasReferenceFromThisPatternToInterior = previousStrictInteriorVars.intersect(currentPatternVars).nonEmpty
 
       // MATCH (a)-[r]-(b) MATCH SHORTEST (()--())+ ()-[r]-() (()--())+
       val previousPatternVars = acc.currentQueryGraph.coveredIdsForPatterns
       val currentStrictInteriorVarsAndDependencies = clause.pattern.patternParts.view.collect {
         case spp @ PatternPartWithSelector(_: SelectiveSelector, _) =>
-          (spp.allVariables -- boundaryNodes(spp.element)).map(_.name) ++ spp.dependencies
+          (spp.allVariables -- boundaryNodes(spp.element)) ++ spp.dependencies
       }.flatten.toSet
       val hasInteriorOrDependencyReferringToPreviouslyBoundVar =
         previousPatternVars.intersect(currentStrictInteriorVarsAndDependencies).nonEmpty
@@ -710,14 +709,14 @@ object ClauseConverters {
         val arguments = builder.currentlyAvailableVariables.intersect(dependencies)
 
         val matchGraph = QueryGraph(
-          patternNodes = Set(id.name),
+          patternNodes = Set(id),
           selections = selections,
-          argumentIds = arguments.map(_.name)
+          argumentIds = arguments
         )
 
         val mergePattern = MergeNodePattern(createNodePattern, matchGraph, onCreate, onMatch)
         val queryGraph = QueryGraph.empty
-          .withArgumentIds(arguments.map(_.name))
+          .withArgumentIds(arguments)
           .addMutatingPatterns(mergePattern)
 
         builder
@@ -744,7 +743,7 @@ object ClauseConverters {
         val seenPatternNodesAndArguments = builder.lastQGNodesAndArguments
 
         val (nodesCreatedBefore, nodesToCreate) = nodes.partition {
-          case CreateNodeCommand(c, _) => seenPatternNodesAndArguments(c.variable.name)
+          case CreateNodeCommand(c, _) => seenPatternNodesAndArguments(c.variable)
         }
 
         nodesCreatedBefore.collectFirst {
@@ -780,7 +779,7 @@ object ClauseConverters {
         val arguments = builder.currentlyAvailableVariables.intersect(dependencies)
 
         val matchGraph = QueryGraph(
-          patternNodes = nodes.map(_.create.variable.name).toSet,
+          patternNodes = nodes.map(_.create.variable).toSet,
           patternRelationships = rels.map {
             case CreateRelCommand(r, _) =>
               PatternRelationship(
@@ -792,11 +791,11 @@ object ClauseConverters {
               )
           }.toSet,
           selections = selections,
-          argumentIds = arguments.map(_.name)
+          argumentIds = arguments
         )
 
         val queryGraph = QueryGraph.empty
-          .withArgumentIds(arguments.map(_.name))
+          .withArgumentIds(arguments)
           .addMutatingPatterns(MergeRelationshipPattern(
             nodesToCreate.map(_.create),
             rels.map(_.create),
@@ -924,7 +923,7 @@ object ClauseConverters {
       clause.updates,
       new PlannerQueryBuilder(SinglePlannerQuery.empty, builder.semanticTable)
         // First, set all available symbols as arguments. Will be fixed a little further down.
-        .amendQueryGraph(_.withArgumentIds(availableToInnerClauses.map(_.name)))
+        .amendQueryGraph(_.withArgumentIds(availableToInnerClauses))
         .withHorizon(PassthroughAllHorizon()),
       anonymousVariableNameGenerator,
       cancellationChecker,
@@ -936,7 +935,7 @@ object ClauseConverters {
     val arguments = availableToInnerClauses.intersect(dependencies)
     // This fixes the arguments of the first planner query inside the foreach.
     // All subsequent planner queries will get their arguments fixed by `.build()`.
-    val innerBuilderWithFixedArguments = innerBuilder.withInitialArguments(arguments.map(_.name))
+    val innerBuilderWithFixedArguments = innerBuilder.withInitialArguments(arguments)
 
     val innerPlannerQuery = innerBuilderWithFixedArguments.build()
 
@@ -947,7 +946,7 @@ object ClauseConverters {
     )
 
     val foreachGraph = QueryGraph(
-      argumentIds = availableBeforeForeach.map(_.name),
+      argumentIds = availableBeforeForeach,
       mutatingPatterns = IndexedSeq(foreachPattern)
     )
 

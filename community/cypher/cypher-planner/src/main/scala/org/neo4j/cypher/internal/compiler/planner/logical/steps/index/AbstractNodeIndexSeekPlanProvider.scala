@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityInde
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.NodeIndexLeafPlanner.NodeIndexMatch
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelToken
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
@@ -37,13 +38,13 @@ import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
 abstract class AbstractNodeIndexSeekPlanProvider extends NodeIndexPlanProvider {
 
   case class Solution(
-    idName: String,
+    variable: LogicalVariable,
     label: LabelToken,
     properties: Seq[IndexedProperty],
     isUnique: Boolean,
     valueExpr: QueryExpression[Expression],
     hint: Option[UsingIndexHint],
-    argumentIds: Set[String],
+    argumentIds: Set[LogicalVariable],
     providedOrder: ProvidedOrder,
     indexOrder: IndexOrder,
     solvedPredicates: Seq[Expression],
@@ -55,7 +56,7 @@ abstract class AbstractNodeIndexSeekPlanProvider extends NodeIndexPlanProvider {
   def createSolution(
     indexMatch: NodeIndexMatch,
     hints: Set[Hint],
-    argumentIds: Set[String],
+    argumentIds: Set[LogicalVariable],
     context: LogicalPlanningContext
   ): Option[Solution] = {
 
@@ -76,7 +77,7 @@ abstract class AbstractNodeIndexSeekPlanProvider extends NodeIndexPlanProvider {
         .headOption
 
       Some(Solution(
-        indexMatch.variableName,
+        indexMatch.variable,
         indexMatch.labelToken,
         properties,
         indexMatch.indexDescriptor.isUnique,

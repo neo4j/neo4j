@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrderin
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -35,7 +36,7 @@ import org.neo4j.cypher.internal.util.InputPosition
 
 import scala.collection.mutable
 
-case class intersectionLabelScanLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
+case class intersectionLabelScanLeafPlanner(skipIDs: Set[LogicalVariable]) extends LeafPlanner {
 
   override def apply(
     qg: QueryGraph,
@@ -51,8 +52,8 @@ case class intersectionLabelScanLeafPlanner(skipIDs: Set[String]) extends LeafPl
           val combined: Map[Variable, Set[LabelName]] = {
             qg.selections.flatPredicatesSet.foldLeft(Map.empty[Variable, Set[LabelName]]) {
               case (acc, current) => current match {
-                  case HasLabels(variable @ Variable(varName), labels)
-                    if !skipIDs.contains(varName) && (qg.patternNodes(varName) && !qg.argumentIds(varName)) =>
+                  case HasLabels(variable: Variable, labels)
+                    if !skipIDs.contains(variable) && (qg.patternNodes(variable) && !qg.argumentIds(variable)) =>
                     val newValue = acc.get(variable).map(current => (current ++ labels)).getOrElse(labels.toSet)
                     acc + (variable -> newValue)
                   case _ => acc

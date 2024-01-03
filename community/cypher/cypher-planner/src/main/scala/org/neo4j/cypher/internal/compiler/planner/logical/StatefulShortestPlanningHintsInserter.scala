@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.compiler.phases.CompilationContains
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.expressions.LogicalVariable
-import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
@@ -108,7 +107,7 @@ case object StatefulShortestPlanningHintsInserter extends PlannerQueryRewriter w
         val hints = qg.selectivePathPatterns.flatMap {
           ssp =>
             val vars = NonEmptyList.from(ssp.pathVariables.map(_.variable.asInstanceOf[Variable]))
-            hinter.maybeHint(qg.argumentIds.map(varFor), vars)
+            hinter.maybeHint(qg.argumentIds, vars)
         }
         qg.addHints(hints)
     }

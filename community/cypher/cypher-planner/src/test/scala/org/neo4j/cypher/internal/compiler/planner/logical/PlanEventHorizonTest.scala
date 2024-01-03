@@ -110,7 +110,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
     // Given
     new givenConfig().withLogicalPlanningContextWithFakeAttributes { (_, context) =>
       val sq = RegularSinglePlannerQuery(
-        QueryGraph(patternNodes = Set("a")),
+        QueryGraph(patternNodes = Set(v"a")),
         horizon = RegularQueryProjection(Map(v"a" -> varFor("a")))
       )
 
@@ -135,7 +135,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
     // Given
     new givenConfig().withLogicalPlanningContextWithFakeAttributes { (_, context) =>
       val sq = RegularSinglePlannerQuery(
-        QueryGraph(patternNodes = Set("a")),
+        QueryGraph(patternNodes = Set(v"a")),
         horizon = RegularQueryProjection(Map(v"a" -> varFor("a")))
       )
 

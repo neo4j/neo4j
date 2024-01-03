@@ -53,7 +53,7 @@ class OrLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 
     new givenConfig {
       qg = QueryGraph(
         selections = Selections(predicates.flatMap(_.asPredicates)),
-        patternNodes = Set("n", "m"),
+        patternNodes = Set(v"n", v"m"),
         patternRelationships =
           Set(PatternRelationship(v"r", (v"n", v"m"), OUTGOING, Seq(relTypeName("R")), SimplePatternLength)),
         argumentIds = Set()

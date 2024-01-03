@@ -203,7 +203,7 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext) ex
     }
 
     val selectivitiesForPredicates = indexMatches
-      .groupBy(im => (im.indexDescriptor, im.variableName))
+      .groupBy(im => (im.indexDescriptor, im.variable))
       .values
       .flatMap { indexMatches =>
         // If we have multiple index matches for the same index,
@@ -325,7 +325,7 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext) ex
     // Construct query graphs for each variable that can be fed to leaf planners to search for index matches.
     val nodeQgs = nodes.map { n =>
       QueryGraph(
-        patternNodes = Set(n.name),
+        patternNodes = Set(n),
         selections = findSelectionsFor(n)
       )
     }
@@ -347,7 +347,7 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext) ex
 
   private def inlineLabelAndRelTypeInfo(qg: QueryGraph, labelInfo: LabelInfo, relTypeInfo: RelTypeInfo): QueryGraph = {
     val labelPredicates = labelInfo.collect {
-      case (variable, labels) if qg.patternNodes.contains(variable.name) =>
+      case (variable, labels) if qg.patternNodes.contains(variable) =>
         WhereClausePredicate(HasLabels(variable, labels.toSeq)(InputPosition.NONE))
     }
     val relTypePredicates = relTypeInfo.collect {

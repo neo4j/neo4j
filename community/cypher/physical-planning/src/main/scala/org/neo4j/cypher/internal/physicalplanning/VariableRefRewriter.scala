@@ -496,14 +496,14 @@ object VariableRefRewriter extends Rewriter {
         case s: SetPropertyPattern                      => s
         case s: SetPropertiesPattern                    => s
         case s: SetPropertiesFromMapPattern             => s
-        case s: SetRelationshipPropertyPattern          => s.copy(idName = VariableRef(s.idName))
-        case s: SetRelationshipPropertiesPattern        => s.copy(idName = VariableRef(s.idName))
-        case s: SetNodePropertiesFromMapPattern         => s.copy(idName = VariableRef(s.idName))
-        case s: SetRelationshipPropertiesFromMapPattern => s.copy(idName = VariableRef(s.idName))
-        case s: SetNodePropertyPattern                  => s.copy(idName = VariableRef(s.idName))
-        case s: SetNodePropertiesPattern                => s.copy(idName = VariableRef(s.idName))
-        case s: SetLabelPattern                         => s.copy(idName = VariableRef(s.idName))
-        case s: RemoveLabelPattern                      => s.copy(idName = VariableRef(s.idName))
+        case s: SetRelationshipPropertyPattern          => s.copy(variable = VariableRef(s.variable))
+        case s: SetRelationshipPropertiesPattern        => s.copy(variable = VariableRef(s.variable))
+        case s: SetNodePropertiesFromMapPattern         => s.copy(variable = VariableRef(s.variable))
+        case s: SetRelationshipPropertiesFromMapPattern => s.copy(variable = VariableRef(s.variable))
+        case s: SetNodePropertyPattern                  => s.copy(variable = VariableRef(s.variable))
+        case s: SetNodePropertiesPattern                => s.copy(variable = VariableRef(s.variable))
+        case s: SetLabelPattern                         => s.copy(variable = VariableRef(s.variable))
+        case s: RemoveLabelPattern                      => s.copy(variable = VariableRef(s.variable))
       }
     case d: DeleteMutatingPattern => d match {
         case d: DeleteExpression => d

@@ -122,10 +122,10 @@ object CardinalityCalculator {
       val Expand(source, from, dir, relTypes, to, relName, _) = plan
       val inboundCardinality = state.cardinalities.get(source.id)
       val qg = QueryGraph(
-        patternNodes = Set(from.name, to.name),
+        patternNodes = Set(from, to),
         patternRelationships =
           Set(PatternRelationship(relName, (from, to), dir, relTypes, SimplePatternLength)),
-        argumentIds = state.arguments.map(_.name)
+        argumentIds = state.arguments
       )
       val qgCardinalityModel = new AssumeIndependenceQueryGraphCardinalityModel(
         planContext,

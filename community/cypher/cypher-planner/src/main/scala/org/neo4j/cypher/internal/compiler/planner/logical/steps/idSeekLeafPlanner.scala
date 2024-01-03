@@ -40,7 +40,7 @@ import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.SeekableArgs
 
-case class idSeekLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
+case class idSeekLeafPlanner(skipIDs: Set[LogicalVariable]) extends LeafPlanner {
 
   override def apply(
     queryGraph: QueryGraph,
@@ -48,7 +48,7 @@ case class idSeekLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
     context: LogicalPlanningContext
   ): Set[LogicalPlan] = {
     queryGraph.selections.flatPredicatesSet.flatMap { e =>
-      val arguments: Set[LogicalVariable] = queryGraph.argumentIds.map(n => Variable(n)(null))
+      val arguments: Set[LogicalVariable] = queryGraph.argumentIds
       val idSeekPredicates: Option[(Expression, LogicalVariable, SeekableArgs, IdType)] = e match {
         // MATCH (a)-[r]-(b) WHERE id(r) IN expr
         // MATCH (a) WHERE id(a) IN $param
@@ -67,11 +67,10 @@ case class idSeekLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
 
       idSeekPredicates flatMap {
         case (predicate, variable, idValues, idType) =>
-          val id = variable.name
-          if (skipIDs.contains(id)) {
+          if (skipIDs.contains(variable)) {
             None
           } else {
-            queryGraph.patternRelationships.find(_.variable.name == id) match {
+            queryGraph.patternRelationships.find(_.variable == variable) match {
               case Some(relationship) =>
                 Some(planHiddenSelectionAndRelationshipLeafPlan(
                   queryGraph.argumentIds,
@@ -97,7 +96,7 @@ case class idSeekLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
                 }
 
                 Some(producePlan(
-                  variable.asInstanceOf[Variable],
+                  variable,
                   idValues,
                   Seq(predicate),
                   queryGraph.argumentIds,
@@ -110,13 +109,13 @@ case class idSeekLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
   }
 
   private def planRelationshipByIdSeek(
-    idExpr: Variable,
+    idExpr: LogicalVariable,
     patternForLeafPlan: PatternRelationship,
     originalPattern: PatternRelationship,
     hiddenSelections: Seq[Expression],
     idValues: SeekableArgs,
     predicates: Seq[Expression],
-    argumentIds: Set[String],
+    argumentIds: Set[LogicalVariable],
     context: LogicalPlanningContext,
     idType: IdType
   ): LogicalPlan = {
@@ -128,7 +127,7 @@ case class idSeekLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
     val variable = originalPattern.variable
     val relTypeFilterHiddenSelection = relTypeFilter(idExpr, originalPattern.types.toList)
     producePlan(
-      variable.name,
+      variable,
       idValues,
       patternForLeafPlan,
       originalPattern,
@@ -139,7 +138,7 @@ case class idSeekLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
     )
   }
 
-  private def relTypeFilter(idExpr: Variable, relTypes: List[RelTypeName]): Option[Expression] = {
+  private def relTypeFilter(idExpr: LogicalVariable, relTypes: List[RelTypeName]): Option[Expression] = {
     relTypes match {
       case Seq(tpe) =>
         val relTypeExpr = relTypeAsStringLiteral(tpe)
@@ -158,7 +157,7 @@ case class idSeekLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
 
   private def relTypeAsStringLiteral(relType: RelTypeName) = StringLiteral(relType.name)(relType.position)
 
-  private def typeOfRelExpr(idExpr: Variable) =
+  private def typeOfRelExpr(idExpr: LogicalVariable) =
     FunctionInvocation(FunctionName("type")(idExpr.position), idExpr)(idExpr.position)
 }
 

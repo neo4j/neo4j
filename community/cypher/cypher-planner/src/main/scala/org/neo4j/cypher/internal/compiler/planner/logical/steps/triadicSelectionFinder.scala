@@ -25,10 +25,10 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.QuerySolvableByG
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
-import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QueryGraph
@@ -164,9 +164,9 @@ case object triadicSelectionFinder extends SelectionCandidateGenerator {
   ): Seq[LogicalPlan] =
     if (
       exp1.mode == ExpandAll && exp1.to == exp2.from &&
-      matchingLabels(positivePredicate, exp1.to.name, exp2.to.name, qg) &&
-      leftPredicatesAcceptable(exp1.to.name, leftPredicates) &&
-      matchingIRExpression(subqueryExpression, exp1.from.name, exp2.to.name, exp1.types, exp1.dir)
+      matchingLabels(positivePredicate, exp1.to, exp2.to, qg) &&
+      leftPredicatesAcceptable(exp1.to, leftPredicates) &&
+      matchingIRExpression(subqueryExpression, exp1.from, exp2.to, exp1.types, exp1.dir)
     ) {
 
       val left =
@@ -176,8 +176,8 @@ case object triadicSelectionFinder extends SelectionCandidateGenerator {
           exp1
 
       val argument = context.staticComponents.logicalPlanProducer.planArgument(
-        patternNodes = Set(exp2.from.name),
-        patternRels = Set(exp1.relName.name),
+        patternNodes = Set(exp2.from),
+        patternRels = Set(exp1.relName),
         other = Set.empty,
         context = context
       )
@@ -191,8 +191,8 @@ case object triadicSelectionFinder extends SelectionCandidateGenerator {
         }.get
         context.staticComponents.logicalPlanProducer.planSimpleExpand(
           argument,
-          exp2.from.name,
-          exp2.to.name,
+          exp2.from,
+          exp2.to,
           expand2PR,
           ExpandAll,
           context
@@ -207,9 +207,9 @@ case object triadicSelectionFinder extends SelectionCandidateGenerator {
       Seq(context.staticComponents.logicalPlanProducer.planTriadicSelection(
         positivePredicate,
         left,
-        exp1.from.name,
-        exp2.from.name,
-        exp2.to.name,
+        exp1.from,
+        exp2.from,
+        exp2.to,
         right,
         triadicPredicate,
         context
@@ -217,14 +217,20 @@ case object triadicSelectionFinder extends SelectionCandidateGenerator {
     } else
       Seq.empty
 
-  private def leftPredicatesAcceptable(leftId: String, leftPredicates: Seq[Expression]) = leftPredicates.forall {
-    case HasLabels(Variable(id), Seq(_)) if id == leftId => true
-    case _                                               => false
-  }
+  private def leftPredicatesAcceptable(leftId: LogicalVariable, leftPredicates: Seq[Expression]) =
+    leftPredicates.forall {
+      case HasLabels(v: Variable, Seq(_)) if v == leftId => true
+      case _                                             => false
+    }
 
-  private def matchingLabels(positivePredicate: Boolean, node1: String, node2: String, qg: QueryGraph): Boolean = {
-    val labels1 = qg.selections.labelsOnNode(varFor(node1))
-    val labels2 = qg.selections.labelsOnNode(varFor(node2))
+  private def matchingLabels(
+    positivePredicate: Boolean,
+    node1: LogicalVariable,
+    node2: LogicalVariable,
+    qg: QueryGraph
+  ): Boolean = {
+    val labels1 = qg.selections.labelsOnNode(node1)
+    val labels2 = qg.selections.labelsOnNode(node2)
     if (positivePredicate)
       labels1 == labels2
     else
@@ -233,8 +239,8 @@ case object triadicSelectionFinder extends SelectionCandidateGenerator {
 
   private def matchingIRExpression(
     pattern: ExistsIRExpression,
-    from: String,
-    to: String,
+    from: LogicalVariable,
+    to: LogicalVariable,
     types: Seq[RelTypeName],
     dir: SemanticDirection
   ): Boolean = pattern match {
@@ -267,9 +273,9 @@ case object triadicSelectionFinder extends SelectionCandidateGenerator {
         _,
         _
       )
-      if patternNodes == Set(predicateFrom.name, predicateTo.name)
-        && predicateFrom.name == from
-        && predicateTo.name == to
+      if patternNodes == Set(predicateFrom, predicateTo)
+        && predicateFrom == from
+        && predicateTo == to
         && predicateDir == dir
         && predicateTypes == types
         && !pattern.dependencies.contains(rel) => true

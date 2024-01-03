@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.QueryGraph
@@ -36,7 +37,7 @@ import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 
 import scala.collection.immutable.ListSet
 
-case class unionLabelScanLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
+case class unionLabelScanLeafPlanner(skipIDs: Set[LogicalVariable]) extends LeafPlanner {
 
   private def variableIfAllEqualHasLabels(expressions: ListSet[Expression]): Option[(Variable, Seq[LabelName])] = {
     val maybeSingleVar = expressions.headOption
@@ -71,9 +72,9 @@ case class unionLabelScanLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
       case ors @ Ors(exprs) =>
         variableIfAllEqualHasLabels(exprs).collect {
           case (variable, labels)
-            if !skipIDs.contains(variable.name) &&
-              qg.patternNodes(variable.name) &&
-              !qg.argumentIds(variable.name) =>
+            if !skipIDs.contains(variable) &&
+              qg.patternNodes(variable) &&
+              !qg.argumentIds(variable) =>
             context.staticComponents.planContext.nodeTokenIndex.flatMap { nodeTokenIndex =>
               // UnionNodeByLabelScan relies on ordering, so we can only use this plan if the nodeTokenIndex is ordered.
               if (nodeTokenIndex.orderCapability == IndexOrderCapability.BOTH) {

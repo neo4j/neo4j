@@ -170,7 +170,7 @@ class RelationshipIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanni
             SimplePatternLength
           )
         ),
-        argumentIds = Set("x")
+        argumentIds = Set(v"x")
       )
 
       relationshipIndexOn("Awesome", "prop")
@@ -179,7 +179,7 @@ class RelationshipIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanni
       relationshipIndexOn("Awesome", "aaa", "bbb", "ccc")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val restriction = LeafPlanRestrictions.OnlyIndexSeekPlansFor("m", Set("x"))
+      val restriction = LeafPlanRestrictions.OnlyIndexSeekPlansFor(v"m", Set(v"x"))
       val resultPlans = relationshipIndexLeafPlanner(restriction)(cfg.qg, InterestingOrderConfig.empty, ctx)
 
       // then

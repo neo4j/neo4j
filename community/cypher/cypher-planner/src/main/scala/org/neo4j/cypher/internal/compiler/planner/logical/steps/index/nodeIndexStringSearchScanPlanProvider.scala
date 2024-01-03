@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.NodeIndexLeafPlanner.NodeIndexMatch
 import org.neo4j.cypher.internal.expressions.Contains
 import org.neo4j.cypher.internal.expressions.EndsWith
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.exceptions.InternalException
 
@@ -33,7 +34,7 @@ object nodeIndexStringSearchScanPlanProvider extends NodeIndexPlanProvider {
   override def createPlans(
     indexMatches: Set[NodeIndexMatch],
     hints: Set[Hint],
-    argumentIds: Set[String],
+    argumentIds: Set[LogicalVariable],
     restrictions: LeafPlanRestrictions,
     context: LogicalPlanningContext
   ): Set[LogicalPlan] = for {
@@ -50,7 +51,7 @@ object nodeIndexStringSearchScanPlanProvider extends NodeIndexPlanProvider {
   private def doCreatePlans(
     indexMatch: NodeIndexMatch,
     hints: Set[Hint],
-    argumentIds: Set[String],
+    argumentIds: Set[LogicalVariable],
     context: LogicalPlanningContext
   ): Set[LogicalPlan] = {
     indexMatch.propertyPredicates.flatMap { indexPredicate =>
@@ -70,7 +71,7 @@ object nodeIndexStringSearchScanPlanProvider extends NodeIndexPlanProvider {
             .headOption
 
           val plan = context.staticComponents.logicalPlanProducer.planNodeIndexStringSearchScan(
-            idName = indexMatch.variableName,
+            variable = indexMatch.variable,
             label = indexMatch.labelToken,
             properties = singlePredicateSet.indexedProperties(context),
             stringSearchMode = stringSearchMode,

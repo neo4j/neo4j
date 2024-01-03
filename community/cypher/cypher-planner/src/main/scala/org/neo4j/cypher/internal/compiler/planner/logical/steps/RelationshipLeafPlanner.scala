@@ -60,13 +60,13 @@ object RelationshipLeafPlanner {
    * @return the leaf plan, with the correct hidden selections.
    */
   def planHiddenSelectionAndRelationshipLeafPlan(
-    argumentIds: Set[String],
+    argumentIds: Set[LogicalVariable],
     relationship: PatternRelationship,
     context: LogicalPlanningContext,
     relationshipLeafPlanProvider: RelationshipLeafPlanProvider
   ): LogicalPlan = {
     val startNodeAndEndNodeIsSame = relationship.left == relationship.right
-    val startOrEndNodeIsBound = relationship.coveredIds.map(_.name).intersect(argumentIds).nonEmpty
+    val startOrEndNodeIsBound = relationship.coveredIds.intersect(argumentIds).nonEmpty
     if (!startOrEndNodeIsBound && !startNodeAndEndNodeIsSame) {
       relationshipLeafPlanProvider.getRelationshipLeafPlan(relationship, relationship, Seq.empty)
     } else if (startOrEndNodeIsBound) {
@@ -94,15 +94,15 @@ object RelationshipLeafPlanner {
    */
   private def generateNewStartEndNodes(
     oldNodes: (LogicalVariable, LogicalVariable),
-    argumentIds: Set[String],
+    argumentIds: Set[LogicalVariable],
     context: LogicalPlanningContext
   ): (LogicalVariable, LogicalVariable) = {
     val (left, right) = oldNodes
     val newLeft =
-      if (!argumentIds.contains(left.name)) left
+      if (!argumentIds.contains(left)) left
       else varFor(context.staticComponents.anonymousVariableNameGenerator.nextName)
     val newRight =
-      if (!argumentIds.contains(right.name)) right
+      if (!argumentIds.contains(right)) right
       else varFor(context.staticComponents.anonymousVariableNameGenerator.nextName)
     (newLeft, newRight)
   }
@@ -113,7 +113,7 @@ object RelationshipLeafPlanner {
    */
   private def generateNewPatternRelationship(
     oldRelationship: PatternRelationship,
-    argumentIds: Set[String],
+    argumentIds: Set[LogicalVariable],
     context: LogicalPlanningContext
   ): PatternRelationship = {
     oldRelationship.copy(boundaryNodes = generateNewStartEndNodes(oldRelationship.boundaryNodes, argumentIds, context))

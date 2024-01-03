@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.ast.Hint
 import org.neo4j.cypher.internal.ast.Union.UnionMapping
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LogicalVariable
-import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery.extractLabelInfo
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery.reverseProjectedInterestingOrder
@@ -39,7 +38,7 @@ import scala.util.hashing.MurmurHash3
  */
 sealed trait PlannerQuery {
   def readOnly: Boolean
-  def returns: Set[String]
+  def returns: Set[LogicalVariable]
 
   def allHints: Set[Hint]
   def withoutHints(hintsToIgnore: Set[Hint]): PlannerQuery
@@ -82,9 +81,9 @@ case class UnionQuery(
 ) extends PlannerQuery {
   override def readOnly: Boolean = lhs.readOnly && rhs.readOnly
 
-  override def returns: Set[String] = lhs.returns.map { returnColInLhs =>
+  override def returns: Set[LogicalVariable] = lhs.returns.map { returnColInLhs =>
     unionMappings.collectFirst {
-      case UnionMapping(varAfterUnion, varInLhs, _) if varInLhs.name == returnColInLhs => varAfterUnion.name
+      case UnionMapping(varAfterUnion, varInLhs, _) if varInLhs == returnColInLhs => varAfterUnion
     }.get
   }
 
@@ -143,7 +142,7 @@ sealed trait SinglePlannerQuery extends PlannerQuery {
    */
   val tail: Option[SinglePlannerQuery]
 
-  def dependencies: Set[String]
+  def dependencies: Set[LogicalVariable]
 
   def readOnlySelf: Boolean = queryGraph.readOnly && horizon.readOnly
   override def readOnly: Boolean = readOnlySelf && tail.forall(_.readOnly)
@@ -172,7 +171,7 @@ sealed trait SinglePlannerQuery extends PlannerQuery {
   def withInput(queryInput: Seq[Variable]): SinglePlannerQuery =
     copy(
       input = Some(queryInput),
-      queryGraph = queryGraph.withArgumentIds(queryGraph.argumentIds ++ queryInput.map(_.name))
+      queryGraph = queryGraph.withArgumentIds(queryGraph.argumentIds ++ queryInput)
     )
 
   override def withoutHints(hintsToIgnore: Set[Hint]): SinglePlannerQuery = {
@@ -340,9 +339,9 @@ sealed trait SinglePlannerQuery extends PlannerQuery {
   lazy val lastLabelInfo: Map[LogicalVariable, Set[LabelName]] =
     extractLabelInfo(last)
 
-  override def returns: Set[String] = {
+  override def returns: Set[LogicalVariable] = {
     lastQueryHorizon match {
-      case projection: QueryProjection => projection.keySet.map(_.name)
+      case projection: QueryProjection => projection.keySet
       case _                           => Set.empty
     }
   }
@@ -374,8 +373,11 @@ sealed trait SinglePlannerQuery extends PlannerQuery {
 object SinglePlannerQuery {
   def empty: RegularSinglePlannerQuery = RegularSinglePlannerQuery()
 
-  def coveredIdsForPatterns(patternNodeIds: Set[String], patternRels: Set[PatternRelationship]): Set[String] = {
-    val patternRelIds = patternRels.flatMap(_.coveredIds.map(_.name))
+  def coveredIdsForPatterns(
+    patternNodeIds: Set[LogicalVariable],
+    patternRels: Set[PatternRelationship]
+  ): Set[LogicalVariable] = {
+    val patternRelIds = patternRels.flatMap(_.coveredIds)
     patternNodeIds ++ patternRelIds
   }
 
@@ -389,12 +391,12 @@ object SinglePlannerQuery {
   def reverseProjectedInterestingOrder(
     order: InterestingOrder,
     horizon: QueryHorizon,
-    argumentIds: Set[String]
+    argumentIds: Set[LogicalVariable]
   ): InterestingOrder = {
     horizon match {
       case qp: QueryProjection =>
-        order.withReverseProjectedColumns(qp.projections, argumentIds.map(varFor))
-      case _ => order.withReverseProjectedColumns(Map.empty, argumentIds.map(varFor))
+        order.withReverseProjectedColumns(qp.projections, argumentIds)
+      case _ => order.withReverseProjectedColumns(Map.empty, argumentIds)
     }
   }
 
@@ -444,8 +446,10 @@ case class RegularSinglePlannerQuery(
   ): SinglePlannerQuery =
     RegularSinglePlannerQuery(queryGraph, interestingOrder, horizon, tail, queryInput)
 
-  override def dependencies: Set[String] =
-    horizon.dependencies.map(_.name) ++ queryGraph.dependencies ++ tail.map(_.dependencies).getOrElse(Set.empty)
+  override def dependencies: Set[LogicalVariable] =
+    horizon.dependencies ++
+      queryGraph.dependencies ++
+      tail.map(_.dependencies).getOrElse(Set.empty)
 
   override def canEqual(that: Any): Boolean = that.isInstanceOf[RegularSinglePlannerQuery]
 

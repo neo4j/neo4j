@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.Relationsh
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.RelationshipIndexLeafPlanner.RelationshipIndexMatch
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.RelationshipIndexPlanProvider
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.RelationshipTypeToken
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QueryGraph
@@ -94,7 +95,7 @@ object relationshipSingleUniqueIndexSeekPlanProvider extends RelationshipIndexPl
   override def createPlans(
     indexMatches: Set[RelationshipIndexMatch],
     hints: Set[Hint],
-    argumentIds: Set[String],
+    argumentIds: Set[LogicalVariable],
     restrictions: LeafPlanRestrictions,
     context: LogicalPlanningContext
   ): Set[LogicalPlan] =
@@ -108,7 +109,7 @@ object relationshipSingleUniqueIndexSeekPlanProvider extends RelationshipIndexPl
     } yield createPlan(
       argumentIds = argumentIds,
       patternRelationship = indexMatch.patternRelationship,
-      variableName = indexMatch.variableName,
+      variable = indexMatch.variable,
       relationshipTypeToken = indexMatch.relationshipTypeToken,
       properties = predicateSet.indexedProperties(context),
       queryExpression = queryExpression,
@@ -142,9 +143,9 @@ object relationshipSingleUniqueIndexSeekPlanProvider extends RelationshipIndexPl
       })
 
   private def createPlan(
-    argumentIds: Set[String],
+    argumentIds: Set[LogicalVariable],
     patternRelationship: PatternRelationship,
-    variableName: String,
+    variable: LogicalVariable,
     relationshipTypeToken: RelationshipTypeToken,
     properties: Seq[IndexedProperty],
     queryExpression: QueryExpression[Expression],
@@ -162,7 +163,7 @@ object relationshipSingleUniqueIndexSeekPlanProvider extends RelationshipIndexPl
       hiddenSelections: Seq[Expression]
     ): LogicalPlan =
       context.staticComponents.logicalPlanProducer.planRelationshipIndexSeek(
-        idName = variableName,
+        variable = variable,
         typeToken = relationshipTypeToken,
         properties = properties,
         valueExpr = queryExpression,

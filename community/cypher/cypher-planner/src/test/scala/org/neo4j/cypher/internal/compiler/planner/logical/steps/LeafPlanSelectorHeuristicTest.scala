@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.helpers.PropertyAccessHelper.PropertyAccess
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
@@ -86,11 +87,11 @@ class LeafPlanSelectorHeuristicTest extends CypherFunSuite with LogicalPlanningT
   }
 
   private def newContextWithPropertyAccess(): LogicalPlanningContext = {
-    newContext().withModifiedPlannerState(_.withAccessedProperties(Set(PropertyAccess("x", "prop"))))
+    newContext().withModifiedPlannerState(_.withAccessedProperties(Set(PropertyAccess(v"x", "prop"))))
   }
 
   private def newContextWithAggregation(): LogicalPlanningContext = {
-    newContext().withModifiedPlannerState(_.withAggregationProperties(Set(PropertyAccess("x", "prop"))))
+    newContext().withModifiedPlannerState(_.withAggregationProperties(Set(PropertyAccess(v"x", "prop"))))
   }
 
   test("should prefer lookup index scan without property access") {

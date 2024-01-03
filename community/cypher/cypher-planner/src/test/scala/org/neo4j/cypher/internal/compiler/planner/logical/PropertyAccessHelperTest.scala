@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.helpers.PropertyAccessHelper.PropertyAccess
 import org.neo4j.cypher.internal.compiler.helpers.PropertyAccessHelper.findAggregationPropertyAccesses
 import org.neo4j.cypher.internal.compiler.helpers.PropertyAccessHelper.findLocalPropertyAccesses
@@ -87,7 +88,7 @@ class PropertyAccessHelperTest extends CypherFunSuite with LogicalPlanningTestSu
     val result =
       context.withModifiedPlannerState(_.withAggregationProperties(findAggregationPropertyAccesses(plannerQuery)))
 
-    assertContextUpdated(result, Set(PropertyAccess("n", "prop")))
+    assertContextUpdated(result, Set(PropertyAccess(v"n", "prop")))
   }
 
   test("addAggregatedPropertiesToContext should be usable for different queries") {
@@ -105,7 +106,7 @@ class PropertyAccessHelperTest extends CypherFunSuite with LogicalPlanningTestSu
     val result =
       context.withModifiedPlannerState(_.withAggregationProperties(findAggregationPropertyAccesses(plannerQuery)))
 
-    assertContextUpdated(result, Set(PropertyAccess("n", "prop")))
+    assertContextUpdated(result, Set(PropertyAccess(v"n", "prop")))
   }
 
   test("should return updated context if mutating patterns after aggregation") {
@@ -113,7 +114,7 @@ class PropertyAccessHelperTest extends CypherFunSuite with LogicalPlanningTestSu
     val result =
       context.withModifiedPlannerState(_.withAggregationProperties(findAggregationPropertyAccesses(plannerQuery)))
 
-    assertContextUpdated(result, Set(PropertyAccess("n", "prop")))
+    assertContextUpdated(result, Set(PropertyAccess(v"n", "prop")))
   }
 
   test("should return updated context for unwind before aggregation") {
@@ -121,7 +122,7 @@ class PropertyAccessHelperTest extends CypherFunSuite with LogicalPlanningTestSu
     val result =
       context.withModifiedPlannerState(_.withAggregationProperties(findAggregationPropertyAccesses(plannerQuery)))
 
-    assertContextUpdated(result, Set(PropertyAccess("n", "prop")))
+    assertContextUpdated(result, Set(PropertyAccess(v"n", "prop")))
   }
 
   test("should return updated context for distinct before aggregation") {
@@ -129,7 +130,7 @@ class PropertyAccessHelperTest extends CypherFunSuite with LogicalPlanningTestSu
     val result =
       context.withModifiedPlannerState(_.withAggregationProperties(findAggregationPropertyAccesses(plannerQuery)))
 
-    assertContextUpdated(result, Set(PropertyAccess("n", "prop")))
+    assertContextUpdated(result, Set(PropertyAccess(v"n", "prop")))
   }
 
   test("should return updated context for LOAD CSV before aggregation") {
@@ -139,7 +140,7 @@ class PropertyAccessHelperTest extends CypherFunSuite with LogicalPlanningTestSu
     val result =
       context.withModifiedPlannerState(_.withAggregationProperties(findAggregationPropertyAccesses(plannerQuery)))
 
-    assertContextUpdated(result, Set(PropertyAccess("n", "prop")))
+    assertContextUpdated(result, Set(PropertyAccess(v"n", "prop")))
   }
 
   test("should return updated context for procedure call before aggregation") {
@@ -157,7 +158,7 @@ class PropertyAccessHelperTest extends CypherFunSuite with LogicalPlanningTestSu
     val result =
       context.withModifiedPlannerState(_.withAggregationProperties(findAggregationPropertyAccesses(plannerQuery)))
 
-    assertContextUpdated(result, Set(PropertyAccess("n", "prop")))
+    assertContextUpdated(result, Set(PropertyAccess(v"n", "prop")))
   }
 
   test("should find no property accesses") {
@@ -173,7 +174,7 @@ class PropertyAccessHelperTest extends CypherFunSuite with LogicalPlanningTestSu
     val result = context.withModifiedPlannerState(_
       .withAccessedProperties(findLocalPropertyAccesses(plannerQuery)))
 
-    assertContextUpdated(result, Set(), Set(PropertyAccess("n", "prop"), PropertyAccess("n", "foo")))
+    assertContextUpdated(result, Set(), Set(PropertyAccess(v"n", "prop"), PropertyAccess(v"n", "foo")))
   }
 
   test("should find property accesses nested in expressions") {
@@ -181,7 +182,7 @@ class PropertyAccessHelperTest extends CypherFunSuite with LogicalPlanningTestSu
     val result = context.withModifiedPlannerState(_
       .withAccessedProperties(findLocalPropertyAccesses(plannerQuery)))
 
-    assertContextUpdated(result, Set(), Set(PropertyAccess("n", "prop"), PropertyAccess("r", "foo")))
+    assertContextUpdated(result, Set(), Set(PropertyAccess(v"n", "prop"), PropertyAccess(v"r", "foo")))
   }
 
   test("should find property accesses in selection") {
@@ -189,7 +190,7 @@ class PropertyAccessHelperTest extends CypherFunSuite with LogicalPlanningTestSu
     val result = context.withModifiedPlannerState(_
       .withAccessedProperties(findLocalPropertyAccesses(plannerQuery)))
 
-    assertContextUpdated(result, Set(), Set(PropertyAccess("n", "prop"), PropertyAccess("n", "foo")))
+    assertContextUpdated(result, Set(), Set(PropertyAccess(v"n", "prop"), PropertyAccess(v"n", "foo")))
   }
 
   test("should find property accesses from pattern component") {
@@ -200,7 +201,7 @@ class PropertyAccessHelperTest extends CypherFunSuite with LogicalPlanningTestSu
     assertContextUpdated(
       result,
       Set(),
-      Set(PropertyAccess("n", "prop"), PropertyAccess("m", "foo"), PropertyAccess("m", "bar"))
+      Set(PropertyAccess(v"n", "prop"), PropertyAccess(v"m", "foo"), PropertyAccess(v"m", "bar"))
     )
   }
 
@@ -212,7 +213,7 @@ class PropertyAccessHelperTest extends CypherFunSuite with LogicalPlanningTestSu
     assertContextUpdated(
       result,
       Set(),
-      Set(PropertyAccess("n", "prop"), PropertyAccess("r", "foo"), PropertyAccess("r", "bar"))
+      Set(PropertyAccess(v"n", "prop"), PropertyAccess(v"r", "foo"), PropertyAccess(v"r", "bar"))
     )
   }
 

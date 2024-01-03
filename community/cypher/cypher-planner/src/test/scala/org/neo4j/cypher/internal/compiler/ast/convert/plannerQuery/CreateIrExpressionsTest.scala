@@ -84,9 +84,9 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
   private val r2 = varFor("r2")
   private val r3 = varFor("r3")
 
-  private val rPred = greaterThan(prop(r.name, "foo"), literalInt(5))
-  private val rLessPred = lessThan(prop(r.name, "foo"), literalInt(10))
-  private val oPred = greaterThan(prop(o.name, "foo"), literalInt(5))
+  private val rPred = greaterThan(prop(r, "foo"), literalInt(5))
+  private val rLessPred = lessThan(prop(r, "foo"), literalInt(10))
+  private val oPred = greaterThan(prop(o, "foo"), literalInt(5))
 
   private val n_r_m_chain = relationshipChain(
     nodePat(Some("n")),
@@ -186,8 +186,8 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
       ListIRExpression(
         queryWith(
           QueryGraph(
-            patternNodes = Set(n.name, m.name),
-            argumentIds = Set(n.name),
+            patternNodes = Set(n, m),
+            argumentIds = Set(n),
             patternRelationships =
               Set(PatternRelationship(r, (n, m), BOTH, Seq.empty, SimplePatternLength))
           ),
@@ -195,7 +195,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
         ),
         variableToCollect,
         collection,
-        s"(${n.name})-[${r.name}]-(${m.name})"
+        v"(${n})-[${r}]-(${m})".name
       )(pos, Some(Set(m, r)), Some(Set(n)))
     )
   }
@@ -214,8 +214,8 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
       ListIRExpression(
         queryWith(
           QueryGraph(
-            patternNodes = Set(n.name, m.name),
-            argumentIds = Set(n.name),
+            patternNodes = Set(n, m),
+            argumentIds = Set(n),
             patternRelationships =
               Set(PatternRelationship(r, (n, m), BOTH, Seq.empty, VarPatternLength(2, Some(5)))),
             selections = Selections.from(Seq(
@@ -228,7 +228,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
         ),
         variableToCollect,
         collection,
-        s"(${n.name})-[${r.name}*2..5]-(${m.name})"
+        v"(${n})-[${r}*2..5]-(${m})".name
       )(pos, Some(Set(m, r)), Some(Set(n)))
     )
   }
@@ -247,8 +247,8 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
       ListIRExpression(
         queryWith(
           QueryGraph(
-            patternNodes = Set(n.name, m.name, o.name),
-            argumentIds = Set(n.name),
+            patternNodes = Set(n, m, o),
+            argumentIds = Set(n),
             patternRelationships = Set(
               PatternRelationship(
                 r,
@@ -263,8 +263,8 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
               differentRelationships(r2, r),
               andedPropertyInequalities(rPred),
               andedPropertyInequalities(oPred),
-              equals(prop(r.name, "prop"), literalInt(5)),
-              equals(prop(o.name, "prop"), literalInt(5)),
+              equals(prop(r, "prop"), literalInt(5)),
+              equals(prop(o, "prop"), literalInt(5)),
               not(hasALabel(o.name))
             ))
           ),
@@ -272,7 +272,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
         ),
         variableToCollect,
         collection,
-        s"(${n.name})-[${r.name}:R|P {prop: 5} WHERE ${r.name}.foo > 5]->(${m.name})<-[${r2.name}]-(${o.name}:!% {prop: 5} WHERE ${o.name}.foo > 5)"
+        v"(${n})-[${r}:R|P {prop: 5} WHERE ${r}.foo > 5]->(${m})<-[${r2}]-(${o}:!% {prop: 5} WHERE ${o}.foo > 5)".name
       )(pos, Some(Set(m, r)), Some(Set(n)))
     )
   }
@@ -289,8 +289,8 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     existsIRExpression.query should equal(
       queryWith(
         QueryGraph(
-          patternNodes = Set(n.name, m.name),
-          argumentIds = Set(n.name),
+          patternNodes = Set(n, m),
+          argumentIds = Set(n),
           patternRelationships =
             Set(PatternRelationship(r, (n, m), BOTH, Seq.empty, SimplePatternLength)),
           selections = Selections.from(ors(hasLabels(m, "M"), hasLabels(m, "MM")))
@@ -300,7 +300,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     )
 
     existsIRExpression.existsVariable shouldBe existsVariable
-    existsIRExpression.solvedExpressionAsString shouldBe s"exists((${n.name})-[${r.name}]-(${m.name}:M|MM))"
+    existsIRExpression.solvedExpressionAsString shouldBe v"exists((${n})-[${r}]-(${m}:M|MM))".name
   }
 
   test("Rewrites Simple ExistsExpression") {
@@ -316,7 +316,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     existsIRExpression.query should equal(
       queryWith(
         QueryGraph(
-          patternNodes = Set(n.name, m.name, o.name, q.name),
+          patternNodes = Set(n, m, o, q),
           patternRelationships =
             Set(
               PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength),
@@ -357,7 +357,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     existsIRExpression.query should equal(
       queryWith(
         QueryGraph(
-          patternNodes = Set(n.name, m.name, o.name, q.name),
+          patternNodes = Set(n, m, o, q),
           patternRelationships =
             Set(
               PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength),
@@ -402,8 +402,8 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     existsIRExpression.query should equal(
       queryWith(
         QueryGraph(
-          patternNodes = Set(n.name, m.name, o.name, q.name),
-          argumentIds = Set(n.name),
+          patternNodes = Set(n, m, o, q),
+          argumentIds = Set(n),
           patternRelationships =
             Set(
               PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength),
@@ -447,7 +447,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     existsIRExpression.query should equal(
       queryWith(
         QueryGraph(
-          patternNodes = Set(n.name, m.name),
+          patternNodes = Set(n, m),
           patternRelationships =
             Set(
               PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
@@ -483,8 +483,8 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     existsIRExpression.query should equal(
       queryWith(
         QueryGraph(
-          patternNodes = Set(n.name, m.name),
-          argumentIds = Set(n.name),
+          patternNodes = Set(n, m),
+          argumentIds = Set(n),
           patternRelationships =
             Set(
               PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
@@ -525,8 +525,8 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     existsIRExpression.query should equal(
       queryWith(
         QueryGraph(
-          patternNodes = Set(n.name, m.name),
-          argumentIds = Set(n.name),
+          patternNodes = Set(n, m),
+          argumentIds = Set(n),
           patternRelationships =
             Set(
               PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
@@ -567,8 +567,8 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     existsIRExpression.query should equal(
       queryWith(
         QueryGraph(
-          patternNodes = Set(n.name, m.name),
-          argumentIds = Set(n.name),
+          patternNodes = Set(n, m),
+          argumentIds = Set(n),
           patternRelationships =
             Set(
               PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
@@ -611,8 +611,8 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     existsIRExpression.query should equal(
       queryWith(
         QueryGraph(
-          patternNodes = Set(n.name, m.name),
-          argumentIds = Set(n.name),
+          patternNodes = Set(n, m),
+          argumentIds = Set(n),
           patternRelationships =
             Set(
               PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
@@ -667,7 +667,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
       UnionQuery(
         RegularSinglePlannerQuery(
           QueryGraph(
-            patternNodes = Set(n.name, m.name),
+            patternNodes = Set(n, m),
             patternRelationships =
               Set(
                 PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
@@ -677,7 +677,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
         ),
         RegularSinglePlannerQuery(
           QueryGraph(
-            patternNodes = Set(n.name, m.name),
+            patternNodes = Set(n, m),
             patternRelationships =
               Set(
                 PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
@@ -686,7 +686,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
           horizon = RegularQueryProjection(Map(n -> n))
         ),
         distinct = true,
-        List(UnionMapping(varFor(n.name), varFor(n.name), varFor(n.name)))
+        List(UnionMapping(n, n, n))
       )
     )
     existsIRExpression.existsVariable shouldBe existsVariable
@@ -716,8 +716,8 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     existsIRExpression.query should equal(
       queryWith(
         QueryGraph(
-          patternNodes = Set(n.name, m.name),
-          argumentIds = Set(n.name),
+          patternNodes = Set(n, m),
+          argumentIds = Set(n),
           patternRelationships =
             Set(
               PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
@@ -756,8 +756,8 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     countIRExpression.query should equal(
       queryWith(
         QueryGraph(
-          patternNodes = Set(n.name, m.name, o.name, q.name),
-          argumentIds = Set(n.name),
+          patternNodes = Set(n, m, o, q),
+          argumentIds = Set(n),
           patternRelationships =
             Set(
               PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength),
@@ -803,8 +803,8 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     countIRExpression.query should equal(
       queryWith(
         QueryGraph(
-          patternNodes = Set(n.name, m.name),
-          argumentIds = Set(n.name),
+          patternNodes = Set(n, m),
+          argumentIds = Set(n),
           patternRelationships =
             Set(
               PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
@@ -842,8 +842,8 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     countIRExpression.query should equal(
       queryWith(
         QueryGraph(
-          patternNodes = Set(n.name, m.name),
-          argumentIds = Set(n.name),
+          patternNodes = Set(n, m),
+          argumentIds = Set(n),
           patternRelationships =
             Set(
               PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
@@ -883,8 +883,8 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     countIRExpression.query should equal(
       queryWith(
         QueryGraph(
-          patternNodes = Set(n.name, m.name),
-          argumentIds = Set(n.name),
+          patternNodes = Set(n, m),
+          argumentIds = Set(n),
           patternRelationships =
             Set(
               PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
@@ -929,8 +929,8 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     countIRExpression.query should equal(
       queryWith(
         QueryGraph(
-          patternNodes = Set(n.name, m.name),
-          argumentIds = Set(n.name),
+          patternNodes = Set(n, m),
+          argumentIds = Set(n),
           patternRelationships =
             Set(
               PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
@@ -977,8 +977,8 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     countIRExpression.query should equal(
       queryWith(
         QueryGraph(
-          patternNodes = Set(n.name, m.name),
-          argumentIds = Set(n.name),
+          patternNodes = Set(n, m),
+          argumentIds = Set(n),
           patternRelationships =
             Set(
               PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
@@ -1026,8 +1026,8 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     countIRExpression.query should equal(
       queryWith(
         QueryGraph(
-          patternNodes = Set(n.name, m.name),
-          argumentIds = Set(n.name),
+          patternNodes = Set(n, m),
+          argumentIds = Set(n),
           patternRelationships =
             Set(
               PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
@@ -1080,14 +1080,14 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     countIRExpression.query should equal(
       queryWith(
         QueryGraph(
-          argumentIds = Set(n.name)
+          argumentIds = Set(n)
         ),
         horizon = Some(CallSubqueryHorizon(
           callSubquery = UnionQuery(
             RegularSinglePlannerQuery(
               QueryGraph(
-                patternNodes = Set(n.name, m.name),
-                argumentIds = Set(n.name),
+                patternNodes = Set(n, m),
+                argumentIds = Set(n),
                 patternRelationships =
                   Set(
                     PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
@@ -1097,8 +1097,8 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
             ),
             RegularSinglePlannerQuery(
               QueryGraph(
-                patternNodes = Set(n.name, m.name),
-                argumentIds = Set(n.name),
+                patternNodes = Set(n, m),
+                argumentIds = Set(n),
                 patternRelationships =
                   Set(
                     PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
@@ -1107,7 +1107,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
               horizon = RegularQueryProjection(Map(n -> n))
             ),
             distinct = true,
-            List(UnionMapping(varFor(n.name), varFor(n.name), varFor(n.name)))
+            List(UnionMapping(n, n, n))
           ),
           correlated = true,
           yielding = true,
@@ -1140,8 +1140,8 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     countIRExpression.query should equal(
       queryWith(
         QueryGraph(
-          patternNodes = Set(n.name, m.name),
-          argumentIds = Set(n.name),
+          patternNodes = Set(n, m),
+          argumentIds = Set(n),
           patternRelationships =
             Set(PatternRelationship(r, (n, m), BOTH, Seq.empty, SimplePatternLength))
         ),
@@ -1168,8 +1168,8 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     countIRExpression.query should equal(
       queryWith(
         QueryGraph(
-          patternNodes = Set(n.name, m.name),
-          argumentIds = Set(n.name),
+          patternNodes = Set(n, m),
+          argumentIds = Set(n),
           patternRelationships =
             Set(PatternRelationship(r, (n, m), BOTH, Seq.empty, SimplePatternLength)),
           selections = Selections.from(andedPropertyInequalities(rPred))
@@ -1197,8 +1197,8 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     countIRExpression.query should equal(
       queryWith(
         QueryGraph(
-          patternNodes = Set(n.name, m.name, o.name),
-          argumentIds = Set(n.name),
+          patternNodes = Set(n, m, o),
+          argumentIds = Set(n),
           patternRelationships = Set(
             PatternRelationship(
               r,
@@ -1213,8 +1213,8 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
             differentRelationships(r2, r),
             andedPropertyInequalities(rPred),
             andedPropertyInequalities(oPred),
-            equals(prop(r.name, "prop"), literalInt(5)),
-            equals(prop(o.name, "prop"), literalInt(5)),
+            equals(prop(r, "prop"), literalInt(5)),
+            equals(prop(o, "prop"), literalInt(5)),
             not(hasALabel(o.name))
           ))
         ),
@@ -1243,8 +1243,8 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     countIRExpression.query should equal(
       queryWith(
         QueryGraph(
-          patternNodes = Set(m.name),
-          argumentIds = Set(m.name),
+          patternNodes = Set(m),
+          argumentIds = Set(m),
           selections = Selections.from(AssertIsNode(m)(pos))
         ),
         horizon =
@@ -1271,8 +1271,8 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     countIRExpression.query should equal(
       queryWith(
         QueryGraph(
-          patternNodes = Set(n.name, m.name),
-          argumentIds = Set(n.name),
+          patternNodes = Set(n, m),
+          argumentIds = Set(n),
           patternRelationships =
             Set(PatternRelationship(r, (n, m), BOTH, Seq.empty, SimplePatternLength)),
           selections = Selections.from(andedPropertyInequalities(rPred, rLessPred))
@@ -1302,8 +1302,8 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     countIRExpression.query should equal(
       queryWith(
         QueryGraph(
-          patternNodes = Set(n.name, m.name, o.name, q.name),
-          argumentIds = Set(n.name, o.name),
+          patternNodes = Set(n, m, o, q),
+          argumentIds = Set(n, o),
           patternRelationships = Set(
             PatternRelationship(r, (n, m), BOTH, Seq.empty, SimplePatternLength),
             PatternRelationship(r2, (o, m), OUTGOING, Seq.empty, SimplePatternLength),
@@ -1346,8 +1346,8 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     collectIRExpression.query should equal(
       queryWith(
         QueryGraph(
-          patternNodes = Set(n.name, m.name),
-          argumentIds = Set(n.name),
+          patternNodes = Set(n, m),
+          argumentIds = Set(n),
           patternRelationships =
             Set(
               PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
@@ -1384,8 +1384,8 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     collectIRExpression.query should equal(
       queryWith(
         QueryGraph(
-          patternNodes = Set(n.name, m.name),
-          argumentIds = Set(n.name),
+          patternNodes = Set(n, m),
+          argumentIds = Set(n),
           patternRelationships =
             Set(
               PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
@@ -1427,7 +1427,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     collectIRExpression.query should equal(
       queryWith(
         QueryGraph(
-          patternNodes = Set(n.name, m.name, o.name, q.name),
+          patternNodes = Set(n, m, o, q),
           patternRelationships =
             Set(
               PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength),
@@ -1475,8 +1475,8 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     collectIRExpression.query should equal(
       queryWith(
         QueryGraph(
-          patternNodes = Set(n.name, m.name),
-          argumentIds = Set(n.name),
+          patternNodes = Set(n, m),
+          argumentIds = Set(n),
           patternRelationships =
             Set(
               PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
@@ -1516,8 +1516,8 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     collectIRExpression.query should equal(
       queryWith(
         QueryGraph(
-          patternNodes = Set(n.name, m.name),
-          argumentIds = Set(n.name),
+          patternNodes = Set(n, m),
+          argumentIds = Set(n),
           patternRelationships =
             Set(
               PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
@@ -1557,8 +1557,8 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     collectIRExpression.query should equal(
       queryWith(
         QueryGraph(
-          patternNodes = Set(n.name, m.name),
-          argumentIds = Set(n.name),
+          patternNodes = Set(n, m),
+          argumentIds = Set(n),
           patternRelationships =
             Set(
               PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
@@ -1602,8 +1602,8 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     collectIRExpression.query should equal(
       queryWith(
         QueryGraph(
-          patternNodes = Set(n.name, m.name),
-          argumentIds = Set(n.name),
+          patternNodes = Set(n, m),
+          argumentIds = Set(n),
           patternRelationships =
             Set(
               PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
@@ -1646,8 +1646,8 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     collectIRExpression.query should equal(
       queryWith(
         QueryGraph(
-          patternNodes = Set(n.name, m.name),
-          argumentIds = Set(n.name),
+          patternNodes = Set(n, m),
+          argumentIds = Set(n),
           patternRelationships =
             Set(
               PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
@@ -1698,8 +1698,8 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
       UnionQuery(
         RegularSinglePlannerQuery(
           QueryGraph(
-            patternNodes = Set(n.name, m.name),
-            argumentIds = Set(n.name),
+            patternNodes = Set(n, m),
+            argumentIds = Set(n),
             patternRelationships =
               Set(
                 PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
@@ -1709,8 +1709,8 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
         ),
         RegularSinglePlannerQuery(
           QueryGraph(
-            patternNodes = Set(n.name, m.name),
-            argumentIds = Set(n.name),
+            patternNodes = Set(n, m),
+            argumentIds = Set(n),
             patternRelationships =
               Set(
                 PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
@@ -1719,7 +1719,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
           horizon = RegularQueryProjection(Map(n -> n))
         ),
         distinct = true,
-        List(UnionMapping(varFor(n.name), varFor(n.name), varFor(n.name)))
+        List(UnionMapping(n, n, n))
       )
     )
 

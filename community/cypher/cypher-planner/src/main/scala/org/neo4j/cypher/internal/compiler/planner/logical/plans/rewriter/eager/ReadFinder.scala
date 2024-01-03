@@ -1057,7 +1057,7 @@ object ReadFinder {
     }
   }
 
-  def processDegreeRead(
+  private def processDegreeRead(
     relTypeNames: Option[RelTypeName],
     planReads: PlanReads,
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator
@@ -1073,7 +1073,7 @@ object ReadFinder {
     }
   }
 
-  def processFilterExpression(acc: PlanReads, expression: Expression, semanticTable: SemanticTable): PlanReads =
+  private def processFilterExpression(acc: PlanReads, expression: Expression, semanticTable: SemanticTable): PlanReads =
     expression match {
       case Ands(expressions) => expressions.foldLeft(acc)(processFilterExpression(_, _, semanticTable))
       case _                 =>
@@ -1117,10 +1117,10 @@ object ReadFinder {
       },
 
       // We cannot find the variableGroupings since they might have been removed in RemoveUnusedGroupVariablesRewriter
-      (nfa.nodeNames -- alreadyBound -- singletonNodeVariables.map(_.nfaExprVar)).foldLeft(_) { (acc, nodeName) =>
+      (nfa.nodes -- alreadyBound -- singletonNodeVariables.map(_.nfaExprVar)).foldLeft(_) { (acc, nodeName) =>
         acc.withIntroducedNodeVariable(nodeName)
       },
-      (nfa.relationshipNames -- singletonRelationshipVariables.map(_.nfaExprVar)).foldLeft(_) { (acc, relName) =>
+      (nfa.relationships -- singletonRelationshipVariables.map(_.nfaExprVar)).foldLeft(_) { (acc, relName) =>
         acc.withIntroducedRelationshipVariable(relName)
       },
       singletonNodeVariables.foldLeft(_) { (acc, mapping) =>

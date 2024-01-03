@@ -40,7 +40,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
   private val qg = QueryGraph(
     selections = Selections(Set(Predicate(Set(n), hasLabels(n, "Awesome")))),
-    patternNodes = Set(n.name)
+    patternNodes = Set(n)
   )
 
   test("simple label scan without compile-time label id") {
@@ -82,7 +82,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext(), semanticTable = semanticTable)
 
     // when
-    val resultPlans = labelScanLeafPlanner(Set("n"))(qg, InterestingOrderConfig.empty, context)
+    val resultPlans = labelScanLeafPlanner(Set(v"n"))(qg, InterestingOrderConfig.empty, context)
 
     // then
     resultPlans should be(empty)

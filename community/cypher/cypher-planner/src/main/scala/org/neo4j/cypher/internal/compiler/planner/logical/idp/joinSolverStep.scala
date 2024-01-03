@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.idp
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningSupport.RichHint
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.joinSolverStep.VERBOSE
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.ir.NodeConnection
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -66,7 +67,7 @@ case class joinSolverStep(qg: QueryGraph, IGNORE_EXPAND_SOLUTIONS_FOR_TEST: Bool
       if (expandStillPossible) {
         qg.argumentIds
       } else {
-        Set.empty[String]
+        Set.empty[LogicalVariable]
       }
 
     val goalSize = goal.size
@@ -120,8 +121,8 @@ case class joinSolverStep(qg: QueryGraph, IGNORE_EXPAND_SOLUTIONS_FOR_TEST: Bool
     lhs: LogicalPlan,
     rhs: LogicalPlan,
     solveds: Solveds,
-    argumentsToRemove: Set[String]
-  ): Set[String] = {
+    argumentsToRemove: Set[LogicalVariable]
+  ): Set[LogicalVariable] = {
     val leftNodes = nodes(lhs, solveds)
     val rightNodes = nodes(rhs, solveds)
     (leftNodes intersect rightNodes) -- argumentsToRemove
@@ -130,25 +131,25 @@ case class joinSolverStep(qg: QueryGraph, IGNORE_EXPAND_SOLUTIONS_FOR_TEST: Bool
   private def computeOverlappingSymbols(
     lhs: LogicalPlan,
     rhs: LogicalPlan,
-    argumentsToRemove: Set[String]
-  ): Set[String] = {
-    val leftSymbols = lhs.availableSymbols.map(_.name)
-    val rightSymbols = rhs.availableSymbols.map(_.name)
+    argumentsToRemove: Set[LogicalVariable]
+  ): Set[LogicalVariable] = {
+    val leftSymbols = lhs.availableSymbols
+    val rightSymbols = rhs.availableSymbols
     (leftSymbols intersect rightSymbols) -- argumentsToRemove
   }
 
-  private def nodes(plan: LogicalPlan, solveds: Solveds): Set[String] =
+  private def nodes(plan: LogicalPlan, solveds: Solveds): Set[LogicalVariable] =
     solveds.get(plan.id).asSinglePlannerQuery.queryGraph.patternNodes
 
-  private def show(goal: Goal, symbols: Set[String]) =
+  private def show(goal: Goal, symbols: Set[LogicalVariable]) =
     s"${showIds(goal.bitSet)}: ${showNames(symbols)}"
 
-  private def goalSymbols(goal: Goal, registry: IdRegistry[NodeConnection]): Set[String] =
-    registry.explode(goal.bitSet).flatMap(_.coveredIds).map(_.name)
+  private def goalSymbols(goal: Goal, registry: IdRegistry[NodeConnection]): Set[LogicalVariable] =
+    registry.explode(goal.bitSet).flatMap(_.coveredIds)
 
   private def showIds(ids: Set[Int]) =
     ids.toIndexedSeq.sorted.mkString("{", ", ", "}")
 
-  private def showNames(ids: Set[String]) =
-    ids.toIndexedSeq.sorted.mkString("[", ", ", "]")
+  private def showNames(ids: Set[LogicalVariable]) =
+    ids.toIndexedSeq.map(_.name).sorted.mkString("[", ", ", "]")
 }

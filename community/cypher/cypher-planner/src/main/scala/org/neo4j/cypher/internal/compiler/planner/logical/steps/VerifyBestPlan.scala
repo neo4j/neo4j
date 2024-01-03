@@ -43,7 +43,6 @@ import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.symbols.CTString
@@ -322,7 +321,7 @@ object VerifyBestPlan {
     queryGraph: QueryGraph
   ): Either[Set[IndexCompatiblePredicate], Boolean] = {
     val predicates = queryGraph.selections.flatPredicates.toSet
-    val arguments: Set[LogicalVariable] = queryGraph.argumentIds.map(Variable(_)(InputPosition.NONE))
+    val arguments: Set[LogicalVariable] = queryGraph.argumentIds
     val matchingPredicates =
       IndexCompatiblePredicatesProvider.findExplicitCompatiblePredicates(arguments, predicates, semanticTable).collect {
         case pred @ IndexCompatiblePredicate(`variable`, LogicalProperty(_, `propertyName`), _, _, _, _, _, _, _, _) =>

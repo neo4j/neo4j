@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityInde
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexSeekPlanProvider.predicatesForIndexSeek
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.RelationshipIndexLeafPlanner.RelationshipIndexMatch
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.QueryExpression
@@ -37,7 +38,7 @@ object RelationshipIndexSeekPlanProvider extends RelationshipIndexPlanProvider {
   override def createPlans(
     indexMatches: Set[RelationshipIndexMatch],
     hints: Set[Hint],
-    argumentIds: Set[String],
+    argumentIds: Set[LogicalVariable],
     restrictions: LeafPlanRestrictions,
     context: LogicalPlanningContext
   ): Set[LogicalPlan] = for {
@@ -58,7 +59,7 @@ object RelationshipIndexSeekPlanProvider extends RelationshipIndexPlanProvider {
   private def doCreatePlans(
     indexMatch: RelationshipIndexMatch,
     hints: Set[Hint],
-    argumentIds: Set[String],
+    argumentIds: Set[LogicalVariable],
     context: LogicalPlanningContext
   ): Set[LogicalPlan] = {
     val predicateSet = predicateSetToSolve(indexMatch)
@@ -69,7 +70,7 @@ object RelationshipIndexSeekPlanProvider extends RelationshipIndexPlanProvider {
     predicateSet: PredicateSet,
     indexMatch: RelationshipIndexMatch,
     hints: Set[Hint],
-    argumentIds: Set[String],
+    argumentIds: Set[LogicalVariable],
     context: LogicalPlanningContext
   ): LogicalPlan = {
 
@@ -84,7 +85,7 @@ object RelationshipIndexSeekPlanProvider extends RelationshipIndexPlanProvider {
       originalPattern: PatternRelationship,
       hiddenSelections: Seq[Expression]
     ): LogicalPlan = context.staticComponents.logicalPlanProducer.planRelationshipIndexSeek(
-      idName = indexMatch.variableName,
+      variable = indexMatch.variable,
       typeToken = indexMatch.relationshipTypeToken,
       properties = predicateSet.indexedProperties(context),
       valueExpr = queryExpression,

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
@@ -31,11 +32,11 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class UnionLabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  private val idName = "n"
+  private val variable = v"n"
 
   private val qg = QueryGraph(
-    selections = Selections.from(ors(hasLabels(idName, "A"), hasLabels(idName, "B"))),
-    patternNodes = Set(idName)
+    selections = Selections.from(ors(hasLabels(variable, "A"), hasLabels(variable, "B"))),
+    patternNodes = Set(variable)
   )
 
   test("simple union label scan") {
@@ -47,7 +48,7 @@ class UnionLabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningT
 
     // then
     resultPlans should equal(Set(
-      UnionNodeByLabelsScan(varFor(idName), Seq(labelName("A"), labelName("B")), Set.empty, IndexOrderNone)
+      UnionNodeByLabelsScan(variable, Seq(labelName("A"), labelName("B")), Set.empty, IndexOrderNone)
     ))
   }
 
@@ -56,7 +57,7 @@ class UnionLabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningT
       newMockedLogicalPlanningContext(planContext = newMockedPlanContext(), semanticTable = new SemanticTable())
     val qg = QueryGraph(
       selections = Selections.from(ors(hasLabels("a", "A"), hasLabels("b", "B"))),
-      patternNodes = Set("a", "b")
+      patternNodes = Set(v"a", v"b")
     )
 
     // when
@@ -72,7 +73,7 @@ class UnionLabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningT
       newMockedLogicalPlanningContext(planContext = newMockedPlanContext(), semanticTable = new SemanticTable())
 
     // when
-    val resultPlans = unionLabelScanLeafPlanner(Set("n"))(qg, InterestingOrderConfig.empty, context)
+    val resultPlans = unionLabelScanLeafPlanner(Set(v"n"))(qg, InterestingOrderConfig.empty, context)
 
     // then
     resultPlans should be(empty)

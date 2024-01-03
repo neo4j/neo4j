@@ -568,8 +568,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     val singletonNodeMappings = singletonNodeVariables.map { case (x, y) => Mapping(varFor(x), varFor(y)) }
     val singletonRelMappings = singletonRelationshipVariables.map { case (x, y) => Mapping(varFor(x), varFor(y)) }
 
-    newNodes(nfa.nodeNames.map(_.name) + targetNode)
-    newRelationships(nfa.relationshipNames.map(_.name))
+    newNodes(nfa.nodes.map(_.name) + targetNode)
+    newRelationships(nfa.relationships.map(_.name))
     nodeVariableGroupings.map(_.group.asInstanceOf[Variable])
       .foreach(newVariable(_, CTList(CTNode)))
     relationshipVariableGroupings.map(_.group.asInstanceOf[Variable])

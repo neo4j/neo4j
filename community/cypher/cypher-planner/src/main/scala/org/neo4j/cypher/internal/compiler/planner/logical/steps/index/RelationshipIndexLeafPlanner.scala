@@ -94,7 +94,7 @@ case class RelationshipIndexLeafPlanner(
 object RelationshipIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
 
   case class RelationshipIndexMatch(
-    variableName: String,
+    variable: LogicalVariable,
     patternRelationship: PatternRelationship,
     relTypeName: RelTypeName,
     relTypeId: RelTypeId,
@@ -111,7 +111,7 @@ object RelationshipIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
       exactPredicatesCanGetValue: Boolean
     ): PredicateSet =
       RelationshipPredicateSet(
-        variableName,
+        variable,
         relTypeName,
         newPredicates,
         getValueBehaviors(indexDescriptor, newPredicates, exactPredicatesCanGetValue)
@@ -120,7 +120,7 @@ object RelationshipIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
   }
 
   case class RelationshipPredicateSet(
-    variableName: String,
+    variable: LogicalVariable,
     symbolicName: RelTypeName,
     propertyPredicates: Seq[IndexCompatiblePredicate],
     getValueBehaviors: Seq[GetValueFromIndexBehavior]
@@ -141,12 +141,12 @@ object RelationshipIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
     findPointIndexes: Boolean = true
   ): Set[RelationshipIndexMatch] = {
     def shouldIgnore(pattern: PatternRelationship) =
-      qg.argumentIds.contains(pattern.variable.name)
+      qg.argumentIds.contains(pattern.variable)
 
     val predicates = qg.selections.flatPredicatesSet
-    val patternRelationshipsMap: Map[String, PatternRelationship] = qg.patternRelationships.collect({
+    val patternRelationshipsMap: Map[LogicalVariable, PatternRelationship] = qg.patternRelationships.collect({
       case pattern @ PatternRelationship(rel, _, _, Seq(_), SimplePatternLength) if !shouldIgnore(pattern) =>
-        rel.name -> pattern
+        rel -> pattern
     }).toMap
 
     // Find plans solving given property predicates together with any label predicates from QG
@@ -164,11 +164,11 @@ object RelationshipIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
         )
 
         for {
-          propertyPredicates <- compatiblePropertyPredicates.groupBy(_.name)
-          variableName = propertyPredicates._1
-          patternRelationship <- patternRelationshipsMap.get(variableName).toSet[PatternRelationship]
+          propertyPredicates <- compatiblePropertyPredicates.groupBy(_.variable)
+          variable = propertyPredicates._1
+          patternRelationship <- patternRelationshipsMap.get(variable).toSet[PatternRelationship]
           indexMatch <- findIndexMatches(
-            variableName,
+            variable,
             propertyPredicates._2,
             patternRelationship,
             interestingOrderConfig,
@@ -186,7 +186,7 @@ object RelationshipIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
 
   private def findIndexCompatiblePredicates(
     predicates: Set[Expression],
-    argumentIds: Set[String],
+    argumentIds: Set[LogicalVariable],
     semanticTable: SemanticTable,
     planContext: PlanContext,
     indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
@@ -200,10 +200,10 @@ object RelationshipIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
       indexPredicateProviderContext
     )
 
-    def valid(variableName: String): Boolean = !argumentIds.contains(variableName)
+    def valid(variable: LogicalVariable): Boolean = !argumentIds.contains(variable)
 
     generalCompatiblePredicates ++ patterns.flatMap {
-      case PatternRelationship(name, _, _, Seq(RelTypeName(relTypeName)), _) if valid(relTypeName) =>
+      case PatternRelationship(variable, _, _, Seq(RelTypeName(relTypeName)), _) if valid(variable) =>
         val constrainedPropNames =
           if (
             indexPredicateProviderContext.outerPlanHasUpdates || planContext.txStateHasChanges()
@@ -213,7 +213,7 @@ object RelationshipIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
             planContext.getRelationshipPropertiesWithExistenceConstraint(relTypeName)
 
         implicitIsNotNullPredicates(
-          name,
+          variable,
           indexPredicateProviderContext.aggregatingProperties,
           constrainedPropNames,
           generalCompatiblePredicates
@@ -224,7 +224,7 @@ object RelationshipIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
   }
 
   private def findIndexMatches(
-    variableName: String,
+    variable: LogicalVariable,
     propertyPredicates: Set[IndexCompatiblePredicate],
     patternRelationship: PatternRelationship,
     interestingOrderConfig: InterestingOrderConfig,
@@ -255,7 +255,7 @@ object RelationshipIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
           providedOrderFactory
         )
       } yield RelationshipIndexMatch(
-        variableName,
+        variable,
         patternRelationship,
         relTypeName,
         relTypeId,

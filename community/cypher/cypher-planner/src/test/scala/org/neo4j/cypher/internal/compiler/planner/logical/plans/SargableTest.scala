@@ -87,7 +87,6 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
       case AsIdSeekable(seekable) =>
         seekable.ident should equal(nodeA)
         seekable.expr should equal(leftExpr)
-        seekable.name should equal(nodeA.name)
         seekable.args.expr should equal(expr2)
         seekable.args.sizeHint should equal(Some(1))
     }
@@ -117,7 +116,6 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
       case AsElementIdSeekable(seekable) =>
         seekable.ident should equal(nodeA)
         seekable.expr should equal(leftExpr)
-        seekable.name should equal(nodeA.name)
         seekable.args.expr should equal(expr2)
         seekable.args.sizeHint should equal(Some(1))
     }
@@ -147,7 +145,6 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
       case AsPropertySeekable(seekable) =>
         seekable.ident should equal(nodeA)
         seekable.expr should equal(leftExpr)
-        seekable.name should equal(nodeA.name)
         seekable.args.expr should equal(expr2)
         seekable.args.sizeHint should equal(None)
     }
@@ -163,7 +160,6 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
       case AsPropertySeekable(seekable) =>
         seekable.ident should equal(nodeA)
         seekable.expr should equal(leftExpr)
-        seekable.name should equal(nodeA.name)
         seekable.args.expr should equal(rightExpr)
         seekable.args.sizeHint should equal(Some(2))
     }

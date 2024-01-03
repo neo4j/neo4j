@@ -129,7 +129,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
       newMockedLogicalPlanWithSolved(
         context.staticComponents.planningAttributes,
         idNames = ids,
-        solved = RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes(ids.toList: _*))
+        solved = RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes(ids.map(varFor).toList: _*))
       )
 
     (context, plan)

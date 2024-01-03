@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.p
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.BestPlans
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.leafPlanOptions
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.ir.NodeConnection
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QueryGraph
@@ -77,7 +78,7 @@ case class SingleComponentPlanner(
   }
 
   private def planComponent(
-    bestLeafPlansPerAvailableSymbol: Map[Set[String], BestPlans],
+    bestLeafPlansPerAvailableSymbol: Map[Set[LogicalVariable], BestPlans],
     qg: QueryGraph,
     context: LogicalPlanningContext,
     kit: QueryPlannerKit,
@@ -153,12 +154,12 @@ case class SingleComponentPlanner(
   }
 
   private def planFullyCoversQG(qg: QueryGraph, plan: LogicalPlan) =
-    (qg.idsWithoutOptionalMatchesOrUpdates -- plan.availableSymbols.map(_.name) -- qg.argumentIds).isEmpty
+    (qg.idsWithoutOptionalMatchesOrUpdates -- plan.availableSymbols -- qg.argumentIds).isEmpty
 
   private def initTable(
     qg: QueryGraph,
     kit: QueryPlannerKit,
-    bestLeafPlansPerAvailableSymbol: Map[Set[String], BestPlans],
+    bestLeafPlansPerAvailableSymbol: Map[Set[LogicalVariable], BestPlans],
     qppInnerPlanner: QPPInnerPlanner,
     context: LogicalPlanningContext,
     interestingOrderConfig: InterestingOrderConfig
@@ -239,7 +240,7 @@ object SingleComponentPlanner {
     qg: QueryGraph,
     kit: QueryPlannerKit,
     patternToSolve: NodeConnection,
-    bestLeafPlansPerAvailableSymbol: Map[Set[String], BestPlans],
+    bestLeafPlansPerAvailableSymbol: Map[Set[LogicalVariable], BestPlans],
     qppInnerPlanner: QPPInnerPlanner,
     context: LogicalPlanningContext
   ): Iterable[LogicalPlan] = {
@@ -259,12 +260,12 @@ object SingleComponentPlanner {
           // Avoid planning an Expand on a plan that already solves another relationship.
           // That is not supposed to happen when we initialize the table, but rather during IDP.
           NonExpandSolutions(None)
-        case pattern: PatternRelationship if solvedQg.allCoveredIds.contains(pattern.variable.name) =>
+        case pattern: PatternRelationship if solvedQg.allCoveredIds.contains(pattern.variable) =>
           NonExpandSolutions(Some(planSingleProjectEndpoints(pattern, leaf, context)))
         case pattern =>
           val (start, end) = pattern.boundaryNodes
-          val leftExpand = planSinglePatternSide(qg, pattern, leaf, start.name, qppInnerPlanner, context)
-          val rightExpand = planSinglePatternSide(qg, pattern, leaf, end.name, qppInnerPlanner, context)
+          val leftExpand = planSinglePatternSide(qg, pattern, leaf, start, qppInnerPlanner, context)
+          val rightExpand = planSinglePatternSide(qg, pattern, leaf, end, qppInnerPlanner, context)
           ExpandSolutions(leftExpand, rightExpand)
       }
       leaf -> solutions
@@ -275,12 +276,12 @@ object SingleComponentPlanner {
       if (start == end) {
         // We are not allowed to plan CP or joins with identical LHS and RHS
         Iterable.empty[LogicalPlan]
-      } else if (qg.argumentIds.contains(start.name) || qg.argumentIds.contains(end.name)) {
+      } else if (qg.argumentIds.contains(start) || qg.argumentIds.contains(end)) {
         // This kind of join for single relationship patterns is currently only supported for non-argument nodes.
         Iterable.empty[LogicalPlan]
       } else {
-        val startJoinNodes = Set(start.name)
-        val endJoinNodes = Set(end.name)
+        val startJoinNodes = Set(start)
+        val endJoinNodes = Set(end)
 
         val maybeStartBestPlans = bestLeafPlansPerAvailableSymbol.get(startJoinNodes ++ qg.argumentIds)
         val maybeEndBestPlans = bestLeafPlansPerAvailableSymbol.get(endJoinNodes ++ qg.argumentIds)
@@ -289,7 +290,7 @@ object SingleComponentPlanner {
           qg,
           kit,
           patternToSolve,
-          start.name,
+          start,
           maybeStartBestPlans,
           maybeEndBestPlans,
           qppInnerPlanner,
@@ -322,7 +323,7 @@ object SingleComponentPlanner {
     qg: QueryGraph,
     kit: QueryPlannerKit,
     pattern: NodeConnection,
-    start: String,
+    start: LogicalVariable,
     maybeStartBestPlans: Option[BestPlans],
     maybeEndBestPlans: Option[BestPlans],
     qppInnerPlanner: QPPInnerPlanner,
@@ -364,8 +365,8 @@ object SingleComponentPlanner {
    */
   private def planSinglePatternJoins(
     qg: QueryGraph,
-    startJoinNodes: Set[String],
-    endJoinNodes: Set[String],
+    startJoinNodes: Set[LogicalVariable],
+    endJoinNodes: Set[LogicalVariable],
     maybeStartBestPlans: Option[BestPlans],
     maybeEndBestPlans: Option[BestPlans],
     getExpandSolutionOnTopOfLeaf: LogicalPlan => Option[ExpandSolutions],

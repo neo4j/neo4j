@@ -67,7 +67,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
       isTerminating = true
     ))
 
-    query.queryGraph.patternNodes should equal(Set("n"))
+    query.queryGraph.patternNodes should equal(Set(v"n"))
     query.queryGraph.mutatingPatterns should equal(List(
       SetNodePropertyPattern(varFor("n"), PropertyKeyName("prop")(pos), literalInt(42))
     ))
@@ -80,7 +80,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
       isTerminating = true
     ))
 
-    query.queryGraph.patternNodes should equal(Set("n"))
+    query.queryGraph.patternNodes should equal(Set(v"n"))
     query.queryGraph.mutatingPatterns should equal(List(
       SetNodePropertyPattern(varFor("n"), PropertyKeyName("prop")(pos), nullLiteral)
     ))
@@ -138,12 +138,12 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
       projections = Map(v"n" -> varFor("n"), v"m" -> varFor("m"))
     ))
 
-    query.queryGraph.patternNodes should equal(Set("n"))
+    query.queryGraph.patternNodes should equal(Set(v"n"))
     query.queryGraph.mutatingPatterns should equal(Seq(CreatePattern(nodes("m"))))
 
     val next = query.tail.get
 
-    next.queryGraph.patternNodes should equal(Set("o"))
+    next.queryGraph.patternNodes should equal(Set(v"o"))
     next.queryGraph.readOnly should be(true)
   }
 
@@ -154,12 +154,12 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
 
     val second = query.tail.get
 
-    second.queryGraph.patternNodes should equal(Set("n"))
+    second.queryGraph.patternNodes should equal(Set(v"n"))
     second.queryGraph.mutatingPatterns should equal(IndexedSeq(CreatePattern(nodes("m"))))
 
     val third = second.tail.get
 
-    third.queryGraph.patternNodes should equal(Set("o"))
+    third.queryGraph.patternNodes should equal(Set(v"o"))
     third.queryGraph.readOnly should be(true)
   }
 
@@ -202,9 +202,9 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
     )
     val foreach = query.allPlannerQueries(2).queryGraph.mutatingPatterns.head.asInstanceOf[ForeachPattern]
     foreach.innerUpdates.allPlannerQueries.map(_.queryGraph.argumentIds) shouldEqual Seq(
-      Set("x", "b", "i"),
-      Set("x", "b", "i"),
-      Set("x", "b", "i", "a", "r")
+      Set(v"x", v"b", v"i"),
+      Set(v"x", v"b", v"i"),
+      Set(v"x", v"b", v"i", v"a", v"r")
     )
   }
 
@@ -220,11 +220,11 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
     )
     val foreach = query.allPlannerQueries(2).queryGraph.mutatingPatterns.head.asInstanceOf[ForeachPattern]
     foreach.innerUpdates.allPlannerQueries.map(_.queryGraph.argumentIds) shouldEqual Seq(
-      Set("x", "b", "i", "y", "c"),
-      Set("x", "b", "i", "y", "c"),
-      Set("x", "b", "i", "y", "c", "a", "r1"),
-      Set("x", "b", "i", "y", "c", "a", "r1"),
-      Set("x", "b", "i", "y", "c", "a", "r1", "r2")
+      Set(v"x", v"b", v"i", v"y", v"c"),
+      Set(v"x", v"b", v"i", v"y", v"c"),
+      Set(v"x", v"b", v"i", v"y", v"c", v"a", v"r1"),
+      Set(v"x", v"b", v"i", v"y", v"c", v"a", v"r1"),
+      Set(v"x", v"b", v"i", v"y", v"c", v"a", v"r1", v"r2")
     )
   }
 
@@ -241,14 +241,14 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
     )
     val outerForeach = query.allPlannerQueries(2).queryGraph.mutatingPatterns.head.asInstanceOf[ForeachPattern]
     outerForeach.innerUpdates.allPlannerQueries.map(_.queryGraph.argumentIds) shouldEqual Seq(
-      Set("b", "c", "i", "list2"),
-      Set("b", "c", "i", "list2"),
-      Set("b", "c", "i", "list2")
+      Set(v"b", v"c", v"i", v"list2"),
+      Set(v"b", v"c", v"i", v"list2"),
+      Set(v"b", v"c", v"i", v"list2")
     )
     val innerForeach =
       outerForeach.innerUpdates.allPlannerQueries(1).queryGraph.mutatingPatterns.head.asInstanceOf[ForeachPattern]
     innerForeach.innerUpdates.allPlannerQueries.map(_.queryGraph.argumentIds) shouldEqual Seq(
-      Set("b", "c", "i", "j")
+      Set(v"b", v"c", v"i", v"j")
     )
   }
 
@@ -261,7 +261,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
       inTransactionsParameters = None,
       callSubquery = RegularSinglePlannerQuery(
         queryGraph = QueryGraph(
-          argumentIds = Set("n"),
+          argumentIds = Set(v"n"),
           mutatingPatterns = IndexedSeq(
             CreatePattern(nodes("m"))
           )
@@ -282,7 +282,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
       inTransactionsParameters = None,
       callSubquery = RegularSinglePlannerQuery(
         queryGraph = QueryGraph(
-          argumentIds = Set("n"),
+          argumentIds = Set(v"n"),
           mutatingPatterns = IndexedSeq(
             CreatePattern(nodes("m"))
           )
@@ -392,7 +392,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
         query.allPlannerQueries(query.allPlannerQueries.length - 2)
           .queryGraph
           .mergeQueryGraph
-          .map(_.argumentIds) shouldEqual Some(expectedDeps)
+          .map(_.argumentIds) shouldEqual Some(expectedDeps.map(varFor))
     }
   }
 

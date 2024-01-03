@@ -55,9 +55,9 @@ object extractPredicates {
 
   def apply(
     availablePredicates: collection.Seq[Expression],
-    originalRelationshipName: String,
-    originalNodeName: String,
-    targetNodeName: String,
+    originalRelationship: LogicalVariable,
+    originalNode: LogicalVariable,
+    targetNode: LogicalVariable,
     targetNodeIsBound: Boolean,
     varLength: VarPatternLength
   ): (NodePredicates, RelationshipPredicates, SolvedPredicates) = {
@@ -77,28 +77,28 @@ object extractPredicates {
      * we cannot solve the predicates during the traversal. Unless the target node is bound.
      */
     def pathDependent(innerPredicate: Expression) = {
-      val names = innerPredicate.dependencies.map(_.name)
-      names.contains(originalRelationshipName) || (names.contains(targetNodeName) && !targetNodeIsBound)
+      val dependencies = innerPredicate.dependencies
+      dependencies.contains(originalRelationship) || (dependencies.contains(targetNode) && !targetNodeIsBound)
     }
 
     availablePredicates.foldLeft(seed) {
 
       // MATCH ()-[r* {prop:1337}]->()
-      case ((n, e, s), p @ AllRelationships(variable, `originalRelationshipName`, innerPredicate))
-        if targetNodeIsBound || !innerPredicate.dependencies.exists(_.name == targetNodeName) =>
+      case ((n, e, s), p @ AllRelationships(variable, `originalRelationship`, innerPredicate))
+        if targetNodeIsBound || !innerPredicate.dependencies.contains(targetNode) =>
         val predicate = VariablePredicate(variable, innerPredicate)
         (n, e + predicate, s + p)
 
       // MATCH (a)-[rs*]-(b) WHERE NONE(r IN rs WHERE r.prop=4)
-      case ((n, e, s), p @ NoRelationships(variable, `originalRelationshipName`, innerPredicate))
-        if targetNodeIsBound || !innerPredicate.dependencies.exists(_.name == targetNodeName) =>
+      case ((n, e, s), p @ NoRelationships(variable, `originalRelationship`, innerPredicate))
+        if targetNodeIsBound || !innerPredicate.dependencies.contains(targetNode) =>
         val predicate = VariablePredicate(variable, Not(innerPredicate)(innerPredicate.position))
         (n, e + predicate, s + p)
 
       // MATCH p = (a)-[x*]->(b) WHERE ALL(r in relationships(p) WHERE r.prop > 5)
       case (
           (n, e, s),
-          p @ AllRelationshipsInPath(`originalNodeName`, `originalRelationshipName`, variable, innerPredicate)
+          p @ AllRelationshipsInPath(`originalNode`, `originalRelationship`, variable, innerPredicate)
         ) if !pathDependent(innerPredicate) =>
         val predicate = VariablePredicate(variable, innerPredicate)
         (n, e + predicate, s + p)
@@ -106,32 +106,32 @@ object extractPredicates {
       // MATCH p = ()-[*]->() WHERE NONE(r in relationships(p) WHERE <innerPredicate>)
       case (
           (n, e, s),
-          p @ NoRelationshipInPath(`originalNodeName`, `originalRelationshipName`, variable, innerPredicate)
+          p @ NoRelationshipInPath(`originalNode`, `originalRelationship`, variable, innerPredicate)
         ) if !pathDependent(innerPredicate) =>
         val predicate = VariablePredicate(variable, Not(innerPredicate)(innerPredicate.position))
         (n, e + predicate, s + p)
 
       // MATCH p = ()-[*]->() WHERE ALL(r in nodes(p) WHERE <innerPredicate>)
-      case ((n, e, s), p @ AllNodesInPath(`originalNodeName`, `originalRelationshipName`, variable, innerPredicate))
+      case ((n, e, s), p @ AllNodesInPath(`originalNode`, `originalRelationship`, variable, innerPredicate))
         if !pathDependent(innerPredicate) =>
         val predicate = VariablePredicate(variable, innerPredicate)
         (n + predicate, e, s + p)
 
       // MATCH p = ()-[*]->() WHERE NONE(r in nodes(p) WHERE <innerPredicate>)
-      case ((n, e, s), p @ NoNodeInPath(`originalNodeName`, `originalRelationshipName`, variable, innerPredicate))
+      case ((n, e, s), p @ NoNodeInPath(`originalNode`, `originalRelationship`, variable, innerPredicate))
         if !pathDependent(innerPredicate) =>
         val predicate = VariablePredicate(variable, Not(innerPredicate)(innerPredicate.position))
         (n + predicate, e, s + p)
 
       // Inserted by AddUniquenessPredicates
-      case ((n, e, s), p @ Unique(Variable(`originalRelationshipName`))) =>
+      case ((n, e, s), p @ Unique(`originalRelationship`)) =>
         (n, e, s + p)
 
       // Inserted by AddVarLengthPredicates. We solve these predicates, iff the var-length expand we are about to plan is more restrictive
       case (
           (n, e, s),
           p @ VarLengthLowerBound(
-            Variable(`originalRelationshipName`),
+            `originalRelationship`,
             predicateLowerBound
           )
         ) if predicateLowerBound <= varLength.min =>
@@ -139,7 +139,7 @@ object extractPredicates {
       case (
           (n, e, s),
           p @ VarLengthUpperBound(
-            Variable(`originalRelationshipName`),
+            `originalRelationship`,
             predicateUpperBound
           )
         ) if predicateUpperBound >= varLength.max.getOrElse(Int.MaxValue) =>
@@ -152,11 +152,11 @@ object extractPredicates {
 
   object AllRelationships {
 
-    def unapply(v: Any): Option[(LogicalVariable, String, Expression)] =
+    def unapply(v: Any): Option[(LogicalVariable, LogicalVariable, Expression)] =
       v match {
-        case AllIterablePredicate(FilterScope(variable, Some(innerPredicate)), relId @ LogicalVariable(name))
+        case AllIterablePredicate(FilterScope(variable, Some(innerPredicate)), relId: LogicalVariable)
           if variable == relId || !innerPredicate.dependencies(relId) =>
-          Some((variable, name, innerPredicate))
+          Some((variable, relId, innerPredicate))
 
         case _ => None
       }
@@ -164,19 +164,19 @@ object extractPredicates {
 
   object NoRelationships {
 
-    def unapply(v: Any): Option[(LogicalVariable, String, Expression)] =
+    def unapply(v: Any): Option[(LogicalVariable, LogicalVariable, Expression)] =
       v match {
-        case NoneIterablePredicate(FilterScope(variable, Some(innerPredicate)), relId @ LogicalVariable(name))
+        case NoneIterablePredicate(FilterScope(variable, Some(innerPredicate)), relId: LogicalVariable)
           if variable == relId || !innerPredicate.dependencies(relId) =>
-          Some((variable, name, innerPredicate))
+          Some((variable, relId, innerPredicate))
 
         case _ => None
       }
   }
 
-  object AllRelationshipsInPath {
+  private object AllRelationshipsInPath {
 
-    def unapply(v: Any): Option[(String, String, LogicalVariable, Expression)] =
+    def unapply(v: Any): Option[(LogicalVariable, LogicalVariable, LogicalVariable, Expression)] =
       v match {
         case AllIterablePredicate(
             FilterScope(variable, Some(innerPredicate)),
@@ -187,15 +187,15 @@ object extractPredicates {
               )
             ))
           ) =>
-          Some((startNode.name, rel.name, variable, innerPredicate))
+          Some((startNode, rel, variable, innerPredicate))
 
         case _ => None
       }
   }
 
-  object AllNodesInPath {
+  private object AllNodesInPath {
 
-    def unapply(v: Any): Option[(String, String, LogicalVariable, Expression)] =
+    def unapply(v: Any): Option[(LogicalVariable, LogicalVariable, LogicalVariable, Expression)] =
       v match {
         case AllIterablePredicate(
             FilterScope(variable, Some(innerPredicate)),
@@ -208,15 +208,15 @@ object extractPredicates {
               )
             )
           ) =>
-          Some((startNode.name, rel.name, variable, innerPredicate))
+          Some((startNode, rel, variable, innerPredicate))
 
         case _ => None
       }
   }
 
-  object NoRelationshipInPath {
+  private object NoRelationshipInPath {
 
-    def unapply(v: Any): Option[(String, String, LogicalVariable, Expression)] =
+    def unapply(v: Any): Option[(LogicalVariable, LogicalVariable, LogicalVariable, Expression)] =
       v match {
         case NoneIterablePredicate(
             FilterScope(variable, Some(innerPredicate)),
@@ -229,15 +229,15 @@ object extractPredicates {
               )
             )
           ) =>
-          Some((startNode.name, rel.name, variable, innerPredicate))
+          Some((startNode, rel, variable, innerPredicate))
 
         case _ => None
       }
   }
 
-  object NoNodeInPath {
+  private object NoNodeInPath {
 
-    def unapply(v: Any): Option[(String, String, LogicalVariable, Expression)] =
+    def unapply(v: Any): Option[(LogicalVariable, LogicalVariable, LogicalVariable, Expression)] =
       v match {
         case NoneIterablePredicate(
             FilterScope(variable, Some(innerPredicate)),
@@ -250,7 +250,7 @@ object extractPredicates {
               )
             )
           ) =>
-          Some((startNode.name, rel.name, variable, innerPredicate))
+          Some((startNode, rel, variable, innerPredicate))
 
         case _ => None
       }
@@ -283,8 +283,8 @@ object extractShortestPathPredicates {
 
   def apply(
     availablePredicates: Set[Expression],
-    pathName: Option[String],
-    relsName: Option[String]
+    path: Option[LogicalVariable],
+    rels: Option[LogicalVariable]
   ): (NodePredicates, RelationshipPredicates, SolvedPredicates) = {
 
     /*
@@ -302,27 +302,27 @@ object extractShortestPathPredicates {
      * we cannot solve the predicates during the traversal.
      */
     def pathDependent(innerPredicate: Expression) = {
-      val names = innerPredicate.dependencies.map(_.name)
-      names.intersect(pathName.toSet ++ relsName.toSet).nonEmpty
+      val dependencies = innerPredicate.dependencies
+      dependencies.intersect(path.toSet ++ rels.toSet).nonEmpty
     }
 
     availablePredicates.foldLeft(seed) {
       // MATCH p=shortestPath((a)-[rs*]-(b)) WHERE all(r IN rs WHERE r.prop = 2)
-      case ((n, e, s), p @ AllRelationships(variable, relationshipsName, innerPredicate))
-        if !pathDependent(innerPredicate) && relsName.contains(relationshipsName) =>
+      case ((n, e, s), p @ AllRelationships(variable, relationships, innerPredicate))
+        if !pathDependent(innerPredicate) && rels.contains(relationships) =>
         val predicate = VariablePredicate(variable, innerPredicate)
         (n, e + predicate, s + p)
 
       // MATCH p=shortestPath((a)-[rs*]-(b)) WHERE NONE(r IN rs WHERE r.prop = 2)
-      case ((n, e, s), p @ NoRelationships(variable, relationshipsName, innerPredicate))
-        if !pathDependent(innerPredicate) && relsName.contains(relationshipsName) =>
+      case ((n, e, s), p @ NoRelationships(variable, relationships, innerPredicate))
+        if !pathDependent(innerPredicate) && rels.contains(relationships) =>
         val predicate = VariablePredicate(variable, Not(innerPredicate)(innerPredicate.position))
         (n, e + predicate, s + p)
 
       // MATCH p = shortestPath((a)-[x*]->(b)) WHERE ALL(r in relationships(p) WHERE r.prop > 5)
       case (
           (n, e, s),
-          p @ AllRelationshipsInNamedPath(`pathName`, variable, innerPredicate)
+          p @ AllRelationshipsInNamedPath(`path`, variable, innerPredicate)
         ) if !pathDependent(innerPredicate) =>
         val predicate = VariablePredicate(variable, innerPredicate)
         (n, e + predicate, s + p)
@@ -330,19 +330,19 @@ object extractShortestPathPredicates {
       // MATCH p = shortestPath((a)-[*]->(b)) WHERE NONE(r in relationships(p) WHERE <innerPredicate>)
       case (
           (n, e, s),
-          p @ NoRelationshipInNamedPath(`pathName`, variable, innerPredicate)
+          p @ NoRelationshipInNamedPath(`path`, variable, innerPredicate)
         ) if !pathDependent(innerPredicate) =>
         val predicate = VariablePredicate(variable, Not(innerPredicate)(innerPredicate.position))
         (n, e + predicate, s + p)
 
       // MATCH p = shortestPath((a)-[*]->(b)) WHERE ALL(r in nodes(p) WHERE <innerPredicate>)
-      case ((n, e, s), p @ AllNodesInNamedPath(`pathName`, variable, innerPredicate))
+      case ((n, e, s), p @ AllNodesInNamedPath(`path`, variable, innerPredicate))
         if !pathDependent(innerPredicate) =>
         val predicate = VariablePredicate(variable, innerPredicate)
         (n + predicate, e, s + p)
 
       // MATCH p = shortestPath((a)-[*]->(b)) WHERE NONE(r in nodes(p) WHERE <innerPredicate>)
-      case ((n, e, s), p @ NoNodeInNamedPath(`pathName`, variable, innerPredicate)) if !pathDependent(innerPredicate) =>
+      case ((n, e, s), p @ NoNodeInNamedPath(`path`, variable, innerPredicate)) if !pathDependent(innerPredicate) =>
         val predicate = VariablePredicate(variable, Not(innerPredicate)(innerPredicate.position))
         (n + predicate, e, s + p)
 
@@ -351,57 +351,57 @@ object extractShortestPathPredicates {
     }
   }
 
-  object AllRelationshipsInNamedPath {
+  private object AllRelationshipsInNamedPath {
 
-    def unapply(v: Any): Option[(Option[String], LogicalVariable, Expression)] =
+    def unapply(v: Any): Option[(Option[LogicalVariable], LogicalVariable, Expression)] =
       v match {
         case AllIterablePredicate(
             FilterScope(variable, Some(innerPredicate)),
-            RelationshipsFunctionArguments(Variable(pathName))
+            RelationshipsFunctionArguments(path: Variable)
           ) =>
-          Some((Some(pathName), variable, innerPredicate))
+          Some((Some(path), variable, innerPredicate))
 
         case _ => None
       }
   }
 
-  object AllNodesInNamedPath {
+  private object AllNodesInNamedPath {
 
-    def unapply(v: Any): Option[(Option[String], LogicalVariable, Expression)] =
+    def unapply(v: Any): Option[(Option[LogicalVariable], LogicalVariable, Expression)] =
       v match {
         case AllIterablePredicate(
             FilterScope(variable, Some(innerPredicate)),
-            NodesFunctionArguments(Variable(pathName))
+            NodesFunctionArguments(path: Variable)
           ) =>
-          Some((Some(pathName), variable, innerPredicate))
+          Some((Some(path), variable, innerPredicate))
 
         case _ => None
       }
   }
 
-  object NoRelationshipInNamedPath {
+  private object NoRelationshipInNamedPath {
 
-    def unapply(v: Any): Option[(Option[String], LogicalVariable, Expression)] =
+    def unapply(v: Any): Option[(Option[LogicalVariable], LogicalVariable, Expression)] =
       v match {
         case NoneIterablePredicate(
             FilterScope(variable, Some(innerPredicate)),
-            RelationshipsFunctionArguments(Variable(pathName))
+            RelationshipsFunctionArguments(path: Variable)
           ) =>
-          Some((Some(pathName), variable, innerPredicate))
+          Some((Some(path), variable, innerPredicate))
 
         case _ => None
       }
   }
 
-  object NoNodeInNamedPath {
+  private object NoNodeInNamedPath {
 
-    def unapply(v: Any): Option[(Option[String], LogicalVariable, Expression)] =
+    def unapply(v: Any): Option[(Option[LogicalVariable], LogicalVariable, Expression)] =
       v match {
         case NoneIterablePredicate(
             FilterScope(variable, Some(innerPredicate)),
-            NodesFunctionArguments(Variable(pathName))
+            NodesFunctionArguments(path: Variable)
           ) =>
-          Some((Some(pathName), variable, innerPredicate))
+          Some((Some(path), variable, innerPredicate))
 
         case _ => None
       }

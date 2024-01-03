@@ -781,51 +781,51 @@ class OptionalMatchRemoverTest extends CypherFunSuite with PlannerQueryRewriterT
   val r4 = v"r4"
 
   test("finds shortest path starting from a single element with a single node in the QG") {
-    val qg = QueryGraph(patternNodes = Set(n.name))
+    val qg = QueryGraph(patternNodes = Set(n))
 
-    smallestGraphIncluding(qg, Set(n.name)) should equal(Set(n.name))
+    smallestGraphIncluding(qg, Set(n)) should equal(Set(n))
   }
 
   test("finds shortest path starting from a single element with a single relationship in the QG") {
     val r = PatternRelationship(r1, (n, m), BOTH, Seq.empty, SimplePatternLength)
-    val qg = QueryGraph(patternRelationships = Set(r), patternNodes = Set(n.name, m.name))
+    val qg = QueryGraph(patternRelationships = Set(r), patternNodes = Set(n, m))
 
-    smallestGraphIncluding(qg, Set(n.name)) should equal(Set(n).map(_.name))
+    smallestGraphIncluding(qg, Set(n)) should equal(Set(n))
   }
 
   test("finds shortest path starting from two nodes with a single relationship in the QG") {
     val r = PatternRelationship(r1, (n, m), BOTH, Seq.empty, SimplePatternLength)
-    val qg = QueryGraph(patternRelationships = Set(r), patternNodes = Set(n.name, m.name))
+    val qg = QueryGraph(patternRelationships = Set(r), patternNodes = Set(n, m))
 
-    smallestGraphIncluding(qg, Set(n.name, m.name)) should equal(Set(n, m, r1).map(_.name))
+    smallestGraphIncluding(qg, Set(n, m)) should equal(Set(n, m, r1))
   }
 
   test("finds shortest path starting from two nodes with two relationships in the QG") {
     val pattRel1 = PatternRelationship(r1, (n, m), BOTH, Seq.empty, SimplePatternLength)
     val pattRel2 = PatternRelationship(r2, (m, c), BOTH, Seq.empty, SimplePatternLength)
-    val qg = QueryGraph(patternRelationships = Set(pattRel1, pattRel2), patternNodes = Set(n.name, m.name, c.name))
+    val qg = QueryGraph(patternRelationships = Set(pattRel1, pattRel2), patternNodes = Set(n, m, c))
 
-    smallestGraphIncluding(qg, Set(n.name, m.name)) should equal(Set(n, m, r1).map(_.name))
+    smallestGraphIncluding(qg, Set(n, m)) should equal(Set(n, m, r1))
   }
 
   test("finds shortest path starting from two nodes with two relationships between the same nodes in the QG") {
     val pattRel1 = PatternRelationship(r1, (n, m), BOTH, Seq.empty, SimplePatternLength)
     val pattRel2 = PatternRelationship(r2, (n, m), BOTH, Seq.empty, SimplePatternLength)
-    val qg = QueryGraph(patternRelationships = Set(pattRel1, pattRel2), patternNodes = Set(n.name, m.name))
+    val qg = QueryGraph(patternRelationships = Set(pattRel1, pattRel2), patternNodes = Set(n, m))
 
-    val result = smallestGraphIncluding(qg, Set(n.name, m.name))
-    result should contain(n.name)
-    result should contain(m.name)
-    result should contain.oneOf(r1.name, r2.name)
+    val result = smallestGraphIncluding(qg, Set(n, m))
+    result should contain(n)
+    result should contain(m)
+    result should contain.oneOf(r1, r2)
   }
 
   test("finds shortest path starting from two nodes with an intermediate relationship in the QG") {
     val pattRel1 = PatternRelationship(r1, (n, m), BOTH, Seq.empty, SimplePatternLength)
     val pattRel2 = PatternRelationship(r2, (m, c), BOTH, Seq.empty, SimplePatternLength)
-    val qg = QueryGraph(patternRelationships = Set(pattRel1, pattRel2), patternNodes = Set(n.name, m.name, c.name))
+    val qg = QueryGraph(patternRelationships = Set(pattRel1, pattRel2), patternNodes = Set(n, m, c))
 
-    smallestGraphIncluding(qg, Set(n.name, c.name)) should equal(
-      Set(n, m, c, r1, r2).map(_.name)
+    smallestGraphIncluding(qg, Set(n, c)) should equal(
+      Set(n, m, c, r1, r2)
     )
   }
 
@@ -835,11 +835,11 @@ class OptionalMatchRemoverTest extends CypherFunSuite with PlannerQueryRewriterT
     val pattRel3 = PatternRelationship(r3, (n, x), BOTH, Seq.empty, SimplePatternLength)
     val qg = QueryGraph(
       patternRelationships = Set(pattRel1, pattRel2, pattRel3),
-      patternNodes = Set(n.name, m.name, c.name, x.name)
+      patternNodes = Set(n, m, c, x)
     )
 
-    smallestGraphIncluding(qg, Set(n.name, m.name, c.name)) should equal(
-      Set(n, m, c, r1, r2).map(_.name)
+    smallestGraphIncluding(qg, Set(n, m, c)) should equal(
+      Set(n, m, c, r1, r2)
     )
   }
 
@@ -847,11 +847,11 @@ class OptionalMatchRemoverTest extends CypherFunSuite with PlannerQueryRewriterT
     val pattRel1 = PatternRelationship(r1, (n, m), BOTH, Seq.empty, SimplePatternLength)
     val qg = QueryGraph(
       patternRelationships = Set(pattRel1),
-      patternNodes = Set(n.name, m.name)
+      patternNodes = Set(n, m)
     )
 
-    smallestGraphIncluding(qg, Set(n.name, r1.name)) should equal(
-      Set(n, m, r1).map(_.name)
+    smallestGraphIncluding(qg, Set(n, r1)) should equal(
+      Set(n, m, r1)
     )
   }
 
@@ -860,11 +860,11 @@ class OptionalMatchRemoverTest extends CypherFunSuite with PlannerQueryRewriterT
     val pattRel2 = PatternRelationship(r2, (n, c), BOTH, Seq.empty, SimplePatternLength)
     val qg = QueryGraph(
       patternRelationships = Set(pattRel1, pattRel2),
-      patternNodes = Set(n.name, m.name, c.name)
+      patternNodes = Set(n, m, c)
     )
 
-    smallestGraphIncluding(qg, Set(n.name, r1.name)) should equal(
-      Set(n, m, r1).map(_.name)
+    smallestGraphIncluding(qg, Set(n, r1)) should equal(
+      Set(n, m, r1)
     )
   }
 
@@ -875,31 +875,31 @@ class OptionalMatchRemoverTest extends CypherFunSuite with PlannerQueryRewriterT
     val pattRel4 = PatternRelationship(r4, (n, e), BOTH, Seq.empty, SimplePatternLength)
     val qg = QueryGraph(
       patternRelationships = Set(pattRel1, pattRel2, pattRel3, pattRel4),
-      patternNodes = Set(n, m, c, d, e).map(_.name)
+      patternNodes = Set(n, m, c, d, e)
     )
 
-    smallestGraphIncluding(qg, Set(n, r1, m, r2, c, r3, d).map(_.name)) should equal(
-      Set(n, r1, m, r2, c, r3, d).map(_.name)
+    smallestGraphIncluding(qg, Set(n, r1, m, r2, c, r3, d)) should equal(
+      Set(n, r1, m, r2, c, r3, d)
     )
   }
 
   test("querygraphs containing only nodes") {
-    val qg = QueryGraph(patternNodes = Set(n.name, m.name))
+    val qg = QueryGraph(patternNodes = Set(n, m))
 
-    smallestGraphIncluding(qg, Set(n.name, m.name)) should equal(Set(n, m).map(_.name))
+    smallestGraphIncluding(qg, Set(n, m)) should equal(Set(n, m))
   }
 
   test("checkLabelExpression should not blow up stack with lots of NOTs") {
     var x: Expression = trueLiteral
     for (_ <- 0 to 10000) x = not(x)
 
-    checkLabelExpression(x, "variable")
+    checkLabelExpression(x, v"variable")
   }
 
   test("checkLabelExpression should not blow up stack with lots of ANDs") {
     var x: Expression = trueLiteral
     for (_ <- 0 to 10000) x = ands(x, x)
 
-    checkLabelExpression(x, "variable")
+    checkLabelExpression(x, v"variable")
   }
 }

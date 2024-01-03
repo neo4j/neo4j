@@ -48,7 +48,7 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2
     val table = IDPTable.empty[LogicalPlan]
     implicit val registry: DefaultIdRegistry[NodeConnection] = IdRegistry[NodeConnection]
     new givenConfig().withLogicalPlanningContext { (cfg, ctx) =>
-      val qg = QueryGraph.empty.addPatternNodes("a", "b", "c")
+      val qg = QueryGraph.empty.addPatternNodes(v"a", v"b", v"c")
       joinSolverStep(qg)(registry, register[NodeConnection](pattern1, pattern2), table, ctx) should be(empty)
     }
   }
@@ -61,15 +61,15 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2
       val plan1 = fakeLogicalPlanFor(ctx.staticComponents.planningAttributes, "a", "r1", "b")
       ctx.staticComponents.planningAttributes.solveds.set(
         plan1.id,
-        RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes("a", "b"))
+        RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes(v"a", v"b"))
       )
       val plan2 = fakeLogicalPlanFor(ctx.staticComponents.planningAttributes, "b", "r2", "c")
       ctx.staticComponents.planningAttributes.solveds.set(
         plan2.id,
-        RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes("b", "c"))
+        RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes(v"b", v"c"))
       )
 
-      val qg = QueryGraph.empty.addPatternNodes("a", "b", "c")
+      val qg = QueryGraph.empty.addPatternNodes(v"a", v"b", v"c")
 
       table.put(register[NodeConnection](pattern1), sorted = false, plan1)
       table.put(register[NodeConnection](pattern2), sorted = false, plan2)
@@ -89,12 +89,12 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2
       val plan1 = fakeLogicalPlanFor(ctx.staticComponents.planningAttributes, "a", "r1", "b")
       ctx.staticComponents.planningAttributes.solveds.set(
         plan1.id,
-        RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes("a", "b"))
+        RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes(v"a", v"b"))
       )
       val plan2 = fakeLogicalPlanFor(ctx.staticComponents.planningAttributes, "b", "r2", "c")
       ctx.staticComponents.planningAttributes.solveds.set(
         plan2.id,
-        RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes("b", "c"))
+        RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes(v"b", v"c"))
       )
       // extra-symbol is used to make `plan1 != plan1Sort`
       val plan1Sort = fakeLogicalPlanFor(ctx.staticComponents.planningAttributes, "a", "r1", "b", "extra-symbol")
@@ -103,7 +103,7 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2
       val plan2Sort = fakeLogicalPlanFor(ctx.staticComponents.planningAttributes, "b", "r2", "c", "extra-symbol2")
       ctx.staticComponents.planningAttributes.solveds.copy(plan2.id, plan2Sort.id)
 
-      val qg = QueryGraph.empty.addPatternNodes("a", "b", "c")
+      val qg = QueryGraph.empty.addPatternNodes(v"a", v"b", v"c")
 
       table.put(register[NodeConnection](pattern1), sorted = false, plan1)
       table.put(register[NodeConnection](pattern1), sorted = true, plan1Sort)
@@ -126,15 +126,15 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2
       val plan1 = fakeLogicalPlanFor(ctx.staticComponents.planningAttributes, "a", "r1", "b")
       ctx.staticComponents.planningAttributes.solveds.set(
         plan1.id,
-        RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes("a", "b"))
+        RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes(v"a", v"b"))
       )
       val plan2 = fakeLogicalPlanFor(ctx.staticComponents.planningAttributes, "b")
       ctx.staticComponents.planningAttributes.solveds.set(
         plan2.id,
-        RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes("b"))
+        RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes(v"b"))
       )
 
-      val qg = QueryGraph.empty.addPatternNodes("a", "b")
+      val qg = QueryGraph.empty.addPatternNodes(v"a", v"b")
 
       table.put(register[NodeConnection](pattern1), sorted = false, plan1)
       table.put(register[NodeConnection](pattern2), sorted = false, plan2)
@@ -153,15 +153,15 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2
       val plan1 = fakeLogicalPlanFor(ctx.staticComponents.planningAttributes, "a", "r1", "b")
       ctx.staticComponents.planningAttributes.solveds.set(
         plan1.id,
-        RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes("a", "b"))
+        RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes(v"a", v"b"))
       )
       val plan2 = fakeLogicalPlanFor(ctx.staticComponents.planningAttributes, "c", "r2", "d")
       ctx.staticComponents.planningAttributes.solveds.set(
         plan2.id,
-        RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes("c", "d"))
+        RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes(v"c", v"d"))
       )
 
-      val qg = QueryGraph.empty.addPatternNodes("a", "b", "c", "d")
+      val qg = QueryGraph.empty.addPatternNodes(v"a", v"b", v"c", v"d")
 
       table.put(register[NodeConnection](pattern1), sorted = false, plan1)
       table.put(register[NodeConnection](pattern2), sorted = false, plan2)
@@ -184,17 +184,17 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2
         ) // those will become available symbols
       ctx.staticComponents.planningAttributes.solveds.set(
         plan1.id,
-        RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes("b"))
+        RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes(v"b"))
       ) // those will become available nodes
       val plan2 = fakeLogicalPlanFor(ctx.staticComponents.planningAttributes, "b", "c")
       ctx.staticComponents.planningAttributes.solveds.set(
         plan2.id,
-        RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes("b"))
+        RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes(v"b"))
       )
       // overlapping symbols plan1& plan2 => (b,c)
       // overlapping nodes   plan1&plan2  => (b)
 
-      val qg = QueryGraph.empty.addPatternNodes("a", "b", "c")
+      val qg = QueryGraph.empty.addPatternNodes(v"a", v"b", v"c")
 
       table.put(register[NodeConnection](pattern1), sorted = false, plan1)
       table.put(register[NodeConnection](pattern2), sorted = false, plan2)
@@ -219,15 +219,15 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2
       val plan1 = fakeLogicalPlanFor(ctx.staticComponents.planningAttributes, "a", "r1", "b", "x")
       ctx.staticComponents.planningAttributes.solveds.set(
         plan1.id,
-        RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes("a", "b"))
+        RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes(v"a", v"b"))
       )
       val plan2 = fakeLogicalPlanFor(ctx.staticComponents.planningAttributes, "c", "r2", "d", "x")
       ctx.staticComponents.planningAttributes.solveds.set(
         plan2.id,
-        RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes("c", "d"))
+        RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes(v"c", v"d"))
       )
 
-      val qg = QueryGraph.empty.addPatternNodes("a", "b", "c", "d")
+      val qg = QueryGraph.empty.addPatternNodes(v"a", v"b", v"c", v"d")
 
       table.put(register[NodeConnection](pattern1), sorted = false, plan1)
       table.put(register[NodeConnection](pattern2), sorted = false, plan2)
@@ -243,15 +243,15 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2
       val plan1 = fakeLogicalPlanFor(ctx.staticComponents.planningAttributes, "a", "r1", "b", "x")
       ctx.staticComponents.planningAttributes.solveds.set(
         plan1.id,
-        RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes("a", "b", "x").addArgumentIds(Seq("x")))
+        RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes(v"a", v"b", v"x").addArgumentIds(Seq(v"x")))
       )
       val plan2 = fakeLogicalPlanFor(ctx.staticComponents.planningAttributes, "c", "r2", "d", "x")
       ctx.staticComponents.planningAttributes.solveds.set(
         plan2.id,
-        RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes("c", "d", "x").addArgumentIds(Seq("x")))
+        RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes(v"c", v"d", v"x").addArgumentIds(Seq(v"x")))
       )
 
-      val qg = QueryGraph.empty.addPatternNodes("a", "b", "c", "d").addArgumentIds(Seq("x"))
+      val qg = QueryGraph.empty.addPatternNodes(v"a", v"b", v"c", v"d").addArgumentIds(Seq(v"x"))
 
       table.put(register[NodeConnection](pattern1), sorted = false, plan1)
       table.put(register[NodeConnection](pattern2), sorted = false, plan2)
@@ -267,15 +267,15 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2
       val plan1 = fakeLogicalPlanFor(ctx.staticComponents.planningAttributes, "a", "r1", "b", "c") // symbols
       ctx.staticComponents.planningAttributes.solveds.set(
         plan1.id,
-        RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes("b").addArgumentIds(Seq("b")))
+        RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes(v"b").addArgumentIds(Seq(v"b")))
       ) // nodes
       val plan2 = fakeLogicalPlanFor(ctx.staticComponents.planningAttributes, "b", "c")
       ctx.staticComponents.planningAttributes.solveds.set(
         plan2.id,
-        RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes("b").addArgumentIds(Seq("b")))
+        RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes(v"b").addArgumentIds(Seq(v"b")))
       )
 
-      val qg = QueryGraph.empty.addPatternNodes("a", "b", "c").addArgumentIds(Seq("b"))
+      val qg = QueryGraph.empty.addPatternNodes(v"a", v"b", v"c").addArgumentIds(Seq(v"b"))
 
       val id1: Goal = register[NodeConnection](pattern1)
       val id2: Goal = register[NodeConnection](pattern2)

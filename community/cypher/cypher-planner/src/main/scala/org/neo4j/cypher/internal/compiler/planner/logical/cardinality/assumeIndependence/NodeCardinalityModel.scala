@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeInd
 
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.expressions.LabelName
-import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.Selectivity
@@ -33,18 +33,18 @@ trait NodeCardinalityModel {
   def getNodeCardinality(
     context: QueryGraphCardinalityContext,
     labelInfo: LabelInfo,
-    node: String
+    node: LogicalVariable
   ): Option[Cardinality] =
     getResolvedNodeLabels(context, labelInfo, node).map(getLabelsCardinality(context, _))
 
   def getArgumentSelectivity(
     context: QueryGraphCardinalityContext,
     labelInfo: LabelInfo,
-    argumentId: String
+    argumentId: LogicalVariable
   ): Selectivity = {
     val selectivities =
       labelInfo
-        .getOrElse(varFor(argumentId), Set.empty)
+        .getOrElse(argumentId, Set.empty)
         .toList
         .flatMap(context.semanticTable.id)
         .flatMap(getLabelSelectivity(context, _))
@@ -54,9 +54,9 @@ trait NodeCardinalityModel {
   def getResolvedNodeLabels(
     context: QueryGraphCardinalityContext,
     labelInfo: LabelInfo,
-    node: String
+    node: LogicalVariable
   ): Option[Set[LabelId]] =
-    resolveNodeLabels(context, labelInfo.getOrElse(varFor(node), Set.empty))
+    resolveNodeLabels(context, labelInfo.getOrElse(node, Set.empty))
 
   def resolveNodeLabels(
     context: QueryGraphCardinalityContext,

@@ -26,11 +26,12 @@ import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOr
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.ResultOrdering
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
-case class labelScanLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
+case class labelScanLeafPlanner(skipIDs: Set[LogicalVariable]) extends LeafPlanner {
 
   override def apply(
     qg: QueryGraph,
@@ -38,8 +39,8 @@ case class labelScanLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
     context: LogicalPlanningContext
   ): Set[LogicalPlan] = {
     qg.selections.flatPredicatesSet.flatMap {
-      case labelPredicate @ HasLabels(variable @ Variable(varName), labels)
-        if !skipIDs.contains(varName) && qg.patternNodes(varName) && !qg.argumentIds(varName) =>
+      case labelPredicate @ HasLabels(variable: Variable, labels)
+        if !skipIDs.contains(variable) && qg.patternNodes(variable) && !qg.argumentIds(variable) =>
         context.staticComponents.planContext.nodeTokenIndex.map { nodeTokenIndex =>
           val labelName = labels.head
           val hint = qg.hints.collectFirst {

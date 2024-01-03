@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.planner
 
-import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.varFor
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.helpers.PropertyAccessHelper.PropertyAccess
@@ -309,7 +308,7 @@ class StubbedLogicalPlanningConfiguration(val parent: LogicalPlanningConfigurati
     labelIdCardinality: Map[LabelId, Cardinality]
   ) = {
     val labelMap: Map[LogicalVariable, Set[HasLabels]] = queryGraph.selections.labelPredicates
-    val labels = queryGraph.patternNodes.map(varFor).flatMap(labelMap.get).flatten.flatMap(_.labels)
+    val labels = queryGraph.patternNodes.flatMap(labelMap.get).flatten.flatMap(_.labels)
     val results = labels.collect {
       case label
         if semanticTable.id(label).isDefined &&

@@ -186,7 +186,7 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
 
   test("plans expands for queries with single pattern rel") {
     val pattern = PatternRelationship(v"r1", (v"a", v"b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
-    val qg = QueryGraph(patternRelationships = Set(pattern), patternNodes = Set("a", "b"))
+    val qg = QueryGraph(patternRelationships = Set(pattern), patternNodes = Set(v"a", v"b"))
     val context = mockContext()
     val kit = context.plannerState.config.toKit(InterestingOrderConfig.empty, context)
     val aPlan = newMockedLogicalPlan(context.staticComponents.planningAttributes, "a")
@@ -199,8 +199,8 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
         kit,
         pattern,
         Map(
-          aPlan.availableSymbols.map(_.name) -> BestResults(aPlan, None),
-          bPlan.availableSymbols.map(_.name) -> BestResults(bPlan, None)
+          aPlan.availableSymbols -> BestResults(aPlan, None),
+          bPlan.availableSymbols -> BestResults(bPlan, None)
         ),
         noQPPInnerPlans,
         context
@@ -213,7 +213,7 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
     val pattern = PatternRelationship(v"r1", (v"a", v"b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
     val qg = QueryGraph(
       patternRelationships = Set(pattern),
-      patternNodes = Set("a", "b"),
+      patternNodes = Set(v"a", v"b"),
       selections = Selections.from(equals(prop("a", "prop"), prop("b", "prop")))
     )
     val context = mockContext()
@@ -228,8 +228,8 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
         kit,
         pattern,
         Map(
-          aPlan.availableSymbols.map(_.name) -> BestResults(aPlan, None),
-          bPlan.availableSymbols.map(_.name) -> BestResults(bPlan, None)
+          aPlan.availableSymbols -> BestResults(aPlan, None),
+          bPlan.availableSymbols -> BestResults(bPlan, None)
         ),
         noQPPInnerPlans,
         context
@@ -244,7 +244,7 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
   test("does not plan Expand on top of relationship leaf plan for queries with more than one pattern rel") {
     val rel1 = PatternRelationship(v"r1", (v"a", v"b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
     val rel2 = PatternRelationship(v"r2", (v"b", v"c"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
-    val qg = QueryGraph(patternRelationships = Set(rel1, rel2), patternNodes = Set("a", "b", "c"))
+    val qg = QueryGraph(patternRelationships = Set(rel1, rel2), patternNodes = Set(v"a", v"b", v"c"))
     val context = mockContext()
     val kit = context.plannerState.config.toKit(InterestingOrderConfig.empty, context)
 
@@ -267,8 +267,8 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
       kit,
       rel1,
       Map(
-        r1Plan.availableSymbols.map(_.name) -> BestResults(r1Plan, None),
-        r2Plan.availableSymbols.map(_.name) -> BestResults(r2Plan, None)
+        r1Plan.availableSymbols -> BestResults(r1Plan, None),
+        r2Plan.availableSymbols -> BestResults(r2Plan, None)
       ),
       noQPPInnerPlans,
       context
@@ -283,7 +283,7 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
     val hint1 = UsingIndexHint(varFor("a"), labelOrRelTypeName("X"), Seq(PropertyKeyName("p")(pos)))(pos)
     val hint2 = UsingIndexHint(varFor("b"), labelOrRelTypeName("X"), Seq(PropertyKeyName("p")(pos)))(pos)
     val qg =
-      QueryGraph(patternRelationships = Set(pattern), patternNodes = Set("a", "b"), hints = Set(hint1, hint2))
+      QueryGraph(patternRelationships = Set(pattern), patternNodes = Set(v"a", v"b"), hints = Set(hint1, hint2))
     val context = mockContext()
     val kit = context.plannerState.config.toKit(InterestingOrderConfig.empty, context)
 
@@ -297,8 +297,8 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
         kit,
         pattern,
         Map(
-          aPlan.availableSymbols.map(_.name) -> BestResults(aPlan, None),
-          bPlan.availableSymbols.map(_.name) -> BestResults(bPlan, None)
+          aPlan.availableSymbols -> BestResults(aPlan, None),
+          bPlan.availableSymbols -> BestResults(bPlan, None)
         ),
         noQPPInnerPlans,
         context
@@ -319,7 +319,7 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
   test("plans hashjoins and cartesian product for queries with single pattern rel and a join hint") {
     val pattern = PatternRelationship(v"r1", (v"a", v"b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
     val hint = UsingJoinHint(Seq(varFor("a")))(pos)
-    val qg = QueryGraph(patternRelationships = Set(pattern), patternNodes = Set("a", "b"), hints = Set(hint))
+    val qg = QueryGraph(patternRelationships = Set(pattern), patternNodes = Set(v"a", v"b"), hints = Set(hint))
     val context = mockContext()
     val kit = context.plannerState.config.toKit(InterestingOrderConfig.empty, context)
 
@@ -333,8 +333,8 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
         kit,
         pattern,
         Map(
-          aPlan.availableSymbols.map(_.name) -> BestResults(aPlan, None),
-          bPlan.availableSymbols.map(_.name) -> BestResults(bPlan, None)
+          aPlan.availableSymbols -> BestResults(aPlan, None),
+          bPlan.availableSymbols -> BestResults(bPlan, None)
         ),
         noQPPInnerPlans,
         context
@@ -353,8 +353,8 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
 
     assertPlanSolvesHints(
       logicalPlans.filter {
-        case join: NodeHashJoin if join.nodes.map(_.name) == Set("a") => true
-        case _                                                        => false
+        case join: NodeHashJoin if join.nodes == Set(v"a") => true
+        case _                                             => false
       },
       context.staticComponents.planningAttributes.solveds,
       hint
@@ -364,7 +364,7 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
   test("does not plan hashjoins and cartesian product if start and end node are the same") {
     val pattern = PatternRelationship(v"r1", (v"a", v"a"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
     val hint = UsingJoinHint(Seq(varFor("a")))(pos)
-    val qg = QueryGraph(patternRelationships = Set(pattern), patternNodes = Set("a", "a"), hints = Set(hint))
+    val qg = QueryGraph(patternRelationships = Set(pattern), patternNodes = Set(v"a", v"a"), hints = Set(hint))
     val context = mockContext()
     val kit = context.plannerState.config.toKit(InterestingOrderConfig.empty, context)
 
@@ -375,7 +375,7 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
       qg,
       kit,
       pattern,
-      Map(aPlan.availableSymbols.map(_.name) -> BestResults(aPlan, None)),
+      Map(aPlan.availableSymbols -> BestResults(aPlan, None)),
       noQPPInnerPlans,
       context
     )
@@ -386,7 +386,7 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
   test("plans hashjoins and cartesian product for queries with single pattern rel and a join hint on the end node") {
     val pattern = PatternRelationship(v"r1", (v"a", v"b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
     val hint = UsingJoinHint(Seq(varFor("b")))(pos)
-    val qg = QueryGraph(patternRelationships = Set(pattern), patternNodes = Set("a", "b"), hints = Set(hint))
+    val qg = QueryGraph(patternRelationships = Set(pattern), patternNodes = Set(v"a", v"b"), hints = Set(hint))
     val context = mockContext()
     val kit = context.plannerState.config.toKit(InterestingOrderConfig.empty, context)
 
@@ -400,8 +400,8 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
         kit,
         pattern,
         Map(
-          aPlan.availableSymbols.map(_.name) -> BestResults(aPlan, None),
-          bPlan.availableSymbols.map(_.name) -> BestResults(bPlan, None)
+          aPlan.availableSymbols -> BestResults(aPlan, None),
+          bPlan.availableSymbols -> BestResults(bPlan, None)
         ),
         noQPPInnerPlans,
         context
@@ -420,8 +420,8 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
 
     assertPlanSolvesHints(
       logicalPlans.filter {
-        case join: NodeHashJoin if join.nodes.map(_.name) == Set("b") => true
-        case _                                                        => false
+        case join: NodeHashJoin if join.nodes == Set(v"b") => true
+        case _                                             => false
       },
       context.staticComponents.planningAttributes.solveds,
       hint
@@ -431,7 +431,7 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
   test("plans expands, hashjoins and cartesian product with generic sort only in sensible places") {
     val pattern = PatternRelationship(v"r1", (v"a", v"b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
     val hint = UsingJoinHint(Seq(varFor("a")))(pos)
-    val qg = QueryGraph(patternRelationships = Set(pattern), patternNodes = Set("a", "b"), hints = Set(hint))
+    val qg = QueryGraph(patternRelationships = Set(pattern), patternNodes = Set(v"a", v"b"), hints = Set(hint))
     val context = mockContext()
     val kit = context.plannerState.config.toKit(InterestingOrderConfig.empty, context)
 
@@ -459,8 +459,8 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
         kit,
         pattern,
         Map(
-          aPlan.availableSymbols.map(_.name) -> BestResults(aPlan, Some(aPlanSort)),
-          bPlan.availableSymbols.map(_.name) -> BestResults(bPlan, Some(bPlanSort))
+          aPlan.availableSymbols -> BestResults(aPlan, Some(aPlanSort)),
+          bPlan.availableSymbols -> BestResults(bPlan, Some(bPlanSort))
         ),
         noQPPInnerPlans,
         context
@@ -487,8 +487,8 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
 
     assertPlanSolvesHints(
       logicalPlans.filter {
-        case join: NodeHashJoin if join.nodes.map(_.name) == Set("a") => true
-        case _                                                        => false
+        case join: NodeHashJoin if join.nodes == Set(v"a") => true
+        case _                                             => false
       },
       context.staticComponents.planningAttributes.solveds,
       hint

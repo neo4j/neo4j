@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityInde
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexScanPlanProvider.predicatesForIndexScan
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.NodeIndexLeafPlanner.NodeIndexMatch
 import org.neo4j.cypher.internal.expressions.LabelToken
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -38,31 +39,31 @@ object nodeIndexScanPlanProvider extends NodeIndexPlanProvider {
    * Container for all values that define a NodeIndexScan plan
    */
   case class NodeIndexScanParameters(
-    idName: String,
+    variable: LogicalVariable,
     token: LabelToken,
     properties: Seq[IndexedProperty],
-    argumentIds: Set[String],
+    argumentIds: Set[LogicalVariable],
     indexOrder: IndexOrder
   )
 
   override def createPlans(
     indexMatches: Set[NodeIndexMatch],
     hints: Set[Hint],
-    argumentIds: Set[String],
+    argumentIds: Set[LogicalVariable],
     restrictions: LeafPlanRestrictions,
     context: LogicalPlanningContext
   ): Set[LogicalPlan] = {
 
     val solutions = for {
       indexMatch <- indexMatches
-      if isAllowedByRestrictions(indexMatch.variableName, restrictions)
+      if isAllowedByRestrictions(indexMatch.variable, restrictions)
     } yield createSolution(indexMatch, hints, argumentIds, context)
 
     val distinctSolutions = mergeSolutions(solutions)
 
     distinctSolutions.map(solution =>
       context.staticComponents.logicalPlanProducer.planNodeIndexScan(
-        idName = solution.indexScanParameters.idName,
+        variable = solution.indexScanParameters.variable,
         label = solution.indexScanParameters.token,
         properties = solution.indexScanParameters.properties,
         solvedPredicates = solution.solvedPredicates,
@@ -79,7 +80,7 @@ object nodeIndexScanPlanProvider extends NodeIndexPlanProvider {
   private def createSolution(
     indexMatch: NodeIndexMatch,
     hints: Set[Hint],
-    argumentIds: Set[String],
+    argumentIds: Set[LogicalVariable],
     context: LogicalPlanningContext
   ): Solution[NodeIndexScanParameters] = {
     val predicateSet =
@@ -94,7 +95,7 @@ object nodeIndexScanPlanProvider extends NodeIndexPlanProvider {
 
     Solution(
       NodeIndexScanParameters(
-        idName = indexMatch.variableName,
+        variable = indexMatch.variable,
         token = indexMatch.labelToken,
         properties = predicateSet.indexedProperties(context),
         argumentIds = argumentIds,

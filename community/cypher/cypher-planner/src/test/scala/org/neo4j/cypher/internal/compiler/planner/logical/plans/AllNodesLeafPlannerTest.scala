@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.allNodesLeafPlanner
@@ -30,7 +31,7 @@ class AllNodesLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
 
   test("simple all nodes scan") {
     // given
-    val queryGraph = QueryGraph(patternNodes = Set("n"))
+    val queryGraph = QueryGraph(patternNodes = Set(v"n"))
 
     val planContext = newMockedPlanContext()
     val context = newMockedLogicalPlanningContext(planContext = planContext)
@@ -44,13 +45,13 @@ class AllNodesLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
 
   test("should not plan all node scan for skipped id") {
     // given
-    val queryGraph = QueryGraph(patternNodes = Set("n"))
+    val queryGraph = QueryGraph(patternNodes = Set(v"n"))
 
     val planContext = newMockedPlanContext()
     val context = newMockedLogicalPlanningContext(planContext = planContext)
 
     // when
-    val resultPlans = allNodesLeafPlanner(Set("n"))(queryGraph, InterestingOrderConfig.empty, context)
+    val resultPlans = allNodesLeafPlanner(Set(v"n"))(queryGraph, InterestingOrderConfig.empty, context)
 
     // then
     resultPlans should be(empty)

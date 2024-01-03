@@ -78,7 +78,7 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
     selections: Selections = Selections()
   ) = RegularSinglePlannerQuery(
     QueryGraph(
-      patternNodes = Set("a", "b")
+      patternNodes = Set(v"a", v"b")
     ).addHints(Set(newNodeIndexHint(indexType))).addSelections(selections)
   )
 
@@ -87,14 +87,14 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
     selections: Selections = Selections()
   ) = RegularSinglePlannerQuery(
     QueryGraph(
-      patternNodes = Set("a", "b"),
+      patternNodes = Set(v"a", v"b"),
       patternRelationships = Set(PatternRelationship(v"r", (v"a", v"b"), BOTH, Seq.empty, SimplePatternLength))
     ).addHints(Set(newRelationshipIndexHint(indexType))).addSelections(selections)
   )
 
   private def newQueryWithJoinHint() = RegularSinglePlannerQuery(
     QueryGraph(
-      patternNodes = Set("a", "b")
+      patternNodes = Set(v"a", v"b")
     ).addHints(Set(newJoinHint()))
   )
 
@@ -156,7 +156,7 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
   test("should throw when finding plan that does not solve all pattern nodes") {
     val query = RegularSinglePlannerQuery(
       QueryGraph(
-        patternNodes = Set("a", "b")
+        patternNodes = Set(v"a", v"b")
       )
     )
     val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext())
@@ -172,7 +172,7 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
       PatternRelationship(v"r", (v"a", v"b"), SemanticDirection.OUTGOING, Seq.empty, VarPatternLength.unlimited)
     val query = RegularSinglePlannerQuery(
       QueryGraph(
-        patternNodes = Set("a", "b"),
+        patternNodes = Set(v"a", v"b"),
         patternRelationships = Set(patternRel)
       )
     )
@@ -186,7 +186,7 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
   test("should not throw when finding plan that does solve all pattern nodes") {
     val query = RegularSinglePlannerQuery(
       QueryGraph(
-        patternNodes = Set("a", "b")
+        patternNodes = Set(v"a", v"b")
       )
     )
     val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext())
@@ -484,7 +484,7 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
         horizon = CallSubqueryHorizon(
           callSubquery = RegularSinglePlannerQuery(
             QueryGraph(
-              patternNodes = Set("a"),
+              patternNodes = Set(v"a"),
               hints = hints
             )
           ),
@@ -513,7 +513,7 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
         horizon = CallSubqueryHorizon(
           callSubquery = RegularSinglePlannerQuery(
             QueryGraph(
-              patternNodes = Set("a"),
+              patternNodes = Set(v"a"),
               hints = hints
             )
           ),
@@ -541,12 +541,12 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
       UnionQuery(
         rhs = RegularSinglePlannerQuery(
           QueryGraph(
-            patternNodes = Set("a"),
+            patternNodes = Set(v"a"),
             hints = hints
           )
         ),
         lhs = RegularSinglePlannerQuery(
-          QueryGraph(patternNodes = Set("a"))
+          QueryGraph(patternNodes = Set(v"a"))
         ),
         distinct = true,
         unionMappings = List.empty
@@ -570,7 +570,7 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
       RegularSinglePlannerQuery(
         QueryGraph.empty.addOptionalMatch(
           QueryGraph(
-            patternNodes = Set("a"),
+            patternNodes = Set(v"a"),
             hints = hints
           )
         )

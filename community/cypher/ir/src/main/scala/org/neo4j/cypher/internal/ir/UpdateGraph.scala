@@ -37,7 +37,6 @@ import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
-import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.functions.Labels
 import org.neo4j.cypher.internal.expressions.functions.Properties
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo.StableIdentifier
@@ -62,13 +61,13 @@ object UpdateGraph {
 
   /**
    * Callback to obtain the predicates solved by the leaf plan(s) that find the
-   * entity with the given name. Grouped by leaf plan.
+   * given entity. Grouped by leaf plan.
    *
    * This is not guaranteed to find the leaf plan(s), so it might return
    * NoLeafPlansFound.
    */
   trait LeafPlansPredicatesResolver {
-    def apply(entityName: String): LeafPlansWithSolvedPredicates
+    def apply(entity: LogicalVariable): LeafPlansWithSolvedPredicates
   }
 
   object LeafPlansPredicatesResolver {
@@ -120,7 +119,7 @@ trait UpdateGraph {
     case m: MergeNodePattern => m
   }
 
-  def hasMergeNodePatterns: Boolean = mutatingPatterns.exists {
+  private def hasMergeNodePatterns: Boolean = mutatingPatterns.exists {
     case _: MergeNodePattern => true
     case _                   => false
   }
@@ -129,16 +128,16 @@ trait UpdateGraph {
     case m: MergeRelationshipPattern => m
   }
 
-  def hasMergeRelationshipPatterns: Boolean = mutatingPatterns.exists {
+  private def hasMergeRelationshipPatterns: Boolean = mutatingPatterns.exists {
     case _: MergeRelationshipPattern => true
     case _                           => false
   }
 
-  def foreachPatterns: Seq[ForeachPattern] = mutatingPatterns.collect {
+  private def foreachPatterns: Seq[ForeachPattern] = mutatingPatterns.collect {
     case p: ForeachPattern => p
   }
 
-  def hasForeachPatterns: Boolean = mutatingPatterns.exists {
+  private def hasForeachPatterns: Boolean = mutatingPatterns.exists {
     case _: ForeachPattern => true
     case _                 => false
   }
@@ -146,11 +145,11 @@ trait UpdateGraph {
   /*
    * Finds all identifiers being deleted.
    */
-  def identifiersToDelete: Set[String] = (deletes flatMap {
+  private def variablesToDelete: Set[LogicalVariable] = (deletes flatMap {
     // DELETE n
-    case DeleteExpression(expr: LogicalVariable, _) => Set(expr.name)
+    case DeleteExpression(expr: LogicalVariable, _) => Set(expr)
     // DELETE (n)-[r]-()
-    case DeleteExpression(expr: PathExpression, _) => expr.dependencies.map(_.name)
+    case DeleteExpression(expr: PathExpression, _) => expr.dependencies
     case _                                         => Set()
   }).toSet
 
@@ -174,21 +173,21 @@ trait UpdateGraph {
   /*
    * Finds all rel properties being created with CREATE
    */
-  lazy val createRelProperties: CreatesPropertyKeys =
+  private lazy val createRelProperties: CreatesPropertyKeys =
     CreatesPropertyKeys(createPatterns.flatMap(_.relationships.flatMap(_.properties)): _*) +
       CreatesPropertyKeys(mergeRelationshipPatterns.flatMap(_.createRelationships.flatMap(c => c.properties)): _*)
 
   /*
-   * finds all label names being removed on given node, REMOVE a:L
+   * Finds all label names being removed on nodes that are not the given node.
    */
-  def labelsToRemoveFromOtherNodes(idName: String): Set[LabelName] = removeLabelPatterns.collect {
-    case RemoveLabelPattern(n, labels) if n.name != idName => labels
+  private def labelsToRemoveFromOtherNodes(node: LogicalVariable): Set[LabelName] = removeLabelPatterns.collect {
+    case RemoveLabelPattern(n, labels) if n != node => labels
   }.flatten.toSet
 
   /*
    * Relationship types being created with, CREATE/MERGE ()-[:T]->()
    */
-  lazy val createRelTypes: Set[RelTypeName] =
+  private lazy val createRelTypes: Set[RelTypeName] =
     (createPatterns.flatMap(_.relationships.map(_.relType)) ++
       mergeRelationshipPatterns.flatMap(_.createRelationships.map(_.relType))).toSet
 
@@ -196,7 +195,7 @@ trait UpdateGraph {
    * Does this UpdateGraph update nodes?
    */
   // NOTE: Put foreachPatterns first to shortcut unnecessary recursion
-  lazy val updatesNodes: Boolean =
+  private lazy val updatesNodes: Boolean =
     hasForeachPatterns ||
       createPatterns.exists(_.nodes.nonEmpty) ||
       hasRemoveLabelPatterns ||
@@ -208,7 +207,7 @@ trait UpdateGraph {
   /**
    * Foreach should have been flattened before calling in here
    */
-  def assertNoForeach(): Unit = {
+  private def assertNoForeach(): Unit = {
     AssertMacros.checkOnlyWhenAssertionsAreEnabled(
       !this.hasForeachPatterns,
       "Foreach should be flattened prior to Eagerness Analysis"
@@ -271,7 +270,7 @@ trait UpdateGraph {
     }
   }
 
-  def createsNodes: Boolean = mutatingPatterns.exists {
+  private def createsNodes: Boolean = mutatingPatterns.exists {
     case c: CreatePattern if c.nodes.nonEmpty                => true
     case _: MergeNodePattern                                 => true
     case MergeRelationshipPattern(nodesToCreate, _, _, _, _) => nodesToCreate.nonEmpty
@@ -283,7 +282,7 @@ trait UpdateGraph {
    * with the labels or properties updated in this query. This may cause the read to affected
    * by the writes.
    */
-  def nodeOverlap(qgWithInfo: QgWithLeafInfo)(implicit semanticTable: SemanticTable): Boolean = {
+  private def nodeOverlap(qgWithInfo: QgWithLeafInfo)(implicit semanticTable: SemanticTable): Boolean = {
     val labelsToCreate = createLabels
     val propertiesToCreate = createNodeProperties
     val tailCreatesNodes = createsNodes
@@ -292,7 +291,7 @@ trait UpdateGraph {
     val relevantNodes = qgWithInfo.nonArgumentPatternNodes(semanticTable) intersect qgWithInfo.leafPatternNodes
     updatesNodes && relevantNodes.exists { currentNode =>
       lazy val labelsOnCurrentNode = qgWithInfo.allKnownUnstableNodeLabelsFor(currentNode)
-      lazy val labelsToRemove = labelsToRemoveFromOtherNodes(currentNode.name)
+      lazy val labelsToRemove = labelsToRemoveFromOtherNodes(currentNode.variable)
       val unstableIdentifierNeedsEager = currentNode match {
         case _: StableIdentifier => false
         case _: UnstableIdentifier =>
@@ -305,7 +304,7 @@ trait UpdateGraph {
           ((labelsOnCurrentNode.nonEmpty || propertiesOnCurrentNode.nonEmpty) && labelAndPropertyExpressionsOverlap(
             qgWithInfo,
             labelsToCreate,
-            NodesToCheckOverlap(None, currentNode.name),
+            NodesToCheckOverlap(None, currentNode.variable),
             propertiesToCreate
           )) ||
           // MATCH ({prop:42}) CREATE ({prop:...})
@@ -346,7 +345,7 @@ trait UpdateGraph {
           qgWithInfo.queryGraph.optionalMatches.flatMap(_.selections.predicates)
       )
 
-    val unstableNodePredicates = selections.predicatesGiven(Set(varFor(nodes.matchedNode)))
+    val unstableNodePredicates = selections.predicatesGiven(Set(nodes.matchedNode))
 
     possibleLabelCombinations.exists { labelsToCreate =>
       val overlap = CreateOverlaps.overlap(unstableNodePredicates, labelsToCreate.map(_.name), propertiesToCreate)
@@ -358,19 +357,15 @@ trait UpdateGraph {
     }
   }
 
-  private case class NodesToCheckOverlap(updatedNode: Option[String], matchedNode: String) {
-
-    def contains(node: String): Boolean =
-      updatedNode.contains(node) || matchedNode == node
-  }
+  private case class NodesToCheckOverlap(updatedNode: Option[LogicalVariable], matchedNode: LogicalVariable)
 
   // if we do match delete and merge we always need to be eager
-  def deleteOverlapWithMergeIn(other: UpdateGraph): Boolean =
+  private def deleteOverlapWithMergeIn(other: UpdateGraph): Boolean =
     hasDeletes && (other.hasMergeNodePatterns || other.hasMergeRelationshipPatterns)
   // NOTE: As long as we have the conservative eagerness rule for FOREACH we do not need this recursive check
   // || other.foreachPatterns.exists(_.innerUpdates.allQueryGraphs.exists(deleteOverlapWithMergeIn)))
 
-  def getDegreeOverlap(qgWithInfo: QgWithLeafInfo) = {
+  private def getDegreeOverlap(qgWithInfo: QgWithLeafInfo) = {
     val predicates = qgWithInfo.queryGraph.selections.predicates.map(_.expr)
     val getDegreeRelationshipTypes = predicates.collect {
       case getDegree: GetDegree                                     => getDegree.relType
@@ -388,7 +383,7 @@ trait UpdateGraph {
    * Checks for overlap between rels being read in the query graph
    * and those being created here
    */
-  def createRelationshipOverlap(qgWithInfo: QgWithLeafInfo): Boolean = {
+  private def createRelationshipOverlap(qgWithInfo: QgWithLeafInfo): Boolean = {
     // MATCH ()-->() CREATE ()-->()
     allRelPatternsWrittenNonEmpty &&
     (getDegreeOverlap(qgWithInfo) ||
@@ -399,7 +394,7 @@ trait UpdateGraph {
       }))
   }
 
-  lazy val allRelPatternsWrittenNonEmpty: Boolean = {
+  private lazy val allRelPatternsWrittenNonEmpty: Boolean = {
     val allRelPatternsWritten =
       createPatterns.filter(_.relationships.nonEmpty) ++ mergeRelationshipPatterns.flatMap(_.createRelationships)
 
@@ -419,7 +414,7 @@ trait UpdateGraph {
     (typesOverlap(readRelTypes, createRelTypes) && propsOverlap(readRelProperties, createRelProperties))
   }
 
-  lazy val labelsToSet: Set[LabelName] = {
+  private lazy val labelsToSet: Set[LabelName] = {
     @tailrec
     def toLabelPattern(patterns: Seq[MutatingPattern], acc: Set[LabelName]): Set[LabelName] = {
 
@@ -448,7 +443,8 @@ trait UpdateGraph {
    * Checks for overlap between labels being read in query graph
    * and labels being updated with SET and MERGE here
    */
-  def setLabelOverlap(qgWithInfo: QgWithLeafInfo)(implicit semanticTable: SemanticTable): Seq[EagernessReason] = {
+  private def setLabelOverlap(qgWithInfo: QgWithLeafInfo)(implicit
+  semanticTable: SemanticTable): Seq[EagernessReason] = {
     // For SET label, we even have to look at the arguments for which we don't know if they are a node or not, so we consider HasLabelsOrTypes predicates.
     lazy val overlapWithKnownLabels: Seq[LabelName] = qgWithInfo.patternNodesAndArguments(semanticTable)
       .flatMap(p => qgWithInfo.allKnownUnstableNodeLabelsFor(p).intersect(labelsToSet)).toSeq
@@ -460,13 +456,13 @@ trait UpdateGraph {
     }
 
     if (labelsToSet.nonEmpty && overlapWithKnownLabels.nonEmpty)
-      overlapWithKnownLabels.map(EagernessReason.LabelReadSetConflict(_))
+      overlapWithKnownLabels.map(EagernessReason.LabelReadSetConflict)
     else if (labelsToSet.nonEmpty && overlapWithLabelsFunction)
-      labelsToSet.toSeq.map(EagernessReason.LabelReadSetConflict(_))
+      labelsToSet.toSeq.map(EagernessReason.LabelReadSetConflict)
     else if (labelsToSet.nonEmpty && overlapWithWildcard)
-      labelsToSet.toSeq.map(EagernessReason.LabelReadSetConflict(_))
+      labelsToSet.toSeq.map(EagernessReason.LabelReadSetConflict)
     else if (labelsToSet.nonEmpty && isReturningNode(qgWithInfo, semanticTable))
-      labelsToSet.toSeq.map(EagernessReason.LabelReadSetConflict(_))
+      labelsToSet.toSeq.map(EagernessReason.LabelReadSetConflict)
     else
       Seq.empty
   }
@@ -475,7 +471,7 @@ trait UpdateGraph {
    * Checks for overlap between what props are read in query graph
    * and what is updated with SET and MERGE here
    */
-  def setPropertyOverlap(qgWithInfo: QgWithLeafInfo)(implicit semanticTable: SemanticTable): Boolean = {
+  private def setPropertyOverlap(qgWithInfo: QgWithLeafInfo)(implicit semanticTable: SemanticTable): Boolean = {
     lazy val hasDynamicProperties = qgWithInfo.folder.treeExists {
       case ContainerIndex(_, index) =>
         // if we access by index, foo[0] or foo[&autoIntX] we must be accessing a list and hence we
@@ -525,7 +521,7 @@ trait UpdateGraph {
    * Checks for overlap between identifiers being read in query graph
    * and what is deleted here
    */
-  def deleteOverlap(
+  private def deleteOverlap(
     qgWithInfo: QgWithLeafInfo,
     leafPlansPredicatesResolver: LeafPlansPredicatesResolver
   )(implicit semanticTable: SemanticTable): Seq[EagernessReason] = {
@@ -538,7 +534,7 @@ trait UpdateGraph {
         qgWithInfo.queryGraph.argumentIds.filter(semanticTable.typeFor(_).couldBe(CTNode))
 
     val relsToRead =
-      qgWithInfo.queryGraph.allPatternRelationshipsRead.map(_.variable.name) ++
+      qgWithInfo.queryGraph.allPatternRelationshipsRead.map(_.variable) ++
         qgWithInfo.queryGraph.argumentIds.filter(semanticTable.typeFor(_).couldBe(CTRelationship))
 
     val identifiersToRead = nodesToRead ++ relsToRead
@@ -549,9 +545,9 @@ trait UpdateGraph {
     ) {
       Seq(EagernessReason.Unknown)
     } else {
-      val overlaps = (identifiersToDelete intersect identifiersToRead).toSeq
+      val overlaps = (variablesToDelete intersect identifiersToRead).toSeq
       if (overlaps.nonEmpty) {
-        overlaps.map(EagernessReason.ReadDeleteConflict)
+        overlaps.map(v => EagernessReason.ReadDeleteConflict(v.name))
       } else {
         deleteLabelExpressionOverlap(qgWithInfo, leafPlansPredicatesResolver)
       }
@@ -574,9 +570,8 @@ trait UpdateGraph {
         // puts any expressions into there.
         qgWithInfo.queryGraph.selections.variableDependencies
           .filter(semanticTable.typeFor(_).couldBe(CTNode))
-          .map(_.name)
     val nodesWithLabelOverlap = relevantNodes
-      .flatMap(unstableNode => identifiersToDelete.map((unstableNode, _)))
+      .flatMap(unstableNode => variablesToDelete.map((unstableNode, _)))
       .filter { case (readNode, deletedNode) =>
         readNode != deletedNode &&
         getDeleteOverlapWithLabelExpression(
@@ -589,7 +584,7 @@ trait UpdateGraph {
       .flatMap { case (unstableNode, _) => Set(unstableNode) }
 
     if (nodesWithLabelOverlap.nonEmpty) {
-      nodesWithLabelOverlap.map(EagernessReason.ReadDeleteConflict).toSeq
+      nodesWithLabelOverlap.map(v => EagernessReason.ReadDeleteConflict(v.name)).toSeq
     } else {
       Seq.empty
     }
@@ -616,8 +611,8 @@ trait UpdateGraph {
    */
   private def getDeleteOverlapWithLabelExpression(
     qgWithInfo: QgWithLeafInfo,
-    readNode: String,
-    deletedNode: String,
+    readNode: LogicalVariable,
+    deletedNode: LogicalVariable,
     leafPlansPredicatesResolver: LeafPlansPredicatesResolver
   ): Boolean = {
     // For the read node, we must use the predicates that are solved by the leaf plan(s) solving that node.
@@ -630,7 +625,7 @@ trait UpdateGraph {
     val selections =
       qgWithInfo.queryGraph.allSelections ++
         getMaybeQueryGraph.map(_.allSelections).getOrElse(Selections.empty)
-    val deletedNodePredicates = selections.predicatesGiven(Set(varFor(deletedNode)))
+    val deletedNodePredicates = selections.predicatesGiven(Set(deletedNode))
 
     // If readNodePredicates == NoLeafPlansFound, we could not find the leaf plan(s) that solve the read node.
     // This happens for instance when we are on the RHS of an Apply.
@@ -650,7 +645,8 @@ trait UpdateGraph {
     }
   }
 
-  def removeLabelOverlap(qgWithInfo: QgWithLeafInfo)(implicit semanticTable: SemanticTable): Seq[EagernessReason] = {
+  private def removeLabelOverlap(qgWithInfo: QgWithLeafInfo)(implicit
+  semanticTable: SemanticTable): Seq[EagernessReason] = {
     lazy val otherLabelsRead = qgWithInfo.allKnownUnstableNodeLabels(semanticTable)
     lazy val overlapWithLabelsFunction = qgWithInfo.folder.treeExists {
       case f: FunctionInvocation => f.function == Labels
@@ -803,13 +799,13 @@ trait UpdateGraph {
     case _                   => false
   }
 
-  def deletesExpressions: Boolean = deletes.exists {
+  private def deletesExpressions: Boolean = deletes.exists {
     // `DELETE expression` deletes something without the variable name
     case DeleteExpression(expr, _) if !expr.isInstanceOf[LogicalVariable] && !expr.isInstanceOf[PathExpression] => true
     case _                                                                                                      => false
   }
 
-  def hasDetachDelete: Boolean = deletes.exists {
+  private def hasDetachDelete: Boolean = deletes.exists {
     // DETACH DELETE deletes relationships without their variable name
     case DeleteExpression(_, true) => true
     case _                         => false

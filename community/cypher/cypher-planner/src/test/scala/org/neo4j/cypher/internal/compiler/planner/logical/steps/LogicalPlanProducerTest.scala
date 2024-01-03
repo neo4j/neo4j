@@ -339,7 +339,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
         ProvidedOrder.asc(prop("y", "bar")).asc(varFor("x")).asc(prop("x", "foo"))
       )
 
-      val joinColumns = Set("x")
+      val joinColumns = Set[LogicalVariable](v"x")
 
       // when
       val result = lpp.planLeftOuterHashJoin(joinColumns, lhs, rhs, Set.empty, context)
@@ -367,7 +367,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
         ProvidedOrder.asc(prop("y", "bar")).asc(prop("x", "foo")).asc(prop("y", "foo"))
       )
 
-      val joinColumns = Set("x")
+      val joinColumns = Set[LogicalVariable](v"x")
 
       // when
       val result = lpp.planLeftOuterHashJoin(joinColumns, lhs, rhs, Set.empty, context)
@@ -395,7 +395,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
         ProvidedOrder.asc(prop("y", "bar")).asc(add(literalInt(10), prop("x", "foo"))).asc(prop("y", "foo"))
       )
 
-      val joinColumns = Set("x")
+      val joinColumns = Set[LogicalVariable](v"x")
 
       // when
       val result = lpp.planLeftOuterHashJoin(joinColumns, lhs, rhs, Set.empty, context)
@@ -762,13 +762,13 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
 
   test("ForListSubqueryExpressionSolver.planRollup should fail when rhs contains update") {
     shouldFailAssertion(ctx =>
-      ctx.producer.ForSubqueryExpressionSolver.planRollup(ctx.lhs, ctx.rhsWithUpdate, "x", "y", ctx.context)
+      ctx.producer.ForSubqueryExpressionSolver.planRollup(ctx.lhs, ctx.rhsWithUpdate, v"x", v"y", ctx.context)
     )
   }
 
   test("ForListSubqueryExpressionSolver.planRollup should retain provided order when rhs contains no update") {
     shouldRetainProvidedOrder(ctx =>
-      ctx.producer.ForSubqueryExpressionSolver.planRollup(ctx.lhs, ctx.rhsWithoutUpdate, "x", "y", ctx.context)
+      ctx.producer.ForSubqueryExpressionSolver.planRollup(ctx.lhs, ctx.rhsWithoutUpdate, v"x", v"y", ctx.context)
     )
   }
 
@@ -777,9 +777,9 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       ctx.producer.planTriadicSelection(
         positivePredicate = true,
         ctx.lhs,
-        "a",
-        "b",
-        "c",
+        v"a",
+        v"b",
+        v"c",
         ctx.rhsWithUpdate,
         varFor("x"),
         ctx.context
@@ -792,9 +792,9 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       ctx.producer.planTriadicSelection(
         positivePredicate = true,
         ctx.lhs,
-        "a",
-        "b",
-        "c",
+        v"a",
+        v"b",
+        v"c",
         ctx.rhsWithoutUpdate,
         varFor("x"),
         ctx.context
@@ -804,25 +804,25 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
 
   test("ConditionalApply should eliminate provided order when rhs contains update") {
     shouldEliminateProvidedOrder(ctx =>
-      ctx.producer.planConditionalApply(ctx.lhs, ctx.rhsWithUpdate, Seq("a"), ctx.context)
+      ctx.producer.planConditionalApply(ctx.lhs, ctx.rhsWithUpdate, Seq(v"a"), ctx.context)
     )
   }
 
   test("ConditionalApply should retain provided order when rhs contains no update") {
     shouldRetainProvidedOrder(ctx =>
-      ctx.producer.planConditionalApply(ctx.lhs, ctx.rhsWithoutUpdate, Seq("a"), ctx.context)
+      ctx.producer.planConditionalApply(ctx.lhs, ctx.rhsWithoutUpdate, Seq(v"a"), ctx.context)
     )
   }
 
   test("AntiConditionalApply should eliminate provided order when rhs contains update") {
     shouldEliminateProvidedOrder(ctx =>
-      ctx.producer.planAntiConditionalApply(ctx.lhs, ctx.rhsWithUpdate, Seq("a"), ctx.context)
+      ctx.producer.planAntiConditionalApply(ctx.lhs, ctx.rhsWithUpdate, Seq(v"a"), ctx.context)
     )
   }
 
   test("AntiConditionalApply should retain provided order when rhs contains no update") {
     shouldRetainProvidedOrder(ctx =>
-      ctx.producer.planAntiConditionalApply(ctx.lhs, ctx.rhsWithoutUpdate, Seq("a"), ctx.context)
+      ctx.producer.planAntiConditionalApply(ctx.lhs, ctx.rhsWithoutUpdate, Seq(v"a"), ctx.context)
     )
   }
 
@@ -900,25 +900,25 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
 
   test("LetSemiApply should fail when rhs contains update") {
     shouldFailAssertion(ctx =>
-      ctx.producer.planLetSemiApply(ctx.lhs, ctx.rhsWithUpdate, "x", ctx.context)
+      ctx.producer.planLetSemiApply(ctx.lhs, ctx.rhsWithUpdate, v"x", ctx.context)
     )
   }
 
   test("LetSemiApply should retain provided order when rhs contains no update") {
     shouldRetainProvidedOrder(ctx =>
-      ctx.producer.planLetSemiApply(ctx.lhs, ctx.rhsWithoutUpdate, "x", ctx.context)
+      ctx.producer.planLetSemiApply(ctx.lhs, ctx.rhsWithoutUpdate, v"x", ctx.context)
     )
   }
 
   test("LetAntiSemiApply should fail when rhs contains update") {
     shouldFailAssertion(ctx =>
-      ctx.producer.planLetAntiSemiApply(ctx.lhs, ctx.rhsWithUpdate, "x", ctx.context)
+      ctx.producer.planLetAntiSemiApply(ctx.lhs, ctx.rhsWithUpdate, v"x", ctx.context)
     )
   }
 
   test("LetAntiSemiApply should retain provided order when rhs contains no update") {
     shouldRetainProvidedOrder(ctx =>
-      ctx.producer.planLetAntiSemiApply(ctx.lhs, ctx.rhsWithoutUpdate, "x", ctx.context)
+      ctx.producer.planLetAntiSemiApply(ctx.lhs, ctx.rhsWithoutUpdate, v"x", ctx.context)
     )
   }
 
@@ -948,25 +948,25 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
 
   test("LetSelectOrSemiApply should fail when rhs contains update") {
     shouldFailAssertion(ctx =>
-      ctx.producer.planLetSelectOrSemiApply(ctx.lhs, ctx.rhsWithUpdate, "x", varFor("x"), ctx.context)
+      ctx.producer.planLetSelectOrSemiApply(ctx.lhs, ctx.rhsWithUpdate, v"x", varFor("x"), ctx.context)
     )
   }
 
   test("LetSelectOrSemiApply should retain provided order when rhs contains no update") {
     shouldRetainProvidedOrder(ctx =>
-      ctx.producer.planLetSelectOrSemiApply(ctx.lhs, ctx.rhsWithoutUpdate, "x", varFor("x"), ctx.context)
+      ctx.producer.planLetSelectOrSemiApply(ctx.lhs, ctx.rhsWithoutUpdate, v"x", varFor("x"), ctx.context)
     )
   }
 
   test("LetSelectOrAntiSemiApply should fail when rhs contains update") {
     shouldFailAssertion(ctx =>
-      ctx.producer.planLetSelectOrAntiSemiApply(ctx.lhs, ctx.rhsWithUpdate, "x", varFor("x"), ctx.context)
+      ctx.producer.planLetSelectOrAntiSemiApply(ctx.lhs, ctx.rhsWithUpdate, v"x", varFor("x"), ctx.context)
     )
   }
 
   test("LetSelectOrAntiSemiApply should retain provided order when rhs contains no update") {
     shouldRetainProvidedOrder(ctx =>
-      ctx.producer.planLetSelectOrAntiSemiApply(ctx.lhs, ctx.rhsWithoutUpdate, "x", varFor("x"), ctx.context)
+      ctx.producer.planLetSelectOrAntiSemiApply(ctx.lhs, ctx.rhsWithoutUpdate, v"x", varFor("x"), ctx.context)
     )
   }
 
@@ -1134,7 +1134,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
           "Collect with previous required order",
           lpp.planAggregation(plan(), Map.empty, foo_collect, Map.empty, foo_collect, Some(interesting_vx), context)
         ),
-        ("ProduceResult", lpp.planProduceResult(plan(), Seq("x"), Some(interesting_vx), context))
+        ("ProduceResult", lpp.planProduceResult(plan(), Seq(v"x"), Some(interesting_vx), context))
       )
 
       // then
@@ -1162,12 +1162,12 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val leaf2 = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x", "y")
       val p1 = lpp.planSort(leaf1, Seq(Ascending(varFor("x"))), initialOrder.columns, InterestingOrder.empty, context)
       val p2 = lpp.planEager(p1, context, ListSet.empty)
-      val p3 = lpp.planRightOuterHashJoin(Set("x"), leaf2, p2, Set.empty, context)
+      val p3 = lpp.planRightOuterHashJoin(Set(v"x"), leaf2, p2, Set.empty, context)
 
       // when
       val result = lpp.planProduceResult(
         p3,
-        Seq("x"),
+        Seq(v"x"),
         Some(InterestingOrder.required(RequiredOrderCandidate.asc(varFor("x")))),
         context
       )
@@ -1199,7 +1199,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       // when
       val result = lpp.planProduceResult(
         u,
-        Seq("x"),
+        Seq(v"x"),
         Some(InterestingOrder.required(RequiredOrderCandidate.asc(varFor("x")))),
         context
       )

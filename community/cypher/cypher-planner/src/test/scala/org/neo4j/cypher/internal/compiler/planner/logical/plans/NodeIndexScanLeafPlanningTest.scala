@@ -61,7 +61,7 @@ import org.neo4j.graphdb.schema.IndexType
 class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   private val n = v"n"
-  private val dependency = "dep"
+  private val dependency = v"dep"
   private val lit12 = literalInt(12)
   private val litApa = literalString("Apa")
   private val litBepa = literalString("Bepa")
@@ -143,7 +143,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val resultPlans = nodeIndexScanLeafPlanner(LeafPlanRestrictions.OnlyIndexSeekPlansFor(n.name, Set(dependency)))(
+      val resultPlans = nodeIndexScanLeafPlanner(LeafPlanRestrictions.OnlyIndexSeekPlansFor(n, Set(dependency)))(
         cfg.qg,
         InterestingOrderConfig.empty,
         ctx
@@ -161,7 +161,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
       val resultPlans =
-        nodeIndexSearchStringScanLeafPlanner(LeafPlanRestrictions.OnlyIndexSeekPlansFor(n.name, Set(dependency)))(
+        nodeIndexSearchStringScanLeafPlanner(LeafPlanRestrictions.OnlyIndexSeekPlansFor(n, Set(dependency)))(
           cfg.qg,
           InterestingOrderConfig.empty,
           ctx
@@ -173,7 +173,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           .nodeIndexOperator(
             v"$n:Awesome(prop CONTAINS ???)".name,
             paramExpr = Seq(dependencyProp),
-            argumentIds = Set(dependency),
+            argumentIds = Set(dependency.name),
             getValue = _ => DoNotGetValue,
             indexType = IndexType.TEXT
           )
@@ -189,7 +189,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
       val resultPlans =
-        nodeIndexSearchStringScanLeafPlanner(LeafPlanRestrictions.OnlyIndexSeekPlansFor(n.name, Set(dependency)))(
+        nodeIndexSearchStringScanLeafPlanner(LeafPlanRestrictions.OnlyIndexSeekPlansFor(n, Set(dependency)))(
           cfg.qg,
           InterestingOrderConfig.empty,
           ctx
@@ -201,7 +201,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           .nodeIndexOperator(
             v"$n:Awesome(prop ENDS WITH ???)".name,
             paramExpr = Seq(dependencyProp),
-            argumentIds = Set(dependency),
+            argumentIds = Set(dependency.name),
             getValue = _ => DoNotGetValue,
             indexType = IndexType.TEXT
           )
@@ -885,7 +885,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           awesomeLabelToken,
           IndexedProperty(propPropertyKeyToken, CanGetValue, NODE_TYPE),
           `litApa`,
-          Set(varFor(dependency)),
+          Set(dependency),
           IndexOrderNone,
           IndexType.RANGE
         ),
@@ -894,7 +894,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           awesomeLabelToken,
           IndexedProperty(propPropertyKeyToken, CanGetValue, NODE_TYPE),
           `litBepa`,
-          Set(varFor(dependency)),
+          Set(dependency),
           IndexOrderNone,
           IndexType.RANGE
         )
@@ -1133,7 +1133,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           awesomeLabelToken,
           IndexedProperty(propPropertyKeyToken, CanGetValue, NODE_TYPE),
           `litApa`,
-          Set(varFor(dependency)),
+          Set(dependency),
           IndexOrderNone,
           IndexType.RANGE
         ),
@@ -1142,7 +1142,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           awesomeLabelToken,
           IndexedProperty(propPropertyKeyToken, CanGetValue, NODE_TYPE),
           `litBepa`,
-          Set(varFor(dependency)),
+          Set(dependency),
           IndexOrderNone,
           IndexType.RANGE
         )
@@ -1223,7 +1223,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   test("does not plan index scans for arguments for: n.prop = <value>") {
     new givenConfig {
       qg = queryGraph(propEquals12, hasLabelAwesome)
-        .withArgumentIds(Set(n.name))
+        .withArgumentIds(Set(n))
 
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -1239,7 +1239,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   test("does not plan index contains scan for arguments") {
     new givenConfig {
       qg = queryGraph(propContainsApa, hasLabelAwesome)
-        .withArgumentIds(Set(n.name))
+        .withArgumentIds(Set(n))
 
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -1255,7 +1255,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   test("does not plan index ends with scan for arguments") {
     new givenConfig {
       qg = queryGraph(propEndsWithApa, hasLabelAwesome)
-        .withArgumentIds(Set(n.name))
+        .withArgumentIds(Set(n))
 
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -1271,7 +1271,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   test("does not plan index scan on argument for (n:Label) with existence constraint") {
     new givenConfig {
       qg = queryGraph(hasLabelAwesome)
-        .withArgumentIds(Set(n.name))
+        .withArgumentIds(Set(n))
 
       indexOn("Awesome", "prop")
       nodePropertyExistenceConstraintOn("Awesome", Set("prop"))
@@ -1288,13 +1288,13 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   test("does not plan index scan on argument for (n:Label) with aggregation") {
     new givenConfig {
       qg = queryGraph(hasLabelAwesome)
-        .withArgumentIds(Set(n.name))
+        .withArgumentIds(Set(n))
 
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
       val ctxWithAggregation =
-        ctx.withModifiedPlannerState(_.withAggregationProperties(Set(PropertyAccess(n.name, "prop"))))
+        ctx.withModifiedPlannerState(_.withAggregationProperties(Set(PropertyAccess(n, "prop"))))
       val resultPlans = allNodeScansLeafPlanner(LeafPlanRestrictions.NoRestrictions)(
         cfg.qg,
         InterestingOrderConfig.empty,
@@ -1347,7 +1347,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   private def queryGraph(predicates: Expression*) =
     QueryGraph(
       selections = Selections(predicates.map(Predicate(Set(n), _)).toSet),
-      patternNodes = Set(n.name),
+      patternNodes = Set(n),
       argumentIds = Set(dependency)
     )
 }

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.ir.ast
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.Selections
@@ -31,8 +32,8 @@ class IRExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
     val e = ListIRExpression(
       RegularSinglePlannerQuery(
         QueryGraph(
-          argumentIds = Set("a"),
-          patternNodes = Set("a", "b"),
+          argumentIds = Set(v"a"),
+          patternNodes = Set(v"a", v"b"),
           // This is to make sure that the appearance of varFor("b") does not add b as a dependency
           selections = Selections.from(varFor("b"))
         )
@@ -49,8 +50,8 @@ class IRExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
     val e = ExistsIRExpression(
       RegularSinglePlannerQuery(
         QueryGraph(
-          argumentIds = Set("a"),
-          patternNodes = Set("a", "b"),
+          argumentIds = Set(v"a"),
+          patternNodes = Set(v"a", v"b"),
           // This is to make sure that the appearance of varFor("b") does not add b as a dependency
           selections = Selections.from(varFor("b"))
         )
@@ -66,8 +67,8 @@ class IRExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
     val e = listOf(ListIRExpression(
       RegularSinglePlannerQuery(
         QueryGraph(
-          argumentIds = Set("a"),
-          patternNodes = Set("a", "b"),
+          argumentIds = Set(v"a"),
+          patternNodes = Set(v"a", v"b"),
           // This is to make sure that the appearance of varFor("b") does not add b as a dependency
           selections = Selections.from(varFor("b"))
         )

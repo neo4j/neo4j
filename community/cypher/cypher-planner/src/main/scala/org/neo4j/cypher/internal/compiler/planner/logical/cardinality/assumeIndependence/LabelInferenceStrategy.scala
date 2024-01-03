@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.helpers.SeqSupport.RichSeq
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.NodeConnection
 import org.neo4j.cypher.internal.ir.PatternRelationship
@@ -75,7 +76,7 @@ object LabelInferenceStrategy {
       } yield inferredLabel
 
       val inferredLabels = allInferredLabels
-        .sequentiallyGroupBy(_.nodeName)
+        .sequentiallyGroupBy(_.node)
         .map { case (nodeName, inferredLabels) =>
           nodeName -> inferredLabels.minBy(x => context.graphStatistics.nodesWithLabelCardinality(Some(x.labelId)))
         }.toMap
@@ -90,7 +91,7 @@ object LabelInferenceStrategy {
       def addInferredLabelOnlyIfNoOtherLabel(labelInfo: LabelInfo): LabelInfo = {
         labelInfo.map {
           case (node, labelNames) if labelNames.isEmpty => // only infer if node has no labels
-            node -> Set(inferredLabels.get(node.name).map(x => LabelName(x.labelName)(InputPosition.NONE))).flatten
+            node -> Set(inferredLabels.get(node).map(x => LabelName(x.labelName)(InputPosition.NONE))).flatten
           case (nodeName, labelNames) =>
             nodeName -> labelNames
         }
@@ -100,9 +101,16 @@ object LabelInferenceStrategy {
     }
   }
 
-  private case class SimpleRelationship(startNode: String, endNode: String, relationshipType: RelTypeId) {
+  private case class SimpleRelationship(
+    startNode: LogicalVariable,
+    endNode: LogicalVariable,
+    relationshipType: RelTypeId
+  ) {
 
-    private def nodesWithSameCardinalityWhenAddingLabel(planContext: PlanContext, labelId: LabelId): List[String] = {
+    private def nodesWithSameCardinalityWhenAddingLabel(
+      planContext: PlanContext,
+      labelId: LabelId
+    ): List[LogicalVariable] = {
       val relationshipCardinality = planContext.statistics.patternStepCardinality(None, Some(relationshipType), None)
 
       def hasSameCardinalityWhenAddingLabel(fromLabel: Option[LabelId], toLabel: Option[LabelId]): Boolean = {
@@ -129,14 +137,14 @@ object LabelInferenceStrategy {
   }
 
   private object SimpleRelationship {
-    case class InferredLabel(nodeName: String, labelName: String, labelId: LabelId)
+    case class InferredLabel(node: LogicalVariable, labelName: String, labelId: LabelId)
 
     def fromNodeConnection(nodeConnection: NodeConnection, semanticTable: SemanticTable): Option[SimpleRelationship] =
       nodeConnection match {
         case relationship @ PatternRelationship(_, _, dir, Seq(relationshipTypeName), SimplePatternLength)
           if dir == SemanticDirection.OUTGOING || dir == SemanticDirection.INCOMING =>
           val (startNode, endNode) = relationship.inOrder
-          semanticTable.id(relationshipTypeName).map(SimpleRelationship(startNode.name, endNode.name, _))
+          semanticTable.id(relationshipTypeName).map(SimpleRelationship(startNode, endNode, _))
         case _ => None
       }
   }

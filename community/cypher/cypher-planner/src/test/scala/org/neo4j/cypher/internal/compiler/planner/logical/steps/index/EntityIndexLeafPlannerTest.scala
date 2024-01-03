@@ -410,7 +410,7 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
       }.withLogicalPlanningContext { (_, context) =>
         val compatiblePredicates = leafPlanner.findIndexCompatiblePredicates(
           predicates,
-          argumentIds,
+          argumentIds.map(varFor),
           context.semanticTable,
           context.staticComponents.planContext,
           context.plannerState.indexCompatiblePredicatesProviderContext
@@ -430,7 +430,7 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
                   }
                   withClue("including exactness") {
                     compatiblePredicate.predicateExactness.isExact shouldBe
-                      (indexRequirements.contains(exactQueryTypeReq))
+                      indexRequirements.contains(exactQueryTypeReq)
                   }
                   withClue("including dependencies") {
                     compatiblePredicate.dependencies.map(_.name) should equal(dependencies)

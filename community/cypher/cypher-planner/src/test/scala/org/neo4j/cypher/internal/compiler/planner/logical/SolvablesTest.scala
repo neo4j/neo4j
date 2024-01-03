@@ -43,7 +43,7 @@ class SolvablesTest extends CypherFunSuite {
   }
 
   test("should compute solvables from query graph with pattern relationships") {
-    val qg = QueryGraph.empty.addPatternNodes(node1.name, node2.name).addPatternRelationship(rel)
+    val qg = QueryGraph.empty.addPatternNodes(node1, node2).addPatternRelationship(rel)
 
     Solvables(qg) should equal(Set(SolvableRelationship(rel)))
   }

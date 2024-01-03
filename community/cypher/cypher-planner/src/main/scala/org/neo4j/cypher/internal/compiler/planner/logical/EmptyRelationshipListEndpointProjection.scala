@@ -61,7 +61,7 @@ case object EmptyRelationshipListEndpointProjection extends PlannerQueryRewriter
               case (rel @ PatternRelationship(name, nodes, _, _, length), _)
                 if relationshipQualifies(qg, nodes, length) &&
                   // Where the relationship is an argument
-                  qg.argumentIds.contains(name.name) =>
+                  qg.argumentIds.contains(name) =>
                 copyRelWithPredicate(from, rel, name)
 
               // Cases where a legacy var-length relationship has the same name as a relationship group variable
@@ -113,8 +113,8 @@ case object EmptyRelationshipListEndpointProjection extends PlannerQueryRewriter
       case VarPatternLength(min, _) => min == 0
     }) &&
     // Where no node is an argument
-    !qg.argumentIds.contains(nodes._1.name) &&
-    !qg.argumentIds.contains(nodes._2.name)
+    !qg.argumentIds.contains(nodes._1) &&
+    !qg.argumentIds.contains(nodes._2)
   }
 
   /**

@@ -46,9 +46,9 @@ object aggregation {
 
     val solver = SubqueryExpressionSolver.solverFor(plan, context)
     val groupingExpressionsMap = aggregation.groupingExpressions.map { case (k, v) =>
-      (k, solver.solve(v, Some(k.name)))
+      (k, solver.solve(v, Some(k)))
     }
-    val aggregations = aggregation.aggregationExpressions.map { case (k, v) => (k, solver.solve(v, Some(k.name))) }
+    val aggregations = aggregation.aggregationExpressions.map { case (k, v) => (k, solver.solve(v, Some(k))) }
     val rewrittenPlan = solver.rewrittenPlan()
 
     val projectionMapForLimit: Map[LogicalVariable, Expression] =

@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.expressions.HasMappableExpressions
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
-import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 
 import scala.util.hashing.MurmurHash3
 
@@ -76,19 +75,22 @@ case class SetPropertiesPattern(entityExpression: Expression, items: Seq[(Proper
     )
 }
 
-case class SetRelationshipPropertyPattern(idName: LogicalVariable, propertyKey: PropertyKeyName, expression: Expression)
-    extends SetMutatingPattern
+case class SetRelationshipPropertyPattern(
+  variable: LogicalVariable,
+  propertyKey: PropertyKeyName,
+  expression: Expression
+) extends SetMutatingPattern
     with HasMappableExpressions[SetRelationshipPropertyPattern] {
-  override def dependencies: Set[LogicalVariable] = expression.dependencies + idName
+  override def dependencies: Set[LogicalVariable] = expression.dependencies + variable
 
   override def mapExpressions(f: Expression => Expression): SetRelationshipPropertyPattern =
     copy(expression = f(expression))
 }
 
-case class SetRelationshipPropertiesPattern(idName: LogicalVariable, items: Seq[(PropertyKeyName, Expression)])
+case class SetRelationshipPropertiesPattern(variable: LogicalVariable, items: Seq[(PropertyKeyName, Expression)])
     extends SetMutatingPattern with HasMappableExpressions[SetRelationshipPropertiesPattern] {
 
-  override def dependencies: Set[LogicalVariable] = items.map(_._2).flatMap(_.dependencies).toSet + idName
+  override def dependencies: Set[LogicalVariable] = items.map(_._2).flatMap(_.dependencies).toSet + variable
 
   override def mapExpressions(f: Expression => Expression): SetRelationshipPropertiesPattern = {
     copy(items = items.map {
@@ -97,22 +99,22 @@ case class SetRelationshipPropertiesPattern(idName: LogicalVariable, items: Seq[
   }
 }
 
-case class SetNodePropertiesFromMapPattern(idName: LogicalVariable, expression: Expression, removeOtherProps: Boolean)
+case class SetNodePropertiesFromMapPattern(variable: LogicalVariable, expression: Expression, removeOtherProps: Boolean)
     extends SetMutatingPattern
     with HasMappableExpressions[SetNodePropertiesFromMapPattern] {
-  override def dependencies: Set[LogicalVariable] = expression.dependencies + idName
+  override def dependencies: Set[LogicalVariable] = expression.dependencies + variable
 
   override def mapExpressions(f: Expression => Expression): SetNodePropertiesFromMapPattern =
     copy(expression = f(expression))
 }
 
 case class SetRelationshipPropertiesFromMapPattern(
-  idName: LogicalVariable,
+  variable: LogicalVariable,
   expression: Expression,
   removeOtherProps: Boolean
 ) extends SetMutatingPattern
     with HasMappableExpressions[SetRelationshipPropertiesFromMapPattern] {
-  override def dependencies: Set[LogicalVariable] = expression.dependencies + idName
+  override def dependencies: Set[LogicalVariable] = expression.dependencies + variable
 
   override def mapExpressions(f: Expression => Expression): SetRelationshipPropertiesFromMapPattern =
     copy(expression = f(expression))
@@ -129,17 +131,17 @@ case class SetPropertiesFromMapPattern(entityExpression: Expression, expression:
     copy(f(entityExpression), f(expression))
 }
 
-case class SetNodePropertyPattern(idName: LogicalVariable, propertyKey: PropertyKeyName, expression: Expression)
+case class SetNodePropertyPattern(variable: LogicalVariable, propertyKey: PropertyKeyName, expression: Expression)
     extends SetMutatingPattern
     with HasMappableExpressions[SetNodePropertyPattern] {
-  override def dependencies: Set[LogicalVariable] = expression.dependencies + idName
+  override def dependencies: Set[LogicalVariable] = expression.dependencies + variable
   override def mapExpressions(f: Expression => Expression): SetNodePropertyPattern = copy(expression = f(expression))
 }
 
-case class SetNodePropertiesPattern(idName: LogicalVariable, items: Seq[(PropertyKeyName, Expression)])
+case class SetNodePropertiesPattern(variable: LogicalVariable, items: Seq[(PropertyKeyName, Expression)])
     extends SetMutatingPattern with HasMappableExpressions[SetNodePropertiesPattern] {
 
-  override def dependencies: Set[LogicalVariable] = items.map(_._2).flatMap(_.dependencies).toSet + idName
+  override def dependencies: Set[LogicalVariable] = items.map(_._2).flatMap(_.dependencies).toSet + variable
 
   override def mapExpressions(f: Expression => Expression): SetNodePropertiesPattern = {
     copy(items = items.map {
@@ -148,13 +150,13 @@ case class SetNodePropertiesPattern(idName: LogicalVariable, items: Seq[(Propert
   }
 }
 
-case class SetLabelPattern(idName: LogicalVariable, labels: Seq[LabelName]) extends SetMutatingPattern {
-  override def dependencies: Set[LogicalVariable] = Set(idName)
+case class SetLabelPattern(variable: LogicalVariable, labels: Seq[LabelName]) extends SetMutatingPattern {
+  override def dependencies: Set[LogicalVariable] = Set(variable)
 }
 
-case class RemoveLabelPattern(idName: LogicalVariable, labels: Seq[LabelName]) extends SetMutatingPattern
+case class RemoveLabelPattern(variable: LogicalVariable, labels: Seq[LabelName]) extends SetMutatingPattern
     with NoSymbols {
-  override def dependencies: Set[LogicalVariable] = Set(idName)
+  override def dependencies: Set[LogicalVariable] = Set(variable)
 }
 
 case class CreatePattern(commands: Seq[CreateCommand]) extends SimpleMutatingPattern
@@ -205,11 +207,11 @@ case class MergeNodePattern(
   onCreate: Seq[SetMutatingPattern],
   onMatch: Seq[SetMutatingPattern]
 ) extends MutatingPattern with MergePattern {
-  override def coveredIds: Set[LogicalVariable] = matchGraph.allCoveredIds.map(varFor)
+  override def coveredIds: Set[LogicalVariable] = matchGraph.allCoveredIds
 
   override def dependencies: Set[LogicalVariable] =
     createNode.dependencies ++
-      matchGraph.dependencies.map(varFor) ++
+      matchGraph.dependencies ++
       onCreate.flatMap(_.dependencies) ++
       onMatch.flatMap(_.dependencies)
 }
@@ -221,17 +223,17 @@ case class MergeRelationshipPattern(
   onCreate: Seq[SetMutatingPattern],
   onMatch: Seq[SetMutatingPattern]
 ) extends MutatingPattern with MergePattern {
-  override def coveredIds: Set[LogicalVariable] = matchGraph.allCoveredIds.map(varFor)
+  override def coveredIds: Set[LogicalVariable] = matchGraph.allCoveredIds
 
   override def dependencies: Set[LogicalVariable] =
     createNodes.flatMap(_.dependencies).toSet ++
       createRelationships.flatMap(_.dependencies).toSet ++
-      matchGraph.dependencies.map(varFor) ++
+      matchGraph.dependencies ++
       onCreate.flatMap(_.dependencies) ++
       onMatch.flatMap(_.dependencies)
 }
 
 case class ForeachPattern(variable: LogicalVariable, expression: Expression, innerUpdates: SinglePlannerQuery)
     extends MutatingPattern with NoSymbols {
-  override def dependencies: Set[LogicalVariable] = expression.dependencies ++ innerUpdates.dependencies.map(varFor)
+  override def dependencies: Set[LogicalVariable] = expression.dependencies ++ innerUpdates.dependencies
 }

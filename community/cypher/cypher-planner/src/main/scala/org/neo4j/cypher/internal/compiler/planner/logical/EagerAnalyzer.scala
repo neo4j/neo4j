@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.ir.CallSubqueryHorizon
 import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.ir.Predicate
@@ -123,21 +124,24 @@ class EagerAnalyzerImpl private (context: LogicalPlanningContext) extends EagerA
   /**
    * Get a LeafPlansPredicatesResolver that looks at the leaves of the given plan.
    */
-  private def getLeafPlansPredicatesResolver(plan: LogicalPlan): LeafPlansPredicatesResolver = (entityName: String) => {
-    val leaves: Seq[LogicalLeafPlan] = plan.leaves.collect {
-      case n: NodeLogicalLeafPlan if n.idName.name == entityName         => n
-      case r: RelationshipLogicalLeafPlan if r.idName.name == entityName => r
-    }
+  private def getLeafPlansPredicatesResolver(plan: LogicalPlan): LeafPlansPredicatesResolver =
+    (entity: LogicalVariable) => {
+      val leaves: Seq[LogicalLeafPlan] = plan.leaves.collect {
+        case n: NodeLogicalLeafPlan if n.idName == entity         => n
+        case r: RelationshipLogicalLeafPlan if r.idName == entity => r
+      }
 
-    leaves.map { p =>
-      val solvedPredicates =
-        context.staticComponents.planningAttributes.solveds(p.id).asSinglePlannerQuery.queryGraph.selections.predicates
-      SolvedPredicatesOfOneLeafPlan(solvedPredicates.map(_.expr).toSeq)
-    }.toList match {
-      case head :: tail => LeafPlansPredicatesResolver.LeafPlansFound(NonEmptyList(head, tail: _*))
-      case Nil          => LeafPlansPredicatesResolver.NoLeafPlansFound
+      leaves.map { p =>
+        val solvedPredicates =
+          context.staticComponents.planningAttributes.solveds(
+            p.id
+          ).asSinglePlannerQuery.queryGraph.selections.predicates
+        SolvedPredicatesOfOneLeafPlan(solvedPredicates.map(_.expr).toSeq)
+      }.toList match {
+        case head :: tail => LeafPlansPredicatesResolver.LeafPlansFound(NonEmptyList(head, tail: _*))
+        case Nil          => LeafPlansPredicatesResolver.NoLeafPlansFound
+      }
     }
-  }
 
   /**
    * Determines whether there is a conflict between the so-far planned LogicalPlan
@@ -176,17 +180,17 @@ class EagerAnalyzerImpl private (context: LogicalPlanningContext) extends EagerA
 
       // We still need to distinguish the stable leaf from the others
       val stableIdentifier = maybeStableLeaf.map {
-        case n: NodeLogicalLeafPlan         => QgWithLeafInfo.StableIdentifier(n.idName.name)
-        case r: RelationshipLogicalLeafPlan => QgWithLeafInfo.StableIdentifier(r.idName.name)
+        case n: NodeLogicalLeafPlan         => QgWithLeafInfo.StableIdentifier(n.idName)
+        case r: RelationshipLogicalLeafPlan => QgWithLeafInfo.StableIdentifier(r.idName)
         case x => throw new InternalException(
             s"Expected NodeLogicalLeafPlan or RelationshipLogicalLeafPlan but was ${x.getClass}"
           )
       }
 
       val unstableLeafIdNames = unstableLeaves.view.flatMap {
-        case n: NodeLogicalLeafPlan         => Set(n.idName.name)
-        case r: RelationshipLogicalLeafPlan => Set(r.idName.name)
-        case a: Argument                    => a.argumentIds.map(_.name)
+        case n: NodeLogicalLeafPlan         => Set(n.idName)
+        case r: RelationshipLogicalLeafPlan => Set(r.idName)
+        case a: Argument                    => a.argumentIds
         case x => throw new InternalException(
             s"Expected NodeLogicalLeafPlan, RelationshipLogicalLeafPlan or Argument but was ${x.getClass}"
           )

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
@@ -69,7 +70,7 @@ class PlannerQueryTest extends CypherFunSuite with AstConstructionTestSupport {
 
     val tail = RegularSinglePlannerQuery(queryGraph = QueryGraph.empty)
     val firstQueryGraph = QueryGraph.empty
-    val secondQueryGraph = QueryGraph(patternNodes = Set("a"))
+    val secondQueryGraph = QueryGraph(patternNodes = Set(v"a"))
     val input = RegularSinglePlannerQuery(queryGraph = firstQueryGraph, tail = Some(tail))
 
     val result = input.foldMap {

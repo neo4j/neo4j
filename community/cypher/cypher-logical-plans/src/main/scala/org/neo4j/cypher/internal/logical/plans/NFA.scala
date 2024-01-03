@@ -131,13 +131,13 @@ case class NFA(
   def predicateVariables: Set[LogicalVariable] =
     transitions.values.flatten.toSeq.flatMap(_.predicate.variablePredicates).map(_.variable).toSet
 
-  def nodeNames: Set[LogicalVariable] =
+  def nodes: Set[LogicalVariable] =
     states.map(_.variable) ++ transitionPredicates.flatMap {
       case r: RelationshipExpansionPredicate => r.nodePred
       case n: NodeJuxtapositionPredicate     => n.variablePredicate
     }.map(_.variable)
 
-  def relationshipNames: Set[LogicalVariable] =
+  def relationships: Set[LogicalVariable] =
     transitionPredicates
       .collect { case r: RelationshipExpansionPredicate => r }
       .flatMap(r => Iterator(Some(r.relationshipVariable), r.relPred.map(_.variable)).flatten)

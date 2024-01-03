@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.StatementConv
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.QuerySolvableByGetDegree.SetExtractor
 import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.PathPatternPart
 import org.neo4j.cypher.internal.expressions.PathStep
@@ -98,7 +99,7 @@ case class CreateIrExpressions(
    */
   private def getPlannerQuery(
     pattern: ASTNode,
-    dependencies: Set[String],
+    dependencies: Set[LogicalVariable],
     maybePredicate: Option[Expression],
     horizon: QueryHorizon
   ): PlannerQuery = {
@@ -139,7 +140,7 @@ case class CreateIrExpressions(
      */
     case exists @ Exists(pe @ PatternExpression(pattern)) =>
       val existsVariable = varFor(anonymousVariableNameGenerator.nextName)
-      val query = getPlannerQuery(pattern, pe.dependencies.map(_.name), None, RegularQueryProjection())
+      val query = getPlannerQuery(pattern, pe.dependencies, None, RegularQueryProjection())
       ExistsIRExpression(query, existsVariable, stringifier(exists))(
         exists.position,
         pe.computedIntroducedVariables,
@@ -158,7 +159,7 @@ case class CreateIrExpressions(
         semanticTable,
         anonymousVariableNameGenerator,
         CancellationChecker.NeverCancelled,
-        existsExpression.scopeDependencies.map(_.name)
+        existsExpression.scopeDependencies
       )
       ExistsIRExpression(plannerQuery, existsVariable, stringifier(existsExpression))(
         existsExpression.position,
@@ -177,7 +178,7 @@ case class CreateIrExpressions(
       val pathExpression = createPathExpression(pe)
       val query = getPlannerQuery(
         pattern,
-        pe.dependencies.map(_.name),
+        pe.dependencies,
         None,
         RegularQueryProjection(Map(variableToCollect -> pathExpression))
       )
@@ -193,7 +194,7 @@ case class CreateIrExpressions(
      */
     case countExpression @ CountExpression(q) =>
       val countVariable = varFor(anonymousVariableNameGenerator.nextName)
-      val arguments = countExpression.dependencies.map(_.name)
+      val arguments = countExpression.dependencies
       val plannerQuery = toPlannerQuery(
         q,
         semanticTable,
@@ -266,7 +267,7 @@ case class CreateIrExpressions(
      */
     case collectExpression @ CollectExpression(q) =>
       val collectVariable = varFor(anonymousVariableNameGenerator.nextName)
-      val arguments = collectExpression.dependencies.map(_.name)
+      val arguments = collectExpression.dependencies
       val plannerQuery = toPlannerQuery(
         q,
         semanticTable,

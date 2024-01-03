@@ -38,7 +38,7 @@ object distinct {
 
     val solver = SubqueryExpressionSolver.solverFor(plan, context)
     val groupingExpressionsMap = distinctQueryProjection.groupingExpressions.map { case (k, v) =>
-      (k, solver.solve(v, Some(k.name)))
+      (k, solver.solve(v, Some(k)))
     }
     val rewrittenPlan = solver.rewrittenPlan()
 

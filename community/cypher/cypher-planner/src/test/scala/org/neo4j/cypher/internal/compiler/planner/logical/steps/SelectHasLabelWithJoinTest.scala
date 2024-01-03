@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.mockito.Mockito.RETURNS_DEEP_STUBS
 import org.mockito.Mockito.when
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
@@ -160,7 +161,7 @@ class SelectHasLabelWithJoinTest extends CypherFunSuite with LogicalPlanningTest
     val candidates = selectHasLabelWithJoin(
       mock[LogicalPlan],
       Set(hasLabels("n", "Label")),
-      QueryGraph.empty.addPatternNodes("n"),
+      QueryGraph.empty.addPatternNodes(v"n"),
       InterestingOrderConfig.empty,
       ctx
     )

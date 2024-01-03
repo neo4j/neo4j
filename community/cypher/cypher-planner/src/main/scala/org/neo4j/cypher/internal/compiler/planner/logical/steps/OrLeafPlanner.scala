@@ -107,7 +107,7 @@ object OrLeafPlanner {
       QueryGraph(
         argumentIds = bareQg.argumentIds,
         patternNodes =
-          solvedRel.fold(bareQg.patternNodes.filter(_ == variable.name))(r => Set(r.left, r.right).map(_.name)),
+          solvedRel.fold(bareQg.patternNodes.filter(_ == variable))(r => Set(r.left, r.right)),
         patternRelationships = solvedRel.toSet,
         hints = bareQg.hints
       )
@@ -189,9 +189,8 @@ object OrLeafPlanner {
           // Those predicates which only use the variable that is used in the OR
           // Any Ors will not get added. Those can either be the disjunction itself, or any other OR which we can't solve with the leaf planners anyway.
           case e
-            if variableUsedInExpression(e, qg.argumentIds).map(_.name).contains(
-              disjunction.variable.name
-            ) && !e.isInstanceOf[Ors] => WhereClausePredicate(e)
+            if variableUsedInExpression(e, qg.argumentIds).contains(disjunction.variable) &&
+              !e.isInstanceOf[Ors] => WhereClausePredicate(e)
         }
     }
 
@@ -341,8 +340,8 @@ object OrLeafPlanner {
   /**
    * If an expression uses exactly one non-argument variable, return it. Otherwise, return None.
    */
-  private def variableUsedInExpression(e: Expression, argumentIds: Set[String]): Option[Variable] = {
-    val nonArgVars = e.folder.findAllByClass[Variable].filterNot(v => argumentIds.contains(v.name))
+  private def variableUsedInExpression(e: Expression, argumentIds: Set[LogicalVariable]): Option[Variable] = {
+    val nonArgVars = e.folder.findAllByClass[Variable].filterNot(v => argumentIds.contains(v))
     if (nonArgVars.distinct.size == 1) nonArgVars.headOption else None
   }
 }
