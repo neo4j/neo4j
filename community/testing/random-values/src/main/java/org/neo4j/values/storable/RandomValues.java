@@ -59,6 +59,7 @@ import java.util.function.Predicate;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import org.apache.commons.lang3.ArrayUtils;
+import org.eclipse.collections.api.RichIterable;
 import org.eclipse.collections.api.list.primitive.LongList;
 
 /**
@@ -1471,6 +1472,15 @@ public class RandomValues {
 
     public long among(LongList among) {
         return among.get(nextInt(among.size()));
+    }
+
+    public <T> T among(RichIterable<T> among) {
+        int offset = nextInt(among.size());
+        final var iterator = among.iterator();
+        while (offset-- > 0) {
+            iterator.next();
+        }
+        return iterator.next();
     }
 
     /**

@@ -28,6 +28,7 @@ import java.util.Random;
 import java.util.function.Consumer;
 import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
+import org.eclipse.collections.api.RichIterable;
 import org.eclipse.collections.api.list.primitive.LongList;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
@@ -247,6 +248,15 @@ public class RandomSupport {
 
     public long among(LongList among) {
         return randoms.among(among);
+    }
+
+    public <T> T among(RichIterable<T> among) {
+        int offset = nextInt(among.size());
+        final var iterator = among.iterator();
+        while (offset-- > 0) {
+            iterator.next();
+        }
+        return iterator.next();
     }
 
     public Object nextValueAsObject() {
