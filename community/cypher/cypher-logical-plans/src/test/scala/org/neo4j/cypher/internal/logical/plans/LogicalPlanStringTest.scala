@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.ast.ActionResource
+import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.CollectExpression
 import org.neo4j.cypher.internal.ast.DatabaseName
 import org.neo4j.cypher.internal.ast.DatabaseScope
@@ -61,9 +62,9 @@ import org.neo4j.cypher.internal.frontend.phases.ResolvedCall
 import org.neo4j.cypher.internal.frontend.phases.ResolvedFunctionInvocation
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.PlannerQuery
-import org.neo4j.cypher.internal.ir.ast.IRExpression
 import org.neo4j.cypher.internal.label_expressions.LabelExpression
 import org.neo4j.cypher.internal.logical.plans.LogicalPlanStringTest.WhiteList
+import org.neo4j.cypher.internal.util.IdentityMap
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.reflections.Reflections
@@ -87,6 +88,15 @@ class LogicalPlanStringTest extends CypherFunSuite {
     subTypes(classOf[Expression]).foreach { expressionClass =>
       if (!Modifier.isAbstract(expressionClass.getModifiers)) {
         checkStringFields(expressionClass, expressionClass.getName, seen)
+      }
+    }
+  }
+
+  test("IR is not allowed to refer to variables by string") {
+    val seen = mutable.Set.empty[Class[_]]
+    subTypes(classOf[PlannerQuery]).foreach { irClass =>
+      if (!Modifier.isAbstract(irClass.getModifiers)) {
+        checkStringFields(irClass, irClass.getName, seen)
       }
     }
   }
@@ -122,7 +132,7 @@ class LogicalPlanStringTest extends CypherFunSuite {
           s"""
              |Hello! Yes you.
              |
-             |I found a path in an expression or a logical plan that might(!) reference a variable using a string:
+             |I found a path in an expression or in IR or a logical plan that might(!) reference a variable using a string:
              |
              |$path: ${cls.getSimpleName}
              |
@@ -265,8 +275,6 @@ object LogicalPlanStringTest {
       classOf[AnyIterablePredicate],
       classOf[SingleIterablePredicate],
       classOf[ListComprehension],
-      classOf[IRExpression], // I assume these will never exists inside a logical plan
-      classOf[PlannerQuery],
       classOf[PropertyKeyName],
       classOf[Parameter],
       classOf[InequalitySeekRangeWrapper],
@@ -290,7 +298,9 @@ object LogicalPlanStringTest {
       classOf[IsTyped],
       classOf[IsNotTyped],
       classOf[NFA],
-      classOf[Exception]
+      classOf[Exception],
+      classOf[IdentityMap[_, _]],
+      classOf[Clause]
     )
 
     val whiteListedMethodNames: Set[String] = Set(
