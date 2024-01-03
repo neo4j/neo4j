@@ -49,4 +49,13 @@ class SelectivityTest extends CypherFunSuite {
 
     (Cardinality(3223143) ^ 50) should equal(maxCardinality)
   }
+
+  test("TINY does not get lost in addition") {
+    // starts failing at 1.0E7, so `take(7)` is as far as we can go.
+    LazyList.iterate(1.0)(_ * 10).take(7).foreach { c =>
+      withClue(s"$c:") {
+        Cardinality(1.0) * Selectivity.TINY + Cardinality(c) should not be Cardinality(c)
+      }
+    }
+  }
 }
