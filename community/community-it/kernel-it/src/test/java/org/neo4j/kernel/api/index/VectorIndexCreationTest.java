@@ -30,7 +30,7 @@ import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
@@ -41,8 +41,9 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
-import org.neo4j.kernel.api.impl.schema.vector.VectorSimilarityFunction;
+import org.neo4j.kernel.api.impl.schema.vector.VectorSimilarityFunctions;
 import org.neo4j.kernel.api.impl.schema.vector.VectorUtils;
+import org.neo4j.kernel.api.vector.VectorSimilarityFunction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.Tokens;
@@ -125,7 +126,7 @@ public class VectorIndexCreationTest {
     }
 
     @ParameterizedTest
-    @EnumSource
+    @MethodSource
     void shouldAcceptValidSimilarityFunction(VectorSimilarityFunction similarityFunction) {
         final var validSimilarityFunctionName = similarityFunction.name();
 
@@ -138,6 +139,10 @@ public class VectorIndexCreationTest {
                         PROP_KEYS.get(1),
                         defaultSettingsWith(IndexSetting.vector_Similarity_Function(), validSimilarityFunctionName)))
                 .doesNotThrowAnyException();
+    }
+
+    private static Iterable<VectorSimilarityFunction> shouldAcceptValidSimilarityFunction() {
+        return VectorSimilarityFunctions.SUPPORTED;
     }
 
     @Test
@@ -260,7 +265,7 @@ public class VectorIndexCreationTest {
                 .hasMessageContainingAll(
                         "is an unsupported vector similarity function",
                         "Supported",
-                        VectorSimilarityFunction.SUPPORTED.toString());
+                        VectorSimilarityFunctions.SUPPORTED.toString());
     }
 
     private static void assertUnsupportedComposite(ThrowingCallable callable) {

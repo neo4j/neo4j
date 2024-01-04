@@ -42,7 +42,7 @@ import java.util.stream.Stream;
 import org.eclipse.collections.api.tuple.Pair;
 import org.eclipse.collections.impl.factory.Maps;
 import org.neo4j.internal.schema.IndexConfig;
-import org.neo4j.kernel.api.impl.schema.vector.VectorSimilarityFunction;
+import org.neo4j.kernel.api.impl.schema.vector.VectorSimilarityFunctions;
 import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -129,7 +129,7 @@ public class IndexSettingUtil {
                     IndexSetting.vector_Dimensions(),
                     1024,
                     IndexSetting.vector_Similarity_Function(),
-                    VectorSimilarityFunction.EUCLIDEAN.name());
+                    VectorSimilarityFunctions.EUCLIDEAN.name());
             default -> Map.of();
         };
     }

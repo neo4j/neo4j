@@ -49,7 +49,7 @@ import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexType
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
-import org.neo4j.kernel.api.impl.schema.vector.VectorSimilarityFunction
+import org.neo4j.kernel.api.impl.schema.vector.VectorSimilarityFunctions
 import org.neo4j.kernel.api.impl.schema.vector.VectorUtils
 import org.neo4j.kernel.database.NormalizedDatabaseName
 import org.neo4j.storageengine.api.StorageEngineFactory
@@ -870,7 +870,7 @@ case class CreateVectorIndexOptionsConverter(context: QueryContext)
     Objects.requireNonNull(similarityFunctionValue, s"'$similarityFunctionSetting' must not be null")
     similarityFunctionValue match {
       case s: String =>
-        VectorSimilarityFunction.fromName(s)
+        VectorSimilarityFunctions.fromName(s)
       case _ =>
         throw new InvalidArgumentsException(
           s"Could not create $schemaType with specified index config '$similarityFunctionSetting'. Expected a String."

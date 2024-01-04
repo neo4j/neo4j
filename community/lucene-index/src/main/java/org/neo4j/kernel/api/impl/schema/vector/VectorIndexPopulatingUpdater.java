@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.impl.schema.vector.VectorSimilarityFunctions.LuceneVectorSimilarityFunction;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.index.schema.IndexUpdateIgnoreStrategy;
@@ -33,12 +34,12 @@ import org.neo4j.values.storable.FloatingPointArray;
 class VectorIndexPopulatingUpdater implements IndexUpdater {
     private final LuceneIndexWriter writer;
     private final IndexUpdateIgnoreStrategy ignoreStrategy;
-    private final VectorSimilarityFunction similarityFunction;
+    private final LuceneVectorSimilarityFunction similarityFunction;
 
     VectorIndexPopulatingUpdater(
             LuceneIndexWriter writer,
             IndexUpdateIgnoreStrategy ignoreStrategy,
-            VectorSimilarityFunction similarityFunction) {
+            LuceneVectorSimilarityFunction similarityFunction) {
         this.writer = writer;
         this.ignoreStrategy = ignoreStrategy;
         this.similarityFunction = similarityFunction;

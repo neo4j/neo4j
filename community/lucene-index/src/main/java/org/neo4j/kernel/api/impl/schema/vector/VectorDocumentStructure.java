@@ -26,6 +26,7 @@ import org.apache.lucene.document.KnnFloatVectorField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.Term;
+import org.neo4j.kernel.api.impl.schema.vector.VectorSimilarityFunctions.LuceneVectorSimilarityFunction;
 import org.neo4j.values.storable.FloatingPointArray;
 
 class VectorDocumentStructure {
@@ -37,7 +38,7 @@ class VectorDocumentStructure {
     }
 
     static Document createLuceneDocument(
-            long id, FloatingPointArray value, VectorSimilarityFunction similarityFunction) {
+            long id, FloatingPointArray value, LuceneVectorSimilarityFunction similarityFunction) {
         final var vector = similarityFunction.maybeToValidVector(value);
         if (vector == null) {
             return null;

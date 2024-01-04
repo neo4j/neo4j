@@ -49,7 +49,7 @@ import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.impl.schema.vector.VectorSimilarityFunction;
+import org.neo4j.kernel.api.impl.schema.vector.VectorSimilarityFunctions;
 import org.neo4j.kernel.api.impl.schema.vector.VectorUtils;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -98,7 +98,7 @@ public class VectorIndexProcedures {
         Preconditions.checkArgument(
                 1 <= vectorDimension && vectorDimension <= VectorUtils.MAX_DIMENSIONS,
                 "'vectorDimension' must be between %d and %d inclusively".formatted(1, VectorUtils.MAX_DIMENSIONS));
-        VectorSimilarityFunction.fromName(
+        VectorSimilarityFunctions.fromName(
                 Objects.requireNonNull(vectorSimilarityFunction, "'vectorSimilarityFunction' must not be null"));
 
         final var indexCreator = tx.schema()
@@ -185,7 +185,7 @@ public class VectorIndexProcedures {
 
     private void setVectorProperty(Entity entity, String propKey, List<Double> vector) {
         // assume EUCLIDEAN as the bare minimum invariant
-        entity.setProperty(propKey, VectorSimilarityFunction.EUCLIDEAN.toValidVector(vector));
+        entity.setProperty(propKey, VectorSimilarityFunctions.EUCLIDEAN.toValidVector(vector));
     }
 
     private float[] validateAndConvertQuery(IndexDescriptor index, List<Double> query) {

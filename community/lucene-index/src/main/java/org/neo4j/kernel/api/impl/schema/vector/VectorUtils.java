@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.impl.schema.vector;
 
 import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.internal.schema.IndexConfig;
+import org.neo4j.kernel.api.vector.VectorSimilarityFunction;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.SequenceValue;
 import org.neo4j.values.storable.FloatingPointArray;
@@ -48,7 +49,7 @@ public class VectorUtils {
 
     public static VectorSimilarityFunction vectorSimilarityFunctionFrom(IndexConfig config) {
         try {
-            return VectorSimilarityFunction.fromName(
+            return VectorSimilarityFunctions.fromName(
                     VectorUtils.<TextValue>getExpectedFrom(config, IndexSetting.vector_Similarity_Function())
                             .stringValue());
         } catch (IllegalArgumentException e) {

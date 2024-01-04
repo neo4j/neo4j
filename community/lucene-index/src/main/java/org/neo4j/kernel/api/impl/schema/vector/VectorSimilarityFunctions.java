@@ -19,15 +19,41 @@
  */
 package org.neo4j.kernel.api.impl.schema.vector;
 
-import java.util.EnumSet;
 import java.util.Locale;
+import java.util.Set;
 import org.neo4j.kernel.api.vector.VectorCandidate;
+import org.neo4j.kernel.api.vector.VectorSimilarityFunction;
 
-public enum VectorSimilarityFunction implements org.neo4j.kernel.api.vector.VectorSimilarityFunction {
+public class VectorSimilarityFunctions {
     // TODO VECTOR: perhaps some unrolling and/or vector api (when available) could be used here
     //              perhaps investigate some more accurate normalisation techniques
 
-    EUCLIDEAN {
+    abstract static class LuceneVectorSimilarityFunction implements VectorSimilarityFunction {
+        @Override
+        public String toString() {
+            return name();
+        }
+
+        @Override
+        public float compare(float[] vector1, float[] vector2) {
+            return toLucene().compare(vector1, vector2);
+        }
+
+        abstract org.apache.lucene.index.VectorSimilarityFunction toLucene();
+    }
+
+    public static final VectorSimilarityFunction EUCLIDEAN = new LuceneVectorSimilarityFunction() {
+
+        @Override
+        public String name() {
+            return "EUCLIDEAN";
+        }
+
+        @Override
+        public org.apache.lucene.index.VectorSimilarityFunction toLucene() {
+            return org.apache.lucene.index.VectorSimilarityFunction.EUCLIDEAN;
+        }
+
         @Override
         public float[] maybeToValidVector(VectorCandidate candidate) {
             final int dimensions;
@@ -54,9 +80,20 @@ public enum VectorSimilarityFunction implements org.neo4j.kernel.api.vector.Vect
             }
             return vector;
         }
-    },
+    };
 
-    COSINE {
+    public static final VectorSimilarityFunction COSINE = new LuceneVectorSimilarityFunction() {
+
+        @Override
+        public String name() {
+            return "COSINE";
+        }
+
+        @Override
+        public org.apache.lucene.index.VectorSimilarityFunction toLucene() {
+            return org.apache.lucene.index.VectorSimilarityFunction.COSINE;
+        }
+
         @Override
         public float[] maybeToValidVector(VectorCandidate candidate) {
             final int dimensions;
@@ -94,28 +131,16 @@ public enum VectorSimilarityFunction implements org.neo4j.kernel.api.vector.Vect
         }
     };
 
-    public static final EnumSet<VectorSimilarityFunction> SUPPORTED = EnumSet.allOf(VectorSimilarityFunction.class);
+    public static final Set<VectorSimilarityFunction> SUPPORTED = Set.of(EUCLIDEAN, COSINE);
 
     public static VectorSimilarityFunction fromName(String name) {
-        try {
-            return valueOf(name.toUpperCase(Locale.ROOT));
-        } catch (IllegalArgumentException e) {
-            final var exception = new IllegalArgumentException(
-                    "'%s' is an unsupported vector similarity function. Supported: %s".formatted(name, SUPPORTED));
-            exception.addSuppressed(e);
-            throw exception;
+        final var normalizedName = name.toUpperCase(Locale.ROOT);
+        for (final var similarityFunction : SUPPORTED) {
+            if (similarityFunction.name().equals(normalizedName)) {
+                return similarityFunction;
+            }
         }
-    }
-
-    @Override
-    public float compare(float[] vector1, float[] vector2) {
-        return toLucene().compare(vector1, vector2);
-    }
-
-    final org.apache.lucene.index.VectorSimilarityFunction toLucene() {
-        return switch (this) {
-            case EUCLIDEAN -> org.apache.lucene.index.VectorSimilarityFunction.EUCLIDEAN;
-            case COSINE -> org.apache.lucene.index.VectorSimilarityFunction.COSINE;
-        };
+        throw new IllegalArgumentException(
+                "'%s' is an unsupported vector similarity function. Supported: %s".formatted(name, SUPPORTED));
     }
 }

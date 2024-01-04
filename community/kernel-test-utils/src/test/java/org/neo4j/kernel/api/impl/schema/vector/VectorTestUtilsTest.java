@@ -28,6 +28,7 @@ import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.kernel.api.schema.vector.VectorTestUtils;
+import org.neo4j.kernel.api.vector.VectorSimilarityFunction;
 import org.neo4j.values.storable.Value;
 
 class VectorTestUtilsTest {
@@ -85,7 +86,7 @@ class VectorTestUtilsTest {
     public final class Euclidean extends TestBase {
 
         public Euclidean() {
-            super(VectorSimilarityFunction.EUCLIDEAN);
+            super(VectorSimilarityFunctions.EUCLIDEAN);
         }
 
         @Override
@@ -113,7 +114,7 @@ class VectorTestUtilsTest {
     public final class Cosine extends TestBase {
 
         public Cosine() {
-            super(VectorSimilarityFunction.COSINE);
+            super(VectorSimilarityFunctions.COSINE);
         }
 
         @Override

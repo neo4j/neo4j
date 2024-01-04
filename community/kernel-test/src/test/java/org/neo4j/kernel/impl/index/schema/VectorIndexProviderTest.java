@@ -40,7 +40,7 @@ import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.impl.schema.vector.VectorIndexProvider;
-import org.neo4j.kernel.api.impl.schema.vector.VectorSimilarityFunction;
+import org.neo4j.kernel.api.impl.schema.vector.VectorSimilarityFunctions;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
 class VectorIndexProviderTest {
@@ -112,7 +112,7 @@ class VectorIndexProviderTest {
                                     IndexSetting.vector_Dimensions(),
                                     -1,
                                     IndexSetting.vector_Similarity_Function(),
-                                    VectorSimilarityFunction.EUCLIDEAN.name())))
+                                    VectorSimilarityFunctions.EUCLIDEAN.name())))
                             .withName("unsupported"),
 
                     // unsupported similarity function
@@ -158,7 +158,7 @@ class VectorIndexProviderTest {
                     IndexSetting.vector_Dimensions(),
                     123,
                     IndexSetting.vector_Similarity_Function(),
-                    VectorSimilarityFunction.EUCLIDEAN.name()));
+                    VectorSimilarityFunctions.EUCLIDEAN.name()));
         }
     }
 
@@ -169,7 +169,7 @@ class VectorIndexProviderTest {
                     IndexSetting.vector_Dimensions(),
                     123,
                     IndexSetting.vector_Similarity_Function(),
-                    VectorSimilarityFunction.COSINE.name()));
+                    VectorSimilarityFunctions.COSINE.name()));
         }
     }
 }

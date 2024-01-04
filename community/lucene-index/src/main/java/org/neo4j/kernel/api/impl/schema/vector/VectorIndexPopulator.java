@@ -23,18 +23,19 @@ import org.apache.lucene.document.Document;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.impl.schema.populator.LuceneIndexPopulator;
+import org.neo4j.kernel.api.impl.schema.vector.VectorSimilarityFunctions.LuceneVectorSimilarityFunction;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.index.schema.IndexUpdateIgnoreStrategy;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.values.storable.FloatingPointArray;
 
 class VectorIndexPopulator extends LuceneIndexPopulator<DatabaseIndex<VectorIndexReader>> {
-    private final VectorSimilarityFunction similarityFunction;
+    private final LuceneVectorSimilarityFunction similarityFunction;
 
     VectorIndexPopulator(
             DatabaseIndex<VectorIndexReader> luceneIndex,
             IndexUpdateIgnoreStrategy ignoreStrategy,
-            VectorSimilarityFunction similarityFunction) {
+            LuceneVectorSimilarityFunction similarityFunction) {
         super(luceneIndex, ignoreStrategy);
         this.similarityFunction = similarityFunction;
     }

@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.schema.vector;
 
-import static org.neo4j.internal.schema.IndexCapability.NO_CAPABILITY;
-import static org.neo4j.kernel.api.impl.schema.LuceneIndexType.VECTOR;
-import static org.neo4j.kernel.api.impl.schema.vector.VectorUtils.vectorDimensionsFrom;
-import static org.neo4j.kernel.api.impl.schema.vector.VectorUtils.vectorSimilarityFunctionFrom;
-
 import java.io.IOException;
 import java.nio.file.OpenOption;
 import org.eclipse.collections.api.set.ImmutableSet;
@@ -46,6 +41,8 @@ import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.LuceneSettings;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.schema.AbstractLuceneIndexProvider;
+import org.neo4j.kernel.api.impl.schema.LuceneIndexType;
+import org.neo4j.kernel.api.impl.schema.vector.VectorSimilarityFunctions.LuceneVectorSimilarityFunction;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -112,14 +109,14 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
         var luceneIndex = VectorIndexBuilder.create(descriptor, readOnlyChecker, config)
                 .withFileSystem(fileSystem)
                 .withIndexStorage(getIndexStorage(descriptor.getId()))
-                .withWriterConfig(() -> IndexWriterConfigs.population(VECTOR, config, indexConfig))
+                .withWriterConfig(() -> IndexWriterConfigs.population(LuceneIndexType.VECTOR, config, indexConfig))
                 .build();
 
         if (luceneIndex.isReadOnly()) {
             throw new UnsupportedOperationException("Can't create populator for read only index");
         }
 
-        final var ignoreStrategy = new IgnoreStrategy(vectorDimensionsFrom(indexConfig));
+        final var ignoreStrategy = new IgnoreStrategy(VectorUtils.vectorDimensionsFrom(indexConfig));
         final var similarityFunction = vectorSimilarityFunctionFrom(indexConfig);
         return new VectorIndexPopulator(luceneIndex, ignoreStrategy, similarityFunction);
     }
@@ -143,7 +140,7 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
         forceMergeSegments(scheduler, luceneIndex);
 
         final var indexConfig = descriptor.getIndexConfig();
-        final var ignoreStrategy = new IgnoreStrategy(vectorDimensionsFrom(indexConfig));
+        final var ignoreStrategy = new IgnoreStrategy(VectorUtils.vectorDimensionsFrom(indexConfig));
         final var similarityFunction = vectorSimilarityFunctionFrom(indexConfig);
         return new VectorIndexAccessor(luceneIndex, descriptor, ignoreStrategy, similarityFunction);
     }
@@ -151,7 +148,7 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
     @Override
     public IndexDescriptor completeConfiguration(
             IndexDescriptor index, StorageEngineIndexingBehaviour indexingBehaviour) {
-        return index.getCapability().equals(NO_CAPABILITY)
+        return index.getCapability().equals(IndexCapability.NO_CAPABILITY)
                 ? index.withIndexCapability(capability(index.getIndexConfig()))
                 : index;
     }
@@ -165,6 +162,17 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
         public boolean ignore(Value[] values) {
             return !(values[0] instanceof final FloatingPointArray vector && vector.length() == dimensions);
         }
+    }
+
+    private static LuceneVectorSimilarityFunction vectorSimilarityFunctionFrom(IndexConfig config) {
+        final var vectorSimilarityFunction = VectorUtils.vectorSimilarityFunctionFrom(config);
+        if (!(vectorSimilarityFunction instanceof final LuceneVectorSimilarityFunction luceneSimilarityFunction)) {
+            throw new IllegalArgumentException(
+                    "'%s' vector similarity function is expected to be compatible with Lucene. Provided: %s"
+                            .formatted(vectorSimilarityFunction.name(), vectorSimilarityFunction));
+        }
+
+        return luceneSimilarityFunction;
     }
 
     /**

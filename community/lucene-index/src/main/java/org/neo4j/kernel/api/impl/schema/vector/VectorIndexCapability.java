@@ -24,6 +24,7 @@ import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexQuery;
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
+import org.neo4j.kernel.api.vector.VectorSimilarityFunction;
 import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.FloatingPointArray;
 import org.neo4j.values.storable.Value;
