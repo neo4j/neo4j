@@ -21,10 +21,15 @@ package org.neo4j.cypher.internal.ir.ast
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
+import org.neo4j.cypher.internal.expressions.ExpressionWithComputedDependencies
+import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.Selections
+import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.topDown
 
 class IRExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
 
@@ -79,5 +84,48 @@ class IRExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
     )(pos, Some(Set(varFor("b"))), Some(Set(varFor("a")))))
 
     e.dependencies should equal(Set(varFor("a")))
+  }
+
+  test("Can rewrite node in IR expression") {
+    val e = ListIRExpression(
+      RegularSinglePlannerQuery(
+        QueryGraph(
+          argumentIds = Set(v"a"),
+          patternNodes = Set(v"a", v"b")
+        )
+      ),
+      varFor("anon_0"),
+      varFor("anon_1"),
+      "ListIRExpression"
+    )(pos, Some(Set(v"b")), Some(Set(v"a")))
+
+    def rename(v: LogicalVariable): LogicalVariable = v match {
+      case v @ LogicalVariable("a") => Variable("o")(v.position)
+      case _                        => v
+    }
+
+    val rewriter = topDown(Rewriter.lift {
+      case lv: LogicalVariable => rename(lv)
+      case e: ExpressionWithComputedDependencies =>
+        val newIntroducedVariables = e.introducedVariables.map(rename)
+        val newScopeDependencies = e.scopeDependencies.map(rename)
+        e.withComputedIntroducedVariables(newIntroducedVariables).withComputedScopeDependencies(newScopeDependencies)
+    })
+
+    val rewritten = e.endoRewrite(rewriter)
+
+    rewritten should equal(
+      ListIRExpression(
+        RegularSinglePlannerQuery(
+          QueryGraph(
+            argumentIds = Set(v"o"),
+            patternNodes = Set(v"o", v"b")
+          )
+        ),
+        varFor("anon_0"),
+        varFor("anon_1"),
+        "ListIRExpression"
+      )(pos, Some(Set(v"b")), Some(Set(v"o")))
+    )
   }
 }
