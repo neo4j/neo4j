@@ -50,6 +50,7 @@ import java.util.zip.ZipException;
 import java.util.zip.ZipInputStream;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.NamingStrategy;
+import net.bytebuddy.description.modifier.TypeManifestation;
 import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.dynamic.DynamicType;
 import net.bytebuddy.implementation.FixedValue;
@@ -392,6 +393,41 @@ public class ProcedureJarLoaderTest {
         assertThat(logProvider)
                 .containsMessages(
                         format("Failed to load `%s` from plugin jar `%s`", className, jar), "Bad return type");
+    }
+
+    @Test
+    void shouldLogHelpfullyWhenJarContainsClassTriggeringLinkageErrorFromParent() throws Exception {
+        String baseClassName = "FinalBase";
+        String className = "BrokenProcedureClass";
+
+        // generate a class that extends another class
+        var base = new ByteBuddy()
+                .with(oneNameStrategy(baseClassName))
+                .subclass(Object.class)
+                .make();
+        var unloaded = new ByteBuddy()
+                // provide a name so that we can assert on it showing up in the log
+                .with(oneNameStrategy(className))
+                .subclass(base.getTypeDescription())
+                .make();
+
+        Path jar = testDirectory.createFile(new Random().nextInt() + ".jar");
+        unloaded.toJar(jar.toFile());
+
+        // replace base class with final one
+        var finalBase = new ByteBuddy()
+                .with(oneNameStrategy(baseClassName))
+                .subclass(Object.class)
+                .modifiers(TypeManifestation.FINAL)
+                .make();
+        finalBase.inject(jar.toFile());
+
+        jarloader.loadProceduresFromDir(jar.getParent());
+
+        assertThat(logProvider)
+                .containsMessages(
+                        format("Failed to load `%s` from plugin jar `%s`", className, jar),
+                        "cannot inherit from final class");
     }
 
     @Test

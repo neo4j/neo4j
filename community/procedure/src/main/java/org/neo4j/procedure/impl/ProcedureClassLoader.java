@@ -31,7 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.jar.JarFile;
-import java.util.stream.Collectors;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
@@ -66,11 +65,7 @@ class ProcedureClassLoader extends URLClassLoader {
     static Result setup(ClassLoader parent, Collection<Path> jars, InternalLog log, boolean procedureReloadEnabled)
             throws ZipException, ProcedureException {
         var loader = new ProcedureClassLoader(
-                jars.stream()
-                        .map(ProcedureClassLoader::toURL)
-                        .collect(Collectors.toSet())
-                        .toArray(URL[]::new),
-                parent);
+                jars.stream().map(ProcedureClassLoader::toURL).toArray(URL[]::new), parent);
 
         // Resolve classes from JARs with extensions using the normal classloader hierarchy.
         ClassResolver extensionResolver = loader::loadClass;
@@ -165,7 +160,6 @@ class ProcedureClassLoader extends URLClassLoader {
             } catch (LinkageError exc) {
                 // Not quite sure what errors trigger this case.
                 logWarning(log, className, jar, exc);
-                exceptions.add(exc);
                 continue;
             }
 

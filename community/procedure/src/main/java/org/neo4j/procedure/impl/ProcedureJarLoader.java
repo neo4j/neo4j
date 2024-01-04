@@ -68,12 +68,7 @@ class ProcedureJarLoader implements AutoCloseable {
             return Callables.empty();
         }
 
-        List<Path> jarFiles = new ArrayList<>();
-        try (DirectoryStream<Path> list = Files.newDirectoryStream(root, "*.jar")) {
-            for (var pth : list) {
-                jarFiles.add(pth);
-            }
-        }
+        List<Path> jarFiles = findJars(root);
 
         if (jarFiles.isEmpty()) {
             return Callables.empty();
@@ -109,6 +104,18 @@ class ProcedureJarLoader implements AutoCloseable {
             }
         }
         return out;
+    }
+
+    private static List<Path> findJars(Path root) throws IOException {
+        List<Path> jarFiles = new ArrayList<>();
+        try (DirectoryStream<Path> list = Files.newDirectoryStream(root, "*.jar")) {
+            for (var path : list) {
+                jarFiles.add(path);
+            }
+        }
+        // sort paths to compensate for unpredictable order of directory stream
+        Collections.sort(jarFiles);
+        return jarFiles;
     }
 
     @Override
