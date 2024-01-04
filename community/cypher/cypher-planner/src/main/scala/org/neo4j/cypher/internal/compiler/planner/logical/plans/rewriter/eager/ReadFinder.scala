@@ -898,19 +898,10 @@ object ReadFinder {
 
       case v: Variable => acc =>
           var res = acc
-          // We use the variable name instead of the variable itself for the type lookup here.
-          // The LogicalPlans can currently contain variables with
-          // incorrect input positions. This is an interim state
-          // until https://trello.com/c/c3fTtlQD is fixed.
-          //
-          // When using expressions, we can therefore be over-eager
-          // on such variables. When using the name, we find the correct
-          // variables. This is safe because LP Eagerness runs after
-          // the Namespacer.
-          if (semanticTable.typeFor(v.name).couldBe(CTNode)) {
+          if (semanticTable.typeFor(v).couldBe(CTNode)) {
             res = res.withReferencedNodeVariable(v)
           }
-          if (semanticTable.typeFor(v.name).couldBe(CTRelationship)) {
+          if (semanticTable.typeFor(v).couldBe(CTRelationship)) {
             res = res.withReferencedRelationshipVariable(v)
           }
           SkipChildren(res)
