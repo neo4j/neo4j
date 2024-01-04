@@ -431,10 +431,10 @@ object ReadFinder {
           rels.foldLeft(_)(_.withIntroducedRelationshipVariable(_)),
           vars.foldLeft(_) { (acc, col) =>
             var res = acc
-            if (semanticTable.typeFor(col.name).couldBe(CTNode)) {
+            if (semanticTable.typeFor(col).couldBe(CTNode)) {
               res = res.withIntroducedNodeVariable(col)
             }
-            if (semanticTable.typeFor(col.name).couldBe(CTRelationship)) {
+            if (semanticTable.typeFor(col).couldBe(CTRelationship)) {
               res = res.withIntroducedRelationshipVariable(col)
             }
             res
@@ -689,12 +689,12 @@ object ReadFinder {
         // Since, there can be no Deletes after a ProduceResult, this information is currently not used.
         columns.foldLeft(PlanReads()) { (acc, col) =>
           var res = acc
-          if (semanticTable.typeFor(col.name).couldBe(CTNode)) {
+          if (semanticTable.typeFor(col).couldBe(CTNode)) {
             res = res
               .withUnknownNodePropertiesRead(Some(col))
               .withUnknownLabelsRead(Some(col))
           }
-          if (semanticTable.typeFor(col.name).couldBe(CTRelationship)) {
+          if (semanticTable.typeFor(col).couldBe(CTRelationship)) {
             res = res
               .withUnknownRelPropertiesRead(Some(col))
           }
@@ -706,7 +706,7 @@ object ReadFinder {
           if (startInScope) identity else _.withIntroducedNodeVariable(start),
           if (endInScope) identity else _.withIntroducedNodeVariable(end),
           // rel could even be a List[Relationship]
-          if (semanticTable.typeFor(rel.name).couldBe(CTRelationship)) _.withReferencedRelationshipVariable(rel)
+          if (semanticTable.typeFor(rel).couldBe(CTRelationship)) _.withReferencedRelationshipVariable(rel)
           else identity,
           if (types.nonEmpty) {
             _.withAddedRelationshipFilterExpression(rel, relTypeNamesToOrs(rel, types))
@@ -738,14 +738,14 @@ object ReadFinder {
             // If there's no entry in the type table for `n.prop`, we assume it _could_ be a node, but at the same time
             // we know that n.prop cannot be a node.
             val couldBeNode =
-              semanticTable.typeFor(v.name).couldBe(CTNode) &&
+              semanticTable.typeFor(v).couldBe(CTNode) &&
                 semanticTable.typeFor(nonVariableExpression).couldBe(CTNode)
             if (couldBeNode) {
               res = res.withIntroducedNodeVariable(v)
             }
 
             val couldBeRel =
-              semanticTable.typeFor(v.name).couldBe(CTRelationship) &&
+              semanticTable.typeFor(v).couldBe(CTRelationship) &&
                 semanticTable.typeFor(nonVariableExpression).couldBe(CTRelationship)
             if (couldBeRel) {
               res = res.withIntroducedRelationshipVariable(v)
