@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.Selection
@@ -29,7 +30,7 @@ class FuseSelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport 
   test("merges two selections into one") {
     val p1 = propEquality("a", "foo", 12)
     val p2 = propEquality("a", "bar", 33)
-    val lhs = Argument(Set(varFor("a")))
+    val lhs = Argument(Set(v"a"))
 
     Selection(Seq(p1), Selection(Seq(p2), lhs)).endoRewrite(fuseSelections) should equal(
       Selection(Seq(p1, p2), lhs)
@@ -40,7 +41,7 @@ class FuseSelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport 
     val p1 = propEquality("a", "foo", 12)
     val p2 = propEquality("a", "bar", 33)
     val p3 = propEquality("a", "baz", 42)
-    val lhs = Argument(Set(varFor("a")))
+    val lhs = Argument(Set(v"a"))
 
     Selection(Seq(p1), Selection(Seq(p2), Selection(Seq(p3), lhs))).endoRewrite(fuseSelections) should equal(
       Selection(Seq(p1, p2, p3), lhs)

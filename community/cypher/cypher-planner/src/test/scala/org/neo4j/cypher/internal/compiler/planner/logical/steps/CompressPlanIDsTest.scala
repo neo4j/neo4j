@@ -104,7 +104,7 @@ class CompressPlanIDsTest extends CypherFunSuite with AstConstructionTestSupport
         )
       }
       state.planningAttributes.cardinalities.set(p.id, Cardinality(p.id.x + 1))
-      state.planningAttributes.providedOrders.set(p.id, ProvidedOrder.asc(varFor(s"v${p.id.x}")))
+      state.planningAttributes.providedOrders.set(p.id, ProvidedOrder.asc(v"v${p.id.x}"))
       // For leveraged order, do only assign it to some plans
       if (p.id.x == GapIdGen.start) {
         state.planningAttributes.leveragedOrders.set(p.id, true)

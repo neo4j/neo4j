@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -30,8 +31,8 @@ class removeIdenticalPlansTest extends CypherFunSuite with LogicalPlanningTestSu
   private val noAttributes = Attributes[LogicalPlan](idGen)
 
   test("should not contain copies") {
-    val scan = AllNodesScan(varFor("a"), Set.empty)
-    val join = NodeHashJoin(Set(varFor("a")), scan, scan)
+    val scan = AllNodesScan(v"a", Set.empty)
+    val join = NodeHashJoin(Set(v"a"), scan, scan)
 
     val rewritten = join.endoRewrite(removeIdenticalPlans(noAttributes))
 
@@ -41,9 +42,9 @@ class removeIdenticalPlansTest extends CypherFunSuite with LogicalPlanningTestSu
   }
 
   test("should not rewrite when not needed") {
-    val scan1 = AllNodesScan(varFor("a"), Set.empty)
-    val scan2 = AllNodesScan(varFor("a"), Set.empty)
-    val join = NodeHashJoin(Set(varFor("a")), scan1, scan2)
+    val scan1 = AllNodesScan(v"a", Set.empty)
+    val scan2 = AllNodesScan(v"a", Set.empty)
+    val join = NodeHashJoin(Set(v"a"), scan1, scan2)
 
     val rewritten = join.endoRewrite(removeIdenticalPlans(noAttributes))
 

@@ -63,33 +63,33 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
   test("setting a node property: MATCH (n) SET n.prop = 42 RETURN n") {
     val query = buildSinglePlannerQuery("MATCH (n) SET n.prop = 42 RETURN n")
     query.horizon should equal(RegularQueryProjection(
-      projections = Map(v"n" -> varFor("n")),
+      projections = Map(v"n" -> v"n"),
       isTerminating = true
     ))
 
     query.queryGraph.patternNodes should equal(Set(v"n"))
     query.queryGraph.mutatingPatterns should equal(List(
-      SetNodePropertyPattern(varFor("n"), PropertyKeyName("prop")(pos), literalInt(42))
+      SetNodePropertyPattern(v"n", PropertyKeyName("prop")(pos), literalInt(42))
     ))
   }
 
   test("removing a node property should look like setting a property to null") {
     val query = buildSinglePlannerQuery("MATCH (n) REMOVE n.prop RETURN n")
     query.horizon should equal(RegularQueryProjection(
-      projections = Map(v"n" -> varFor("n")),
+      projections = Map(v"n" -> v"n"),
       isTerminating = true
     ))
 
     query.queryGraph.patternNodes should equal(Set(v"n"))
     query.queryGraph.mutatingPatterns should equal(List(
-      SetNodePropertyPattern(varFor("n"), PropertyKeyName("prop")(pos), nullLiteral)
+      SetNodePropertyPattern(v"n", PropertyKeyName("prop")(pos), nullLiteral)
     ))
   }
 
   test("setting a relationship property: MATCH (a)-[r]->(b) SET r.prop = 42 RETURN r") {
     val query = buildSinglePlannerQuery("MATCH (a)-[r]->(b) SET r.prop = 42 RETURN r")
     query.horizon should equal(RegularQueryProjection(
-      projections = Map(v"r" -> varFor("r")),
+      projections = Map(v"r" -> v"r"),
       isTerminating = true
     ))
 
@@ -97,14 +97,14 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
       PatternRelationship(v"r", (v"a", v"b"), OUTGOING, List(), SimplePatternLength)
     ))
     query.queryGraph.mutatingPatterns should equal(List(
-      SetRelationshipPropertyPattern(varFor("r"), PropertyKeyName("prop")(pos), literalInt(42))
+      SetRelationshipPropertyPattern(v"r", PropertyKeyName("prop")(pos), literalInt(42))
     ))
   }
 
   test("removing a relationship property should look like setting a property to null") {
     val query = buildSinglePlannerQuery("MATCH (a)-[r]->(b) REMOVE r.prop RETURN r")
     query.horizon should equal(RegularQueryProjection(
-      projections = Map(v"r" -> varFor("r")),
+      projections = Map(v"r" -> v"r"),
       isTerminating = true
     ))
 
@@ -112,14 +112,14 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
       PatternRelationship(v"r", (v"a", v"b"), OUTGOING, List(), SimplePatternLength)
     ))
     query.queryGraph.mutatingPatterns should equal(List(
-      SetRelationshipPropertyPattern(varFor("r"), PropertyKeyName("prop")(pos), nullLiteral)
+      SetRelationshipPropertyPattern(v"r", PropertyKeyName("prop")(pos), nullLiteral)
     ))
   }
 
   test("Query with single CREATE clause") {
     val query = buildSinglePlannerQuery("CREATE (a), (b), (a)-[r:X]->(b) RETURN a, r, b")
     query.horizon should equal(RegularQueryProjection(
-      projections = Map(v"a" -> varFor("a"), v"r" -> varFor("r"), v"b" -> varFor("b")),
+      projections = Map(v"a" -> v"a", v"r" -> v"r", v"b" -> v"b"),
       isTerminating = true
     ))
 
@@ -135,7 +135,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
   test("Read write and read again") {
     val query = buildSinglePlannerQuery("MATCH (n) CREATE (m) WITH * MATCH (o) RETURN *")
     query.horizon should equal(RegularQueryProjection(
-      projections = Map(v"n" -> varFor("n"), v"m" -> varFor("m"))
+      projections = Map(v"n" -> v"n", v"m" -> v"m")
     ))
 
     query.queryGraph.patternNodes should equal(Set(v"n"))
@@ -169,7 +169,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
     val second = query.tail.get
     second.queryGraph.mutatingPatterns should equal(
       Seq(ForeachPattern(
-        varFor("i"),
+        v"i",
         listOfInt(1),
         RegularSinglePlannerQuery(
           QueryGraph(
@@ -267,7 +267,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
           )
         ),
         horizon = RegularQueryProjection(
-          projections = Map(v"m" -> varFor("m"))
+          projections = Map(v"m" -> v"m")
         )
       )
     )
@@ -338,9 +338,9 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
       SelectivePathPattern(
         pathPattern = ExhaustivePathPattern.NodeConnections(NonEmptyList(qpp1, qpp2)),
         selections = Selections.from(Seq(
-          unique(varFor("r")),
-          unique(varFor("r2")),
-          disjoint(varFor("r"), varFor("r2"))
+          unique(v"r"),
+          unique(v"r2"),
+          disjoint(v"r", v"r2")
         )),
         selector = SelectivePathPattern.Selector.Shortest(1)
       )
@@ -350,11 +350,11 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
         .empty
         .addSelectivePathPattern(shortestPathPattern)
         .addMutatingPatterns(CreatePattern(Seq(
-          CreateNode(varFor("x"), Set.empty, None),
-          CreateRelationship(varFor("r3"), varFor("v"), relTypeName("R"), varFor("x"), OUTGOING, None)
+          CreateNode(v"x", Set.empty, None),
+          CreateRelationship(v"r3", v"v", relTypeName("R"), v"x", OUTGOING, None)
         )))
 
-    val projection = RegularQueryProjection(projections = Map(v"x" -> varFor("x")), isTerminating = true)
+    val projection = RegularQueryProjection(projections = Map(v"x" -> v"x"), isTerminating = true)
 
     query shouldEqual RegularSinglePlannerQuery(queryGraph = queryGraph, horizon = projection)
   }

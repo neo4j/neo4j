@@ -96,28 +96,28 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
   test("ORDER BY previously unprojected column in WITH") {
     val plan = new givenConfig().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.age RETURN a.name")._1
 
-    val labelScan = NodeByLabelScan(varFor("a"), labelName("A"), Set.empty, IndexOrderNone)
+    val labelScan = NodeByLabelScan(v"a", labelName("A"), Set.empty, IndexOrderNone)
     val ageProperty = prop("a", "age")
     val nameProperty = prop("a", "name")
 
-    val projection = Projection(labelScan, Map(varFor("a.age") -> ageProperty))
-    val sort = Sort(projection, Seq(Ascending(varFor("a.age"))))
-    val resultProjection = Projection(sort, Map(varFor("a.name") -> nameProperty))
+    val projection = Projection(labelScan, Map(v"a.age" -> ageProperty))
+    val sort = Sort(projection, Seq(Ascending(v"a.age")))
+    val resultProjection = Projection(sort, Map(v"a.name" -> nameProperty))
 
     plan should equal(resultProjection)
   }
 
   test("ORDER BY previously unprojected column in WITH and return that column") {
     val plan = new givenConfig().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.age RETURN a.name, a.age")._1
-    val labelScan = NodeByLabelScan(varFor("a"), labelName("A"), Set.empty, IndexOrderNone)
+    val labelScan = NodeByLabelScan(v"a", labelName("A"), Set.empty, IndexOrderNone)
     val nameProperty = prop("a", "name")
 
-    val projection = Projection(labelScan, Map(varFor("a.age") -> cachedNodePropFromStore("a", "age")))
-    val sort = Sort(projection, Seq(Ascending(varFor("a.age"))))
+    val projection = Projection(labelScan, Map(v"a.age" -> cachedNodePropFromStore("a", "age")))
+    val sort = Sort(projection, Seq(Ascending(v"a.age")))
     val resultProjection =
       Projection(
         sort,
-        Map(varFor("a.name") -> nameProperty, varFor("a.age") -> cachedNodeProp("a", "age"))
+        Map(v"a.name" -> nameProperty, v"a.age" -> cachedNodeProp("a", "age"))
       )
 
     plan should equal(resultProjection)
@@ -127,13 +127,13 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
     val plan =
       new givenConfig().getLogicalPlanFor("MATCH (a:A) WITH a, a.age AS age ORDER BY age RETURN a.name, age")._1
 
-    val labelScan = NodeByLabelScan(varFor("a"), labelName("A"), Set.empty, IndexOrderNone)
+    val labelScan = NodeByLabelScan(v"a", labelName("A"), Set.empty, IndexOrderNone)
     val ageProperty = prop("a", "age")
     val nameProperty = prop("a", "name")
 
-    val projection = Projection(labelScan, Map(varFor("age") -> ageProperty))
-    val sort = Sort(projection, Seq(Ascending(varFor("age"))))
-    val resultProjection = Projection(sort, Map(varFor("a.name") -> nameProperty))
+    val projection = Projection(labelScan, Map(v"age" -> ageProperty))
+    val sort = Sort(projection, Seq(Ascending(v"age")))
+    val resultProjection = Projection(sort, Map(v"a.name" -> nameProperty))
 
     plan should equal(resultProjection)
   }
@@ -213,13 +213,13 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
   test("ORDER BY previously unprojected column in RETURN") {
     val plan = new givenConfig().getLogicalPlanFor("MATCH (a:A) RETURN a.name ORDER BY a.age")._1
 
-    val labelScan = NodeByLabelScan(varFor("a"), labelName("A"), Set.empty, IndexOrderNone)
+    val labelScan = NodeByLabelScan(v"a", labelName("A"), Set.empty, IndexOrderNone)
     val ageProperty = prop("a", "age")
     val nameProperty = prop("a", "name")
 
-    val projection = Projection(labelScan, Map(varFor("a.age") -> ageProperty))
-    val sort = Sort(projection, Seq(Ascending(varFor("a.age"))))
-    val result = Projection(sort, Map(varFor("a.name") -> nameProperty))
+    val projection = Projection(labelScan, Map(v"a.age" -> ageProperty))
+    val sort = Sort(projection, Seq(Ascending(v"a.age")))
+    val result = Projection(sort, Map(v"a.name" -> nameProperty))
 
     plan should equal(result)
   }
@@ -227,13 +227,13 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
   test("ORDER BY previously unprojected column in RETURN and return that column") {
     val plan = new givenConfig().getLogicalPlanFor("""MATCH (a:A) RETURN a.name, a.age ORDER BY a.age""")._1
 
-    val labelScan = NodeByLabelScan(varFor("a"), labelName("A"), Set.empty, IndexOrderNone)
+    val labelScan = NodeByLabelScan(v"a", labelName("A"), Set.empty, IndexOrderNone)
     val ageProperty = prop("a", "age")
     val nameProperty = prop("a", "name")
 
-    val projection = Projection(labelScan, Map(varFor("a.age") -> ageProperty))
-    val sort = Sort(projection, Seq(Ascending(varFor("a.age"))))
-    val result = Projection(sort, Map(varFor("a.name") -> nameProperty))
+    val projection = Projection(labelScan, Map(v"a.age" -> ageProperty))
+    val sort = Sort(projection, Seq(Ascending(v"a.age")))
+    val result = Projection(sort, Map(v"a.name" -> nameProperty))
 
     plan should equal(result)
   }
@@ -241,13 +241,13 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
   test("ORDER BY previously unprojected column in RETURN and project and return that column") {
     val plan = new givenConfig().getLogicalPlanFor("MATCH (a:A) RETURN a.name, a.age AS age ORDER BY age")._1
 
-    val labelScan = NodeByLabelScan(varFor("a"), labelName("A"), Set.empty, IndexOrderNone)
+    val labelScan = NodeByLabelScan(v"a", labelName("A"), Set.empty, IndexOrderNone)
     val ageProperty = prop("a", "age")
     val nameProperty = prop("a", "name")
 
-    val projection = Projection(labelScan, Map(varFor("age") -> ageProperty))
-    val sort = Sort(projection, Seq(Ascending(varFor("age"))))
-    val result = Projection(sort, Map(varFor("a.name") -> nameProperty))
+    val projection = Projection(labelScan, Map(v"age" -> ageProperty))
+    val sort = Sort(projection, Seq(Ascending(v"age")))
+    val result = Projection(sort, Map(v"a.name" -> nameProperty))
 
     plan should equal(result)
   }
@@ -255,11 +255,11 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
   test("ORDER BY previously unprojected column in RETURN *") {
     val plan = new givenConfig().getLogicalPlanFor("MATCH (a:A) RETURN * ORDER BY a.age")._1
 
-    val labelScan = NodeByLabelScan(varFor("a"), labelName("A"), Set.empty, IndexOrderNone)
+    val labelScan = NodeByLabelScan(v"a", labelName("A"), Set.empty, IndexOrderNone)
     val ageProperty = prop("a", "age")
 
-    val projection = Projection(labelScan, Map(varFor("a.age") -> ageProperty))
-    val sort = Sort(projection, Seq(Ascending(varFor("a.age"))))
+    val projection = Projection(labelScan, Map(v"a.age" -> ageProperty))
+    val sort = Sort(projection, Seq(Ascending(v"a.age")))
 
     plan should equal(sort)
   }
@@ -267,11 +267,11 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
   test("ORDER BY previously unprojected column in RETURN * and return that column") {
     val plan = new givenConfig().getLogicalPlanFor("MATCH (a:A) RETURN *, a.age ORDER BY a.age")._1
 
-    val labelScan = NodeByLabelScan(varFor("a"), labelName("A"), Set.empty, IndexOrderNone)
+    val labelScan = NodeByLabelScan(v"a", labelName("A"), Set.empty, IndexOrderNone)
     val ageProperty = prop("a", "age")
 
-    val projection = Projection(labelScan, Map(varFor("a.age") -> ageProperty))
-    val sort = Sort(projection, Seq(Ascending(varFor("a.age"))))
+    val projection = Projection(labelScan, Map(v"a.age" -> ageProperty))
+    val sort = Sort(projection, Seq(Ascending(v"a.age")))
 
     plan should equal(sort)
   }
@@ -279,11 +279,11 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
   test("ORDER BY previously unprojected column in RETURN * and project and return that column") {
     val plan = new givenConfig().getLogicalPlanFor("MATCH (a:A) RETURN *, a.age AS age ORDER BY age")._1
 
-    val labelScan = NodeByLabelScan(varFor("a"), labelName("A"), Set.empty, IndexOrderNone)
+    val labelScan = NodeByLabelScan(v"a", labelName("A"), Set.empty, IndexOrderNone)
     val ageProperty = prop("a", "age")
 
-    val projection = Projection(labelScan, Map(varFor("age") -> ageProperty))
-    val sort = Sort(projection, Seq(Ascending(varFor("age"))))
+    val projection = Projection(labelScan, Map(v"age" -> ageProperty))
+    val sort = Sort(projection, Seq(Ascending(v"age")))
 
     plan should equal(sort)
   }
@@ -309,11 +309,11 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
   test("ORDER BY previously unprojected DISTINCT column in WITH and project and return it") {
     val plan = new givenConfig().getLogicalPlanFor("MATCH (a:A) WITH DISTINCT a.age AS age ORDER BY age RETURN age")._1
 
-    val labelScan = NodeByLabelScan(varFor("a"), labelName("A"), Set.empty, IndexOrderNone)
+    val labelScan = NodeByLabelScan(v"a", labelName("A"), Set.empty, IndexOrderNone)
     val ageProperty = prop("a", "age")
 
-    val distinct = Distinct(labelScan, Map(varFor("age") -> ageProperty))
-    val sort = Sort(distinct, Seq(Ascending(varFor("age"))))
+    val distinct = Distinct(labelScan, Map(v"age" -> ageProperty))
+    val sort = Sort(distinct, Seq(Ascending(v"age")))
 
     plan should equal(sort)
   }
@@ -2572,7 +2572,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       .build()
 
     val mapProjection = DesugaredMapProjection(
-      varFor("n"),
+      v"n",
       Seq(LiteralEntry(propName("prop"), cachedNodeProp("a", "prop", "n", knownToAccessStore = true))(pos)),
       includeAllProps = false
     )(pos)
@@ -2608,7 +2608,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       .build()
 
     val mapProjection = DesugaredMapProjection(
-      varFor("n"),
+      v"n",
       Seq(LiteralEntry(propName("prop"), cachedNodeProp("n", "prop", "n", knownToAccessStore = true))(pos)),
       includeAllProps = false
     )(pos)

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanTestOps
@@ -1958,9 +1959,9 @@ class PushdownPropertyReadsTest
 
   test("should not co-read when reading multiple properties from case expression on same node") {
     val caseExpression = CaseExpression.apply(
-      Some(prop(varFor("a"), "prop")),
+      Some(prop(v"a", "prop")),
       List.empty,
-      Some(prop(varFor("a"), "prop1"))
+      Some(prop(v"a", "prop1"))
     )(pos)
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("r")
@@ -1979,9 +1980,9 @@ class PushdownPropertyReadsTest
 
   test("should co-read map projection to get lower cardinality") {
     val mapProjection = DesugaredMapProjection(
-      varFor("n"),
+      v"n",
       Seq("p1", "p2", "p3").map { key =>
-        LiteralEntry(PropertyKeyName(key)(pos), prop(varFor("n"), key))(pos)
+        LiteralEntry(PropertyKeyName(key)(pos), prop(v"n", key))(pos)
       },
       includeAllProps = false
     )(pos)
@@ -2010,9 +2011,9 @@ class PushdownPropertyReadsTest
   // Runtime implementation of map projection is faster without cached properties
   test("should not co-read map projection at same cardinality") {
     val mapProjection = DesugaredMapProjection(
-      varFor("n"),
+      v"n",
       Seq("p1", "p2", "p3").map { key =>
-        LiteralEntry(PropertyKeyName(key)(pos), prop(varFor("n"), key))(pos)
+        LiteralEntry(PropertyKeyName(key)(pos), prop(v"n", key))(pos)
       },
       includeAllProps = false
     )(pos)

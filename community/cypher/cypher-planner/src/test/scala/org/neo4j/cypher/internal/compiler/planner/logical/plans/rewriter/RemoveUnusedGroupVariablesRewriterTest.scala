@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.RemoveUnusedGroupVariablesRewriterTest.`(a) ((n)-[r]-(m))+ (b)`
@@ -332,7 +333,7 @@ class RemoveUnusedGroupVariablesRewriterTest extends CypherFunSuite with Logical
   // group variables used by named path
   test("MATCH p = (a) ((n)-[r]->(m))+ (b) RETURN p") {
     def plan(params: TrailParameters, projectionDiscard: Set[String]) = {
-      val pathExpression = qppPath(varFor("a"), Seq(varFor("n"), varFor("r")), varFor("b"))
+      val pathExpression = qppPath(v"a", Seq(v"n", v"r"), v"b")
       new LogicalPlanBuilder()
         .produceResults("p")
         .projection(Map("p" -> pathExpression))
@@ -352,7 +353,7 @@ class RemoveUnusedGroupVariablesRewriterTest extends CypherFunSuite with Logical
   // group variables used by named path
   test("MATCH p = ANY SHORTEST (a) ((n)-[r]->(m))+ (b) RETURN p") {
     def plan(params: TrailParameters) = {
-      val pathExpression = qppPath(varFor("a"), Seq(varFor("n"), varFor("r")), varFor("b"))
+      val pathExpression = qppPath(v"a", Seq(v"n", v"r"), v"b")
       new LogicalPlanBuilder()
         .produceResults("p")
         .projection(Map("p" -> pathExpression))

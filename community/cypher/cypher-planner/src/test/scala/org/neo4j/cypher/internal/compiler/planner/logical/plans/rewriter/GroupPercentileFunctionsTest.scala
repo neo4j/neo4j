@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.expressions.Expression
@@ -83,7 +84,7 @@ class GroupPercentileFunctionsTest extends CypherFunSuite with LogicalPlanningTe
       .projection(s"`$mapName`.p1 AS p1", s"`$mapName`.p2 AS p2")
       .aggregation(
         Map.empty[String, Expression],
-        Map(mapName -> percentiles(varFor("n"), Seq(0.5, 0.6), Seq("p1", "p2"), Seq(true, true)))
+        Map(mapName -> percentiles(v"n", Seq(0.5, 0.6), Seq("p1", "p2"), Seq(true, true)))
       )
       .projection("from.number AS n")
       .allNodeScan("from")
@@ -105,7 +106,7 @@ class GroupPercentileFunctionsTest extends CypherFunSuite with LogicalPlanningTe
       .projection(s"`$mapName`.p1 AS p1", s"`$mapName`.p2 AS p2")
       .aggregation(
         Map.empty[String, Expression],
-        Map(mapName -> percentiles(varFor("n"), Seq(0.5, 0.6), Seq("p1", "p2"), Seq(true, true)))
+        Map(mapName -> percentiles(v"n", Seq(0.5, 0.6), Seq("p1", "p2"), Seq(true, true)))
       )
       .projection("from.number AS n")
       .allNodeScan("from")
@@ -127,7 +128,7 @@ class GroupPercentileFunctionsTest extends CypherFunSuite with LogicalPlanningTe
       .projection(s"`$mapName`.p1 AS p1", s"`$mapName`.p2 AS p2")
       .aggregation(
         Map.empty[String, Expression],
-        Map(mapName -> percentiles(varFor("n"), Seq(0.5, 0.6), Seq("p1", "p2"), Seq(false, false)))
+        Map(mapName -> percentiles(v"n", Seq(0.5, 0.6), Seq("p1", "p2"), Seq(false, false)))
       )
       .projection("from.number AS n")
       .allNodeScan("from")
@@ -152,8 +153,8 @@ class GroupPercentileFunctionsTest extends CypherFunSuite with LogicalPlanningTe
     val after = new LogicalPlanBuilder(wholePlan = false)
       .projection(s"`$mapName`.p1 AS p1", s"`$mapName`.p2 AS p2")
       .orderedAggregation(
-        Map("from" -> varFor("from")),
-        Map(mapName -> percentiles(varFor("n"), Seq(0.5, 0.6), Seq("p1", "p2"), Seq(true, true))),
+        Map("from" -> v"from"),
+        Map(mapName -> percentiles(v"n", Seq(0.5, 0.6), Seq("p1", "p2"), Seq(true, true))),
         Seq("from")
       )
       .projection("from.number AS n")
@@ -176,7 +177,7 @@ class GroupPercentileFunctionsTest extends CypherFunSuite with LogicalPlanningTe
       .projection(s"`$mapName`.p1 AS p1", s"`$mapName`.p2 AS p2")
       .aggregation(
         Map.empty[String, Expression],
-        Map(mapName -> percentiles(varFor("n"), Seq(0.5, 0.6), Seq("p1", "p2"), Seq(true, true), distinct = true))
+        Map(mapName -> percentiles(v"n", Seq(0.5, 0.6), Seq("p1", "p2"), Seq(true, true), distinct = true))
       )
       .projection("from.number AS n")
       .allNodeScan("from")
@@ -202,8 +203,8 @@ class GroupPercentileFunctionsTest extends CypherFunSuite with LogicalPlanningTe
       .aggregation(
         Map.empty[String, Expression],
         Map(
-          mapName -> percentiles(varFor("n"), Seq(0.5, 0.6), Seq("p1", "p2"), Seq(true, true)),
-          "p3" -> distinctFunction(PercentileDisc.name, varFor("n"), literalFloat(0.6))
+          mapName -> percentiles(v"n", Seq(0.5, 0.6), Seq("p1", "p2"), Seq(true, true)),
+          "p3" -> distinctFunction(PercentileDisc.name, v"n", literalFloat(0.6))
         )
       )
       .projection("from.number AS n")
@@ -226,7 +227,7 @@ class GroupPercentileFunctionsTest extends CypherFunSuite with LogicalPlanningTe
       .projection(s"`$mapName`.p1 AS p1", s"`$mapName`.p2 AS p2")
       .aggregation(
         Map.empty[String, Expression],
-        Map(mapName -> percentiles(varFor("n"), Seq(0.5, 0.6), Seq("p1", "p2"), Seq(false, true)))
+        Map(mapName -> percentiles(v"n", Seq(0.5, 0.6), Seq("p1", "p2"), Seq(false, true)))
       )
       .projection("from.number AS n")
       .allNodeScan("from")
@@ -248,7 +249,7 @@ class GroupPercentileFunctionsTest extends CypherFunSuite with LogicalPlanningTe
       .projection(s"`$mapName`.p1 AS p1", s"`$mapName`.p2 AS p2")
       .aggregation(
         Map.empty[String, Expression],
-        Map(mapName -> percentiles(varFor("n"), Seq(0.5, 0.6), Seq("p1", "p2"), Seq(false, true), distinct = true))
+        Map(mapName -> percentiles(v"n", Seq(0.5, 0.6), Seq("p1", "p2"), Seq(false, true), distinct = true))
       )
       .projection("from.number AS n")
       .allNodeScan("from")
@@ -323,8 +324,8 @@ class GroupPercentileFunctionsTest extends CypherFunSuite with LogicalPlanningTe
       .aggregation(
         Map.empty[String, Expression],
         Map(
-          mapName -> percentiles(varFor("n1"), Seq(0.5, 0.6), Seq("p1", "p2"), Seq(true, true)),
-          "p3" -> function(PercentileDisc.name, varFor("n2"), literalFloat(0.7))
+          mapName -> percentiles(v"n1", Seq(0.5, 0.6), Seq("p1", "p2"), Seq(true, true)),
+          "p3" -> function(PercentileDisc.name, v"n2", literalFloat(0.7))
         )
       )
       .projection("from.n1 AS n1", "from.n2 AS n2")
@@ -370,10 +371,10 @@ class GroupPercentileFunctionsTest extends CypherFunSuite with LogicalPlanningTe
       .aggregation(
         Map.empty[String, Expression],
         Map(
-          map1 -> percentiles(varFor("n1"), Seq(0.6, 0.5), Seq("p1", "p0"), Seq(false, true), distinct = true),
-          map0 -> percentiles(varFor("n1"), Seq(0.6, 0.5), Seq("p3", "p2"), Seq(true, true)),
-          "p4" -> distinctFunction(PercentileDisc.name, varFor("n2"), literalFloat(0.7)),
-          map2 -> percentiles(varFor("n2"), Seq(0.8, 0.7, 0.8), Seq("p6", "p5", "p7"), Seq(true, true, false))
+          map1 -> percentiles(v"n1", Seq(0.6, 0.5), Seq("p1", "p0"), Seq(false, true), distinct = true),
+          map0 -> percentiles(v"n1", Seq(0.6, 0.5), Seq("p3", "p2"), Seq(true, true)),
+          "p4" -> distinctFunction(PercentileDisc.name, v"n2", literalFloat(0.7)),
+          map2 -> percentiles(v"n2", Seq(0.8, 0.7, 0.8), Seq("p6", "p5", "p7"), Seq(true, true, false))
         )
       )
       .projection("from.n1 AS n1", "from.n2 AS n2")

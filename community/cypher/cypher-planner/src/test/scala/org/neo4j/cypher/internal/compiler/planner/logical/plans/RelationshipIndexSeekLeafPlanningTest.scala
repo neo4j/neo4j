@@ -235,7 +235,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
   test("plans index seeks when variable exists as an argument") {
     new givenConfig {
       addTypeToSemanticTable(lit42, CTInteger.invariant)
-      val x: Expression = varFor("x")
+      val x: Expression = v"x"
       qg = queryGraph(Seq(relTypeName), BOTH, in(rProp, listOf(x))).addArgumentIds(Seq(v"x"))
 
       addTypeToSemanticTable(x, CTNode.invariant)
@@ -264,7 +264,7 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
   test("does not plan an index seek when the RHS expression does not have its dependencies in scope") {
     new givenConfig {
       addTypeToSemanticTable(lit42, CTInteger.invariant)
-      qg = queryGraph(Seq(relTypeName), BOTH, in(rProp, listOf(varFor("x"))))
+      qg = queryGraph(Seq(relTypeName), BOTH, in(rProp, listOf(v"x")))
 
       relationshipIndexOn(relTypeName, prop)
     }.withLogicalPlanningContext { (cfg, ctx) =>

@@ -54,7 +54,7 @@ class LogicalPlanningAttributesTestSupportTest
     config.planState(query)
 
   val providedOrder: NonEmptyProvidedOrder =
-    ProvidedOrder.asc(prop("a", "prop"), Map(v"a" -> varFor("a"))).fromLeft
+    ProvidedOrder.asc(prop("a", "prop"), Map(v"a" -> v"a")).fromLeft
 
   val planAndEffectiveCardinalities: (LogicalPlan, PlanningAttributes.EffectiveCardinalities) =
     (planState.logicalPlan, planState.planningAttributes.effectiveCardinalities)
@@ -184,7 +184,7 @@ class LogicalPlanningAttributesTestSupportTest
         .top(2, "`a.prop` ASC").withProvidedOrder(providedOrder)
         .projection("cacheN[a.prop] AS `a.prop`").withProvidedOrder(NoProvidedOrder)
         .filter("cacheNFromStore[a.prop] > 42")
-        .nodeByLabelScan("a", "A", IndexOrderNone).withProvidedOrder(ProvidedOrder.desc(varFor("nonsense")).fromRight)
+        .nodeByLabelScan("a", "A", IndexOrderNone).withProvidedOrder(ProvidedOrder.desc(v"nonsense").fromRight)
 
     assertThrows[TestFailedException] {
       planAndProvidedOrders should haveSamePlanAndProvidedOrdersAs((expected.build(), expected.providedOrders))
@@ -212,7 +212,7 @@ class LogicalPlanningAttributesTestSupportTest
       config
         .planBuilder()
         .produceResults("a")
-        .top(2, "`a.prop` ASC").withProvidedOrder(ProvidedOrder.desc(varFor("nonsense")).fromRight)
+        .top(2, "`a.prop` ASC").withProvidedOrder(ProvidedOrder.desc(v"nonsense").fromRight)
         .projection("cacheN[a.prop] AS `a.prop`")
         .filter("cacheNFromStore[a.prop] > 42")
         .nodeByLabelScan("a", "A", IndexOrderNone).withProvidedOrder(NoProvidedOrder)

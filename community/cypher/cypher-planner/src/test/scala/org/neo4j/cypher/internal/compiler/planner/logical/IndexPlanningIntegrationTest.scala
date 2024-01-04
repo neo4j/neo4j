@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.planner.AttributeComparisonStrategy
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningAttributesTestSupport
@@ -98,7 +99,7 @@ class IndexPlanningIntegrationTest
         .apply()
         .|.nodeIndexOperator(
           s"b:Label(prop $op ???)",
-          paramExpr = Some(varFor("foo")),
+          paramExpr = Some(v"foo"),
           argumentIds = Set("foo"),
           indexType = IndexType.RANGE
         )
@@ -272,7 +273,7 @@ class IndexPlanningIntegrationTest
         .apply()
         .|.nodeIndexOperator(
           s"b:Label(prop $op ???)",
-          paramExpr = Some(varFor("foo")),
+          paramExpr = Some(v"foo"),
           argumentIds = Set("foo"),
           indexType = IndexType.RANGE
         )
@@ -379,7 +380,7 @@ class IndexPlanningIntegrationTest
         "Place",
         "location",
         "{x: 0, y: 0, crs: 'cartesian'}",
-        distanceExpr = varFor("maxDistance"),
+        distanceExpr = v"maxDistance",
         argumentIds = Set("maxDistance"),
         inclusive = true,
         indexType = IndexType.POINT

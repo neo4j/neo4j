@@ -76,13 +76,13 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
 
   implicit val windowsSafe: WindowsStringSafe.type = WindowsStringSafe
 
-  private val n = varFor("n")
-  private val m = varFor("m")
-  private val o = varFor("o")
-  private val q = varFor("q")
-  private val r = varFor("r")
-  private val r2 = varFor("r2")
-  private val r3 = varFor("r3")
+  private val n = v"n"
+  private val m = v"m"
+  private val o = v"o"
+  private val q = v"q"
+  private val r = v"r"
+  private val r2 = v"r2"
+  private val r3 = v"r3"
 
   private val rPred = greaterThan(prop(r, "foo"), literalInt(5))
   private val rLessPred = lessThan(prop(r, "foo"), literalInt(10))
@@ -219,7 +219,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
             patternRelationships =
               Set(PatternRelationship(r, (n, m), BOTH, Seq.empty, VarPatternLength(2, Some(5)))),
             selections = Selections.from(Seq(
-              unique(varFor("r")),
+              unique(v"r"),
               varLengthLowerLimitPredicate("r", 2),
               varLengthUpperLimitPredicate("r", 5)
             ))
@@ -319,9 +319,9 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
           patternNodes = Set(n, m, o, q),
           patternRelationships =
             Set(
-              PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength),
-              PatternRelationship(varFor("r2"), (o, m), OUTGOING, Seq.empty, SimplePatternLength),
-              PatternRelationship(varFor("r3"), (m, q), OUTGOING, Seq.empty, SimplePatternLength)
+              PatternRelationship(v"r", (n, m), BOTH, Seq.empty, SimplePatternLength),
+              PatternRelationship(v"r2", (o, m), OUTGOING, Seq.empty, SimplePatternLength),
+              PatternRelationship(v"r3", (m, q), OUTGOING, Seq.empty, SimplePatternLength)
             ),
           selections = Selections.from(Seq(
             differentRelationships(r, r3),
@@ -360,9 +360,9 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
           patternNodes = Set(n, m, o, q),
           patternRelationships =
             Set(
-              PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength),
-              PatternRelationship(varFor("r2"), (o, m), OUTGOING, Seq.empty, SimplePatternLength),
-              PatternRelationship(varFor("r3"), (m, q), OUTGOING, Seq.empty, SimplePatternLength)
+              PatternRelationship(v"r", (n, m), BOTH, Seq.empty, SimplePatternLength),
+              PatternRelationship(v"r2", (o, m), OUTGOING, Seq.empty, SimplePatternLength),
+              PatternRelationship(v"r3", (m, q), OUTGOING, Seq.empty, SimplePatternLength)
             ),
           selections = Selections.from(Seq(
             differentRelationships(r, r3),
@@ -406,9 +406,9 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
           argumentIds = Set(n),
           patternRelationships =
             Set(
-              PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength),
-              PatternRelationship(varFor("r2"), (o, m), OUTGOING, Seq.empty, SimplePatternLength),
-              PatternRelationship(varFor("r3"), (m, q), OUTGOING, Seq.empty, SimplePatternLength)
+              PatternRelationship(v"r", (n, m), BOTH, Seq.empty, SimplePatternLength),
+              PatternRelationship(v"r2", (o, m), OUTGOING, Seq.empty, SimplePatternLength),
+              PatternRelationship(v"r3", (m, q), OUTGOING, Seq.empty, SimplePatternLength)
             ),
           selections = Selections.from(Seq(
             differentRelationships(r, r3),
@@ -450,7 +450,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
           patternNodes = Set(n, m),
           patternRelationships =
             Set(
-              PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
+              PatternRelationship(v"r", (n, m), BOTH, Seq.empty, SimplePatternLength)
             )
         ),
         horizon = Some(RegularQueryProjection(Map(n -> n), isTerminating = true))
@@ -487,7 +487,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
           argumentIds = Set(n),
           patternRelationships =
             Set(
-              PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
+              PatternRelationship(v"r", (n, m), BOTH, Seq.empty, SimplePatternLength)
             )
         ),
         horizon =
@@ -529,7 +529,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
           argumentIds = Set(n),
           patternRelationships =
             Set(
-              PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
+              PatternRelationship(v"r", (n, m), BOTH, Seq.empty, SimplePatternLength)
             )
         ),
         horizon =
@@ -571,7 +571,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
           argumentIds = Set(n),
           patternRelationships =
             Set(
-              PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
+              PatternRelationship(v"r", (n, m), BOTH, Seq.empty, SimplePatternLength)
             )
         ),
         horizon =
@@ -615,7 +615,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
           argumentIds = Set(n),
           patternRelationships =
             Set(
-              PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
+              PatternRelationship(v"r", (n, m), BOTH, Seq.empty, SimplePatternLength)
             )
         ),
         horizon =
@@ -670,7 +670,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
             patternNodes = Set(n, m),
             patternRelationships =
               Set(
-                PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
+                PatternRelationship(v"r", (n, m), BOTH, Seq.empty, SimplePatternLength)
               )
           ),
           horizon = RegularQueryProjection(Map(n -> n))
@@ -680,7 +680,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
             patternNodes = Set(n, m),
             patternRelationships =
               Set(
-                PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
+                PatternRelationship(v"r", (n, m), BOTH, Seq.empty, SimplePatternLength)
               )
           ),
           horizon = RegularQueryProjection(Map(n -> n))
@@ -720,7 +720,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
           argumentIds = Set(n),
           patternRelationships =
             Set(
-              PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
+              PatternRelationship(v"r", (n, m), BOTH, Seq.empty, SimplePatternLength)
             )
         ),
         horizon =
@@ -760,9 +760,9 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
           argumentIds = Set(n),
           patternRelationships =
             Set(
-              PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength),
-              PatternRelationship(varFor("r2"), (o, m), OUTGOING, Seq.empty, SimplePatternLength),
-              PatternRelationship(varFor("r3"), (m, q), OUTGOING, Seq.empty, SimplePatternLength)
+              PatternRelationship(v"r", (n, m), BOTH, Seq.empty, SimplePatternLength),
+              PatternRelationship(v"r2", (o, m), OUTGOING, Seq.empty, SimplePatternLength),
+              PatternRelationship(v"r3", (m, q), OUTGOING, Seq.empty, SimplePatternLength)
             ),
           selections = Selections.from(Seq(
             differentRelationships(r, r3),
@@ -807,7 +807,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
           argumentIds = Set(n),
           patternRelationships =
             Set(
-              PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
+              PatternRelationship(v"r", (n, m), BOTH, Seq.empty, SimplePatternLength)
             )
         ),
         horizon =
@@ -846,7 +846,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
           argumentIds = Set(n),
           patternRelationships =
             Set(
-              PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
+              PatternRelationship(v"r", (n, m), BOTH, Seq.empty, SimplePatternLength)
             )
         ),
         horizon =
@@ -887,7 +887,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
           argumentIds = Set(n),
           patternRelationships =
             Set(
-              PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
+              PatternRelationship(v"r", (n, m), BOTH, Seq.empty, SimplePatternLength)
             )
         ),
         horizon = Some(RegularQueryProjection(
@@ -933,7 +933,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
           argumentIds = Set(n),
           patternRelationships =
             Set(
-              PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
+              PatternRelationship(v"r", (n, m), BOTH, Seq.empty, SimplePatternLength)
             )
         ),
         horizon = Some(RegularQueryProjection(
@@ -981,7 +981,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
           argumentIds = Set(n),
           patternRelationships =
             Set(
-              PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
+              PatternRelationship(v"r", (n, m), BOTH, Seq.empty, SimplePatternLength)
             )
         ),
         horizon = Some(RegularQueryProjection(
@@ -1030,7 +1030,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
           argumentIds = Set(n),
           patternRelationships =
             Set(
-              PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
+              PatternRelationship(v"r", (n, m), BOTH, Seq.empty, SimplePatternLength)
             )
         ),
         horizon = Some(DistinctQueryProjection(
@@ -1090,7 +1090,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
                 argumentIds = Set(n),
                 patternRelationships =
                   Set(
-                    PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
+                    PatternRelationship(v"r", (n, m), BOTH, Seq.empty, SimplePatternLength)
                   )
               ),
               horizon = RegularQueryProjection(Map(n -> n))
@@ -1101,7 +1101,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
                 argumentIds = Set(n),
                 patternRelationships =
                   Set(
-                    PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
+                    PatternRelationship(v"r", (n, m), BOTH, Seq.empty, SimplePatternLength)
                   )
               ),
               horizon = RegularQueryProjection(Map(n -> n))
@@ -1350,7 +1350,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
           argumentIds = Set(n),
           patternRelationships =
             Set(
-              PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
+              PatternRelationship(v"r", (n, m), BOTH, Seq.empty, SimplePatternLength)
             )
         ),
         horizon =
@@ -1388,7 +1388,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
           argumentIds = Set(n),
           patternRelationships =
             Set(
-              PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
+              PatternRelationship(v"r", (n, m), BOTH, Seq.empty, SimplePatternLength)
             )
         ),
         horizon =
@@ -1430,9 +1430,9 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
           patternNodes = Set(n, m, o, q),
           patternRelationships =
             Set(
-              PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength),
-              PatternRelationship(varFor("r2"), (o, m), OUTGOING, Seq.empty, SimplePatternLength),
-              PatternRelationship(varFor("r3"), (m, q), OUTGOING, Seq.empty, SimplePatternLength)
+              PatternRelationship(v"r", (n, m), BOTH, Seq.empty, SimplePatternLength),
+              PatternRelationship(v"r2", (o, m), OUTGOING, Seq.empty, SimplePatternLength),
+              PatternRelationship(v"r3", (m, q), OUTGOING, Seq.empty, SimplePatternLength)
             ),
           selections = Selections.from(Seq(
             differentRelationships(r, r3),
@@ -1479,7 +1479,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
           argumentIds = Set(n),
           patternRelationships =
             Set(
-              PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
+              PatternRelationship(v"r", (n, m), BOTH, Seq.empty, SimplePatternLength)
             )
         ),
         horizon =
@@ -1520,7 +1520,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
           argumentIds = Set(n),
           patternRelationships =
             Set(
-              PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
+              PatternRelationship(v"r", (n, m), BOTH, Seq.empty, SimplePatternLength)
             )
         ),
         horizon =
@@ -1561,7 +1561,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
           argumentIds = Set(n),
           patternRelationships =
             Set(
-              PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
+              PatternRelationship(v"r", (n, m), BOTH, Seq.empty, SimplePatternLength)
             )
         ),
         horizon =
@@ -1606,7 +1606,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
           argumentIds = Set(n),
           patternRelationships =
             Set(
-              PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
+              PatternRelationship(v"r", (n, m), BOTH, Seq.empty, SimplePatternLength)
             )
         ),
         horizon =
@@ -1650,7 +1650,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
           argumentIds = Set(n),
           patternRelationships =
             Set(
-              PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
+              PatternRelationship(v"r", (n, m), BOTH, Seq.empty, SimplePatternLength)
             )
         ),
         horizon =
@@ -1702,7 +1702,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
             argumentIds = Set(n),
             patternRelationships =
               Set(
-                PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
+                PatternRelationship(v"r", (n, m), BOTH, Seq.empty, SimplePatternLength)
               )
           ),
           horizon = RegularQueryProjection(Map(n -> n))
@@ -1713,7 +1713,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
             argumentIds = Set(n),
             patternRelationships =
               Set(
-                PatternRelationship(varFor("r"), (n, m), BOTH, Seq.empty, SimplePatternLength)
+                PatternRelationship(v"r", (n, m), BOTH, Seq.empty, SimplePatternLength)
               )
           ),
           horizon = RegularQueryProjection(Map(n -> n))

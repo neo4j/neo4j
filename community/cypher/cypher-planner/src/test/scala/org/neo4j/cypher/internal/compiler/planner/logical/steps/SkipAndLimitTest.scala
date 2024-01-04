@@ -140,7 +140,7 @@ class SkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   private def regularProjection(skip: Option[Expression] = None, limit: Option[Expression] = None) =
-    RegularQueryProjection(projections = Map(v"n" -> varFor("n")), queryPagination = QueryPagination(skip, limit))
+    RegularQueryProjection(projections = Map(v"n" -> v"n"), queryPagination = QueryPagination(skip, limit))
 
   private def solved(patternNodes: String*): SinglePlannerQuery =
     RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes(patternNodes.map(varFor): _*))

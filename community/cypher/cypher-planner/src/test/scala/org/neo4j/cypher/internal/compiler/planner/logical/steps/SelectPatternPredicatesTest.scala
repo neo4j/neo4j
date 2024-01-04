@@ -65,7 +65,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
           Set(patternRel)
       )
     ),
-    varFor(""),
+    v"",
     s"exists((a)-[`$relName`]->(`$nodeName`))"
   )(pos, Some(Set(nodeName)), Some(Set(arg)))
 
@@ -78,7 +78,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
           Set(PatternRelationship(relName2, (arg, nodeName2), dir, types, SimplePatternLength))
       )
     ),
-    varFor(""),
+    v"",
     s"exists((a)-[`$relName2`]->(`$nodeName2`))"
   )(pos, Some(Set(relName2, nodeName2)), Some(Set(arg)))
 
@@ -242,7 +242,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     // Then
     result should equal(
       Seq(SelectionCandidate(
-        SelectOrSemiApply(LetSemiApply(aPlan, inner, varFor("  UNNAMED1")), inner2, varFor("  UNNAMED1")),
+        SelectOrSemiApply(LetSemiApply(aPlan, inner, v"  UNNAMED1"), inner2, v"  UNNAMED1"),
         Set(orsExp)
       ))
     )
@@ -287,7 +287,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     // Then
     result should equal(
       Seq(SelectionCandidate(
-        SelectOrAntiSemiApply(LetSemiApply(aPlan, inner, varFor("  UNNAMED1")), inner2, varFor("  UNNAMED1")),
+        SelectOrAntiSemiApply(LetSemiApply(aPlan, inner, v"  UNNAMED1"), inner2, v"  UNNAMED1"),
         Set(orsExp)
       ))
     )
@@ -332,7 +332,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     // Then
     result should equal(
       Seq(SelectionCandidate(
-        SelectOrSemiApply(LetAntiSemiApply(aPlan, inner, varFor("  UNNAMED1")), inner2, varFor("  UNNAMED1")),
+        SelectOrSemiApply(LetAntiSemiApply(aPlan, inner, v"  UNNAMED1"), inner2, v"  UNNAMED1"),
         Set(orsExp)
       ))
     )
@@ -381,9 +381,9 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     result should equal(
       Seq(SelectionCandidate(
         SelectOrAntiSemiApply(
-          LetSelectOrSemiApply(aPlan, inner, varFor("  UNNAMED1"), equalsExp),
+          LetSelectOrSemiApply(aPlan, inner, v"  UNNAMED1", equalsExp),
           inner2,
-          varFor("  UNNAMED1")
+          v"  UNNAMED1"
         ),
         Set(orsExp)
       ))
@@ -433,9 +433,9 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     result should equal(
       Seq(SelectionCandidate(
         SelectOrSemiApply(
-          LetSelectOrAntiSemiApply(aPlan, inner, varFor("  UNNAMED1"), equalsExp),
+          LetSelectOrAntiSemiApply(aPlan, inner, v"  UNNAMED1", equalsExp),
           inner2,
-          varFor("  UNNAMED1")
+          v"  UNNAMED1"
         ),
         Set(orsExp)
       ))

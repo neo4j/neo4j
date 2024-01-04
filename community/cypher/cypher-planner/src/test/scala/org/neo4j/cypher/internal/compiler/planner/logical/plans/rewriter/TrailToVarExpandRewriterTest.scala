@@ -27,6 +27,7 @@ import TrailToVarExpandRewriterTest.rewrite
 import TrailToVarExpandRewriterTest.rewrites
 import TrailToVarExpandRewriterTest.subPlanBuilder
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanTestOps
@@ -518,7 +519,7 @@ class TrailToVarExpandRewriterTest extends CypherFunSuite with LogicalPlanningTe
 
     val expand = subPlanBuilder
       .projection("1 AS s")
-      .filterExpression(noneOfRels(varFor("rr"), varFor("r_i")))
+      .filterExpression(noneOfRels(v"rr", v"r_i"))
       .expand("(b)<-[r_i*1..]-(a)")
       .allRelationshipsScan("(b)-[rr]-(c)")
       .build()
@@ -590,7 +591,7 @@ class TrailToVarExpandRewriterTest extends CypherFunSuite with LogicalPlanningTe
 
     val expand = subPlanBuilder
       .projection("1 AS s")
-      .filterExpression(disjoint(varFor("r_i"), varFor("rr")))
+      .filterExpression(disjoint(v"r_i", v"rr"))
       .expand("(b)<-[r_i*1..]-(a)")
       .expand("(b)-[rr*1..]->(c)")
       .allNodeScan("b")
@@ -671,8 +672,8 @@ class TrailToVarExpandRewriterTest extends CypherFunSuite with LogicalPlanningTe
     val expand = subPlanBuilder
       .projection("1 AS s")
       .filterExpression(
-        disjoint(varFor("r_i"), varFor("rr")),
-        disjoint(varFor("r_i"), varFor("rrr"))
+        disjoint(v"r_i", v"rr"),
+        disjoint(v"r_i", v"rrr")
       )
       .expand("(b)<-[r_i*1..]-(a)")
       .trail(`(b) ((x)-[rr]-(y)-[rrr]-(z))+ (c)`.xyzless)
@@ -738,7 +739,7 @@ class TrailToVarExpandRewriterTest extends CypherFunSuite with LogicalPlanningTe
       .|.filterExpression(isRepeatTrailUnique("rrr_i"))
       .|.expand("(x_i)-[rrr_i]->(y_i)")
       .|.argument("x_i")
-      .filterExpression(noneOfRels(varFor("rr"), varFor("r")))
+      .filterExpression(noneOfRels(v"rr", v"r"))
       .expand("(b)-[rr]->(c)")
       .trail(`(a) ((n)-[r]-(m))+ (b)`.nmless)
       .|.filterExpression(isRepeatTrailUnique("r_i"))
@@ -748,10 +749,10 @@ class TrailToVarExpandRewriterTest extends CypherFunSuite with LogicalPlanningTe
       .build()
     val expand = subPlanBuilder
       .projection("1 AS s")
-      .filterExpression(disjoint(varFor("rrr_i"), varFor("r")))
-      .filterExpression(noneOfRels(varFor("rr"), varFor("rrr_i")))
+      .filterExpression(disjoint(v"rrr_i", v"r"))
+      .filterExpression(noneOfRels(v"rr", v"rrr_i"))
       .expand("(c)-[rrr_i*1..]->(d)")
-      .filterExpression(noneOfRels(varFor("rr"), varFor("r")))
+      .filterExpression(noneOfRels(v"rr", v"r"))
       .expand("(b)-[rr]->(c)")
       .expand("(a)-[r*1..]->(b)")
       .allNodeScan("a")
@@ -782,7 +783,7 @@ class TrailToVarExpandRewriterTest extends CypherFunSuite with LogicalPlanningTe
   // named path uses group node variables
   test("Preserves MATCH p = (a) ((n)-[r]->(m))+ (b) RETURN p") {
     val trail = subPlanBuilder
-      .projection(Map("p" -> qppPath(varFor("a"), Seq(varFor("n"), varFor("r")), varFor("b"))))
+      .projection(Map("p" -> qppPath(v"a", Seq(v"n", v"r"), v"b")))
       .trail(`(a) ((n)-[r]-(m))+ (b)`.mless)
       .|.filterExpression(isRepeatTrailUnique("r_i"))
       .|.expand("(n_i)-[r_i]->(m_i)")

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.expressions.Expression
@@ -32,7 +33,7 @@ import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class irExpressionRewriterTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
-  private val dummyPlan = AllNodesScan(varFor("a"), Set.empty)
+  private val dummyPlan = AllNodesScan(v"a", Set.empty)
 
   case class TestableIRExpression(expression: IRExpression, expectedRewrite: Expression)
 
@@ -151,7 +152,7 @@ class irExpressionRewriterTest extends CypherFunSuite with LogicalPlanningTestSu
       .projection(Map("p" -> listIrExpr1.expression))
       .argument()
       .build()
-    val expr = NestedPlanExpression.collect(plan, varFor("x"), varFor("y"))(pos)
+    val expr = NestedPlanExpression.collect(plan, v"x", v"y")(pos)
 
     new givenConfig().withLogicalPlanningContextWithFakeAttributes { (_, context) =>
       val rewriter = irExpressionRewriter(dummyPlan, context)
@@ -171,8 +172,8 @@ class irExpressionRewriterTest extends CypherFunSuite with LogicalPlanningTestSu
           patternNodes = patternNodes.map(varFor)
         )
       ),
-      varFor("anon_0"),
-      varFor("anon_1"),
+      v"anon_0",
+      v"anon_1",
       "ListIRExpression"
     )(pos, None, Some(argumentIds.map(name => varFor(name))))
   }
@@ -185,7 +186,7 @@ class irExpressionRewriterTest extends CypherFunSuite with LogicalPlanningTestSu
           patternNodes = patternNodes.map(varFor)
         )
       ),
-      varFor("anon_0"),
+      v"anon_0",
       "ExistsIRExpression"
     )(pos, None, Some(argumentIds.map(name => varFor(name))))
   }

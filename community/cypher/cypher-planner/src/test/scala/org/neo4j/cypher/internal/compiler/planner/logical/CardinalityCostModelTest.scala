@@ -404,9 +404,9 @@ class CardinalityCostModelTest extends CypherFunSuite with AstConstructionTestSu
   ) {
     val builder = new LogicalPlanBuilder(wholePlan = false)
     val plan = builder
-      .cartesianProduct().withCardinality(10000).withProvidedOrder(ProvidedOrder.asc(varFor("a")))
+      .cartesianProduct().withCardinality(10000).withProvidedOrder(ProvidedOrder.asc(v"a"))
       .|.argument("b").withCardinality(100)
-      .argument("a").withCardinality(100).withProvidedOrder(ProvidedOrder.asc(varFor("a")))
+      .argument("a").withCardinality(100).withProvidedOrder(ProvidedOrder.asc(v"a"))
       .build()
 
     costFor(
@@ -611,7 +611,7 @@ class CardinalityCostModelTest extends CypherFunSuite with AstConstructionTestSu
       .sort("n ASC").withCardinality(100)
       .allNodeScan("n").withCardinality(100)
       .build()
-    val semanticTable = SemanticTable().addNode(varFor("n"))
+    val semanticTable = SemanticTable().addNode(v"n")
     val withoutLimit = QueryGraphSolverInput.empty
     val withLimit = QueryGraphSolverInput.empty.withLimitSelectivityConfig(LimitSelectivityConfig(
       Selectivity.of(0.5).get,

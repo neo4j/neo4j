@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
@@ -29,13 +30,13 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 class LogicalPlanTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("single row returns itself as the leafs") {
-    val argument = Argument(Set(varFor("a")))
+    val argument = Argument(Set(v"a"))
 
     argument.leaves should equal(Seq(argument))
   }
 
   test("apply with two arguments should return them both") {
-    val argument1 = Argument(Set(varFor("a")))
+    val argument1 = Argument(Set(v"a"))
     val argument2 = Argument()
     val apply = Apply(argument1, argument2)
 
@@ -43,9 +44,9 @@ class LogicalPlanTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("apply pyramid should work multiple levels deep") {
-    val argument1 = Argument(Set(varFor("a")))
+    val argument1 = Argument(Set(v"a"))
     val argument2 = Argument()
-    val argument3 = Argument(Set(varFor("b")))
+    val argument3 = Argument(Set(v"b"))
     val argument4 = Argument()
     val apply1 = Apply(argument1, argument2)
     val apply2 = Apply(argument3, argument4)

@@ -27,16 +27,16 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 class AggregationHelperTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("extractPropertyForValue") {
-    extractPropertyForValue(varFor("x"), Map.empty) should be(None)
+    extractPropertyForValue(v"x", Map.empty) should be(None)
     extractPropertyForValue(prop("x", "prop"), Map.empty) should be(Some(prop("x", "prop")))
-    extractPropertyForValue(prop("x", "prop"), Map(v"x" -> varFor("y"))) should be(Some(prop("y", "prop")))
-    extractPropertyForValue(varFor("x"), Map(v"x" -> prop("y", "prop"))) should be(Some(prop("y", "prop")))
-    extractPropertyForValue(varFor("x"), Map(v"x" -> varFor("z"), v"z" -> prop("y", "prop"))) should be(Some(prop(
+    extractPropertyForValue(prop("x", "prop"), Map(v"x" -> v"y")) should be(Some(prop("y", "prop")))
+    extractPropertyForValue(v"x", Map(v"x" -> prop("y", "prop"))) should be(Some(prop("y", "prop")))
+    extractPropertyForValue(v"x", Map(v"x" -> v"z", v"z" -> prop("y", "prop"))) should be(Some(prop(
       "y",
       "prop"
     )))
     extractPropertyForValue(function("foo", prop("x", "prop")), Map.empty) should be(Some(prop("x", "prop")))
-    extractPropertyForValue(function("foo", varFor("x"), prop("x", "prop")), Map.empty) should be(None)
+    extractPropertyForValue(function("foo", v"x", prop("x", "prop")), Map.empty) should be(None)
     extractPropertyForValue(function("foo", function("bar", prop("x", "prop"))), Map.empty) should be(None)
   }
 }

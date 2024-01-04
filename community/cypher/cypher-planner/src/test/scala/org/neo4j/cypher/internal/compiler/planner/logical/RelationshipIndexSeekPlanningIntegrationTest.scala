@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfiguration
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
@@ -284,7 +285,7 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
         .relationshipIndexOperator(
           s"(a)-[r:REL(prop > ???)]-(b)",
           argumentIds = Set("x"),
-          paramExpr = Some(varFor("x")),
+          paramExpr = Some(v"x"),
           indexType = IndexType.RANGE
         )
         .build()

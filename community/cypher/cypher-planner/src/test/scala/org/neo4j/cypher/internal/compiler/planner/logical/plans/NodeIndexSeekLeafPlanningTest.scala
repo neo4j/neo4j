@@ -85,7 +85,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   private val nPropContainsLitText = contains(nProp, literalString("Text"))
   private val nFooEqualsLit42 = equals(nFoo, lit42)
   private val nFooIsNotNull = isNotNull(nFoo)
-  private val nPropLessThanLit42 = AndedPropertyInequalities(varFor("n"), nProp, NonEmptyList(lessThan(nProp, lit42)))
+  private val nPropLessThanLit42 = AndedPropertyInequalities(v"n", nProp, NonEmptyList(lessThan(nProp, lit42)))
 
   private def hasLabel(l: String) = hasLabels("n", l)
 
@@ -154,7 +154,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   test("index seeks when there is an index on the property and there are multiple predicates") {
     val prop1: Property = prop("n", "prop")
     val prop1Predicate1 = in(prop1, listOf(lit42))
-    val prop1Predicate2 = AndedPropertyInequalities(varFor("n"), prop1, NonEmptyList(lessThan(prop1, lit6)))
+    val prop1Predicate2 = AndedPropertyInequalities(v"n", prop1, NonEmptyList(lessThan(prop1, lit6)))
     val prop1Predicate1Expr = SingleQueryExpression(lit42)
     val prop1Predicate2Expr =
       RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(ExclusiveBound(lit6))))(pos))
@@ -209,7 +209,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
     val prop1Predicate2 = in(prop1, listOf(lit43))
     val prop1Predicate3 = in(prop1, listOf(lit44))
     val prop2Predicate1 = in(prop2, listOf(lit6))
-    val prop2Predicate2 = AndedPropertyInequalities(varFor("n"), prop2, NonEmptyList(lessThan(prop2, lit6)))
+    val prop2Predicate2 = AndedPropertyInequalities(v"n", prop2, NonEmptyList(lessThan(prop2, lit6)))
     val prop1Predicate1Expr = SingleQueryExpression(lit42)
     val prop1Predicate2Expr = SingleQueryExpression(lit43)
     val prop1Predicate3Expr = SingleQueryExpression(lit44)
@@ -394,7 +394,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
     val prop1Predicate1 = in(prop1, listOf(lit42))
     val prop1Predicate2 = in(prop1, listOf(lit43))
     val prop2Predicate1 = in(prop2, listOf(lit6))
-    val prop2Predicate2 = AndedPropertyInequalities(varFor("n"), prop2, NonEmptyList(lessThan(prop2, lit6)))
+    val prop2Predicate2 = AndedPropertyInequalities(v"n", prop2, NonEmptyList(lessThan(prop2, lit6)))
 
     new givenConfig {
       addTypeToSemanticTable(lit42, CTInteger.invariant)
@@ -587,7 +587,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
     new givenConfig {
       addTypeToSemanticTable(lit42, CTInteger.invariant)
       // GIVEN 42 as x MATCH a WHERE a.prop IN [x]
-      val x: Expression = varFor("x")
+      val x: Expression = v"x"
       qg = queryGraph(in(nProp, listOf(x)), hasLabel("Awesome")).addArgumentIds(Seq(v"x"))
 
       addTypeToSemanticTable(x, CTNode.invariant)
@@ -609,7 +609,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
     new givenConfig {
       addTypeToSemanticTable(lit42, CTInteger.invariant)
       // MATCH a, x WHERE a.prop IN [x]
-      qg = queryGraph(in(nProp, listOf(varFor("x"))), hasLabel("Awesome"))
+      qg = queryGraph(in(nProp, listOf(v"x")), hasLabel("Awesome"))
 
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -636,7 +636,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
         hasLabels("n", "Awesome"),
         hasLabels("x", "Awesome"),
         in(nProp, listOf(lit42)),
-        AndedPropertyInequalities(varFor("n"), nProp, NonEmptyList(lessThan(nProp, lit6))),
+        AndedPropertyInequalities(v"n", nProp, NonEmptyList(lessThan(nProp, lit6))),
         nPropEquals,
         startsWith(nProp, literalString("foo")),
         endsWith(nProp, literalString("foo")),
@@ -667,7 +667,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           labelToken,
           Seq(IndexedProperty(nPropToken, CanGetValue, NODE_TYPE)),
           xPropExpr,
-          Set(varFor("x")),
+          Set(v"x"),
           IndexOrderNone,
           IndexType.RANGE
         )
@@ -732,7 +732,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           labelToken,
           indexedProperties,
           CompositeQueryExpression(Seq(xPropExpr, lit42Expr)),
-          Set(varFor("x"), varFor("y")),
+          Set(v"x", v"y"),
           IndexOrderNone,
           IndexType.RANGE
         ),
@@ -741,7 +741,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           labelToken,
           indexedProperties,
           CompositeQueryExpression(Seq(xPropExpr, yPropExpr)),
-          Set(varFor("x"), varFor("y")),
+          Set(v"x", v"y"),
           IndexOrderNone,
           IndexType.RANGE
         ),
@@ -750,7 +750,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           labelToken,
           indexedProperties,
           CompositeQueryExpression(Seq(lit42Expr, yPropExpr)),
-          Set(varFor("x"), varFor("y")),
+          Set(v"x", v"y"),
           IndexOrderNone,
           IndexType.RANGE
         )
@@ -767,7 +767,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
     val xPropExpr = SingleQueryExpression(xProp)
     val nPropEquals = equals(lit42, nProp)
     val nPropIn = in(nProp, listOf(lit6, lit42))
-    val nPropLessThan = AndedPropertyInequalities(varFor("n"), nProp, NonEmptyList(lessThan(nProp, lit6)))
+    val nPropLessThan = AndedPropertyInequalities(v"n", nProp, NonEmptyList(lessThan(nProp, lit6)))
     val literalFoo = literalString("foo")
     val nPropStartsWith = startsWith(nProp, literalFoo)
     val nPropEndsWith = endsWith(nProp, literalFoo)
@@ -815,7 +815,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           labelToken,
           Seq(IndexedProperty(nPropToken, CanGetValue, NODE_TYPE)),
           ManyQueryExpression(listOf(lit6, lit42)),
-          Set(varFor("x")),
+          Set(v"x"),
           IndexOrderNone,
           IndexType.RANGE
         ),
@@ -824,7 +824,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           labelToken,
           Seq(IndexedProperty(nPropToken, DoNotGetValue, NODE_TYPE)),
           RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(ExclusiveBound(lit6))))(pos)),
-          Set(varFor("x")),
+          Set(v"x"),
           IndexOrderNone,
           IndexType.RANGE
         ),
@@ -833,7 +833,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           labelToken,
           Seq(IndexedProperty(nPropToken, CanGetValue, NODE_TYPE)),
           SingleQueryExpression(lit42),
-          Set(varFor("x")),
+          Set(v"x"),
           IndexOrderNone,
           IndexType.RANGE
         ),
@@ -842,7 +842,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           labelToken,
           Seq(IndexedProperty(nPropToken, DoNotGetValue, NODE_TYPE)),
           RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(literalFoo))(pos)),
-          Set(varFor("x")),
+          Set(v"x"),
           IndexOrderNone,
           IndexType.RANGE
         ),
@@ -851,7 +851,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
           labelToken,
           Seq(IndexedProperty(nPropToken, CanGetValue, NODE_TYPE)),
           xPropExpr,
-          Set(varFor("x")),
+          Set(v"x"),
           IndexOrderNone,
           IndexType.RANGE
         )
@@ -941,7 +941,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
   test("plans index seeks such that it solves hints") {
     val hint: UsingIndexHint =
-      UsingIndexHint(varFor("n"), labelOrRelTypeName("Awesome"), Seq(PropertyKeyName("prop")(pos))) _
+      UsingIndexHint(v"n", labelOrRelTypeName("Awesome"), Seq(PropertyKeyName("prop")(pos))) _
 
     new givenConfig {
       addTypeToSemanticTable(lit42, CTInteger.invariant)
@@ -966,7 +966,7 @@ class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
 
   test("plans unique index seeks such that it solves hints") {
     val hint: UsingIndexHint =
-      UsingIndexHint(varFor("n"), labelOrRelTypeName("Awesome"), Seq(PropertyKeyName("prop")(pos))) _
+      UsingIndexHint(v"n", labelOrRelTypeName("Awesome"), Seq(PropertyKeyName("prop")(pos))) _
 
     new givenConfig {
       addTypeToSemanticTable(lit42, CTInteger.invariant)

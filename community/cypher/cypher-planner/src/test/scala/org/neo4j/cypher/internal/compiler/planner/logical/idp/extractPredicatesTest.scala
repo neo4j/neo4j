@@ -48,8 +48,8 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
 
   test("(n)-[r* {prop: 42}]->()") {
     val rewrittenPredicate = AllIterablePredicate(
-      FilterScope(varFor("  FRESHID15"), Some(propEquality("  FRESHID15", "prop", 42)))(pos),
-      varFor("r")
+      FilterScope(v"  FRESHID15", Some(propEquality("  FRESHID15", "prop", 42)))(pos),
+      v"r"
     )(pos)
 
     val (nodePredicates, relationshipPredicates, solvedPredicates) =
@@ -64,7 +64,7 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
 
     nodePredicates shouldBe empty
     relationshipPredicates shouldBe ListSet(VariablePredicate(
-      varFor("  FRESHID15"),
+      v"  FRESHID15",
       propEquality("  FRESHID15", "prop", 42)
     ))
     solvedPredicates shouldBe ListSet(rewrittenPredicate)
@@ -72,8 +72,8 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
 
   test("(n)-[r* {prop: 42}]->() with bound variable") {
     val rewrittenPredicate = AllIterablePredicate(
-      FilterScope(varFor("  FRESHID15"), Some(propEquality("  FRESHID15", "prop", 42)))(pos),
-      varFor("r")
+      FilterScope(v"  FRESHID15", Some(propEquality("  FRESHID15", "prop", 42)))(pos),
+      v"r"
     )(pos)
 
     val (nodePredicates, relationshipPredicates, solvedPredicates) =
@@ -88,7 +88,7 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
 
     nodePredicates shouldBe empty
     relationshipPredicates shouldBe ListSet(VariablePredicate(
-      varFor("  FRESHID15"),
+      v"  FRESHID15",
       propEquality("  FRESHID15", "prop", 42)
     ))
     solvedPredicates shouldBe ListSet(rewrittenPredicate)
@@ -96,13 +96,13 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
 
   test("(n)-[x*]->(m) WHERE ALL(r in x WHERE  r.prop < 4)") {
     val rewrittenPredicate = AllIterablePredicate(
-      FilterScope(varFor("r"), Some(propLessThan("r", "prop", 4)))(pos),
+      FilterScope(v"r", Some(propLessThan("r", "prop", 4)))(pos),
       function(
         "relationships",
         PathExpression(
           NodePathStep(
-            varFor("n"),
-            MultiRelationshipPathStep(varFor("x"), SemanticDirection.OUTGOING, Some(varFor("m")), NilPathStep()(pos))(
+            v"n",
+            MultiRelationshipPathStep(v"x", SemanticDirection.OUTGOING, Some(v"m"), NilPathStep()(pos))(
               pos
             )
           )(pos)
@@ -121,7 +121,7 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
       )
 
     nodePredicates shouldBe empty
-    relationshipPredicates shouldBe ListSet(VariablePredicate(varFor("r"), propLessThan("r", "prop", 4)))
+    relationshipPredicates shouldBe ListSet(VariablePredicate(v"r", propLessThan("r", "prop", 4)))
     solvedPredicates shouldBe ListSet(rewrittenPredicate)
   }
 
@@ -130,13 +130,13 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
   ) {
 
     val rewrittenRelPredicate = NoneIterablePredicate(
-      FilterScope(varFor("r"), Some(propLessThan("r", "prop", 4)))(pos),
+      FilterScope(v"r", Some(propLessThan("r", "prop", 4)))(pos),
       function(
         "relationships",
         PathExpression(
           NodePathStep(
-            varFor("n"),
-            MultiRelationshipPathStep(varFor("x"), SemanticDirection.OUTGOING, Some(varFor("0")), NilPathStep()(pos))(
+            v"n",
+            MultiRelationshipPathStep(v"x", SemanticDirection.OUTGOING, Some(v"0"), NilPathStep()(pos))(
               pos
             )
           )(pos)
@@ -145,13 +145,13 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
     )(pos)
 
     val rewrittenNodePredicate = AllIterablePredicate(
-      FilterScope(varFor("m"), Some(isNotNull(prop("m", "prop"))))(pos),
+      FilterScope(v"m", Some(isNotNull(prop("m", "prop"))))(pos),
       function(
         "nodes",
         PathExpression(
           NodePathStep(
-            varFor("n"),
-            MultiRelationshipPathStep(varFor("x"), SemanticDirection.OUTGOING, Some(varFor("o")), NilPathStep()(pos))(
+            v"n",
+            MultiRelationshipPathStep(v"x", SemanticDirection.OUTGOING, Some(v"o"), NilPathStep()(pos))(
               pos
             )
           )(pos)
@@ -169,22 +169,22 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
         VarPatternLength.unlimited
       )
 
-    nodePredicates shouldBe ListSet(VariablePredicate(varFor("m"), isNotNull(prop("m", "prop"))))
-    relationshipPredicates shouldBe ListSet(VariablePredicate(varFor("r"), not(propLessThan("r", "prop", 4))))
+    nodePredicates shouldBe ListSet(VariablePredicate(v"m", isNotNull(prop("m", "prop"))))
+    relationshipPredicates shouldBe ListSet(VariablePredicate(v"r", not(propLessThan("r", "prop", 4))))
     solvedPredicates shouldBe ListSet(rewrittenRelPredicate, rewrittenNodePredicate)
   }
 
   test("p = (n)-[r*1]->(m) WHERE ALL (x IN nodes(p) WHERE x.prop = n.prop") {
     val pathExpression = PathExpression(
       NodePathStep(
-        varFor("n"),
-        MultiRelationshipPathStep(varFor("r"), SemanticDirection.OUTGOING, Some(varFor("m")), NilPathStep()(pos))(pos)
+        v"n",
+        MultiRelationshipPathStep(v"r", SemanticDirection.OUTGOING, Some(v"m"), NilPathStep()(pos))(pos)
       )(pos)
     )(pos)
 
     val nodePredicate = equals(prop("x", "prop"), prop("n", "prop"))
     val rewrittenPredicate = AllIterablePredicate(
-      FilterScope(varFor("x"), Some(nodePredicate))(pos),
+      FilterScope(v"x", Some(nodePredicate))(pos),
       function("nodes", pathExpression)
     )(pos)
 
@@ -198,7 +198,7 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
         VarPatternLength.unlimited
       )
 
-    nodePredicates shouldBe ListSet(VariablePredicate(varFor("x"), equals(prop("x", "prop"), prop("n", "prop"))))
+    nodePredicates shouldBe ListSet(VariablePredicate(v"x", equals(prop("x", "prop"), prop("n", "prop"))))
     relationshipPredicates shouldBe empty
     solvedPredicates shouldBe ListSet(rewrittenPredicate)
   }
@@ -206,13 +206,13 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
   test("p = (n)-[r*1]->(m) WHERE ALL (x IN nodes(p) WHERE length(p) = 1)") {
     val pathExpression = PathExpression(
       NodePathStep(
-        varFor("n"),
-        MultiRelationshipPathStep(varFor("r"), SemanticDirection.OUTGOING, Some(varFor("m")), NilPathStep()(pos))(pos)
+        v"n",
+        MultiRelationshipPathStep(v"r", SemanticDirection.OUTGOING, Some(v"m"), NilPathStep()(pos))(pos)
       )(pos)
     )(pos)
 
     val rewrittenPredicate = AllIterablePredicate(
-      FilterScope(varFor("x"), Some(equals(function("length", pathExpression), literalInt(1))))(pos),
+      FilterScope(v"x", Some(equals(function("length", pathExpression), literalInt(1))))(pos),
       function("nodes", pathExpression)
     )(pos)
 
@@ -235,13 +235,13 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
 
     val pathExpression = PathExpression(
       NodePathStep(
-        varFor("n"),
-        MultiRelationshipPathStep(varFor("rel"), SemanticDirection.OUTGOING, Some(varFor("m")), NilPathStep()(pos))(pos)
+        v"n",
+        MultiRelationshipPathStep(v"rel", SemanticDirection.OUTGOING, Some(v"m"), NilPathStep()(pos))(pos)
       )(pos)
     )(pos)
 
     val rewrittenPredicate = AllIterablePredicate(
-      FilterScope(varFor("x"), Some(ors(equals(varFor("x"), varFor("n")), equals(varFor("x"), varFor("m")))))(pos),
+      FilterScope(v"x", Some(ors(equals(v"x", v"n"), equals(v"x", v"m"))))(pos),
       function("nodes", pathExpression)
     )(pos)
 
@@ -263,13 +263,13 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
   test("p = (n)-[r*1]->() WHERE ALL (x IN relationships(p) WHERE length(p) = 1)") {
     val pathExpression = PathExpression(
       NodePathStep(
-        varFor("n"),
-        MultiRelationshipPathStep(varFor("r"), SemanticDirection.OUTGOING, Some(varFor("m")), NilPathStep()(pos))(pos)
+        v"n",
+        MultiRelationshipPathStep(v"r", SemanticDirection.OUTGOING, Some(v"m"), NilPathStep()(pos))(pos)
       )(pos)
     )(pos)
 
     val rewrittenPredicate = AllIterablePredicate(
-      FilterScope(varFor("x"), Some(equals(function("length", pathExpression), literalInt(1))))(pos),
+      FilterScope(v"x", Some(equals(function("length", pathExpression), literalInt(1))))(pos),
       function("relationships", pathExpression)
     )(pos)
 
@@ -291,13 +291,13 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
   test("p = (n)-[r*1]->() WHERE NONE (x IN nodes(p) WHERE length(p) = 1)") {
     val pathExpression = PathExpression(
       NodePathStep(
-        varFor("n"),
-        MultiRelationshipPathStep(varFor("r"), SemanticDirection.OUTGOING, Some(varFor("m")), NilPathStep()(pos))(pos)
+        v"n",
+        MultiRelationshipPathStep(v"r", SemanticDirection.OUTGOING, Some(v"m"), NilPathStep()(pos))(pos)
       )(pos)
     )(pos)
 
     val rewrittenPredicate = NoneIterablePredicate(
-      FilterScope(varFor("x"), Some(equals(function("length", pathExpression), literalInt(1))))(pos),
+      FilterScope(v"x", Some(equals(function("length", pathExpression), literalInt(1))))(pos),
       function("nodes", pathExpression)
     )(pos)
 
@@ -319,13 +319,13 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
   test("p = (n)-[r*1]->(m) WHERE NONE (x IN relationships(p) WHERE length(p) = 1)") {
     val pathExpression = PathExpression(
       NodePathStep(
-        varFor("n"),
-        MultiRelationshipPathStep(varFor("r"), SemanticDirection.OUTGOING, Some(varFor("m")), NilPathStep()(pos))(pos)
+        v"n",
+        MultiRelationshipPathStep(v"r", SemanticDirection.OUTGOING, Some(v"m"), NilPathStep()(pos))(pos)
       )(pos)
     )(pos)
 
     val rewrittenPredicate = NoneIterablePredicate(
-      FilterScope(varFor("x"), Some(equals(function("length", pathExpression), literalInt(1))))(pos),
+      FilterScope(v"x", Some(equals(function("length", pathExpression), literalInt(1))))(pos),
       function("relationships", pathExpression)
     )(pos)
 
@@ -343,7 +343,7 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
 
     val rewrittenPredicate = AllIterablePredicate(
       FilterScope(
-        varFor("x"),
+        v"x",
         Some(
           ands(
             equals(prop("x", "aProp"), prop("a", "prop")),
@@ -377,7 +377,7 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
 
     val solvableAllPredicate = AllIterablePredicate(
       FilterScope(
-        varFor("x"),
+        v"x",
         Some(
           equals(prop("x", "aProp"), prop("a", "prop"))
         )
@@ -386,7 +386,7 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
     )(pos)
     val dependingAllPredicate = AllIterablePredicate(
       FilterScope(
-        varFor("x"),
+        v"x",
         Some(
           equals(prop("x", "bProp"), prop("b", "prop"))
         )
@@ -403,7 +403,7 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
 
     nodePredicates shouldBe empty
     relationshipPredicates shouldBe ListSet(
-      VariablePredicate(varFor("x"), equals(prop("x", "aProp"), prop("a", "prop")))
+      VariablePredicate(v"x", equals(prop("x", "aProp"), prop("a", "prop")))
     )
     solvedPredicates shouldBe ListSet(solvableAllPredicate)
   }
@@ -411,21 +411,21 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
   test("p = (n)-[r*1]->(m) WHERE ALL (x IN nodes(p) WHERE x.prop < m.prop) with bound variable") {
     val pathExpression = PathExpression(
       NodePathStep(
-        varFor("n"),
-        MultiRelationshipPathStep(varFor("r"), SemanticDirection.OUTGOING, Some(varFor("m")), NilPathStep()(pos))(pos)
+        v"n",
+        MultiRelationshipPathStep(v"r", SemanticDirection.OUTGOING, Some(v"m"), NilPathStep()(pos))(pos)
       )(pos)
     )(pos)
 
     val nodePredicate = lessThan(prop("x", "prop"), prop("m", "prop"))
     val rewrittenPredicate = AllIterablePredicate(
-      FilterScope(varFor("x"), Some(nodePredicate))(pos),
+      FilterScope(v"x", Some(nodePredicate))(pos),
       function("nodes", pathExpression)
     )(pos)
 
     val (nodePredicates, relationshipPredicates, solvedPredicates) =
       extractPredicates(Seq(rewrittenPredicate), v"r", v"n", v"m", targetNodeIsBound = true, VarPatternLength.fixed(1))
 
-    nodePredicates shouldBe ListSet(VariablePredicate(varFor("x"), lessThan(prop("x", "prop"), prop("m", "prop"))))
+    nodePredicates shouldBe ListSet(VariablePredicate(v"x", lessThan(prop("x", "prop"), prop("m", "prop"))))
     relationshipPredicates shouldBe empty
     solvedPredicates shouldBe ListSet(rewrittenPredicate)
   }
@@ -433,7 +433,7 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
   test("should mark uniqueness predicate as solved") {
     val (nodePredicates, relationshipPredicates, solvedPredicates) =
       extractPredicates(
-        Seq(unique(varFor("r")), unique(varFor("other_rel"))),
+        Seq(unique(v"r"), unique(v"other_rel")),
         v"r",
         v"n",
         v"m",
@@ -443,7 +443,7 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
 
     nodePredicates shouldBe empty
     relationshipPredicates shouldBe empty
-    solvedPredicates shouldBe ListSet(unique(varFor("r")))
+    solvedPredicates shouldBe ListSet(unique(v"r"))
   }
 
   test("should extract VarLengthBound predicates on exact match") {
@@ -520,19 +520,19 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
       // p = (a)-[r*]->(b)
       val pathExpr = PathExpression(
         NodePathStep(
-          varFor("a"),
-          MultiRelationshipPathStep(varFor("r"), SemanticDirection.OUTGOING, Some(varFor("b")), NilPathStep()(pos))(
+          v"a",
+          MultiRelationshipPathStep(v"r", SemanticDirection.OUTGOING, Some(v"b"), NilPathStep()(pos))(
             pos
           )
         )(pos)
       )(pos)
 
       val iterablePredicate = if (negatedPredicate)
-        NoneIterablePredicate(varFor("m"), function(funcName, pathExpr), Some(pred))(pos)
+        NoneIterablePredicate(v"m", function(funcName, pathExpr), Some(pred))(pos)
       else
-        AllIterablePredicate(varFor("m"), function(funcName, pathExpr), Some(pred))(pos)
+        AllIterablePredicate(v"m", function(funcName, pathExpr), Some(pred))(pos)
 
-      val solvedPredicate = VariablePredicate(varFor("m"), if (negatedPredicate) not(pred) else pred)
+      val solvedPredicate = VariablePredicate(v"m", if (negatedPredicate) not(pred) else pred)
       (iterablePredicate, solvedPredicate)
     }
 

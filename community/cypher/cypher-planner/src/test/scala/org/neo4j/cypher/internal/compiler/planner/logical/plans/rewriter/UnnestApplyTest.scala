@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningAttributesTestSupport
@@ -42,7 +43,7 @@ import org.scalatest.Assertion
 class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestSupport
     with LogicalPlanConstructionTestSupport with AstConstructionTestSupport {
 
-  private val po_n: ProvidedOrder = ProvidedOrder.asc(varFor("n"))
+  private val po_n: ProvidedOrder = ProvidedOrder.asc(v"n")
 
   test("should unnest apply with a single Argument on the lhs") {
     val inputBuilder = new LogicalPlanBuilder()
@@ -253,7 +254,7 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
       .apply()
       .|.nodeIndexOperator(
         "n:Label(prop=???)",
-        paramExpr = Some(varFor("x")),
+        paramExpr = Some(v"x"),
         argumentIds = Set("x"),
         indexType = IndexType.RANGE
       )

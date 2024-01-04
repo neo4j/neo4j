@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfiguration
 import org.neo4j.cypher.internal.expressions.NilPathStep
@@ -45,8 +46,8 @@ class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with Log
   private val pathExpr: PathExpression =
     PathExpression(
       NodePathStep(
-        varFor("a"),
-        SingleRelationshipPathStep(varFor("r"), SemanticDirection.OUTGOING, Some(varFor("b")), NilPathStep()(pos))(pos)
+        v"a",
+        SingleRelationshipPathStep(v"r", SemanticDirection.OUTGOING, Some(v"b"), NilPathStep()(pos))(pos)
       )(pos)
     )(pos)
 
@@ -67,7 +68,7 @@ class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with Log
       .filterExpression(
         equals(
           function("head", function("nodes", pathExpr)),
-          varFor("a")
+          v"a"
         )
       )
       .expandAll("(a)-[r]->(b)")
@@ -83,7 +84,7 @@ class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with Log
       .filterExpression(
         equals(
           function("head", function("nodes", pathExpr)),
-          varFor("a")
+          v"a"
         ),
         greaterThan(
           function("length", pathExpr),

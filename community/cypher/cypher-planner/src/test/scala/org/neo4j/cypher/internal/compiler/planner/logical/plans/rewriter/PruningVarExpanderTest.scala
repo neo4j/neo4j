@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.expressions.Expression
@@ -464,11 +465,11 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
   test("double var expand with grouping aggregation to both bfs when min depth is 0") {
     val before = new LogicalPlanBuilder(wholePlan = false)
       .aggregation(
-        Map("a" -> varFor("a")),
+        Map("a" -> v"a"),
         Map(
-          "agg1" -> min(size(varFor("r2"))),
-          "agg2" -> min(length(varLengthPathExpression(varFor("a"), varFor("r1"), varFor("b")))),
-          "agg3" -> min(length(varLengthPathExpression(varFor("a"), varFor("r1"), varFor("b"))))
+          "agg1" -> min(size(v"r2")),
+          "agg2" -> min(length(varLengthPathExpression(v"a", v"r1", v"b"))),
+          "agg3" -> min(length(varLengthPathExpression(v"a", v"r1", v"b")))
         )
       )
       .expand("(b)-[r2*0..3]-(c)")
@@ -495,11 +496,11 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
   test("double var expand with grouping aggregation to both bfs when min depth is 1") {
     val before = new LogicalPlanBuilder(wholePlan = false)
       .aggregation(
-        Map("a" -> varFor("a")),
+        Map("a" -> v"a"),
         Map(
-          "agg1" -> min(size(varFor("r2"))),
-          "agg2" -> min(length(varLengthPathExpression(varFor("a"), varFor("r1"), varFor("b")))),
-          "agg3" -> min(length(varLengthPathExpression(varFor("a"), varFor("r1"), varFor("b"))))
+          "agg1" -> min(size(v"r2")),
+          "agg2" -> min(length(varLengthPathExpression(v"a", v"r1", v"b"))),
+          "agg3" -> min(length(varLengthPathExpression(v"a", v"r1", v"b")))
         )
       )
       .expand("(b)-[r2*1..3]-(c)")
@@ -700,17 +701,17 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
       .distinct("a AS a")
       .valueHashJoin("pathA=pathB")
       .|.projection(Map("pathB" -> varLengthPathExpression(
-        varFor("a"),
-        varFor("r"),
-        varFor("b"),
+        v"a",
+        v"r",
+        v"b",
         SemanticDirection.BOTH
       )))
       .|.expand("(b)-[r:R*2..3]-(a)")
       .|.allNodeScan("b")
       .projection(Map("pathA" -> varLengthPathExpression(
-        varFor("a"),
-        varFor("r"),
-        varFor("b"),
+        v"a",
+        v"r",
+        v"b",
         SemanticDirection.BOTH
       )))
       .expand("(a)-[r:R*2..3]-(b)")
@@ -725,17 +726,17 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
       .distinct("a AS a")
       .valueHashJoin("pathA=pathB")
       .|.projection(Map("pathB" -> varLengthPathExpression(
-        varFor("a"),
-        varFor("r"),
-        varFor("b"),
+        v"a",
+        v"r",
+        v"b",
         SemanticDirection.BOTH
       )))
       .|.expand("(b)-[r:R*1..3]-(a)")
       .|.allNodeScan("b")
       .projection(Map("pathA" -> varLengthPathExpression(
-        varFor("a"),
-        varFor("r"),
-        varFor("b"),
+        v"a",
+        v"r",
+        v"b",
         SemanticDirection.BOTH
       )))
       .expand("(a)-[r:R*1..3]-(b)")
@@ -1095,9 +1096,9 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
       .distinct("d AS d")
       .projection("nodes(path) AS d")
       .projection(Map("path" -> varLengthPathExpression(
-        varFor("from"),
-        varFor("r"),
-        varFor("to"),
+        v"from",
+        v"r",
+        v"to",
         SemanticDirection.BOTH
       )))
       .expand("(from)-[r*0..2]-(to)")
@@ -1142,7 +1143,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
   }
 
   test("should handle insanely long logical plans without running out of stack") {
-    val leafPlan: LogicalPlan = Argument(Set(varFor("x")))
+    val leafPlan: LogicalPlan = Argument(Set(v"x"))
     var plan = leafPlan
     (1 until 10000) foreach { _ =>
       plan = Selection(Seq(trueLiteral), plan)
@@ -1639,7 +1640,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val before = new LogicalPlanBuilder(wholePlan = false)
       .aggregation(
         Map.empty[String, Expression],
-        Map("distance" -> min(length(varLengthPathExpression(varFor("a"), varFor("r"), varFor("b")))))
+        Map("distance" -> min(length(varLengthPathExpression(v"a", v"r", v"b"))))
       )
       .expand("(a)-[r*0..]-(b)")
       .allNodeScan("a")
@@ -1660,7 +1661,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val before = new LogicalPlanBuilder(wholePlan = false)
       .aggregation(
         Map.empty[String, Expression],
-        Map("distance" -> min(length(varLengthPathExpression(varFor("a"), varFor("r"), varFor("b")))))
+        Map("distance" -> min(length(varLengthPathExpression(v"a", v"r", v"b"))))
       )
       .expand("(a)-[r*1..]-(b)")
       .allNodeScan("a")
@@ -1681,7 +1682,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val before = new LogicalPlanBuilder(wholePlan = false)
       .aggregation(
         Map.empty[String, Expression],
-        Map("distance" -> min(length(varLengthPathExpression(varFor("a"), varFor("r"), varFor("b")))))
+        Map("distance" -> min(length(varLengthPathExpression(v"a", v"r", v"b"))))
       )
       .expand("(a)-[r*2..]-(b)")
       .allNodeScan("a")
@@ -1693,8 +1694,8 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
   test("use bfs pruning with aggregation when grouping aggregation function is min(length(path)) when min depth is 0") {
     val before = new LogicalPlanBuilder(wholePlan = false)
       .aggregation(
-        Map("a" -> varFor("a")),
-        Map("distance" -> min(length(varLengthPathExpression(varFor("a"), varFor("r"), varFor("b")))))
+        Map("a" -> v"a"),
+        Map("distance" -> min(length(varLengthPathExpression(v"a", v"r", v"b"))))
       )
       .expand("(a)-[r*0..]-(b)")
       .allNodeScan("a")
@@ -1716,8 +1717,8 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
   ) {
     val before = new LogicalPlanBuilder(wholePlan = false)
       .aggregation(
-        Map("a" -> varFor("a")),
-        Map("distance" -> min(length(varLengthPathExpression(varFor("a"), varFor("r"), varFor("b")))))
+        Map("a" -> v"a"),
+        Map("distance" -> min(length(varLengthPathExpression(v"a", v"r", v"b"))))
       )
       .expand("(a)-[r*1..]-(b)")
       .allNodeScan("a")
@@ -1737,8 +1738,8 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
   test("do not use pruning with aggregation when grouping aggregation function is min(length(path))") {
     val before = new LogicalPlanBuilder(wholePlan = false)
       .aggregation(
-        Map("a" -> varFor("a")),
-        Map("distance" -> min(length(varLengthPathExpression(varFor("a"), varFor("r"), varFor("b")))))
+        Map("a" -> v"a"),
+        Map("distance" -> min(length(varLengthPathExpression(v"a", v"r", v"b"))))
       )
       .expand("(a)-[r*2..]-(b)")
       .allNodeScan("a")
@@ -1814,12 +1815,12 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
 
     val before = new LogicalPlanBuilder(wholePlan = false)
       .aggregation(
-        Map("from" -> varFor("from")),
+        Map("from" -> v"from"),
         Map(
-          "valid1" -> min(length(varLengthPathExpression(varFor("a"), varFor("r"), varFor("b")))),
-          "valid2" -> min(size(varFor("r"))),
-          "valid3" -> collect(varFor("to"), distinct = true),
-          "invalid" -> collect(varFor("r"), distinct = true)
+          "valid1" -> min(length(varLengthPathExpression(v"a", v"r", v"b"))),
+          "valid2" -> min(size(v"r")),
+          "valid3" -> collect(v"to", distinct = true),
+          "invalid" -> collect(v"r", distinct = true)
         )
       )
       .expand("(from)-[r:R*1..3]-(to)")

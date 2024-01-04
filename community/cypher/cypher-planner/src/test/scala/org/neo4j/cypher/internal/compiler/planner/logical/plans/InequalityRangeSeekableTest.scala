@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.plans
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.InequalityExpression
@@ -107,9 +108,9 @@ class InequalityRangeSeekableTest extends CypherFunSuite with AstConstructionTes
   private def valueRangeSeekable(first: InequalityExpression, others: InequalityExpression*) = {
     val inequalities = NonEmptyList(first, others: _*)
     InequalityRangeSeekable(
-      varFor("n"),
+      v"n",
       prop("n", "prop"),
-      AndedPropertyInequalities(varFor("n"), prop("n", "prop"), inequalities)
+      AndedPropertyInequalities(v"n", prop("n", "prop"), inequalities)
     )
   }
 }

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfiguration
@@ -372,7 +373,7 @@ class LimitPropagationPlanningIntegrationTest
       planBuilder
         .produceResults("a", "c")
         .skip(100000)
-        .top(Seq(Ascending(varFor("c.id"))), add(literalInt(10), literalInt(100000)))
+        .top(Seq(Ascending(v"c.id")), add(literalInt(10), literalInt(100000)))
         .projection("cache[c.id] AS `c.id`")
         .filter("c:C", "cacheNFromStore[c.id] STARTS WITH ''")
         .expandAll("(b)<-[cb:REL_CB]-(c)")
@@ -396,7 +397,7 @@ class LimitPropagationPlanningIntegrationTest
       planBuilder
         .produceResults("a", "c")
         .skip(100000)
-        .top(Seq(Ascending(varFor("cb.id"))), add(literalInt(1), literalInt(100000)))
+        .top(Seq(Ascending(v"cb.id")), add(literalInt(1), literalInt(100000)))
         .projection("cacheR[cb.id] AS `cb.id`")
         .filterExpression(
           hasLabels("c", "C"),
@@ -476,7 +477,7 @@ class LimitPropagationPlanningIntegrationTest
       planBuilder
         .produceResults("a", "c")
         .skip(100000)
-        .top(Seq(Ascending(varFor("c.id"))), add(literalInt(10), literalInt(100000)))
+        .top(Seq(Ascending(v"c.id")), add(literalInt(10), literalInt(100000)))
         .projection("cache[c.id] AS `c.id`")
         .distinct("a AS a", "c AS c")
         .filter("c:C", "cacheNFromStore[c.id] STARTS WITH ''")

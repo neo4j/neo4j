@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
-  private val aggregatingMap = Map[LogicalVariable, Expression](varFor("count(*)") -> CountStar()(pos))
+  private val aggregatingMap = Map[LogicalVariable, Expression](v"count(*)" -> CountStar()(pos))
 
   test("should introduce aggregation when needed") {
     val projection = AggregatingQueryProjection(
@@ -75,7 +75,7 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("RETURN x.prop, count(*) => WITH x.prop as `x.prop` RETURN `x.prop`, count(*)") {
     // Given RETURN x.prop, count(*) => WITH x.prop as `x.prop` RETURN `x.prop`, count(*)
     val groupingMap = Map[LogicalVariable, Expression](v"x.prop" -> prop("x", "prop"))
-    val groupingKeyMap = Map[LogicalVariable, Expression](v"x.prop" -> varFor("x.prop"))
+    val groupingKeyMap = Map[LogicalVariable, Expression](v"x.prop" -> v"x.prop")
     val projection = AggregatingQueryProjection(
       groupingExpressions = groupingKeyMap,
       aggregationExpressions = aggregatingMap

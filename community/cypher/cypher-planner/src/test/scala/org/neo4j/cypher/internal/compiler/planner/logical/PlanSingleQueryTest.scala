@@ -73,7 +73,7 @@ class PlanSingleQueryTest extends CypherFunSuite with LogicalPlanningTestSupport
     val q = RegularSinglePlannerQuery(
       queryGraph = QueryGraph(patternNodes = Set(v"n")),
       horizon = RegularQueryProjection(
-        projections = Map(v"m" -> varFor("n")),
+        projections = Map(v"m" -> v"n"),
         queryPagination = QueryPagination(
           limit = Some(literalInt(1000))
         )
@@ -99,7 +99,7 @@ class PlanSingleQueryTest extends CypherFunSuite with LogicalPlanningTestSupport
     val q = RegularSinglePlannerQuery(
       queryGraph = QueryGraph(patternNodes = Set(v"n")),
       horizon = RegularQueryProjection(
-        projections = Map(v"m" -> varFor("n")),
+        projections = Map(v"m" -> v"n"),
         queryPagination = QueryPagination(
           limit = Some(literalInt(1000))
         )

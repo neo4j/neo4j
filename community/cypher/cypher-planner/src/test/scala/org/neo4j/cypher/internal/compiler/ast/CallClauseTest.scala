@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.ast
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.ast.ProcedureResult
 import org.neo4j.cypher.internal.ast.ProcedureResultItem
 import org.neo4j.cypher.internal.ast.UnresolvedCall
@@ -54,7 +55,7 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
     val signature =
       ProcedureSignature(qualifiedName, signatureInputs, signatureOutputs, None, ProcedureReadOnlyAccess, id = ID)
     val callArguments = IndexedSeq(parameter("a", CTInteger))
-    val callResults = IndexedSeq(ProcedureResultItem(varFor("x"))(pos), ProcedureResultItem(varFor("y"))(pos))
+    val callResults = IndexedSeq(ProcedureResultItem(v"x")(pos), ProcedureResultItem(v"y")(pos))
 
     val resolved = ResolvedCall(_ => signature)(unresolved)
 
@@ -105,7 +106,7 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
     val signature =
       ProcedureSignature(qualifiedName, signatureInputs, signatureOutputs, None, ProcedureReadOnlyAccess, id = ID)
     val callArguments = Seq(parameter("a", CTInteger))
-    val callResults = IndexedSeq(ProcedureResultItem(varFor("x"))(pos), ProcedureResultItem(varFor("y"))(pos))
+    val callResults = IndexedSeq(ProcedureResultItem(v"x")(pos), ProcedureResultItem(v"y")(pos))
     val unresolved = UnresolvedCall(ns, name, None, Some(ProcedureResult(callResults)(pos)))(pos)
 
     val resolved = ResolvedCall(_ => signature)(unresolved)
@@ -131,7 +132,7 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
     val signature =
       ProcedureSignature(qualifiedName, signatureInputs, signatureOutputs, None, ProcedureReadOnlyAccess, id = ID)
     val callArguments = Seq(parameter("a", CTAny))
-    val callResults = IndexedSeq(ProcedureResultItem(varFor("x"))(pos), ProcedureResultItem(varFor("y"))(pos))
+    val callResults = IndexedSeq(ProcedureResultItem(v"x")(pos), ProcedureResultItem(v"y")(pos))
     val unresolved = UnresolvedCall(ns, name, Some(callArguments), None)(pos)
 
     val resolved = ResolvedCall(_ => signature)(unresolved)
@@ -184,8 +185,8 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
       ProcedureSignature(qualifiedName, signatureInputs, signatureOutputs, None, ProcedureReadOnlyAccess, id = ID)
     val callArguments = Seq(parameter("a", CTAny))
     val callResults = IndexedSeq(
-      ProcedureResultItem(varFor("x"))(pos),
-      ProcedureResultItem(ProcedureOutput("y")(pos), varFor("z"))(pos)
+      ProcedureResultItem(v"x")(pos),
+      ProcedureResultItem(ProcedureOutput("y")(pos), v"z")(pos)
     )
     val unresolved = UnresolvedCall(ns, name, Some(callArguments), Some(ProcedureResult(callResults)(pos)))(pos)
 
@@ -226,8 +227,8 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
       ProcedureSignature(qualifiedName, signatureInputs, signatureOutputs, None, ProcedureReadOnlyAccess, id = ID)
     val callArguments = Seq(parameter("a", CTAny))
     val callResults = IndexedSeq(
-      ProcedureResultItem(varFor("x"))(pos),
-      ProcedureResultItem(ProcedureOutput("y")(pos), varFor("z"))(pos)
+      ProcedureResultItem(v"x")(pos),
+      ProcedureResultItem(ProcedureOutput("y")(pos), v"z")(pos)
     )
     val unresolved = UnresolvedCall(ns, name, Some(callArguments), Some(ProcedureResult(callResults)(pos)))(pos)
     val resolved = ResolvedCall(_ => signature)(unresolved)
@@ -254,8 +255,8 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
       ProcedureSignature(qualifiedName, signatureInputs, signatureOutputs, None, ProcedureReadOnlyAccess, id = ID)
     val callArguments = Seq.empty
     val callResults = IndexedSeq(
-      ProcedureResultItem(varFor("x"))(pos),
-      ProcedureResultItem(ProcedureOutput("y")(pos), varFor("z"))(pos)
+      ProcedureResultItem(v"x")(pos),
+      ProcedureResultItem(ProcedureOutput("y")(pos), v"z")(pos)
     )
     val unresolved = UnresolvedCall(ns, name, Some(callArguments), Some(ProcedureResult(callResults)(pos)))(pos)
     val resolved = ResolvedCall(_ => signature)(unresolved)
@@ -278,8 +279,8 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
       ProcedureSignature(qualifiedName, signatureInputs, signatureOutputs, None, ProcedureReadOnlyAccess, id = ID)
     val callArguments = Seq(parameter("a", CTAny))
     val callResults = IndexedSeq(
-      ProcedureResultItem(varFor("x"))(pos),
-      ProcedureResultItem(ProcedureOutput("y")(pos), varFor("x"))(pos)
+      ProcedureResultItem(v"x")(pos),
+      ProcedureResultItem(ProcedureOutput("y")(pos), v"x")(pos)
     )
     val unresolved = UnresolvedCall(ns, name, Some(callArguments), Some(ProcedureResult(callResults)(pos)))(pos)
     val resolved = ResolvedCall(_ => signature)(unresolved)
@@ -296,8 +297,8 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
       ProcedureSignature(qualifiedName, signatureInputs, signatureOutputs, None, ProcedureReadOnlyAccess, id = ID)
     val callArguments = Seq(parameter("a", CTAny))
     val callResults = IndexedSeq(
-      ProcedureResultItem(varFor("x"))(pos),
-      ProcedureResultItem(ProcedureOutput("p")(pos), varFor("y"))(pos)
+      ProcedureResultItem(v"x")(pos),
+      ProcedureResultItem(ProcedureOutput("p")(pos), v"y")(pos)
     )
     val unresolved = UnresolvedCall(ns, name, Some(callArguments), Some(ProcedureResult(callResults)(pos)))(pos)
     val resolved = ResolvedCall(_ => signature)(unresolved)
@@ -314,8 +315,8 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
       ProcedureSignature(qualifiedName, signatureInputs, signatureOutputs, None, ProcedureReadOnlyAccess, id = ID)
     val callArguments = Seq(literalString("nope"))
     val callResults = IndexedSeq(
-      ProcedureResultItem(varFor("x"))(pos),
-      ProcedureResultItem(ProcedureOutput("y")(pos), varFor("z"))(pos)
+      ProcedureResultItem(v"x")(pos),
+      ProcedureResultItem(ProcedureOutput("y")(pos), v"z")(pos)
     )
     val unresolved = UnresolvedCall(ns, name, Some(callArguments), Some(ProcedureResult(callResults)(pos)))(pos)
     val resolved = ResolvedCall(_ => signature)(unresolved)

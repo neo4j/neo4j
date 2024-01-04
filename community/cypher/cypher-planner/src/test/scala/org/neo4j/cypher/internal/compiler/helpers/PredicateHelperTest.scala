@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.helpers
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.helpers.PredicateHelper.isPredicate
 import org.neo4j.cypher.internal.expressions.GetDegree
 import org.neo4j.cypher.internal.expressions.GreaterThan
@@ -31,12 +32,12 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 class PredicateHelperTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("isPredicate tests") {
-    isPredicate(HasLabels(varFor("n"), Seq(LabelName("L")(pos)))(pos)) shouldBe true
-    isPredicate(GetDegree(varFor("n"), None, SemanticDirection.OUTGOING)(pos)) shouldBe false
-    isPredicate(function("exists", varFor("x"))) shouldBe true
-    isPredicate(function("toBoolean", varFor("x"))) shouldBe true
-    isPredicate(function("isEmpty", varFor("x"))) shouldBe true
-    isPredicate(function("collect", varFor("x"))) shouldBe false
-    isPredicate(GreaterThan(varFor("a"), varFor("b"))(pos)) shouldBe true
+    isPredicate(HasLabels(v"n", Seq(LabelName("L")(pos)))(pos)) shouldBe true
+    isPredicate(GetDegree(v"n", None, SemanticDirection.OUTGOING)(pos)) shouldBe false
+    isPredicate(function("exists", v"x")) shouldBe true
+    isPredicate(function("toBoolean", v"x")) shouldBe true
+    isPredicate(function("isEmpty", v"x")) shouldBe true
+    isPredicate(function("collect", v"x")) shouldBe false
+    isPredicate(GreaterThan(v"a", v"b")(pos)) shouldBe true
   }
 }

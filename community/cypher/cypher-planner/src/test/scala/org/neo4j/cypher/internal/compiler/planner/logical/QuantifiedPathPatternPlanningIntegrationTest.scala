@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.expressions.AssertIsNode
 import org.neo4j.cypher.internal.expressions.NilPathStep
@@ -997,9 +998,9 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       reverseGroupVariableProjections = true
     )
     val predicate = allInList(
-      varFor("i"),
-      varFor("r"),
-      equals(prop(varFor("i"), "p"), prop(varFor("a"), "p"))
+      v"i",
+      v"r",
+      equals(prop(v"i", "p"), prop(v"a", "p"))
     )
 
     plan shouldEqual planner.subPlanBuilder()
@@ -2092,10 +2093,10 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
         reverseGroupVariableProjections = false
       )
     val path = PathExpression(NodePathStep(
-      varFor("a"),
+      v"a",
       RepeatPathStep(
-        List(NodeRelPair(varFor("b"), varFor("r"))),
-        varFor("d"),
+        List(NodeRelPair(v"b", v"r")),
+        v"d",
         NilPathStep()(pos)
       )(pos)
     )(pos))(pos)
@@ -2151,10 +2152,10 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       )
     }
     val path = PathExpression(NodePathStep(
-      varFor("  UNNAMED0"),
+      v"  UNNAMED0",
       RepeatPathStep(
-        List(NodeRelPair(varFor("  UNNAMED3"), varFor("  y@2"))),
-        varFor("  UNNAMED1"),
+        List(NodeRelPair(v"  UNNAMED3", v"  y@2")),
+        v"  UNNAMED1",
         NilPathStep()(pos)
       )(pos)
     )(pos))(pos)
@@ -2199,10 +2200,10 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       )
     }
     val path = PathExpression(NodePathStep(
-      varFor("  UNNAMED0"),
+      v"  UNNAMED0",
       RepeatPathStep(
-        List(NodeRelPair(varFor("  UNNAMED4"), varFor("  UNNAMED5"))),
-        varFor("  UNNAMED1"),
+        List(NodeRelPair(v"  UNNAMED4", v"  UNNAMED5")),
+        v"  UNNAMED1",
         NilPathStep()(pos)
       )(pos)
     )(pos))(pos)

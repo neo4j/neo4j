@@ -165,7 +165,7 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("create simple NFA and report non-inlineable predicate (depends on group variable)") {
-    val nonInlineablePredicate = equals(size(varFor("a")), literalInt(3))
+    val nonInlineablePredicate = equals(size(v"a"), literalInt(3))
 
     val spp =
       SelectivePathPattern(
@@ -264,7 +264,7 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
         )
       ),
       argumentIds = Set.empty,
-      selections = Selections.from(differentRelationships(varFor("r"), varFor("s"))),
+      selections = Selections.from(differentRelationships(v"r", v"s")),
       repetition = Repetition(0, UpperBound.Unlimited),
       nodeVariableGroupings = Set(v"a", v"b", v"c").map(name => variableGrouping(name, name)),
       relationshipVariableGroupings = Set(v"r", v"s").map(name => variableGrouping(name, name))
@@ -346,9 +346,9 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
       )),
       argumentIds = Set.empty,
       selections = Selections.from(Seq(
-        equals(prop("a", "prop"), varFor("foo")),
-        equals(prop("r", "prop"), varFor("foo")),
-        equals(prop("b", "prop"), varFor("foo"))
+        equals(prop("a", "prop"), v"foo"),
+        equals(prop("r", "prop"), v"foo"),
+        equals(prop("b", "prop"), v"foo")
       )),
       repetition = Repetition(1, UpperBound.Unlimited),
       nodeVariableGroupings = Set(v"a", v"b").map(name => variableGrouping(name, name)),
@@ -366,7 +366,7 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
         pathPattern =
           ExhaustivePathPattern.NodeConnections(NonEmptyList(qpp, rel)),
         selections = Selections.from(
-          equals(prop("r2", "prop"), varFor("foo"))
+          equals(prop("r2", "prop"), v"foo")
         ),
         selector = SelectivePathPattern.Selector.ShortestGroups(1)
       )
@@ -384,7 +384,7 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
       spp,
       fromLeft = true,
       Set(v"foo"),
-      Seq(equals(prop("end", "prop"), varFor("foo"))),
+      Seq(equals(prop("end", "prop"), v"foo")),
       new AnonymousVariableNameGenerator
     ) should equal((
       expectedNfa,
@@ -874,7 +874,7 @@ class ConvertToNFATest extends CypherFunSuite with AstConstructionTestSupport {
         VarPatternLength(0, Some(3))
       )
     val relationshipPredicate =
-      allInList(varFor("r_inner"), varFor("r"), in(prop("r_inner", "prop"), listOf(literalInt(2))))
+      allInList(v"r_inner", v"r", in(prop("r_inner", "prop"), listOf(literalInt(2))))
     val startNodePredicate = hasLabels("start", "Label")
     val endNodePredicate = in(prop("end", "prop"), listOf(literalInt(42)))
     val spp =

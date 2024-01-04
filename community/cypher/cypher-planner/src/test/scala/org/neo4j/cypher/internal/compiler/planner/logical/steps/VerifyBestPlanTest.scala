@@ -66,12 +66,12 @@ import org.neo4j.notifications.JoinHintUnfulfillableNotification
 class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   private def newNodeIndexHint(indexType: UsingIndexHintType = UsingAnyIndexType): Hint =
-    UsingIndexHint(varFor("a"), labelOrRelTypeName("User"), Seq(PropertyKeyName("name")(pos)), indexType = indexType) _
+    UsingIndexHint(v"a", labelOrRelTypeName("User"), Seq(PropertyKeyName("name")(pos)), indexType = indexType) _
 
   private def newRelationshipIndexHint(indexType: UsingIndexHintType = UsingAnyIndexType): Hint =
-    UsingIndexHint(varFor("r"), labelOrRelTypeName("User"), Seq(PropertyKeyName("name")(pos)), indexType = indexType) _
+    UsingIndexHint(v"r", labelOrRelTypeName("User"), Seq(PropertyKeyName("name")(pos)), indexType = indexType) _
 
-  private def newJoinHint(): Hint = { UsingJoinHint(Seq(varFor("a"))) _ }
+  private def newJoinHint(): Hint = { UsingJoinHint(Seq(v"a")) _ }
 
   private def newQueryWithNodeIndexHint(
     indexType: UsingIndexHintType = UsingAnyIndexType,
@@ -136,13 +136,13 @@ class VerifyBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport 
     val stringTypeGetter = SemanticTable.TypeGetter(Some(CTString.invariant))
 
     when(semanticTable.typeFor("a")).thenReturn(nodeTypeGetter)
-    when(semanticTable.typeFor(varFor("a"))).thenReturn(nodeTypeGetter)
+    when(semanticTable.typeFor(v"a")).thenReturn(nodeTypeGetter)
 
     when(semanticTable.typeFor("b")).thenReturn(nodeTypeGetter)
-    when(semanticTable.typeFor(varFor("b"))).thenReturn(nodeTypeGetter)
+    when(semanticTable.typeFor(v"b")).thenReturn(nodeTypeGetter)
 
     when(semanticTable.typeFor("r")).thenReturn(relTypeGetter)
-    when(semanticTable.typeFor(varFor("r"))).thenReturn(relTypeGetter)
+    when(semanticTable.typeFor(v"r")).thenReturn(relTypeGetter)
 
     when(semanticTable.typeFor(StringLiteral("test")(InputPosition.NONE))).thenReturn(stringTypeGetter)
 

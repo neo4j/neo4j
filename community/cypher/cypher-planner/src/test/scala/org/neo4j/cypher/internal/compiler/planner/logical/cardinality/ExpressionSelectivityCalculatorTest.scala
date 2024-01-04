@@ -104,8 +104,8 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
   protected val nProp: Property = prop("n", nodePropName)
 
   protected val personLabelName: LabelName = labelName("Person")
-  protected val nIsPerson: Predicate = nPredicate(HasLabels(varFor("n"), Seq(personLabelName)) _)
-  protected val nIsAnimal: Predicate = nPredicate(HasLabels(varFor("n"), Seq(labelName("Animal"))) _)
+  protected val nIsPerson: Predicate = nPredicate(HasLabels(v"n", Seq(personLabelName)) _)
+  protected val nIsAnimal: Predicate = nPredicate(HasLabels(v"n", Seq(labelName("Animal"))) _)
 
   protected val nIsPersonLabelInfo: Map[LogicalVariable, Set[LabelName]] = Map(v"n" -> Set(personLabelName))
 
@@ -603,7 +603,7 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
 
   test("starts with/ends with/contains length unknown, no label") {
     for ((mkExpr, clue) <- substringPredicatesWithClues) withClue(clue) {
-      val stringPredicate = nPredicate(mkExpr(nProp, varFor("string")))
+      val stringPredicate = nPredicate(mkExpr(nProp, v"string"))
 
       val calculator = setUpCalculator()
       val stringPredicateResult = calculator(stringPredicate.expr)
@@ -677,7 +677,7 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
 
   test("starts with/ends with/contains length unknown, one label") {
     for ((mkExpr, clue) <- substringPredicatesWithClues) withClue(clue) {
-      val stringPredicate = nPredicate(mkExpr(nProp, varFor("string")))
+      val stringPredicate = nPredicate(mkExpr(nProp, v"string"))
 
       val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo)
 
@@ -875,7 +875,7 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
 
   test("starts with/ends with/contains length unknown, two labels") {
     for ((mkExpr, clue) <- substringPredicatesWithClues) withClue(clue) {
-      val stringPredicate = nPredicate(mkExpr(nProp, varFor("string")))
+      val stringPredicate = nPredicate(mkExpr(nProp, v"string"))
 
       val calculator = setUpCalculator(
         labelInfo = nIsPersonAndAnimalLabelInfo,
@@ -912,7 +912,7 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
 
   test("starts with/ends with/contains length unknown, two labels, multiple index types") {
     for ((mkExpr, clue) <- substringPredicatesWithClues) withClue(clue) {
-      val stringPredicate = nPredicate(mkExpr(nProp, varFor("string")))
+      val stringPredicate = nPredicate(mkExpr(nProp, v"string"))
 
       val calculator = setUpCalculator(
         labelInfo = nIsPersonAndAnimalLabelInfo,
@@ -954,7 +954,7 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
     val regexPredicate = nPredicate(regex(nProp, literalString("\\d+")))
 
     // n.prop CONTAINS $string
-    val containsPredicate = nPredicate(contains(nProp, varFor("string")))
+    val containsPredicate = nPredicate(contains(nProp, v"string"))
 
     val calculator = setUpCalculator(
       labelInfo = nIsPersonAndAnimalLabelInfo,
@@ -1155,7 +1155,7 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
   }
 
   test("equality with no label, size unknown") {
-    val equals = nPredicate(in(nProp, varFor("someList")))
+    val equals = nPredicate(in(nProp, v"someList"))
 
     val calculator = setUpCalculator()
     val eqResult = calculator(equals.expr)
@@ -1293,7 +1293,7 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
   }
 
   test("equality with one label, size unknown") {
-    val equals = nPredicate(in(nProp, varFor("someList")))
+    val equals = nPredicate(in(nProp, v"someList"))
 
     val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo)
 
@@ -1381,7 +1381,7 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
   }
 
   test("equality with two labels, size unknown") {
-    val equals = nPredicate(in(nProp, varFor("someList")))
+    val equals = nPredicate(in(nProp, v"someList"))
 
     val calculator = setUpCalculator(
       labelInfo = nIsPersonAndAnimalLabelInfo,
@@ -1419,7 +1419,7 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
       resolvedLabelNames = Map("Page" -> LabelId(0))
     )
 
-    val hasLabels = HasLabels(varFor("n"), Seq(labelName("Page"))) _
+    val hasLabels = HasLabels(v"n", Seq(labelName("Page"))) _
     val labelInfo: LabelInfo = Selections(Set(nPredicate(hasLabels))).labelInfo
 
     val stats = mock[GraphStatistics]
@@ -1572,7 +1572,7 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
 
   test("distance in AndedPropertyInequalities") {
     val inequality = lessThan(function(Seq("point"), "distance", nProp, fakePoint), rProp)
-    val predicate = AndedPropertyInequalities(varFor("r"), rProp, NonEmptyList(inequality))
+    val predicate = AndedPropertyInequalities(v"r", rProp, NonEmptyList(inequality))
 
     val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo)
 
@@ -2348,10 +2348,10 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
   protected def rPredicate(expr: Expression): Predicate = Predicate(Set(v"r"), expr)
 
   protected def nAnded(exprs: NonEmptyList[InequalityExpression]): Expression =
-    AndedPropertyInequalities(varFor("n"), nProp, exprs)
+    AndedPropertyInequalities(v"n", nProp, exprs)
 
   protected def rAnded(exprs: NonEmptyList[InequalityExpression]): Expression =
-    AndedPropertyInequalities(varFor("r"), rProp, exprs)
+    AndedPropertyInequalities(v"r", rProp, exprs)
 
   implicit private class DoubleToSelectivitySyntax(selectivityValue: Double) {
     def toSelectivity: Selectivity = Selectivity.of(selectivityValue).get

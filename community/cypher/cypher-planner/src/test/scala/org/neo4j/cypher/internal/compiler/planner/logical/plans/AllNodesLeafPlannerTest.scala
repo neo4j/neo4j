@@ -40,7 +40,7 @@ class AllNodesLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     val resultPlans = allNodesLeafPlanner(Set.empty)(queryGraph, InterestingOrderConfig.empty, context)
 
     // then
-    resultPlans should equal(Set(AllNodesScan(varFor("n"), Set.empty)))
+    resultPlans should equal(Set(AllNodesScan(v"n", Set.empty)))
   }
 
   test("should not plan all node scan for skipped id") {

@@ -70,7 +70,7 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSuppor
       table.put(register(pattern1), sorted = false, plan1)
 
       expandSolverStep(qg, noQPPInnerPlans)(registry, register(pattern1, pattern2), table, ctx).toSet should equal(Set(
-        Expand(plan1, varFor("b"), SemanticDirection.OUTGOING, Seq.empty, varFor("c"), varFor("r2"), ExpandAll)
+        Expand(plan1, v"b", SemanticDirection.OUTGOING, Seq.empty, v"c", v"r2", ExpandAll)
       ))
     }
   }
@@ -96,8 +96,8 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSuppor
         ) // a - [r2] -> b
 
       expandSolverStep(qg, noQPPInnerPlans)(registry, register(pattern1, patternX), table, ctx).toSet should equal(Set(
-        Expand(plan1, varFor("a"), SemanticDirection.OUTGOING, Seq.empty, varFor("b"), varFor("r2"), ExpandInto),
-        Expand(plan1, varFor("b"), SemanticDirection.INCOMING, Seq.empty, varFor("a"), varFor("r2"), ExpandInto)
+        Expand(plan1, v"a", SemanticDirection.OUTGOING, Seq.empty, v"b", v"r2", ExpandInto),
+        Expand(plan1, v"b", SemanticDirection.INCOMING, Seq.empty, v"a", v"r2", ExpandInto)
       ))
     }
   }
@@ -140,8 +140,8 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSuppor
         table,
         ctx
       ).toSet should equal(Set(
-        Expand(plan1, varFor("b"), SemanticDirection.OUTGOING, Seq.empty, varFor("c"), varFor("r3"), ExpandInto),
-        Expand(plan1, varFor("c"), SemanticDirection.INCOMING, Seq.empty, varFor("b"), varFor("r3"), ExpandInto)
+        Expand(plan1, v"b", SemanticDirection.OUTGOING, Seq.empty, v"c", v"r3", ExpandInto),
+        Expand(plan1, v"c", SemanticDirection.INCOMING, Seq.empty, v"b", v"r3", ExpandInto)
       ))
     }
   }

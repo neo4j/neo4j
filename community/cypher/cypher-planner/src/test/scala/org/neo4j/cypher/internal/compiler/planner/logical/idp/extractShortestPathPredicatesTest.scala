@@ -42,8 +42,8 @@ class extractShortestPathPredicatesTest extends CypherFunSuite with AstConstruct
 
   test("MATCH (n), (m), p=shortestPath((n)-[rs* ]->(m)) WHERE all(r IN rs WHERE r.prop=42)") {
     val rewrittenPredicate = AllIterablePredicate(
-      FilterScope(varFor("  FRESHID15"), Some(propEquality("  FRESHID15", "prop", 42)))(pos),
-      varFor("rs")
+      FilterScope(v"  FRESHID15", Some(propEquality("  FRESHID15", "prop", 42)))(pos),
+      v"rs"
     )(pos)
 
     val (nodePredicates, relationshipPredicates, solvedPredicates) =
@@ -51,7 +51,7 @@ class extractShortestPathPredicatesTest extends CypherFunSuite with AstConstruct
 
     nodePredicates shouldBe empty
     relationshipPredicates shouldBe ListSet(VariablePredicate(
-      varFor("  FRESHID15"),
+      v"  FRESHID15",
       propEquality("  FRESHID15", "prop", 42)
     ))
     solvedPredicates shouldBe ListSet(rewrittenPredicate)
@@ -59,15 +59,15 @@ class extractShortestPathPredicatesTest extends CypherFunSuite with AstConstruct
 
   test("MATCH (n), (m), shortestPath((n)-[x*]->(m)) WHERE ALL(r in x WHERE r.prop < 4)") {
     val rewrittenPredicate = AllIterablePredicate(
-      FilterScope(varFor("r"), Some(propLessThan("r", "prop", 4)))(pos),
-      varFor("x")
+      FilterScope(v"r", Some(propLessThan("r", "prop", 4)))(pos),
+      v"x"
     )(pos)
 
     val (nodePredicates, relationshipPredicates, solvedPredicates) =
       extractShortestPathPredicates(Set(rewrittenPredicate), None, Some(v"x"))
 
     nodePredicates shouldBe empty
-    relationshipPredicates shouldBe ListSet(VariablePredicate(varFor("r"), propLessThan("r", "prop", 4)))
+    relationshipPredicates shouldBe ListSet(VariablePredicate(v"r", propLessThan("r", "prop", 4)))
     solvedPredicates shouldBe ListSet(rewrittenPredicate)
   }
 
@@ -75,48 +75,48 @@ class extractShortestPathPredicatesTest extends CypherFunSuite with AstConstruct
     "p = shortestPath((n)-[x*]->(o)) WHERE NONE(r in relationships(p) WHERE r.prop < 4) AND ALL(m in nodes(p) WHERE m.prop IS NOT NULL)"
   ) {
     val rewrittenRelPredicate = NoneIterablePredicate(
-      FilterScope(varFor("r"), Some(propLessThan("r", "prop", 4)))(pos),
+      FilterScope(v"r", Some(propLessThan("r", "prop", 4)))(pos),
       function(
         "relationships",
-        varFor("p")
+        v"p"
       )
     )(pos)
 
     val rewrittenNodePredicate = AllIterablePredicate(
-      FilterScope(varFor("m"), Some(isNotNull(prop("m", "prop"))))(pos),
+      FilterScope(v"m", Some(isNotNull(prop("m", "prop"))))(pos),
       function(
         "nodes",
-        varFor("p")
+        v"p"
       )
     )(pos)
 
     val (nodePredicates, relationshipPredicates, solvedPredicates) =
       extractShortestPathPredicates(Set(rewrittenRelPredicate, rewrittenNodePredicate), Some(v"p"), Some(v"x"))
 
-    nodePredicates shouldBe ListSet(VariablePredicate(varFor("m"), isNotNull(prop("m", "prop"))))
-    relationshipPredicates shouldBe ListSet(VariablePredicate(varFor("r"), not(propLessThan("r", "prop", 4))))
+    nodePredicates shouldBe ListSet(VariablePredicate(v"m", isNotNull(prop("m", "prop"))))
+    relationshipPredicates shouldBe ListSet(VariablePredicate(v"r", not(propLessThan("r", "prop", 4))))
     solvedPredicates shouldBe ListSet(rewrittenRelPredicate, rewrittenNodePredicate)
   }
 
   test("p = shortestPath((n)-[r*]->(m)) WHERE ALL (x IN nodes(p) WHERE x.prop = n.prop") {
     val nodePredicate = equals(prop("x", "prop"), prop("n", "prop"))
     val rewrittenPredicate = AllIterablePredicate(
-      FilterScope(varFor("x"), Some(nodePredicate))(pos),
-      function("nodes", varFor("p"))
+      FilterScope(v"x", Some(nodePredicate))(pos),
+      function("nodes", v"p")
     )(pos)
 
     val (nodePredicates, relationshipPredicates, solvedPredicates) =
       extractShortestPathPredicates(Set(rewrittenPredicate), Some(v"p"), Some(v"r"))
 
-    nodePredicates shouldBe ListSet(VariablePredicate(varFor("x"), equals(prop("x", "prop"), prop("n", "prop"))))
+    nodePredicates shouldBe ListSet(VariablePredicate(v"x", equals(prop("x", "prop"), prop("n", "prop"))))
     relationshipPredicates shouldBe empty
     solvedPredicates shouldBe ListSet(rewrittenPredicate)
   }
 
   test("p = shortestPath((n)-[r*]->(m)) WHERE ALL (x IN nodes(p) WHERE length(p) = 1)") {
     val rewrittenPredicate = AllIterablePredicate(
-      FilterScope(varFor("x"), Some(equals(function("length", varFor("p")), literalInt(1))))(pos),
-      function("nodes", varFor("p"))
+      FilterScope(v"x", Some(equals(function("length", v"p"), literalInt(1))))(pos),
+      function("nodes", v"p")
     )(pos)
 
     val (nodePredicates, relationshipPredicates, solvedPredicates) =
@@ -129,15 +129,15 @@ class extractShortestPathPredicatesTest extends CypherFunSuite with AstConstruct
 
   test("p=shortestPath((n)-[rel*]->(m)) WHERE ALL (x in nodes(p) WHERE x = n or x = m)") {
     val rewrittenPredicate = AllIterablePredicate(
-      FilterScope(varFor("x"), Some(ors(equals(varFor("x"), varFor("n")), equals(varFor("x"), varFor("m")))))(pos),
-      function("nodes", varFor("p"))
+      FilterScope(v"x", Some(ors(equals(v"x", v"n"), equals(v"x", v"m"))))(pos),
+      function("nodes", v"p")
     )(pos)
 
     val (nodePredicates, relationshipPredicates, solvedPredicates) =
       extractShortestPathPredicates(Set(rewrittenPredicate), Some(v"p"), Some(v"rel"))
 
     nodePredicates shouldBe ListSet(
-      VariablePredicate(varFor("x"), ors(equals(varFor("x"), varFor("n")), equals(varFor("x"), varFor("m"))))
+      VariablePredicate(v"x", ors(equals(v"x", v"n"), equals(v"x", v"m")))
     )
     relationshipPredicates shouldBe empty
     solvedPredicates shouldBe ListSet(rewrittenPredicate)
@@ -145,8 +145,8 @@ class extractShortestPathPredicatesTest extends CypherFunSuite with AstConstruct
 
   test("p = shortestPath((n)-[r*]->(m)) WHERE ALL (x IN relationships(p) WHERE length(p) = 1)") {
     val rewrittenPredicate = AllIterablePredicate(
-      FilterScope(varFor("x"), Some(equals(function("length", varFor("p")), literalInt(1))))(pos),
-      function("relationships", varFor("p"))
+      FilterScope(v"x", Some(equals(function("length", v"p"), literalInt(1))))(pos),
+      function("relationships", v"p")
     )(pos)
 
     val (nodePredicates, relationshipPredicates, solvedPredicates) =
@@ -159,8 +159,8 @@ class extractShortestPathPredicatesTest extends CypherFunSuite with AstConstruct
 
   test("p = shortestPath((n)-[r*]->(m)) WHERE NONE (x IN nodes(p) WHERE length(p) = 1)") {
     val rewrittenPredicate = NoneIterablePredicate(
-      FilterScope(varFor("x"), Some(equals(function("length", varFor("p")), literalInt(1))))(pos),
-      function("nodes", varFor("p"))
+      FilterScope(v"x", Some(equals(function("length", v"p"), literalInt(1))))(pos),
+      function("nodes", v"p")
     )(pos)
 
     val (nodePredicates, relationshipPredicates, solvedPredicates) =
@@ -173,8 +173,8 @@ class extractShortestPathPredicatesTest extends CypherFunSuite with AstConstruct
 
   test("p = shortestPath((n)-[r*]->(m)) WHERE NONE (x IN relationships(p) WHERE length(p) = 1)") {
     val rewrittenPredicate = NoneIterablePredicate(
-      FilterScope(varFor("x"), Some(equals(function("length", varFor("p")), literalInt(1))))(pos),
-      function("relationships", varFor("p"))
+      FilterScope(v"x", Some(equals(function("length", v"p"), literalInt(1))))(pos),
+      function("relationships", v"p")
     )(pos)
 
     val (nodePredicates, relationshipPredicates, solvedPredicates) =
@@ -190,7 +190,7 @@ class extractShortestPathPredicatesTest extends CypherFunSuite with AstConstruct
   ) {
     val rewrittenPredicate = AllIterablePredicate(
       FilterScope(
-        varFor("x"),
+        v"x",
         Some(
           ands(
             equals(prop("x", "aProp"), prop("a", "prop")),
@@ -198,7 +198,7 @@ class extractShortestPathPredicatesTest extends CypherFunSuite with AstConstruct
           )
         )
       )(pos),
-      function("relationships", varFor("p"))
+      function("relationships", v"p")
     )(pos)
 
     val (nodePredicates, relationshipPredicates, solvedPredicates) =
@@ -207,7 +207,7 @@ class extractShortestPathPredicatesTest extends CypherFunSuite with AstConstruct
     nodePredicates shouldBe empty
     relationshipPredicates shouldBe ListSet(
       VariablePredicate(
-        varFor("x"),
+        v"x",
         ands(
           equals(prop("x", "aProp"), prop("a", "prop")),
           equals(prop("x", "bProp"), prop("b", "prop"))
@@ -222,21 +222,21 @@ class extractShortestPathPredicatesTest extends CypherFunSuite with AstConstruct
   ) {
     val solvableAllPredicate = AllIterablePredicate(
       FilterScope(
-        varFor("x"),
+        v"x",
         Some(
           equals(prop("x", "aProp"), prop("a", "prop"))
         )
       )(pos),
-      varFor("r")
+      v"r"
     )(pos)
     val dependingAllPredicate = AllIterablePredicate(
       FilterScope(
-        varFor("x"),
+        v"x",
         Some(
           equals(prop("x", "bProp"), prop("b", "prop"))
         )
       )(pos),
-      function("relationships", varFor("p"))
+      function("relationships", v"p")
     )(pos)
 
     val (nodePredicates, relationshipPredicates, solvedPredicates) =
@@ -251,8 +251,8 @@ class extractShortestPathPredicatesTest extends CypherFunSuite with AstConstruct
 
     nodePredicates shouldBe empty
     relationshipPredicates shouldBe ListSet(
-      VariablePredicate(varFor("x"), equals(prop("x", "aProp"), prop("a", "prop"))),
-      VariablePredicate(varFor("x"), equals(prop("x", "bProp"), prop("b", "prop")))
+      VariablePredicate(v"x", equals(prop("x", "aProp"), prop("a", "prop"))),
+      VariablePredicate(v"x", equals(prop("x", "bProp"), prop("b", "prop")))
     )
     solvedPredicates shouldBe ListSet(solvableAllPredicate, dependingAllPredicate)
   }
@@ -262,21 +262,21 @@ class extractShortestPathPredicatesTest extends CypherFunSuite with AstConstruct
   ) {
     val otherPathPredicate = AllIterablePredicate(
       FilterScope(
-        varFor("x"),
+        v"x",
         Some(
           equals(prop("x", "aProp"), prop("a", "prop"))
         )
       )(pos),
-      function("relationships", varFor("p1"))
+      function("relationships", v"p1")
     )(pos)
     val solvableAllPredicate = AllIterablePredicate(
       FilterScope(
-        varFor("x"),
+        v"x",
         Some(
           equals(prop("x", "bProp"), prop("b", "prop"))
         )
       )(pos),
-      function("relationships", varFor("p2"))
+      function("relationships", v"p2")
     )(pos)
 
     val (nodePredicates, relationshipPredicates, solvedPredicates) =
@@ -291,7 +291,7 @@ class extractShortestPathPredicatesTest extends CypherFunSuite with AstConstruct
 
     nodePredicates shouldBe empty
     relationshipPredicates shouldBe ListSet(
-      VariablePredicate(varFor("x"), equals(prop("x", "bProp"), prop("b", "prop")))
+      VariablePredicate(v"x", equals(prop("x", "bProp"), prop("b", "prop")))
     )
     solvedPredicates shouldBe ListSet(solvableAllPredicate)
   }
@@ -302,11 +302,11 @@ class extractShortestPathPredicatesTest extends CypherFunSuite with AstConstruct
       val pred = lessThan(prop("m", "prop"), literalInt(123))
 
       val iterablePredicate = if (negatedPredicate)
-        NoneIterablePredicate(varFor("m"), function(funcName, varFor("path")), Some(pred))(pos)
+        NoneIterablePredicate(v"m", function(funcName, v"path"), Some(pred))(pos)
       else
-        AllIterablePredicate(varFor("m"), function(funcName, varFor("path")), Some(pred))(pos)
+        AllIterablePredicate(v"m", function(funcName, v"path"), Some(pred))(pos)
 
-      val solvedPredicate = VariablePredicate(varFor("m"), if (negatedPredicate) not(pred) else pred)
+      val solvedPredicate = VariablePredicate(v"m", if (negatedPredicate) not(pred) else pred)
       (iterablePredicate, solvedPredicate)
     }
 

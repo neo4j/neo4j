@@ -23,6 +23,7 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseInternalSettings.StatefulShortestPlanningMode.ALL_IF_POSSIBLE
 import org.neo4j.configuration.GraphDatabaseInternalSettings.StatefulShortestPlanningMode.INTO_ONLY
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.ExecutionModel.Volcano
 import org.neo4j.cypher.internal.compiler.helpers.WindowsSafeAnyRef
@@ -134,16 +135,16 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     val plan = planner.plan(query)
 
     val pathExpression = PathExpression(NodePathStep(
-      varFor("s"),
+      v"s",
       RepeatPathStep(
         List(
-          NodeRelPair(varFor("anon_13"), varFor("anon_20")),
-          NodeRelPair(varFor("anon_14"), varFor("anon_12")),
-          NodeRelPair(varFor("anon_18"), varFor("anon_15")),
-          NodeRelPair(varFor("anon_11"), varFor("anon_16")),
-          NodeRelPair(varFor("anon_17"), varFor("anon_19"))
+          NodeRelPair(v"anon_13", v"anon_20"),
+          NodeRelPair(v"anon_14", v"anon_12"),
+          NodeRelPair(v"anon_18", v"anon_15"),
+          NodeRelPair(v"anon_11", v"anon_16"),
+          NodeRelPair(v"anon_17", v"anon_19")
         ),
-        varFor("t"),
+        v"t",
         NilPathStep()(pos)
       )(pos)
     )(pos))(pos)
@@ -1659,10 +1660,10 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     val plan = planner.plan(query).stripProduceResults
 
     val path = PathExpression(NodePathStep(
-      varFor("a"),
+      v"a",
       RepeatPathStep(
-        List(NodeRelPair(varFor("b"), varFor("r"))),
-        varFor("d"),
+        List(NodeRelPair(v"b", v"r")),
+        v"d",
         NilPathStep()(pos)
       )(pos)
     )(pos))(pos)
@@ -1700,18 +1701,18 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
 
     val path = PathExpression(
       NodePathStep(
-        varFor("a"),
+        v"a",
         SingleRelationshipPathStep(
-          varFor("anon_0"),
+          v"anon_0",
           BOTH,
-          Some(varFor("b")),
+          Some(v"b"),
           RepeatPathStep(
-            List(NodeRelPair(varFor("c"), varFor("r"))),
-            varFor("e"),
+            List(NodeRelPair(v"c", v"r")),
+            v"e",
             SingleRelationshipPathStep(
-              varFor("anon_1"),
+              v"anon_1",
               BOTH,
-              Some(varFor("f")),
+              Some(v"f"),
               NilPathStep()(pos)
             )(pos)
           )(pos)
@@ -1754,11 +1755,11 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
 
     val path = PathExpression(
       NodePathStep(
-        varFor("a"),
+        v"a",
         SingleRelationshipPathStep(
-          varFor("r"),
+          v"r",
           OUTGOING,
-          Some(varFor("b")),
+          Some(v"b"),
           NilPathStep()(pos)
         )(pos)
       )(pos)
@@ -1874,13 +1875,13 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     val plan = planner.plan(query).stripProduceResults
 
     val path = PathExpression(NodePathStep(
-      varFor("a"),
+      v"a",
       RepeatPathStep(
-        List(NodeRelPair(varFor("b"), varFor("r"))),
-        varFor("d"),
+        List(NodeRelPair(v"b", v"r")),
+        v"d",
         RepeatPathStep(
-          List(NodeRelPair(varFor("e"), varFor("s"))),
-          varFor("g"),
+          List(NodeRelPair(v"e", v"s")),
+          v"g",
           NilPathStep()(pos)
         )(pos)
       )(pos)
@@ -1924,13 +1925,13 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     val plan = planner.plan(query).stripProduceResults
 
     val path = PathExpression(NodePathStep(
-      varFor("a"),
+      v"a",
       RepeatPathStep(
-        List(NodeRelPair(varFor("b"), varFor("r"))),
-        varFor("d"),
+        List(NodeRelPair(v"b", v"r")),
+        v"d",
         RepeatPathStep(
-          List(NodeRelPair(varFor("e"), varFor("s"))),
-          varFor("g"),
+          List(NodeRelPair(v"e", v"s")),
+          v"g",
           NilPathStep()(pos)
         )(pos)
       )(pos)
@@ -1974,13 +1975,13 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     val plan = planner.plan(query).stripProduceResults
 
     val path = PathExpression(NodePathStep(
-      varFor("a"),
+      v"a",
       RepeatPathStep(
-        List(NodeRelPair(varFor("b"), varFor("r"))),
-        varFor("d"),
+        List(NodeRelPair(v"b", v"r")),
+        v"d",
         RepeatPathStep(
-          List(NodeRelPair(varFor("e"), varFor("s"))),
-          varFor("g"),
+          List(NodeRelPair(v"e", v"s")),
+          v"g",
           NilPathStep()(pos)
         )(pos)
       )(pos)

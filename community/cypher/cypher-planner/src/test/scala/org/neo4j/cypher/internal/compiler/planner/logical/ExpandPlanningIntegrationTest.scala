@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.expressions.MultiRelationshipPathStep
 import org.neo4j.cypher.internal.expressions.NilPathStep
@@ -261,8 +262,8 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningI
     val plan = planner.plan("MATCH p = ((a:A)-[r*1..3]->(b)) WHERE all(x IN nodes(p) WHERE x = a OR x = b) RETURN p")
 
     val path = PathExpression(NodePathStep(
-      varFor("a"),
-      MultiRelationshipPathStep(varFor("r"), OUTGOING, Some(varFor("b")), NilPathStep()(pos))(pos)
+      v"a",
+      MultiRelationshipPathStep(v"r", OUTGOING, Some(v"b"), NilPathStep()(pos))(pos)
     )(pos))(pos)
 
     plan shouldEqual planner.planBuilder()
@@ -270,11 +271,11 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningI
       .projection(Map("p" -> path))
       .filterExpression(
         allInList(
-          varFor("x"),
+          v"x",
           nodes(path),
           ors(
-            equals(varFor("x"), varFor("a")),
-            equals(varFor("x"), varFor("b"))
+            equals(v"x", v"a"),
+            equals(v"x", v"b")
           )
         )
       )
@@ -644,12 +645,12 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningI
 
     val path = PathExpression(
       NodePathStep(
-        varFor("a"),
+        v"a",
         SingleRelationshipPathStep(
-          varFor("r"),
+          v"r",
           OUTGOING,
-          Some(varFor("anon_0")),
-          SingleRelationshipPathStep(varFor("r"), INCOMING, Some(varFor("b")), NilPathStep()(pos))(pos)
+          Some(v"anon_0"),
+          SingleRelationshipPathStep(v"r", INCOMING, Some(v"b"), NilPathStep()(pos))(pos)
         )(pos)
       )(pos)
     )(pos)

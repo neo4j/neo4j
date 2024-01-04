@@ -61,7 +61,7 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
 
     // then
     resultPlans should equal(Set(
-      DirectedRelationshipTypeScan(varFor("r"), varFor("a"), relTypeName("R"), varFor("b"), Set.empty, IndexOrderNone)
+      DirectedRelationshipTypeScan(v"r", v"a", relTypeName("R"), v"b", Set.empty, IndexOrderNone)
     ))
   }
 
@@ -76,7 +76,7 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
 
     // then
     resultPlans should equal(Set(
-      DirectedRelationshipTypeScan(varFor("r"), varFor("b"), relTypeName("R"), varFor("a"), Set.empty, IndexOrderNone)
+      DirectedRelationshipTypeScan(v"r", v"b", relTypeName("R"), v"a", Set.empty, IndexOrderNone)
     ))
   }
 
@@ -91,7 +91,7 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
 
     // then
     resultPlans should equal(Set(
-      UndirectedRelationshipTypeScan(varFor("r"), varFor("a"), relTypeName("R"), varFor("b"), Set.empty, IndexOrderNone)
+      UndirectedRelationshipTypeScan(v"r", v"a", relTypeName("R"), v"b", Set.empty, IndexOrderNone)
     ))
   }
 
@@ -171,7 +171,7 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
     val resultPlans = relationshipTypeScanLeafPlanner(Set.empty)(
       qg,
       InterestingOrderConfig(
-        InterestingOrder(RequiredOrderCandidate(Seq(ColumnOrder(varFor("r"), ascending = true))))
+        InterestingOrder(RequiredOrderCandidate(Seq(ColumnOrder(v"r", ascending = true))))
       ),
       context
     )
@@ -179,10 +179,10 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
     // then
     resultPlans should equal(Set(
       DirectedRelationshipTypeScan(
-        varFor("r"),
-        varFor("a"),
+        v"r",
+        v"a",
         relTypeName("R"),
-        varFor("b"),
+        v"b",
         Set.empty,
         IndexOrderAscending
       )
@@ -199,7 +199,7 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
     val resultPlans = relationshipTypeScanLeafPlanner(Set.empty)(
       qg,
       InterestingOrderConfig(
-        InterestingOrder(RequiredOrderCandidate(Seq(ColumnOrder(varFor("r"), ascending = false))))
+        InterestingOrder(RequiredOrderCandidate(Seq(ColumnOrder(v"r", ascending = false))))
       ),
       context
     )
@@ -207,10 +207,10 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
     // then
     resultPlans should equal(Set(
       DirectedRelationshipTypeScan(
-        varFor("r"),
-        varFor("a"),
+        v"r",
+        v"a",
         relTypeName("R"),
-        varFor("b"),
+        v"b",
         Set.empty,
         IndexOrderDescending
       )
@@ -227,7 +227,7 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
     val resultPlans = relationshipTypeScanLeafPlanner(Set.empty)(
       qg,
       InterestingOrderConfig(
-        InterestingOrder(RequiredOrderCandidate(Seq(ColumnOrder(varFor("r"), ascending = true))))
+        InterestingOrder(RequiredOrderCandidate(Seq(ColumnOrder(v"r", ascending = true))))
       ),
       context
     )
@@ -235,10 +235,10 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
     // then
     resultPlans should equal(Set(
       DirectedRelationshipTypeScan(
-        varFor("r"),
-        varFor("b"),
+        v"r",
+        v"b",
         relTypeName("R"),
-        varFor("a"),
+        v"a",
         Set.empty,
         IndexOrderAscending
       )
@@ -255,7 +255,7 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
     val resultPlans = relationshipTypeScanLeafPlanner(Set.empty)(
       qg,
       InterestingOrderConfig(
-        InterestingOrder(RequiredOrderCandidate(Seq(ColumnOrder(varFor("r"), ascending = false))))
+        InterestingOrder(RequiredOrderCandidate(Seq(ColumnOrder(v"r", ascending = false))))
       ),
       context
     )
@@ -263,10 +263,10 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
     // then
     resultPlans should equal(Set(
       DirectedRelationshipTypeScan(
-        varFor("r"),
-        varFor("b"),
+        v"r",
+        v"b",
         relTypeName("R"),
-        varFor("a"),
+        v"a",
         Set.empty,
         IndexOrderDescending
       )
@@ -285,7 +285,7 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
       InterestingOrderConfig(
         InterestingOrder(
           RequiredOrderCandidate(Seq.empty),
-          Seq(InterestingOrderCandidate(Seq(ColumnOrder(varFor("r"), ascending = false))))
+          Seq(InterestingOrderCandidate(Seq(ColumnOrder(v"r", ascending = false))))
         )
       ),
       context
@@ -294,10 +294,10 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
     // then
     resultPlans should equal(Set(
       DirectedRelationshipTypeScan(
-        varFor("r"),
-        varFor("a"),
+        v"r",
+        v"a",
         relTypeName("R"),
-        varFor("b"),
+        v"b",
         Set.empty,
         IndexOrderDescending
       )
@@ -315,8 +315,8 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
       qg,
       InterestingOrderConfig(
         InterestingOrder(
-          RequiredOrderCandidate(Seq(ColumnOrder(varFor("r"), ascending = true))),
-          Seq(InterestingOrderCandidate(Seq(ColumnOrder(varFor("r"), ascending = false))))
+          RequiredOrderCandidate(Seq(ColumnOrder(v"r", ascending = true))),
+          Seq(InterestingOrderCandidate(Seq(ColumnOrder(v"r", ascending = false))))
         )
       ),
       context
@@ -325,10 +325,10 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
     // then
     resultPlans should equal(Set(
       DirectedRelationshipTypeScan(
-        varFor("r"),
-        varFor("a"),
+        v"r",
+        v"a",
         relTypeName("R"),
-        varFor("b"),
+        v"b",
         Set.empty,
         IndexOrderAscending
       )
@@ -345,7 +345,7 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
     val resultPlans = relationshipTypeScanLeafPlanner(Set.empty)(
       qg,
       InterestingOrderConfig(
-        InterestingOrder(RequiredOrderCandidate(Seq(ColumnOrder(varFor("r"), ascending = true))))
+        InterestingOrder(RequiredOrderCandidate(Seq(ColumnOrder(v"r", ascending = true))))
       ),
       context
     )
@@ -353,10 +353,10 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
     // then
     resultPlans should equal(Set(
       UndirectedRelationshipTypeScan(
-        varFor("r"),
-        varFor("a"),
+        v"r",
+        v"a",
         relTypeName("R"),
-        varFor("b"),
+        v"b",
         Set.empty,
         IndexOrderAscending
       )
@@ -373,7 +373,7 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
     val resultPlans = relationshipTypeScanLeafPlanner(Set.empty)(
       qg,
       InterestingOrderConfig(
-        InterestingOrder(RequiredOrderCandidate(Seq(ColumnOrder(varFor("r"), ascending = false))))
+        InterestingOrder(RequiredOrderCandidate(Seq(ColumnOrder(v"r", ascending = false))))
       ),
       context
     )
@@ -381,10 +381,10 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
     // then
     resultPlans should equal(Set(
       UndirectedRelationshipTypeScan(
-        varFor("r"),
-        varFor("a"),
+        v"r",
+        v"a",
         relTypeName("R"),
-        varFor("b"),
+        v"b",
         Set.empty,
         IndexOrderDescending
       )
@@ -403,7 +403,7 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
       InterestingOrderConfig(
         InterestingOrder(
           RequiredOrderCandidate(Seq.empty),
-          Seq(InterestingOrderCandidate(Seq(ColumnOrder(varFor("r"), ascending = false))))
+          Seq(InterestingOrderCandidate(Seq(ColumnOrder(v"r", ascending = false))))
         )
       ),
       context
@@ -412,10 +412,10 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
     // then
     resultPlans should equal(Set(
       UndirectedRelationshipTypeScan(
-        varFor("r"),
-        varFor("a"),
+        v"r",
+        v"a",
         relTypeName("R"),
-        varFor("b"),
+        v"b",
         Set.empty,
         IndexOrderDescending
       )
@@ -433,8 +433,8 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
       qg,
       InterestingOrderConfig(
         InterestingOrder(
-          RequiredOrderCandidate(Seq(ColumnOrder(varFor("r"), ascending = true))),
-          Seq(InterestingOrderCandidate(Seq(ColumnOrder(varFor("r"), ascending = false))))
+          RequiredOrderCandidate(Seq(ColumnOrder(v"r", ascending = true))),
+          Seq(InterestingOrderCandidate(Seq(ColumnOrder(v"r", ascending = false))))
         )
       ),
       context
@@ -443,10 +443,10 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
     // then
     resultPlans should equal(Set(
       UndirectedRelationshipTypeScan(
-        varFor("r"),
-        varFor("a"),
+        v"r",
+        v"a",
         relTypeName("R"),
-        varFor("b"),
+        v"b",
         Set.empty,
         IndexOrderAscending
       )

@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler
 
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItems
@@ -74,8 +75,8 @@ class RewriteProcedureCallsTest extends CypherFunSuite with AstConstructionTestS
           ReturnItems(
             includeExisting = false,
             Seq(
-              AliasedReturnItem(varFor("x"), varFor("x"))(pos),
-              AliasedReturnItem(varFor("y"), varFor("y"))(pos)
+              AliasedReturnItem(v"x", v"x")(pos),
+              AliasedReturnItem(v"y", v"y")(pos)
             )
           )(pos),
           None,
@@ -91,7 +92,7 @@ class RewriteProcedureCallsTest extends CypherFunSuite with AstConstructionTestS
 
   test("should resolve in-query procedure calls") {
     val unresolved = UnresolvedCall(ns, name, None, None)(pos)
-    val headClause = Unwind(varFor("x"), varFor("y"))(pos)
+    val headClause = Unwind(v"x", v"y")(pos)
     val original = SingleQuery(Seq(headClause, unresolved))(pos)
 
     val resolver = makeResolver()
@@ -107,7 +108,7 @@ class RewriteProcedureCallsTest extends CypherFunSuite with AstConstructionTestS
 
   test("TryRewriteProcedureCalls should return original for unresolved procedures") {
     val unresolved = UnresolvedCall(ns, name, None, None)(pos)
-    val headClause = Unwind(varFor("x"), varFor("y"))(pos)
+    val headClause = Unwind(v"x", v"y")(pos)
     val original = SingleQuery(Seq(headClause, unresolved))(pos)
 
     val rewrittenTry =
@@ -117,7 +118,7 @@ class RewriteProcedureCallsTest extends CypherFunSuite with AstConstructionTestS
   }
 
   test("TryRewriteProcedureCalls should return original for unresolved functions") {
-    val headClause = Unwind(function("missing", varFor("x")), varFor("y"))(pos)
+    val headClause = Unwind(function("missing", v"x"), v"y")(pos)
     val original = SingleQuery(Seq(headClause))(pos)
 
     val rewrittenTry = tryRewriteProcedureCalls(makeResolver(), original)
@@ -147,7 +148,7 @@ class RewriteProcedureCallsTest extends CypherFunSuite with AstConstructionTestS
   test(
     "should do nothing when no procedure call is present"
   ) {
-    val headClause = Unwind(varFor("x"), varFor("y"))(pos)
+    val headClause = Unwind(v"x", v"y")(pos)
     val original = SingleQuery(Seq(headClause))(pos)
 
     val evaluate = (callable: InstrumentedProcedureSignatureResolver => _) => {

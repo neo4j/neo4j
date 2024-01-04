@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.expressions.MultiRelationshipPathStep
 import org.neo4j.cypher.internal.expressions.NilPathStep
@@ -113,8 +114,8 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
       .|.projection("length(p) AS anon_1")
       .|.filter("length(p) > 4")
       .|.projection(Map("p" -> PathExpression(NodePathStep(
-        varFor("a"),
-        MultiRelationshipPathStep(varFor("anon_0"), BOTH, Some(varFor("b")), NilPathStep()(pos))(pos)
+        v"a",
+        MultiRelationshipPathStep(v"anon_0", BOTH, Some(v"b"), NilPathStep()(pos))(pos)
       )(pos))(pos)))
       .|.expand(
         "(a)-[anon_0*1..]-(b)",
@@ -155,7 +156,7 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
         Map("p" ->
           PathExpression(
             NodePathStep(
-              varFor("a"),
+              v"a",
               multiRelationshipPathStep("r", OUTGOING, "b")
             )(pos)
           )(pos))

@@ -228,7 +228,7 @@ class GoalBitAllocationTest extends CypherFunSuite with AstConstructionTestSuppo
       ), // 10
       QueryGraph(
         patternNodes = Set(v"c"),
-        selections = Selections.from(notEquals(prop("c", "prop"), Length(varFor("p"))(pos))),
+        selections = Selections.from(notEquals(prop("c", "prop"), Length(v"p")(pos))),
         argumentIds = Set(v"c", v"p")
       ) // 10
     )

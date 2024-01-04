@@ -75,8 +75,8 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2
       table.put(register[NodeConnection](pattern2), sorted = false, plan2)
 
       joinSolverStep(qg)(registry, register[NodeConnection](pattern1, pattern2), table, ctx).toSet should equal(Set(
-        NodeHashJoin(Set(varFor("b")), plan1, plan2),
-        NodeHashJoin(Set(varFor("b")), plan2, plan1)
+        NodeHashJoin(Set(v"b"), plan1, plan2),
+        NodeHashJoin(Set(v"b"), plan2, plan1)
       ))
     }
   }
@@ -111,10 +111,10 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2
       table.put(register[NodeConnection](pattern2), sorted = true, plan2Sort)
 
       joinSolverStep(qg)(registry, register[NodeConnection](pattern1, pattern2), table, ctx).toSet should equal(Set(
-        NodeHashJoin(Set(varFor("b")), plan1, plan2),
-        NodeHashJoin(Set(varFor("b")), plan1, plan2Sort),
-        NodeHashJoin(Set(varFor("b")), plan2, plan1),
-        NodeHashJoin(Set(varFor("b")), plan2, plan1Sort)
+        NodeHashJoin(Set(v"b"), plan1, plan2),
+        NodeHashJoin(Set(v"b"), plan1, plan2Sort),
+        NodeHashJoin(Set(v"b"), plan2, plan1),
+        NodeHashJoin(Set(v"b"), plan2, plan1Sort)
       ))
     }
   }
@@ -140,8 +140,8 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2
       table.put(register[NodeConnection](pattern2), sorted = false, plan2)
 
       joinSolverStep(qg)(registry, register[NodeConnection](pattern1, pattern2), table, ctx).toSet should equal(Set(
-        NodeHashJoin(Set(varFor("b")), plan1, plan2),
-        NodeHashJoin(Set(varFor("b")), plan2, plan1)
+        NodeHashJoin(Set(v"b"), plan1, plan2),
+        NodeHashJoin(Set(v"b"), plan2, plan1)
       ))
     }
   }
@@ -205,8 +205,8 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2
         table,
         ctx
       ).toSet should equal(Set(
-        NodeHashJoin(Set(varFor("b")), plan1, plan2),
-        NodeHashJoin(Set(varFor("b")), plan2, plan1)
+        NodeHashJoin(Set(v"b"), plan1, plan2),
+        NodeHashJoin(Set(v"b"), plan2, plan1)
       ))
     }
   }
@@ -292,8 +292,8 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2
 
       // Goal is completely compacted - should result in expandStillPossible == false
       joinSolverStep(qg)(registry, Goal(compactedId1.bitSet ++ compactedId2.bitSet), table, ctx).toSet should equal(Set(
-        NodeHashJoin(Set(varFor("b")), plan1, plan2),
-        NodeHashJoin(Set(varFor("b")), plan2, plan1)
+        NodeHashJoin(Set(v"b"), plan1, plan2),
+        NodeHashJoin(Set(v"b"), plan2, plan1)
       ))
     }
   }

@@ -403,9 +403,9 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
         case RegularSinglePlannerQuery(queryGraph, _, _, _, _) if queryGraph.patternNodes == Set(v"c") => 3000.0
         case _                                                                                         => 100.0
       }
-      addTypeToSemanticTable(varFor("a"), CTNode)
-      addTypeToSemanticTable(varFor("b"), CTNode)
-      addTypeToSemanticTable(varFor("c"), CTNode)
+      addTypeToSemanticTable(v"a", CTNode)
+      addTypeToSemanticTable(v"b", CTNode)
+      addTypeToSemanticTable(v"c", CTNode)
     }.withLogicalPlanningContext { (cfg, context) =>
       val kit = context.plannerState.config.toKit(InterestingOrderConfig.empty, context)
 

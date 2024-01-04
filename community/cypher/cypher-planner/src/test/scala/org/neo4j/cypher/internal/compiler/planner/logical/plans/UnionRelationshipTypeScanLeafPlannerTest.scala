@@ -62,10 +62,10 @@ class UnionRelationshipTypeScanLeafPlannerTest extends CypherFunSuite with Logic
     // then
     resultPlans should equal(Set(
       DirectedUnionRelationshipTypesScan(
-        varFor("r"),
-        varFor("a"),
+        v"r",
+        v"a",
         Seq(relTypeName("R"), relTypeName("S")),
-        varFor("b"),
+        v"b",
         Set.empty,
         IndexOrderNone
       )
@@ -84,10 +84,10 @@ class UnionRelationshipTypeScanLeafPlannerTest extends CypherFunSuite with Logic
     // then
     resultPlans should equal(Set(
       DirectedUnionRelationshipTypesScan(
-        varFor("r"),
-        varFor("b"),
+        v"r",
+        v"b",
         Seq(relTypeName("R"), relTypeName("S")),
-        varFor("a"),
+        v"a",
         Set.empty,
         IndexOrderNone
       )
@@ -106,10 +106,10 @@ class UnionRelationshipTypeScanLeafPlannerTest extends CypherFunSuite with Logic
     // then
     resultPlans should equal(Set(
       UndirectedUnionRelationshipTypesScan(
-        varFor("r"),
-        varFor("a"),
+        v"r",
+        v"a",
         Seq(relTypeName("R"), relTypeName("S")),
-        varFor("b"),
+        v"b",
         Set.empty,
         IndexOrderNone
       )
@@ -192,7 +192,7 @@ class UnionRelationshipTypeScanLeafPlannerTest extends CypherFunSuite with Logic
     val resultPlans = unionRelationshipTypeScanLeafPlanner(Set.empty)(
       qg,
       InterestingOrderConfig(
-        InterestingOrder(RequiredOrderCandidate(Seq(ColumnOrder(varFor("r"), ascending = true))))
+        InterestingOrder(RequiredOrderCandidate(Seq(ColumnOrder(v"r", ascending = true))))
       ),
       context
     )
@@ -200,10 +200,10 @@ class UnionRelationshipTypeScanLeafPlannerTest extends CypherFunSuite with Logic
     // then
     resultPlans should equal(Set(
       DirectedUnionRelationshipTypesScan(
-        varFor("r"),
-        varFor("a"),
+        v"r",
+        v"a",
         Seq(relTypeName("R"), relTypeName("S")),
-        varFor("b"),
+        v"b",
         Set.empty,
         IndexOrderAscending
       )
@@ -220,7 +220,7 @@ class UnionRelationshipTypeScanLeafPlannerTest extends CypherFunSuite with Logic
     val resultPlans = unionRelationshipTypeScanLeafPlanner(Set.empty)(
       qg,
       InterestingOrderConfig(
-        InterestingOrder(RequiredOrderCandidate(Seq(ColumnOrder(varFor("r"), ascending = false))))
+        InterestingOrder(RequiredOrderCandidate(Seq(ColumnOrder(v"r", ascending = false))))
       ),
       context
     )
@@ -228,10 +228,10 @@ class UnionRelationshipTypeScanLeafPlannerTest extends CypherFunSuite with Logic
     // then
     resultPlans should equal(Set(
       DirectedUnionRelationshipTypesScan(
-        varFor("r"),
-        varFor("a"),
+        v"r",
+        v"a",
         Seq(relTypeName("R"), relTypeName("S")),
-        varFor("b"),
+        v"b",
         Set.empty,
         IndexOrderDescending
       )
@@ -250,7 +250,7 @@ class UnionRelationshipTypeScanLeafPlannerTest extends CypherFunSuite with Logic
       InterestingOrderConfig(
         InterestingOrder(
           RequiredOrderCandidate(Seq.empty),
-          Seq(InterestingOrderCandidate(Seq(ColumnOrder(varFor("r"), ascending = false))))
+          Seq(InterestingOrderCandidate(Seq(ColumnOrder(v"r", ascending = false))))
         )
       ),
       context
@@ -259,10 +259,10 @@ class UnionRelationshipTypeScanLeafPlannerTest extends CypherFunSuite with Logic
     // then
     resultPlans should equal(Set(
       DirectedUnionRelationshipTypesScan(
-        varFor("r"),
-        varFor("a"),
+        v"r",
+        v"a",
         Seq(relTypeName("R"), relTypeName("S")),
-        varFor("b"),
+        v"b",
         Set.empty,
         IndexOrderDescending
       )
@@ -280,8 +280,8 @@ class UnionRelationshipTypeScanLeafPlannerTest extends CypherFunSuite with Logic
       qg,
       InterestingOrderConfig(
         InterestingOrder(
-          RequiredOrderCandidate(Seq(ColumnOrder(varFor("r"), ascending = true))),
-          Seq(InterestingOrderCandidate(Seq(ColumnOrder(varFor("r"), ascending = false))))
+          RequiredOrderCandidate(Seq(ColumnOrder(v"r", ascending = true))),
+          Seq(InterestingOrderCandidate(Seq(ColumnOrder(v"r", ascending = false))))
         )
       ),
       context
@@ -290,10 +290,10 @@ class UnionRelationshipTypeScanLeafPlannerTest extends CypherFunSuite with Logic
     // then
     resultPlans should equal(Set(
       DirectedUnionRelationshipTypesScan(
-        varFor("r"),
-        varFor("a"),
+        v"r",
+        v"a",
         Seq(relTypeName("R"), relTypeName("S")),
-        varFor("b"),
+        v"b",
         Set.empty,
         IndexOrderAscending
       )

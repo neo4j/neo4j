@@ -76,12 +76,12 @@ class SelectSubQueryPredicatesTest extends CypherFunSuite with LogicalPlanningTe
 
     val existsPredicate = ExistsIRExpression(
       query = subQuery,
-      existsVariable = varFor(""),
+      existsVariable = v"",
       solvedExpressionAsString = "exists((a)-[r]->(b))"
     )(
       position = pos,
-      computedIntroducedVariables = Some(Set(varFor("r"), varFor("b"))),
-      computedScopeDependencies = Some(Set(varFor("a")))
+      computedIntroducedVariables = Some(Set(v"r", v"b")),
+      computedScopeDependencies = Some(Set(v"a"))
     )
 
     val qg = QueryGraph(
@@ -212,8 +212,8 @@ class SelectSubQueryPredicatesTest extends CypherFunSuite with LogicalPlanningTe
 
     val listIRExpression = ListIRExpression(
       query = subQuery,
-      variableToCollect = varFor("item"),
-      collection = varFor("items"),
+      variableToCollect = v"item",
+      collection = v"items",
       solvedExpressionAsString = s"[($argumentName)-[$relationshipName]->($otherNodeName) | 1]"
     )(
       position = pos,
@@ -222,7 +222,7 @@ class SelectSubQueryPredicatesTest extends CypherFunSuite with LogicalPlanningTe
     )
 
     SingleIterablePredicate(
-      scope = FilterScope(varFor("x"), Some(trueLiteral))(pos),
+      scope = FilterScope(v"x", Some(trueLiteral))(pos),
       expression = listIRExpression
     )(pos)
   }
@@ -247,19 +247,19 @@ class SelectSubQueryPredicatesTest extends CypherFunSuite with LogicalPlanningTe
 
     val projection = Projection(
       source = expand,
-      projectExpressions = Map(varFor("item") -> literalInt(1))
+      projectExpressions = Map(v"item" -> literalInt(1))
     )
 
     val rollUpApply = RollUpApply(
       left = inputPlan,
       right = projection,
-      collectionName = varFor("items"),
-      variableToCollect = varFor("item")
+      collectionName = v"items",
+      variableToCollect = v"item"
     )
 
     val rewrittenSinglePredicate = SingleIterablePredicate(
-      scope = FilterScope(varFor("x"), Some(trueLiteral))(pos),
-      expression = varFor("items")
+      scope = FilterScope(v"x", Some(trueLiteral))(pos),
+      expression = v"items"
     )(pos)
 
     Selection(

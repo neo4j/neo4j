@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseInternalSettings.EagerAnalysisImplementation
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.assertIsNode
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.literalInt
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.propName
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.relTypeName
-import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.varFor
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.ExecutionModel.Volcano
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
@@ -634,7 +634,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
         .produceResults("`count(*)`")
         .aggregation(Seq(), Seq("count(*) AS `count(*)`"))
         .filterExpression(
-          HasDegreeGreaterThan(varFor("c"), Some(relTypeName("BAR")), OUTGOING, literalInt(0))(InputPosition.NONE),
+          HasDegreeGreaterThan(v"c", Some(relTypeName("BAR")), OUTGOING, literalInt(0))(InputPosition.NONE),
           assertIsNode("c")
         )
         .eager(reason)
@@ -684,7 +684,7 @@ abstract class EagerPlanningIntegrationTest(impl: EagerAnalysisImplementation) e
         .produceResults("`count(*)`")
         .aggregation(Seq(), Seq("count(*) AS `count(*)`"))
         .filterExpression(
-          HasDegreeGreaterThan(varFor("c"), None, OUTGOING, literalInt(0))(InputPosition.NONE),
+          HasDegreeGreaterThan(v"c", None, OUTGOING, literalInt(0))(InputPosition.NONE),
           assertIsNode("c")
         )
         .eager(reason)

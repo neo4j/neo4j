@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.ast.ASTAnnotationMap
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.ast.semantics.ExpressionTypeInfo
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
@@ -45,7 +46,7 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
   private val expr1 = mock[Expression]
   private val expr2 = mock[Expression]
 
-  private val nodeA = varFor("a")
+  private val nodeA = v"a"
 
   test("StringRangeSeekable finds n.prop STARTS WITH 'prefix'") {
     val leftExpr = prop("a", "prop")

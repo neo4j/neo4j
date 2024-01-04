@@ -280,8 +280,8 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
 
   test("plans hashjoins and cartesian product for queries with single pattern rel and multiple index hints") {
     val pattern = PatternRelationship(v"r1", (v"a", v"b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
-    val hint1 = UsingIndexHint(varFor("a"), labelOrRelTypeName("X"), Seq(PropertyKeyName("p")(pos)))(pos)
-    val hint2 = UsingIndexHint(varFor("b"), labelOrRelTypeName("X"), Seq(PropertyKeyName("p")(pos)))(pos)
+    val hint1 = UsingIndexHint(v"a", labelOrRelTypeName("X"), Seq(PropertyKeyName("p")(pos)))(pos)
+    val hint2 = UsingIndexHint(v"b", labelOrRelTypeName("X"), Seq(PropertyKeyName("p")(pos)))(pos)
     val qg =
       QueryGraph(patternRelationships = Set(pattern), patternNodes = Set(v"a", v"b"), hints = Set(hint1, hint2))
     val context = mockContext()
@@ -318,7 +318,7 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
 
   test("plans hashjoins and cartesian product for queries with single pattern rel and a join hint") {
     val pattern = PatternRelationship(v"r1", (v"a", v"b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
-    val hint = UsingJoinHint(Seq(varFor("a")))(pos)
+    val hint = UsingJoinHint(Seq(v"a"))(pos)
     val qg = QueryGraph(patternRelationships = Set(pattern), patternNodes = Set(v"a", v"b"), hints = Set(hint))
     val context = mockContext()
     val kit = context.plannerState.config.toKit(InterestingOrderConfig.empty, context)
@@ -363,7 +363,7 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
 
   test("does not plan hashjoins and cartesian product if start and end node are the same") {
     val pattern = PatternRelationship(v"r1", (v"a", v"a"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
-    val hint = UsingJoinHint(Seq(varFor("a")))(pos)
+    val hint = UsingJoinHint(Seq(v"a"))(pos)
     val qg = QueryGraph(patternRelationships = Set(pattern), patternNodes = Set(v"a", v"a"), hints = Set(hint))
     val context = mockContext()
     val kit = context.plannerState.config.toKit(InterestingOrderConfig.empty, context)
@@ -385,7 +385,7 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
 
   test("plans hashjoins and cartesian product for queries with single pattern rel and a join hint on the end node") {
     val pattern = PatternRelationship(v"r1", (v"a", v"b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
-    val hint = UsingJoinHint(Seq(varFor("b")))(pos)
+    val hint = UsingJoinHint(Seq(v"b"))(pos)
     val qg = QueryGraph(patternRelationships = Set(pattern), patternNodes = Set(v"a", v"b"), hints = Set(hint))
     val context = mockContext()
     val kit = context.plannerState.config.toKit(InterestingOrderConfig.empty, context)
@@ -430,7 +430,7 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
 
   test("plans expands, hashjoins and cartesian product with generic sort only in sensible places") {
     val pattern = PatternRelationship(v"r1", (v"a", v"b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
-    val hint = UsingJoinHint(Seq(varFor("a")))(pos)
+    val hint = UsingJoinHint(Seq(v"a"))(pos)
     val qg = QueryGraph(patternRelationships = Set(pattern), patternNodes = Set(v"a", v"b"), hints = Set(hint))
     val context = mockContext()
     val kit = context.plannerState.config.toKit(InterestingOrderConfig.empty, context)

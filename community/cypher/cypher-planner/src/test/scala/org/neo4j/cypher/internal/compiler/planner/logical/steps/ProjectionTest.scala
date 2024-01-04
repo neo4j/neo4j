@@ -71,7 +71,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("does not add projection when not needed") {
     // given
-    val projections = Map[LogicalVariable, Expression](v"n" -> varFor("n"))
+    val projections = Map[LogicalVariable, Expression](v"n" -> v"n")
     val (context, startPlan) = queryGraphWith(projectionsMap = projections)
 
     // when
@@ -86,7 +86,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("only adds the set difference of projections needed") {
     // given
-    val projections = Map[LogicalVariable, Expression](v"n" -> varFor("n"), v"42" -> literalInt(42))
+    val projections = Map[LogicalVariable, Expression](v"n" -> v"n", v"42" -> literalInt(42))
     val (context, startPlan) = queryGraphWith(projectionsMap = projections)
 
     // when
@@ -103,7 +103,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("does projection when renaming columns") {
     // given
-    val projections = Map[LogicalVariable, Expression](v"  n@34" -> varFor("n"))
+    val projections = Map[LogicalVariable, Expression](v"  n@34" -> v"n")
     val (context, startPlan) = queryGraphWith(projectionsMap = projections)
 
     // when

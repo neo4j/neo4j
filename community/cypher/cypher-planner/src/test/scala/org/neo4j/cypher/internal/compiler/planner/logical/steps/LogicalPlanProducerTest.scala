@@ -90,7 +90,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
 
       // then
       context.staticComponents.planningAttributes.providedOrders.get(result.id) should be(
-        ProvidedOrder.asc(varFor("xfoo")).fromLeft
+        ProvidedOrder.asc(v"xfoo").fromLeft
       )
     }
   }
@@ -102,7 +102,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val plan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x.foo")
       context.staticComponents.planningAttributes.providedOrders.set(plan.id, ProvidedOrder.asc(prop("x", "foo")))
       // projection
-      val projections = Map[LogicalVariable, Expression](v"y" -> varFor("x"))
+      val projections = Map[LogicalVariable, Expression](v"y" -> v"x")
 
       // when
       val result = lpp.planRegularProjection(plan, projections, Some(projections), context)
@@ -120,16 +120,16 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val lpp = LogicalPlanProducer(context.cardinality, context.staticComponents.planningAttributes, idGen)
       // plan with provided order
       val plan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x")
-      context.staticComponents.planningAttributes.providedOrders.set(plan.id, ProvidedOrder.asc(varFor("x")))
+      context.staticComponents.planningAttributes.providedOrders.set(plan.id, ProvidedOrder.asc(v"x"))
       // projection
-      val projections = Map[LogicalVariable, Expression](v"y" -> varFor("x"))
+      val projections = Map[LogicalVariable, Expression](v"y" -> v"x")
 
       // when
       val result = lpp.planRegularProjection(plan, projections, Some(projections), context)
 
       // then
       context.staticComponents.planningAttributes.providedOrders.get(result.id) should be(
-        ProvidedOrder.asc(varFor("y")).fromLeft
+        ProvidedOrder.asc(v"y").fromLeft
       )
     }
   }
@@ -148,7 +148,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
 
       // then
       context.staticComponents.planningAttributes.providedOrders.get(result.id) should be(
-        ProvidedOrder.asc(varFor("carrot")).fromLeft
+        ProvidedOrder.asc(v"carrot").fromLeft
       )
     }
   }
@@ -167,7 +167,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
 
       // then
       context.staticComponents.planningAttributes.providedOrders.get(result.id) should be(
-        ProvidedOrder.asc(varFor("xfoo")).fromLeft
+        ProvidedOrder.asc(v"xfoo").fromLeft
       )
     }
   }
@@ -177,16 +177,16 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val lpp = LogicalPlanProducer(context.cardinality, context.staticComponents.planningAttributes, idGen)
       // plan with provided order
       val plan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "id(n)")
-      context.staticComponents.planningAttributes.providedOrders.set(plan.id, ProvidedOrder.asc(id(varFor("n"))))
+      context.staticComponents.planningAttributes.providedOrders.set(plan.id, ProvidedOrder.asc(id(v"n")))
       // projection
-      val projections = Map[LogicalVariable, Expression](v"id(n)" -> id(varFor("n")))
+      val projections = Map[LogicalVariable, Expression](v"id(n)" -> id(v"n"))
 
       // when
       val result = lpp.planDistinct(plan, projections, projections, context)
 
       // then
       context.staticComponents.planningAttributes.providedOrders.get(result.id) should be(
-        ProvidedOrder.asc(varFor("id(n)")).fromLeft
+        ProvidedOrder.asc(v"id(n)").fromLeft
       )
     }
   }
@@ -199,7 +199,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       context.staticComponents.planningAttributes.providedOrders.set(plan.id, ProvidedOrder.asc(prop("x", "foo")))
 
       val aggregations = Map[LogicalVariable, Expression](v"xfoo" -> prop("x", "foo"))
-      val groupings = Map[LogicalVariable, Expression](v"y" -> varFor("y"))
+      val groupings = Map[LogicalVariable, Expression](v"y" -> v"y")
 
       // when
       val result = lpp.planAggregation(plan, groupings, aggregations, groupings, aggregations, None, context)
@@ -218,18 +218,18 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val plan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x.foo", "y")
       context.staticComponents.planningAttributes.providedOrders.set(
         plan.id,
-        ProvidedOrder.asc(varFor("y")).asc(prop("x", "foo"))
+        ProvidedOrder.asc(v"y").asc(prop("x", "foo"))
       )
 
       val aggregations = Map[LogicalVariable, Expression](v"xfoo" -> prop("x", "foo"))
-      val groupings = Map[LogicalVariable, Expression](v"y" -> varFor("y"))
+      val groupings = Map[LogicalVariable, Expression](v"y" -> v"y")
 
       // when
       val result = lpp.planAggregation(plan, groupings, aggregations, groupings, aggregations, None, context)
 
       // then
       context.staticComponents.planningAttributes.providedOrders.get(result.id) should be(
-        ProvidedOrder.asc(varFor("y")).fromLeft
+        ProvidedOrder.asc(v"y").fromLeft
       )
     }
   }
@@ -241,18 +241,18 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val plan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x.foo", "y")
       context.staticComponents.planningAttributes.providedOrders.set(
         plan.id,
-        ProvidedOrder.asc(varFor("y")).asc(prop("x", "foo"))
+        ProvidedOrder.asc(v"y").asc(prop("x", "foo"))
       )
 
       val aggregations = Map[LogicalVariable, Expression](v"xfoo" -> prop("x", "foo"))
-      val groupings = Map[LogicalVariable, Expression](v"z" -> varFor("y"))
+      val groupings = Map[LogicalVariable, Expression](v"z" -> v"y")
 
       // when
       val result = lpp.planAggregation(plan, groupings, aggregations, groupings, aggregations, None, context)
 
       // then
       context.staticComponents.planningAttributes.providedOrders.get(result.id) should be(
-        ProvidedOrder.asc(varFor("z")).fromLeft
+        ProvidedOrder.asc(v"z").fromLeft
       )
     }
   }
@@ -268,7 +268,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       )
 
       val aggregations = Map[LogicalVariable, Expression](v"xfoo" -> prop("x", "foo"))
-      val groupings = Map[LogicalVariable, Expression](v"z" -> varFor("y"))
+      val groupings = Map[LogicalVariable, Expression](v"z" -> v"y")
 
       // when
       val result = lpp.planAggregation(plan, groupings, aggregations, groupings, aggregations, None, context)
@@ -296,7 +296,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
 
       // then
       context.staticComponents.planningAttributes.providedOrders.get(result.id) should be(
-        ProvidedOrder.asc(varFor("z")).fromLeft
+        ProvidedOrder.asc(v"z").fromLeft
       )
     }
   }
@@ -319,7 +319,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
 
       // then
       context.staticComponents.planningAttributes.providedOrders.get(result.id) should be(
-        ProvidedOrder.asc(varFor("z")).fromLeft
+        ProvidedOrder.asc(v"z").fromLeft
       )
     }
   }
@@ -331,12 +331,12 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val lhs = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x", "z.bar")
       context.staticComponents.planningAttributes.providedOrders.set(
         lhs.id,
-        ProvidedOrder.asc(prop("z", "bar")).desc(varFor("x"))
+        ProvidedOrder.asc(prop("z", "bar")).desc(v"x")
       )
       val rhs = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x", "y.bar", "x.foo")
       context.staticComponents.planningAttributes.providedOrders.set(
         rhs.id,
-        ProvidedOrder.asc(prop("y", "bar")).asc(varFor("x")).asc(prop("x", "foo"))
+        ProvidedOrder.asc(prop("y", "bar")).asc(v"x").asc(prop("x", "foo"))
       )
 
       val joinColumns = Set[LogicalVariable](v"x")
@@ -359,7 +359,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val lhs = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x", "z.bar")
       context.staticComponents.planningAttributes.providedOrders.set(
         lhs.id,
-        ProvidedOrder.asc(prop("z", "bar")).desc(varFor("x"))
+        ProvidedOrder.asc(prop("z", "bar")).desc(v"x")
       )
       val rhs = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x", "y.bar", "x.foo")
       context.staticComponents.planningAttributes.providedOrders.set(
@@ -387,7 +387,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val lhs = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x", "z.bar")
       context.staticComponents.planningAttributes.providedOrders.set(
         lhs.id,
-        ProvidedOrder.asc(prop("z", "bar")).desc(varFor("x"))
+        ProvidedOrder.asc(prop("z", "bar")).desc(v"x")
       )
       val rhs = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x", "y.bar", "x.foo")
       context.staticComponents.planningAttributes.providedOrders.set(
@@ -417,18 +417,18 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val plan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "size(x)", "y")
       context.staticComponents.planningAttributes.providedOrders.set(
         plan.id,
-        ProvidedOrder.asc(varFor("y")).asc(function("size", varFor("x")))
+        ProvidedOrder.asc(v"y").asc(function("size", v"x"))
       )
 
-      val aggregations = Map[LogicalVariable, Expression](v"size(x)" -> function("size", varFor("x")))
-      val groupings = Map[LogicalVariable, Expression](v"y" -> varFor("y"))
+      val aggregations = Map[LogicalVariable, Expression](v"size(x)" -> function("size", v"x"))
+      val groupings = Map[LogicalVariable, Expression](v"y" -> v"y")
 
       // when
       val result = lpp.planAggregation(plan, groupings, aggregations, groupings, aggregations, None, context)
 
       // then
       context.staticComponents.planningAttributes.providedOrders.get(result.id) should be(
-        ProvidedOrder.asc(varFor("y")).fromLeft
+        ProvidedOrder.asc(v"y").fromLeft
       )
     }
   }
@@ -445,25 +445,25 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
 
       context.staticComponents.planningAttributes.providedOrders.set(
         plan.id,
-        ProvidedOrder.asc(varFor("y")).asc(propOfProp)
+        ProvidedOrder.asc(v"y").asc(propOfProp)
       )
 
       val aggregations = Map[LogicalVariable, Expression](v"xfoobar" -> propOfProp)
-      val groupings = Map[LogicalVariable, Expression](v"y" -> varFor("y"))
+      val groupings = Map[LogicalVariable, Expression](v"y" -> v"y")
 
       // when
       val result = lpp.planAggregation(plan, groupings, aggregations, groupings, aggregations, None, context)
 
       // then
       context.staticComponents.planningAttributes.providedOrders.get(result.id) should be(
-        ProvidedOrder.asc(varFor("y")).fromLeft
+        ProvidedOrder.asc(v"y").fromLeft
       )
     }
   }
 
   test("Create should eliminate provided order") {
     shouldEliminateProvidedOrder(ctx =>
-      ctx.producer.planCreate(ctx.lhs, CreatePattern(Seq(CreateNode(varFor("n"), Set(), None))), ctx.context)
+      ctx.producer.planCreate(ctx.lhs, CreatePattern(Seq(CreateNode(v"n", Set(), None))), ctx.context)
     )
   }
 
@@ -471,9 +471,9 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
     shouldEliminateProvidedOrder(ctx =>
       ctx.producer.planMerge(
         ctx.lhs,
-        Seq(CreateNode(varFor("n"), Set(), None)),
+        Seq(CreateNode(v"n", Set(), None)),
         Seq.empty,
-        Seq(SetNodePropertyPattern(varFor("x"), PropertyKeyName("p")(pos), literalInt(1))),
+        Seq(SetNodePropertyPattern(v"x", PropertyKeyName("p")(pos), literalInt(1))),
         Seq.empty,
         Set.empty,
         ctx.context
@@ -485,7 +485,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
     shouldRetainProvidedOrder(ctx =>
       ctx.producer.planMerge(
         ctx.lhs,
-        Seq(CreateNode(varFor("n"), Set(), None)),
+        Seq(CreateNode(v"n", Set(), None)),
         Seq.empty,
         Seq.empty,
         Seq.empty,
@@ -497,37 +497,37 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
 
   test("DeleteNode should eliminate provided order") {
     shouldEliminateProvidedOrder(ctx =>
-      ctx.producer.planDeleteNode(ctx.lhs, DeleteExpression(varFor("n"), false), ctx.context)
+      ctx.producer.planDeleteNode(ctx.lhs, DeleteExpression(v"n", false), ctx.context)
     )
   }
 
   test("DeleteRelationship should eliminate provided order") {
     shouldEliminateProvidedOrder(ctx =>
-      ctx.producer.planDeleteRelationship(ctx.lhs, DeleteExpression(varFor("r"), false), ctx.context)
+      ctx.producer.planDeleteRelationship(ctx.lhs, DeleteExpression(v"r", false), ctx.context)
     )
   }
 
   test("DeletePath should eliminate provided order") {
     shouldEliminateProvidedOrder(ctx =>
-      ctx.producer.planDeletePath(ctx.lhs, DeleteExpression(varFor("p"), false), ctx.context)
+      ctx.producer.planDeletePath(ctx.lhs, DeleteExpression(v"p", false), ctx.context)
     )
   }
 
   test("DeleteExpression should eliminate provided order") {
     shouldEliminateProvidedOrder(ctx =>
-      ctx.producer.planDeleteExpression(ctx.lhs, DeleteExpression(varFor("x"), false), ctx.context)
+      ctx.producer.planDeleteExpression(ctx.lhs, DeleteExpression(v"x", false), ctx.context)
     )
   }
 
   test("Setlabel should eliminate provided order") {
     shouldEliminateProvidedOrder(ctx =>
-      ctx.producer.planSetLabel(ctx.lhs, SetLabelPattern(varFor("n"), Seq(labelName("N"))), ctx.context)
+      ctx.producer.planSetLabel(ctx.lhs, SetLabelPattern(v"n", Seq(labelName("N"))), ctx.context)
     )
   }
 
   test("RemoveLabel should eliminate provided order") {
     shouldEliminateProvidedOrder(ctx =>
-      ctx.producer.planRemoveLabel(ctx.lhs, RemoveLabelPattern(varFor("n"), Seq(labelName("N"))), ctx.context)
+      ctx.producer.planRemoveLabel(ctx.lhs, RemoveLabelPattern(v"n", Seq(labelName("N"))), ctx.context)
     )
   }
 
@@ -535,7 +535,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
     shouldEliminateProvidedOrder(ctx =>
       ctx.producer.planSetProperty(
         ctx.lhs,
-        SetPropertyPattern(varFor("x"), PropertyKeyName("p")(pos), literalInt(1)),
+        SetPropertyPattern(v"x", PropertyKeyName("p")(pos), literalInt(1)),
         ctx.context
       )
     )
@@ -545,7 +545,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
     shouldEliminateProvidedOrder(ctx =>
       ctx.producer.planSetPropertiesFromMap(
         ctx.lhs,
-        SetPropertiesFromMapPattern(varFor("x"), mapOfInt("p" -> 1), false),
+        SetPropertiesFromMapPattern(v"x", mapOfInt("p" -> 1), false),
         ctx.context
       )
     )
@@ -555,7 +555,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
     shouldEliminateProvidedOrder(ctx =>
       ctx.producer.planSetNodeProperty(
         ctx.lhs,
-        SetNodePropertyPattern(varFor("x"), PropertyKeyName("p")(pos), literalInt(1)),
+        SetNodePropertyPattern(v"x", PropertyKeyName("p")(pos), literalInt(1)),
         ctx.context
       )
     )
@@ -565,7 +565,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
     shouldEliminateProvidedOrder(ctx =>
       ctx.producer.planSetNodePropertiesFromMap(
         ctx.lhs,
-        SetNodePropertiesFromMapPattern(varFor("x"), mapOfInt("p" -> 1), false),
+        SetNodePropertiesFromMapPattern(v"x", mapOfInt("p" -> 1), false),
         ctx.context
       )
     )
@@ -575,7 +575,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
     shouldEliminateProvidedOrder(ctx =>
       ctx.producer.planSetRelationshipProperty(
         ctx.lhs,
-        SetRelationshipPropertyPattern(varFor("x"), PropertyKeyName("p")(pos), literalInt(1)),
+        SetRelationshipPropertyPattern(v"x", PropertyKeyName("p")(pos), literalInt(1)),
         ctx.context
       )
     )
@@ -585,7 +585,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
     shouldEliminateProvidedOrder(ctx =>
       ctx.producer.planSetRelationshipPropertiesFromMap(
         ctx.lhs,
-        SetRelationshipPropertiesFromMapPattern(varFor("r"), mapOfInt("p" -> 1), false),
+        SetRelationshipPropertiesFromMapPattern(v"r", mapOfInt("p" -> 1), false),
         ctx.context
       )
     )
@@ -781,7 +781,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
         v"b",
         v"c",
         ctx.rhsWithUpdate,
-        varFor("x"),
+        v"x",
         ctx.context
       )
     )
@@ -796,7 +796,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
         v"b",
         v"c",
         ctx.rhsWithoutUpdate,
-        varFor("x"),
+        v"x",
         ctx.context
       )
     )
@@ -840,13 +840,13 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
 
   test("InputApply should fail when rhs contains update") {
     shouldEliminateProvidedOrder(ctx =>
-      ctx.producer.planInputApply(ctx.lhs, ctx.rhsWithUpdate, Seq(varFor("x")), ctx.context)
+      ctx.producer.planInputApply(ctx.lhs, ctx.rhsWithUpdate, Seq(v"x"), ctx.context)
     )
   }
 
   test("InputApply should retain provided order when rhs contains no update") {
     shouldRetainProvidedOrder(ctx =>
-      ctx.producer.planInputApply(ctx.lhs, ctx.rhsWithoutUpdate, Seq(varFor("x")), ctx.context)
+      ctx.producer.planInputApply(ctx.lhs, ctx.rhsWithoutUpdate, Seq(v"x"), ctx.context)
     )
   }
 
@@ -855,9 +855,9 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       ctx.producer.planForeachApply(
         ctx.lhs,
         ctx.rhsWithUpdate,
-        ForeachPattern(varFor("x"), varFor("x"), SinglePlannerQuery.empty),
+        ForeachPattern(v"x", v"x", SinglePlannerQuery.empty),
         ctx.context,
-        varFor("x")
+        v"x"
       )
     )
   }
@@ -867,34 +867,34 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       ctx.producer.planForeachApply(
         ctx.lhs,
         ctx.rhsWithoutUpdate,
-        ForeachPattern(varFor("x"), varFor("x"), SinglePlannerQuery.empty),
+        ForeachPattern(v"x", v"x", SinglePlannerQuery.empty),
         ctx.context,
-        varFor("x")
+        v"x"
       )
     )
   }
 
   test("SemiApply should fail when rhs contains update") {
     shouldFailAssertion(ctx =>
-      ctx.producer.planSemiApply(ctx.lhs, ctx.rhsWithUpdate, varFor("x"), ctx.context)
+      ctx.producer.planSemiApply(ctx.lhs, ctx.rhsWithUpdate, v"x", ctx.context)
     )
   }
 
   test("SemiApply should retain provided order when rhs contains no update") {
     shouldRetainProvidedOrder(ctx =>
-      ctx.producer.planSemiApply(ctx.lhs, ctx.rhsWithoutUpdate, varFor("x"), ctx.context)
+      ctx.producer.planSemiApply(ctx.lhs, ctx.rhsWithoutUpdate, v"x", ctx.context)
     )
   }
 
   test("AntiSemiApply should fail when rhs contains update") {
     shouldFailAssertion(ctx =>
-      ctx.producer.planAntiSemiApply(ctx.lhs, ctx.rhsWithUpdate, varFor("x"), ctx.context)
+      ctx.producer.planAntiSemiApply(ctx.lhs, ctx.rhsWithUpdate, v"x", ctx.context)
     )
   }
 
   test("AntiSemiApply should retain provided order when rhs contains no update") {
     shouldRetainProvidedOrder(ctx =>
-      ctx.producer.planAntiSemiApply(ctx.lhs, ctx.rhsWithoutUpdate, varFor("x"), ctx.context)
+      ctx.producer.planAntiSemiApply(ctx.lhs, ctx.rhsWithoutUpdate, v"x", ctx.context)
     )
   }
 
@@ -924,49 +924,49 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
 
   test("SelectOrSemiApply should fail when rhs contains update") {
     shouldFailAssertion(ctx =>
-      ctx.producer.planSelectOrSemiApply(ctx.lhs, ctx.rhsWithUpdate, varFor("x"), ctx.context)
+      ctx.producer.planSelectOrSemiApply(ctx.lhs, ctx.rhsWithUpdate, v"x", ctx.context)
     )
   }
 
   test("SelectOrSemiApply should retain provided order when rhs contains no update") {
     shouldRetainProvidedOrder(ctx =>
-      ctx.producer.planSelectOrSemiApply(ctx.lhs, ctx.rhsWithoutUpdate, varFor("x"), ctx.context)
+      ctx.producer.planSelectOrSemiApply(ctx.lhs, ctx.rhsWithoutUpdate, v"x", ctx.context)
     )
   }
 
   test("SelectOrAntiSemiApply should fail when rhs contains update") {
     shouldFailAssertion(ctx =>
-      ctx.producer.planSelectOrAntiSemiApply(ctx.lhs, ctx.rhsWithUpdate, varFor("x"), ctx.context)
+      ctx.producer.planSelectOrAntiSemiApply(ctx.lhs, ctx.rhsWithUpdate, v"x", ctx.context)
     )
   }
 
   test("SelectOrAntiSemiApply should retain provided order when rhs contains no update") {
     shouldRetainProvidedOrder(ctx =>
-      ctx.producer.planSelectOrAntiSemiApply(ctx.lhs, ctx.rhsWithoutUpdate, varFor("x"), ctx.context)
+      ctx.producer.planSelectOrAntiSemiApply(ctx.lhs, ctx.rhsWithoutUpdate, v"x", ctx.context)
     )
   }
 
   test("LetSelectOrSemiApply should fail when rhs contains update") {
     shouldFailAssertion(ctx =>
-      ctx.producer.planLetSelectOrSemiApply(ctx.lhs, ctx.rhsWithUpdate, v"x", varFor("x"), ctx.context)
+      ctx.producer.planLetSelectOrSemiApply(ctx.lhs, ctx.rhsWithUpdate, v"x", v"x", ctx.context)
     )
   }
 
   test("LetSelectOrSemiApply should retain provided order when rhs contains no update") {
     shouldRetainProvidedOrder(ctx =>
-      ctx.producer.planLetSelectOrSemiApply(ctx.lhs, ctx.rhsWithoutUpdate, v"x", varFor("x"), ctx.context)
+      ctx.producer.planLetSelectOrSemiApply(ctx.lhs, ctx.rhsWithoutUpdate, v"x", v"x", ctx.context)
     )
   }
 
   test("LetSelectOrAntiSemiApply should fail when rhs contains update") {
     shouldFailAssertion(ctx =>
-      ctx.producer.planLetSelectOrAntiSemiApply(ctx.lhs, ctx.rhsWithUpdate, v"x", varFor("x"), ctx.context)
+      ctx.producer.planLetSelectOrAntiSemiApply(ctx.lhs, ctx.rhsWithUpdate, v"x", v"x", ctx.context)
     )
   }
 
   test("LetSelectOrAntiSemiApply should retain provided order when rhs contains no update") {
     shouldRetainProvidedOrder(ctx =>
-      ctx.producer.planLetSelectOrAntiSemiApply(ctx.lhs, ctx.rhsWithoutUpdate, v"x", varFor("x"), ctx.context)
+      ctx.producer.planLetSelectOrAntiSemiApply(ctx.lhs, ctx.rhsWithoutUpdate, v"x", v"x", ctx.context)
     )
   }
 
@@ -978,7 +978,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
         simpleExistsExpression(
           patternForMatch(nodePat(Some("x"))),
           None,
-          introducedVariables = Set(varFor("x"))
+          introducedVariables = Set(v"x")
         ),
         ctx.context
       )
@@ -993,7 +993,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
         simpleExistsExpression(
           patternForMatch(nodePat(Some("x"))),
           None,
-          introducedVariables = Set(varFor("x"))
+          introducedVariables = Set(v"x")
         ),
         ctx.context
       )
@@ -1008,7 +1008,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
         simpleExistsExpression(
           patternForMatch(nodePat(Some("x"))),
           None,
-          introducedVariables = Set(varFor("x"))
+          introducedVariables = Set(v"x")
         ),
         ctx.context
       )
@@ -1023,7 +1023,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
         simpleExistsExpression(
           patternForMatch(nodePat(Some("x"))),
           None,
-          introducedVariables = Set(varFor("x"))
+          introducedVariables = Set(v"x")
         ),
         ctx.context
       )
@@ -1062,11 +1062,11 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
   private def getPlan(context: LogicalPlanningContext, createPlan: PlanCreationContext => LogicalPlan) = {
     val lpp = LogicalPlanProducer(context.cardinality, context.staticComponents.planningAttributes, idGen)
     val lhs = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x", "y")
-    val providedOrder = ProvidedOrder.asc(varFor("y")).asc(varFor("x"))
+    val providedOrder = ProvidedOrder.asc(v"y").asc(v"x")
     context.staticComponents.planningAttributes.providedOrders.set(lhs.id, providedOrder)
 
     val rhs = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "a")
-    val rhsWithUpdate = lpp.planSetLabel(rhs, SetLabelPattern(varFor("n"), Seq(labelName("N"))), context)
+    val rhsWithUpdate = lpp.planSetLabel(rhs, SetLabelPattern(v"n", Seq(labelName("N"))), context)
     createPlan(PlanCreationContext(lpp, context, lhs, rhsWithUpdate, rhs))
   }
 
@@ -1074,7 +1074,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
     new givenConfig().withLogicalPlanningContext { (_, context) =>
       val lpp = LogicalPlanProducer(context.cardinality, context.staticComponents.planningAttributes, idGen)
 
-      val initialOrder = ProvidedOrder.asc(varFor("x"))
+      val initialOrder = ProvidedOrder.asc(v"x")
       // plan with provided order
       def plan() = {
         val p = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x", "y")
@@ -1087,7 +1087,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
         p
       }
 
-      val vx = varFor("x")
+      val vx = v"x"
       val x_vx = Map[LogicalVariable, Expression](v"x" -> vx)
       val foo_vx = Map[LogicalVariable, Expression](v"foo" -> vx)
       val foo_collect =
@@ -1095,7 +1095,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val interesting_vx = InterestingOrder.required(RequiredOrderCandidate.asc(vx))
       val one = literalInt(1)
       val unionMappings =
-        List(UnionMapping(varFor("x"), varFor("x"), varFor("x")), UnionMapping(varFor("y"), varFor("y"), varFor("y")))
+        List(UnionMapping(v"x", v"x", v"x"), UnionMapping(v"y", v"y", v"y"))
 
       // when
       val resultsAndNames = Seq(
@@ -1103,9 +1103,9 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
           "PartialSort",
           lpp.planPartialSort(
             plan(),
-            Seq(Ascending(varFor("x"))),
-            Seq(Ascending(varFor("y"))),
-            initialOrder.asc(varFor("y")).columns,
+            Seq(Ascending(v"x")),
+            Seq(Ascending(v"y")),
+            initialOrder.asc(v"y").columns,
             InterestingOrder.empty,
             context
           )
@@ -1115,11 +1115,11 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
           lpp.planOrderedAggregation(plan(), x_vx, foo_vx, Seq(vx), x_vx, foo_vx, context)
         ),
         ("OrderedDistinct", lpp.planOrderedDistinct(plan(), foo_vx, Seq(vx), foo_vx, context)),
-        ("OrderedUnion", lpp.planOrderedUnion(plan(), plan2(), unionMappings, Seq(Ascending(varFor("x"))), context)),
+        ("OrderedUnion", lpp.planOrderedUnion(plan(), plan2(), unionMappings, Seq(Ascending(v"x")), context)),
         (
           "OrderedDistinct for Union",
           lpp.planOrderedDistinctForUnion(
-            lpp.planOrderedUnion(plan(), plan2(), unionMappings, Seq(Ascending(varFor("x"))), context),
+            lpp.planOrderedUnion(plan(), plan2(), unionMappings, Seq(Ascending(v"x")), context),
             Seq(vx),
             context
           )
@@ -1156,11 +1156,11 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
     new givenConfig().withLogicalPlanningContext { (_, context) =>
       val lpp = LogicalPlanProducer(context.cardinality, context.staticComponents.planningAttributes, idGen)
 
-      val initialOrder = ProvidedOrder.asc(varFor("x"))
+      val initialOrder = ProvidedOrder.asc(v"x")
 
       val leaf1 = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x", "y")
       val leaf2 = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x", "y")
-      val p1 = lpp.planSort(leaf1, Seq(Ascending(varFor("x"))), initialOrder.columns, InterestingOrder.empty, context)
+      val p1 = lpp.planSort(leaf1, Seq(Ascending(v"x")), initialOrder.columns, InterestingOrder.empty, context)
       val p2 = lpp.planEager(p1, context, ListSet.empty)
       val p3 = lpp.planRightOuterHashJoin(Set(v"x"), leaf2, p2, Set.empty, context)
 
@@ -1168,7 +1168,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val result = lpp.planProduceResult(
         p3,
         Seq(v"x"),
-        Some(InterestingOrder.required(RequiredOrderCandidate.asc(varFor("x")))),
+        Some(InterestingOrder.required(RequiredOrderCandidate.asc(v"x"))),
         context
       )
 
@@ -1186,21 +1186,21 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
     new givenConfig().withLogicalPlanningContext { (_, context) =>
       val lpp = LogicalPlanProducer(context.cardinality, context.staticComponents.planningAttributes, idGen)
 
-      val initialOrder = ProvidedOrder.asc(varFor("x"))
+      val initialOrder = ProvidedOrder.asc(v"x")
 
       val leaf1 = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x", "y")
       val leaf2 = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x", "y")
       val sort1 =
-        lpp.planSort(leaf1, Seq(Ascending(varFor("x"))), initialOrder.columns, InterestingOrder.empty, context)
+        lpp.planSort(leaf1, Seq(Ascending(v"x")), initialOrder.columns, InterestingOrder.empty, context)
       val sort2 =
-        lpp.planSort(leaf2, Seq(Ascending(varFor("x"))), initialOrder.columns, InterestingOrder.empty, context)
-      val u = lpp.planOrderedUnion(sort1, sort2, List(), Seq(Ascending(varFor("x"))), context)
+        lpp.planSort(leaf2, Seq(Ascending(v"x")), initialOrder.columns, InterestingOrder.empty, context)
+      val u = lpp.planOrderedUnion(sort1, sort2, List(), Seq(Ascending(v"x")), context)
 
       // when
       val result = lpp.planProduceResult(
         u,
         Seq(v"x"),
-        Some(InterestingOrder.required(RequiredOrderCandidate.asc(varFor("x")))),
+        Some(InterestingOrder.required(RequiredOrderCandidate.asc(v"x"))),
         context
       )
 
@@ -1220,8 +1220,8 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
 
       val lhs = fakeLogicalPlanFor("x", "y")
       val rhs = fakeLogicalPlanFor("x", "y")
-      val hint1 = UsingIndexHint(varFor("foo"), labelOrRelTypeName("bar"), Seq())(InputPosition.NONE)
-      val hint2 = UsingIndexHint(varFor("blah"), labelOrRelTypeName("meh"), Seq())(InputPosition.NONE)
+      val hint1 = UsingIndexHint(v"foo", labelOrRelTypeName("bar"), Seq())(InputPosition.NONE)
+      val hint2 = UsingIndexHint(v"blah", labelOrRelTypeName("meh"), Seq())(InputPosition.NONE)
 
       val solveds = context.staticComponents.planningAttributes.solveds
       val spqLhs = SinglePlannerQuery.empty.amendQueryGraph(qg => qg.addHints(Seq(hint1)))
@@ -1283,13 +1283,13 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
 
   test("providedOrderOfApply: is correct") {
     val po_empty = ProvidedOrder.empty
-    val po_a = ProvidedOrder.asc(varFor("a"))
-    val po_b = ProvidedOrder.asc(varFor("b"))
-    val po_c = ProvidedOrder.asc(varFor("c"))
-    val po_ab = ProvidedOrder.asc(varFor("a")).asc(varFor("b"))
-    val po_abc = ProvidedOrder.asc(varFor("a")).asc(varFor("b")).asc(varFor("c"))
-    val d_a = DistinctColumns(varFor("a"))
-    val d_ab = DistinctColumns(varFor("a"), varFor("b"))
+    val po_a = ProvidedOrder.asc(v"a")
+    val po_b = ProvidedOrder.asc(v"b")
+    val po_c = ProvidedOrder.asc(v"c")
+    val po_ab = ProvidedOrder.asc(v"a").asc(v"b")
+    val po_abc = ProvidedOrder.asc(v"a").asc(v"b").asc(v"c")
+    val d_a = DistinctColumns(v"a")
+    val d_ab = DistinctColumns(v"a", v"b")
 
     val providedOrderOfApplyTest = Table(
       ("leftProvidedOrder", "rightProvidedOrder", "leftDistinctness", "expectedProvidedOrder"),
@@ -1324,7 +1324,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
     new givenConfig().withLogicalPlanningContext { (_, context) =>
       val lpp = LogicalPlanProducer(context.cardinality, context.staticComponents.planningAttributes, idGen)
 
-      val varX = varFor("x")
+      val varX = v"x"
       val fooToX = Map[LogicalVariable, Expression](v"foo" -> varX)
       val initialOrder = ProvidedOrder.asc(varX)
 

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.InequalityExpression
@@ -92,11 +93,11 @@ class GroupInequalityPredicatesTest extends CypherFunSuite with AstConstructionT
 
   test("Should not group inequalities on non-property lookups") {
     groupInequalityPredicates(ListSet(
-      pred(lessThan(varFor("x"), literalInt(1))),
-      pred(greaterThanOrEqual(varFor("x"), literalInt(1)))
+      pred(lessThan(v"x", literalInt(1))),
+      pred(greaterThanOrEqual(v"x", literalInt(1)))
     )).toSet should equal(Set(
-      pred(lessThan(varFor("x"), literalInt(1))),
-      pred(greaterThanOrEqual(varFor("x"), literalInt(1)))
+      pred(lessThan(v"x", literalInt(1))),
+      pred(greaterThanOrEqual(v"x", literalInt(1)))
     ))
   }
 

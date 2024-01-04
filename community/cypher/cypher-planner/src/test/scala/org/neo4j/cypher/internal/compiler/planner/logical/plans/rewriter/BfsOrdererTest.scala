@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.logical.plans.Ascending
@@ -72,7 +73,7 @@ class BfsOrdererTest extends CypherFunSuite with LogicalPlanningTestSupport {
       .build()
 
     val after = new LogicalPlanBuilder(wholePlan = false)
-      .partialSortColumns(Seq(Ascending(varFor("depth1"))), Seq(Ascending(varFor("to"))))
+      .partialSortColumns(Seq(Ascending(v"depth1")), Seq(Ascending(v"to")))
       .bfsPruningVarExpand("(middle)-[*1..3]-(to)", depthName = Some("depth2"))
       .bfsPruningVarExpand("(from)-[*1..3]-(middle)", depthName = Some("depth1"))
       .argument("from")
@@ -92,7 +93,7 @@ class BfsOrdererTest extends CypherFunSuite with LogicalPlanningTestSupport {
       .build()
 
     val after = new LogicalPlanBuilder(wholePlan = false)
-      .partialSortColumns(Seq(Ascending(varFor("depth1Alias2"))), Seq(Ascending(varFor("to"))))
+      .partialSortColumns(Seq(Ascending(v"depth1Alias2")), Seq(Ascending(v"to")))
       .projection("depth1Alias AS depth1Alias2", "depth1Alias AS depth1Alias3")
       .projection("depth1 AS depth1Alias", "depth2 AS depth2Alias")
       .bfsPruningVarExpand("(middle)-[*1..3]-(to)", depthName = Some("depth2"))
@@ -189,7 +190,7 @@ class BfsOrdererTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("should rewrite to partial top when depth is first top column in asc order") {
     val before = new LogicalPlanBuilder(wholePlan = false)
-      .top(Seq(Ascending(varFor("depth")), Ascending(varFor("to"))), 42)
+      .top(Seq(Ascending(v"depth"), Ascending(v"to")), 42)
       .bfsPruningVarExpand("(from)-[*1..3]-(to)", depthName = Some("depth"))
       .argument("from")
       .build()
@@ -221,7 +222,7 @@ class BfsOrdererTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("should rewrite to partial top when two bfs plans and top uses depth of first one") {
     val before = new LogicalPlanBuilder(wholePlan = false)
-      .top(Seq(Ascending(varFor("depth1")), Ascending(varFor("to"))), 42)
+      .top(Seq(Ascending(v"depth1"), Ascending(v"to")), 42)
       .bfsPruningVarExpand("(middle)-[*1..3]-(to)", depthName = Some("depth2"))
       .bfsPruningVarExpand("(from)-[*1..3]-(middle)", depthName = Some("depth1"))
       .argument("from")
@@ -239,7 +240,7 @@ class BfsOrdererTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("should rewrite to partial top when sort column is an alias of original depth variable") {
     val before = new LogicalPlanBuilder(wholePlan = false)
-      .top(Seq(Ascending(varFor("depth1Alias2")), Ascending(varFor("to"))), 42)
+      .top(Seq(Ascending(v"depth1Alias2"), Ascending(v"to")), 42)
       .projection("depth1Alias AS depth1Alias2", "depth1Alias AS depth1Alias3")
       .projection("depth1 AS depth1Alias", "depth2 AS depth2Alias")
       .bfsPruningVarExpand("(middle)-[*1..3]-(to)", depthName = Some("depth2"))
@@ -265,7 +266,7 @@ class BfsOrdererTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("should not rewrite to partial top when depth is not first top column") {
     val before = new LogicalPlanBuilder(wholePlan = false)
-      .top(Seq(Ascending(varFor("to")), Ascending(varFor("depth"))), 42)
+      .top(Seq(Ascending(v"to"), Ascending(v"depth")), 42)
       .bfsPruningVarExpand("(from)-[*1..3]-(to)", depthName = Some("depth"))
       .argument("from")
       .build()
@@ -275,7 +276,7 @@ class BfsOrdererTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("should not rewrite to partial top when depth is first top column but is desc") {
     val before = new LogicalPlanBuilder(wholePlan = false)
-      .top(Seq(Descending(varFor("depth")), Ascending(varFor("to"))), 42)
+      .top(Seq(Descending(v"depth"), Ascending(v"to")), 42)
       .bfsPruningVarExpand("(from)-[*1..3]-(to)", depthName = Some("depth"))
       .argument("from")
       .build()
@@ -295,7 +296,7 @@ class BfsOrdererTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("should not rewrite to partial top when two bfs plans and top uses depth of second one") {
     val before = new LogicalPlanBuilder(wholePlan = false)
-      .top(Seq(Ascending(varFor("depth2")), Ascending(varFor("to"))), 42)
+      .top(Seq(Ascending(v"depth2"), Ascending(v"to")), 42)
       .bfsPruningVarExpand("(middle)-[*1..3]-(to)", depthName = Some("depth2"))
       .bfsPruningVarExpand("(from)-[*1..3]-(middle)", depthName = Some("depth1"))
       .argument("from")

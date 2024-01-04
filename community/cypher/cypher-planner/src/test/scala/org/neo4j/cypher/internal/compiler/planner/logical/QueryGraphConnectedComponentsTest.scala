@@ -390,7 +390,7 @@ class QueryGraphConnectedComponentsTest
       argumentIds = Set(X),
       patternNodes = Set(A, B),
       quantifiedPathPatterns = Set(qpp(A, B)),
-      selections = Selections.from(equals(varFor("a_inner_group"), X))
+      selections = Selections.from(equals(v"a_inner_group", X))
     )
 
     val components = graph.connectedComponents

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps.index
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.ast.IsTyped
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsBoundingBoxSeekable
@@ -94,7 +95,7 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
 
   testFindIndexCompatiblePredicate(
     "equals with unknown variable",
-    equals(property, varFor("m")),
+    equals(property, v"m"),
     expectedPredicatesOrArgs = Args(
       solvedPredicate = Some(PartialPredicateWrapper(isNotNull(property), _)),
       indexRequirements = Set(IndexRequirement.SupportsIndexQuery(IndexQueryType.EXISTS)),
@@ -104,7 +105,7 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
 
   testFindIndexCompatiblePredicate(
     "equals with known variable",
-    equals(property, varFor("m")),
+    equals(property, v"m"),
     argumentIds = Set("m"),
     expectedPredicatesOrArgs = Args(
       dependencies = Set("m"),
@@ -180,7 +181,7 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
 
   testFindIndexCompatiblePredicate(
     "lessThan with unknown variable",
-    lessThan(property, varFor("m")),
+    lessThan(property, v"m"),
     expectedPredicatesOrArgs = Args(
       solvedPredicate = Some(PartialPredicateWrapper(isNotNull(property), _)),
       indexRequirements = Set(IndexRequirement.SupportsIndexQuery(IndexQueryType.EXISTS)),
@@ -190,9 +191,9 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
 
   testFindIndexCompatiblePredicate(
     "lessThan with known variable",
-    lessThan(property, varFor("m")),
+    lessThan(property, v"m"),
     argumentIds = Set("m"),
-    propertyTypes = Map(varFor("m") -> CTInteger.invariant),
+    propertyTypes = Map(v"m" -> CTInteger.invariant),
     expectedPredicatesOrArgs = Args(
       dependencies = Set("m"),
       indexRequirements = Set(IndexRequirement.SupportsIndexQuery(IndexQueryType.RANGE)),
@@ -233,7 +234,7 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
     } withLogicalPlanningContext {
       (_, context) =>
         val implicitPredicates = EntityIndexLeafPlanner.implicitIsNotNullPredicates(
-          varFor("varName"),
+          v"varName",
           context.plannerState.indexCompatiblePredicatesProviderContext.aggregatingProperties,
           Set("prop1", "prop2"),
           Set.empty
@@ -254,7 +255,7 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
     } withLogicalPlanningContext {
       (_, context) =>
         val implicitPredicates = EntityIndexLeafPlanner.implicitIsNotNullPredicates(
-          varFor("varName"),
+          v"varName",
           context.plannerState.indexCompatiblePredicatesProviderContext.aggregatingProperties,
           Set.empty,
           Set.empty
@@ -337,7 +338,7 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
     stringPredicate: BooleanExpression
   ): Unit = {
     val explicitPredicate = IndexCompatiblePredicate(
-      variable = varFor("n"),
+      variable = v"n",
       property = property,
       predicate = stringPredicate,
       queryExpression = ExistenceQueryExpression(),
@@ -360,7 +361,7 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
     solvedPredicate: Option[Expression => PartialPredicate[Expression]] = None
   ): Unit = {
     val explicitPredicate = IndexCompatiblePredicate(
-      variable = varFor("n"),
+      variable = v"n",
       property = property,
       predicate = pointPredicate,
       queryExpression = pointPredicate match {

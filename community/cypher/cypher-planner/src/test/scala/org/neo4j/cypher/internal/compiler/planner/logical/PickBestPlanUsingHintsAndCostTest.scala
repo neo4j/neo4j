@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.mockito.Mockito.RETURNS_DEEP_STUBS
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
@@ -51,10 +52,10 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
   }
 
   private val hint1: UsingIndexHint =
-    UsingIndexHint(varFor("n"), labelOrRelTypeName("Person"), Seq(PropertyKeyName("name") _)) _
+    UsingIndexHint(v"n", labelOrRelTypeName("Person"), Seq(PropertyKeyName("name") _)) _
 
   private val hint2: UsingIndexHint =
-    UsingIndexHint(varFor("n"), labelOrRelTypeName("Person"), Seq(PropertyKeyName("age") _)) _
+    UsingIndexHint(v"n", labelOrRelTypeName("Person"), Seq(PropertyKeyName("age") _)) _
 
   test("picks the right plan by cost, no matter the cardinality") {
     val a = fakeLogicalPlanFor("a")

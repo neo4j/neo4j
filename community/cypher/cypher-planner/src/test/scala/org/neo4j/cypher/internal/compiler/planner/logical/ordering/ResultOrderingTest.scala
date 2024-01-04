@@ -97,11 +97,11 @@ abstract class ResultOrderingTest[OC <: OrderCandidate[OC]](
   test(
     "IndexOperator: Single property order with projected property results in matching provided order for compatible index capability"
   ) {
-    val interestingAsc = toInterestingOrder(orderCandidateFactory.asc(varFor("xfoo"), Map(v"xfoo" -> xFoo)))
+    val interestingAsc = toInterestingOrder(orderCandidateFactory.asc(v"xfoo", Map(v"xfoo" -> xFoo)))
     indexOrder(interestingAsc, indexPropertyXFoo, BOTH) should be((ProvidedOrder.asc(xFoo), IndexOrderAscending))
     indexOrder(interestingAsc, indexPropertyXFooExact, BOTH) should be((ProvidedOrder.asc(xFoo), IndexOrderAscending))
 
-    val interestingDesc = toInterestingOrder(orderCandidateFactory.desc(varFor("xfoo"), Map(v"xfoo" -> xFoo)))
+    val interestingDesc = toInterestingOrder(orderCandidateFactory.desc(v"xfoo", Map(v"xfoo" -> xFoo)))
     indexOrder(interestingDesc, indexPropertyXFoo, BOTH) should be((ProvidedOrder.desc(xFoo), IndexOrderDescending))
     // Since the property has an exact predicate the ascending and descending order is the same, so we can choose both index orders and ascending is cheaper
     indexOrder(interestingDesc, indexPropertyXFooExact, BOTH) should be((ProvidedOrder.desc(xFoo), IndexOrderAscending))
@@ -304,10 +304,10 @@ abstract class ResultOrderingTest[OC <: OrderCandidate[OC]](
   }
 
   test("Label scan: Simple order with projected variable results in matching provided order") {
-    val interestingAsc = toInterestingOrder(orderCandidateFactory.asc(varFor("blob"), Map(v"blob" -> x)))
+    val interestingAsc = toInterestingOrder(orderCandidateFactory.asc(v"blob", Map(v"blob" -> x)))
     providedOrderForLabelScan(interestingAsc, x, IndexOrderCapability.BOTH) should be(ProvidedOrder.asc(x))
 
-    val interestingDesc = toInterestingOrder(orderCandidateFactory.desc(varFor("blob"), Map(v"blob" -> x)))
+    val interestingDesc = toInterestingOrder(orderCandidateFactory.desc(v"blob", Map(v"blob" -> x)))
     providedOrderForLabelScan(interestingDesc, x, IndexOrderCapability.BOTH) should be(ProvidedOrder.desc(x))
   }
 
@@ -352,12 +352,12 @@ abstract class ResultOrderingTest[OC <: OrderCandidate[OC]](
   }
 
   test("RelType scan: Simple order with projected variable results in matching provided order") {
-    val interestingAsc = toInterestingOrder(orderCandidateFactory.asc(varFor("blob"), Map(v"blob" -> x)))
+    val interestingAsc = toInterestingOrder(orderCandidateFactory.asc(v"blob", Map(v"blob" -> x)))
     providedOrderForRelationshipTypeScan(interestingAsc, v"x", IndexOrderCapability.BOTH) should be(
       ProvidedOrder.asc(x)
     )
 
-    val interestingDesc = toInterestingOrder(orderCandidateFactory.desc(varFor("blob"), Map(v"blob" -> x)))
+    val interestingDesc = toInterestingOrder(orderCandidateFactory.desc(v"blob", Map(v"blob" -> x)))
     providedOrderForRelationshipTypeScan(interestingDesc, v"x", IndexOrderCapability.BOTH) should be(
       ProvidedOrder.desc(x)
     )
@@ -401,8 +401,8 @@ abstract class ResultOrderingTest[OC <: OrderCandidate[OC]](
     extractVariableForValue(prop("x", "prop"), Map.empty) should be(None)
     extractVariableForValue(prop("x", "prop"), Map(v"x" -> y)) should be(None)
     extractVariableForValue(x, Map(v"x" -> prop("y", "prop"))) should be(None)
-    extractVariableForValue(x, Map(v"x" -> varFor("z"), v"z" -> prop("y", "prop"))) should be(None)
-    extractVariableForValue(x, Map(v"x" -> varFor("z"))) should be(Some(varFor("z")))
+    extractVariableForValue(x, Map(v"x" -> v"z", v"z" -> prop("y", "prop"))) should be(None)
+    extractVariableForValue(x, Map(v"x" -> v"z")) should be(Some(v"z"))
   }
 }
 
@@ -417,8 +417,8 @@ object ResultOrderingTest extends AstConstructionTestSupport {
 
   val indexPropertyXFooExact: Seq[PropertyAndPredicateType] =
     Seq(PropertyAndPredicateType(xFoo, isSingleExactPredicate = true))
-  val x: Variable = varFor("x")
-  val y: Variable = varFor("y")
+  val x: Variable = v"x"
+  val y: Variable = v"y"
 
   val requiredAscXFoo: InterestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(xFoo))
   val requiredDescXFoo: InterestingOrder = InterestingOrder.required(RequiredOrderCandidate.desc(xFoo))

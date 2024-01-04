@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.helpers
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.HasAnyLabel
@@ -237,9 +238,9 @@ class LogicalPlanBuilderTest extends CypherFunSuite with AstConstructionTestSupp
     plan should beLike {
       case ProduceResult(Projection(_, projections), _) =>
         projections shouldEqual Map(
-          varFor("n2") -> hasLabels("n", "N"),
-          varFor("r2") -> hasTypes("r", "R"),
-          varFor("v2") -> hasLabelsOrTypes("v", "V")
+          v"n2" -> hasLabels("n", "N"),
+          v"r2" -> hasTypes("r", "R"),
+          v"v2" -> hasLabelsOrTypes("v", "V")
         )
     }
   }
@@ -255,9 +256,9 @@ class LogicalPlanBuilderTest extends CypherFunSuite with AstConstructionTestSupp
       // TODO
       case ProduceResult(Projection(_, projections), _) =>
         projections shouldEqual Map(
-          varFor("n") -> hasLabels("n", "N"),
-          varFor("r") -> hasTypes("r", "R"),
-          varFor("v") -> hasLabelsOrTypes("v", "V")
+          v"n" -> hasLabels("n", "N"),
+          v"r" -> hasTypes("r", "R"),
+          v"v" -> hasLabelsOrTypes("v", "V")
         )
     }
   }

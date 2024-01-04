@@ -194,107 +194,107 @@ class RelationshipIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanni
       resultPlans shouldEqual Set(
         // nPropInLit6Lit42
         DirectedRelationshipIndexSeek(
-          varFor("n"),
-          varFor("n1"),
-          varFor("n2"),
+          v"n",
+          v"n1",
+          v"n2",
           relationshipTypeToken,
           Seq(IndexedProperty(propToken, CanGetValue, RELATIONSHIP_TYPE)),
           ManyQueryExpression(listOf(lit6, lit42)),
-          Set(varFor("x")),
+          Set(v"x"),
           IndexOrderNone,
           IndexType.RANGE
         ),
         // nPropLessThanLit6
         DirectedRelationshipIndexSeek(
-          varFor("n"),
-          varFor("n1"),
-          varFor("n2"),
+          v"n",
+          v"n1",
+          v"n2",
           relationshipTypeToken,
           Seq(IndexedProperty(propToken, DoNotGetValue, RELATIONSHIP_TYPE)),
           RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(ExclusiveBound(lit6))))(pos)),
-          Set(varFor("x")),
+          Set(v"x"),
           IndexOrderNone,
           IndexType.RANGE
         ),
         // nPropEqualsLit42
         DirectedRelationshipIndexSeek(
-          varFor("n"),
-          varFor("n1"),
-          varFor("n2"),
+          v"n",
+          v"n1",
+          v"n2",
           relationshipTypeToken,
           Seq(IndexedProperty(propToken, CanGetValue, RELATIONSHIP_TYPE)),
           SingleQueryExpression(lit42),
-          Set(varFor("x")),
+          Set(v"x"),
           IndexOrderNone,
           IndexType.RANGE
         ),
         // nPropStartsWithLitFoo
         DirectedRelationshipIndexSeek(
-          varFor("n"),
-          varFor("n1"),
-          varFor("n2"),
+          v"n",
+          v"n1",
+          v"n2",
           relationshipTypeToken,
           Seq(IndexedProperty(propToken, DoNotGetValue, RELATIONSHIP_TYPE)),
           RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(litFoo))(pos)),
-          Set(varFor("x")),
+          Set(v"x"),
           IndexOrderNone,
           IndexType.RANGE
         ),
         DirectedRelationshipIndexSeek(
-          varFor("n"),
-          varFor("n1"),
-          varFor("n2"),
+          v"n",
+          v"n1",
+          v"n2",
           relationshipTypeToken,
           Seq(IndexedProperty(propToken, DoNotGetValue, RELATIONSHIP_TYPE)),
           RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(litFoo))(pos)),
-          Set(varFor("x")),
+          Set(v"x"),
           IndexOrderNone,
           IndexType.TEXT
         ),
         // nPropEqualsXProp
         DirectedRelationshipIndexSeek(
-          varFor("n"),
-          varFor("n1"),
-          varFor("n2"),
+          v"n",
+          v"n1",
+          v"n2",
           relationshipTypeToken,
           Seq(IndexedProperty(propToken, CanGetValue, RELATIONSHIP_TYPE)),
           SingleQueryExpression(xProp),
-          Set(varFor("x")),
+          Set(v"x"),
           IndexOrderNone,
           IndexType.RANGE
         ),
         // mPropEqualsXProp
         UndirectedRelationshipIndexSeek(
-          varFor("m"),
-          varFor("m1"),
-          varFor("m2"),
+          v"m",
+          v"m1",
+          v"m2",
           relationshipTypeToken,
           Seq(IndexedProperty(propToken, CanGetValue, RELATIONSHIP_TYPE)),
           SingleQueryExpression(xProp),
-          Set(varFor("x")),
+          Set(v"x"),
           IndexOrderNone,
           IndexType.RANGE
         ),
         // oFooEqualsLit6, oBarEqualsLit42
         DirectedRelationshipIndexSeek(
-          varFor("o"),
-          varFor("o1"),
-          varFor("o2"),
+          v"o",
+          v"o1",
+          v"o2",
           relationshipTypeToken,
           Seq(
             IndexedProperty(fooToken, CanGetValue, RELATIONSHIP_TYPE),
             IndexedProperty(barToken, CanGetValue, RELATIONSHIP_TYPE)
           ),
           CompositeQueryExpression(Seq(SingleQueryExpression(lit6), SingleQueryExpression(lit42))),
-          Set(varFor("x")),
+          Set(v"x"),
           IndexOrderNone,
           IndexType.RANGE
         ),
         // oAaaEqualsLit42, oBbbLessThan6, oCccLessThan6
         DirectedRelationshipIndexSeek(
-          varFor("o"),
-          varFor("o1"),
-          varFor("o2"),
+          v"o",
+          v"o1",
+          v"o2",
           relationshipTypeToken,
           Seq(
             IndexedProperty(aaaToken, CanGetValue, RELATIONSHIP_TYPE),
@@ -306,114 +306,114 @@ class RelationshipIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanni
             RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(ExclusiveBound(lit6))))(pos)),
             ExistenceQueryExpression()
           )),
-          Set(varFor("x")),
+          Set(v"x"),
           IndexOrderNone,
           IndexType.RANGE
         ),
         // nPropContainsLitFoo
         DirectedRelationshipIndexContainsScan(
-          varFor("n"),
-          varFor("n1"),
-          varFor("n2"),
+          v"n",
+          v"n1",
+          v"n2",
           relationshipTypeToken,
           IndexedProperty(propToken, DoNotGetValue, RELATIONSHIP_TYPE),
           litFoo,
-          Set(varFor("x")),
+          Set(v"x"),
           IndexOrderNone,
           IndexType.RANGE
         ),
         DirectedRelationshipIndexContainsScan(
-          varFor("n"),
-          varFor("n1"),
-          varFor("n2"),
+          v"n",
+          v"n1",
+          v"n2",
           relationshipTypeToken,
           IndexedProperty(propToken, DoNotGetValue, RELATIONSHIP_TYPE),
           litFoo,
-          Set(varFor("x")),
+          Set(v"x"),
           IndexOrderNone,
           IndexType.TEXT
         ),
         // nPropEndsWithLitFoo
         DirectedRelationshipIndexEndsWithScan(
-          varFor("n"),
-          varFor("n1"),
-          varFor("n2"),
+          v"n",
+          v"n1",
+          v"n2",
           relationshipTypeToken,
           IndexedProperty(propToken, DoNotGetValue, RELATIONSHIP_TYPE),
           litFoo,
-          Set(varFor("x")),
+          Set(v"x"),
           IndexOrderNone,
           IndexType.RANGE
         ),
         DirectedRelationshipIndexEndsWithScan(
-          varFor("n"),
-          varFor("n1"),
-          varFor("n2"),
+          v"n",
+          v"n1",
+          v"n2",
           relationshipTypeToken,
           IndexedProperty(propToken, DoNotGetValue, RELATIONSHIP_TYPE),
           litFoo,
-          Set(varFor("x")),
+          Set(v"x"),
           IndexOrderNone,
           IndexType.TEXT
         ),
         // ..several..
         DirectedRelationshipIndexScan(
-          varFor("n"),
-          varFor("n1"),
-          varFor("n2"),
+          v"n",
+          v"n1",
+          v"n2",
           relationshipTypeToken,
           Seq(IndexedProperty(propToken, DoNotGetValue, RELATIONSHIP_TYPE)),
-          Set(varFor("x")),
+          Set(v"x"),
           IndexOrderNone,
           IndexType.RANGE
         ),
         DirectedRelationshipIndexScan(
-          varFor("n"),
-          varFor("n1"),
-          varFor("n2"),
+          v"n",
+          v"n1",
+          v"n2",
           relationshipTypeToken,
           Seq(IndexedProperty(propToken, DoNotGetValue, RELATIONSHIP_TYPE)),
-          Set(varFor("x")),
+          Set(v"x"),
           IndexOrderNone,
           IndexType.TEXT
         ),
         // oPropIsNotNull
         DirectedRelationshipIndexScan(
-          varFor("o"),
-          varFor("o1"),
-          varFor("o2"),
+          v"o",
+          v"o1",
+          v"o2",
           relationshipTypeToken,
           Seq(IndexedProperty(propToken, DoNotGetValue, RELATIONSHIP_TYPE)),
-          Set(varFor("x")),
+          Set(v"x"),
           IndexOrderNone,
           IndexType.RANGE
         ),
         // oFooEqualsLit6, oBarEqualsLit42,
         DirectedRelationshipIndexScan(
-          varFor("o"),
-          varFor("o1"),
-          varFor("o2"),
+          v"o",
+          v"o1",
+          v"o2",
           relationshipTypeToken,
           Seq(
             IndexedProperty(fooToken, DoNotGetValue, RELATIONSHIP_TYPE),
             IndexedProperty(barToken, DoNotGetValue, RELATIONSHIP_TYPE)
           ),
-          Set(varFor("x")),
+          Set(v"x"),
           IndexOrderNone,
           IndexType.RANGE
         ),
         // oAaaEqualsLit42, oBbbLessThan6, oCccLessThan6
         DirectedRelationshipIndexScan(
-          varFor("o"),
-          varFor("o1"),
-          varFor("o2"),
+          v"o",
+          v"o1",
+          v"o2",
           relationshipTypeToken,
           Seq(
             IndexedProperty(aaaToken, DoNotGetValue, RELATIONSHIP_TYPE),
             IndexedProperty(bbbToken, DoNotGetValue, RELATIONSHIP_TYPE),
             IndexedProperty(cccToken, DoNotGetValue, RELATIONSHIP_TYPE)
           ),
-          Set(varFor("x")),
+          Set(v"x"),
           IndexOrderNone,
           IndexType.RANGE
         )

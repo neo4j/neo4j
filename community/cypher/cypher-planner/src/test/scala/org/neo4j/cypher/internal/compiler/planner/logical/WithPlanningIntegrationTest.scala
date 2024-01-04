@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.expressions.HasDegreeGreaterThan
@@ -214,7 +215,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite
         .produceResults("n")
         .filterExpression(
           not(HasDegreeGreaterThan(
-            varFor("n2"),
+            v"n2",
             None,
             SemanticDirection.OUTGOING,
             literalInt(0)

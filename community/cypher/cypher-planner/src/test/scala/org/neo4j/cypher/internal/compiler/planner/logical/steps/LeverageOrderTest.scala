@@ -32,68 +32,68 @@ import scala.collection.immutable.SortedMap
 class LeverageOrderTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("should leverage ASC order for exact match with grouping column") {
-    val po = ProvidedOrder.asc(varFor("a"))
-    val grouping = Map[LogicalVariable, Expression](v"newA" -> varFor("a"))
-    leverageOrder(po, grouping, Set.empty) should be(OrderToLeverageWithAliases(Seq(varFor("a")), grouping))
+    val po = ProvidedOrder.asc(v"a")
+    val grouping = Map[LogicalVariable, Expression](v"newA" -> v"a")
+    leverageOrder(po, grouping, Set.empty) should be(OrderToLeverageWithAliases(Seq(v"a"), grouping))
   }
 
   test("should leverage DESC order for exact match with grouping column") {
-    val po = ProvidedOrder.desc(varFor("a"))
-    val grouping = Map[LogicalVariable, Expression](v"newA" -> varFor("a"))
-    leverageOrder(po, grouping, Set.empty) should be(OrderToLeverageWithAliases(Seq(varFor("a")), grouping))
+    val po = ProvidedOrder.desc(v"a")
+    val grouping = Map[LogicalVariable, Expression](v"newA" -> v"a")
+    leverageOrder(po, grouping, Set.empty) should be(OrderToLeverageWithAliases(Seq(v"a"), grouping))
   }
 
   test("should leverage order for prefix match with grouping column") {
-    val po = ProvidedOrder.asc(varFor("a")).desc(varFor("b"))
-    val grouping = Map[LogicalVariable, Expression](v"newA" -> varFor("a"))
-    leverageOrder(po, grouping, Set.empty) should be(OrderToLeverageWithAliases(Seq(varFor("a")), grouping))
+    val po = ProvidedOrder.asc(v"a").desc(v"b")
+    val grouping = Map[LogicalVariable, Expression](v"newA" -> v"a")
+    leverageOrder(po, grouping, Set.empty) should be(OrderToLeverageWithAliases(Seq(v"a"), grouping))
   }
 
   test("should leverage order for exact match with one of grouping columns") {
-    val po = ProvidedOrder.asc(varFor("a"))
-    val grouping = Map[LogicalVariable, Expression](v"newA" -> varFor("a"), v"newB" -> varFor("b"))
-    leverageOrder(po, grouping, Set.empty) should be(OrderToLeverageWithAliases(Seq(varFor("a")), grouping))
+    val po = ProvidedOrder.asc(v"a")
+    val grouping = Map[LogicalVariable, Expression](v"newA" -> v"a", v"newB" -> v"b")
+    leverageOrder(po, grouping, Set.empty) should be(OrderToLeverageWithAliases(Seq(v"a"), grouping))
   }
 
   test("should leverage order for prefix match with one of grouping columns") {
-    val po = ProvidedOrder.asc(varFor("a")).desc(varFor("b"))
-    val grouping = Map[LogicalVariable, Expression](v"newA" -> varFor("a"), v"newC" -> varFor("c"))
-    leverageOrder(po, grouping, Set.empty) should be(OrderToLeverageWithAliases(Seq(varFor("a")), grouping))
+    val po = ProvidedOrder.asc(v"a").desc(v"b")
+    val grouping = Map[LogicalVariable, Expression](v"newA" -> v"a", v"newC" -> v"c")
+    leverageOrder(po, grouping, Set.empty) should be(OrderToLeverageWithAliases(Seq(v"a"), grouping))
   }
 
   test("should leverage order for prefix match with one of grouping columns as prefix and one as suffix") {
-    val po = ProvidedOrder.asc(varFor("a")).desc(varFor("b")).asc(varFor("c"))
-    val grouping = Map[LogicalVariable, Expression](v"newA" -> varFor("a"), v"newC" -> varFor("c"))
-    leverageOrder(po, grouping, Set.empty) should be(OrderToLeverageWithAliases(Seq(varFor("a")), grouping))
+    val po = ProvidedOrder.asc(v"a").desc(v"b").asc(v"c")
+    val grouping = Map[LogicalVariable, Expression](v"newA" -> v"a", v"newC" -> v"c")
+    leverageOrder(po, grouping, Set.empty) should be(OrderToLeverageWithAliases(Seq(v"a"), grouping))
   }
 
   test("should alias expressions if there are symbols available") {
     val po = ProvidedOrder.asc(prop("a", "prop"))
     val grouping = Map[LogicalVariable, Expression](v"aprop" -> prop("a", "prop"))
-    val aliasedOrder = Seq(varFor("aprop"))
-    val aliasedGroupings = Map[LogicalVariable, Expression](v"aprop" -> varFor("aprop"))
+    val aliasedOrder = Seq(v"aprop")
+    val aliasedGroupings = Map[LogicalVariable, Expression](v"aprop" -> v"aprop")
     leverageOrder(po, grouping, Set(v"aprop")) should be(OrderToLeverageWithAliases(aliasedOrder, aliasedGroupings))
   }
 
   test("should alias multiple identical expressions if there are symbols available ASC") {
     val po = ProvidedOrder.asc(prop("a", "prop"))
     val grouping = Map[LogicalVariable, Expression](v"aprop" -> prop("a", "prop"), v"xxx" -> prop("a", "prop"))
-    val aliasedOrder = Seq(varFor("aprop"))
-    val aliasedGroupings = Map[LogicalVariable, Expression](v"aprop" -> varFor("aprop"), v"xxx" -> varFor("aprop"))
+    val aliasedOrder = Seq(v"aprop")
+    val aliasedGroupings = Map[LogicalVariable, Expression](v"aprop" -> v"aprop", v"xxx" -> v"aprop")
     leverageOrder(po, grouping, Set(v"aprop")) should be(OrderToLeverageWithAliases(aliasedOrder, aliasedGroupings))
   }
 
   test("should alias multiple identical expressions if there are symbols available DESC") {
     val po = ProvidedOrder.desc(prop("a", "prop"))
     val grouping = Map[LogicalVariable, Expression](v"aprop" -> prop("a", "prop"), v"xxx" -> prop("a", "prop"))
-    val aliasedOrder = Seq(varFor("aprop"))
-    val aliasedGroupings = Map[LogicalVariable, Expression](v"aprop" -> varFor("aprop"), v"xxx" -> varFor("aprop"))
+    val aliasedOrder = Seq(v"aprop")
+    val aliasedGroupings = Map[LogicalVariable, Expression](v"aprop" -> v"aprop", v"xxx" -> v"aprop")
     leverageOrder(po, grouping, Set(v"aprop")) should be(OrderToLeverageWithAliases(aliasedOrder, aliasedGroupings))
   }
 
   test("should use the instances from the grouping expressions - not the instances from the provided order") {
-    val providedOrderInstance = varFor("a")
-    val groupingInstance = varFor("a")
+    val providedOrderInstance = v"a"
+    val groupingInstance = v"a"
     val po = ProvidedOrder.asc(providedOrderInstance)
     val grouping = Map[LogicalVariable, Expression](v"newA" -> groupingInstance)
 
@@ -108,7 +108,7 @@ class LeverageOrderTest extends CypherFunSuite with AstConstructionTestSupport {
     for (stringOrdering <- Seq(Ordering.String, Ordering.String.reverse)) {
       val mapOrdering = Ordering.by[LogicalVariable, String](_.name)(stringOrdering)
 
-      val aVar = varFor("a")
+      val aVar = v"a"
       // WITH a, a AS b, a AS c
       val grouping = SortedMap[LogicalVariable, Expression](v"a" -> aVar, v"b" -> aVar, v"c" -> aVar)(mapOrdering)
       val providedOrder = ProvidedOrder.empty
@@ -121,8 +121,8 @@ class LeverageOrderTest extends CypherFunSuite with AstConstructionTestSupport {
     for (stringOrdering <- Seq(Ordering.String, Ordering.String.reverse)) {
       val mapOrdering = Ordering.by[LogicalVariable, String](_.name)(stringOrdering)
 
-      val aVar = varFor("a")
-      val bVar = varFor("b")
+      val aVar = v"a"
+      val bVar = v"b"
       // WITH a, a AS b, a AS c
       val grouping = SortedMap[LogicalVariable, Expression](v"a" -> aVar, v"b" -> aVar, v"c" -> aVar)(mapOrdering)
       val providedOrder = ProvidedOrder.asc(bVar)

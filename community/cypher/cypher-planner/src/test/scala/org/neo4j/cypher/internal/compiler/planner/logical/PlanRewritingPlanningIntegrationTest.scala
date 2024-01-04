@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -31,7 +32,7 @@ class PlanRewritingPlanningIntegrationTest extends CypherFunSuite with LogicalPl
     val cfg = plannerBuilder().setAllNodesCardinality(100).build()
     val plan = cfg.plan("MATCH (n) RETURN size([p=(n)-->() | p]) AS deg").stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
-      .projection(Map("deg" -> getDegree(varFor("n"), OUTGOING)))
+      .projection(Map("deg" -> getDegree(v"n", OUTGOING)))
       .allNodeScan("n")
       .build()
   }

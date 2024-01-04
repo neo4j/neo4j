@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.cardinality
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalitySupport.SelectivityEquality
 import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_RANGE_SEEK_FACTOR
 import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_STRING_LENGTH
@@ -71,7 +72,7 @@ class CompositeExpressionSelectivityCalculatorTest extends CypherFunSuite with A
     ),
     TestedPredicate(
       "starts with expression",
-      startsWith(_, varFor("x")),
+      startsWith(_, v"x"),
       (_, _, _) => DEFAULT_RANGE_SEEK_FACTOR / DEFAULT_STRING_LENGTH
     ),
     TestedPredicate(
@@ -81,7 +82,7 @@ class CompositeExpressionSelectivityCalculatorTest extends CypherFunSuite with A
     ),
     TestedPredicate(
       "ends with expression",
-      endsWith(_, varFor("x")),
+      endsWith(_, v"x"),
       (_, _, _) => DEFAULT_RANGE_SEEK_FACTOR / DEFAULT_STRING_LENGTH
     ),
     TestedPredicate(
@@ -91,12 +92,12 @@ class CompositeExpressionSelectivityCalculatorTest extends CypherFunSuite with A
     ),
     TestedPredicate(
       "contains expression",
-      contains(_, varFor("x")),
+      contains(_, v"x"),
       (_, _, _) => DEFAULT_RANGE_SEEK_FACTOR / DEFAULT_STRING_LENGTH
     ),
     TestedPredicate(
       "distance",
-      property => lessThan(Distance.asInvocation(property, varFor("point"))(pos), literalFloat(3.5)),
+      property => lessThan(Distance.asInvocation(property, v"point")(pos), literalFloat(3.5)),
       (_, _, _) => DEFAULT_RANGE_SEEK_FACTOR
     ),
     TestedPredicate(

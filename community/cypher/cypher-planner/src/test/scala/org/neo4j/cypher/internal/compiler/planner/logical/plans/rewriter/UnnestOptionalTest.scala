@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.VarPatternLength
@@ -39,29 +40,29 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 class UnnestOptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("should rewrite Apply/Optional/Expand to OptionalExpand when lhs of expand is single row") {
-    val argument: LogicalPlan = Argument(Set(varFor("a")))
+    val argument: LogicalPlan = Argument(Set(v"a"))
     val rhs: LogicalPlan =
       Optional(
-        Expand(argument, varFor("a"), SemanticDirection.OUTGOING, Seq.empty, varFor("b"), varFor("r"))
+        Expand(argument, v"a", SemanticDirection.OUTGOING, Seq.empty, v"b", v"r")
       )
     val lhs = newMockedLogicalPlan("a")
     val input = Apply(lhs, rhs)
 
     input.endoRewrite(unnestOptional) should equal(
-      OptionalExpand(lhs, varFor("a"), SemanticDirection.OUTGOING, Seq.empty, varFor("b"), varFor("r"), ExpandAll, None)
+      OptionalExpand(lhs, v"a", SemanticDirection.OUTGOING, Seq.empty, v"b", v"r", ExpandAll, None)
     )
   }
 
   test("should not rewrite Apply/Optional/Selection/Expand to OptionalExpand when expansion is variable length") {
-    val argument: LogicalPlan = Argument(Set(varFor("a")))
+    val argument: LogicalPlan = Argument(Set(v"a"))
     val expand = VarExpand(
       argument,
-      varFor("a"),
+      v"a",
       SemanticDirection.OUTGOING,
       SemanticDirection.OUTGOING,
       Seq.empty,
-      varFor("b"),
-      varFor("r"),
+      v"b",
+      v"r",
       VarPatternLength(1, None),
       ExpandAll
     )
@@ -75,10 +76,10 @@ class UnnestOptionalTest extends CypherFunSuite with LogicalPlanningTestSupport 
   }
 
   test("should not rewrite plans containing merges") {
-    val argument: LogicalPlan = Argument(Set(varFor("a")))
+    val argument: LogicalPlan = Argument(Set(v"a"))
     val rhs: LogicalPlan =
       Optional(
-        Expand(argument, varFor("a"), SemanticDirection.OUTGOING, Seq.empty, varFor("b"), varFor("r"))
+        Expand(argument, v"a", SemanticDirection.OUTGOING, Seq.empty, v"b", v"r")
       )
     val lhs = newMockedLogicalPlan("a")
     val apply = Apply(lhs, rhs)

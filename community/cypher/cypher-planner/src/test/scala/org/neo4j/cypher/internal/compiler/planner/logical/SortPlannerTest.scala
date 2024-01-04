@@ -122,8 +122,8 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   test("should copy projections from interesting order to provided order: aliased sort expression") {
     new givenConfig().withLogicalPlanningContext { (_, context) =>
       val io = InterestingOrder.required(RequiredOrderCandidate
-        .asc(varFor("xfoo"), Map(v"xfoo" -> prop("x", "foo")))
-        .desc(varFor("yprop"), Map(v"yprop" -> prop("y", "prop"))))
+        .asc(v"xfoo", Map(v"xfoo" -> prop("x", "foo")))
+        .desc(v"yprop", Map(v"yprop" -> prop("y", "prop"))))
       val inputPlan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x", "y")
 
       // When
@@ -137,16 +137,16 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
       // Then
       context.staticComponents.planningAttributes.providedOrders.get(sortedPlan.get.id) should equal(ProvidedOrder
-        .asc(varFor("xfoo"), Map(v"xfoo" -> prop("x", "foo")))
-        .desc(varFor("yprop"), Map(v"yprop" -> prop("y", "prop"))))
+        .asc(v"xfoo", Map(v"xfoo" -> prop("x", "foo")))
+        .desc(v"yprop", Map(v"yprop" -> prop("y", "prop"))))
     }
   }
 
   test("should copy projections from interesting order to provided order: unaliased sort expression") {
     new givenConfig().withLogicalPlanningContext { (_, context) =>
       val io = InterestingOrder.required(RequiredOrderCandidate
-        .asc(prop("x", "foo"), Map(v"x" -> varFor("xx")))
-        .desc(prop("y", "prop"), Map(v"y" -> varFor("yy"))))
+        .asc(prop("x", "foo"), Map(v"x" -> v"xx"))
+        .desc(prop("y", "prop"), Map(v"y" -> v"yy")))
       val inputPlan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x", "y")
 
       // When
@@ -160,22 +160,22 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
       // Then
       context.staticComponents.planningAttributes.providedOrders.get(sortedPlan.get.id) should equal(ProvidedOrder
-        .asc(prop("x", "foo"), Map(v"x" -> varFor("xx")))
-        .desc(prop("y", "prop"), Map(v"y" -> varFor("yy"))))
+        .asc(prop("x", "foo"), Map(v"x" -> v"xx"))
+        .desc(prop("y", "prop"), Map(v"y" -> v"yy")))
     }
   }
 
   test("should do a partial sort if things are partially in the right order already") {
     new givenConfig().withLogicalPlanningContext { (_, context) =>
-      val io = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("n")).asc(varFor("m")))
-      val solvedIO = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("n")))
+      val io = InterestingOrder.required(RequiredOrderCandidate.asc(v"n").asc(v"m"))
+      val solvedIO = InterestingOrder.required(RequiredOrderCandidate.asc(v"n"))
       val inputPlan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "n", "m")
       // Fake sort the plan
       context.staticComponents.planningAttributes.solveds.set(
         inputPlan.id,
         RegularSinglePlannerQuery(interestingOrder = solvedIO)
       )
-      context.staticComponents.planningAttributes.providedOrders.set(inputPlan.id, ProvidedOrder.asc(varFor("n")))
+      context.staticComponents.planningAttributes.providedOrders.set(inputPlan.id, ProvidedOrder.asc(v"n"))
 
       // When
       val sortedPlan = SortPlanner.maybeSortedPlan(
@@ -187,7 +187,7 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
       )
 
       // Then
-      sortedPlan should equal(Some(PartialSort(inputPlan, Seq(Ascending(varFor("n"))), Seq(Ascending(varFor("m"))))))
+      sortedPlan should equal(Some(PartialSort(inputPlan, Seq(Ascending(v"n")), Seq(Ascending(v"m")))))
       context.staticComponents.planningAttributes.solveds.get(sortedPlan.get.id) should equal(
         RegularSinglePlannerQuery(interestingOrder = io)
       )
@@ -232,7 +232,7 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   test("should return sorted plan when needed for renamed property") {
     // [WITH x] WITH x.foo AS a ORDER BY a
     new givenConfig().withLogicalPlanningContext { (_, context) =>
-      val io = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("a"), Map(v"a" -> prop("x", "foo"))))
+      val io = InterestingOrder.required(RequiredOrderCandidate.asc(v"a", Map(v"a" -> prop("x", "foo"))))
       val inputPlan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x")
 
       // When
@@ -407,7 +407,7 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   test("SatisfiedForPlan should return false when satisfied prefix is empty") {
     val plan = fakeLogicalPlanFor("x")
-    val interestingOrder = Seq(Asc(varFor("x")))
+    val interestingOrder = Seq(Asc(v"x"))
     val asSortedAsPossible = SatisfiedForPlan(plan).unapply(Satisfaction(Seq.empty, interestingOrder))
 
     asSortedAsPossible shouldBe false
@@ -415,7 +415,7 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   test("SatisfiedForPlan should return true when satisfied prefix is non empty and missing suffix is empty") {
     val plan = fakeLogicalPlanFor("x")
-    val interestingOrder = Seq(Asc(varFor("x")))
+    val interestingOrder = Seq(Asc(v"x"))
     val asSortedAsPossible = SatisfiedForPlan(plan).unapply(Satisfaction(interestingOrder, Seq.empty))
 
     asSortedAsPossible shouldBe true
@@ -425,8 +425,8 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
     "SatisfiedForPlan should return false when both prefix and suffix are non empty and all suffix symbols are available"
   ) {
     val plan = fakeLogicalPlanFor("x", "y")
-    val interestingOrderOnX = Seq(Asc(varFor("x")))
-    val interestingOrderOnY = Seq(Asc(varFor("y")))
+    val interestingOrderOnX = Seq(Asc(v"x"))
+    val interestingOrderOnY = Seq(Asc(v"y"))
     val asSortedAsPossible = SatisfiedForPlan(plan).unapply(Satisfaction(interestingOrderOnX, interestingOrderOnY))
 
     asSortedAsPossible shouldBe false
@@ -436,8 +436,8 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
     "SatisfiedForPlan should return true when both prefix and suffix are non empty and only some suffix symbols are available"
   ) {
     val plan = fakeLogicalPlanFor("x", "y")
-    val interestingOrderOnX = Seq(Asc(varFor("x")))
-    val interestingOrderOnYZ = Seq(Asc(varFor("y")), Asc(varFor("z")))
+    val interestingOrderOnX = Seq(Asc(v"x"))
+    val interestingOrderOnYZ = Seq(Asc(v"y"), Asc(v"z"))
     val asSortedAsPossible = SatisfiedForPlan(plan).unapply(Satisfaction(interestingOrderOnX, interestingOrderOnYZ))
 
     asSortedAsPossible shouldBe true
@@ -447,8 +447,8 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
     "SatisfiedForPlan should return true when both prefix and suffix are non empty and no suffix symbols are available"
   ) {
     val plan = fakeLogicalPlanFor("x")
-    val interestingOrderOnX = Seq(Asc(varFor("x")))
-    val interestingOrderOnY = Seq(Asc(varFor("y")))
+    val interestingOrderOnX = Seq(Asc(v"x"))
+    val interestingOrderOnY = Seq(Asc(v"y"))
     val asSortedAsPossible = SatisfiedForPlan(plan).unapply(Satisfaction(interestingOrderOnX, interestingOrderOnY))
 
     asSortedAsPossible shouldBe true
@@ -509,8 +509,8 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   }
 
   test("planIfAsSortedAsPossible should plan partial sort, when non-sorted columns dependencies in available symbols") {
-    val sortExprX = varFor("x")
-    val sortExprY = varFor("y")
+    val sortExprX = v"x"
+    val sortExprY = v"y"
     val io = InterestingOrder.required(RequiredOrderCandidate.asc(sortExprX).asc(sortExprY))
 
     new givenConfig().withLogicalPlanningContext { (_, context) =>
@@ -522,13 +522,13 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
       // Then
       sortedPlan should equal(Some(
-        PartialSort(plan, Seq(Ascending(varFor("x"))), Seq(Ascending(varFor("y"))))
+        PartialSort(plan, Seq(Ascending(v"x")), Seq(Ascending(v"y")))
       ))
     }
   }
 
   test("planIfAsSortedAsPossible should return None when not possible to sort, plan not partially sorted.") {
-    val sortExprX = varFor("x")
+    val sortExprX = v"x"
     val io = InterestingOrder.required(RequiredOrderCandidate.asc(sortExprX))
 
     new givenConfig().withLogicalPlanningContext { (_, context) =>
@@ -545,8 +545,8 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   test(
     "planIfAsSortedAsPossible should return None when not possible to sort, plan not partially sorted but same prefix."
   ) {
-    val sortExprX = varFor("x")
-    val sortExprY = varFor("y")
+    val sortExprX = v"x"
+    val sortExprY = v"y"
     val io = InterestingOrder.required(RequiredOrderCandidate.asc(sortExprX).asc(sortExprY))
 
     new givenConfig().withLogicalPlanningContext { (_, context) =>
@@ -635,7 +635,7 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   test("should sort without pre-projection if things are already projected in previous horizon") {
     // [WITH n, m] WITH n AS n ORDER BY m
     new givenConfig().withLogicalPlanningContext { (_, context) =>
-      val io = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("m")))
+      val io = InterestingOrder.required(RequiredOrderCandidate.asc(v"m"))
       val inputPlan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "m", "n")
 
       // When
@@ -682,7 +682,7 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
     // [WITH x] WITH x.foo + 42 AS add ORDER BY add
     new givenConfig().withLogicalPlanningContext { (_, context) =>
       val sortOn = add(prop("x", "foo"), literalInt(42))
-      val io = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("add"), Map(v"add" -> sortOn)))
+      val io = InterestingOrder.required(RequiredOrderCandidate.asc(v"add", Map(v"add" -> sortOn)))
       val inputPlan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x")
 
       // When
@@ -704,8 +704,8 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   test("should sort and two step pre-projection for expressions") {
     // [WITH n] WITH n + 10 AS m ORDER BY m + 5 ASCENDING
-    val mExpr = add(varFor("n"), literalInt(10))
-    val sortExpression = add(varFor("m"), literalInt(5))
+    val mExpr = add(v"n", literalInt(10))
+    val sortExpression = add(v"m", literalInt(5))
 
     new givenConfig().withLogicalPlanningContext { (_, context) =>
       val inputPlan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "n")
@@ -735,7 +735,7 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
     new givenConfig().withLogicalPlanningContext { (_, context) =>
       val io = InterestingOrder.required(RequiredOrderCandidate.asc(prop("p", "name")).asc(
-        varFor("bday"),
+        v"bday",
         Map(v"bday" -> bdayExp)
       ))
       val inputPlan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "p")
@@ -763,7 +763,7 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
     val bdayExp = isNotNull(prop("p", "born"))
 
     new givenConfig().withLogicalPlanningContext { (_, context) =>
-      val io = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("bday"), Map(v"bday" -> bdayExp)).asc(prop(
+      val io = InterestingOrder.required(RequiredOrderCandidate.asc(v"bday", Map(v"bday" -> bdayExp)).asc(prop(
         "p",
         "name"
       )))

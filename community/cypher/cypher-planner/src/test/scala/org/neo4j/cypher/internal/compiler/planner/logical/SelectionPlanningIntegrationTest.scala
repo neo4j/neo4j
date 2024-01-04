@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
@@ -50,7 +51,7 @@ class SelectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
     val otherLabel = hasLabels("n", "OtherLabel")
     val nProp = equals(prop("n", "prop"), literalInt(5))
     val nPropIn = in(prop("n", "prop"), listOfInt(5))
-    val nParam = equals(varFor("n"), parameter("param", CTAny))
+    val nParam = equals(v"n", parameter("param", CTAny))
     val nFooBar = equals(prop("n", "foo"), prop("n", "bar"))
     val selectivities = Map[Expression, Double](
       label -> 0.1, // More selective, so will be chosen for LabelScan.

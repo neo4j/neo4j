@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.frontend.helpers.InputDataStreamTestInitialState
@@ -43,29 +44,29 @@ class InputDataStreamPlanningTest extends CypherFunSuite with LogicalPlanningTes
     with AstConstructionTestSupport {
 
   test("INPUT DATA STREAM a, b, c RETURN *") {
-    val ast = singleQuery(input(varFor("a"), varFor("b"), varFor("c")), returnAll)
+    val ast = singleQuery(input(v"a", v"b", v"c"), returnAll)
     new givenConfig().getLogicalPlanForAst(createInitStateFromAst(ast))._1 should equal(Input(Seq("a", "b", "c")))
   }
 
   test("INPUT DATA STREAM a, b, c RETURN DISTINCT a") {
-    val ast = singleQuery(input(varFor("a"), varFor("b"), varFor("c")), returnDistinct(returnItem(varFor("a"), "a")))
+    val ast = singleQuery(input(v"a", v"b", v"c"), returnDistinct(returnItem(v"a", "a")))
     new givenConfig().getLogicalPlanForAst(createInitStateFromAst(ast))._1 should equal(Distinct(
       Input(Seq("a", "b", "c")),
-      Map(varFor("a") -> varFor("a"))
+      Map(v"a" -> v"a")
     ))
   }
 
   test("INPUT DATA STREAM a, b, c RETURN sum(a)") {
-    val ast = singleQuery(input(varFor("a"), varFor("b"), varFor("c")), return_(returnItem(sum(varFor("a")), "sum(a)")))
+    val ast = singleQuery(input(v"a", v"b", v"c"), return_(returnItem(sum(v"a"), "sum(a)")))
     new givenConfig().getLogicalPlanForAst(createInitStateFromAst(ast))._1 should equal(
-      Aggregation(Input(Seq("a", "b", "c")), Map.empty, Map(varFor("sum(a)") -> sum(varFor("a"))))
+      Aggregation(Input(Seq("a", "b", "c")), Map.empty, Map(v"sum(a)" -> sum(v"a")))
     )
   }
 
   test("INPUT DATA STREAM a, b, c WITH * WHERE a.pid = 99 RETURN *") {
     val ast =
       singleQuery(
-        input(varFor("a"), varFor("b"), varFor("c")),
+        input(v"a", v"b", v"c"),
         withAll(Some(where(propEquality("a", "pid", 99)))),
         returnAll
       )
@@ -77,36 +78,36 @@ class InputDataStreamPlanningTest extends CypherFunSuite with LogicalPlanningTes
 
   test("INPUT DATA STREAM a, b, c WITH * WHERE a:Employee RETURN a.name AS name ORDER BY name") {
     val ast = singleQuery(
-      input(varFor("a"), varFor("b"), varFor("c")),
+      input(v"a", v"b", v"c"),
       withAll(Some(where(hasLabelsOrTypes("a", "Employee")))),
-      return_(orderBy(sortItem(varFor("name"))), returnItem(prop("a", "name"), "name"))
+      return_(orderBy(sortItem(v"name")), returnItem(prop("a", "name"), "name"))
     )
 
     new givenConfig().getLogicalPlanForAst(createInitStateFromAst(ast))._1 should equal(
       Sort(
         Projection(
           Selection(ands(hasLabelsOrTypes("a", "Employee")), Input(Seq("a", "b", "c"))),
-          Map(varFor("name") -> prop("a", "name"))
+          Map(v"name" -> prop("a", "name"))
         ),
-        List(Ascending(varFor("name")))
+        List(Ascending(v"name"))
       )
     )
   }
 
   test("INPUT DATA STREAM a, b, c WITH * MATCH (x) RETURN *") {
     val ast =
-      singleQuery(input(varFor("a"), varFor("b"), varFor("c")), withAll(), match_(nodePat(Some("x"))), returnAll)
+      singleQuery(input(v"a", v"b", v"c"), withAll(), match_(nodePat(Some("x"))), returnAll)
 
     new givenConfig().getLogicalPlanForAst(createInitStateFromAst(ast))._1 should equal(
       Apply(
         Input(Seq("a", "b", "c")),
-        AllNodesScan(varFor("x"), Set("a", "b", "c").map(varFor(_)))
+        AllNodesScan(v"x", Set("a", "b", "c").map(varFor))
       )
     )
   }
 
   test("INPUT DATA STREAM g, uid, cids, cid, p RETURN *") {
-    val ast = singleQuery(input(varFor("g"), varFor("uid"), varFor("cids"), varFor("cid"), varFor("p")), returnAll)
+    val ast = singleQuery(input(v"g", v"uid", v"cids", v"cid", v"p"), returnAll)
     new givenConfig().getLogicalPlanForAst(createInitStateFromAst(ast))._1 should equal(
       Input(Seq("g", "uid", "cids", "cid", "p"))
     )

@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.apache.commons.io.FileUtils
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.graphcounts.GraphCountsJson
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.AttributeComparisonStrategy.ComparingProvidedAttributesOnly
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningAttributesTestSupport
@@ -95,22 +96,22 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
       }
     } getLogicalPlanFor "MATCH (a:X)-[r1]->(b) OPTIONAL MATCH (b)-[r2]->(c:Y) RETURN b")._1 should equal(
       LeftOuterHashJoin(
-        Set(varFor("b")),
+        Set(v"b"),
         Expand(
-          NodeByLabelScan(varFor("a"), labelName("X"), Set.empty, IndexOrderNone),
-          varFor("a"),
+          NodeByLabelScan(v"a", labelName("X"), Set.empty, IndexOrderNone),
+          v"a",
           SemanticDirection.OUTGOING,
           Seq(),
-          varFor("b"),
-          varFor("r1")
+          v"b",
+          v"r1"
         ),
         Expand(
-          NodeByLabelScan(varFor("c"), labelName("Y"), Set.empty, IndexOrderNone),
-          varFor("c"),
+          NodeByLabelScan(v"c", labelName("Y"), Set.empty, IndexOrderNone),
+          v"c",
           SemanticDirection.INCOMING,
           Seq(),
-          varFor("b"),
-          varFor("r2")
+          v"b",
+          v"r2"
         )
       )
     )
@@ -129,22 +130,22 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
       }
     } getLogicalPlanFor "MATCH (a:X)-[r1]->(b) OPTIONAL MATCH (b)-[r2]->(c:Y) RETURN b")._1 should equal(
       RightOuterHashJoin(
-        Set(varFor("b")),
+        Set(v"b"),
         Expand(
-          NodeByLabelScan(varFor("c"), labelName("Y"), Set.empty, IndexOrderNone),
-          varFor("c"),
+          NodeByLabelScan(v"c", labelName("Y"), Set.empty, IndexOrderNone),
+          v"c",
           SemanticDirection.INCOMING,
           Seq(),
-          varFor("b"),
-          varFor("r2")
+          v"b",
+          v"r2"
         ),
         Expand(
-          NodeByLabelScan(varFor("a"), labelName("X"), Set.empty, IndexOrderNone),
-          varFor("a"),
+          NodeByLabelScan(v"a", labelName("X"), Set.empty, IndexOrderNone),
+          v"a",
           SemanticDirection.OUTGOING,
           Seq(),
-          varFor("b"),
-          varFor("r1")
+          v"b",
+          v"r1"
         )
       )
     )
@@ -176,22 +177,22 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
       }
     } getLogicalPlanFor "MATCH (a:X)-[r1]->(b) OPTIONAL MATCH (b)-[r2]->(c:Y) RETURN b")._1 should equal(
       LeftOuterHashJoin(
-        Set(varFor("b")),
+        Set(v"b"),
         Expand(
-          NodeByLabelScan(varFor("a"), labelName("X"), Set.empty, IndexOrderNone),
-          varFor("a"),
+          NodeByLabelScan(v"a", labelName("X"), Set.empty, IndexOrderNone),
+          v"a",
           SemanticDirection.OUTGOING,
           Seq(),
-          varFor("b"),
-          varFor("r1")
+          v"b",
+          v"r1"
         ),
         Expand(
-          NodeByLabelScan(varFor("c"), labelName("Y"), Set.empty, IndexOrderNone),
-          varFor("c"),
+          NodeByLabelScan(v"c", labelName("Y"), Set.empty, IndexOrderNone),
+          v"c",
           SemanticDirection.INCOMING,
           Seq(),
-          varFor("b"),
-          varFor("r2")
+          v"b",
+          v"r2"
         )
       )
     )
@@ -223,22 +224,22 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
       }
     } getLogicalPlanFor "MATCH (a:X)-[r1]->(b) OPTIONAL MATCH (b)-[r2]->(c:Y) RETURN b")._1 should equal(
       RightOuterHashJoin(
-        Set(varFor("b")),
+        Set(v"b"),
         Expand(
-          NodeByLabelScan(varFor("c"), labelName("Y"), Set.empty, IndexOrderNone),
-          varFor("c"),
+          NodeByLabelScan(v"c", labelName("Y"), Set.empty, IndexOrderNone),
+          v"c",
           SemanticDirection.INCOMING,
           Seq(),
-          varFor("b"),
-          varFor("r2")
+          v"b",
+          v"r2"
         ),
         Expand(
-          NodeByLabelScan(varFor("a"), labelName("X"), Set.empty, IndexOrderNone),
-          varFor("a"),
+          NodeByLabelScan(v"a", labelName("X"), Set.empty, IndexOrderNone),
+          v"a",
           SemanticDirection.OUTGOING,
           Seq(),
-          varFor("b"),
-          varFor("r1")
+          v"b",
+          v"r1"
         )
       )
     )
@@ -246,15 +247,15 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
 
   test("should build simple optional match plans") { // This should be built using plan rewriting
     planFor("OPTIONAL MATCH (a) RETURN a")._1 should equal(
-      Optional(AllNodesScan(varFor("a"), Set.empty))
+      Optional(AllNodesScan(v"a", Set.empty))
     )
   }
 
   test("should allow MATCH after OPTIONAL MATCH") {
     planFor("OPTIONAL MATCH (a) MATCH (b) RETURN a, b")._1 should equal(
       Apply(
-        Optional(AllNodesScan(varFor("a"), Set.empty)),
-        AllNodesScan(varFor("b"), Set(varFor("a")))
+        Optional(AllNodesScan(v"a", Set.empty)),
+        AllNodesScan(v"b", Set(v"a"))
       )
     )
   }
@@ -330,7 +331,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
           )
         ) =>
         args.map(_.name) should equal(Set("r", "a1"))
-        val predicate = equals(varFor("a1"), varFor("a2"))
+        val predicate = equals(v"a1", v"a2")
         predicates.exprs should equal(ListSet(predicate))
       case plan => throw new IllegalArgumentException(s"Unexpected plan: $plan")
     }
@@ -387,16 +388,16 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
         |WHERE m.prop = 42
         |RETURN m""".stripMargin
     )._1.endoRewrite(unnestOptional)
-    val allNodesN: LogicalPlan = NodeByLabelScan(varFor("n"), labelName("X"), Set.empty, IndexOrderNone)
+    val allNodesN: LogicalPlan = NodeByLabelScan(v"n", labelName("X"), Set.empty, IndexOrderNone)
 
     plan should equal(
       OptionalExpand(
         allNodesN,
-        varFor("n"),
+        v"n",
         SemanticDirection.BOTH,
         Seq.empty,
-        varFor("m"),
-        varFor("r"),
+        v"m",
+        v"r",
         ExpandAll,
         Some(Ands.create(ListSet(hasLabels("m", "Y"), equals(prop("m", "prop"), literalInt(42)))))
       )
@@ -854,7 +855,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
       .limit(0)
       .apply()
       .|.optional("n0", "n1")
-      .|.filterExpression(equals(varFor("n0"), varFor("anon_2")), assertIsNode("n1"))
+      .|.filterExpression(equals(v"n0", v"anon_2"), assertIsNode("n1"))
       .|.relationshipTypeScan("(anon_2)-[anon_0:REL]-(anon_1)", IndexOrderNone, "n0", "n1")
       .cartesianProduct()
       .|.allNodeScan("n1")
@@ -889,7 +890,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
       .limit(0)
       .apply()
       .|.optional("n0", "n1")
-      .|.filterExpression(equals(varFor("n0"), varFor("anon_2")), assertIsNode("n1"))
+      .|.filterExpression(equals(v"n0", v"anon_2"), assertIsNode("n1"))
       .|.relationshipTypeScan("(anon_2)-[anon_0:REL]->(anon_1)", IndexOrderNone, "n0", "n1")
       .cartesianProduct()
       .|.allNodeScan("n1")
@@ -954,7 +955,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
       .limit(0)
       .apply()
       .|.optional("n0", "n1")
-      .|.filterExpression(equals(varFor("n0"), varFor("anon_1")), assertIsNode("n1"))
+      .|.filterExpression(equals(v"n0", v"anon_1"), assertIsNode("n1"))
       .|.undirectedRelationshipByIdSeek("r", "anon_1", "anon_0", Set("n0", "n1"), 0)
       .cartesianProduct()
       .|.allNodeScan("n1")
@@ -987,7 +988,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
       .limit(0)
       .apply()
       .|.optional("n0", "n1")
-      .|.filterExpression(equals(varFor("n0"), varFor("anon_1")), assertIsNode("n1"))
+      .|.filterExpression(equals(v"n0", v"anon_1"), assertIsNode("n1"))
       .|.directedRelationshipByIdSeek("r", "anon_0", "anon_1", Set("n0", "n1"), 42)
       .cartesianProduct()
       .|.allNodeScan("n1")

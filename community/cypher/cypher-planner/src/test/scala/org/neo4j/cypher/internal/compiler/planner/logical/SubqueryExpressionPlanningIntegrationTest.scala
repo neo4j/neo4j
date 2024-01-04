@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.helpers.WindowsSafeAnyRef
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher
@@ -152,7 +153,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
         planner.subPlanBuilder()
           .nodeCountFromCountStore("anon_0", Seq(None))
           .build(),
-        varFor("anon_0"),
+        v"anon_0",
         "COUNT { MATCH (x) }"
       )(pos)
     )
@@ -171,7 +172,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
 
     val resultExpr = containerIndex(
       listOfInt(1, 2, 3),
-      getDegree(varFor("a"), SemanticDirection.OUTGOING)
+      getDegree(v"a", SemanticDirection.OUTGOING)
     )
 
     plan shouldEqual planner.subPlanBuilder()
@@ -187,10 +188,10 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     plan should beLike {
       case Projection(_, projectExpressions) =>
         projectExpressions shouldBe Map(
-          varFor("result") ->
+          v"result" ->
             ands(
-              not(equals(varFor("anon_0"), varFor("anon_1"))),
-              not(equals(varFor("anon_2"), varFor("anon_3")))
+              not(equals(v"anon_0", v"anon_1")),
+              not(equals(v"anon_2", v"anon_3"))
             )
         )
     }
@@ -347,7 +348,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       .rollUpApply("x", "c")
       .|.skip(7L)
       .|.top(
-        Seq(Ascending(varFor("c"))),
+        Seq(Ascending(v"c")),
         add(SignedDecimalIntegerLiteral("42")(pos), SignedDecimalIntegerLiteral("7")(pos))
       )
       .|.expandAll("(a)-[r:KNOWS]->(c)")
@@ -370,11 +371,11 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
   }
 
   private def reduceExpr(anonOffset: Int): ReduceExpression = reduce(
-    varFor("sum"),
+    v"sum",
     literalInt(0),
-    varFor("x"),
-    varFor(s"anon_$anonOffset"),
-    add(varFor("sum"), varFor("x"))
+    v"x",
+    v"anon_$anonOffset",
+    add(v"sum", v"x")
   )
 
   test("should consider variables introduced by outer list comprehensions when planning pattern predicates") {
@@ -389,8 +390,8 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       .build()
 
     val projectionExpression = listComprehension(
-      varFor("f"),
-      varFor("friends"),
+      v"f",
+      v"friends",
       Some(
         NestedPlanExistsExpression(
           nestedPlan,
@@ -472,7 +473,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       planner.planBuilder()
         .produceResults("a")
         .filterExpression(HasDegreeGreaterThan(
-          varFor("a"),
+          v"a",
           Some(RelTypeName("X")(pos)),
           SemanticDirection.OUTGOING,
           literalInt(0)
@@ -488,7 +489,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       planner.planBuilder()
         .produceResults("a")
         .filterExpression(not(HasDegreeGreaterThan(
-          varFor("a"),
+          v"a",
           Some(RelTypeName("X")(pos)),
           SemanticDirection.OUTGOING,
           literalInt(0)
@@ -504,7 +505,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       planner.planBuilder()
         .produceResults("a")
         .filterExpression(HasDegreeGreaterThan(
-          varFor("a"),
+          v"a",
           Some(RelTypeName("X")(pos)),
           SemanticDirection.OUTGOING,
           literalInt(0)
@@ -520,7 +521,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       planner.planBuilder()
         .produceResults("b")
         .filterExpression(HasDegreeGreaterThan(
-          varFor("b"),
+          v"b",
           Some(RelTypeName("X")(pos)),
           SemanticDirection.OUTGOING,
           literalInt(0)
@@ -537,7 +538,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       planner.planBuilder()
         .produceResults("a")
         .filterExpression(not(HasDegreeGreaterThan(
-          varFor("a"),
+          v"a",
           Some(RelTypeName("X")(pos)),
           SemanticDirection.OUTGOING,
           literalInt(0)
@@ -553,7 +554,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       planner.planBuilder()
         .produceResults("b")
         .filterExpression(not(HasDegreeGreaterThan(
-          varFor("b"),
+          v"b",
           Some(RelTypeName("X")(pos)),
           SemanticDirection.OUTGOING,
           literalInt(0)
@@ -570,7 +571,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       new LogicalPlanBuilder()
         .produceResults("a")
         .filterExpression(HasDegreeGreaterThan(
-          varFor("a"),
+          v"a",
           Some(RelTypeName("X")(pos)),
           SemanticDirection.OUTGOING,
           literalInt(0)
@@ -586,7 +587,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       new LogicalPlanBuilder()
         .produceResults("a")
         .filterExpression(not(HasDegreeGreaterThan(
-          varFor("a"),
+          v"a",
           Some(RelTypeName("X")(pos)),
           SemanticDirection.OUTGOING,
           literalInt(0)
@@ -700,7 +701,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       new LogicalPlanBuilder()
         .produceResults("a")
         .filterExpression(HasDegreeGreaterThan(
-          varFor("a"),
+          v"a",
           Some(RelTypeName("X")(pos)),
           SemanticDirection.OUTGOING,
           literalInt(0)
@@ -717,7 +718,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       new LogicalPlanBuilder()
         .produceResults("a")
         .filterExpression(not(HasDegreeGreaterThan(
-          varFor("a"),
+          v"a",
           Some(RelTypeName("X")(pos)),
           SemanticDirection.OUTGOING,
           literalInt(0)
@@ -883,13 +884,13 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       planner.subPlanBuilder()
         .filterExpression(ors(
           not(HasDegreeGreaterThan(
-            varFor("a"),
+            v"a",
             Some(RelTypeName("Y")(pos)),
             SemanticDirection.OUTGOING,
             literalInt(0)
           )(pos)),
           not(HasDegreeGreaterThan(
-            varFor("a"),
+            v"a",
             Some(RelTypeName("X")(pos)),
             SemanticDirection.OUTGOING,
             literalInt(0)
@@ -1035,8 +1036,8 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       planner.plan("MATCH p=(a)-[r*]->(b) WHERE all(n in nodes(p) WHERE n.prop = 1337) RETURN p").stripProduceResults
 
     val pathExpression = PathExpression(NodePathStep(
-      varFor("a"),
-      MultiRelationshipPathStep(varFor("r"), OUTGOING, Some(varFor("b")), NilPathStep()(pos))(pos)
+      v"a",
+      MultiRelationshipPathStep(v"r", OUTGOING, Some(v"b"), NilPathStep()(pos))(pos)
     )(pos))(pos)
 
     plan should equal(
@@ -1058,8 +1059,8 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       planner.plan("MATCH p=(a)-[r*]->(b) WHERE none(n in nodes(p) WHERE n.prop = 1337) RETURN p").stripProduceResults
 
     val pathExpression = PathExpression(NodePathStep(
-      varFor("a"),
-      MultiRelationshipPathStep(varFor("r"), OUTGOING, Some(varFor("b")), NilPathStep()(pos))(pos)
+      v"a",
+      MultiRelationshipPathStep(v"r", OUTGOING, Some(v"b"), NilPathStep()(pos))(pos)
     )(pos))(pos)
 
     plan should equal(
@@ -1614,8 +1615,8 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
         .rollUpApply("ages", "anon_0")
         .|.projection(Map("anon_0" -> PathExpression(
           NodePathStep(
-            varFor("n"),
-            SingleRelationshipPathStep(varFor("anon_1"), OUTGOING, Some(varFor("b")), NilPathStep()(pos))(pos)
+            v"n",
+            SingleRelationshipPathStep(v"anon_1", OUTGOING, Some(v"b"), NilPathStep()(pos))(pos)
           )(pos)
         )(pos)))
         .|.expandAll("(n)-[anon_1]->(b)")
@@ -1735,7 +1736,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     val nestedCollection =
       NestedPlanCollectExpression(
         nestedPlan,
-        varFor("anon_0"),
+        v"anon_0",
         """COLLECT { MATCH (a)-[`anon_1`]->(b)
           |RETURN b.age AS `anon_0` }""".stripMargin
       )(pos)
@@ -1794,7 +1795,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     val nestedCollection =
       NestedPlanCollectExpression(
         nestedPlan,
-        varFor("anon_0"),
+        v"anon_0",
         """COLLECT { MATCH (a)-[`anon_1`]->(b)
           |RETURN b.age AS `anon_0` }""".stripMargin
       )(pos)
@@ -1836,7 +1837,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     val nestedCollection =
       NestedPlanCollectExpression(
         nestedPlan,
-        varFor("anon_0"),
+        v"anon_0",
         """COLLECT { MATCH (a)-[`anon_2`]->(b)
           |RETURN b.age AS `anon_0` }""".stripMargin
       )(pos)
@@ -1890,7 +1891,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     val nestedCollection =
       NestedPlanCollectExpression(
         nestedPlan,
-        varFor("anon_0"),
+        v"anon_0",
         """COLLECT { MATCH (a)-[`anon_1`]->(b)
           |RETURN b.age AS `anon_0` }""".stripMargin
       )(pos)
@@ -1932,7 +1933,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     val nestedCollection =
       NestedPlanCollectExpression(
         nestedPlan,
-        varFor("anon_0"),
+        v"anon_0",
         """COLLECT { MATCH (a)-[`anon_3`]->(b)
           |RETURN b.age AS `anon_0` }""".stripMargin
       )(pos)
@@ -1975,7 +1976,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     val nestedCollection =
       NestedPlanCollectExpression(
         nestedPlan,
-        varFor("anon_0"),
+        v"anon_0",
         """COLLECT { MATCH (a)-[`anon_3`]->(b)
           |RETURN b.age AS `anon_0` }""".stripMargin
       )(pos)
@@ -2209,7 +2210,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
           Map("age" -> containerIndex(
             NestedPlanCollectExpression(
               expectedNestedPlan,
-              varFor("anon_0"),
+              v"anon_0",
               """COLLECT { MATCH (n)-[`anon_1`]->(b)
                 |RETURN b.age AS `anon_0` }""".stripMargin
             )(pos),
@@ -2248,18 +2249,18 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
           Map("age" ->
             AllIterablePredicate(
               FilterScope(
-                varFor("node"),
+                v"node",
                 Some(IsEmpty(
                   NestedPlanCollectExpression(
                     expectedNestedPlan,
-                    varFor("anon_0"),
+                    v"anon_0",
                     s"""COLLECT { MATCH (n)-[r]->(b)
                        |  WHERE n.prop > 5
                        |RETURN b.age AS `anon_0` }""".stripMargin
                   )(pos)
                 )(pos))
               )(pos),
-              nodes(PathExpression(NodePathStep(varFor("n"), NilPathStep()(pos))(pos))(pos))
+              nodes(PathExpression(NodePathStep(v"n", NilPathStep()(pos))(pos))(pos))
             )(pos))
         )
         .allNodeScan("n")
@@ -2426,7 +2427,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
 
     plan should equal(planner.subPlanBuilder()
       .projection(Map(
-        "size" -> GetDegree(varFor("a"), Some(RelTypeName("FOO")(pos)), SemanticDirection.OUTGOING)(pos)
+        "size" -> GetDegree(v"a", Some(RelTypeName("FOO")(pos)), SemanticDirection.OUTGOING)(pos)
       ))
       .allNodeScan("a")
       .build())
@@ -2443,7 +2444,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
 
     plan should equal(planner.subPlanBuilder()
       .projection(Map("exists" -> HasDegreeGreaterThan(
-        varFor("a"),
+        v"a",
         Some(RelTypeName("FOO")(pos)),
         SemanticDirection.OUTGOING,
         literalInt(0)
@@ -2463,7 +2464,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
 
     plan should equal(planner.subPlanBuilder()
       .projection(Map("foos" -> GetDegree(
-        varFor("a"),
+        v"a",
         Some(RelTypeName("FOO")(pos)),
         SemanticDirection.OUTGOING
       )(pos)))
@@ -2482,7 +2483,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
 
     plan should equal(planner.subPlanBuilder()
       .projection(Map("moreThan10Foos" -> HasDegreeGreaterThan(
-        varFor("a"),
+        v"a",
         Some(RelTypeName("FOO")(pos)),
         SemanticDirection.OUTGOING,
         literalInt(10)
@@ -2747,13 +2748,13 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       containerIndex(
         NestedPlanCollectExpression(
           expectedNestedPlan,
-          varFor("anon_0"),
+          v"anon_0",
           """COLLECT { MATCH (a)<-[`anon_2`]-(`b`)
             |RETURN `b`.prop4 IN [true] AS `anon_0` }""".stripMargin
         )(pos),
         literalInt(2)
       ),
-      varFor("anon_4")
+      v"anon_4"
     )
 
     plan.stripProduceResults should equal(
@@ -2789,14 +2790,14 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
         planner.subPlanBuilder()
           .relationshipCountFromCountStore("anon_0", None, Seq("REL"), None)
           .build(),
-        varFor("anon_0"),
+        v"anon_0",
         "COUNT { MATCH (a)-[r:REL]->(b) }"
       )(pos),
       NestedPlanGetByNameExpression(
         planner.subPlanBuilder()
           .relationshipCountFromCountStore("anon_1", Some("Person"), Seq("KNOWS"), None)
           .build(),
-        varFor("anon_1"),
+        v"anon_1",
         s"COUNT { MATCH (c)-[k:KNOWS]->(d)$NL  WHERE c:Person }"
       )(pos)
     )
@@ -2879,7 +2880,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     ).stripProduceResults
     plan should equal(planner.subPlanBuilder()
       .projection(
-        Map("foo" -> GetDegree(varFor("a"), Some(RelTypeName("KNOWS")(pos)), SemanticDirection.OUTGOING)(pos))
+        Map("foo" -> GetDegree(v"a", Some(RelTypeName("KNOWS")(pos)), SemanticDirection.OUTGOING)(pos))
       )
       .nodeByLabelScan("a", "Person", IndexOrderNone)
       .build())
@@ -2940,7 +2941,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       .|.aggregation(Seq(), Seq("count(*) AS anon_0"))
       .|.skip(7L)
       .|.top(
-        Seq(Ascending(varFor("a"))),
+        Seq(Ascending(v"a")),
         add(SignedDecimalIntegerLiteral("42")(pos), SignedDecimalIntegerLiteral("7")(pos))
       )
       .|.expandAll("(a)-[r:KNOWS]->(c)")
@@ -3015,7 +3016,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       planner.planBuilder()
         .produceResults("exists")
         .projection(Map("exists" -> HasDegreeGreaterThan(
-          varFor("a"),
+          v"a",
           Some(RelTypeName("X")(pos)),
           SemanticDirection.OUTGOING,
           literalInt(0)
@@ -3094,7 +3095,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       .semiApply()
       .|.skip(7L)
       .|.top(
-        Seq(Ascending(varFor("a"))),
+        Seq(Ascending(v"a")),
         add(SignedDecimalIntegerLiteral("42")(pos), SignedDecimalIntegerLiteral("7")(pos))
       )
       .|.expandAll("(a)-[r:KNOWS]->(c)")
@@ -3665,7 +3666,7 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     val solvedString =
       """COLLECT { MATCH (m)
         |RETURN m AS m }""".stripMargin
-    val collectExpression = NestedPlanCollectExpression(nestedPlan, varFor("m"), solvedString)(pos)
+    val collectExpression = NestedPlanCollectExpression(nestedPlan, v"m", solvedString)(pos)
     val indexExpression = containerIndex(collectExpression, 0)
 
     planner.plan(query) should equal(

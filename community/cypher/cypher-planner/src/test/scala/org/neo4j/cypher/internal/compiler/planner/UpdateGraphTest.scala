@@ -90,7 +90,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
 
   test("should not be empty after adding label to set") {
     val original = QueryGraph()
-    val setLabel = SetLabelPattern(varFor("name"), Seq.empty)
+    val setLabel = SetLabelPattern(v"name", Seq.empty)
 
     original.addMutatingPatterns(setLabel).containsUpdates should be(true)
   }
@@ -278,10 +278,10 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
         CreatePattern(
           List(
             CreateRelationship(
-              varFor("r2"),
-              varFor("a"),
+              v"r2",
+              v"a",
               RelTypeName("T1")(pos),
-              varFor("b"),
+              v"b",
               SemanticDirection.OUTGOING,
               Some(
                 MapExpression(Seq(
@@ -306,7 +306,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
       IndexedSeq(
         DeleteExpression(Variable("a")(pos), detachDelete = false),
         MergeNodePattern(
-          CreateNode(varFor("b"), Set(LabelName("L3")(pos), LabelName("L3")(pos)), None),
+          CreateNode(v"b", Set(LabelName("L3")(pos), LabelName("L3")(pos)), None),
           QueryGraph.empty,
           Seq.empty,
           Seq.empty
@@ -343,33 +343,33 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
       "Set pattern" -> "Expected",
 
       // SET b_no_type.prop = 123
-      SetPropertyPattern(varFor("b_no_type"), pKey, literalInt(123)) -> ListSet(EagernessReason.Unknown),
+      SetPropertyPattern(v"b_no_type", pKey, literalInt(123)) -> ListSet(EagernessReason.Unknown),
 
       // SET b_no_type.prop = 123, ...
-      SetPropertiesPattern(varFor("b_no_type"), Seq(pKey -> literalInt(123))) -> ListSet(EagernessReason.Unknown),
+      SetPropertiesPattern(v"b_no_type", Seq(pKey -> literalInt(123))) -> ListSet(EagernessReason.Unknown),
 
       // SET r.prop = 123
-      SetRelationshipPropertyPattern(varFor("r"), pKey, literalInt(123)) -> ListSet(),
+      SetRelationshipPropertyPattern(v"r", pKey, literalInt(123)) -> ListSet(),
 
       // SET r.prop = 123, ...
-      SetRelationshipPropertiesPattern(varFor("r"), Seq(pKey -> literalInt(123))) -> ListSet(),
+      SetRelationshipPropertiesPattern(v"r", Seq(pKey -> literalInt(123))) -> ListSet(),
 
       // SET b = {prop: 123}
-      SetNodePropertiesFromMapPattern(varFor("b"), mapOfInt(propName -> 123), true) -> ListSet(EagernessReason.Unknown),
+      SetNodePropertiesFromMapPattern(v"b", mapOfInt(propName -> 123), true) -> ListSet(EagernessReason.Unknown),
 
       // SET r = {prop: 123}
-      SetRelationshipPropertiesFromMapPattern(varFor("r"), mapOfInt(propName -> 123), true) -> ListSet(),
+      SetRelationshipPropertiesFromMapPattern(v"r", mapOfInt(propName -> 123), true) -> ListSet(),
 
       // SET b_no_type = {prop: 123}
-      SetPropertiesFromMapPattern(varFor("b_no_type"), mapOfInt(propName -> 123), true) -> ListSet(
+      SetPropertiesFromMapPattern(v"b_no_type", mapOfInt(propName -> 123), true) -> ListSet(
         EagernessReason.Unknown
       ),
 
       // SET b.prop = 123
-      SetNodePropertyPattern(varFor("b"), pKey, literalInt(123)) -> ListSet(EagernessReason.Unknown),
+      SetNodePropertyPattern(v"b", pKey, literalInt(123)) -> ListSet(EagernessReason.Unknown),
 
       // SET b.prop = 123, ...
-      SetNodePropertiesPattern(varFor("b"), Seq(pKey -> literalInt(123))) -> ListSet(EagernessReason.Unknown)
+      SetNodePropertiesPattern(v"b", Seq(pKey -> literalInt(123))) -> ListSet(EagernessReason.Unknown)
     )
 
     val selections = Selections.from(Seq(
@@ -387,7 +387,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
     forAll(tests) {
       case (pattern, expected) =>
         val merge = MergeNodePattern(
-          CreateNode(varFor("b"), Set.empty, None),
+          CreateNode(v"b", Set.empty, None),
           QueryGraph.empty,
           Seq(pattern),
           Seq.empty
@@ -400,7 +400,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
     forAll(tests) {
       case (pattern, expected) =>
         val merge = MergeNodePattern(
-          CreateNode(varFor("b"), Set.empty, None),
+          CreateNode(v"b", Set.empty, None),
           QueryGraph.empty,
           Seq.empty,
           Seq(pattern)
@@ -420,35 +420,35 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
       "Set pattern" -> "Expected",
 
       // SET r_no_type.prop = 123
-      SetPropertyPattern(varFor("r_no_type"), pKey, literalInt(123)) -> ListSet(EagernessReason.Unknown),
+      SetPropertyPattern(v"r_no_type", pKey, literalInt(123)) -> ListSet(EagernessReason.Unknown),
 
       // SET r_no_type.prop = 123, ...
-      SetPropertiesPattern(varFor("r_no_type"), Seq(pKey -> literalInt(123))) -> ListSet(EagernessReason.Unknown),
+      SetPropertiesPattern(v"r_no_type", Seq(pKey -> literalInt(123))) -> ListSet(EagernessReason.Unknown),
 
       // SET r.prop = 123
-      SetRelationshipPropertyPattern(varFor("r"), pKey, literalInt(123)) -> ListSet(EagernessReason.Unknown),
+      SetRelationshipPropertyPattern(v"r", pKey, literalInt(123)) -> ListSet(EagernessReason.Unknown),
 
       // SET r.prop = 123, ...
-      SetRelationshipPropertiesPattern(varFor("r"), Seq(pKey -> literalInt(123))) -> ListSet(EagernessReason.Unknown),
+      SetRelationshipPropertiesPattern(v"r", Seq(pKey -> literalInt(123))) -> ListSet(EagernessReason.Unknown),
 
       // SET b = {prop: 123}
-      SetNodePropertiesFromMapPattern(varFor("b"), mapOfInt(propName -> 123), true) -> ListSet(),
+      SetNodePropertiesFromMapPattern(v"b", mapOfInt(propName -> 123), true) -> ListSet(),
 
       // SET r = {prop: 123}
-      SetRelationshipPropertiesFromMapPattern(varFor("r"), mapOfInt(propName -> 123), true) -> ListSet(
+      SetRelationshipPropertiesFromMapPattern(v"r", mapOfInt(propName -> 123), true) -> ListSet(
         EagernessReason.Unknown
       ),
 
       // SET r_no_type = {prop: 123}
-      SetPropertiesFromMapPattern(varFor("r_no_type"), mapOfInt(propName -> 123), true) -> ListSet(
+      SetPropertiesFromMapPattern(v"r_no_type", mapOfInt(propName -> 123), true) -> ListSet(
         EagernessReason.Unknown
       ),
 
       // SET b.prop = 123
-      SetNodePropertyPattern(varFor("b"), pKey, literalInt(123)) -> ListSet(),
+      SetNodePropertyPattern(v"b", pKey, literalInt(123)) -> ListSet(),
 
       // SET b.prop = 123, ...
-      SetNodePropertiesPattern(varFor("b"), Seq(pKey -> literalInt(123))) -> ListSet()
+      SetNodePropertiesPattern(v"b", Seq(pKey -> literalInt(123))) -> ListSet()
     )
 
     val selections = Selections.from(Seq(
@@ -470,10 +470,10 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
         val merge = MergeRelationshipPattern(
           Seq.empty,
           Seq(CreateRelationship(
-            varFor("r"),
-            varFor("a"),
+            v"r",
+            v"a",
             RelTypeName("R")(pos),
-            varFor("b"),
+            v"b",
             SemanticDirection.OUTGOING,
             None
           )),
@@ -491,10 +491,10 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
         val merge = MergeRelationshipPattern(
           Seq.empty,
           Seq(CreateRelationship(
-            varFor("r"),
-            varFor("a"),
+            v"r",
+            v"a",
             RelTypeName("R")(pos),
-            varFor("b"),
+            v"b",
             SemanticDirection.OUTGOING,
             None
           )),
@@ -517,7 +517,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
     val ug = QueryGraph(mutatingPatterns =
       IndexedSeq(
         MergeNodePattern(
-          CreateNode(varFor("b"), Set(labelName("Label")), Some(mapOfInt("prop" -> 123))),
+          CreateNode(v"b", Set(labelName("Label")), Some(mapOfInt("prop" -> 123))),
           QueryGraph.empty,
           Seq.empty,
           Seq.empty
@@ -537,7 +537,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
     val ug = QueryGraph(mutatingPatterns =
       IndexedSeq(
         MergeNodePattern(
-          CreateNode(varFor("b"), Set(labelName("Label")), Some(mapOfInt("prop" -> 123))),
+          CreateNode(v"b", Set(labelName("Label")), Some(mapOfInt("prop" -> 123))),
           QueryGraph.empty,
           Seq.empty,
           Seq.empty
@@ -558,7 +558,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
     val ug = QueryGraph(mutatingPatterns =
       IndexedSeq(
         MergeNodePattern(
-          CreateNode(varFor("b"), Set(labelName("OtherLabel")), Some(mapOfInt("prop" -> 123))),
+          CreateNode(v"b", Set(labelName("OtherLabel")), Some(mapOfInt("prop" -> 123))),
           QueryGraph.empty,
           Seq.empty,
           Seq.empty
@@ -574,8 +574,8 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
     val innerQg2 = QueryGraph(patternNodes = Set(v"b"))
     val qg = QueryGraph(
       selections = Selections.from(Seq(
-        ExistsIRExpression(RegularSinglePlannerQuery(innerQg1), varFor(""), "")(pos, Some(Set.empty), Some(Set.empty)),
-        ListIRExpression(RegularSinglePlannerQuery(innerQg2), varFor(""), varFor(""), "")(
+        ExistsIRExpression(RegularSinglePlannerQuery(innerQg1), v"", "")(pos, Some(Set.empty), Some(Set.empty)),
+        ListIRExpression(RegularSinglePlannerQuery(innerQg2), v"", v"", "")(
           pos,
           Some(Set.empty),
           Some(Set.empty)
@@ -591,12 +591,12 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
     val innerQg2 = QueryGraph(patternNodes = Set(v"b"))
     val horizon = RegularQueryProjection(
       Map(
-        v"a" -> ExistsIRExpression(RegularSinglePlannerQuery(innerQg1), varFor(""), "")(
+        v"a" -> ExistsIRExpression(RegularSinglePlannerQuery(innerQg1), v"", "")(
           pos,
           Some(Set.empty),
           Some(Set.empty)
         ),
-        v"b" -> ListIRExpression(RegularSinglePlannerQuery(innerQg2), varFor(""), varFor(""), "")(
+        v"b" -> ListIRExpression(RegularSinglePlannerQuery(innerQg2), v"", v"", "")(
           pos,
           Some(Set.empty),
           Some(Set.empty)
@@ -633,7 +633,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
       SelectivePathPattern(
         pathPattern = ExhaustivePathPattern.NodeConnections(NonEmptyList(`((a)-[r:R]->(b))+`)),
         selections = Selections.from(List(
-          unique(varFor("r"))
+          unique(v"r")
         )),
         selector = SelectivePathPattern.Selector.Shortest(1)
       )
@@ -650,7 +650,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport wit
     val ug = QueryGraph(mutatingPatterns =
       IndexedSeq(
         MergeNodePattern(
-          CreateNode(varFor("q"), Set(labelName("Label")), None),
+          CreateNode(v"q", Set(labelName("Label")), None),
           QueryGraph.empty,
           Seq.empty,
           Seq.empty
