@@ -111,10 +111,10 @@ class VectorTestUtilsTest {
     }
 
     @Nested
-    public final class Cosine extends TestBase {
+    public final class SimpleCosine extends TestBase {
 
-        public Cosine() {
-            super(VectorSimilarityFunctions.COSINE);
+        public SimpleCosine() {
+            super(VectorSimilarityFunctions.SIMPLE_COSINE);
         }
 
         @Override

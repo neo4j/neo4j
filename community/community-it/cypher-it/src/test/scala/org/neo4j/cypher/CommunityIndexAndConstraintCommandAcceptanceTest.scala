@@ -29,7 +29,6 @@ import org.neo4j.graphdb.schema.ConstraintType
 import org.neo4j.graphdb.schema.IndexSettingImpl.VECTOR_DIMENSIONS
 import org.neo4j.graphdb.schema.IndexSettingImpl.VECTOR_SIMILARITY_FUNCTION
 import org.neo4j.graphdb.schema.IndexType
-import org.neo4j.kernel.api.impl.schema.vector.VectorSimilarityFunctions.COSINE
 import org.neo4j.kernel.impl.api.index.IndexingService
 import org.neo4j.kernel.impl.index.schema.RangeIndexProvider
 
@@ -137,7 +136,7 @@ class CommunityIndexAndConstraintCommandAcceptanceTest extends ExecutionEngineFu
       s"CREATE VECTOR INDEX $indexName FOR (n:$label) ON n.$prop OPTIONS {indexConfig: $$map}",
       Map("map" -> anyMap(
         VECTOR_DIMENSIONS.getSettingName -> 50,
-        VECTOR_SIMILARITY_FUNCTION.getSettingName -> COSINE.name
+        VECTOR_SIMILARITY_FUNCTION.getSettingName -> "COSINE"
       ))
     ).queryStatistics()
 
@@ -155,7 +154,7 @@ class CommunityIndexAndConstraintCommandAcceptanceTest extends ExecutionEngineFu
         s"CREATE VECTOR INDEX $indexName FOR ()-[r:$relType]-() ON r.$prop OPTIONS {indexConfig: $$map}",
         Map("map" -> anyMap(
           VECTOR_DIMENSIONS.getSettingName -> 50,
-          VECTOR_SIMILARITY_FUNCTION.getSettingName -> COSINE.name
+          VECTOR_SIMILARITY_FUNCTION.getSettingName -> "COSINE"
         ))
       )
     }

@@ -171,7 +171,7 @@ class VectorIndexProviderTest {
                     IndexSetting.vector_Dimensions(),
                     123,
                     IndexSetting.vector_Similarity_Function(),
-                    VectorSimilarityFunctions.COSINE.name()));
+                    VectorSimilarityFunctions.SIMPLE_COSINE.name()));
         }
     }
 }

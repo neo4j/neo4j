@@ -45,7 +45,7 @@ public enum VectorIndexVersion {
             KernelVersion.VERSION_NODE_VECTOR_INDEX_INTRODUCED,
             2048,
             VectorSimilarityFunctions.EUCLIDEAN,
-            VectorSimilarityFunctions.COSINE) {
+            VectorSimilarityFunctions.SIMPLE_COSINE) {
 
         @Override
         public boolean acceptsValueInstanceType(Value candidate) {
