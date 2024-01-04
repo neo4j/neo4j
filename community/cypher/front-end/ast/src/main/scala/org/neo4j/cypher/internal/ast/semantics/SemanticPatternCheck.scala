@@ -88,7 +88,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
       semanticCheckFold(pattern.patternParts)(check(ctx)) chain
       semanticCheckFold(pattern.patternParts)(checkMinimumNodeCount) ifOkChain
       when(ctx != SemanticContext.Create) {
-        ensureNoReferencesOutFromQuantifiedPath(pattern) chain
+        ensureNoIllegalReferencesOut(pattern) chain
           ensureNoRepeatedRelationships(pattern) chain
           ensureNoRepeatedVarLengthRelationships(pattern)
       }
@@ -128,9 +128,8 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
       case x: PatternPartWithSelector =>
         val normalised = x.modifyElement {
           // sub-path assignment is fair game in selective path patterns, we can check it as if it was anonymous
-          case parenthesizedPath @ ParenthesizedPath(NamedPatternPart(_, patternPart), optionalWhereClause)
-            if x.isSelective =>
-            ParenthesizedPath(patternPart, optionalWhereClause)(parenthesizedPath.position)
+          case parenthesizedPath @ ParenthesizedPath(NamedPatternPart(_, _), _)
+            if x.isSelective => normalizeParenthesizedPath(parenthesizedPath)
           case element => element
         }
         check(ctx)(normalised.part) chain
@@ -346,7 +345,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
 
       case ParenthesizedPath(NamedPatternPart(variable, _), _) =>
         error("Sub-path assignment is currently not supported.", variable.position)
-      case ParenthesizedPath(patternPart, where) =>
+      case p @ ParenthesizedPath(patternPart, where) =>
         def checkContainedPatterns: SemanticCheck =
           // patternPart at this point is known to be an AnonymousPatternPart, as we have matched NamedPatternPart above
           // An AnonymousPatternPart can currently only be a ShortestPathsPatternPart or a PatternPartWithSelector.
@@ -359,9 +358,13 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
             case _ => success
           }
 
-        check(ctx)(patternPart) chain
-          checkContainedPatterns chain
-          where.foldSemanticCheck(Where.checkExpression)
+        withScopedStateWithVariablesFromRecordedScope(p) {
+          // Here we import the variables from the previously recorded scope when we did all declarations.
+          check(ctx)(patternPart) chain
+            checkContainedPatterns chain
+            where.foldSemanticCheck(Where.checkExpression) chain
+            recordCurrentScope(p) // We need to overwrite the recorded scope of p for later checks.
+        }
     }
 
   private def getTypeString(factor: PathFactor) = factor match {
@@ -575,9 +578,21 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
           declareVariable(entityBinding.group, _.expressionType(entityBinding.singleton).actual.wrapInList)
         }
 
-      case ParenthesizedPath(pattern, _) =>
-        declareVariables(ctx, pattern.element) chain
-          declarePathVariable(pattern)
+      case p @ ParenthesizedPath(pattern, _) =>
+        // During later checks, we only have access to a normalized path, thus we use it here as well to be able to lookup recorded scopes later.
+        val normalized = normalizeParenthesizedPath(p)
+
+        withScopedState {
+          // Variables from parenthesized path are exported into the parent scope, because of that we can't tell whether a variable was declared inside
+          // or outside of a given parenthesized path. By recording scopes before and after declaring variables, we can then later compute a diff to
+          // get this information back.
+          recordCurrentScope(ScopeBeforeParenthesizedPath(normalized)) chain
+            declareVariables(ctx, pattern.element) chain
+            declarePathVariable(pattern) chain
+            recordCurrentScope(normalized) chain
+            recordCurrentScope(ScopeAfterParenthesizedPath(normalized))
+        } chain
+          importValuesFromRecordedScope(normalized)
     }
 
   private def declarePathVariable(pattern: PatternPart): SemanticCheck =
@@ -612,13 +627,65 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
         }
     }
 
-  private def ensureNoReferencesOutFromQuantifiedPath(pattern: Pattern): SemanticCheck = {
-    val quantifiedPathPatterns = pattern.patternParts.flatMap(_.element.folder.findAllByClass[QuantifiedPath])
-    quantifiedPathPatterns.foldSemanticCheck { qpp => (state: SemanticState) =>
-      val qppScope = state.recordedScopes(qpp)
+  private def ensureNoIllegalReferencesOut(pattern: Pattern): SemanticCheck = {
+    val elements: Seq[PatternElement] = pattern.patternParts.flatMap { patternPart =>
+      patternPart.element.folder.treeCollect {
+        case q: QuantifiedPath    => q
+        case p: ParenthesizedPath => p
+      }
+    }
+    elements.foldSemanticCheck {
+      case q: QuantifiedPath    => ensureNoReferencesOutFromQuantifiedPath(pattern, q)
+      case p: ParenthesizedPath => ensureNoReferencesOutFromParenthesizedPath(pattern, normalizeParenthesizedPath(p))
+    }
+  }
 
-      val qppDependencies = qppScope.declarationsAndDependencies.dependencies
+  private def ensureNoReferencesOutFromQuantifiedPath(
+    pattern: Pattern,
+    quantifiedPath: QuantifiedPath
+  ): SemanticCheck = {
+    SemanticCheck.fromState { (state: SemanticState) =>
+      val scope = state.recordedScopes(quantifiedPath)
+      val dependencies = scope.declarationsAndDependencies.dependencies
 
+      ensureNoReferencesOutFromPatternElement(
+        pattern,
+        quantifiedPath,
+        dependencies,
+        patternElementErrorMessageDescription = "quantified path pattern"
+      )
+    }
+  }
+
+  private def ensureNoReferencesOutFromParenthesizedPath(
+    pattern: Pattern,
+    parenthesizedPath: ParenthesizedPath
+  ): SemanticCheck = {
+    SemanticCheck.fromState { (state: SemanticState) =>
+      val beforeScope = state.recordedScopes(ScopeBeforeParenthesizedPath(parenthesizedPath))
+      val afterScope = state.recordedScopes(ScopeAfterParenthesizedPath(parenthesizedPath))
+      val introducedDeclarations =
+        afterScope.declarationsAndDependencies.declarations -- beforeScope.declarationsAndDependencies.declarations
+
+      val finalScope = state.recordedScopes(parenthesizedPath)
+      val dependencies = finalScope.declarationsAndDependencies.dependencies -- introducedDeclarations
+
+      ensureNoReferencesOutFromPatternElement(
+        pattern,
+        parenthesizedPath,
+        dependencies,
+        patternElementErrorMessageDescription = "parenthesized path pattern"
+      )
+    }
+  }
+
+  private def ensureNoReferencesOutFromPatternElement(
+    pattern: Pattern,
+    patternElement: PatternElement,
+    dependencies: Set[SymbolUse],
+    patternElementErrorMessageDescription: String
+  ): SemanticCheck = {
+    { (state: SemanticState) =>
       // Since we don't open a new scope for a new MATCH clause,
       // this may contain declarations from previous MATCH clauses.
       val declarationsInCurrentScope = state.currentScope.declarationsAndDependencies.declarations
@@ -626,11 +693,11 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
       val variablesInPattern = pattern.patternParts.flatMap(_.allVariables).toSet
       val declarationsInPattern = variablesInPattern.map(SymbolUse(_)).filter(declarationsInCurrentScope)
 
-      val referencesFromQppToPattern = qppDependencies.intersect(declarationsInPattern).toSeq
+      val referencesFromQppToPattern = dependencies.intersect(declarationsInPattern).toSeq
       val errors = referencesFromQppToPattern.map { symbolUse =>
-        val stringifiedQpp = stringifier.patterns(qpp)
+        val stringifiedQpp = stringifier.patterns(patternElement)
         SemanticError(
-          s"""From within a quantified path pattern, one may only reference variables, that are already bound in a previous `MATCH` clause.
+          s"""From within a ${patternElementErrorMessageDescription}, one may only reference variables, that are already bound in a previous `MATCH` clause.
              |In this case, ${symbolUse.name} is defined in the same `MATCH` clause as $stringifiedQpp.""".stripMargin,
           symbolUse.asVariable.position
         )
@@ -762,6 +829,25 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
     } else {
       None
     }
+  }
+
+  private def normalizeParenthesizedPath(ppp: ParenthesizedPath): ParenthesizedPath = {
+    ppp match {
+      case parenthesizedPath @ ParenthesizedPath(NamedPatternPart(_, patternPart), optionalWhereClause) =>
+        ParenthesizedPath(patternPart, optionalWhereClause)(parenthesizedPath.position)
+      case element => element
+    }
+  }
+
+  // These are fake AST nodes that are introduced to recorded multiple scopes for the same parenthesized path object.
+  // Normally we can only record a single scope per AST node.
+
+  private case class ScopeBeforeParenthesizedPath(p: ParenthesizedPath) extends ASTNode {
+    override def position: InputPosition = p.position
+  }
+
+  private case class ScopeAfterParenthesizedPath(p: ParenthesizedPath) extends ASTNode {
+    override def position: InputPosition = p.position
   }
 }
 

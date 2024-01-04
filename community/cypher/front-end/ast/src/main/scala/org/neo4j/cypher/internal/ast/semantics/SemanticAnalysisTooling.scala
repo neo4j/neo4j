@@ -277,6 +277,11 @@ trait SemanticAnalysisTooling {
     SemanticCheckResult.success(state.recordCurrentScope(astNode))
   }
 
+  def importValuesFromRecordedScope(astNode: ASTNode): SemanticCheck = { (state: SemanticState) =>
+    val scopeToImportFrom = state.scope(astNode).get
+    SemanticCheckResult.success(state.importValuesFromScope(scopeToImportFrom))
+  }
+
   def requireFeatureSupport(msg: String, feature: SemanticFeature, position: InputPosition): SemanticCheck =
     (s: SemanticState) => {
       if (!s.features(feature))
