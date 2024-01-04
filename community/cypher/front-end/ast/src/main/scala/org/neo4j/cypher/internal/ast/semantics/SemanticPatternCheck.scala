@@ -637,6 +637,8 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
     elements.foldSemanticCheck {
       case q: QuantifiedPath    => ensureNoReferencesOutFromQuantifiedPath(pattern, q)
       case p: ParenthesizedPath => ensureNoReferencesOutFromParenthesizedPath(pattern, normalizeParenthesizedPath(p))
+      case x =>
+        throw new IllegalArgumentException(s"Expected QuantifiedPath or ParenthesizedPath, but was ${x.getClass}.")
     }
   }
 
