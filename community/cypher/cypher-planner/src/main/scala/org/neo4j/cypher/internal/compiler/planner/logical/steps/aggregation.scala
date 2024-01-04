@@ -28,8 +28,6 @@ import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Asc
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Desc
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
-import org.neo4j.cypher.internal.logical.plans.Ascending
-import org.neo4j.cypher.internal.logical.plans.Descending
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 object aggregation {
@@ -99,38 +97,30 @@ object aggregation {
       )
     } else {
       val inputProvidedOrder = context.staticComponents.planningAttributes.providedOrders(plan.id)
-      val OrderToLeverageWithAliases(orderToLeverage, aggregationOrder, newGroupingExpressionsMap) =
+      val OrderToLeverageWithAliases(orderToLeverage, newGroupingExpressionsMap, newAggregationExpressions) =
         leverageOrder(inputProvidedOrder, groupingExpressionsMap, aggregations, plan.availableSymbols)
-
-      val aggregationOrderOnVariable = aggregationOrder.collect {
-        case Asc(v: LogicalVariable, _)  => Ascending(v)
-        case Desc(v: LogicalVariable, _) => Descending(v)
-        case order                       =>
-          // NOTE: at time of writing leveragedOrder should return an aggregationOrder that is always LogicalVariable
-          throw new IllegalStateException(s"Expected expression to be LogicalVariable but was: ${order.expression}")
-      }
 
       if (orderToLeverage.isEmpty) {
         context.staticComponents.logicalPlanProducer.planAggregation(
           rewrittenPlan,
           newGroupingExpressionsMap,
-          aggregations,
+          newAggregationExpressions,
           aggregation.groupingExpressions,
           aggregation.aggregationExpressions,
           previousInterestingOrder,
           context,
-          aggregationOrderOnVariable
+          None // TODO remove
         )
       } else {
         context.staticComponents.logicalPlanProducer.planOrderedAggregation(
           rewrittenPlan,
           newGroupingExpressionsMap,
-          aggregations,
+          newAggregationExpressions,
           orderToLeverage,
           aggregation.groupingExpressions,
           aggregation.aggregationExpressions,
           context,
-          aggregationOrderOnVariable
+          None // TODO remove
         )
       }
     }

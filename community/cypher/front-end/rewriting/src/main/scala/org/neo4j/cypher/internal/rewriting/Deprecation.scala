@@ -145,7 +145,7 @@ object Deprecations {
           None,
           Some(DeprecatedTextIndexProvider(c.position))
         )
-      case f @ FunctionInvocation(namespace, FunctionName(name), _, _)
+      case f @ FunctionInvocation(namespace, FunctionName(name), _, _, _)
         if namespace.parts.isEmpty && name.equalsIgnoreCase("id") =>
         Deprecation(
           None,

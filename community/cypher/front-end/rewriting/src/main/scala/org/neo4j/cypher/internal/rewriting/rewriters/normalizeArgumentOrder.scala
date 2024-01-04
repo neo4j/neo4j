@@ -52,10 +52,10 @@ case object normalizeArgumentOrder extends StepSequencer.Step with ASTRewriterFa
   val instance: Rewriter = topDown(Rewriter.lift {
 
     // move id(n) on equals to the left
-    case predicate @ Equals(func @ FunctionInvocation(_, _, _, _), _) if isIdFunction(func) =>
+    case predicate @ Equals(func @ FunctionInvocation(_, _, _, _, _), _) if isIdFunction(func) =>
       predicate
 
-    case predicate @ Equals(lhs, rhs @ FunctionInvocation(_, _, _, _)) if isIdFunction(rhs) =>
+    case predicate @ Equals(lhs, rhs @ FunctionInvocation(_, _, _, _, _)) if isIdFunction(rhs) =>
       predicate.copy(lhs = rhs, rhs = lhs)(predicate.position)
 
     // move n.prop on equals to the left

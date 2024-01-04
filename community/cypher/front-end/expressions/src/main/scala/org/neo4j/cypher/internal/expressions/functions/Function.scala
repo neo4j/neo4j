@@ -195,8 +195,8 @@ abstract class Function extends FunctionWithName with TypeSignatures {
   def unapply(arg: Expression): Option[Expression] = {
     val (namespace, functionName) = asFunctionName(InputPosition.NONE)
     arg match {
-      case FunctionInvocation(ns, `functionName`, _, args) if ns == namespace => Some(args.head)
-      case _                                                                  => None
+      case FunctionInvocation(ns, `functionName`, _, args, _) if ns == namespace => Some(args.head)
+      case _                                                                     => None
     }
   }
 }

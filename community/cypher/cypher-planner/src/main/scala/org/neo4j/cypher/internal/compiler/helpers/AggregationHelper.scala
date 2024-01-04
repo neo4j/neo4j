@@ -52,8 +52,8 @@ object AggregationHelper {
 
   def hasInterestingOrder(function: FunctionInvocation): Boolean = {
     function match {
-      case FunctionInvocation(_, _, true, _) => true
-      case FunctionInvocation(_, FunctionName(name), _, _)
+      case FunctionInvocation(_, _, true, _, _) => true
+      case FunctionInvocation(_, FunctionName(name), _, _, _)
         if {
           val nameLower = name.toLowerCase(Locale.ROOT)
           nameLower == PercentileCont.name.toLowerCase(Locale.ROOT) ||
@@ -70,7 +70,7 @@ object AggregationHelper {
     groupingExpressions.isEmpty &&
     aggregationExpressions.size == 1 &&
     aggregationExpressions.values.exists {
-      case FunctionInvocation(_, FunctionName(name), _, _) =>
+      case FunctionInvocation(_, FunctionName(name), _, _, _) =>
         val nameLower = name.toLowerCase(Locale.ROOT)
         nameLower == Min.name.toLowerCase(Locale.ROOT) || nameLower == Max.name.toLowerCase(Locale.ROOT)
       case _ => false
@@ -116,7 +116,7 @@ object AggregationHelper {
       property: Option[Property]
     ): Option[Property] = {
       expression match {
-        case FunctionInvocation(_, _, _, Seq(expr, _*)) =>
+        case FunctionInvocation(_, _, _, Seq(expr, _*), _) =>
           // Cannot handle a function inside an aggregation
           if (expr.isInstanceOf[FunctionInvocation])
             None

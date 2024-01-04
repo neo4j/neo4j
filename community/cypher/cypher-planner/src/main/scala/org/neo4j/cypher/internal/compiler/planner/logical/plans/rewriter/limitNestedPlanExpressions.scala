@@ -64,7 +64,8 @@ case class limitNestedPlanExpressions(cardinalities: Cardinalities, otherAttribu
         Namespace(List()),
         FunctionName(Head.name),
         _,
-        IndexedSeq(npe @ NestedPlanCollectExpression(plan, _, _))
+        IndexedSeq(npe @ NestedPlanCollectExpression(plan, _, _)),
+        _
       ) if shouldInsertLimitOnTopOf(plan) =>
       val newPlan =
         planLimitOnTopOf(plan, SignedDecimalIntegerLiteral("1")(npe.position))(otherAttributes.copy(plan.id))
@@ -91,7 +92,8 @@ case class limitNestedPlanExpressions(cardinalities: Cardinalities, otherAttribu
         Namespace(List()),
         FunctionName(IsEmpty.name),
         _,
-        IndexedSeq(npe @ NestedPlanCollectExpression(plan, _, _))
+        IndexedSeq(npe @ NestedPlanCollectExpression(plan, _, _)),
+        _
       ) if shouldInsertLimitOnTopOf(plan) =>
       val newPlan =
         planLimitOnTopOf(plan, SignedDecimalIntegerLiteral("1")(npe.position))(otherAttributes.copy(plan.id))

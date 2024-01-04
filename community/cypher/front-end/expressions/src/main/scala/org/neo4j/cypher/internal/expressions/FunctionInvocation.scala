@@ -57,11 +57,17 @@ object DeterministicFunctionInvocation {
   }
 }
 
+sealed trait ArgumentOrder
+case object ArgumentUnordered extends ArgumentOrder
+case object ArgumentAsc extends ArgumentOrder
+case object ArgumentDesc extends ArgumentOrder
+
 case class FunctionInvocation(
   namespace: Namespace,
   functionName: FunctionName,
   distinct: Boolean,
-  args: IndexedSeq[Expression]
+  args: IndexedSeq[Expression],
+  order: ArgumentOrder = ArgumentUnordered
 )(val position: InputPosition) extends Expression {
   val name: String = (namespace.parts :+ functionName.name).mkString(".")
 

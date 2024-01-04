@@ -895,7 +895,8 @@ case class Match(
           Namespace(List(namespace)),
           FunctionName(functionName),
           _,
-          Seq(Property(Variable(`variable`), PropertyKeyName(name)), _, _)
+          Seq(Property(Variable(`variable`), PropertyKeyName(name)), _, _),
+          _
         ) if namespace.equalsIgnoreCase("point") && functionName.equalsIgnoreCase("withinBBox") =>
         acc => SkipChildren(acc :+ name)
       case expr: InequalityExpression =>
@@ -908,7 +909,8 @@ case class Match(
                   Namespace(List(namespace)),
                   FunctionName(functionName),
                   _,
-                  Seq(Property(Variable(id), PropertyKeyName(name)), _)
+                  Seq(Property(Variable(id), PropertyKeyName(name)), _),
+                  _
                 )
                 if id == variable && namespace.equalsIgnoreCase("point") && functionName.equalsIgnoreCase("distance") =>
                 acc :+ name

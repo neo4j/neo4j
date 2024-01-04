@@ -160,7 +160,8 @@ class StatisticsBackedCardinalityModel(
             Namespace(Seq()),
             FunctionName("range"),
             _,
-            Seq(from: IntegerLiteral, to: IntegerLiteral)
+            Seq(from: IntegerLiteral, to: IntegerLiteral),
+            _
           ) =>
           val diff = to.value - from.value + 1
           Multiplier(Math.max(0, diff))
@@ -168,7 +169,8 @@ class StatisticsBackedCardinalityModel(
             Namespace(Seq()),
             FunctionName("range"),
             _,
-            Seq(from: IntegerLiteral, to: IntegerLiteral, step: IntegerLiteral)
+            Seq(from: IntegerLiteral, to: IntegerLiteral, step: IntegerLiteral),
+            _
           ) =>
           val diff = to.value - from.value
           val steps = diff / step.value + 1

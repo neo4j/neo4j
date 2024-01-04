@@ -20,6 +20,8 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.helpers.AggregationHelper
+import org.neo4j.cypher.internal.expressions.ArgumentAsc
+import org.neo4j.cypher.internal.expressions.ArgumentDesc
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.LogicalVariable
@@ -33,8 +35,8 @@ object leverageOrder {
 
   final case class OrderToLeverageWithAliases(
     orderToLeverage: Seq[Expression],
-    aggregationOrder: Option[ColumnOrder],
-    groupingExpressionsMap: Map[LogicalVariable, Expression]
+    groupingExpressionsMap: Map[LogicalVariable, Expression],
+    aggregationExpressionsMap: Map[LogicalVariable, Expression]
   )
 
   /**
@@ -50,7 +52,7 @@ object leverageOrder {
   def apply(
     inputProvidedOrder: ProvidedOrder,
     groupingExpressionsMap: Map[LogicalVariable, Expression],
-    aggregations: Map[LogicalVariable, Expression],
+    aggregationExpressionsMap: Map[LogicalVariable, Expression],
     availableSymbols: Set[LogicalVariable]
   ): OrderToLeverageWithAliases = {
     // Collect aliases for all grouping expressions which project a variable that is already an available symbol
@@ -65,7 +67,7 @@ object leverageOrder {
       case (k, expr)                   => (k, aliasMap.getOrElse(expr, expr))
     }
 
-    val (orderToLeverage, aggregationOrder) = {
+    val (orderToLeverage, newAggregationExpressionsMap) = {
 
       val aliasesForProvidedOrder = {
         val newGroupingVariablesAliases = newGroupingExpressionsMap.collect {
@@ -80,17 +82,17 @@ object leverageOrder {
         case c @ Desc(expression, _) => c.copy(aliasesForProvidedOrder.getOrElse(expression, expression))
       }
 
-      providedOrderPrefix(aliasedInputProvidedOrder, newGroupingExpressionsMap.values.toSet, aggregations.values)
+      providedOrderPrefix(aliasedInputProvidedOrder, newGroupingExpressionsMap.values.toSet, aggregationExpressionsMap)
     }
 
-    OrderToLeverageWithAliases(orderToLeverage, aggregationOrder, newGroupingExpressionsMap)
+    OrderToLeverageWithAliases(orderToLeverage, newGroupingExpressionsMap, newAggregationExpressionsMap)
   }
 
   private def providedOrderPrefix(
     inputProvidedOrder: ProvidedOrder,
     groupingExpressions: Set[Expression],
-    aggregations: Iterable[Expression]
-  ): (Seq[Expression], Option[ColumnOrder]) = {
+    aggregationExpressionsMap: Map[LogicalVariable, Expression]
+  ): (Seq[Expression], Map[LogicalVariable, Expression]) = {
     var aggregationOrderCandidate: Option[ColumnOrder] = None
     // We use the instances of expressions from the groupingExpressions (instead of the instance of expressions from the ProvidedOrder).
     // This is important because some rewriters will rewrite expressions based on reference equality
@@ -107,18 +109,16 @@ object leverageOrder {
           false
       }.flatMap(_._2)
 
-    // NOTE: currently the expression to aggregate is always at offset 0, but checking them all for future proofing
-    val aggregationArgs = aggregations.collect {
-      case f: FunctionInvocation if AggregationHelper.hasInterestingOrder(f) => f.args
-    }.flatten
-      .filter(_.isInstanceOf[LogicalVariable])
+    val newAggregationExpressionsMap = aggregationExpressionsMap.map {
+      case (v, f: FunctionInvocation) if AggregationHelper.hasInterestingOrder(f) =>
+        aggregationOrderCandidate.find(_.expression == f.args(0)) match {
+          case Some(_: Asc)  => v -> f.copy(order = ArgumentAsc)(f.position)
+          case Some(_: Desc) => v -> f.copy(order = ArgumentDesc)(f.position)
+          case None          => v -> f
+        }
+      case (v, e) => v -> e
+    }
 
-    val aggregationOrder = aggregationOrderCandidate.collect(order =>
-      (order, aggregationArgs.find(_ == order.expression)) match {
-        case (asc: Asc, Some(e))   => asc.copy(expression = e)
-        case (desc: Desc, Some(e)) => desc.copy(expression = e)
-      }
-    )
-    (groupingOrderPrefix, aggregationOrder)
+    (groupingOrderPrefix, newAggregationExpressionsMap)
   }
 }
