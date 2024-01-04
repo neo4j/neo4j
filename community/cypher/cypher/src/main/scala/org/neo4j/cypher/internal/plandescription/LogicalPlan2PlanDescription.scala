@@ -1609,7 +1609,7 @@ case class LogicalPlan2PlanDescription(
           id = id,
           name = "StatefulShortestPath",
           children = children,
-          arguments = Seq(Details(asPrettyString.raw(solvedExpressionString))),
+          arguments = Seq(Details(asPrettyString.solvedExpressionString(solvedExpressionString))),
           variables = variables,
           withRawCardinalities = withRawCardinalities,
           withDistinctness = withDistinctness

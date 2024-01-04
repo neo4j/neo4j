@@ -5536,7 +5536,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   }
 
   test("StatefulShortestPath") {
-    val solvedExpressionStr = "SHORTEST 5 PATHS (a)-->*(b)"
+    val solvedExpressionStr = "SHORTEST 5 PATHS (a)-[`  UNNAMED0`]->*(`  b@45`)"
     val nfa = {
       val builder = new NFABuilder(varFor("a"))
       builder
@@ -5567,7 +5567,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         "StatefulShortestPath",
         SingleChild(lhsPD),
         Seq(details(
-          solvedExpressionStr
+          "SHORTEST 5 PATHS (a)-[`anon_0`]->*(`b`)"
         )),
         Set("a")
       )
