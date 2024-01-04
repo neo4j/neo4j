@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.schema.vector;
 
-import java.util.Locale;
-import java.util.Set;
 import org.neo4j.kernel.api.vector.VectorCandidate;
 import org.neo4j.kernel.api.vector.VectorSimilarityFunction;
 
@@ -136,16 +134,65 @@ public class VectorSimilarityFunctions {
         }
     };
 
-    public static final Set<VectorSimilarityFunction> SUPPORTED = Set.of(EUCLIDEAN, SIMPLE_COSINE);
+    public static final VectorSimilarityFunction L2_NORM_COSINE = new LuceneVectorSimilarityFunction() {
 
-    public static VectorSimilarityFunction fromName(String name) {
-        final var normalizedName = name.toUpperCase(Locale.ROOT);
-        for (final var similarityFunction : SUPPORTED) {
-            if (similarityFunction.name().equals(normalizedName)) {
-                return similarityFunction;
-            }
+        @Override
+        public String name() {
+            return "COSINE";
         }
-        throw new IllegalArgumentException(
-                "'%s' is an unsupported vector similarity function. Supported: %s".formatted(name, SUPPORTED));
-    }
+
+        @Override
+        public String toString() {
+            return LuceneVectorSimilarityFunction.class.getSimpleName() + ": L2_NORM_COSINE";
+        }
+
+        @Override
+        public org.apache.lucene.index.VectorSimilarityFunction toLucene() {
+            return org.apache.lucene.index.VectorSimilarityFunction.DOT_PRODUCT;
+        }
+
+        @Override
+        public float[] maybeToValidVector(VectorCandidate candidate) {
+            final int dimensions;
+            if (candidate == null || (dimensions = candidate.dimensions()) == 0) {
+                return null;
+            }
+
+            double square = 0.0;
+            for (int i = 0; i < dimensions; i++) {
+                final var element = candidate.doubleElement(i);
+                if (!Double.isFinite(element)) {
+                    return null;
+                }
+                square += element * element;
+            }
+
+            final double scale;
+            if (square <= 0.0 || !Double.isFinite(square) || !Double.isFinite(scale = 1.0 / Math.sqrt(square))) {
+                return null;
+            }
+
+            final var vector = new float[dimensions];
+            for (int i = 0; i < dimensions; i++) {
+                final var element = (float) (candidate.doubleElement(i) * scale);
+                if (!Float.isFinite(element)) {
+                    return null;
+                }
+                vector[i] = element;
+            }
+
+            return vector;
+        }
+
+        @Override
+        public float[] toValidVector(VectorCandidate candidate) {
+            final var vector = maybeToValidVector(candidate);
+            if (vector == null) {
+                throw new IllegalArgumentException(
+                        "Vector must only contain finite values, and have positive and finite l2-norm. Provided: "
+                                + candidate);
+            }
+            return vector;
+        }
+    };
 }
