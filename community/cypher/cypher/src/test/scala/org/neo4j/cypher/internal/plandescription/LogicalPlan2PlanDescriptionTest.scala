@@ -98,6 +98,7 @@ import org.neo4j.cypher.internal.ast.WriteAction
 import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
+import org.neo4j.cypher.internal.expressions.ArgumentAsc
 import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.Equals
@@ -4706,6 +4707,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       FunctionInvocation(FunctionName(Count.name)(pos), distinct = false, IndexedSeq(varFor("c")))(pos)
     val collectDistinctFunction =
       FunctionInvocation(FunctionName(Collect.name)(pos), distinct = true, IndexedSeq(varFor("c")))(pos)
+    val orderedCollectDistinctFunction =
+      FunctionInvocation(FunctionName(Collect.name)(pos), distinct = true, IndexedSeq(varFor("c")), ArgumentAsc)(pos)
 
     // Aggregation 1 grouping, 1 aggregating
     assertGood(
@@ -4737,6 +4740,24 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         "EagerAggregation",
         SingleChild(lhsPD),
         Seq(details("a, c AS b, count(c) AS `count(c)`, collect(DISTINCT c) AS collect")),
+        Set("a", "b", "`count(c)`", "collect")
+      )
+    )
+
+    assertGood(
+      attach(
+        Aggregation(
+          lhsLP,
+          Map(varFor("a") -> varFor("a"), varFor("b") -> varFor("c")),
+          Map(varFor("count(c)") -> countFunction, varFor("collect") -> orderedCollectDistinctFunction)
+        ),
+        1.3
+      ),
+      planDescription(
+        id,
+        "EagerAggregation",
+        SingleChild(lhsPD),
+        Seq(details("a, c AS b, count(c) AS `count(c)`, collect(ASC DISTINCT c) AS collect")),
         Set("a", "b", "`count(c)`", "collect")
       )
     )
@@ -4831,6 +4852,25 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         "OrderedAggregation",
         SingleChild(lhsPD),
         Seq(details("d, a, c AS b, collect(DISTINCT c) AS `collect(DISTINCT c)`")),
+        Set("a", "b", "d", "`collect(DISTINCT c)`")
+      )
+    )
+
+    assertGood(
+      attach(
+        OrderedAggregation(
+          lhsLP,
+          Map(varFor("a") -> varFor("a"), varFor("b") -> varFor("c"), varFor("d") -> varFor("d")),
+          Map(varFor("collect(DISTINCT c)") -> orderedCollectDistinctFunction),
+          Seq(varFor("d"), varFor("a"))
+        ),
+        1.3
+      ),
+      planDescription(
+        id,
+        "OrderedAggregation",
+        SingleChild(lhsPD),
+        Seq(details("d, a, c AS b, collect(ASC DISTINCT c) AS `collect(DISTINCT c)`")),
         Set("a", "b", "d", "`collect(DISTINCT c)`")
       )
     )

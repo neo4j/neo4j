@@ -42,6 +42,14 @@ object FunctionInvocation {
     args: IndexedSeq[Expression]
   )(position: InputPosition): FunctionInvocation =
     FunctionInvocation(Namespace()(position), functionName, distinct, args)(position)
+
+  def apply(
+    functionName: FunctionName,
+    distinct: Boolean,
+    args: IndexedSeq[Expression],
+    order: ArgumentOrder
+  )(position: InputPosition): FunctionInvocation =
+    FunctionInvocation(Namespace()(position), functionName, distinct, args, order)(position)
 }
 
 /**
