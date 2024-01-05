@@ -89,6 +89,11 @@ public class TokenIndexImporter implements IndexImporter {
             }
 
             @Override
+            public void yield() {
+                actual.yield();
+            }
+
+            @Override
             public void close() throws IOException {
                 try {
                     actual.close();

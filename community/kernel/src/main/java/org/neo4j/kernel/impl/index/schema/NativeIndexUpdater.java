@@ -75,6 +75,11 @@ class NativeIndexUpdater<KEY extends NativeIndexKey<KEY>> implements IndexUpdate
         }
     }
 
+    @Override
+    public void yield() {
+        writer.yield();
+    }
+
     static <KEY extends NativeIndexKey<KEY>> void processUpdate(
             KEY treeKey,
             ValueIndexEntryUpdate<?> update,

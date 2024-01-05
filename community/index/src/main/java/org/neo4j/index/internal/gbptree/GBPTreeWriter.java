@@ -396,9 +396,18 @@ class GBPTreeWriter<K, V> implements Writer<K, V> {
         if (coordination.checkForceReset()) {
             // After pessimistic (and at some frequency for parallel writer) the tree is pretty much locked tight
             // so force a reset for the next operation
-            treeLogic.reset();
-            coordination.reset();
+            reset();
         }
+    }
+
+    private void reset() {
+        treeLogic.reset();
+        coordination.reset();
+    }
+
+    @Override
+    public void yield() {
+        reset();
     }
 
     private void handleStructureChanges(CursorContext cursorContext) throws IOException {

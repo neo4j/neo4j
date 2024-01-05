@@ -162,6 +162,11 @@ class TokenIndexUpdater implements IndexUpdater {
         checkNextTokenId(tokenUpdate.values());
     }
 
+    @Override
+    public void yield() {
+        writer.yield();
+    }
+
     private void checkNextTokenId(int[] tokens) {
         if (tokens.length > 0 && tokens[0] != -1) {
             lowestTokenId = Math.min(lowestTokenId, tokens[0]);

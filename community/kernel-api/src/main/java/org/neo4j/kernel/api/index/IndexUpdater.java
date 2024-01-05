@@ -36,6 +36,8 @@ import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 public interface IndexUpdater extends AutoCloseable {
     void process(IndexEntryUpdate<?> update) throws IndexEntryConflictException;
 
+    default void yield() {}
+
     default <INDEX_KEY extends SchemaDescriptorSupplier> ValueIndexEntryUpdate<INDEX_KEY> asValueUpdate(
             IndexEntryUpdate<INDEX_KEY> update) {
         if (update instanceof ValueIndexEntryUpdate) {

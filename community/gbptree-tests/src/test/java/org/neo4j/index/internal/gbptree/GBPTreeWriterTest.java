@@ -39,6 +39,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
@@ -188,6 +189,51 @@ class GBPTreeWriterTest {
         assertThat(cursorTracer.hits()).isEqualTo(1);
         assertThat(cursorTracer.unpins()).isEqualTo(1);
         assertThat(cursorTracer.faults()).isEqualTo(0);
+    }
+
+    @Test
+    void shouldYieldParallelWriterSoThatOthersCanProgressUnhindered() throws Exception {
+        // given
+        try (var tree = new GBPTreeBuilder<>(pageCache, fileSystem, directory.file("index"), layout).build();
+                var t2 = new OtherThreadExecutor("T2")) {
+            int numInitialWrites = 10;
+            int numAdditionalWrites = 1_000;
+            int numFinalWrites = 5;
+            try (var writer1 = tree.writer(NULL_CONTEXT)) {
+                for (int i = 0; i < numInitialWrites; i++) {
+                    writer1.put(new MutableLong(i), new MutableLong(i));
+                }
+                writer1.yield();
+
+                // when writer in another thread adds data, enough to for sure require pessimistic mode (split root)
+                t2.execute(() -> {
+                    try (var writer2 = tree.writer(NULL_CONTEXT)) {
+                        for (int i = 0; i < numAdditionalWrites; i++) {
+                            int value = numInitialWrites + i;
+                            writer2.put(new MutableLong(value), new MutableLong(value));
+                        }
+                    }
+                    return null;
+                });
+
+                // and when using the first writer to add even more data
+                for (int i = 0; i < numFinalWrites; i++) {
+                    int value = numInitialWrites + numAdditionalWrites + i;
+                    writer1.put(new MutableLong(value), new MutableLong(value));
+                }
+            }
+
+            // then all writes should complete and all data should be there
+            int numWrites = numInitialWrites + numAdditionalWrites + numFinalWrites;
+            try (var seek = tree.seek(new MutableLong(0), new MutableLong(numWrites), NULL_CONTEXT)) {
+                for (long expected = 0; expected < numWrites; expected++) {
+                    assertThat(seek.next()).isTrue();
+                    assertThat(seek.key().longValue()).isEqualTo(expected);
+                    assertThat(seek.value().longValue()).isEqualTo(expected);
+                }
+                assertThat(seek.next()).isFalse();
+            }
+        }
     }
 
     private static void assertZeroCursor(CursorContext cursorContext) {

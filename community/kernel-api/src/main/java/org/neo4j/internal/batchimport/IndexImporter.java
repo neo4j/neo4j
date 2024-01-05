@@ -49,6 +49,9 @@ public interface IndexImporter extends Closeable {
         public Writer writer(boolean parallel) {
             return this;
         }
+
+        @Override
+        public void yield() {}
     }
 
     interface Writer extends Closeable {
@@ -66,5 +69,7 @@ public interface IndexImporter extends Closeable {
          * @param tokens the tokens associated with the entity (labels/relationship types)
          */
         void remove(long entity, int[] tokens);
+
+        void yield();
     }
 }

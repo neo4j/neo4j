@@ -42,6 +42,15 @@ public interface Writer<KEY, VALUE> extends Closeable {
     void put(KEY key, VALUE value);
 
     /**
+     * A {@link Writer} can preserve state and internal latches between calls to e.g.
+     * {@link #put(Object, Object)} or {@link #merge(Object, Object, ValueMerger)} for better performance.
+     * If the user of a writer knows that the next write call will not be immediate,
+     * it may be beneficial to release such latches and state so that other parallel {@link Writer writers}
+     * can progress unhindered. This method will release any such state and latches.
+     */
+    void yield();
+
+    /**
      * If the {@code key} doesn't already exist in the index the {@code key} will be added and the {@code value}
      * associated with it.
      * If the {@code key} already exists then its existing {@code value} will be merged with the given {@code value}, using the {@link ValueMerger}.
