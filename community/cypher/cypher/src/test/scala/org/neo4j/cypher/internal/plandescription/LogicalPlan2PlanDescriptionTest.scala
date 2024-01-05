@@ -4689,14 +4689,14 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   test("Aggregation") {
     // Aggregation 1 grouping, 0 aggregating
     assertGood(
-      attach(Aggregation(lhsLP, Map(varFor("a") -> varFor("a")), Map.empty, None), 17.5),
+      attach(Aggregation(lhsLP, Map(varFor("a") -> varFor("a")), Map.empty), 17.5),
       planDescription(id, "EagerAggregation", SingleChild(lhsPD), Seq(details("a")), Set("a"))
     )
 
     // Aggregation 2 grouping, 0 aggregating
     assertGood(
       attach(
-        Aggregation(lhsLP, Map(varFor("a") -> varFor("a"), varFor("b") -> varFor("c")), Map.empty, None),
+        Aggregation(lhsLP, Map(varFor("a") -> varFor("a"), varFor("b") -> varFor("c")), Map.empty),
         17.5
       ),
       planDescription(id, "EagerAggregation", SingleChild(lhsPD), Seq(details("a, c AS b")), Set("a", "b"))
@@ -4710,7 +4710,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     // Aggregation 1 grouping, 1 aggregating
     assertGood(
       attach(
-        Aggregation(lhsLP, Map(varFor("a") -> varFor("a")), Map(varFor("count") -> countFunction), None),
+        Aggregation(lhsLP, Map(varFor("a") -> varFor("a")), Map(varFor("count") -> countFunction)),
         1.3
       ),
       planDescription(
@@ -4728,8 +4728,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         Aggregation(
           lhsLP,
           Map(varFor("a") -> varFor("a"), varFor("b") -> varFor("c")),
-          Map(varFor("count(c)") -> countFunction, varFor("collect") -> collectDistinctFunction),
-          None
+          Map(varFor("count(c)") -> countFunction, varFor("collect") -> collectDistinctFunction)
         ),
         1.3
       ),
@@ -4776,7 +4775,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     // OrderedAggregation 1 grouping, 0 aggregating, 1 sorted
     assertGood(
       attach(
-        OrderedAggregation(lhsLP, Map(varFor("a") -> varFor("a")), Map.empty, Seq(varFor("a")), None),
+        OrderedAggregation(lhsLP, Map(varFor("a") -> varFor("a")), Map.empty, Seq(varFor("a"))),
         17.5
       ),
       planDescription(id, "OrderedAggregation", SingleChild(lhsPD), Seq(details("a")), Set("a"))
@@ -4789,8 +4788,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           lhsLP,
           Map(varFor("a") -> varFor("a"), varFor("b") -> varFor("c"), varFor("d") -> varFor("d")),
           Map.empty,
-          Seq(varFor("d"), varFor("a")),
-          None
+          Seq(varFor("d"), varFor("a"))
         ),
         17.5
       ),
@@ -4804,8 +4802,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           lhsLP,
           Map(varFor("a") -> varFor("a"), varFor("b") -> varFor("c"), varFor("d") -> varFor("d")),
           Map(varFor("count") -> countFunction),
-          Seq(varFor("d"), varFor("a")),
-          None
+          Seq(varFor("d"), varFor("a"))
         ),
         1.3
       ),
@@ -4825,8 +4822,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           lhsLP,
           Map(varFor("a") -> varFor("a"), varFor("b") -> varFor("c"), varFor("d") -> varFor("d")),
           Map(varFor("collect(DISTINCT c)") -> collectDistinctFunction),
-          Seq(varFor("d"), varFor("a")),
-          None
+          Seq(varFor("d"), varFor("a"))
         ),
         1.3
       ),
@@ -4846,8 +4842,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           lhsLP,
           Map(varFor("a") -> varFor("a"), varFor("b") -> varFor("c"), varFor("d") -> varFor("d")),
           Map(varFor("collect(DISTINCT c)") -> collectDistinctFunction),
-          Seq(varFor("d"), varFor("c")),
-          None
+          Seq(varFor("d"), varFor("c"))
         ),
         1.3
       ),

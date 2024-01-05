@@ -669,8 +669,7 @@ abstract class LogicalLeafPlanExtension(idGen: IdGen) extends LogicalLeafPlan(id
 case class Aggregation(
   override val source: LogicalPlan,
   override val groupingExpressions: Map[LogicalVariable, Expression],
-  override val aggregationExpressions: Map[LogicalVariable, Expression],
-  aggregationOrder: Option[ColumnOrder]
+  override val aggregationExpressions: Map[LogicalVariable, Expression]
 )(implicit idGen: IdGen)
     extends LogicalUnaryPlan(idGen) with EagerLogicalPlan with AggregatingPlan with ProjectingPlan {
 
@@ -3041,8 +3040,7 @@ case class OrderedAggregation(
   override val source: LogicalPlan,
   override val groupingExpressions: Map[LogicalVariable, Expression],
   override val aggregationExpressions: Map[LogicalVariable, Expression],
-  override val orderToLeverage: Seq[Expression],
-  aggregationOrder: Option[ColumnOrder]
+  override val orderToLeverage: Seq[Expression]
 )(implicit idGen: IdGen)
     extends LogicalUnaryPlan(idGen) with AggregatingPlan with ProjectingPlan {
 

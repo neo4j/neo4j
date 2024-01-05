@@ -385,7 +385,7 @@ class SlotAllocationArgumentsTest extends CypherFunSuite with LogicalPlanningTes
     val leaf2 = leaf()
     val rhs = pipe(leaf2, 2, 2, "rhsLong", "rhsRef")
     val aggregation =
-      Aggregation(rhs, Map(varFor("rhsLong0") -> varFor("rhsLong0")), Map(varFor("rhsRef1") -> varFor("rhsRef1")), None)
+      Aggregation(rhs, Map(varFor("rhsLong0") -> varFor("rhsLong0")), Map(varFor("rhsRef1") -> varFor("rhsRef1")))
     val plan = applyRight(lhs, aggregation)
 
     // when

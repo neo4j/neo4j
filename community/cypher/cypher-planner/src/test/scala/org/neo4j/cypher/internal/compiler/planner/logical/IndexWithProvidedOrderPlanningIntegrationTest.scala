@@ -1307,8 +1307,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           ),
           Map(v"a.prop" -> cachedNodePropFromStore("a", "prop")),
           Map(v"count(b)" -> count(v"b")),
-          Seq(cachedNodePropFromStore("a", "prop")),
-          None
+          Seq(cachedNodePropFromStore("a", "prop"))
         )
       )
     }
@@ -3772,8 +3771,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             supportPartitionedScan = true
           ),
           Map.empty,
-          Map(v"$functionName(n.prop)" -> function(functionName, cachedNodeProp("n", "prop"))),
-          None
+          Map(v"$functionName(n.prop)" -> function(functionName, cachedNodeProp("n", "prop")))
         )
       )
     }
@@ -3906,8 +3904,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           Map(
             v"$functionName(n.prop)" -> function(functionName, cachedNodeProp("n", "prop")),
             v"count(n.prop)" -> count(cachedNodeProp("n", "prop"))
-          ),
-          None
+          )
         )
       )
     }

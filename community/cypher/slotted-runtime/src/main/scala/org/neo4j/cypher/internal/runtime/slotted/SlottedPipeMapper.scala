@@ -1525,7 +1525,7 @@ class SlottedPipeMapper(
         val offset = slots.getReferenceOffsetFor(name)
         UnwindSlottedPipe(source, convertExpressions(expression), offset, slots)(id)
 
-      case Aggregation(_, groupingExpressions, aggregationExpression, aggregationOrder) =>
+      case Aggregation(_, groupingExpressions, aggregationExpression) =>
         val aggregation = aggregationExpression.map {
           case (key, expression) =>
             slots.getReferenceOffsetFor(key) -> convertExpressions(expression).asInstanceOf[AggregationExpression]
@@ -1578,7 +1578,7 @@ class SlottedPipeMapper(
 
         EagerAggregationPipe(source, tableFactory)(id)
 
-      case OrderedAggregation(_, groupingExpressions, aggregationExpression, orderToLeverage, aggregationOrder) =>
+      case OrderedAggregation(_, groupingExpressions, aggregationExpression, orderToLeverage) =>
         val aggregation = aggregationExpression.map {
           case (key, expression) =>
             slots.getReferenceOffsetFor(key) -> convertExpressions(expression).asInstanceOf[AggregationExpression]

@@ -108,8 +108,7 @@ object aggregation {
           aggregation.groupingExpressions,
           aggregation.aggregationExpressions,
           previousInterestingOrder,
-          context,
-          None // TODO remove
+          context
         )
       } else {
         context.staticComponents.logicalPlanProducer.planOrderedAggregation(
@@ -119,8 +118,7 @@ object aggregation {
           orderToLeverage,
           aggregation.groupingExpressions,
           aggregation.aggregationExpressions,
-          context,
-          None // TODO remove
+          context
         )
       }
     }

@@ -1206,8 +1206,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
           Map.empty[String, Expression],
           Map(
             "m" -> percentiles(varFor("n"), Seq(0.5), Seq("p1"), Seq(true), distinct)
-          ),
-          None
+          )
         )
         .projection("x.num as n")
         .allNodeScan("x")
@@ -1238,8 +1237,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
           Map.empty[String, Expression],
           Map(
             "m" -> percentiles(varFor("n"), Seq(0.5), Seq("p1"), Seq(false), distinct)
-          ),
-          None
+          )
         )
         .projection("x.num as n")
         .allNodeScan("x")
@@ -1270,8 +1268,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
           Map.empty[String, Expression],
           Map(
             "m" -> percentiles(varFor("n"), Seq(0.5, 0.5), Seq("p1", "p2"), Seq(true, true), distinct)
-          ),
-          None
+          )
         )
         .projection("x.num as n")
         .allNodeScan("x")
@@ -1302,8 +1299,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
           Map.empty[String, Expression],
           Map(
             "m" -> percentiles(varFor("n"), Seq(0.5, 0.5), Seq("p1", "p2"), Seq(false, false), distinct)
-          ),
-          None
+          )
         )
         .projection("x.num as n")
         .allNodeScan("x")
@@ -1334,8 +1330,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
           Map.empty[String, Expression],
           Map(
             "m" -> percentiles(varFor("n"), Seq(0.5, 0.5), Seq("p1", "p2"), Seq(true, false), distinct)
-          ),
-          None
+          )
         )
         .projection("x.num as n")
         .allNodeScan("x")
@@ -1366,8 +1361,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
           Map.empty[String, Expression],
           Map(
             "m" -> percentiles(prop("n", "num"), Seq(0.5, 0.5), Seq("p1", "p2"), Seq(true, false), distinct)
-          ),
-          None
+          )
         )
         .allNodeScan("n")
         .build()
@@ -1389,8 +1383,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
           Map.empty[String, Expression],
           Map(
             "m" -> percentiles(prop("n", "num"), Seq(0.5, 0.5), Seq("p1", "p2"), Seq(true, false), distinct)
-          ),
-          None
+          )
         )
         .allNodeScan("n")
         .build()
@@ -1420,8 +1413,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
           Map.empty[String, Expression],
           Map(
             "m" -> percentiles(prop("n", "num"), Seq(0.5, 0.5), Seq("p1", "p2"), Seq(true, false), distinct)
-          ),
-          None
+          )
         )
         .allNodeScan("n")
         .build()

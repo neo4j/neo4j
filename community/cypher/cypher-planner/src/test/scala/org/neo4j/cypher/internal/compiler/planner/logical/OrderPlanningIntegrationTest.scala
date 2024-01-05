@@ -1716,8 +1716,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
           Expand(Expand(_: Sort, _, _, _, _, _, _), _, _, _, _, _, _),
           _,
           _,
-          Seq(Variable("a.prop")),
-          None
+          Seq(Variable("a.prop"))
         ) => ()
     }
   }
@@ -1737,8 +1736,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
           Expand(Expand(_: Sort, _, _, _, _, _, _), _, _, _, _, _, _),
           _,
           _,
-          Seq(Variable("x")),
-          _
+          Seq(Variable("x"))
         ) =>
         ()
     }
@@ -1759,8 +1757,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
           Expand(Expand(_: Sort, _, _, _, _, _, _), _, _, _, _, _, _),
           _,
           _,
-          Seq(Variable("x")),
-          _
+          Seq(Variable("x"))
         ) =>
         ()
     }
@@ -1781,8 +1778,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
           Expand(Expand(_: Sort, _, _, _, _, _, _), _, _, _, _, _, _),
           _,
           _,
-          Seq(Variable("x")),
-          _
+          Seq(Variable("x"))
         ) =>
         ()
     }
@@ -1804,8 +1800,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
           Expand(Expand(_: Sort, _, _, _, _, _, _), _, _, _, _, _, _),
           _,
           _,
-          Seq(Variable("x")),
-          _
+          Seq(Variable("x"))
         ) =>
         ()
     }
@@ -1826,8 +1821,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
           Expand(Expand(_: Sort, _, _, _, _, _, _), _, _, _, _, _, _),
           _,
           _,
-          Seq(Variable("p1")),
-          _
+          Seq(Variable("p1"))
         ) =>
         ()
     }
@@ -1867,8 +1861,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
           Expand(Sort(Projection(_: Expand, _), _), _, _, _, _, LogicalVariable("wideRel"), _),
           _,
           _,
-          Seq(Variable("p1")),
-          _
+          Seq(Variable("p1"))
         ) => ()
     }
   }

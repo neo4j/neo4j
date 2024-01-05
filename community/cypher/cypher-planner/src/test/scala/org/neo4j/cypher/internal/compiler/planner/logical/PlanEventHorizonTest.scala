@@ -281,7 +281,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
         PlanEventHorizon.planHorizonForPlan(pq, inputPlan, None, context, InterestingOrderConfig(pq.interestingOrder))
 
       // Then
-      val aggregation = Aggregation(inputPlan, grouping, aggregating, None)
+      val aggregation = Aggregation(inputPlan, grouping, aggregating)
       val sorted = Sort(aggregation, Seq(Ascending(v"m"), Ascending(v"o")))
       result should equal(sorted)
     }

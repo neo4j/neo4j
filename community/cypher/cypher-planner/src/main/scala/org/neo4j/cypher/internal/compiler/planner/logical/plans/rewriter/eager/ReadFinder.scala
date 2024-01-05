@@ -807,7 +807,7 @@ object ReadFinder {
         Pay special attention to leaf plans and plans that reference nodes/relationship by name (a String) instead of through a Variable.
         When in doubt, ask the planner team.
        */
-      case Aggregation(_, _, _, _) |
+      case Aggregation(_, _, _) |
         AntiSemiApply(_, _) |
         Apply(_, _) |
         CacheProperties(_, _) |
@@ -830,7 +830,7 @@ object ReadFinder {
         LetSemiApply(_, _, _) |
         Limit(_, _) |
         LoadCSV(_, _, _, _, _, _, _) |
-        OrderedAggregation(_, _, _, _, _) |
+        OrderedAggregation(_, _, _, _) |
         OrderedDistinct(_, _, _) |
         ProcedureCall(_, _) |
         SelectOrAntiSemiApply(_, _, _) |

@@ -461,7 +461,7 @@ class LogicalPlanGenerator(
     WithState(aggregatingExpressions, state) <-
       projectionList(state, source.availableSymbols.toSeq, _.aggregatingExpression, minSize = 1)
   } yield {
-    val plan = Aggregation(source, groupingExpressions, aggregatingExpressions, None)(state.idGen)
+    val plan = Aggregation(source, groupingExpressions, aggregatingExpressions)(state.idGen)
     annotate(plan, state)
   }
 

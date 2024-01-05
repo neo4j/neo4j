@@ -31,6 +31,9 @@ import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.AndsReorderable
 import org.neo4j.cypher.internal.expressions.AnyIterablePredicate
+import org.neo4j.cypher.internal.expressions.ArgumentAsc
+import org.neo4j.cypher.internal.expressions.ArgumentDesc
+import org.neo4j.cypher.internal.expressions.ArgumentUnordered
 import org.neo4j.cypher.internal.expressions.AssertIsNode
 import org.neo4j.cypher.internal.expressions.BinaryOperatorExpression
 import org.neo4j.cypher.internal.expressions.CaseExpression
@@ -196,7 +199,12 @@ private class DefaultExpressionStringifier(
         val np = if (namespace.parts.isEmpty) "" else "."
         val ds = if (distinct) "DISTINCT " else ""
         val as = args.map(inner(ast)).mkString(", ")
-        s"$ns$np${apply(functionName)}($ds$as)"
+        val o = order match {
+          case ArgumentAsc       => "ASC "
+          case ArgumentDesc      => "DESC "
+          case ArgumentUnordered => ""
+        }
+        s"$ns$np${apply(functionName)}($o$ds$as)"
 
       case functionInvocation: UserDefinedFunctionInvocation =>
         apply(functionInvocation.asUnresolvedFunction)

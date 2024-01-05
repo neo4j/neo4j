@@ -326,7 +326,7 @@ class InterpretedPipeMapperIT extends CypherFunSuite with AstConstructionTestSup
     when(planContext.getOptPropertyKeyId("prop")).thenReturn(Some(token))
     val allNodesScan = AllNodesScan(varFor("n"), Set.empty)
     val expressions = Map[LogicalVariable, Expression](varFor("n.prop") -> prop("n", "prop"))
-    val aggregation = Aggregation(allNodesScan, expressions, Map.empty, None)
+    val aggregation = Aggregation(allNodesScan, expressions, Map.empty)
 
     // WHEN
     val pipe = build(aggregation)

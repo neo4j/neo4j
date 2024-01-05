@@ -1915,8 +1915,7 @@ case class LogicalPlanProducer(
     reportedGrouping: Map[LogicalVariable, Expression],
     reportedAggregation: Map[LogicalVariable, Expression],
     previousInterestingOrder: Option[InterestingOrder],
-    context: LogicalPlanningContext,
-    aggregationOrder: Option[ColumnOrder]
+    context: LogicalPlanningContext
   ): LogicalPlan = {
     val solved = solveds.get(left.id).asSinglePlannerQuery.updateTailOrSelf(_.withHorizon(
       AggregatingQueryProjection(groupingExpressions = reportedGrouping, aggregationExpressions = reportedAggregation)
@@ -1926,7 +1925,7 @@ case class LogicalPlanProducer(
     val trimmedAndRenamed = trimAndRenameProvidedOrder(providedOrders.get(left.id), grouping)
 
     val plan = annotate(
-      Aggregation(left, grouping, aggregation, aggregationOrder),
+      Aggregation(left, grouping, aggregation),
       solved,
       context.providedOrderFactory.providedOrder(trimmedAndRenamed, ProvidedOrder.Left),
       context
@@ -1952,8 +1951,7 @@ case class LogicalPlanProducer(
     orderToLeverage: Seq[Expression],
     reportedGrouping: Map[LogicalVariable, Expression],
     reportedAggregation: Map[LogicalVariable, Expression],
-    context: LogicalPlanningContext,
-    aggregationOrder: Option[ColumnOrder]
+    context: LogicalPlanningContext
   ): LogicalPlan = {
     val solved = solveds.get(left.id).asSinglePlannerQuery.updateTailOrSelf(_.withHorizon(
       AggregatingQueryProjection(groupingExpressions = reportedGrouping, aggregationExpressions = reportedAggregation)
@@ -1963,7 +1961,7 @@ case class LogicalPlanProducer(
     val trimmedAndRenamed = trimAndRenameProvidedOrder(providedOrders.get(left.id), grouping)
 
     val plan = annotate(
-      OrderedAggregation(left, grouping, aggregation, orderToLeverage, aggregationOrder),
+      OrderedAggregation(left, grouping, aggregation, orderToLeverage),
       solved,
       context.providedOrderFactory.providedOrder(trimmedAndRenamed, ProvidedOrder.Left),
       context

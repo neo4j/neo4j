@@ -472,7 +472,7 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
   }
 
   test("Aggregation without grouping") {
-    val plan = Aggregation(Argument(), Map.empty, Map.empty, None)
+    val plan = Aggregation(Argument(), Map.empty, Map.empty)
 
     val c = CardinalityCalculator.aggregationCardinality(
       plan,
@@ -484,7 +484,7 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
   }
 
   test("Aggregation with grouping") {
-    val plan = Aggregation(Argument(), Map(varFor("x") -> CountStar()(pos)), Map.empty, None)
+    val plan = Aggregation(Argument(), Map(varFor("x") -> CountStar()(pos)), Map.empty)
 
     val c = CardinalityCalculator.aggregationCardinality(
       plan,
