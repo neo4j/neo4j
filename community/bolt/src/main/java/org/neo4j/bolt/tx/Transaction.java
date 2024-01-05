@@ -73,6 +73,14 @@ public interface Transaction {
     boolean hasOpenStatement();
 
     /**
+     * Identifies whether this transaction has been terminated as a result of a failure during
+     * query execution.
+     *
+     * @return true if failed, false otherwise.
+     */
+    boolean hasFailed();
+
+    /**
      * Executes a statement within the context of this transaction.
      *
      * @param statement a cypher statement.

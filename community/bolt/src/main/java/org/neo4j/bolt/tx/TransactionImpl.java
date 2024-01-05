@@ -66,6 +66,17 @@ public class TransactionImpl implements Transaction {
     private final StatementCleanupListener statementListener = new StatementCleanupListener();
     private final Map<Long, Statement> statementMap = new HashMap<>();
 
+    /**
+     * Flags whether this transaction has previously been marked as failed as a result of a query
+     * execution failure (e.g. during {@code PULL}).
+     * <p />
+     * This flag effectively attempts to guard against interrupts on transactions which have
+     * previously been marked as failed and thus terminated. Note, however, that it does not
+     * necessarily guard against all such calls due to the asynchronous nature of interrupts within
+     * Bolt.
+     */
+    private volatile boolean failed;
+
     public TransactionImpl(
             String id, TransactionType type, DatabaseReference database, Clock clock, BoltTransaction transaction) {
         this.id = id;
@@ -106,11 +117,20 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
+    public boolean hasFailed() {
+        return this.failed;
+    }
+
+    public void markFailed() {
+        this.failed = true;
+    }
+
+    @Override
     public Statement run(String statement, MapValue params) throws StatementException {
         var statementId = this.nextStatementId.getAndIncrement();
         this.latestStatementId = statementId;
 
-        var subscriber = new StatementQuerySubscriber();
+        var subscriber = new StatementQuerySubscriberIml();
         BoltQueryExecution query;
         try {
             query = this.transaction.executeQuery(statement, params, true, subscriber);
@@ -119,6 +139,7 @@ public class TransactionImpl implements Transaction {
             // thus causing errors to be surfaced prior to "actual" execution
             subscriber.assertSuccess();
         } catch (Exception ex) {
+            this.markFailed();
             throw new StatementExecutionException(ex);
         }
         var handle = new StatementImpl(statementId, this.database, this.clock, query, subscriber);
@@ -291,6 +312,16 @@ public class TransactionImpl implements Transaction {
         COMMITTED,
         ROLLED_BACK,
         CLOSED
+    }
+
+    private class StatementQuerySubscriberIml extends StatementQuerySubscriber {
+
+        @Override
+        public void onError(Throwable throwable) throws Exception {
+            TransactionImpl.this.markFailed();
+
+            super.onError(throwable);
+        }
     }
 
     private class StatementCleanupListener implements Statement.Listener {

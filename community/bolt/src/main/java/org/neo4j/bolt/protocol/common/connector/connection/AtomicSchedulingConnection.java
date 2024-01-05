@@ -449,7 +449,7 @@ public class AtomicSchedulingConnection extends AbstractConnection {
             // if there is currently an active transaction, we'll interrupt it and all of its children
             // in order to free up the worker threads immediately
             var tx = this.transaction.get();
-            if (tx != null) {
+            if (tx != null && !tx.hasFailed()) {
                 tx.interrupt();
             }
         }
