@@ -695,12 +695,12 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
       val variablesInPattern = pattern.patternParts.flatMap(_.allVariables).toSet
       val declarationsInPattern = variablesInPattern.map(SymbolUse(_)).filter(declarationsInCurrentScope)
 
-      val referencesFromQppToPattern = dependencies.intersect(declarationsInPattern).toSeq
-      val errors = referencesFromQppToPattern.map { symbolUse =>
-        val stringifiedQpp = stringifier.patterns(patternElement)
+      val referencesFromPatternElementToPattern = dependencies.intersect(declarationsInPattern).toSeq
+      val errors = referencesFromPatternElementToPattern.map { symbolUse =>
+        val stringifiedPatternElement = stringifier.patterns(patternElement)
         SemanticError(
           s"""From within a ${patternElementErrorMessageDescription}, one may only reference variables, that are already bound in a previous `MATCH` clause.
-             |In this case, ${symbolUse.name} is defined in the same `MATCH` clause as $stringifiedQpp.""".stripMargin,
+             |In this case, ${symbolUse.name} is defined in the same `MATCH` clause as $stringifiedPatternElement.""".stripMargin,
           symbolUse.asVariable.position
         )
       }
