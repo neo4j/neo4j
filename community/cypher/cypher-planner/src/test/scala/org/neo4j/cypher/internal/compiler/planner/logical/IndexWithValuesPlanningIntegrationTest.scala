@@ -1582,7 +1582,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
           supportPartitionedScan = true
         ),
         Map.empty,
-        Map(v"sum(n.prop)" -> sum(cachedNodeProp("n", "prop"))),
+        Map(v"sum(n.prop)" -> sum(cachedNodeProp("n", "prop")))
       )
     )
   }
