@@ -590,6 +590,8 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
             declareVariables(ctx, pattern.element) chain
             declarePathVariable(pattern) chain
             recordCurrentScope(normalized) chain
+            // Record the same scope again, because the current `normalized` scope
+            // will be overwritten and lost after we check WHERE predicates at a later time.
             recordCurrentScope(ScopeAfterParenthesizedPath(normalized))
         } chain
           importValuesFromRecordedScope(normalized)
