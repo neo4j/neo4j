@@ -20,15 +20,16 @@
 package org.neo4j.server.security.auth;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
+import static org.neo4j.function.Suppliers.lazySingleton;
 import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
 
 import java.nio.file.Path;
-import java.util.function.Supplier;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.cypher.internal.security.SecureHasher;
 import org.neo4j.dbms.database.DatabaseContextProvider;
+import org.neo4j.function.Suppliers;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -57,7 +58,7 @@ public class CommunitySecurityModule extends SecurityModule {
 
     @Override
     public void setup() {
-        Supplier<GraphDatabaseService> systemSupplier = () -> {
+        Suppliers.Lazy<GraphDatabaseService> systemSupplier = lazySingleton(() -> {
             DatabaseContextProvider<?> databaseContextProvider =
                     globalDependencies.resolveDependency(DatabaseContextProvider.class);
             return databaseContextProvider
@@ -65,7 +66,7 @@ public class CommunitySecurityModule extends SecurityModule {
                     .orElseThrow(
                             () -> new RuntimeException("No database called `" + SYSTEM_DATABASE_NAME + "` was found."))
                     .databaseFacade();
-        };
+        });
 
         authManager = new BasicSystemGraphRealm(
                 new SystemGraphRealmHelper(systemSupplier, new SecureHasher()), createAuthenticationStrategy(config));

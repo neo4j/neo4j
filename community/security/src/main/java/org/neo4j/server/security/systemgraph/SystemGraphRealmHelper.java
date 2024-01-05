@@ -22,11 +22,11 @@ package org.neo4j.server.security.systemgraph;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
 
-import java.util.function.Supplier;
 import org.neo4j.cypher.internal.security.FormatException;
 import org.neo4j.cypher.internal.security.SecureHasher;
 import org.neo4j.cypher.internal.security.SystemGraphCredential;
 import org.neo4j.dbms.database.DatabaseContextProvider;
+import org.neo4j.function.Suppliers;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -38,9 +38,8 @@ import org.neo4j.kernel.impl.security.Credential;
 import org.neo4j.kernel.impl.security.User;
 
 public class SystemGraphRealmHelper {
-    private final Supplier<GraphDatabaseService> systemSupplier;
+    private final Suppliers.Lazy<GraphDatabaseService> systemSupplier;
     private final SecureHasher secureHasher;
-    private GraphDatabaseService systemDb;
 
     /**
      * This flag is used in the same way as User.PASSWORD_CHANGE_REQUIRED, but it's
@@ -50,7 +49,7 @@ public class SystemGraphRealmHelper {
 
     public static final String DEFAULT_DATABASE = "default_database";
 
-    public SystemGraphRealmHelper(Supplier<GraphDatabaseService> systemSupplier, SecureHasher secureHasher) {
+    public SystemGraphRealmHelper(Suppliers.Lazy<GraphDatabaseService> systemSupplier, SecureHasher secureHasher) {
         this.systemSupplier = systemSupplier;
         this.secureHasher = secureHasher;
     }
@@ -83,18 +82,15 @@ public class SystemGraphRealmHelper {
     }
 
     public GraphDatabaseService getSystemDb() {
-        if (systemDb == null) {
-            systemDb = systemSupplier.get();
-        }
-        return systemDb;
+        return systemSupplier.get();
     }
 
-    public static Supplier<GraphDatabaseService> makeSystemSupplier(
+    public static Suppliers.Lazy<GraphDatabaseService> makeSystemSupplier(
             DatabaseContextProvider<?> databaseContextProvider) {
-        return () -> databaseContextProvider
+        return Suppliers.lazySingleton(() -> databaseContextProvider
                 .getDatabaseContext(NAMED_SYSTEM_DATABASE_ID)
                 .orElseThrow(() ->
                         new AuthProviderFailedException("No database called `" + SYSTEM_DATABASE_NAME + "` was found."))
-                .databaseFacade();
+                .databaseFacade());
     }
 }
