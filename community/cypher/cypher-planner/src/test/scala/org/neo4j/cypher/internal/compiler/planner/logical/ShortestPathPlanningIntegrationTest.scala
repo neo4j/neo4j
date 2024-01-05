@@ -1071,6 +1071,45 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     )
   }
 
+  test("should inline predicates in QPP with undirected relationship") {
+    val query =
+      """
+        |MATCH ANY SHORTEST ((u:User) ((a)-[r:R WHERE r.prop > 0]-(b:B))+ (v))
+        |RETURN *
+        |""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+
+    val expectedNfa = new TestNFABuilder(0, "u")
+      .addTransition(0, 1, "(u) (a)")
+      .addTransition(1, 2, "(a)-[r:R WHERE r.prop > 0]-(b:B)")
+      .addTransition(2, 1, "(b) (a)")
+      .addTransition(2, 3, "(b) (v)")
+      .setFinalState(3)
+      .build()
+
+    plan should equal(
+      planner.subPlanBuilder()
+        .statefulShortestPath(
+          "u",
+          "v",
+          "SHORTEST 1 ((u) ((a)-[r:R]-(b) WHERE `b`:B AND `r`.prop > 0){1, } (v) WHERE unique(`r`))",
+          None,
+          Set(("a", "a"), ("b", "b")),
+          Set(("r", "r")),
+          singletonNodeVariables = Set(),
+          singletonRelationshipVariables = Set(),
+          StatefulShortestPath.Selector.Shortest(1),
+          expectedNfa,
+          ExpandInto
+        )
+        .cartesianProduct()
+        .|.nodeByLabelScan("v", "B")
+        .nodeByLabelScan("u", "User")
+        .build()
+    )
+  }
+
   test("should inline predicates that depend on interior and boundary start node") {
     val query =
       """MATCH ANY SHORTEST ((u:User) ((a)-[r:R]->(b:B))+ (v)-[s]->(w:N) WHERE v.prop = u.prop AND s.prop = u.prop)

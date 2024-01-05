@@ -380,26 +380,35 @@ object expandSolverStep {
         case ((updatedNodeConnections, inlinedQppPredicates), nodeConnection) => nodeConnection match {
             case pr: PatternRelationship    => (updatedNodeConnections.appended(pr), inlinedQppPredicates)
             case qpp: QuantifiedPathPattern =>
-              // We need to collect the variable groupings by pattern relationship since we can only inline a predicate if the state contains
-              // all nodes and relationships that are referenced in the predicate. We also cannot inline predicates in undirected patterns.
-              val variableGroupingsByDirectedPattern: Set[Set[VariableGrouping]] =
-                qpp.patternRelationships.toSet[PatternRelationship]
+              // All node variables, each in their own set
+              val nodeVariableGrouping = qpp.nodeVariableGroupings.map(Set(_))
+              // All relationship variables, each in their own set
+              val relVariableGrouping = qpp.relationshipVariableGroupings.map(Set(_))
+              // All undirected relationships in a set together with their boundary nodes.
+              // We do this because predicates using only these can also be inlined.
+              // See `getExtraRelationshipPredicates` in ConvertToNFA.
+              val extraRelVariableGroupings =
+                qpp.patternRelationships.toSet
                   .filterNot(_.dir == BOTH)
                   .map(pr => pr.boundaryNodesSet + pr.variable)
-                  .map(boundaryNodes =>
+                  .map(singletonVariables =>
                     qpp.variableGroupings
-                      .filter(variableGrouping => boundaryNodes.contains(variableGrouping.singleton))
+                      .filter(variableGrouping => singletonVariables.contains(variableGrouping.singleton))
                   )
-              val extractedPredicates = variableGroupingsByDirectedPattern.map { patternGroupVariables =>
+
+              val variableGroupings: Set[Set[VariableGrouping]] =
+                nodeVariableGrouping ++ relVariableGrouping ++ extraRelVariableGroupings
+
+              val extractedPredicates = variableGroupings.map { variableGrouping =>
                 val extracted = extractQPPPredicates(
                   spp.selections.flatPredicates,
-                  patternGroupVariables,
+                  variableGrouping,
                   availableSymbols
                 )
-                val patternSingletonVariables = patternGroupVariables.map(_.singleton)
+                val singletonVariables = variableGrouping.map(_.singleton)
                 val filteredPredicates = extracted.predicates
                   .filter(extractedPredicate =>
-                    ConvertToNFA.canBeInlined(extractedPredicate.extracted, patternSingletonVariables)
+                    ConvertToNFA.canBeInlined(extractedPredicate.extracted, singletonVariables)
                   )
                 extracted.copy(predicates = filteredPredicates)
               }
