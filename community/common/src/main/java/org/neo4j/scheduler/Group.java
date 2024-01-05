@@ -130,6 +130,7 @@ public enum Group {
     TOPOLOGY_GRAPH_WRITE_SUPPORT("TopologyGraphWriteSupport"),
     CONNECTIVITY_CHECKS("ConnectivityChecks"),
     RAFTED_STATUS_CHECKS("RaftedStatusChecks"),
+    COMMIT_COORDINATOR("CommitCoordinator"),
 
     /** Rolls back idle transactions on the server. */
     SERVER_TRANSACTION_TIMEOUT("ServerTransactionTimeout"),
