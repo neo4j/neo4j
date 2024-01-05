@@ -186,4 +186,9 @@ trait PlanContext extends ReadTokenContext with ProcedureSignatureResolver {
    * Checks if there are uncommitted changes in the transaction state.
    */
   def txStateHasChanges(): Boolean
+
+  /**
+   * Return a copy with the given notificationLogger
+   */
+  def withNotificationLogger(notificationLogger: InternalNotificationLogger): PlanContext
 }

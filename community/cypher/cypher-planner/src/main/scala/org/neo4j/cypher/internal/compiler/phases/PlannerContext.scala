@@ -105,7 +105,39 @@ class PlannerContext(
   val databaseId: NamedDatabaseId,
   val log: Log,
   val internalNotificationStats: InternalNotificationStats
-) extends BaseContextImpl(cypherExceptionFactory, tracer, notificationLogger, monitors, cancellationChecker)
+) extends BaseContextImpl(cypherExceptionFactory, tracer, notificationLogger, monitors, cancellationChecker) {
+
+  /**
+   * Return a copy with the given notificationLogger
+   */
+  def withNotificationLogger(notificationLogger: InternalNotificationLogger): PlannerContext = {
+    val newPlanContext = planContext.withNotificationLogger(notificationLogger)
+    new PlannerContext(
+      cypherExceptionFactory: CypherExceptionFactory,
+      tracer: CompilationPhaseTracer,
+      notificationLogger: InternalNotificationLogger,
+      newPlanContext: PlanContext,
+      monitors: Monitors,
+      metrics: Metrics,
+      config: CypherPlannerConfiguration,
+      queryGraphSolver: QueryGraphSolver,
+      updateStrategy: UpdateStrategy,
+      debugOptions: CypherDebugOptions,
+      clock: Clock,
+      logicalPlanIdGen: IdGen,
+      params: MapValue,
+      executionModel: ExecutionModel,
+      cancellationChecker: CancellationChecker,
+      materializedEntitiesMode: Boolean,
+      eagerAnalyzer: CypherEagerAnalyzerOption,
+      statefulShortestPlanningMode: CypherStatefulShortestPlanningModeOption,
+      databaseReferenceRepository: DatabaseReferenceRepository,
+      databaseId: NamedDatabaseId,
+      log: Log,
+      internalNotificationStats: InternalNotificationStats
+    )
+  }
+}
 
 object PlannerContext {
 

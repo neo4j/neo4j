@@ -153,4 +153,6 @@ class NotImplementedPlanContext extends PlanContext {
   ): Option[IndexDescriptor] = ???
 
   override def procedureSignatureVersion: Long = ???
+
+  override def withNotificationLogger(notificationLogger: InternalNotificationLogger): PlanContext = this
 }

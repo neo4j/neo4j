@@ -205,7 +205,6 @@ class CypherQueryCachesTest extends CypherFunSuite with GraphDatabaseTestSupport
   }
 
   test("Preparser notifications should be cached") {
-
     val ccpDescription =
       "The Cypher query option `connectComponentsPlanner` is deprecated and will be removed without a replacement." +
         " The product's default behavior of using a cost-based IDP search algorithm when combining sub-plans will be kept." +
@@ -221,6 +220,14 @@ class CypherQueryCachesTest extends CypherFunSuite with GraphDatabaseTestSupport
       ccpDescription
     )
 
+  }
+
+  test("Logical plan cache does only cache its own notifications") {
+    execute("CREATE (a {f\\u0085oo:1})").notifications should not be empty
+    // If we wrongly cache the notification from the above query in the logical plan cache, then
+    // the 2nd query will also get it. It will miss the String cache but hit the AST cache and
+    // thus get the cached logical plan
+    execute("CREATE (a {`f\\u0085oo`:1})").notifications should be(empty)
   }
 
 }

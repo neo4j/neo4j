@@ -42,6 +42,7 @@ import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.spi.procsHelpers.asCypherProcedureSignature
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CancellationChecker
+import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.devNullLogger
 import org.neo4j.internal.schema.constraints.SchemaValueType
 import org.neo4j.kernel.api.query.QueryObfuscator
@@ -188,5 +189,7 @@ class CypherQueryObfuscatorFactory {
     private def fail() = throw new IllegalStateException("Should not have been called in this test.")
 
     override def procedureSignatureVersion: Long = -1
+
+    override def withNotificationLogger(notificationLogger: InternalNotificationLogger): PlanContext = this
   }
 }

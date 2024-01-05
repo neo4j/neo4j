@@ -49,6 +49,7 @@ import org.neo4j.cypher.internal.compiler.UpdateStrategy
 import org.neo4j.cypher.internal.compiler.defaultUpdateStrategy
 import org.neo4j.cypher.internal.compiler.eagerUpdateStrategy
 import org.neo4j.cypher.internal.compiler.phases.CachableLogicalPlanState
+import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.logical.CachedSimpleMetricsFactory
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.ComponentConnectorPlanner
@@ -90,11 +91,14 @@ import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
 import org.neo4j.cypher.internal.spi.ExceptionTranslatingPlanContext
 import org.neo4j.cypher.internal.spi.TransactionBoundPlanContext
 import org.neo4j.cypher.internal.util.CancellationChecker
+import org.neo4j.cypher.internal.util.ComposedNotificationLogger
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.InternalNotificationStats
+import org.neo4j.cypher.internal.util.RecordingNotificationLogger
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
+import org.neo4j.cypher.internal.util.devNullLogger
 import org.neo4j.exceptions.DatabaseAdministrationException
 import org.neo4j.exceptions.Neo4jException
 import org.neo4j.exceptions.SyntaxException
@@ -416,7 +420,6 @@ case class CypherPlanner(
         plannerContext,
         notificationLogger,
         runtime,
-        planContext,
         shouldBeCached,
         missingParameterNames
       )
@@ -465,7 +468,7 @@ case class CypherPlanner(
       autoExtractParams,
       cacheableLogicalPlan.reusability,
       plannerContext,
-      cacheableLogicalPlan.notifications,
+      (notificationLogger.notifications ++ cacheableLogicalPlan.notifications).toIndexedSeq,
       cacheableLogicalPlan.shouldBeCached,
       obfuscator
     )
@@ -473,13 +476,51 @@ case class CypherPlanner(
 
   private def doCreatePlan(
     preparedQuery: BaseState,
-    context: PlannerContext,
-    notificationLogger: InternalNotificationLogger,
+    outerContext: PlannerContext,
+    outerNotificationLogger: InternalNotificationLogger,
     runtime: CypherRuntime[_],
-    planContext: PlanContext,
     shouldBeCached: Boolean,
     missingParameterNames: Seq[String]
   ): CacheableLogicalPlan = {
+    // Only collects the notifications from planning.
+    val (planningNotificationsLogger, notificationLogger) = outerNotificationLogger match {
+      case `devNullLogger` =>
+        (devNullLogger, devNullLogger)
+      case _ =>
+        val pL = new RecordingNotificationLogger()
+        val nL = new ComposedNotificationLogger(outerNotificationLogger, pL)
+        (pL, nL)
+    }
+    val context = outerContext.withNotificationLogger(notificationLogger)
+
+    val (logicalPlanState, reusabilityState, shouldCache) =
+      doCreatePlanWithLocalNotificationLogger(
+        preparedQuery,
+        runtime,
+        shouldBeCached,
+        missingParameterNames,
+        notificationLogger,
+        context
+      )
+
+    CacheableLogicalPlan(
+      logicalPlanState.asCachableLogicalPlanState(),
+      reusabilityState,
+      // Only cache planning-related notifications here
+      planningNotificationsLogger.notifications.toIndexedSeq,
+      shouldCache
+    )
+  }
+
+  private def doCreatePlanWithLocalNotificationLogger(
+    preparedQuery: BaseState,
+    runtime: CypherRuntime[_],
+    shouldBeCached: Boolean,
+    missingParameterNames: Seq[String],
+    notificationLogger: InternalNotificationLogger,
+    context: PlannerContext
+  ): (LogicalPlanState, ReusabilityState, Boolean) = {
+    val planContext = context.planContext
     val logicalPlanStateOld = planner.planPreparedQuery(preparedQuery, context)
     val hasLoadCsv = logicalPlanStateOld.logicalPlan.folder.treeFind[LogicalPlan] {
       case _: LoadCSV => true
@@ -530,12 +571,7 @@ case class CypherPlanner(
     // Record stats for finalized notifications, used for notification counter metrics
     notifications.foreach { context.internalNotificationStats.incrementNotificationCount }
 
-    CacheableLogicalPlan(
-      logicalPlanState.asCachableLogicalPlanState(),
-      reusabilityState,
-      notifications.toIndexedSeq,
-      shouldCache
-    )
+    (logicalPlanState, reusabilityState, shouldCache)
   }
 
   private def checkForSchemaChanges(tcw: TransactionalContextWrapper): Unit =

@@ -49,6 +49,18 @@ class RecordingNotificationLogger() extends InternalNotificationLogger {
   def notifications: Set[InternalNotification] = builder.result()
 }
 
+/**
+ * Forwards calls to multiple other loggers.
+ */
+class ComposedNotificationLogger(loggers: InternalNotificationLogger*) extends InternalNotificationLogger {
+
+  override def log(notification: InternalNotification): Unit =
+    loggers.foreach(_.log(notification))
+
+  override def notifications: Set[InternalNotification] =
+    loggers.view.flatMap(_.notifications).toSet
+}
+
 case class InternalNotificationStats() {
   private val notificationCounts: TrieMap[String, LongAdder] = new TrieMap()
 

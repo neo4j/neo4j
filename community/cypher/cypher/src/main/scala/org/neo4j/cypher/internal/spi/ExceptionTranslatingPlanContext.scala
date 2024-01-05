@@ -206,4 +206,9 @@ class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext wi
     )
 
   override def procedureSignatureVersion: Long = translateException(tokenNameLookup, inner.procedureSignatureVersion)
+
+  override def withNotificationLogger(notificationLogger: InternalNotificationLogger): PlanContext =
+    new ExceptionTranslatingPlanContext(
+      inner.withNotificationLogger(notificationLogger)
+    )
 }
