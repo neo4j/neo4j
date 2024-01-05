@@ -101,8 +101,9 @@ object ConvertToNFA {
   }
 
   /**
-   * Return True if the given expression is only depend on availableSymbols and entities, but also use
-   * at least one entity. Therefore being able to be inlined.
+   * Return True if the given expression
+   * - does depend on at least one of the given entities
+   * - does not contain any IR expressions.
    */
   def canBeInlined(expression: Expression, entities: Set[LogicalVariable]): Boolean =
     expression.folder.treeFindByClass[IRExpression].isEmpty &&
@@ -139,7 +140,7 @@ object ConvertToNFA {
      * at least one entity.
      */
     def getPredicates(selections: Selections, entities: Set[LogicalVariable]): ListSet[Expression] =
-      selections.predicatesGiven((availableSymbols ++ entities))
+      selections.predicatesGiven(availableSymbols ++ entities)
         .filter(canBeInlined(_, entities))
         .to(ListSet)
 

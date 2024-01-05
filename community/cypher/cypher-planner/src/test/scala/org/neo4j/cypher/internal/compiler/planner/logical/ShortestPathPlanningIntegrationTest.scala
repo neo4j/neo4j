@@ -2436,10 +2436,49 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           Set(),
           StatefulShortestPath.Selector.Shortest(1),
           nfa,
-          ExpandAll,
-          false
+          ExpandAll
         )
         .nodeByLabelScan("u", "User")
+        .build()
+    )
+  }
+
+  test(
+    "should plan SHORTEST with node property comparison with variable from previous MATCH inlined in NFA"
+  ) {
+    val query =
+      """MATCH (foo)
+        |MATCH ANY SHORTEST ((u:User)((n)-[r]->(m) WHERE m.prop = foo.prop)+(v))
+        |RETURN *""".stripMargin
+
+    val nfa = new TestNFABuilder(0, "u")
+      .addTransition(0, 1, "(u) (n)")
+      .addTransition(1, 2, "(n)-[r]->(m WHERE m.prop = cacheN[foo.prop])")
+      .addTransition(2, 1, "(m) (n)")
+      .addTransition(2, 3, "(m) (v WHERE v.prop = cacheN[foo.prop])")
+      .setFinalState(3)
+      .build()
+
+    val plan = all_if_possible_planner.plan(query).stripProduceResults
+    plan should equal(
+      all_if_possible_planner.subPlanBuilder()
+        .statefulShortestPath(
+          "u",
+          "v",
+          "SHORTEST 1 ((u) ((n)-[r]->(m) WHERE `m`.prop = foo.prop){1, } (v) WHERE unique(`r`) AND v.prop = foo.prop)",
+          None,
+          Set(("n", "n"), ("m", "m")),
+          Set(("r", "r")),
+          Set(("v", "v")),
+          Set(),
+          StatefulShortestPath.Selector.Shortest(1),
+          nfa,
+          ExpandAll
+        )
+        .apply()
+        .|.nodeByLabelScan("u", "User", "foo")
+        .cacheProperties("cacheNFromStore[foo.prop]")
+        .allNodeScan("foo")
         .build()
     )
   }
@@ -2564,7 +2603,6 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
   }
 
   test("With statefulShortestPlanningMode=all_if_possible should plan Into if both start and end are already bound") {
-
     val query =
       s"""
          |MATCH (n), (m)

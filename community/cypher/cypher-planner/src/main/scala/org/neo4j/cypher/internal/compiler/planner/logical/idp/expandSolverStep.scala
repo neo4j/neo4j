@@ -366,14 +366,15 @@ object expandSolverStep {
   }
 
   /**
-   * Predicates that were extracted from Quantified Path Patterns within a Selective Path Pattern during [[MoveQuantifiedPathPatternPredicates]] gets
+   * Predicates that were extracted from Quantified Path Patterns within a Selective Path Pattern during
+   * [[org.neo4j.cypher.internal.compiler.planner.logical.MoveQuantifiedPathPatternPredicates]] gets
    * inlined back into the QPP here and changed back into its original form.
    * @param spp SelectivePathPattern to update
    * @param availableSymbols Symbols available from source
    * @return Updated SelectivePathPattern with extracted QPP Predicates inlined and reverted back to its original form
    */
   def inlineQPPPredicates(spp: SelectivePathPattern, availableSymbols: Set[LogicalVariable]): SelectivePathPattern = {
-    // We need to collect the updated updated node connections as well as the inlined predicates so we can remove them from the SPP Selections.
+    // We need to collect the updated node connections as well as the inlined predicates so we can remove them from the SPP Selections.
     val (newConnections, liftedPredicates) =
       spp.pathPattern.connections.foldLeft((Seq[ExhaustiveNodeConnection](), Set[Expression]())) {
         case ((updatedNodeConnections, inlinedQppPredicates), nodeConnection) => nodeConnection match {
@@ -395,15 +396,14 @@ object expandSolverStep {
                   patternGroupVariables,
                   availableSymbols
                 )
-                val currentlyAvailableSymbols =
-                  patternGroupVariables.map(_.singleton) -- availableSymbols
+                val patternSingletonVariables = patternGroupVariables.map(_.singleton)
                 val filteredPredicates = extracted.predicates
                   .filter(extractedPredicate =>
-                    ConvertToNFA.canBeInlined(extractedPredicate.extracted, currentlyAvailableSymbols)
+                    ConvertToNFA.canBeInlined(extractedPredicate.extracted, patternSingletonVariables)
                   )
-
                 extracted.copy(predicates = filteredPredicates)
               }
+
               val inlinedPredicates = extractedPredicates.flatMap(_.predicates.map(_.extracted))
               val originalPredicates = extractedPredicates.flatMap(_.predicates.map(_.original))
 
