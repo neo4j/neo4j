@@ -136,7 +136,7 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable {
      * Putting after the last key is the same as adding the value with {@link #add}, after first adding `key - lastKey() - 1` number of null values as padding.
      * Putting before the first key is not allowed and will throw {@link IndexOutOfBoundsException}
      *
-     * @param key the key to put at
+     * @param key   the key to put at
      * @param value the value to be inserted
      * @return the old value at the index or null
      */
@@ -376,12 +376,14 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable {
     @SuppressWarnings("unchecked")
     public void foreach(LongObjectProcedure<V> fun) {
         Chunk<V> chunk = firstChunk;
+        final int cs = chunkSize;
         long key = firstKey;
-        int chunkMask = chunkSize - 1;
+        int chunkMask = cs - 1;
         int index = ((int) key) & chunkMask;
+        final long lkifc = lastKeyInFirstChunk;
 
         // Iterate over the first chunk
-        while (key < lastKeyInFirstChunk) {
+        while (key < lkifc) {
             V value = (V) chunk.values[index];
             if (value != null) {
                 fun.value(key, value);
@@ -390,21 +392,15 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable {
             key++;
         }
 
-        // Move to the next chunk (cannot be null unless key == lastKey)
-        chunk = chunk.next;
-
         // Iterate over remaining chunks
-        while (key < lastKey) {
-            if (index >= chunkSize) {
-                chunk = chunk.next;
-                index = 0;
+        for (chunk = chunk.next; chunk != null; chunk = chunk.next) {
+            for (int i = index; i < cs; i++, key++) {
+                V value = (V) chunk.values[i];
+                if (value != null) {
+                    fun.value(key, value);
+                }
             }
-            V value = (V) chunk.values[index];
-            if (value != null) {
-                fun.value(key, value);
-            }
-            index++;
-            key++;
+            index = 0;
         }
     }
 
@@ -465,7 +461,7 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable {
     }
 
     private class SingleChunkValuesIterator implements Iterator<V> {
-        private Chunk<V> chunk;
+        private final Chunk<V> chunk;
         private long key;
 
         {
