@@ -30,6 +30,7 @@ import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.vector.VectorSimilarityFunction;
 import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.storable.FloatingPointArray;
+import org.neo4j.values.storable.NumberArray;
 import org.neo4j.values.storable.Value;
 
 public enum VectorIndexVersion {
@@ -50,6 +51,19 @@ public enum VectorIndexVersion {
         @Override
         public boolean acceptsValueInstanceType(Value candidate) {
             return candidate instanceof FloatingPointArray;
+        }
+    },
+
+    V2_0(
+            "2.0",
+            KernelVersion.VERSION_VECTOR_2_INTRODUCED,
+            4096,
+            VectorSimilarityFunctions.EUCLIDEAN,
+            VectorSimilarityFunctions.L2_NORM_COSINE) {
+
+        @Override
+        public boolean acceptsValueInstanceType(Value candidate) {
+            return candidate instanceof NumberArray;
         }
     };
 

@@ -82,10 +82,11 @@ public enum KernelVersion {
     public static final KernelVersion VERSION_CDC_USER_METADATA_INTRODUCED = V5_12;
     public static final KernelVersion VERSION_CDC_LOGICAL_KEY_CHANGES = V5_15;
     public static final KernelVersion VERSION_ENVELOPED_TRANSACTION_LOGS_INTRODUCED = GLORIOUS_FUTURE;
+    public static final KernelVersion VERSION_VECTOR_2_INTRODUCED = GLORIOUS_FUTURE;
 
     // Keep updated each time there is an new schema rule added
     // related to IntegrityValidator
-    public static final KernelVersion LATEST_SCHEMA_CHANGE = VERSION_NODE_VECTOR_INDEX_INTRODUCED;
+    public static final KernelVersion LATEST_SCHEMA_CHANGE = VERSION_VECTOR_2_INTRODUCED;
 
     // All neo4j 5.0-5.6 members defaulted to this version when bootstrapping a rafted database
     public static final KernelVersion DEFAULT_BOOTSTRAP_VERSION = V5_0;
