@@ -38,7 +38,6 @@
             <artifactId>neo4j-values</artifactId>
             <version>${project.version}</version>
         </dependency>
-
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>

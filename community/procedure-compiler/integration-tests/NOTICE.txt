@@ -26,7 +26,6 @@ Third-party licenses
 --------------------
 
 Apache Software License, Version 2.0
-  Apache Commons Logging
   Auto Common Libraries
   AutoValue Annotations
   error-prone annotations
@@ -35,14 +34,7 @@ Apache Software License, Version 2.0
   Guava ListenableFuture only
   Guava: Google Core Libraries for Java
   J2ObjC Annotations
-  org.apiguardian:apiguardian-api
-  org.opentest4j:opentest4j
   Truth Core
-
-Eclipse Public License v2.0
-  JUnit Platform Commons
-  JUnit Platform Engine API
-  JUnit Vintage Engine
 
 MIT License
   Checker Qual

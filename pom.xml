@@ -670,28 +670,54 @@
                 <fail>true</fail>
               </configuration>
             </execution>
-            <execution>
-              <!-- Ban messing up the build by depending on test-jars from non-test scope -->
-              <id>ban-test-dependencies-in-compile</id>
-              <goals>
-                <goal>enforce</goal>
-              </goals>
-              <configuration>
-                <rules>
-                  <bannedDependencies>
-                    <excludes>
-                      <exclude>*:*:*:test-jar:compile:tests</exclude>
-                      <exclude>*:*:*:test-jar:runtime:tests</exclude>
-                    </excludes>
-                    <searchTransitive>false</searchTransitive>
-                    <message>Depending on test-jars in compile scope is banned</message>
-                  </bannedDependencies>
-                </rules>
-                <fail>true</fail>
-              </configuration>
-            </execution>
+              <execution>
+                  <!-- Ban messing up the build by depending on test-jars from non-test scope -->
+                  <id>ban-test-dependencies-in-compile</id>
+                  <goals>
+                      <goal>enforce</goal>
+                  </goals>
+                  <configuration>
+                      <rules>
+                          <bannedDependencies>
+                              <excludes>
+                                  <exclude>org.junit.*:*:*:*:compile</exclude>
+                                  <!-- ban all neo4j modules with test in the artifact name -->
+                                  <exclude>org.neo4j:*test*:*:*:compile</exclude>
+                                  <exclude>com.neo4j:*test*:*:*:compile</exclude>
+                                  <!-- ban all neo4j modules under org/com.neo4j.test -->
+                                  <exclude>org.neo4j.test*:*:*:*:compile</exclude>
+                                  <exclude>com.neo4j.test*:*:*:*:compile</exclude>
+                                  <!-- ban neo4j-harness dependencies -->
+                                  <exclude>com.neo4j.test:neo4j-harness-enterprise:*:compile</exclude>
+                                  <exclude>org.neo4j.test:neo4j-harness:*:compile</exclude>
+                                  <!-- ban neo4j modules we definitely know are internal only -->
+                                  <exclude>com.neo4j.bench:*:*:*:compile</exclude>
+                                  <!-- ban public/community/testing utilities -->
+                                  <exclude>com.neo4j:enterprise-integration-tests:*:*:compile</exclude>
+                                  <exclude>com.neo4j:neo4j-net-test-utils:*:*:compile</exclude>
+                                  <exclude>com.neo4j:lighthouse-testbed:*:*:compile</exclude>
+                                  <exclude>com.neo4j:neo4j-tools:*:*:compile</exclude>
+                                  <exclude>org.neo4j:*test*:*:*:compile</exclude>
+                                  <exclude>org.neo4j:*-test-util:*:*:compile</exclude>
+                                  <exclude>org.neo4j:*-test-utils:*:*:compile</exclude>
+                                  <exclude>org.neo4j:neo4j-cypher-spec-suite-tools:*:*:compile</exclude>
+                                  <exclude>org.neo4j:neo4j-cypher-testing:*:*:compile</exclude>
+                                  <exclude>org.neo4j:neo4j-random-values:*:*:compile</exclude>
+                                  <exclude>org.neo4j:neo4j-test-util:*:*:compile</exclude>
+                                  <exclude>org.neo4j:test-proxy:*:*:compile</exclude>
+                                  <exclude>org.neo4j:test-utils:*:*:compile</exclude>
+                                  <exclude>org.neo4j:testing-parent:*:*:compile</exclude>
+                                  <exclude>org.neo4j.app:neo4j-server-test-utils:*:*:compile</exclude>
+                                  <exclude>org.neo4j.community:it-test-support:*:*:compile</exclude>
+                              </excludes>
+                              <searchTransitive>true</searchTransitive>
+                              <message>Depending on test jars in compile scope is banned</message>
+                          </bannedDependencies>
+                      </rules>
+                      <fail>true</fail>
+                  </configuration>
+              </execution>
           </executions>
-
         </plugin>
 
         <!-- Plugin version management -->

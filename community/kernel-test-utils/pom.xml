@@ -24,7 +24,24 @@
         <url>https://github.com/neo4j/neo4j</url>
     </scm>
 
-    <dependencies>
+    <build>
+        <plugins>
+            <plugin>
+                <!-- disable only the ban-test-dependencies-in-compile enforcer rule
+                since this project creates test utilities -->
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>ban-test-dependencies-in-compile</id>
+                        <phase></phase>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+<dependencies>
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>kernel-api-test-utils</artifactId>
