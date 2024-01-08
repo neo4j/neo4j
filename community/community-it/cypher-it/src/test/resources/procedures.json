@@ -494,7 +494,7 @@
   },
   {
     "name": "db.index.fulltext.queryNodes",
-    "description": "Query the given full-text index. Returns the matching nodes and their Lucene query score, ordered by score.\nValid _key: value_ pairs for the `options` map are:\n* 'skip' -- to skip the top N results.\n* 'limit' -- to limit the number of results returned.\n* 'analyzer' -- to use the specified analyzer as a search analyzer for this query.\nThe `options` map and any of the keys are optional.\nAn example of the `options` map: `{skip: 30, limit: 10, analyzer: 'whitespace'}`\n",
+    "description": "Query the given full-text index. Returns the matching nodes and their Lucene query score, ordered by score.\nValid _key: value_ pairs for the `options` map are:\n\n* 'skip' -- to skip the top N results.\n* 'limit' -- to limit the number of results returned.\n* 'analyzer' -- to use the specified analyzer as a search analyzer for this query.\n\nThe `options` map and any of the keys are optional.\nAn example of the `options` map: `{skip: 30, limit: 10, analyzer: 'whitespace'}`\n",
     "mode": "READ",
     "worksOnSystem": true,
     "signature": "db.index.fulltext.queryNodes(indexName :: STRING, queryString :: STRING, options = {} :: MAP) :: (node :: NODE, score :: FLOAT)",
@@ -549,7 +549,7 @@
   },
   {
     "name": "db.index.fulltext.queryRelationships",
-    "description": "Query the given full-text index. Returns the matching relationships and their Lucene query score, ordered by score.\nValid _key: value_ pairs for the `options` map are:\n* 'skip' -- to skip the top N results.\n* 'limit' -- to limit the number of results returned.\n* 'analyzer' -- to use the specified analyzer as a search analyzer for this query.\nThe `options` map and any of the keys are optional.\nAn example of the `options` map: `{skip: 30, limit: 10, analyzer: 'whitespace'}`\n",
+    "description": "Query the given full-text index. Returns the matching relationships and their Lucene query score, ordered by score.\nValid _key: value_ pairs for the `options` map are:\n\n* 'skip' -- to skip the top N results.\n* 'limit' -- to limit the number of results returned.\n* 'analyzer' -- to use the specified analyzer as a search analyzer for this query.\n\nThe `options` map and any of the keys are optional.\nAn example of the `options` map: `{skip: 30, limit: 10, analyzer: 'whitespace'}`\n",
     "mode": "READ",
     "worksOnSystem": true,
     "signature": "db.index.fulltext.queryRelationships(indexName :: STRING, queryString :: STRING, options = {} :: MAP) :: (relationship :: RELATIONSHIP, score :: FLOAT)",
