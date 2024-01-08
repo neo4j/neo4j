@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.runtime.spec
 
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseInternalSettings
-import org.neo4j.configuration.GraphDatabaseInternalSettings.CypherOperatorEngine
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
+import org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
 import org.neo4j.configuration.GraphDatabaseSettings.cypher_worker_limit
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.InterpretedRuntimeName
@@ -118,6 +118,7 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
   protected var managementService: DatabaseManagementService = _
   protected var dbmsFileSystem: EphemeralFileSystemAbstraction = _
   protected var graphDb: GraphDatabaseService = _
+  protected var systemDb: GraphDatabaseService = _
   protected var runtimeTestSupport: RuntimeTestSupport[CONTEXT] = _
   protected var kernel: Kernel = _
   val ANY_VALUE_ORDERING: Ordering[AnyValue] = Ordering.comparatorToOrdering(AnyValues.COMPARATOR)
@@ -151,6 +152,7 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
   def setAdditionalConfigs(configs: Array[(Setting[_], Object)]): Unit = {
     require(managementService == null)
     require(graphDb == null)
+    require(systemDb == null)
     require(runtimeTestSupport == null)
     require(kernel == null)
     edition = edition.copyWith(configs: _*)
@@ -178,6 +180,7 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
     managementService = dbms.dbms
     dbmsFileSystem = dbms.filesystem
     graphDb = managementService.database(DEFAULT_DATABASE_NAME)
+    systemDb = managementService.database(SYSTEM_DATABASE_NAME)
     kernel = graphDb.asInstanceOf[GraphDatabaseFacade].getDependencyResolver.resolveDependency(classOf[Kernel])
   }
 
@@ -229,6 +232,7 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
       runtimeTestSupport = null
       kernel = null
       graphDb = null
+      systemDb = null
       // NOTE: AssertFusingSucceeded relies on logProvider not being null, so delay setting it to null
       //       in case a test case explicitly calls shutdownDatabase() (looking at you, SchedulerTracerTestBase...)
       if (logProvider != null) {

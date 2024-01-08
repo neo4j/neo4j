@@ -57,10 +57,13 @@ import org.neo4j.cypher.result.QueryProfile
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.QueryStatistics
+import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo
 import org.neo4j.internal.kernel.api.security.LoginContext
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.api.query.CompilerInfo
+import org.neo4j.kernel.api.security.AuthManager
+import org.neo4j.kernel.api.security.AuthToken
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.locking.LockManager
 import org.neo4j.kernel.impl.query.ChainableQuerySubscriberProbe
@@ -108,6 +111,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
   private val monitors = resolver.resolveDependency(classOf[Monitors])
   private val contextFactory = Neo4jTransactionalContextFactory.create(cypherGraphDb)
   private lazy val txIdStore = resolver.resolveDependency(classOf[TransactionIdStore])
+  private lazy val authManager = resolver.resolveDependency(classOf[AuthManager])
 
   private[this] var _tx: InternalTransaction = _
   private[this] var _txContext: TransactionalContext = _
@@ -396,6 +400,49 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
     profile = false,
     testPlanCombinationRewriterHints = testPlanCombinationRewriterHints
   )
+
+  override def executeAs(
+    logicalQuery: LogicalQuery,
+    runtime: CypherRuntime[CONTEXT],
+    username: String,
+    password: String
+  ): RecordingRuntimeResult = {
+
+    val lgCtx =
+      authManager.login(AuthToken.newBasicAuthToken(username, password), ClientConnectionInfo.EMBEDDED_CONNECTION)
+    val tx = cypherGraphDb.beginTransaction(Type.EXPLICIT, lgCtx)
+    val txContext = contextFactory.newContext(
+      tx,
+      "<<queryText>>",
+      VirtualValues.EMPTY_MAP,
+      QueryExecutionConfiguration.DEFAULT_CONFIG
+    )
+    val queryContext = newQueryContext(txContext)
+    val subscriber = newRecordingQuerySubscriber
+    try {
+      val executionPlan = compileWithTx(logicalQuery, runtime, queryContext)._1
+      runWithTx(
+        executionPlan,
+        NO_INPUT.stream(),
+        (_, result) => {
+          val recordingRuntimeResult = newRecordingRuntimeResult(result, subscriber)
+          recordingRuntimeResult.awaitAll()
+          recordingRuntimeResult.runtimeResult.close()
+          recordingRuntimeResult
+        },
+        subscriber,
+        profile = false,
+        logicalQuery.readOnly,
+        Map.empty,
+        tx,
+        txContext
+      )
+    } finally {
+      queryContext.resources.close()
+      txContext.close()
+      tx.close()
+    }
+  }
 
   override def executeAndConsumeTransactionally(
     logicalQuery: LogicalQuery,

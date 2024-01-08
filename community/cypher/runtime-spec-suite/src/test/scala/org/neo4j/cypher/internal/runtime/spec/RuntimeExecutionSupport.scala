@@ -78,6 +78,13 @@ trait RuntimeExecutionSupport[CONTEXT <: RuntimeContext] extends InputDataStream
   def execute(logicalQuery: LogicalQuery, runtime: CypherRuntime[CONTEXT]): RecordingRuntimeResult =
     execute(logicalQuery, runtime, NoInput, Map.empty)
 
+  def executeAs(
+    logicalQuery: LogicalQuery,
+    runtime: CypherRuntime[CONTEXT],
+    username: String,
+    password: String
+  ): RecordingRuntimeResult
+
   def execute(
     logicalQuery: LogicalQuery,
     runtime: CypherRuntime[CONTEXT],

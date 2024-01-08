@@ -76,6 +76,13 @@ trait RuntimeTestSupportExecution[CONTEXT <: RuntimeContext] extends RuntimeExec
   override def execute(executablePlan: ExecutionPlan, readOnly: Boolean, implicitTx: Boolean): RecordingRuntimeResult =
     runtimeTestSupport.execute(executablePlan, readOnly, implicitTx)
 
+  override def executeAs(
+    logicalQuery: LogicalQuery,
+    runtime: CypherRuntime[CONTEXT],
+    username: String,
+    password: String
+  ): RecordingRuntimeResult = runtimeTestSupport.executeAs(logicalQuery, runtime, username, password)
+
   override def buildPlan(
     logicalQuery: LogicalQuery,
     runtime: CypherRuntime[CONTEXT],

@@ -135,6 +135,23 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
     (aNodes, bNodes)
   }
 
+  def bipartiteGraphMultiLabel(
+    nNodes: Int,
+    aLabel: String,
+    bLabel: String,
+    relTypes: String*
+  ): (Seq[Node], Seq[Node]) = {
+    val aNodes = nodePropertyGraph(nNodes, PartialFunction.empty[Int, Map[String, Any]], aLabel)
+    val bNodes = nodePropertyGraph(nNodes, PartialFunction.empty[Int, Map[String, Any]], bLabel)
+    val relationshipTypes = for { relType <- relTypes } yield RelationshipType.withName(relType)
+    for { a <- aNodes; b <- bNodes } {
+      for (relationshipType <- relationshipTypes) {
+        a.createRelationshipTo(b, relationshipType)
+      }
+    }
+    (aNodes, bNodes)
+  }
+
   def bidirectionalBipartiteGraph(
     nNodes: Int,
     aLabel: String,
@@ -503,6 +520,34 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
     for (i <- 0 until ringSize) {
       val a = ring(i)
       rels += a.createRelationshipTo(center, rType)
+    }
+    (ring :+ center, rels.toSeq)
+  }
+
+  /**
+   * A star graph with rings of different labels
+   * Will create ringSize * labelRings number of nodes.
+   * Relationships are in the outgoing direction from center node.
+   */
+  def starGraphMultiLabel(
+    ringSize: Int,
+    labelCenter: String,
+    labelRings: Seq[String]
+  ): (Seq[Node], Seq[Relationship]) = {
+    val ring =
+      for {
+        _ <- 0 until ringSize
+        label <- labelRings
+      } yield {
+        runtimeTestSupport.tx.createNode(Label.label(label))
+      }
+    val center = runtimeTestSupport.tx.createNode(Label.label(labelCenter))
+
+    val rels = new ArrayBuffer[Relationship]
+    val rType = RelationshipType.withName("R")
+    for (i <- 0 until ring.size) {
+      val a = ring(i)
+      rels += center.createRelationshipTo(a, rType)
     }
     (ring :+ center, rels.toSeq)
   }
