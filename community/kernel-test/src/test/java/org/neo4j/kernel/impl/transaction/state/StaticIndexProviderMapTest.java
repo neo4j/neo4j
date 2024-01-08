@@ -27,6 +27,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.collection.Dependencies.dependenciesOf;
 
 import java.util.ArrayList;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -51,7 +52,8 @@ class StaticIndexProviderMapTest {
         var textIndexProvider = mockProvider(TextIndexProvider.class, IndexType.TEXT);
         var trigramIndexProvider = mockProvider(TrigramIndexProvider.class, IndexType.TEXT);
         var fulltextIndexProvider = mockProvider(FulltextIndexProvider.class, IndexType.FULLTEXT);
-        var vectorIndexProvider = mockProvider(VectorIndexProvider.class, IndexType.VECTOR);
+        var vectorV1IndexProvider = mockProvider(VectorIndexProvider.class, IndexType.VECTOR);
+        var vectorV2IndexProvider = mockProvider(VectorIndexProvider.class, IndexType.VECTOR);
         var map = new StaticIndexProviderMap(
                 tokenIndexProvider,
                 rangeIndexProvider,
@@ -59,7 +61,8 @@ class StaticIndexProviderMapTest {
                 textIndexProvider,
                 trigramIndexProvider,
                 fulltextIndexProvider,
-                vectorIndexProvider,
+                vectorV1IndexProvider,
+                vectorV2IndexProvider,
                 new Dependencies());
         map.init();
 
@@ -68,7 +71,7 @@ class StaticIndexProviderMapTest {
         assertThat(map.getTextIndexProvider()).isEqualTo(trigramIndexProvider);
         assertThat(map.getFulltextProvider()).isEqualTo(fulltextIndexProvider);
         assertThat(map.getPointIndexProvider()).isEqualTo(pointIndexProvider);
-        assertThat(map.getVectorIndexProvider()).isEqualTo(vectorIndexProvider);
+        assertThat(map.getVectorIndexProvider()).isEqualTo(vectorV2IndexProvider);
     }
 
     @Test
@@ -79,7 +82,8 @@ class StaticIndexProviderMapTest {
         var textIndexProvider = mockProvider(TextIndexProvider.class, IndexType.TEXT);
         var trigramIndexProvider = mockProvider(TrigramIndexProvider.class, IndexType.TEXT);
         var fulltextIndexProvider = mockProvider(FulltextIndexProvider.class, IndexType.FULLTEXT);
-        var vectorIndexProvider = mockProvider(VectorIndexProvider.class, IndexType.VECTOR);
+        var vectorV1IndexProvider = mockProvider(VectorIndexProvider.class, IndexType.VECTOR);
+        var vectorV2IndexProvider = mockProvider(VectorIndexProvider.class, IndexType.VECTOR);
         var map = new StaticIndexProviderMap(
                 tokenIndexProvider,
                 rangeIndexProvider,
@@ -87,7 +91,8 @@ class StaticIndexProviderMapTest {
                 textIndexProvider,
                 trigramIndexProvider,
                 fulltextIndexProvider,
-                vectorIndexProvider,
+                vectorV1IndexProvider,
+                vectorV2IndexProvider,
                 new Dependencies());
         map.init();
 
@@ -98,7 +103,8 @@ class StaticIndexProviderMapTest {
                         textIndexProvider,
                         trigramIndexProvider,
                         fulltextIndexProvider,
-                        vectorIndexProvider)
+                        vectorV1IndexProvider,
+                        vectorV2IndexProvider)
                 .forEach(p -> {
                     assertThat(map.lookup(p.getProviderDescriptor()))
                             .as("lookup by descriptor")
@@ -118,7 +124,8 @@ class StaticIndexProviderMapTest {
         var textIndexProvider = mockProvider(TextIndexProvider.class, IndexType.TEXT);
         var trigramIndexProvider = mockProvider(TrigramIndexProvider.class, IndexType.TEXT);
         var fulltextIndexProvider = mockProvider(FulltextIndexProvider.class, IndexType.FULLTEXT);
-        var vectorIndexProvider = mockProvider(VectorIndexProvider.class, IndexType.VECTOR);
+        var vectorV1IndexProvider = mockProvider(VectorIndexProvider.class, IndexType.VECTOR);
+        var vectorV2IndexProvider = mockProvider(VectorIndexProvider.class, IndexType.VECTOR);
         var map = new StaticIndexProviderMap(
                 tokenIndexProvider,
                 rangeIndexProvider,
@@ -126,7 +133,8 @@ class StaticIndexProviderMapTest {
                 textIndexProvider,
                 trigramIndexProvider,
                 fulltextIndexProvider,
-                vectorIndexProvider,
+                vectorV1IndexProvider,
+                vectorV2IndexProvider,
                 new Dependencies());
         map.init();
 
@@ -141,7 +149,8 @@ class StaticIndexProviderMapTest {
                         trigramIndexProvider,
                         fulltextIndexProvider,
                         pointIndexProvider,
-                        vectorIndexProvider);
+                        vectorV1IndexProvider,
+                        vectorV2IndexProvider);
     }
 
     @Test
@@ -155,6 +164,7 @@ class StaticIndexProviderMapTest {
                 mockProvider(TextIndexProvider.class, IndexType.TEXT),
                 mockProvider(TrigramIndexProvider.class, IndexType.TEXT),
                 mockProvider(FulltextIndexProvider.class, IndexType.FULLTEXT),
+                mockProvider(VectorIndexProvider.class, IndexType.VECTOR),
                 mockProvider(VectorIndexProvider.class, IndexType.VECTOR),
                 dependenciesOf(extension));
         map.init();
@@ -178,6 +188,7 @@ class StaticIndexProviderMapTest {
                 mockProvider(TrigramIndexProvider.class, IndexType.TEXT),
                 mockProvider(FulltextIndexProvider.class, IndexType.FULLTEXT),
                 mockProvider(VectorIndexProvider.class, IndexType.VECTOR),
+                mockProvider(VectorIndexProvider.class, IndexType.VECTOR),
                 new Dependencies());
         map.init();
 
@@ -191,7 +202,8 @@ class StaticIndexProviderMapTest {
 
     private static <T extends IndexProvider> T mockProvider(Class<? extends T> clazz) {
         var mock = mock(clazz);
-        when(mock.getProviderDescriptor()).thenReturn(new IndexProviderDescriptor(clazz.getName(), "o_O"));
+        var version = UUID.randomUUID().toString();
+        when(mock.getProviderDescriptor()).thenReturn(new IndexProviderDescriptor(clazz.getName(), version));
         return mock;
     }
 

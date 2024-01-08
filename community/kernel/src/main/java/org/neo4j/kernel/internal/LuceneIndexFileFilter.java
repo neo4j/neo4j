@@ -46,6 +46,7 @@ public class LuceneIndexFileFilter extends IndexFileFilter {
         return provider.equals(TextIndexProvider.DESCRIPTOR.name())
                 || provider.equals(TrigramIndexProvider.DESCRIPTOR.name())
                 || provider.equals(FulltextIndexProviderFactory.DESCRIPTOR.name())
-                || provider.equals(VectorIndexVersion.V1_0.descriptor().name());
+                || provider.equals(VectorIndexVersion.V1_0.descriptor().name())
+                || provider.equals(VectorIndexVersion.V2_0.descriptor().name());
     }
 }
