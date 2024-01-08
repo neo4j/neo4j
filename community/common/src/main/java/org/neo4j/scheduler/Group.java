@@ -148,7 +148,7 @@ public enum Group {
     SECURITY_MAINTAINENCE("SecurityMaintainence"),
 
     // GDS
-    GDS_CLUSTER_WRITE("GdsClusterWrite"),
+    GDS_CLUSTER_WRITE("GdsClusterWrite", ExecutorServiceFactory.cached()),
 
     // ARROW
     ARROW_WRITE("ArrowWrite"),
