@@ -216,11 +216,11 @@ public class StaticIndexProviderMapFactory {
 
         return new StaticIndexProviderMap(
                 tokenIndexProvider,
-                textIndexProvider,
-                fulltextIndexProvider,
                 rangeIndexProvider,
                 pointIndexProvider,
+                textIndexProvider,
                 trigramIndexProvider,
+                fulltextIndexProvider,
                 vectorIndexProvider,
                 dependencies);
     }

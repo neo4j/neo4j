@@ -40,17 +40,17 @@ public class MockIndexProviderMap extends LifecycleAdapter implements IndexProvi
     public void init() {}
 
     @Override
+    public IndexProvider getTokenIndexProvider() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public IndexProvider getDefaultProvider() {
         return indexProvider;
     }
 
     @Override
-    public IndexProvider getFulltextProvider() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public IndexProvider getTokenIndexProvider() {
+    public IndexProvider getPointIndexProvider() {
         throw new UnsupportedOperationException();
     }
 
@@ -60,7 +60,7 @@ public class MockIndexProviderMap extends LifecycleAdapter implements IndexProvi
     }
 
     @Override
-    public IndexProvider getPointIndexProvider() {
+    public IndexProvider getFulltextProvider() {
         throw new UnsupportedOperationException();
     }
 

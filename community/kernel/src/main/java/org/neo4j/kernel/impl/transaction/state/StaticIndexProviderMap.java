@@ -48,55 +48,44 @@ public class StaticIndexProviderMap extends LifecycleAdapter implements IndexPro
     private final Map<String, IndexProvider> indexProvidersByName = new HashMap<>();
     private final Map<IndexType, List<IndexProvider>> indexProvidersByType = new HashMap<>();
     private final IndexProvider tokenIndexProvider;
-    private final IndexProvider textIndexProvider;
-    private final IndexProvider fulltextIndexProvider;
     private final IndexProvider rangeIndexProvider;
     private final IndexProvider pointIndexProvider;
+    private final IndexProvider textIndexProvider;
     private final IndexProvider trigramIndexProvider;
+    private final IndexProvider fulltextIndexProvider;
     private final IndexProvider vectorIndexProvider;
     private final DependencyResolver dependencies;
 
     public StaticIndexProviderMap(
             TokenIndexProvider tokenIndexProvider,
-            TextIndexProvider textIndexProvider,
-            FulltextIndexProvider fulltextIndexProvider,
             RangeIndexProvider rangeIndexProvider,
             PointIndexProvider pointIndexProvider,
+            TextIndexProvider textIndexProvider,
             TrigramIndexProvider trigramIndexProvider,
+            FulltextIndexProvider fulltextIndexProvider,
             VectorIndexProvider vectorIndexProvider,
             DependencyResolver dependencies) {
         this.tokenIndexProvider = tokenIndexProvider;
-        this.textIndexProvider = textIndexProvider;
-        this.fulltextIndexProvider = fulltextIndexProvider;
         this.rangeIndexProvider = rangeIndexProvider;
         this.pointIndexProvider = pointIndexProvider;
+        this.textIndexProvider = textIndexProvider;
         this.trigramIndexProvider = trigramIndexProvider;
+        this.fulltextIndexProvider = fulltextIndexProvider;
         this.vectorIndexProvider = vectorIndexProvider;
         this.dependencies = dependencies;
     }
 
     @Override
     public void init() throws Exception {
-        add(tokenIndexProvider);
-        add(textIndexProvider);
-        add(fulltextIndexProvider);
-        add(rangeIndexProvider);
-        add(pointIndexProvider);
-        add(trigramIndexProvider);
-        if (vectorIndexProvider != null) {
-            add(vectorIndexProvider);
-        }
+        add(
+                tokenIndexProvider,
+                rangeIndexProvider,
+                pointIndexProvider,
+                textIndexProvider,
+                trigramIndexProvider,
+                fulltextIndexProvider,
+                vectorIndexProvider);
         dependencies.resolveTypeDependencies(IndexProvider.class).forEach(this::add);
-    }
-
-    @Override
-    public IndexProvider getDefaultProvider() {
-        return rangeIndexProvider;
-    }
-
-    @Override
-    public IndexProvider getFulltextProvider() {
-        return fulltextIndexProvider;
     }
 
     @Override
@@ -105,13 +94,23 @@ public class StaticIndexProviderMap extends LifecycleAdapter implements IndexPro
     }
 
     @Override
-    public IndexProvider getTextIndexProvider() {
-        return trigramIndexProvider;
+    public IndexProvider getDefaultProvider() {
+        return rangeIndexProvider;
     }
 
     @Override
     public IndexProvider getPointIndexProvider() {
         return pointIndexProvider;
+    }
+
+    @Override
+    public IndexProvider getTextIndexProvider() {
+        return trigramIndexProvider;
+    }
+
+    @Override
+    public IndexProvider getFulltextProvider() {
+        return fulltextIndexProvider;
     }
 
     @Override
@@ -181,6 +180,10 @@ public class StaticIndexProviderMap extends LifecycleAdapter implements IndexPro
     }
 
     private void add(IndexProvider provider) {
+        if (provider == null) {
+            return;
+        }
+
         var providerDescriptor = requireNonNull(provider.getProviderDescriptor());
         var existing = indexProvidersByDescriptor.putIfAbsent(providerDescriptor, provider);
         if (existing != null) {
@@ -192,5 +195,11 @@ public class StaticIndexProviderMap extends LifecycleAdapter implements IndexPro
         indexProvidersByType
                 .computeIfAbsent(provider.getIndexType(), it -> new ArrayList<>())
                 .add(provider);
+    }
+
+    private void add(IndexProvider... providers) {
+        for (var provider : providers) {
+            add(provider);
+        }
     }
 }

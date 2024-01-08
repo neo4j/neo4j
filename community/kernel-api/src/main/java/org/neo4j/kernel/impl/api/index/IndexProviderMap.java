@@ -61,6 +61,13 @@ public interface IndexProviderMap extends IndexConfigCompleter {
     List<IndexProvider> lookup(IndexType indexType);
 
     /**
+     * There's always a token index provider, this method returns it.
+     *
+     * @return token index provider for this instance
+     */
+    IndexProvider getTokenIndexProvider();
+
+    /**
      * There's always a default {@link IndexProvider}, this method returns it.
      *
      * @return the default index provider for this instance.
@@ -68,18 +75,9 @@ public interface IndexProviderMap extends IndexConfigCompleter {
     IndexProvider getDefaultProvider();
 
     /**
-     * The preferred {@link IndexProvider} for handling full-text indexes.
-     *
-     * @return the default or preferred index provider for full-text indexes.
+     * The preferred {@link IndexProvider} for handling point indexes.
      */
-    IndexProvider getFulltextProvider();
-
-    /**
-     * There's always a token index provider, this method returns it.
-     *
-     * @return token index provider for this instance
-     */
-    IndexProvider getTokenIndexProvider();
+    IndexProvider getPointIndexProvider();
 
     /**
      * The preferred {@link IndexProvider} for handling text indexes.
@@ -89,9 +87,11 @@ public interface IndexProviderMap extends IndexConfigCompleter {
     IndexProvider getTextIndexProvider();
 
     /**
-     * The preferred {@link IndexProvider} for handling point indexes.
+     * The preferred {@link IndexProvider} for handling full-text indexes.
+     *
+     * @return the default or preferred index provider for full-text indexes.
      */
-    IndexProvider getPointIndexProvider();
+    IndexProvider getFulltextProvider();
 
     /**
      * The preferred {@link IndexProvider} for handling vector indexes.
@@ -128,17 +128,17 @@ public interface IndexProviderMap extends IndexConfigCompleter {
         }
 
         @Override
+        public IndexProvider getTokenIndexProvider() {
+            return IndexProvider.EMPTY;
+        }
+
+        @Override
         public IndexProvider getDefaultProvider() {
             return IndexProvider.EMPTY;
         }
 
         @Override
-        public IndexProvider getFulltextProvider() {
-            return IndexProvider.EMPTY;
-        }
-
-        @Override
-        public IndexProvider getTokenIndexProvider() {
+        public IndexProvider getPointIndexProvider() {
             return IndexProvider.EMPTY;
         }
 
@@ -148,7 +148,7 @@ public interface IndexProviderMap extends IndexConfigCompleter {
         }
 
         @Override
-        public IndexProvider getPointIndexProvider() {
+        public IndexProvider getFulltextProvider() {
             return IndexProvider.EMPTY;
         }
 

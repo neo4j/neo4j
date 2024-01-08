@@ -46,73 +46,86 @@ class StaticIndexProviderMapTest {
     @Test
     void testGetters() throws Exception {
         var tokenIndexProvider = mockProvider(TokenIndexProvider.class, IndexType.LOOKUP);
-        var textIndexProvider = mockProvider(TextIndexProvider.class, IndexType.TEXT);
-        var fulltextIndexProvider = mockProvider(FulltextIndexProvider.class, IndexType.FULLTEXT);
         var rangeIndexProvider = mockProvider(RangeIndexProvider.class, IndexType.RANGE);
         var pointIndexProvider = mockProvider(PointIndexProvider.class, IndexType.POINT);
+        var textIndexProvider = mockProvider(TextIndexProvider.class, IndexType.TEXT);
         var trigramIndexProvider = mockProvider(TrigramIndexProvider.class, IndexType.TEXT);
+        var fulltextIndexProvider = mockProvider(FulltextIndexProvider.class, IndexType.FULLTEXT);
         var vectorIndexProvider = mockProvider(VectorIndexProvider.class, IndexType.VECTOR);
         var map = new StaticIndexProviderMap(
                 tokenIndexProvider,
-                textIndexProvider,
-                fulltextIndexProvider,
                 rangeIndexProvider,
                 pointIndexProvider,
+                textIndexProvider,
                 trigramIndexProvider,
+                fulltextIndexProvider,
                 vectorIndexProvider,
                 new Dependencies());
         map.init();
 
-        assertThat(map.getTextIndexProvider()).isEqualTo(trigramIndexProvider);
-        assertThat(map.getFulltextProvider()).isEqualTo(fulltextIndexProvider);
         assertThat(map.getTokenIndexProvider()).isEqualTo(tokenIndexProvider);
         assertThat(map.getDefaultProvider()).isEqualTo(rangeIndexProvider);
+        assertThat(map.getTextIndexProvider()).isEqualTo(trigramIndexProvider);
+        assertThat(map.getFulltextProvider()).isEqualTo(fulltextIndexProvider);
         assertThat(map.getPointIndexProvider()).isEqualTo(pointIndexProvider);
+        assertThat(map.getVectorIndexProvider()).isEqualTo(vectorIndexProvider);
     }
 
     @Test
     void testLookup() throws Exception {
         var tokenIndexProvider = mockProvider(TokenIndexProvider.class, IndexType.LOOKUP);
-        var textIndexProvider = mockProvider(TextIndexProvider.class, IndexType.TEXT);
-        var fulltextIndexProvider = mockProvider(FulltextIndexProvider.class, IndexType.FULLTEXT);
         var rangeIndexProvider = mockProvider(RangeIndexProvider.class, IndexType.RANGE);
         var pointIndexProvider = mockProvider(PointIndexProvider.class, IndexType.POINT);
+        var textIndexProvider = mockProvider(TextIndexProvider.class, IndexType.TEXT);
         var trigramIndexProvider = mockProvider(TrigramIndexProvider.class, IndexType.TEXT);
+        var fulltextIndexProvider = mockProvider(FulltextIndexProvider.class, IndexType.FULLTEXT);
         var vectorIndexProvider = mockProvider(VectorIndexProvider.class, IndexType.VECTOR);
         var map = new StaticIndexProviderMap(
                 tokenIndexProvider,
-                textIndexProvider,
-                fulltextIndexProvider,
                 rangeIndexProvider,
                 pointIndexProvider,
+                textIndexProvider,
                 trigramIndexProvider,
+                fulltextIndexProvider,
                 vectorIndexProvider,
                 new Dependencies());
         map.init();
 
-        asList(tokenIndexProvider, textIndexProvider, fulltextIndexProvider, rangeIndexProvider, pointIndexProvider)
+        asList(
+                        tokenIndexProvider,
+                        rangeIndexProvider,
+                        pointIndexProvider,
+                        textIndexProvider,
+                        trigramIndexProvider,
+                        fulltextIndexProvider,
+                        vectorIndexProvider)
                 .forEach(p -> {
-                    assertThat(map.lookup(p.getProviderDescriptor())).isEqualTo(p);
-                    assertThat(map.lookup(p.getProviderDescriptor().name())).isEqualTo(p);
+                    assertThat(map.lookup(p.getProviderDescriptor()))
+                            .as("lookup by descriptor")
+                            .isEqualTo(p);
+
+                    assertThat(map.lookup(p.getProviderDescriptor().name()))
+                            .as("lookup by descriptor name")
+                            .isEqualTo(p);
                 });
     }
 
     @Test
     void testAccept() throws Exception {
         var tokenIndexProvider = mockProvider(TokenIndexProvider.class, IndexType.LOOKUP);
-        var textIndexProvider = mockProvider(TextIndexProvider.class, IndexType.TEXT);
-        var fulltextIndexProvider = mockProvider(FulltextIndexProvider.class, IndexType.FULLTEXT);
         var rangeIndexProvider = mockProvider(RangeIndexProvider.class, IndexType.RANGE);
         var pointIndexProvider = mockProvider(PointIndexProvider.class, IndexType.POINT);
+        var textIndexProvider = mockProvider(TextIndexProvider.class, IndexType.TEXT);
         var trigramIndexProvider = mockProvider(TrigramIndexProvider.class, IndexType.TEXT);
+        var fulltextIndexProvider = mockProvider(FulltextIndexProvider.class, IndexType.FULLTEXT);
         var vectorIndexProvider = mockProvider(VectorIndexProvider.class, IndexType.VECTOR);
         var map = new StaticIndexProviderMap(
                 tokenIndexProvider,
-                textIndexProvider,
-                fulltextIndexProvider,
                 rangeIndexProvider,
                 pointIndexProvider,
+                textIndexProvider,
                 trigramIndexProvider,
+                fulltextIndexProvider,
                 vectorIndexProvider,
                 new Dependencies());
         map.init();
@@ -123,10 +136,10 @@ class StaticIndexProviderMapTest {
         assertThat(accepted)
                 .containsExactlyInAnyOrder(
                         tokenIndexProvider,
-                        textIndexProvider,
-                        fulltextIndexProvider,
                         rangeIndexProvider,
+                        textIndexProvider,
                         trigramIndexProvider,
+                        fulltextIndexProvider,
                         pointIndexProvider,
                         vectorIndexProvider);
     }
@@ -137,11 +150,11 @@ class StaticIndexProviderMapTest {
         RangeIndexProvider rangeIndexProvider = mockProvider(RangeIndexProvider.class, IndexType.RANGE);
         var map = new StaticIndexProviderMap(
                 mockProvider(TokenIndexProvider.class, IndexType.LOOKUP),
-                mockProvider(TextIndexProvider.class, IndexType.TEXT),
-                mockProvider(FulltextIndexProvider.class, IndexType.FULLTEXT),
                 rangeIndexProvider,
                 mockProvider(PointIndexProvider.class, IndexType.POINT),
+                mockProvider(TextIndexProvider.class, IndexType.TEXT),
                 mockProvider(TrigramIndexProvider.class, IndexType.TEXT),
+                mockProvider(FulltextIndexProvider.class, IndexType.FULLTEXT),
                 mockProvider(VectorIndexProvider.class, IndexType.VECTOR),
                 dependenciesOf(extension));
         map.init();
@@ -159,11 +172,11 @@ class StaticIndexProviderMapTest {
         var rangeIndexProvider = mockProvider(RangeIndexProvider.class, IndexType.RANGE);
         var map = new StaticIndexProviderMap(
                 mockProvider(TokenIndexProvider.class, IndexType.LOOKUP),
-                mockProvider(TextIndexProvider.class, IndexType.TEXT),
-                mockProvider(FulltextIndexProvider.class, IndexType.FULLTEXT),
                 rangeIndexProvider,
-                mockProvider(PointIndexProvider.class, IndexType.TEXT), // <- Not point
+                mockProvider(PointIndexProvider.class, IndexType.TEXT), // <- Specifically NOT point
+                mockProvider(TextIndexProvider.class, IndexType.TEXT),
                 mockProvider(TrigramIndexProvider.class, IndexType.TEXT),
+                mockProvider(FulltextIndexProvider.class, IndexType.FULLTEXT),
                 mockProvider(VectorIndexProvider.class, IndexType.VECTOR),
                 new Dependencies());
         map.init();
