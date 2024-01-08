@@ -19,15 +19,13 @@
  */
 package org.neo4j.cypher.internal.ir.ordering
 
-import org.neo4j.cypher.internal.expressions.DesugaredMapProjection
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.ast.IRExpression
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.projectExpression
-import org.neo4j.cypher.internal.util.RewriterStopperWithParent
-import org.neo4j.cypher.internal.util.RewriterWithParent
-import org.neo4j.cypher.internal.util.topDownWithParent
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.topDown
 
 /**
  * A column of either an [[OrderCandidate]] or a [[ProvidedOrder]].
@@ -94,24 +92,14 @@ object ColumnOrder {
    * @return the original expression, or the same expression.
    */
   def projectExpression(expression: Expression, projections: Map[LogicalVariable, Expression]): Expression = {
-    expression.endoRewrite(topDownWithParent(
-      RewriterWithParent.lift {
-        // We must be careful when rewriting the logical variable used in a map projection
-        case (v: LogicalVariable, Some(DesugaredMapProjection(mapVar, _, _))) if mapVar == v =>
-          projections.get(v) match {
-            // Replacing the variable with another logical variable is sound
-            case Some(lv: LogicalVariable) => lv
-            // Any other type is not
-            case Some(_) => v
-            // If v isn't a projected value, keep it as is
-            case None => v
-          }
-        case (v: Variable, _) =>
+    expression.endoRewrite(topDown(
+      Rewriter.lift {
+        case v: Variable =>
           projections.getOrElse(v, v)
       },
       // Do not attempt rewriting in IR expressions, they contain variables in places where they cannot get substituted
       // by other expression.
-      stopper = RewriterStopperWithParent(_.isInstanceOf[IRExpression])
+      stopper = _.isInstanceOf[IRExpression]
     ))
   }
 }

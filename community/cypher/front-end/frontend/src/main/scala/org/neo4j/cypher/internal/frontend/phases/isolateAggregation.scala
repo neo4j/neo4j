@@ -138,8 +138,8 @@ case object isolateAggregation extends StatementRewriter with StepSequencer.Step
                 Seq(expr) ++ extract.dependencies.diff(Set(e.variable))
             }
 
-          case e @ DesugaredMapProjection(variable, items, _) if hasAggregateButIsNotAggregate(e) =>
-            items.map(_.exp) :+ variable
+          case e @ DesugaredMapProjection(entity, items, _) if hasAggregateButIsNotAggregate(e) =>
+            items.map(_.exp) :+ entity
 
           case e: IterablePredicateExpression if hasAggregateButIsNotAggregate(e) =>
             val predicate: Expression =

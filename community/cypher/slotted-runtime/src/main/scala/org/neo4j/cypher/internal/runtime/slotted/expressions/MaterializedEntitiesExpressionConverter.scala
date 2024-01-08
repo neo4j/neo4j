@@ -74,7 +74,7 @@ case class MaterializedEntitiesExpressionConverter(tokenContext: ReadTokenContex
       case e: expressions.HasLabelsOrTypes => hasLabelsOrTypes(id, e, self)
       case e: expressions.DesugaredMapProjection =>
         Some(MaterializedDesugaredMapExpression(
-          self.toCommandExpression(id, e.variable),
+          self.toCommandExpression(id, e.entity),
           e.items.map(le => le.key.name -> self.toCommandExpression(id, le.exp)).toMap,
           e.includeAllProps
         ))

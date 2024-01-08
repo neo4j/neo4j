@@ -26,7 +26,7 @@ case class MapProjection(
   override def isConstantForQuery: Boolean = items.forall(_.isConstantForQuery)
 }
 
-case class DesugaredMapProjection(variable: LogicalVariable, items: Seq[LiteralEntry], includeAllProps: Boolean)(
+case class DesugaredMapProjection(entity: Expression, items: Seq[LiteralEntry], includeAllProps: Boolean)(
   val position: InputPosition
 ) extends Expression {
   // we need the variable to read

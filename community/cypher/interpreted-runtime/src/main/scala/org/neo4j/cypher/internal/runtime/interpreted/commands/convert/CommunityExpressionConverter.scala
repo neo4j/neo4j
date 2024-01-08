@@ -410,7 +410,11 @@ case class CommunityExpressionConverter(
             e.inequalities.map(e => inequalityExpression(id, e, self))
           )
       case e: DesugaredMapProjection => commands.expressions
-          .DesugaredMapProjection(variable(e.variable), e.includeAllProps, mapProjectionItems(id, e.items, self))
+          .DesugaredMapProjection(
+            self.toCommandExpression(id, e.entity),
+            e.includeAllProps,
+            mapProjectionItems(id, e.items, self)
+          )
       case e: ResolvedFunctionInvocation =>
         val callArgumentCommands = e.callArguments.map(Some(_))
           .zipAll(e.fcnSignature.get.inputSignature.map(_.default), None, None).map {

@@ -647,7 +647,7 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
 
       case x: DesugaredMapProjection =>
         check(ctx, x.items) chain
-          ensureDefined(x.variable) chain
+          check(ctx, x.entity) chain
           specifyType(CTMap, x) ifOkChain // We need to remember the scope to later rewrite this ASTNode
           SemanticState.recordCurrentScope(x)
 

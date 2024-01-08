@@ -89,7 +89,7 @@ class ColumnOrderTest extends CypherFunSuite with AstConstructionTestSupport {
       v"keanu" -> v"actor"
     )
     val desugaredMapProjection = DesugaredMapProjection(
-      variable = v"keanu",
+      entity = v"keanu",
       items = List(
         LiteralEntry(propName("name"), prop("keanu", "name"))(pos)
       ),
@@ -108,7 +108,7 @@ class ColumnOrderTest extends CypherFunSuite with AstConstructionTestSupport {
       v"movies" -> collect(v"movie")
     )
     val desugaredMapProjection = DesugaredMapProjection(
-      variable = v"keanu",
+      entity = v"keanu",
       items = List(
         LiteralEntry(propName("name"), prop("keanu", "name"))(pos),
         LiteralEntry(propName("movies"), v"movies")(pos)
@@ -119,9 +119,9 @@ class ColumnOrderTest extends CypherFunSuite with AstConstructionTestSupport {
     columnOrder.dependencies shouldBe Set(v"actor", v"movie")
   }
 
-  // `RETURN {'name': 'Keanu Reeves'} AS keanu, collect(movie) AS movies ORDER BY keanu{.name, movies: movies}` depends on `keanu` and `movie`
+  // `RETURN {'name': 'Keanu Reeves'} AS keanu, collect(movie) AS movies ORDER BY keanu{.name, movies: movies}` depends on `movie`
   test(
-    "Column Order on map projection of a projected non-variable expression with a literal entry should return the projected expression and the variable in the literal entry as dependencies"
+    "Column Order on map projection of a projected non-variable expression with a literal entry should return the variable in the literal entry as dependencies"
   ) {
     val projections = Map[LogicalVariable, Expression](
       v"keanu" -> mapOf(
@@ -130,7 +130,7 @@ class ColumnOrderTest extends CypherFunSuite with AstConstructionTestSupport {
       v"movies" -> collect(v"movie")
     )
     val desugaredMapProjection = DesugaredMapProjection(
-      variable = v"keanu",
+      entity = v"keanu",
       items = List(
         LiteralEntry(propName("name"), prop("keanu", "name"))(pos),
         LiteralEntry(propName("movies"), v"movies")(pos)
@@ -138,7 +138,7 @@ class ColumnOrderTest extends CypherFunSuite with AstConstructionTestSupport {
       includeAllProps = false
     )(pos)
     val columnOrder = Asc(desugaredMapProjection, projections)
-    columnOrder.dependencies shouldBe Set(v"keanu", v"movie")
+    columnOrder.dependencies shouldBe Set(v"movie")
   }
 
 }

@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
 import org.neo4j.cypher.internal.expressions.Ands
-import org.neo4j.cypher.internal.expressions.DesugaredMapProjection
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.RelTypeName
@@ -194,8 +193,6 @@ object ConvertToNFA {
       ))
         // We cannot rewrite IRExpressions, since they contain Variables as strings
         .filter(_.folder.treeFindByClass[IRExpression].isEmpty)
-        // DesugaredMapProjection cannot ge rewritten. They must have a variable as the first child, not an expression.
-        .filter(_.folder.treeFindByClass[DesugaredMapProjection].isEmpty)
 
       val allApplicablePredicates = allPredicatesGiven -- alreadySolvedPredicates
       allApplicablePredicates.map(p => p -> rewrite(p))

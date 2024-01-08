@@ -294,12 +294,12 @@ private class DefaultExpressionStringifier(
         val itemsText = items.map(apply).mkString(", ")
         s"${apply(variable)}{$itemsText}"
 
-      case DesugaredMapProjection(variable, items, includeAllProps) =>
+      case DesugaredMapProjection(entity, items, includeAllProps) =>
         val itemsText = {
           val allItems = if (!includeAllProps) items else items :+ AllPropertiesSelector()(InputPosition.NONE)
           allItems.map(apply).mkString(", ")
         }
-        s"${apply(variable)}{$itemsText}"
+        s"${apply(entity)}{$itemsText}"
 
       case LiteralEntry(k, e) =>
         s"${apply(k)}: ${inner(ast)(e)}"

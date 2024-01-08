@@ -33,13 +33,13 @@ import org.neo4j.values.virtual.VirtualValues
 import scala.collection.Map
 
 case class DesugaredMapProjection(
-  variable: VariableCommand,
+  entity: Expression,
   includeAllProps: Boolean,
   literalExpressions: Map[String, Expression]
 ) extends Expression with GraphElementPropertyFunctions {
 
   override def apply(row: ReadableRow, state: QueryState): AnyValue = {
-    val variableValue = variable(row, state)
+    val variableValue = entity(row, state)
 
     val mapOfProperties = variableValue match {
       case v if v eq Values.NO_VALUE => return Values.NO_VALUE
@@ -63,11 +63,11 @@ case class DesugaredMapProjection(
   }
 
   override def rewrite(f: Expression => Expression): Expression =
-    f(DesugaredMapProjection(variable, includeAllProps, literalExpressions.rewrite(f)))
+    f(DesugaredMapProjection(entity, includeAllProps, literalExpressions.rewrite(f)))
 
   override def arguments: Seq[Expression] = literalExpressions.values.toIndexedSeq
 
-  override def children: Seq[AstNode[_]] = Seq(variable) ++ arguments
+  override def children: Seq[AstNode[_]] = Seq(entity) ++ arguments
 
-  override def toString: String = s"$variable{.*, " + literalExpressions.mkString + "}"
+  override def toString: String = s"$entity{.*, " + literalExpressions.mkString + "}"
 }

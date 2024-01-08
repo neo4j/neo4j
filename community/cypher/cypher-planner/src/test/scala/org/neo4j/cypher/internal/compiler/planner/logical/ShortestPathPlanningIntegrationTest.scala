@@ -28,6 +28,8 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.ExecutionModel.Volcano
 import org.neo4j.cypher.internal.compiler.helpers.WindowsSafeAnyRef
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
+import org.neo4j.cypher.internal.expressions.DesugaredMapProjection
+import org.neo4j.cypher.internal.expressions.LiteralEntry
 import org.neo4j.cypher.internal.expressions.NilPathStep
 import org.neo4j.cypher.internal.expressions.NodePathStep
 import org.neo4j.cypher.internal.expressions.NodeRelPair
@@ -36,14 +38,18 @@ import org.neo4j.cypher.internal.expressions.RepeatPathStep
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.expressions.SingleRelationshipPathStep
+import org.neo4j.cypher.internal.expressions.functions.EndNode
+import org.neo4j.cypher.internal.expressions.functions.StartNode
 import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.logical.builder.TestNFABuilder
+import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.NFA.RelationshipExpansionPredicate
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -2316,17 +2322,44 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     )
   }
 
-  // Our AST does not allow rewriting DesugaredMapProjections to use an expression instead of a variable.
-  test("Should not inline relationship local (start and end node) predicate into NFA: DesugaredMapProjection") {
+  test("Should inline relationship local (start and end node) predicate into NFA: DesugaredMapProjection") {
     val query =
       "MATCH ANY SHORTEST ((u:User)((n)-[r]->(m))+(v)-[r2]->(w) WHERE v{.foo,.bar} = w{.foo,.bar, baz: r2.baz}) RETURN *"
+
+    val expr = equals(
+      DesugaredMapProjection(
+        StartNode(v"r2")(pos),
+        Seq(
+          LiteralEntry(propName("foo"), prop(StartNode(v"r2")(pos), "foo"))(pos),
+          LiteralEntry(propName("bar"), prop(StartNode(v"r2")(pos), "bar"))(pos)
+        ),
+        includeAllProps = false
+      )(pos),
+      DesugaredMapProjection(
+        EndNode(v"r2")(pos),
+        Seq(
+          LiteralEntry(propName("foo"), prop(EndNode(v"r2")(pos), "foo"))(pos),
+          LiteralEntry(propName("bar"), prop(EndNode(v"r2")(pos), "bar"))(pos),
+          LiteralEntry(propName("baz"), prop("r2", "baz"))(pos)
+        ),
+        includeAllProps = false
+      )(pos)
+    )
+
+    val nfaPredicate = RelationshipExpansionPredicate(
+      v"r2",
+      Some(Expand.VariablePredicate(v"r2", expr)),
+      Seq.empty,
+      OUTGOING,
+      None
+    )
 
     val nfa = new TestNFABuilder(0, "u")
       .addTransition(0, 1, "(u) (n)")
       .addTransition(1, 2, "(n)-[r]->(m)")
       .addTransition(2, 1, "(m) (n)")
       .addTransition(2, 3, "(m) (v)")
-      .addTransition(3, 4, "(v)-[r2]->(w)")
+      .addTransition((3, "v"), (4, "w"), nfaPredicate)
       .setFinalState(4)
       .build()
 
@@ -2337,7 +2370,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
           "u",
           "w",
           "SHORTEST 1 ((u) ((n)-[r]->(m)){1, } (v)-[r2]->(w) WHERE NOT r2 IN `r` AND unique(`r`) AND v{foo: v.foo, bar: v.bar} = w{foo: w.foo, bar: w.bar, baz: r2.baz})",
-          Some("v{foo: v.foo, bar: v.bar} = w{foo: w.foo, bar: w.bar, baz: r2.baz}"),
+          None,
           groupNodes = Set(("n", "n"), ("m", "m")),
           groupRelationships = Set(("r", "r")),
           singletonNodeVariables = Set("v" -> "v"),
