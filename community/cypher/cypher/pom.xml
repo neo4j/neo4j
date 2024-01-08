@@ -30,7 +30,7 @@
             <plugin>
                 <groupId>com.helger.maven</groupId>
                 <artifactId>ph-javacc-maven-plugin</artifactId>
-                <version>4.1.3</version>
+                <version>4.1.5</version>
                 <configuration>
                     <jdkVersion>1.8</jdkVersion>
                     <javadocFriendlyComments>true</javadocFriendlyComments>
