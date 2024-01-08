@@ -523,7 +523,7 @@ object CardinalityCostModel {
 
       case plan: PartitionedIntersectionNodeByLabelsScan =>
         // A workaround for cases where we might get value from an index scan instead. Using the same cost means we will use leaf plan heuristic to decide.
-        if (propertyAccess.exists(_.variableName == plan.idName.name)) {
+        if (propertyAccess.exists(_.variable == plan.idName)) {
           INDEX_SCAN_COST_PER_ROW + STORE_LOOKUP_COST_PER_ROW
         } else {
           INDEX_SCAN_COST_PER_ROW
@@ -571,10 +571,10 @@ object CardinalityCostModel {
         hackyRelTypeScanCost(propertyAccess, plan.idName, directed = false)
 
       case plan: PartitionedDirectedRelationshipTypeScan =>
-        hackyRelTypeScanCost(propertyAccess, plan.idName.name, directed = true)
+        hackyRelTypeScanCost(propertyAccess, plan.idName, directed = true)
 
       case plan: PartitionedUndirectedRelationshipTypeScan =>
-        hackyRelTypeScanCost(propertyAccess, plan.idName.name, directed = false)
+        hackyRelTypeScanCost(propertyAccess, plan.idName, directed = false)
 
       case plan: DirectedUnionRelationshipTypesScan =>
         hackyRelTypeScanCost(propertyAccess, plan.idName, directed = true)
@@ -583,10 +583,10 @@ object CardinalityCostModel {
         hackyRelTypeScanCost(propertyAccess, plan.idName, directed = false)
 
       case plan: PartitionedDirectedUnionRelationshipTypesScan =>
-        hackyRelTypeScanCost(propertyAccess, plan.idName.name, directed = true)
+        hackyRelTypeScanCost(propertyAccess, plan.idName, directed = true)
 
       case plan: PartitionedUndirectedUnionRelationshipTypesScan =>
-        hackyRelTypeScanCost(propertyAccess, plan.idName.name, directed = false)
+        hackyRelTypeScanCost(propertyAccess, plan.idName, directed = false)
 
       case _: DirectedRelationshipIndexScan | _: PartitionedDirectedRelationshipIndexScan =>
         DIRECTED_RELATIONSHIP_INDEX_SCAN_COST_PER_ROW
