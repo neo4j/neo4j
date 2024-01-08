@@ -177,7 +177,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration
             "Certain operations may suffer from a performance penalty of up to 10%, which is why this format is not switched on by default. " +
             "However, if you want to change the configured record format value, you must also set `dbms.allow_upgrade=true`, " +
             "because the setting implies a one-way store format migration." )
-    @DocumentedDefaultValue( "Blank (no value). New databases will use `aligned`. Existing databases will stay on their current format" )
+    @DocumentedDefaultValue( "`aligned` for new databases. Existing databases stay on their current format." )
     public static final Setting<String> record_format = newBuilder( "dbms.record_format", STRING, "" ).build();
 
     @Description( "Whether to allow a system graph upgrade to happen automatically in single instance mode (dbms.mode=SINGLE). " +
