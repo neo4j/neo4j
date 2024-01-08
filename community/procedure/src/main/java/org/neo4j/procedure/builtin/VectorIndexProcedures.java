@@ -80,8 +80,8 @@ public class VectorIndexProcedures {
 
     @Description(
             """
-            Create a named node vector index for the given label and property for a specified vector dimensionality.
-            Valid similarity functions are 'EUCLIDEAN' and 'COSINE', and are case-insensitive.
+            Create a named node vector index for the specified label and property with the given vector dimensionality using either the EUCLIDEAN or COSINE similarity function.
+            Both similarity functions are case-insensitive.
             Use the `db.index.vector.queryNodes` procedure to query the named index.
             """)
     @Procedure(name = "db.index.vector.createNodeIndex", mode = SCHEMA)

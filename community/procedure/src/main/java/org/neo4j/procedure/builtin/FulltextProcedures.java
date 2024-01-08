@@ -106,9 +106,17 @@ public class FulltextProcedures {
 
     @SystemProcedure
     @Description(
-            "Query the given full-text index. Returns the matching nodes, and their Lucene query score, ordered by score. "
-                    + "Valid keys for the options map are: 'skip' to skip the top N results; 'limit' to limit the number of results returned; "
-                    + "'analyzer' to use the specified analyzer as a search analyzer for this query.")
+            """
+            Query the given full-text index. Returns the matching nodes and their Lucene query score, ordered by score.
+            Valid _key: value_ pairs for the `options` map are:
+
+            * 'skip' -- to skip the top N results.
+            * 'limit' -- to limit the number of results returned.
+            * 'analyzer' -- to use the specified analyzer as a search analyzer for this query.
+
+            The `options` map and any of the keys are optional.
+            An example of the `options` map: `{skip: 30, limit: 10, analyzer: 'whitespace'}`
+            """)
     @Procedure(name = "db.index.fulltext.queryNodes", mode = READ)
     public Stream<NodeOutput> queryFulltextForNodes(
             @Name("indexName") String name,
@@ -180,9 +188,17 @@ public class FulltextProcedures {
 
     @SystemProcedure
     @Description(
-            "Query the given full-text index. Returns the matching relationships, and their Lucene query score, ordered by score. "
-                    + "Valid keys for the options map are: 'skip' to skip the top N results; 'limit' to limit the number of results returned; "
-                    + "'analyzer' to use the specified analyzer as search analyzer for this query.")
+            """
+            Query the given full-text index. Returns the matching relationships and their Lucene query score, ordered by score.
+            Valid _key: value_ pairs for the `options` map are:
+
+            * 'skip' -- to skip the top N results.
+            * 'limit' -- to limit the number of results returned.
+            * 'analyzer' -- to use the specified analyzer as a search analyzer for this query.
+
+            The `options` map and any of the keys are optional.
+            An example of the `options` map: `{skip: 30, limit: 10, analyzer: 'whitespace'}`
+            """)
     @Procedure(name = "db.index.fulltext.queryRelationships", mode = READ)
     public Stream<RelationshipOutput> queryFulltextForRelationships(
             @Name("indexName") String name,

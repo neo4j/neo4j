@@ -494,7 +494,7 @@
   },
   {
     "name": "db.index.fulltext.queryNodes",
-    "description": "Query the given full-text index. Returns the matching nodes, and their Lucene query score, ordered by score. Valid keys for the options map are: 'skip' to skip the top N results; 'limit' to limit the number of results returned; 'analyzer' to use the specified analyzer as a search analyzer for this query.",
+    "description": "Query the given full-text index. Returns the matching nodes and their Lucene query score, ordered by score.\nValid _key: value_ pairs for the `options` map are:\n* 'skip' -- to skip the top N results.\n* 'limit' -- to limit the number of results returned.\n* 'analyzer' -- to use the specified analyzer as a search analyzer for this query.\nThe `options` map and any of the keys are optional.\nAn example of the `options` map: `{skip: 30, limit: 10, analyzer: 'whitespace'}`\n",
     "mode": "READ",
     "worksOnSystem": true,
     "signature": "db.index.fulltext.queryNodes(indexName :: STRING, queryString :: STRING, options = {} :: MAP) :: (node :: NODE, score :: FLOAT)",
@@ -549,7 +549,7 @@
   },
   {
     "name": "db.index.fulltext.queryRelationships",
-    "description": "Query the given full-text index. Returns the matching relationships, and their Lucene query score, ordered by score. Valid keys for the options map are: 'skip' to skip the top N results; 'limit' to limit the number of results returned; 'analyzer' to use the specified analyzer as search analyzer for this query.",
+    "description": "Query the given full-text index. Returns the matching relationships and their Lucene query score, ordered by score.\nValid _key: value_ pairs for the `options` map are:\n* 'skip' -- to skip the top N results.\n* 'limit' -- to limit the number of results returned.\n* 'analyzer' -- to use the specified analyzer as a search analyzer for this query.\nThe `options` map and any of the keys are optional.\nAn example of the `options` map: `{skip: 30, limit: 10, analyzer: 'whitespace'}`\n",
     "mode": "READ",
     "worksOnSystem": true,
     "signature": "db.index.fulltext.queryRelationships(indexName :: STRING, queryString :: STRING, options = {} :: MAP) :: (relationship :: RELATIONSHIP, score :: FLOAT)",
@@ -604,7 +604,7 @@
   },
   {
     "name": "db.index.vector.createNodeIndex",
-    "description": "Create a named node vector index for the given label and property for a specified vector dimensionality.\nValid similarity functions are 'EUCLIDEAN' and 'COSINE', and are case-insensitive.\nUse the `db.index.vector.queryNodes` procedure to query the named index.\n",
+    "description": "Create a named node vector index for the specified label and property with the given vector dimensionality using either the EUCLIDEAN or COSINE similarity function.\nBoth similarity functions are case-insensitive.\nUse the `db.index.vector.queryNodes` procedure to query the named index.\n",
     "mode": "SCHEMA",
     "worksOnSystem": false,
     "signature": "db.index.vector.createNodeIndex(indexName :: STRING, label :: STRING, propertyKey :: STRING, vectorDimension :: INTEGER, vectorSimilarityFunction :: STRING)",
