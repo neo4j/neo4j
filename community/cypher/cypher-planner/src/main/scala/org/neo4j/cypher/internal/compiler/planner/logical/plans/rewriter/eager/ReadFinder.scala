@@ -127,23 +127,6 @@ import org.neo4j.cypher.internal.logical.plans.OrderedDistinct
 import org.neo4j.cypher.internal.logical.plans.OrderedUnion
 import org.neo4j.cypher.internal.logical.plans.PartialSort
 import org.neo4j.cypher.internal.logical.plans.PartialTop
-import org.neo4j.cypher.internal.logical.plans.PartitionedAllNodesScan
-import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedAllRelationshipsScan
-import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipIndexScan
-import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipIndexSeek
-import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipTypeScan
-import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedUnionRelationshipTypesScan
-import org.neo4j.cypher.internal.logical.plans.PartitionedIntersectionNodeByLabelsScan
-import org.neo4j.cypher.internal.logical.plans.PartitionedNodeByLabelScan
-import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexScan
-import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexSeek
-import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedAllRelationshipsScan
-import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipIndexScan
-import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipIndexSeek
-import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipTypeScan
-import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedUnionRelationshipTypesScan
-import org.neo4j.cypher.internal.logical.plans.PartitionedUnionNodeByLabelsScan
-import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
 import org.neo4j.cypher.internal.logical.plans.PathPropagatingBFS
 import org.neo4j.cypher.internal.logical.plans.PhysicalPlanningPlan
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
@@ -333,18 +316,8 @@ object ReadFinder {
       case AllNodesScan(varName, _) =>
         PlanReads()
           .withIntroducedNodeVariable(varName)
-      case PartitionedAllNodesScan(varName, _) =>
-        PlanReads()
-          .withIntroducedNodeVariable(varName)
 
       case NodeByLabelScan(variable, labelName, _, _) =>
-        val hasLabels = HasLabels(variable, Seq(labelName))(InputPosition.NONE)
-        PlanReads()
-          .withLabelRead(AccessedLabel(labelName, Some(variable)))
-          .withIntroducedNodeVariable(variable)
-          .withAddedNodeFilterExpression(variable, hasLabels)
-
-      case PartitionedNodeByLabelScan(variable, labelName, _) =>
         val hasLabels = HasLabels(variable, Seq(labelName))(InputPosition.NONE)
         PlanReads()
           .withLabelRead(AccessedLabel(labelName, Some(variable)))
@@ -363,28 +336,7 @@ object ReadFinder {
           acc.withLabelRead(AccessedLabel(labelName, Some(variable)))
         }
 
-      case PartitionedUnionNodeByLabelsScan(variable, labelNames, _) =>
-        val predicates = labelNames.map { labelName =>
-          HasLabels(variable, Seq(labelName))(InputPosition.NONE)
-        }
-        val filterExpression = Ors(predicates)(InputPosition.NONE)
-        val acc = PlanReads()
-          .withIntroducedNodeVariable(variable)
-          .withAddedNodeFilterExpression(variable, filterExpression)
-        labelNames.foldLeft(acc) { (acc, labelName) =>
-          acc.withLabelRead(AccessedLabel(labelName, Some(variable)))
-        }
-
       case IntersectionNodeByLabelsScan(variable, labelNames, _, _) =>
-        val acc = PlanReads()
-          .withIntroducedNodeVariable(variable)
-        labelNames.foldLeft(acc) { (acc, labelName) =>
-          val hasLabels = HasLabels(variable, Seq(labelName))(InputPosition.NONE)
-          acc.withLabelRead(AccessedLabel(labelName, Some(variable)))
-            .withAddedNodeFilterExpression(variable, hasLabels)
-        }
-
-      case PartitionedIntersectionNodeByLabelsScan(variable, labelNames, _) =>
         val acc = PlanReads()
           .withIntroducedNodeVariable(variable)
         labelNames.foldLeft(acc) { (acc, labelName) =>
@@ -425,13 +377,7 @@ object ReadFinder {
       case NodeIndexScan(node, LabelToken(labelName, _), properties, _, _, _, _) =>
         processNodeIndexPlan(node, labelName, properties)
 
-      case PartitionedNodeIndexScan(node, LabelToken(labelName, _), properties, _, _) =>
-        processNodeIndexPlan(node, labelName, properties)
-
       case NodeIndexSeek(node, LabelToken(labelName, _), properties, _, _, _, _, _) =>
-        processNodeIndexPlan(node, labelName, properties)
-
-      case PartitionedNodeIndexSeek(node, LabelToken(labelName, _), properties, _, _, _) =>
         processNodeIndexPlan(node, labelName, properties)
 
       case NodeUniqueIndexSeek(node, LabelToken(labelName, _), properties, _, _, _, _) =>
@@ -505,19 +451,7 @@ object ReadFinder {
       case UndirectedRelationshipTypeScan(relationship, leftNode, relType, rightNode, _, _) =>
         processRelTypeRead(relationship, leftNode, relType, rightNode)
 
-      case PartitionedUndirectedRelationshipTypeScan(relationship, leftNode, relType, rightNode, _) =>
-        processRelTypeRead(relationship, leftNode, relType, rightNode)
-
-      case PartitionedDirectedAllRelationshipsScan(relationship, leftNode, rightNode, _) =>
-        processRelationshipRead(relationship, leftNode, rightNode)
-
-      case PartitionedUndirectedAllRelationshipsScan(relationship, leftNode, rightNode, _) =>
-        processRelationshipRead(relationship, leftNode, rightNode)
-
       case DirectedRelationshipTypeScan(relationship, leftNode, relType, rightNode, _, _) =>
-        processRelTypeRead(relationship, leftNode, relType, rightNode)
-
-      case PartitionedDirectedRelationshipTypeScan(relationship, leftNode, relType, rightNode, _) =>
         processRelTypeRead(relationship, leftNode, relType, rightNode)
 
       case DirectedRelationshipIndexScan(
@@ -528,17 +462,6 @@ object ReadFinder {
           properties,
           _,
           _,
-          _,
-          _
-        ) =>
-        processRelationshipIndexPlan(relationship, typeName, properties, leftNode, rightNode)
-
-      case PartitionedDirectedRelationshipIndexScan(
-          relationship,
-          leftNode,
-          rightNode,
-          RelationshipTypeToken(typeName, _),
-          properties,
           _,
           _
         ) =>
@@ -571,29 +494,6 @@ object ReadFinder {
         ) =>
         processRelationshipIndexPlan(relationship, typeName, properties, leftNode, rightNode)
 
-      case PartitionedUndirectedRelationshipIndexScan(
-          relationship,
-          leftNode,
-          rightNode,
-          RelationshipTypeToken(typeName, _),
-          properties,
-          _,
-          _
-        ) =>
-        processRelationshipIndexPlan(relationship, typeName, properties, leftNode, rightNode)
-
-      case PartitionedDirectedRelationshipIndexSeek(
-          relationship,
-          leftNode,
-          rightNode,
-          RelationshipTypeToken(typeName, _),
-          properties,
-          _,
-          _,
-          _
-        ) =>
-        processRelationshipIndexPlan(relationship, typeName, properties, leftNode, rightNode)
-
       case UndirectedRelationshipIndexSeek(
           relationship,
           leftNode,
@@ -602,18 +502,6 @@ object ReadFinder {
           properties,
           _,
           _,
-          _,
-          _,
-          _
-        ) =>
-        processRelationshipIndexPlan(relationship, typeName, properties, leftNode, rightNode)
-
-      case PartitionedUndirectedRelationshipIndexSeek(
-          relationship,
-          leftNode,
-          rightNode,
-          RelationshipTypeToken(typeName, _),
-          properties,
           _,
           _,
           _
@@ -714,12 +602,6 @@ object ReadFinder {
         processUnionRelTypeScan(relationship, leftNode, relTypes, rightNode)
 
       case DirectedUnionRelationshipTypesScan(relationship, leftNode, relTypes, rightNode, _, _) =>
-        processUnionRelTypeScan(relationship, leftNode, relTypes, rightNode)
-
-      case PartitionedUndirectedUnionRelationshipTypesScan(relationship, leftNode, relTypes, rightNode, _) =>
-        processUnionRelTypeScan(relationship, leftNode, relTypes, rightNode)
-
-      case PartitionedDirectedUnionRelationshipTypesScan(relationship, leftNode, relTypes, rightNode, _) =>
         processUnionRelTypeScan(relationship, leftNode, relTypes, rightNode)
 
       case Selection(predicate, _) =>
@@ -961,7 +843,6 @@ object ReadFinder {
         SubqueryForeach(_, _) |
         Union(_, _) |
         UnwindCollection(_, _, _) |
-        PartitionedUnwindCollection(_, _, _) |
         ValueHashJoin(_, _, _) |
         Sort(_, _) |
         PartialSort(_, _, _, _) |

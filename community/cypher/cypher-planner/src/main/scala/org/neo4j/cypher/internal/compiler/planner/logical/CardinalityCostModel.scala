@@ -95,23 +95,7 @@ import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.OptionalExpand
 import org.neo4j.cypher.internal.logical.plans.OrderedUnion
 import org.neo4j.cypher.internal.logical.plans.PartialSort
-import org.neo4j.cypher.internal.logical.plans.PartitionedAllNodesScan
-import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedAllRelationshipsScan
-import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipIndexScan
-import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipIndexSeek
-import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipTypeScan
-import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedUnionRelationshipTypesScan
-import org.neo4j.cypher.internal.logical.plans.PartitionedIntersectionNodeByLabelsScan
-import org.neo4j.cypher.internal.logical.plans.PartitionedNodeByLabelScan
-import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexScan
-import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexSeek
-import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedAllRelationshipsScan
-import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipIndexScan
-import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipIndexSeek
-import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipTypeScan
-import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedUnionRelationshipTypesScan
-import org.neo4j.cypher.internal.logical.plans.PartitionedUnionNodeByLabelsScan
-import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
+import org.neo4j.cypher.internal.logical.plans.PartitionedScanPlan
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
 import org.neo4j.cypher.internal.logical.plans.ProjectEndpoints
 import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
@@ -278,7 +262,7 @@ case class CardinalityCostModel(executionModel: ExecutionModel) extends CostMode
      */
     object AllNodesScanIsh {
       def unapply(v: LogicalPlan): Boolean = v match {
-        case _: AllNodesScan | _: PartitionedAllNodesScan                                                      => true
+        case _: AllNodesScan                                                                                   => true
         case lup @ LogicalUnaryPlan(ans @ AllNodesScanIsh()) if cardinalities(lup.id) == cardinalities(ans.id) => true
         case _                                                                                                 => false
       }
@@ -506,22 +490,10 @@ object CardinalityCostModel {
        */
 
       case _: NodeByLabelScan |
-        _: PartitionedNodeByLabelScan |
         _: UnionNodeByLabelsScan |
-        _: PartitionedUnionNodeByLabelsScan |
-        _: NodeIndexScan |
-        _: PartitionedNodeIndexScan =>
-        INDEX_SCAN_COST_PER_ROW
+        _: NodeIndexScan => INDEX_SCAN_COST_PER_ROW
 
       case plan: IntersectionNodeByLabelsScan =>
-        // A workaround for cases where we might get value from an index scan instead. Using the same cost means we will use leaf plan heuristic to decide.
-        if (propertyAccess.exists(_.variable == plan.idName)) {
-          INDEX_SCAN_COST_PER_ROW + STORE_LOOKUP_COST_PER_ROW
-        } else {
-          INDEX_SCAN_COST_PER_ROW
-        }
-
-      case plan: PartitionedIntersectionNodeByLabelsScan =>
         // A workaround for cases where we might get value from an index scan instead. Using the same cost means we will use leaf plan heuristic to decide.
         if (propertyAccess.exists(_.variable == plan.idName)) {
           INDEX_SCAN_COST_PER_ROW + STORE_LOOKUP_COST_PER_ROW
@@ -533,7 +505,7 @@ object CardinalityCostModel {
 
       case Selection(predicate, _) => costPerRowFor(predicate, semanticTable)
 
-      case _: AllNodesScan | _: PartitionedAllNodesScan => ALL_SCAN_COST_PER_ROW
+      case _: AllNodesScan => ALL_SCAN_COST_PER_ROW
 
       case e: OptionalExpand if e.mode == ExpandInto => EXPAND_INTO_COST
 
@@ -547,7 +519,6 @@ object CardinalityCostModel {
 
       case _: NodeUniqueIndexSeek |
         _: NodeIndexSeek |
-        _: PartitionedNodeIndexSeek |
         _: NodeIndexContainsScan |
         _: NodeIndexEndsWithScan => INDEX_SEEK_COST_PER_ROW
 
@@ -560,20 +531,14 @@ object CardinalityCostModel {
         // Only every second row needs to access the store
         => STORE_LOOKUP_COST_PER_ROW / 2
 
-      case _: DirectedAllRelationshipsScan | _: PartitionedDirectedAllRelationshipsScan => ALL_SCAN_COST_PER_ROW
+      case _: DirectedAllRelationshipsScan => ALL_SCAN_COST_PER_ROW
 
-      case _: UndirectedAllRelationshipsScan | _: PartitionedUndirectedAllRelationshipsScan => ALL_SCAN_COST_PER_ROW / 2
+      case _: UndirectedAllRelationshipsScan => ALL_SCAN_COST_PER_ROW / 2
 
       case plan: DirectedRelationshipTypeScan =>
         hackyRelTypeScanCost(propertyAccess, plan.idName, directed = true)
 
       case plan: UndirectedRelationshipTypeScan =>
-        hackyRelTypeScanCost(propertyAccess, plan.idName, directed = false)
-
-      case plan: PartitionedDirectedRelationshipTypeScan =>
-        hackyRelTypeScanCost(propertyAccess, plan.idName, directed = true)
-
-      case plan: PartitionedUndirectedRelationshipTypeScan =>
         hackyRelTypeScanCost(propertyAccess, plan.idName, directed = false)
 
       case plan: DirectedUnionRelationshipTypesScan =>
@@ -582,26 +547,17 @@ object CardinalityCostModel {
       case plan: UndirectedUnionRelationshipTypesScan =>
         hackyRelTypeScanCost(propertyAccess, plan.idName, directed = false)
 
-      case plan: PartitionedDirectedUnionRelationshipTypesScan =>
-        hackyRelTypeScanCost(propertyAccess, plan.idName, directed = true)
+      case _: DirectedRelationshipIndexScan => DIRECTED_RELATIONSHIP_INDEX_SCAN_COST_PER_ROW
 
-      case plan: PartitionedUndirectedUnionRelationshipTypesScan =>
-        hackyRelTypeScanCost(propertyAccess, plan.idName, directed = false)
-
-      case _: DirectedRelationshipIndexScan | _: PartitionedDirectedRelationshipIndexScan =>
-        DIRECTED_RELATIONSHIP_INDEX_SCAN_COST_PER_ROW
-
-      case _: UndirectedRelationshipIndexScan | _: PartitionedUndirectedRelationshipIndexScan
+      case _: UndirectedRelationshipIndexScan
         // Only every second row needs to access the index and the store
         => DIRECTED_RELATIONSHIP_INDEX_SCAN_COST_PER_ROW / 2
 
       case _: DirectedRelationshipIndexSeek |
-        _: PartitionedDirectedRelationshipIndexSeek |
         _: DirectedRelationshipIndexContainsScan |
         _: DirectedRelationshipIndexEndsWithScan => INDEX_SEEK_COST_PER_ROW + STORE_LOOKUP_COST_PER_ROW
 
       case _: UndirectedRelationshipIndexSeek |
-        _: PartitionedUndirectedRelationshipIndexSeek |
         _: UndirectedRelationshipIndexContainsScan |
         _: UndirectedRelationshipIndexEndsWithScan
         // Only every second row needs to access the index and the store
@@ -621,7 +577,6 @@ object CardinalityCostModel {
         _: Union |
         _: ValueHashJoin |
         _: UnwindCollection |
-        _: PartitionedUnwindCollection |
         _: ProcedureCall => DEFAULT_COST_PER_ROW
 
       case _: Sort =>
@@ -637,6 +592,9 @@ object CardinalityCostModel {
 
       case _: StatefulShortestPath =>
         SHORTEST_PRODUCT_GRAPH_COST
+
+      case _: PartitionedScanPlan =>
+        throw new IllegalStateException("partitioned scans should only be planned at physical planning")
 
       case _ // Default
         => DEFAULT_COST_PER_ROW

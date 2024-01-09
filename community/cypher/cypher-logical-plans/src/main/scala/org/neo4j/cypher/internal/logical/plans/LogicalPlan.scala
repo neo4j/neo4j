@@ -634,6 +634,8 @@ abstract class CommandLogicalPlan(idGen: IdGen) extends LogicalLeafPlan(idGen = 
  */
 sealed trait PhysicalPlanningPlan extends LogicalPlan
 
+sealed trait PartitionedScanPlan extends PhysicalPlanningPlan
+
 /**
  * Marker trait for all plans that are only generated in tests.
  */
@@ -722,7 +724,7 @@ case class AllNodesScan(idName: LogicalVariable, argumentIds: Set[LogicalVariabl
 * Partitioned version of the AllNodesScan operator, should only be used for parallel runtime.
 */
 case class PartitionedAllNodesScan(idName: LogicalVariable, argumentIds: Set[LogicalVariable])(implicit idGen: IdGen)
-    extends NodeLogicalLeafPlan(idGen) with StableLeafPlan with PhysicalPlanningPlan {
+    extends NodeLogicalLeafPlan(idGen) with StableLeafPlan with PartitionedScanPlan {
 
   override val availableSymbols: Set[LogicalVariable] = argumentIds + idName
 
@@ -1287,7 +1289,7 @@ case class PartitionedDirectedAllRelationshipsScan(
   endNode: LogicalVariable,
   argumentIds: Set[LogicalVariable]
 )(implicit idGen: IdGen)
-    extends RelationshipLogicalLeafPlan(idGen) with StableLeafPlan with PhysicalPlanningPlan {
+    extends RelationshipLogicalLeafPlan(idGen) with StableLeafPlan with PartitionedScanPlan {
 
   override val availableSymbols: Set[LogicalVariable] = argumentIds ++ Set(idName, leftNode, rightNode)
 
@@ -1517,7 +1519,7 @@ case class PartitionedDirectedRelationshipIndexScan(
   argumentIds: Set[LogicalVariable],
   override val indexType: IndexType
 )(implicit idGen: IdGen)
-    extends RelationshipIndexLeafPlan(idGen) with StableLeafPlan with PhysicalPlanningPlan {
+    extends RelationshipIndexLeafPlan(idGen) with StableLeafPlan with PartitionedScanPlan {
 
   override val availableSymbols: Set[LogicalVariable] = argumentIds ++ Set(idName, leftNode, rightNode)
 
@@ -1602,7 +1604,7 @@ case class PartitionedDirectedRelationshipIndexSeek(
   valueExpr: QueryExpression[Expression],
   argumentIds: Set[LogicalVariable],
   override val indexType: IndexType
-)(implicit idGen: IdGen) extends RelationshipIndexSeekLeafPlan(idGen) with StableLeafPlan with PhysicalPlanningPlan {
+)(implicit idGen: IdGen) extends RelationshipIndexSeekLeafPlan(idGen) with StableLeafPlan with PartitionedScanPlan {
 
   override val availableSymbols: Set[LogicalVariable] = argumentIds ++ Set(idName, leftNode, rightNode)
 
@@ -1687,7 +1689,7 @@ case class PartitionedDirectedRelationshipTypeScan(
   endNode: LogicalVariable,
   argumentIds: Set[LogicalVariable]
 )(implicit idGen: IdGen)
-    extends RelationshipLogicalLeafPlan(idGen) with RelationshipTypeScan with StableLeafPlan with PhysicalPlanningPlan {
+    extends RelationshipLogicalLeafPlan(idGen) with RelationshipTypeScan with StableLeafPlan with PartitionedScanPlan {
 
   override val availableSymbols: Set[LogicalVariable] = argumentIds ++ Set(idName, leftNode, rightNode)
 
@@ -1798,7 +1800,7 @@ case class PartitionedDirectedUnionRelationshipTypesScan(
   endNode: LogicalVariable,
   argumentIds: Set[LogicalVariable]
 )(implicit idGen: IdGen)
-    extends RelationshipLogicalLeafPlan(idGen) with StableLeafPlan with PhysicalPlanningPlan {
+    extends RelationshipLogicalLeafPlan(idGen) with StableLeafPlan with PartitionedScanPlan {
 
   override val availableSymbols: Set[LogicalVariable] = argumentIds ++ Set(idName, leftNode, rightNode)
 
@@ -2362,7 +2364,7 @@ case class PartitionedIntersectionNodeByLabelsScan(
   labels: Seq[LabelName],
   argumentIds: Set[LogicalVariable]
 )(implicit idGen: IdGen)
-    extends NodeLogicalLeafPlan(idGen) with StableLeafPlan with PhysicalPlanningPlan {
+    extends NodeLogicalLeafPlan(idGen) with StableLeafPlan with PartitionedScanPlan {
 
   override val availableSymbols: Set[LogicalVariable] = argumentIds + idName
 
@@ -2655,7 +2657,7 @@ case class PartitionedNodeByLabelScan(
   idName: LogicalVariable,
   label: LabelName,
   argumentIds: Set[LogicalVariable]
-)(implicit idGen: IdGen) extends NodeLogicalLeafPlan(idGen) with StableLeafPlan with PhysicalPlanningPlan {
+)(implicit idGen: IdGen) extends NodeLogicalLeafPlan(idGen) with StableLeafPlan with PartitionedScanPlan {
 
   override val availableSymbols: Set[LogicalVariable] = argumentIds + idName
 
@@ -2835,7 +2837,7 @@ case class PartitionedNodeIndexScan(
   argumentIds: Set[LogicalVariable],
   override val indexType: IndexType
 )(implicit idGen: IdGen)
-    extends NodeIndexLeafPlan(idGen) with StableLeafPlan with PhysicalPlanningPlan {
+    extends NodeIndexLeafPlan(idGen) with StableLeafPlan with PartitionedScanPlan {
 
   override val availableSymbols: Set[LogicalVariable] = argumentIds + idName
 
@@ -2866,7 +2868,7 @@ case class NodeIndexSeek(
   indexOrder: IndexOrder,
   override val indexType: IndexType,
   supportPartitionedScan: Boolean
-)(implicit idGen: IdGen) extends NodeIndexSeekLeafPlan(idGen) with StableLeafPlan {
+)(implicit idGen: IdGen) extends NodeIndexSeekLeafPlan(idGen) with StableLeafPlan with PartitionedScanPlan {
 
   override val availableSymbols: Set[LogicalVariable] = argumentIds + idName
 
@@ -2892,7 +2894,7 @@ case class PartitionedNodeIndexSeek(
   valueExpr: QueryExpression[Expression],
   argumentIds: Set[LogicalVariable],
   override val indexType: IndexType
-)(implicit idGen: IdGen) extends NodeIndexSeekLeafPlan(idGen) with StableLeafPlan with PhysicalPlanningPlan {
+)(implicit idGen: IdGen) extends NodeIndexSeekLeafPlan(idGen) with StableLeafPlan with PartitionedScanPlan {
 
   override def indexOrder: IndexOrder = IndexOrderNone
 
@@ -4150,7 +4152,7 @@ case class PartitionedUndirectedAllRelationshipsScan(
   rightNode: LogicalVariable,
   argumentIds: Set[LogicalVariable]
 )(implicit idGen: IdGen)
-    extends RelationshipLogicalLeafPlan(idGen) with StableLeafPlan with PhysicalPlanningPlan {
+    extends RelationshipLogicalLeafPlan(idGen) with StableLeafPlan with PartitionedScanPlan {
 
   override val availableSymbols: Set[LogicalVariable] = argumentIds ++ Set(idName, leftNode, rightNode)
 
@@ -4354,7 +4356,7 @@ case class PartitionedUndirectedRelationshipIndexScan(
   argumentIds: Set[LogicalVariable],
   override val indexType: IndexType
 )(implicit idGen: IdGen)
-    extends RelationshipIndexLeafPlan(idGen) with StableLeafPlan with PhysicalPlanningPlan {
+    extends RelationshipIndexLeafPlan(idGen) with StableLeafPlan with PartitionedScanPlan {
 
   override val availableSymbols: Set[LogicalVariable] = argumentIds ++ Set(idName, leftNode, rightNode)
 
@@ -4432,7 +4434,7 @@ case class PartitionedUndirectedRelationshipIndexSeek(
   valueExpr: QueryExpression[Expression],
   argumentIds: Set[LogicalVariable],
   override val indexType: IndexType
-)(implicit idGen: IdGen) extends RelationshipIndexSeekLeafPlan(idGen) with StableLeafPlan with PhysicalPlanningPlan {
+)(implicit idGen: IdGen) extends RelationshipIndexSeekLeafPlan(idGen) with StableLeafPlan with PartitionedScanPlan {
 
   override def indexOrder: IndexOrder = IndexOrderNone
 
@@ -4510,7 +4512,7 @@ case class PartitionedUndirectedRelationshipTypeScan(
   rightNode: LogicalVariable,
   argumentIds: Set[LogicalVariable]
 )(implicit idGen: IdGen)
-    extends RelationshipLogicalLeafPlan(idGen) with RelationshipTypeScan with StableLeafPlan with PhysicalPlanningPlan {
+    extends RelationshipLogicalLeafPlan(idGen) with RelationshipTypeScan with StableLeafPlan with PartitionedScanPlan {
 
   override val availableSymbols: Set[LogicalVariable] = argumentIds ++ Set(idName, leftNode, rightNode)
 
@@ -4612,7 +4614,7 @@ case class PartitionedUndirectedUnionRelationshipTypesScan(
   endNode: LogicalVariable,
   argumentIds: Set[LogicalVariable]
 )(implicit idGen: IdGen)
-    extends RelationshipLogicalLeafPlan(idGen) with StableLeafPlan with PhysicalPlanningPlan {
+    extends RelationshipLogicalLeafPlan(idGen) with StableLeafPlan with PartitionedScanPlan {
 
   override val availableSymbols: Set[LogicalVariable] = argumentIds ++ Set(idName, leftNode, rightNode)
 
@@ -4673,7 +4675,7 @@ case class PartitionedUnionNodeByLabelsScan(
   labels: Seq[LabelName],
   argumentIds: Set[LogicalVariable]
 )(implicit idGen: IdGen)
-    extends NodeLogicalLeafPlan(idGen) with StableLeafPlan with PhysicalPlanningPlan {
+    extends NodeLogicalLeafPlan(idGen) with StableLeafPlan with PartitionedScanPlan {
 
   override val availableSymbols: Set[LogicalVariable] = argumentIds + idName
 
@@ -4711,7 +4713,7 @@ case class PartitionedUnwindCollection(
   expression: Expression
 )(
   implicit idGen: IdGen
-) extends LogicalUnaryPlan(idGen) with PhysicalPlanningPlan {
+) extends LogicalUnaryPlan(idGen) with PartitionedScanPlan {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
   override val availableSymbols: Set[LogicalVariable] = source.availableSymbols + variable

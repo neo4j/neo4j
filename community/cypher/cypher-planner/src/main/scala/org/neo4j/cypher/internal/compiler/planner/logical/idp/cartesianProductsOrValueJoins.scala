@@ -43,9 +43,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexEndsWithScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
-import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipIndexSeek
-import org.neo4j.cypher.internal.logical.plans.PartitionedNodeIndexSeek
-import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipIndexSeek
+import org.neo4j.cypher.internal.logical.plans.PartitionedScanPlan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexEndsWithScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexSeek
@@ -606,17 +604,11 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
     plan.leaves.exists {
       case NodeIndexSeek(_, _, _, valueExpr, _, _, _, _) =>
         valueExpr.expressions.exists(_.dependencies.nonEmpty)
-      case PartitionedNodeIndexSeek(_, _, _, valueExpr, _, _) =>
-        valueExpr.expressions.exists(_.dependencies.nonEmpty)
       case NodeUniqueIndexSeek(_, _, _, valueExpr, _, _, _) =>
         valueExpr.expressions.exists(_.dependencies.nonEmpty)
       case DirectedRelationshipIndexSeek(_, _, _, _, _, valueExpr, _, _, _, _) =>
         valueExpr.expressions.exists(_.dependencies.nonEmpty)
       case UndirectedRelationshipIndexSeek(_, _, _, _, _, valueExpr, _, _, _, _) =>
-        valueExpr.expressions.exists(_.dependencies.nonEmpty)
-      case PartitionedDirectedRelationshipIndexSeek(_, _, _, _, _, valueExpr, _, _) =>
-        valueExpr.expressions.exists(_.dependencies.nonEmpty)
-      case PartitionedUndirectedRelationshipIndexSeek(_, _, _, _, _, valueExpr, _, _) =>
         valueExpr.expressions.exists(_.dependencies.nonEmpty)
       case NodeIndexContainsScan(_, _, _, valueExpr, _, _, _) =>
         valueExpr.dependencies.nonEmpty
@@ -630,6 +622,8 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
         valueExpr.dependencies.nonEmpty
       case UndirectedRelationshipIndexEndsWithScan(_, _, _, _, _, valueExpr, _, _, _) =>
         valueExpr.dependencies.nonEmpty
+      case _: PartitionedScanPlan =>
+        throw new IllegalStateException("partitioned scans should only be planned at physical planning")
       case _ => false
     }
 
