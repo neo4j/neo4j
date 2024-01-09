@@ -384,7 +384,7 @@ object expandSolverStep {
               val nodeVariableGrouping = qpp.nodeVariableGroupings.map(Set(_))
               // All relationship variables, each in their own set
               val relVariableGrouping = qpp.relationshipVariableGroupings.map(Set(_))
-              // All undirected relationships in a set together with their boundary nodes.
+              // All directed relationships in a set together with their boundary nodes.
               // We do this because predicates using only these can also be inlined.
               // See `getExtraRelationshipPredicates` in ConvertToNFA.
               val extraRelVariableGroupings =

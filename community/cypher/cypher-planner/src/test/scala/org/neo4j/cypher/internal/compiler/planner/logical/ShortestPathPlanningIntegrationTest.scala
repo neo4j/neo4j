@@ -1303,6 +1303,44 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
   }
 
   test(
+    "Should support a shortest path pattern with a predicate on undirected relationship and boundary node inside a QPP"
+  ) {
+    val query =
+      """MATCH ANY SHORTEST (u:User) ((b)-[r]-(c) WHERE r.prop < c.prop)* (d)
+        |RETURN *""".stripMargin
+
+    val nfa = new TestNFABuilder(0, "u")
+      .addTransition(0, 1, "(u) (b)")
+      .addTransition(0, 3, "(u) (d)")
+      .addTransition(1, 2, "(b)-[r]-(c)")
+      .addTransition(2, 1, "(c) (b)")
+      .addTransition(2, 3, "(c) (d)")
+      .setFinalState(3)
+      .build()
+
+    val plan = planner.plan(query).stripProduceResults
+    val expected = planner.subPlanBuilder()
+      .statefulShortestPath(
+        "u",
+        "d",
+        "SHORTEST 1 ((u) ((b)-[r]-(c)){0, } (d) WHERE `r`.prop < `c`.prop AND unique(`r`))",
+        Some("all(anon_0 IN range(0, size(c) - 1) WHERE (r[anon_0]).prop < (c[anon_0]).prop)"),
+        Set(("b", "b"), ("c", "c")),
+        Set(("r", "r")),
+        Set(),
+        Set(),
+        StatefulShortestPath.Selector.Shortest(1),
+        nfa,
+        ExpandInto
+      )
+      .cartesianProduct()
+      .|.allNodeScan("d")
+      .nodeByLabelScan("u", "User")
+      .build()
+    plan should equal(expected)
+  }
+
+  test(
     "should plan SHORTEST with predicate depending on no variables as a filter before the statefulShortestPath"
   ) {
     val query = "MATCH ANY SHORTEST ((u:User)((n)-[r]->(m))+(v) WHERE $param) RETURN *"
