@@ -233,6 +233,7 @@ public class DetachedLogTailScanner {
 
                     var logEntryReader =
                             new VersionAwareLogEntryReader(commandReaderFactory, binarySupportedKernelVersions);
+                    LogPosition position;
                     try (var reader = logFile.getReader(lookupPosition, NO_MORE_CHANNELS);
                             var cursor = new LogEntryCursor(logEntryReader, reader)) {
                         LogEntry entry;
@@ -246,11 +247,17 @@ public class DetachedLogTailScanner {
                                 start = e;
                             }
                         }
+                        position = reader.getCurrentLogPosition();
                     }
                     if ((start != null) && (commit != null || chunkEnd != null)) {
                         return new StartCommitEntries(start, commit, chunkEnd);
                     }
-                    verifyReaderPosition(logVersion, logEntryReader.lastPosition());
+                    // signal that we still need recovery since our logs look broken
+                    corruptedTransactionLogs = logEntryReader.hasBrokenLastEntry();
+                    // if the last tail record is partial we know that we will fail the next check
+                    if (!corruptedTransactionLogs) {
+                        verifyReaderPosition(logVersion, position);
+                    }
                     logVersion++;
                 }
             } catch (Error | ClosedByInterruptException e) {

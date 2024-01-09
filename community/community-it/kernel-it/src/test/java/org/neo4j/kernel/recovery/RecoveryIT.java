@@ -336,6 +336,83 @@ class RecoveryIT {
     }
 
     @Test
+    void recoverTxLogsWithPartiallyWrittenLastRecordInFirstTransactionAfterCheckpoint() throws Exception {
+        var database = createDatabase();
+        var logFiles = database.getDependencyResolver().resolveDependency(LogFiles.class);
+        var checkpointer = database.getDependencyResolver().resolveDependency(CheckPointer.class);
+        var logFileToManipulate = logFiles.getLogFile().getHighestLogFile();
+
+        var marker = withName("Type");
+        var propertyName = "a";
+
+        // we do transaction before checkpoint to force token creation that we will use after checkpoint to make sure
+        // that its a first transaction after the checkpoint
+        try (Transaction tx = database.beginTx()) {
+            Node node1 = tx.createNode();
+            Node node2 = tx.createNode();
+            node1.createRelationshipTo(node2, marker);
+            node2.setProperty(propertyName, "b");
+            tx.commit();
+        }
+
+        checkpointer.forceCheckPoint(new SimpleTriggerInfo("test"));
+
+        LogPosition position = logFiles.getLogFile().getTransactionLogWriter().getCurrentPosition();
+
+        // our test big transaction
+        try (Transaction tx = database.beginTx()) {
+            Node node1 = tx.createNode();
+            Node node2 = tx.createNode();
+            node1.createRelationshipTo(node2, marker);
+            node2.setProperty(propertyName, randomAlphanumeric(TEN_KB));
+            tx.commit();
+        }
+        managementService.shutdown();
+
+        removeLastCheckpointRecordFromLastLogFile(databaseLayout, fileSystem);
+        // we write big transaction with huge property command above and here we truncate a bit of that to simulate
+        // partially written command
+        removeLastKbFromLogFile(logFileToManipulate, position);
+
+        recoverDatabase();
+    }
+
+    @Test
+    void recoverTxLogsWithBrokenFirstEntryInFirstTransactionAfterCheckpoint() throws Exception {
+        var database = createDatabase();
+
+        var logFiles = database.getDependencyResolver().resolveDependency(LogFiles.class);
+        var checkpointer = database.getDependencyResolver().resolveDependency(CheckPointer.class);
+        var logFileToManipulate = logFiles.getLogFile().getHighestLogFile();
+        var positionForCorruption =
+                logFiles.getLogFile().getTransactionLogWriter().getCurrentPosition();
+
+        checkpointer.forceCheckPoint(new SimpleTriggerInfo("test"));
+        managementService.shutdown();
+
+        // remove shutdown checkpoint
+        removeLastCheckpointRecordFromLastLogFile(databaseLayout, fileSystem);
+        // append data that will cause broken next entry
+        appendBytesToLastLogFile(logFileToManipulate, positionForCorruption, new byte[] {1, 0, 0});
+
+        // we check that recovery is required! (we have broken tail) and do actual recovery
+        recoverDatabase();
+
+        var recoveredDatabase = createDatabase();
+        // we truncate broken bits and bytes as part of recovery
+        assertEquals(
+                positionForCorruption,
+                logFiles.getLogFile().getTransactionLogWriter().getCurrentPosition());
+        //
+        try (var tx = recoveredDatabase.beginTx()) {
+            tx.createNode();
+            tx.commit();
+        } finally {
+            managementService.shutdown();
+        }
+    }
+
+    @Test
     @EnabledOnOs(OS.LINUX)
     void failToRecoverDatabaseWithCorruptedLastCheckpointFile() throws Exception {
         var database = createDatabase();
@@ -2171,6 +2248,14 @@ class RecoveryIT {
 
             storeChannel.writeAll(ByteBuffer.wrap(new byte[BIGGEST_HEADER]));
             storeChannel.writeAll(ByteBuffer.wrap(new byte[] {0, 0, 0, 0, corruptionSource, 0}));
+        }
+    }
+
+    private void removeLastKbFromLogFile(Path victimFilePath, LogPosition logPosition) throws IOException {
+        try (StoreChannel storeChannel = fileSystem.open(victimFilePath, Set.of(WRITE))) {
+            long newSize = storeChannel.size() - ByteUnit.kibiBytes(1);
+            assertThat(newSize).isGreaterThan(logPosition.getByteOffset());
+            storeChannel.truncate(newSize);
         }
     }
 

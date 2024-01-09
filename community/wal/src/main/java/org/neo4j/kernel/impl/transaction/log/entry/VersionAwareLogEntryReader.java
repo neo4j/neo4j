@@ -48,6 +48,7 @@ public class VersionAwareLogEntryReader implements LogEntryReader {
     private final BinarySupportedKernelVersions binarySupportedKernelVersions;
     private final LogPositionMarker positionMarker;
     private final boolean verifyChecksumChain;
+    private boolean brokenLastEntry;
     private LogEntrySerializationSet parserSet;
     private int lastTxChecksum = BASE_TX_CHECKSUM;
 
@@ -93,10 +94,14 @@ public class VersionAwareLogEntryReader implements LogEntryReader {
             LogPosition currentLogPosition = channel.getCurrentLogPosition();
             // check if error was in the last command or is there anything else after that
             checkTail(channel, currentLogPosition, e);
-
+            brokenLastEntry = true;
             rewindToEntryStartPosition(channel, positionMarker, entryStartPosition);
             return null;
         }
+    }
+
+    public boolean hasBrokenLastEntry() {
+        return brokenLastEntry;
     }
 
     private static void checkTail(ReadableLogPositionAwareChannel channel, LogPosition currentLogPosition, Exception e)
