@@ -260,7 +260,7 @@ object SlottedProjectedPath {
 
   private def addUndirected(relValue: AnyValue, state: QueryState, builder: PathValueBuilder) = relValue match {
     case r: VirtualRelationshipValue =>
-      val previous = VirtualValues.node(builder.previousNode)
+      val previous = builder.previousNode
       builder.addRelationship(r).addNode(CypherFunctions.otherNode(
         r,
         state.query,

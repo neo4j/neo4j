@@ -59,7 +59,7 @@ case class Property(mapExpr: Expression, propertyKey: KeyToken)
         case None => Values.NO_VALUE
         case Some(propId) =>
           state.query.relationshipReadOps.getProperty(
-            r.id(),
+            r,
             propId,
             state.cursors.relationshipScanCursor,
             state.cursors.propertyCursor,

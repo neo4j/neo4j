@@ -155,11 +155,11 @@ public final class VirtualValues {
     public static PathReference pathReference(VirtualNodeValue[] nodes, VirtualRelationshipValue[] relationships) {
         assert nodes != null;
         assert relationships != null;
-        assert nodes.length == relationships.length + 1;
         if ((nodes.length + relationships.length) % 2 == 0) {
             throw new IllegalArgumentException(
                     "Tried to construct a path that is not built like a path: even number of elements");
         }
+        assert nodes.length == relationships.length + 1;
 
         return PathReference.path(nodes, relationships);
     }

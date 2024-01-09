@@ -51,6 +51,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Node
 import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.longValue
+import org.neo4j.values.virtual.VirtualRelationshipValue
 
 class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
 
@@ -141,7 +142,9 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
     val relWriteOps = mock[RelationshipOperations]
     when(qtx.relationshipReadOps).thenReturn(relReadOps)
     when(qtx.relationshipWriteOps).thenReturn(relWriteOps)
-    when(relReadOps.getProperty(anyLong(), anyInt(), any(), any(), anyBoolean())).thenReturn(Values.NO_VALUE)
+    when(relReadOps.getProperty(any[VirtualRelationshipValue](), anyInt(), any(), any(), anyBoolean())).thenReturn(
+      Values.NO_VALUE
+    )
 
     needsExclusiveLock shouldBe true
 
@@ -197,7 +200,9 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
     val relWriteOps = mock[RelationshipOperations]
     when(qtx.relationshipReadOps).thenReturn(relReadOps)
     when(qtx.relationshipWriteOps).thenReturn(relWriteOps)
-    when(relReadOps.getProperty(anyLong(), anyInt(), any(), any(), anyBoolean())).thenReturn(Values.NO_VALUE)
+    when(relReadOps.getProperty(any[VirtualRelationshipValue](), anyInt(), any(), any(), anyBoolean())).thenReturn(
+      Values.NO_VALUE
+    )
 
     needsExclusiveLock shouldBe false
 
@@ -260,7 +265,9 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
     when(qtx.relationshipReadOps).thenReturn(relReadOps)
     when(qtx.relationshipWriteOps).thenReturn(relWriteOps)
 
-    when(relReadOps.getProperty(anyLong(), anyInt(), any(), any(), anyBoolean())).thenReturn(Values.NO_VALUE)
+    when(relReadOps.getProperty(any[VirtualRelationshipValue](), anyInt(), any(), any(), anyBoolean())).thenReturn(
+      Values.NO_VALUE
+    )
 
     needsExclusiveLock shouldBe false
 
@@ -458,7 +465,9 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
     when(qtx.relationshipWriteOps).thenReturn(relWriteOps)
     when(qtx.getOptPropertyKeyId(property1)).thenReturn(None)
     when(relWriteOps.propertyKeyIds(10, null, null)).thenReturn(Array.empty[Int]) // <--- O_O
-    when(relReadOps.getProperty(anyLong(), anyInt(), any(), any(), anyBoolean())).thenReturn(Values.NO_VALUE)
+    when(relReadOps.getProperty(any[VirtualRelationshipValue](), anyInt(), any(), any(), anyBoolean())).thenReturn(
+      Values.NO_VALUE
+    )
 
     needsExclusiveLock shouldBe false
 

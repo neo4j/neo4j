@@ -63,9 +63,9 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         return "List";
     }
 
-    private static final long ARRAY_VALUE_LIST_VALUE_SHALLOW_SIZE = shallowSizeOfInstance(ArrayValueListValue.class);
-
     public static final class ArrayValueListValue extends ListValue {
+        private static final long ARRAY_VALUE_LIST_VALUE_SHALLOW_SIZE =
+                shallowSizeOfInstance(ArrayValueListValue.class);
         private final ArrayValue array;
 
         ArrayValueListValue(ArrayValue array) {
@@ -108,9 +108,8 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         }
     }
 
-    private static final long ARRAY_LIST_VALUE_SHALLOW_SIZE = shallowSizeOfInstance(ArrayListValue.class);
-
     public static final class ArrayListValue extends ListValue {
+        private static final long ARRAY_LIST_VALUE_SHALLOW_SIZE = shallowSizeOfInstance(ArrayListValue.class);
         private final AnyValue[] values;
         private final long payloadSize;
 
