@@ -36,8 +36,10 @@ import static java.util.Objects.requireNonNull;
 import static org.neo4j.function.Predicates.alwaysTrue;
 import static org.neo4j.util.Preconditions.checkArgument;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -50,16 +52,19 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.NotDirectoryException;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.SystemUtils;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction.NativeByteBufferOutputStream;
 
 /**
  * Set of utility methods to work with {@link Path} using the {@link DefaultFileSystemAbstraction default file system}.
@@ -404,6 +409,23 @@ public final class FileUtils {
         } catch (IOException ignored) {
             return null; // Preserve behaviour of File.listFiles()
         }
+    }
+
+    /**
+     * Wrap the {@link StoreFileChannel} for the provider path as an {@link OutputStream}
+     * @param path the path to write to
+     * @param storeChannelProvider factory for creating the store channel
+     * @param options the options to use when creating the channel
+     * @return the output stream
+     * @throws IOException if unable to open the channel
+     */
+    public static OutputStream toBufferedStream(
+            Path path, Function<FileChannel, StoreFileChannel> storeChannelProvider, Set<OpenOption> options)
+            throws IOException {
+        FileChannel channel = FileChannel.open(path, options);
+        StoreFileChannel fileChannel = storeChannelProvider.apply(channel);
+        fileChannel.tryMakeUninterruptible();
+        return new BufferedOutputStream(new NativeByteBufferOutputStream(fileChannel));
     }
 
     private static class DeletingFileVisitor extends SimpleFileVisitor<Path> {

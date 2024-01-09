@@ -25,9 +25,9 @@ import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static org.neo4j.io.ByteUnit.kibiBytes;
+import static org.neo4j.io.fs.FileUtils.toBufferedStream;
 
 import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -74,7 +74,7 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction {
 
     @Override
     public OutputStream openAsOutputStream(Path fileName, boolean append) throws IOException {
-        return new BufferedOutputStream(openFileOutputStream(fileName, append));
+        return toBufferedStream(fileName, this::getStoreFileChannel, append ? APPEND_OPTIONS : WRITE_OPTIONS);
     }
 
     @Override
@@ -248,13 +248,6 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction {
         StoreFileChannel fileChannel = getStoreFileChannel(channel);
         fileChannel.tryMakeUninterruptible();
         return new NativeByteBufferInputStream(fileChannel);
-    }
-
-    private OutputStream openFileOutputStream(Path path, boolean append) throws IOException {
-        FileChannel channel = FileChannel.open(path, append ? APPEND_OPTIONS : WRITE_OPTIONS);
-        StoreFileChannel fileChannel = getStoreFileChannel(channel);
-        fileChannel.tryMakeUninterruptible();
-        return new NativeByteBufferOutputStream(fileChannel);
     }
 
     @VisibleForTesting
