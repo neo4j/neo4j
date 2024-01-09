@@ -45,6 +45,8 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.os.OsBeanUtil;
+import org.neo4j.kernel.internal.LuceneIndexFileFilter;
+import org.neo4j.kernel.internal.NativeIndexFileFilter;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
@@ -166,7 +168,7 @@ public class MemoryRecommendationsCommand extends AbstractAdminCommand {
         return MemoryRecommendation.sumStoreFiles(layout, fs)
                 + MemoryRecommendation.sumIndexFiles(
                         baseSchemaIndexFolder(layout.databaseDirectory()),
-                        MemoryRecommendation.getNativeIndexFileFilter(layout.databaseDirectory(), false, fs),
+                        MemoryRecommendation.wrapIndexFilter(new NativeIndexFileFilter(layout.databaseDirectory()), fs),
                         fs);
     }
 
@@ -182,7 +184,7 @@ public class MemoryRecommendationsCommand extends AbstractAdminCommand {
         Path databaseDirectory = databaseLayout.databaseDirectory();
         return MemoryRecommendation.sumIndexFiles(
                 baseSchemaIndexFolder(databaseDirectory),
-                MemoryRecommendation.getNativeIndexFileFilter(databaseDirectory, true, fs),
+                MemoryRecommendation.wrapIndexFilter(new LuceneIndexFileFilter(databaseDirectory), fs),
                 fs);
     }
 

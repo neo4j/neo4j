@@ -73,11 +73,7 @@ import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.api.impl.index.storage.FailureStorage;
-import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
-import org.neo4j.kernel.api.impl.schema.trigram.TrigramIndexProvider;
-import org.neo4j.kernel.api.impl.schema.vector.VectorIndexVersion;
-import org.neo4j.kernel.api.index.IndexDirectoryStructure;
-import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory;
+import org.neo4j.kernel.internal.LuceneIndexFileFilter;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.Inject;
@@ -414,19 +410,15 @@ class MemoryRecommendationsCommandTest {
             pageCacheTotal.add(Files.size(path));
         }
 
-        Path indexFolder = IndexDirectoryStructure.baseSchemaIndexFolder(databaseLayout.databaseDirectory());
+        final var isLuceneIndexFile = new LuceneIndexFileFilter(databaseLayout.databaseDirectory());
+        final var indexFolder = isLuceneIndexFile.indexRoot();
         if (Files.exists(indexFolder)) {
             Files.walkFileTree(indexFolder, new SimpleFileVisitor<>() {
                 @Override
                 public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) throws IOException {
-                    String name = path.getName(path.getNameCount() - 4).toString();
-                    boolean isLuceneFile = TextIndexProvider.DESCRIPTOR.name().equals(name)
-                            || TrigramIndexProvider.DESCRIPTOR.name().equals(name)
-                            || FulltextIndexProviderFactory.DESCRIPTOR.name().equals(name)
-                            || VectorIndexVersion.V1_0.descriptor().name().equals(name);
                     if (!FailureStorage.DEFAULT_FAILURE_FILE_NAME.equals(
                             path.getFileName().toString())) {
-                        (isLuceneFile ? luceneTotal : pageCacheTotal).add(Files.size(path));
+                        (isLuceneIndexFile.test(path) ? luceneTotal : pageCacheTotal).add(Files.size(path));
                     }
                     return FileVisitResult.CONTINUE;
                 }

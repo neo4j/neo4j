@@ -32,13 +32,12 @@ import static org.neo4j.io.ByteUnit.tebiBytes;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
-import java.util.function.Predicate;
 import java.util.function.ToDoubleFunction;
 import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.impl.index.storage.FailureStorage;
-import org.neo4j.kernel.internal.NativeIndexFileFilter;
+import org.neo4j.kernel.internal.IndexFileFilter;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 
 public final class MemoryRecommendation {
@@ -151,9 +150,8 @@ public final class MemoryRecommendation {
         return new Brackets(totalMemoryGB, lower, upper);
     }
 
-    public static DirectoryStream.Filter<Path> getNativeIndexFileFilter(
-            Path storeDir, boolean inverse, FileSystemAbstraction fs) {
-        Predicate<Path> nativeIndexFilter = new NativeIndexFileFilter(storeDir);
+    public static DirectoryStream.Filter<Path> wrapIndexFilter(
+            IndexFileFilter indexFileFilter, FileSystemAbstraction fs) {
         return file -> {
             if (fs.isDirectory(file)) {
                 // Always go down directories
@@ -164,7 +162,7 @@ public final class MemoryRecommendation {
                 return false;
             }
 
-            return inverse != nativeIndexFilter.test(file);
+            return indexFileFilter.test(file);
         };
     }
 
