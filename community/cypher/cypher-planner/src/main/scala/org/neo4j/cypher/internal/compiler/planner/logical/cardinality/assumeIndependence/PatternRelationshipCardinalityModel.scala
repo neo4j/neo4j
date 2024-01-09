@@ -245,8 +245,8 @@ trait PatternRelationshipCardinalityModel extends NodeCardinalityModel {
   ): Cardinality = {
     val cardinalities =
       for {
-        (labelOnLeft, otherLabelsOnLeft) <- endpointLabelsCombinations(context, labelsOnLeft)
-        (labelOnRight, otherLabelsOnRight) <- endpointLabelsCombinations(context, labelsOnRight)
+        (labelOnLeft, otherLabelsOnLeft) <- endpointLabelsCombinations(labelsOnLeft)
+        (labelOnRight, otherLabelsOnRight) <- endpointLabelsCombinations(labelsOnRight)
       } yield {
         lazy val outgoing = patternStepCardinality(context, labelOnLeft, relationshipType, labelOnRight)
         lazy val incoming = patternStepCardinality(context, labelOnRight, relationshipType, labelOnLeft)
@@ -264,17 +264,15 @@ trait PatternRelationshipCardinalityModel extends NodeCardinalityModel {
   }
 
   private def endpointLabelsCombinations(
-    context: QueryGraphCardinalityContext,
     labels: Set[LabelId]
   ): Vector[(Option[LabelId], Vector[LabelId])] =
     if (labels.isEmpty)
       Vector((None, Vector.empty))
     else
-      buildEndpointLabelsCombinations(context, labels.toVector, Vector.empty, Vector.empty)
+      buildEndpointLabelsCombinations(labels.toVector, Vector.empty, Vector.empty)
 
   @tailrec
   private def buildEndpointLabelsCombinations(
-    context: QueryGraphCardinalityContext,
     labels: Vector[LabelId],
     previousLabels: Vector[LabelId],
     combinations: Vector[(Option[LabelId], Vector[LabelId])]
@@ -285,7 +283,7 @@ trait PatternRelationshipCardinalityModel extends NodeCardinalityModel {
       val head = labels.head
       val tail = labels.tail
       val combination = (Some(head), previousLabels.appendedAll(tail))
-      buildEndpointLabelsCombinations(context, tail, previousLabels.prepended(head), combinations.appended(combination))
+      buildEndpointLabelsCombinations(tail, previousLabels.prepended(head), combinations.appended(combination))
     }
 
   private def patternStepCardinality(
