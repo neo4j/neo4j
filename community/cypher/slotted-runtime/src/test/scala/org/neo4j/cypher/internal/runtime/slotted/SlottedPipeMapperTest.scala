@@ -818,7 +818,7 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
       label,
       Seq.empty,
       seekExpression,
-      Set(varFor("x")),
+      Set.empty,
       IndexOrderNone,
       IndexType.RANGE
     )
@@ -908,7 +908,7 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
 
     val tableFactory = pipe.tableFactory.asInstanceOf[SlottedPrimitiveGroupingAggTable.Factory]
     // then
-    val offsetZ = tableFactory.writeGrouping(tableFactory.slots("z").offset)
+    val offsetZ = tableFactory.writeGrouping.indexOf(tableFactory.slots("z").offset)
 
     // x has id 0 and z has id 1
     for (i <- tableFactory.readGrouping.indices) {
