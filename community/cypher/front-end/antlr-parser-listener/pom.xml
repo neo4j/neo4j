@@ -9,13 +9,12 @@
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>neo4j-cypher-antlr-parser</artifactId>
+    <artifactId>neo4j-cypher-antlr-parser-listener</artifactId>
     <packaging>jar</packaging>
-    <name>Neo4j - Cypher ANTLR4 based parser</name>
 
-    <description>Cypher parser using ANTLR4</description>
+    <name>Neo4j - Cypher ANTLR4 parser listener</name>
+    <description>Generate optimised parser listener</description>
     <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
-
     <scm>
         <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
         <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
@@ -23,8 +22,16 @@
     </scm>
 
     <properties>
-        <moduleName>org.neo4j.cypher.internal.parser.antlr4</moduleName>
+        <moduleName>org.neo4j.cypher.internal.parser</moduleName>
     </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-cypher-antlr-parser</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
 
     <build>
         <plugins>
@@ -43,55 +50,21 @@
                 </configuration>
             </plugin>
             <plugin>
-                <groupId>org.antlr</groupId>
-                <artifactId>antlr4-maven-plugin</artifactId>
-                <version>${antlr.version}</version>
+                <groupId>org.neo4j</groupId>
+                <artifactId>neo4j-cypher-antlr-parser-listener-maven-plugin</artifactId>
+                <version>${project.version}</version>
                 <executions>
                     <execution>
-                        <id>antlr</id>
+                        <id>generate-antlr-listener</id>
                         <goals>
-                            <goal>antlr4</goal>
+                            <goal>generate-antlr-listener</goal>
                         </goals>
                     </execution>
                 </executions>
                 <configuration>
-                    <listener>false</listener> <!-- We have our own optimised listener -->
-                    <visitor>false</visitor>
+                    <inputClassName>org.neo4j.cypher.internal.parser.CypherParserListener</inputClassName>
                 </configuration>
             </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-enforcer-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>default</id>
-                        <goals>
-                            <goal>enforce</goal>
-                        </goals>
-                        <configuration>
-                            <rules>
-                                <RestrictImports>
-                                    <excludedSourceRoot>target/generated-sources/antlr4</excludedSourceRoot>
-                                </RestrictImports>
-                            </rules>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
         </plugins>
-
     </build>
-
-    <dependencies>
-
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.antlr</groupId>
-            <artifactId>antlr4-runtime</artifactId>
-        </dependency>
-    </dependencies>
 </project>

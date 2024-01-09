@@ -16,44 +16,12 @@
  */
 package org.neo4j.cypher.internal.cst.factory.neo4j
 
-import org.antlr.v4.runtime.BaseErrorListener
 import org.antlr.v4.runtime.CharStreams
 import org.antlr.v4.runtime.CommonTokenStream
 import org.antlr.v4.runtime.ParserRuleContext
-import org.antlr.v4.runtime.RecognitionException
-import org.antlr.v4.runtime.Recognizer
 import org.antlr.v4.runtime.Token
 import org.neo4j.cypher.internal.parser.CypherLexer
 import org.neo4j.cypher.internal.parser.CypherParser
-
-import scala.collection.mutable
-
-case class SyntaxError(
-  offendingSymbol: Any,
-  line: Int,
-  charPositionInLine: Int,
-  message: String,
-  e: RecognitionException
-) extends Exception(message)
-
-class SyntaxErrorListener extends BaseErrorListener {
-  private var syntaxErrors: mutable.Seq[SyntaxError] = mutable.Seq.empty
-
-  def getSyntaxErrors: Iterator[SyntaxError] = {
-    syntaxErrors.iterator
-  }
-
-  override def syntaxError(
-    recognizer: Recognizer[_, _],
-    offendingSymbol: Any,
-    line: Int,
-    charPositionInLine: Int,
-    msg: String,
-    e: RecognitionException
-  ): Unit = {
-    syntaxErrors :+= SyntaxError(offendingSymbol, line, charPositionInLine, msg, e)
-  }
-}
 
 trait AntlrRule[+T <: ParserRuleContext] {
   def apply(queryText: String): Cst[T]
@@ -121,7 +89,7 @@ object AntlrRule {
         if (checkAllTokensConsumed) areAllTokensConsumed(parserResult, tokenStream) else Option.empty
       new Cst(parserResult) {
         val parsingErrors: List[Exception] =
-          (parserErrorListener.getSyntaxErrors ++ syntaxChecker.getErrors ++ exhaustedInputError).toList
+          (parserErrorListener.syntaxErrors ++ syntaxChecker.getErrors ++ exhaustedInputError).toList
       }
     }
 

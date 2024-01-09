@@ -18,8 +18,11 @@ package org.neo4j.cypher.internal.cst.factory.neo4j
 
 import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.Token
+import org.antlr.v4.runtime.tree.ErrorNode
+import org.antlr.v4.runtime.tree.ParseTreeListener
 import org.antlr.v4.runtime.tree.TerminalNode
 import org.neo4j.cypher.internal.ast.factory.ConstraintType
+import org.neo4j.cypher.internal.cst.factory.neo4j.ast.Util.cast
 import org.neo4j.cypher.internal.parser.CypherParser
 import org.neo4j.cypher.internal.parser.CypherParser.ConstraintNodePatternContext
 import org.neo4j.cypher.internal.parser.CypherParser.ConstraintRelPatternContext
@@ -29,17 +32,41 @@ import org.neo4j.cypher.internal.parser.CypherParser.DropConstraintNodeCheckCont
 import org.neo4j.cypher.internal.parser.CypherParser.GlobContext
 import org.neo4j.cypher.internal.parser.CypherParser.GlobRecursiveContext
 import org.neo4j.cypher.internal.parser.CypherParser.SymbolicAliasNameOrParameterContext
-import org.neo4j.cypher.internal.parser.CypherParserBaseListener
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 
-import scala.collection.mutable
 import scala.jdk.CollectionConverters.ListHasAsScala
 import scala.jdk.CollectionConverters.SeqHasAsJava
 
-class SyntaxChecker extends CypherParserBaseListener {
+final class SyntaxChecker extends ParseTreeListener {
   private val exceptionFactory = new OpenCypherExceptionFactory(None)
-  private var errors: mutable.Seq[Exception] = mutable.Seq.empty
+  private var errors: Seq[Exception] = Seq.empty
+
+  override def visitTerminal(node: TerminalNode): Unit = {}
+  override def visitErrorNode(node: ErrorNode): Unit = {}
+  override def enterEveryRule(ctx: ParserRuleContext): Unit = {}
+
+  override def exitEveryRule(ctx: ParserRuleContext): Unit = {
+    // Note, this has been shown to be significantly faster than using the generated listener.
+    // Compiles into a lookupswitch (or possibly tableswitch)
+    ctx.getRuleIndex match {
+      case CypherParser.RULE_periodicCommitQueryHintFailure   => checkPeriodicCommitQueryHintFailure(cast(ctx))
+      case CypherParser.RULE_subqueryInTransactionsParameters => checkSubqueryInTransactionsParameters(cast(ctx))
+      case CypherParser.RULE_createCommand                    => checkCreateCommand(cast(ctx))
+      case CypherParser.RULE_createConstraint                 => checkCreateConstraint(cast(ctx))
+      case CypherParser.RULE_dropConstraint                   => checkDropConstraint(cast(ctx))
+      case CypherParser.RULE_createLookupIndex                => checkCreateLookupIndex(cast(ctx))
+      case CypherParser.RULE_createUser                       => checkCreateUser(cast(ctx))
+      case CypherParser.RULE_alterUser                        => checkAlterUser(cast(ctx))
+      case CypherParser.RULE_allPrivilege                     => checkAllPrivilege(cast(ctx))
+      case CypherParser.RULE_createDatabase                   => checkCreateDatabase(cast(ctx))
+      case CypherParser.RULE_alterDatabase                    => checkAlterDatabase(cast(ctx))
+      case CypherParser.RULE_createAlias                      => checkCreateAlias(cast(ctx))
+      case CypherParser.RULE_alterAlias                       => checkAlterAlias(cast(ctx))
+      case CypherParser.RULE_globPart                         => checkGlobPart(cast(ctx))
+      case _                                                  =>
+    }
+  }
 
   def getErrors: Iterator[Exception] = {
     errors.iterator
@@ -129,17 +156,17 @@ class SyntaxChecker extends CypherParserBaseListener {
     }
   }
 
-  override def exitSubqueryInTransactionsParameters(ctx: CypherParser.SubqueryInTransactionsParametersContext): Unit = {
+  private def checkSubqueryInTransactionsParameters(ctx: CypherParser.SubqueryInTransactionsParametersContext): Unit = {
     errorOnDuplicatedRule(ctx.subqueryInTransactionsBatchParameters(), "OF ROWS")
     errorOnDuplicatedRule(ctx.subqueryInTransactionsErrorParameters(), "ON ERROR")
     errorOnDuplicatedRule(ctx.subqueryInTransactionsReportParameters(), "ON ERROR")
   }
 
-  override def exitCreateAlias(ctx: CypherParser.CreateAliasContext): Unit = {
+  private def checkCreateAlias(ctx: CypherParser.CreateAliasContext): Unit = {
     errorOnAliasNameContainingDots(ctx.symbolicAliasNameOrParameter())
   }
 
-  override def exitAlterAlias(ctx: CypherParser.AlterAliasContext): Unit = {
+  private def checkAlterAlias(ctx: CypherParser.AlterAliasContext): Unit = {
     errorOnAliasNameContainingDots(ctx.symbolicAliasNameOrParameter())
     errorOnDuplicated(ctx.DRIVER(), "DRIVER")
     errorOnDuplicated(ctx.AT(), "AT")
@@ -149,20 +176,20 @@ class SyntaxChecker extends CypherParserBaseListener {
     errorOnDuplicated(ctx.TARGET(), "TARGET")
   }
 
-  override def exitCreateUser(ctx: CypherParser.CreateUserContext): Unit = {
+  private def checkCreateUser(ctx: CypherParser.CreateUserContext): Unit = {
     errorOnDuplicatedRule(ctx.passwordChangeRequired(), "SET PASSWORD CHANGE [NOT] REQUIRED")
     errorOnDuplicatedRule(ctx.userStatus(), "SET STATUS {SUSPENDED|ACTIVE}")
     errorOnDuplicatedRule(ctx.homeDatabase(), "SET HOME DATABASE")
   }
 
-  override def exitAlterUser(ctx: CypherParser.AlterUserContext): Unit = {
+  private def checkAlterUser(ctx: CypherParser.AlterUserContext): Unit = {
     errorOnDuplicatedRule(ctx.setPassword(), "SET PASSWORD")
     errorOnDuplicatedRule(ctx.passwordChangeRequired(), "SET PASSWORD CHANGE [NOT] REQUIRED")
     errorOnDuplicatedRule(ctx.userStatus(), "SET STATUS {SUSPENDED|ACTIVE}")
     errorOnDuplicatedRule(ctx.homeDatabase(), "SET HOME DATABASE")
   }
 
-  override def exitAllPrivilege(ctx: CypherParser.AllPrivilegeContext): Unit = {
+  private def checkAllPrivilege(ctx: CypherParser.AllPrivilegeContext): Unit = {
     val privilegeType = ctx.allPrivilegeType()
     val privilegeTarget = ctx.allPrivilegeTarget()
 
@@ -194,7 +221,7 @@ class SyntaxChecker extends CypherParserBaseListener {
     }
   }
 
-  override def exitGlobPart(ctx: CypherParser.GlobPartContext): Unit = {
+  private def checkGlobPart(ctx: CypherParser.GlobPartContext): Unit = {
     if (ctx.DOT() == null) {
       ctx.parent.parent match {
         case r: GlobRecursiveContext if r.globPart().escapedSymbolicNameString() != null =>
@@ -215,7 +242,7 @@ class SyntaxChecker extends CypherParserBaseListener {
     }
   }
 
-  override def exitCreateConstraint(ctx: CypherParser.CreateConstraintContext): Unit = {
+  private def checkCreateConstraint(ctx: CypherParser.CreateConstraintContext): Unit = {
     errorOnNodesAndRelConstraints[ConstraintNodePatternContext, CreateConstraintRelCheckContext](
       ctx.constraintNodePattern(),
       ctx.createConstraintRelCheck(),
@@ -250,7 +277,7 @@ class SyntaxChecker extends CypherParserBaseListener {
     }
   }
 
-  override def exitDropConstraint(ctx: CypherParser.DropConstraintContext): Unit = {
+  private def checkDropConstraint(ctx: CypherParser.DropConstraintContext): Unit = {
     errorOnRelationshipAndNodeConstraints[ConstraintRelPatternContext, DropConstraintNodeCheckContext](
       ctx.constraintRelPattern(),
       ctx.dropConstraintNodeCheck(),
@@ -265,7 +292,7 @@ class SyntaxChecker extends CypherParserBaseListener {
     }
   }
 
-  override def exitCreateDatabase(ctx: CypherParser.CreateDatabaseContext): Unit = {
+  private def checkCreateDatabase(ctx: CypherParser.CreateDatabaseContext): Unit = {
     val primaries =
       (ctx.PRIMARY().asScala ++ ctx.PRIMARIES().asScala).sortBy(_.getSymbol.getStartIndex)
     val secondaries =
@@ -275,7 +302,7 @@ class SyntaxChecker extends CypherParserBaseListener {
     errorOnDuplicated(secondaries.asJava, "SECONDARY")
   }
 
-  override def exitAlterDatabase(ctx: CypherParser.AlterDatabaseContext): Unit = {
+  private def checkAlterDatabase(ctx: CypherParser.AlterDatabaseContext): Unit = {
     val primaries =
       (ctx.PRIMARY().asScala ++ ctx.PRIMARIES().asScala).sortBy(_.getSymbol.getStartIndex)
     val secondaries =
@@ -289,7 +316,7 @@ class SyntaxChecker extends CypherParserBaseListener {
     errorOnDuplicated(ctx.OPTION(), "OPTION")
   }
 
-  override def exitPeriodicCommitQueryHintFailure(ctx: CypherParser.PeriodicCommitQueryHintFailureContext): Unit = {
+  private def checkPeriodicCommitQueryHintFailure(ctx: CypherParser.PeriodicCommitQueryHintFailureContext): Unit = {
     val periodic = ctx.PERIODIC().getSymbol
 
     errors :+= exceptionFactory.syntaxException(
@@ -298,7 +325,7 @@ class SyntaxChecker extends CypherParserBaseListener {
     )
   }
 
-  override def exitCreateCommand(ctx: CypherParser.CreateCommandContext): Unit = {
+  private def checkCreateCommand(ctx: CypherParser.CreateCommandContext): Unit = {
     val createIndex = ctx.createIndex()
     val replace = ctx.REPLACE()
 
@@ -312,7 +339,7 @@ class SyntaxChecker extends CypherParserBaseListener {
     }
   }
 
-  override def exitCreateLookupIndex(ctx: CypherParser.CreateLookupIndexContext): Unit = {
+  private def checkCreateLookupIndex(ctx: CypherParser.CreateLookupIndexContext): Unit = {
     val lookupIndexFunctionName = ctx.lookupIndexFunctionName()
 
     if (lookupIndexFunctionName != null) {
