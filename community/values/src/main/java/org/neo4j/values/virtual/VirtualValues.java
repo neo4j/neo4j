@@ -75,6 +75,10 @@ public final class VirtualValues {
         return new ListValue.ArrayValueListValue(arrayValue);
     }
 
+    public static ListValue.RelationshipListValue fromRelationships(VirtualRelationshipValue[] array) {
+        return new ListValue.RelationshipListValue(array);
+    }
+
     /*
     TOMBSTONE: TransformedListValue & FilteredListValue
 

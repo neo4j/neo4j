@@ -21,6 +21,8 @@ package org.neo4j.values.virtual;
 
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray;
+import static org.neo4j.memory.HeapEstimator.sizeOf;
+import static org.neo4j.memory.HeapEstimator.sizeOfObjectArray;
 import static org.neo4j.values.SequenceValue.IterationPreference.RANDOM_ACCESS;
 import static org.neo4j.values.utils.ValueMath.HASH_CONSTANT;
 import static org.neo4j.values.virtual.ArrayHelpers.assertValueRepresentation;
@@ -36,6 +38,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import org.github.jamm.Unmetered;
+import org.neo4j.exceptions.CypherTypeException;
 import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.helpers.collection.PrefetchingIterator;
@@ -105,6 +108,53 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         @Override
         public long estimatedHeapUsage() {
             return ARRAY_VALUE_LIST_VALUE_SHALLOW_SIZE + array.estimatedHeapUsage();
+        }
+    }
+
+    public static final class RelationshipListValue extends ListValue {
+        private static final long REL_LIST_VALUE_SHALLOW_SIZE = shallowSizeOfInstance(RelationshipListValue.class);
+
+        private final VirtualRelationshipValue[] array;
+
+        RelationshipListValue(VirtualRelationshipValue[] array) {
+            this.array = array;
+        }
+
+        @Override
+        public IterationPreference iterationPreference() {
+            return RANDOM_ACCESS;
+        }
+
+        @Override
+        public ArrayValue toStorableArray() {
+            throw new CypherTypeException(
+                    "Collections containing relationship values can not be stored in properties.");
+        }
+
+        @Override
+        public int size() {
+            return array.length;
+        }
+
+        @Override
+        public ValueRepresentation itemValueRepresentation() {
+            return ValueRepresentation.ANYTHING;
+        }
+
+        @Override
+        public AnyValue value(int offset) {
+            return array[offset];
+        }
+
+        @Override
+        public long estimatedHeapUsage() {
+            int length = array.length;
+            if (length == 0) {
+                return REL_LIST_VALUE_SHALLOW_SIZE;
+            } else {
+                return REL_LIST_VALUE_SHALLOW_SIZE
+                        + sizeOfObjectArray(sizeOf(array[0]), length); // Use first element as probe
+            }
         }
     }
 
@@ -780,14 +830,10 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
 
     @Override
     protected int computeHashToMemoize() {
-        switch (iterationPreference()) {
-            case RANDOM_ACCESS:
-                return randomAccessComputeHash();
-            case ITERATION:
-                return iterationComputeHash();
-            default:
-                throw new IllegalStateException("not a valid iteration preference");
-        }
+        return switch (iterationPreference()) {
+            case RANDOM_ACCESS -> randomAccessComputeHash();
+            case ITERATION -> iterationComputeHash();
+        };
     }
 
     @Override

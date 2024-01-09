@@ -21,7 +21,6 @@ package org.neo4j.values.virtual;
 
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
-import java.util.Arrays;
 import org.neo4j.values.AnyValueWriter;
 
 public abstract class PathReference extends VirtualPathValue {
@@ -171,7 +170,7 @@ public abstract class PathReference extends VirtualPathValue {
 
         @Override
         public ListValue relationshipsAsList() {
-            return VirtualValues.fromList(Arrays.asList(relationships));
+            return VirtualValues.fromRelationships(relationships);
         }
 
         @Override
