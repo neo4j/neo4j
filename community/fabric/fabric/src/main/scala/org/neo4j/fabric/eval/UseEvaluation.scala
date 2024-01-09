@@ -84,14 +84,15 @@ object UseEvaluation {
     }
 
     private def resolveFunctions(expr: Expression): Expression = expr.rewritten.bottomUp {
-      case f: FunctionInvocation if f.needsToBeResolved =>
+      case f: FunctionInvocation if f.needsToBeResolved => {
         val resolved = ResolvedFunctionInvocation(signatureResolver.functionSignature)(f).coerceArguments
 
         if (resolved.fcnSignature.isEmpty) {
           Errors.openCypherFailure(Errors.openCypherSemantic(s"Unknown function '${resolved.qualifiedName}'", resolved))
         }
 
-        resolved
+        return resolved
+      }
     }
 
     def resolveGraph(compositeName: NormalizedDatabaseName): Catalog.Graph =
