@@ -20,6 +20,7 @@
 package org.neo4j.fabric.planning
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsParameters
 import org.neo4j.cypher.internal.ast.UnresolvedCall
 import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
@@ -341,6 +342,33 @@ class FabricFragmenterTest
         .getMessage
         .should(include("Variable `y` not defined"))
     }
+
+    "InTransactionsParameters stored on apply" in {
+      val frag = fragment(
+        """
+          |CALL {
+          |  MATCH (n) RETURN n
+          |} IN TRANSACTIONS
+          |RETURN n
+          |""".stripMargin
+      )
+
+      frag.as[Fragment.Leaf].input.as[Fragment.Apply].inTransactionsParameters.isDefined.shouldBe(true)
+    }
+
+    "InTransactionsParameters stored on apply with USE" in {
+      val frag = fragment(
+        """
+          |CALL {
+          |  USE x
+          |  MATCH (n) RETURN n
+          |} IN TRANSACTIONS
+          |RETURN n
+          |""".stripMargin
+      )
+
+      frag.as[Fragment.Leaf].input.as[Fragment.Apply].inTransactionsParameters.isDefined.shouldBe(true)
+    }
   }
 
   "Full queries:" - {
@@ -607,6 +635,64 @@ class FabricFragmenterTest
             ),
             Seq.empty
           )
+      )
+    }
+
+    val inTransactionParameters = Some(InTransactionsParameters(None, None, None)(pos))
+
+    "Call in tx" in {
+      fragment(
+        """
+          |CALL {
+          |  MATCH (n)
+          |  RETURN n
+          |} IN TRANSACTIONS
+          |RETURN n
+          |""".stripMargin
+      ).shouldEqual(
+        init(defaultUse)
+          .apply(
+            oldUse =>
+              init(Inherited(oldUse)(pos))
+                .leaf(
+                  Seq(
+                    match_(NodePattern(Some(varFor("n")), None, None, None)(pos)),
+                    returnVars("n")
+                  ),
+                  Seq("n")
+                ),
+            inTransactionParameters
+          )
+          .leaf(Seq(returnVars("n")), Seq("n"))
+      )
+    }
+
+    "Call in tx with use" in {
+      fragment(
+        """
+          |CALL {
+          |  USE x
+          |  MATCH (n)
+          |  RETURN n
+          |} IN TRANSACTIONS
+          |RETURN n
+          |""".stripMargin
+      ).shouldEqual(
+        init(defaultUse)
+          .apply(
+            _ =>
+              init(Declared(use("x")))
+                .leaf(
+                  Seq(
+                    use("x"),
+                    match_(NodePattern(Some(varFor("n")), None, None, None)(pos)),
+                    returnVars("n")
+                  ),
+                  Seq("n")
+                ),
+            inTransactionParameters
+          )
+          .leaf(Seq(returnVars("n")), Seq("n"))
       )
     }
   }

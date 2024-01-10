@@ -20,6 +20,7 @@
 package org.neo4j.fabric.planning
 
 import org.neo4j.cypher.internal
+import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.GraphSelection
@@ -34,8 +35,10 @@ import org.neo4j.cypher.internal.ast.UnionAll
 import org.neo4j.cypher.internal.ast.UnionDistinct
 import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
+import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.SensitiveLiteral
 import org.neo4j.cypher.internal.expressions.SensitiveParameter
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.rewriting.rewriters.sensitiveLiteralReplacement
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
@@ -44,6 +47,10 @@ import org.neo4j.cypher.rendering.QueryRenderer
 import org.neo4j.exceptions.SyntaxException
 import org.neo4j.fabric.eval.UseEvaluation
 import org.neo4j.fabric.pipeline.FabricFrontEnd
+import org.neo4j.fabric.planning.Ast.aliasedReturn
+import org.neo4j.fabric.planning.Fragment.Apply
+import org.neo4j.fabric.planning.Fragment.Exec
+import org.neo4j.fabric.planning.Fragment.Init
 import org.neo4j.fabric.util.Rewritten.RewritingOps
 
 /**
@@ -54,7 +61,8 @@ case class FabricStitcher(
   queryString: String,
   compositeContext: Boolean,
   pipeline: FabricFrontEnd#Pipeline,
-  useHelper: UseHelper
+  useHelper: UseHelper,
+  callInTransactionsEnabled: Boolean
 ) {
 
   /**
@@ -77,9 +85,75 @@ case class FabricStitcher(
         )
     }
 
-    if (compositeContext) validateNoTransactionalSubquery(result)
+    if (callInTransactionsEnabled) {
+      if (compositeContext) processCompositeCallInTx(result) else result
+    } else {
+      if (compositeContext) validateNoTransactionalSubquery(result)
+      result
+    }
+  }
 
-    result
+  private def processCompositeCallInTx(fragment: Fragment): Fragment.Chain = fragment match {
+    // Go over the fragment chain and process CALL IN TX Apply if present
+    case apply: Apply if apply.inTransactionsParameters.isDefined => {
+      val newExec = apply.inner match {
+        case exec: Exec => constructCallInTransactionExec(exec, apply.inTransactionsParameters.get)
+        // At the end of stitching an Apply can have only Exec as the inner fragment
+        case f => throw new IllegalArgumentException("Unexpected fragment: " + f);
+      }
+      apply.copy(input = processCompositeCallInTx(apply.input), inner = newExec)(apply.pos)
+    }
+    case init: Init => init
+    case exec: Exec => exec.copy(input = processCompositeCallInTx(exec.input))
+    case f          => throw new IllegalArgumentException("Unexpected fragment: " + f);
+  }
+
+  private def constructCallInTransactionExec(
+    originalExec: Exec,
+    inTransactionsParameters: SubqueryCall.InTransactionsParameters
+  ): Fragment = {
+    val pos = originalExec.pos
+    val clauses = originalExec.query match {
+      case singleQuery: SingleQuery => singleQuery.clauses
+      case q                        => throw new IllegalArgumentException("Unexpected query type: " + q)
+    }
+    val clausesWithoutInsertedWith = if (originalExec.importColumns.isEmpty) clauses else clauses.tail
+    val unwind =
+      ast.Unwind(ExplicitParameter(Apply.CALL_IN_TX_ROWS, CTAny)(pos), Variable(Apply.CALL_IN_TX_ROW)(pos))(pos)
+    val postUnwindWith = With(ReturnItems(
+      includeExisting = false,
+      items =
+        for {
+          varName <- originalExec.importColumns :+ Apply.CALL_IN_TX_ROW_ID
+        } yield AliasedReturnItem(
+          expression = Property(
+            Variable(Apply.CALL_IN_TX_ROW)(pos),
+            (org.neo4j.cypher.internal.expressions PropertyKeyName varName)(pos)
+          )(pos),
+          variable = Variable(varName)(pos)
+        )(pos)
+    )(pos))(pos)
+
+    val call = SubqueryCall(SingleQuery(clausesWithoutInsertedWith)(pos), Some(inTransactionsParameters))(pos)
+    val outputColumns = callInTxOutputColumns(originalExec, inTransactionsParameters)
+    val returnClause = aliasedReturn(outputColumns, pos)
+
+    val resultClauses = Seq(unwind, postUnwindWith, call, returnClause)
+    asExec(originalExec.input, SingleQuery(resultClauses)(pos), outputColumns)
+  }
+
+  private def callInTxOutputColumns(
+    originalExec: Exec,
+    inTransactionsParameters: SubqueryCall.InTransactionsParameters
+  ): Seq[String] = {
+    // These are the columns that were actually specified in the query ...
+    val userColumns = inTransactionsParameters.reportParams
+      .map(reportParams => reportParams.reportAs.name)
+      .map(reportVariable => originalExec.outputColumns :+ reportVariable)
+      .getOrElse(originalExec.outputColumns)
+    // ... and we add one extra column that will enable the runtime to pair
+    // output rows to the input ones.
+    userColumns :+ Apply.CALL_IN_TX_ROW_ID
   }
 
   def convertUnion(union: Fragment.Union): Fragment =

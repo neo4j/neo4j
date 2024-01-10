@@ -132,7 +132,8 @@ case class FabricPlanner(
 
       val compositeContext = useHelper.rootTargetsCompositeContext(fragments)
 
-      val stitcher = FabricStitcher(query.statement, compositeContext, pipeline, useHelper)
+      val stitcher =
+        FabricStitcher(query.statement, compositeContext, pipeline, useHelper, config.isCallInTransactionEnabled)
       val stitchedFragments = stitcher.convert(fragments)
 
       FabricPlan(
@@ -168,12 +169,12 @@ case class FabricPlanner(
       finally event.close()
     }
 
-    def asLocal(fragment: Fragment.SingleQuerySegment): LocalQuery = LocalQuery(
+    def asLocal(fragment: Fragment.Exec): LocalQuery = LocalQuery(
       FullyParsedQuery(fragment.localQuery, optionsFor(fragment)),
       fragment.queryType
     )
 
-    def asRemote(fragment: Fragment.SingleQuerySegment): RemoteQuery = RemoteQuery(
+    def asRemote(fragment: Fragment.Exec): RemoteQuery = RemoteQuery(
       QueryRenderer.addOptions(fragment.remoteQuery.query, optionsFor(fragment)),
       fragment.queryType,
       fragment.remoteQuery.extractedLiterals

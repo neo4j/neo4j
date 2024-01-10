@@ -124,7 +124,7 @@ abstract class SingleQueryFragmentExecutor {
         return fragmentExecutor;
     }
 
-    PrepareResult prepare(Fragment.SingleQuerySegment fragment, Record argument) {
+    PrepareResult prepare(Fragment.Exec fragment, Record argument) {
         ctx.validateStatementType(fragment.statementType());
         Map<String, AnyValue> argumentValues = argumentValues(fragment, argument);
 
@@ -139,7 +139,7 @@ abstract class SingleQueryFragmentExecutor {
     }
 
     FragmentResult doExecuteFragment(
-            Fragment.SingleQuerySegment fragment,
+            Fragment.Exec fragment,
             MapValue parameters,
             Catalog.Graph graph,
             TransactionMode transactionMode,

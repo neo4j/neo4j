@@ -262,8 +262,13 @@ public class FabricExecutor {
 
             if (fragment instanceof Fragment.Init) {
                 return runInit();
-            } else if (fragment instanceof Fragment.Apply) {
-                return runApply((Fragment.Apply) fragment, argument);
+            } else if (fragment instanceof Fragment.Apply apply) {
+                if (apply.inTransactionsParameters().isEmpty()) {
+                    return runApply(apply, argument);
+                } else {
+                    return runCallInTransactions(apply, argument);
+                }
+
             } else if (fragment instanceof Fragment.Union) {
                 return runUnion((Fragment.Union) fragment, argument);
             } else if (fragment instanceof Fragment.Exec) {
@@ -332,6 +337,29 @@ public class FabricExecutor {
                             tracer(),
                             FabricStatementExecution.this::run)
                     .run(argument);
+        }
+
+        FragmentResult runCallInTransactions(Fragment.Apply fragment, Record argument) {
+            var resultRecords = new CallInTransactionsExecutor(
+                            fragment,
+                            plannerInstance,
+                            fabricWorkerExecutor,
+                            ctx,
+                            useEvaluator,
+                            plan,
+                            queryParams,
+                            accessMode,
+                            notifications,
+                            lifecycle,
+                            prefetcher,
+                            queryRoutingMonitor,
+                            statistics,
+                            tracer(),
+                            FabricStatementExecution.this::run)
+                    .run(argument);
+
+            Mono<QueryExecutionType> executionType = Mono.just(EffectiveQueryType.queryExecutionType(plan, accessMode));
+            return new FragmentResult(resultRecords, Mono.empty(), executionType);
         }
 
         SingleQueryFragmentExecutor.Tracer tracer() {

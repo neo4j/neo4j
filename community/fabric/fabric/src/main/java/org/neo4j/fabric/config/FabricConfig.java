@@ -22,17 +22,24 @@ package org.neo4j.fabric.config;
 import java.time.Duration;
 import java.util.function.Supplier;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 
 public class FabricConfig {
     private final Supplier<Duration> transactionTimeout;
     private final DataStream dataStream;
     private final boolean routingEnabled;
+    private final boolean callInTransactionEnabled;
 
-    public FabricConfig(Supplier<Duration> transactionTimeout, DataStream dataStream, boolean routingEnabled) {
+    public FabricConfig(
+            Supplier<Duration> transactionTimeout,
+            DataStream dataStream,
+            boolean routingEnabled,
+            boolean callInTransactionEnabled) {
         this.transactionTimeout = transactionTimeout;
         this.dataStream = dataStream;
         this.routingEnabled = routingEnabled;
+        this.callInTransactionEnabled = callInTransactionEnabled;
     }
 
     public Duration getTransactionTimeout() {
@@ -47,11 +54,19 @@ public class FabricConfig {
         return routingEnabled;
     }
 
+    public boolean isCallInTransactionEnabled() {
+        return callInTransactionEnabled;
+    }
+
     public static FabricConfig from(Config config) {
         var syncBatchSize = FabricConstants.BATCH_SIZE;
         // the rest of the settings are not used for any type of queries supported in CE
         var dataStream = new DataStream(0, 0, syncBatchSize, 0);
-        return new FabricConfig(() -> config.get(GraphDatabaseSettings.transaction_timeout), dataStream, false);
+        return new FabricConfig(
+                () -> config.get(GraphDatabaseSettings.transaction_timeout),
+                dataStream,
+                false,
+                config.get(GraphDatabaseInternalSettings.composite_call_in_transactions));
     }
 
     public static class DataStream {
