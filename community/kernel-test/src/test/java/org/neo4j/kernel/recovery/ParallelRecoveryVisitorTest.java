@@ -307,7 +307,7 @@ class ParallelRecoveryVisitorTest {
         }
 
         @Override
-        public void rollback(ReadableTransactionState txState, CursorContext rollbackContext) {
+        public void release(ReadableTransactionState txState, CursorContext rollbackContext, boolean rolledBack) {
             throw new UnsupportedOperationException();
         }
 

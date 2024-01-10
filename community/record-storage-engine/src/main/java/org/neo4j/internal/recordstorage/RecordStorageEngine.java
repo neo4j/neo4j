@@ -489,9 +489,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
                 locks, txState, neoStores, schemaRuleAccess, storeCursors);
         commandLockVerification.verifySufficientlyLocked(commands);
 
-        unallocateIds(txState.addedAndRemovedNodes().getRemovedFromAdded(), RecordIdType.NODE, cursorContext);
-        unallocateIds(
-                txState.addedAndRemovedRelationships().getRemovedFromAdded(), RecordIdType.RELATIONSHIP, cursorContext);
         return commands;
     }
 
@@ -528,17 +525,19 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
     }
 
     @Override
-    public void rollback(ReadableTransactionState txState, CursorContext cursorContext) {
+    public void release(ReadableTransactionState txState, CursorContext cursorContext, boolean rolledBack) {
         // Extract allocated IDs from created nodes/relationships from txState
         // (optionally) flick through the commands to try and salvage other types of IDs, like property/dynamic record
         // IDs, but that's way less bang for your buck.
-        unallocateIds(txState.addedAndRemovedNodes(), RecordIdType.NODE, cursorContext);
-        unallocateIds(txState.addedAndRemovedRelationships(), RecordIdType.RELATIONSHIP, cursorContext);
+        unallocateIds(txState.addedAndRemovedNodes(), RecordIdType.NODE, cursorContext, rolledBack);
+        unallocateIds(txState.addedAndRemovedRelationships(), RecordIdType.RELATIONSHIP, cursorContext, rolledBack);
     }
 
-    private void unallocateIds(LongDiffSets ids, IdType idType, CursorContext cursorContext) {
+    private void unallocateIds(LongDiffSets ids, IdType idType, CursorContext cursorContext, boolean rolledBack) {
         // Free those that were created
-        unallocateIds(ids.getAdded(), idType, cursorContext);
+        if (rolledBack) {
+            unallocateIds(ids.getAdded(), idType, cursorContext);
+        }
         // Free those that were created and then deleted
         unallocateIds(ids.getRemovedFromAdded(), idType, cursorContext);
     }

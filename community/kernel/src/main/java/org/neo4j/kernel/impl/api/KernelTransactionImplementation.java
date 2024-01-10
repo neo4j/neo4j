@@ -1138,22 +1138,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             if (hasTxStateWithChanges()) {
                 try (var rollbackEvent = transactionEvent.beginRollback()) {
                     committer.rollback(rollbackEvent);
-                    AutoCloseable constraintDropper = () -> {
-                        try {
-                            dropCreatedConstraintIndexes();
-                        } catch (IllegalStateException | SecurityException e) {
-                            throw new TransactionFailureException(
-                                    Status.Transaction.TransactionRollbackFailed,
-                                    e,
-                                    "Could not drop created constraint indexes");
-                        }
-                    };
-
-                    AutoCloseable storageRollback = () -> storageEngine.rollback(txState, cursorContext);
-                    //noinspection EmptyTryBlock
-                    try (constraintDropper;
-                            storageRollback) {
-                        // close those things safely
+                    try {
+                        dropCreatedConstraintIndexes();
+                    } catch (IllegalStateException | SecurityException e) {
+                        throw new TransactionFailureException(
+                                Status.Transaction.TransactionRollbackFailed,
+                                e,
+                                "Could not drop created constraint indexes");
                     }
                 }
             }
@@ -1285,6 +1276,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         try {
             try {
                 lockClient.close();
+            } catch (RuntimeException | Error e) {
+                error = Exceptions.chain(error, e);
+            }
+            try {
+                if (txState != null) {
+                    storageEngine.release(txState, cursorContext, !commit);
+                }
             } catch (RuntimeException | Error e) {
                 error = Exceptions.chain(error, e);
             }
