@@ -316,34 +316,29 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
 
         @Override
         public Iterator<AnyValue> iterator() {
-            switch (inner.iterationPreference()) {
-                case RANDOM_ACCESS:
-                    return super.iterator();
-                case ITERATION:
-                    return new PrefetchingIterator<>() {
-                        private int count;
-                        private Iterator<AnyValue> innerIterator = inner.iterator();
+            return switch (inner.iterationPreference()) {
+                case RANDOM_ACCESS -> super.iterator();
+                case ITERATION -> new PrefetchingIterator<>() {
+                    private int count;
+                    private final Iterator<AnyValue> innerIterator = inner.iterator();
 
-                        @Override
-                        protected AnyValue fetchNextOrNull() {
-                            // make sure we are at least at first element
-                            while (count < from && innerIterator.hasNext()) {
-                                innerIterator.next();
-                                count++;
-                            }
-                            // check if we are done
-                            if (count < from || count >= to || !innerIterator.hasNext()) {
-                                return null;
-                            }
-                            // take the next step
+                    @Override
+                    protected AnyValue fetchNextOrNull() {
+                        // make sure we are at least at first element
+                        while (count < from && innerIterator.hasNext()) {
+                            innerIterator.next();
                             count++;
-                            return innerIterator.next();
                         }
-                    };
-
-                default:
-                    throw new IllegalStateException("unknown iteration preference");
-            }
+                        // check if we are done
+                        if (count < from || count >= to || !innerIterator.hasNext()) {
+                            return null;
+                        }
+                        // take the next step
+                        count++;
+                        return innerIterator.next();
+                    }
+                };
+            };
         }
 
         @Override
@@ -619,14 +614,10 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
 
         @Override
         public Iterator<AnyValue> iterator() {
-            switch (base.iterationPreference()) {
-                case RANDOM_ACCESS:
-                    return super.iterator();
-                case ITERATION:
-                    return Iterators.appendTo(base.iterator(), appended);
-                default:
-                    throw new IllegalStateException("unknown iteration preference");
-            }
+            return switch (base.iterationPreference()) {
+                case RANDOM_ACCESS -> super.iterator();
+                case ITERATION -> Iterators.appendTo(base.iterator(), appended);
+            };
         }
 
         @Override
@@ -689,14 +680,10 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
 
         @Override
         public Iterator<AnyValue> iterator() {
-            switch (base.iterationPreference()) {
-                case RANDOM_ACCESS:
-                    return super.iterator();
-                case ITERATION:
-                    return Iterators.prependTo(base.iterator(), prepended);
-                default:
-                    throw new IllegalStateException("unknown iteration preference");
-            }
+            return switch (base.iterationPreference()) {
+                case RANDOM_ACCESS -> super.iterator();
+                case ITERATION -> Iterators.prependTo(base.iterator(), prepended);
+            };
         }
 
         @Override
@@ -818,14 +805,10 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
     }
 
     public AnyValue[] asArray() {
-        switch (iterationPreference()) {
-            case RANDOM_ACCESS:
-                return randomAccessAsArray();
-            case ITERATION:
-                return iterationAsArray();
-            default:
-                throw new IllegalStateException("not a valid iteration preference");
-        }
+        return switch (iterationPreference()) {
+            case RANDOM_ACCESS -> randomAccessAsArray();
+            case ITERATION -> iterationAsArray();
+        };
     }
 
     @Override
