@@ -115,11 +115,20 @@ public class StringArray extends TextArray {
 
     @Override
     public String prettyPrint() {
-        return Arrays.toString(value);
+        if (isEmpty()) {
+            return "[]";
+        }
+
+        final var sb = new StringBuilder(length());
+        sb.append('[').append(value(0).prettyPrint());
+        for (int i = 1; i < length(); i++) {
+            sb.append(", ").append(value(i).prettyPrint());
+        }
+        return sb.append(']').toString();
     }
 
     @Override
-    public AnyValue value(int offset) {
+    public Value value(int offset) {
         return Values.stringOrNoValue(stringValue(offset));
     }
 

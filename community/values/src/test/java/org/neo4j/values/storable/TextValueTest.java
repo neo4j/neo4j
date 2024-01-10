@@ -22,13 +22,17 @@ package org.neo4j.values.storable;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.params.provider.Arguments.of;
+import static org.neo4j.values.storable.Values.charArray;
 import static org.neo4j.values.storable.Values.stringArray;
 import static org.neo4j.values.storable.Values.utf8Value;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.function.Function;
+import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.values.virtual.ListValue;
 
@@ -147,6 +151,19 @@ class TextValueTest {
         assertThat(helloSplitOnEmptyStorable).isInstanceOf(StringArray.class); // is not CharArray
         assertThat(helloSplitOnEmptyStorable.asObject())
                 .isEqualTo(new String[] {"H", "E", "L", "L", "O"}); // is not char[]
+    }
+
+    public static Stream<Arguments> prettyPrintTextArray() {
+        return Stream.of(
+                of(stringArray("Hello", "World"), "['Hello', 'World']"),
+                of(stringArray("\"Hello\"", "\"World\""), "['\"Hello\"', '\"World\"']"),
+                of(charArray(new char[] {'H', 'e', 'l', 'l', 'o'}), "['H', 'e', 'l', 'l', 'o']"));
+    }
+
+    @ParameterizedTest
+    @MethodSource
+    void prettyPrintTextArray(TextArray array, String prettyString) {
+        assertThat(array.prettyPrint()).isEqualTo(prettyString);
     }
 
     @ParameterizedTest

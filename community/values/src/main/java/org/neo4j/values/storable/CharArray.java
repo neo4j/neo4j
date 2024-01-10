@@ -105,11 +105,20 @@ public final class CharArray extends TextArray {
 
     @Override
     public String prettyPrint() {
-        return Arrays.toString(value);
+        if (isEmpty()) {
+            return "[]";
+        }
+
+        final var sb = new StringBuilder(length());
+        sb.append('[').append(value(0).prettyPrint());
+        for (int i = 1; i < length(); i++) {
+            sb.append(", ").append(value(i).prettyPrint());
+        }
+        return sb.append(']').toString();
     }
 
     @Override
-    public AnyValue value(int position) {
+    public CharValue value(int position) {
         return Values.charValue(value[position]);
     }
 
