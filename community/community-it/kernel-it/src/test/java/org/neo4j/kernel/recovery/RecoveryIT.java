@@ -28,6 +28,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.commons.lang3.RandomStringUtils.randomAlphanumeric;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assumptions.assumeThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -114,6 +115,7 @@ import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.nativeimpl.NativeAccessProvider;
+import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -338,6 +340,8 @@ class RecoveryIT {
     @Test
     void recoverTxLogsWithPartiallyWrittenLastRecordInFirstTransactionAfterCheckpoint() throws Exception {
         var database = createDatabase();
+        assumeRecordStorageEngine(database);
+
         var logFiles = database.getDependencyResolver().resolveDependency(LogFiles.class);
         var checkpointer = database.getDependencyResolver().resolveDependency(CheckPointer.class);
         var logFileToManipulate = logFiles.getLogFile().getHighestLogFile();
@@ -2493,6 +2497,13 @@ class RecoveryIT {
         } finally {
             managementService.shutdown();
         }
+    }
+
+    private void assumeRecordStorageEngine(GraphDatabaseAPI database) {
+        final var storageEngine = database.getDependencyResolver().resolveDependency(StorageEngine.class);
+        assumeThat(storageEngine instanceof RecordStorageEngine)
+                .as("Requires the use of testAccessNeoStores, which is record format specific")
+                .isTrue();
     }
 
     private void appendBytesToLastLogFile(Path logFilePath, LogPosition logPosition, byte[] bytesToWrite)
