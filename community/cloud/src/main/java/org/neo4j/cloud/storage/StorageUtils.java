@@ -45,6 +45,16 @@ public interface StorageUtils {
     Set<OpenOption> APPEND_OPTIONS = Set.of(WRITE, APPEND, CREATE);
 
     /**
+     *
+     * @param options the options to check
+     * @return <code>true</code> if the options contains any create options,
+     * i.e. {@link java.nio.file.StandardOpenOption#CREATE} or {@link java.nio.file.StandardOpenOption#CREATE_NEW}
+     */
+    static boolean hasCreateOption(Set<? extends OpenOption> options) {
+        return options.contains(CREATE) || options.contains(CREATE_NEW);
+    }
+
+    /**
      * @param options the options to normalize
      * @return the normalized options
      */
