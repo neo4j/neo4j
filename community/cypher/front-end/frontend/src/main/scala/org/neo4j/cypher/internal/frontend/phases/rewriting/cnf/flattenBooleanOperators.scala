@@ -52,7 +52,7 @@ case object flattenBooleanOperators extends Rewriter with CnfPhase {
       })(p.position)
   }
 
-  private val instance = inSequence(bottomUp(firstStep), fixedPoint(bottomUp(secondStep)))
+  val instance: Rewriter = inSequence(bottomUp(firstStep), fixedPoint(bottomUp(secondStep)))
 
   override def preConditions: Set[StepSequencer.Condition] = Set.empty
 

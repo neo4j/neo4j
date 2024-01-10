@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.compiler.helpers.SignatureResolver;
 import org.neo4j.cypher.internal.evaluator.SimpleInternalExpressionEvaluator;
 import org.neo4j.cypher.internal.frontend.phases.BaseState;
 import org.neo4j.cypher.internal.frontend.phases.ProcedureSignatureResolver;
+import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.flattenBooleanOperators;
 import org.neo4j.cypher.internal.javacompat.ExecutionEngine;
 import org.neo4j.cypher.internal.rewriting.rewriters.RemoveUseRewriter;
 import org.neo4j.cypher.internal.runtime.CypherRow;
@@ -187,7 +188,9 @@ public class QueryProcessorImpl implements QueryProcessor {
     }
 
     private static String rewriteQueryText(BaseState parsedQuery, QueryOptions queryOptions) {
-        var rewrittenStatement = RemoveUseRewriter.instance().apply(parsedQuery.statement());
+        var rewrittenStatement = flattenBooleanOperators
+                .instance()
+                .apply(RemoveUseRewriter.instance().apply(parsedQuery.statement()));
         var rewrittenStatementString = QueryRenderer.render((Statement) rewrittenStatement);
 
         return QueryRenderer.addOptions(rewrittenStatementString, queryOptions);
