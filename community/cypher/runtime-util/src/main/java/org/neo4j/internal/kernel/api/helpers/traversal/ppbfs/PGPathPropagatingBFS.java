@@ -100,11 +100,13 @@ public final class PGPathPropagatingBFS implements AutoCloseable {
 
         return new PrefetchingIterator<>() {
             private Iterator<NodeData> currentTargets = Collections.emptyIterator();
-            private boolean done = false;
+            private boolean targetSaturated = false;
+
+            private boolean groupYielded = false;
 
             @Override
             protected Row fetchNextOrNull() {
-                if (done) {
+                if (targetSaturated) {
                     return null;
                 }
 
@@ -114,20 +116,29 @@ public final class PGPathPropagatingBFS implements AutoCloseable {
                         while (pathTracer.hasNext()) {
                             var path = pathTracer.next();
                             var row = toRow.apply(path);
+
                             if (nonInlinedPredicate.test(row)) {
-                                if (!isGroupSelector) {
-                                    // if the selector is not grouped, we count each valid path
-                                    pathTracer.decrementTargetCount();
-                                } else if (!pathTracer.hasNext()) {
-                                    // if it is grouped, we wait until the last path of the group has been yielded
+                                if (isGroupSelector) {
+                                    groupYielded = true;
+                                } else {
                                     pathTracer.decrementTargetCount();
                                 }
 
                                 if (intoTarget != NO_SUCH_ENTITY && pathTracer.isSaturated()) {
-                                    done = true;
+                                    targetSaturated = true;
                                 }
                                 return row;
                             }
+                        }
+                    }
+
+                    if (groupYielded) {
+                        groupYielded = false;
+                        pathTracer.decrementTargetCount();
+
+                        if (intoTarget != NO_SUCH_ENTITY && pathTracer.isSaturated()) {
+                            targetSaturated = true;
+                            return null;
                         }
                     }
 
@@ -136,7 +147,7 @@ public final class PGPathPropagatingBFS implements AutoCloseable {
                         if (nextLevelWithTargets()) {
                             currentTargets = dataManager.targets().iterator();
                         } else {
-                            done = true;
+                            targetSaturated = true;
                             return null;
                         }
                     }

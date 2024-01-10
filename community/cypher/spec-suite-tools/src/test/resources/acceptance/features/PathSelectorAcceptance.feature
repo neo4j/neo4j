@@ -334,9 +334,9 @@ Feature: PathSelectorAcceptance
       | SHORTEST 1         | :!X    | [['s1-t1', [[4, 1]]], ['s2-t1', [[3, 1]]]]                                          |
       | SHORTEST 2         | :!X    | [['s1-t1', [[4, 2]]], ['s2-t1', [[3, 1], [5, 1]]]]                                  |
       | SHORTEST 3         | :!X    | [['s1-t1', [[4, 2]]], ['s2-t1', [[3, 1], [5, 1]]]]                                  |
-#      | ALL SHORTEST       | :!X    | [['s1-t1', [[4, 2]]], ['s2-t1', [[3, 1]]]]                                          |
-#      | SHORTEST GROUP     | :!X    | [['s1-t1', [[4, 2]]], ['s2-t1', [[3, 1]]]]                                          |
-#      | SHORTEST 1 GROUP   | :!X    | [['s1-t1', [[4, 2]]], ['s2-t1', [[3, 1]]]]                                          |
+      | ALL SHORTEST       | :!X    | [['s1-t1', [[4, 2]]], ['s2-t1', [[3, 1]]]]                                          |
+      | SHORTEST GROUP     | :!X    | [['s1-t1', [[4, 2]]], ['s2-t1', [[3, 1]]]]                                          |
+      | SHORTEST 1 GROUP   | :!X    | [['s1-t1', [[4, 2]]], ['s2-t1', [[3, 1]]]]                                          |
       | SHORTEST 2 GROUPS  | :!X    | [['s1-t1', [[4, 2]]], ['s2-t1', [[3, 1], [5, 1]]]]                                  |
       | SHORTEST 3 GROUPS  | :!X    | [['s1-t1', [[4, 2]]], ['s2-t1', [[3, 1], [5, 1]]]]                                  |
 
