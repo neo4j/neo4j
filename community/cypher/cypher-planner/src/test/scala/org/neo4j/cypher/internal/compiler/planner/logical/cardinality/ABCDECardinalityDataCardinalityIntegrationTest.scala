@@ -132,7 +132,7 @@ class ABCDECardinalityDataCardinalityIntegrationTest extends CypherFunSuite with
   }
 
   test("MATCH (a:B) WHERE a.bar = 42") {
-    expectCardinality(B * DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_EQUALITY_SELECTIVITY)
+    expectCardinality(B * UnindexedProp)
   }
 
   test("MATCH (a:A) WHERE NOT a.prop = 42") {
@@ -148,7 +148,7 @@ class ABCDECardinalityDataCardinalityIntegrationTest extends CypherFunSuite with
   }
 
   test("MATCH (a:B) WHERE a.prop = 42 OR a.bar = 43") {
-    expectCardinality(B * or(Bprop, DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_EQUALITY_SELECTIVITY))
+    expectCardinality(B * or(Bprop, UnindexedProp))
   }
 
   test("MATCH (t:T) WHERE t.prop STARTS WITH ''") {
@@ -160,7 +160,7 @@ class ABCDECardinalityDataCardinalityIntegrationTest extends CypherFunSuite with
   }
 
   test("MATCH (t:T) WHERE t.prop = 42") {
-    expectCardinality(T * DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_EQUALITY_SELECTIVITY)
+    expectCardinality(T * UnindexedProp)
   }
 
   test("MATCH (a) WHERE false") {
@@ -172,7 +172,7 @@ class ABCDECardinalityDataCardinalityIntegrationTest extends CypherFunSuite with
   }
 
   test("MATCH (a:B) WHERE a.prop = 42 AND a.bar = 43") {
-    expectCardinality(B * Bprop * DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_EQUALITY_SELECTIVITY)
+    expectCardinality(B * Bprop * UnindexedProp)
   }
 
   test("MATCH (c:C) WHERE c.prop = 42 AND c.bar = 43") {
@@ -351,7 +351,7 @@ class ABCDECardinalityDataCardinalityIntegrationTest extends CypherFunSuite with
   }
 
   test("MATCH ()-[t: T1|T2]->() WHERE t.prop = 2") {
-    expectCardinality(R * DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_EQUALITY_SELECTIVITY)
+    expectCardinality(R * UnindexedProp)
   }
 
   test("MATCH ()-[t: T1 {prop: 2}]->()") {
@@ -359,7 +359,7 @@ class ABCDECardinalityDataCardinalityIntegrationTest extends CypherFunSuite with
   }
 
   test("MATCH ()-[t: T2 {prop: 2}]->()") {
-    expectCardinality(ANY_T2_ANY * DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_EQUALITY_SELECTIVITY)
+    expectCardinality(ANY_T2_ANY * UnindexedProp)
   }
 
   test("MATCH ()-[t {prop: 2}]->() WHERE t:T1") {
@@ -387,7 +387,7 @@ class ABCDECardinalityDataCardinalityIntegrationTest extends CypherFunSuite with
   }
 
   test("MATCH ()-[t:T1]->() WHERE t.bar = 42") {
-    expectCardinality(ANY_T1_ANY * DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_EQUALITY_SELECTIVITY)
+    expectCardinality(ANY_T1_ANY * UnindexedProp)
   }
 
   test("MATCH ()-[t:T1]->() WHERE NOT t.prop = 42") {
@@ -408,7 +408,7 @@ class ABCDECardinalityDataCardinalityIntegrationTest extends CypherFunSuite with
 
   test("MATCH ()-[t1: T1]->()-[t2:T2]->() WHERE t1.prop = 2 AND t2.prop = 3") {
     expectCardinality(
-      N * N * N * ANY_T1_ANY_sel * ANY_T2_ANY_sel * T1prop * DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_EQUALITY_SELECTIVITY
+      N * N * N * ANY_T1_ANY_sel * ANY_T2_ANY_sel * T1prop * UnindexedProp
     )
   }
 
@@ -454,7 +454,7 @@ class ABCDECardinalityDataCardinalityIntegrationTest extends CypherFunSuite with
   }
 
   test("MATCH ()-[t: T1]->() WHERE t.prop = 2 AND t.bar = 2") {
-    expectCardinality(ANY_T1_ANY * T1prop * DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_EQUALITY_SELECTIVITY)
+    expectCardinality(ANY_T1_ANY * T1prop * UnindexedProp)
   }
 
   test("MATCH ()-[t: T1]->() WITH t AS t WHERE t.prop = 2") {
@@ -532,7 +532,7 @@ class ABCDECardinalityDataCardinalityIntegrationTest extends CypherFunSuite with
 
   test("MATCH (a:A) WITH 1 AS foo MATCH (a) WHERE a.prop = 2") {
     // Different a-variables, don't use index for a.prop = 2
-    expectCardinality(A * N * DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_EQUALITY_SELECTIVITY)
+    expectCardinality(A * N * UnindexedProp)
   }
 
   test("MATCH (a:A) WITH a, 1 AS foo MATCH (a) WHERE a.prop = 1") {
@@ -674,7 +674,7 @@ class ABCDECardinalityDataCardinalityIntegrationTest extends CypherFunSuite with
   }
 
   test("MATCH (a:A) CALL { MATCH (a) WHERE a.prop = 42 RETURN 42 AS ft }") {
-    expectCardinality(A * N * DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_EQUALITY_SELECTIVITY)
+    expectCardinality(A * N * UnindexedProp)
   }
 
   test("MATCH (a:A) CALL { WITH a MATCH (b:B) RETURN b AS x UNION ALL WITH a MATCH (c:C) RETURN c AS x}") {

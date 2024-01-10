@@ -57,6 +57,7 @@ trait ABCDECardinalityData extends CardinalityIntegrationTestSupport {
   val R2: Double = N * R2sel
   val T: Double = N * Tsel // Nodes with label T
 
+  val UnindexedProp = DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_EQUALITY_SELECTIVITY // Selectivity of prop (of node with no label) to exist and be a unique value
   val ApropExists: Double = 1.0   // Exists selectivity of index on :A(prop)
   val ApropUnique: Double = 0.5   // Unique selectivity of index on :A(prop)
   val Aprop: Double = ApropExists * ApropUnique // Selectivity of :A(prop) to exist and be unique
