@@ -48,6 +48,8 @@ import java.util.Set;
 import java.util.function.Predicate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.internal.matchers.ArrayEquals;
@@ -146,10 +148,7 @@ class SchemeFileSystemAbstractionTest {
     }
 
     @Test
-    void resolve() throws IOException {
-        assertThat(schemeFs.resolve(FS_PATH.toString())).isEqualTo(FS_PATH);
-        assertThat(schemeFs.resolve(FS_PATH.toUri())).isEqualTo(FS_PATH);
-
+    void resolveNonFileSchemes() throws IOException {
         final var remotePath = SCHEME + "://remote/stuff";
         assertThat(schemeFs.resolve(remotePath)).isEqualTo(schemePath);
         assertThat(schemeFs.resolve(URI.create(remotePath))).isEqualTo(schemePath);
@@ -158,6 +157,17 @@ class SchemeFileSystemAbstractionTest {
         assertThatThrownBy(() -> schemeFs.resolve(otherPath)).isInstanceOf(ProviderMismatchException.class);
         assertThatThrownBy(() -> schemeFs.resolve(URI.create(otherPath))).isInstanceOf(ProviderMismatchException.class);
 
+        verifyNoInteractions(fs);
+    }
+
+    @Test
+    @DisabledOnOs(
+            value = OS.WINDOWS,
+            disabledReason =
+                    "Windows prepends the Z directory as part of the URI resolution, i.e. local\\stuff != Z:\\local\\stuff")
+    void resolveLocalPaths() throws IOException {
+        assertThat(schemeFs.resolve(FS_PATH.toString())).isEqualTo(FS_PATH);
+        assertThat(schemeFs.resolve(FS_PATH.toUri())).isEqualTo(FS_PATH);
         verifyNoInteractions(fs);
     }
 
