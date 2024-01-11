@@ -485,15 +485,13 @@ public class IndexedIdGenerator implements IdGenerator {
             // now we need to make sure that range is not yet used by any other concurrent allocator
             // so we check if it's not yet locked before returning it, otherwise we mark those ids unallocated and
             // fallback to new range
-            var range = new ArrayBasedRange(reusedIds, idsPerPage);
+            var range = PageIdRange.wrap(reusedIds, idsPerPage);
             if (lockedPageRanges.add(range.pageId())) {
                 return range;
             } else {
                 // we mark optimistically allocated range as unallocated and fallback to new ids
                 try (var marker = lockAndInstantiateMarker(false, false, cursorContext)) {
-                    for (long reusedId : reusedIds) {
-                        marker.markUnallocated(reusedId);
-                    }
+                    range.unallocate(marker);
                 }
             }
         }
@@ -508,7 +506,7 @@ public class IndexedIdGenerator implements IdGenerator {
         monitor.allocatedFromHigh(currentHighId, (int) requestSize);
         var pageIdRange = hasReservedIdInRange(currentHighId, currentHighId + idsPerPage)
                 ? rangeWithoutReservedId(idsPerPage, currentHighId)
-                : new ContinuousIdRange(currentHighId, (int) requestSize);
+                : new ContinuousIdRange(currentHighId, (int) requestSize, idsPerPage);
         lockedPageRanges.add(pageIdRange.pageId());
         return pageIdRange;
     }

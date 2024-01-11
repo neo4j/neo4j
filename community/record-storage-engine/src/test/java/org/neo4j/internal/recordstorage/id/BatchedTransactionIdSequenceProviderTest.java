@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.recordstorage.id;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -31,7 +32,9 @@ import static org.neo4j.kernel.impl.store.StoreType.NODE;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.internal.id.IdGenerator;
+import org.neo4j.internal.id.range.ArrayBasedRange;
 import org.neo4j.internal.id.range.ContinuousIdRange;
+import org.neo4j.internal.id.range.PageIdRange;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordStore;
@@ -50,8 +53,8 @@ class BatchedTransactionIdSequenceProviderTest {
         when(neoStores.getRecordStore(NODE)).thenReturn(nodeStore);
         when(nodeStore.getIdGenerator()).thenReturn(idGenerator);
         when(idGenerator.nextPageRange(any(), anyInt()))
-                .thenReturn(new ContinuousIdRange(100, 10))
-                .thenReturn(new ContinuousIdRange(200, 10));
+                .thenReturn(new ContinuousIdRange(100, 10, 120))
+                .thenReturn(new ContinuousIdRange(200, 10, 120));
     }
 
     @Test
@@ -90,5 +93,36 @@ class BatchedTransactionIdSequenceProviderTest {
         sequenceProvider.release(CursorContext.NULL_CONTEXT);
 
         assertEquals(200, idSequence.nextId(CursorContext.NULL_CONTEXT));
+    }
+
+    @Test
+    void idRangeOfReusedIds() {
+        var pageIdRange = PageIdRange.wrap(new long[] {4, 5, 6}, 280);
+        assertThat(pageIdRange).isInstanceOf(ContinuousIdRange.class);
+        assertEquals(4, pageIdRange.nextId());
+
+        pageIdRange = PageIdRange.wrap(new long[] {4, 6}, 280);
+        assertThat(pageIdRange).isInstanceOf(ArrayBasedRange.class);
+        assertEquals(4, pageIdRange.nextId());
+
+        pageIdRange = PageIdRange.wrap(new long[] {6}, 280);
+        assertThat(pageIdRange).isInstanceOf(ContinuousIdRange.class);
+        assertEquals(6, pageIdRange.nextId());
+
+        pageIdRange = PageIdRange.wrap(new long[] {2, 5, 6, 7, 8, 9}, 280);
+        assertThat(pageIdRange).isInstanceOf(ArrayBasedRange.class);
+        assertEquals(2, pageIdRange.nextId());
+    }
+
+    @Test
+    void idRangePage() {
+        assertEquals(0, new ContinuousIdRange(4, 3, 280).pageId());
+        assertEquals(0, new ContinuousIdRange(217, 3, 280).pageId());
+        assertEquals(1, new ContinuousIdRange(280, 3, 280).pageId());
+        assertEquals(2, new ContinuousIdRange(700, 3, 280).pageId());
+
+        assertEquals(0, new ArrayBasedRange(new long[] {0, 1, 2}, 140).pageId());
+        assertEquals(1, new ArrayBasedRange(new long[] {140, 141, 142}, 140).pageId());
+        assertEquals(2, new ArrayBasedRange(new long[] {300}, 140).pageId());
     }
 }

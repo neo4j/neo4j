@@ -27,11 +27,13 @@ import org.neo4j.internal.id.IdGenerator;
 public class ContinuousIdRange implements PageIdRange {
     private final long rangeStart;
     private final int rangeSize;
+    private final long idsPerPage;
     private int cursor = 0;
 
-    public ContinuousIdRange(long rangeStart, int rangeSize) {
+    public ContinuousIdRange(long rangeStart, int rangeSize, long idsPerPage) {
         this.rangeStart = rangeStart;
         this.rangeSize = rangeSize;
+        this.idsPerPage = idsPerPage;
     }
 
     @Override
@@ -54,7 +56,7 @@ public class ContinuousIdRange implements PageIdRange {
 
     @Override
     public long pageId() {
-        return rangeStart / rangeSize;
+        return rangeStart / idsPerPage;
     }
 
     @Override

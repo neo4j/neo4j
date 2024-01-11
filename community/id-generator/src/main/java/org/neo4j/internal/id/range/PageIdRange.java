@@ -48,6 +48,13 @@ public interface PageIdRange {
         }
     };
 
+    static PageIdRange wrap(long[] ids, int idsPerPage) {
+        if (ids[0] + ids.length - 1 == ids[ids.length - 1]) {
+            return new ContinuousIdRange(ids[0], ids.length, idsPerPage);
+        }
+        return new ArrayBasedRange(ids, idsPerPage);
+    }
+
     /**
      * Id from this reserved range. Should be used only in combination with {@link #hasNext()}
      */
