@@ -28,14 +28,19 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.OptionalLong;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
+import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.ByteBuffers;
+import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.database.transaction.LogChannel;
 import org.neo4j.kernel.api.database.transaction.TransactionLogChannels;
 import org.neo4j.kernel.api.database.transaction.TransactionLogService;
@@ -43,6 +48,7 @@ import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.availability.DescriptiveAvailabilityRequirement;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseTracers;
+import org.neo4j.kernel.impl.api.tracer.DefaultTracer;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
@@ -52,13 +58,24 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFile;
 import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitorAdapter;
+import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
+import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
+import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
+import org.neo4j.kernel.impl.transaction.tracing.StoreApplyEvent;
+import org.neo4j.kernel.impl.transaction.tracing.TransactionEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.kernel.monitoring.tracing.Tracers;
+import org.neo4j.lock.LockTracer;
+import org.neo4j.logging.NullLog;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.MetadataProvider;
+import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
 import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.time.Clocks;
+import org.neo4j.util.concurrent.BinaryLatch;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.OptionalLong.empty;
@@ -100,8 +117,13 @@ class TransactionLogServiceIT
     @ExtensionCallback
     void configure( TestDatabaseManagementServiceBuilder builder )
     {
-        builder.setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, THRESHOLD )
-               .setConfig( GraphDatabaseSettings.keep_logical_logs, "1 files" );
+        var dependencies = new Dependencies();
+        var tracers = new InjectableBeforeApplyTracers();
+        dependencies.satisfyDependency( tracers );
+        builder.setExternalDependencies( dependencies );
+
+        builder.setConfig(GraphDatabaseSettings.logical_log_rotation_threshold, THRESHOLD)
+                .setConfig(GraphDatabaseSettings.keep_logical_logs, "1 files");
     }
 
     @Test
@@ -304,16 +326,15 @@ class TransactionLogServiceIT
     }
 
     @Test
-    void endOffsetPositionedToEndOfFileOrLastClosedTransaction() throws IOException
+    void endOffsetPositionedToEndOfFile() throws IOException
     {
         var propertyValue = randomAscii( (int) THRESHOLD );
 
         int numberOfTransactions = 30;
         for ( int i = 0; i < numberOfTransactions; i++ )
         {
-            executeTransaction( propertyValue );
+            createNodeInIsolatedTransaction( propertyValue );
         }
-
         try ( TransactionLogChannels logReaders = logService.logFilesChannels( 2 ) )
         {
 
@@ -322,12 +343,71 @@ class TransactionLogServiceIT
 
             for ( LogChannel fullChannel : fullChannels )
             {
-                assertThat( fullChannel.getEndOffset() ).isEqualTo( fullChannel.getChannel().size() );
+                assertThat(fullChannel.getEndOffset())
+                        .isEqualTo(fullChannel.getChannel().size());
             }
+        }
+    }
 
-            var lastChannel = channels.get( channels.size() - 1 );
-            var lastClosedTransaction = metadataProvider.getLastClosedTransaction();
-            assertThat( lastChannel.getEndOffset() ).isEqualTo( lastClosedTransaction.getLogPosition().getByteOffset() );
+    // This test ensures that we return the use the last committed transaction, not the last closed transaction as
+    // the upper bound when we retrieve channels.
+    @Test
+    void endOffsetPositionedToLastCommittedTransaction() throws Exception
+    {
+        createNodeInIsolatedTransaction("some prop value");
+
+        var txIsCommitted = new BinaryLatch();
+        var canCloseTx = new BinaryLatch();
+
+        var initialLastCommittedTx = metadataProvider.getLastCommittedTransactionId();
+        var initialLastClosedTx = metadataProvider.getLastClosedTransactionId();
+
+        try ( OtherThreadExecutor e1 = new OtherThreadExecutor( "tx taking a long time to apply" ) )
+        {
+            // lock next applying transaction on canCloseTx so that it is committed but not closed
+            InjectableBeforeApplyTracers.InjectableBeforeApplyTxWriteEvent.INSTANCE.beforeStoreApply.set( () ->
+            {
+                txIsCommitted.release();
+                canCloseTx.await();
+            });
+
+            var openTx = e1.executeDontWait( () ->
+            {
+                try ( var tx = databaseAPI.beginTx() )
+                {
+                    tx.createNode();
+                    tx.commit();
+                }
+                return null;
+            });
+
+            try
+            {
+                txIsCommitted.await();
+
+                // then we should have the last committed after the last closed:
+                var lastCommittedTransaction = metadataProvider.getLastCommittedTransactionId();
+                var lastClosedTx = metadataProvider.getLastClosedTransactionId();
+                assertThat( lastClosedTx ).isEqualTo( initialLastClosedTx );
+                assertThat( lastCommittedTransaction ).isEqualTo( initialLastCommittedTx + 1 );
+
+                // when we get the channels starting at the last committed transaction:
+                try ( TransactionLogChannels logReaders = logService.logFilesChannels( lastCommittedTransaction ) )
+                {
+                    var channels = logReaders.getChannels();
+                    assertThat( channels ).hasSize( 1 );
+                    var channel = channels.get( 0 );
+                    // they should include only the last committed transaction (not the last closed)
+                    assertThat( channel.getLastTxId() ).isEqualTo( lastCommittedTransaction );
+                    assertThat( channel.getStartTxId() ).isEqualTo( lastCommittedTransaction );
+                    assertThat( channel.getEndOffset() ).isEqualTo( getTxEndOffset(lastCommittedTransaction) );
+                }
+            }
+            finally
+            {
+                canCloseTx.release();
+                openTx.get( 1, TimeUnit.MINUTES );
+            }
         }
     }
 
@@ -340,11 +420,11 @@ class TransactionLogServiceIT
             executeTransaction( "abc" );
         }
 
-        verifyReportedPositions( 2, getTxOffset( 2 ) );
-        verifyReportedPositions( 3, getTxOffset( 3 ) );
-        verifyReportedPositions( 4, getTxOffset( 4 ) );
-        verifyReportedPositions( 5, getTxOffset( 5 ) );
-        verifyReportedPositions( 15, getTxOffset( 15 ) );
+        verifyReportedPositions( 2, getTxStartOffset( 2 ) );
+        verifyReportedPositions( 3, getTxStartOffset( 3 ) );
+        verifyReportedPositions( 4, getTxStartOffset( 4 ) );
+        verifyReportedPositions( 5, getTxStartOffset( 5 ) );
+        verifyReportedPositions( 15, getTxStartOffset( 15 ) );
     }
 
     @Test
@@ -594,6 +674,16 @@ class TransactionLogServiceIT
         assertEquals( logVersionBefore, logFiles.getLogFile().getHighestLogVersion() );
     }
 
+    private void createNodeInIsolatedTransaction( String propertyValue )
+    {
+        try ( var tx = databaseAPI.beginTx() )
+        {
+            Node node = tx.createNode();
+            node.setProperty( "a", propertyValue );
+            tx.commit();
+        }
+    }
+
     private ByteBuffer readTransactionIntoBuffer( GraphDatabaseAPI db, LogPosition positionBeforeTransaction, LogPosition positionAfterTransaction )
             throws IOException
     {
@@ -606,10 +696,16 @@ class TransactionLogServiceIT
         }
         return createBuffer( length ).put( data );
     }
-
-    private long getTxOffset( int txId ) throws IOException
+    private long getTxStartOffset( long txId ) throws IOException
     {
         return transactionStore.getTransactions( txId ).position().getByteOffset();
+    }
+
+    private long getTxEndOffset( long txId ) throws IOException
+    {
+        var commandBatches = transactionStore.getTransactions( txId );
+        commandBatches.next();
+        return commandBatches.position().getByteOffset();
     }
 
     private void verifyReportedPositions( int txId, long expectedOffset ) throws IOException
@@ -654,6 +750,111 @@ class TransactionLogServiceIT
         public List<Long> getObservedVersions()
         {
             return versions;
+        }
+    }
+
+    static class InjectableBeforeApplyTracers extends Tracers
+    {
+        InjectableBeforeApplyTracers()
+        {
+            super( "null", NullLog.getInstance(), new Monitors(), null, Clocks.nanoClock(), null );
+        }
+
+        @Override
+        public PageCacheTracer getPageCacheTracer()
+        {
+            return PageCacheTracer.NULL;
+        }
+
+        @Override
+        public LockTracer getLockTracer()
+        {
+            return LockTracer.NONE;
+        }
+
+        @Override
+        public DatabaseTracer getDatabaseTracer()
+        {
+            return new InjectableBeforeApplyDatabaseTracer();
+        }
+
+        private static class InjectableBeforeApplyDatabaseTracer extends DefaultTracer
+        {
+            InjectableBeforeApplyDatabaseTracer()
+            {
+                super( );
+            }
+
+            @Override
+            public TransactionEvent beginTransaction( CursorContext cursorContext )
+            {
+                return new InjectableBeforeApplyTransactionEvent( );
+            }
+        }
+
+        private static class InjectableBeforeApplyTxWriteEvent implements CommitEvent
+        {
+
+            public static final InjectableBeforeApplyTxWriteEvent INSTANCE = new InjectableBeforeApplyTxWriteEvent();
+
+            private final AtomicReference<Runnable> beforeStoreApply = new AtomicReference<>();
+
+            @Override
+            public void close()
+            {
+            }
+
+            @Override
+            public LogAppendEvent beginLogAppend()
+            {
+                return LogAppendEvent.NULL;
+            }
+
+            @Override
+            public StoreApplyEvent beginStoreApply()
+            {
+                var beforeStoreApplyRunnable = beforeStoreApply.getAndSet( null );
+                if ( beforeStoreApplyRunnable != null )
+                {
+                    beforeStoreApplyRunnable.run();
+                }
+                return StoreApplyEvent.NULL;
+            }
+        }
+
+        private static class InjectableBeforeApplyTransactionEvent implements TransactionEvent
+        {
+
+            @Override
+            public void setSuccess( boolean success )
+            {
+            }
+
+            @Override
+            public void setFailure( boolean failure )
+            {
+            }
+
+            @Override
+            public CommitEvent beginCommitEvent()
+            {
+                return InjectableBeforeApplyTxWriteEvent.INSTANCE;
+            }
+
+            @Override
+            public void close()
+            {
+            }
+
+            @Override
+            public void setTransactionWriteState( String transactionWriteState )
+            {
+            }
+
+            @Override
+            public void setReadOnly( boolean wasReadOnly )
+            {
+            }
         }
     }
 }

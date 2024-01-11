@@ -223,8 +223,9 @@ public class GlobalModule
         globalLife.setLast( globalAvailabilityGuard );
 
         String desiredImplementationName = globalConfig.get( GraphDatabaseInternalSettings.tracer );
-        tracers = globalDependencies.satisfyDependency( new Tracers( desiredImplementationName,
+        tracers = tryResolveOrCreate(Tracers.class, () -> new Tracers( desiredImplementationName,
                 logService.getInternalLog( Tracers.class ), globalMonitors, jobScheduler, globalClock, globalConfig ) );
+        globalDependencies.satisfyDependency(tracers);
         globalDependencies.satisfyDependency( tracers.getPageCacheTracer() );
 
         collectionsFactorySupplier = createCollectionsFactorySupplier( globalConfig, globalLife );
