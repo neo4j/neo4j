@@ -76,6 +76,8 @@ case class PreParsedQuery(
 
   override def cacheKey: InputQuery.CacheKey = InputQuery.CacheKey(options.cacheKey, statement)
 
+  def cacheKeyWithRawStatement: InputQuery.CacheKey = InputQuery.CacheKey(options.cacheKey, rawStatement)
+
   def rawPreparserOptions: String = rawStatement.take(rawStatement.length - statement.length)
 
   override def description: String = rawStatement
