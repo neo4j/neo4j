@@ -86,6 +86,16 @@ public interface PageCacheCounters {
     long flushes();
 
     /**
+     * @return Number of flushes performed by page evictions
+     */
+    long evictionFlushes();
+
+    /**
+     * @return Number of flushes performed by cooperation evictions
+     */
+    long cooperativeEvictionFlushes();
+
+    /**
      * @return The number of page merges observed so far
      */
     long merges();

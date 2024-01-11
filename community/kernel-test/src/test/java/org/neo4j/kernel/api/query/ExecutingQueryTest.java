@@ -512,6 +512,11 @@ class ExecutingQueryTest {
             return evictions;
         }
 
+        @Override
+        public long evictionFlushes() {
+            return 0;
+        }
+
         public void evictions(long increment) {
             evictions += increment;
         }

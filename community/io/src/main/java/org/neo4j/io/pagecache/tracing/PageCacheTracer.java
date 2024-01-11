@@ -136,6 +136,16 @@ public interface PageCacheTracer extends PageCacheCounters {
         }
 
         @Override
+        public long evictionFlushes() {
+            return 0;
+        }
+
+        @Override
+        public long cooperativeEvictionFlushes() {
+            return 0;
+        }
+
+        @Override
         public long merges() {
             return 0;
         }
@@ -260,6 +270,9 @@ public interface PageCacheTracer extends PageCacheCounters {
 
         @Override
         public void cooperativeEvictions(long evictions) {}
+
+        @Override
+        public void cooperativeEvictionFlushes(long evictionFlushes) {}
 
         @Override
         public void evictionExceptions(long evictionExceptions) {}
@@ -430,6 +443,12 @@ public interface PageCacheTracer extends PageCacheCounters {
      * @param evictions number of cooperative evictions
      */
     void cooperativeEvictions(long evictions);
+
+    /**
+     * Report number of flushes caused by cooperative evictions
+     * @param evictionFlushes number of cooperative eviction flushes
+     */
+    void cooperativeEvictionFlushes(long evictionFlushes);
 
     /**
      * Report number of eviction exceptions

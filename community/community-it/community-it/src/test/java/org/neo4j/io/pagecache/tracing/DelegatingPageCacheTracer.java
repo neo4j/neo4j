@@ -235,6 +235,11 @@ public class DelegatingPageCacheTracer implements PageCacheTracer {
     }
 
     @Override
+    public void cooperativeEvictionFlushes(long evictionFlushes) {
+        delegate.closedCursors(evictionFlushes);
+    }
+
+    @Override
     public void evictionExceptions(long evictionExceptions) {
         delegate.evictionExceptions(evictionExceptions);
     }
@@ -307,6 +312,16 @@ public class DelegatingPageCacheTracer implements PageCacheTracer {
     @Override
     public long flushes() {
         return delegate.flushes();
+    }
+
+    @Override
+    public long evictionFlushes() {
+        return delegate.evictionFlushes();
+    }
+
+    @Override
+    public long cooperativeEvictionFlushes() {
+        return delegate.cooperativeEvictionFlushes();
     }
 
     @Override

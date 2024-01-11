@@ -44,6 +44,8 @@ public class DefaultPageCacheTracer implements PageCacheTracer {
     protected final LongAdder unpins = new LongAdder();
     protected final LongAdder hits = new LongAdder();
     protected final LongAdder flushes = new LongAdder();
+    protected final LongAdder evictionFlushes = new LongAdder();
+    protected final LongAdder cooperativeEvictionFlushes = new LongAdder();
     protected final LongAdder merges = new LongAdder();
     protected final LongAdder bytesRead = new LongAdder();
     protected final LongAdder bytesWritten = new LongAdder();
@@ -180,6 +182,16 @@ public class DefaultPageCacheTracer implements PageCacheTracer {
     @Override
     public long flushes() {
         return flushes.sum();
+    }
+
+    @Override
+    public long evictionFlushes() {
+        return evictionFlushes.sum();
+    }
+
+    @Override
+    public long cooperativeEvictionFlushes() {
+        return cooperativeEvictionFlushes.sum();
     }
 
     @Override
@@ -378,6 +390,11 @@ public class DefaultPageCacheTracer implements PageCacheTracer {
     }
 
     @Override
+    public void cooperativeEvictionFlushes(long evictionFlushes) {
+        cooperativeEvictionFlushes.add(evictionFlushes);
+    }
+
+    @Override
     public void evictionExceptions(long evictionExceptions) {
         this.evictionExceptions.add(evictionExceptions);
     }
@@ -429,6 +446,12 @@ public class DefaultPageCacheTracer implements PageCacheTracer {
             pagesFlushed += pageCount;
             flushes.add(pageCount);
             swapperTracer.flushes(pageCount);
+        }
+
+        @Override
+        public void addEvictionFlushedPages(int pageCount) {
+            evictionFlushes.add(pageCount);
+            this.addPagesFlushed(pageCount);
         }
 
         @Override

@@ -76,6 +76,33 @@ class DefaultPageCacheTracerTest {
     }
 
     @Test
+    void countFlushedEvictions() {
+        try (var evictionRun = tracer.beginPageEvictions(17)) {
+            try (var evictionEvent = evictionRun.beginEviction(0)) {
+                evictionEvent.setSwapper(swapper);
+                FlushEvent flushEvent = evictionEvent.beginFlush(0, swapper, pageReferenceTranslator);
+                flushEvent.addBytesWritten(12);
+                flushEvent.addEvictionFlushedPages(1);
+            }
+            try (var evictionEvent = evictionRun.beginEviction(1)) {
+                evictionEvent.setSwapper(swapper);
+                FlushEvent flushEvent = evictionEvent.beginFlush(0, swapper, pageReferenceTranslator);
+                flushEvent.addBytesWritten(24);
+                flushEvent.addEvictionFlushedPages(1);
+            }
+            try (var evictionEvent = evictionRun.beginEviction(1)) {
+                evictionEvent.setSwapper(swapper);
+                FlushEvent flushEvent = evictionEvent.beginFlush(0, swapper, pageReferenceTranslator);
+                flushEvent.addBytesWritten(36);
+                flushEvent.addPagesFlushed(1);
+            }
+        }
+
+        assertEquals(3, tracer.flushes());
+        assertEquals(2, tracer.evictionFlushes());
+    }
+
+    @Test
     void mustCountEvictions() {
         try (EvictionRunEvent evictionRunEvent = tracer.beginPageEvictions(2)) {
             try (EvictionEvent evictionEvent = evictionRunEvent.beginEviction(0)) {
@@ -102,7 +129,7 @@ class DefaultPageCacheTracerTest {
             evictionRunEvent.beginEviction(0).close();
         }
 
-        assertCounts(0, 0, 0, 0, 4, 2, 13, 0, 0, 36, 0, 0, 0d, 0);
+        assertCounts(0, 0, 0, 0, 4, 2, 13, 0, 0, 36, 0, 0, 0d, 0, 0, 0);
     }
 
     @Test
@@ -112,7 +139,7 @@ class DefaultPageCacheTracerTest {
                 evictionEvent.setSwapper(swapper);
                 var flushEvent = evictionEvent.beginFlush(0, swapper, pageReferenceTranslator);
                 flushEvent.addBytesWritten(12);
-                flushEvent.addPagesFlushed(10);
+                flushEvent.addEvictionFlushedPages(10);
             }
 
             evictionRunEvent.beginEviction(0).close();
@@ -124,13 +151,13 @@ class DefaultPageCacheTracerTest {
                     evictionEvent.setSwapper(swapper);
                     var flushEvent = evictionEvent.beginFlush(0, swapper, pageReferenceTranslator);
                     flushEvent.addBytesWritten(12);
-                    flushEvent.addPagesFlushed(1);
+                    flushEvent.addEvictionFlushedPages(1);
                 }
             }
             pageCursorTracer.unpin(0, swapper);
         }
 
-        assertCounts(1, 1, 0, 1, 3, 0, 11, 0, 0, 24, 0, 0, 0d, 1);
+        assertCounts(1, 1, 0, 1, 3, 0, 11, 0, 0, 24, 0, 0, 0d, 1, 10, 1);
     }
 
     @Test
@@ -139,9 +166,9 @@ class DefaultPageCacheTracerTest {
         when(pagedFile.path()).thenReturn(Path.of("a"));
 
         tracer.mappedFile(1, pagedFile);
-        assertCounts(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0d, 0);
+        assertCounts(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0d, 0, 0, 0);
         tracer.unmappedFile(1, pagedFile);
-        assertCounts(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0d, 0);
+        assertCounts(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0d, 0, 0, 0);
     }
 
     @Test
@@ -152,7 +179,7 @@ class DefaultPageCacheTracerTest {
             cacheFlush.beginFlush(0, swapper, pageReferenceTranslator).close();
         }
 
-        assertCounts(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0d, 0);
+        assertCounts(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0d, 0, 0, 0);
 
         try (var fileFlush = tracer.beginFileFlush(swapper)) {
             var flushEvent1 = fileFlush.beginFlush(0, swapper, pageReferenceTranslator);
@@ -168,7 +195,7 @@ class DefaultPageCacheTracerTest {
             flushEvent3.close();
         }
 
-        assertCounts(0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0d, 0);
+        assertCounts(0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0d, 0, 0, 0);
     }
 
     @Test
@@ -178,7 +205,7 @@ class DefaultPageCacheTracerTest {
             cacheFlush.beginFlush(0, swapper, pageReferenceTranslator).close();
             cacheFlush.beginFlush(0, swapper, pageReferenceTranslator).close();
         }
-        assertCounts(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0d, 0);
+        assertCounts(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0d, 0, 0, 0);
 
         try (var fileFlush = tracer.beginFileFlush(swapper)) {
             var flushEvent1 = fileFlush.beginFlush(new long[] {0}, swapper, pageReferenceTranslator, 0, 1);
@@ -193,7 +220,7 @@ class DefaultPageCacheTracerTest {
             flushEvent3.addPagesMerged(3);
             flushEvent3.close();
         }
-        assertCounts(0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0d, 0);
+        assertCounts(0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0d, 0, 0, 0);
     }
 
     @Test
@@ -255,14 +282,20 @@ class DefaultPageCacheTracerTest {
             long filesMapped,
             long filesUnmapped,
             double hitRatio,
-            long cooperativeEvictions) {
+            long cooperativeEvictions,
+            long evictionFlushes,
+            long cooperativeEvictionsFlushes) {
         assertThat(tracer.pins()).as("pins").isEqualTo(pins);
         assertThat(tracer.unpins()).as("unpins").isEqualTo(unpins);
         assertThat(tracer.hits()).as("hits").isEqualTo(hits);
         assertThat(tracer.faults()).as("faults").isEqualTo(faults);
         assertThat(tracer.merges()).as("merges").isEqualTo(merges);
         assertThat(tracer.evictions()).as("evictions").isEqualTo(evictions);
+        assertThat(tracer.evictionFlushes()).as("eviction flushes").isEqualTo(evictionFlushes);
         assertThat(tracer.cooperativeEvictions()).as("cooperativeEvictions").isEqualTo(cooperativeEvictions);
+        assertThat(tracer.cooperativeEvictionFlushes())
+                .as("cooperativeEvictionsFlushes")
+                .isEqualTo(cooperativeEvictionsFlushes);
         assertThat(tracer.evictionExceptions()).as("evictionExceptions").isEqualTo(evictionExceptions);
         assertThat(tracer.flushes()).as("flushes").isEqualTo(flushes);
         assertThat(tracer.bytesRead()).as("bytesRead").isEqualTo(bytesRead);

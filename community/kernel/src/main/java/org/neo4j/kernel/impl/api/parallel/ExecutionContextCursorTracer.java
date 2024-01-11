@@ -57,6 +57,7 @@ public class ExecutionContextCursorTracer extends DefaultPageCursorTracer {
                 super.bytesRead(),
                 super.bytesWritten(),
                 super.evictions(),
+                super.evictionFlushes(),
                 super.evictionExceptions(),
                 super.flushes(),
                 super.merges(),

@@ -165,6 +165,16 @@ public class RecordingPageCacheTracer extends RecordingTracer implements PageCac
     }
 
     @Override
+    public long evictionFlushes() {
+        return 0;
+    }
+
+    @Override
+    public long cooperativeEvictionFlushes() {
+        return 0;
+    }
+
+    @Override
     public long merges() {
         return 0;
     }
@@ -295,6 +305,9 @@ public class RecordingPageCacheTracer extends RecordingTracer implements PageCac
 
     @Override
     public void cooperativeEvictions(long evictions) {}
+
+    @Override
+    public void cooperativeEvictionFlushes(long evictionFlushes) {}
 
     @Override
     public void evictionExceptions(long evictionExceptions) {}

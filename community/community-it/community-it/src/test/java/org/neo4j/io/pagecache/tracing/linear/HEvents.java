@@ -165,6 +165,11 @@ class HEvents {
         }
 
         @Override
+        public void addEvictionFlushedPages(int pageCount) {
+            addPagesFlushed(pageCount);
+        }
+
+        @Override
         public void addPagesMerged(int pagesMerged) {
             this.pageMerged = pagesMerged;
         }

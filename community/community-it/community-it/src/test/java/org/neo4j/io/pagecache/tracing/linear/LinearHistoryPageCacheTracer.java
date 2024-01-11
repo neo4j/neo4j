@@ -154,6 +154,16 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer {
     }
 
     @Override
+    public long evictionFlushes() {
+        return 0;
+    }
+
+    @Override
+    public long cooperativeEvictionFlushes() {
+        return 0;
+    }
+
+    @Override
     public long merges() {
         return 0;
     }
@@ -278,6 +288,9 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer {
 
     @Override
     public void cooperativeEvictions(long evictions) {}
+
+    @Override
+    public void cooperativeEvictionFlushes(long evictionFlushes) {}
 
     @Override
     public void evictionExceptions(long evictionExceptions) {}

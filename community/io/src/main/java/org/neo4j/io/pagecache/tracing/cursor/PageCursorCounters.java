@@ -87,6 +87,11 @@ public interface PageCursorCounters {
     long evictions();
 
     /**
+     * @return The number of page flushes caused by evictions.
+     */
+    long evictionFlushes();
+
+    /**
      * @return The number of page evictions that have thrown exceptions thus far.
      */
     long evictionExceptions();

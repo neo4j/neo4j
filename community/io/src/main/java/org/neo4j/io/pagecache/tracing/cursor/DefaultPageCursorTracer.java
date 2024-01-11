@@ -64,6 +64,7 @@ public class DefaultPageCursorTracer implements PageCursorTracer {
     private long bytesRead;
     private long bytesWritten;
     private long evictions;
+    private long evictionFlushes;
     private long evictionExceptions;
     private long flushes;
     private long merges;
@@ -126,6 +127,7 @@ public class DefaultPageCursorTracer implements PageCursorTracer {
         this.bytesRead += statisticSnapshot.bytesRead();
         this.bytesWritten += statisticSnapshot.bytesWritten();
         this.evictions += statisticSnapshot.evictions();
+        this.evictionFlushes += statisticSnapshot.evictionFlushes();
         this.evictionExceptions += statisticSnapshot.evictionExceptions();
         this.flushes += statisticSnapshot.flushes();
         this.merges += statisticSnapshot.merges();
@@ -180,6 +182,9 @@ public class DefaultPageCursorTracer implements PageCursorTracer {
             pageCacheTracer.evictions(evictions);
             // all evictions counted by PageCursorTracer are cooperative
             pageCacheTracer.cooperativeEvictions(evictions);
+        }
+        if (evictionFlushes > 0) {
+            pageCacheTracer.cooperativeEvictionFlushes(evictionFlushes);
         }
         if (evictionExceptions > 0) {
             pageCacheTracer.evictionExceptions(evictionExceptions);
@@ -254,6 +259,7 @@ public class DefaultPageCursorTracer implements PageCursorTracer {
         bytesRead = 0;
         bytesWritten = 0;
         evictions = 0;
+        evictionFlushes = 0;
         evictionExceptions = 0;
         flushes = 0;
         merges = 0;
@@ -316,6 +322,11 @@ public class DefaultPageCursorTracer implements PageCursorTracer {
     @Override
     public long evictions() {
         return evictions;
+    }
+
+    @Override
+    public long evictionFlushes() {
+        return evictionFlushes;
     }
 
     @Override
@@ -508,6 +519,12 @@ public class DefaultPageCursorTracer implements PageCursorTracer {
         public void addPagesFlushed(int flushedPages) {
             flushes += flushedPages;
             swapperTracer.flushes(flushedPages);
+        }
+
+        @Override
+        public void addEvictionFlushedPages(int pageCount) {
+            evictionFlushes += pageCount;
+            addPagesFlushed(pageCount);
         }
 
         @Override

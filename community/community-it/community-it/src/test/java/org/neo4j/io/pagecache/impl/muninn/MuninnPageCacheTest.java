@@ -983,6 +983,41 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
     }
 
     @Test
+    void countFlushesFromEvictor() throws IOException {
+        DefaultPageCacheTracer pageCacheTracer = new DefaultPageCacheTracer();
+        try (MuninnPageCache pageCache = createPageCache(fs, 40, pageCacheTracer);
+                PagedFile pagedFile = map(pageCache, file("a"), (int) ByteUnit.kibiBytes(8))) {
+            long evictionsBefore = pageCacheTracer.evictions();
+            long evictionFlushesBefore = pageCacheTracer.evictionFlushes();
+            long flushesBefore = pageCacheTracer.flushes();
+
+            // generate non evictor flush
+            try (PageCursor cursor = pagedFile.io(2, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
+                assertTrue(cursor.next());
+                cursor.putLong(1);
+            }
+            try (var flushEvent = pageCacheTracer.beginFileFlush()) {
+                pagedFile.flushAndForce(flushEvent);
+            }
+
+            for (int pageId = 0; pageId < 10; pageId++) {
+                try (PageCursor cursor = pagedFile.io(pageId, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
+                    assertTrue(cursor.next());
+                    cursor.putLong(1);
+                }
+            }
+
+            try (EvictionRunEvent evictionRunEvent = pageCacheTracer.beginEviction()) {
+                pageCache.evictPages(10, 0, evictionRunEvent);
+            }
+
+            assertEquals(10, pageCacheTracer.evictions() - evictionsBefore);
+            assertEquals(10, pageCacheTracer.evictionFlushes() - evictionFlushesBefore);
+            assertEquals(11, pageCacheTracer.flushes() - flushesBefore);
+        }
+    }
+
+    @Test
     void countFlushesPerChunkWithNoBuffers() throws IOException {
         assumeTrue(DISABLED_BUFFER_FACTORY.equals(fixture.getBufferFactory()));
         var pageCacheTracer = new InfoTracer();

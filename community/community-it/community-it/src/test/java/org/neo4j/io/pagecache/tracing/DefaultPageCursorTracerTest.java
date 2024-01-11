@@ -216,6 +216,7 @@ class DefaultPageCursorTracerTest {
         assertEquals(3, cacheTracer.failedFaults());
         assertEquals(3, cacheTracer.evictions());
         assertEquals(3, cacheTracer.cooperativeEvictions());
+        assertEquals(3, cacheTracer.cooperativeEvictionFlushes());
         assertEquals(3, cacheTracer.evictionExceptions());
         assertEquals(3, cacheTracer.flushes());
         assertEquals(3, cacheTracer.merges());
@@ -236,6 +237,7 @@ class DefaultPageCursorTracerTest {
         assertEquals(1, cacheTracer.failedFaults());
         assertEquals(1, cacheTracer.evictions());
         assertEquals(1, cacheTracer.cooperativeEvictions());
+        assertEquals(1, cacheTracer.cooperativeEvictionFlushes());
         assertEquals(1, cacheTracer.evictionExceptions());
         assertEquals(1, cacheTracer.flushes());
         assertEquals(1, cacheTracer.merges());
@@ -254,6 +256,7 @@ class DefaultPageCursorTracerTest {
         assertEquals(3, cacheTracer.failedFaults());
         assertEquals(3, cacheTracer.evictions());
         assertEquals(3, cacheTracer.cooperativeEvictions());
+        assertEquals(3, cacheTracer.cooperativeEvictionFlushes());
         assertEquals(3, cacheTracer.evictionExceptions());
         assertEquals(3, cacheTracer.flushes());
         assertEquals(3, cacheTracer.merges());
@@ -337,7 +340,7 @@ class DefaultPageCursorTracerTest {
                     evictionEvent.setSwapper(swapper);
                     try (var flushEvent = evictionEvent.beginFlush(0, swapper, referenceTranslator)) {
                         flushEvent.addBytesWritten(10);
-                        flushEvent.addPagesFlushed(1);
+                        flushEvent.addEvictionFlushedPages(1);
                         flushEvent.addPagesMerged(1);
                     }
                     evictionEvent.setException(new IOException("eviction exception"));

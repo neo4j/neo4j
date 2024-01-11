@@ -490,7 +490,7 @@ class PageList implements PageReferenceTranslator {
                 long bytesWritten = swapper.write(filePageId, address);
                 explicitlyMarkPageUnmodifiedUnderExclusiveLock(pageRef);
                 flushEvent.addBytesWritten(bytesWritten);
-                flushEvent.addPagesFlushed(1);
+                flushEvent.addEvictionFlushedPages(1);
             } catch (IOException e) {
                 unlockExclusive(pageRef);
                 flushEvent.setException(e);

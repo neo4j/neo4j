@@ -39,6 +39,9 @@ public interface FlushEvent extends AutoCloseablePageCacheTracerEvent {
         public void addPagesFlushed(int pageCount) {}
 
         @Override
+        public void addEvictionFlushedPages(int pageCount) {}
+
+        @Override
         public void addPagesMerged(int pagesMerged) {}
 
         @Override
@@ -54,6 +57,11 @@ public interface FlushEvent extends AutoCloseablePageCacheTracerEvent {
      * Add up a number of pages that has been flushed.
      */
     void addPagesFlushed(int pageCount);
+
+    /**
+     * Add up a number of pages that has been flushed by background evictor.
+     */
+    void addEvictionFlushedPages(int pageCount);
 
     /**
      * Record number of pages that were merged together into single flushed buffer.
