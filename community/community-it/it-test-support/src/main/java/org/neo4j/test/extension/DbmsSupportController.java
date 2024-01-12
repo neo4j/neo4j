@@ -91,14 +91,15 @@ public class DbmsSupportController {
 
         // Make service
         var dbms = buildDbms(configuration, callback);
-        var databaseToStart = isNotEmpty(databaseName) ? databaseName : getDatabaseName(dbms);
-        startDatabase(databaseToStart);
+        var dbToStart = isNotEmpty(databaseName) ? Optional.of(databaseName) : getDefaultDatabaseName(dbms);
+        dbToStart.ifPresent(this::startDatabase);
     }
 
-    protected static String getDatabaseName(DatabaseManagementService dbms) {
+    protected Optional<String> getDefaultDatabaseName(DatabaseManagementService dbms) {
         var databases = new ArrayList<>(dbms.listDatabases());
+
         databases.remove(SYSTEM_DATABASE_NAME);
-        return databases.get(0);
+        return databases.isEmpty() ? Optional.empty() : Optional.of(databases.get(0));
     }
 
     public void startDatabase(String databaseName) {
