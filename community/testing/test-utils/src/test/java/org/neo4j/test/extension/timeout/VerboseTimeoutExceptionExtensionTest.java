@@ -34,6 +34,7 @@ import org.junit.platform.testkit.engine.Events;
 import org.neo4j.test.extension.timeout.DumpThreadDumpOnTimeout.After;
 import org.neo4j.test.extension.timeout.DumpThreadDumpOnTimeout.Before;
 import org.neo4j.test.extension.timeout.DumpThreadDumpOnTimeout.IncludeThreadsCleanedOnAfter;
+import org.neo4j.test.extension.timeout.DumpThreadDumpOnTimeout.ThreadDumpingDisabled;
 
 class VerboseTimeoutExceptionExtensionTest {
     @Test
@@ -72,16 +73,25 @@ class VerboseTimeoutExceptionExtensionTest {
         assertTestGetsNoThreadDump("doNotDumpOnDeepException");
     }
 
+    @Test
+    void shouldNotDumpThreadsIfDisabled() {
+        assertTestGetsNoThreadDump("testWithTimeout", ThreadDumpingDisabled.class);
+    }
+
     static void assertTestGetsThreadDump(String test) {
         assertTestGetsThreadDump(test, DumpThreadDumpOnTimeout.class);
     }
 
     static void assertTestGetsNoThreadDump(String test) {
-        assertThreadDumpEvent(executeTest(test, DumpThreadDumpOnTimeout.class), false);
+        assertTestGetsNoThreadDump(test, DumpThreadDumpOnTimeout.class);
     }
 
     static void assertTestGetsThreadDump(String test, Class<?> cls) {
         assertThreadDumpEvent(executeTest(test, cls), true);
+    }
+
+    static void assertTestGetsNoThreadDump(String test, Class<?> cls) {
+        assertThreadDumpEvent(executeTest(test, cls), false);
     }
 
     static void assertTestGetsThreadDumpWithMessage(String test, Class<?> cls, String... messages) {

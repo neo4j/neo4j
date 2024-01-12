@@ -36,6 +36,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.extension.TestInstancePostProcessor;
 import org.opentest4j.AssertionFailedError;
 
 class DumpThreadDumpOnTimeout {
@@ -174,6 +177,22 @@ class DumpThreadDumpOnTimeout {
                 } catch (InterruptedException ignored) {
                 }
             }
+        }
+    }
+
+    @Nested
+    @ExtendWith(DisableThreadDump.class)
+    class ThreadDumpingDisabled {
+        @Test
+        void testWithTimeout() throws TimeoutException {
+            throw new TimeoutException();
+        }
+    }
+
+    private static class DisableThreadDump implements TestInstancePostProcessor {
+        @Override
+        public void postProcessTestInstance(Object testInstance, ExtensionContext context) {
+            VerboseTimeoutExceptionExtension.disable(context);
         }
     }
 }

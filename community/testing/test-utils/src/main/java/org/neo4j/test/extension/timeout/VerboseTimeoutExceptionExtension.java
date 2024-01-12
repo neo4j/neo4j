@@ -33,37 +33,44 @@ import org.junit.jupiter.api.extension.TestExecutionExceptionHandler;
 
 public class VerboseTimeoutExceptionExtension
         implements TestExecutionExceptionHandler, LifecycleMethodExecutionExceptionHandler {
+    private static final ExtensionContext.Namespace THREAD_DUMPER_NAMESPACE =
+            ExtensionContext.Namespace.create("threadDumper");
+    private static final String DISABLED = "disabled";
+
+    public static void disable(ExtensionContext context) {
+        context.getRoot().getStore(THREAD_DUMPER_NAMESPACE).put(DISABLED, DISABLED);
+    }
 
     @Override
-    public void handleTestExecutionException(ExtensionContext context, Throwable cause) throws Throwable {
-        handleFailure(context.getDisplayName(), context.getRequiredTestMethod().getName(), cause);
-        throw cause;
+    public void handleTestExecutionException(ExtensionContext context, Throwable throwable) throws Throwable {
+        handleFailure(context, context.getRequiredTestMethod().getName(), throwable);
+        throw throwable;
     }
 
     @Override
     public void handleBeforeAllMethodExecutionException(ExtensionContext context, Throwable throwable)
             throws Throwable {
-        handleFailure(context.getDisplayName(), "BeforeAll", throwable);
+        handleFailure(context, "BeforeAll", throwable);
         throw throwable;
     }
 
     @Override
     public void handleBeforeEachMethodExecutionException(ExtensionContext context, Throwable throwable)
             throws Throwable {
-        handleFailure(context.getDisplayName(), "BeforeEach", throwable);
+        handleFailure(context, "BeforeEach", throwable);
         throw throwable;
     }
 
     @Override
     public void handleAfterEachMethodExecutionException(ExtensionContext context, Throwable throwable)
             throws Throwable {
-        handleFailure(context.getDisplayName(), "AfterEach", throwable);
+        handleFailure(context, "AfterEach", throwable);
         throw throwable;
     }
 
     @Override
     public void handleAfterAllMethodExecutionException(ExtensionContext context, Throwable throwable) throws Throwable {
-        handleFailure(context.getDisplayName(), "AfterAll", throwable);
+        handleFailure(context, "AfterAll", throwable);
         throw throwable;
     }
 
@@ -77,10 +84,15 @@ public class VerboseTimeoutExceptionExtension
                                 .anyMatch(VerboseTimeoutExceptionExtension::isTimeout));
     }
 
-    private static void handleFailure(String displayName, String testMethod, Throwable cause) {
-        if (isTimeout(cause)) {
+    private static void handleFailure(ExtensionContext context, String testMethod, Throwable cause) {
+        if (isEnabled(context) && isTimeout(cause)) {
+            var displayName = context.getDisplayName();
             cause.addSuppressed(new ThreadDump(format("Test %s-%s timed out. ", displayName, testMethod)));
         }
+    }
+
+    private static boolean isEnabled(ExtensionContext context) {
+        return context.getRoot().getStore(THREAD_DUMPER_NAMESPACE).get(DISABLED) == null;
     }
 
     static class ThreadDump extends RuntimeException {
