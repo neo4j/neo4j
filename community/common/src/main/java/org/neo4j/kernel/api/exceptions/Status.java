@@ -310,6 +310,7 @@ public interface Status {
                 SeverityLevel.INFORMATION,
                 NotificationCategory.PERFORMANCE),
 
+        @Deprecated
         SideEffectVisibility(
                 ClientNotification,
                 "Using a subquery expression within a mutating statement has implications for its side-effect visibility",

@@ -269,14 +269,6 @@ public enum NotificationCodeWithDescription {
             "No databases were reallocated. No better allocation is currently possible.",
             "`REALLOCATE DATABASES` has no effect. No databases were reallocated. No better allocation is currently possible."),
 
-    SIDE_EFFECT_VISIBILITY(
-            Status.Statement.SideEffectVisibility,
-            "The semantics of this statement may change in later versions."
-                    + " To overcome this, extract the subquery expression into a preceding WITH and potentially wrap the mutating statement into a CALL subquery.",
-            "Using a subquery expression within a mutating statement has implications for its side-effect visibility."
-                    + " The semantics of this statement may change in later versions."
-                    + " To overcome this, extract the subquery expression into a preceding WITH and potentially wrap the mutating statement into a CALL subquery."),
-
     CORDONED_SERVERS_EXISTED_DURING_ALLOCATION(
             Status.Cluster.CordonedServersExistedDuringAllocation,
             "Server(s) `%s` are cordoned. This can impact allocation decisions.",
@@ -558,10 +550,6 @@ public enum NotificationCodeWithDescription {
 
     public static NotificationImplementation noDatabasesReallocated(InputPosition position) {
         return NO_DATABASES_REALLOCATED.notification(position);
-    }
-
-    public static NotificationImplementation sideEffectVisibility(InputPosition position) {
-        return SIDE_EFFECT_VISIBILITY.notification(position);
     }
 
     public static NotificationImplementation cordonedServersExist(InputPosition position, String servers) {

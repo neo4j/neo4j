@@ -50,7 +50,6 @@ import org.neo4j.cypher.internal.util.RevokePrivilegeCommandHasNoEffectNotificat
 import org.neo4j.cypher.internal.util.RevokeRoleCommandHasNoEffectNotification
 import org.neo4j.cypher.internal.util.ServerAlreadyCordoned
 import org.neo4j.cypher.internal.util.ServerAlreadyEnabled
-import org.neo4j.cypher.internal.util.SideEffectVisibility
 import org.neo4j.cypher.internal.util.SubqueryVariableShadowing
 import org.neo4j.cypher.internal.util.UnboundedShortestPathNotification
 import org.neo4j.cypher.internal.util.UnionReturnItemsInDifferentOrder
@@ -348,11 +347,6 @@ object NotificationWrapping {
     case NoDatabasesReallocated() =>
       NotificationCodeWithDescription.noDatabasesReallocated(
         graphdb.InputPosition.empty
-      )
-
-    case SideEffectVisibility(position) =>
-      NotificationCodeWithDescription.sideEffectVisibility(
-        position.withOffset(offset).asInputPosition
       )
 
     case CordonedServersExistedDuringAllocation(servers) =>

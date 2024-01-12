@@ -19,7 +19,6 @@ package org.neo4j.cypher.internal.frontend.phases
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-//TODO: Unignore these when we are ready to rewrite
 class IsolateSubqueriesInMutatingPatternsNoSemanticAnalysisTest extends CypherFunSuite with RewritePhaseTest
     with AstConstructionTestSupport {
 
@@ -45,14 +44,7 @@ class IsolateSubqueriesInMutatingPatternsTest extends CypherFunSuite with Rewrit
       SemanticAnalysis(false, semanticFeatures: _*) andThen
       ExpandStarRewriter
 
-  // TODO: Remove this test once the full rewriter is live
-  test("Should not rewrite subquery expression in CREATE before warning has been live for a while") {
-    assertNotRewritten(
-      "CREATE (a {p: COUNT { MATCH (b) }})"
-    )
-  }
-
-  ignore("Rewrites subquery expression in CREATE") {
+  test("Rewrites subquery expression in CREATE") {
     assertRewritten(
       "CREATE (a {p: COUNT { MATCH (b) }})",
       """WITH COUNT { MATCH (b) } AS `  UNNAMED0`
@@ -60,7 +52,7 @@ class IsolateSubqueriesInMutatingPatternsTest extends CypherFunSuite with Rewrit
     )
   }
 
-  ignore("Rewrites subquery expression in CREATE that has a dependency on the previous clause") {
+  test("Rewrites subquery expression in CREATE that has a dependency on the previous clause") {
     assertRewritten(
       """MATCH (b)
         |CREATE (a {p: COUNT { MATCH (b) }})""".stripMargin,
@@ -70,7 +62,7 @@ class IsolateSubqueriesInMutatingPatternsTest extends CypherFunSuite with Rewrit
     )
   }
 
-  ignore("Rewrites subquery expression in CREATE that has a dependency on a previous clause") {
+  test("Rewrites subquery expression in CREATE that has a dependency on a previous clause") {
     assertRewritten(
       """MATCH (b)
         |WITH b
@@ -94,7 +86,7 @@ class IsolateSubqueriesInMutatingPatternsTest extends CypherFunSuite with Rewrit
     assertNotRewritten("CREATE (a)-[r:R]->(b {prop: EXISTS { (c) WHERE EXISTS { (c)<-[r2]-(a) }}})")
   }
 
-  ignore("Rewrites subquery expression in REMOVE") {
+  test("Rewrites subquery expression in REMOVE") {
     assertRewritten(
       "REMOVE (COLLECT { MATCH (a) RETURN a }[0]).prop",
       """WITH COLLECT { MATCH (a) RETURN a }[0] AS `  UNNAMED0`
@@ -103,7 +95,7 @@ class IsolateSubqueriesInMutatingPatternsTest extends CypherFunSuite with Rewrit
     )
   }
 
-  ignore("Rewrites subquery expression in DELETE") {
+  test("Rewrites subquery expression in DELETE") {
     assertRewritten(
       "DELETE (COLLECT { MATCH (a) RETURN a }[0])",
       """WITH COLLECT { MATCH (a) RETURN a }[0] AS `  UNNAMED0`
@@ -122,7 +114,7 @@ class IsolateSubqueriesInMutatingPatternsTest extends CypherFunSuite with Rewrit
     assertNotRewritten("FOREACH(y IN [1] | REMOVE (COLLECT { MATCH (a) RETURN a }[0]).prop )")
   }
 
-  ignore("Rewrites case expression") {
+  test("Rewrites case expression") {
     assertRewritten(
       """
         |MATCH (a)
@@ -135,7 +127,7 @@ class IsolateSubqueriesInMutatingPatternsTest extends CypherFunSuite with Rewrit
     )
   }
 
-  ignore("Rewrites multiple subquery expressions") {
+  test("Rewrites multiple subquery expressions") {
     assertRewritten(
       """
         |DELETE (COLLECT { MATCH (a) RETURN a }[0]),
@@ -148,7 +140,7 @@ class IsolateSubqueriesInMutatingPatternsTest extends CypherFunSuite with Rewrit
     )
   }
 
-  ignore("Inserts sort-of-empty importing WITH if the rewritten updating clause is the first clause in a subquery") {
+  test("Inserts sort-of-empty importing WITH if the rewritten updating clause is the first clause in a subquery") {
     assertRewritten(
       """CALL {
         |  CREATE (a {p: COUNT { MATCH (b) }})
@@ -167,7 +159,7 @@ class IsolateSubqueriesInMutatingPatternsTest extends CypherFunSuite with Rewrit
     )
   }
 
-  ignore("Does not insert empty importing WITH if the rewritten updating clause is the second clause in a subquery") {
+  test("Does not insert empty importing WITH if the rewritten updating clause is the second clause in a subquery") {
     assertRewritten(
       """CALL {
         |  MATCH (foo)

@@ -57,7 +57,6 @@ object InternalNotification {
     "ServerAlreadyEnabled",
     "ServerAlreadyCordoned",
     "NoDatabasesReallocated",
-    "SideEffectVisibility",
     "CordonedServersExistedDuringAllocation",
     "RuntimeUnsupportedNotification",
     "IndexHintUnfulfillableNotification",
@@ -147,6 +146,5 @@ case class ImpossibleRevokeCommandWarning(command: String, cause: String) extend
 case class ServerAlreadyEnabled(server: String) extends InternalNotification
 case class ServerAlreadyCordoned(server: String) extends InternalNotification
 case class NoDatabasesReallocated() extends InternalNotification
-case class SideEffectVisibility(position: InputPosition) extends InternalNotification
 case class CordonedServersExistedDuringAllocation(servers: String) extends InternalNotification
 case class RequestedTopologyMatchedCurrentTopology() extends InternalNotification

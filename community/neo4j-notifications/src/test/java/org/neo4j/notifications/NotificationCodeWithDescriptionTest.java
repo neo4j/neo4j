@@ -64,7 +64,6 @@ import static org.neo4j.notifications.NotificationCodeWithDescription.requestedT
 import static org.neo4j.notifications.NotificationCodeWithDescription.runtimeUnsupported;
 import static org.neo4j.notifications.NotificationCodeWithDescription.serverAlreadyCordoned;
 import static org.neo4j.notifications.NotificationCodeWithDescription.serverAlreadyEnabled;
-import static org.neo4j.notifications.NotificationCodeWithDescription.sideEffectVisibility;
 import static org.neo4j.notifications.NotificationCodeWithDescription.subqueryVariableShadowing;
 import static org.neo4j.notifications.NotificationCodeWithDescription.unboundedShortestPath;
 import static org.neo4j.notifications.NotificationCodeWithDescription.unionReturnOrder;
@@ -902,23 +901,6 @@ class NotificationCodeWithDescriptionTest {
     }
 
     @Test
-    void shouldConstructNotificationsFor_SIDE_EFFECT_VISIBILITY() {
-        NotificationImplementation notification = sideEffectVisibility(InputPosition.empty);
-
-        verifyNotification(
-                notification,
-                "Using a subquery expression within a mutating statement has implications for its side-effect visibility",
-                SeverityLevel.WARNING,
-                "Neo.ClientNotification.Statement.SideEffectVisibility",
-                "The semantics of this statement may change in later versions."
-                        + " To overcome this, extract the subquery expression into a preceding WITH and potentially wrap the mutating statement into a CALL subquery.",
-                NotificationCategory.DEPRECATION,
-                "Using a subquery expression within a mutating statement has implications for its side-effect visibility."
-                        + " The semantics of this statement may change in later versions."
-                        + " To overcome this, extract the subquery expression into a preceding WITH and potentially wrap the mutating statement into a CALL subquery.");
-    }
-
-    @Test
     void shouldConstructNotificationsFor_CORDONED_SERVERS_EXIST() {
         NotificationImplementation notification =
                 cordonedServersExist(InputPosition.empty, "server-1,server-2,server-3");
@@ -1002,6 +984,7 @@ class NotificationCodeWithDescriptionTest {
 
         byte[] notificationHash = DigestUtils.sha256(notificationBuilder.toString());
 
+        // TODO
         byte[] expectedHash = new byte[] {
             -48, 107, 29, 20, 110, 123, 103, 21, 29, 37, 25, -38, -88, 108, -27, -87, -82, -101, 94, 107, -41, -119,
             -46, -122, 112, 26, -61, 74, -17, 52, -113, 24
