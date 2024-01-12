@@ -65,6 +65,7 @@ import org.neo4j.cypher.internal.ast.factory.CreateIndexTypes;
 import org.neo4j.cypher.internal.ast.factory.HintIndexType;
 import org.neo4j.cypher.internal.ast.factory.ParameterType;
 import org.neo4j.cypher.internal.ast.factory.ParserCypherTypeName;
+import org.neo4j.cypher.internal.ast.factory.ParserNormalForm;
 import org.neo4j.cypher.internal.ast.factory.ScopeType;
 import org.neo4j.cypher.internal.ast.factory.ShowCommandFilterTypes;
 import org.neo4j.cypher.internal.ast.factory.SimpleEither;
@@ -542,11 +543,16 @@ TOKEN [IGNORE_CASE] :
     | < NAME: "NAME" >
     | < NAMES: "NAMES" >
     | < NAN: "NAN" >
+    | < NFC: "NFC" >
+    | < NFD: "NFD" >
+    | < NFKC: "NFKC" >
+    | < NFKD: "NFKD" >
     | < NEW: "NEW" >
     | < NODE: "NODE" >
     | < NODETACH: "NODETACH" >
     | < NODES: "NODES" >
     | < NONE: "NONE" >
+    | < NORMALIZE: "NORMALIZE" >
     | < NOT: "NOT" >
     | < NOTHING: "NOTHING" >
     | < NOWAIT: "NOWAIT">
@@ -3460,6 +3466,7 @@ EXPRESSION Expression1() throws Exception:
         | LOOKAHEAD( 3 ) e=AnyExpression()
         | LOOKAHEAD( 3 ) e=NoneExpression()
         | LOOKAHEAD( 3 ) e=SingleExpression()
+        | LOOKAHEAD( 2 ) e=NormalizeExpression()
         | LOOKAHEAD( NodePattern() RelationshipPattern() ) e=PatternExpression()
         | LOOKAHEAD( 2 ) e=ShortestPathExpression()
         | <LPAREN>
@@ -3623,6 +3630,27 @@ EXPRESSION SingleExpression() throws Exception:
     t=<SINGLE> <LPAREN> v=Variable() <IN> e=Expression() ( <WHERE> where=Expression() )? <RPAREN>
     {
         return astFactory.singleExpression( pos( t ), v, e, where );
+    }
+}
+
+EXPRESSION NormalizeExpression() throws Exception:
+{
+    Token t;
+    EXPRESSION e;
+    ParserNormalForm normalForm = ParserNormalForm.NFC;
+}
+{
+    t=<NORMALIZE> <LPAREN>
+        e=Expression()
+        (<COMMA> (
+          <NFC>
+          | <NFD> { normalForm = ParserNormalForm.NFD; }
+          | <NFKC> { normalForm = ParserNormalForm.NFKC; }
+          | <NFKD> { normalForm = ParserNormalForm.NFKD; }
+        ))?
+        <RPAREN>
+    {
+        return astFactory.normalizeExpression( pos( t ), e, normalForm );
     }
 }
 
@@ -7109,11 +7137,16 @@ Token UnescapedLabelSymbolicNameString() :
         | t=<NAME>
         | t=<NAMES>
         | t=<NAN>
+        | t=<NFC>
+        | t=<NFD>
+        | t=<NFKC>
+        | t=<NFKD>
         | t=<NEW>
         | t=<NODE>
         | t=<NODETACH>
         | t=<NODES>
         | t=<NONE>
+        | t=<NORMALIZE>
         | t=<NOTHING>
         | t=<NOWAIT>
         | t=<OF>

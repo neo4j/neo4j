@@ -527,6 +527,18 @@ NAMES:
 NAN:
    N A N;
 
+NFC:
+   N F C;
+
+NFD:
+   N F D;
+
+NFKC:
+   N F K C;
+
+NFKD:
+   N F K D;
+
 NEW:
    N E W;
 
@@ -541,6 +553,9 @@ NODES:
 
 NONE:
    N O N E;
+
+NORMALIZE:
+   N O R M A L I Z E;
 
 NOT:
    N O T;

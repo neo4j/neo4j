@@ -29,6 +29,8 @@ trait TypeSignature {
   def removeFirstArgumentType: TypeSignature
 
   def getSignatureAsString: String
+
+  def overriddenArgumentTypeName: Option[Map[String, String]]
 }
 
 case class FunctionTypeSignature(
@@ -41,7 +43,8 @@ case class FunctionTypeSignature(
   optionalTypes: IndexedSeq[CypherType] = Vector.empty,
   deprecated: Boolean = false,
   internal: Boolean = false,
-  overrideDefaultAsString: Option[String] = None
+  overrideDefaultAsString: Option[String] = None,
+  overriddenArgumentTypeName: Option[Map[String, String]] = None
 ) extends TypeSignature {
 
   override def getSignatureAsString: String = {
@@ -97,8 +100,11 @@ object TypeSignature {
     ExpressionTypeSignature(argumentTypes, outputType)
 }
 
-case class ExpressionTypeSignature(argumentTypes: IndexedSeq[CypherType], outputType: CypherType)
-    extends TypeSignature {
+case class ExpressionTypeSignature(
+  argumentTypes: IndexedSeq[CypherType],
+  outputType: CypherType,
+  overriddenArgumentTypeName: Option[Map[String, String]] = None
+) extends TypeSignature {
   override def removeFirstArgumentType: TypeSignature = this.copy(argumentTypes = this.argumentTypes.tail)
 
   def getSignatureAsString: String =

@@ -38,6 +38,7 @@ import static scala.jdk.javaapi.CollectionConverters.asJava;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -737,6 +738,26 @@ public final class CypherFunctions {
         } else {
             throw notAString("right", original);
         }
+    }
+
+    public static AnyValue normalize(AnyValue input) {
+        return normalize(input, Values.stringValue("NFC"));
+    }
+
+    public static AnyValue normalize(AnyValue input, AnyValue normalForm) {
+        if (input == NO_VALUE || normalForm == NO_VALUE) {
+            return NO_VALUE;
+        }
+
+        Normalizer.Form form;
+        try {
+            form = Normalizer.Form.valueOf(asTextValue(normalForm).stringValue());
+        } catch (IllegalArgumentException e) {
+            throw new InvalidArgumentException("Unknown normal form. Valid values are: NFC, NFD, NFKC, NFKD.");
+        }
+
+        String normalized = Normalizer.normalize(asTextValue(input).stringValue(), form);
+        return Values.stringValue(normalized);
     }
 
     public static AnyValue split(AnyValue original, AnyValue separator) {

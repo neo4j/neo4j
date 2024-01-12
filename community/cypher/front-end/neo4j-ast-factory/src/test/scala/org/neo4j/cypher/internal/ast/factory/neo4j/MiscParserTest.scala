@@ -106,6 +106,10 @@ class MiscParserTest extends ParserSyntaxTreeBase[ParserRuleContext, ASTNode] {
         "XOR",
         "AND",
         "NOT",
+        "NFC",
+        "NFD",
+        "NFKC",
+        "NFKD",
         "STARTS",
         "ENDS",
         "CONTAINS",
@@ -210,5 +214,15 @@ class MiscParserTest extends ParserSyntaxTreeBase[ParserRuleContext, ASTNode] {
     implicit val antlrRule: AntlrRule[CypherParser.StringLiteralContext] = AntlrRule.StringLiteral
 
     parsing("""'\\\''""") shouldGive literalString("""\'""")
+  }
+
+  test("Normal Form is only converted to strings inside functions, else treated as a variable") {
+    implicit val javaccRule: JavaccRule[Clause] = JavaccRule.Clause
+    implicit val antlrRule: AntlrRule[Cst.Clause] = AntlrRule.Clause
+
+    Seq("NFC", "NFD", "NFKC", "NFKD").foreach { normalForm =>
+      parsing(s"RETURN $normalForm") shouldGive
+        return_(variableReturnItem(normalForm))
+    }
   }
 }

@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.ast.factory.CreateIndexTypes;
 import org.neo4j.cypher.internal.ast.factory.HintIndexType;
 import org.neo4j.cypher.internal.ast.factory.ParameterType;
 import org.neo4j.cypher.internal.ast.factory.ParserCypherTypeName;
+import org.neo4j.cypher.internal.ast.factory.ParserNormalForm;
 import org.neo4j.cypher.internal.ast.factory.ScopeType;
 import org.neo4j.cypher.internal.ast.factory.ShowCommandFilterTypes;
 import org.neo4j.cypher.internal.ast.factory.SimpleEither;
@@ -431,6 +432,11 @@ public class NullAstFactory
 
     @Override
     public NULL singleExpression(NULL p, NULL v, NULL list, NULL where) {
+        return null;
+    }
+
+    @Override
+    public NULL normalizeExpression(NULL p, NULL i, ParserNormalForm normalForm) {
         return null;
     }
 

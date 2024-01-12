@@ -358,6 +358,7 @@ import org.neo4j.cypher.internal.ast.factory.CreateIndexTypes
 import org.neo4j.cypher.internal.ast.factory.HintIndexType
 import org.neo4j.cypher.internal.ast.factory.ParameterType
 import org.neo4j.cypher.internal.ast.factory.ParserCypherTypeName
+import org.neo4j.cypher.internal.ast.factory.ParserNormalForm
 import org.neo4j.cypher.internal.ast.factory.ScopeType
 import org.neo4j.cypher.internal.ast.factory.ShowCommandFilterTypes
 import org.neo4j.cypher.internal.ast.factory.SimpleEither
@@ -467,6 +468,7 @@ import org.neo4j.cypher.internal.expressions.UnsignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.VariableSelector
 import org.neo4j.cypher.internal.expressions.Xor
+import org.neo4j.cypher.internal.expressions.functions.Normalize
 import org.neo4j.cypher.internal.label_expressions.LabelExpression
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.Leaf
 import org.neo4j.cypher.internal.label_expressions.LabelExpressionPredicate
@@ -1370,6 +1372,14 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
 
   override def singleExpression(p: InputPosition, v: Variable, list: Expression, where: Expression): Expression =
     SingleIterablePredicate(v, list, Option(where))(p)
+
+  override def normalizeExpression(p: InputPosition, i: Expression, normalForm: ParserNormalForm): Expression = {
+    FunctionInvocation(
+      FunctionName(Normalize.name)(p),
+      distinct = false,
+      IndexedSeq(i, newString(p, normalForm.description()))
+    )(p)
+  }
 
   override def patternExpression(p: InputPosition, pattern: PatternPart): Expression =
     pattern match {

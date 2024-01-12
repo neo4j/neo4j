@@ -145,10 +145,15 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.NAME;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.NAMES;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.NAN;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.NEW;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.NFC;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.NFD;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.NFKC;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.NFKD;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.NODE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.NODES;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.NODETACH;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.NONE;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.NORMALIZE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.NOT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.NOTHING;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.NOWAIT;
@@ -398,11 +403,16 @@ public class IdentifierTokens {
             NAME,
             NAMES,
             NAN,
+            NFC,
+            NFD,
+            NFKC,
+            NFKD,
             NEW,
             NODE,
             NODETACH,
             NODES,
             NONE,
+            NORMALIZE,
             NOT,
             NOTHING,
             NOWAIT,

@@ -423,9 +423,12 @@ case class FunctionWithInformation(f: FunctionTypeSignature) extends FunctionInf
 
   override def returnType: String = f.outputType.normalizedCypherTypeString()
 
-  override def inputSignature: java.util.List[InputInformation] =
+  override def inputSignature: java.util.List[InputInformation] = {
     f.names.zip(f.argumentTypes ++ f.optionalTypes).map { case (name, cType) =>
-      val typeString = cType.normalizedCypherTypeString()
+      val typeString = f.overriddenArgumentTypeName match {
+        case Some(map) => map.getOrElse(name, cType.normalizedCypherTypeString())
+        case None      => cType.normalizedCypherTypeString()
+      }
       new InputInformation(
         name,
         typeString,
@@ -434,6 +437,7 @@ case class FunctionWithInformation(f: FunctionTypeSignature) extends FunctionInf
         java.util.Optional.empty[String]()
       )
     }.asJava
+  }
 }
 
 object ExecutionEngine {

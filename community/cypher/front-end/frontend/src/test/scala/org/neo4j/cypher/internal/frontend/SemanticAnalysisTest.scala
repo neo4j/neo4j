@@ -1669,6 +1669,14 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
     ))
   }
 
+  test("should fail for normalize() with incorrect arguments") {
+    val query = "RETURN normalize(1) AS normalize"
+    expectErrorsFrom(
+      query,
+      Set(SemanticError("Type mismatch: expected String but was Integer", InputPosition(17, 1, 18)))
+    )
+  }
+
   override def messageProvider: ErrorMessageProvider = new ErrorMessageProviderAdapter {
     override def createUseClauseUnsupportedError(): String = "A very nice message explaining why USE is not allowed"
 

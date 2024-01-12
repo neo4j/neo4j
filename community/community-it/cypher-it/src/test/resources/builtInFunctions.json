@@ -2051,6 +2051,66 @@
     "isDeprecated": false
   },
   {
+    "name": "normalize",
+    "category": "String",
+    "description": "Normalize a `STRING`. The `STRING` will be normalized using the normal form 'NFC'.",
+    "signature": "normalize(input :: STRING) :: STRING",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      }
+    ],
+    "returnDescription": "STRING",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
+  },
+  {
+    "name": "normalize",
+    "category": "String",
+    "description": "Normalize a `STRING`. The `STRING` will be normalized according to the specified normalization form.",
+    "signature": "normalize(input :: STRING, normalForm = NFC :: [NFC, NFD, NFKC, NFKD]) :: STRING",
+    "isBuiltIn": true,
+    "argumentDescription": [
+      {
+        "name": "input",
+        "description": "input :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      },
+      {
+        "name": "normalForm",
+        "description": "normalForm :: [NFC, NFD, NFKC, NFKD]",
+        "type": "[NFC, NFD, NFKC, NFKD]",
+        "isDeprecated": false
+      }
+    ],
+    "returnDescription": "STRING",
+    "aggregating": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin",
+      "architect",
+      "editor",
+      "publisher",
+      "reader"
+    ],
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
+  },
+  {
     "name": "nullIf",
     "category": "Scalar",
     "description": "Returns null if the two given parameters are equivalent, otherwise returns the value of the first parameter.",

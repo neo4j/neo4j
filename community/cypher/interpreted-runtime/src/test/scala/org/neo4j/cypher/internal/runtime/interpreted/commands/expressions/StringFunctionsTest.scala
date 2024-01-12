@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.CypherTypeException
+import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.EMPTY_STRING
 import org.neo4j.values.storable.Values.stringArray
@@ -185,5 +186,19 @@ class StringFunctionsTest extends CypherFunSuite {
     split("Hello", "") should equal(stringArray("H", "e", "l", "l", "o"))
     split("joe@soap.com", Seq("@", ".")) should equal(stringArray("joe", "soap", "com"))
     intercept[CypherTypeException](split(1024, 10))
+  }
+
+  test("normalizeTests") {
+    def normalize(x: Any, y: Any) = NormalizeFunction(literal(x), literal(y))(CypherRow.empty, QueryStateHelper.empty)
+
+    normalize("\u212B", "NFC") should equal(stringValue("\u00C5"))
+    normalize("\u00E4", "NFD") should equal(stringValue("\u0061\u0308"))
+    normalize("\uFE64script\uFE65", "NFKC") should equal(stringValue("\u003Cscript\u003E"))
+    normalize("\u003Cscript\u003E", "NFKD") should equal(stringValue("\u003Cscript\u003E"))
+    normalize("hello", null) should equal(expectedNull)
+    normalize(null, "hello") should equal(expectedNull)
+    normalize(null, null) should equal(expectedNull)
+    intercept[CypherTypeException](normalize(1024, 10))
+    intercept[InvalidArgumentException](normalize("HELLO", "WORLD"))
   }
 }

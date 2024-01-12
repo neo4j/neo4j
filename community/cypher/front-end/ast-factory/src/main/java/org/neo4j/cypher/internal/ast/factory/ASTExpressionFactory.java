@@ -190,6 +190,8 @@ public interface ASTExpressionFactory<
 
     EXPRESSION singleExpression(POS p, VARIABLE v, EXPRESSION list, EXPRESSION where);
 
+    EXPRESSION normalizeExpression(POS p, EXPRESSION i, ParserNormalForm normalForm);
+
     EXPRESSION patternExpression(POS p, PATTERN pattern);
 
     EXPRESSION existsExpression(POS p, MATCH_MODE matchMode, List<PATTERN> patterns, QUERY q, WHERE where);

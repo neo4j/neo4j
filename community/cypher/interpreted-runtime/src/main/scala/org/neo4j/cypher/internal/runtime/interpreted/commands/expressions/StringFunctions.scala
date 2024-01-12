@@ -190,3 +190,18 @@ case class RightFunction(orig: Expression, length: Expression)
   override def rewrite(f: Expression => Expression): Expression = f(RightFunction(orig.rewrite(f), length.rewrite(f)))
 
 }
+
+case class NormalizeFunction(input: Expression, normalForm: Expression)
+    extends Expression {
+
+  override def apply(row: ReadableRow, state: QueryState): AnyValue =
+    CypherFunctions.normalize(input(row, state), normalForm(row, state))
+
+  override def arguments: Seq[Expression] = Seq(input, normalForm)
+
+  override def children: Seq[AstNode[_]] = arguments
+
+  override def rewrite(f: Expression => Expression): Expression =
+    f(NormalizeFunction(input.rewrite(f), normalForm.rewrite(f)))
+
+}

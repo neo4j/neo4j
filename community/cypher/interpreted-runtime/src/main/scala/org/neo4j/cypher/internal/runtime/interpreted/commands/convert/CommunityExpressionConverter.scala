@@ -74,6 +74,7 @@ import org.neo4j.cypher.internal.expressions.functions.Log10
 import org.neo4j.cypher.internal.expressions.functions.Max
 import org.neo4j.cypher.internal.expressions.functions.Min
 import org.neo4j.cypher.internal.expressions.functions.Nodes
+import org.neo4j.cypher.internal.expressions.functions.Normalize
 import org.neo4j.cypher.internal.expressions.functions.PercentileCont
 import org.neo4j.cypher.internal.expressions.functions.PercentileDisc
 import org.neo4j.cypher.internal.expressions.functions.Percentiles
@@ -565,6 +566,16 @@ case class CommunityExpressionConverter(
         else
           command
       case Nodes => commands.expressions.NodesFunction(self.toCommandExpression(id, invocation.arguments.head))
+      case Normalize =>
+        val maybeNormalForm = toCommandExpression(id, invocation.arguments.lift(1), self)
+        val form = maybeNormalForm match {
+          case Some(mode) => mode
+          case None       => commands.expressions.Literal(Values.stringValue("NFC"))
+        }
+        commands.expressions.NormalizeFunction(
+          self.toCommandExpression(id, invocation.arguments.head),
+          form
+        )
       case PercentileCont =>
         val firstArg = self.toCommandExpression(id, invocation.arguments.head)
         val secondArg = self.toCommandExpression(id, invocation.arguments(1))
