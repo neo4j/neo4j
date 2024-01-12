@@ -32,14 +32,12 @@ public class TransactionConflictException extends TransientFailureException {
     private DatabaseFile databaseFile;
     private long observedVersion;
     private long highestClosed;
-    private long[] nonVisibleTransactions;
 
     public TransactionConflictException(DatabaseFile databaseFile, VersionContext versionContext, long pageId) {
         super(createMessage(databaseFile.getName(), pageId, versionContext));
         this.databaseFile = databaseFile;
         this.observedVersion = versionContext.chainHeadVersion();
         this.highestClosed = versionContext.highestClosed();
-        this.nonVisibleTransactions = versionContext.notVisibleTransactionIds();
     }
 
     public TransactionConflictException(String message, Exception cause) {
@@ -70,10 +68,6 @@ public class TransactionConflictException extends TransientFailureException {
 
     public long getHighestClosed() {
         return highestClosed;
-    }
-
-    public long[] getNonVisibleTransactions() {
-        return nonVisibleTransactions;
     }
 
     @Override

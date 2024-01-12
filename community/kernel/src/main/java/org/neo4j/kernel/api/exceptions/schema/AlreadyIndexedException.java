@@ -25,7 +25,6 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.Status;
 
 public class AlreadyIndexedException extends SchemaKernelException {
-    private static final String NO_CONTEXT_FORMAT = "Already indexed %s.";
 
     private static final String INDEX_CONTEXT_FORMAT = "There already exists an index %s.";
     private static final String CONSTRAINT_CONTEXT_FORMAT =

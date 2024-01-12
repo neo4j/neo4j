@@ -25,7 +25,6 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.Status;
 
 public class AlreadyConstrainedException extends SchemaKernelException {
-    private static final String NO_CONTEXT_FORMAT = "Already constrained %s.";
 
     private static final String ALREADY_CONSTRAINED_MESSAGE_PREFIX = "Constraint already exists: ";
 

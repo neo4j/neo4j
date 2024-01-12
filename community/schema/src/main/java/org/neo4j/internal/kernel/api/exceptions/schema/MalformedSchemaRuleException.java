@@ -26,10 +26,6 @@ import org.neo4j.kernel.api.exceptions.Status;
  * be parsed.
  */
 public class MalformedSchemaRuleException extends SchemaKernelException {
-    public MalformedSchemaRuleException(Throwable cause, String message, Object... parameters) {
-        super(Status.General.SchemaCorruptionDetected, cause, message, parameters);
-    }
-
     public MalformedSchemaRuleException(String message, Throwable cause) {
         super(Status.General.SchemaCorruptionDetected, message, cause);
     }

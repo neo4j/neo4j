@@ -25,7 +25,6 @@ import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.kernel.api.exceptions.Status;
 
 public class EquivalentSchemaRuleAlreadyExistsException extends SchemaKernelException {
-    private static final String EQUIVALENT_SCHEMA_RULE = "An equivalent schema rule already exists, '%s'.";
     private static final String EQUIVALENT_INDEX = "An equivalent index already exists, '%s'.";
     private static final String EQUIVALENT_CONSTRAINT = "An equivalent constraint already exists, '%s'.";
 

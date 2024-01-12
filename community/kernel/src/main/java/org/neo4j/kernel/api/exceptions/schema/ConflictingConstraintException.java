@@ -27,11 +27,8 @@ import org.neo4j.kernel.api.exceptions.Status;
 public class ConflictingConstraintException extends SchemaKernelException {
     private static final String CONFLICTING_CONSTRAINT_PREFIX = "Conflicting constraint already exists: ";
 
-    private final ConstraintDescriptor constraint;
-
     public ConflictingConstraintException(ConstraintDescriptor constraint, TokenNameLookup tokenNameLookup) {
         super(Status.Schema.ConstraintAlreadyExists, constructUserMessage(tokenNameLookup, constraint));
-        this.constraint = constraint;
     }
 
     private static String constructUserMessage(TokenNameLookup tokenNameLookup, ConstraintDescriptor constraint) {

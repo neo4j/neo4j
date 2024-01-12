@@ -35,10 +35,6 @@ public class TransactionFailureException extends KernelException {
         super(statusCode, message, parameters);
     }
 
-    public TransactionFailureException(Status statusCode) {
-        this(statusCode, statusCode.code().description());
-    }
-
     // To satisfy DatabaseHealth
     public TransactionFailureException(String message, Throwable cause) {
         super(Status.Transaction.TransactionStartFailed, cause, message);
