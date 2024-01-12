@@ -197,11 +197,6 @@ public class StubRead implements Read {
     }
 
     @Override
-    public long countsForNodeWithoutTxState(int labelId) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public long estimateCountsForNode(int labelId) {
         throw new UnsupportedOperationException();
     }
@@ -213,11 +208,6 @@ public class StubRead implements Read {
 
     @Override
     public long countsForRelationship(int startLabelId, int typeId, int endLabelId) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public long countsForRelationshipWithoutTxState(int startLabelId, int typeId, int endLabelId) {
         throw new UnsupportedOperationException();
     }
 

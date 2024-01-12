@@ -383,7 +383,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 indexingService,
                 indexStatisticsStore,
                 dependencies,
-                memoryTracker);
+                memoryTracker,
+                multiVersioned);
         this.executionContextFactory = createExecutionContextFactory(
                 contextFactory,
                 storageEngine,
@@ -398,7 +399,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 leaseService,
                 dependencies,
                 securityAuthorizationHandler,
-                elementIdMapper);
+                elementIdMapper,
+                multiVersioned);
         this.operations = new Operations(
                 allStoreHolder,
                 storageReader,
@@ -495,7 +497,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             LeaseService leaseService,
             Dependencies dependencies,
             SecurityAuthorizationHandler securityAuthorizationHandler,
-            ElementIdMapper elementIdMapper) {
+            ElementIdMapper elementIdMapper,
+            boolean multiVersioned) {
         return (securityContext,
                 transactionId,
                 transactionCursorContext,
@@ -547,7 +550,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     kernelTransaction,
                     clockContextSupplier,
                     List.of(executionContextStorageReader, executionContextLockClient),
-                    procedureView);
+                    procedureView,
+                    multiVersioned);
         };
     }
 

@@ -50,6 +50,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -83,7 +84,7 @@ public class DatabaseComparator {
                         ((TransactionImpl) fromTx)
                                 .kernelTransaction()
                                 .dataRead()
-                                .nodesGetCount())) {
+                                .estimateCountsForNode(TokenRead.ANY_LABEL))) {
             MutableLongList batch = LongLists.mutable.withInitialCapacity(batchSize);
             for (Node fromNode : fromTx.getAllNodes()) {
                 batch.add(fromNode.getId());

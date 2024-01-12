@@ -19,12 +19,8 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import static org.neo4j.function.Predicates.alwaysTrue;
 import static org.neo4j.internal.helpers.collection.Iterators.singleOrNull;
-import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
-import static org.neo4j.storageengine.api.txstate.TxStateVisitor.EMPTY;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -38,7 +34,6 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.collection.diffset.DiffSets;
 import org.neo4j.common.EntityType;
-import org.neo4j.counts.CountsVisitor;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.IndexMonitor;
@@ -47,12 +42,8 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
-import org.neo4j.internal.kernel.api.RelationshipDataAccessor;
-import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
-import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.SchemaReadCore;
-import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenReadSession;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
@@ -93,13 +84,10 @@ import org.neo4j.kernel.impl.locking.LockManager.Client;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.storageengine.api.CountsDelta;
 import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageSchemaReader;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
-import org.neo4j.storageengine.api.txstate.TransactionCountingStateVisitor;
-import org.neo4j.token.api.TokenConstants;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.Value;
 
@@ -127,6 +115,8 @@ public abstract class AllStoreHolder extends Read {
     private final IndexReaderCache<ValueIndexReader> valueIndexReaderCache;
     private final IndexReaderCache<TokenIndexReader> tokenIndexReaderCache;
 
+    private final EntityCounter entityCounter;
+
     private AllStoreHolder(
             StorageReader storageReader,
             TokenRead tokenRead,
@@ -137,7 +127,8 @@ public abstract class AllStoreHolder extends Read {
             DefaultPooledCursors cursors,
             StoreCursors storageCursors,
             StorageLocks storageLocks,
-            LockTracer lockTracer) {
+            LockTracer lockTracer,
+            boolean multiVersioned) {
         super(storageReader, tokenRead, cursors, storageCursors, storageLocks, lockTracer);
         this.schemaState = schemaState;
         this.valueIndexReaderCache = new IndexReaderCache<>(
@@ -147,6 +138,7 @@ public abstract class AllStoreHolder extends Read {
         this.indexingService = indexingService;
         this.indexStatisticsStore = indexStatisticsStore;
         this.memoryTracker = memoryTracker;
+        this.entityCounter = new EntityCounter(multiVersioned);
     }
 
     @Override
@@ -204,71 +196,20 @@ public abstract class AllStoreHolder extends Read {
 
     @Override
     public long countsForNode(int labelId) {
-        return countsForNodeWithoutTxState(labelId) + countsForNodeInTxState(labelId);
-    }
-
-    private static class MostCommonLabelGivenRelTypeVisitor implements CountsVisitor {
-        private final int relationshipType;
-        private long labelCount = -1;
-        public ArrayList<Integer> highest = new ArrayList<>();
-
-        public MostCommonLabelGivenRelTypeVisitor(int relationshipType) {
-            this.relationshipType = relationshipType;
-        }
-
-        @Override
-        public void visitNodeCount(int labelId, long count) {}
-
-        @Override
-        public void visitRelationshipCount(int startLabelId, int typeId, int endLabelId, long count) {
-            if (typeId == relationshipType
-                    && (startLabelId > TokenConstants.ANY_LABEL ^ endLabelId > TokenConstants.ANY_LABEL)) {
-                int labelId = startLabelId > TokenConstants.ANY_LABEL ? startLabelId : endLabelId;
-
-                if (count > labelCount) {
-                    labelCount = count;
-                    highest = new ArrayList<>(List.of(labelId));
-                } else if (count == labelCount) {
-                    highest.add(labelId);
-                }
-            }
-        }
-    }
-
-    public List<Integer> mostCommonLabelGivenRelationshipType(int type) {
-        MostCommonLabelGivenRelTypeVisitor myVisitor = new MostCommonLabelGivenRelTypeVisitor(type);
-        storageReader.visitAllCounts(myVisitor, cursorContext());
-
-        return myVisitor.highest;
+        return entityCounter.countsForNode(
+                labelId,
+                getAccessMode(),
+                storageReader,
+                cursors,
+                cursorContext(),
+                memoryTracker(),
+                this,
+                storageCursors);
     }
 
     @Override
-    public long countsForNodeWithoutTxState(int labelId) {
-        if (getAccessMode().allowsTraverseAllNodesWithLabel(labelId)) {
-            // All nodes with the specified label can be traversed, so the count store can be used.
-            return storageReader.countsForNode(labelId, cursorContext());
-        } else if (getAccessMode().disallowsTraverseLabel(labelId)) {
-            // No nodes with the specified label can be traversed, so the count will be 0.
-            return 0;
-        } else {
-            // We have a restriction on what part of the graph can be traversed, that can affect nodes with the
-            // specified label.
-            // This disables the count store entirely.
-            // We need to calculate the counts through expensive operations.
-            // We cannot use a NodeLabelScan without an expensive post-filtering, since it is not guaranteed that all
-            // nodes with the label can be traversed.
-            long count = 0;
-            // DefaultNodeCursor already contains traversal checks within next()
-            try (DefaultNodeCursor nodes = cursors.allocateNodeCursor(cursorContext(), memoryTracker())) {
-                this.allNodesScan(nodes);
-                while (nodes.next()) {
-                    if (labelId == TokenRead.ANY_LABEL || nodes.hasLabel(labelId)) {
-                        count++;
-                    }
-                }
-            }
-            return count - countsForNodeInTxState(labelId);
-        }
+    public List<Integer> mostCommonLabelGivenRelationshipType(int type) {
+        return entityCounter.mostCommonLabelGivenRelationshipType(type, storageReader, cursorContext());
     }
 
     @Override
@@ -276,159 +217,24 @@ public abstract class AllStoreHolder extends Read {
         return storageReader.estimateCountsForNode(labelId, cursorContext());
     }
 
-    private long countsForNodeInTxState(int labelId) {
-        long count = 0;
-        if (hasTxStateWithChanges()) {
-            CountsDelta counts = new CountsDelta();
-            try {
-                TransactionState txState = txState();
-                try (var countingVisitor = new TransactionCountingStateVisitor(
-                        EMPTY, storageReader, txState, counts, cursorContext(), storageCursors)) {
-                    txState.accept(countingVisitor);
-                }
-                if (counts.hasChanges()) {
-                    count += counts.nodeCount(labelId);
-                }
-            } catch (KernelException e) {
-                throw new IllegalArgumentException("Unexpected error: " + e.getMessage());
-            }
-        }
-        return count;
-    }
-
     @Override
     public long countsForRelationship(int startLabelId, int typeId, int endLabelId) {
-        return countsForRelationshipWithoutTxState(startLabelId, typeId, endLabelId)
-                + countsForRelationshipInTxState(startLabelId, typeId, endLabelId);
-    }
-
-    @Override
-    public long countsForRelationshipWithoutTxState(int startLabelId, int typeId, int endLabelId) {
-        if (getAccessMode().allowsTraverseRelType(typeId)
-                && getAccessMode().allowsTraverseNode(startLabelId)
-                && getAccessMode().allowsTraverseNode(endLabelId)) {
-            return storageReader.countsForRelationship(startLabelId, typeId, endLabelId, cursorContext());
-        }
-        if (getAccessMode().disallowsTraverseRelType(typeId)
-                || getAccessMode().disallowsTraverseLabel(startLabelId)
-                || getAccessMode().disallowsTraverseLabel(endLabelId)) {
-            // Not allowed to traverse any relationship with the specified relationship type, start node label and end
-            // node label,
-            // so the count will be 0.
-            return 0;
-        }
-
-        // token index scan can only scan for single relationship type
-        if (typeId != TokenRead.ANY_RELATIONSHIP_TYPE) {
-            try {
-                var index = findUsableTokenIndex(EntityType.RELATIONSHIP);
-                if (index != IndexDescriptor.NO_INDEX) {
-                    long count = 0;
-                    try (var relationshipsWithType =
-                                    cursors.allocateRelationshipTypeIndexCursor(cursorContext(), memoryTracker());
-                            DefaultNodeCursor sourceNode =
-                                    cursors.allocateNodeCursor(cursorContext(), memoryTracker());
-                            DefaultNodeCursor targetNode =
-                                    cursors.allocateNodeCursor(cursorContext(), memoryTracker())) {
-                        var session = tokenReadSession(index);
-                        this.relationshipTypeScan(
-                                session,
-                                relationshipsWithType,
-                                unconstrained(),
-                                new TokenPredicate(typeId),
-                                cursorContext());
-                        count += countRelationshipsWithEndLabels(
-                                relationshipsWithType, sourceNode, targetNode, startLabelId, endLabelId);
-                    }
-                    return count - countsForRelationshipInTxState(startLabelId, typeId, endLabelId);
-                }
-            } catch (KernelException ignored) {
-                // ignore, fallback to allRelationshipsScan
-            }
-        }
-
-        long count;
-        try (DefaultRelationshipScanCursor rels =
-                        cursors.allocateRelationshipScanCursor(cursorContext(), memoryTracker());
-                DefaultNodeCursor sourceNode = cursors.allocateFullAccessNodeCursor(cursorContext());
-                DefaultNodeCursor targetNode = cursors.allocateFullAccessNodeCursor(cursorContext())) {
-            this.allRelationshipsScan(rels);
-            Predicate<RelationshipScanCursor> predicate =
-                    typeId == TokenRead.ANY_RELATIONSHIP_TYPE ? alwaysTrue() : CursorPredicates.hasType(typeId);
-            var filteredCursor = new FilteringRelationshipScanCursorWrapper(rels, predicate);
-            count = countRelationshipsWithEndLabels(filteredCursor, sourceNode, targetNode, startLabelId, endLabelId);
-        }
-        return count - countsForRelationshipInTxState(startLabelId, typeId, endLabelId);
+        return entityCounter.countsForRelationship(
+                startLabelId,
+                typeId,
+                endLabelId,
+                getAccessMode(),
+                storageReader,
+                cursors,
+                this,
+                cursorContext(),
+                memoryTracker(),
+                storageCursors);
     }
 
     @Override
     public long estimateCountsForRelationships(int startLabelId, int typeId, int endLabelId) {
         return storageReader.estimateCountsForRelationship(startLabelId, typeId, endLabelId, cursorContext());
-    }
-
-    private static long countRelationshipsWithEndLabels(
-            RelationshipIndexCursor relationship,
-            DefaultNodeCursor sourceNode,
-            DefaultNodeCursor targetNode,
-            int startLabelId,
-            int endLabelId) {
-        long internalCount = 0;
-        while (relationship.next()) {
-            if (relationship.readFromStore()
-                    && matchesLabels(relationship, sourceNode, targetNode, startLabelId, endLabelId)) {
-                internalCount++;
-            }
-        }
-        return internalCount;
-    }
-
-    private static long countRelationshipsWithEndLabels(
-            RelationshipScanCursor relationship,
-            DefaultNodeCursor sourceNode,
-            DefaultNodeCursor targetNode,
-            int startLabelId,
-            int endLabelId) {
-        long internalCount = 0;
-        while (relationship.next()) {
-            if (matchesLabels(relationship, sourceNode, targetNode, startLabelId, endLabelId)) {
-                internalCount++;
-            }
-        }
-        return internalCount;
-    }
-
-    private static boolean matchesLabels(
-            RelationshipDataAccessor relationship,
-            DefaultNodeCursor sourceNode,
-            DefaultNodeCursor targetNode,
-            int startLabelId,
-            int endLabelId) {
-        relationship.source(sourceNode);
-        relationship.target(targetNode);
-        return sourceNode.next()
-                && (startLabelId == TokenRead.ANY_LABEL || sourceNode.hasLabel(startLabelId))
-                && targetNode.next()
-                && (endLabelId == TokenRead.ANY_LABEL || targetNode.hasLabel(endLabelId));
-    }
-
-    private long countsForRelationshipInTxState(int startLabelId, int typeId, int endLabelId) {
-        long count = 0;
-        if (hasTxStateWithChanges()) {
-            CountsDelta counts = new CountsDelta();
-            try {
-                TransactionState txState = txState();
-                try (var countingVisitor = new TransactionCountingStateVisitor(
-                        EMPTY, storageReader, txState, counts, cursorContext(), storageCursors)) {
-                    txState.accept(countingVisitor);
-                }
-                if (counts.hasChanges()) {
-                    count += counts.relationshipCount(startLabelId, typeId, endLabelId);
-                }
-            } catch (KernelException e) {
-                throw new IllegalArgumentException("Unexpected error: " + e.getMessage());
-            }
-        }
-        return count;
     }
 
     IndexDescriptor findUsableTokenIndex(EntityType entityType) throws IndexNotFoundKernelException {
@@ -1074,7 +880,8 @@ public abstract class AllStoreHolder extends Read {
                 IndexingService indexingService,
                 IndexStatisticsStore indexStatisticsStore,
                 Dependencies databaseDependencies,
-                MemoryTracker memoryTracker) {
+                MemoryTracker memoryTracker,
+                boolean multiVersioned) {
             super(
                     storageReader,
                     tokenRead,
@@ -1085,7 +892,8 @@ public abstract class AllStoreHolder extends Read {
                     cursors,
                     ktx.storeCursors(),
                     storageLocks,
-                    ktx.lockTracer());
+                    ktx.lockTracer(),
+                    multiVersioned);
 
             this.ktx = ktx;
             this.databaseDependencies = databaseDependencies;
@@ -1164,7 +972,8 @@ public abstract class AllStoreHolder extends Read {
                 ExecutionContextProcedureKernelTransaction kernelTransaction,
                 SecurityAuthorizationHandler securityAuthorizationHandler,
                 Supplier<ClockContext> clockContextSupplier,
-                ProcedureView procedureView) {
+                ProcedureView procedureView,
+                boolean multiVersioned) {
             super(
                     storageReader,
                     executionContext.tokenRead(),
@@ -1175,7 +984,8 @@ public abstract class AllStoreHolder extends Read {
                     cursors,
                     storageCursors,
                     storageLocks,
-                    lockTracer);
+                    lockTracer,
+                    multiVersioned);
             this.overridableSecurityContext = overridableSecurityContext;
             this.cursorContext = cursorContext;
             this.lockClient = lockClient;

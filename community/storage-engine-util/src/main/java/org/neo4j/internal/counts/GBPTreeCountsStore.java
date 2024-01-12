@@ -56,7 +56,7 @@ public class GBPTreeCountsStore extends GBPTreeGenericCountsStore implements Cou
 
     /**
      * Public utility method for instantiating a {@link CountsKey} for a node label id.
-     *
+     * <p>
      * Key data layout for this type:
      * <pre>
      * first:  4B (lsb) labelId
@@ -72,7 +72,7 @@ public class GBPTreeCountsStore extends GBPTreeGenericCountsStore implements Cou
 
     /**
      * Public utility method for instantiating a {@link CountsKey} for a node start/end label and relationship type id.
-     *
+     * <p>
      * Key data layout for this type:
      * <pre>
      * first:  4B (msb) startLabelId, 4B (lsb) relationshipTypeId
@@ -80,8 +80,8 @@ public class GBPTreeCountsStore extends GBPTreeGenericCountsStore implements Cou
      * </pre>
      *
      * @param startLabelId id of the label of start node.
-     * @param typeId id of the relationship type.
-     * @param endLabelId id of the label of end node.
+     * @param typeId       id of the relationship type.
+     * @param endLabelId   id of the label of end node.
      * @return a {@link CountsKey} for the node start/end label and relationship type id.
      */
     public static CountsKey relationshipKey(int startLabelId, long typeId, int endLabelId) {
@@ -135,6 +135,12 @@ public class GBPTreeCountsStore extends GBPTreeGenericCountsStore implements Cou
     public CountsUpdater directUpdater(boolean deltas, CursorContext cursorContext) throws IOException {
         CountUpdater updater = createDirectUpdater(deltas, cursorContext);
         return updater != null ? new Incrementer(updater) : CountsUpdater.NO_OP_UPDATER;
+    }
+
+    @Override
+    public CountsUpdater rollbackUpdater(long txId, CursorContext cursorContext) {
+        CountUpdater updater = updaterImpl(txId, false, cursorContext);
+        return updater != null ? new Decrementer(updater) : CountsUpdater.NO_OP_UPDATER;
     }
 
     @Override
@@ -211,13 +217,7 @@ public class GBPTreeCountsStore extends GBPTreeGenericCountsStore implements Cou
                 openOptions);
     }
 
-    private static class Incrementer implements CountsUpdater {
-        private final CountUpdater actual;
-
-        Incrementer(CountUpdater actual) {
-            this.actual = actual;
-        }
-
+    private record Incrementer(CountUpdater actual) implements CountsUpdater {
         @Override
         public void incrementNodeCount(int labelId, long delta) {
             actual.increment(nodeKey(labelId), delta);
@@ -234,12 +234,24 @@ public class GBPTreeCountsStore extends GBPTreeGenericCountsStore implements Cou
         }
     }
 
-    private static class InitialCountsRebuilder implements Rebuilder {
-        private final CountsBuilder initialCountsBuilder;
-
-        InitialCountsRebuilder(CountsBuilder initialCountsBuilder) {
-            this.initialCountsBuilder = initialCountsBuilder;
+    private record Decrementer(CountUpdater actual) implements CountsUpdater {
+        @Override
+        public void incrementNodeCount(int labelId, long delta) {
+            actual.increment(nodeKey(labelId), -delta);
         }
+
+        @Override
+        public void incrementRelationshipCount(int startLabelId, int typeId, int endLabelId, long delta) {
+            actual.increment(relationshipKey(startLabelId, typeId, endLabelId), -delta);
+        }
+
+        @Override
+        public void close() {
+            actual.close();
+        }
+    }
+
+    private record InitialCountsRebuilder(CountsBuilder initialCountsBuilder) implements Rebuilder {
 
         @Override
         public long lastCommittedTxId() {

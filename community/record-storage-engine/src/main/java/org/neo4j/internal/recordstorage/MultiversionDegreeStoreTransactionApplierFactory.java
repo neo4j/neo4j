@@ -19,42 +19,29 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.neo4j.counts.CountsStore;
 import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.storageengine.api.CommandBatchToApply;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
-class MultiversionCountsStoreTransactionApplierFactory implements TransactionApplierFactory {
+class MultiversionDegreeStoreTransactionApplierFactory implements TransactionApplierFactory {
     private final TransactionApplicationMode mode;
-    private final CountsStore countsStore;
     private final RelationshipGroupDegreesStore groupDegreesStore;
 
-    MultiversionCountsStoreTransactionApplierFactory(
-            TransactionApplicationMode mode, CountsStore countsStore, RelationshipGroupDegreesStore groupDegreesStore) {
+    MultiversionDegreeStoreTransactionApplierFactory(
+            TransactionApplicationMode mode, RelationshipGroupDegreesStore groupDegreesStore) {
         this.mode = mode;
-        this.countsStore = countsStore;
         this.groupDegreesStore = groupDegreesStore;
     }
 
     @Override
     public TransactionApplier startTx(CommandBatchToApply transaction, BatchContext batchContext) {
         return switch (mode) {
-            case REVERSE_RECOVERY -> new SimpleCountsStoreTransactionApplier(
-                    () -> countsStore.reverseRecoveryUpdater(transaction.transactionId(), transaction.cursorContext()),
-                    () -> groupDegreesStore.reverseRecoveryUpdater(
-                            transaction.transactionId(), transaction.cursorContext()));
-            case MVCC_ROLLBACK -> new SimpleCountsStoreTransactionApplier(
-                    () -> countsStore.rollbackUpdater(transaction.transactionId(), transaction.cursorContext()),
+            case REVERSE_RECOVERY -> new SimpleDegreeStoreTransactionApplier(() ->
+                    groupDegreesStore.reverseRecoveryUpdater(transaction.transactionId(), transaction.cursorContext()));
+            case MVCC_ROLLBACK -> new SimpleDegreeStoreTransactionApplier(
                     () -> groupDegreesStore.rollbackUpdater(transaction.transactionId(), transaction.cursorContext()));
-            default -> new SimpleCountsStoreTransactionApplier(
-                    () -> countsStore.updater(
-                            transaction.transactionId(),
-                            transaction.commandBatch().isLast(),
-                            transaction.cursorContext()),
-                    () -> groupDegreesStore.updater(
-                            transaction.transactionId(),
-                            transaction.commandBatch().isLast(),
-                            transaction.cursorContext()));
+            default -> new SimpleDegreeStoreTransactionApplier(() -> groupDegreesStore.updater(
+                    transaction.transactionId(), transaction.commandBatch().isLast(), transaction.cursorContext()));
         };
     }
 }

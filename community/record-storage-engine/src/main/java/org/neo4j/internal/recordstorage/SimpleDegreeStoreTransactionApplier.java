@@ -20,36 +20,17 @@
 package org.neo4j.internal.recordstorage;
 
 import java.util.function.Supplier;
-import org.neo4j.counts.CountsUpdater;
 import org.neo4j.internal.counts.DegreeUpdater;
 
 /**
  * It's simple because it doesn't open updates if they are not required and avoids other hacks of {@link CountsStoreTransactionApplier}
  */
-class SimpleCountsStoreTransactionApplier extends TransactionApplier.Adapter {
-    private final Supplier<CountsUpdater> counstUpdaterSupplier;
+class SimpleDegreeStoreTransactionApplier extends TransactionApplier.Adapter {
     private final Supplier<DegreeUpdater> degreeUpdaterSupplier;
-    private CountsUpdater countsUpdater;
     private DegreeUpdater degreesUpdater;
 
-    SimpleCountsStoreTransactionApplier(
-            Supplier<CountsUpdater> countsUpdaterSupplier, Supplier<DegreeUpdater> degreeUpdaterSupplier) {
-        this.counstUpdaterSupplier = countsUpdaterSupplier;
+    SimpleDegreeStoreTransactionApplier(Supplier<DegreeUpdater> degreeUpdaterSupplier) {
         this.degreeUpdaterSupplier = degreeUpdaterSupplier;
-    }
-
-    @Override
-    public boolean visitNodeCountsCommand(Command.NodeCountsCommand command) {
-        countsUpdater().incrementNodeCount(command.labelId(), command.delta());
-        return false;
-    }
-
-    @Override
-    public boolean visitRelationshipCountsCommand(Command.RelationshipCountsCommand command) {
-        countsUpdater()
-                .incrementRelationshipCount(
-                        command.startLabelId(), command.typeId(), command.endLabelId(), command.delta());
-        return false;
     }
 
     @Override
@@ -60,19 +41,9 @@ class SimpleCountsStoreTransactionApplier extends TransactionApplier.Adapter {
 
     @Override
     public void close() {
-        if (countsUpdater != null) {
-            countsUpdater.close();
-        }
         if (degreesUpdater != null) {
             degreesUpdater.close();
         }
-    }
-
-    private CountsUpdater countsUpdater() {
-        if (countsUpdater == null) {
-            countsUpdater = counstUpdaterSupplier.get();
-        }
-        return countsUpdater;
     }
 
     private DegreeUpdater degreesUpdater() {

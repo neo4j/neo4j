@@ -177,7 +177,8 @@ abstract class OperationsTest {
                 indexingService,
                 mock(IndexStatisticsStore.class),
                 dependenciesOf(facade),
-                INSTANCE);
+                INSTANCE,
+                false);
         allStoreHolder.initialize(mock(ProcedureView.class));
         constraintIndexCreator = mock(ConstraintIndexCreator.class);
         creationContext = mock(CommandCreationContext.class);

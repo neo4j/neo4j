@@ -682,11 +682,9 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
             // when
             tx.dataWrite().nodeAddLabel(node2.node, node1.labels[0]);
             long countTxState = tx.dataRead().countsForNode(node1.labels[0]);
-            long countNoTxState = tx.dataRead().countsForNodeWithoutTxState(node1.labels[0]);
 
             // then
             assertEquals(2, countTxState);
-            assertEquals(1, countNoTxState);
         }
     }
 
@@ -700,11 +698,9 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
             // when
             tx.dataWrite().nodeCreate();
             long countTxState = tx.dataRead().countsForNode(-1);
-            long countNoTxState = tx.dataRead().countsForNodeWithoutTxState(-1);
 
             // then
             assertEquals(3, countTxState);
-            assertEquals(2, countNoTxState);
         }
     }
 
@@ -718,11 +714,9 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
             // when
             tx.dataWrite().nodeRemoveLabel(node2.node, node2.labels[0]);
             long countTxState = tx.dataRead().countsForNode(node1.labels[0]);
-            long countNoTxState = tx.dataRead().countsForNodeWithoutTxState(node1.labels[0]);
 
             // then
             assertEquals(1, countTxState);
-            assertEquals(2, countNoTxState);
         }
     }
 
@@ -736,11 +730,9 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
             // when
             tx.dataWrite().nodeDelete(node2.node);
             long countTxState = tx.dataRead().countsForNode(node1.labels[0]);
-            long countNoTxState = tx.dataRead().countsForNodeWithoutTxState(node1.labels[0]);
 
             // then
             assertEquals(1, countTxState);
-            assertEquals(2, countNoTxState);
         }
     }
 
@@ -759,11 +751,9 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
             // when
             tx.dataWrite().nodeAddLabel(node2.node, node1.labels[0]);
             long countTxState = tx.dataRead().countsForNode(node1.labels[0]);
-            long countNoTxState = tx.dataRead().countsForNodeWithoutTxState(node1.labels[0]);
 
             // then
             assertEquals(2, countTxState);
-            assertEquals(1, countNoTxState);
         }
     }
 
@@ -782,11 +772,9 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
             // when
             tx.dataWrite().nodeCreate();
             long countTxState = tx.dataRead().countsForNode(-1);
-            long countNoTxState = tx.dataRead().countsForNodeWithoutTxState(-1);
 
             // then
             assertEquals(3, countTxState);
-            assertEquals(2, countNoTxState);
         }
     }
 
@@ -805,11 +793,9 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
             // when
             tx.dataWrite().nodeRemoveLabel(node2.node, node2.labels[0]);
             long countTxState = tx.dataRead().countsForNode(node1.labels[0]);
-            long countNoTxState = tx.dataRead().countsForNodeWithoutTxState(node1.labels[0]);
 
             // then
             assertEquals(1, countTxState);
-            assertEquals(2, countNoTxState);
         }
     }
 
@@ -828,11 +814,9 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
             // when
             tx.dataWrite().nodeDelete(node2.node);
             long countTxState = tx.dataRead().countsForNode(node1.labels[0]);
-            long countNoTxState = tx.dataRead().countsForNodeWithoutTxState(node1.labels[0]);
 
             // then
             assertEquals(1, countTxState);
-            assertEquals(2, countNoTxState);
         }
     }
 

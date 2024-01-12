@@ -88,7 +88,7 @@ public abstract class TokenAccess<R> {
 
         @Override
         boolean inUse(Read read, SchemaReadCore schemaReadCore, int tokenId) {
-            return true; // TODO: add support for telling if a property key is in use or not
+            return true;
         }
     };
 

@@ -135,10 +135,10 @@ public class SchemaProcedure {
                         Map<String, Object> properties = new HashMap<>();
                         VirtualNodeHack node = getOrCreateLabel(labelName, properties, nodes);
 
-                        if (dataRead.countsForRelationship(labelId, relId, TokenRead.ANY_LABEL) > 0) {
+                        if (dataRead.estimateCountsForRelationships(labelId, relId, TokenRead.ANY_LABEL) > 0) {
                             startNodes.add(node);
                         }
-                        if (dataRead.countsForRelationship(TokenRead.ANY_LABEL, relId, labelId) > 0) {
+                        if (dataRead.estimateCountsForRelationships(TokenRead.ANY_LABEL, relId, labelId) > 0) {
                             endNodes.add(node);
                         }
                     }

@@ -80,7 +80,8 @@ class ThreadExecutionContextTest {
                 mock(KernelTransaction.class),
                 mock(Supplier.class),
                 List.of(storageReader, lockClient),
-                mock(ProcedureView.class))) {
+                mock(ProcedureView.class),
+                false)) {
             executionContext.complete();
         }
 

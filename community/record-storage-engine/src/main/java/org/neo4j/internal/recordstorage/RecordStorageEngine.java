@@ -300,7 +300,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
         }
         if (isMultiVersionedFormat()) {
             // in mvcc all modes apply count stores
-            appliers.add(new MultiversionCountsStoreTransactionApplierFactory(mode, countsStore, groupDegreesStore));
+            appliers.add(new MultiversionCountStoreTransactionApplierFactory(mode, countsStore));
+            appliers.add(new MultiversionDegreeStoreTransactionApplierFactory(mode, groupDegreesStore));
         } else if (mode.needsAuxiliaryStores()) {
             // Counts store application
             appliers.add(new CountsStoreTransactionApplierFactory(countsStore, groupDegreesStore));
@@ -427,10 +428,10 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
     }
 
     /**
-     * @throws TransactionFailureException if command generation fails or some prerequisite of some command didn't validate,
-     * for example if trying to delete a node that still has relationships.
+     * @throws TransactionFailureException      if command generation fails or some prerequisite of some command didn't validate,
+     *                                          for example if trying to delete a node that still has relationships.
      * @throws CreateConstraintFailureException if this transaction was set to create a constraint and that failed.
-     * @throws ConstraintValidationException if this transaction was set to create a constraint and some data violates that constraint.
+     * @throws ConstraintValidationException    if this transaction was set to create a constraint and some data violates that constraint.
      */
     @Override
     public List<StorageCommand> createCommands(

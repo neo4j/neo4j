@@ -545,11 +545,6 @@ class DefaultRelationshipTraversalCursorTest {
         }
 
         @Override
-        public long countsForNodeWithoutTxState(int labelId) {
-            return 0;
-        }
-
-        @Override
         public long estimateCountsForNode(int labelId) {
             return 0;
         }
@@ -561,11 +556,6 @@ class DefaultRelationshipTraversalCursorTest {
 
         @Override
         public long countsForRelationship(int startLabelId, int typeId, int endLabelId) {
-            return 0;
-        }
-
-        @Override
-        public long countsForRelationshipWithoutTxState(int startLabelId, int typeId, int endLabelId) {
             return 0;
         }
 

@@ -74,11 +74,11 @@ final class GraphCountsSection {
         List<Map<String, Object>> nodeCounts = new ArrayList<>();
         Map<String, Object> nodeCount = new HashMap<>();
 
-        nodeCount.put("count", read.countsForNodeWithoutTxState(-1));
+        nodeCount.put("count", read.estimateCountsForNode(TokenRead.ANY_LABEL));
         nodeCounts.add(nodeCount);
 
         tokens.labelsGetAllTokens().forEachRemaining(t -> {
-            long count = read.countsForNodeWithoutTxState(t.id());
+            long count = read.estimateCountsForNode(t.id());
             Map<String, Object> labelCount = new HashMap<>();
             labelCount.put("label", anonymizer.label(t.name(), t.id()));
             labelCount.put("count", count);
@@ -91,20 +91,23 @@ final class GraphCountsSection {
     private static List<Map<String, Object>> relationshipCounts(TokenRead tokens, Read read, Anonymizer anonymizer) {
         List<Map<String, Object>> relationshipCounts = new ArrayList<>();
         Map<String, Object> relationshipCount = new HashMap<>();
-        relationshipCount.put("count", read.countsForRelationshipWithoutTxState(-1, -1, -1));
+        relationshipCount.put(
+                "count",
+                read.estimateCountsForRelationships(
+                        TokenRead.ANY_LABEL, TokenRead.ANY_RELATIONSHIP_TYPE, TokenRead.ANY_LABEL));
         relationshipCounts.add(relationshipCount);
 
         List<NamedToken> labels = Iterators.asList(tokens.labelsGetAllTokens());
 
         tokens.relationshipTypesGetAllTokens().forEachRemaining(t -> {
-            long count = read.countsForRelationshipWithoutTxState(-1, t.id(), -1);
+            long count = read.estimateCountsForRelationships(TokenRead.ANY_LABEL, t.id(), TokenRead.ANY_LABEL);
             Map<String, Object> relationshipTypeCount = new HashMap<>();
             relationshipTypeCount.put("relationshipType", anonymizer.relationshipType(t.name(), t.id()));
             relationshipTypeCount.put("count", count);
             relationshipCounts.add(relationshipTypeCount);
 
             for (NamedToken label : labels) {
-                long startCount = read.countsForRelationshipWithoutTxState(label.id(), t.id(), -1);
+                long startCount = read.estimateCountsForRelationships(label.id(), t.id(), TokenRead.ANY_LABEL);
                 if (startCount > 0) {
                     Map<String, Object> x = new HashMap<>();
                     x.put("relationshipType", anonymizer.relationshipType(t.name(), t.id()));
@@ -112,7 +115,7 @@ final class GraphCountsSection {
                     x.put("count", startCount);
                     relationshipCounts.add(x);
                 }
-                long endCount = read.countsForRelationshipWithoutTxState(-1, t.id(), label.id());
+                long endCount = read.estimateCountsForRelationships(TokenRead.ANY_LABEL, t.id(), label.id());
                 if (endCount > 0) {
                     Map<String, Object> x = new HashMap<>();
                     x.put("relationshipType", anonymizer.relationshipType(t.name(), t.id()));

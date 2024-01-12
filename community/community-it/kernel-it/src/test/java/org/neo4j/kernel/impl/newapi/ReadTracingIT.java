@@ -155,21 +155,6 @@ class ReadTracingIT {
     }
 
     @Test
-    void tracePageCacheAccessOnNodeWithoutTxStateCount() {
-        try (InternalTransaction transaction = (InternalTransaction) database.beginTx()) {
-            var kernelTransaction = transaction.kernelTransaction();
-            var cursorContext = kernelTransaction.cursorContext();
-            var dataRead = kernelTransaction.dataRead();
-
-            assertZeroCursor(cursorContext);
-
-            dataRead.countsForNodeWithoutTxState(0);
-
-            assertOneCursor(cursorContext);
-        }
-    }
-
-    @Test
     void tracePageCacheAccessOnNodeCountByLabel() {
         try (InternalTransaction transaction = (InternalTransaction) database.beginTx()) {
             var kernelTransaction = transaction.kernelTransaction();
@@ -194,21 +179,6 @@ class ReadTracingIT {
             assertZeroCursor(cursorContext);
 
             assertEquals(0, dataRead.nodesGetCount());
-
-            assertOneCursor(cursorContext);
-        }
-    }
-
-    @Test
-    void tracePageCacheAccessOnRelationshipWithoutTxStateCount() {
-        try (InternalTransaction transaction = (InternalTransaction) database.beginTx()) {
-            var kernelTransaction = transaction.kernelTransaction();
-            var cursorContext = kernelTransaction.cursorContext();
-            var dataRead = kernelTransaction.dataRead();
-
-            assertZeroCursor(cursorContext);
-
-            dataRead.countsForRelationshipWithoutTxState(ANY_LABEL, ANY_RELATIONSHIP_TYPE, ANY_LABEL);
 
             assertOneCursor(cursorContext);
         }

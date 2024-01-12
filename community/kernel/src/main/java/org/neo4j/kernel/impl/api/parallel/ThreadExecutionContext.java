@@ -95,7 +95,8 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
             KernelTransaction ktx,
             Supplier<ClockContext> clockContextSupplier,
             List<AutoCloseable> otherResources,
-            ProcedureView procedureView) {
+            ProcedureView procedureView,
+            boolean multiVersioned) {
         this.cursors = cursors;
         this.context = context;
         this.overridableSecurityContext = overridableSecurityContext;
@@ -126,7 +127,8 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
                 this.ktx,
                 securityAuthorizationHandler,
                 clockContextSupplier,
-                procedureView);
+                procedureView,
+                multiVersioned);
     }
 
     @Override

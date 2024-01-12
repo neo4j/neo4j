@@ -88,7 +88,8 @@ class DefaultNodeCursorTest {
                 mock(IndexingService.class),
                 mock(IndexStatisticsStore.class),
                 mock(Dependencies.class),
-                EmptyMemoryTracker.INSTANCE);
+                EmptyMemoryTracker.INSTANCE,
+                false);
         read.initialize(mock(ProcedureView.class));
         var txState = new TxState();
         setup.accept(txState);

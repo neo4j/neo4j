@@ -870,10 +870,8 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             write.relationshipCreate(write.nodeCreate(), relationship, write.nodeCreate());
 
             long countsTxState = tx.dataRead().countsForRelationship(-1, relationship, -1);
-            long countsNoTxState = tx.dataRead().countsForRelationshipWithoutTxState(-1, relationship, -1);
 
             assertEquals(2, countsTxState);
-            assertEquals(1, countsNoTxState);
         }
     }
 
@@ -893,10 +891,8 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             write.relationshipDelete(relationship);
 
             long countsTxState = tx.dataRead().countsForRelationship(-1, relationshipId, -1);
-            long countsNoTxState = tx.dataRead().countsForRelationshipWithoutTxState(-1, relationshipId, -1);
 
             assertEquals(0, countsTxState);
-            assertEquals(1, countsNoTxState);
         }
     }
 
@@ -920,10 +916,8 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             write.relationshipCreate(write.nodeCreate(), relationship, write.nodeCreate());
 
             long countsTxState = tx.dataRead().countsForRelationship(-1, relationship, -1);
-            long countsNoTxState = tx.dataRead().countsForRelationshipWithoutTxState(-1, relationship, -1);
 
             assertEquals(2, countsTxState);
-            assertEquals(1, countsNoTxState);
         }
     }
 
@@ -948,10 +942,8 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             write.relationshipDelete(relationship);
 
             long countsTxState = tx.dataRead().countsForRelationship(-1, relationshipId, -1);
-            long countsNoTxState = tx.dataRead().countsForRelationshipWithoutTxState(-1, relationshipId, -1);
 
             assertEquals(0, countsTxState);
-            assertEquals(1, countsNoTxState);
         }
     }
 
