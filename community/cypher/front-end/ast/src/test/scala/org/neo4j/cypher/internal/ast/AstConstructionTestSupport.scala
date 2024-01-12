@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.AndsReorderable
 import org.neo4j.cypher.internal.expressions.AnyIterablePredicate
+import org.neo4j.cypher.internal.expressions.ArgumentOrder
 import org.neo4j.cypher.internal.expressions.AssertIsNode
 import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
 import org.neo4j.cypher.internal.expressions.BooleanLiteral
@@ -380,6 +381,9 @@ trait AstConstructionTestSupport {
 
   def count(expression: Expression): FunctionInvocation =
     FunctionInvocation(expression, FunctionName(Count.name)(pos))
+
+  def count(expression: Expression, isDistinct: Boolean, order: ArgumentOrder): FunctionInvocation =
+    FunctionInvocation(FunctionName(Count.name)(pos), isDistinct, IndexedSeq(expression), order)(pos)
 
   def countStar(): CountStar =
     CountStar()(pos)

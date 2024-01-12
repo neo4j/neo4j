@@ -24,7 +24,11 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings.cypher_pipelined_ba
 import org.neo4j.configuration.GraphDatabaseInternalSettings.cypher_pipelined_batch_size_small
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.expressions.ArgumentAsc
+import org.neo4j.cypher.internal.expressions.ArgumentDesc
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.functions.PercentileCont
+import org.neo4j.cypher.internal.expressions.functions.PercentileDisc
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
@@ -433,6 +437,72 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("c")
       .aggregation(Seq.empty, Seq("count(DISTINCT x.num) AS c"))
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("c").withSingleRow(sizeHint / 8)
+  }
+
+  test("should count(ASC DISTINCT)") {
+    assume(!isParallel)
+
+    givenGraph {
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int if i % 2 == 0 => Map("num" -> i % (sizeHint / 8))
+        },
+        "Honey"
+      )
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("c")
+      .aggregation(
+        Map.empty[String, Expression],
+        Map(
+          "c" -> count(prop(varFor("x"), "num"), isDistinct = true, order = ArgumentAsc)
+        )
+      )
+      .sort("num ASC")
+      .projection("x.num AS num")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("c").withSingleRow(sizeHint / 8)
+  }
+
+  test("should count(DESC DISTINCT)") {
+    assume(!isParallel)
+
+    givenGraph {
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int if i % 2 == 0 => Map("num" -> i % (sizeHint / 8))
+        },
+        "Honey"
+      )
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("c")
+      .aggregation(
+        Map.empty[String, Expression],
+        Map(
+          "c" -> count(prop(varFor("x"), "num"), isDistinct = true, order = ArgumentDesc)
+        )
+      )
+      .sort("num ASC")
+      .projection("x.num AS num")
       .allNodeScan("x")
       .build()
 
@@ -1449,6 +1519,74 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("p").withRows(singleRow(4))
   }
 
+  test("should handle percentileDisc with ASC argument") {
+    assume(!isParallel)
+
+    givenGraph {
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int => Map("num" -> i % 10)
+        },
+        "Honey"
+      )
+    }
+
+    // when
+    val percentileDisc = function(PercentileDisc.name, varFor("num"), literalFloat(0.5))
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p")
+      .aggregation(
+        Map.empty[String, Expression],
+        Map(
+          "p" -> percentileDisc.copy(order = ArgumentAsc)(pos)
+        )
+      )
+      .sort("num ASC")
+      .projection("x.num AS num")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("p").withRows(singleRow(4))
+  }
+
+  test("should handle percentileDisc with DESC argument") {
+    assume(!isParallel)
+
+    givenGraph {
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int => Map("num" -> i % 10)
+        },
+        "Honey"
+      )
+    }
+
+    // when
+    val percentileDisc = function(PercentileDisc.name, varFor("num"), literalFloat(0.5))
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p")
+      .aggregation(
+        Map.empty[String, Expression],
+        Map(
+          "p" -> percentileDisc.copy(order = ArgumentDesc)(pos)
+        )
+      )
+      .sort("num DESC")
+      .projection("x.num AS num")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("p").withRows(singleRow(4))
+  }
+
   test("should handle percentileDisc with nulls") {
     givenGraph {
       nodePropertyGraph(
@@ -1553,6 +1691,74 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("p")
       .aggregation(Seq.empty, Seq("percentileCont(x.num, 0.5) AS p"))
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("p").withRows(singleRow(4.5))
+  }
+
+  test("should handle percentileCont with ASC argument") {
+    assume(!isParallel)
+
+    givenGraph {
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int => Map("num" -> i % 10)
+        },
+        "Honey"
+      )
+    }
+
+    // when
+    val percentileCont = function(PercentileCont.name, varFor("num"), literalFloat(0.5))
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p")
+      .aggregation(
+        Map.empty[String, Expression],
+        Map(
+          "p" -> percentileCont.copy(order = ArgumentAsc)(pos)
+        )
+      )
+      .sort("num ASC")
+      .projection("x.num AS num")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("p").withRows(singleRow(4.5))
+  }
+
+  test("should handle percentileCont with DESC argument") {
+    assume(!isParallel)
+
+    givenGraph {
+      nodePropertyGraph(
+        sizeHint,
+        {
+          case i: Int => Map("num" -> i % 10)
+        },
+        "Honey"
+      )
+    }
+
+    // when
+    val percentileCont = function(PercentileCont.name, varFor("num"), literalFloat(0.5))
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("p")
+      .aggregation(
+        Map.empty[String, Expression],
+        Map(
+          "p" -> percentileCont.copy(order = ArgumentDesc)(pos)
+        )
+      )
+      .sort("num DESC")
+      .projection("x.num AS num")
       .allNodeScan("x")
       .build()
 
