@@ -45,9 +45,16 @@ public interface PatternSegment extends Segment {
 
     String property();
 
+    String pattern();
+
     @Override
     default boolean satisfies(Segment segment) {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    default String toCypherSnippet() {
+        return String.format("FOR %s", pattern());
     }
 
     record ValuePatternSegment(
@@ -67,10 +74,15 @@ public interface PatternSegment extends Segment {
         }
 
         @Override
-        public String toString() {
+        public String pattern() {
             return String.format(
-                    "FOR %s WHERE %s %s %s",
+                    "%s WHERE %s %s %s",
                     nodeString(), propertyString(), this.operator.getSymbol(), this.value.prettyPrint());
+        }
+
+        @Override
+        public String toString() {
+            return String.format("FOR(%s)", pattern());
         }
     }
 
@@ -87,8 +99,13 @@ public interface PatternSegment extends Segment {
         }
 
         @Override
+        public String pattern() {
+            return String.format("%s WHERE %s %s", nodeString(), propertyString(), this.operator.getSymbol());
+        }
+
+        @Override
         public String toString() {
-            return String.format("FOR %s WHERE %s %s", nodeString(), propertyString(), this.operator.getSymbol());
+            return String.format("FOR(%s)", pattern());
         }
     }
 }

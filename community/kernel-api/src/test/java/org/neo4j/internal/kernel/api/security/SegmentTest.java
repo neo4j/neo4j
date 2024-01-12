@@ -19,24 +19,16 @@
  */
 package org.neo4j.internal.kernel.api.security;
 
-public record ProcedureSegment(String procedure) implements Segment {
-    @Override
-    public boolean satisfies(Segment segment) {
-        if (segment instanceof ProcedureSegment other) {
-            return procedure == null || procedure.equals(other.procedure);
-        }
-        return false;
-    }
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.spy;
 
-    @Override
-    public String toCypherSnippet() {
-        return nullToStar(procedure);
-    }
+import org.junit.jupiter.api.Test;
 
-    @Override
-    public String toString() {
-        return String.format("PROCEDURE(%s)", nullToStar(procedure));
+public class SegmentTest {
+    @Test
+    void nullToStar() {
+        var ps = spy(Segment.class);
+        assertThat(ps.nullToStar(null)).isEqualTo("*");
+        assertThat(ps.nullToStar("s")).isEqualTo("s");
     }
-
-    public static final ProcedureSegment ALL = new ProcedureSegment(null);
 }

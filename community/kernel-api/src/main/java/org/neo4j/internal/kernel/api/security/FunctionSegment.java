@@ -30,8 +30,13 @@ public record FunctionSegment(String function) implements Segment {
     }
 
     @Override
+    public String toCypherSnippet() {
+        return nullToStar(function);
+    }
+
+    @Override
     public String toString() {
-        return function == null ? "*" : function;
+        return String.format("FUNCTION(%s)", nullToStar(function));
     }
 
     public static final FunctionSegment ALL = new FunctionSegment(null);

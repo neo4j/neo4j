@@ -39,7 +39,32 @@ public class LoadSegment implements Segment {
         return false;
     }
 
-    public static LoadSegment ALL = new LoadSegment(null, null);
+    @Override
+    public String toCypherSnippet() {
+        if (isAllData()) {
+            return LoadSegment.ALL_DATA;
+        } else if (isUrl()) {
+            return String.format("%s \"%s\"", LoadSegment.URL, getUrl());
+        } else {
+            return String.format("%s \"%s\"", LoadSegment.CIDR, getCidr());
+        }
+    }
+
+    @Override
+    public String toString() {
+        if (cidr == null && url == null) {
+            return "ALL DATA";
+        } else if (cidr == null) {
+            return String.format("URL('%s')", url);
+        } else {
+            return String.format("CIDR('%s')", cidr);
+        }
+    }
+
+    public static final LoadSegment ALL = new LoadSegment(null, null);
+    public static final String CIDR = "CIDR";
+    public static final String URL = "URL";
+    public static final String ALL_DATA = "ALL DATA";
 
     public static LoadSegment CIDR(String cidr) {
         return new LoadSegment(cidr, null);
@@ -50,9 +75,9 @@ public class LoadSegment implements Segment {
     }
 
     public static LoadSegment fromValueString(String value) {
-        if (value.equals("ALL DATA")) {
+        if (value.equals(ALL_DATA)) {
             return ALL;
-        } else if (value.startsWith("CIDR")) {
+        } else if (value.startsWith(CIDR)) {
             // Will be split into: CIDR(, <range>, )
             String[] splitValue = value.split("'");
             return CIDR(splitValue[1]);
@@ -71,35 +96,15 @@ public class LoadSegment implements Segment {
         return url != null;
     }
 
+    public boolean isAllData() {
+        return !isCidr() && !isUrl();
+    }
+
     public String getCidr() {
         return cidr;
     }
 
     public String getUrl() {
         return url;
-    }
-
-    @Override
-    public String toString() {
-        if (cidr == null && url == null) {
-            // Both null -> LOAD ON ALL DATA
-            return "ALL DATA";
-        } else if (cidr == null) {
-            // cidr null -> LOAD ON URL
-            return String.format("URL \"%s\"", url);
-        } else {
-            // url null -> LOAD ON CIDR
-            return String.format("CIDR \"%s\"", cidr);
-        }
-    }
-
-    public String toValue() {
-        if (cidr == null && url == null) {
-            return "ALL DATA";
-        } else if (cidr == null) {
-            return String.format("URL('%s')", url);
-        } else {
-            return String.format("CIDR('%s')", cidr);
-        }
     }
 }

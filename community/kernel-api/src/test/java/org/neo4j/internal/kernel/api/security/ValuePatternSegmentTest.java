@@ -35,28 +35,34 @@ import org.neo4j.internal.kernel.api.security.PropertyRule.ComparisonOperator;
 import org.neo4j.values.storable.Values;
 
 public class ValuePatternSegmentTest {
-    private static Stream<Arguments> patternSegmentStringRepresentations() {
+    private static Stream<Arguments> patterns() {
         return Arrays.stream(ComparisonOperator.values())
                 .flatMap(op -> Stream.of(
                         of(
                                 new ValuePatternSegment(Set.of("L1"), "p1", Values.stringValue("s1"), op),
-                                String.format("FOR (n:L1) WHERE n.p1 %s 's1'", op.getSymbol())),
+                                String.format("(n:L1) WHERE n.p1 %s 's1'", op.getSymbol())),
                         of(
                                 new ValuePatternSegment(Set.of("L1", "L2"), "p1", Values.stringValue("s1"), op),
-                                String.format("FOR (n:L1|L2) WHERE n.p1 %s 's1'", op.getSymbol())),
+                                String.format("(n:L1|L2) WHERE n.p1 %s 's1'", op.getSymbol())),
                         of(
                                 new ValuePatternSegment("p1", Values.stringValue("s1"), op),
-                                String.format("FOR (n) WHERE n.p1 %s 's1'", op.getSymbol())),
+                                String.format("(n) WHERE n.p1 %s 's1'", op.getSymbol())),
                         of(
                                 new ValuePatternSegment(
                                         Set.of("Label Name"), "property name", Values.stringValue("s1"), op),
-                                String.format("FOR (n:Label Name) WHERE n.property name %s 's1'", op.getSymbol()))));
+                                String.format("(n:Label Name) WHERE n.property name %s 's1'", op.getSymbol()))));
     }
 
     @ParameterizedTest
     @MethodSource
-    void patternSegmentStringRepresentations(ValuePatternSegment vps, String stringRepresentation) {
-        assertThat(vps.toString()).isEqualTo(stringRepresentation);
+    void patterns(ValuePatternSegment vps, String pattern) {
+        assertThat(vps.pattern()).isEqualTo(pattern);
+    }
+
+    @ParameterizedTest
+    @MethodSource("patterns")
+    void toStringTest(ValuePatternSegment vps, String pattern) {
+        assertThat(vps.toString()).isEqualTo(String.format("FOR(%s)", pattern));
     }
 
     @Test

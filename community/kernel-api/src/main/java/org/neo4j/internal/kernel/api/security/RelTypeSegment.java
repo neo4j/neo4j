@@ -22,16 +22,21 @@ package org.neo4j.internal.kernel.api.security;
 public record RelTypeSegment(String relType) implements Segment {
 
     @Override
-    public String toString() {
-        return String.format("RELATIONSHIP %s", relType == null ? "*" : relType);
-    }
-
-    @Override
     public boolean satisfies(Segment segment) {
         if (segment instanceof RelTypeSegment other) {
             return relType == null || relType.equals(other.relType);
         }
         return false;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("RELATIONSHIP(%s)", nullToStar(relType));
+    }
+
+    @Override
+    public String toCypherSnippet() {
+        return String.format("RELATIONSHIP %s", nullToStar(relType));
     }
 
     public static final RelTypeSegment ALL = new RelTypeSegment(null);

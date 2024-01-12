@@ -34,25 +34,31 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 public class NullPatternSegmentTest {
-    private static Stream<Arguments> patternSegmentStringRepresentations() {
+    private static Stream<Arguments> patterns() {
         return Arrays.stream(NullOperator.values())
                 .flatMap(op -> Stream.of(
                         of(
                                 new NullPatternSegment(Set.of("L1"), "p1", op),
-                                String.format("FOR (n:L1) WHERE n.p1 %s", op.getSymbol())),
+                                String.format("(n:L1) WHERE n.p1 %s", op.getSymbol())),
                         of(
                                 new NullPatternSegment(Set.of("L1", "L2"), "p1", op),
-                                String.format("FOR (n:L1|L2) WHERE n.p1 %s", op.getSymbol())),
-                        of(new NullPatternSegment("p1", op), String.format("FOR (n) WHERE n.p1 %s", op.getSymbol())),
+                                String.format("(n:L1|L2) WHERE n.p1 %s", op.getSymbol())),
+                        of(new NullPatternSegment("p1", op), String.format("(n) WHERE n.p1 %s", op.getSymbol())),
                         of(
                                 new NullPatternSegment(Set.of("Label Name"), "property name", op),
-                                String.format("FOR (n:Label Name) WHERE n.property name %s", op.getSymbol()))));
+                                String.format("(n:Label Name) WHERE n.property name %s", op.getSymbol()))));
     }
 
     @ParameterizedTest
     @MethodSource
-    void patternSegmentStringRepresentations(NullPatternSegment nps, String stringRepresentation) {
-        assertThat(nps.toString()).isEqualTo(stringRepresentation);
+    void patterns(NullPatternSegment nps, String pattern) {
+        assertThat(nps.pattern()).isEqualTo(pattern);
+    }
+
+    @ParameterizedTest
+    @MethodSource("patterns")
+    void toStringTest(NullPatternSegment nps, String pattern) {
+        assertThat(nps.toString()).isEqualTo(String.format("FOR(%s)", pattern));
     }
 
     @Test

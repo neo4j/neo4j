@@ -21,10 +21,6 @@ package org.neo4j.internal.kernel.api.security;
 
 public record SettingSegment(String setting) implements Segment {
 
-    public String getSetting() {
-        return setting;
-    }
-
     @Override
     public boolean satisfies(Segment segment) {
         if (segment instanceof SettingSegment other) {
@@ -34,8 +30,13 @@ public record SettingSegment(String setting) implements Segment {
     }
 
     @Override
+    public String toCypherSnippet() {
+        return nullToStar(setting);
+    }
+
+    @Override
     public String toString() {
-        return setting == null ? "*" : setting;
+        return String.format("SETTING(%s)", nullToStar(setting));
     }
 
     public static final SettingSegment ALL = new SettingSegment(null);

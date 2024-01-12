@@ -22,5 +22,28 @@ package org.neo4j.internal.kernel.api.security;
 public interface Segment {
     boolean satisfies(Segment segment);
 
-    Segment ALL = segment -> true;
+    String toCypherSnippet();
+
+    default String nullToStar(String s) {
+        return s == null ? "*" : s;
+    }
+
+    Segment ALL = new Segment() {
+        private static final String DATABASE = "database";
+
+        @Override
+        public boolean satisfies(Segment segment) {
+            return true;
+        }
+
+        @Override
+        public String toCypherSnippet() {
+            return DATABASE;
+        }
+
+        @Override
+        public String toString() {
+            return DATABASE;
+        }
+    };
 }

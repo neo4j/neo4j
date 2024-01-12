@@ -22,16 +22,21 @@ package org.neo4j.internal.kernel.api.security;
 public record LabelSegment(String label) implements Segment {
 
     @Override
-    public String toString() {
-        return String.format("NODE %s", label == null ? "*" : label);
-    }
-
-    @Override
     public boolean satisfies(Segment segment) {
         if (segment instanceof LabelSegment other) {
             return label == null || label.equals(other.label);
         }
         return false;
+    }
+
+    @Override
+    public String toCypherSnippet() {
+        return String.format("NODE %s", nullToStar(label));
+    }
+
+    @Override
+    public String toString() {
+        return String.format("NODE(%s)", nullToStar(label));
     }
 
     public static final LabelSegment ALL = new LabelSegment(null);

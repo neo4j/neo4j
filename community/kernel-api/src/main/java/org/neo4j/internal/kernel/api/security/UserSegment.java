@@ -30,8 +30,13 @@ public record UserSegment(String username) implements Segment {
     }
 
     @Override
+    public String toCypherSnippet() {
+        return nullToStar(username);
+    }
+
+    @Override
     public String toString() {
-        return username == null ? "*" : username;
+        return String.format("USER(%s)", nullToStar(username));
     }
 
     public static final UserSegment ALL = new UserSegment(null);
