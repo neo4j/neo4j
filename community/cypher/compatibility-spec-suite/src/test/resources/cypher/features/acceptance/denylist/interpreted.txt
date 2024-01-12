@@ -18,17 +18,6 @@ Feature "QuantifiedPathPatternAcceptance": Scenario "References to non-local unc
 // Uses enterprise procedure
 Feature "CollectExpressionAcceptance": Scenario "COLLECT with updating procedure and yield should fail"
 
-// CIP-101: item-by-item visibility for CREATE
-Feature "Create": Scenario "Creating patterns first evaluates all contained pattern expressions"
-Feature "Create": Scenario "Creating patterns first evaluates all contained pattern comprehensions"
-Feature "Create": Scenario "Creating patterns first evaluates all contained count expressions"
-Feature "Create": Scenario "Creating patterns first evaluates all contained exists expressions"
-
-Feature "RemoveAcceptance": Scenario "Does not observe item-by-item visibility"
-Feature "RemoveAcceptance": Scenario "Does not observe row-by-row visibility"
-Feature "DeleteAcceptance": Scenario "Does not observe item-by-item visibility"
-Feature "DeleteAcceptance": Scenario "Does not observe row-by-row visibility"
-
 // Var-length relationship with inline predicate not currently supported, will be solved by https://trello.com/c/oYWxieEi
 Feature "GpmSyntaxMixingAcceptance": Scenario "Var-length relationship with inline predicate - OK"
 

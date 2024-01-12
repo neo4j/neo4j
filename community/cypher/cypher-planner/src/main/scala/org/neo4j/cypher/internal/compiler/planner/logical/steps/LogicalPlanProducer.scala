@@ -2856,14 +2856,19 @@ case class LogicalPlanProducer(
   ): LogicalPlan = {
     val solved =
       solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addMutatingPatterns(pattern)))
-    val (rewrittenPattern, rewrittenInner) = SubqueryExpressionSolver.ForMappable().solve(inner, pattern, context)
+
+    // SET has currently row-by-row visibility. This could change in a major release.
+    // To maintain the visibility, even with subqueries, we must use NestedPlanExpressions.
+    val rewriter = irExpressionRewriter(inner, context)
+    val rewrittenPattern = pattern.endoRewrite(rewriter)
+
     val plan = SetNodeProperty(
-      rewrittenInner,
+      inner,
       rewrittenPattern.variable,
       rewrittenPattern.propertyKey,
       rewrittenPattern.expression
     )
-    val providedOrder = providedOrderOfUpdate(plan, rewrittenInner, context.settings.executionModel)
+    val providedOrder = providedOrderOfUpdate(plan, inner, context.settings.executionModel)
     annotate(plan, solved, providedOrder, context)
   }
 
@@ -2874,9 +2879,14 @@ case class LogicalPlanProducer(
   ): LogicalPlan = {
     val solved =
       solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addMutatingPatterns(pattern)))
-    val (rewrittenPattern, rewrittenInner) = SubqueryExpressionSolver.ForMappable().solve(inner, pattern, context)
-    val plan = SetNodeProperties(rewrittenInner, rewrittenPattern.variable, rewrittenPattern.items)
-    val providedOrder = providedOrderOfUpdate(plan, rewrittenInner, context.settings.executionModel)
+
+    // SET has currently row-by-row visibility. This could change in a major release.
+    // To maintain the visibility, even with subqueries, we must use NestedPlanExpressions.
+    val rewriter = irExpressionRewriter(inner, context)
+    val rewrittenPattern = pattern.endoRewrite(rewriter)
+
+    val plan = SetNodeProperties(inner, rewrittenPattern.variable, rewrittenPattern.items)
+    val providedOrder = providedOrderOfUpdate(plan, inner, context.settings.executionModel)
     annotate(plan, solved, providedOrder, context)
   }
 
@@ -2887,14 +2897,19 @@ case class LogicalPlanProducer(
   ): LogicalPlan = {
     val solved =
       solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addMutatingPatterns(pattern)))
-    val (rewrittenPattern, rewrittenInner) = SubqueryExpressionSolver.ForMappable().solve(inner, pattern, context)
+
+    // SET has currently row-by-row visibility. This could change in a major release.
+    // To maintain the visibility, even with subqueries, we must use NestedPlanExpressions.
+    val rewriter = irExpressionRewriter(inner, context)
+    val rewrittenPattern = pattern.endoRewrite(rewriter)
+
     val plan = SetNodePropertiesFromMap(
-      rewrittenInner,
+      inner,
       rewrittenPattern.variable,
       rewrittenPattern.expression,
       rewrittenPattern.removeOtherProps
     )
-    val providedOrder = providedOrderOfUpdate(plan, rewrittenInner, context.settings.executionModel)
+    val providedOrder = providedOrderOfUpdate(plan, inner, context.settings.executionModel)
     annotate(plan, solved, providedOrder, context)
   }
 
@@ -2905,14 +2920,19 @@ case class LogicalPlanProducer(
   ): LogicalPlan = {
     val solved =
       solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addMutatingPatterns(pattern)))
-    val (rewrittenPattern, rewrittenInner) = SubqueryExpressionSolver.ForMappable().solve(inner, pattern, context)
+
+    // SET has currently row-by-row visibility. This could change in a major release.
+    // To maintain the visibility, even with subqueries, we must use NestedPlanExpressions.
+    val rewriter = irExpressionRewriter(inner, context)
+    val rewrittenPattern = pattern.endoRewrite(rewriter)
+
     val plan = SetRelationshipProperty(
-      rewrittenInner,
+      inner,
       rewrittenPattern.variable,
       rewrittenPattern.propertyKey,
       rewrittenPattern.expression
     )
-    val providedOrder = providedOrderOfUpdate(plan, rewrittenInner, context.settings.executionModel)
+    val providedOrder = providedOrderOfUpdate(plan, inner, context.settings.executionModel)
     annotate(plan, solved, providedOrder, context)
   }
 
@@ -2923,9 +2943,14 @@ case class LogicalPlanProducer(
   ): LogicalPlan = {
     val solved =
       solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addMutatingPatterns(pattern)))
-    val (rewrittenPattern, rewrittenInner) = SubqueryExpressionSolver.ForMappable().solve(inner, pattern, context)
-    val plan = SetRelationshipProperties(rewrittenInner, rewrittenPattern.variable, rewrittenPattern.items)
-    val providedOrder = providedOrderOfUpdate(plan, rewrittenInner, context.settings.executionModel)
+
+    // SET has currently row-by-row visibility. This could change in a major release.
+    // To maintain the visibility, even with subqueries, we must use NestedPlanExpressions.
+    val rewriter = irExpressionRewriter(inner, context)
+    val rewrittenPattern = pattern.endoRewrite(rewriter)
+
+    val plan = SetRelationshipProperties(inner, rewrittenPattern.variable, rewrittenPattern.items)
+    val providedOrder = providedOrderOfUpdate(plan, inner, context.settings.executionModel)
     annotate(plan, solved, providedOrder, context)
   }
 
@@ -2936,14 +2961,19 @@ case class LogicalPlanProducer(
   ): LogicalPlan = {
     val solved =
       solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addMutatingPatterns(pattern)))
-    val (rewrittenPattern, rewrittenInner) = SubqueryExpressionSolver.ForMappable().solve(inner, pattern, context)
+
+    // SET has currently row-by-row visibility. This could change in a major release.
+    // To maintain the visibility, even with subqueries, we must use NestedPlanExpressions.
+    val rewriter = irExpressionRewriter(inner, context)
+    val rewrittenPattern = pattern.endoRewrite(rewriter)
+
     val plan = SetRelationshipPropertiesFromMap(
-      rewrittenInner,
+      inner,
       rewrittenPattern.variable,
       rewrittenPattern.expression,
       rewrittenPattern.removeOtherProps
     )
-    val providedOrder = providedOrderOfUpdate(plan, rewrittenInner, context.settings.executionModel)
+    val providedOrder = providedOrderOfUpdate(plan, inner, context.settings.executionModel)
     annotate(plan, solved, providedOrder, context)
   }
 
@@ -2954,28 +2984,38 @@ case class LogicalPlanProducer(
   ): LogicalPlan = {
     val solved =
       solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addMutatingPatterns(pattern)))
-    val (rewrittenPattern, rewrittenInner) = SubqueryExpressionSolver.ForMappable().solve(inner, pattern, context)
+
+    // SET has currently row-by-row visibility. This could change in a major release.
+    // To maintain the visibility, even with subqueries, we must use NestedPlanExpressions.
+    val rewriter = irExpressionRewriter(inner, context)
+    val rewrittenPattern = pattern.endoRewrite(rewriter)
+
     val plan = SetPropertiesFromMap(
-      rewrittenInner,
+      inner,
       rewrittenPattern.entityExpression,
       rewrittenPattern.expression,
       rewrittenPattern.removeOtherProps
     )
-    val providedOrder = providedOrderOfUpdate(plan, rewrittenInner, context.settings.executionModel)
+    val providedOrder = providedOrderOfUpdate(plan, inner, context.settings.executionModel)
     annotate(plan, solved, providedOrder, context)
   }
 
   def planSetProperty(inner: LogicalPlan, pattern: SetPropertyPattern, context: LogicalPlanningContext): LogicalPlan = {
     val solved =
       solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addMutatingPatterns(pattern)))
-    val (rewrittenPattern, rewrittenInner) = SubqueryExpressionSolver.ForMappable().solve(inner, pattern, context)
+
+    // SET has currently row-by-row visibility. This could change in a major release.
+    // To maintain the visibility, even with subqueries, we must use NestedPlanExpressions.
+    val rewriter = irExpressionRewriter(inner, context)
+    val rewrittenPattern = pattern.endoRewrite(rewriter)
+
     val plan = SetProperty(
-      rewrittenInner,
+      inner,
       rewrittenPattern.entityExpression,
       rewrittenPattern.propertyKeyName,
       rewrittenPattern.expression
     )
-    val providedOrder = providedOrderOfUpdate(plan, rewrittenInner, context.settings.executionModel)
+    val providedOrder = providedOrderOfUpdate(plan, inner, context.settings.executionModel)
     annotate(plan, solved, providedOrder, context)
   }
 
@@ -2986,9 +3026,14 @@ case class LogicalPlanProducer(
   ): LogicalPlan = {
     val solved =
       solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addMutatingPatterns(pattern)))
-    val (rewrittenPattern, rewrittenInner) = SubqueryExpressionSolver.ForMappable().solve(inner, pattern, context)
-    val plan = SetProperties(rewrittenInner, rewrittenPattern.entityExpression, rewrittenPattern.items)
-    val providedOrder = providedOrderOfUpdate(plan, rewrittenInner, context.settings.executionModel)
+
+    // SET has currently row-by-row visibility. This could change in a major release.
+    // To maintain the visibility, even with subqueries, we must use NestedPlanExpressions.
+    val rewriter = irExpressionRewriter(inner, context)
+    val rewrittenPattern = pattern.endoRewrite(rewriter)
+
+    val plan = SetProperties(inner, rewrittenPattern.entityExpression, rewrittenPattern.items)
+    val providedOrder = providedOrderOfUpdate(plan, inner, context.settings.executionModel)
     annotate(plan, solved, providedOrder, context)
   }
 
