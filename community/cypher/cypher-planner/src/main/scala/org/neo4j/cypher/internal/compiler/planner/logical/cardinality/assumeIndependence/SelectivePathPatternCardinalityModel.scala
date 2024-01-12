@@ -168,6 +168,6 @@ trait SelectivePathPatternCardinalityModel
           uniqueRelationships.contains(relationship.variable)
         )
       case quantifiedPathPattern: QuantifiedPathPattern =>
-        getQuantifiedPathPatternCardinality(context, labelInfo, quantifiedPathPattern, uniqueRelationships)
+        getQuantifiedPathPatternCardinality(context, labelInfo, quantifiedPathPattern, uniqueRelationships, Set.empty)
     }
 }

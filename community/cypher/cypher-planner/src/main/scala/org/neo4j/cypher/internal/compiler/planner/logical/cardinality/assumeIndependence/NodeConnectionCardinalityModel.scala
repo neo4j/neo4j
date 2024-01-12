@@ -75,12 +75,17 @@ trait NodeConnectionCardinalityModel
           )
         }
 
+        // predicates that operate on the boundary (outer) nodes
+        val boundaryNodePredicates =
+          predicates.otherPredicates.filter(_.dependencies.exists(quantifiedPathPattern.boundaryNodesSet.contains))
+
         val cardinality =
           getQuantifiedPathPatternCardinality(
             context,
             predicates.allLabelInfo,
             qppWithExtractedPredicates,
-            predicates.uniqueRelationships
+            predicates.uniqueRelationships,
+            boundaryNodePredicates
           )
         boundNodesAndArguments.bindEndpoints(context, predicates, quantifiedPathPattern, cardinality)
 

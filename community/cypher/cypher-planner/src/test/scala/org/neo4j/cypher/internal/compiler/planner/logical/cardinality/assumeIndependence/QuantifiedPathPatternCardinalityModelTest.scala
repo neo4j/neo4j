@@ -124,7 +124,7 @@ class QuantifiedPathPatternCardinalityModelTest extends CypherFunSuite with Quan
       )
 
     val cardinality =
-      getQuantifiedPathPatternCardinality(context, labelInfo, quantifiedPathPattern = qpp, Set(v"r", v"s"))
+      getQuantifiedPathPatternCardinality(context, labelInfo, quantifiedPathPattern = qpp, Set(v"r", v"s"), Set.empty)
 
     // (:A)(()-[r:R]->()<-[s:R]-() WHERE r <> s){2}(end:B)
     cardinality shouldEqual Cardinality(

@@ -35,7 +35,9 @@ import org.neo4j.cypher.internal.util.Cardinality.NumericCardinality
 import org.neo4j.cypher.internal.util.Multiplier
 import org.neo4j.cypher.internal.util.Multiplier.NumericMultiplier
 import org.neo4j.cypher.internal.util.NonEmptyList
+import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.Selectivity
+import org.neo4j.cypher.internal.util.topDown
 
 import scala.collection.mutable
 
@@ -45,7 +47,8 @@ trait QuantifiedPathPatternCardinalityModel extends NodeCardinalityModel with Pa
     context: QueryGraphCardinalityContext,
     labelInfo: LabelInfo,
     quantifiedPathPattern: QuantifiedPathPattern,
-    uniqueRelationships: Set[LogicalVariable]
+    uniqueRelationships: Set[LogicalVariable],
+    boundaryNodePredicates: Set[Predicate]
   ): Cardinality = {
     val predicates = QuantifiedPathPatternPredicates.partitionSelections(labelInfo, quantifiedPathPattern.selections)
 
@@ -60,13 +63,25 @@ trait QuantifiedPathPatternCardinalityModel extends NodeCardinalityModel with Pa
         quantifiedPathPattern.rightBinding.inner
       )
 
+    lazy val (predicatesSolvedForFirstIteration, otherPredicates) =
+      partitionBoundarySolvedPredicates(quantifiedPathPattern, predicates, boundaryNodePredicates)
+
+    lazy val extraRelTypeInfo = quantifiedPathPattern.patternRelationships.collect {
+      case PatternRelationship(rel, _, _, Seq(relType), _) => rel -> relType
+    }.toMap
+
+    lazy val boundaryNodePredicatesSelectivity: Selectivity =
+      context.predicatesSelectivityWithExtraRelTypeInfo(
+        labelInfo = predicates.allLabelInfo,
+        extraRelTypeInfo = extraRelTypeInfo,
+        predicates = predicatesSolvedForFirstIteration
+      )
+
     lazy val otherPredicatesSelectivity: Selectivity =
       context.predicatesSelectivityWithExtraRelTypeInfo(
         labelInfo = predicates.allLabelInfo,
-        extraRelTypeInfo = quantifiedPathPattern.patternRelationships.collect {
-          case PatternRelationship(rel, _, _, Seq(relType), _) => rel -> relType
-        }.toMap,
-        predicates = predicates.otherPredicates
+        extraRelTypeInfo = extraRelTypeInfo,
+        predicates = otherPredicates
       )
 
     val patternCardinality =
@@ -159,10 +174,39 @@ trait QuantifiedPathPatternCardinalityModel extends NodeCardinalityModel with Pa
               (intermediateIterationMultiplier ^ (i - 2)) *
               lastIterationMultiplier *
               uniquenessSelectivity *
-              (otherPredicatesSelectivity ^ i)
+              (otherPredicatesSelectivity ^ i) *
+              (boundaryNodePredicatesSelectivity ^ (i - 1))
         }.sum(NumericCardinality)
 
     patternCardinality
+  }
+
+  /**
+   * Partition qpp predicates depending on whether they've already been solved once on the boundary node or not.
+   * It's important to treat these predicates separately in order to not overestimate their selectivity.
+   * Since they already exist on the boundary node, we exclude their selectivity for the first iteration of the qpp,
+   * since it's already solved for that iteration.
+   *
+   * @param qpp The quantified path pattern
+   * @param predicates The predicates associated with the quantified path pattern
+   * @param boundaryNodePredicates all predicates that are present on the boundary nodes
+   *                               (juxtaposed nodes outside of the quantified path pattern)
+   * @return A tuple containing predicates solved once on boundary nodes, and all other predicates
+   */
+  private def partitionBoundarySolvedPredicates(
+    qpp: QuantifiedPathPattern,
+    predicates: QuantifiedPathPatternPredicates,
+    boundaryNodePredicates: Set[Predicate]
+  ): (Set[Predicate], Set[Predicate]) = {
+    // rewrite boundary node predicates to their corresponding inner representation
+    val rewrittenPredicates = boundaryNodePredicates.map(pred =>
+      topDown(Rewriter.lift {
+        case variable if variable == qpp.leftBinding.outer  => qpp.leftBinding.inner
+        case variable if variable == qpp.rightBinding.outer => qpp.rightBinding.inner
+      })(pred).asInstanceOf[Predicate]
+    )
+
+    predicates.otherPredicates.partition(rewrittenPredicates.contains)
   }
 
   private def getPatternRelationshipsCardinality(

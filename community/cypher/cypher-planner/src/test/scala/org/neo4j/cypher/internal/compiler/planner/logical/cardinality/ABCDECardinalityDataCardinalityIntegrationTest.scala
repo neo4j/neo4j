@@ -890,8 +890,8 @@ class ABCDECardinalityDataCardinalityIntegrationTest extends CypherFunSuite with
   private val AB_T1_AB_sel = Seq(AB_T1_A_sel, AB_T1_B_sel, A_T1_AB_sel, B_T1_AB_sel).min
   private val B_T1_BC_sel = B_T1_B_sel.min(B_T1_C_sel)
 
-  private val qpp2_2 =
-    A * A_T1_AB_sel * AB * AB_T1_B_sel * B * uniquenessSelectivityForNRels(2).factor
+  private val qpp1_1 = A_T1_B
+  private val qpp2_2 = A * A_T1_AB_sel * AB * AB_T1_B_sel * B * uniquenessSelectivityForNRels(2).factor
 
   private val qpp3_3 =
     A * A_T1_AB_sel * AB * AB_T1_AB_sel * AB * AB_T1_B_sel * B * uniquenessSelectivityForNRels(3).factor
@@ -952,6 +952,38 @@ class ABCDECardinalityDataCardinalityIntegrationTest extends CypherFunSuite with
 
     queryShouldHaveCardinality(q, cardinality2_2 + cardinality3_3)
     queryShouldHaveCardinality("MATCH (n:A) ((a:B)-[r:T1]->(b:B)){2, 3} (m:C)", cardinality2_2 + cardinality3_3)
+  }
+
+  test("MATCH (n) MATCH (start)((:A {blop: n.prop})-[:T1]->(:B)){1}(end)") {
+    expectCardinality(N * qpp1_1 * UnindexedProp)
+  }
+
+  test("MATCH (n) MATCH (start)((:A)-[:T1]->(:B {blop: n.prop})){1}(end)") {
+    expectCardinality(N * qpp1_1 * UnindexedProp)
+  }
+
+  test("MATCH (n) MATCH (start)((:A {prop: n.prop})-[:T1]->(:B)){2}(end)") {
+    expectCardinality(N * qpp2_2 * Math.pow(Aprop, 2))
+  }
+
+  test("MATCH (n) MATCH (start)((:A)-[:T1]->(:B {prop: n.prop})){2, 3}(end)") {
+    expectCardinality(N * (qpp2_2 * Math.pow(Bprop, 2) + qpp3_3 * Math.pow(Bprop, 3)))
+  }
+
+  test("MATCH (start)((a:A)-[r]->(b)){1}(end)") {
+    expectCardinality(A_ANY_ANY)
+  }
+
+  test("MATCH (start:A)((a:A)-[r]->(b)){1}(end)") {
+    expectCardinality(A_ANY_ANY)
+  }
+
+  test("MATCH (n) MATCH (start)((:A {prop: n.prop})-[:T1]->(:B)){0,1}(end)") {
+    expectCardinality(N * (N + qpp1_1 * Aprop))
+  }
+
+  test("MATCH (n) MATCH (start)((:A {prop: n.prop})-[:T1]->(:B {prop: n.prop})){2}(end)") {
+    expectCardinality(N * qpp2_2 * Math.pow(Aprop, 2) * Math.pow(Bprop, 2))
   }
 
   test("MATCH (a:A)-[r:T1]->(b:B) WITH r SKIP 0 MATCH ()-[r]->()") {
