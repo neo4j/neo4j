@@ -20,6 +20,7 @@ import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
 import org.neo4j.cypher.internal.ast.ASTAnnotationMap
 import org.neo4j.cypher.internal.ast.ASTAnnotationMap.ASTAnnotationMap
+import org.neo4j.cypher.internal.ast.CatalogName
 import org.neo4j.cypher.internal.ast.semantics.Scope.DeclarationsAndDependencies
 import org.neo4j.cypher.internal.ast.semantics.SemanticState.ScopeLocation
 import org.neo4j.cypher.internal.expressions.Expression
@@ -316,7 +317,8 @@ case class SemanticState(
   notifications: Set[InternalNotification] = Set.empty,
   features: Set[SemanticFeature] = Set.empty,
   declareVariablesToSuppressDuplicateErrors: Boolean = true,
-  semanticCheckHasRunOnce: Boolean = false
+  semanticCheckHasRunOnce: Boolean = false,
+  targetGraph: Option[CatalogName] = None
 ) {
 
   def scopeTree: Scope = currentScope.rootScope
@@ -440,4 +442,6 @@ case class SemanticState(
     recordedScopes.get(astNode).map(_.scope)
 
   def withFeature(feature: SemanticFeature): SemanticState = copy(features = features + feature)
+
+  def recordTargetGraph(targetGraph: CatalogName): SemanticState = copy(targetGraph = Some(targetGraph))
 }

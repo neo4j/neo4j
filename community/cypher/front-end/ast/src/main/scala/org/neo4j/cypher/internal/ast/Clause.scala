@@ -464,7 +464,7 @@ final case class UseGraph(graphReference: GraphReference)(val position: InputPos
 
   private def checkStaticGraphSelector: SemanticCheck = {
     graphReference match {
-      case _: GraphDirectReference => success
+      case graphReference: GraphDirectReference => checkTargetGraph(graphReference)
       case _: GraphFunctionReference =>
         SemanticCheck.fromFunctionWithContext { (semanticState, context) =>
           SemanticCheckResult.error(
@@ -473,6 +473,26 @@ final case class UseGraph(graphReference: GraphReference)(val position: InputPos
             position
           )
         }
+    }
+  }
+
+  private def checkTargetGraph(graphReference: GraphDirectReference): SemanticCheck = {
+    SemanticCheck.fromFunctionWithContext { (semanticState, context) =>
+      semanticState.targetGraph match {
+        case Some(existingTarget) =>
+          if (existingTarget.equals(graphReference.catalogName)) {
+            SemanticCheckResult.success(semanticState)
+          } else {
+            SemanticCheckResult.error(
+              semanticState,
+              context.errorMessageProvider.createMultipleGraphReferencesError(graphReference.print),
+              position
+            )
+          }
+        case None =>
+          val newState = semanticState.recordTargetGraph(graphReference.catalogName)
+          SemanticCheckResult.success(newState)
+      }
     }
   }
 }

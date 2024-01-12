@@ -84,24 +84,6 @@ sealed trait Query extends Statement with SemanticCheckable with SemanticAnalysi
    */
   def semanticCheckInSubqueryExpressionContext(canOmitReturn: Boolean): SemanticCheck
 
-  protected def checkUse(): SemanticCheck =
-    whenState(_.features(SemanticFeature.UseAsSingleGraphSelector))(
-      thenBranch = {
-        val useClauses = folder.findAllByClass[UseGraph]
-        val distinctGraphs = useClauses.map(_.graphReference).distinct
-        if (distinctGraphs.size > 1)
-          SemanticCheck.fromFunctionWithContext { (semanticState, context) =>
-            SemanticCheckResult.error(
-              semanticState,
-              context.errorMessageProvider.createMultipleGraphReferencesError(distinctGraphs(1).print),
-              useClauses(1).position
-            )
-          }
-        else
-          success
-      }
-    )
-
   /**
    * Return a copy of this query where the mapping function f is applied
    * to each single query, regardless if this a single query or a union query.
@@ -185,7 +167,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
       checkOrder(clauses, canOmitReturnClause) chain
       checkNoCallInTransactionsAfterWriteClause(clauses) chain
       checkInputDataStream(clauses) chain
-      checkUse() chain
+      checkUsePosition() chain
       recordCurrentScope(this)
 
   override def semanticCheck: SemanticCheck =
@@ -476,10 +458,6 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
     }
   }
 
-  override protected def checkUse(): SemanticCheck = {
-    super.checkUse() chain checkUsePosition()
-  }
-
   private def checkUsePosition(): SemanticCheck = {
     val maybeFirstUse = clauses.find(_.isInstanceOf[UseGraph])
     if (maybeFirstUse.isEmpty) {
@@ -561,7 +539,6 @@ sealed trait Union extends Query {
       defineUnionVariables chain
       checkInputDataStream chain
       checkNoCallInTransactionInsideUnion chain
-      checkUse() chain
       SemanticState.recordCurrentScope(this)
 
   def semanticCheck: SemanticCheck =
