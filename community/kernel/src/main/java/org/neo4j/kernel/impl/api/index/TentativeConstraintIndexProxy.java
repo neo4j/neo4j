@@ -66,7 +66,7 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy 
     @Override
     public IndexUpdater newUpdater(IndexUpdateMode mode, CursorContext cursorContext, boolean parallel) {
         return switch (mode) {
-            case ONLINE -> new DeferredConflictCheckingIndexUpdater(
+            case ONLINE, RECOVERY -> new DeferredConflictCheckingIndexUpdater(
                     target.accessor.newUpdater(mode, cursorContext, parallel),
                     target::newValueReader,
                     target.getDescriptor(),
@@ -89,7 +89,6 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy 
                     }
                 }
             };
-            case RECOVERY -> newUpdater(mode, cursorContext, parallel);
             default -> throw new IllegalArgumentException("Unsupported update mode: " + mode);
         };
     }
