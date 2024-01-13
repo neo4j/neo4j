@@ -381,7 +381,7 @@ class GroupPercentileFunctionsTest extends CypherFunSuite with LogicalPlanningTe
       .allNodeScan("from")
       .build()
 
-    rewrite(before, names = Seq(map2, map1, map0)) should equal(after)
+    rewrite(before, names = Seq(map1, map2, map0)) should equal(after)
   }
 
   private def assertNotRewritten(p: LogicalPlan): Unit = {
