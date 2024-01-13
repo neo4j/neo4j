@@ -22,22 +22,28 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.AggregationFunction
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.DistinctFunction
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.OrderedDistinctFunction
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.memory.MemoryTracker
 
-case class Distinct(innerAggregator: AggregationExpression, expression: Expression)
+case class Distinct(innerAggregator: AggregationExpression, expression: Expression, isOrdered: Boolean)
     extends AggregationWithInnerExpression(expression) {
   override val expectedInnerType: CypherType = CTAny
 
   override def createAggregationFunction(memoryTracker: MemoryTracker): AggregationFunction = {
-    memoryTracker.allocateHeap(DistinctFunction.SHALLOW_SIZE)
-    new DistinctFunction(expression, innerAggregator.createAggregationFunction(memoryTracker), memoryTracker)
+    if (isOrdered) {
+      memoryTracker.allocateHeap(OrderedDistinctFunction.SHALLOW_SIZE)
+      new OrderedDistinctFunction(expression, innerAggregator.createAggregationFunction(memoryTracker))
+    } else {
+      memoryTracker.allocateHeap(DistinctFunction.SHALLOW_SIZE)
+      new DistinctFunction(expression, innerAggregator.createAggregationFunction(memoryTracker), memoryTracker)
+    }
   }
 
   override def rewrite(f: Expression => Expression): Expression = innerAggregator.rewrite(f) match {
-    case inner: AggregationExpression => f(Distinct(inner, expression.rewrite(f)))
-    case _                            => f(Distinct(innerAggregator, expression.rewrite(f)))
+    case inner: AggregationExpression => f(Distinct(inner, expression.rewrite(f), isOrdered))
+    case _                            => f(Distinct(innerAggregator, expression.rewrite(f), isOrdered))
   }
 
   override def arguments: Seq[Expression] = Seq(expression, innerAggregator)
