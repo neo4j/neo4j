@@ -21,6 +21,9 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation
 
 import org.neo4j.collection.trackable.HeapTrackingArrayList
 import org.neo4j.collection.trackable.HeapTrackingCollections
+import org.neo4j.cypher.internal.expressions.ArgumentDesc
+import org.neo4j.cypher.internal.expressions.ArgumentOrder
+import org.neo4j.cypher.internal.expressions.ArgumentUnordered
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
@@ -82,19 +85,25 @@ trait OnePercentile extends InitiateOnFirstRow {
   }
 }
 
-class PercentileContFunction(value: Expression, val percentile: Expression, memoryTracker: MemoryTracker)
-    extends PercentileFunction(value, memoryTracker) with OnePercentile {
+class PercentileContFunction(
+  value: Expression,
+  val percentile: Expression,
+  memoryTracker: MemoryTracker,
+  order: ArgumentOrder
+) extends PercentileFunction(value, memoryTracker) with OnePercentile {
 
   def name = "PERCENTILE_CONT"
 
   override def result(state: QueryState): AnyValue = {
-    temp.sort((o1: NumberValue, o2: NumberValue) => java.lang.Double.compare(o1.doubleValue(), o2.doubleValue()))
+    if (order == ArgumentUnordered) {
+      temp.sort((o1: NumberValue, o2: NumberValue) => java.lang.Double.compare(o1.doubleValue(), o2.doubleValue()))
+    }
 
     val result =
       if (count == 0) {
         Values.NO_VALUE
       } else {
-        PercentileContFunction.computePercentileCont(temp, count, perc)
+        PercentileContFunction.computePercentileCont(temp, count, perc, order)
       }
 
     temp.close()
@@ -107,32 +116,50 @@ class PercentileContFunction(value: Expression, val percentile: Expression, memo
 object PercentileContFunction {
   val SHALLOW_SIZE: Long = shallowSizeOfInstance(classOf[PercentileContFunction])
 
-  def computePercentileCont(data: HeapTrackingArrayList[NumberValue], count: Int, percentile: Double): NumberValue = {
+  def computePercentileCont(
+    data: HeapTrackingArrayList[NumberValue],
+    count: Int,
+    percentile: Double,
+    order: ArgumentOrder = ArgumentUnordered /*TODO no default value*/
+  ): NumberValue = {
     if (percentile == 1.0 || count == 1) {
-      data.get(count - 1)
+      if (order == ArgumentDesc) data.get(0) else data.get(count - 1)
     } else {
       val floatIdx = percentile * (count - 1)
       val floor = floatIdx.toInt
       val ceil = math.ceil(floatIdx).toInt
-      if (ceil == floor || floor == count - 1) data.get(floor)
-      else data.get(floor).times(ceil - floatIdx).plus(data.get(ceil).times(floatIdx - floor))
+      if (order == ArgumentDesc) {
+        if (ceil == floor || floor == count - 1) data.get(count - 1 - floor)
+        else data.get(count - 1 - floor).times(ceil - floatIdx)
+          .plus(data.get(count - 1 - ceil).times(floatIdx - floor))
+      } else {
+        if (ceil == floor || floor == count - 1) data.get(floor)
+        else data.get(floor).times(ceil - floatIdx)
+          .plus(data.get(ceil).times(floatIdx - floor))
+      }
     }
   }
 }
 
-class PercentileDiscFunction(value: Expression, val percentile: Expression, memoryTracker: MemoryTracker)
-    extends PercentileFunction(value, memoryTracker) with OnePercentile {
+class PercentileDiscFunction(
+  value: Expression,
+  val percentile: Expression,
+  memoryTracker: MemoryTracker,
+  order: ArgumentOrder
+) extends PercentileFunction(value, memoryTracker) with OnePercentile {
 
   def name = "PERCENTILE_DISC"
 
   override def result(state: QueryState): AnyValue = {
-    temp.sort((o1: NumberValue, o2: NumberValue) => java.lang.Double.compare(o1.doubleValue(), o2.doubleValue()))
+    if (order == ArgumentUnordered) {
+      temp.sort((o1: NumberValue, o2: NumberValue) => java.lang.Double.compare(o1.doubleValue(), o2.doubleValue()))
+    }
 
     val result =
       if (count == 0) {
         Values.NO_VALUE
       } else {
-        PercentileDiscFunction.computePercentileDisc(temp, count, perc)
+        PercentileDiscFunction.computePercentileDisc(temp, count, perc, order)
       }
 
     temp.close()
@@ -145,14 +172,23 @@ class PercentileDiscFunction(value: Expression, val percentile: Expression, memo
 object PercentileDiscFunction {
   val SHALLOW_SIZE: Long = shallowSizeOfInstance(classOf[PercentileDiscFunction])
 
-  def computePercentileDisc(data: HeapTrackingArrayList[NumberValue], count: Int, percentile: Double): NumberValue = {
+  def computePercentileDisc(
+    data: HeapTrackingArrayList[NumberValue],
+    count: Int,
+    percentile: Double,
+    order: ArgumentOrder = ArgumentUnordered /*TODO no default value*/
+  ): NumberValue = {
     if (percentile == 1.0 || count == 1) {
-      data.get(count - 1)
+      if (order == ArgumentDesc) data.get(0) else data.get(count - 1)
     } else {
       val floatIdx = percentile * count
       val toInt = floatIdx.toInt
       val idx = if (floatIdx != toInt || toInt == 0) toInt else toInt - 1
-      data.get(idx)
+      if (order == ArgumentDesc) {
+        data.get(count - 1 - idx)
+      } else {
+        data.get(idx)
+      }
     }
   }
 }
@@ -162,7 +198,8 @@ class PercentilesFunction(
   percentiles: Expression,
   keys: Expression,
   isDiscreteRange: Expression,
-  memoryTracker: MemoryTracker
+  memoryTracker: MemoryTracker,
+  order: ArgumentOrder
 ) extends PercentileFunction(value, memoryTracker) {
 
   private var percs: Array[Double] = _
@@ -212,7 +249,9 @@ class PercentilesFunction(
   }
 
   override def result(state: QueryState): AnyValue = {
-    temp.sort((o1: NumberValue, o2: NumberValue) => java.lang.Double.compare(o1.doubleValue(), o2.doubleValue()))
+    if (order == ArgumentUnordered) {
+      temp.sort((o1: NumberValue, o2: NumberValue) => java.lang.Double.compare(o1.doubleValue(), o2.doubleValue()))
+    }
 
     val result = {
       if (count == 0) {
@@ -225,9 +264,9 @@ class PercentilesFunction(
           val mapKey = mapKeys(i)
           val percValue =
             if (isDiscretes(i)) {
-              PercentileDiscFunction.computePercentileDisc(temp, count, perc)
+              PercentileDiscFunction.computePercentileDisc(temp, count, perc, order)
             } else {
-              PercentileContFunction.computePercentileCont(temp, count, perc)
+              PercentileContFunction.computePercentileCont(temp, count, perc, order)
             }
           mapBuilder.add(mapKey, percValue)
           i += 1

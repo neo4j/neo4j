@@ -589,7 +589,7 @@ case class CommunityExpressionConverter(
         val firstArg = self.toCommandExpression(id, invocation.arguments.head)
         val secondArg = self.toCommandExpression(id, invocation.arguments(1))
 
-        val command = commands.expressions.PercentileCont(firstArg, secondArg)
+        val command = commands.expressions.PercentileCont(firstArg, secondArg, invocation.order)
         if (invocation.distinct)
           commands.expressions.Distinct(command, firstArg, invocation.order != ArgumentUnordered)
         else
@@ -598,7 +598,7 @@ case class CommunityExpressionConverter(
         val firstArg = self.toCommandExpression(id, invocation.arguments.head)
         val secondArg = self.toCommandExpression(id, invocation.arguments(1))
 
-        val command = commands.expressions.PercentileDisc(firstArg, secondArg)
+        val command = commands.expressions.PercentileDisc(firstArg, secondArg, invocation.order)
         if (invocation.distinct)
           commands.expressions.Distinct(command, firstArg, invocation.order != ArgumentUnordered)
         else
@@ -609,7 +609,8 @@ case class CommunityExpressionConverter(
         val keysArg = self.toCommandExpression(id, invocation.arguments(2))
         val isDiscretesArg = self.toCommandExpression(id, invocation.arguments(3))
 
-        val command = commands.expressions.Percentiles(inputArg, percentilesArg, keysArg, isDiscretesArg)
+        val command =
+          commands.expressions.Percentiles(inputArg, percentilesArg, keysArg, isDiscretesArg, invocation.order)
         if (invocation.distinct) {
           commands.expressions.Distinct(command, inputArg, invocation.order != ArgumentUnordered)
         } else

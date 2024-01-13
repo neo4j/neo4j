@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
+import org.neo4j.cypher.internal.expressions.ArgumentOrder
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.AggregationFunction
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.PercentileContFunction
@@ -28,48 +29,55 @@ import org.neo4j.cypher.internal.util.symbols.CTNumber
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.memory.MemoryTracker
 
-case class PercentileCont(anInner: Expression, percentile: Expression) extends AggregationWithInnerExpression(anInner) {
-
-  override def createAggregationFunction(memoryTracker: MemoryTracker): AggregationFunction = {
-    memoryTracker.allocateHeap(PercentileContFunction.SHALLOW_SIZE)
-    new PercentileContFunction(anInner, percentile, memoryTracker)
-  }
-
-  def expectedInnerType: CypherType = CTNumber
-
-  override def rewrite(f: Expression => Expression): Expression =
-    f(PercentileCont(anInner.rewrite(f), percentile.rewrite(f)))
-
-  override def children: Seq[AstNode[_]] = Seq(anInner, percentile)
-}
-
-case class PercentileDisc(anInner: Expression, percentile: Expression) extends AggregationWithInnerExpression(anInner) {
-
-  override def createAggregationFunction(memoryTracker: MemoryTracker): AggregationFunction = {
-    memoryTracker.allocateHeap(PercentileDiscFunction.SHALLOW_SIZE)
-    new PercentileDiscFunction(anInner, percentile, memoryTracker)
-  }
-
-  def expectedInnerType: CypherType = CTNumber
-
-  override def rewrite(f: Expression => Expression): Expression =
-    f(PercentileDisc(anInner.rewrite(f), percentile.rewrite(f)))
-
-  override def children: Seq[AstNode[_]] = Seq(anInner, percentile)
-}
-
-case class Percentiles(anInner: Expression, percentiles: Expression, keys: Expression, isDiscretes: Expression)
+case class PercentileCont(anInner: Expression, percentile: Expression, order: ArgumentOrder)
     extends AggregationWithInnerExpression(anInner) {
 
   override def createAggregationFunction(memoryTracker: MemoryTracker): AggregationFunction = {
-    memoryTracker.allocateHeap(PercentilesFunction.SHALLOW_SIZE)
-    new PercentilesFunction(anInner, percentiles, keys, isDiscretes, memoryTracker)
+    memoryTracker.allocateHeap(PercentileContFunction.SHALLOW_SIZE)
+    new PercentileContFunction(anInner, percentile, memoryTracker, order)
   }
 
   def expectedInnerType: CypherType = CTNumber
 
   override def rewrite(f: Expression => Expression): Expression =
-    f(Percentiles(anInner.rewrite(f), percentiles.rewrite(f), keys.rewrite(f), isDiscretes.rewrite(f)))
+    f(PercentileCont(anInner.rewrite(f), percentile.rewrite(f), order))
+
+  override def children: Seq[AstNode[_]] = Seq(anInner, percentile)
+}
+
+case class PercentileDisc(anInner: Expression, percentile: Expression, order: ArgumentOrder)
+    extends AggregationWithInnerExpression(anInner) {
+
+  override def createAggregationFunction(memoryTracker: MemoryTracker): AggregationFunction = {
+    memoryTracker.allocateHeap(PercentileDiscFunction.SHALLOW_SIZE)
+    new PercentileDiscFunction(anInner, percentile, memoryTracker, order)
+  }
+
+  def expectedInnerType: CypherType = CTNumber
+
+  override def rewrite(f: Expression => Expression): Expression =
+    f(PercentileDisc(anInner.rewrite(f), percentile.rewrite(f), order))
+
+  override def children: Seq[AstNode[_]] = Seq(anInner, percentile)
+}
+
+case class Percentiles(
+  anInner: Expression,
+  percentiles: Expression,
+  keys: Expression,
+  isDiscretes: Expression,
+  order: ArgumentOrder
+) extends AggregationWithInnerExpression(anInner) {
+
+  override def createAggregationFunction(memoryTracker: MemoryTracker): AggregationFunction = {
+    memoryTracker.allocateHeap(PercentilesFunction.SHALLOW_SIZE)
+    new PercentilesFunction(anInner, percentiles, keys, isDiscretes, memoryTracker, order)
+  }
+
+  def expectedInnerType: CypherType = CTNumber
+
+  override def rewrite(f: Expression => Expression): Expression =
+    f(Percentiles(anInner.rewrite(f), percentiles.rewrite(f), keys.rewrite(f), isDiscretes.rewrite(f), order))
 
   override def children: Seq[AstNode[_]] = Seq(anInner, percentiles, keys, isDiscretes)
 }

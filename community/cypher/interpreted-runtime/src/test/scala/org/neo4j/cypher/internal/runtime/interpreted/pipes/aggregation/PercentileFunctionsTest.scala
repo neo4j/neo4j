@@ -19,6 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation
 
+import org.neo4j.cypher.internal.expressions.ArgumentAsc
+import org.neo4j.cypher.internal.expressions.ArgumentDesc
+import org.neo4j.cypher.internal.expressions.ArgumentOrder
+import org.neo4j.cypher.internal.expressions.ArgumentUnordered
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
@@ -36,6 +40,8 @@ trait PercentileTest {
 
   def createAggregator(inner: Expression, percentile: Expression): AggregationFunction
 
+  def order: ArgumentOrder
+
   def getPercentile(percentile: Double, values: List[Any]): AnyValue = {
     val func = createAggregator(Variable("x"), literal(percentile))
     values.foreach(value => {
@@ -43,12 +49,18 @@ trait PercentileTest {
     })
     func.result(state)
   }
+
+  protected def orderedList(list: List[Double]): List[Double] = order match {
+    case ArgumentUnordered => list
+    case ArgumentAsc       => list.sorted
+    case ArgumentDesc      => list.sorted.reverse
+  }
 }
 
-class PercentileDiscTest extends CypherFunSuite with PercentileTest {
+abstract class BasePercentileDiscTest extends CypherFunSuite with PercentileTest {
 
   def createAggregator(inner: Expression, perc: Expression) =
-    new PercentileDiscFunction(inner, perc, EmptyMemoryTracker.INSTANCE)
+    new PercentileDiscFunction(inner, perc, EmptyMemoryTracker.INSTANCE, order)
 
   test("singleOne") {
     val values = List(1.0)
@@ -67,7 +79,7 @@ class PercentileDiscTest extends CypherFunSuite with PercentileTest {
   }
 
   test("oneTwoThree") {
-    val values = List(1.0, 2.0, 3.0)
+    val values = orderedList(List(1.0, 2.0, 3.0))
     getPercentile(0.00, values) should equal(doubleValue(1.0))
     getPercentile(0.25, values) should equal(doubleValue(1.0))
     getPercentile(0.33, values) should equal(doubleValue(1.0))
@@ -79,7 +91,7 @@ class PercentileDiscTest extends CypherFunSuite with PercentileTest {
   }
 
   test("oneTwoThreeFour") {
-    val values = List(1.0, 2.0, 3.0, 4.0)
+    val values = orderedList(List(1.0, 2.0, 3.0, 4.0))
     getPercentile(0.00, values) should equal(doubleValue(1.0))
     getPercentile(0.25, values) should equal(doubleValue(1.0))
     getPercentile(0.33, values) should equal(doubleValue(2.0))
@@ -91,7 +103,7 @@ class PercentileDiscTest extends CypherFunSuite with PercentileTest {
   }
 
   test("oneTwoThreeFourFive") {
-    val values = List(1.0, 2.0, 3.0, 4.0, 5.0)
+    val values = orderedList(List(1.0, 2.0, 3.0, 4.0, 5.0))
     getPercentile(0.00, values) should equal(doubleValue(1.0))
     getPercentile(0.25, values) should equal(doubleValue(2.0))
     getPercentile(0.33, values) should equal(doubleValue(2.0))
@@ -103,7 +115,7 @@ class PercentileDiscTest extends CypherFunSuite with PercentileTest {
   }
 
   test("oneTwoThreeFourFiveSix") {
-    val values = List(1.0, 2.0, 3.0, 4.0, 5.0, 6.0)
+    val values = orderedList(List(1.0, 2.0, 3.0, 4.0, 5.0, 6.0))
     getPercentile(0.00, values) should equal(doubleValue(1.0))
     getPercentile(0.25, values) should equal(doubleValue(2.0))
     getPercentile(0.33, values) should equal(doubleValue(2.0))
@@ -115,7 +127,7 @@ class PercentileDiscTest extends CypherFunSuite with PercentileTest {
   }
 
   test("oneTwoThreeFourFiveSixSeven") {
-    val values = List(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0)
+    val values = orderedList(List(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0))
     getPercentile(0.00, values) should equal(doubleValue(1.0))
     getPercentile(0.25, values) should equal(doubleValue(2.0))
     getPercentile(0.33, values) should equal(doubleValue(3.0))
@@ -127,10 +139,22 @@ class PercentileDiscTest extends CypherFunSuite with PercentileTest {
   }
 }
 
-class PercentileContTest extends CypherFunSuite with PercentileTest {
+class PercentileDiscTest extends BasePercentileDiscTest {
+  override def order: ArgumentOrder = ArgumentUnordered
+}
+
+class PercentileDiscAscTest extends BasePercentileDiscTest {
+  override def order: ArgumentOrder = ArgumentAsc
+}
+
+class PercentileDiscDescTest extends BasePercentileDiscTest {
+  override def order: ArgumentOrder = ArgumentDesc
+}
+
+abstract class BasePercentileContTest extends CypherFunSuite with PercentileTest {
 
   def createAggregator(inner: Expression, perc: Expression) =
-    new PercentileContFunction(inner, perc, EmptyMemoryTracker.INSTANCE)
+    new PercentileContFunction(inner, perc, EmptyMemoryTracker.INSTANCE, order)
 
   test("singleOne") {
     val values = List(1.0)
@@ -149,7 +173,7 @@ class PercentileContTest extends CypherFunSuite with PercentileTest {
   }
 
   test("oneTwoThree") {
-    val values = List(1.0, 2.0, 3.0)
+    val values = orderedList(List(1.0, 2.0, 3.0))
     asDouble(getPercentile(0.0, values)).doubleValue() should equal(1.0 +- .01)
     asDouble(getPercentile(0.25, values)).doubleValue() should equal(1.5 +- .01)
     asDouble(getPercentile(0.33, values)).doubleValue() should equal(1.66 +- .01)
@@ -161,7 +185,7 @@ class PercentileContTest extends CypherFunSuite with PercentileTest {
   }
 
   test("oneTwoThreeFour") {
-    val values = List(1.0, 2.0, 3.0, 4.0)
+    val values = orderedList(List(1.0, 2.0, 3.0, 4.0))
     asDouble(getPercentile(0.0, values)).doubleValue() should equal(1.0 +- .01)
     asDouble(getPercentile(0.25, values)).doubleValue() should equal(1.75 +- .01)
     asDouble(getPercentile(0.33, values)).doubleValue() should equal(1.99 +- .01)
@@ -173,7 +197,7 @@ class PercentileContTest extends CypherFunSuite with PercentileTest {
   }
 
   test("oneTwoThreeFourFive") {
-    val values = List(1.0, 2.0, 3.0, 4.0, 5.0)
+    val values = orderedList(List(1.0, 2.0, 3.0, 4.0, 5.0))
     asDouble(getPercentile(0.0, values)).doubleValue() should equal(1.0 +- .01)
     asDouble(getPercentile(0.25, values)).doubleValue() should equal(2.0 +- .01)
     asDouble(getPercentile(0.33, values)).doubleValue() should equal(2.32 +- .01)
@@ -185,7 +209,7 @@ class PercentileContTest extends CypherFunSuite with PercentileTest {
   }
 
   test("oneTwoThreeFourFiveSix") {
-    val values = List(1.0, 2.0, 3.0, 4.0, 5.0, 6.0)
+    val values = orderedList(List(1.0, 2.0, 3.0, 4.0, 5.0, 6.0))
     asDouble(getPercentile(0.0, values)).doubleValue() should equal(1.0 +- .01)
     asDouble(getPercentile(0.25, values)).doubleValue() should equal(2.25 +- .01)
     asDouble(getPercentile(0.33, values)).doubleValue() should equal(2.65 +- .01)
@@ -197,7 +221,7 @@ class PercentileContTest extends CypherFunSuite with PercentileTest {
   }
 
   test("oneTwoThreeFourFiveSixSeven") {
-    val values = List(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0)
+    val values = orderedList(List(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0))
     asDouble(getPercentile(0.0, values)).doubleValue() should equal(1.0 +- .01)
     asDouble(getPercentile(0.25, values)).doubleValue() should equal(2.5 +- .01)
     asDouble(getPercentile(0.33, values)).doubleValue() should equal(2.98 +- .01)
@@ -207,4 +231,18 @@ class PercentileContTest extends CypherFunSuite with PercentileTest {
     asDouble(getPercentile(0.99, values)).doubleValue() should equal(6.94 +- .01)
     asDouble(getPercentile(1.00, values)).doubleValue() should equal(7.0 +- .01)
   }
+}
+
+class PercentileContTest extends BasePercentileContTest {
+  override def order: ArgumentOrder = ArgumentUnordered
+}
+
+class PercentileContAscTest extends BasePercentileContTest {
+
+  override def order: ArgumentOrder = ArgumentAsc
+}
+
+class PercentileContDescTest extends BasePercentileContTest {
+
+  override def order: ArgumentOrder = ArgumentDesc
 }
