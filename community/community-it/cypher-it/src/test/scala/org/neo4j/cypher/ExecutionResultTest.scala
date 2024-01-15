@@ -49,35 +49,94 @@ class ExecutionResultTest extends ExecutionEngineFunSuite {
   }
 
   test("correctLabelStatisticsForCreate") {
-    val result = execute("create (n:foo:bar)")
+    val result = execute("CREATE (n:foo:bar)")
     val stats = result.queryStatistics()
 
     assert(stats.labelsAdded === 2)
     assert(stats.labelsRemoved === 0)
   }
 
-  test("correctLabelStatisticsForAdd") {
-    val n = createNode()
-    val result = execute(s"match (n) where id(n) = ${n.getId} set n:foo:bar")
+  test("correctLabelStatisticsForCreateWithIs") {
+    val result = execute("CREATE (n IS foo)")
+    val stats = result.queryStatistics()
+
+    assert(stats.labelsAdded === 1)
+    assert(stats.labelsRemoved === 0)
+  }
+
+  test("correctLabelStatisticsForCreateWith&Conjunction") {
+    val result = execute("CREATE (n:foo&bar)")
     val stats = result.queryStatistics()
 
     assert(stats.labelsAdded === 2)
+    assert(stats.labelsRemoved === 0)
+  }
+
+  test("correctLabelStatisticsForMerge") {
+    val result = execute("MERGE (n:foo:bar)")
+    val stats = result.queryStatistics()
+
+    assert(stats.labelsAdded === 2)
+    assert(stats.labelsRemoved === 0)
+  }
+
+  test("correctLabelStatisticsForMergeWithIs") {
+    val result = execute("MERGE (n IS foo)")
+    val stats = result.queryStatistics()
+
+    assert(stats.labelsAdded === 1)
+    assert(stats.labelsRemoved === 0)
+  }
+
+  test("correctLabelStatisticsForMergeWith&Conjunction") {
+    val result = execute("MERGE (n:foo&bar&baz)")
+    val stats = result.queryStatistics()
+
+    assert(stats.labelsAdded === 3)
+    assert(stats.labelsRemoved === 0)
+  }
+
+  test("correctLabelStatisticsForSet") {
+    val n = createNode()
+    val result = execute(s"MATCH (n) WHERE id(n) = ${n.getId} SET n:foo:bar")
+    val stats = result.queryStatistics()
+
+    assert(stats.labelsAdded === 2)
+    assert(stats.labelsRemoved === 0)
+  }
+
+  test("correctLabelStatisticsForSetWithIs") {
+    val n = createNode()
+    val result = execute(s"MATCH (n) WHERE id(n) = ${n.getId} SET n IS foo, n IS bar, n IS baz")
+    val stats = result.queryStatistics()
+
+    assert(stats.labelsAdded === 3)
     assert(stats.labelsRemoved === 0)
   }
 
   test("correctLabelStatisticsForRemove") {
     val n = createNode()
-    execute(s"match (n) where id(n) = ${n.getId} set n:foo:bar")
-    val result = execute(s"match (n) where id(n) = ${n.getId} remove n:foo:bar")
+    execute(s"MATCH (n) WHERE id(n) = ${n.getId} SET n:foo:bar")
+    val result = execute(s"MATCH (n) WHERE id(n) = ${n.getId} REMOVE n:foo:bar")
     val stats = result.queryStatistics()
 
     assert(stats.labelsAdded === 0)
     assert(stats.labelsRemoved === 2)
   }
 
-  test("correctLabelStatisticsForAddAndRemove") {
+  test("correctLabelStatisticsForRemoveWithIs") {
+    val n = createNode()
+    execute(s"MATCH (n) WHERE id(n) = ${n.getId} SET n:foo")
+    val result = execute(s"MATCH (n) WHERE id(n) = ${n.getId} REMOVE n IS foo")
+    val stats = result.queryStatistics()
+
+    assert(stats.labelsAdded === 0)
+    assert(stats.labelsRemoved === 1)
+  }
+
+  test("correctLabelStatisticsForSetAndRemove") {
     val n = createLabeledNode("foo", "bar")
-    val result = execute(s"match (n) where id(n) = ${n.getId} set n:baz remove n:foo:bar")
+    val result = execute(s"MATCH (n) WHERE id(n) = ${n.getId} SET n:baz REMOVE n:foo:bar")
     val stats = result.queryStatistics()
 
     assert(stats.labelsAdded === 1)
@@ -86,7 +145,7 @@ class ExecutionResultTest extends ExecutionEngineFunSuite {
 
   test("correctLabelStatisticsForLabelAddedTwice") {
     val n = createLabeledNode("foo", "bar")
-    val result = execute(s"match (n) where id(n) = ${n.getId} set n:bar:baz")
+    val result = execute(s"MATCH (n) WHERE id(n) = ${n.getId} SET n:bar:baz")
     val stats = result.queryStatistics()
 
     assert(stats.labelsAdded === 1)
@@ -95,7 +154,7 @@ class ExecutionResultTest extends ExecutionEngineFunSuite {
 
   test("correctLabelStatisticsForRemovalOfUnsetLabel") {
     val n = createLabeledNode("foo", "bar")
-    val result = execute(s"match (n) where id(n) = ${n.getId} remove n:baz:foo")
+    val result = execute(s"MATCH (n) WHERE id(n) = ${n.getId} REMOVE n:baz:foo")
     val stats = result.queryStatistics()
 
     assert(stats.labelsAdded === 0)
