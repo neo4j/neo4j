@@ -488,7 +488,7 @@ object AdministrationCommandRuntime {
     valueMapper: String => String = identity
   ): NameFields = name match {
     case Left(u) =>
-      NameFields(s"$internalPrefix$key", Values.utf8Value(valueMapper(u)), IdentityConverter)
+      NameFields(internalKey(key), Values.utf8Value(valueMapper(u)), IdentityConverter)
     case Right(parameter) =>
       def rename: String => String = paramName => internalKey(paramName)
       NameFields(
