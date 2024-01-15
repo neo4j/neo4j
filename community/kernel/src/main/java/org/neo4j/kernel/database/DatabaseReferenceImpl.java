@@ -263,6 +263,24 @@ public abstract class DatabaseReferenceImpl implements DatabaseReference {
             return constituents;
         }
 
+        public Optional<DatabaseReference> getConstituentByName(String databaseName) {
+            for (DatabaseReference constituent : constituents) {
+                if (constituent.fullName().name().equals(databaseName)) {
+                    return Optional.of(constituent);
+                }
+            }
+            return Optional.empty();
+        }
+
+        public Optional<DatabaseReference> getConstituentById(UUID databaseId) {
+            for (DatabaseReference constituent : constituents) {
+                if (constituent.id().equals(databaseId)) {
+                    return Optional.of(constituent);
+                }
+            }
+            return Optional.empty();
+        }
+
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
