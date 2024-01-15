@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.runtime.NoInput
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.graphdb.Label
 
 import scala.util.Random
 
@@ -666,6 +667,74 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
     val expected = rels.filter(p => p.hasProperty("p")).map(r => Array(r))
     result should beColumns("r").withRows(expected)
     result.runtimeResult.queryProfile().operatorProfile(2).dbHits() shouldBe 0
+  }
+
+  test("should handle duplicated cached properties on rhs of nested cartesian product") {
+
+    givenGraph {
+      val n1 = tx.createNode(Label.label("A"))
+      n1.setProperty("p", 10)
+      n1.setProperty("p2", 11)
+      val n2 = tx.createNode(Label.label("A"))
+      n2.setProperty("p", 20)
+      val n3 = tx.createNode(Label.label("C"))
+      n3.setProperty("p3", 30)
+    }
+
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("p3")
+      .projection("cache[n3.p3] as p3")
+      .cacheProperties("cache[n3.p3]")
+      .apply()
+      .|.cartesianProduct()
+      .|.|.cartesianProduct()
+      .|.|.|.filter("cache[n1.p2] = 11")
+      .|.|.|.nodeByLabelScan("n3", "C")
+      .|.|.cacheProperties("cache[n1.p2]")
+      .|.|.argument("n1")
+      .|.filter("n2.p = 20")
+      .|.allNodeScan("n2")
+      .allNodeScan("n1")
+      .build()
+
+    val result = execute(query, runtime)
+
+    result should beColumns("p3").withSingleRow(30)
+  }
+
+  test("should handle duplicated cached properties on rhs of cartesian product with additional slots") {
+
+    givenGraph {
+      val n1 = tx.createNode(Label.label("A"))
+      n1.setProperty("p", 10)
+      n1.setProperty("p2", 11)
+      val n2 = tx.createNode(Label.label("A"))
+      n2.setProperty("p", 20)
+      val n3 = tx.createNode(Label.label("C"))
+      n3.setProperty("p3", 30)
+    }
+
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("p3")
+      .projection("cache[n3.p3] as p3")
+      .cacheProperties("cache[n3.p3]")
+      .apply()
+      .|.cartesianProduct()
+      .|.|.projection("2 as p5")
+      .|.|.cartesianProduct()
+      .|.|.|.projection("1 as p4")
+      .|.|.|.filter("cache[n1.p2] = 11")
+      .|.|.|.nodeByLabelScan("n3", "C")
+      .|.|.cacheProperties("cache[n1.p2]")
+      .|.|.argument("n1")
+      .|.filter("n2.p = 20")
+      .|.allNodeScan("n2")
+      .allNodeScan("n1")
+      .build()
+
+    val result = execute(query, runtime)
+
+    result should beColumns("p3").withSingleRow(30)
   }
 }
 

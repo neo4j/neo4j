@@ -460,6 +460,114 @@ class SlotConfigurationTest extends CypherFunSuite with AstConstructionTestSuppo
     result.getCachedPropertyOffsetFor(eCP) should equal(7)
   }
 
+  test("addAllSlotsInOrderTo should increase numberOfReferences when duplicated cached property is in last slot") {
+    // given
+    val slots = SlotConfiguration.empty
+    val cachedProp = CachedProperty(varFor("a"), varFor("a"), PropertyKeyName("prop")(pos), NODE_TYPE)(pos)
+    slots.newCachedProperty(cachedProp.runtimeKey) // ref slot 0
+    slots.newCachedProperty(cachedProp.runtimeKey, shouldDuplicate = true) // ref slot 1
+
+    // when
+    val result = SlotConfiguration.empty
+    slots.addAllSlotsInOrderTo(result)
+
+    // then
+    result.numberOfReferences should equal(2)
+    result.getCachedPropertyOffsetFor(cachedProp) should equal(0)
+    cachedPropertiesTest(result, (cachedProp.runtimeKey, RefSlot(0, nullable = false, typ = CTAny)))
+  }
+
+  test("addAllSlotsInOrderTo should add nothing with empty source") {
+    // given
+    val slots = SlotConfiguration.empty
+
+    // when
+    val result = SlotConfiguration.empty
+    slots.addAllSlotsInOrderTo(result)
+
+    // then
+    result.numberOfReferences should equal(0)
+    result.numberOfLongs should equal(0)
+  }
+
+  test("addAllSlotsInOrderTo should handle duplicated cached properties mixed with ref slots") {
+    // given
+    val slots = SlotConfiguration.empty
+    val cachedProp = CachedProperty(varFor("a"), varFor("a"), PropertyKeyName("prop")(pos), NODE_TYPE)(pos)
+
+    slots.newCachedProperty(cachedProp.runtimeKey) // ref slot 0, 1 CachedPropertySlotKey
+    slots.newReference("b", nullable = true, CTNode) // ref slot 1, 1 CachedPropertySlotKey + 1 VariableSlotKey
+    slots.newCachedProperty(
+      cachedProp.runtimeKey,
+      shouldDuplicate = true
+    ) // ref slot 2, 1 CachedPropertySlotKey +  1 DuplicatedSlotKey + 1 VariableSlotKey
+    slots.newReference(
+      "c",
+      nullable = false,
+      CTNode
+    ) // ref slot 3, 1 CachedPropertySlotKey +  1 DuplicatedSlotKey + 2 VariableSlotKey
+    slots.newCachedProperty(
+      cachedProp.runtimeKey,
+      shouldDuplicate = true
+    ) // ref slot 4, 1 CachedPropertySlotKey + 2 DuplicatedSlotKey + 2 VariableSlotKey
+
+    // when
+    val result = SlotConfiguration.empty
+    slots.addAllSlotsInOrderTo(result)
+
+    // then
+    result.numberOfReferences should equal(5)
+    cachedPropertiesTest(result, (cachedProp.runtimeKey, RefSlot(0, nullable = false, typ = CTAny)))
+    result.getReferenceOffsetFor("b") should equal(1)
+    result.getReferenceOffsetFor("c") should equal(3)
+  }
+
+  test("addAllSlotsInOrderTo should increment numberOfRefs when cached property already exists on target ") {
+    // given
+    val slots = SlotConfiguration.empty
+    val cachedProp = CachedProperty(varFor("a"), varFor("a"), PropertyKeyName("prop")(pos), NODE_TYPE)(pos)
+    slots.newCachedProperty(cachedProp.runtimeKey)
+    slots.newReference("b", nullable = true, CTNode)
+
+    val result = SlotConfiguration.empty
+    result.newReference("a", nullable = false, CTNode)
+    result.newCachedProperty(cachedProp.runtimeKey)
+
+    // when
+    slots.addAllSlotsInOrderTo(result)
+
+    // then
+    result.numberOfReferences should equal(4)
+    result.getReferenceOffsetFor("a") should equal(0)
+    result.getReferenceOffsetFor("b") should equal(3)
+    cachedPropertiesTest(result, (cachedProp.runtimeKey, RefSlot(1, nullable = false, typ = CTAny)))
+  }
+
+  test("addAllSlotsInOrderTo with skipSlots and cached properties") {
+    // given
+    val slots = SlotConfiguration.empty
+    val cachedProp = CachedProperty(varFor("a"), varFor("a"), PropertyKeyName("prop")(pos), NODE_TYPE)(pos)
+
+    slots.newReference("skip_this", nullable = false, CTAny) // ref slot 0 --> skip this
+    slots.newReference("skip_this_too", nullable = false, CTAny) // ref slot 1 --> skip this
+    slots.newCachedProperty(cachedProp.runtimeKey) // ref slot 2 --> skip this
+    slots.newCachedProperty(cachedProp.runtimeKey, shouldDuplicate = true) // ref slot 3 --> ref slot 0
+    slots.newCachedProperty(cachedProp.runtimeKey, shouldDuplicate = true) // ref slot 4 --> ref slot 1
+    slots.newCachedProperty(cachedProp.runtimeKey, shouldDuplicate = true) // ref slot 5 --> ref slot 2
+    slots.newReference("b", nullable = true, CTNode) // ref slot 6 --> ref slot 3
+
+    // when
+    val result = SlotConfiguration.empty
+    slots.addAllSlotsInOrderTo(result, skipFirst = SlotConfiguration.Size(0, 3))
+
+    // then
+    result.numberOfReferences should equal(4)
+    assertThrows[NoSuchElementException] {
+      result.getCachedPropertyOffsetFor(cachedProp.runtimeKey)
+    }
+    result.getReferenceOffsetFor("b") should equal(3)
+  }
+
   test("iterate cached property slots") {
     val slots = SlotConfiguration.empty
 

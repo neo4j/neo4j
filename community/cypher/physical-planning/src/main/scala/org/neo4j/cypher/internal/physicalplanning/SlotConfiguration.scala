@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.ApplyPlanSlotKey
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.CachedPropertySlotKey
+import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.DuplicatedSlotKey
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.MetaDataSlotKey
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.OuterNestedApplyPlanSlotKey
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.SlotKey
@@ -74,6 +75,7 @@ object SlotConfiguration {
   sealed trait SlotKey
   case class VariableSlotKey(name: String) extends SlotKey
   case class CachedPropertySlotKey(property: ASTCachedProperty.RuntimeKey) extends SlotKey
+  case class DuplicatedSlotKey(property: ASTCachedProperty.RuntimeKey, refSlotId: Int) extends SlotKey
   case class ApplyPlanSlotKey(applyPlanId: Id) extends SlotKey
   case class OuterNestedApplyPlanSlotKey(applyPlanId: Id) extends SlotKey
   case class MetaDataSlotKey(name: String, planId: Id) extends SlotKey
@@ -338,11 +340,11 @@ class SlotConfiguration private (
         // RefSlots for cached node properties are always compatible and identical in nullability and type. We can therefore reuse the existing slot.
         if (shouldDuplicate) {
           // In case we want to copy a whole bunch of slots at runtime using Arraycopy, we dont want to exclude same cached property slot,
-          // even if it already exists in the row. To make that possible, we increase the number of references here, which will mean that there will be no
-          // assigned slot for that array index in the references array. We can then simply copy the cached property into that position together with all
+          // even if it already exists in the row. To make that possible, we add a new duplicated slot key and a ref slot that will act as
+          // a placeholder for the additional slot. We can then simply copy the cached property into that position together with all
           // the other slots. We won't read it ever again from that array position, we will rather read the duplicate that exists at some other position
           // in the row.
-          numberOfReferences += 1
+          newDuplicatedSlot(key)
         }
 
       case None =>
@@ -350,6 +352,16 @@ class SlotConfiguration private (
         cachedPropertyOffsets.add(numberOfReferences)
         numberOfReferences = numberOfReferences + 1
     }
+    this
+  }
+
+  private def newDuplicatedSlot(property: ASTCachedProperty.RuntimeKey): SlotConfiguration = {
+    require(!finalized)
+    slots.put(
+      DuplicatedSlotKey(property, numberOfReferences),
+      RefSlot(numberOfReferences, nullable = false, typ = CTAny)
+    )
+    numberOfReferences = numberOfReferences + 1
     this
   }
 
@@ -548,6 +560,7 @@ class SlotConfiguration private (
           }
         case SlotWithKeyAndAliases(CachedPropertySlotKey(key), _, _) =>
           other.newCachedProperty(key, shouldDuplicate = true)
+        case SlotWithKeyAndAliases(DuplicatedSlotKey(key, _), _, _)     => other.newDuplicatedSlot(key)
         case SlotWithKeyAndAliases(MetaDataSlotKey(key, id), _, _)      => other.newMetaData(key, id)
         case SlotWithKeyAndAliases(ApplyPlanSlotKey(applyPlanId), _, _) => other.newArgument(applyPlanId)
         case SlotWithKeyAndAliases(OuterNestedApplyPlanSlotKey(applyPlanId), _, _) =>

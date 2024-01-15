@@ -169,6 +169,7 @@ import org.neo4j.cypher.internal.physicalplanning.SlotAllocation.LOAD_CSV_METADA
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.ApplyPlanSlotKey
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.CachedPropertySlotKey
+import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.DuplicatedSlotKey
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.MetaDataSlotKey
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.OuterNestedApplyPlanSlotKey
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.SlotWithKeyAndAliases
@@ -2000,6 +2001,8 @@ class SlottedPipeMapper(
       rhsSlots.filterSlots({
         case (VariableSlotKey(k), _) => lhsSlots.get(k).isDefined
         case (CachedPropertySlotKey(k), slot) =>
+          slot.offset < argumentSize.nReferences && lhsSlots.hasCachedPropertySlot(k)
+        case (DuplicatedSlotKey(k, _), slot) =>
           slot.offset < argumentSize.nReferences && lhsSlots.hasCachedPropertySlot(k)
         case (key: MetaDataSlotKey, slot) => slot.offset < argumentSize.nReferences && lhsSlots.hasMetaDataSlot(key)
         case (key: ApplyPlanSlotKey, _)   => throw new InternalException(s"Unexpected slot key $key")
