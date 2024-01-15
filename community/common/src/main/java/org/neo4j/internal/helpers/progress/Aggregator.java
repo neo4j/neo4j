@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
 final class Aggregator {
@@ -36,12 +35,9 @@ final class Aggregator {
     @SuppressWarnings("unused" /*accessed through updater*/)
     private volatile long progress;
 
-    @SuppressWarnings("unused" /*accessed through updater*/)
     private volatile int last;
 
     private static final AtomicLongFieldUpdater<Aggregator> PROGRESS_UPDATER = newUpdater(Aggregator.class, "progress");
-    private static final AtomicIntegerFieldUpdater<Aggregator> LAST_UPDATER =
-            AtomicIntegerFieldUpdater.newUpdater(Aggregator.class, "last");
     private volatile long totalCount;
 
     Aggregator(Indicator indicator) {
@@ -68,18 +64,17 @@ final class Aggregator {
             long progress = min(totalCount, PROGRESS_UPDATER.addAndGet(this, delta));
             if (progress > 0) {
                 int current = (int) ((progress * indicator.reportResolution()) / totalCount);
-                updateTo(current);
+                if (current > last) {
+                    updateTo(current);
+                }
             }
         }
     }
 
-    private void updateTo(int to) {
-        for (int last = this.last; to > last; last = this.last) {
-            if (LAST_UPDATER.compareAndSet(this, last, to)) {
-                synchronized (this) {
-                    indicator.progress(last, to);
-                }
-            }
+    private synchronized void updateTo(int to) {
+        if (to > last) {
+            indicator.progress(last, to);
+            last = to;
         }
     }
 
