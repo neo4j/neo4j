@@ -69,6 +69,7 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.impl.muninn.VersionStorage;
@@ -393,7 +394,8 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
     }
 
     private void checkCounts() {
-        if (!consistencyFlags.checkCounts()) {
+        if (!consistencyFlags.checkCounts()
+                || neoStores.getOpenOptions().contains(PageCacheOpenOptions.MULTI_VERSIONED)) {
             return;
         }
 
