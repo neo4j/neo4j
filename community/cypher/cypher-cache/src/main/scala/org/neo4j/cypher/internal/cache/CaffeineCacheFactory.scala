@@ -236,6 +236,13 @@ class SharedExecutorBasedCaffeineCacheFactory(executor: Executor, val cacheTrace
     cacheKindToCache.get(kind).foreach(_.cleanUp())
   }
 
+  /**
+   * For testing purposes only.
+   */
+  def invalidateAllEntries(kind: String): Unit = {
+    cacheKindToCache.get(kind).foreach(_.invalidateAll())
+  }
+
   private def tracer[K <: AnyRef](cacheKind: String): CacheTracer[K] = {
     cacheTracerRepository.tracerForCacheKind(cacheKind).asInstanceOf[CacheTracer[K]]
   }
