@@ -571,3 +571,37 @@ Feature: LabelExpressionAcceptance
       | true   |
       | false  |
     And no side effects
+
+  Scenario: Label conjunction in CREATE clause
+    Given an empty graph
+    And having executed:
+      """
+      CREATE (:A&B)
+      """
+
+    When executing query:
+      """
+      MATCH (n)
+      RETURN labels(n) AS result
+      """
+    Then the result should be, in any order:
+      | result     |
+      | ['A', 'B'] |
+    And no side effects
+
+  Scenario: Label conjunction in MERGE clause
+    Given an empty graph
+    And having executed:
+      """
+      MERGE (:A&B)
+      """
+
+    When executing query:
+      """
+      MATCH (n)
+      RETURN labels(n) AS result
+      """
+    Then the result should be, in any order:
+      | result     |
+      | ['A', 'B'] |
+    And no side effects

@@ -130,6 +130,7 @@ import org.neo4j.cypher.internal.ir.ordering.InterestingOrderCandidate
 import org.neo4j.cypher.internal.ir.ordering.RequiredOrderCandidate
 import org.neo4j.cypher.internal.label_expressions.LabelExpression
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.ColonConjunction
+import org.neo4j.cypher.internal.label_expressions.LabelExpression.Conjunctions
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.Leaf
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CancellationChecker
@@ -409,6 +410,7 @@ object ClauseConverters {
     labelExpression.collect {
       case Leaf(labelName: LabelName, _) => Set(labelName)
       case ColonConjunction(lhs, rhs, _) => getLabelNameSet(Some(lhs)) ++ getLabelNameSet(Some(rhs))
+      case Conjunctions(children, _)     => children.flatMap(child => getLabelNameSet(Some(child))).toSet
     }.getOrElse(Set.empty)
 
   sealed private trait CreateEntityCommand
