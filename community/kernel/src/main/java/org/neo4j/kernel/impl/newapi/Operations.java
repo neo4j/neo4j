@@ -1565,31 +1565,42 @@ public class Operations implements Write, SchemaWrite, Upgrade {
 
     @Override
     public IndexDescriptor indexCreate(IndexPrototype prototype) throws KernelException {
-        IndexType indexType = prototype.getIndexType();
+        // can use index provider
+        prototype = ensureIndexPrototypeHasIndexProvider(prototype);
+
+        final var indexProviderDescriptor = prototype.getIndexProvider();
+        final var indexProvider = indexProviders.getIndexProvider(indexProviderDescriptor);
+        assertSupportedInVersion(
+                "Failed to create index with provider '%s'.".formatted(indexProviderDescriptor.name()),
+                indexProvider.getMinimumRequiredVersion());
+
+        // valid schema checks
+        final var indexType = prototype.getIndexType();
+
+        if (indexType == IndexType.VECTOR) {
+            switch (prototype.schema().entityType()) {
+                case NODE -> assertSupportedInVersion(
+                        "Failed to create node vector index.", KernelVersion.VERSION_NODE_VECTOR_INDEX_INTRODUCED);
+                case RELATIONSHIP -> throw new UnsupportedOperationException(
+                        "Relationship indexes are not supported for " + indexType.name() + " index type");
+            }
+        }
+
+        assertValidDescriptor(prototype.schema(), INDEX_CREATION);
+
         if ((indexType == IndexType.TEXT || indexType == IndexType.POINT || indexType == IndexType.VECTOR)
                 && prototype.schema().getPropertyIds().length > 1) {
             throw new UnsupportedOperationException(
                     "Composite indexes are not supported for " + indexType.name() + " index type.");
         }
 
-        if (indexType == IndexType.VECTOR) {
-            if (prototype.schema().entityType() == NODE) {
-                assertSupportedInVersion(
-                        "Failed to create node vector index.", KernelVersion.VERSION_NODE_VECTOR_INDEX_INTRODUCED);
-            } else {
-                throw new UnsupportedOperationException(
-                        "Relationship indexes are not supported for " + indexType.name() + " index type.");
-            }
-        }
-
-        exclusiveSchemaLock(prototype.schema());
-        ktx.assertOpen();
-        assertValidDescriptor(prototype.schema(), INDEX_CREATION);
+        // ensure named
         prototype = ensureIndexPrototypeHasName(prototype);
-        prototype = ensureIndexPrototypeHasIndexProvider(prototype);
-        Optional<String> nameOptional = prototype.getName();
-        assert nameOptional.isPresent();
-        String name = nameOptional.get();
+        final var name = prototype.getName().orElseThrow();
+
+        // take locks
+        ktx.assertOpen();
+        exclusiveSchemaLock(prototype.schema());
         exclusiveSchemaNameLock(name);
         assertNoBlockingSchemaRulesExists(prototype);
 
@@ -1848,21 +1859,22 @@ public class Operations implements Write, SchemaWrite, Upgrade {
     }
 
     private void assertSupportedInVersion(String message, KernelVersion minimumVersionForSupport) {
-        KernelVersion currentStoreVersion = kernelVersionProvider.kernelVersion();
+        final var currentStoreVersion = kernelVersionProvider.kernelVersion();
         if (currentStoreVersion.isAtLeast(minimumVersionForSupport)) {
             // New or upgraded store, good to go
             return;
         }
 
-        KernelVersion currentDbmsVersion = dbmsRuntimeRepository.getVersion().kernelVersion();
+        final var currentDbmsVersion = dbmsRuntimeRepository.getVersion().kernelVersion();
         if (currentDbmsVersion.isAtLeast(minimumVersionForSupport)) {
             // Dbms runtime version is good, current transaction will trigger the upgrade transaction
             // we will double-check the kernel version during commit
             return;
         }
-        throw new UnsupportedOperationException(format(
-                "%s Version was %s, but required version for operation is %s. Please upgrade dbms using 'dbms.upgrade()'.",
-                message, currentDbmsVersion.name(), minimumVersionForSupport.name()));
+
+        throw new UnsupportedOperationException(
+                "%s Version was %s, but required version for operation is %s. Please upgrade dbms using 'dbms.upgrade()'."
+                        .formatted(message, currentDbmsVersion.name(), minimumVersionForSupport.name()));
     }
 
     @Override
