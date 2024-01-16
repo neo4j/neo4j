@@ -154,6 +154,7 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.NODES;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.NODETACH;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.NONE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.NORMALIZE;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.NORMALIZED;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.NOT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.NOTHING;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.NOWAIT;
@@ -413,6 +414,7 @@ public class IdentifierTokens {
             NODES,
             NONE,
             NORMALIZE,
+            NORMALIZED,
             NOT,
             NOTHING,
             NOWAIT,

@@ -21,6 +21,8 @@ import org.neo4j.cypher.internal.ast.CollectExpression
 import org.neo4j.cypher.internal.ast.CountExpression
 import org.neo4j.cypher.internal.ast.CypherTypeName
 import org.neo4j.cypher.internal.ast.ExistsExpression
+import org.neo4j.cypher.internal.ast.IsNormalized
+import org.neo4j.cypher.internal.ast.IsNotNormalized
 import org.neo4j.cypher.internal.ast.IsNotTyped
 import org.neo4j.cypher.internal.ast.IsTyped
 import org.neo4j.cypher.internal.ast.SubqueryCall
@@ -293,6 +295,16 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
           CypherTypeName(x.typeName).semanticCheck chain
           checkTypes(x, x.signatures) chain
           SemanticCheck.success
+
+      case x: IsNormalized =>
+        check(ctx, x.arguments) chain
+          checkTypes(x, x.signatures) chain
+          specifyType(CTBoolean, x)
+
+      case x: IsNotNormalized =>
+        check(ctx, x.arguments) chain
+          checkTypes(x, x.signatures) chain
+          specifyType(CTBoolean, x)
 
       case x: LessThan =>
         check(ctx, x.arguments) chain checkTypes(x, x.signatures)

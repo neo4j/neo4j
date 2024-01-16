@@ -19,6 +19,8 @@ package org.neo4j.cypher.internal.ast.prettifier
 import org.neo4j.cypher.internal.ast.CollectExpression
 import org.neo4j.cypher.internal.ast.CountExpression
 import org.neo4j.cypher.internal.ast.ExistsExpression
+import org.neo4j.cypher.internal.ast.IsNormalized
+import org.neo4j.cypher.internal.ast.IsNotNormalized
 import org.neo4j.cypher.internal.ast.IsNotTyped
 import org.neo4j.cypher.internal.ast.IsTyped
 import org.neo4j.cypher.internal.expressions.Add
@@ -224,6 +226,12 @@ private class DefaultExpressionStringifier(
 
       case e @ IsNotTyped(arg, predicateType) =>
         s"${inner(ast)(arg)} ${e.canonicalOperatorSymbol} ${predicateType.description}"
+
+      case e @ IsNormalized(arg, normalForm) =>
+        s"${inner(ast)(arg)} IS ${normalForm.description} NORMALIZED"
+
+      case e @ IsNotNormalized(arg, normalForm) =>
+        s"${inner(ast)(arg)} IS NOT ${normalForm.description} NORMALIZED"
 
       case ContainerIndex(exp, idx) =>
         s"${inner(ast)(exp)}[${inner(ast)(idx)}]"
@@ -489,7 +497,9 @@ private class DefaultExpressionStringifier(
       _: IsNull |
       _: IsNotNull |
       _: IsTyped |
-      _: IsNotTyped =>
+      _: IsNotTyped |
+      _: IsNormalized |
+      _: IsNotNormalized =>
       Precedence(3)
 
     case _: Property |

@@ -234,8 +234,8 @@ class ExecuteFunctionPrivilegeAdministrationCommandParserTest extends Administra
                      |  "*"
                      |  "."
                      |  "?"
+                     |  "NFKD"
                      |  "ON"
-                     |  "TYPED"
                      |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
                 )
               }
@@ -248,7 +248,7 @@ class ExecuteFunctionPrivilegeAdministrationCommandParserTest extends Administra
                      |  "*"
                      |  "."
                      |  "?"
-                     |  "TYPED"
+                     |  "NFKD"
                      |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
                 )
               }

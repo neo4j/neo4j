@@ -557,6 +557,9 @@ NONE:
 NORMALIZE:
    N O R M A L I Z E;
 
+NORMALIZED:
+   N O R M A L I Z E D;
+
 NOT:
    N O T;
 

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
 
+import org.neo4j.cypher.internal.expressions.NormalForm
 import org.neo4j.cypher.internal.runtime.CastSupport
 import org.neo4j.cypher.internal.runtime.IsList
 import org.neo4j.cypher.internal.runtime.IsNoValue
@@ -42,6 +43,7 @@ import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.internal.kernel.api.PropertyCursor
 import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.kernel.api.StatementConstants
+import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.BooleanValue
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Value
@@ -208,6 +210,20 @@ case class IsTyped(expression: Expression, typeName: CypherType) extends Predica
   override def toString: String = expression + " IS :: " + typeName
   override def rewrite(f: Expression => Expression): Expression = f(IsTyped(expression.rewrite(f), typeName))
   override def arguments: Seq[Expression] = Seq(expression)
+  override def children: Seq[AstNode[_]] = Seq(expression)
+}
+
+case class IsNormalized(expression: Expression, normalForm: NormalForm) extends Expression {
+
+  override def toString: String = expression + " IS NORMALIZED"
+
+  override def rewrite(f: Expression => Expression): Expression = f(IsNormalized(expression.rewrite(f), normalForm))
+
+  override def apply(ctx: ReadableRow, state: QueryState): AnyValue =
+    CypherFunctions.isNormalized(expression(ctx, state), normalForm)
+
+  override def arguments: Seq[Expression] = Seq(expression)
+
   override def children: Seq[AstNode[_]] = Seq(expression)
 }
 

@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.expressions.AllPropertiesSelector
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.ListSlice
 import org.neo4j.cypher.internal.expressions.MapProjection
+import org.neo4j.cypher.internal.expressions.NFCNormalForm
 import org.neo4j.cypher.internal.expressions.ShortestPathExpression
 import org.neo4j.cypher.internal.expressions.ShortestPathsPatternPart
 import org.neo4j.cypher.internal.util.symbols.BooleanType
@@ -43,7 +44,7 @@ class ExpressionPrecedenceParsingTest extends ParserSyntaxTreeBase[Cst.Expressio
    * 10: AND
    * 9: NOT
    * 8: =, !=, <>, <, >, <=, >=
-   * 7: =~, STARS WITH, ENDS WITH, CONTAINS, IN, IS NULL, IS NOT NULL, IS ::, IS NOT ::
+   * 7: =~, STARS WITH, ENDS WITH, CONTAINS, IN, IS NULL, IS NOT NULL, IS ::, IS NOT ::, IS NORMALIZED, IS NOT NORMALIZED
    * 6: +, -
    * 5: *, /, %
    * 4: POW
@@ -91,10 +92,11 @@ class ExpressionPrecedenceParsingTest extends ParserSyntaxTreeBase[Cst.Expressio
   test("precedence 8 vs 7") {
     // ('string' STARTS WITH 's') = ('string' =~ 's?') > ('string' ENDS WITH 's') < ('string' IS NULL)
     // >= ('string' CONTAINS 's') <> ('string' IS NOT NULL) <= ('string' IN list) = (y IS TYPED BOOLEAN)
-    // = (1 IS NOT TYPED BOOLEAN)
+    // = (1 IS NOT TYPED BOOLEAN) = ('string' IS NORMALIZED) = ('string' IS NOT NORMALIZED)
     parsing(
       "'string' STARTS WITH 's' = 'string' =~ 's?' > 'string' ENDS WITH 's' < 'string' IS NULL >= 'string' " +
-        "CONTAINS 's' <> 'string' IS NOT NULL <= 'string' IN list = y IS TYPED BOOLEAN = 1 IS NOT TYPED BOOLEAN"
+        "CONTAINS 's' <> 'string' IS NOT NULL <= 'string' IN list = y IS TYPED BOOLEAN = 1 IS NOT TYPED BOOLEAN" +
+        " = 'string' IS NORMALIZED = 'string' IS NOT NORMALIZED"
     ) shouldGive
       ands(
         eq(
@@ -128,6 +130,14 @@ class ExpressionPrecedenceParsingTest extends ParserSyntaxTreeBase[Cst.Expressio
         eq(
           isTyped(varFor("y"), BooleanType(isNullable = true)(pos)),
           isNotTyped(literalInt(1), BooleanType(isNullable = true)(pos))
+        ),
+        eq(
+          isNotTyped(literalInt(1), BooleanType(isNullable = true)(pos)),
+          isNormalized(literalString("string"), NFCNormalForm)
+        ),
+        eq(
+          isNormalized(literalString("string"), NFCNormalForm),
+          isNotNormalized(literalString("string"), NFCNormalForm)
         )
       )
   }
@@ -136,6 +146,7 @@ class ExpressionPrecedenceParsingTest extends ParserSyntaxTreeBase[Cst.Expressio
     failsToParse("'parse' ENDS WITH 'se' CONTAINS 'e'")
     failsToParse("'ab' STARTS WITH 'a' IS NOT TYPED BOOLEAN")
     failsToParse("RETURN [1] IS :: LIST<INT> IS :: BOOLEAN")
+    failsToParse("RETURN 'string' IS :: STRING IS NORMALIZED")
   }
 
   test("precedence 7 vs 6") {
@@ -165,6 +176,13 @@ class ExpressionPrecedenceParsingTest extends ParserSyntaxTreeBase[Cst.Expressio
       regex(
         subtract(literalString("string"), literalString("ing")),
         subtract(literalString("s?"), literalString("s"))
+      )
+
+    // ('string' - 'ing') IS NORMALIZED
+    parsing("'string' - 'ing' IS NORMALIZED") shouldGive
+      isNormalized(
+        subtract(literalString("string"), literalString("ing")),
+        NFCNormalForm
       )
 
     // (2 + 3) IN [(2 - 1)]

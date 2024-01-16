@@ -553,6 +553,7 @@ TOKEN [IGNORE_CASE] :
     | < NODES: "NODES" >
     | < NONE: "NONE" >
     | < NORMALIZE: "NORMALIZE" >
+    | < NORMALIZED: "NORMALIZED" >
     | < NOT: "NOT" >
     | < NOTHING: "NOTHING" >
     | < NOWAIT: "NOWAIT">
@@ -3298,6 +3299,7 @@ EXPRESSION ComparisonExpression6( EXPRESSION lhs ) throws Exception:
     Token t;
     EXPRESSION rhs;
     ParserCypherTypeName typeName;
+    ParserNormalForm normalForm;
 }
 {
     LOOKAHEAD( 2 ) t=<REGEQ> rhs=Expression6() { return astFactory.regeq( pos( t ), lhs, rhs ); }
@@ -3310,11 +3312,27 @@ EXPRESSION ComparisonExpression6( EXPRESSION lhs ) throws Exception:
         | <NOT> (
             <NULL> { return astFactory.isNotNull( pos( t ), lhs ); }
             | ((<TYPED> | <COLONCOLON>) typeName = cypherTypeName() { return astFactory.isNotTyped( pos( t ), lhs, typeName ); })
+            | (normalForm = normalForm() <NORMALIZED> { return astFactory.isNotNormalized( pos( t ), lhs, normalForm ); })
         )
         | (<TYPED> | <COLONCOLON>) typeName = cypherTypeName() { return astFactory.isTyped( pos( t ), lhs, typeName ); }
+        |  normalForm = normalForm() <NORMALIZED>{ return astFactory.isNormalized( pos( t ), lhs, normalForm ); }
 
     )
     | t=<COLONCOLON> typeName = cypherTypeName() { return astFactory.isTyped( pos( t ), lhs, typeName ); }
+}
+
+ParserNormalForm normalForm():
+{
+    ParserNormalForm normalForm = ParserNormalForm.NFC;
+}
+{
+        (
+          <NFC>
+          | <NFD> { normalForm = ParserNormalForm.NFD; }
+          | <NFKC> { normalForm = ParserNormalForm.NFKC; }
+          | <NFKD> { normalForm = ParserNormalForm.NFKD; }
+        )?
+        { return normalForm; }
 }
 
 EXPRESSION Expression6() throws Exception:
@@ -6982,6 +7000,11 @@ Token UnescapedSymbolicNameString() :
         | t=<NOT>
         | t=<NULL>
         | t=<TYPED>
+        | t=<NORMALIZED>
+        | t=<NFC>
+        | t=<NFD>
+        | t=<NFKC>
+        | t=<NFKD>
     )
     {
         return t;
@@ -7137,10 +7160,6 @@ Token UnescapedLabelSymbolicNameString() :
         | t=<NAME>
         | t=<NAMES>
         | t=<NAN>
-        | t=<NFC>
-        | t=<NFD>
-        | t=<NFKC>
-        | t=<NFKD>
         | t=<NEW>
         | t=<NODE>
         | t=<NODETACH>

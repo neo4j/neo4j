@@ -374,6 +374,16 @@ public class NullAstFactory
     }
 
     @Override
+    public NULL isNormalized(NULL p, NULL e, ParserNormalForm normalForm) {
+        return null;
+    }
+
+    @Override
+    public NULL isNotNormalized(NULL p, NULL e, ParserNormalForm normalForm) {
+        return null;
+    }
+
+    @Override
     public NULL listLookup(NULL list, NULL index) {
         return null;
     }

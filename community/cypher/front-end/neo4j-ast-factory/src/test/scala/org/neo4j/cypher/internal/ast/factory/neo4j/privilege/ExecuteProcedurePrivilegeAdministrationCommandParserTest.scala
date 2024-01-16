@@ -230,8 +230,8 @@ class ExecuteProcedurePrivilegeAdministrationCommandParserTest extends Administr
                      |  "*"
                      |  "."
                      |  "?"
+                     |  "NFKD"
                      |  "ON"
-                     |  "TYPED"
                      |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
                 )
               }
@@ -244,7 +244,7 @@ class ExecuteProcedurePrivilegeAdministrationCommandParserTest extends Administr
                      |  "*"
                      |  "."
                      |  "?"
-                     |  "TYPED"
+                     |  "NFKD"
                      |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
                 )
               }

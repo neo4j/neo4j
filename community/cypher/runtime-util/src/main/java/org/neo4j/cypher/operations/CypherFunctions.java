@@ -47,6 +47,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.StreamSupport;
+import org.neo4j.cypher.internal.expressions.NormalForm;
 import org.neo4j.cypher.internal.runtime.DbAccess;
 import org.neo4j.cypher.internal.runtime.ExpressionCursors;
 import org.neo4j.cypher.internal.util.symbols.AnyType;
@@ -1627,6 +1628,25 @@ public final class CypherFunctions {
         } else {
             throw new CypherTypeException(
                     "Expected VirtualNodeValue got " + value.getClass().getName());
+        }
+    }
+
+    public static AnyValue isNormalized(AnyValue input, NormalForm normalForm) {
+        if (input == NO_VALUE) {
+            return NO_VALUE;
+        }
+
+        if (input instanceof TextValue asText) {
+            Normalizer.Form form;
+            try {
+                form = Normalizer.Form.valueOf(normalForm.description());
+            } catch (IllegalArgumentException e) {
+                throw new InvalidArgumentException("Unknown normal form. Valid values are: NFC, NFD, NFKC, NFKD.");
+            }
+            boolean normalized = Normalizer.isNormalized(asText.stringValue(), form);
+            return Values.booleanValue(normalized);
+        } else {
+            return NO_VALUE;
         }
     }
 

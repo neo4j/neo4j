@@ -1428,6 +1428,16 @@ public class LiteralInterpreter
     }
 
     @Override
+    public Object isNormalized(NULL p, Object e, ParserNormalForm normalForm) {
+        throw new UnsupportedOperationException("isNormalized is not a literal");
+    }
+
+    @Override
+    public Object isNotNormalized(NULL p, Object e, ParserNormalForm normalForm) {
+        throw new UnsupportedOperationException("isNotNormalized is not a literal");
+    }
+
+    @Override
     public Object listLookup(Object list, Object index) {
         throw new UnsupportedOperationException("listLookup is not a literal");
     }

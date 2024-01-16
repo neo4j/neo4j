@@ -882,6 +882,8 @@ case class Match(
         acc => SkipChildren(acc :+ name)
       case IsTyped(Property(Variable(`variable`), PropertyKeyName(name)), typeName) if !typeName.isNullable =>
         acc => SkipChildren(acc :+ name)
+      case IsNormalized(Property(Variable(`variable`), PropertyKeyName(name)), _) =>
+        acc => SkipChildren(acc :+ name)
       case StartsWith(Property(Variable(`variable`), PropertyKeyName(name)), _) =>
         acc => SkipChildren(acc :+ name)
       case EndsWith(Property(Variable(`variable`), PropertyKeyName(name)), _) =>

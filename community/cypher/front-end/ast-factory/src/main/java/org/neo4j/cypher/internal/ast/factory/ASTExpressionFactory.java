@@ -155,6 +155,10 @@ public interface ASTExpressionFactory<
 
     EXPRESSION isNotTyped(POS p, EXPRESSION e, ParserCypherTypeName typeName);
 
+    EXPRESSION isNormalized(POS p, EXPRESSION e, ParserNormalForm normalForm);
+
+    EXPRESSION isNotNormalized(POS p, EXPRESSION e, ParserNormalForm normalForm);
+
     EXPRESSION listLookup(EXPRESSION list, EXPRESSION index);
 
     EXPRESSION listSlice(POS p, EXPRESSION list, EXPRESSION start, EXPRESSION end);

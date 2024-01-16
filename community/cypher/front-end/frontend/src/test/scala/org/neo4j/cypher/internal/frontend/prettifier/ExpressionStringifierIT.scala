@@ -102,7 +102,9 @@ class ExpressionStringifierIT extends CypherFunSuite {
       "1 :: ARRAY <  VARcHAr  >" -> "1 IS :: LIST<STRING>",
       "1 :: any value    <  int    | bool   | bool  >" -> "1 IS :: BOOLEAN | INTEGER",
       "1 :: any     <  int    | bool   | bool  >" -> "1 IS :: BOOLEAN | INTEGER",
-      "1 ::  int    | bool   | bool  " -> "1 IS :: BOOLEAN | INTEGER"
+      "1 ::  int    | bool   | bool  " -> "1 IS :: BOOLEAN | INTEGER",
+      "x IS nfc NORMALIZED" -> "x IS NFC NORMALIZED",
+      "x IS not normalized" -> "x IS NOT NFC NORMALIZED"
     )
 
   tests foreach {

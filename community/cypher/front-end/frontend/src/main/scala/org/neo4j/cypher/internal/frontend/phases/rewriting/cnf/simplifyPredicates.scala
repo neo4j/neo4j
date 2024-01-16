@@ -16,6 +16,8 @@
  */
 package org.neo4j.cypher.internal.frontend.phases.rewriting.cnf
 
+import org.neo4j.cypher.internal.ast.IsNormalized
+import org.neo4j.cypher.internal.ast.IsNotNormalized
 import org.neo4j.cypher.internal.ast.IsNotTyped
 import org.neo4j.cypher.internal.ast.IsTyped
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
@@ -65,6 +67,9 @@ case class simplifyPredicates(semanticState: SemanticState) extends Rewriter {
     case n @ Not(IsNotNull(innerExpression))            => IsNull(innerExpression)(n.position)
     case n @ Not(IsNotTyped(innerExpression, typeName)) => IsTyped(innerExpression, typeName)(n.position)
     case n @ IsNotTyped(innerExpression, typeName) => Not(IsTyped(innerExpression, typeName)(n.position))(n.position)
+    case n @ Not(IsNotNormalized(innerExpression, normalForm)) => IsNormalized(innerExpression, normalForm)(n.position)
+    case n @ IsNotNormalized(innerExpression, normalForm) =>
+      Not(IsNormalized(innerExpression, normalForm)(n.position))(n.position)
     case Ands(exps) if exps.isEmpty =>
       throw new IllegalStateException("Found an instance of Ands with empty expressions")
     case Ors(exps) if exps.isEmpty => throw new IllegalStateException("Found an instance of Ors with empty expressions")

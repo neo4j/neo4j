@@ -88,6 +88,7 @@ import org.neo4j.cypher.internal.expressions.NodeRelPair
 import org.neo4j.cypher.internal.expressions.NonPrefixedPatternPart
 import org.neo4j.cypher.internal.expressions.NoneIterablePredicate
 import org.neo4j.cypher.internal.expressions.NoneOfRelationships
+import org.neo4j.cypher.internal.expressions.NormalForm
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.NotEquals
 import org.neo4j.cypher.internal.expressions.Null
@@ -520,6 +521,12 @@ trait AstConstructionTestSupport {
 
   def isNotTyped(expression: Expression, typeName: CypherType): IsNotTyped =
     IsNotTyped(expression, typeName)(pos)
+
+  def isNormalized(expression: Expression, normalForm: NormalForm): IsNormalized =
+    IsNormalized(expression, normalForm)(pos)
+
+  def isNotNormalized(expression: Expression, normalForm: NormalForm): IsNotNormalized =
+    IsNotNormalized(expression, normalForm)(pos)
 
   def sliceFrom(list: Expression, from: Expression): ListSlice = ListSlice(list, Some(from), None)(pos)
 

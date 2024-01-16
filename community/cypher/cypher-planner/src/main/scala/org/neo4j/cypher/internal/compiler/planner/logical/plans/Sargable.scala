@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans
 
+import org.neo4j.cypher.internal.ast.IsNormalized
 import org.neo4j.cypher.internal.ast.IsTyped
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
@@ -170,6 +171,9 @@ object AsPropertyScannable {
 
     case isTyped @ IsTyped(lhs, cypherType) if !cypherType.isNullable =>
       partialPropertyPredicate(isTyped, lhs, cypherType = cypherType)
+
+    case isNormalized: IsNormalized =>
+      partialPropertyPredicate(isNormalized, isNormalized.lhs, cypherType = CTString)
 
     case not @ Not(AsPropertyScannable(scannable)) =>
       partialPropertyPredicate(not, scannable.property, cypherType = scannable.cypherType)

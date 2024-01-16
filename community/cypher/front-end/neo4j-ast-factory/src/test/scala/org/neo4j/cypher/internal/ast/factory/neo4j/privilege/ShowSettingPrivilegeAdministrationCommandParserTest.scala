@@ -215,8 +215,8 @@ class ShowSettingPrivilegeAdministrationCommandParserTest extends Administration
                      |  "*"
                      |  "."
                      |  "?"
+                     |  "NFKD"
                      |  "ON"
-                     |  "TYPED"
                      |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
                 )
               }
@@ -229,7 +229,7 @@ class ShowSettingPrivilegeAdministrationCommandParserTest extends Administration
                      |  "*"
                      |  "."
                      |  "?"
-                     |  "TYPED"
+                     |  "NFKD"
                      |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
                 )
               }

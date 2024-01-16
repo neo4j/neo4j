@@ -156,6 +156,8 @@ import org.neo4j.cypher.internal.ast.IfExistsReplace
 import org.neo4j.cypher.internal.ast.IfExistsThrowError
 import org.neo4j.cypher.internal.ast.ImpersonateUserAction
 import org.neo4j.cypher.internal.ast.IndefiniteWait
+import org.neo4j.cypher.internal.ast.IsNormalized
+import org.neo4j.cypher.internal.ast.IsNotNormalized
 import org.neo4j.cypher.internal.ast.IsNotTyped
 import org.neo4j.cypher.internal.ast.IsTyped
 import org.neo4j.cypher.internal.ast.KeyConstraints
@@ -406,6 +408,10 @@ import org.neo4j.cypher.internal.expressions.MatchMode
 import org.neo4j.cypher.internal.expressions.MatchMode.MatchMode
 import org.neo4j.cypher.internal.expressions.Modulo
 import org.neo4j.cypher.internal.expressions.Multiply
+import org.neo4j.cypher.internal.expressions.NFCNormalForm
+import org.neo4j.cypher.internal.expressions.NFDNormalForm
+import org.neo4j.cypher.internal.expressions.NFKCNormalForm
+import org.neo4j.cypher.internal.expressions.NFKDNormalForm
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.NaN
 import org.neo4j.cypher.internal.expressions.NamedPatternPart
@@ -413,6 +419,7 @@ import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.NonPrefixedPatternPart
 import org.neo4j.cypher.internal.expressions.NoneIterablePredicate
+import org.neo4j.cypher.internal.expressions.NormalForm
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.NotEquals
 import org.neo4j.cypher.internal.expressions.Null
@@ -754,12 +761,15 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   def _predicateUnary: Gen[Expression] = for {
     r <- _expression
     typeName <- _cypherTypeName
+    normalForm <- _normalForm
     res <- oneOf(
       Not(r)(pos),
       IsNull(r)(pos),
       IsNotNull(r)(pos),
       IsTyped(r, typeName)(pos),
-      IsNotTyped(r, typeName)(pos)
+      IsNotTyped(r, typeName)(pos),
+      IsNormalized(r, normalForm)(pos),
+      IsNotNormalized(r, normalForm)(pos)
     )
   } yield res
 
@@ -1907,6 +1917,15 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
 
   def _cypherTypeName: Gen[CypherType] = for {
     _type <- oneOf(allCypherTypeNamesFromReflection)
+  } yield _type
+
+  def _normalForm: Gen[NormalForm] = for {
+    _type <- oneOf(
+      NFCNormalForm,
+      NFDNormalForm,
+      NFKCNormalForm,
+      NFKDNormalForm
+    )
   } yield _type
 
   private val allCypherTypeNamesFromReflection: Set[CypherType] = {

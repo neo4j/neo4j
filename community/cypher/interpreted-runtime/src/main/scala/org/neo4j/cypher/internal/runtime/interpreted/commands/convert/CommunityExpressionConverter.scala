@@ -234,6 +234,10 @@ case class CommunityExpressionConverter(
         predicates.IsTyped(self.toCommandExpression(id, e.lhs), e.typeName)
       case _: internal.ast.IsNotTyped =>
         throw new InternalException("`IsNotTyped` should have been rewritten away")
+      case e: internal.ast.IsNormalized =>
+        predicates.IsNormalized(self.toCommandExpression(id, e.lhs), e.normalForm)
+      case _: internal.ast.IsNotNormalized =>
+        throw new InternalException("`IsNotNormalized` should have been rewritten away")
       case e: internal.expressions.InequalityExpression => inequalityExpression(id, e, self)
       case e: internal.expressions.Add =>
         commands.expressions.Add(self.toCommandExpression(id, e.lhs), self.toCommandExpression(id, e.rhs))

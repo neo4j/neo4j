@@ -166,6 +166,8 @@ import org.neo4j.cypher.internal.ast.IfExistsReplace
 import org.neo4j.cypher.internal.ast.IfExistsThrowError
 import org.neo4j.cypher.internal.ast.ImpersonateUserAction
 import org.neo4j.cypher.internal.ast.IndefiniteWait
+import org.neo4j.cypher.internal.ast.IsNormalized
+import org.neo4j.cypher.internal.ast.IsNotNormalized
 import org.neo4j.cypher.internal.ast.IsNotTyped
 import org.neo4j.cypher.internal.ast.IsTyped
 import org.neo4j.cypher.internal.ast.KeyConstraints
@@ -410,12 +412,17 @@ import org.neo4j.cypher.internal.expressions.MatchMode.MatchMode
 import org.neo4j.cypher.internal.expressions.MatchMode.RepeatableElements
 import org.neo4j.cypher.internal.expressions.Modulo
 import org.neo4j.cypher.internal.expressions.Multiply
+import org.neo4j.cypher.internal.expressions.NFCNormalForm
+import org.neo4j.cypher.internal.expressions.NFDNormalForm
+import org.neo4j.cypher.internal.expressions.NFKCNormalForm
+import org.neo4j.cypher.internal.expressions.NFKDNormalForm
 import org.neo4j.cypher.internal.expressions.NaN
 import org.neo4j.cypher.internal.expressions.NamedPatternPart
 import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.NonPrefixedPatternPart
 import org.neo4j.cypher.internal.expressions.NoneIterablePredicate
+import org.neo4j.cypher.internal.expressions.NormalForm
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.NotEquals
 import org.neo4j.cypher.internal.expressions.Null
@@ -1303,6 +1310,14 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     IsNotTyped(e, scalaType)(p)
   }
 
+  override def isNormalized(p: InputPosition, e: Expression, normalForm: ParserNormalForm): Expression = {
+    IsNormalized(e, convertNormalForm(normalForm))(p)
+  }
+
+  override def isNotNormalized(p: InputPosition, e: Expression, normalForm: ParserNormalForm): Expression = {
+    IsNotNormalized(e, convertNormalForm(normalForm))(p)
+  }
+
   override def listLookup(list: Expression, index: Expression): Expression = ContainerIndex(list, index)(index.position)
 
   override def listSlice(p: InputPosition, list: Expression, start: Expression, end: Expression): Expression = {
@@ -1928,6 +1943,17 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     }
 
     cypherTypeName.simplify
+  }
+
+  private def convertNormalForm(javaType: ParserNormalForm): NormalForm = {
+    javaType match {
+      case ParserNormalForm.NFC  => NFCNormalForm
+      case ParserNormalForm.NFD  => NFDNormalForm
+      case ParserNormalForm.NFKC => NFKCNormalForm
+      case ParserNormalForm.NFKD => NFKDNormalForm
+      case nf =>
+        throw new Neo4jASTConstructionException(s"Unknown Normal Form: $nf")
+    }
   }
 
   // Index Commands

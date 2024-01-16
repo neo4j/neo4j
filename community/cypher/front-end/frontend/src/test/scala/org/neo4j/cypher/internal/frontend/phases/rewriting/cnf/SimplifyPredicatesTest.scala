@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.frontend.phases.rewriting.cnf
 
+import org.neo4j.cypher.internal.ast.IsNormalized
 import org.neo4j.cypher.internal.ast.IsTyped
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
@@ -31,6 +32,7 @@ import org.neo4j.cypher.internal.expressions.GreaterThan
 import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.IsNull
 import org.neo4j.cypher.internal.expressions.ListLiteral
+import org.neo4j.cypher.internal.expressions.NFCNormalForm
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Null
 import org.neo4j.cypher.internal.expressions.Ors
@@ -117,6 +119,29 @@ class SimplifyPredicatesTest extends CypherFunSuite {
     assertRewrittenMatches(
       "NOT( 'P' IS :: BOOL )",
       { case Not(IsTyped(StringLiteral("P"), BooleanType(true))) => () }
+    )
+  }
+
+  test("IS NOT NORMALIZED is rewritten") {
+    // IsNotNormalized(P) <=> not(IsNormalized(P, INTEGER))
+    assertRewrittenMatches(
+      "'P' IS NOT NORMALIZED",
+      { case Not(IsNormalized(StringLiteral("P"), NFCNormalForm)) => () }
+    )
+  }
+
+  test("NOT IS NOT NORMALIZED is rewritten") {
+    // not(IsNotNormalized(P), STRING) <=> IsNormalized(P, STRING)
+    assertRewrittenMatches(
+      "NOT( 'P' IS NOT NORMALIZED )",
+      { case IsNormalized(StringLiteral("P"), NFCNormalForm) => () }
+    )
+  }
+
+  test("NOT IS NORMALIZED is not rewritten") {
+    assertRewrittenMatches(
+      "NOT( 'P' IS NORMALIZED )",
+      { case Not(IsNormalized(StringLiteral("P"), NFCNormalForm)) => () }
     )
   }
 

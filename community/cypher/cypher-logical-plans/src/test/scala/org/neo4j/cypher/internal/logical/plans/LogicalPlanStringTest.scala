@@ -26,6 +26,8 @@ import org.neo4j.cypher.internal.ast.DatabaseName
 import org.neo4j.cypher.internal.ast.DatabaseScope
 import org.neo4j.cypher.internal.ast.DbmsAction
 import org.neo4j.cypher.internal.ast.DropDatabaseAdditionalAction
+import org.neo4j.cypher.internal.ast.IsNormalized
+import org.neo4j.cypher.internal.ast.IsNotNormalized
 import org.neo4j.cypher.internal.ast.IsNotTyped
 import org.neo4j.cypher.internal.ast.IsTyped
 import org.neo4j.cypher.internal.ast.Options
@@ -307,6 +309,8 @@ object LogicalPlanStringTest {
       classOf[AssertNotCurrentUser],
       classOf[IsTyped],
       classOf[IsNotTyped],
+      classOf[IsNormalized],
+      classOf[IsNotNormalized],
       classOf[NFA],
       classOf[Exception],
       classOf[IdentityMap[_, _]],
