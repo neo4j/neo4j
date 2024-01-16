@@ -19,7 +19,6 @@
  */
 package org.neo4j.router.impl.query;
 
-import java.util.function.BiFunction;
 import org.neo4j.cypher.internal.QueryOptions;
 import org.neo4j.cypher.internal.util.CancellationChecker;
 import org.neo4j.cypher.rendering.QueryOptionsRenderer;
@@ -27,16 +26,15 @@ import org.neo4j.fabric.executor.Location;
 import org.neo4j.fabric.executor.QueryStatementLifecycles;
 import org.neo4j.fabric.transaction.TransactionMode;
 import org.neo4j.kernel.database.DatabaseReference;
+import org.neo4j.kernel.database.DatabaseReferenceImpl;
 import org.neo4j.kernel.impl.query.ConstituentTransactionFactory;
 import org.neo4j.kernel.impl.query.QueryExecution;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.QuerySubscriber;
-import org.neo4j.router.location.LocationService;
 import org.neo4j.router.query.Query;
 import org.neo4j.router.query.QueryProcessor;
 import org.neo4j.router.query.TargetService;
-import org.neo4j.router.transaction.DatabaseTransaction;
-import org.neo4j.router.transaction.TransactionInfo;
+import org.neo4j.router.transaction.RouterTransactionContext;
 import org.neo4j.values.virtual.MapValue;
 
 public class ConstituentTransactionFactoryImpl implements ConstituentTransactionFactory {
@@ -44,27 +42,20 @@ public class ConstituentTransactionFactoryImpl implements ConstituentTransaction
     private final QueryStatementLifecycles statementLifecycles;
     private final CancellationChecker cancellationChecker;
     private final QueryOptions queryOptions;
+    private final RouterTransactionContext context;
     private final QueryProcessor queryProcessor;
-    private final TransactionInfo transactionInfo;
-    private final BiFunction<Location, TransactionMode, DatabaseTransaction> transactionFor;
-    private final LocationService locationService;
-    private final String NL = System.lineSeparator();
 
     public ConstituentTransactionFactoryImpl(
             QueryProcessor queryProcessor,
-            BiFunction<Location, TransactionMode, DatabaseTransaction> transactionFor,
-            LocationService locationService,
             QueryStatementLifecycles queryStatementLifecycles,
-            TransactionInfo transactionInfo,
             CancellationChecker cancellationChecker,
-            QueryOptions queryOptions) {
+            QueryOptions queryOptions,
+            RouterTransactionContext context) {
         this.queryProcessor = queryProcessor;
-        this.transactionInfo = transactionInfo;
-        this.transactionFor = transactionFor;
-        this.locationService = locationService;
         this.statementLifecycles = queryStatementLifecycles;
         this.cancellationChecker = cancellationChecker;
         this.queryOptions = queryOptions;
+        this.context = context;
     }
 
     @Override
@@ -72,35 +63,40 @@ public class ConstituentTransactionFactoryImpl implements ConstituentTransaction
         return new ConstituentTransactionImpl(databaseReference);
     }
 
+    @Override
+    public DatabaseReferenceImpl.Composite sessionDatabase() {
+        return (DatabaseReferenceImpl.Composite) context.sessionDatabaseReference();
+    }
+
     public class ConstituentTransactionImpl implements ConstituentTransaction {
 
-        private final DatabaseReference reference;
+        private final DatabaseReference targetReference;
         private final TargetService targetService;
         private final Location location;
 
-        public ConstituentTransactionImpl(DatabaseReference reference) {
-            this.reference = reference;
-            this.targetService = new DirectTargetService(reference);
-            this.location = locationService.locationOf(reference);
+        public ConstituentTransactionImpl(DatabaseReference targetReference) {
+            this.targetReference = targetReference;
+            this.targetService = new DirectTargetService(targetReference);
+            this.location = context.locationService().locationOf(targetReference);
         }
 
         @Override
         public QueryExecution executeQuery(String queryString, MapValue parameters, QuerySubscriber querySubscriber)
                 throws QueryExecutionKernelException {
             var statementLifecycle = statementLifecycles.create(
-                    transactionInfo.statementLifecycleTransactionInfo(), queryString, parameters, null);
+                    context.transactionInfo().statementLifecycleTransactionInfo(), queryString, parameters, null);
             statementLifecycle.startProcessing();
             var query = Query.of(QueryOptionsRenderer.addOptions(queryString, queryOptions), parameters);
             var processedQuery =
                     queryProcessor.processQuery(query, targetService, (dbRef) -> location, cancellationChecker, false);
             statementLifecycle.doneRouterProcessing(
-                    processedQuery.obfuscationMetadata().get(), reference.isComposite());
+                    processedQuery.obfuscationMetadata().get(), targetReference.isComposite());
             TransactionMode mode = TransactionMode.from(
-                    transactionInfo.accessMode(),
+                    context.transactionInfo().accessMode(),
                     queryOptions.queryOptions().executionMode(),
                     processedQuery.statementType().isReadQuery(),
-                    reference.isComposite());
-            return transactionFor.apply(location, mode).executeQuery(query, querySubscriber, statementLifecycle);
+                    targetReference.isComposite());
+            return context.transactionFor(location, mode).executeQuery(query, querySubscriber, statementLifecycle);
         }
     }
 }

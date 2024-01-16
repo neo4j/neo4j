@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.query;
 
 import org.neo4j.exceptions.InvalidSemanticsException;
 import org.neo4j.kernel.database.DatabaseReference;
+import org.neo4j.kernel.database.DatabaseReferenceImpl;
 import org.neo4j.values.virtual.MapValue;
 
 public interface ConstituentTransactionFactory {
@@ -33,10 +34,27 @@ public interface ConstituentTransactionFactory {
      */
     ConstituentTransaction transactionFor(DatabaseReference databaseReference);
 
+    /**
+     * The session database should be used to resolving constituent databases, which keeps the resolved names consistent.
+     *
+     * @return composite database reference tied to this session.
+     */
+    DatabaseReferenceImpl.Composite sessionDatabase();
+
     static ConstituentTransactionFactory throwing() {
-        return (DatabaseReference dbRef) -> {
-            throw new InvalidSemanticsException(
-                    "Multiple graph references in the same query is not supported on standard databases. This capability is supported on composite databases only.");
+        return new ConstituentTransactionFactory() {
+
+            @Override
+            public ConstituentTransaction transactionFor(DatabaseReference databaseReference) {
+                throw new InvalidSemanticsException(
+                        "Multiple graph references in the same query is not supported on standard databases. This capability is supported on composite databases only.");
+            }
+
+            @Override
+            public DatabaseReferenceImpl.Composite sessionDatabase() {
+                throw new InvalidSemanticsException(
+                        "Multiple graph references in the same query is not supported on standard databases. This capability is supported on composite databases only.");
+            }
         };
     }
 

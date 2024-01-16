@@ -31,7 +31,6 @@ import static scala.jdk.javaapi.CollectionConverters.asScala;
 
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.BiFunction;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
@@ -43,7 +42,6 @@ import org.neo4j.cypher.internal.util.InputPosition;
 import org.neo4j.cypher.internal.util.ObfuscationMetadata;
 import org.neo4j.fabric.executor.Location;
 import org.neo4j.fabric.executor.QueryStatementLifecycles;
-import org.neo4j.fabric.transaction.TransactionMode;
 import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.kernel.impl.query.ConstituentTransactionFactory;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
@@ -52,6 +50,7 @@ import org.neo4j.router.location.LocationService;
 import org.neo4j.router.query.Query;
 import org.neo4j.router.query.QueryProcessor;
 import org.neo4j.router.transaction.DatabaseTransaction;
+import org.neo4j.router.transaction.RouterTransactionContext;
 import org.neo4j.router.transaction.TransactionInfo;
 import org.neo4j.values.virtual.MapValue;
 import scala.collection.immutable.HashSet;
@@ -63,9 +62,7 @@ class ConstituentTransactionFactoryImplTest {
     void testWithoutPreParserOptions() throws QueryExecutionKernelException {
         CypherQueryOptions queryOptions = CypherQueryOptions.defaultOptions();
         DatabaseTransaction innerTransaction = mock(DatabaseTransaction.class);
-        BiFunction<Location, TransactionMode, DatabaseTransaction> transactionFor =
-                (location, transactionMode) -> innerTransaction;
-        var constituentTransactionFactory = getConstituentTransactionFactory(queryOptions, transactionFor);
+        var constituentTransactionFactory = getConstituentTransactionFactory(queryOptions, innerTransaction);
 
         var transaction = constituentTransactionFactory.transactionFor(mock(DatabaseReference.class));
         transaction.executeQuery("MATCH (n) RETURN n", MapValue.EMPTY, QuerySubscriber.DO_NOTHING_SUBSCRIBER);
@@ -84,9 +81,7 @@ class ConstituentTransactionFactoryImplTest {
                         .build()),
                 new HashSet<>());
         DatabaseTransaction innerTransaction = mock(DatabaseTransaction.class);
-        BiFunction<Location, TransactionMode, DatabaseTransaction> transactionFor =
-                (location, transactionMode) -> innerTransaction;
-        var constituentTransactionFactory = getConstituentTransactionFactory(queryOptions, transactionFor);
+        var constituentTransactionFactory = getConstituentTransactionFactory(queryOptions, innerTransaction);
 
         var transaction = constituentTransactionFactory.transactionFor(mock(DatabaseReference.class));
         transaction.executeQuery("MATCH (n) RETURN n", MapValue.EMPTY, QuerySubscriber.DO_NOTHING_SUBSCRIBER);
@@ -106,9 +101,7 @@ class ConstituentTransactionFactoryImplTest {
                 asScala(Map.of("PLANNER", "dp", "debug", "toString", "DEbug", "ast"))
                         .toSet());
         DatabaseTransaction innerTransaction = mock(DatabaseTransaction.class);
-        BiFunction<Location, TransactionMode, DatabaseTransaction> transactionFor =
-                (location, transactionMode) -> innerTransaction;
-        var constituentTransactionFactory = getConstituentTransactionFactory(queryOptions, transactionFor);
+        var constituentTransactionFactory = getConstituentTransactionFactory(queryOptions, innerTransaction);
 
         var transaction = constituentTransactionFactory.transactionFor(mock(DatabaseReference.class));
         transaction.executeQuery("MATCH (n) RETURN n", MapValue.EMPTY, QuerySubscriber.DO_NOTHING_SUBSCRIBER);
@@ -119,8 +112,7 @@ class ConstituentTransactionFactoryImplTest {
     }
 
     private ConstituentTransactionFactory getConstituentTransactionFactory(
-            CypherQueryOptions cypherQueryOptions,
-            BiFunction<Location, TransactionMode, DatabaseTransaction> transactionFor) {
+            CypherQueryOptions cypherQueryOptions, DatabaseTransaction innerTransaction) {
         QueryProcessor queryProcessor = mock(QueryProcessor.class);
         QueryOptions queryOptions = QueryOptions.apply(InputPosition.NONE(), cypherQueryOptions, false, false);
         StatementType statementType = StatementType.of(StatementType.Query());
@@ -132,16 +124,14 @@ class ConstituentTransactionFactoryImplTest {
 
         LocationService locationService = (databaseReference) -> mock(Location.Local.class);
         TransactionInfo transactionInfo = mock(TransactionInfo.class);
+        RouterTransactionContext context = mock(RouterTransactionContext.class);
+        when(context.transactionInfo()).thenReturn(transactionInfo);
+        when(context.locationService()).thenReturn(locationService);
+        when(context.transactionFor(any(), any())).thenReturn(innerTransaction);
         QueryStatementLifecycles queryStatementLifecycles = mock(QueryStatementLifecycles.class);
         when(queryStatementLifecycles.create(any(), anyString(), any(), any()))
                 .thenReturn(mock(QueryStatementLifecycles.StatementLifecycle.class));
         return new ConstituentTransactionFactoryImpl(
-                queryProcessor,
-                transactionFor,
-                locationService,
-                queryStatementLifecycles,
-                transactionInfo,
-                CancellationChecker.neverCancelled(),
-                queryOptions);
+                queryProcessor, queryStatementLifecycles, CancellationChecker.neverCancelled(), queryOptions, context);
     }
 }

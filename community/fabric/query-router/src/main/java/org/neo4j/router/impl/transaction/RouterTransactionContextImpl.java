@@ -22,6 +22,7 @@ package org.neo4j.router.impl.transaction;
 import org.neo4j.fabric.bookmark.TransactionBookmarkManager;
 import org.neo4j.fabric.executor.Location;
 import org.neo4j.fabric.transaction.TransactionMode;
+import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.router.impl.query.StatementType;
 import org.neo4j.router.location.LocationService;
 import org.neo4j.router.query.TargetService;
@@ -73,5 +74,10 @@ public record RouterTransactionContextImpl(
     @Override
     public void verifyStatementType(StatementType type) {
         routerTransaction.verifyStatementType(type);
+    }
+
+    @Override
+    public DatabaseReference sessionDatabaseReference() {
+        return routingInfo.sessionDatabaseReference();
     }
 }

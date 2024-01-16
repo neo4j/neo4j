@@ -116,7 +116,7 @@ public class QueryRouterImpl implements QueryRouter {
     public RouterTransactionContext beginTransaction(TransactionInfo incomingTransactionInfo) {
         var transactionBookmarkManager =
                 new TransactionBookmarkManagerImpl(BookmarkFormat.parse(incomingTransactionInfo.bookmarks()));
-        // regardless of what we do, System graph must be always up to date
+        // regardless of what we do, System graph must be always up-to-date
         transactionBookmarkManager
                 .getBookmarkForLocalSystemDatabase()
                 .ifPresent(
@@ -207,8 +207,7 @@ public class QueryRouterImpl implements QueryRouter {
             statementLifecycle.doneRouterProcessing(
                     processedQueryInfo.obfuscationMetadata().get(), target.isComposite());
             RouterTransaction routerTransaction = context.routerTransaction();
-            var constituentTransactionFactory =
-                    getConstituentTransactionFactory(transactionInfo, routerTransaction, locationService, queryOptions);
+            var constituentTransactionFactory = getConstituentTransactionFactory(context, queryOptions);
             routerTransaction.setConstituentTransactionFactory(constituentTransactionFactory);
             return databaseTransaction.executeQuery(
                     processedQueryInfo.rewrittenQuery(), subscriber, statementLifecycle);
@@ -225,21 +224,16 @@ public class QueryRouterImpl implements QueryRouter {
     }
 
     private ConstituentTransactionFactory getConstituentTransactionFactory(
-            TransactionInfo transactionInfo,
-            RouterTransaction routerTransaction,
-            LocationService locationService,
-            QueryOptions queryOptions) {
-        if (!(transactionInfo.isComposite())) {
+            RouterTransactionContext context, QueryOptions queryOptions) {
+        if (!(context.transactionInfo().isComposite())) {
             return ConstituentTransactionFactory.throwing();
         }
         return new ConstituentTransactionFactoryImpl(
                 queryProcessor,
-                routerTransaction::transactionFor,
-                locationService,
                 statementLifecycles,
-                transactionInfo,
-                cancellationChecker(routerTransaction),
-                queryOptions);
+                cancellationChecker(context.routerTransaction()),
+                queryOptions,
+                context);
     }
 
     private void verifyAccessModeWithStatementType(
