@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.util.attribution.Id
 
 /**
- * Dummy pipe that does nothing. Intended for test-use only.
+ * Dummy pipe that has side-effects that generate db hits. Intended for test-use only.
  */
 case class NonPipelinedTestPipe(source: Pipe)(val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
 
@@ -35,6 +35,22 @@ case class NonPipelinedTestPipe(source: Pipe)(val id: Id = Id.INVALID_ID) extend
     input.map(row => {
       state.query.getOptLabelId("DUMMY_LABEL") // Expected to generate one db hit per row, for testing profiling.
       row
+    })
+  }
+}
+
+/**
+ * Dummy pipe that does duplicates each row into the number of rows given by the factor. Intended for test-use only.
+ */
+case class NonPipelinedHeadTestPipe(source: Pipe, expandFactor: Long)(val id: Id = Id.INVALID_ID)
+    extends PipeWithSource(source) {
+
+  protected def internalCreateResults(
+    input: ClosingIterator[CypherRow],
+    state: QueryState
+  ): ClosingIterator[CypherRow] = {
+    input.flatMap(row => {
+      Array.fill(expandFactor.toInt)(row)
     })
   }
 }
