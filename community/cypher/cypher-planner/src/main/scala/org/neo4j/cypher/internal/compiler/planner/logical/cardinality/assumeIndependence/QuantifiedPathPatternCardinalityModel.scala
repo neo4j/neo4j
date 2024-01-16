@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.ir.NodeBinding
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
@@ -198,12 +199,17 @@ trait QuantifiedPathPatternCardinalityModel extends NodeCardinalityModel with Pa
     predicates: QuantifiedPathPatternPredicates,
     boundaryNodePredicates: Set[Predicate]
   ): (Set[Predicate], Set[Predicate]) = {
-    // rewrite boundary node predicates to their corresponding inner representation
-    val rewrittenPredicates = boundaryNodePredicates.map(pred =>
+    val rewriter = (binding: NodeBinding) =>
       topDown(Rewriter.lift {
-        case variable if variable == qpp.leftBinding.outer  => qpp.leftBinding.inner
-        case variable if variable == qpp.rightBinding.outer => qpp.rightBinding.inner
-      })(pred).asInstanceOf[Predicate]
+        case variable if variable == binding.outer => binding.inner
+      })
+
+    val leftBindingRewriter = rewriter(qpp.leftBinding)
+    val rightBindingRewriter = rewriter(qpp.rightBinding)
+
+    // rewrite boundary node predicates to their corresponding inner representation
+    val rewrittenPredicates = boundaryNodePredicates.flatMap(pred =>
+      Seq(leftBindingRewriter(pred), rightBindingRewriter(pred))
     )
 
     predicates.otherPredicates.partition(rewrittenPredicates.contains)

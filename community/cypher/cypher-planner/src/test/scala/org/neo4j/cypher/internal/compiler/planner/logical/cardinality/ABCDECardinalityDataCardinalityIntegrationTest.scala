@@ -986,6 +986,10 @@ class ABCDECardinalityDataCardinalityIntegrationTest extends CypherFunSuite with
     expectCardinality(N * qpp2_2 * Math.pow(Aprop, 2) * Math.pow(Bprop, 2))
   }
 
+  test("MATCH (start)((a:A)-[r:T1]->(b:B) WHERE a.prop <> b.prop){2}(end) WHERE start.prop <> end.prop") {
+    expectCardinality(qpp2_2 * 0.5 * 0.5 * 0.5)
+  }
+
   test("MATCH (a:A)-[r:T1]->(b:B) WITH r SKIP 0 MATCH ()-[r]->()") {
     expectCardinality(A_T1_B)
   }
