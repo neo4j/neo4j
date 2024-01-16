@@ -148,10 +148,10 @@ public enum Group {
     SECURITY_MAINTAINENCE("SecurityMaintainence"),
 
     // GDS
-    GDS_CLUSTER_WRITE("GdsClusterWrite", ExecutorServiceFactory.cached()),
-
-    // ARROW
-    ARROW_WRITE("ArrowWrite"),
+    GDS_CLUSTER_WRITE(
+            "GdsClusterWrite",
+            ExecutorServiceFactory.cached(),
+            Runtime.getRuntime().availableProcessors()),
 
     // TESTING
     TESTING("TestingGroup", ExecutorServiceFactory.callingThread());
