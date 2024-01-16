@@ -5957,7 +5957,36 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       ),
       planDescription(
         id,
-        "StatefulShortestPath",
+        "StatefulShortestPath(All)",
+        SingleChild(lhsPD),
+        Seq(details(
+          "SHORTEST 5 PATHS (a)-[`anon_0`]->*(`b`)"
+        )),
+        Set("a")
+      )
+    )
+    assertGood(
+      attach(
+        StatefulShortestPath(
+          lhsLP,
+          varFor("a"),
+          varFor("b"),
+          nfa,
+          ExpandInto,
+          None,
+          Set.empty,
+          Set.empty,
+          Set.empty,
+          Set.empty,
+          Selector.Shortest(5),
+          solvedExpressionStr,
+          false
+        ),
+        2345.0
+      ),
+      planDescription(
+        id,
+        "StatefulShortestPath(Into)",
         SingleChild(lhsPD),
         Seq(details(
           "SHORTEST 5 PATHS (a)-[`anon_0`]->*(`b`)"

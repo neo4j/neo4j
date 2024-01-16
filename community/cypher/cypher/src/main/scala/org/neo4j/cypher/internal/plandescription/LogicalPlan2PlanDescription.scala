@@ -1763,11 +1763,8 @@ case class LogicalPlan2PlanDescription(
           Some(1),
           None
         ))
-        val modeText = mode match {
-          case ExpandAll  => "Expand(All)"
-          case ExpandInto => "Expand(Into)"
-        }
-        PlanDescriptionImpl(id, modeText, children, Seq(expression), variables, withRawCardinalities, withDistinctness)
+        val modeDescr = expandModeDescription(mode)
+        PlanDescriptionImpl(id, s"Expand($modeDescr)", children, Seq(expression), variables, withRawCardinalities, withDistinctness)
 
       case SimulatedExpand(_, fromName, relName, toName, factor) =>
         val prettyFactor = asPrettyString(DecimalDoubleLiteral(factor.toString)(InputPosition.NONE))
@@ -1888,10 +1885,11 @@ case class LogicalPlan2PlanDescription(
           withDistinctness
         )
 
-      case StatefulShortestPath(_, _, _, _, _, _, _, _, _, _, _, solvedExpressionString, _) =>
+      case StatefulShortestPath(_, _, _, _, mode, _, _, _, _, _, _, solvedExpressionString, _) =>
+        val modeDescr = expandModeDescription(mode)
         PlanDescriptionImpl(
           id = id,
-          name = "StatefulShortestPath",
+          name = s"StatefulShortestPath($modeDescr)",
           children = children,
           arguments = Seq(Details(asPrettyString.solvedExpressionString(solvedExpressionString))),
           variables = variables,
@@ -2088,10 +2086,7 @@ case class LogicalPlan2PlanDescription(
           maxLength = Some(max),
           maybeProperties = None
         )
-        val modeDescr = mode match {
-          case ExpandAll  => "All"
-          case ExpandInto => "Into"
-        }
+        val modeDescr = expandModeDescription(mode)
 
         val (expandDescriptionPrefix, predicatesDescription) =
           varExpandPredicateDescriptions(nodePredicates, relationshipPredicates)
@@ -2394,10 +2389,7 @@ case class LogicalPlan2PlanDescription(
         )
         val (expandDescriptionPrefix, predicatesDescription) =
           varExpandPredicateDescriptions(nodePredicates, relationshipPredicates)
-        val modeDescr = mode match {
-          case ExpandAll  => "All"
-          case ExpandInto => "Into"
-        }
+        val modeDescr = expandModeDescription(mode)
         PlanDescriptionImpl(
           id,
           s"VarLengthExpand($modeDescr)",
@@ -2553,6 +2545,13 @@ case class LogicalPlan2PlanDescription(
     }
 
     addRuntimeAttributes(addPlanningAttributes(result, plan), plan)
+  }
+
+  private def expandModeDescription(mode: Expand.ExpansionMode) = {
+    mode match {
+      case ExpandAll => "All"
+      case ExpandInto => "Into"
+    }
   }
 
   private def callInTxsDetails(
