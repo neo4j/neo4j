@@ -198,6 +198,10 @@ public class InputEntity implements InputEntityVisitor {
         delegate.endOfEntity();
     }
 
+    public boolean isComplete() {
+        return end;
+    }
+
     public String[] labels() {
         return labels.toArray(new String[0]);
     }
