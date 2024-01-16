@@ -82,6 +82,8 @@ case class FunctionInvocation(
   val function: functions.Function =
     functions.Function.lookup.getOrElse(name.toLowerCase(Locale.ROOT), UnresolvedFunction)
 
+  val isOrdered = order != ArgumentUnordered
+
   def needsToBeResolved: Boolean = function match {
     case UnresolvedFunction => true
     case _                  => false
