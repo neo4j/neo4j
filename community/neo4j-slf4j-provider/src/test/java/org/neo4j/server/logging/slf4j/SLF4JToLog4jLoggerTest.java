@@ -22,6 +22,7 @@ package org.neo4j.server.logging.slf4j;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -59,7 +60,9 @@ class SLF4JToLog4jLoggerTest {
     @ParameterizedTest
     @EnumSource
     void respectLogLevels(Level level) {
-        SLF4JToLog4jLogger log = new SLF4JToLog4jLogger(null, logger, "test", level);
+        setLogLevelOfDelegate(level, logger);
+
+        SLF4JToLog4jLogger log = new SLF4JToLog4jLogger(null, logger, "test");
         logAll(log);
         List<String> expectedForLevel = getExpectedForLevel(level);
         assertThat(logMessages).hasSameElementsAs(expectedForLevel);
@@ -68,7 +71,8 @@ class SLF4JToLog4jLoggerTest {
     @SuppressWarnings("PlaceholderCountMatchesArgumentCount")
     @Test
     void dontCrashOnMalformedLogging() {
-        SLF4JToLog4jLogger log = new SLF4JToLog4jLogger(null, logger, "test", Level.TRACE);
+        setLogLevelOfDelegate(Level.TRACE, logger);
+        SLF4JToLog4jLogger log = new SLF4JToLog4jLogger(null, logger, "test");
         log.trace("Too many arguments {}", 1, 2);
         log.trace("Too few arguments {} {}", 1);
         log.trace("No anchors", 1, 2, 3);
@@ -151,5 +155,25 @@ class SLF4JToLog4jLoggerTest {
         ret.add("error ERROR LEVEL");
 
         return ret;
+    }
+
+    private static void setLogLevelOfDelegate(Level level, ExtendedLogger logger) {
+        doReturn(false).when(logger).isTraceEnabled();
+        doReturn(false).when(logger).isDebugEnabled();
+        doReturn(false).when(logger).isInfoEnabled();
+        doReturn(false).when(logger).isWarnEnabled();
+        doReturn(false).when(logger).isErrorEnabled();
+        switch (level) {
+            case TRACE:
+                doReturn(true).when(logger).isTraceEnabled();
+            case DEBUG:
+                doReturn(true).when(logger).isDebugEnabled();
+            case INFO:
+                doReturn(true).when(logger).isInfoEnabled();
+            case WARN:
+                doReturn(true).when(logger).isWarnEnabled();
+            case ERROR:
+                doReturn(true).when(logger).isErrorEnabled();
+        }
     }
 }

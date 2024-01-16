@@ -300,11 +300,11 @@ public abstract class NeoBootstrapper implements Bootstrapper {
         JULBridge.resetJUL();
         Logger.getLogger("").setLevel(Level.WARNING);
         JULBridge.forwardTo(userLogProvider);
-        setupSLF4JProvider(userLogProvider, List.of("org.eclipse.jetty"), "WARN");
+        setupSLF4JProvider(userLogProvider, List.of("org.eclipse.jetty"));
         return userLogProvider;
     }
 
-    private static void setupSLF4JProvider(Log4jLogProvider userLogProvider, List<String> prefixFilters, String level) {
+    private static void setupSLF4JProvider(Log4jLogProvider userLogProvider, List<String> prefixFilters) {
         if (!USE_NEO4J_SLF4J_PROVIDER) {
             return;
         }
@@ -312,9 +312,8 @@ public abstract class NeoBootstrapper implements Bootstrapper {
         try {
             // Load dynamically to allow user to remove the neo4j SLF4J provider and replace it another one
             Class<?> bridge = Class.forName(NEO4J_SLF4J_PROVIDER);
-            Method setLogProvider =
-                    bridge.getMethod("setInstantiationContext", Log4jLogProvider.class, List.class, String.class);
-            setLogProvider.invoke(null, userLogProvider, prefixFilters, level);
+            Method setLogProvider = bridge.getMethod("setInstantiationContext", Log4jLogProvider.class, List.class);
+            setLogProvider.invoke(null, userLogProvider, prefixFilters);
         } catch (ClassNotFoundException
                 | NoSuchMethodException
                 | InvocationTargetException

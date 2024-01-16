@@ -27,7 +27,6 @@ import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.log4j.Log4jLogProvider;
 import org.slf4j.ILoggerFactory;
 import org.slf4j.IMarkerFactory;
-import org.slf4j.event.Level;
 import org.slf4j.helpers.BasicMarkerFactory;
 import org.slf4j.helpers.NOPLoggerFactory;
 import org.slf4j.helpers.NOPMDCAdapter;
@@ -37,7 +36,7 @@ import org.slf4j.spi.SLF4JServiceProvider;
 /**
  * Capture SLF4J logging and redirect it to an {@link InternalLogProvider}.
  * <p>
- * A call to {@link #setInstantiationContext(Log4jLogProvider,List,String)} most be done <strong>before</strong>
+ * A call to {@link #setInstantiationContext(Log4jLogProvider,List)} most be done <strong>before</strong>
  * any interactions with libraries that uses SLF4J. This should ideally be done as soon as possible
  * during bootstrapping.
  */
@@ -54,9 +53,8 @@ public class SLF4JLogBridge implements SLF4JServiceProvider {
         // Service-loaded by SLF4J
     }
 
-    public static void setInstantiationContext(
-            Log4jLogProvider newLogProvider, List<String> classPrefixes, String level) {
-        CONTEXT.set(new InstantiationContext(newLogProvider, classPrefixes, level));
+    public static void setInstantiationContext(Log4jLogProvider newLogProvider, List<String> classPrefixes) {
+        CONTEXT.set(new InstantiationContext(newLogProvider, classPrefixes));
     }
 
     @Override
@@ -83,17 +81,15 @@ public class SLF4JLogBridge implements SLF4JServiceProvider {
     public void initialize() {
         InstantiationContext ctx = CONTEXT.get();
         if (ctx != null) {
-            Level level = parseLevel(ctx.level);
 
             LOGGER.debug(
-                    "Initializing [{}] with neo4j log provider with prefix filter {} and level [{}].",
+                    "Initializing [{}] with neo4j log provider with prefix filter {}.",
                     SLF4JLogBridge.class.getSimpleName(),
-                    ctx.classPrefixes,
-                    level);
+                    ctx.classPrefixes);
             SLF4JToLog4jMarkerFactory slf4JToLog4jMarkerFactory = new SLF4JToLog4jMarkerFactory();
             markerFactory = slf4JToLog4jMarkerFactory;
             loggerFactory =
-                    new SLF4JToLog4jLoggerFactory(ctx.logProvider, slf4JToLog4jMarkerFactory, ctx.classPrefixes, level);
+                    new SLF4JToLog4jLoggerFactory(ctx.logProvider, slf4JToLog4jMarkerFactory, ctx.classPrefixes);
             mdcAdapter = new SLF4JToLog4jMDCAdapter();
         } else {
             LOGGER.debug("Initializing [{}] with NOP provider.", SLF4JLogBridge.class.getSimpleName());
@@ -103,15 +99,5 @@ public class SLF4JLogBridge implements SLF4JServiceProvider {
         }
     }
 
-    private static Level parseLevel(String levelString) {
-        Level level = Level.WARN;
-        try {
-            level = Level.valueOf(levelString);
-        } catch (IllegalArgumentException e) {
-            LOGGER.warn("Unrecognizable log level [{}], falling back to [{}].", levelString, level.name());
-        }
-        return level;
-    }
-
-    private record InstantiationContext(Log4jLogProvider logProvider, List<String> classPrefixes, String level) {}
+    private record InstantiationContext(Log4jLogProvider logProvider, List<String> classPrefixes) {}
 }

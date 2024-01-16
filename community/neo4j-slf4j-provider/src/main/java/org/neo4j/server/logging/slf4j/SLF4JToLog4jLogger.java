@@ -35,17 +35,11 @@ class SLF4JToLog4jLogger implements LocationAwareLogger {
     private final SLF4JToLog4jMarkerFactory markerFactory;
     private final ExtendedLogger logger;
     private final String name;
-    private final org.slf4j.event.Level logLevel;
 
-    SLF4JToLog4jLogger(
-            SLF4JToLog4jMarkerFactory markerFactory,
-            ExtendedLogger logger,
-            String name,
-            org.slf4j.event.Level logLevel) {
+    SLF4JToLog4jLogger(SLF4JToLog4jMarkerFactory markerFactory, ExtendedLogger logger, String name) {
         this.markerFactory = markerFactory;
         this.logger = logger;
         this.name = name;
-        this.logLevel = logLevel;
     }
 
     @Override
@@ -90,7 +84,7 @@ class SLF4JToLog4jLogger implements LocationAwareLogger {
 
     @Override
     public boolean isTraceEnabled() {
-        return logLevel.toInt() <= org.slf4j.event.Level.TRACE.toInt();
+        return logger.isTraceEnabled();
     }
 
     @Override
@@ -170,7 +164,7 @@ class SLF4JToLog4jLogger implements LocationAwareLogger {
 
     @Override
     public boolean isDebugEnabled() {
-        return logLevel.toInt() <= org.slf4j.event.Level.DEBUG.toInt();
+        return logger.isDebugEnabled();
     }
 
     @Override
@@ -250,7 +244,7 @@ class SLF4JToLog4jLogger implements LocationAwareLogger {
 
     @Override
     public boolean isInfoEnabled() {
-        return logLevel.toInt() <= org.slf4j.event.Level.INFO.toInt();
+        return logger.isInfoEnabled();
     }
 
     @Override
@@ -330,7 +324,7 @@ class SLF4JToLog4jLogger implements LocationAwareLogger {
 
     @Override
     public boolean isWarnEnabled() {
-        return logLevel.toInt() <= org.slf4j.event.Level.WARN.toInt();
+        return logger.isWarnEnabled();
     }
 
     @Override
@@ -410,7 +404,7 @@ class SLF4JToLog4jLogger implements LocationAwareLogger {
 
     @Override
     public boolean isErrorEnabled() {
-        return logLevel.toInt() <= org.slf4j.event.Level.ERROR.toInt();
+        return logger.isErrorEnabled();
     }
 
     @Override
@@ -456,9 +450,6 @@ class SLF4JToLog4jLogger implements LocationAwareLogger {
     @Override
     public void log(Marker slf4jMarker, String fqcn, int slf4jLevel, String message, Object[] argArray, Throwable t) {
         Level log4jLevel = getLog4jLevel(slf4jLevel);
-        if (slf4jLevel < logLevel.toInt()) {
-            return;
-        }
 
         emitLogMessage(fqcn, message, argArray, t, log4jLevel, slf4jMarker);
     }
@@ -495,10 +486,7 @@ class SLF4JToLog4jLogger implements LocationAwareLogger {
     @Override
     public LoggingEventBuilder makeLoggingEventBuilder(org.slf4j.event.Level slf4jLevel) {
         Level log4jLevel = getLog4jLevel(slf4jLevel.toInt());
-        if (slf4jLevel.toInt() >= logLevel.toInt()) {
-            return new SLF4JToLog4jEventBuilder(markerFactory, logger.atLevel(log4jLevel));
-        }
-        return NOPLoggingEventBuilder.singleton();
+        return new SLF4JToLog4jEventBuilder(markerFactory, logger.atLevel(log4jLevel));
     }
 
     @Override
@@ -539,10 +527,5 @@ class SLF4JToLog4jLogger implements LocationAwareLogger {
             return new SLF4JToLog4jEventBuilder(markerFactory, logger.atError());
         }
         return NOPLoggingEventBuilder.singleton();
-    }
-
-    @Override
-    public boolean isEnabledForLevel(org.slf4j.event.Level slf4jLevel) {
-        return logLevel.toInt() <= slf4jLevel.toInt();
     }
 }

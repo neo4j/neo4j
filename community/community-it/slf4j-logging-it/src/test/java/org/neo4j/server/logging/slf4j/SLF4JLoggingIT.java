@@ -22,7 +22,6 @@ package org.neo4j.server.logging.slf4j;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.ByteArrayOutputStream;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.logging.log4j.Level;
@@ -39,6 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.helpers.NOPLogger;
 
+// We need to fork because log configuration goes to statics
 @ExtendWith(ForkingTestExtension.class)
 class SLF4JLoggingIT {
     private final StatusLogListener statusLogListener = new StatusLogListener();
@@ -57,38 +57,24 @@ class SLF4JLoggingIT {
     void useAssignedLogProvider() {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         Log4jLogProvider logProvider = new Log4jLogProvider(outputStream);
-        SLF4JLogBridge.setInstantiationContext(logProvider, List.of("org.neo4j.server"), "DEBUG");
+        SLF4JLogBridge.setInstantiationContext(logProvider, List.of("org.neo4j.server"));
 
-        Logger logger = LoggerFactory.getLogger(SLF4JLoggingIT.class);
-        logger.info("Test");
-        Logger excludedLogger = LoggerFactory.getLogger("not.in.filter.Clazz");
+        var underlyingLogger = logProvider.getLog(SLF4JLoggingIT.class);
+        var wrappedLogger = LoggerFactory.getLogger(SLF4JLoggingIT.class);
+        wrappedLogger.info("Test");
+        var excludedLogger = LoggerFactory.getLogger("not.in.filter.Clazz");
         excludedLogger.info("Should not be written!");
 
-        assertThat(logger.isTraceEnabled()).isFalse();
-        assertThat(logger.isDebugEnabled()).isTrue();
-        assertThat(logger.isInfoEnabled()).isTrue();
-        assertThat(logger.isWarnEnabled()).isTrue();
-        assertThat(logger.isErrorEnabled()).isTrue();
+        assertThat(wrappedLogger.isTraceEnabled()).isEqualTo(underlyingLogger.isTraceEnabled());
+        assertThat(wrappedLogger.isDebugEnabled()).isEqualTo(underlyingLogger.isDebugEnabled());
+        assertThat(wrappedLogger.isInfoEnabled()).isEqualTo(underlyingLogger.isInfoEnabled());
+        assertThat(wrappedLogger.isWarnEnabled()).isEqualTo(underlyingLogger.isWarnEnabled());
+        assertThat(wrappedLogger.isErrorEnabled()).isEqualTo(underlyingLogger.isErrorEnabled());
 
         assertThat(outputStream.toString()).contains("SLF4JLoggingIT] Test").doesNotContain("Should not be written!");
         assertThat(statusLogListener.logLines)
                 .contains(
-                        "Initializing [SLF4JLogBridge] with neo4j log provider with prefix filter [org.neo4j.server] and level [DEBUG].");
-    }
-
-    @Test
-    void warnAboutUnrecognizedLogLevel() {
-        Log4jLogProvider logProvider = new Log4jLogProvider(OutputStream.nullOutputStream());
-        SLF4JLogBridge.setInstantiationContext(logProvider, List.of("org.neo4j.server"), "NOT A LOG LEVEL");
-
-        Logger logger = LoggerFactory.getLogger(SLF4JLoggingIT.class);
-        assertThat(logger.isTraceEnabled()).isFalse();
-        assertThat(logger.isDebugEnabled()).isFalse();
-        assertThat(logger.isInfoEnabled()).isFalse();
-        assertThat(logger.isWarnEnabled()).isTrue();
-        assertThat(logger.isErrorEnabled()).isTrue();
-        assertThat(statusLogListener.logLines)
-                .contains("Unrecognizable log level [NOT A LOG LEVEL], falling back to [WARN].");
+                        "Initializing [SLF4JLogBridge] with neo4j log provider with prefix filter [org.neo4j.server].");
     }
 
     @Test

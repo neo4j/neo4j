@@ -24,24 +24,18 @@ import org.apache.logging.log4j.LogManager;
 import org.neo4j.logging.log4j.Log4jLogProvider;
 import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
-import org.slf4j.event.Level;
 import org.slf4j.helpers.NOPLogger;
 
 public class SLF4JToLog4jLoggerFactory implements ILoggerFactory {
     private final Log4jLogProvider logProvider;
     private final SLF4JToLog4jMarkerFactory markerFactory;
     private final List<String> classPrefixes;
-    private final Level level;
 
     public SLF4JToLog4jLoggerFactory(
-            Log4jLogProvider logProvider,
-            SLF4JToLog4jMarkerFactory markerFactory,
-            List<String> classPrefixes,
-            Level level) {
+            Log4jLogProvider logProvider, SLF4JToLog4jMarkerFactory markerFactory, List<String> classPrefixes) {
         this.logProvider = logProvider;
         this.markerFactory = markerFactory;
         this.classPrefixes = classPrefixes;
-        this.level = level;
     }
 
     @Override
@@ -51,7 +45,7 @@ public class SLF4JToLog4jLoggerFactory implements ILoggerFactory {
         }
 
         String key = remapRootLogger(name);
-        return new SLF4JToLog4jLogger(markerFactory, logProvider.getLog(key), name, level);
+        return new SLF4JToLog4jLogger(markerFactory, logProvider.getLog(key), name);
     }
 
     private boolean shouldInclude(String name) {
