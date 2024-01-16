@@ -770,6 +770,13 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .argument()
       .build())
 
+  testPlan("nonPipelinedHead",
+    new TestPlanBuilder()
+      .produceResults("x", "y")
+      .nonPipelinedHead()
+      .argument()
+      .build())
+
   testPlan("prober",
     new TestPlanBuilder()
       .produceResults("x", "y")

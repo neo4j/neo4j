@@ -31,5 +31,15 @@ case class NonPipelined(override val source: LogicalPlan)(implicit idGen: IdGen)
   val availableSymbols: Set[String] = source.availableSymbols
 }
 
+/**
+ * NOTE: This plan is only for testing
+ */
+case class NonPipelinedHead(override val source: LogicalPlan, expandFactor: Long)(implicit idGen: IdGen) extends LogicalUnaryPlan(idGen)  {
+
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
+
+  val availableSymbols: Set[String] = source.availableSymbols
+}
+
 
 

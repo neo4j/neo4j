@@ -98,6 +98,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NonFuseable
 import org.neo4j.cypher.internal.logical.plans.NonPipelined
+import org.neo4j.cypher.internal.logical.plans.NonPipelinedHead
 import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.OptionalExpand
 import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
@@ -233,6 +234,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeIndexScanPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeIndexSeekPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeLeftOuterHashJoinPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.NodeRightOuterHashJoinPipe
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.NonPipelinedHeadTestPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.NonPipelinedTestPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.OptionalExpandAllPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.OptionalExpandIntoPipe
@@ -541,6 +543,9 @@ case class InterpretedPipeMapper(readOnly: Boolean,
 
       case NonPipelined(_) =>
         NonPipelinedTestPipe(source)(id = id)
+
+      case NonPipelinedHead(_, expandFactor) =>
+        NonPipelinedHeadTestPipe(source, expandFactor)(id = id)
 
       case Prober(_, probe) =>
         ProberPipe(source, probe)(id = id)
