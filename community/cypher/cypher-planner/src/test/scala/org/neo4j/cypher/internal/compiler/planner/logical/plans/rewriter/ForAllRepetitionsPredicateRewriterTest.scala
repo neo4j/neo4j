@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.ir.ast
+package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
@@ -28,14 +28,20 @@ import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SimplePatternLength
+import org.neo4j.cypher.internal.ir.ast.ForAllRepetitions
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.Repetition
 import org.neo4j.cypher.internal.util.UpperBound
+import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class ForAllRepetitionsTest extends CypherFunSuite with AstConstructionTestSupport {
+class ForAllRepetitionsPredicateRewriterTest extends CypherFunSuite with AstConstructionTestSupport {
 
   // (start) ((x)-[r]->(y)-[q]->(z))* (end)
   private val qpp = QuantifiedPathPattern(
@@ -83,22 +89,22 @@ class ForAllRepetitionsTest extends CypherFunSuite with AstConstructionTestSuppo
   }
 
   test("predicate with singleton variable") {
-    val predicate = greaterThan(prop("z", "prop"), prop(varFor("argument"), "prop"))
+    val predicate = greaterThan(prop("z", "prop"), prop(v"argument", "prop"))
     val far = ForAllRepetitions(qpp, predicate)
 
-    far.dependencies shouldBe Set(varFor("zGroup"), varFor("argument"))
+    far.dependencies shouldBe Set(v"zGroup", v"argument")
+    val iterVar = v"  UNNAMED0"
 
-    val iterVar = varFor("  UNNAMED0")
-    far.asAllIterablePredicate(new AnonymousVariableNameGenerator()) shouldBe {
+    getRewriter.rewriteToAllIterablePredicate(far) shouldBe {
       allInList(
         iterVar,
         rangeForGroupVariable("zGroup"),
         greaterThan(
           prop(
-            containerIndex(varFor("zGroup"), iterVar),
+            containerIndex(v"zGroup", iterVar),
             "prop"
           ),
-          prop(varFor("argument"), "prop")
+          prop(v"argument", "prop")
         )
       )
     }
@@ -108,20 +114,20 @@ class ForAllRepetitionsTest extends CypherFunSuite with AstConstructionTestSuppo
     val predicate = greaterThan(prop("z", "prop"), prop("y", "prop"))
     val far = ForAllRepetitions(qpp, predicate)
 
-    far.dependencies shouldBe Set(varFor("zGroup"), varFor("yGroup"))
+    far.dependencies shouldBe Set(v"zGroup", v"yGroup")
+    val iterVar = v"  UNNAMED0"
 
-    val iterVar = varFor("  UNNAMED0")
-    far.asAllIterablePredicate(new AnonymousVariableNameGenerator()) shouldBe {
+    getRewriter.rewriteToAllIterablePredicate(far) shouldBe {
       allInList(
         iterVar,
         rangeForGroupVariable("yGroup"),
         greaterThan(
           prop(
-            containerIndex(varFor("zGroup"), iterVar),
+            containerIndex(v"zGroup", iterVar),
             "prop"
           ),
           prop(
-            containerIndex(varFor("yGroup"), iterVar),
+            containerIndex(v"yGroup", iterVar),
             "prop"
           )
         )
@@ -133,11 +139,54 @@ class ForAllRepetitionsTest extends CypherFunSuite with AstConstructionTestSuppo
     val predicate = greaterThan(literal(123), parameter("param", CTAny))
     val far = ForAllRepetitions(qpp, predicate)
 
-    far.dependencies shouldBe Set(varFor("qGroup"))
+    far.dependencies shouldBe Set(v"qGroup")
+    val iterVar = v"  UNNAMED0"
 
-    val iterVar = varFor("  UNNAMED0")
-    far.asAllIterablePredicate(new AnonymousVariableNameGenerator()) shouldBe {
+    getRewriter.rewriteToAllIterablePredicate(far) shouldBe {
       allInList(iterVar, rangeForGroupVariable("qGroup"), predicate)
     }
   }
+
+  test("anded inequalities predicate") {
+    val predicate = andedPropertyInequalities(
+      propGreaterThan("z", "prop", 0),
+      propLessThan("y", "prop", 10)
+    )
+
+    val far = ForAllRepetitions(qpp, predicate)
+    val iterVar = v"  UNNAMED0"
+
+    val actual = getRewriter.rewriteToAllIterablePredicate(far)
+    actual shouldBe {
+      allInList(
+        iterVar,
+        rangeForGroupVariable("yGroup"),
+        ands(
+          greaterThan(
+            prop(
+              containerIndex(v"zGroup", iterVar),
+              "prop"
+            ),
+            literalInt(0)
+          ),
+          lessThan(
+            prop(
+              containerIndex(v"yGroup", iterVar),
+              "prop"
+            ),
+            literalInt(10)
+          )
+        )
+      )
+    }
+  }
+
+  private def getRewriter =
+    ForAllRepetitionsPredicateRewriter(
+      new AnonymousVariableNameGenerator,
+      new Solveds,
+      new Cardinalities,
+      new ProvidedOrders,
+      SameId(Id(0))
+    )
 }

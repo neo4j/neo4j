@@ -584,7 +584,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     selector: StatefulShortestPath.Selector,
     nfa: NFA,
     mode: ExpansionMode,
-    reverseGroupVariableProjections: Boolean
+    reverseGroupVariableProjections: Boolean = false
   ): IMPL = {
     val nodeVariableGroupings = groupNodes.map { case (x, y) => VariableGrouping(varFor(x), varFor(y))(pos) }
     val relationshipVariableGroupings = groupRelationships.map { case (x, y) =>

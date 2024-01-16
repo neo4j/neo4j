@@ -33,14 +33,18 @@ case class NestedPlanCollectExpression(
   // We cannot put the actual pattern expression in the case class, that would lead to endless recursion
   // while trying to rewrite such pattern expressions away.
   override val solvedExpressionAsString: String
-)(val position: InputPosition) extends NestedPlanExpression
+)(val position: InputPosition) extends NestedPlanExpression {
+  override def withPlan(plan: LogicalPlan): NestedPlanExpression = copy(plan = plan)(position)
+}
 
 case class NestedPlanExistsExpression(
   override val plan: LogicalPlan,
   // We cannot put the actual exists pattern expression in the case class, that would lead to endless recursion
   // while trying to rewrite such exists expressions away.
   override val solvedExpressionAsString: String
-)(val position: InputPosition) extends NestedPlanExpression
+)(val position: InputPosition) extends NestedPlanExpression {
+  override def withPlan(plan: LogicalPlan): NestedPlanExpression = copy(plan = plan)(position)
+}
 
 case class NestedPlanGetByNameExpression(
   override val plan: LogicalPlan,
@@ -48,11 +52,18 @@ case class NestedPlanGetByNameExpression(
   // We cannot put the actual pattern expression in the case class, that would lead to endless recursion
   // while trying to rewrite such pattern expressions away.
   override val solvedExpressionAsString: String
-)(val position: InputPosition) extends NestedPlanExpression
+)(val position: InputPosition) extends NestedPlanExpression {
+  override def withPlan(plan: LogicalPlan): NestedPlanExpression = copy(plan = plan)(position)
+}
 
 sealed abstract class NestedPlanExpression extends Expression with SemanticCheckableExpression {
 
   def plan: LogicalPlan
+
+  /**
+   * Copy this NPE but change the nested plan.
+   */
+  def withPlan(plan: LogicalPlan): NestedPlanExpression
 
   /**
    * Used for rendering nicer plan descriptions.

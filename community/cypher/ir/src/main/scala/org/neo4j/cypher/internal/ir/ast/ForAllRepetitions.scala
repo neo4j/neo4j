@@ -20,18 +20,11 @@
 package org.neo4j.cypher.internal.ir.ast
 
 import org.neo4j.cypher.internal.expressions
-import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.BooleanExpression
-import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
-import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
-import org.neo4j.cypher.internal.expressions.Subtract
-import org.neo4j.cypher.internal.expressions.UnPositionedVariable
 import org.neo4j.cypher.internal.expressions.VariableGrouping
-import org.neo4j.cypher.internal.expressions.functions
 import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
-import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.InputPosition
 
 /**
@@ -57,37 +50,13 @@ case class ForAllRepetitions(
     translatedSingletonDependencies + groupVariableAnchor
   }
 
-  def asAllIterablePredicate(anonymousVariableNameGenerator: AnonymousVariableNameGenerator): Expression = {
-    val pos = InputPosition.NONE
-
-    val iterVar = UnPositionedVariable.varFor(anonymousVariableNameGenerator.nextName)
-
-    val singletonReplacements: Set[(LogicalVariable, LogicalVariable)] =
-      originalInnerPredicate.dependencies.flatMap { v =>
-        groupVariableFor(v).map(v -> _)
-      }
-
-    val rewrittenPredicate = singletonReplacements.foldLeft(originalInnerPredicate) {
-      case (expr, (singletonVar, groupVar)) =>
-        def indexedGroupVar: Expression = ContainerIndex(groupVar.copyId, iterVar.copyId)(pos)
-        // x -> xGroup[iterVar]
-        expr.replaceAllOccurrencesBy(singletonVar, indexedGroupVar)
+  def variableGroupingForSingleton(singleton: LogicalVariable): Option[VariableGrouping] = {
+    variableGroupings.collectFirst {
+      case grouping @ expressions.VariableGrouping(`singleton`, _) => grouping
     }
-
-    AllIterablePredicate(
-      iterVar,
-      functions.Range.asInvocation(
-        SignedDecimalIntegerLiteral("0")(pos),
-        Subtract(
-          functions.Size(groupVariableAnchor.copyId)(pos),
-          SignedDecimalIntegerLiteral("1")(pos)
-        )(pos)
-      )(pos),
-      Some(rewrittenPredicate)
-    )(originalInnerPredicate.position)
   }
 
-  private def groupVariableFor(singleton: LogicalVariable): Option[LogicalVariable] = {
+  def groupVariableFor(singleton: LogicalVariable): Option[LogicalVariable] = {
     variableGroupings.collectFirst {
       case expressions.VariableGrouping(`singleton`, group) => group
     }

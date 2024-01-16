@@ -51,6 +51,7 @@ import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NFA.RelationshipExpansionPredicate
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
+import org.neo4j.cypher.internal.logical.plans.NestedPlanGetByNameExpression
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -1692,6 +1693,146 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     )
   }
 
+  test("should plan pattern expression predicates inside QPP") {
+    val query =
+      """MATCH ANY SHORTEST ((u:User)(
+        |  (n)-[r]->(m)
+        |    WHERE (m)-[]->(:N)
+        |  )+(v))
+        |RETURN *""".stripMargin
+    val planner = plannerBase
+      .enableDeduplicateNames(false)
+      .build()
+
+    val plan = planner.plan(query)
+
+    val nestedPlan = planner.subPlanBuilder()
+      .filter("`  UNNAMED1`:N")
+      .expand("(`  m@2`)-[`  UNNAMED0`]->(`  UNNAMED1`)")
+      .projection("`  m@5`[`  UNNAMED2`] AS `  m@2`")
+      .argument("  m@5", "  UNNAMED2")
+      .build()
+
+    val solvedNestedExpressionAsString =
+      """EXISTS { MATCH (`  m@2`)-[`  UNNAMED0`]->(`  UNNAMED1`)
+        |  WHERE `  UNNAMED1`:N }""".stripMargin
+    val nestedPlanExpression = NestedPlanExistsExpression(
+      plan = nestedPlan,
+      solvedExpressionAsString =
+        solvedNestedExpressionAsString
+    )(pos)
+
+    val nonInlineablePredicate = allInList(
+      varFor("  UNNAMED2"),
+      function("range", literalInt(0), subtract(function("size", varFor("  m@5")), literalInt(1))),
+      nestedPlanExpression
+    )
+
+    val expectedNfa = new TestNFABuilder(0, "u")
+      .addTransition(0, 1, "(u) (`  n@0`)")
+      .addTransition(1, 2, "(`  n@0`)-[`  r@1`]->(`  m@2`)")
+      .addTransition(2, 1, "(`  m@2`) (`  n@0`)")
+      .addTransition(2, 3, "(`  m@2`) (v)")
+      .setFinalState(3)
+      .build()
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("`  m@5`", "`  n@3`", "`  r@4`", "u", "v")
+        .statefulShortestPathExpr(
+          "u",
+          "v",
+          """SHORTEST 1 ((u) ((`  n@0`)-[`  r@1`]->(`  m@2`)){1, } (v) WHERE EXISTS { MATCH (`  m@2`)-[`  UNNAMED0`]->(`  UNNAMED1`)
+            |  WHERE `  UNNAMED1`:N } AND unique(`  r@4`))""".stripMargin,
+          Some(nonInlineablePredicate),
+          Set(("  n@0", "  n@3"), ("  m@2", "  m@5")),
+          Set(("  r@1", "  r@4")),
+          Set(),
+          Set(),
+          StatefulShortestPath.Selector.Shortest(1),
+          expectedNfa,
+          ExpandInto
+        )
+        .cartesianProduct()
+        .|.allNodeScan("v")
+        .nodeByLabelScan("u", "User")
+        .build()
+    )
+  }
+
+  test("should plan subquery expression inside QPP") {
+    // GIVEN
+    val query =
+      """MATCH ANY SHORTEST ((u:User)(
+        |  (n)-[r]->(m)
+        |    WHERE COUNT { (m)-[]->(:N) } = 2
+        |  )+(v))
+        |RETURN *""".stripMargin
+    val planner = plannerBase
+      .enableDeduplicateNames(false)
+      .build()
+
+    // WHEN
+    val plan = planner.plan(query)
+
+    // THEN
+    val nestedPlan = planner.subPlanBuilder()
+      .apply()
+      .|.aggregation(Seq.empty, Seq("count(*) AS `  UNNAMED2`"))
+      .|.filter("`  UNNAMED1`:N")
+      .|.expand("(`  m@2`)-[`  UNNAMED0`]->(`  UNNAMED1`)")
+      .|.argument("  m@2")
+      .projection("`  m@5`[`  UNNAMED3`] AS `  m@2`")
+      .argument("  m@5", "  UNNAMED3")
+      .build()
+
+    val solvedNestedExpressionAsString =
+      """COUNT { MATCH (`  m@2`)-[`  UNNAMED0`]->(`  UNNAMED1`)
+        |  WHERE `  UNNAMED1`:N }""".stripMargin
+    val nestedPlanExpression = NestedPlanGetByNameExpression(
+      plan = nestedPlan,
+      v"  UNNAMED2",
+      solvedExpressionAsString = solvedNestedExpressionAsString
+    )(pos)
+
+    val nonInlineablePredicate = allInList(
+      varFor("  UNNAMED3"),
+      function("range", literalInt(0), subtract(function("size", varFor("  m@5")), literalInt(1))),
+      equals(nestedPlanExpression, literalInt(2))
+    )
+
+    val expectedNfa = new TestNFABuilder(0, "u")
+      .addTransition(0, 1, "(u) (`  n@0`)")
+      .addTransition(1, 2, "(`  n@0`)-[`  r@1`]->(`  m@2`)")
+      .addTransition(2, 1, "(`  m@2`) (`  n@0`)")
+      .addTransition(2, 3, "(`  m@2`) (v)")
+      .setFinalState(3)
+      .build()
+
+    plan should equal(
+      planner.planBuilder()
+        .produceResults("`  m@5`", "`  n@3`", "`  r@4`", "u", "v")
+        .statefulShortestPathExpr(
+          "u",
+          "v",
+          """SHORTEST 1 ((u) ((`  n@0`)-[`  r@1`]->(`  m@2`)){1, } (v) WHERE COUNT { MATCH (`  m@2`)-[`  UNNAMED0`]->(`  UNNAMED1`)
+            |  WHERE `  UNNAMED1`:N } = 2 AND unique(`  r@4`))""".stripMargin,
+          Some(nonInlineablePredicate),
+          Set(("  n@0", "  n@3"), ("  m@2", "  m@5")),
+          Set(("  r@1", "  r@4")),
+          Set(),
+          Set(),
+          StatefulShortestPath.Selector.Shortest(1),
+          expectedNfa,
+          ExpandInto
+        )
+        .cartesianProduct()
+        .|.allNodeScan("v")
+        .nodeByLabelScan("u", "User")
+        .build()
+    )
+  }
+
   test("should plan subquery expression predicates with multiple dependencies") {
     val query =
       """MATCH ANY SHORTEST ((u:User) ((a)-[r]->(b))+ (v)-[s]->(w)-[t]->(x) WHERE EXISTS { (v)<--(w) })
@@ -1707,8 +1848,7 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     val solvedNestedExpressionAsString = "EXISTS { MATCH (v)<-[`anon_0`]-(w) }"
     val nestedPlanExpression = NestedPlanExistsExpression(
       plan = nestedPlan,
-      solvedExpressionAsString =
-        solvedNestedExpressionAsString
+      solvedExpressionAsString = solvedNestedExpressionAsString
     )(pos)
 
     val expectedNfa = new TestNFABuilder(0, "u")
@@ -1742,6 +1882,19 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .nodeByLabelScan("u", "User")
         .build()
     )
+  }
+
+  test("Should handle shortest path in subquery expression") {
+    val query =
+      """MATCH (m:User)
+        |  WHERE CASE
+        |    WHEN m.prop IS NOT NULL
+        |      THEN EXISTS { MATCH SHORTEST 1 (m) (()--())+ (other:User) }
+        |    ELSE false
+        |  END
+        |RETURN m""".stripMargin
+
+    println(planner.plan(query))
   }
 
   test("Should handle path assignment for shortest path containing qpp with two juxtaposed nodes") {

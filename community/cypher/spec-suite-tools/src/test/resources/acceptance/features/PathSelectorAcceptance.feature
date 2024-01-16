@@ -1353,3 +1353,33 @@ Feature: PathSelectorAcceptance
       | ANY               |
       | ANY 1             |
       | ANY 2             |
+
+  Scenario Outline: Find shortest path with pattern expression in QPP
+    Given having executed:
+      """
+        CREATE (start:Start)-[:R]->(:Wrong)-[:R]->(end:End)
+        CREATE (start)-[:R]->(r1:Right)-[:R]->(r2:Right)-[:R]->(end)
+        CREATE (r1)-[:R]->()-[:R]->(:N)
+        CREATE (r2)-[:R]->()-[:R]->(:N)
+        CREATE (end)-[:R]->()-[:R]->(:N)
+      """
+    When executing query:
+      """
+         MATCH p = SHORTEST 1 (start:Start)
+                              (
+                                (n)-[r]->(m)
+                                  WHERE n <> m AND <pattern>
+                              )+
+                              (end:End)
+         RETURN p
+      """
+    Then the result should be, in any order:
+      | p                                                              |
+      | <(:Start)-[:R {}]->(:Right)-[:R {}]->(:Right)-[:R {}]->(:End)> |
+    Examples:
+      | pattern                                                           |
+#      | (m)-->()-->(:N)                                                   |
+#      | CASE WHEN (m)-->() THEN EXISTS { (m)-->()-->(:N) } ELSE false END |
+#      | [p = (m)-->()-->(:N) \| length(p) ] <> []                         |
+      | COUNT { (m)-->()-->(:N) } = 1                                     |
+#      | COUNT { (m)-->()-->(:N) } = 1 AND (m)-->()-->(:N)                 |

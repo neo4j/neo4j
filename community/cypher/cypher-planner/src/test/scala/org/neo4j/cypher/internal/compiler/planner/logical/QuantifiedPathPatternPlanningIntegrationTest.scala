@@ -818,7 +818,10 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
   }
 
   test("Should plan quantified path pattern with a WHERE clause with multiple references to previous MATCH") {
-    val query = "MATCH (a), (b) MATCH (a) ((n)-[r]->(m) WHERE n.prop > a.prop AND n.prop > b.prop)+ (b) RETURN n, m"
+    val query =
+      """MATCH (a), (b)
+        |MATCH (a) ((n)-[r]->(m) WHERE n.prop > a.prop AND n.prop > b.prop)+ (b)
+        |RETURN n, m""".stripMargin
 
     val plan = planner.plan(query).stripProduceResults
     val `((n)-[r]->(m))+` = TrailParameters(
@@ -852,6 +855,44 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
         .|.allNodeScan("b")
         .cacheProperties("cacheNFromStore[a.prop]")
         .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test("Should plan quantified path pattern with a WHERE clause with anded properties") {
+    val query =
+      """MATCH (a:User) ((n)-[r]->(m) WHERE n.prop > m.prop AND n.prop < m.prop)+ (b)
+        |RETURN n, m""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+    val `((n)-[r]->(m))+` = TrailParameters(
+      min = 1,
+      max = Unlimited,
+      start = "a",
+      end = "b",
+      innerStart = "n",
+      innerEnd = "m",
+      groupNodes = Set(("n", "n"), ("m", "m")),
+      groupRelationships = Set.empty,
+      innerRelationships = Set("r"),
+      previouslyBoundRelationships = Set.empty,
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = false
+    )
+
+    plan should equal(
+      planner.subPlanBuilder()
+        .trail(`((n)-[r]->(m))+`)
+        .|.filterExpression(
+          andsReorderable(
+            "cacheNFromStore[n.prop] > cacheNFromStore[m.prop]",
+            "cacheNFromStore[n.prop] < cacheNFromStore[m.prop]"
+          ),
+          isRepeatTrailUnique("r")
+        )
+        .|.expandAll("(n)-[r]->(m)")
+        .|.argument("n")
+        .nodeByLabelScan("a", "User")
         .build()
     )
   }

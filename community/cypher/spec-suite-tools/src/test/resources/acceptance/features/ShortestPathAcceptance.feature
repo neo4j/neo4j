@@ -405,7 +405,7 @@ Feature: ShortestPathAcceptance
     And having executed:
       """
       CREATE (s:START), (e:END)
-      CREATE(s)-[:R]->()-[:R]->(e),
+      CREATE (s)-[:R]->()-[:R]->(e),
              (s)-[:R {p:42}]->()-[:R {p:42}]->()-[:R {p:42}]->(e)
       """
     When executing query:
