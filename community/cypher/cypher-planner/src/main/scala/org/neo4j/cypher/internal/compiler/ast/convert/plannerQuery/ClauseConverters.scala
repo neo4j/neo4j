@@ -130,8 +130,12 @@ import org.neo4j.cypher.internal.ir.ordering.InterestingOrderCandidate
 import org.neo4j.cypher.internal.ir.ordering.RequiredOrderCandidate
 import org.neo4j.cypher.internal.label_expressions.LabelExpression
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.ColonConjunction
+import org.neo4j.cypher.internal.label_expressions.LabelExpression.ColonDisjunction
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.Conjunctions
+import org.neo4j.cypher.internal.label_expressions.LabelExpression.Disjunctions
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.Leaf
+import org.neo4j.cypher.internal.label_expressions.LabelExpression.Negation
+import org.neo4j.cypher.internal.label_expressions.LabelExpression.Wildcard
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
@@ -406,12 +410,24 @@ object ClauseConverters {
     builder.amendQueryGraph(_.addMutatingPatterns(CreatePattern(commands.toSeq)))
   }
 
-  private def getLabelNameSet(labelExpression: Option[LabelExpression]): Set[LabelName] =
-    labelExpression.collect {
-      case Leaf(labelName: LabelName, _) => Set(labelName)
-      case ColonConjunction(lhs, rhs, _) => getLabelNameSet(Some(lhs)) ++ getLabelNameSet(Some(rhs))
-      case Conjunctions(children, _)     => children.flatMap(child => getLabelNameSet(Some(child))).toSet
-    }.getOrElse(Set.empty)
+  private def getLabelNameSet(labelExpression: Option[LabelExpression]): Set[LabelName] = {
+    def fail(le: LabelExpression) =
+      throw new IllegalStateException(
+        s"This label expression is not allowed here: $le. This is a bug and should have been caught by Semantic Analysis."
+      )
+
+    labelExpression match {
+      case None                                => Set.empty
+      case Some(Leaf(labelName: LabelName, _)) => Set(labelName)
+      case Some(ColonConjunction(lhs, rhs, _)) => getLabelNameSet(Some(lhs)) ++ getLabelNameSet(Some(rhs))
+      case Some(Conjunctions(children, _))     => children.flatMap(child => getLabelNameSet(Some(child))).toSet
+      case Some(n: Negation)                   => fail(n)
+      case Some(c: ColonDisjunction)           => fail(c)
+      case Some(d: Disjunctions)               => fail(d)
+      case Some(w: Wildcard)                   => fail(w)
+      case Some(l @ Leaf(_, _))                => fail(l)
+    }
+  }
 
   sealed private trait CreateEntityCommand
 
