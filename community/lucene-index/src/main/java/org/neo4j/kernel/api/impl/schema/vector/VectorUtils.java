@@ -22,13 +22,13 @@ package org.neo4j.kernel.api.impl.schema.vector;
 import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.SequenceValue;
 import org.neo4j.values.storable.FloatingPointArray;
-import org.neo4j.values.storable.FloatingPointValue;
 import org.neo4j.values.storable.IntegralValue;
+import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
-import org.neo4j.values.virtual.ListValue;
 
 public class VectorUtils {
     public static final int MAX_DIMENSIONS = 2048;
@@ -74,24 +74,24 @@ public class VectorUtils {
             return floatingPointArray;
         }
 
-        if (candidate instanceof final ListValue list) {
+        if (candidate instanceof final SequenceValue list) {
             return maybeToFloatingPointArray(list);
         }
 
         return null;
     }
 
-    public static FloatingPointArray maybeToFloatingPointArray(ListValue candidate) {
+    public static FloatingPointArray maybeToFloatingPointArray(SequenceValue candidate) {
         if (candidate == null) {
             return null;
         }
 
-        final var array = new double[candidate.size()];
+        final var array = new double[candidate.length()];
         for (int i = 0; i < array.length; i++) {
-            if (!(candidate.value(i) instanceof final FloatingPointValue floatingPointValue)) {
+            if (!(candidate.value(i) instanceof final NumberValue number)) {
                 return null;
             }
-            array[i] = floatingPointValue.doubleValue();
+            array[i] = number.doubleValue();
         }
         return Values.doubleArray(array);
     }
