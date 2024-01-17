@@ -1997,7 +1997,10 @@ case class LogicalPlanProducer(
     annotate(
       NodeCountFromCountStore(projectedColumn, labels, argumentIds),
       solved,
-      query.interestingOrder.requiredOrderCandidate.asProvidedOrder(context.providedOrderFactory),
+      context.providedOrderFactory.providedOrder(
+        query.interestingOrder.requiredOrderCandidate.order,
+        ProvidedOrder.Self
+      ),
       context
     )
   }
@@ -2015,7 +2018,10 @@ case class LogicalPlanProducer(
     annotate(
       RelationshipCountFromCountStore(variable, startLabel, typeNames, endLabel, argumentIds),
       solved,
-      query.interestingOrder.requiredOrderCandidate.asProvidedOrder(context.providedOrderFactory),
+      context.providedOrderFactory.providedOrder(
+        query.interestingOrder.requiredOrderCandidate.order,
+        ProvidedOrder.Self
+      ),
       context
     )
   }
