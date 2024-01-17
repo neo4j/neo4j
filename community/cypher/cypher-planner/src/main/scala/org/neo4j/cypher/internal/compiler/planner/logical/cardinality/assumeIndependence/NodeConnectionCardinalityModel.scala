@@ -90,7 +90,16 @@ trait NodeConnectionCardinalityModel
         boundNodesAndArguments.bindEndpoints(context, predicates, quantifiedPathPattern, cardinality)
 
       case selectivePathPattern: SelectivePathPattern =>
-        val cardinality = getSelectivePathPatternCardinality(context, predicates.allLabelInfo, selectivePathPattern)
+        // predicates that operate on the boundary (outer) nodes
+        val boundaryNodePredicates =
+          predicates.otherPredicates.filter(_.dependencies.exists(selectivePathPattern.boundaryNodesSet.contains))
+
+        val cardinality = getSelectivePathPatternCardinality(
+          context,
+          predicates.allLabelInfo,
+          selectivePathPattern,
+          boundaryNodePredicates
+        )
         // At the time of writing, if a match clause contains a selective path pattern, it can't contain anything else,
         // so we don't need to worry about marking the inner nodes as bound.
         boundNodesAndArguments.bindEndpoints(context, predicates, selectivePathPattern, cardinality)

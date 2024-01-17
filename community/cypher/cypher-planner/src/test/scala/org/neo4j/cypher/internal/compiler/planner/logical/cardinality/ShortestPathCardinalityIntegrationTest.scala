@@ -208,6 +208,25 @@ class ShortestPathCardinalityIntegrationTest extends CypherFunSuite with Cardina
     )
   }
 
+  test("SHORTEST with boundary node predicate should not count predicate selectivity twice") {
+    val unindexedProp = DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_EQUALITY_SELECTIVITY
+
+    val query = """MATCH (a) MATCH ANY SHORTEST ((u)((n {prop: 5})-[r]->(m)){1,2}(v))"""
+
+    // (u)((n {prop: 5})-[r]->(m)){1}(v)
+    val qpp1 = allRelationships * unindexedProp
+
+    // (u)((n {prop: 5})-[r]->(m)){2}(v)
+    val qpp2 = (qpp1 * qpp1 / allNodes * relationshipUniqueness)
+
+    // (u)((n {prop: 5})-[r]->(m)){1,2}(v)
+    val qpp = qpp1 + qpp2
+
+    val expectedCardinality = allNodes * qpp
+
+    queryShouldHaveCardinality(configuration, query, expectedCardinality)
+  }
+
   // The resulting cardinality should be the same as in the following test: "SHORTEST with inlined property predicate referencing two nodes within the qpp"
   test("SHORTEST should inline predicates with source node references but currently does not do that") {
 

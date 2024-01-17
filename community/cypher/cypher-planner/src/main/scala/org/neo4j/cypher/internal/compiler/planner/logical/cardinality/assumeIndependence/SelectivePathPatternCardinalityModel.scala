@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.ir.ExhaustiveNodeConnection
 import org.neo4j.cypher.internal.ir.ExhaustivePathPattern.NodeConnections
 import org.neo4j.cypher.internal.ir.PatternRelationship
+import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SelectivePathPattern
@@ -43,7 +44,8 @@ trait SelectivePathPatternCardinalityModel
   def getSelectivePathPatternCardinality(
     context: QueryGraphCardinalityContext,
     labelInfo: LabelInfo,
-    selectivePathPattern: SelectivePathPattern
+    selectivePathPattern: SelectivePathPattern,
+    boundaryNodePredicates: Set[Predicate]
   ): Cardinality = {
     val leftNodeCardinality =
       getNodeCardinality(context, labelInfo, selectivePathPattern.left).getOrElse(Cardinality.EMPTY)
@@ -61,6 +63,7 @@ trait SelectivePathPatternCardinalityModel
           selections = sppWithInlinedPredicates.selections,
           leftNodeCardinality = leftNodeCardinality,
           rightNodeCardinality = rightNodeCardinality,
+          boundaryNodePredicates,
           k = k
         )
       case Selector.Shortest(k) =>
@@ -72,6 +75,7 @@ trait SelectivePathPatternCardinalityModel
           selections = sppWithInlinedPredicates.selections,
           leftNodeCardinality = leftNodeCardinality,
           rightNodeCardinality = rightNodeCardinality,
+          boundaryNodePredicates,
           k = k
         )
       case Selector.ShortestGroups(k) =>
@@ -82,6 +86,7 @@ trait SelectivePathPatternCardinalityModel
           selections = sppWithInlinedPredicates.selections,
           leftNodeCardinality = leftNodeCardinality,
           rightNodeCardinality = rightNodeCardinality,
+          boundaryNodePredicates,
           k = k
         )
     }
@@ -94,9 +99,10 @@ trait SelectivePathPatternCardinalityModel
     selections: Selections,
     leftNodeCardinality: Cardinality,
     rightNodeCardinality: Cardinality,
+    boundaryNodePredicates: Set[Predicate],
     k: Long
   ): Cardinality = {
-    val patternCardinality = pathPatternCardinality(context, labelInfo, pathPattern, selections)
+    val patternCardinality = pathPatternCardinality(context, labelInfo, pathPattern, selections, boundaryNodePredicates)
     Cardinality.min(patternCardinality, leftNodeCardinality * rightNodeCardinality * Multiplier(k))
   }
 
@@ -107,10 +113,11 @@ trait SelectivePathPatternCardinalityModel
     selections: Selections,
     leftNodeCardinality: Cardinality,
     rightNodeCardinality: Cardinality,
+    boundaryNodePredicates: Set[Predicate],
     k: Long
   ): Cardinality = {
     val increasinglyLargerPatternsCardinalities = increasinglyLargerPatterns(pathPattern).map(resizedPattern =>
-      pathPatternCardinality(context, labelInfo, resizedPattern, selections)
+      pathPatternCardinality(context, labelInfo, resizedPattern, selections, boundaryNodePredicates)
     )
 
     increasinglyLargerPatternsCardinalities
@@ -125,16 +132,29 @@ trait SelectivePathPatternCardinalityModel
     context: QueryGraphCardinalityContext,
     labelInfo: LabelInfo,
     pathPattern: NodeConnections[ExhaustiveNodeConnection],
-    selections: Selections
+    selections: Selections,
+    boundaryNodePredicates: Set[Predicate]
   ): Cardinality = {
     val predicates = QueryGraphPredicates.partitionSelections(labelInfo, selections)
     val patternCardinality = pathPattern.connections match {
       case Fby(head, tail) =>
         val headCardinality =
-          getExhaustiveNodeConnectionCardinality(context, predicates.allLabelInfo, predicates.uniqueRelationships, head)
+          getExhaustiveNodeConnectionCardinality(
+            context,
+            predicates.allLabelInfo,
+            predicates.uniqueRelationships,
+            head,
+            boundaryNodePredicates
+          )
         tail.foldLeft(headCardinality) { case (cardinality, connection) =>
           val connectionCardinality =
-            getExhaustiveNodeConnectionCardinality(context, labelInfo, predicates.uniqueRelationships, connection)
+            getExhaustiveNodeConnectionCardinality(
+              context,
+              labelInfo,
+              predicates.uniqueRelationships,
+              connection,
+              boundaryNodePredicates
+            )
           val leftNodeCardinality =
             getNodeCardinality(context, labelInfo, connection.left).getOrElse(Cardinality.EMPTY)
           val connectionMultiplier =
@@ -145,7 +165,13 @@ trait SelectivePathPatternCardinalityModel
           cardinality * connectionMultiplier
         }
       case Last(head) =>
-        getExhaustiveNodeConnectionCardinality(context, predicates.allLabelInfo, predicates.uniqueRelationships, head)
+        getExhaustiveNodeConnectionCardinality(
+          context,
+          predicates.allLabelInfo,
+          predicates.uniqueRelationships,
+          head,
+          boundaryNodePredicates
+        )
     }
 
     val otherPredicatesSelectivity = context.predicatesSelectivity(predicates.allLabelInfo, predicates.otherPredicates)
@@ -157,7 +183,8 @@ trait SelectivePathPatternCardinalityModel
     context: QueryGraphCardinalityContext,
     labelInfo: LabelInfo,
     uniqueRelationships: Set[LogicalVariable],
-    exhaustiveNodeConnection: ExhaustiveNodeConnection
+    exhaustiveNodeConnection: ExhaustiveNodeConnection,
+    boundaryNodePredicates: Set[Predicate]
   ): Cardinality =
     exhaustiveNodeConnection match {
       case relationship: PatternRelationship =>
@@ -168,6 +195,12 @@ trait SelectivePathPatternCardinalityModel
           uniqueRelationships.contains(relationship.variable)
         )
       case quantifiedPathPattern: QuantifiedPathPattern =>
-        getQuantifiedPathPatternCardinality(context, labelInfo, quantifiedPathPattern, uniqueRelationships, Set.empty)
+        getQuantifiedPathPatternCardinality(
+          context,
+          labelInfo,
+          quantifiedPathPattern,
+          uniqueRelationships,
+          boundaryNodePredicates
+        )
     }
 }
