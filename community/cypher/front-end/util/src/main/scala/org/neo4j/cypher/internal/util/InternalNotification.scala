@@ -74,7 +74,8 @@ object InternalNotification {
     "ProcedureWarningNotification",
     "DeprecatedFieldNotification",
     "MissingParametersNotification",
-    "CodeGenerationFailedNotification"
+    "CodeGenerationFailedNotification",
+    "RequestedTopologyMatchedCurrentTopology"
   )
 
   def allNotificationsAsJavaIterable(): lang.Iterable[String] = allNotifications.asJava
@@ -148,3 +149,4 @@ case class ServerAlreadyCordoned(server: String) extends InternalNotification
 case class NoDatabasesReallocated() extends InternalNotification
 case class SideEffectVisibility(position: InputPosition) extends InternalNotification
 case class CordonedServersExistedDuringAllocation(servers: String) extends InternalNotification
+case class RequestedTopologyMatchedCurrentTopology() extends InternalNotification

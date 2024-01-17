@@ -60,6 +60,7 @@ import static org.neo4j.notifications.NotificationCodeWithDescription.noDatabase
 import static org.neo4j.notifications.NotificationCodeWithDescription.procedureWarning;
 import static org.neo4j.notifications.NotificationCodeWithDescription.repeatedRelationshipReference;
 import static org.neo4j.notifications.NotificationCodeWithDescription.repeatedVarLengthRelationshipReference;
+import static org.neo4j.notifications.NotificationCodeWithDescription.requestedTopologyMatchedCurrentTopology;
 import static org.neo4j.notifications.NotificationCodeWithDescription.runtimeUnsupported;
 import static org.neo4j.notifications.NotificationCodeWithDescription.serverAlreadyCordoned;
 import static org.neo4j.notifications.NotificationCodeWithDescription.serverAlreadyEnabled;
@@ -932,6 +933,20 @@ class NotificationCodeWithDescriptionTest {
                 "Cordoned servers existed when making an allocation decision. Server(s) `server-1,server-2,server-3` are cordoned. This can impact allocation decisions.");
     }
 
+    @Test
+    void shouldConstructNotificationsFor_REQUEST_TOPOLOGY_MATCHED_CURRENT_TOPOLOGY() {
+        NotificationImplementation notification = requestedTopologyMatchedCurrentTopology(InputPosition.empty);
+
+        verifyNotification(
+                notification,
+                "`ALTER DATABASE` has no effect.",
+                SeverityLevel.INFORMATION,
+                "Neo.ClientNotification.Cluster.RequestedTopologyMatchedCurrentTopology",
+                "The requested topology matched the current topology. No allocations were changed.",
+                NotificationCategory.TOPOLOGY,
+                "`ALTER DATABASE` has no effect. The requested topology matched the current topology. No allocations were changed.");
+    }
+
     private void verifyNotification(
             NotificationImplementation notification,
             String title,
@@ -988,8 +1003,8 @@ class NotificationCodeWithDescriptionTest {
         byte[] notificationHash = DigestUtils.sha256(notificationBuilder.toString());
 
         byte[] expectedHash = new byte[] {
-            -96, 62, -70, -67, -57, 55, 38, 64, -126, 101, -2, 48, 99, 58, 51, 82, 114, 21, -20, -103, 44, 90, 13, 1,
-            78, 126, 17, -118, -114, 42, 84, -5
+            -48, 107, 29, 20, 110, 123, 103, 21, 29, 37, 25, -38, -88, 108, -27, -87, -82, -101, 94, 107, -41, -119,
+            -46, -122, 112, 26, -61, 74, -17, 52, -113, 24
         };
 
         if (!Arrays.equals(notificationHash, expectedHash)) {

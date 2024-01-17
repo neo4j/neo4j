@@ -258,6 +258,7 @@ public enum NotificationCodeWithDescription {
             Status.Cluster.ServerAlreadyEnabled,
             "Server `%s` is already enabled. Verify that this is the intended server.",
             "`ENABLE SERVER` has no effect. Server `%s` is already enabled. Verify that this is the intended server."),
+
     SERVER_ALREADY_CORDONED(
             Status.Cluster.ServerAlreadyCordoned,
             "Server `%s` is already cordoned. Verify that this is the intended server.",
@@ -275,10 +276,16 @@ public enum NotificationCodeWithDescription {
             "Using a subquery expression within a mutating statement has implications for its side-effect visibility."
                     + " The semantics of this statement may change in later versions."
                     + " To overcome this, extract the subquery expression into a preceding WITH and potentially wrap the mutating statement into a CALL subquery."),
+
     CORDONED_SERVERS_EXISTED_DURING_ALLOCATION(
             Status.Cluster.CordonedServersExistedDuringAllocation,
             "Server(s) `%s` are cordoned. This can impact allocation decisions.",
-            "Cordoned servers existed when making an allocation decision. Server(s) `%s` are cordoned. This can impact allocation decisions.");
+            "Cordoned servers existed when making an allocation decision. Server(s) `%s` are cordoned. This can impact allocation decisions."),
+
+    REQUESTED_TOPOLOGY_MATCHED_CURRENT_TOPOLOGY(
+            Status.Cluster.RequestedTopologyMatchedCurrentTopology,
+            "The requested topology matched the current topology. No allocations were changed.",
+            "`ALTER DATABASE` has no effect. The requested topology matched the current topology. No allocations were changed.");
 
     private final Status status;
     private final String description;
@@ -560,6 +567,10 @@ public enum NotificationCodeWithDescription {
     public static NotificationImplementation cordonedServersExist(InputPosition position, String servers) {
         return CORDONED_SERVERS_EXISTED_DURING_ALLOCATION.notificationWithParameters(
                 position, new String[] {servers}, new String[] {servers});
+    }
+
+    public static NotificationImplementation requestedTopologyMatchedCurrentTopology(InputPosition position) {
+        return REQUESTED_TOPOLOGY_MATCHED_CURRENT_TOPOLOGY.notification(position);
     }
 
     private NotificationImplementation notification(InputPosition position) {

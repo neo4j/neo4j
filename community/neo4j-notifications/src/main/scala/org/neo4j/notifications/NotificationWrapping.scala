@@ -45,6 +45,7 @@ import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.NoDatabasesReallocated
 import org.neo4j.cypher.internal.util.RepeatedRelationshipReference
 import org.neo4j.cypher.internal.util.RepeatedVarLengthRelationshipReference
+import org.neo4j.cypher.internal.util.RequestedTopologyMatchedCurrentTopology
 import org.neo4j.cypher.internal.util.RevokePrivilegeCommandHasNoEffectNotification
 import org.neo4j.cypher.internal.util.RevokeRoleCommandHasNoEffectNotification
 import org.neo4j.cypher.internal.util.ServerAlreadyCordoned
@@ -358,6 +359,11 @@ object NotificationWrapping {
       NotificationCodeWithDescription.cordonedServersExist(
         graphdb.InputPosition.empty,
         servers
+      )
+
+    case RequestedTopologyMatchedCurrentTopology() =>
+      NotificationCodeWithDescription.requestedTopologyMatchedCurrentTopology(
+        graphdb.InputPosition.empty
       )
 
     case _ => throw new IllegalStateException("Missing mapping for notification detail.")

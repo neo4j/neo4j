@@ -688,6 +688,12 @@ public interface Status {
                 ClientNotification,
                 "Cordoned servers existed when making an allocation decision.",
                 SeverityLevel.INFORMATION,
+                NotificationCategory.TOPOLOGY),
+
+        RequestedTopologyMatchedCurrentTopology(
+                ClientNotification,
+                "`ALTER DATABASE` has no effect.",
+                SeverityLevel.INFORMATION,
                 NotificationCategory.TOPOLOGY);
 
         private final Code code;

@@ -21,6 +21,7 @@ org.neo4j.kernel.api.exceptions.Status.Cluster::CordonedServersExistedDuringAllo
 org.neo4j.kernel.api.exceptions.Status.Cluster::NoDatabasesReallocated org.neo4j.kernel.api.exceptions.Status.Cluster public static final
 org.neo4j.kernel.api.exceptions.Status.Cluster::NotALeader org.neo4j.kernel.api.exceptions.Status.Cluster public static final
 org.neo4j.kernel.api.exceptions.Status.Cluster::ReplicationFailure org.neo4j.kernel.api.exceptions.Status.Cluster public static final
+org.neo4j.kernel.api.exceptions.Status.Cluster::RequestedTopologyMatchedCurrentTopology org.neo4j.kernel.api.exceptions.Status.Cluster public static final
 org.neo4j.kernel.api.exceptions.Status.Cluster::Routing org.neo4j.kernel.api.exceptions.Status.Cluster public static final
 org.neo4j.kernel.api.exceptions.Status.Cluster::ServerAlreadyCordoned org.neo4j.kernel.api.exceptions.Status.Cluster public static final
 org.neo4j.kernel.api.exceptions.Status.Cluster::ServerAlreadyEnabled org.neo4j.kernel.api.exceptions.Status.Cluster public static final
