@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
 import org.neo4j.cypher.internal.runtime.ClosingIterator
-import org.neo4j.cypher.internal.runtime.ClosingIterator.JavaIteratorAsClosingIterator
+import org.neo4j.cypher.internal.runtime.ClosingIterator.JavaAutoCloseableIteratorAsClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.CommandNFA
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
@@ -75,7 +75,7 @@ case class StatefulShortestPathPipe(
       inputRow.getByName(sourceNodeName) match {
 
         case sourceNode: VirtualNodeValue =>
-          val ppbfs = new PGPathPropagatingBFS(
+          PGPathPropagatingBFS.create(
             sourceNode.id(),
             intoTargetNodeId,
             commandNFA.compile(inputRow, state),
@@ -83,17 +83,14 @@ case class StatefulShortestPathPipe(
             nodeCursor,
             traversalCursor,
             pathTracer,
+            withPathVariables(inputRow, _),
+            pathPredicate,
+            selector.isGroup,
             selector.k.toInt,
             commandNFA.states.size,
             memoryTracker,
             hooks
-          )
-
-          ppbfs.iterate(
-            withPathVariables(inputRow, _),
-            pathPredicate,
-            selector.isGroup
-          ).asClosingIterator.closing(ppbfs)
+          ).asSelfClosingIterator
 
         case value =>
           throw new InternalException(

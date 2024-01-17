@@ -117,7 +117,7 @@ object LoggingPPBFSHooks extends PPBFSHooks {
     log("invalidTrail" -> getTracedPath().toString)
   }
 
-  override def registerNodeToPropagate(nodeData: NodeData, lengthFromSource: Int, lengthToTarget: Int): Unit = {
+  override def schedulePropagation(nodeData: NodeData, lengthFromSource: Int, lengthToTarget: Int): Unit = {
     log(
       "nodeData" -> nodeData,
       "lengthFromSource" -> lengthFromSource,

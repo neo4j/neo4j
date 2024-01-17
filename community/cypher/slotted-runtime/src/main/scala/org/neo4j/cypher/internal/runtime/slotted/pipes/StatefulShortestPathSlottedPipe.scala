@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration
 import org.neo4j.cypher.internal.physicalplanning.SlotConfigurationUtils.NO_ENTITY_FUNCTION
 import org.neo4j.cypher.internal.physicalplanning.SlotConfigurationUtils.makeGetPrimitiveNodeFromSlotFunctionFor
 import org.neo4j.cypher.internal.runtime.ClosingIterator
-import org.neo4j.cypher.internal.runtime.ClosingIterator.JavaIteratorAsClosingIterator
+import org.neo4j.cypher.internal.runtime.ClosingIterator.JavaAutoCloseableIteratorAsClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.CommandNFA
@@ -86,7 +86,7 @@ case class StatefulShortestPathSlottedPipe(
       val sourceNode = getSourceNodeFunction.applyAsLong(inputRow)
       val intoTargetNode = getTargetNodeFunction.applyAsLong(inputRow)
 
-      val ppbfs = new PGPathPropagatingBFS(
+      PGPathPropagatingBFS.create(
         sourceNode,
         intoTargetNode,
         commandNFA.compile(inputRow, state),
@@ -94,17 +94,14 @@ case class StatefulShortestPathSlottedPipe(
         nodeCursor,
         traversalCursor,
         pathTracer,
+        withPathVariables(inputRow, _),
+        pathPredicate,
+        selector.isGroup,
         selector.k.toInt,
         commandNFA.states.size,
         memoryTracker,
         hooks
-      )
-
-      ppbfs.iterate(
-        withPathVariables(inputRow, _),
-        pathPredicate,
-        selector.isGroup
-      ).asClosingIterator.closing(ppbfs)
+      ).asSelfClosingIterator
 
     }.closing(nodeCursor).closing(traversalCursor)
   }

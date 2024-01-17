@@ -88,12 +88,13 @@ public class ProductGraphTraversalCursorTest {
             var s2 = builder.newFinalState();
 
             s0.addRelationshipExpansion(
-                    Predicates.alwaysTrue(), new int[] {R1}, Direction.BOTH, LongPredicates.alwaysTrue(), s1);
+                    s1, Predicates.alwaysTrue(), new int[] {R1}, Direction.BOTH, LongPredicates.alwaysTrue());
 
             s1.addRelationshipExpansion(
-                    Predicates.alwaysTrue(), new int[] {R2}, Direction.BOTH, LongPredicates.alwaysTrue(), s2);
+                    s2, Predicates.alwaysTrue(), new int[] {R2}, Direction.BOTH, LongPredicates.alwaysTrue());
 
-            ProductGraphTraversalCursor pgCursor = new ProductGraphTraversalCursor(relCursor, NO_TRACKING);
+            ProductGraphTraversalCursor pgCursor =
+                    new ProductGraphTraversalCursor(read, nodeCursor, relCursor, NO_TRACKING);
 
             // then
             ProductGraph expected = new ProductGraphBuilder()
@@ -117,7 +118,8 @@ public class ProductGraphTraversalCursorTest {
                     var nodeCursor2 = tx2.cursors().allocateNodeCursor(NULL_CONTEXT);
                     var relCursor2 = tx2.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
                 Read read2 = tx2.dataRead();
-                ProductGraphTraversalCursor pgCursor2 = new ProductGraphTraversalCursor(relCursor2, NO_TRACKING);
+                ProductGraphTraversalCursor pgCursor2 =
+                        new ProductGraphTraversalCursor(read2, nodeCursor2, relCursor2, NO_TRACKING);
                 ProductGraph actual2 = ProductGraph.fromCursors(start, s0.state(), pgCursor2, nodeCursor2, read2);
                 assertThat(actual2).isEqualTo(expected);
                 actual2.assertMultiStateExpansions(pgCursor2, nodeCursor2, read2);
@@ -152,16 +154,17 @@ public class ProductGraphTraversalCursorTest {
             var s2 = builder.newFinalState();
 
             s0.addRelationshipExpansion(
-                    Predicates.alwaysTrue(), new int[] {R1}, Direction.OUTGOING, LongPredicates.alwaysTrue(), s1);
+                    s1, Predicates.alwaysTrue(), new int[] {R1}, Direction.OUTGOING, LongPredicates.alwaysTrue());
 
             s1.addRelationshipExpansion(
+                    s2,
                     Predicates.alwaysTrue(),
                     new int[] {R1}, // can't be traversed from s1
                     Direction.OUTGOING,
-                    LongPredicates.alwaysTrue(),
-                    s2);
+                    LongPredicates.alwaysTrue());
 
-            ProductGraphTraversalCursor pgCursor = new ProductGraphTraversalCursor(relCursor, NO_TRACKING);
+            ProductGraphTraversalCursor pgCursor =
+                    new ProductGraphTraversalCursor(read, nodeCursor, relCursor, NO_TRACKING);
 
             // then
             ProductGraph expected = new ProductGraphBuilder()
@@ -184,7 +187,8 @@ public class ProductGraphTraversalCursorTest {
                     var nodeCursor2 = tx2.cursors().allocateNodeCursor(NULL_CONTEXT);
                     var relCursor2 = tx2.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
                 Read read2 = tx2.dataRead();
-                ProductGraphTraversalCursor pgCursor2 = new ProductGraphTraversalCursor(relCursor2, NO_TRACKING);
+                ProductGraphTraversalCursor pgCursor2 =
+                        new ProductGraphTraversalCursor(read2, nodeCursor2, relCursor2, NO_TRACKING);
                 ProductGraph actual2 = ProductGraph.fromCursors(start, s0.state(), pgCursor2, nodeCursor2, read2);
                 assertThat(actual2).isEqualTo(expected);
                 actual2.assertMultiStateExpansions(pgCursor2, nodeCursor2, read2);
@@ -219,16 +223,17 @@ public class ProductGraphTraversalCursorTest {
             var s2 = builder.newFinalState();
 
             s0.addRelationshipExpansion(
-                    Predicates.alwaysTrue(), null, Direction.OUTGOING, LongPredicates.alwaysTrue(), s1);
+                    s1, Predicates.alwaysTrue(), null, Direction.OUTGOING, LongPredicates.alwaysTrue());
 
             s1.addRelationshipExpansion(
+                    s2,
                     Predicates.alwaysTrue(),
                     new int[] {R2},
                     Direction.INCOMING, // can't be traversed from s1 in this direction
-                    LongPredicates.alwaysTrue(),
-                    s2);
+                    LongPredicates.alwaysTrue());
 
-            ProductGraphTraversalCursor pgCursor = new ProductGraphTraversalCursor(relCursor, NO_TRACKING);
+            ProductGraphTraversalCursor pgCursor =
+                    new ProductGraphTraversalCursor(read, nodeCursor, relCursor, NO_TRACKING);
 
             // then
             ProductGraph expected = new ProductGraphBuilder()
@@ -250,7 +255,8 @@ public class ProductGraphTraversalCursorTest {
                     var nodeCursor2 = tx2.cursors().allocateNodeCursor(NULL_CONTEXT);
                     var relCursor2 = tx2.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
                 Read read2 = tx2.dataRead();
-                ProductGraphTraversalCursor pgCursor2 = new ProductGraphTraversalCursor(relCursor2, NO_TRACKING);
+                ProductGraphTraversalCursor pgCursor2 =
+                        new ProductGraphTraversalCursor(read2, nodeCursor2, relCursor2, NO_TRACKING);
                 ProductGraph actual2 = ProductGraph.fromCursors(start, s0.state(), pgCursor2, nodeCursor2, read2);
                 assertThat(actual2).isEqualTo(expected);
                 actual2.assertMultiStateExpansions(pgCursor2, nodeCursor2, read2);
@@ -285,12 +291,13 @@ public class ProductGraphTraversalCursorTest {
             var s2 = builder.newFinalState();
 
             s0.addRelationshipExpansion(
-                    Predicates.alwaysTrue(), null, Direction.OUTGOING, LongPredicates.alwaysTrue(), s1);
+                    s1, Predicates.alwaysTrue(), null, Direction.OUTGOING, LongPredicates.alwaysTrue());
 
             s1.addRelationshipExpansion(
-                    Predicates.alwaysFalse(), new int[] {R2}, Direction.INCOMING, LongPredicates.alwaysTrue(), s2);
+                    s2, Predicates.alwaysFalse(), new int[] {R2}, Direction.INCOMING, LongPredicates.alwaysTrue());
 
-            ProductGraphTraversalCursor pgCursor = new ProductGraphTraversalCursor(relCursor, NO_TRACKING);
+            ProductGraphTraversalCursor pgCursor =
+                    new ProductGraphTraversalCursor(read, nodeCursor, relCursor, NO_TRACKING);
 
             // then
             ProductGraph expected = new ProductGraphBuilder()
@@ -312,7 +319,8 @@ public class ProductGraphTraversalCursorTest {
                     var nodeCursor2 = tx2.cursors().allocateNodeCursor(NULL_CONTEXT);
                     var relCursor2 = tx2.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
                 Read read2 = tx2.dataRead();
-                ProductGraphTraversalCursor pgCursor2 = new ProductGraphTraversalCursor(relCursor2, NO_TRACKING);
+                ProductGraphTraversalCursor pgCursor2 =
+                        new ProductGraphTraversalCursor(read2, nodeCursor2, relCursor2, NO_TRACKING);
                 ProductGraph actual2 = ProductGraph.fromCursors(start, s0.state(), pgCursor2, nodeCursor2, read2);
                 assertThat(actual2).isEqualTo(expected);
                 actual2.assertMultiStateExpansions(pgCursor2, nodeCursor2, read2);
@@ -347,12 +355,13 @@ public class ProductGraphTraversalCursorTest {
             var s2 = builder.newFinalState();
 
             s0.addRelationshipExpansion(
-                    Predicates.alwaysTrue(), null, Direction.OUTGOING, LongPredicates.alwaysTrue(), s1);
+                    s1, Predicates.alwaysTrue(), null, Direction.OUTGOING, LongPredicates.alwaysTrue());
 
             s1.addRelationshipExpansion(
-                    Predicates.alwaysTrue(), new int[] {R2}, Direction.INCOMING, LongPredicates.alwaysFalse(), s2);
+                    s2, Predicates.alwaysTrue(), new int[] {R2}, Direction.INCOMING, LongPredicates.alwaysFalse());
 
-            ProductGraphTraversalCursor pgCursor = new ProductGraphTraversalCursor(relCursor, NO_TRACKING);
+            ProductGraphTraversalCursor pgCursor =
+                    new ProductGraphTraversalCursor(read, nodeCursor, relCursor, NO_TRACKING);
 
             // then
             ProductGraph expected = new ProductGraphBuilder()
@@ -374,7 +383,8 @@ public class ProductGraphTraversalCursorTest {
                     var nodeCursor2 = tx2.cursors().allocateNodeCursor(NULL_CONTEXT);
                     var relCursor2 = tx2.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
                 Read read2 = tx2.dataRead();
-                ProductGraphTraversalCursor pgCursor2 = new ProductGraphTraversalCursor(relCursor2, NO_TRACKING);
+                ProductGraphTraversalCursor pgCursor2 =
+                        new ProductGraphTraversalCursor(read2, nodeCursor2, relCursor2, NO_TRACKING);
                 ProductGraph actual2 = ProductGraph.fromCursors(start, s0.state(), pgCursor2, nodeCursor2, read2);
                 assertThat(actual2).isEqualTo(expected);
                 actual2.assertMultiStateExpansions(pgCursor2, nodeCursor2, read2);
@@ -437,21 +447,22 @@ public class ProductGraphTraversalCursorTest {
             var s4 = builder.newFinalState();
 
             s0.addRelationshipExpansion(
-                    Predicates.alwaysTrue(), new int[] {O1}, Direction.OUTGOING, LongPredicates.alwaysTrue(), s1);
+                    s1, Predicates.alwaysTrue(), new int[] {O1}, Direction.OUTGOING, LongPredicates.alwaysTrue());
 
             s0.addRelationshipExpansion(
-                    Predicates.alwaysTrue(), new int[] {I1, I2}, Direction.INCOMING, LongPredicates.alwaysTrue(), s2);
+                    s2, Predicates.alwaysTrue(), new int[] {I1, I2}, Direction.INCOMING, LongPredicates.alwaysTrue());
 
             s0.addRelationshipExpansion(
-                    Predicates.alwaysTrue(), new int[] {L1, I3}, Direction.BOTH, LongPredicates.alwaysTrue(), s3);
+                    s3, Predicates.alwaysTrue(), new int[] {L1, I3}, Direction.BOTH, LongPredicates.alwaysTrue());
 
             s3.addRelationshipExpansion(
-                    Predicates.alwaysTrue(), new int[] {O3, L2}, Direction.INCOMING, LongPredicates.alwaysTrue(), s4);
+                    s4, Predicates.alwaysTrue(), new int[] {O3, L2}, Direction.INCOMING, LongPredicates.alwaysTrue());
 
             s4.addRelationshipExpansion(
-                    Predicates.alwaysTrue(), new int[] {L3}, Direction.INCOMING, LongPredicates.alwaysTrue(), s0);
+                    s0, Predicates.alwaysTrue(), new int[] {L3}, Direction.INCOMING, LongPredicates.alwaysTrue());
 
-            ProductGraphTraversalCursor pgCursor = new ProductGraphTraversalCursor(relCursor, NO_TRACKING);
+            ProductGraphTraversalCursor pgCursor =
+                    new ProductGraphTraversalCursor(read, nodeCursor, relCursor, NO_TRACKING);
 
             // then
             ProductGraph expected = new ProductGraphBuilder()
@@ -484,7 +495,8 @@ public class ProductGraphTraversalCursorTest {
                     var nodeCursor2 = tx2.cursors().allocateNodeCursor(NULL_CONTEXT);
                     var relCursor2 = tx2.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
                 Read read2 = tx2.dataRead();
-                ProductGraphTraversalCursor pgCursor2 = new ProductGraphTraversalCursor(relCursor2, NO_TRACKING);
+                ProductGraphTraversalCursor pgCursor2 =
+                        new ProductGraphTraversalCursor(read2, nodeCursor2, relCursor2, NO_TRACKING);
                 ProductGraph actual2 = ProductGraph.fromCursors(start, s0.state(), pgCursor2, nodeCursor2, read2);
                 assertThat(actual2).isEqualTo(expected);
                 actual2.assertMultiStateExpansions(pgCursor2, nodeCursor2, read2);
@@ -508,11 +520,12 @@ public class ProductGraphTraversalCursorTest {
             var s1 = builder.newState();
             var s2 = builder.newFinalState();
 
-            s0.addNodeJuxtaposition(LongPredicates.alwaysTrue(), s1);
-            s0.addNodeJuxtaposition(LongPredicates.alwaysFalse(), s2);
-            s1.addNodeJuxtaposition(LongPredicates.alwaysFalse(), s2);
+            s0.addNodeJuxtaposition(s1, LongPredicates.alwaysTrue());
+            s0.addNodeJuxtaposition(s2, LongPredicates.alwaysFalse());
+            s1.addNodeJuxtaposition(s2, LongPredicates.alwaysFalse());
 
-            ProductGraphTraversalCursor pgCursor = new ProductGraphTraversalCursor(relCursor, NO_TRACKING);
+            ProductGraphTraversalCursor pgCursor =
+                    new ProductGraphTraversalCursor(read, nodeCursor, relCursor, NO_TRACKING);
 
             // then
             ProductGraph expected = new ProductGraphBuilder()
@@ -534,7 +547,8 @@ public class ProductGraphTraversalCursorTest {
                     var nodeCursor2 = tx2.cursors().allocateNodeCursor(NULL_CONTEXT);
                     var relCursor2 = tx2.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
                 Read read2 = tx2.dataRead();
-                ProductGraphTraversalCursor pgCursor2 = new ProductGraphTraversalCursor(relCursor2, NO_TRACKING);
+                ProductGraphTraversalCursor pgCursor2 =
+                        new ProductGraphTraversalCursor(read2, nodeCursor2, relCursor2, NO_TRACKING);
                 ProductGraph actual2 = ProductGraph.fromCursors(start, s0.state(), pgCursor2, nodeCursor2, read2);
                 assertThat(actual2).isEqualTo(expected);
                 actual2.assertMultiStateExpansions(pgCursor2, nodeCursor2, read2);
@@ -613,49 +627,52 @@ public class ProductGraphTraversalCursorTest {
             var re3 = nfaBuilder.newFinalState();
             var re4 = nfaBuilder.newFinalState();
 
-            nj0.addNodeJuxtaposition(n -> n == n1, nj1);
-            nj0.addNodeJuxtaposition(n -> n == start, nj2);
-            nj1.addNodeJuxtaposition(LongPredicates.alwaysTrue(), nj2);
-            nj2.addNodeJuxtaposition(n -> n == start, re0);
+            nj0.addNodeJuxtaposition(nj1, n -> n == n1);
+            nj0.addNodeJuxtaposition(nj2, n -> n == start);
+            nj1.addNodeJuxtaposition(nj2, LongPredicates.alwaysTrue());
+            nj2.addNodeJuxtaposition(re0, n -> n == start);
 
             re0.addRelationshipExpansion(
-                    rCursor -> rCursor.originNodeReference() == rCursor.otherNodeReference(),
+                    nj4,
+                    (rel) -> rel.sourceNodeReference() == rel.targetNodeReference(),
                     null, // All types
                     Direction.BOTH,
-                    LongPredicates.alwaysTrue(),
-                    nj4);
+                    LongPredicates.alwaysTrue());
 
             re0.addRelationshipExpansion(
-                    r -> r.reference() == rs5 || r.reference() == r2s || r.reference() == rs1,
+                    nj3,
+                    (rel) -> rel.relationshipReference() == rs5
+                            || rel.relationshipReference() == r2s
+                            || rel.relationshipReference() == rs1,
                     null, // All types
                     Direction.BOTH,
-                    n -> n != n5,
-                    nj3);
+                    n -> n != n5);
 
-            nj3.addNodeJuxtaposition(n -> n != start, re1);
+            nj3.addNodeJuxtaposition(re1, n -> n != start);
 
             re1.addRelationshipExpansion(
+                    re2,
                     Predicates.alwaysTrue(),
                     null, // All types
                     Direction.BOTH,
-                    LongPredicates.alwaysTrue(),
-                    re2);
+                    LongPredicates.alwaysTrue());
 
             re2.addRelationshipExpansion(
+                    re2,
                     Predicates.alwaysTrue(),
                     null, // All types
                     Direction.OUTGOING,
-                    LongPredicates.alwaysTrue(),
-                    re2);
+                    LongPredicates.alwaysTrue());
 
             re2.addRelationshipExpansion(
-                    rCursor -> rCursor.originNodeReference() == rCursor.otherNodeReference(),
+                    nj5,
+                    (rel) -> rel.sourceNodeReference() == rel.targetNodeReference(),
                     null, // All types
                     Direction.OUTGOING,
-                    LongPredicates.alwaysTrue(),
-                    nj5);
+                    LongPredicates.alwaysTrue());
 
-            ProductGraphTraversalCursor pgCursor = new ProductGraphTraversalCursor(relCursor, NO_TRACKING);
+            ProductGraphTraversalCursor pgCursor =
+                    new ProductGraphTraversalCursor(read, nodeCursor, relCursor, NO_TRACKING);
 
             // then
             ProductGraph expected = new ProductGraphBuilder()
@@ -710,7 +727,8 @@ public class ProductGraphTraversalCursorTest {
                     var nodeCursor2 = tx2.cursors().allocateNodeCursor(NULL_CONTEXT);
                     var relCursor2 = tx2.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
                 Read read2 = tx2.dataRead();
-                ProductGraphTraversalCursor pgCursor2 = new ProductGraphTraversalCursor(relCursor2, NO_TRACKING);
+                ProductGraphTraversalCursor pgCursor2 =
+                        new ProductGraphTraversalCursor(read2, nodeCursor2, relCursor2, NO_TRACKING);
                 ProductGraph actual2 = ProductGraph.fromCursors(start, nj0.state(), pgCursor2, nodeCursor2, read2);
                 assertThat(actual2).isEqualTo(expected);
                 actual2.assertMultiStateExpansions(pgCursor2, nodeCursor2, read2);
@@ -790,60 +808,63 @@ public class ProductGraphTraversalCursorTest {
             var s10 = nfaBuilder.newFinalState();
 
             // mixed state
-            s0.addNodeJuxtaposition(n -> n == n1, s1);
-            s0.addNodeJuxtaposition(n -> n == start, s2);
+            s0.addNodeJuxtaposition(s1, n -> n == n1);
+            s0.addNodeJuxtaposition(s2, n -> n == start);
             s0.addRelationshipExpansion(
+                    s4,
                     Predicates.alwaysTrue(),
                     null, // All types
                     Direction.INCOMING,
-                    LongPredicates.alwaysTrue(),
-                    s4);
+                    LongPredicates.alwaysTrue());
 
-            s1.addNodeJuxtaposition(LongPredicates.alwaysTrue(), s2);
-            s2.addNodeJuxtaposition(n -> n == start, s6);
+            s1.addNodeJuxtaposition(s2, LongPredicates.alwaysTrue());
+            s2.addNodeJuxtaposition(s6, n -> n == start);
 
-            s4.addNodeJuxtaposition(n -> n == n2, s5);
+            s4.addNodeJuxtaposition(s5, n -> n == n2);
             s4.addRelationshipExpansion(
-                    Predicates.alwaysTrue(), new int[] {R21}, Direction.OUTGOING, LongPredicates.alwaysTrue(), s3);
+                    s3, Predicates.alwaysTrue(), new int[] {R21}, Direction.OUTGOING, LongPredicates.alwaysTrue());
 
             s6.addRelationshipExpansion(
-                    rCursor -> rCursor.originNodeReference() == rCursor.otherNodeReference(),
+                    s4,
+                    (rel) -> rel.sourceNodeReference() == rel.targetNodeReference(),
                     null, // All types
                     Direction.BOTH,
-                    LongPredicates.alwaysTrue(),
-                    s4);
+                    LongPredicates.alwaysTrue());
 
             s6.addRelationshipExpansion(
-                    r -> r.reference() == rs5 || r.reference() == r2s || r.reference() == rs1,
+                    s3,
+                    (r) -> r.relationshipReference() == rs5
+                            || r.relationshipReference() == r2s
+                            || r.relationshipReference() == rs1,
                     null, // All types
                     Direction.BOTH,
-                    n -> n != n5,
-                    s3);
+                    n -> n != n5);
 
-            s3.addNodeJuxtaposition(n -> n != start, s7);
+            s3.addNodeJuxtaposition(s7, n -> n != start);
 
             s7.addRelationshipExpansion(
+                    s8,
                     Predicates.alwaysTrue(),
                     null, // All types
                     Direction.BOTH,
-                    LongPredicates.alwaysTrue(),
-                    s8);
+                    LongPredicates.alwaysTrue());
 
             s8.addRelationshipExpansion(
+                    s8,
                     Predicates.alwaysTrue(),
                     null, // All types
                     Direction.OUTGOING,
-                    LongPredicates.alwaysTrue(),
-                    s8);
+                    LongPredicates.alwaysTrue());
 
             s8.addRelationshipExpansion(
-                    rCursor -> rCursor.originNodeReference() == rCursor.otherNodeReference(),
+                    s5,
+                    (rel) -> rel.sourceNodeReference() == rel.targetNodeReference(),
                     null, // All types
                     Direction.OUTGOING,
-                    LongPredicates.alwaysTrue(),
-                    s5);
+                    LongPredicates.alwaysTrue());
 
-            ProductGraphTraversalCursor pgCursor = new ProductGraphTraversalCursor(relCursor, NO_TRACKING);
+            ProductGraphTraversalCursor pgCursor =
+                    new ProductGraphTraversalCursor(read, nodeCursor, relCursor, NO_TRACKING);
             ProductGraph actual = ProductGraph.fromCursors(start, s0.state(), pgCursor, nodeCursor, read);
 
             // then
@@ -903,7 +924,8 @@ public class ProductGraphTraversalCursorTest {
                     var nodeCursor2 = tx2.cursors().allocateNodeCursor(NULL_CONTEXT);
                     var relCursor2 = tx2.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
                 Read read2 = tx2.dataRead();
-                ProductGraphTraversalCursor pgCursor2 = new ProductGraphTraversalCursor(relCursor2, NO_TRACKING);
+                ProductGraphTraversalCursor pgCursor2 =
+                        new ProductGraphTraversalCursor(read2, nodeCursor2, relCursor2, NO_TRACKING);
                 ProductGraph actual2 = ProductGraph.fromCursors(start, s0.state(), pgCursor2, nodeCursor2, read2);
                 assertThat(actual2).isEqualTo(expected);
                 actual2.assertMultiStateExpansions(pgCursor2, nodeCursor2, read2);
@@ -996,13 +1018,8 @@ public class ProductGraphTraversalCursorTest {
             var adjacencyLists = new HashMap<PGNode, Set<Relationship>>();
             while (toExpand.notEmpty()) {
                 PGNode node = toExpand.pop();
-                read.singleNode(node.id, nodeCursor);
 
-                if (!nodeCursor.next()) {
-                    throw new IllegalStateException("Node was unexpectedly deleted");
-                }
-
-                expandTransition(adjacencyLists, node, nodeCursor, pgCursor, toExpand, seen);
+                expandTransition(adjacencyLists, node, pgCursor, toExpand, seen);
             }
 
             return new ProductGraph(adjacencyLists);
@@ -1032,9 +1049,6 @@ public class ProductGraphTraversalCursorTest {
                 long nodeId = nodeStates.getOne();
                 ArrayList<State> states = nodeStates.getTwo();
 
-                read.singleNode(nodeId, nodeCursor);
-                assertThat(nodeCursor.next()).isTrue();
-
                 // Iterate through every possible subset of the states set
                 for (var statesSubset : combinations(states)) {
                     Set<Relationship> existingAdjacencyList = new HashSet<>();
@@ -1044,7 +1058,7 @@ public class ProductGraphTraversalCursorTest {
                                 .toList());
                     }
 
-                    pgCursor.setNodeAndStates(nodeCursor, statesSubset);
+                    pgCursor.setNodeAndStates(nodeId, statesSubset);
 
                     var adjacencyList = new HashSet<>();
                     while (pgCursor.next()) {
@@ -1061,7 +1075,6 @@ public class ProductGraphTraversalCursorTest {
         private static void expandTransition(
                 HashMap<PGNode, Set<Relationship>> adjacencyLists,
                 PGNode node,
-                NodeCursor nodeCursor,
                 ProductGraphTraversalCursor pgCursor,
                 ArrayStack<PGNode> toExpand,
                 Set<PGNode> seen) {
@@ -1086,7 +1099,7 @@ public class ProductGraphTraversalCursorTest {
             }
 
             // Expand relationship expansions
-            pgCursor.setNodeAndStates(nodeCursor, Collections.singletonList(state));
+            pgCursor.setNodeAndStates(node.id, Collections.singletonList(state));
 
             while (pgCursor.next()) {
                 long nodeId = pgCursor.otherNodeReference();

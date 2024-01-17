@@ -24,12 +24,12 @@ import java.util.Objects;
 import java.util.function.LongPredicate;
 import java.util.function.Predicate;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
+import org.neo4j.internal.kernel.api.RelationshipDataReader;
 import org.neo4j.internal.kernel.api.helpers.traversal.SlotOrName;
 import org.neo4j.util.Preconditions;
 
 public final class RelationshipExpansion implements Transition {
-    private final Predicate<RelationshipTraversalCursor> relPredicate;
+    private final Predicate<RelationshipDataReader> relPredicate;
     private final int[] types;
     private final Direction direction;
     private final SlotOrName slotOrName;
@@ -37,7 +37,7 @@ public final class RelationshipExpansion implements Transition {
     private State targetState;
 
     public RelationshipExpansion(
-            Predicate<RelationshipTraversalCursor> relPredicate,
+            Predicate<RelationshipDataReader> relPredicate,
             int[] types,
             Direction direction,
             SlotOrName slotOrName,
@@ -51,8 +51,8 @@ public final class RelationshipExpansion implements Transition {
         this.targetState = targetState;
     }
 
-    public boolean testRelationship(RelationshipTraversalCursor cursor) {
-        return relPredicate.test(cursor);
+    public boolean testRelationship(RelationshipDataReader rel) {
+        return relPredicate.test(rel);
     }
 
     public boolean testNode(long node) {

@@ -68,7 +68,7 @@ abstract class PPBFSHooks {
     totalLength: Int
   ): Unit = {}
   def propagateAllAtLengths(lengthFromSource: Int, lengthToTarget: Int): Unit = {}
-  def registerNodeToPropagate(nodeData: NodeData, lengthFromSource: Int, lengthToTarget: Int): Unit = {}
+  def schedulePropagation(nodeData: NodeData, lengthFromSource: Int, lengthToTarget: Int): Unit = {}
   def newRow(nodeId: Long): Unit = {}
   def finishedPropagation(targets: HeapTrackingArrayList[NodeData]): Unit = {}
   def decrementTargetCount(nodeData: NodeData, remainingTargetCount: Int): Unit = {}

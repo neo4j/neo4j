@@ -116,7 +116,7 @@ public final class PathTracer extends PrefetchingIterator<PathTracer.TracedPath>
 
         this.dgLength = dgLength;
         this.currentDgLengthToTarget = 0;
-        this.shouldReturnSingleNodePath = targetNode == sourceNode;
+        this.shouldReturnSingleNodePath = targetNode == sourceNode && dgLength == 0;
         super.reset();
     }
 
@@ -264,7 +264,10 @@ public final class PathTracer extends PrefetchingIterator<PathTracer.TracedPath>
             entities[index--] = PathEntity.fromNode(signpost.prevNode);
         }
 
-        Preconditions.checkState(index == -1, "Traced path length was not as expected");
+        Preconditions.checkState(
+                index == -1,
+                "Traced path length was not as expected (expected " + entities.length + " but found "
+                        + (entities.length - (index + 1)) + ")");
 
         return new TracedPath(entities);
     }

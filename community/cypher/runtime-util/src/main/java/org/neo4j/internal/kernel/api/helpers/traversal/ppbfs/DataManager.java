@@ -124,7 +124,7 @@ final class DataManager implements AutoCloseable {
     }
 
     public void schedulePropagation(NodeData nodeData, int lengthFromSource, int lengthToTarget) {
-        hooks.registerNodeToPropagate(nodeData, lengthFromSource, lengthToTarget);
+        hooks.schedulePropagation(nodeData, lengthFromSource, lengthToTarget);
 
         nodesToPropagate
                 .getIfAbsentPut(

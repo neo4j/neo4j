@@ -19,29 +19,35 @@
  */
 package org.neo4j.internal.kernel.api.helpers.traversal.productgraph;
 
-import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
-
 import java.util.List;
 import org.apache.commons.lang3.ArrayUtils;
+import org.neo4j.exceptions.EntityNotFoundException;
+import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.RelationshipDataReader;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
-import org.neo4j.internal.kernel.api.helpers.RelationshipSelections;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.DirectedTypes;
 import org.neo4j.storageengine.api.RelationshipDirection;
+import org.neo4j.storageengine.api.RelationshipSelection;
 
 public class ProductGraphTraversalCursor implements AutoCloseable {
 
-    private long originNodeId = NO_SUCH_NODE;
+    private final DataGraphRelationshipCursor graphCursor;
     private boolean initialized = false;
     private final DirectedTypes directedTypes;
-    private RelationshipTraversalCursor traversalCursor;
     private final ComposedSourceCursor<List<State>, State, RelationshipExpansion> nfaCursor;
 
-    public ProductGraphTraversalCursor(RelationshipTraversalCursor relCursor, MemoryTracker memoryTracker) {
-        this.traversalCursor = relCursor;
+    public ProductGraphTraversalCursor(
+            Read read, NodeCursor nodeCursor, RelationshipTraversalCursor relCursor, MemoryTracker mt) {
+        this(new DataGraphRelationshipCursorImpl(read, nodeCursor, relCursor), mt);
+    }
+
+    public ProductGraphTraversalCursor(DataGraphRelationshipCursor graph, MemoryTracker mt) {
+        this.graphCursor = graph;
         this.nfaCursor = new ComposedSourceCursor<>(new ListCursor<>(), new RelationshipExpansionCursor());
-        this.directedTypes = new DirectedTypes(memoryTracker);
+        this.directedTypes = new DirectedTypes(mt);
     }
 
     public State targetState() {
@@ -53,11 +59,11 @@ public class ProductGraphTraversalCursor implements AutoCloseable {
     }
 
     public long otherNodeReference() {
-        return traversalCursor.otherNodeReference();
+        return graphCursor.otherNode();
     }
 
     public long relationshipReference() {
-        return traversalCursor.reference();
+        return graphCursor.relationshipReference();
     }
 
     public RelationshipExpansion relationshipExpansion() {
@@ -87,22 +93,19 @@ public class ProductGraphTraversalCursor implements AutoCloseable {
 
     private boolean nextRelationship() {
         nfaCursor.reset();
-        return traversalCursor.next();
+        return graphCursor.nextRelationship();
     }
 
     private boolean evaluateCurrent() {
         var expansion = nfaCursor.current();
-        var currentDirection = RelationshipDirection.directionOfStrict(
-                originNodeId, traversalCursor.sourceNodeReference(), traversalCursor.targetNodeReference());
-        return currentDirection.matches(expansion.direction())
-                && (expansion.types() == null || ArrayUtils.contains(expansion.types(), traversalCursor.type()))
-                && expansion.testRelationship(traversalCursor)
-                && expansion.testNode(traversalCursor.otherNodeReference());
+        return graphCursor.direction().matches(expansion.direction())
+                && (expansion.types() == null || ArrayUtils.contains(expansion.types(), graphCursor.type()))
+                && expansion.testRelationship(graphCursor)
+                && expansion.testNode(graphCursor.otherNode());
     }
 
-    public void setNodeAndStates(NodeCursor node, List<State> states) {
+    public void setNodeAndStates(long nodeId, List<State> states) {
         initialized = false;
-        this.originNodeId = node.nodeReference();
         this.nfaCursor.setSource(states);
 
         // preprocess nfa type directions for the current node for use in the graph cursor
@@ -112,13 +115,104 @@ public class ProductGraphTraversalCursor implements AutoCloseable {
             directedTypes.addTypes(expansion.types(), expansion.direction());
         }
         this.nfaCursor.reset();
+        this.graphCursor.setNode(nodeId, RelationshipSelection.selection(directedTypes));
+    }
 
-        RelationshipSelections.multiTypeMultiDirectionCursor(traversalCursor, node, directedTypes);
+    public void setTracer(KernelReadTracer tracer) {
+        graphCursor.setTracer(tracer);
     }
 
     @Override
     public void close() throws Exception {
-        // this class does not own the traversalCursor, it should be closed by the consumer
+        // this class does not own the nodeCursor or traversalCursor, they should be closed by the consumer
         this.nfaCursor.close();
+    }
+
+    public interface DataGraphRelationshipCursor extends RelationshipDataReader {
+        boolean nextRelationship();
+
+        void setNode(long nodeId, RelationshipSelection relationshipSelection);
+
+        long originNode();
+
+        long otherNode();
+
+        default RelationshipDirection direction() {
+            return RelationshipDirection.directionOfStrict(originNode(), sourceNodeReference(), targetNodeReference());
+        }
+
+        void setTracer(KernelReadTracer tracer);
+    }
+
+    static class DataGraphRelationshipCursorImpl implements DataGraphRelationshipCursor {
+        private final Read read;
+        private final NodeCursor node;
+        private final RelationshipTraversalCursor rel;
+
+        DataGraphRelationshipCursorImpl(Read read, NodeCursor node, RelationshipTraversalCursor rel) {
+            this.read = read;
+            this.node = node;
+            this.rel = rel;
+        }
+
+        @Override
+        public boolean nextRelationship() {
+            return rel.next();
+        }
+
+        @Override
+        public void setTracer(KernelReadTracer tracer) {
+            node.setTracer(tracer);
+            rel.setTracer(tracer);
+        }
+
+        @Override
+        public void setNode(long nodeId, RelationshipSelection relationshipSelection) {
+            read.singleNode(nodeId, node);
+            if (!node.next()) {
+                throw new EntityNotFoundException("Node " + nodeId + " was unexpectedly deleted");
+            }
+            node.relationships(rel, relationshipSelection);
+        }
+
+        @Override
+        public long relationshipReference() {
+            return rel.reference();
+        }
+
+        @Override
+        public long originNode() {
+            return rel.originNodeReference();
+        }
+
+        @Override
+        public long otherNode() {
+            return rel.otherNodeReference();
+        }
+
+        @Override
+        public long sourceNodeReference() {
+            return rel.sourceNodeReference();
+        }
+
+        @Override
+        public long targetNodeReference() {
+            return rel.targetNodeReference();
+        }
+
+        @Override
+        public void source(NodeCursor cursor) {
+            rel.source(cursor);
+        }
+
+        @Override
+        public void target(NodeCursor cursor) {
+            rel.target(cursor);
+        }
+
+        @Override
+        public int type() {
+            return rel.type();
+        }
     }
 }

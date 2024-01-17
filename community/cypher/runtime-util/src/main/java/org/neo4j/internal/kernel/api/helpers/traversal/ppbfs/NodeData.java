@@ -24,6 +24,7 @@ import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_ENTITY;
 import java.util.BitSet;
 import java.util.function.Consumer;
 import org.neo4j.collection.trackable.HeapTrackingArrayList;
+import org.neo4j.internal.kernel.api.helpers.traversal.SlotOrName;
 import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.State;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.Preconditions;
@@ -221,18 +222,6 @@ public final class NodeData implements AutoCloseable {
             return;
         }
 
-        Preconditions.checkState(
-                lengthsFromSource.get(lengthFromSource),
-                "We shouldn't be asked to propagate at length pairs for"
-                        + " which we haven't registered, and we shouldn't register for a "
-                        + "(int lengthFromSource, int lengthToTarget) pair if we don't have a trail from the source of length"
-                        + " lengthFromSource");
-
-        assert hasMinDistToTarget(lengthToTarget)
-                : "We shouldn't be asked to propagate at length pairs for which we haven't registered, "
-                        + "and we shouldn't register for a (int lengthFromSource, int lengthToTarget) pair if "
-                        + "we don't have a trail to the target of length lengthToTarget";
-
         forEachTargetSignpost(signpost -> {
             if (signpost.minDistToTarget() == lengthToTarget) {
                 signpost.propagate(lengthFromSource, lengthToTarget);
@@ -326,7 +315,11 @@ public final class NodeData implements AutoCloseable {
 
     @Override
     public String toString() {
-        return "(" + id + "," + state.id() + ')';
+        var stateName = String.valueOf(state.id());
+        if (state.slotOrName() instanceof SlotOrName.VarName name) {
+            stateName = name.name();
+        }
+        return "(" + id + "," + stateName + ')';
     }
 
     public int remainingTargetCount() {

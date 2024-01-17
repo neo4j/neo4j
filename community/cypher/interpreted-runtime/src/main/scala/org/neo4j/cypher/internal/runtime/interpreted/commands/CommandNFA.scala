@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.DirectionC
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.RelationshipTypes
 import org.neo4j.function.Predicates
-import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
+import org.neo4j.internal.kernel.api.RelationshipDataReader
 import org.neo4j.internal.kernel.api.helpers.traversal.SlotOrName
 import org.neo4j.internal.kernel.api.helpers.traversal.productgraph
 import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.NodeJuxtaposition
@@ -68,17 +68,17 @@ case class CommandNFA(
         case _               => LongPredicates.alwaysTrue()
       }
 
-    def relPredicate(transition: RelationshipExpansionTransition): Predicate[RelationshipTraversalCursor] =
+    def relPredicate(transition: RelationshipExpansionTransition): Predicate[RelationshipDataReader] =
       transition.innerRelPred match {
-        case Some(predicate) => (cursor: RelationshipTraversalCursor) => {
+        case Some(predicate) => (rel: RelationshipDataReader) => {
             predicate(
               row,
               queryState,
               relationship(
-                cursor.relationshipReference(),
-                cursor.sourceNodeReference(),
-                cursor.targetNodeReference(),
-                cursor.`type`()
+                rel.relationshipReference(),
+                rel.sourceNodeReference(),
+                rel.targetNodeReference(),
+                rel.`type`()
               )
             )
           }

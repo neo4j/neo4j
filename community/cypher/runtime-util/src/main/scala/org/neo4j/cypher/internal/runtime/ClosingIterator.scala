@@ -32,7 +32,6 @@ import org.neo4j.storageengine.api.RelationshipVisitor
 import org.neo4j.values.AnyValue
 
 import scala.collection.GenTraversableOnce
-import scala.collection.Iterator
 import scala.collection.Iterator.empty
 import scala.collection.immutable
 import scala.collection.mutable.ArrayBuffer
@@ -269,6 +268,10 @@ abstract class ClosingIterator[+T] extends AutoCloseable {
 }
 
 object ClosingIterator {
+
+  implicit class JavaAutoCloseableIteratorAsClosingIterator[T](val iterator: java.util.Iterator[T] with AutoCloseable) {
+    def asSelfClosingIterator: ClosingIterator[T] = new DelegatingClosingJavaIterator(iterator).closing(iterator)
+  }
 
   implicit class JavaIteratorAsClosingIterator[T](val iterator: java.util.Iterator[T]) {
     def asClosingIterator: ClosingIterator[T] = new DelegatingClosingJavaIterator(iterator)

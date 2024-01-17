@@ -31,6 +31,7 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.PPBFSHooks;
+import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.ProductGraphTraversalCursor;
 import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.State;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.Preconditions;
@@ -38,28 +39,69 @@ import org.neo4j.util.Preconditions;
 /**
  * This is the root of the product graph PPBFS algorithm. It is provided with a single source node and a starting NFA
  * state.
- *
+ * <p>
  * To learn more about how the algorithm works, read the PPBFS guide:
  * https://neo4j.atlassian.net/wiki/spaces/CYPHER/pages/180977665/Shortest+K+Implementation
  */
-public final class PGPathPropagatingBFS implements AutoCloseable {
+public final class PGPathPropagatingBFS<Row> extends PrefetchingIterator<Row> implements AutoCloseable {
+    // dependencies
     private final DataManager dataManager;
     private final BFSExpander bfsExpander;
     private final NodeData sourceData;
     private final long intoTarget;
     private final PathTracer pathTracer;
+    private final Function<PathTracer.TracedPath, Row> toRow;
+    private final Predicate<Row> nonInlinedPredicate;
+    private final Boolean isGroupSelector;
     private final PPBFSHooks hooks;
+
+    // iteration state
     private int nextDepth = 0;
     private boolean isInitialLevel = true;
+    private Iterator<NodeData> currentTargets = Collections.emptyIterator();
+    private boolean targetSaturated = false;
+    private boolean groupYielded = false;
 
     /**
      * Creates a new PathPropagatingBFS.
      *
-     * @param source The id of the starting node.
-     * @param startState The initial state of the NFA generated from the QPP
-     * @param pathTracer A PathTracer instance that will be reused for each new target node & length
+     * @param source              The id of the starting node.
+     * @param startState          The initial state of the NFA generated from the QPP
+     * @param pathTracer          A PathTracer instance that will be reused for each new target node & length
+     * @param toRow               a function converting a traced path to a row in the relevant runtime
+     * @param nonInlinedPredicate the non inlined predicate, executed on the output row
+     * @param isGroupSelector     a boolean indicating whether the K selector specifies GROUPS or not
      */
     public PGPathPropagatingBFS(
+            long source,
+            long intoTarget,
+            State startState,
+            ProductGraphTraversalCursor pgCursor,
+            PathTracer pathTracer,
+            Function<PathTracer.TracedPath, Row> toRow,
+            Predicate<Row> nonInlinedPredicate,
+            Boolean isGroupSelector,
+            int initialCountForTargetNodes,
+            int numberOfNfaStates,
+            MemoryTracker mt,
+            PPBFSHooks hooks) {
+        this.intoTarget = intoTarget;
+        this.pathTracer = pathTracer;
+        this.toRow = toRow;
+        this.nonInlinedPredicate = nonInlinedPredicate;
+        this.isGroupSelector = isGroupSelector;
+        this.hooks = hooks;
+        this.dataManager = new DataManager(mt, hooks, this, initialCountForTargetNodes, numberOfNfaStates);
+        this.bfsExpander = new BFSExpander(dataManager, pgCursor, intoTarget, hooks, mt);
+        this.sourceData = new NodeData(mt, source, startState, 0, dataManager, intoTarget);
+
+        dataManager.addToNextLevel(sourceData);
+        pathTracer.setSourceNode(sourceData);
+
+        this.hooks.newRow(source);
+    }
+
+    public static <Row> PGPathPropagatingBFS<Row> create(
             long source,
             long intoTarget,
             State startState,
@@ -67,95 +109,81 @@ public final class PGPathPropagatingBFS implements AutoCloseable {
             NodeCursor nodeCursor,
             RelationshipTraversalCursor relCursor,
             PathTracer pathTracer,
+            Function<PathTracer.TracedPath, Row> toRow,
+            Predicate<Row> nonInlinedPredicate,
+            Boolean isGroupSelector,
             int initialCountForTargetNodes,
             int numberOfNfaStates,
             MemoryTracker mt,
             PPBFSHooks hooks) {
-        this.intoTarget = intoTarget;
-        this.pathTracer = pathTracer;
-        this.hooks = hooks;
-        this.dataManager = new DataManager(mt, hooks, this, initialCountForTargetNodes, numberOfNfaStates);
-        this.bfsExpander = new BFSExpander(dataManager, read, nodeCursor, relCursor, mt, hooks, intoTarget);
-        this.sourceData = new NodeData(mt, source, startState, 0, dataManager, intoTarget);
+        return new PGPathPropagatingBFS<>(
+                source,
+                intoTarget,
+                startState,
+                new ProductGraphTraversalCursor(read, nodeCursor, relCursor, mt),
+                pathTracer,
+                toRow,
+                nonInlinedPredicate,
+                isGroupSelector,
+                initialCountForTargetNodes,
+                numberOfNfaStates,
+                mt,
+                hooks);
+    }
 
-        dataManager.addToNextLevel(sourceData);
+    @Override
+    protected Row fetchNextOrNull() {
+        if (targetSaturated) {
+            return null;
+        }
 
-        this.hooks.newRow(source);
+        while (true) {
+            if (pathTracer.ready()) {
+                // exhaust the paths for the current target if there is one
+                while (pathTracer.hasNext()) {
+                    var path = pathTracer.next();
+                    var row = toRow.apply(path);
+                    if (nonInlinedPredicate.test(row)) {
+                        if (isGroupSelector) {
+                            groupYielded = true;
+                        } else {
+                            pathTracer.decrementTargetCount();
+                        }
+
+                        if (intoTarget != NO_SUCH_ENTITY && pathTracer.isSaturated()) {
+                            targetSaturated = true;
+                        }
+                        return row;
+                    }
+                }
+            }
+
+            if (groupYielded) {
+                groupYielded = false;
+                pathTracer.decrementTargetCount();
+
+                if (intoTarget != NO_SUCH_ENTITY && pathTracer.isSaturated()) {
+                    targetSaturated = true;
+                    return null;
+                }
+            }
+
+            // if we exhausted the current target set, expand & propagate until we find the next target set
+            if (!currentTargets.hasNext()) {
+                if (nextLevelWithTargets()) {
+                    currentTargets = dataManager.targets().iterator();
+                } else {
+                    targetSaturated = true;
+                    return null;
+                }
+            }
+
+            pathTracer.resetWithNewTargetNodeAndDGLength(currentTargets.next(), nextDepth);
+        }
     }
 
     public int nextDepth() {
         return nextDepth;
-    }
-
-    /**
-     * @param toRow a function converting a traced path to a row in the relevant runtime
-     * @param nonInlinedPredicate the non inlined predicate, executed on the output row
-     * @param isGroupSelector a boolean indicating whether the K selector specifies GROUPS or not
-     * @return an iterator of new rows in ascending order of length
-     */
-    public <Row> Iterator<Row> iterate(
-            Function<PathTracer.TracedPath, Row> toRow, Predicate<Row> nonInlinedPredicate, Boolean isGroupSelector) {
-
-        pathTracer.setSourceNode(sourceData);
-
-        return new PrefetchingIterator<>() {
-            private Iterator<NodeData> currentTargets = Collections.emptyIterator();
-            private boolean targetSaturated = false;
-
-            private boolean groupYielded = false;
-
-            @Override
-            protected Row fetchNextOrNull() {
-                if (targetSaturated) {
-                    return null;
-                }
-
-                while (true) {
-                    if (pathTracer.ready()) {
-                        // exhaust the paths for the current target if there is one
-                        while (pathTracer.hasNext()) {
-                            var path = pathTracer.next();
-                            var row = toRow.apply(path);
-
-                            if (nonInlinedPredicate.test(row)) {
-                                if (isGroupSelector) {
-                                    groupYielded = true;
-                                } else {
-                                    pathTracer.decrementTargetCount();
-                                }
-
-                                if (intoTarget != NO_SUCH_ENTITY && pathTracer.isSaturated()) {
-                                    targetSaturated = true;
-                                }
-                                return row;
-                            }
-                        }
-                    }
-
-                    if (groupYielded) {
-                        groupYielded = false;
-                        pathTracer.decrementTargetCount();
-
-                        if (intoTarget != NO_SUCH_ENTITY && pathTracer.isSaturated()) {
-                            targetSaturated = true;
-                            return null;
-                        }
-                    }
-
-                    // if we exhausted the current target set, expand & propagate until we find the next target set
-                    if (!currentTargets.hasNext()) {
-                        if (nextLevelWithTargets()) {
-                            currentTargets = dataManager.targets().iterator();
-                        } else {
-                            targetSaturated = true;
-                            return null;
-                        }
-                    }
-
-                    pathTracer.resetWithNewTargetNodeAndDGLength(currentTargets.next(), nextDepth);
-                }
-            }
-        };
     }
 
     /**

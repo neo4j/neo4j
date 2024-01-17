@@ -20,6 +20,7 @@
 package org.neo4j.internal.kernel.api.helpers.traversal.ppbfs;
 
 import java.util.BitSet;
+import java.util.stream.Collectors;
 import org.neo4j.internal.kernel.api.helpers.traversal.SlotOrName;
 import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.RelationshipExpansion;
 import org.neo4j.util.Preconditions;
@@ -204,15 +205,26 @@ public abstract sealed class TwoWaySignpost {
 
         @Override
         public String toString() {
-            return "RelSignpost["
-                    + "prevNode=" + prevNode
-                    + ", relId=" + relId
-                    + ", forwardNode=" + forwardNode
-                    + ", slotOrName=" + slotOrName()
-                    + ", minDistToTarget=" + minDistToTarget
-                    + ", lengthsFromSource: " + lengthsFromSource
-                    + ", verifiedAtLengthFromSource: " + verifiedAtLengthFromSource
-                    + ']';
+            var sb = new StringBuilder("RE ").append(prevNode).append("-[");
+
+            if (slotOrName() != SlotOrName.none()) {
+                sb.append(slotOrName()).append("@");
+            }
+
+            sb.append(relId).append("]->").append(forwardNode);
+
+            if (minDistToTarget != NO_TARGET_DISTANCE) {
+                sb.append(", minDistToTarget: ").append(minDistToTarget);
+            }
+
+            if (!lengthsFromSource.isEmpty()) {
+                var lengths = lengthsFromSource.stream()
+                        .mapToObj(i -> i + (verifiedAtLengthFromSource.get(i) ? "✓" : "?"))
+                        .collect(Collectors.joining(",", "{", "}"));
+                sb.append(", lengthsFromSource: ").append(lengths);
+            }
+
+            return sb.toString();
         }
     }
 
@@ -253,13 +265,20 @@ public abstract sealed class TwoWaySignpost {
 
         @Override
         public String toString() {
-            return "NodeSignpost["
-                    + "prevNode=" + prevNode
-                    + ", forwardNode=" + forwardNode
-                    + ", minDistToTarget=" + minDistToTarget
-                    + ", lengthsFromSource: " + lengthsFromSource
-                    + ", verifiedAtLengthFromSource: " + verifiedAtLengthFromSource
-                    + ']';
+            var sb = new StringBuilder("NJ ").append(prevNode).append(" ").append(forwardNode);
+
+            if (minDistToTarget != NO_TARGET_DISTANCE) {
+                sb.append(", minDistToTarget: ").append(minDistToTarget);
+            }
+
+            if (!lengthsFromSource.isEmpty()) {
+                var lengths = lengthsFromSource.stream()
+                        .mapToObj(i -> i + (verifiedAtLengthFromSource.get(i) ? "✓" : "?"))
+                        .collect(Collectors.joining(",", "{", "}"));
+                sb.append(", lengthsFromSource: ").append(lengths);
+            }
+
+            return sb.toString();
         }
     }
 }

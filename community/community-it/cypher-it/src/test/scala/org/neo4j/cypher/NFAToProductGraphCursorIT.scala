@@ -1185,9 +1185,10 @@ class NFAToProductGraphCursorIT extends ExecutionEngineFunSuite {
       try {
         val cursorFactory = tx.kernelTransaction().cursors()
         val cursorContext = tx.kernelTransaction().cursorContext()
+        val read = tx.kernelTransaction().dataRead()
         nodeCursor = cursorFactory.allocateNodeCursor(cursorContext)
         relCursor = cursorFactory.allocateRelationshipTraversalCursor(cursorContext)
-        pgCursor = new ProductGraphTraversalCursor(relCursor, EmptyMemoryTracker.INSTANCE)
+        pgCursor = new ProductGraphTraversalCursor(read, nodeCursor, relCursor, EmptyMemoryTracker.INSTANCE)
 
         QueryStateHelper.withQueryState(
           graph,

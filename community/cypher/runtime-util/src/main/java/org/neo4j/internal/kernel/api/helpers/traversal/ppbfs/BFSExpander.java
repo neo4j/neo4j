@@ -20,11 +20,7 @@
 package org.neo4j.internal.kernel.api.helpers.traversal.ppbfs;
 
 import org.neo4j.collection.trackable.HeapTrackingArrayList;
-import org.neo4j.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.KernelReadTracer;
-import org.neo4j.internal.kernel.api.NodeCursor;
-import org.neo4j.internal.kernel.api.Read;
-import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.helpers.traversal.ppbfs.hooks.PPBFSHooks;
 import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.ProductGraphTraversalCursor;
 import org.neo4j.internal.kernel.api.helpers.traversal.productgraph.State;
@@ -34,9 +30,6 @@ final class BFSExpander implements AutoCloseable {
     private final MemoryTracker mt;
     private final PPBFSHooks hooks;
     private final DataManager dataManager;
-    private final Read read;
-    private final NodeCursor nodeCursor;
-    private final RelationshipTraversalCursor relCursor;
     private final ProductGraphTraversalCursor pgCursor;
     private final long intoTarget;
 
@@ -47,21 +40,16 @@ final class BFSExpander implements AutoCloseable {
 
     public BFSExpander(
             DataManager dataManager,
-            Read read,
-            NodeCursor nodeCursor,
-            RelationshipTraversalCursor relCursor,
-            MemoryTracker mt,
+            ProductGraphTraversalCursor pgCursor,
+            long intoTarget,
             PPBFSHooks hooks,
-            long intoTarget) {
-        this.dataManager = dataManager;
-        this.read = read;
-        this.nodeCursor = nodeCursor;
-        this.relCursor = relCursor;
+            MemoryTracker mt) {
         this.mt = mt;
         this.hooks = hooks;
-        this.pgCursor = new ProductGraphTraversalCursor(relCursor, mt);
-        this.statesList = HeapTrackingArrayList.newArrayList(2, mt);
+        this.dataManager = dataManager;
+        this.pgCursor = pgCursor;
         this.intoTarget = intoTarget;
+        this.statesList = HeapTrackingArrayList.newArrayList(2, mt);
     }
 
     public void floodInitialNodeJuxtapositions() {
@@ -103,12 +91,7 @@ final class BFSExpander implements AutoCloseable {
                 }
             }
 
-            read.singleNode(dgNodeId, nodeCursor);
-            if (!nodeCursor.next()) {
-                throw new EntityNotFoundException("Node " + dgNodeId + " was unexpectedly deleted");
-            }
-
-            pgCursor.setNodeAndStates(nodeCursor, statesList);
+            pgCursor.setNodeAndStates(dgNodeId, statesList);
             while (pgCursor.next()) {
                 long foundNode = pgCursor.otherNodeReference();
                 NodeData nextNode = dataManager.getNodeData(
@@ -138,17 +121,12 @@ final class BFSExpander implements AutoCloseable {
     }
 
     public void setTracer(KernelReadTracer tracer) {
-        if (nodeCursor != null) {
-            nodeCursor.setTracer(tracer);
-        }
-        if (relCursor != null) {
-            relCursor.setTracer(tracer);
-        }
+        pgCursor.setTracer(tracer);
     }
 
     @Override
     public void close() throws Exception {
-        // dataManager, relCursor and nodeCursor are not owned by this class; they should be closed by the consumer
+        // dataManager is not owned by this class; it should be closed by the consumer
         this.pgCursor.close();
         this.statesList.close();
     }
