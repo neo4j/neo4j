@@ -202,6 +202,24 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends NameBasedSemanticAnalys
     )
   }
 
+  test("MATCH (a)-[]->{9223372036854775808}(b) RETURN count(*)") {
+    runSemanticAnalysis().errorMessages shouldEqual Seq(
+      "integer is too large"
+    )
+  }
+
+  test("MATCH (a)-[]->{1, 9223372036854775808}(b) RETURN count(*)") {
+    runSemanticAnalysis().errorMessages shouldEqual Seq(
+      "integer is too large"
+    )
+  }
+
+  test("MATCH (a)-[]->{9223372036854775808,}(b) RETURN count(*)") {
+    runSemanticAnalysis().errorMessages shouldEqual Seq(
+      "integer is too large"
+    )
+  }
+
   test("MATCH (x) ((a)-[]->(b)){0, 1_000_000} RETURN count(*)") {
     runSemanticAnalysis().errors shouldBe empty
   }

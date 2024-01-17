@@ -85,7 +85,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
 
   def check(ctx: SemanticContext, pattern: Pattern): SemanticCheck =
     semanticCheckFold(pattern.patternParts)(declareVariables(ctx)) chain
-      semanticCheckFold(pattern.patternParts)(check(ctx)) chain
+      semanticCheckFold(pattern.patternParts)(check(ctx)) ifOkChain
       semanticCheckFold(pattern.patternParts)(checkMinimumNodeCount) ifOkChain
       when(ctx != SemanticContext.Create) {
         ensureNoIllegalReferencesOut(pattern) chain
@@ -408,17 +408,27 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
   }
 
   private def checkQuantifier(quantifier: GraphPatternQuantifier): SemanticCheck =
+    checkQuantifierValue(quantifier) ifOkChain {
+      quantifier match {
+        case FixedQuantifier(UnsignedDecimalIntegerLiteral("0")) =>
+          error("A quantifier for a path pattern must not be limited by 0.", quantifier.position)
+        case IntervalQuantifier(Some(lower), Some(upper)) if upper.value < lower.value =>
+          error(
+            s"""A quantifier for a path pattern must not have a lower bound which exceeds its upper bound.
+               |In this case, the lower bound ${lower.value} is greater than the upper bound ${upper.value}.""".stripMargin,
+            quantifier.position
+          )
+        case IntervalQuantifier(_, Some(UnsignedDecimalIntegerLiteral("0"))) =>
+          error("A quantifier for a path pattern must not be limited by 0.", quantifier.position)
+        case _ => SemanticCheck.success
+      }
+    }
+
+  private def checkQuantifierValue(quantifier: GraphPatternQuantifier): SemanticCheck =
     quantifier match {
-      case FixedQuantifier(UnsignedDecimalIntegerLiteral("0")) =>
-        error("A quantifier for a path pattern must not be limited by 0.", quantifier.position)
-      case IntervalQuantifier(Some(lower), Some(upper)) if upper.value < lower.value =>
-        error(
-          s"""A quantifier for a path pattern must not have a lower bound which exceeds its upper bound.
-             |In this case, the lower bound ${lower.value} is greater than the upper bound ${upper.value}.""".stripMargin,
-          quantifier.position
-        )
-      case IntervalQuantifier(_, Some(UnsignedDecimalIntegerLiteral("0"))) =>
-        error("A quantifier for a path pattern must not be limited by 0.", quantifier.position)
+      case FixedQuantifier(value) => SemanticExpressionCheck.simple(value)
+      case IntervalQuantifier(lower, upper) =>
+        SemanticExpressionCheck.simple(lower) chain SemanticExpressionCheck.simple(upper)
       case _ => SemanticCheck.success
     }
 
