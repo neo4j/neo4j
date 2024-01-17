@@ -1714,6 +1714,19 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
       Array[Any](n)
     ))
   }
+
+  test("distinct average of Infinity is Infinity") {
+    // https://trello.com/c/JQtWpAWn/
+    // https://neo4j.slack.com/archives/CBPBWR908/p1705405225696079
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("b")
+      .aggregation(Seq("a AS a"), Seq("avg(DISTINCT Infinity) AS b"))
+      .unwind("[1, 1, 1, 1, 1, 1] as a")
+      .argument()
+      .build()
+
+    execute(query, runtime) should beColumns("b").withSingleRow(Double.PositiveInfinity)
+  }
 }
 
 trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] extends BeforeAndAfterEach {

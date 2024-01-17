@@ -28,7 +28,7 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.DurationValue
 import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values
-import org.neo4j.values.utils.ValueMath.overflowSafeAdd
+import org.neo4j.values.utils.ValueMath.incrementalAverage
 
 import java.time.temporal.ChronoUnit
 
@@ -71,9 +71,7 @@ class AvgFunction(val value: Expression)
       vl,
       number => {
         count += 1
-        val diff = number.minus(sumNumber)
-        val next = diff.dividedBy(count.toDouble)
-        sumNumber = overflowSafeAdd(sumNumber, next)
+        sumNumber = incrementalAverage(sumNumber, number, count)
       },
       duration => {
         count += 1

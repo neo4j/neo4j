@@ -177,4 +177,42 @@ public final class ValueMath {
     public static DoubleValue multiply(double a, double b) {
         return Values.doubleValue(a * b);
     }
+
+    private static boolean oppositeInfinites(double a, double b) {
+        return a == Double.POSITIVE_INFINITY && b == Double.NEGATIVE_INFINITY
+                || a == Double.NEGATIVE_INFINITY && b == Double.POSITIVE_INFINITY;
+    }
+
+    /** Calculates an incremental average taking into account NaN and +/-Infinity */
+    public static NumberValue incrementalAverage(NumberValue runningAverage, NumberValue newNumber, double weight) {
+        double newDbl = newNumber.doubleValue();
+        double runningDbl = runningAverage.doubleValue();
+
+        if (Double.isNaN(runningDbl) || Double.isNaN(newDbl)) {
+            return Values.NaN;
+        }
+
+        boolean newInfinite = Double.isInfinite(newDbl);
+        boolean runningInfinite = Double.isInfinite(runningDbl);
+
+        if (!newInfinite && !runningInfinite) {
+            var diff = newNumber.minus(runningAverage);
+            var next = diff.dividedBy(weight);
+            return overflowSafeAdd(runningAverage, next);
+        }
+
+        if (newInfinite && !runningInfinite) {
+            return newNumber;
+        }
+
+        if (!newInfinite) {
+            return runningAverage;
+        }
+
+        if (oppositeInfinites(newDbl, runningDbl)) {
+            return Values.NaN;
+        }
+
+        return runningAverage;
+    }
 }

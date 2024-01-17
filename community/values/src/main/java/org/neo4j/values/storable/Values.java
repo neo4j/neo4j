@@ -78,6 +78,7 @@ public final class Values {
     public static final DoubleValue PI = Values.doubleValue(Math.PI);
     public static final DoubleValue NaN = Values.doubleValue(Double.NaN);
     public static final DoubleValue Infinity = Values.doubleValue(Double.POSITIVE_INFINITY);
+    public static final DoubleValue NegInfinity = Values.doubleValue(Double.NEGATIVE_INFINITY);
     public static final ArrayValue EMPTY_SHORT_ARRAY = Values.shortArray(ArrayUtils.EMPTY_SHORT_ARRAY);
     public static final ArrayValue EMPTY_BOOLEAN_ARRAY = Values.booleanArray(ArrayUtils.EMPTY_BOOLEAN_ARRAY);
     public static final ArrayValue EMPTY_BYTE_ARRAY = Values.byteArray(ArrayUtils.EMPTY_BYTE_ARRAY);
