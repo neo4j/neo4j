@@ -38,10 +38,10 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.CostComparisonLi
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProviderContext
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
-import org.neo4j.cypher.internal.ir.ordering.DefaultProvidedOrderFactory
-import org.neo4j.cypher.internal.ir.ordering.NoProvidedOrderFactory
-import org.neo4j.cypher.internal.ir.ordering.ProvidedOrderFactory
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.ordering.DefaultProvidedOrderFactory
+import org.neo4j.cypher.internal.logical.plans.ordering.NoProvidedOrderFactory
+import org.neo4j.cypher.internal.logical.plans.ordering.ProvidedOrderFactory
 import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.options.CypherEagerAnalyzerOption

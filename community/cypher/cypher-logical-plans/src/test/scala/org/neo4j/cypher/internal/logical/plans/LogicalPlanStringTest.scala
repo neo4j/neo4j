@@ -34,6 +34,8 @@ import org.neo4j.cypher.internal.ast.Options
 import org.neo4j.cypher.internal.ast.PrivilegeQualifier
 import org.neo4j.cypher.internal.ast.PropertyResource
 import org.neo4j.cypher.internal.ast.WaitUntilComplete
+import org.neo4j.cypher.internal.ast.semantics.CustomExpression
+import org.neo4j.cypher.internal.ast.semantics.ErrorExpression
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
 import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
 import org.neo4j.cypher.internal.expressions.AnyIterablePredicate
@@ -314,7 +316,9 @@ object LogicalPlanStringTest {
       classOf[NFA],
       classOf[Exception],
       classOf[IdentityMap[_, _]],
-      classOf[Clause]
+      classOf[Clause],
+      classOf[CustomExpression],
+      classOf[ErrorExpression]
     )
 
     val whiteListedMethodNames: Set[String] = Set(

@@ -27,10 +27,6 @@ import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Asc
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Desc
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.projectExpression
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.FullSatisfaction
-import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.Satisfaction
-
-import scala.annotation.tailrec
 
 object InterestingOrder {
 

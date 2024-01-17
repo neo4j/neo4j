@@ -17,16 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.ir.ordering
+package org.neo4j.cypher.internal.logical.plans.ordering
 
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.ir.ordering.ColumnOrder
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Asc
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Desc
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.projectExpression
+import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.FullSatisfaction
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.Satisfaction
-import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder.OrderOrigin
+import org.neo4j.cypher.internal.logical.plans.ordering
+import org.neo4j.cypher.internal.logical.plans.ordering.ProvidedOrder.OrderOrigin
 import org.neo4j.cypher.internal.util.NonEmptyList
 
 import scala.annotation.tailrec
@@ -57,10 +60,10 @@ object ProvidedOrder {
   val empty: ProvidedOrder = NoProvidedOrder
 
   def asc(expression: Expression, projections: Map[LogicalVariable, Expression] = Map.empty): NonEmptyProvidedOrder =
-    NonEmptyProvidedOrder(NonEmptyList(Asc(expression, projections)), Self)
+    ordering.NonEmptyProvidedOrder(NonEmptyList(Asc(expression, projections)), Self)
 
   def desc(expression: Expression, projections: Map[LogicalVariable, Expression] = Map.empty): NonEmptyProvidedOrder =
-    NonEmptyProvidedOrder(NonEmptyList(Desc(expression, projections)), Self)
+    ordering.NonEmptyProvidedOrder(NonEmptyList(Desc(expression, projections)), Self)
 }
 
 sealed trait ProvidedOrderFactory {
@@ -223,10 +226,10 @@ case class NonEmptyProvidedOrder(allColumns: NonEmptyList[ColumnOrder], theOrder
   override def orderOrigin: Option[OrderOrigin] = Some(theOrderOrigin)
 
   def asc(expression: Expression, projections: Map[LogicalVariable, Expression] = Map.empty): NonEmptyProvidedOrder =
-    NonEmptyProvidedOrder(allColumns :+ Asc(expression, projections), theOrderOrigin)
+    ordering.NonEmptyProvidedOrder(allColumns :+ Asc(expression, projections), theOrderOrigin)
 
   def desc(expression: Expression, projections: Map[LogicalVariable, Expression] = Map.empty): NonEmptyProvidedOrder =
-    NonEmptyProvidedOrder(allColumns :+ Desc(expression, projections), theOrderOrigin)
+    ordering.NonEmptyProvidedOrder(allColumns :+ Desc(expression, projections), theOrderOrigin)
 
   override def fromLeft: NonEmptyProvidedOrder = copy(theOrderOrigin = ProvidedOrder.Left)
   override def fromRight: NonEmptyProvidedOrder = copy(theOrderOrigin = ProvidedOrder.Right)

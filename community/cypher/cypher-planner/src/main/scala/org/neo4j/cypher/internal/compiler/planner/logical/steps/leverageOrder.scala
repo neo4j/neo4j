@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Asc
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Desc
-import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
+import org.neo4j.cypher.internal.logical.plans.ordering.ProvidedOrder
 
 object leverageOrder {
 

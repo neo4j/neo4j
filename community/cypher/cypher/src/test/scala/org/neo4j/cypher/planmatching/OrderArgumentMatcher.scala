@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.planmatching
 
-import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
+import org.neo4j.cypher.internal.logical.plans.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.plandescription.Arguments.Order
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.plandescription.asPrettyString
