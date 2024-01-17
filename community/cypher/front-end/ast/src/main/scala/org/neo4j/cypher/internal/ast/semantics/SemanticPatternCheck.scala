@@ -126,27 +126,29 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
   def check(ctx: SemanticContext)(part: PatternPart): SemanticCheck =
     part match {
       case x: PatternPartWithSelector =>
-        val normalised = x.modifyElement {
-          // sub-path assignment is fair game in selective path patterns, we can check it as if it was anonymous
-          case parenthesizedPath @ ParenthesizedPath(NamedPatternPart(_, _), _)
-            if x.isSelective => normalizeParenthesizedPath(parenthesizedPath)
-          case element => element
+        checkSelectorCount(x.selector) ifOkChain {
+          val normalised = x.modifyElement {
+            // sub-path assignment is fair game in selective path patterns, we can check it as if it was anonymous
+            case parenthesizedPath @ ParenthesizedPath(NamedPatternPart(_, _), _)
+              if x.isSelective => normalizeParenthesizedPath(parenthesizedPath)
+            case element => element
+          }
+          check(ctx)(normalised.part) chain
+            when(normalised.isSelective) {
+              checkContext(
+                ctx,
+                s"Path selectors such as `${normalised.selector.prettified}`",
+                normalised.selector.position
+              ) chain
+                whenState(!_.features.contains(SemanticFeature.GpmShortestPath)) {
+                  error(
+                    s"Path selectors such as `${normalised.selector.prettified}` are not supported yet",
+                    normalised.selector.position
+                  )
+                }
+            } chain
+            check(normalised.selector)
         }
-        check(ctx)(normalised.part) chain
-          when(normalised.isSelective) {
-            checkContext(
-              ctx,
-              s"Path selectors such as `${normalised.selector.prettified}`",
-              normalised.selector.position
-            ) chain
-              whenState(!_.features.contains(SemanticFeature.GpmShortestPath)) {
-                error(
-                  s"Path selectors such as `${normalised.selector.prettified}` are not supported yet",
-                  normalised.selector.position
-                )
-              }
-          } chain
-          check(normalised.selector)
 
       case x: NamedPatternPart =>
         check(ctx)(x.patternPart)
@@ -279,6 +281,12 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
       error("The path count needs to be greater than 0.", sel.count.position)
     case _ => success
   }
+
+  private def checkSelectorCount(selector: PatternPart.Selector): SemanticCheck =
+    selector match {
+      case sel: CountedSelector => SemanticExpressionCheck.simple(sel.count)
+      case _                    => success
+    }
 
   def check(ctx: SemanticContext, element: PatternElement): SemanticCheck =
     element match {

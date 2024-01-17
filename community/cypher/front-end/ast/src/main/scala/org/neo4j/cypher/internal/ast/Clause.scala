@@ -566,13 +566,14 @@ case class Match(
 
   override def clauseSpecificSemanticCheck: SemanticCheck =
     noImplicitJoinsInQuantifiedPathPatterns chain
-      SemanticPatternCheck.check(Pattern.SemanticContext.Match, pattern) chain
-      hints.semanticCheck chain
-      uniqueHints chain
-      checkMatchMode chain
-      where.semanticCheck chain
-      checkHints chain
-      checkForCartesianProducts
+      SemanticPatternCheck.check(Pattern.SemanticContext.Match, pattern) ifOkChain {
+        hints.semanticCheck chain
+          uniqueHints chain
+          checkMatchMode chain
+          where.semanticCheck chain
+          checkHints chain
+          checkForCartesianProducts
+      }
 
   /**
    * Ensure that the node and relationship variables defined inside the quantified path patterns contained in this MATCH clause do not form any implicit joins.
