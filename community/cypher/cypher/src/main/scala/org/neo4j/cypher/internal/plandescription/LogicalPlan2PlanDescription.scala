@@ -1764,7 +1764,15 @@ case class LogicalPlan2PlanDescription(
           None
         ))
         val modeDescr = expandModeDescription(mode)
-        PlanDescriptionImpl(id, s"Expand($modeDescr)", children, Seq(expression), variables, withRawCardinalities, withDistinctness)
+        PlanDescriptionImpl(
+          id,
+          s"Expand($modeDescr)",
+          children,
+          Seq(expression),
+          variables,
+          withRawCardinalities,
+          withDistinctness
+        )
 
       case SimulatedExpand(_, fromName, relName, toName, factor) =>
         val prettyFactor = asPrettyString(DecimalDoubleLiteral(factor.toString)(InputPosition.NONE))
@@ -2549,7 +2557,7 @@ case class LogicalPlan2PlanDescription(
 
   private def expandModeDescription(mode: Expand.ExpansionMode) = {
     mode match {
-      case ExpandAll => "All"
+      case ExpandAll  => "All"
       case ExpandInto => "Into"
     }
   }
