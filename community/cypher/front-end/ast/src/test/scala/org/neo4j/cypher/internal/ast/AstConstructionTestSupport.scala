@@ -372,7 +372,7 @@ trait AstConstructionTestSupport {
     return_(vars.map(v => varFor(v).aliased): _*)
 
   def function(name: String, args: Expression*): FunctionInvocation =
-    FunctionInvocation(FunctionName(name)(pos), distinct = false, args.toIndexedSeq)(pos)
+    function(name, ArgumentUnordered, args: _*)
 
   def function(name: String, order: ArgumentOrder, args: Expression*): FunctionInvocation =
     FunctionInvocation(FunctionName(name)(pos), distinct = false, args.toIndexedSeq, order)(pos)
@@ -381,7 +381,10 @@ trait AstConstructionTestSupport {
     FunctionInvocation(Namespace(ns.toList)(pos), FunctionName(name)(pos), distinct = false, args.toIndexedSeq)(pos)
 
   def distinctFunction(name: String, args: Expression*): FunctionInvocation =
-    FunctionInvocation(FunctionName(name)(pos), distinct = true, args.toIndexedSeq)(pos)
+    distinctFunction(name, ArgumentUnordered, args: _*)
+
+  def distinctFunction(name: String, order: ArgumentOrder, args: Expression*): FunctionInvocation =
+    FunctionInvocation(FunctionName(name)(pos), distinct = true, args.toIndexedSeq, order)(pos)
 
   def count(expression: Expression): FunctionInvocation =
     FunctionInvocation(expression, FunctionName(Count.name)(pos))

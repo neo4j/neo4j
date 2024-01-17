@@ -27,8 +27,16 @@ import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.expressions.ArgumentAsc
 import org.neo4j.cypher.internal.expressions.ArgumentDesc
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.functions.Avg
+import org.neo4j.cypher.internal.expressions.functions.Collect
+import org.neo4j.cypher.internal.expressions.functions.Count
+import org.neo4j.cypher.internal.expressions.functions.Max
+import org.neo4j.cypher.internal.expressions.functions.Min
 import org.neo4j.cypher.internal.expressions.functions.PercentileCont
 import org.neo4j.cypher.internal.expressions.functions.PercentileDisc
+import org.neo4j.cypher.internal.expressions.functions.StdDev
+import org.neo4j.cypher.internal.expressions.functions.StdDevP
+import org.neo4j.cypher.internal.expressions.functions.Sum
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
@@ -880,7 +888,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults(columns.toSeq: _*)
+      .produceResults(columns: _*)
       .aggregation(
         Seq.empty,
         Seq(
@@ -909,7 +917,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns(columns.toSeq: _*)
+    runtimeResult should beColumns(columns: _*)
       .withSingleRow(
         0,
         0,
@@ -956,7 +964,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults(columns.toSeq: _*)
+      .produceResults(columns: _*)
       .aggregation(
         Seq("x AS x"),
         Seq(
@@ -985,9 +993,82 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    runtimeResult should beColumns(columns.toSeq: _*)
+    runtimeResult should beColumns(columns: _*)
       .withSingleRow(
         1,
+        1,
+        1,
+        1,
+        1,
+        Collections.singletonList(1),
+        Collections.singletonList(1),
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0
+      )
+  }
+
+  test("should return one row for one ordered input row") {
+    // given one row
+    val input = inputValues(Array(1))
+    val columns = Seq(
+      "countD",
+      "countOD",
+      "avgD",
+      "avgOD",
+      "collectD",
+      "collectOD",
+      "maxD",
+      "maxOD",
+      "minD",
+      "minOD",
+      "sumD",
+      "sumOD",
+      "stdevD",
+      "stdevOD",
+      "stdevPD",
+      "stdevPOD"
+    )
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults(columns: _*)
+      .aggregation(
+        Map.empty[String, Expression],
+        Map(
+          "countD" -> distinctFunction(Count.name, varFor("x")),
+          "countOD" -> distinctFunction(Count.name, ArgumentDesc, varFor("x")),
+          "avgD" -> distinctFunction(Avg.name, varFor("x")),
+          "avgOD" -> distinctFunction(Avg.name, ArgumentAsc, varFor("x")),
+          "collectD" -> distinctFunction(Collect.name, varFor("x")),
+          "collectOD" -> distinctFunction(Collect.name, ArgumentAsc, varFor("x")),
+          "maxD" -> distinctFunction(Max.name, varFor("x")),
+          "maxOD" -> distinctFunction(Max.name, ArgumentAsc, varFor("x")),
+          "minD" -> distinctFunction(Min.name, varFor("x")),
+          "minOD" -> distinctFunction(Min.name, ArgumentAsc, varFor("x")),
+          "sumD" -> distinctFunction(Sum.name, varFor("x")),
+          "sumOD" -> distinctFunction(Sum.name, ArgumentAsc, varFor("x")),
+          "stdevD" -> distinctFunction(StdDev.name, varFor("x")),
+          "stdevOD" -> distinctFunction(StdDev.name, ArgumentAsc, varFor("x")),
+          "stdevPD" -> distinctFunction(StdDevP.name, varFor("x")),
+          "stdevPOD" -> distinctFunction(StdDevP.name, ArgumentAsc, varFor("x"))
+        )
+      )
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    runtimeResult should beColumns(columns: _*)
+      .withSingleRow(
         1,
         1,
         1,
