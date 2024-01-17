@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.SubqueryCall
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorBreak
 import org.neo4j.cypher.internal.ast.UnionAll
 import org.neo4j.cypher.internal.ast.UnionDistinct
 import org.neo4j.cypher.internal.ast.With
@@ -134,8 +135,9 @@ case class FabricStitcher(
         )(pos)
     )(pos))(pos)
 
-    val call = SubqueryCall(SingleQuery(clausesWithoutInsertedWith)(pos), Some(inTransactionsParameters))(pos)
-    val outputColumns = callInTxOutputColumns(originalExec, inTransactionsParameters)
+    val adjustedParameters = adjustInTransactionsParameters(inTransactionsParameters)
+    val call = SubqueryCall(SingleQuery(clausesWithoutInsertedWith)(pos), Some(adjustedParameters))(pos)
+    val outputColumns = callInTxOutputColumns(originalExec, adjustedParameters)
     val returnClause = aliasedReturn(outputColumns, pos)
 
     val resultClauses = Seq(unwind, postUnwindWith, call, returnClause)
@@ -154,6 +156,29 @@ case class FabricStitcher(
     // ... and we add one extra column that will enable the runtime to pair
     // output rows to the input ones.
     userColumns :+ Apply.CALL_IN_TX_ROW_ID
+  }
+
+  // When using ON ERROR break, we need the status regardless if the user
+  // wanted the status report or not. The reason is that success or failure
+  // of the batch cannot be determined without the status report in the case of ON ERROR break.
+  private def adjustInTransactionsParameters(inTransactionsParameters: SubqueryCall.InTransactionsParameters)
+    : SubqueryCall.InTransactionsParameters = {
+    if (
+      inTransactionsParameters.errorParams.isEmpty
+      || !inTransactionsParameters.errorParams.get.behaviour.equals(OnErrorBreak)
+    ) {
+      return inTransactionsParameters
+    }
+
+    if (inTransactionsParameters.reportParams.isDefined) {
+      return inTransactionsParameters
+    }
+
+    inTransactionsParameters.copy(reportParams =
+      Some(SubqueryCall.InTransactionsReportParameters(
+        Variable(Apply.REPORT_VARIABLE)(inTransactionsParameters.position)
+      )(inTransactionsParameters.position))
+    )(inTransactionsParameters.position)
   }
 
   def convertUnion(union: Fragment.Union): Fragment =

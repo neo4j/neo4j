@@ -137,6 +137,7 @@ object Fragment {
     final val CALL_IN_TX_ROWS = "call_in_tx_rows"
     final val CALL_IN_TX_ROW = "call_in_tx_row"
     final val CALL_IN_TX_ROW_ID = "call_in_tx_row_id"
+    final val REPORT_VARIABLE = "call_in_tx_report"
   }
 
   final case class Union(

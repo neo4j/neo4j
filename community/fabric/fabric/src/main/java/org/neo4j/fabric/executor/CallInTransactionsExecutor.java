@@ -46,7 +46,9 @@ import org.neo4j.fabric.transaction.TransactionMode;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.kernel.impl.query.QueryRoutingMonitor;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.LongValue;
+import org.neo4j.values.storable.NoValue;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.ListValueBuilder;
 import org.neo4j.values.virtual.MapValue;
@@ -62,6 +64,7 @@ class CallInTransactionsExecutor extends SingleQueryFragmentExecutor {
     private final List<BufferedInputRow> inputRowsBuffer;
     private Catalog.Graph batchGraph;
     private TransactionMode batchTransactionMode;
+    private OnErrorBreakContext onErrorBreakContext;
 
     CallInTransactionsExecutor(
             Fragment.Apply callInTransactions,
@@ -98,6 +101,33 @@ class CallInTransactionsExecutor extends SingleQueryFragmentExecutor {
         this.innerFragment = (Fragment.Exec) callInTransactions.inner();
         this.batchSize = batchSize();
         inputRowsBuffer = new ArrayList<>(batchSize);
+        this.onErrorBreakContext = onErrorBreakContext();
+    }
+
+    private OnErrorBreakContext onErrorBreakContext() {
+        var parameters = callInTransactions.inTransactionsParameters().get();
+        if (!CallInTransactionsExecutorUtil.isOnErrorBreak(parameters)) {
+            return null;
+        }
+
+        int variableOffset = extractBreakReportVariableOffset(parameters);
+        return new OnErrorBreakContext(variableOffset, false);
+    }
+
+    private int extractBreakReportVariableOffset(SubqueryCall.InTransactionsParameters parameters) {
+        var variableName = parameters
+                .reportParams()
+                .map(reportParameters -> reportParameters.reportAs().name())
+                .getOrElse(Fragment.Apply$.MODULE$::REPORT_VARIABLE);
+
+        List<String> columns = asJava(innerFragment.outputColumns());
+        for (int i = 0; i < columns.size(); i++) {
+            if (columns.get(i).equals(variableName)) {
+                return i;
+            }
+        }
+
+        throw new IllegalStateException("Report variable not found among columns: " + columns);
     }
 
     Flux<Record> run(Record argument) {
@@ -123,6 +153,10 @@ class CallInTransactionsExecutor extends SingleQueryFragmentExecutor {
     }
 
     private Flux<Record> processInputRecord(Record argument) {
+        if (onErrorBreakContext != null && onErrorBreakContext.breakExecution) {
+            return produceBreakOutput(argument);
+        }
+
         PrepareResult prepareResult = prepare(innerFragment, argument);
 
         if (batchGraph == null) {
@@ -146,6 +180,25 @@ class CallInTransactionsExecutor extends SingleQueryFragmentExecutor {
         return Flux.empty();
     }
 
+    private Flux<Record> produceBreakOutput(Record argument) {
+        List<String> columns = asJava(innerFragment.outputColumns());
+        List<AnyValue> values = new ArrayList<>(columns.size());
+        for (int i = 0; i < columns.size(); i++) {
+            if (i == onErrorBreakContext.reportVariableOffset) {
+                MapValueBuilder builder = new MapValueBuilder(4);
+                builder.add("started", BooleanValue.FALSE);
+                builder.add("committed", BooleanValue.FALSE);
+                builder.add("transactionId", NoValue.NO_VALUE);
+                builder.add("errorMessage", NoValue.NO_VALUE);
+                values.add(builder.build());
+            } else {
+                values.add(NoValue.NO_VALUE);
+            }
+        }
+
+        return Flux.just(Records.join(argument, Records.of(values)));
+    }
+
     private Flux<Record> processBufferedInputRows() {
         if (inputRowsBuffer.isEmpty()) {
             return Flux.empty();
@@ -162,13 +215,16 @@ class CallInTransactionsExecutor extends SingleQueryFragmentExecutor {
                 // Unlike standard query execution with which most logic is shared
                 () -> new FragmentResult(Flux.just(Records.empty()), Mono.empty(), Mono.empty()));
         var inputRecords = new ArrayList<>(inputRowsBuffer);
-        Flux<Record> resultStream;
+        Flux<Record> resultStream = result.records();
+        if (onErrorBreakContext != null) {
+            resultStream = resultStream.map(this::checkBreakCondition);
+        }
+
         if (callInTransactions.outputColumns().isEmpty()) {
-            resultStream = result.records().map(outputRecord -> getMatchingInputRecord(outputRecord, inputRecords));
+            resultStream = resultStream.map(outputRecord -> getMatchingInputRecord(outputRecord, inputRecords));
         } else {
-            resultStream = result.records()
-                    .map(outputRecord ->
-                            Records.join(getMatchingInputRecord(outputRecord, inputRecords), outputRecord));
+            resultStream = resultStream.map(
+                    outputRecord -> Records.join(getMatchingInputRecord(outputRecord, inputRecords), outputRecord));
         }
         batchGraph = null;
         batchTransactionMode = null;
@@ -181,6 +237,16 @@ class CallInTransactionsExecutor extends SingleQueryFragmentExecutor {
         var rowIdColumn = innerFragment.outputColumns().size() - 1;
         var rowId = (LongValue) outputRecord.getValue(rowIdColumn);
         return inputRecords.get((int) rowId.value()).record;
+    }
+
+    private Record checkBreakCondition(Record outputRecord) {
+        var value = outputRecord.getValue(onErrorBreakContext.reportVariableOffset);
+        var mapValue = (MapValue) value;
+        if (mapValue.get("errorMessage") != NoValue.NO_VALUE) {
+            onErrorBreakContext = new OnErrorBreakContext(onErrorBreakContext.reportVariableOffset, true);
+        }
+
+        return outputRecord;
     }
 
     private MapValue addParamsFromInputRows() {
@@ -232,4 +298,6 @@ class CallInTransactionsExecutor extends SingleQueryFragmentExecutor {
     }
 
     private record BufferedInputRow(Map<String, AnyValue> argumentValues, Record record) {}
+
+    private record OnErrorBreakContext(int reportVariableOffset, boolean breakExecution) {}
 }
