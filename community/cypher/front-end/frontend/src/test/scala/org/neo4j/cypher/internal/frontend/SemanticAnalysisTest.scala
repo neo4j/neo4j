@@ -1091,6 +1091,26 @@ class SemanticAnalysisTest extends CypherFunSuite {
     )
   }
 
+  test("Should not allow too large lower bound in variable length relationship") {
+    val query = "MATCH ()-[*9999999999999999999999999999999999999999999..]->() RETURN 1"
+    expectErrorsFrom(
+      query,
+      Set(
+        SemanticError("integer is too large", InputPosition(11, 1, 12))
+      )
+    )
+  }
+
+  test("Should not allow too large upper bound in variable length relationship") {
+    val query = "MATCH ()-[*..9999999999999999999999999999999999999999999]->() RETURN 1"
+    expectErrorsFrom(
+      query,
+      Set(
+        SemanticError("integer is too large", InputPosition(13, 1, 14))
+      )
+    )
+  }
+
   private def initStartState(query: String) =
     InitialState(query, None, NoPlannerName, new AnonymousVariableNameGenerator)
 

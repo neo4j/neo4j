@@ -247,6 +247,13 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
         }
       }
 
+    def checkVarLengthBounds: SemanticCheck =
+      x.length match {
+        case Some(Some(Range(lower, upper))) =>
+          SemanticExpressionCheck.simple(lower) chain SemanticExpressionCheck.simple(upper)
+        case _ => state => SemanticCheckResult.success(state)
+      }
+
     def checkProperties: SemanticCheck =
       SemanticExpressionCheck.simple(x.properties) chain
         expectType(CTMap.covariant, x.properties)
@@ -262,6 +269,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
     }
 
     checkNoVarLengthWhenUpdating chain
+      checkVarLengthBounds chain
       checkForLegacyTypeSeparator chain
       checkNoParamMapsWhenMatching(x.properties, ctx) chain
       checkProperties chain
