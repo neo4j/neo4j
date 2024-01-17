@@ -120,7 +120,7 @@ object PercentileContFunction {
     data: HeapTrackingArrayList[NumberValue],
     count: Int,
     percentile: Double,
-    order: ArgumentOrder = ArgumentUnordered /*TODO no default value*/
+    order: ArgumentOrder
   ): NumberValue = {
     if (percentile == 1.0 || count == 1) {
       if (order == ArgumentDesc) data.get(0) else data.get(count - 1)
@@ -176,7 +176,7 @@ object PercentileDiscFunction {
     data: HeapTrackingArrayList[NumberValue],
     count: Int,
     percentile: Double,
-    order: ArgumentOrder = ArgumentUnordered /*TODO no default value*/
+    order: ArgumentOrder
   ): NumberValue = {
     if (percentile == 1.0 || count == 1) {
       if (order == ArgumentDesc) data.get(0) else data.get(count - 1)
