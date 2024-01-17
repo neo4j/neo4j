@@ -1691,6 +1691,26 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
     ))
   }
 
+  test("Should not allow too large lower bound in variable length relationship") {
+    val query = "MATCH ()-[*9999999999999999999999999999999999999999999..]->() RETURN 1"
+    expectErrorsFrom(
+      query,
+      Set(
+        SemanticError("integer is too large", InputPosition(11, 1, 12))
+      )
+    )
+  }
+
+  test("Should not allow too large upper bound in variable length relationship") {
+    val query = "MATCH ()-[*..9999999999999999999999999999999999999999999]->() RETURN 1"
+    expectErrorsFrom(
+      query,
+      Set(
+        SemanticError("integer is too large", InputPosition(13, 1, 14))
+      )
+    )
+  }
+
   override def messageProvider: ErrorMessageProvider = new ErrorMessageProviderAdapter {
     override def createUseClauseUnsupportedError(): String = "A very nice message explaining why USE is not allowed"
 
