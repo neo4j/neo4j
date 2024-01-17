@@ -242,14 +242,23 @@ class IdRangeMarker implements IdGenerator.TransactionalMarker, IdGenerator.Cont
     public void markUnallocated(long id, int numberOfIds) {
         bridgeGapBetweenHighestWrittenIdAndThisId(id, numberOfIds, true);
         if (!hasReservedIdInRange(id, id + numberOfIds)) {
-            key.setIdRangeIdx(idRangeIndex(id));
-            value.clear(generation, ADDITION_REUSE);
-            var idOffset = idOffset(id);
-            value.setBits(BITSET_REUSE, idOffset, numberOfIds);
-            value.setBits(BITSET_RESERVED, idOffset, numberOfIds);
-            writer.merge(key, value, merger);
-            monitor.markedAsFree(id, numberOfIds);
+            long initialRange = idRangeIndex(id);
+            int numbersLeft = numberOfIds;
+            int rangeStep = 0;
+            while (numbersLeft > 0) {
+                var startIndex = rangeStep == 0 ? idOffset(id) : 0;
+                int bitsToMark = (startIndex + numbersLeft) > idsPerEntry ? idsPerEntry - startIndex : numbersLeft;
+
+                key.setIdRangeIdx(initialRange + rangeStep++);
+                value.clear(generation, ADDITION_REUSE);
+                value.setBits(BITSET_REUSE, startIndex, bitsToMark);
+                value.setBits(BITSET_RESERVED, startIndex, bitsToMark);
+
+                writer.merge(key, value, merger);
+                numbersLeft -= bitsToMark;
+            }
         }
+        monitor.markedAsFree(id, numberOfIds);
 
         freeIdsNotifier.set(true);
     }

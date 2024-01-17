@@ -48,15 +48,20 @@ public class ContinuousIdRange implements PageIdRange {
 
     @Override
     public void unallocate(IdGenerator.TransactionalMarker marker) {
-        // TODO batch release is broken atm and can't release huge number of ids
-        while (hasNext()) {
-            marker.markUnallocated(nextId());
+        if (hasNext()) {
+            long firstIdToRelease = rangeStart + cursor;
+            int numberOfIds = rangeSize - cursor;
+            marker.markUnallocated(firstIdToRelease, numberOfIds);
         }
     }
 
     @Override
     public long pageId() {
         return rangeStart / idsPerPage;
+    }
+
+    public int getRangeSize() {
+        return rangeSize;
     }
 
     @Override
