@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.AndsReorderable
 import org.neo4j.cypher.internal.expressions.AnyIterablePredicate
 import org.neo4j.cypher.internal.expressions.ArgumentOrder
+import org.neo4j.cypher.internal.expressions.ArgumentUnordered
 import org.neo4j.cypher.internal.expressions.AssertIsNode
 import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
 import org.neo4j.cypher.internal.expressions.BooleanLiteral
@@ -373,6 +374,9 @@ trait AstConstructionTestSupport {
   def function(name: String, args: Expression*): FunctionInvocation =
     FunctionInvocation(FunctionName(name)(pos), distinct = false, args.toIndexedSeq)(pos)
 
+  def function(name: String, order: ArgumentOrder, args: Expression*): FunctionInvocation =
+    FunctionInvocation(FunctionName(name)(pos), distinct = false, args.toIndexedSeq, order)(pos)
+
   def function(ns: Seq[String], name: String, args: Expression*): FunctionInvocation =
     FunctionInvocation(Namespace(ns.toList)(pos), FunctionName(name)(pos), distinct = false, args.toIndexedSeq)(pos)
 
@@ -414,12 +418,14 @@ trait AstConstructionTestSupport {
     percentiles: Seq[Double],
     propertyKeys: Seq[String],
     isDiscretes: Seq[Boolean],
-    distinct: Boolean = false
+    distinct: Boolean = false,
+    order: ArgumentOrder = ArgumentUnordered
   ): FunctionInvocation = {
     FunctionInvocation(
       FunctionName(Percentiles.name)(pos),
       distinct,
-      IndexedSeq(input, listOfFloat(percentiles: _*), listOfString(propertyKeys: _*), listOfBoolean(isDiscretes: _*))
+      IndexedSeq(input, listOfFloat(percentiles: _*), listOfString(propertyKeys: _*), listOfBoolean(isDiscretes: _*)),
+      order
     )(pos)
   }
 

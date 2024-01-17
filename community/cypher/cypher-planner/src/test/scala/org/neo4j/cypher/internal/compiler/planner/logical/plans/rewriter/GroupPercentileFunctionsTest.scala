@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
+import org.neo4j.cypher.internal.expressions.ArgumentDesc
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.functions.PercentileDisc
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -206,6 +207,34 @@ class GroupPercentileFunctionsTest extends CypherFunSuite with LogicalPlanningTe
           mapName -> percentiles(v"n", Seq(0.5, 0.6), Seq("p1", "p2"), Seq(true, true)),
           "p3" -> distinctFunction(PercentileDisc.name, v"n", literalFloat(0.6))
         )
+      )
+      .projection("from.number AS n")
+      .allNodeScan("from")
+      .build()
+
+    rewrite(before, names = Seq(mapName)) should equal(after)
+  }
+
+  test("should preserve argument order") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .aggregation(
+        Map.empty[String, Expression],
+        Map(
+          "p1" -> function(PercentileDisc.name, ArgumentDesc, v"n", literalFloat(0.5)),
+          "p2" -> function(PercentileDisc.name, ArgumentDesc, v"n", literalFloat(0.6))
+        )
+      )
+      .projection("from.number AS n")
+      .allNodeScan("from")
+      .build()
+
+    val mapName = "   map0"
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .projection(s"`$mapName`.p1 AS p1", s"`$mapName`.p2 AS p2")
+      .aggregation(
+        Map.empty[String, Expression],
+        Map(mapName -> percentiles(v"n", Seq(0.5, 0.6), Seq("p1", "p2"), Seq(true, true), order = ArgumentDesc))
       )
       .projection("from.number AS n")
       .allNodeScan("from")

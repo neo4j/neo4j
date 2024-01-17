@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
+import org.neo4j.cypher.internal.expressions.ArgumentOrder
 import org.neo4j.cypher.internal.expressions.BooleanLiteral
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.False
@@ -99,7 +100,7 @@ case class groupPercentileFunctions(
   })
 
   private def newExpressions(
-    groupedPercentileFunctions: Map[(Expression, Boolean), Map[LogicalVariable, FunctionInvocation]],
+    groupedPercentileFunctions: Map[(Expression, Boolean, ArgumentOrder), Map[LogicalVariable, FunctionInvocation]],
     aggregations: Map[LogicalVariable, Expression]
   ): (Map[LogicalVariable, Expression], Map[LogicalVariable, Property]) = {
     val functionVariableMappings: Map[FunctionInvocation, Seq[LogicalVariable]] =
@@ -129,9 +130,9 @@ case class groupPercentileFunctions(
 
   /**
    * Filters out all aggregation expressions other than [[PercentileDisc]] and returns those (if any) expressions
-   * grouped on: input variable + distinctness.
+   * grouped on: input variable + distinctness + input order.
    *
-   * For example,
+   * For example, if 'a' is order ASC
    * {{{
    *   percentileDisc(a,0.5) AS p1,
    *   percentileDisc(a,0.6) AS p2,
@@ -144,20 +145,21 @@ case class groupPercentileFunctions(
    * Would become,
    * {{{
    *   Map(
-   *      (a,false) -> Map(p1 -> 'percentileDisc(a,0.5)', p2 -> 'percentileDisc(a,0.6)'),
-   *      (b,false) -> Map(p3 -> 'percentileDisc(b,0.7)', p4 -> 'percentileCont(b,0.7)'),
-   *      (c,true)  -> Map(p6 -> 'percentileDisc(DISTINCT c,0.8)', p7 -> 'percentileCont(DISTINCT c,0.9)')
+   *      (a,false,ASC) -> Map(p1 -> 'percentileDisc(a,0.5)', p2 -> 'percentileDisc(a,0.6)'),
+   *      (b,false,NONE) -> Map(p3 -> 'percentileDisc(b,0.7)', p4 -> 'percentileCont(b,0.7)'),
+   *      (c,true,NONE)  -> Map(p6 -> 'percentileDisc(DISTINCT c,0.8)', p7 -> 'percentileCont(DISTINCT c,0.9)')
    *   )
    * }}}
    *
    * @return groups that contain at least two expressions.
    */
   private def groupFunctions(aggregationExpressions: Map[LogicalVariable, Expression])
-    : Map[(Expression, Boolean), Map[LogicalVariable, FunctionInvocation]] = {
+    : Map[(Expression, Boolean, ArgumentOrder), Map[LogicalVariable, FunctionInvocation]] = {
     aggregationExpressions.collect {
       case (v, f @ FunctionInvocation(_, FunctionName(name), _, _, _))
         if name.equalsIgnoreCase(PercentileDisc.name) || name.equalsIgnoreCase(PercentileCont.name) => (v, f)
-    }.groupBy { case (_, f: FunctionInvocation) => (f.args(0), f.distinct) }.filter { case (_, fs) => fs.size > 1 }
+    }.groupBy { case (_, f: FunctionInvocation) => (f.args(0), f.distinct, f.order) }
+      .filter { case (_, fs) => fs.size > 1 }
   }
 
   /**
@@ -183,10 +185,10 @@ case class groupPercentileFunctions(
    * @return mapping of percentiles functions to the variables which eventually need to be projected.
    */
   private def toPercentilesAndVariables(groupedFunctions: Map[
-    (Expression, Boolean),
+    (Expression, Boolean, ArgumentOrder),
     Map[LogicalVariable, FunctionInvocation]
   ]): Map[FunctionInvocation, Seq[LogicalVariable]] = {
-    groupedFunctions.map { case ((inputNumber, distinct), percentileGroup: Map[LogicalVariable, FunctionInvocation]) =>
+    groupedFunctions.map { case ((input, distinct, order), percentileGroup: Map[LogicalVariable, FunctionInvocation]) =>
       val (variables, percentiles, isDiscretes) = toVariablePercentilePairs(percentileGroup)
 
       val percentilesLiteral = ListLiteral(percentiles)(pos)
@@ -195,7 +197,8 @@ case class groupPercentileFunctions(
       val percentilesFunction = FunctionInvocation(
         FunctionName(Percentiles.name)(pos),
         distinct,
-        IndexedSeq(inputNumber, percentilesLiteral, propertyKeys, isDiscretesLiteral)
+        IndexedSeq(input, percentilesLiteral, propertyKeys, isDiscretesLiteral),
+        order
       )(pos)
 
       (percentilesFunction, variables)
