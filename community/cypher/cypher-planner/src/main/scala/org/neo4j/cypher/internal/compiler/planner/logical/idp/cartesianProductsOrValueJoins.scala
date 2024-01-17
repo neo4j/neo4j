@@ -184,7 +184,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
       val plan = comp.plan.bestResult
       val asSortedAsPossible = SatisfiedForPlan(plan)
       val providedOrder = context.staticComponents.planningAttributes.providedOrders(plan.id)
-      interestingOrderConfig.orderToSolve.satisfiedBy(providedOrder) match {
+      providedOrder.satisfies(interestingOrderConfig.orderToSolve) match {
         case asSortedAsPossible() => true
         case _                    => false
       }

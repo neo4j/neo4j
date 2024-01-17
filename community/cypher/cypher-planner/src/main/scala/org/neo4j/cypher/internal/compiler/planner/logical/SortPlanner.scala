@@ -127,8 +127,8 @@ object SortPlanner {
     context: LogicalPlanningContext,
     plan: LogicalPlan
   ): Satisfaction =
-    interestingOrderConfig.orderToSolve.satisfiedBy(
-      context.staticComponents.planningAttributes.providedOrders.get(plan.id)
+    context.staticComponents.planningAttributes.providedOrders.get(plan.id).satisfies(
+      interestingOrderConfig.orderToSolve
     )
 
   case class SatisfiedForPlan(plan: LogicalPlan) {

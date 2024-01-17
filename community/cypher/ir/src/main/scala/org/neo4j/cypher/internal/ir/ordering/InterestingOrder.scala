@@ -141,38 +141,4 @@ case class InterestingOrder(
       interestingOrderCandidates.map(_.renameColumns(renamePrefix)).filter(!_.isEmpty)
     )
   }
-
-  /**
-   * Checks if a RequiredOrder is satisfied by a ProvidedOrder
-   */
-  def satisfiedBy(providedOrder: ProvidedOrder): Satisfaction = {
-    @tailrec
-    def satisfied(
-      providedOrder: Expression,
-      requiredOrder: Expression,
-      projections: Map[LogicalVariable, Expression]
-    ): Boolean = {
-      val projected = projectExpression(requiredOrder, projections)
-      if (providedOrder == requiredOrder || providedOrder == projected) {
-        true
-      } else if (projected != requiredOrder) {
-        satisfied(providedOrder, projected, projections)
-      } else {
-        false
-      }
-    }
-    requiredOrderCandidate.order.zipAll(providedOrder.columns, null, null).foldLeft(
-      Satisfaction(Seq.empty, Seq.empty)
-    ) {
-      case (s, (null, _)) => s // no required order left
-      case (s @ FullSatisfaction(), (satisfiedColumn @ Asc(requiredExp, projections), Asc(providedExpr, _)))
-        if satisfied(providedExpr, requiredExp, projections) => s.withSatisfied(satisfiedColumn)
-      case (s @ FullSatisfaction(), (satisfiedColumn @ Desc(requiredExp, projections), Desc(providedExpr, _)))
-        if satisfied(providedExpr, requiredExp, projections) => s.withSatisfied(satisfiedColumn)
-      case (s, (unsatisfiedColumn, _)) =>
-        s.withMissing(
-          unsatisfiedColumn
-        ) // required order left but no provided or provided not matching or previous column not matching
-    }
-  }
 }

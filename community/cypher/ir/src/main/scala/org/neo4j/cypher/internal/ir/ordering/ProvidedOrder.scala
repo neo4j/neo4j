@@ -23,8 +23,13 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Asc
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Desc
+import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.projectExpression
+import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.FullSatisfaction
+import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.Satisfaction
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder.OrderOrigin
 import org.neo4j.cypher.internal.util.NonEmptyList
+
+import scala.annotation.tailrec
 
 object ProvidedOrder {
 
@@ -157,6 +162,42 @@ sealed trait ProvidedOrder {
    * The same order columns, but with OrderOrigin = [[Both]]
    */
   def fromBoth: ProvidedOrder
+
+  /**
+   * Checks if a RequiredOrder is satisfied by a ProvidedOrder
+   */
+  def satisfies(interestingOrder: InterestingOrder): Satisfaction = {
+    @tailrec
+    def satisfied(
+      providedOrder: Expression,
+      requiredOrder: Expression,
+      projections: Map[LogicalVariable, Expression]
+    ): Boolean = {
+      val projected = projectExpression(requiredOrder, projections)
+      if (providedOrder == requiredOrder || providedOrder == projected) {
+        true
+      } else if (projected != requiredOrder) {
+        satisfied(providedOrder, projected, projections)
+      } else {
+        false
+      }
+    }
+
+    interestingOrder.requiredOrderCandidate.order.zipAll(this.columns, null, null).foldLeft(
+      Satisfaction(Seq.empty, Seq.empty)
+    ) {
+      case (s, (null, _)) => s // no required order left
+      case (s @ FullSatisfaction(), (satisfiedColumn @ Asc(requiredExp, projections), Asc(providedExpr, _)))
+        if satisfied(providedExpr, requiredExp, projections) => s.withSatisfied(satisfiedColumn)
+      case (s @ FullSatisfaction(), (satisfiedColumn @ Desc(requiredExp, projections), Desc(providedExpr, _)))
+        if satisfied(providedExpr, requiredExp, projections) => s.withSatisfied(satisfiedColumn)
+      case (s, (unsatisfiedColumn, _)) =>
+        s.withMissing(
+          unsatisfiedColumn
+        ) // required order left but no provided or provided not matching or previous column not matching
+    }
+  }
+
 }
 
 case object NoProvidedOrder extends ProvidedOrder {
