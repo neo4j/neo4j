@@ -64,6 +64,8 @@ public final class NodeData implements AutoCloseable {
     // NB: this mechanism relies on the NFA having a single final state
     private int remainingTargetCount = 0;
 
+    private boolean isTarget = false;
+
     public NodeData(
             MemoryTracker mt, long id, State state, int distanceFromSource, DataManager dataManager, long intoTarget) {
         this.sourceSignposts = HeapTrackingArrayList.newArrayList(SIGNPOSTS_INIT_SIZE, mt);
@@ -76,6 +78,7 @@ public final class NodeData implements AutoCloseable {
 
         if (state().isFinalState() && (intoTarget == NO_SUCH_ENTITY || intoTarget == id)) {
             this.remainingTargetCount = (int) dataManager.initialCountForTargetNodes;
+            this.isTarget = true;
             dataManager.incrementLiveTargetCount();
         }
     }
@@ -85,7 +88,7 @@ public final class NodeData implements AutoCloseable {
     }
 
     public boolean isTarget() {
-        return this.state.isFinalState();
+        return this.isTarget;
     }
 
     public int nextSignpostIndexForLength(int currentIndex, int lengthFromSource) {

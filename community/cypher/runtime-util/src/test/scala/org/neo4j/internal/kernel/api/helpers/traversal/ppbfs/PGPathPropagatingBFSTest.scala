@@ -804,7 +804,6 @@ class PGPathPropagatingBFSTest extends CypherFunSuite {
       .nextLevel(2)
       .schedulePropagation(b, 2, 1)
       .returnPath(a, ab, b, bc, c)
-      .schedulePropagation(b, 2, 1)
       .nextLevel(3)
       .propagateLengthPair(b, 2, 1)
       .returnPath(a, ad, d, db, b, bc, c)
