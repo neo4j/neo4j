@@ -260,7 +260,6 @@ import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.UpdatingPlan
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.logical.plans.VarExpand
-import org.neo4j.cypher.internal.logical.plans.ordering.NoProvidedOrder
 import org.neo4j.cypher.internal.logical.plans.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.plans.ordering.ProvidedOrderFactory
 import org.neo4j.cypher.internal.macros.AssertMacros
@@ -310,11 +309,13 @@ case class LogicalPlanProducer(
     }
 
     def planApply(left: LogicalPlan, right: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
-      val providedOrder = providedOrderOfApply(left, right, context.settings.executionModel)
+      val plan = Apply(left, right)
+      val providedOrder =
+        providedOrderOfApply(left, right, plan, context.settings.executionModel, context.providedOrderFactory)
       // The RHS is the leaf plan we are wrapping under an apply in order to solve the pattern expression.
       // It has the correct solved
       val solved = solveds.get(right.id)
-      annotate(Apply(left, right), solved, providedOrder, context)
+      annotate(plan, solved, providedOrder, context)
     }
 
     def planRollup(
@@ -330,7 +331,7 @@ case class LogicalPlanProducer(
       annotate(
         RollUpApply(lhs, rhs, collectionName, variableToCollect),
         solved,
-        providedOrders.get(lhs.id).fromLeft,
+        ProvidedOrder.Left,
         context
       )
     }
@@ -341,10 +342,11 @@ case class LogicalPlanProducer(
       context: LogicalPlanningContext
     ): LogicalPlan = {
       val solved = solveds.get(lhs.id)
+      val plan = Apply(lhs, rhs)
       annotate(
-        Apply(lhs, rhs),
+        plan,
         solved,
-        providedOrderOfApply(lhs, rhs, context.settings.executionModel),
+        providedOrderOfApply(lhs, rhs, plan, context.settings.executionModel, context.providedOrderFactory),
         context
       )
     }
@@ -946,7 +948,8 @@ case class LogicalPlanProducer(
       solveds.get(right.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.withArgumentIds(Set.empty)))
     val solved = solveds.get(left.id).asSinglePlannerQuery ++ rhsSolved
     val plan = Apply(left, right)
-    val providedOrder = providedOrderOfApply(left, right, context.settings.executionModel)
+    val providedOrder =
+      providedOrderOfApply(left, right, plan, context.settings.executionModel, context.providedOrderFactory)
     annotate(plan, solved, providedOrder, context)
   }
 
@@ -957,7 +960,8 @@ case class LogicalPlanProducer(
       lhsSolved.updateTailOrSelf(_.amendQueryGraph(_.addMutatingPatterns(rhsSolved.queryGraph.mutatingPatterns)))
 
     val plan = Apply(left, right)
-    val providedOrder = providedOrderOfApply(left, right, context.settings.executionModel)
+    val providedOrder =
+      providedOrderOfApply(left, right, plan, context.settings.executionModel, context.providedOrderFactory)
     annotate(plan, solved, providedOrder, context)
   }
 
@@ -1010,15 +1014,18 @@ case class LogicalPlanProducer(
         }
       }
 
-    val providedOrder = providedOrderOfApply(left, right, context.settings.executionModel)
+    val providedOrder =
+      providedOrderOfApply(left, right, plan, context.settings.executionModel, context.providedOrderFactory)
     annotate(plan, solved, providedOrder, context)
   }
 
   def planTailApply(left: LogicalPlan, right: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
     val solved =
       solveds.get(left.id).asSinglePlannerQuery.updateTailOrSelf(_.withTail(solveds.get(right.id).asSinglePlannerQuery))
-    val providedOrder = providedOrderOfApply(left, right, context.settings.executionModel)
-    annotate(Apply(left, right), solved, providedOrder, context)
+    val plan = Apply(left, right)
+    val providedOrder =
+      providedOrderOfApply(left, right, plan, context.settings.executionModel, context.providedOrderFactory)
+    annotate(plan, solved, providedOrder, context)
   }
 
   def planInputApply(
@@ -1028,15 +1035,19 @@ case class LogicalPlanProducer(
     context: LogicalPlanningContext
   ): LogicalPlan = {
     val solved = solveds.get(right.id).asSinglePlannerQuery.withInput(symbols)
-    val providedOrder = providedOrderOfApply(left, right, context.settings.executionModel)
-    annotate(Apply(left, right), solved, providedOrder, context)
+    val plan = Apply(left, right)
+    val providedOrder =
+      providedOrderOfApply(left, right, plan, context.settings.executionModel, context.providedOrderFactory)
+    annotate(plan, solved, providedOrder, context)
   }
 
   def planCartesianProduct(left: LogicalPlan, right: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
     val solved: SinglePlannerQuery =
       solveds.get(left.id).asSinglePlannerQuery ++ solveds.get(right.id).asSinglePlannerQuery
-    val providedOrder = providedOrderOfApply(left, right, context.settings.executionModel)
-    annotate(CartesianProduct(left, right), solved, providedOrder, context)
+    val plan = CartesianProduct(left, right)
+    val providedOrder =
+      providedOrderOfApply(left, right, plan, context.settings.executionModel, context.providedOrderFactory)
+    annotate(plan, solved, providedOrder, context)
   }
 
   def planSimpleExpand(
@@ -1049,11 +1060,10 @@ case class LogicalPlanProducer(
   ): LogicalPlan = {
     val dir = pattern.directionRelativeTo(from)
     val solved = solveds.get(left.id).asSinglePlannerQuery.amendQueryGraph(_.addPatternRelationship(pattern))
-    val providedOrder = providedOrders.get(left.id).fromLeft
     annotate(
       Expand(left, from, dir, pattern.types, to, pattern.variable, mode),
       solved,
-      providedOrder,
+      ProvidedOrder.Left,
       context
     )
   }
@@ -1103,7 +1113,7 @@ case class LogicalPlanProducer(
             relationshipPredicates = rewrittenRelationshipPredicates.toSeq
           ),
           solved,
-          providedOrders.get(source.id).fromLeft,
+          ProvidedOrder.Left,
           context
         )
 
@@ -1188,7 +1198,7 @@ case class LogicalPlanProducer(
       .addQuantifiedPathPattern(pattern)
       .addPredicates(predicates: _*))
 
-    val providedOrder = providedOrders.get(source.id).fromLeft
+    val providedOrderRule = ProvidedOrder.Left
     val trailPlan = annotate(
       Trail(
         left = source,
@@ -1206,7 +1216,7 @@ case class LogicalPlanProducer(
         reverseGroupVariableProjections = reverseGroupVariableProjections
       ),
       solved,
-      providedOrder,
+      providedOrderRule,
       context
     )
 
@@ -1215,7 +1225,7 @@ case class LogicalPlanProducer(
         annotateSelection(
           Selection(Seq(hiddenFilter), trailPlan),
           solved,
-          providedOrder,
+          providedOrderRule,
           context
         )
       case None => trailPlan
@@ -1470,7 +1480,7 @@ case class LogicalPlanProducer(
   ): LogicalPlan = {
     val plannerQuery = solveds.get(left.id).asSinglePlannerQuery ++ solveds.get(right.id).asSinglePlannerQuery
     val solved = plannerQuery.amendQueryGraph(_.addHints(hints))
-    annotate(NodeHashJoin(nodes, left, right), solved, providedOrders.get(right.id).fromRight, context)
+    annotate(NodeHashJoin(nodes, left, right), solved, ProvidedOrder.Right, context)
   }
 
   def planValueHashJoin(
@@ -1490,7 +1500,7 @@ case class LogicalPlanProducer(
     annotate(
       ValueHashJoin(rewrittenLhs, rewrittenRhs, rewrittenJoin),
       solved,
-      providedOrders.get(right.id).fromRight,
+      ProvidedOrder.Right,
       context
     )
   }
@@ -1543,7 +1553,7 @@ case class LogicalPlanProducer(
   ): LogicalPlan = {
     val solved: SinglePlannerQuery =
       solveds.get(left.id).asSinglePlannerQuery ++ solveds.get(right.id).asSinglePlannerQuery
-    annotate(AssertSameNode(node, left, right), solved, providedOrders.get(left.id).fromLeft, context)
+    annotate(AssertSameNode(node, left, right), solved, ProvidedOrder.Left, context)
   }
 
   def planAssertSameRelationship(
@@ -1555,7 +1565,7 @@ case class LogicalPlanProducer(
     annotate(
       AssertSameRelationship(relationship.variable, left, right),
       solveds.get(left.id).asSinglePlannerQuery ++ solveds.get(right.id).asSinglePlannerQuery,
-      providedOrders.get(left.id).fromLeft,
+      ProvidedOrder.Left,
       context
     )
 
@@ -1590,7 +1600,7 @@ case class LogicalPlanProducer(
         .withArgumentIds(ids)
     )
 
-    annotate(Optional(inputPlan, ids), solved, providedOrders.get(inputPlan.id).fromLeft, context)
+    annotate(Optional(inputPlan, ids), solved, ProvidedOrder.Left, context)
   }
 
   def planLeftOuterHashJoin(
@@ -1604,6 +1614,8 @@ case class LogicalPlanProducer(
       _.addOptionalMatch(solveds.get(right.id).asSinglePlannerQuery.queryGraph.addHints(hints))
     )
     val inputOrder = providedOrders.get(right.id)
+
+    val plan = LeftOuterHashJoin(nodes, left, right)
     val providedOrder =
       if (inputOrder.columns.exists(!_.isAscending)) {
         // Join nodes that are not matched from the RHS will result in rows with null in the Sort column.
@@ -1613,9 +1625,11 @@ case class LogicalPlanProducer(
       } else {
         // If the order is on a join column (or derived from a join column), we cannot continue guaranteeing that order.
         // The join nodes that are not matched from the RHS will appear out-of-order after all join nodes which were matched.
-        inputOrder.upToExcluding(nodes).fromRight
+        inputOrder
+          .upToExcluding(nodes)(context.providedOrderFactory, Some(plan))
+          .fromRight(context.providedOrderFactory, Some(plan))
       }
-    annotate(LeftOuterHashJoin(nodes, left, right), solved, providedOrder, context)
+    annotate(plan, solved, providedOrder, context)
   }
 
   def planRightOuterHashJoin(
@@ -1631,7 +1645,7 @@ case class LogicalPlanProducer(
     annotate(
       RightOuterHashJoin(nodes, left, right),
       solved,
-      providedOrders.get(right.id).fromRight,
+      ProvidedOrder.Right,
       context
     )
   }
@@ -1646,7 +1660,7 @@ case class LogicalPlanProducer(
       annotateSelection(
         Selection(coercedRewrittenPredicates, rewrittenSource),
         solved,
-        providedOrders.get(source.id).fromLeft,
+        ProvidedOrder.Left,
         context
       )
     }
@@ -1676,7 +1690,7 @@ case class LogicalPlanProducer(
       annotateSelection(
         Selection(coercedRewrittenPredicates, rewrittenSource),
         solved,
-        providedOrders.get(existsPlan.id).fromLeft,
+        ProvidedOrder.Left,
         context
       )
     }
@@ -1696,7 +1710,7 @@ case class LogicalPlanProducer(
       annotateSelection(
         Selection(coercedPredicates, source),
         solved,
-        providedOrders.get(source.id).fromLeft,
+        ProvidedOrder.Left,
         context
       )
     }
@@ -1717,7 +1731,7 @@ case class LogicalPlanProducer(
     annotate(
       SelectOrAntiSemiApply(rewrittenOuter, inner, rewrittenExpr),
       solveds.get(outer.id),
-      providedOrders.get(outer.id).fromLeft,
+      ProvidedOrder.Left,
       context
     )
   }
@@ -1733,7 +1747,7 @@ case class LogicalPlanProducer(
     annotate(
       LetSelectOrAntiSemiApply(rewrittenOuter, inner, id, rewrittenExpr),
       solveds.get(outer.id),
-      providedOrders.get(outer.id).fromLeft,
+      ProvidedOrder.Left,
       context
     )
   }
@@ -1748,7 +1762,7 @@ case class LogicalPlanProducer(
     annotate(
       SelectOrSemiApply(rewrittenOuter, inner, rewrittenExpr),
       solveds.get(outer.id),
-      providedOrders.get(outer.id).fromLeft,
+      ProvidedOrder.Left,
       context
     )
   }
@@ -1764,7 +1778,7 @@ case class LogicalPlanProducer(
     annotate(
       LetSelectOrSemiApply(rewrittenOuter, inner, id, rewrittenExpr),
       solveds.get(outer.id),
-      providedOrders.get(outer.id).fromLeft,
+      ProvidedOrder.Left,
       context
     )
   }
@@ -1778,7 +1792,7 @@ case class LogicalPlanProducer(
     annotate(
       LetAntiSemiApply(left, right, id),
       solveds.get(left.id),
-      providedOrders.get(left.id).fromLeft,
+      ProvidedOrder.Left,
       context
     )
 
@@ -1788,7 +1802,7 @@ case class LogicalPlanProducer(
     id: LogicalVariable,
     context: LogicalPlanningContext
   ): LogicalPlan =
-    annotate(LetSemiApply(left, right, id), solveds.get(left.id), providedOrders.get(left.id).fromLeft, context)
+    annotate(LetSemiApply(left, right, id), solveds.get(left.id), ProvidedOrder.Left, context)
 
   def planAntiSemiApply(
     left: LogicalPlan,
@@ -1797,7 +1811,7 @@ case class LogicalPlanProducer(
     context: LogicalPlanningContext
   ): LogicalPlan = {
     val solved = solveds.get(left.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addPredicates(expr)))
-    annotate(AntiSemiApply(left, right), solved, providedOrders.get(left.id).fromLeft, context)
+    annotate(AntiSemiApply(left, right), solved, ProvidedOrder.Left, context)
   }
 
   def planSemiApply(
@@ -1807,7 +1821,7 @@ case class LogicalPlanProducer(
     context: LogicalPlanningContext
   ): LogicalPlan = {
     val solved = solveds.get(left.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addPredicates(expr)))
-    annotate(SemiApply(left, right), solved, providedOrders.get(left.id).fromLeft, context)
+    annotate(SemiApply(left, right), solved, ProvidedOrder.Left, context)
   }
 
   def planSemiApplyInHorizon(
@@ -1820,7 +1834,7 @@ case class LogicalPlanProducer(
       case horizon: QueryProjection => horizon.addPredicates(expr)
       case horizon                  => horizon
     })
-    annotate(SemiApply(left, right), solved, providedOrders.get(left.id).fromLeft, context)
+    annotate(SemiApply(left, right), solved, ProvidedOrder.Left, context)
   }
 
   def planAntiSemiApplyInHorizon(
@@ -1833,7 +1847,7 @@ case class LogicalPlanProducer(
       case horizon: QueryProjection => horizon.addPredicates(expr)
       case horizon                  => horizon
     })
-    annotate(AntiSemiApply(left, right), solved, providedOrders.get(left.id).fromLeft, context)
+    annotate(AntiSemiApply(left, right), solved, ProvidedOrder.Left, context)
   }
 
   def planQueryArgument(queryGraph: QueryGraph, context: LogicalPlanningContext): LogicalPlan = {
@@ -1924,10 +1938,11 @@ case class LogicalPlanProducer(
     // NOTE: aggregation order is not used here as it is lost after aggregation
     val trimmedAndRenamed = trimAndRenameProvidedOrder(providedOrders.get(left.id), grouping)
 
+    val agg = Aggregation(left, grouping, aggregation)
     val plan = annotate(
-      Aggregation(left, grouping, aggregation),
+      agg,
       solved,
-      context.providedOrderFactory.providedOrder(trimmedAndRenamed, ProvidedOrder.Left),
+      context.providedOrderFactory.providedOrder(trimmedAndRenamed, ProvidedOrder.Left, Some(agg)),
       context
     )
 
@@ -1960,10 +1975,11 @@ case class LogicalPlanProducer(
     // NOTE: aggregation order is not used here as it is lost after aggregation
     val trimmedAndRenamed = trimAndRenameProvidedOrder(providedOrders.get(left.id), grouping)
 
+    val agg = OrderedAggregation(left, grouping, aggregation, orderToLeverage)
     val plan = annotate(
-      OrderedAggregation(left, grouping, aggregation, orderToLeverage),
+      agg,
       solved,
-      context.providedOrderFactory.providedOrder(trimmedAndRenamed, ProvidedOrder.Left),
+      context.providedOrderFactory.providedOrder(trimmedAndRenamed, ProvidedOrder.Left, Some(agg)),
       context
     )
     markOrderAsLeveragedBackwardsUntilOrigin(plan, context.providedOrderFactory)
@@ -1994,12 +2010,14 @@ case class LogicalPlanProducer(
     context: LogicalPlanningContext
   ): LogicalPlan = {
     val solved = RegularSinglePlannerQuery(query.queryGraph, query.interestingOrder, query.horizon)
+    val plan = NodeCountFromCountStore(projectedColumn, labels, argumentIds)
     annotate(
-      NodeCountFromCountStore(projectedColumn, labels, argumentIds),
+      plan,
       solved,
       context.providedOrderFactory.providedOrder(
         query.interestingOrder.requiredOrderCandidate.order,
-        ProvidedOrder.Self
+        ProvidedOrder.Self,
+        Some(plan)
       ),
       context
     )
@@ -2015,12 +2033,14 @@ case class LogicalPlanProducer(
     context: LogicalPlanningContext
   ): LogicalPlan = {
     val solved: SinglePlannerQuery = RegularSinglePlannerQuery(query.queryGraph, query.interestingOrder, query.horizon)
+    val plan = RelationshipCountFromCountStore(variable, startLabel, typeNames, endLabel, argumentIds)
     annotate(
-      RelationshipCountFromCountStore(variable, startLabel, typeNames, endLabel, argumentIds),
+      plan,
       solved,
       context.providedOrderFactory.providedOrder(
         query.interestingOrder.requiredOrderCandidate.order,
-        ProvidedOrder.Self
+        ProvidedOrder.Self,
+        Some(plan)
       ),
       context
     )
@@ -2036,7 +2056,7 @@ case class LogicalPlanProducer(
     val solved = solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(
       _.updateQueryProjection(_.updatePagination(_.withSkipExpression(count)))
     )
-    val plan = annotate(Skip(inner, count), solved, providedOrders.get(inner.id).fromLeft, context)
+    val plan = annotate(Skip(inner, count), solved, ProvidedOrder.Left, context)
     if (interestingOrder.requiredOrderCandidate.nonEmpty) {
       markOrderAsLeveragedBackwardsUntilOrigin(plan, context.providedOrderFactory)
     }
@@ -2069,7 +2089,7 @@ case class LogicalPlanProducer(
         context.settings.csvBufferSize
       ),
       solved,
-      providedOrders.get(rewrittenInner.id).fromLeft,
+      ProvidedOrder.Left,
       context
     )
   }
@@ -2091,7 +2111,7 @@ case class LogicalPlanProducer(
     annotate(
       UnwindCollection(rewrittenInner, variable, rewrittenExpression),
       solved,
-      providedOrders.get(rewrittenInner.id).fromLeft,
+      ProvidedOrder.Left,
       context
     )
   }
@@ -2102,9 +2122,11 @@ case class LogicalPlanProducer(
     val solver = SubqueryExpressionSolver.solverFor(inner, context)
     val rewrittenCall = call.mapCallArguments(solver.solve(_))
     val rewrittenInner = solver.rewrittenPlan()
-    val providedOrder =
-      if (call.containsNoUpdates) providedOrders.get(rewrittenInner.id).fromLeft else ProvidedOrder.empty
-    annotate(ProcedureCall(rewrittenInner, rewrittenCall), solved, providedOrder, context)
+
+    if (call.containsNoUpdates)
+      annotate(ProcedureCall(rewrittenInner, rewrittenCall), solved, ProvidedOrder.Left, context)
+    else
+      annotate(ProcedureCall(rewrittenInner, rewrittenCall), solved, ProvidedOrder.empty, context)
   }
 
   def planCommand(inner: LogicalPlan, clause: CommandClause, context: LogicalPlanningContext): LogicalPlan = {
@@ -2161,9 +2183,9 @@ case class LogicalPlanProducer(
   def planPassAll(inner: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.withHorizon(PassthroughAllHorizon()))
     // Keep some attributes, but change solved
-    val keptAttributes = Attributes(idGen, cardinalities, leveragedOrders, labelAndRelTypeInfos)
+    val keptAttributes = Attributes(idGen, cardinalities, leveragedOrders, providedOrders, labelAndRelTypeInfos)
     val newPlan = inner.copyPlanWithIdGen(keptAttributes.copy(inner.id))
-    annotate(newPlan, solved, providedOrders.get(inner.id).fromLeft, context)
+    annotate(newPlan, solved, providedOrders.get(inner.id), context)
   }
 
   def planLimit(
@@ -2177,7 +2199,7 @@ case class LogicalPlanProducer(
     val solved = solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(
       _.updateQueryProjection(_.updatePagination(_.withLimitExpression(reportedCount)))
     )
-    val plan = annotate(Limit(inner, effectiveCount), solved, providedOrders.get(inner.id).fromLeft, context)
+    val plan = annotate(Limit(inner, effectiveCount), solved, ProvidedOrder.Left, context)
     if (interestingOrder.requiredOrderCandidate.nonEmpty) {
       markOrderAsLeveragedBackwardsUntilOrigin(plan, context.providedOrderFactory)
     }
@@ -2195,7 +2217,7 @@ case class LogicalPlanProducer(
     val solved = solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(
       _.updateQueryProjection(_.updatePagination(_.withLimitExpression(reportedCount)))
     )
-    val plan = annotate(ExhaustiveLimit(inner, effectiveCount), solved, providedOrders.get(inner.id).fromLeft, context)
+    val plan = annotate(ExhaustiveLimit(inner, effectiveCount), solved, ProvidedOrder.Left, context)
     if (interestingOrder.requiredOrderCandidate.nonEmpty) {
       markOrderAsLeveragedBackwardsUntilOrigin(plan, context.providedOrderFactory)
     }
@@ -2256,15 +2278,15 @@ case class LogicalPlanProducer(
     val solved = solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.withHorizon(
       AggregatingQueryProjection(groupingExpressions = reportedGrouping, aggregationExpressions = reportedAggregation)
     ).withInterestingOrder(interestingOrder))
-    val providedOrder = providedOrders.get(inner.id).fromLeft
+    val providedOrderRule = ProvidedOrder.Left
     val limitPlan = planLimitOnTopOf(inner, SignedDecimalIntegerLiteral("1")(InputPosition.NONE))
-    val annotatedLimitPlan = annotate(limitPlan, solved, providedOrder, context)
+    val annotatedLimitPlan = annotate(limitPlan, solved, providedOrderRule, context)
 
     // The limit leverages the order, not the following optional
     markOrderAsLeveragedBackwardsUntilOrigin(annotatedLimitPlan, context.providedOrderFactory)
 
     val plan = Optional(annotatedLimitPlan)
-    annotate(plan, solved, providedOrder, context)
+    annotate(plan, solved, providedOrderRule, context)
   }
 
   def planSort(
@@ -2275,10 +2297,11 @@ case class LogicalPlanProducer(
     context: LogicalPlanningContext
   ): LogicalPlan = {
     val solved = solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.withInterestingOrder(interestingOrder))
+    val plan = Sort(inner, sortColumns)
     annotate(
-      Sort(inner, sortColumns),
+      plan,
       solved,
-      context.providedOrderFactory.providedOrder(orderColumns, ProvidedOrder.Self),
+      context.providedOrderFactory.providedOrder(orderColumns, ProvidedOrder.Self, Some(plan)),
       context
     )
   }
@@ -2293,10 +2316,11 @@ case class LogicalPlanProducer(
   ): LogicalPlan = {
     val solved = solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.withInterestingOrder(interestingOrder)
       .updateQueryProjection(_.updatePagination(_.withLimitExpression(limit))))
+    val plan = Top(inner, sortColumns, limit)
     val top = annotate(
-      Top(inner, sortColumns, limit),
+      plan,
       solved,
-      context.providedOrderFactory.providedOrder(orderColumns, ProvidedOrder.Self),
+      context.providedOrderFactory.providedOrder(orderColumns, ProvidedOrder.Self, Some(plan)),
       context
     )
     if (interestingOrder.requiredOrderCandidate.nonEmpty) {
@@ -2316,10 +2340,11 @@ case class LogicalPlanProducer(
       .updateQueryProjection(
         _.updatePagination(_.withLimitExpression(SignedDecimalIntegerLiteral("1")(InputPosition.NONE)))
       ))
+    val plan = Top1WithTies(inner, sortColumns)
     val top = annotate(
-      Top1WithTies(inner, sortColumns),
+      plan,
       solved,
-      context.providedOrderFactory.providedOrder(orderColumns, ProvidedOrder.Self),
+      context.providedOrderFactory.providedOrder(orderColumns, ProvidedOrder.Self, Some(plan)),
       context
     )
     if (interestingOrder.requiredOrderCandidate.nonEmpty) {
@@ -2337,10 +2362,11 @@ case class LogicalPlanProducer(
     context: LogicalPlanningContext
   ): LogicalPlan = {
     val solved = solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.withInterestingOrder(interestingOrder))
+    val sort = PartialSort(inner, alreadySortedPrefix, stillToSortSuffix, None)
     val plan = annotate(
-      PartialSort(inner, alreadySortedPrefix, stillToSortSuffix, None),
+      sort,
       solved,
-      context.providedOrderFactory.providedOrder(orderColumns, ProvidedOrder.Left),
+      context.providedOrderFactory.providedOrder(orderColumns, ProvidedOrder.Left, Some(sort)),
       context
     )
     markOrderAsLeveragedBackwardsUntilOrigin(plan, context.providedOrderFactory)
@@ -2377,7 +2403,7 @@ case class LogicalPlanProducer(
         if (disallowSameNode) DisallowSameNode else SkipSameNode
       ),
       solved,
-      providedOrders.get(rewrittenSource.id).fromLeft,
+      ProvidedOrder.Left,
       context
     )
   }
@@ -2430,8 +2456,7 @@ case class LogicalPlanProducer(
       solvedExpressionAsString,
       reverseGroupVariableProjections
     )
-    val providedOrder = providedOrders.get(inner.id).fromLeft
-    annotate(plan, solved, providedOrder, context)
+    annotate(plan, solved, ProvidedOrder.Left, context)
   }
 
   def planProjectEndpoints(
@@ -2457,7 +2482,7 @@ case class LogicalPlanProducer(
         patternRel.length
       ),
       solved,
-      providedOrders.get(inner.id).fromLeft,
+      ProvidedOrder.Left,
       context
     )
   }
@@ -2470,7 +2495,7 @@ case class LogicalPlanProducer(
     annotate(
       Projection(inner, expressions),
       solveds.get(inner.id),
-      providedOrders.get(inner.id).fromLeft,
+      ProvidedOrder.Left,
       context
     )
   }
@@ -2500,9 +2525,12 @@ case class LogicalPlanProducer(
     val solvedRight = solveds.get(right.id).asSinglePlannerQuery
     val solved = UnionQuery(solvedLeft, solvedRight, distinct = false, unionMappings)
 
-    val providedOrder = providedOrders.get(left.id).commonPrefixWith(providedOrders.get(right.id)).fromBoth
+    val union = OrderedUnion(left, right, sortedColumns)
+    val providedOrder = providedOrders.get(left.id)
+      .commonPrefixWith(providedOrders.get(right.id))(context.providedOrderFactory, Some(union))
+      .fromBoth(context.providedOrderFactory, Some(union))
 
-    val plan = annotate(OrderedUnion(left, right, sortedColumns), solved, providedOrder, context)
+    val plan = annotate(union, solved, providedOrder, context)
     markOrderAsLeveragedBackwardsUntilOrigin(plan, context.providedOrderFactory)
     plan
   }
@@ -2515,9 +2543,9 @@ case class LogicalPlanProducer(
       case _ => throw new IllegalStateException("Planning a distinct for union, but no union was planned before.")
     }
     if (returnAll.isEmpty) {
-      annotate(left.copyPlanWithIdGen(idGen), solved, providedOrders.get(left.id).fromLeft, context)
+      annotate(left.copyPlanWithIdGen(idGen), solved, ProvidedOrder.Left, context)
     } else {
-      annotate(Distinct(left, returnAll.toMap), solved, providedOrders.get(left.id).fromLeft, context)
+      annotate(Distinct(left, returnAll.toMap), solved, ProvidedOrder.Left, context)
     }
   }
 
@@ -2533,12 +2561,12 @@ case class LogicalPlanProducer(
       case _ => throw new IllegalStateException("Planning a distinct for or union, but no union was planned before.")
     }
     if (returnAll.isEmpty) {
-      annotate(left.copyPlanWithIdGen(idGen), solved, providedOrders.get(left.id).fromLeft, context)
+      annotate(left.copyPlanWithIdGen(idGen), solved, ProvidedOrder.Left, context)
     } else {
       val plan = annotate(
         OrderedDistinct(left, returnAll.toMap, orderToLeverage),
         solved,
-        providedOrders.get(left.id).fromLeft,
+        ProvidedOrder.Left,
         context
       )
       markOrderAsLeveragedBackwardsUntilOrigin(plan, context.providedOrderFactory)
@@ -2568,9 +2596,10 @@ case class LogicalPlanProducer(
         DistinctQueryProjection(reported)
       ))
     val columnsWithRenames = renameProvidedOrderColumns(providedOrders.get(left.id).columns, expressions)
-    val providedOrder = context.providedOrderFactory.providedOrder(columnsWithRenames, ProvidedOrder.Left)
+    val plan = Distinct(left, expressions)
+    val providedOrder = context.providedOrderFactory.providedOrder(columnsWithRenames, ProvidedOrder.Left, Some(plan))
     annotate(
-      Distinct(left, expressions),
+      plan,
       solved,
       providedOrder,
       context
@@ -2645,9 +2674,11 @@ case class LogicalPlanProducer(
         DistinctQueryProjection(reported)
       ))
     val columnsWithRenames = renameProvidedOrderColumns(providedOrders.get(left.id).columns, expressions)
-    val providedOrder = context.providedOrderFactory.providedOrder(columnsWithRenames, ProvidedOrder.Left)
+    val distinct = OrderedDistinct(left, expressions, orderToLeverage)
+    val providedOrder =
+      context.providedOrderFactory.providedOrder(columnsWithRenames, ProvidedOrder.Left, Some(distinct))
     val plan = annotate(
-      OrderedDistinct(left, expressions, orderToLeverage),
+      distinct,
       solved,
       providedOrder,
       context
@@ -2701,7 +2732,7 @@ case class LogicalPlanProducer(
     annotate(
       TriadicSelection(left, right, positivePredicate, sourceId, seenId, targetId),
       solved,
-      providedOrders.get(left.id).fromLeft,
+      ProvidedOrder.Left,
       context
     )
   }
@@ -2712,7 +2743,8 @@ case class LogicalPlanProducer(
     val (rewrittenPattern: CreatePattern, rewrittenInner) =
       SubqueryExpressionSolver.ForMappable().solve(inner, pattern, context)
     val plan = plans.Create(rewrittenInner, rewrittenPattern.commands)
-    val providedOrder = providedOrderOfUpdate(plan, rewrittenInner, context.settings.executionModel)
+    val providedOrder =
+      providedOrderOfUpdate(plan, rewrittenInner, context.settings.executionModel, context.providedOrderFactory)
     annotate(plan, solved, providedOrder, context)
   }
 
@@ -2761,7 +2793,8 @@ case class LogicalPlanProducer(
         onCreatePatterns,
         nodesToLock
       )
-    val providedOrder = providedOrderOfUpdate(merge, inner, context.settings.executionModel)
+    val providedOrder =
+      providedOrderOfUpdate(merge, inner, context.settings.executionModel, context.providedOrderFactory)
     annotate(merge, solved, providedOrder, context)
   }
 
@@ -2772,8 +2805,10 @@ case class LogicalPlanProducer(
     context: LogicalPlanningContext
   ): LogicalPlan = {
     val solved = solveds.get(lhs.id).asSinglePlannerQuery ++ solveds.get(rhs.id).asSinglePlannerQuery
-    val providedOrder = providedOrderOfApply(lhs, rhs, context.settings.executionModel)
-    annotate(ConditionalApply(lhs, rhs, idNames), solved, providedOrder, context)
+    val plan = ConditionalApply(lhs, rhs, idNames)
+    val providedOrder =
+      providedOrderOfApply(lhs, rhs, plan, context.settings.executionModel, context.providedOrderFactory)
+    annotate(plan, solved, providedOrder, context)
   }
 
   def planAntiConditionalApply(
@@ -2785,8 +2820,10 @@ case class LogicalPlanProducer(
   ): LogicalPlan = {
     val solved =
       maybeSolved.getOrElse(solveds.get(lhs.id).asSinglePlannerQuery ++ solveds.get(rhs.id).asSinglePlannerQuery)
-    val providedOrder = providedOrderOfApply(lhs, rhs, context.settings.executionModel)
-    annotate(AntiConditionalApply(lhs, rhs, idNames), solved, providedOrder, context)
+    val plan = AntiConditionalApply(lhs, rhs, idNames)
+    val providedOrder =
+      providedOrderOfApply(lhs, rhs, plan, context.settings.executionModel, context.providedOrderFactory)
+    annotate(plan, solved, providedOrder, context)
   }
 
   def planDeleteNode(inner: LogicalPlan, delete: DeleteExpression, context: LogicalPlanningContext): LogicalPlan = {
@@ -2799,7 +2836,8 @@ case class LogicalPlanProducer(
       } else {
         DeleteNode(rewrittenInner, rewrittenDelete.expression)
       }
-    val providedOrder = providedOrderOfUpdate(plan, inner, context.settings.executionModel)
+    val providedOrder =
+      providedOrderOfUpdate(plan, inner, context.settings.executionModel, context.providedOrderFactory)
     annotate(plan, solved, providedOrder, context)
   }
 
@@ -2812,7 +2850,8 @@ case class LogicalPlanProducer(
       solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addMutatingPatterns(delete)))
     val (rewrittenDelete, rewrittenInner) = SubqueryExpressionSolver.ForMappable().solve(inner, delete, context)
     val plan = DeleteRelationship(rewrittenInner, rewrittenDelete.expression)
-    val providedOrder = providedOrderOfUpdate(plan, inner, context.settings.executionModel)
+    val providedOrder =
+      providedOrderOfUpdate(plan, inner, context.settings.executionModel, context.providedOrderFactory)
     annotate(plan, solved, providedOrder, context)
   }
 
@@ -2827,7 +2866,8 @@ case class LogicalPlanProducer(
       } else {
         DeletePath(inner, delete.expression)
       }
-    val providedOrder = providedOrderOfUpdate(plan, inner, context.settings.executionModel)
+    val providedOrder =
+      providedOrderOfUpdate(plan, inner, context.settings.executionModel, context.providedOrderFactory)
     annotate(plan, solved, providedOrder, context)
   }
 
@@ -2845,7 +2885,8 @@ case class LogicalPlanProducer(
       } else {
         plans.DeleteExpression(rewrittenInner, rewrittenDelete.expression)
       }
-    val providedOrder = providedOrderOfUpdate(plan, inner, context.settings.executionModel)
+    val providedOrder =
+      providedOrderOfUpdate(plan, inner, context.settings.executionModel, context.providedOrderFactory)
     annotate(plan, solved, providedOrder, context)
   }
 
@@ -2853,7 +2894,8 @@ case class LogicalPlanProducer(
     val solved =
       solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addMutatingPatterns(pattern)))
     val plan = SetLabels(inner, pattern.variable, pattern.labels.toSet)
-    val providedOrder = providedOrderOfUpdate(plan, inner, context.settings.executionModel)
+    val providedOrder =
+      providedOrderOfUpdate(plan, inner, context.settings.executionModel, context.providedOrderFactory)
     annotate(plan, solved, providedOrder, context)
   }
 
@@ -2876,7 +2918,8 @@ case class LogicalPlanProducer(
       rewrittenPattern.propertyKey,
       rewrittenPattern.expression
     )
-    val providedOrder = providedOrderOfUpdate(plan, inner, context.settings.executionModel)
+    val providedOrder =
+      providedOrderOfUpdate(plan, inner, context.settings.executionModel, context.providedOrderFactory)
     annotate(plan, solved, providedOrder, context)
   }
 
@@ -2894,7 +2937,8 @@ case class LogicalPlanProducer(
     val rewrittenPattern = pattern.endoRewrite(rewriter)
 
     val plan = SetNodeProperties(inner, rewrittenPattern.variable, rewrittenPattern.items)
-    val providedOrder = providedOrderOfUpdate(plan, inner, context.settings.executionModel)
+    val providedOrder =
+      providedOrderOfUpdate(plan, inner, context.settings.executionModel, context.providedOrderFactory)
     annotate(plan, solved, providedOrder, context)
   }
 
@@ -2917,7 +2961,8 @@ case class LogicalPlanProducer(
       rewrittenPattern.expression,
       rewrittenPattern.removeOtherProps
     )
-    val providedOrder = providedOrderOfUpdate(plan, inner, context.settings.executionModel)
+    val providedOrder =
+      providedOrderOfUpdate(plan, inner, context.settings.executionModel, context.providedOrderFactory)
     annotate(plan, solved, providedOrder, context)
   }
 
@@ -2940,7 +2985,8 @@ case class LogicalPlanProducer(
       rewrittenPattern.propertyKey,
       rewrittenPattern.expression
     )
-    val providedOrder = providedOrderOfUpdate(plan, inner, context.settings.executionModel)
+    val providedOrder =
+      providedOrderOfUpdate(plan, inner, context.settings.executionModel, context.providedOrderFactory)
     annotate(plan, solved, providedOrder, context)
   }
 
@@ -2958,7 +3004,8 @@ case class LogicalPlanProducer(
     val rewrittenPattern = pattern.endoRewrite(rewriter)
 
     val plan = SetRelationshipProperties(inner, rewrittenPattern.variable, rewrittenPattern.items)
-    val providedOrder = providedOrderOfUpdate(plan, inner, context.settings.executionModel)
+    val providedOrder =
+      providedOrderOfUpdate(plan, inner, context.settings.executionModel, context.providedOrderFactory)
     annotate(plan, solved, providedOrder, context)
   }
 
@@ -2981,7 +3028,8 @@ case class LogicalPlanProducer(
       rewrittenPattern.expression,
       rewrittenPattern.removeOtherProps
     )
-    val providedOrder = providedOrderOfUpdate(plan, inner, context.settings.executionModel)
+    val providedOrder =
+      providedOrderOfUpdate(plan, inner, context.settings.executionModel, context.providedOrderFactory)
     annotate(plan, solved, providedOrder, context)
   }
 
@@ -3004,7 +3052,8 @@ case class LogicalPlanProducer(
       rewrittenPattern.expression,
       rewrittenPattern.removeOtherProps
     )
-    val providedOrder = providedOrderOfUpdate(plan, inner, context.settings.executionModel)
+    val providedOrder =
+      providedOrderOfUpdate(plan, inner, context.settings.executionModel, context.providedOrderFactory)
     annotate(plan, solved, providedOrder, context)
   }
 
@@ -3023,7 +3072,8 @@ case class LogicalPlanProducer(
       rewrittenPattern.propertyKeyName,
       rewrittenPattern.expression
     )
-    val providedOrder = providedOrderOfUpdate(plan, inner, context.settings.executionModel)
+    val providedOrder =
+      providedOrderOfUpdate(plan, inner, context.settings.executionModel, context.providedOrderFactory)
     annotate(plan, solved, providedOrder, context)
   }
 
@@ -3041,7 +3091,8 @@ case class LogicalPlanProducer(
     val rewrittenPattern = pattern.endoRewrite(rewriter)
 
     val plan = SetProperties(inner, rewrittenPattern.entityExpression, rewrittenPattern.items)
-    val providedOrder = providedOrderOfUpdate(plan, inner, context.settings.executionModel)
+    val providedOrder =
+      providedOrderOfUpdate(plan, inner, context.settings.executionModel, context.providedOrderFactory)
     annotate(plan, solved, providedOrder, context)
   }
 
@@ -3049,7 +3100,8 @@ case class LogicalPlanProducer(
     val solved =
       solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addMutatingPatterns(pattern)))
     val plan = RemoveLabels(inner, pattern.variable, pattern.labels.toSet)
-    val providedOrder = providedOrderOfUpdate(plan, inner, context.settings.executionModel)
+    val providedOrder =
+      providedOrderOfUpdate(plan, inner, context.settings.executionModel, context.providedOrderFactory)
     annotate(plan, solved, providedOrder, context)
   }
 
@@ -3064,7 +3116,13 @@ case class LogicalPlanProducer(
       solveds.get(left.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addMutatingPatterns(pattern)))
     val (rewrittenExpression, rewrittenLeft) = SubqueryExpressionSolver.ForSingle.solve(left, expression, context)
     val plan = ForeachApply(rewrittenLeft, innerUpdates, pattern.variable, rewrittenExpression)
-    val providedOrder = providedOrderOfApply(rewrittenLeft, innerUpdates, context.settings.executionModel)
+    val providedOrder = providedOrderOfApply(
+      rewrittenLeft,
+      innerUpdates,
+      plan,
+      context.settings.executionModel,
+      context.providedOrderFactory
+    )
     annotate(plan, solved, providedOrder, context)
   }
 
@@ -3084,7 +3142,8 @@ case class LogicalPlanProducer(
       rewrittenExpression,
       mutations
     )
-    val providedOrder = providedOrderOfUpdate(plan, inner, context.settings.executionModel)
+    val providedOrder =
+      providedOrderOfUpdate(plan, inner, context.settings.executionModel, context.providedOrderFactory)
     annotate(plan, solved, providedOrder, context)
   }
 
@@ -3093,14 +3152,14 @@ case class LogicalPlanProducer(
     context: LogicalPlanningContext,
     reasons: ListSet[EagernessReason]
   ): LogicalPlan =
-    annotate(Eager(inner, reasons), solveds.get(inner.id), providedOrders.get(inner.id).fromLeft, context)
+    annotate(Eager(inner, reasons), solveds.get(inner.id), ProvidedOrder.Left, context)
 
   def planError(
     inner: LogicalPlan,
     exception: ExhaustiveShortestPathForbiddenException,
     context: LogicalPlanningContext
   ): LogicalPlan =
-    annotate(ErrorPlan(inner, exception), solveds.get(inner.id), providedOrders.get(inner.id).fromLeft, context)
+    annotate(ErrorPlan(inner, exception), solveds.get(inner.id), ProvidedOrder.Left, context)
 
   /**
    * @param lastInterestingOrders the interesting order of the last part of the whole query, or `None` for UNION queries.
@@ -3127,7 +3186,10 @@ case class LogicalPlanProducer(
     // Do not calculate cardinality for ProduceResult. Since the passed context does not have accurate label information
     // It will get a wrong value with some projections. Use the cardinality of inner instead
     cardinalities.copy(inner.id, produceResult.id)
-    providedOrders.set(produceResult.id, providedOrders.get(inner.id).fromLeft)
+    providedOrders.set(
+      produceResult.id,
+      providedOrders.get(inner.id).fromLeft(context.providedOrderFactory, Some(produceResult))
+    )
 
     if (lastInterestingOrders.exists(_.requiredOrderCandidate.nonEmpty)) {
       markOrderAsLeveragedBackwardsUntilOrigin(produceResult, context.providedOrderFactory)
@@ -3150,7 +3212,7 @@ case class LogicalPlanProducer(
         .asSinglePlannerQuery
         .updateTailOrSelf(_.withHorizon(RunQueryAtHorizon(graphReference, queryString, parameters, columns)))
     val runQueryAt = RunQueryAt(inner, queryString, graphReference, parameters, columns)
-    annotate(runQueryAt, solved, NoProvidedOrder, context)
+    annotate(runQueryAt, solved, ProvidedOrder.empty, context)
   }
 
   def addMissingStandaloneArgumentPatternNodes(
@@ -3176,18 +3238,21 @@ case class LogicalPlanProducer(
   private def providedOrderOfUpdate(
     updatePlan: UpdatingPlan,
     sourcePlan: LogicalPlan,
-    executionModel: ExecutionModel
+    executionModel: ExecutionModel,
+    providedOrderFactory: ProvidedOrderFactory
   ): ProvidedOrder =
     if (invalidatesProvidedOrder(updatePlan, executionModel)) {
       ProvidedOrder.empty
     } else {
-      providedOrders.get(sourcePlan.id).fromLeft
+      providedOrders.get(sourcePlan.id).fromLeft(providedOrderFactory, Some(updatePlan))
     }
 
   private def providedOrderOfApply(
     left: LogicalPlan,
     right: LogicalPlan,
-    executionModel: ExecutionModel
+    plan: LogicalPlan,
+    executionModel: ExecutionModel,
+    providedOrderFactory: ProvidedOrderFactory
   ): ProvidedOrder = {
     // Plans with a rhs may invalidate the provided order coming from the lhs. If this is the case, this method returns an empty provided order.
     if (invalidatesProvidedOrderRecursive(right, executionModel)) {
@@ -3197,7 +3262,13 @@ case class LogicalPlanProducer(
       val rightProvidedOrder = providedOrders.get(right.id)
       val leftDistinctness = left.distinctness
 
-      LogicalPlanProducer.providedOrderOfApply(leftProvidedOrder, rightProvidedOrder, leftDistinctness)
+      LogicalPlanProducer.providedOrderOfApply(
+        leftProvidedOrder,
+        rightProvidedOrder,
+        leftDistinctness,
+        plan,
+        providedOrderFactory
+      )
     }
   }
 
@@ -3259,8 +3330,35 @@ case class LogicalPlanProducer(
       )
     solveds.set(plan.id, solved)
     cardinalities.set(plan.id, cardinality)
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+      providedOrder.isEmpty || Set(plan.lhs, plan.lhs).flatten.forall(p => providedOrders.get(p.id) ne providedOrder),
+      s"A plan must not use the same provided order instance as one of its children. Make sure to use the ProvidedOrderFactory."
+    )
     providedOrders.set(plan.id, providedOrder)
     plan
+  }
+
+  /**
+   * Compute cardinality for a plan. Set this cardinality in the Cardinalities attribute.
+   * Forward the ProvidedOrder from the LHS or RHS depending on the given `providedOrderPropagationRule`.
+   *
+   * @return the same plan
+   */
+  private def annotate[T <: LogicalPlan](
+    plan: T,
+    solved: PlannerQuery,
+    providedOrderPropagationRule: ProvidedOrder.OrderOrigin,
+    context: LogicalPlanningContext
+  ): T = {
+    val providedOrder = providedOrderPropagationRule match {
+      case ProvidedOrder.Left =>
+        providedOrders.get(plan.lhs.get.id).fromLeft(context.providedOrderFactory, Some(plan))
+      case ProvidedOrder.Right =>
+        providedOrders.get(plan.rhs.get.id).fromRight(context.providedOrderFactory, Some(plan))
+      case ProvidedOrder.Both => throw new IllegalAccessException("Not allowed to pass ProvidedOrder.Both to annotate.")
+      case ProvidedOrder.Self => throw new IllegalAccessException("Not allowed to pass ProvidedOrder.Self to annotate.")
+    }
+    annotate(plan, solved, providedOrder, context)
   }
 
   /**
@@ -3271,7 +3369,7 @@ case class LogicalPlanProducer(
   private def annotateSelection(
     selection: Selection,
     solved: PlannerQuery,
-    providedOrder: ProvidedOrder,
+    providedOrderPropagationRule: ProvidedOrder.OrderOrigin,
     context: LogicalPlanningContext
   ): Selection = {
     labelAndRelTypeInfos.set(
@@ -3279,7 +3377,7 @@ case class LogicalPlanProducer(
       Some(LabelAndRelTypeInfo(context.plannerState.input.labelInfo, context.plannerState.input.relTypeInfo))
     )
 
-    annotate(selection, solved, providedOrder, context)
+    annotate(selection, solved, providedOrderPropagationRule, context)
   }
 
   /**
@@ -3315,11 +3413,12 @@ case class LogicalPlanProducer(
     expressions: Map[LogicalVariable, Expression],
     context: LogicalPlanningContext,
     solved: SinglePlannerQuery
-  ) = {
+  ): Projection = {
     val columnsWithRenames = renameProvidedOrderColumns(providedOrders.get(inner.id).columns, expressions)
-    val providedOrder = context.providedOrderFactory.providedOrder(columnsWithRenames, ProvidedOrder.Left)
+    val plan = Projection(inner, expressions)
+    val providedOrder = context.providedOrderFactory.providedOrder(columnsWithRenames, ProvidedOrder.Left, Some(plan))
     annotate(
-      Projection(inner, expressions),
+      plan,
       solved,
       providedOrder,
       context
@@ -3458,16 +3557,20 @@ object LogicalPlanProducer {
   private[steps] def providedOrderOfApply(
     leftProvidedOrder: ProvidedOrder,
     rightProvidedOrder: ProvidedOrder,
-    leftDistinctness: Distinctness
+    leftDistinctness: Distinctness,
+    plan: LogicalPlan,
+    providedOrderFactory: ProvidedOrderFactory
   ): ProvidedOrder = {
     // To combine two orders, we concatenate their columns, if both orders are non-empty.
     def combinedOrder: ProvidedOrder = {
       if (leftProvidedOrder.isEmpty) {
-        rightProvidedOrder.fromRight
+        rightProvidedOrder.fromRight(providedOrderFactory, Some(plan))
       } else if (rightProvidedOrder.isEmpty) {
-        leftProvidedOrder.fromLeft
+        leftProvidedOrder.fromLeft(providedOrderFactory, Some(plan))
       } else {
-        leftProvidedOrder.followedBy(rightProvidedOrder).fromBoth
+        leftProvidedOrder
+          .followedBy(rightProvidedOrder)(providedOrderFactory, Some(plan))
+          .fromBoth(providedOrderFactory, Some(plan))
       }
     }
 
@@ -3484,7 +3587,7 @@ object LogicalPlanProducer {
         combinedOrder
       case _ =>
         // If the LHS has duplicate values, we cannot guarantee any added order from the RHS
-        leftProvidedOrder.fromLeft
+        leftProvidedOrder.fromLeft(providedOrderFactory, Some(plan))
     }
   }
 }

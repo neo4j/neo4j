@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.logical.builder.TestNFABuilder
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
+import org.neo4j.cypher.internal.logical.plans.ordering.DefaultProvidedOrderFactory
 import org.neo4j.cypher.internal.logical.plans.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
@@ -43,7 +44,7 @@ import org.scalatest.Assertion
 class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestSupport
     with LogicalPlanConstructionTestSupport with AstConstructionTestSupport {
 
-  private val po_n: ProvidedOrder = ProvidedOrder.asc(v"n")
+  private val po_n: ProvidedOrder = DefaultProvidedOrderFactory.asc(v"n")
 
   test("should unnest apply with a single Argument on the lhs") {
     val inputBuilder = new LogicalPlanBuilder()

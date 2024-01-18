@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.IndexSeek.nodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.MultiNodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeekLeafPlan
-import org.neo4j.cypher.internal.logical.plans.ordering.ProvidedOrder
+import org.neo4j.cypher.internal.logical.plans.ordering.DefaultProvidedOrderFactory
 import org.neo4j.cypher.internal.plandescription.Arguments.BatchSize
 import org.neo4j.cypher.internal.plandescription.Arguments.DbHits
 import org.neo4j.cypher.internal.plandescription.Arguments.EstimatedRows
@@ -433,7 +433,7 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll with A
     val expandPlan =
       Expand(argument, varFor("from"), SemanticDirection.INCOMING, Seq.empty, varFor("to"), varFor("rel"), ExpandAll)
     val providedOrders = new ProvidedOrders
-    providedOrders.set(expandPlan.id, ProvidedOrder.asc(varFor("  UNNAMED42")))
+    providedOrders.set(expandPlan.id, DefaultProvidedOrderFactory.asc(varFor("  UNNAMED42")))
     val description = LogicalPlan2PlanDescription(
       readOnly = true,
       new EffectiveCardinalities,

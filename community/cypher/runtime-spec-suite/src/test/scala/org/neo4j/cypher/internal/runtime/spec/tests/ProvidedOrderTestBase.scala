@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderDescending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
+import org.neo4j.cypher.internal.logical.plans.ordering.DefaultProvidedOrderFactory
 import org.neo4j.cypher.internal.logical.plans.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
@@ -56,8 +57,8 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
   self: ProvidedOrderTestBase[CONTEXT] =>
 
   private[this] val parse: String => Expression = Parser.parseExpression
-  private[this] val asc: Expression => ProvidedOrder = ProvidedOrder.asc(_: Expression)
-  private[this] val desc: Expression => ProvidedOrder = ProvidedOrder.desc(_: Expression)
+  private[this] val asc: Expression => ProvidedOrder = DefaultProvidedOrderFactory.asc(_: Expression)
+  private[this] val desc: Expression => ProvidedOrder = DefaultProvidedOrderFactory.desc(_: Expression)
 
   for (
     ProvidedOrderTest(orderString, indexOrder, providedOrderFactory, expectedMutation) <- Seq(
@@ -1152,8 +1153,8 @@ trait CartesianProductProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
   self: ProvidedOrderTestBase[CONTEXT] =>
 
   private[this] val parse: String => Expression = Parser.parseExpression
-  private[this] val asc: Expression => ProvidedOrder = ProvidedOrder.asc(_: Expression)
-  private[this] val desc: Expression => ProvidedOrder = ProvidedOrder.desc(_: Expression)
+  private[this] val asc: Expression => ProvidedOrder = DefaultProvidedOrderFactory.asc(_: Expression)
+  private[this] val desc: Expression => ProvidedOrder = DefaultProvidedOrderFactory.desc(_: Expression)
 
   for (
     ProvidedOrderTest(orderString, indexOrder, providedOrderFactory, expectedMutation) <- Seq(

@@ -32,9 +32,13 @@ import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.FullSatisfaction
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.NoSatisfaction
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.Satisfaction
 import org.neo4j.cypher.internal.ir.ordering.RequiredOrderCandidate
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class ProvidedOrderTest extends CypherFunSuite with AstConstructionTestSupport {
+
+  implicit val noPlan: Option[LogicalPlan] = None
+  implicit val poFactory: ProvidedOrderFactory = DefaultProvidedOrderFactory
 
   test("should append provided order") {
     val left = ProvidedOrder.asc(varFor("a")).asc(varFor("b"))

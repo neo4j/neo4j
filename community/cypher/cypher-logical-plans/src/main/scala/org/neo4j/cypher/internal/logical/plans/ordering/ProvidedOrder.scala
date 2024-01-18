@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.projectExpression
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.FullSatisfaction
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.Satisfaction
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ordering
 import org.neo4j.cypher.internal.logical.plans.ordering.ProvidedOrder.OrderOrigin
 import org.neo4j.cypher.internal.util.NonEmptyList
@@ -47,7 +48,7 @@ object ProvidedOrder {
   final case object Right extends OrderOrigin
   final case object Both extends OrderOrigin
 
-  def apply(columns: Seq[ColumnOrder], orderOrigin: OrderOrigin): ProvidedOrder = {
+  private[ordering] def apply(columns: Seq[ColumnOrder], orderOrigin: OrderOrigin): ProvidedOrder = {
     if (columns.isEmpty) NoProvidedOrder
     else NonEmptyProvidedOrder(NonEmptyList.from(columns), orderOrigin)
   }
@@ -59,42 +60,83 @@ object ProvidedOrder {
 
   val empty: ProvidedOrder = NoProvidedOrder
 
-  def asc(expression: Expression, projections: Map[LogicalVariable, Expression] = Map.empty): NonEmptyProvidedOrder =
+  private[ordering] def asc(
+    expression: Expression,
+    projections: Map[LogicalVariable, Expression] = Map.empty
+  ): NonEmptyProvidedOrder =
     ordering.NonEmptyProvidedOrder(NonEmptyList(Asc(expression, projections)), Self)
 
-  def desc(expression: Expression, projections: Map[LogicalVariable, Expression] = Map.empty): NonEmptyProvidedOrder =
+  private[ordering] def desc(
+    expression: Expression,
+    projections: Map[LogicalVariable, Expression] = Map.empty
+  ): NonEmptyProvidedOrder =
     ordering.NonEmptyProvidedOrder(NonEmptyList(Desc(expression, projections)), Self)
 }
 
+/**
+ * A factory to create ProvidedOrders.
+ * Outside of this package, all ProvidedOrders can only be created through a factory.
+ */
 sealed trait ProvidedOrderFactory {
-  def providedOrder(columns: Seq[ColumnOrder], orderOrigin: OrderOrigin): ProvidedOrder
+
+  /**
+   * A providedOrder for the given plan.
+   */
+  def providedOrder(providedOrder: ProvidedOrder, plan: Option[LogicalPlan]): ProvidedOrder
+
+  /**
+   * A providedOrder with the given columns and origin for the given plan.
+   */
+  def providedOrder(columns: Seq[ColumnOrder], orderOrigin: OrderOrigin, plan: Option[LogicalPlan]): ProvidedOrder
+
+  /**
+   * A providedOrder with a single ascending column.
+   */
   def asc(expression: Expression, projections: Map[LogicalVariable, Expression] = Map.empty): ProvidedOrder
+
+  /**
+   * A providedOrder with a single descending column.
+   */
   def desc(expression: Expression, projections: Map[LogicalVariable, Expression] = Map.empty): ProvidedOrder
   def assertOnNoProvidedOrder: Boolean
 }
 
 case object DefaultProvidedOrderFactory extends ProvidedOrderFactory {
 
-  override def providedOrder(columns: Seq[ColumnOrder], orderOrigin: OrderOrigin): ProvidedOrder =
+  override def providedOrder(providedOrder: ProvidedOrder, plan: Option[LogicalPlan]): ProvidedOrder = providedOrder
+
+  override def providedOrder(
+    columns: Seq[ColumnOrder],
+    orderOrigin: OrderOrigin,
+    plan: Option[LogicalPlan]
+  ): ProvidedOrder =
     ProvidedOrder.apply(columns, orderOrigin)
 
   override def asc(
     expression: Expression,
     projections: Map[LogicalVariable, Expression] = Map.empty
-  ): NonEmptyProvidedOrder =
+  ): ProvidedOrder =
     ProvidedOrder.asc(expression, projections)
 
   override def desc(
     expression: Expression,
     projections: Map[LogicalVariable, Expression] = Map.empty
-  ): NonEmptyProvidedOrder =
+  ): ProvidedOrder =
     ProvidedOrder.desc(expression, projections)
 
   override def assertOnNoProvidedOrder: Boolean = true
 }
 
 case object NoProvidedOrderFactory extends ProvidedOrderFactory {
-  override def providedOrder(columns: Seq[ColumnOrder], orderOrigin: OrderOrigin): ProvidedOrder = ProvidedOrder.empty
+
+  override def providedOrder(providedOrder: ProvidedOrder, plan: Option[LogicalPlan]): ProvidedOrder =
+    ProvidedOrder.empty
+
+  override def providedOrder(
+    columns: Seq[ColumnOrder],
+    orderOrigin: OrderOrigin,
+    plan: Option[LogicalPlan]
+  ): ProvidedOrder = ProvidedOrder.empty
 
   override def asc(expression: Expression, projections: Map[LogicalVariable, Expression] = Map.empty): ProvidedOrder =
     ProvidedOrder.empty
@@ -127,6 +169,22 @@ sealed trait ProvidedOrder {
   def orderOrigin: Option[OrderOrigin]
 
   /**
+   * Add an ascending column to this ProvidedOrder
+   */
+  def asc(expression: Expression, projections: Map[LogicalVariable, Expression] = Map.empty)(
+    implicit factory: ProvidedOrderFactory,
+    plan: Option[LogicalPlan]
+  ): ProvidedOrder
+
+  /**
+   * Add an descending column to this ProvidedOrder
+   */
+  def desc(expression: Expression, projections: Map[LogicalVariable, Expression] = Map.empty)(
+    implicit factory: ProvidedOrderFactory,
+    plan: Option[LogicalPlan]
+  ): ProvidedOrder
+
+  /**
    * Returns a new provided order where the order columns of this are concatenated with
    * the order columns of the other provided order. Example:
    * [n.foo ASC, n.bar DESC].followedBy([n.baz ASC]) = [n.foo ASC, n.bar DESC, n.baz ASC]
@@ -134,37 +192,41 @@ sealed trait ProvidedOrder {
    * If this is empty, then the returned provided order will also be empty, regardless of the
    * given nextOrder.
    */
-  def followedBy(nextOrder: ProvidedOrder): ProvidedOrder
+  def followedBy(nextOrder: ProvidedOrder)(
+    implicit factory: ProvidedOrderFactory,
+    plan: Option[LogicalPlan]
+  ): ProvidedOrder
 
   /**
    * Trim provided order up until a sort column that matches any of the given args.
    */
-  def upToExcluding(args: Set[LogicalVariable]): ProvidedOrder
+  def upToExcluding(args: Set[LogicalVariable])(
+    implicit factory: ProvidedOrderFactory,
+    plan: Option[LogicalPlan]
+  ): ProvidedOrder
 
   /**
    * Returns the common prefix between this and another provided order.
    */
-  def commonPrefixWith(otherOrder: ProvidedOrder): ProvidedOrder
-
-  /**
-   * Map the columns with some mapping function
-   */
-  def mapColumns(f: ColumnOrder => ColumnOrder): ProvidedOrder
+  def commonPrefixWith(otherOrder: ProvidedOrder)(
+    implicit factory: ProvidedOrderFactory,
+    plan: Option[LogicalPlan]
+  ): ProvidedOrder
 
   /**
    * The same order columns, but with OrderOrigin = [[Left]]
    */
-  def fromLeft: ProvidedOrder
+  def fromLeft(implicit factory: ProvidedOrderFactory, plan: Option[LogicalPlan]): ProvidedOrder
 
   /**
    * The same order columns, but with OrderOrigin = [[Right]]
    */
-  def fromRight: ProvidedOrder
+  def fromRight(implicit factory: ProvidedOrderFactory, plan: Option[LogicalPlan]): ProvidedOrder
 
   /**
    * The same order columns, but with OrderOrigin = [[Both]]
    */
-  def fromBoth: ProvidedOrder
+  def fromBoth(implicit factory: ProvidedOrderFactory, plan: Option[LogicalPlan]): ProvidedOrder
 
   /**
    * Checks if a RequiredOrder is satisfied by a ProvidedOrder
@@ -203,20 +265,42 @@ sealed trait ProvidedOrder {
 
 }
 
-case object NoProvidedOrder extends ProvidedOrder {
+private case object NoProvidedOrder extends ProvidedOrder {
   override def columns: Seq[ColumnOrder] = Seq.empty
   override def isEmpty: Boolean = true
   override def orderOrigin: Option[OrderOrigin] = None
-  override def followedBy(nextOrder: ProvidedOrder): ProvidedOrder = this
-  override def upToExcluding(args: Set[LogicalVariable]): ProvidedOrder = this
-  override def commonPrefixWith(otherOrder: ProvidedOrder): ProvidedOrder = this
-  override def mapColumns(f: ColumnOrder => ColumnOrder): ProvidedOrder = this
-  override def fromLeft: ProvidedOrder = this
-  override def fromRight: ProvidedOrder = this
-  override def fromBoth: ProvidedOrder = this
+
+  override def asc(expression: Expression, projections: Map[LogicalVariable, Expression])(
+    implicit factory: ProvidedOrderFactory,
+    plan: Option[LogicalPlan]
+  ): ProvidedOrder = this
+
+  override def desc(expression: Expression, projections: Map[LogicalVariable, Expression])(
+    implicit factory: ProvidedOrderFactory,
+    plan: Option[LogicalPlan]
+  ): ProvidedOrder = this
+
+  override def followedBy(nextOrder: ProvidedOrder)(
+    implicit factory: ProvidedOrderFactory,
+    plan: Option[LogicalPlan]
+  ): ProvidedOrder = this
+
+  override def upToExcluding(args: Set[LogicalVariable])(
+    implicit factory: ProvidedOrderFactory,
+    plan: Option[LogicalPlan]
+  ): ProvidedOrder = this
+
+  override def commonPrefixWith(otherOrder: ProvidedOrder)(
+    implicit factory: ProvidedOrderFactory,
+    plan: Option[LogicalPlan]
+  ): ProvidedOrder = this
+
+  override def fromLeft(implicit factory: ProvidedOrderFactory, plan: Option[LogicalPlan]): ProvidedOrder = this
+  override def fromRight(implicit factory: ProvidedOrderFactory, plan: Option[LogicalPlan]): ProvidedOrder = this
+  override def fromBoth(implicit factory: ProvidedOrderFactory, plan: Option[LogicalPlan]): ProvidedOrder = this
 }
 
-case class NonEmptyProvidedOrder(allColumns: NonEmptyList[ColumnOrder], theOrderOrigin: OrderOrigin)
+private case class NonEmptyProvidedOrder(allColumns: NonEmptyList[ColumnOrder], theOrderOrigin: OrderOrigin)
     extends ProvidedOrder {
 
   override def columns: Seq[ColumnOrder] = allColumns.toIndexedSeq
@@ -225,23 +309,38 @@ case class NonEmptyProvidedOrder(allColumns: NonEmptyList[ColumnOrder], theOrder
 
   override def orderOrigin: Option[OrderOrigin] = Some(theOrderOrigin)
 
-  def asc(expression: Expression, projections: Map[LogicalVariable, Expression] = Map.empty): NonEmptyProvidedOrder =
-    ordering.NonEmptyProvidedOrder(allColumns :+ Asc(expression, projections), theOrderOrigin)
+  def asc(expression: Expression, projections: Map[LogicalVariable, Expression] = Map.empty)(
+    implicit factory: ProvidedOrderFactory,
+    plan: Option[LogicalPlan]
+  ): ProvidedOrder =
+    factory.providedOrder(NonEmptyProvidedOrder(allColumns :+ Asc(expression, projections), theOrderOrigin), plan)
 
-  def desc(expression: Expression, projections: Map[LogicalVariable, Expression] = Map.empty): NonEmptyProvidedOrder =
-    ordering.NonEmptyProvidedOrder(allColumns :+ Desc(expression, projections), theOrderOrigin)
+  def desc(expression: Expression, projections: Map[LogicalVariable, Expression] = Map.empty)(
+    implicit factory: ProvidedOrderFactory,
+    plan: Option[LogicalPlan]
+  ): ProvidedOrder =
+    factory.providedOrder(NonEmptyProvidedOrder(allColumns :+ Desc(expression, projections), theOrderOrigin), plan)
 
-  override def fromLeft: NonEmptyProvidedOrder = copy(theOrderOrigin = ProvidedOrder.Left)
-  override def fromRight: NonEmptyProvidedOrder = copy(theOrderOrigin = ProvidedOrder.Right)
-  override def fromBoth: ProvidedOrder = copy(theOrderOrigin = ProvidedOrder.Both)
+  override def fromLeft(implicit factory: ProvidedOrderFactory, plan: Option[LogicalPlan]): ProvidedOrder =
+    factory.providedOrder(copy(theOrderOrigin = ProvidedOrder.Left), plan)
 
-  override def mapColumns(f: ColumnOrder => ColumnOrder): NonEmptyProvidedOrder = copy(allColumns = allColumns.map(f))
+  override def fromRight(implicit factory: ProvidedOrderFactory, plan: Option[LogicalPlan]): ProvidedOrder =
+    factory.providedOrder(copy(theOrderOrigin = ProvidedOrder.Right), plan)
 
-  override def followedBy(nextOrder: ProvidedOrder): NonEmptyProvidedOrder = {
-    NonEmptyProvidedOrder(allColumns :++ nextOrder.columns, theOrderOrigin)
+  override def fromBoth(implicit factory: ProvidedOrderFactory, plan: Option[LogicalPlan]): ProvidedOrder =
+    factory.providedOrder(copy(theOrderOrigin = ProvidedOrder.Both), plan)
+
+  override def followedBy(nextOrder: ProvidedOrder)(
+    implicit factory: ProvidedOrderFactory,
+    plan: Option[LogicalPlan]
+  ): ProvidedOrder = {
+    factory.providedOrder(NonEmptyProvidedOrder(allColumns :++ nextOrder.columns, theOrderOrigin), plan)
   }
 
-  override def upToExcluding(args: Set[LogicalVariable]): ProvidedOrder = {
+  override def upToExcluding(args: Set[LogicalVariable])(
+    implicit factory: ProvidedOrderFactory,
+    plan: Option[LogicalPlan]
+  ): ProvidedOrder = {
     val (_, trimmed) = columns.foldLeft((false, Seq.empty[ColumnOrder])) {
       case (acc, _) if acc._1                                      => acc
       case (acc, col) if args.intersect(col.dependencies).nonEmpty => (true, acc._2)
@@ -250,14 +349,19 @@ case class NonEmptyProvidedOrder(allColumns: NonEmptyList[ColumnOrder], theOrder
     if (trimmed.isEmpty) {
       NoProvidedOrder
     } else {
-      NonEmptyProvidedOrder(NonEmptyList.from(trimmed), theOrderOrigin)
+      factory.providedOrder(NonEmptyProvidedOrder(NonEmptyList.from(trimmed), theOrderOrigin), plan)
     }
   }
 
-  override def commonPrefixWith(otherOrder: ProvidedOrder): ProvidedOrder = otherOrder match {
-    case NoProvidedOrder => NoProvidedOrder
-    case other: NonEmptyProvidedOrder =>
-      val newColumns = columns.zip(other.columns).takeWhile { case (a, b) => a == b }.map(_._1)
-      if (newColumns.isEmpty) NoProvidedOrder else copy(allColumns = NonEmptyList.from(newColumns))
-  }
+  override def commonPrefixWith(otherOrder: ProvidedOrder)(
+    implicit factory: ProvidedOrderFactory,
+    plan: Option[LogicalPlan]
+  ): ProvidedOrder =
+    otherOrder match {
+      case NoProvidedOrder => NoProvidedOrder
+      case other: NonEmptyProvidedOrder =>
+        val newColumns = columns.zip(other.columns).takeWhile { case (a, b) => a == b }.map(_._1)
+        if (newColumns.isEmpty) NoProvidedOrder
+        else factory.providedOrder(copy(allColumns = NonEmptyList.from(newColumns)), plan)
+    }
 }

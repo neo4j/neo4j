@@ -24,9 +24,9 @@ import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.planner.AttributeComparisonStrategy.ComparingProvidedAttributesOnly
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.logical.plans.ordering.NoProvidedOrder
-import org.neo4j.cypher.internal.logical.plans.ordering.NonEmptyProvidedOrder
+import org.neo4j.cypher.internal.logical.plans.ordering.DefaultProvidedOrderFactory
 import org.neo4j.cypher.internal.logical.plans.ordering.ProvidedOrder
+import org.neo4j.cypher.internal.logical.plans.ordering.ProvidedOrderFactory
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.exceptions.TestFailedException
@@ -36,6 +36,9 @@ class LogicalPlanningAttributesTestSupportTest
     with LogicalPlanningTestSupport2
     with LogicalPlanningIntegrationTestSupport
     with LogicalPlanningAttributesTestSupport {
+
+  implicit val noPlan: Option[LogicalPlan] = None
+  implicit val poFactory: ProvidedOrderFactory = DefaultProvidedOrderFactory
 
   val config: StatisticsBackedLogicalPlanningConfiguration =
     plannerBuilder()
@@ -53,8 +56,10 @@ class LogicalPlanningAttributesTestSupportTest
   val planState: LogicalPlanState =
     config.planState(query)
 
-  val providedOrder: NonEmptyProvidedOrder =
-    ProvidedOrder.asc(prop("a", "prop"), Map(v"a" -> v"a")).fromLeft
+  val providedOrder: ProvidedOrder =
+    DefaultProvidedOrderFactory
+      .asc(prop("a", "prop"), Map(v"a" -> v"a"))
+      .fromLeft
 
   val planAndEffectiveCardinalities: (LogicalPlan, PlanningAttributes.EffectiveCardinalities) =
     (planState.logicalPlan, planState.planningAttributes.effectiveCardinalities)
@@ -169,9 +174,9 @@ class LogicalPlanningAttributesTestSupportTest
         .planBuilder()
         .produceResults("a").withProvidedOrder(providedOrder)
         .top(2, "`a.prop` ASC").withProvidedOrder(providedOrder)
-        .projection("cacheN[a.prop] AS `a.prop`").withProvidedOrder(NoProvidedOrder)
+        .projection("cacheN[a.prop] AS `a.prop`").withProvidedOrder(ProvidedOrder.empty)
         .filter("cacheNFromStore[a.prop] > 42")
-        .nodeByLabelScan("a", "A", IndexOrderNone).withProvidedOrder(NoProvidedOrder)
+        .nodeByLabelScan("a", "A", IndexOrderNone).withProvidedOrder(ProvidedOrder.empty)
 
     planAndProvidedOrders should haveSamePlanAndProvidedOrdersAs((expected.build(), expected.providedOrders))
   }
@@ -182,9 +187,11 @@ class LogicalPlanningAttributesTestSupportTest
         .planBuilder()
         .produceResults("a").withProvidedOrder(providedOrder)
         .top(2, "`a.prop` ASC").withProvidedOrder(providedOrder)
-        .projection("cacheN[a.prop] AS `a.prop`").withProvidedOrder(NoProvidedOrder)
+        .projection("cacheN[a.prop] AS `a.prop`").withProvidedOrder(ProvidedOrder.empty)
         .filter("cacheNFromStore[a.prop] > 42")
-        .nodeByLabelScan("a", "A", IndexOrderNone).withProvidedOrder(ProvidedOrder.desc(v"nonsense").fromRight)
+        .nodeByLabelScan("a", "A", IndexOrderNone).withProvidedOrder(DefaultProvidedOrderFactory.desc(
+          v"nonsense"
+        ).fromRight)
 
     assertThrows[TestFailedException] {
       planAndProvidedOrders should haveSamePlanAndProvidedOrdersAs((expected.build(), expected.providedOrders))
@@ -199,7 +206,7 @@ class LogicalPlanningAttributesTestSupportTest
         .top(2, "`a.prop` ASC").withProvidedOrder(providedOrder)
         .projection("cacheN[a.prop] AS `a.prop`")
         .filter("cacheNFromStore[a.prop] > 42")
-        .nodeByLabelScan("a", "A", IndexOrderNone).withProvidedOrder(NoProvidedOrder)
+        .nodeByLabelScan("a", "A", IndexOrderNone).withProvidedOrder(ProvidedOrder.empty)
 
     planAndProvidedOrders should haveSamePlanAndProvidedOrdersAs(
       (expected.build(), expected.providedOrders),
@@ -212,10 +219,10 @@ class LogicalPlanningAttributesTestSupportTest
       config
         .planBuilder()
         .produceResults("a")
-        .top(2, "`a.prop` ASC").withProvidedOrder(ProvidedOrder.desc(v"nonsense").fromRight)
+        .top(2, "`a.prop` ASC").withProvidedOrder(DefaultProvidedOrderFactory.desc(v"nonsense").fromRight)
         .projection("cacheN[a.prop] AS `a.prop`")
         .filter("cacheNFromStore[a.prop] > 42")
-        .nodeByLabelScan("a", "A", IndexOrderNone).withProvidedOrder(NoProvidedOrder)
+        .nodeByLabelScan("a", "A", IndexOrderNone).withProvidedOrder(ProvidedOrder.empty)
 
     assertThrows[TestFailedException] {
       planAndProvidedOrders should haveSamePlanAndProvidedOrdersAs(

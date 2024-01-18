@@ -154,6 +154,7 @@ import org.neo4j.cypher.internal.ir.SetNodePropertyPattern
 import org.neo4j.cypher.internal.ir.ShortestRelationshipPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
+import org.neo4j.cypher.internal.ir.ordering.ColumnOrder
 import org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
@@ -386,6 +387,7 @@ import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.logical.plans.VarExpand
 import org.neo4j.cypher.internal.logical.plans.WaitForCompletion
+import org.neo4j.cypher.internal.logical.plans.ordering.DefaultProvidedOrderFactory
 import org.neo4j.cypher.internal.logical.plans.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.plandescription.Arguments.Details
 import org.neo4j.cypher.internal.plandescription.Arguments.EstimatedRows
@@ -512,7 +514,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         AllNodesScan(varFor("a"), Set.empty),
         EffectiveCardinality(1.0, Some(15.0)),
-        ProvidedOrder.asc(varFor("a"))
+        DefaultProvidedOrderFactory.asc(varFor("a"))
       ),
       planDescription(
         id,
@@ -536,7 +538,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         AllNodesScan(varFor("  UNNAMED111"), Set.empty),
         EffectiveCardinality(1.0, Some(10.0)),
-        ProvidedOrder.asc(varFor("  UNNAMED111"))
+        DefaultProvidedOrderFactory.asc(varFor("  UNNAMED111"))
       ),
       planDescription(
         id,
@@ -582,7 +584,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   // Leaf Plans
   test("AllNodesScan") {
     assertGood(
-      attach(AllNodesScan(varFor("a"), Set.empty), 1.0, providedOrder = ProvidedOrder.asc(varFor("a"))),
+      attach(AllNodesScan(varFor("a"), Set.empty), 1.0, providedOrder = DefaultProvidedOrderFactory.asc(varFor("a"))),
       planDescription(id, "AllNodesScan", NoChildren, Seq(details("a"), Order(asPrettyString.raw("a ASC"))), Set("a"))
     )
 
@@ -590,7 +592,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         AllNodesScan(varFor("  UNNAMED111"), Set.empty),
         1.0,
-        providedOrder = ProvidedOrder.asc(varFor("  UNNAMED111"))
+        providedOrder = DefaultProvidedOrderFactory.asc(varFor("  UNNAMED111"))
       ),
       planDescription(
         id,
@@ -605,7 +607,11 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         AllNodesScan(varFor("b"), Set.empty),
         42.0,
-        providedOrder = ProvidedOrder.asc(varFor("b")).desc(prop("b", "foo"))
+        providedOrder = DefaultProvidedOrderFactory.providedOrder(
+          Seq(ColumnOrder.Asc(varFor("b")), ColumnOrder.Desc(prop("b", "foo"))),
+          ProvidedOrder.Self,
+          None
+        )
       ),
       planDescription(
         id,
@@ -619,7 +625,11 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
   test("PartitionedAllNodesScan") {
     assertGood(
-      attach(PartitionedAllNodesScan(varFor("a"), Set.empty), 1.0, providedOrder = ProvidedOrder.asc(varFor("a"))),
+      attach(
+        PartitionedAllNodesScan(varFor("a"), Set.empty),
+        1.0,
+        providedOrder = DefaultProvidedOrderFactory.asc(varFor("a"))
+      ),
       planDescription(
         id,
         "PartitionedAllNodesScan",
@@ -633,7 +643,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         PartitionedAllNodesScan(varFor("  UNNAMED111"), Set.empty),
         1.0,
-        providedOrder = ProvidedOrder.asc(varFor("  UNNAMED111"))
+        providedOrder = DefaultProvidedOrderFactory.asc(varFor("  UNNAMED111"))
       ),
       planDescription(
         id,
@@ -648,7 +658,11 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         PartitionedAllNodesScan(varFor("b"), Set.empty),
         42.0,
-        providedOrder = ProvidedOrder.asc(varFor("b")).desc(prop("b", "foo"))
+        providedOrder = DefaultProvidedOrderFactory.providedOrder(
+          Seq(ColumnOrder.Asc(varFor("b")), ColumnOrder.Desc(prop("b", "foo"))),
+          ProvidedOrder.Self,
+          None
+        )
       ),
       planDescription(
         id,
@@ -7630,7 +7644,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
   test("SimulatedNodeScan") {
     assertGood(
-      attach(SimulatedNodeScan(varFor("a"), 1000), 1.0, providedOrder = ProvidedOrder.asc(varFor("a"))),
+      attach(SimulatedNodeScan(varFor("a"), 1000), 1.0, providedOrder = DefaultProvidedOrderFactory.asc(varFor("a"))),
       planDescription(
         id,
         "SimulatedNodeScan",

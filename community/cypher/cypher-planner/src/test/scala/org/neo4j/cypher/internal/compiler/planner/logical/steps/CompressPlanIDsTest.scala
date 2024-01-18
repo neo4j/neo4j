@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.logical.plans.ordering.ProvidedOrder
+import org.neo4j.cypher.internal.logical.plans.ordering.DefaultProvidedOrderFactory
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CancellationChecker
@@ -104,7 +104,7 @@ class CompressPlanIDsTest extends CypherFunSuite with AstConstructionTestSupport
         )
       }
       state.planningAttributes.cardinalities.set(p.id, Cardinality(p.id.x + 1))
-      state.planningAttributes.providedOrders.set(p.id, ProvidedOrder.asc(v"v${p.id.x}"))
+      state.planningAttributes.providedOrders.set(p.id, DefaultProvidedOrderFactory.asc(v"v${p.id.x}"))
       // For leveraged order, do only assign it to some plans
       if (p.id.x == GapIdGen.start) {
         state.planningAttributes.leveragedOrders.set(p.id, true)

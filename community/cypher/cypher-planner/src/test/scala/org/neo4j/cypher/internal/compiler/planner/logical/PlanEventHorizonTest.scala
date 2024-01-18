@@ -56,7 +56,7 @@ import org.neo4j.cypher.internal.logical.plans.ProcedureCall
 import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
-import org.neo4j.cypher.internal.logical.plans.ordering.ProvidedOrder
+import org.neo4j.cypher.internal.logical.plans.ordering.DefaultProvidedOrderFactory
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTList
@@ -300,7 +300,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
         InterestingOrder.required(RequiredOrderCandidate.asc(varFor(variable)))
       )
     )
-    planningAttributes.providedOrders.set(result.id, ProvidedOrder.asc(varFor(variable)))
+    planningAttributes.providedOrders.set(result.id, DefaultProvidedOrderFactory.asc(varFor(variable)))
     result
   }
 

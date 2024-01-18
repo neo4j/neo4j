@@ -77,19 +77,19 @@ object leverageOrder {
       }
 
       // To find out if there are order columns of which we can leverage the order, we have to use the same aliases in the provided order.
-      val aliasedInputProvidedOrder = inputProvidedOrder.mapColumns {
+      val aliasedInputProvidedOrderColumns = inputProvidedOrder.columns.map {
         case c @ Asc(expression, _)  => c.copy(aliasesForProvidedOrder.getOrElse(expression, expression))
         case c @ Desc(expression, _) => c.copy(aliasesForProvidedOrder.getOrElse(expression, expression))
       }
 
-      providedOrderPrefix(aliasedInputProvidedOrder, newGroupingExpressionsMap.values.toSet, aggregationExpressionsMap)
+      providedOrderPrefix(aliasedInputProvidedOrderColumns, newGroupingExpressionsMap.values.toSet, aggregationExpressionsMap)
     }
 
     OrderToLeverageWithAliases(orderToLeverage, newGroupingExpressionsMap, newAggregationExpressionsMap)
   }
 
   private def providedOrderPrefix(
-    inputProvidedOrder: ProvidedOrder,
+    inputProvidedOrderColumns: Seq[ColumnOrder],
     groupingExpressions: Set[Expression],
     aggregationExpressionsMap: Map[LogicalVariable, Expression]
   ): (Seq[Expression], Map[LogicalVariable, Expression]) = {
@@ -98,13 +98,13 @@ object leverageOrder {
     // and we need to make sure that orderToLeverage expressions are equal to grouping expressions, even after those rewriters.
     // Likewise, we do the same for the aggregation order expression.
     val groupingOrderPrefixOptions: Seq[Option[Expression]] =
-      inputProvidedOrder.columns.map(_.expression)
+      inputProvidedOrderColumns.map(_.expression)
         .map { exp =>
           groupingExpressions.find(_ == exp)
         }
         .takeWhile(_.isDefined)
     val aggregationOrderCandidate: Option[ColumnOrder] =
-      inputProvidedOrder.columns.lift(groupingOrderPrefixOptions.length)
+      inputProvidedOrderColumns.lift(groupingOrderPrefixOptions.length)
     val groupingOrderPrefix = groupingOrderPrefixOptions.flatten
 
     val newAggregationExpressionsMap = aggregationExpressionsMap.map {

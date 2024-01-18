@@ -45,7 +45,7 @@ import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlanToPlanBuilderString
 import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
-import org.neo4j.cypher.internal.logical.plans.ordering.ProvidedOrder
+import org.neo4j.cypher.internal.logical.plans.ordering.DefaultProvidedOrderFactory
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
@@ -404,9 +404,9 @@ class CardinalityCostModelTest extends CypherFunSuite with AstConstructionTestSu
   ) {
     val builder = new LogicalPlanBuilder(wholePlan = false)
     val plan = builder
-      .cartesianProduct().withCardinality(10000).withProvidedOrder(ProvidedOrder.asc(v"a"))
+      .cartesianProduct().withCardinality(10000).withProvidedOrder(DefaultProvidedOrderFactory.asc(v"a"))
       .|.argument("b").withCardinality(100)
-      .argument("a").withCardinality(100).withProvidedOrder(ProvidedOrder.asc(v"a"))
+      .argument("a").withCardinality(100).withProvidedOrder(DefaultProvidedOrderFactory.asc(v"a"))
       .build()
 
     costFor(

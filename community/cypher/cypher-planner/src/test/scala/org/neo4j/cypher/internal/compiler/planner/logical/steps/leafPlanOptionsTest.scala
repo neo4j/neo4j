@@ -40,7 +40,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.Sort
-import org.neo4j.cypher.internal.logical.plans.ordering.ProvidedOrder
+import org.neo4j.cypher.internal.logical.plans.ordering.DefaultProvidedOrderFactory
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -57,7 +57,7 @@ class leafPlanOptionsTest extends CypherFunSuite with LogicalPlanningTestSupport
         Seq.empty,
         None,
         Set.empty,
-        ProvidedOrder.asc(node),
+        DefaultProvidedOrderFactory.asc(node),
         context
       )
     )

@@ -34,7 +34,6 @@ import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderDescending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.ordering.DefaultProvidedOrderFactory
-import org.neo4j.cypher.internal.logical.plans.ordering.NoProvidedOrder
 import org.neo4j.cypher.internal.logical.plans.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.plans.ordering.ProvidedOrderFactory
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
@@ -180,19 +179,19 @@ object ResultOrdering {
         }
 
       def toResult(providedOrder: ProvidedOrder, indexOrder: IndexOrder) = providedOrder match {
-        case NoProvidedOrder => (ProvidedOrder.empty, IndexOrderNone)
-        case providedOrder   => (providedOrder, indexOrder)
+        case ProvidedOrder.empty => (ProvidedOrder.empty, IndexOrderNone)
+        case providedOrder       => (providedOrder, indexOrder)
       }
       val orderAccPerCandidate: Seq[Acc] = candidates.filter(_.nonEmpty).map(possibleOrdersForCandidate)
       val maybeResult = orderAccPerCandidate.collectFirst {
         case IndexOrderDecided(indexOrder, columns) if columns.nonEmpty =>
-          toResult(providedOrderFactory.providedOrder(columns, ProvidedOrder.Self), indexOrder)
+          toResult(providedOrderFactory.providedOrder(columns, ProvidedOrder.Self, None), indexOrder)
         case OrderNotYetDecided(columns) if columns.nonEmpty =>
           val indexOrder = indexOrderCapability match {
             case IndexOrderCapability.NONE => IndexOrderNone
             case IndexOrderCapability.BOTH => IndexOrderAscending
           }
-          toResult(providedOrderFactory.providedOrder(columns, ProvidedOrder.Self), indexOrder)
+          toResult(providedOrderFactory.providedOrder(columns, ProvidedOrder.Self, None), indexOrder)
       }
 
       // If the required order cannot be satisfied, return empty
