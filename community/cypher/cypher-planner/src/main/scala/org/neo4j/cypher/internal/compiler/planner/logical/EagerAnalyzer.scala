@@ -212,7 +212,7 @@ class EagerAnalyzerImpl private (context: LogicalPlanningContext) extends EagerA
         stablySolvedPredicates,
         unstableLeaves = unstableLeafIdNames,
         stableIdentifier = stableIdentifier,
-        isTerminatingProjection = plannerQuery.horizon.isTerminatingProjection
+        isTerminatingProjection = plannerQuery.horizon.isProjectionInFinalPosition
       )
 
       // Start recursion by checking the given plannerQuery against itself

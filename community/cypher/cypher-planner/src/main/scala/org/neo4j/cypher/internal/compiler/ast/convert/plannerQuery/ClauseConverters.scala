@@ -158,6 +158,7 @@ object ClauseConverters {
    * @param acc        the PlannerQueryBuilder
    * @param clause     the clause to add.
    * @param nextClause the next clause, if there is any
+   * @param position   position of the clause relative to the top-level query, used for eagerness analysis
    * @return the updated PlannerQueryBuilder
    */
   def addToLogicalPlanInput(
@@ -166,9 +167,9 @@ object ClauseConverters {
     nextClause: Option[Clause],
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
     cancellationChecker: CancellationChecker,
-    nonTerminating: Boolean
+    position: QueryProjection.Position
   ): PlannerQueryBuilder = clause match {
-    case c: Return          => addReturnToLogicalPlanInput(acc, c, nonTerminating)
+    case c: Return          => addReturnToLogicalPlanInput(acc, c, position)
     case c: Match           => addMatchToLogicalPlanInput(acc, c, anonymousVariableNameGenerator)
     case c: With            => addWithToLogicalPlanInput(acc, c, nextClause)
     case c: Unwind          => addUnwindToLogicalPlanInput(acc, c)
@@ -215,7 +216,7 @@ object ClauseConverters {
   private def asQueryProjection(
     distinct: Boolean,
     items: Seq[AliasedReturnItem],
-    returningQueryProjection: Boolean
+    position: QueryProjection.Position
   ): QueryProjection = {
     val (aggregatingItems: Seq[AliasedReturnItem], groupingKeys: Seq[AliasedReturnItem]) =
       items.partition(item => IsAggregate(item.expression))
@@ -233,18 +234,18 @@ object ClauseConverters {
       AggregatingQueryProjection(
         groupingExpressions = projectionMap,
         aggregationExpressions = aggregationsMap,
-        isTerminating = returningQueryProjection
+        position = position
       )
     else if (distinct)
-      DistinctQueryProjection(groupingExpressions = projectionMap, isTerminating = returningQueryProjection)
+      DistinctQueryProjection(groupingExpressions = projectionMap, position = position)
     else
-      RegularQueryProjection(projections = projectionMap, isTerminating = returningQueryProjection)
+      RegularQueryProjection(projections = projectionMap, position = position)
   }
 
   private def addReturnToLogicalPlanInput(
     acc: PlannerQueryBuilder,
     clause: Return,
-    nonTerminating: Boolean
+    position: QueryProjection.Position
   ): PlannerQueryBuilder =
     clause match {
       case Return(distinct, ReturnItems(star, items, _), optOrderBy, skip, limit, _, _) if !star =>
@@ -255,7 +256,7 @@ object ClauseConverters {
             distinct,
             // Return items have been aliased at this point
             items.asInstanceOf[Seq[AliasedReturnItem]],
-            returningQueryProjection = !nonTerminating
+            position
           ).withPagination(queryPagination)
         val requiredOrder = findRequiredOrder(projection, optOrderBy)
 
@@ -632,7 +633,7 @@ object ClauseConverters {
         anonymousVariableNameGenerator,
         cancellationChecker,
         rewrite = false,
-        nonTerminating = true
+        position = QueryProjection.Position.Intermediate
       )
     acc.withCallSubquery(callSubquery, subquery.isCorrelated, subquery.isReturning, clause.inTransactionsParameters)
   }
@@ -666,9 +667,13 @@ object ClauseConverters {
     val queryPagination = QueryPagination().withLimit(`yield`.limit).withSkip(`yield`.skip)
 
     val queryProjection =
-      asQueryProjection(distinct = false, returnItems, returningQueryProjection = false).withPagination(
-        queryPagination
-      ).withSelection(selections)
+      asQueryProjection(
+        distinct = false,
+        returnItems,
+        position = QueryProjection.Position.Intermediate
+      )
+        .withPagination(queryPagination)
+        .withSelection(selections)
 
     val requiredOrder = findRequiredOrder(queryProjection, `yield`.orderBy)
 
@@ -929,7 +934,7 @@ object ClauseConverters {
         val queryPagination = QueryPagination().withLimit(limit).withSkip(skip)
 
         val queryProjection =
-          asQueryProjection(distinct, returnItems, returningQueryProjection = false).withPagination(
+          asQueryProjection(distinct, returnItems, position = QueryProjection.Position.Intermediate).withPagination(
             queryPagination
           ).withSelection(selections)
 
@@ -977,7 +982,7 @@ object ClauseConverters {
         .withHorizon(PassthroughAllHorizon()),
       anonymousVariableNameGenerator,
       cancellationChecker,
-      nonTerminating = false
+      position = QueryProjection.Position.Intermediate
     )
 
     val dependencies = innerBuilder.q.allPlannerQueries.view

@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.ir.PassthroughAllHorizon
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
 import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.ir.QueryProjection
 import org.neo4j.cypher.internal.ir.RegularQueryProjection
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.Selections
@@ -64,7 +65,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
     val query = buildSinglePlannerQuery("MATCH (n) SET n.prop = 42 RETURN n")
     query.horizon should equal(RegularQueryProjection(
       projections = Map(v"n" -> v"n"),
-      isTerminating = true
+      position = QueryProjection.Position.Final
     ))
 
     query.queryGraph.patternNodes should equal(Set(v"n"))
@@ -77,7 +78,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
     val query = buildSinglePlannerQuery("MATCH (n) REMOVE n.prop RETURN n")
     query.horizon should equal(RegularQueryProjection(
       projections = Map(v"n" -> v"n"),
-      isTerminating = true
+      position = QueryProjection.Position.Final
     ))
 
     query.queryGraph.patternNodes should equal(Set(v"n"))
@@ -90,7 +91,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
     val query = buildSinglePlannerQuery("MATCH (a)-[r]->(b) SET r.prop = 42 RETURN r")
     query.horizon should equal(RegularQueryProjection(
       projections = Map(v"r" -> v"r"),
-      isTerminating = true
+      position = QueryProjection.Position.Final
     ))
 
     query.queryGraph.patternRelationships should equal(Set(
@@ -105,7 +106,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
     val query = buildSinglePlannerQuery("MATCH (a)-[r]->(b) REMOVE r.prop RETURN r")
     query.horizon should equal(RegularQueryProjection(
       projections = Map(v"r" -> v"r"),
-      isTerminating = true
+      position = QueryProjection.Position.Final
     ))
 
     query.queryGraph.patternRelationships should equal(Set(
@@ -120,7 +121,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
     val query = buildSinglePlannerQuery("CREATE (a), (b), (a)-[r:X]->(b) RETURN a, r, b")
     query.horizon should equal(RegularQueryProjection(
       projections = Map(v"a" -> v"a", v"r" -> v"r", v"b" -> v"b"),
-      isTerminating = true
+      position = QueryProjection.Position.Final
     ))
 
     query.queryGraph.mutatingPatterns should equal(Seq(
@@ -354,7 +355,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
           CreateRelationship(v"r3", v"v", relTypeName("R"), v"x", OUTGOING, None)
         )))
 
-    val projection = RegularQueryProjection(projections = Map(v"x" -> v"x"), isTerminating = true)
+    val projection = RegularQueryProjection(projections = Map(v"x" -> v"x"), position = QueryProjection.Position.Final)
 
     query shouldEqual RegularSinglePlannerQuery(queryGraph = queryGraph, horizon = projection)
   }

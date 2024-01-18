@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.expressions.Or
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.ir.PlannerQuery
+import org.neo4j.cypher.internal.ir.QueryProjection
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.UnionQuery
 import org.neo4j.cypher.internal.ir.ast.IRExpression
@@ -65,7 +66,7 @@ object StatementConverters {
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
     cancellationChecker: CancellationChecker,
     importedVariables: Set[LogicalVariable],
-    nonTerminating: Boolean
+    position: QueryProjection.Position
   ): SinglePlannerQuery = {
     val allImportedVars = importedVariables ++ q.importWith.map((wth: With) =>
       wth.returnItems.items.map(_.asInstanceOf[AliasedReturnItem].variable).toSet
@@ -77,7 +78,7 @@ object StatementConverters {
       builder,
       anonymousVariableNameGenerator,
       cancellationChecker,
-      nonTerminating
+      position
     ).build()
   }
 
@@ -89,7 +90,7 @@ object StatementConverters {
     builder: PlannerQueryBuilder,
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
     cancellationChecker: CancellationChecker,
-    nonTerminating: Boolean
+    position: QueryProjection.Position
   ): PlannerQueryBuilder = {
     @tailrec
     def addClausesToPlannerQueryBuilderRec(clauses: Seq[Clause], builder: PlannerQueryBuilder): PlannerQueryBuilder =
@@ -107,7 +108,7 @@ object StatementConverters {
             nextClause,
             anonymousVariableNameGenerator,
             cancellationChecker,
-            nonTerminating
+            position
           )
         addClausesToPlannerQueryBuilderRec(nextClauses, newBuilder)
       }
@@ -137,7 +138,7 @@ object StatementConverters {
     cancellationChecker: CancellationChecker,
     importedVariables: Set[LogicalVariable] = Set.empty,
     rewrite: Boolean = true,
-    nonTerminating: Boolean = false
+    position: QueryProjection.Position = QueryProjection.Position.Final
   ): PlannerQuery = {
     val rewrittenQuery =
       if (rewrite) query.endoRewrite(CreateIrExpressions(anonymousVariableNameGenerator, semanticTable)) else query
@@ -152,7 +153,7 @@ object StatementConverters {
           anonymousVariableNameGenerator,
           cancellationChecker,
           importedVariables,
-          nonTerminating
+          position
         )
 
       case unionQuery: ast.ProjectingUnion =>
@@ -164,7 +165,7 @@ object StatementConverters {
             cancellationChecker,
             importedVariables,
             rewrite = false,
-            nonTerminating = true
+            QueryProjection.Position.Intermediate
           )
         val rhs: SinglePlannerQuery =
           toSinglePlannerQuery(
@@ -173,7 +174,7 @@ object StatementConverters {
             anonymousVariableNameGenerator,
             cancellationChecker,
             importedVariables,
-            nonTerminating = true
+            QueryProjection.Position.Intermediate
           )
 
         val distinct = unionQuery match {

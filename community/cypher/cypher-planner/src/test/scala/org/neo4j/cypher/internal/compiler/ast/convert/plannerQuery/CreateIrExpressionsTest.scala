@@ -49,6 +49,7 @@ import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.QueryHorizon
 import org.neo4j.cypher.internal.ir.QueryPagination
+import org.neo4j.cypher.internal.ir.QueryProjection
 import org.neo4j.cypher.internal.ir.RegularQueryProjection
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.Selections
@@ -416,7 +417,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
             differentRelationships(r3, r2)
           ))
         ),
-        horizon = Some(RegularQueryProjection(Map(n -> n), isTerminating = true))
+        horizon = Some(RegularQueryProjection(Map(n -> n), position = QueryProjection.Position.Final))
       )
     )
 
@@ -453,7 +454,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
               PatternRelationship(v"r", (n, m), BOTH, Seq.empty, SimplePatternLength)
             )
         ),
-        horizon = Some(RegularQueryProjection(Map(n -> n), isTerminating = true))
+        horizon = Some(RegularQueryProjection(Map(n -> n), position = QueryProjection.Position.Final))
       )
     )
 
@@ -491,7 +492,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
             )
         ),
         horizon =
-          Some(RegularQueryProjection(Map(n -> n), isTerminating = true)),
+          Some(RegularQueryProjection(Map(n -> n), position = QueryProjection.Position.Final)),
         interestingOrder =
           InterestingOrder.required(RequiredOrderCandidate.asc(n, Map(v"n" -> n)))
       )
@@ -535,7 +536,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
         horizon =
           Some(RegularQueryProjection(
             Map(n -> n),
-            isTerminating = true,
+            position = QueryProjection.Position.Final,
             queryPagination = QueryPagination(Some(literalInt(2)), None)
           ))
       )
@@ -577,7 +578,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
         horizon =
           Some(RegularQueryProjection(
             Map(n -> n),
-            isTerminating = true,
+            position = QueryProjection.Position.Final,
             queryPagination = QueryPagination(None, Some(literalInt(42)))
           ))
       )
@@ -621,7 +622,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
         horizon =
           Some(RegularQueryProjection(
             Map(n -> n),
-            isTerminating = true,
+            position = QueryProjection.Position.Final,
             queryPagination = QueryPagination(Some(literalInt(2)), Some(literalInt(42)))
           )),
         interestingOrder =
@@ -726,7 +727,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
         horizon =
           Some(DistinctQueryProjection(
             Map(n -> n),
-            isTerminating = true
+            position = QueryProjection.Position.Final
           ))
       )
     )
@@ -893,7 +894,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
         horizon = Some(RegularQueryProjection(
           Map(n -> n),
           queryPagination = QueryPagination(Some(literalInt(2)), None),
-          isTerminating = true
+          position = QueryProjection.Position.Final
         )),
         tail = Some(
           RegularSinglePlannerQuery(
@@ -939,7 +940,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
         horizon = Some(RegularQueryProjection(
           Map(n -> n),
           queryPagination = QueryPagination(None, Some(literalInt(42))),
-          isTerminating = true
+          position = QueryProjection.Position.Final
         )),
         tail = Some(
           RegularSinglePlannerQuery(
@@ -987,7 +988,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
         horizon = Some(RegularQueryProjection(
           Map(n -> n),
           queryPagination = QueryPagination(Some(literalInt(2)), Some(literalInt(42))),
-          isTerminating = true
+          position = QueryProjection.Position.Final
         )),
         tail = Some(
           RegularSinglePlannerQuery(
@@ -1035,7 +1036,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
         ),
         horizon = Some(DistinctQueryProjection(
           Map(n -> n),
-          isTerminating = true
+          position = QueryProjection.Position.Final
         )),
         tail = Some(
           RegularSinglePlannerQuery(
@@ -1354,7 +1355,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
             )
         ),
         horizon =
-          Some(RegularQueryProjection(Map(n -> n), isTerminating = true)),
+          Some(RegularQueryProjection(Map(n -> n), position = QueryProjection.Position.Final)),
         None
       )
     )
@@ -1392,7 +1393,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
             )
         ),
         horizon =
-          Some(RegularQueryProjection(Map(n -> n), isTerminating = true)),
+          Some(RegularQueryProjection(Map(n -> n), position = QueryProjection.Position.Final)),
         None,
         InterestingOrder.required(RequiredOrderCandidate.asc(n, Map(n -> n)))
       )
@@ -1442,7 +1443,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
           ))
         ),
         horizon =
-          Some(RegularQueryProjection(Map(n -> n), isTerminating = true)),
+          Some(RegularQueryProjection(Map(n -> n), position = QueryProjection.Position.Final)),
         None,
         InterestingOrder.required(RequiredOrderCandidate.asc(n, Map(n -> n)))
       )
@@ -1483,7 +1484,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
             )
         ),
         horizon =
-          Some(RegularQueryProjection(Map(n -> n), isTerminating = true)),
+          Some(RegularQueryProjection(Map(n -> n), position = QueryProjection.Position.Final)),
         interestingOrder =
           InterestingOrder.required(RequiredOrderCandidate.asc(n, Map(n -> n)))
       )
@@ -1526,7 +1527,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
         horizon =
           Some(RegularQueryProjection(
             Map(n -> n),
-            isTerminating = true,
+            position = QueryProjection.Position.Final,
             queryPagination = QueryPagination(Some(literalInt(2)), None)
           ))
       )
@@ -1567,7 +1568,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
         horizon =
           Some(RegularQueryProjection(
             Map(n -> n),
-            isTerminating = true,
+            position = QueryProjection.Position.Final,
             queryPagination = QueryPagination(None, Some(literalInt(42)))
           ))
       )
@@ -1612,7 +1613,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
         horizon =
           Some(RegularQueryProjection(
             Map(n -> n),
-            isTerminating = true,
+            position = QueryProjection.Position.Final,
             queryPagination = QueryPagination(Some(literalInt(2)), Some(literalInt(42)))
           )),
         interestingOrder =
@@ -1656,7 +1657,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
         horizon =
           Some(DistinctQueryProjection(
             Map(n -> n),
-            isTerminating = true
+            position = QueryProjection.Position.Final
           ))
       )
     )

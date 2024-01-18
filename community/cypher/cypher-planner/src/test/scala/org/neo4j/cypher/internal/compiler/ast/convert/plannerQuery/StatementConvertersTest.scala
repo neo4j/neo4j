@@ -60,6 +60,7 @@ import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.QueryHorizon
 import org.neo4j.cypher.internal.ir.QueryPagination
+import org.neo4j.cypher.internal.ir.QueryProjection
 import org.neo4j.cypher.internal.ir.RegularQueryProjection
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.Selections
@@ -103,7 +104,10 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     query.tail should not be empty
 
     val nextQuery = query.tail.get
-    nextQuery.horizon should equal(RegularQueryProjection(Map(v"y" -> literalInt(2)), isTerminating = true))
+    nextQuery.horizon should equal(RegularQueryProjection(
+      Map(v"y" -> literalInt(2)),
+      position = QueryProjection.Position.Final
+    ))
   }
 
   test("CALL around single correlated query") {
@@ -129,7 +133,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     subQuery.tail should not be empty
     val nextQuery = subQuery.tail.get
 
-    nextQuery.horizon should equal(RegularQueryProjection(Map(v"y" -> v"y"), isTerminating = true))
+    nextQuery.horizon should equal(RegularQueryProjection(Map(v"y" -> v"y"), position = QueryProjection.Position.Final))
   }
 
   test("CALL around single query - using returned var in outer query") {
@@ -146,7 +150,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     query.tail should not be empty
 
     val nextQuery = query.tail.get
-    nextQuery.horizon should equal(RegularQueryProjection(Map(v"x" -> v"x"), isTerminating = true))
+    nextQuery.horizon should equal(RegularQueryProjection(Map(v"x" -> v"x"), position = QueryProjection.Position.Final))
   }
 
   test("CALL around union query") {
@@ -170,7 +174,10 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     query.tail should not be empty
 
     val nextQuery = query.tail.get
-    nextQuery.horizon should equal(RegularQueryProjection(Map(v"y" -> literalInt(3)), isTerminating = true))
+    nextQuery.horizon should equal(RegularQueryProjection(
+      Map(v"y" -> literalInt(3)),
+      position = QueryProjection.Position.Final
+    ))
   }
 
   test("CALL around correlated union query") {
@@ -202,7 +209,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     subquery.tail should not be empty
 
     val nextQuery = subquery.tail.get
-    nextQuery.horizon should equal(RegularQueryProjection(Map(v"y" -> v"y"), isTerminating = true))
+    nextQuery.horizon should equal(RegularQueryProjection(Map(v"y" -> v"y"), position = QueryProjection.Position.Final))
   }
 
   test("CALL around union query - using returned var in outer query") {
@@ -226,7 +233,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     query.tail should not be empty
 
     val nextQuery = query.tail.get
-    nextQuery.horizon should equal(RegularQueryProjection(Map(v"x" -> v"x"), isTerminating = true))
+    nextQuery.horizon should equal(RegularQueryProjection(Map(v"x" -> v"x"), position = QueryProjection.Position.Final))
   }
 
   test("CALL unit subquery in transactions") {
@@ -243,7 +250,10 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     query.tail should not be empty
 
     val nextQuery = query.tail.get
-    nextQuery.horizon should equal(RegularQueryProjection(Map(v"y" -> literalInt(2)), isTerminating = true))
+    nextQuery.horizon should equal(RegularQueryProjection(
+      Map(v"y" -> literalInt(2)),
+      position = QueryProjection.Position.Final
+    ))
   }
 
   test("CALL correlated unit subquery in transactions") {
@@ -268,7 +278,10 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     subQuery.tail should not be empty
 
     val nextQuery = subQuery.tail.get
-    nextQuery.horizon should equal(RegularQueryProjection(Map(v"y" -> literalInt(2)), isTerminating = true))
+    nextQuery.horizon should equal(RegularQueryProjection(
+      Map(v"y" -> literalInt(2)),
+      position = QueryProjection.Position.Final
+    ))
   }
 
   test("CALL subquery in transactions") {
@@ -286,7 +299,10 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     query.tail should not be empty
 
     val nextQuery = query.tail.get
-    nextQuery.horizon should equal(RegularQueryProjection(Map(v"y" -> literalInt(2)), isTerminating = true))
+    nextQuery.horizon should equal(RegularQueryProjection(
+      Map(v"y" -> literalInt(2)),
+      position = QueryProjection.Position.Final
+    ))
   }
 
   test("CALL correlated subquery in transactions") {
@@ -312,12 +328,18 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     subQuery.tail should not be empty
 
     val nextQuery = subQuery.tail.get
-    nextQuery.horizon should equal(RegularQueryProjection(Map(v"y" -> literalInt(2)), isTerminating = true))
+    nextQuery.horizon should equal(RegularQueryProjection(
+      Map(v"y" -> literalInt(2)),
+      position = QueryProjection.Position.Final
+    ))
   }
 
   test("RETURN 42") {
     val query = buildSinglePlannerQuery("RETURN 42")
-    query.horizon should equal(RegularQueryProjection(Map(v"42" -> literalInt(42)), isTerminating = true))
+    query.horizon should equal(RegularQueryProjection(
+      Map(v"42" -> literalInt(42)),
+      position = QueryProjection.Position.Final
+    ))
   }
 
   test("RETURN 42, 'foo'") {
@@ -327,7 +349,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         v"42" -> literalInt(42),
         v"'foo'" -> literalString("foo")
       ),
-      isTerminating = true
+      position = QueryProjection.Position.Final
     ))
   }
 
@@ -337,7 +359,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       Map(
         v"n" -> v"n"
       ),
-      isTerminating = true
+      position = QueryProjection.Position.Final
     ))
 
     query.queryGraph.patternNodes should equal(Set(v"n"))
@@ -349,7 +371,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       Map(
         v"n" -> v"n"
       ),
-      isTerminating = true
+      position = QueryProjection.Position.Final
     ))
 
     query.queryGraph.selections should equal(Selections(Set(
@@ -366,7 +388,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       Map(
         v"n" -> v"n"
       ),
-      isTerminating = true
+      position = QueryProjection.Position.Final
     ))
 
     query.queryGraph.selections should equal(Selections(Set(
@@ -388,7 +410,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       Map(
         v"n" -> v"n"
       ),
-      isTerminating = true
+      position = QueryProjection.Position.Final
     ))
 
     query.queryGraph.selections should equal(Selections(Set(
@@ -417,7 +439,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       Map(
         v"n" -> v"n"
       ),
-      isTerminating = true
+      position = QueryProjection.Position.Final
     ))
 
     query.queryGraph.selections should equal(Selections(Set(
@@ -439,7 +461,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       Map(
         v"n" -> v"n"
       ),
-      isTerminating = true
+      position = QueryProjection.Position.Final
     ))
 
     query.queryGraph.selections should equal(Selections(Set(
@@ -461,7 +483,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       Map(
         v"n" -> v"n"
       ),
-      isTerminating = true
+      position = QueryProjection.Position.Final
     ))
 
     query.queryGraph.selections should equal(Selections(Set(
@@ -487,7 +509,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       Map(
         v"p" -> PathExpression(NodePathStep(v"a", NilPathStep()(pos))(pos)) _
       ),
-      isTerminating = true
+      position = QueryProjection.Position.Final
     ))
   }
 
@@ -501,7 +523,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         v"a" -> v"a",
         v"r" -> v"r"
       ),
-      isTerminating = true
+      position = QueryProjection.Position.Final
     ))
   }
 
@@ -519,7 +541,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         v"r" -> v"r",
         v"b" -> v"b"
       ),
-      isTerminating = true
+      position = QueryProjection.Position.Final
     ))
   }
 
@@ -536,7 +558,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         v"a" -> v"a",
         v"r" -> v"r"
       ),
-      isTerminating = true
+      position = QueryProjection.Position.Final
     ))
   }
 
@@ -553,7 +575,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         v"a" -> v"a",
         v"r" -> v"r"
       ),
-      isTerminating = true
+      position = QueryProjection.Position.Final
     ))
   }
 
@@ -571,7 +593,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         v"a" -> v"a",
         v"r" -> v"r"
       ),
-      isTerminating = true
+      position = QueryProjection.Position.Final
     ))
   }
 
@@ -589,7 +611,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         v"a" -> v"a",
         v"r" -> v"r"
       ),
-      isTerminating = true
+      position = QueryProjection.Position.Final
     ))
   }
 
@@ -605,7 +627,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         v"a" -> v"a",
         v"r" -> v"r"
       ),
-      isTerminating = true
+      position = QueryProjection.Position.Final
     ))
   }
 
@@ -624,7 +646,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         v"a" -> v"a",
         v"r" -> v"r"
       ),
-      isTerminating = true
+      position = QueryProjection.Position.Final
     ))
   }
 
@@ -649,7 +671,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         v"b" -> v"b",
         v"c" -> v"c"
       ),
-      isTerminating = true
+      position = QueryProjection.Position.Final
     ))
   }
 
@@ -668,7 +690,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         v"a" -> v"a",
         v"r" -> v"r"
       ),
-      isTerminating = true
+      position = QueryProjection.Position.Final
     ))
   }
 
@@ -688,7 +710,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         v"a" -> v"a",
         v"r" -> v"r"
       ),
-      isTerminating = true
+      position = QueryProjection.Position.Final
     ))
   }
 
@@ -712,7 +734,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         v"a" -> v"a",
         v"r" -> v"r"
       ),
-      isTerminating = true
+      position = QueryProjection.Position.Final
     ))
   }
 
@@ -725,7 +747,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       Map(
         v"a" -> v"a"
       ),
-      isTerminating = true
+      position = QueryProjection.Position.Final
     ))
 
     query.queryGraph.optionalMatches.size should equal(1)
@@ -750,7 +772,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         v"b" -> v"b",
         v"r" -> v"r"
       ),
-      isTerminating = true
+      position = QueryProjection.Position.Final
     ))
 
     query.queryGraph.optionalMatches.size should equal(1)
@@ -777,7 +799,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         v"b" -> v"b",
         v"r" -> v"r"
       ),
-      isTerminating = true
+      position = QueryProjection.Position.Final
     ))
     query.queryGraph.optionalMatches.size should equal(1)
     query.queryGraph.argumentIds should equal(Set())
@@ -826,7 +848,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     query.tail should equal(Some(RegularSinglePlannerQuery(
       QueryGraph(argumentIds = Set(v"b")),
       InterestingOrder.empty,
-      RegularQueryProjection(Map(v"b" -> v"b"), isTerminating = true)
+      RegularQueryProjection(Map(v"b" -> v"b"), position = QueryProjection.Position.Final)
     )))
   }
 
@@ -837,7 +859,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     query.tail should equal(Some(RegularSinglePlannerQuery(
       QueryGraph(argumentIds = Set(v"b")),
       InterestingOrder.empty,
-      RegularQueryProjection(Map(v"b" -> v"b"), isTerminating = true)
+      RegularQueryProjection(Map(v"b" -> v"b"), position = QueryProjection.Position.Final)
     )))
   }
 
@@ -847,7 +869,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val expectation = RegularSinglePlannerQuery(
       queryGraph =
         QueryGraph(patternNodes = Set(v"a"), selections = Selections(Set(Predicate(Set.empty, trueLiteral)))),
-      horizon = RegularQueryProjection(projections = Map(v"a" -> v"a"), isTerminating = true)
+      horizon = RegularQueryProjection(projections = Map(v"a" -> v"a"), position = QueryProjection.Position.Final)
     )
 
     result should equal(expectation)
@@ -959,7 +981,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
           skip = None,
           limit = Some(literalInt(10))
         ),
-        isTerminating = true
+        position = QueryProjection.Position.Final
       )
     )
   }
@@ -978,7 +1000,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
           skip = Some(literalInt(10)),
           limit = None
         ),
-        isTerminating = true
+        position = QueryProjection.Position.Final
       )
     )
   }
@@ -988,7 +1010,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     query.queryGraph.patternNodes should equal(Set(v"a"))
     query.horizon should equal(RegularQueryProjection(
       Map(v"a" -> v"a"),
-      isTerminating = true
+      position = QueryProjection.Position.Final
     ))
     query.tail should equal(None)
   }
@@ -1075,7 +1097,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       RegularQueryProjection(
         projections = Map(v"b" -> v"b"),
         QueryPagination(),
-        isTerminating = true
+        position = QueryProjection.Position.Final
       )
     )
   }
@@ -1105,7 +1127,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     secondQuery.horizon should equal(
       RegularQueryProjection(
         Map(v"b" -> v"b"),
-        isTerminating = true
+        position = QueryProjection.Position.Final
       )
     )
   }
@@ -1138,7 +1160,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       RegularQueryProjection(
         projections = Map(v"b" -> v"b"),
         QueryPagination(),
-        isTerminating = true
+        position = QueryProjection.Position.Final
       )
     )
   }
@@ -1251,7 +1273,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val query = buildSinglePlannerQuery("match (n) return distinct n")
     query.horizon should equal(DistinctQueryProjection(
       groupingExpressions = Map(v"n" -> v"n"),
-      isTerminating = true
+      position = QueryProjection.Position.Final
     ))
 
     query.queryGraph.patternNodes should equal(Set(v"n"))
@@ -1316,7 +1338,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       ),
       tail = Some(RegularSinglePlannerQuery(
         queryGraph = QueryGraph(argumentIds = Set(v"collected", v"owner")),
-        horizon = RegularQueryProjection(projections = Map(v"owner" -> v"owner"), isTerminating = true)
+        horizon =
+          RegularQueryProjection(projections = Map(v"owner" -> v"owner"), position = QueryProjection.Position.Final)
       ))
     )
 
@@ -1333,7 +1356,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
 
     val tail = query.tail.get
 
-    tail.horizon should equal(RegularQueryProjection(Map(v"x" -> v"x"), isTerminating = true))
+    tail.horizon should equal(RegularQueryProjection(Map(v"x" -> v"x"), position = QueryProjection.Position.Final))
   }
 
   test("CALL foo() YIELD all RETURN all") {
@@ -1389,7 +1412,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val set = Set(Predicate(Set(v"n", v"x"), in(nProp, listOf(v"x"))))
 
     tail.queryGraph.selections.predicates should equal(set)
-    tail.horizon should equal(RegularQueryProjection(Map(v"n" -> v"n"), isTerminating = true))
+    tail.horizon should equal(RegularQueryProjection(Map(v"n" -> v"n"), position = QueryProjection.Position.Final))
   }
 
   test("MATCH (n) UNWIND n.prop as x RETURN x") {
@@ -1404,7 +1427,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
 
     val tail = query.tail.get
     tail.queryGraph.patternNodes should equal(Set.empty)
-    tail.horizon should equal(RegularQueryProjection(Map(v"x" -> v"x"), isTerminating = true))
+    tail.horizon should equal(RegularQueryProjection(Map(v"x" -> v"x"), position = QueryProjection.Position.Final))
   }
 
   test("MATCH (row) WITH collect(row) AS rows UNWIND rows AS node RETURN node") {
@@ -1432,7 +1455,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     tailOfTail.horizon should equal(
       RegularQueryProjection(
         projections = Map(v"node" -> v"node"),
-        isTerminating = true
+        position = QueryProjection.Position.Final
       )
     )
   }
@@ -1531,7 +1554,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
               v"d" -> v"d",
               v"e" -> v"e"
             ),
-            isTerminating = true
+            position = QueryProjection.Position.Final
           )
         )
       )
@@ -1579,7 +1602,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
           horizon =
             RegularQueryProjection(
               Map(v"a" -> v"a", v"b" -> v"b", v"c" -> v"c"),
-              isTerminating = true
+              position = QueryProjection.Position.Final
             )
         )
       )
@@ -2332,7 +2355,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         .empty
         .addSelectivePathPattern(shortestPathPattern)
 
-    val projection = RegularQueryProjection(projections = Map(v"one" -> literalInt(1)), isTerminating = true)
+    val projection =
+      RegularQueryProjection(projections = Map(v"one" -> literalInt(1)), position = QueryProjection.Position.Final)
 
     query shouldEqual RegularSinglePlannerQuery(queryGraph = queryGraph, horizon = projection)
   }
@@ -2368,7 +2392,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         .empty
         .addSelectivePathPattern(shortestPathPattern)
 
-    val projection = RegularQueryProjection(projections = Map(v"one" -> literalInt(1)), isTerminating = true)
+    val projection =
+      RegularQueryProjection(projections = Map(v"one" -> literalInt(1)), position = QueryProjection.Position.Final)
 
     query shouldEqual RegularSinglePlannerQuery(queryGraph = queryGraph, horizon = projection)
   }
@@ -2403,7 +2428,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         .empty
         .addSelectivePathPattern(shortestPathPattern)
 
-    val projection = RegularQueryProjection(projections = Map(v"one" -> literalInt(1)), isTerminating = true)
+    val projection =
+      RegularQueryProjection(projections = Map(v"one" -> literalInt(1)), position = QueryProjection.Position.Final)
 
     query shouldEqual RegularSinglePlannerQuery(queryGraph = queryGraph, horizon = projection)
   }
@@ -2438,7 +2464,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         .empty
         .addSelectivePathPattern(shortestPathPattern)
 
-    val projection = RegularQueryProjection(projections = Map(v"one" -> literalInt(1)), isTerminating = true)
+    val projection =
+      RegularQueryProjection(projections = Map(v"one" -> literalInt(1)), position = QueryProjection.Position.Final)
 
     query shouldEqual RegularSinglePlannerQuery(queryGraph = queryGraph, horizon = projection)
   }
@@ -2502,7 +2529,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         v"start" -> v"start",
         v"r" -> v"r"
       ),
-      isTerminating = true
+      position = QueryProjection.Position.Final
     )
 
     query shouldEqual RegularSinglePlannerQuery(queryGraph = queryGraph, horizon = projection)

@@ -3186,7 +3186,7 @@ case class LogicalPlanProducer(
     if (columns.nonEmpty) {
       val newSolved = solveds.get(inner.id) match {
         case query: SinglePlannerQuery => query.updateTailOrSelf(
-            _.updateQueryProjection(_.withIsTerminating(true))
+            _.updateQueryProjection(_.markAsFinal)
           )
         case uq @ UnionQuery(_, _, _, _) =>
           uq
