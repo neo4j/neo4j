@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAUL
 import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_RANGE_SEEK_FACTOR
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.CompositeExpressionSelectivityCalculator.SelectivitiesForPredicates
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.CompositeExpressionSelectivityCalculator.selectivityForCompositeIndexPredicates
+import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsBoundingBoxSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsDistanceSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsPropertyScannable
@@ -60,6 +61,7 @@ import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.helpers.CachedFunction
 import org.neo4j.cypher.internal.logical.plans.PrefixRange
+import org.neo4j.cypher.internal.logical.plans.ordering.NoProvidedOrderFactory
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.InputPosition
@@ -279,6 +281,8 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext) ex
       semanticTable,
       planContext,
       indexPredicateProviderContext,
+      InterestingOrderConfig.empty,
+      NoProvidedOrderFactory,
       // text indexes do not support composite indexes
       findTextIndexes = false,
       findRangeIndexes = true,
@@ -297,6 +301,8 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext) ex
       semanticTable,
       planContext,
       indexPredicateProviderContext,
+      InterestingOrderConfig.empty,
+      NoProvidedOrderFactory,
       // text indexes do not support composite indexes
       findTextIndexes = false,
       findRangeIndexes = true,

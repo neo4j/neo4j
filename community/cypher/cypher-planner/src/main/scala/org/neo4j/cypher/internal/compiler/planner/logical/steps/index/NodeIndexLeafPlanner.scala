@@ -42,7 +42,6 @@ import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.logical.plans.GetValueFromIndexBehavior
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.logical.plans.ordering.NoProvidedOrderFactory
 import org.neo4j.cypher.internal.logical.plans.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.plans.ordering.ProvidedOrderFactory
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
@@ -131,8 +130,8 @@ object NodeIndexLeafPlanner extends IndexCompatiblePredicatesProvider {
     semanticTable: SemanticTable,
     planContext: PlanContext,
     indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
-    interestingOrderConfig: InterestingOrderConfig = InterestingOrderConfig.empty,
-    providedOrderFactory: ProvidedOrderFactory = NoProvidedOrderFactory,
+    interestingOrderConfig: InterestingOrderConfig,
+    providedOrderFactory: ProvidedOrderFactory,
     findTextIndexes: Boolean = true,
     findRangeIndexes: Boolean = true,
     findPointIndexes: Boolean = true
