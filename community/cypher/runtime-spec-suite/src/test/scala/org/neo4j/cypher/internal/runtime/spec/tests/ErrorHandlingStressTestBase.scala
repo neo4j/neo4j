@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.runtime.spec.RandomValuesTestSupport
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSupport
 import org.neo4j.cypher.internal.runtime.spec.SideEffectingInputStream
-import org.neo4j.graphdb
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.logging.InternalLogProvider
@@ -88,7 +87,7 @@ abstract class ErrorHandlingStressTestBase[CONTEXT <: RuntimeContext](
     var errorCount = 0
 
     val fatalProbe = new Probe {
-      override def onRow(row: AnyRef, queryStatistics: graphdb.QueryStatistics, transactionsCommitted: Int): Unit = {
+      override def onRow(row: AnyRef, state: AnyRef): Unit = {
         errorCount = (errorCount + 1) % nRandomMessages
         throw new SuperFatalError(errorMessages(errorCount))
       }

@@ -39,6 +39,7 @@ import org.neo4j.cypher.internal.runtime.IteratorInputStream
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.GraphCreation.ComplexGraph
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
+import org.neo4j.cypher.internal.runtime.spec.QueryStatisticsProbe
 import org.neo4j.cypher.internal.runtime.spec.RandomValuesTestSupport
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
@@ -401,7 +402,7 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
       Array[Any](i.toLong)
     }
 
-    val probe = newProbe(queryStatistics => {
+    val probe = queryStatisticsProbe(queryStatistics => {
       queryStatistics.getNodesCreated shouldEqual 1
       queryStatistics.getLabelsAdded shouldEqual 1
     })
@@ -437,7 +438,7 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
       Array[Any](i.toLong)
     }
 
-    val probe = newProbe(queryStatistics => {
+    val probe = queryStatisticsProbe(queryStatistics => {
       queryStatistics.getNodesCreated shouldEqual batchSize
       queryStatistics.getLabelsAdded shouldEqual batchSize
     })
@@ -481,7 +482,7 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
     }
 
     var nodeCount: Long = 1
-    val probe = newProbe(queryStatistics => {
+    val probe = queryStatisticsProbe(queryStatistics => {
       val _nodeCount = nodeCount
       nodeCount = tx.findNodes(Label.label("N")).stream().count()
       queryStatistics.getNodesCreated shouldEqual _nodeCount
@@ -529,7 +530,7 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
     }
 
     var nodeCount: Long = 1
-    val probe = newProbe(queryStatistics => {
+    val probe = queryStatisticsProbe(queryStatistics => {
       val _nodeCount = nodeCount
       nodeCount = tx.findNodes(Label.label("Label"), "prop", 2).stream().count()
       queryStatistics.getNodesCreated shouldEqual _nodeCount
@@ -1524,27 +1525,8 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
 
   protected def txAssertionProbe(assertion: InternalTransaction => Unit): Prober.Probe = {
     new Probe {
-      override def onRow(row: AnyRef, queryStatistics: QueryStatistics, transactionsCommitted: Int): Unit = {
+      override def onRow(row: AnyRef, state: AnyRef): Unit = {
         withNewTx(assertion(_))
-      }
-    }
-  }
-
-  protected def newProbe(
-    assertion: QueryStatistics => Assertion
-  ): Prober.Probe = {
-    new Probe {
-      private var _prevTxQueryStatistics = org.neo4j.cypher.internal.runtime.QueryStatistics.empty
-      private var _thisTxQueryStatistics = org.neo4j.cypher.internal.runtime.QueryStatistics.empty
-      private var _transactionsCommitted = 0
-
-      override def onRow(row: AnyRef, queryStatistics: QueryStatistics, transactionsCommitted: Int): Unit = {
-        if (_transactionsCommitted != transactionsCommitted) {
-          assertion(_thisTxQueryStatistics.-(_prevTxQueryStatistics))
-          _transactionsCommitted = transactionsCommitted
-          _prevTxQueryStatistics = org.neo4j.cypher.internal.runtime.QueryStatistics.empty.+(_thisTxQueryStatistics)
-        }
-        _thisTxQueryStatistics = org.neo4j.cypher.internal.runtime.QueryStatistics(queryStatistics)
       }
     }
   }

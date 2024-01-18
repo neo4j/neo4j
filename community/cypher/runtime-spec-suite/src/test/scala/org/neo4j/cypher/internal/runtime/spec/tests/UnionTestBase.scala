@@ -944,7 +944,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
   }
 
   private def sizeHintAlignedToMorselSize: Int = {
-    val morselSize = edition.cypherConfig().pipelinedBatchSizeSmall
+    val morselSize = edition.cypherConfig.pipelinedBatchSizeSmall
     (1 + sizeHint / morselSize) * morselSize
   }
 }

@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.StaticGraphRuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.spec.tests.VariableLivenessTestBase.AssertMemoryFreed
-import org.neo4j.graphdb.QueryStatistics
 import org.neo4j.values.storable.Values.longValue
 
 abstract class VariableLivenessTestBase[CONTEXT <: RuntimeContext](
@@ -175,7 +174,7 @@ object VariableLivenessTestBase {
 
   case class AssertMemoryFreed(variables: String*) extends Prober.Probe {
 
-    override def onRow(anyRow: AnyRef, stats: QueryStatistics, txCommitted: Int): Unit = {
+    override def onRow(anyRow: AnyRef, state: AnyRef): Unit = {
       val row = anyRow.asInstanceOf[CypherRow]
       val nonNullVars = variables
         .map(name => name -> row.getByName(name))

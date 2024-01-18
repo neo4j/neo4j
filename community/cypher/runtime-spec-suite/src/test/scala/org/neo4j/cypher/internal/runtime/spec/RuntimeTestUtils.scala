@@ -17,25 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.runtime.interpreted.pipes
+package org.neo4j.cypher.internal.runtime.spec
 
-import org.neo4j.cypher.internal.logical.plans.Prober
-import org.neo4j.cypher.internal.runtime.ClosingIterator
-import org.neo4j.cypher.internal.runtime.CypherRow
-import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 
 /**
- * Pipe that sends each rows to an observing probe. Intended for test-use only.
+ * Runtime test utility methods that may have implementations that dependent on the edition (community or enterprise).
  */
-case class ProberPipe(source: Pipe, probe: Prober.Probe)(val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
+trait RuntimeTestUtils {
 
-  protected def internalCreateResults(
-    input: ClosingIterator[CypherRow],
-    state: QueryState
-  ): ClosingIterator[CypherRow] = {
-    input.map { row =>
-      probe.onRow(row, state)
-      row
-    }
+  /**
+   * Extracts the query statistics from the given query state, independent of runtime implementation.
+   */
+  def queryStatistics(queryState: AnyRef): org.neo4j.cypher.internal.runtime.QueryStatistics
+}
+
+object CommunityRuntimeTestUtils extends RuntimeTestUtils {
+
+  override def queryStatistics(state: AnyRef): org.neo4j.cypher.internal.runtime.QueryStatistics = {
+    state.asInstanceOf[QueryState].getStatistics
   }
 }

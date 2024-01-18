@@ -70,6 +70,7 @@ import org.neo4j.values.storable.PointValue
 import org.neo4j.values.storable.Value
 import org.scalactic.source.Position
 import org.scalatest.Args
+import org.scalatest.Assertion
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.Status
@@ -374,6 +375,12 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
       case array: Array[_] => listOf(array.map(toExpression): _*)
       case other           => literal(other)
     }
+  }
+
+  def runtimeTestUtils: RuntimeTestUtils = edition.runtimeTestUtils
+
+  protected def queryStatisticsProbe(assertion: QueryStatistics => Assertion): QueryStatisticsProbe = {
+    QueryStatisticsProbe(assertion, runtimeTestUtils)
   }
 
   protected def recordingProbe(variablesToRecord: String*): Prober.Probe with RecordingRowsProbe = {

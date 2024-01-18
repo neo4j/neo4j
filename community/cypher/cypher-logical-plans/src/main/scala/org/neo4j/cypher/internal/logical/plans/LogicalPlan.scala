@@ -75,7 +75,6 @@ import org.neo4j.cypher.internal.util.attribution.Identifiable
 import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.exceptions.InternalException
 import org.neo4j.exceptions.ShortestPathCommonEndNodesForbiddenException
-import org.neo4j.graphdb.QueryStatistics
 import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.util.Preconditions
 
@@ -3209,16 +3208,13 @@ object Prober {
     /**
      * Called on each row that passes through this operator.
      *
-     * NOTE: The row object is transient and any data that needs to be stored
+     * NOTE: The row and state objects are transient and any data that needs to be stored
      * should be copied before the call returns.
      *
      * @param row a CypherRow representation
+     * @param state the QueryState
      */
-    def onRow(
-      row: AnyRef,
-      queryStatistics: QueryStatistics /*TODO with ExtendedQueryStatistics*/,
-      transactionsCommitted: Int
-    ): Unit
+    def onRow(row: AnyRef, state: AnyRef): Unit
 
     /**
      * A name to identify the prober in debug information.
@@ -3228,7 +3224,7 @@ object Prober {
   }
 
   object NoopProbe extends Probe {
-    override def onRow(row: AnyRef, queryStatistics: QueryStatistics, transactionsCommitted: Int): Unit = {}
+    override def onRow(row: AnyRef, state: AnyRef): Unit = {}
   }
 }
 

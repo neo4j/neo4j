@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.runtime.InputValues
 import org.neo4j.cypher.internal.runtime.IteratorInputStream
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
+import org.neo4j.cypher.internal.runtime.spec.QueryStatisticsProbe
 import org.neo4j.cypher.internal.runtime.spec.RandomValuesTestSupport
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
@@ -67,6 +68,7 @@ import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.MapValueBuilder
 import org.neo4j.values.virtual.VirtualValues
 import org.scalacheck.Gen
+import org.scalatest.Assertion
 
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -220,7 +222,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       Array[Any](i.toLong)
     }
 
-    val probe = newProbe(queryStatistics => {
+    val probe = queryStatisticsProbe(queryStatistics => {
       queryStatistics.getNodesCreated shouldEqual 1
       queryStatistics.getLabelsAdded shouldEqual 1
     })
@@ -258,7 +260,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       Array[Any](i.toLong)
     }
 
-    val probe = newProbe(queryStatistics => {
+    val probe = queryStatisticsProbe(queryStatistics => {
       queryStatistics.getNodesCreated shouldEqual batchSize
       queryStatistics.getLabelsAdded shouldEqual batchSize
     })
@@ -300,7 +302,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       Array[Any](i.toLong)
     }
 
-    val probe = newProbe(queryStatistics => {
+    val probe = queryStatisticsProbe(queryStatistics => {
       queryStatistics.getNodesCreated shouldEqual 0
       queryStatistics.getLabelsAdded shouldEqual 0
       Iterables.count(tx.getAllNodes) shouldEqual 0
@@ -335,7 +337,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
     }
 
     var nodesCreated = 0
-    val probe = newProbe(queryStatistics => {
+    val probe = queryStatisticsProbe(queryStatistics => {
       nodesCreated += 1
       queryStatistics.getNodesCreated shouldEqual nodesCreated
       queryStatistics.getLabelsAdded shouldEqual nodesCreated
@@ -374,7 +376,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
     }
 
     var nodeCount: Long = 1
-    val probe = newProbe(queryStatistics => {
+    val probe = queryStatisticsProbe(queryStatistics => {
       val _nodeCount = nodeCount
       nodeCount = tx.findNodes(Label.label("N")).stream().count()
       queryStatistics.getNodesCreated shouldEqual _nodeCount
@@ -426,7 +428,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
     }
 
     var nodeCount: Long = 1
-    val probe = newProbe(queryStatistics => {
+    val probe = queryStatisticsProbe(queryStatistics => {
       val _nodeCount = nodeCount
       nodeCount = tx.findNodes(Label.label("N")).stream().count()
       queryStatistics.getNodesCreated shouldEqual nodeCount - _nodeCount
@@ -482,7 +484,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
     }
 
     var nodeCount: Long = 1
-    val probe = newProbe(queryStatistics => {
+    val probe = queryStatisticsProbe(queryStatistics => {
       val _nodeCount = nodeCount
       nodeCount = tx.findNodes(Label.label("Label"), "prop", 2).stream().count()
       queryStatistics.getNodesCreated shouldEqual _nodeCount
@@ -533,7 +535,7 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
     }
 
     var nodeCount: Long = 1
-    val probe = newProbe(queryStatistics => {
+    val probe = queryStatisticsProbe(queryStatistics => {
       val _nodeCount = nodeCount
       nodeCount = tx.findNodes(Label.label("N")).stream().count()
       queryStatistics.getNodesCreated shouldEqual _nodeCount
@@ -1438,25 +1440,8 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
   protected def txAssertionProbe(assertion: InternalTransaction => Unit): Prober.Probe = {
     new Probe {
-      override def onRow(row: AnyRef, queryStatistics: QueryStatistics, transactionsCommitted: Int): Unit = {
+      override def onRow(row: AnyRef, state: AnyRef): Unit = {
         withNewTx(assertion(_))
-      }
-    }
-  }
-
-  protected def newProbe(assertion: QueryStatistics => Unit): Prober.Probe = {
-    new Probe {
-      private var _prevTxQueryStatistics = org.neo4j.cypher.internal.runtime.QueryStatistics.empty
-      private var _thisTxQueryStatistics = org.neo4j.cypher.internal.runtime.QueryStatistics.empty
-      private var _transactionsCommitted = 0
-
-      override def onRow(row: AnyRef, queryStatistics: QueryStatistics, transactionsCommitted: Int): Unit = {
-        if (_transactionsCommitted != transactionsCommitted) {
-          assertion(_thisTxQueryStatistics.-(_prevTxQueryStatistics))
-          _transactionsCommitted = transactionsCommitted
-          _prevTxQueryStatistics = org.neo4j.cypher.internal.runtime.QueryStatistics.empty.+(_thisTxQueryStatistics)
-        }
-        _thisTxQueryStatistics = org.neo4j.cypher.internal.runtime.QueryStatistics(queryStatistics)
       }
     }
   }

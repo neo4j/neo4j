@@ -30,12 +30,10 @@ import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.RuntimeContextManager
 import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
-import org.neo4j.cypher.internal.logical.plans.Prober
 import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.plandescription.PlanDescriptionBuilder
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
-import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.InputValues
 import org.neo4j.cypher.internal.runtime.NoInput
@@ -82,11 +80,7 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualValues
 
-import java.io.PrintStream
 import java.util.Collections
-import java.util.concurrent.ConcurrentLinkedQueue
-
-import scala.collection.mutable.ArrayBuffer
 
 /**
  * This class contains various ugliness needed to perform physical compilation
@@ -798,7 +792,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
 
   protected def newRuntimeContext(queryContext: QueryContext): CONTEXT = {
 
-    val cypherConfiguration: CypherConfiguration = edition.cypherConfig()
+    val cypherConfiguration: CypherConfiguration = edition.cypherConfig
 
     val queryOptions = PreParser.queryOptions(List.empty, InputPosition.NONE, cypherConfiguration)
 
@@ -833,112 +827,4 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
   def waitForWorkersToIdle(timeoutMs: Int): Unit = {
     runtimeContextManager.waitForWorkersToIdle(timeoutMs)
   }
-}
-
-//=============================================================================
-// TESTING PROBES
-//=============================================================================
-
-/**
- * Probe that records the requested variables for each row that it sees
- * Inject into the query using a [[Prober]] plan
- */
-class RecordingProbe(variablesToRecord: String*)(chain: Prober.Probe = null) extends Prober.Probe()
-    with RecordingRowsProbe {
-  private[this] val _seenRows = new ArrayBuffer[Array[AnyValue]]
-
-  override def onRow(row: AnyRef, queryStatistics: QueryStatistics, transactionsCommitted: Int): Unit = {
-    val cypherRow = row.asInstanceOf[CypherRow]
-    val recordedVars = variablesToRecord.toArray.map { v =>
-      cypherRow.getByName(v)
-    }
-    _seenRows += recordedVars
-
-    if (chain != null) {
-      chain.onRow(row, queryStatistics, transactionsCommitted)
-    }
-  }
-
-  override def seenRows: Array[Array[AnyValue]] = {
-    _seenRows.toArray
-  }
-}
-
-object RecordingProbe {
-
-  def apply(variablesToRecord: String*): RecordingProbe =
-    new RecordingProbe(variablesToRecord: _*)()
-}
-
-trait RecordingRowsProbe {
-  def seenRows: Array[Array[AnyValue]]
-}
-
-/**
- * Thread-safe probe that records the requested variables for each row that it sees
- * Inject into the query using a [[Prober]] plan
- */
-class ThreadSafeRecordingProbe(variablesToRecord: String*)(chain: Prober.Probe = null) extends Prober.Probe()
-    with RecordingRowsProbe {
-  private[this] val _seenRows = new ConcurrentLinkedQueue[Array[AnyValue]]
-
-  override def onRow(row: AnyRef, queryStatistics: QueryStatistics, transactionsCommitted: Int): Unit = {
-    val cypherRow = row.asInstanceOf[CypherRow]
-    val recordedVars = variablesToRecord.toArray.map { v =>
-      cypherRow.getByName(v)
-    }
-    _seenRows.add(recordedVars)
-
-    if (chain != null) {
-      chain.onRow(row, queryStatistics, transactionsCommitted)
-    }
-  }
-
-  override def seenRows: Array[Array[AnyValue]] = {
-    _seenRows.toArray().map(_.asInstanceOf[Array[AnyValue]])
-  }
-}
-
-object ThreadSafeRecordingProbe {
-
-  def apply(variablesToRecord: String*): ThreadSafeRecordingProbe =
-    new ThreadSafeRecordingProbe(variablesToRecord: _*)()
-}
-
-/**
- * Probe that prints the requested variables for each row that it sees
- * Inject into the query using a [[Prober]] plan
- */
-class PrintingProbe(variablesToPrint: String*)(
-  prefix: String = "",
-  override val name: String = "",
-  printStream: PrintStream = System.out
-)(chain: Prober.Probe = null) extends Prober.Probe() {
-  private[this] var rowCount = 0L
-
-  override def onRow(row: AnyRef, queryStatistics: QueryStatistics, transactionsCommitted: Int): Unit = {
-    val cypherRow = row.asInstanceOf[CypherRow]
-    val variablesString = variablesToPrint.toArray.map { v =>
-      val value = cypherRow.getByName(v)
-      s"$v = $value"
-    }.mkString("{ ", ", ", " }")
-    printStream.println(s"$prefix Row: $rowCount $variablesString")
-    rowCount += 1
-
-    if (chain != null) {
-      chain.onRow(row, queryStatistics, transactionsCommitted)
-    }
-  }
-}
-
-object PrintingProbe {
-
-  def apply(variablesToRecord: String*): PrintingProbe =
-    new PrintingProbe(variablesToRecord: _*)()()
-}
-
-object RecordingAndPrintingProbe {
-
-  def apply(variablesToRecord: String*): RecordingProbe =
-    new RecordingProbe(variablesToRecord: _*)(new PrintingProbe(variablesToRecord: _*)()())
 }

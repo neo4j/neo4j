@@ -357,7 +357,7 @@ trait RuntimeResultMatchers[CONTEXT <: RuntimeContext] {
     new Prober.Probe {
       val c = new AtomicInteger(0)
 
-      override def onRow(row: AnyRef, queryStatistics: QueryStatistics, transactionsCommitted: Int): Unit = {
+      override def onRow(row: AnyRef, state: AnyRef): Unit = {
         if (c.incrementAndGet() == failAfterRowCount) {
           throw fail(s"Probe failed as expected (row count=$c)")
         }

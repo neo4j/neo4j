@@ -52,6 +52,7 @@ trait RuntimeContextManagerFactory[CONTEXT <: RuntimeContext] {
 class Edition[CONTEXT <: RuntimeContext](
   graphBuilderFactory: () => TestDatabaseManagementServiceBuilder,
   runtimeContextManagerFactory: RuntimeContextManagerFactory[CONTEXT],
+  val runtimeTestUtils: RuntimeTestUtils,
   val configs: (Setting[_], Object)*
 ) {
 
@@ -69,7 +70,7 @@ class Edition[CONTEXT <: RuntimeContext](
 
   def copyWith(additionalConfigs: (Setting[_], Object)*): Edition[CONTEXT] = {
     val newConfigs = (configs ++ additionalConfigs).toMap
-    new Edition(graphBuilderFactory, runtimeContextManagerFactory, newConfigs.toSeq: _*)
+    new Edition(graphBuilderFactory, runtimeContextManagerFactory, runtimeTestUtils, newConfigs.toSeq: _*)
   }
 
   def copyWith(
@@ -77,7 +78,7 @@ class Edition[CONTEXT <: RuntimeContext](
     additionalConfigs: (Setting[_], Object)*
   ): Edition[CONTEXT] = {
     val newConfigs = (configs ++ additionalConfigs).toMap
-    new Edition(graphBuilderFactory, newRuntimeContextManagerFactory, newConfigs.toSeq: _*)
+    new Edition(graphBuilderFactory, newRuntimeContextManagerFactory, runtimeTestUtils, newConfigs.toSeq: _*)
   }
 
   def getSetting[T](setting: Setting[T]): Option[T] = {
@@ -89,13 +90,13 @@ class Edition[CONTEXT <: RuntimeContext](
     lifeSupport: LifeSupport,
     logProvider: InternalLogProvider
   ): RuntimeContextManager[CONTEXT] =
-    runtimeContextManagerFactory.newRuntimeContextManager(runtimeConfig(), resolver, lifeSupport, logProvider)
+    runtimeContextManagerFactory.newRuntimeContextManager(runtimeConfig, resolver, lifeSupport, logProvider)
 
-  def runtimeConfig(): CypherRuntimeConfiguration = {
-    CypherRuntimeConfiguration.fromCypherConfiguration(cypherConfig())
+  def runtimeConfig: CypherRuntimeConfiguration = {
+    CypherRuntimeConfiguration.fromCypherConfiguration(cypherConfig)
   }
 
-  def cypherConfig(): CypherConfiguration = {
+  def cypherConfig: CypherConfiguration = {
     val config = Config.defaults(configs.toMap.asJava)
     CypherConfiguration.fromConfig(config)
   }
@@ -110,6 +111,7 @@ object COMMUNITY {
   val EDITION = new Edition(
     () => new TestDatabaseManagementServiceBuilder,
     (runtimeConfig, _, _, logProvider) => CommunityRuntimeContextManager(logProvider.getLog("test"), runtimeConfig),
+    CommunityRuntimeTestUtils,
     GraphDatabaseSettings.cypher_hints_error -> TRUE
   )
 }
