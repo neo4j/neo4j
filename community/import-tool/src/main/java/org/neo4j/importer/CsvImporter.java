@@ -192,12 +192,14 @@ class CsvImporter implements Importer {
 
         try (JobScheduler jobScheduler = createInitialisedScheduler()) {
             // Let the storage engine factory be configurable in the tool later on...
-            StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine(databaseConfig);
             var logService = new SimpleLogService(
                     NullLogProvider.getInstance(),
                     new PrefixedLogProvider(logProvider, databaseLayout.getDatabaseName()),
                     databaseConfig.get(duplication_user_messages));
             if (incremental) {
+                StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine(
+                                fileSystem, databaseLayout)
+                        .orElseThrow();
                 try (Lifespan life = new Lifespan()) {
                     var indexProviders = life.add(new DefaultIndexProvidersAccess(
                             storageEngineFactory,
@@ -239,6 +241,7 @@ class CsvImporter implements Importer {
                     }
                 }
             } else {
+                StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine(databaseConfig);
                 BatchImporter importer = storageEngineFactory.batchImporter(
                         databaseLayout,
                         fileSystem,
