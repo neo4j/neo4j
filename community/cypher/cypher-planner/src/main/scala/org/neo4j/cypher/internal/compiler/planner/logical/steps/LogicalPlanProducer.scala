@@ -260,6 +260,8 @@ import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.UpdatingPlan
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.logical.plans.VarExpand
+import org.neo4j.cypher.internal.logical.plans.ordering.DefaultProvidedOrderFactory
+import org.neo4j.cypher.internal.logical.plans.ordering.ParallelExecutionProvidedOrderFactory
 import org.neo4j.cypher.internal.logical.plans.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.plans.ordering.ProvidedOrderFactory
 import org.neo4j.cypher.internal.macros.AssertMacros
@@ -3518,12 +3520,19 @@ case class LogicalPlanProducer(
         case Some(ProvidedOrder.Right) => loop(current.rhs.get)
         case Some(ProvidedOrder.Both)  => loop(current.lhs.get); loop(current.rhs.get)
         case Some(ProvidedOrder.Self)  => // done
-        case None                      =>
-          // If the executionModel doesn't provide order ending up here is expected
-          AssertMacros.checkOnlyWhenAssertionsAreEnabled(
-            !providedOrderFactory.assertOnNoProvidedOrder,
-            s"While marking leveraged order we encountered a plan with no provided order:\n ${LogicalPlanToPlanBuilderString(current)}"
-          )
+        case None =>
+          val bug = "While marking leveraged order we encountered a plan with no provided order. This is a bug."
+          providedOrderFactory match {
+            case DefaultProvidedOrderFactory =>
+              throw new IllegalStateException(
+                s"$bug\n${LogicalPlanToPlanBuilderString(current)}"
+              )
+            case ParallelExecutionProvidedOrderFactory =>
+              throw new IllegalStateException(
+                s"$bug In the meantime, try running without `runtime=parallel`.\n${LogicalPlanToPlanBuilderString(current)}"
+              )
+          }
+
       }
     }
 

@@ -28,7 +28,19 @@ import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.projectExpression
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.FullSatisfaction
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder.Satisfaction
+import org.neo4j.cypher.internal.logical.plans.Apply
+import org.neo4j.cypher.internal.logical.plans.Argument
+import org.neo4j.cypher.internal.logical.plans.AtMostOneRow
+import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.PartialSort
+import org.neo4j.cypher.internal.logical.plans.PartialTop
+import org.neo4j.cypher.internal.logical.plans.ProduceResult
+import org.neo4j.cypher.internal.logical.plans.Projection
+import org.neo4j.cypher.internal.logical.plans.Selection
+import org.neo4j.cypher.internal.logical.plans.Skip
+import org.neo4j.cypher.internal.logical.plans.Sort
+import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.ordering
 import org.neo4j.cypher.internal.logical.plans.ordering.ProvidedOrder.OrderOrigin
 import org.neo4j.cypher.internal.util.NonEmptyList
@@ -98,7 +110,6 @@ sealed trait ProvidedOrderFactory {
    * A providedOrder with a single descending column.
    */
   def desc(expression: Expression, projections: Map[LogicalVariable, Expression] = Map.empty): ProvidedOrder
-  def assertOnNoProvidedOrder: Boolean
 }
 
 case object DefaultProvidedOrderFactory extends ProvidedOrderFactory {
@@ -123,27 +134,56 @@ case object DefaultProvidedOrderFactory extends ProvidedOrderFactory {
     projections: Map[LogicalVariable, Expression] = Map.empty
   ): ProvidedOrder =
     ProvidedOrder.desc(expression, projections)
-
-  override def assertOnNoProvidedOrder: Boolean = true
 }
 
 case object ParallelExecutionProvidedOrderFactory extends ProvidedOrderFactory {
 
-  override def providedOrder(providedOrder: ProvidedOrder, plan: Option[LogicalPlan]): ProvidedOrder =
-    ProvidedOrder.empty
+  /**
+   * These plans are known to not break ordering in the parallel runtime.
+   */
+  object OrderMaintainingAllowlistedPlan {
+
+    def unapply(plan: LogicalPlan): Boolean = plan match {
+      // Provides order
+      case _: Sort => true
+      case _: Top  => true
+
+      // Provides order AND propagates order
+      case _: PartialSort => true
+      case _: PartialTop  => true
+
+      // Only 1 row, so ordered by definition
+      case p if p.distinctness == AtMostOneRow => true
+
+      // Propagates order
+      case _: Skip               => true
+      case _: Limit              => true
+      case _: Selection          => true
+      case _: Projection         => true
+      case _: ProduceResult      => true
+      case Apply(_, _: Argument) => true
+      case _                     => false
+    }
+  }
+
+  override def providedOrder(providedOrder: ProvidedOrder, plan: Option[LogicalPlan]): ProvidedOrder = {
+    plan match {
+      case Some(OrderMaintainingAllowlistedPlan()) => providedOrder
+      case _                                       => ProvidedOrder.empty
+    }
+  }
 
   override def providedOrder(
     columns: Seq[ColumnOrder],
     orderOrigin: OrderOrigin,
     plan: Option[LogicalPlan]
-  ): ProvidedOrder = ProvidedOrder.empty
+  ): ProvidedOrder = providedOrder(ProvidedOrder.apply(columns, orderOrigin), plan)
 
   override def asc(expression: Expression, projections: Map[LogicalVariable, Expression] = Map.empty): ProvidedOrder =
     ProvidedOrder.empty
 
   override def desc(expression: Expression, projections: Map[LogicalVariable, Expression] = Map.empty): ProvidedOrder =
     ProvidedOrder.empty
-  override def assertOnNoProvidedOrder: Boolean = false
 }
 
 /**
