@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.convert
 import org.neo4j.cypher.internal
 import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.expressions.ASTCachedProperty
-import org.neo4j.cypher.internal.expressions.ArgumentUnordered
 import org.neo4j.cypher.internal.expressions.AssertIsNode
 import org.neo4j.cypher.internal.expressions.CachedHasProperty
 import org.neo4j.cypher.internal.expressions.DesugaredMapProjection
@@ -493,7 +492,7 @@ case class CommunityExpressionConverter(
         val inner = self.toCommandExpression(id, invocation.arguments.head)
         val command = commands.expressions.Avg(inner)
         if (invocation.distinct)
-          commands.expressions.Distinct(command, inner, invocation.order != ArgumentUnordered)
+          commands.expressions.Distinct(command, inner, invocation.isOrdered)
         else
           command
       case Ceil => commands.expressions.CeilFunction(self.toCommandExpression(id, invocation.arguments.head))
@@ -504,7 +503,7 @@ case class CommunityExpressionConverter(
         val inner = self.toCommandExpression(id, invocation.arguments.head)
         val command = commands.expressions.Collect(inner)
         if (invocation.distinct)
-          commands.expressions.Distinct(command, inner, invocation.order != ArgumentUnordered)
+          commands.expressions.Distinct(command, inner, invocation.isOrdered)
         else
           command
       case Cos => commands.expressions.CosFunction(self.toCommandExpression(id, invocation.arguments.head))
@@ -513,7 +512,7 @@ case class CommunityExpressionConverter(
         val inner = self.toCommandExpression(id, invocation.arguments.head)
         val command = commands.expressions.Count(inner)
         if (invocation.distinct)
-          commands.expressions.Distinct(command, inner, invocation.order != ArgumentUnordered)
+          commands.expressions.Distinct(command, inner, invocation.isOrdered)
         else
           command
       case Degrees => commands.expressions.DegreesFunction(self.toCommandExpression(id, invocation.arguments.head))
@@ -564,14 +563,14 @@ case class CommunityExpressionConverter(
         val inner = self.toCommandExpression(id, invocation.arguments.head)
         val command = commands.expressions.Max(inner)
         if (invocation.distinct)
-          commands.expressions.Distinct(command, inner, invocation.order != ArgumentUnordered)
+          commands.expressions.Distinct(command, inner, invocation.isOrdered)
         else
           command
       case Min =>
         val inner = self.toCommandExpression(id, invocation.arguments.head)
         val command = commands.expressions.Min(inner)
         if (invocation.distinct)
-          commands.expressions.Distinct(command, inner, invocation.order != ArgumentUnordered)
+          commands.expressions.Distinct(command, inner, invocation.isOrdered)
         else
           command
       case Nodes => commands.expressions.NodesFunction(self.toCommandExpression(id, invocation.arguments.head))
@@ -591,7 +590,7 @@ case class CommunityExpressionConverter(
 
         val command = commands.expressions.PercentileCont(firstArg, secondArg, invocation.order)
         if (invocation.distinct)
-          commands.expressions.Distinct(command, firstArg, invocation.order != ArgumentUnordered)
+          commands.expressions.Distinct(command, firstArg, invocation.isOrdered)
         else
           command
       case PercentileDisc =>
@@ -600,7 +599,7 @@ case class CommunityExpressionConverter(
 
         val command = commands.expressions.PercentileDisc(firstArg, secondArg, invocation.order)
         if (invocation.distinct)
-          commands.expressions.Distinct(command, firstArg, invocation.order != ArgumentUnordered)
+          commands.expressions.Distinct(command, firstArg, invocation.isOrdered)
         else
           command
       case Percentiles =>
@@ -612,7 +611,7 @@ case class CommunityExpressionConverter(
         val command =
           commands.expressions.Percentiles(inputArg, percentilesArg, keysArg, isDiscretesArg, invocation.order)
         if (invocation.distinct) {
-          commands.expressions.Distinct(command, inputArg, invocation.order != ArgumentUnordered)
+          commands.expressions.Distinct(command, inputArg, invocation.isOrdered)
         } else
           command
       case Pi => commands.expressions.PiFunction()
@@ -682,14 +681,14 @@ case class CommunityExpressionConverter(
         val inner = self.toCommandExpression(id, invocation.arguments.head)
         val command = commands.expressions.Stdev(inner)
         if (invocation.distinct)
-          commands.expressions.Distinct(command, inner, invocation.order != ArgumentUnordered)
+          commands.expressions.Distinct(command, inner, invocation.isOrdered)
         else
           command
       case StdDevP =>
         val inner = self.toCommandExpression(id, invocation.arguments.head)
         val command = commands.expressions.StdevP(inner)
         if (invocation.distinct)
-          commands.expressions.Distinct(command, inner, invocation.order != ArgumentUnordered)
+          commands.expressions.Distinct(command, inner, invocation.isOrdered)
         else
           command
       case Substring =>
@@ -702,7 +701,7 @@ case class CommunityExpressionConverter(
         val inner = self.toCommandExpression(id, invocation.arguments.head)
         val command = commands.expressions.Sum(inner)
         if (invocation.distinct)
-          commands.expressions.Distinct(command, inner, invocation.order != ArgumentUnordered)
+          commands.expressions.Distinct(command, inner, invocation.isOrdered)
         else
           command
       case Tail =>

@@ -1132,15 +1132,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
         ("Skip", lpp.planSkip(plan(), one, interesting_vx, context)),
         (
           "Collect with previous required order",
-          lpp.planAggregation(
-            plan(),
-            Map.empty,
-            foo_collect,
-            Map.empty,
-            foo_collect,
-            Some(interesting_vx),
-            context
-          )
+          lpp.planAggregation(plan(), Map.empty, foo_collect, Map.empty, foo_collect, Some(interesting_vx), context)
         ),
         ("ProduceResult", lpp.planProduceResult(plan(), Seq(v"x"), Some(interesting_vx), context))
       )

@@ -2180,10 +2180,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     appendAtCurrentIndent(LeafOperator(planBuilder))
   }
 
-  def aggregation(
-    groupingExpressions: Seq[String],
-    aggregationExpression: Seq[String]
-  ): IMPL = {
+  def aggregation(groupingExpressions: Seq[String], aggregationExpression: Seq[String]): IMPL = {
     appendAtCurrentIndent(UnaryOperator(lp => {
       Aggregation(
         lp,
@@ -2198,11 +2195,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     aggregationExpressions: Map[String, Expression]
   ): IMPL = {
     appendAtCurrentIndent(UnaryOperator(lp => {
-      Aggregation(
-        lp,
-        toVarMap(groupingExpressions),
-        toVarMap(aggregationExpressions)
-      )(_)
+      Aggregation(lp, toVarMap(groupingExpressions), toVarMap(aggregationExpressions))(_)
     }))
   }
 
@@ -2229,12 +2222,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   ): IMPL = {
     val order = orderToLeverage.map(parseExpression)
     appendAtCurrentIndent(UnaryOperator(lp => {
-      OrderedAggregation(
-        lp,
-        toVarMap(groupingExpressions),
-        toVarMap(aggregationExpressions),
-        order
-      )(_)
+      OrderedAggregation(lp, toVarMap(groupingExpressions), toVarMap(aggregationExpressions), order)(_)
     }))
   }
 

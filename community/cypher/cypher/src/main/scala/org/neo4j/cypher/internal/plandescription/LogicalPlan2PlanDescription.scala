@@ -3035,7 +3035,6 @@ case class LogicalPlan2PlanDescription(
       } else {
         indexSeekNames.PLAN_DESCRIPTION_INDEX_SEEK_NAME
       }
-
     valueExpr match {
       case _: ExistenceQueryExpression[expressions.Expression] =>
         indexSeekNames.PLAN_DESCRIPTION_INDEX_SCAN_NAME
@@ -3479,11 +3478,9 @@ case class LogicalPlan2PlanDescription(
     case NoOptions               => pretty""
     case OptionsParam(parameter) => pretty" OPTIONS ${asPrettyString(parameter)}"
     case OptionsMap(options) =>
-      pretty" OPTIONS ${
-          options.map({
-            case (s, e) => pretty"${asPrettyString(s)}: ${asPrettyString(e)}"
-          }).mkPrettyString("{", SEPARATOR, "}")
-        }"
+      pretty" OPTIONS ${options.map({
+          case (s, e) => pretty"${asPrettyString(s)}: ${asPrettyString(e)}"
+        }).mkPrettyString("{", SEPARATOR, "}")}"
   }
 
   private def setPropertyInfo(idName: PrettyString, expression: Expression, removeOtherProps: Boolean): PrettyString = {

@@ -1732,12 +1732,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       .stripProduceResults
 
     plan should beLike {
-      case OrderedAggregation(
-          Expand(Expand(_: Sort, _, _, _, _, _, _), _, _, _, _, _, _),
-          _,
-          _,
-          Seq(Variable("x"))
-        ) =>
+      case OrderedAggregation(Expand(Expand(_: Sort, _, _, _, _, _, _), _, _, _, _, _, _), _, _, Seq(Variable("x"))) =>
         ()
     }
   }
@@ -1753,12 +1748,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       .stripProduceResults
 
     plan should beLike {
-      case OrderedAggregation(
-          Expand(Expand(_: Sort, _, _, _, _, _, _), _, _, _, _, _, _),
-          _,
-          _,
-          Seq(Variable("x"))
-        ) =>
+      case OrderedAggregation(Expand(Expand(_: Sort, _, _, _, _, _, _), _, _, _, _, _, _), _, _, Seq(Variable("x"))) =>
         ()
     }
   }
@@ -1774,12 +1764,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       .stripProduceResults
 
     plan should beLike {
-      case OrderedAggregation(
-          Expand(Expand(_: Sort, _, _, _, _, _, _), _, _, _, _, _, _),
-          _,
-          _,
-          Seq(Variable("x"))
-        ) =>
+      case OrderedAggregation(Expand(Expand(_: Sort, _, _, _, _, _, _), _, _, _, _, _, _), _, _, Seq(Variable("x"))) =>
         ()
     }
   }
@@ -1796,12 +1781,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       .stripProduceResults
 
     plan should beLike {
-      case OrderedAggregation(
-          Expand(Expand(_: Sort, _, _, _, _, _, _), _, _, _, _, _, _),
-          _,
-          _,
-          Seq(Variable("x"))
-        ) =>
+      case OrderedAggregation(Expand(Expand(_: Sort, _, _, _, _, _, _), _, _, _, _, _, _), _, _, Seq(Variable("x"))) =>
         ()
     }
   }
@@ -1817,12 +1797,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       .stripProduceResults
 
     plan should beLike {
-      case OrderedAggregation(
-          Expand(Expand(_: Sort, _, _, _, _, _, _), _, _, _, _, _, _),
-          _,
-          _,
-          Seq(Variable("p1"))
-        ) =>
+      case OrderedAggregation(Expand(Expand(_: Sort, _, _, _, _, _, _), _, _, _, _, _, _), _, _, Seq(Variable("p1"))) =>
         ()
     }
   }

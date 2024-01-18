@@ -69,8 +69,7 @@ case class CollectUnwindOnTop(
           val unwoundRowVar = Variable(unwoundRowName)(pos)
           val rowMapExpr = MapExpression(columns.map { c => PropertyKeyName(c.name)(pos) -> c })(pos)
           val collectExpr = CollectAll(rowMapExpr)(pos)
-          val aggregation =
-            Aggregation(source, Map.empty, Map(varFor(collectedRowsName) -> collectExpr))(ctx.idGen)
+          val aggregation = Aggregation(source, Map.empty, Map(varFor(collectedRowsName) -> collectExpr))(ctx.idGen)
           val unwind = UnwindCollection(aggregation, varFor(unwoundRowName), collectedRowsVar)(ctx.idGen)
           val projections = columns.map { c =>
             c -> Property(unwoundRowVar, PropertyKeyName(c.name)(pos))(pos)
