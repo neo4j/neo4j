@@ -50,7 +50,7 @@ case class NonPipelinedHeadTestPipe(source: Pipe, expandFactor: Long)(val id: Id
     state: QueryState
   ): ClosingIterator[CypherRow] = {
     input.flatMap(row => {
-      Array.fill(expandFactor.toInt)(row)
+      ClosingIterator.asClosingIterator(Array.fill(expandFactor.toInt)(row))
     })
   }
 }

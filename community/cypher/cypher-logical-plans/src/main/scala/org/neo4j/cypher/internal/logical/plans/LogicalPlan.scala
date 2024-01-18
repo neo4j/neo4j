@@ -2998,11 +2998,13 @@ case class NonPipelined(override val source: LogicalPlan)(implicit idGen: IdGen)
  * NOTE: This plan is only for testing
  */
 case class NonPipelinedHead(override val source: LogicalPlan, expandFactor: Long)(implicit idGen: IdGen)
-    extends LogicalUnaryPlan(idGen) {
+    extends LogicalUnaryPlan(idGen) with TestOnlyPlan {
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
-  val availableSymbols: Set[String] = source.availableSymbols
+  override val availableSymbols: Set[LogicalVariable] = source.availableSymbols
+
+  override val distinctness: Distinctness = source.distinctness
 }
 
 case class NullifyMetadata(override val source: LogicalPlan, key: String, planId: Int)(implicit idGen: IdGen)
