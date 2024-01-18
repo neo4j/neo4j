@@ -40,7 +40,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompa
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ordering.DefaultProvidedOrderFactory
-import org.neo4j.cypher.internal.logical.plans.ordering.NoProvidedOrderFactory
+import org.neo4j.cypher.internal.logical.plans.ordering.ParallelExecutionProvidedOrderFactory
 import org.neo4j.cypher.internal.logical.plans.ordering.ProvidedOrderFactory
 import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.options.CypherDebugOptions
@@ -283,7 +283,7 @@ case class LogicalPlanningContext(
     if (settings.executionModel.providedOrderPreserving) {
       DefaultProvidedOrderFactory
     } else {
-      NoProvidedOrderFactory
+      ParallelExecutionProvidedOrderFactory
     }
   }
 }

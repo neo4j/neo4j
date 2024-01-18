@@ -127,7 +127,7 @@ case object DefaultProvidedOrderFactory extends ProvidedOrderFactory {
   override def assertOnNoProvidedOrder: Boolean = true
 }
 
-case object NoProvidedOrderFactory extends ProvidedOrderFactory {
+case object ParallelExecutionProvidedOrderFactory extends ProvidedOrderFactory {
 
   override def providedOrder(providedOrder: ProvidedOrder, plan: Option[LogicalPlan]): ProvidedOrder =
     ProvidedOrder.empty

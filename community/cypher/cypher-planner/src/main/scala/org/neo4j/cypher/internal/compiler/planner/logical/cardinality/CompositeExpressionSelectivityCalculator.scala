@@ -61,7 +61,7 @@ import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.helpers.CachedFunction
 import org.neo4j.cypher.internal.logical.plans.PrefixRange
-import org.neo4j.cypher.internal.logical.plans.ordering.NoProvidedOrderFactory
+import org.neo4j.cypher.internal.logical.plans.ordering.ParallelExecutionProvidedOrderFactory
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.InputPosition
@@ -282,7 +282,7 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext) ex
       planContext,
       indexPredicateProviderContext,
       InterestingOrderConfig.empty,
-      NoProvidedOrderFactory,
+      ParallelExecutionProvidedOrderFactory,
       // text indexes do not support composite indexes
       findTextIndexes = false,
       findRangeIndexes = true,
@@ -302,7 +302,7 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext) ex
       planContext,
       indexPredicateProviderContext,
       InterestingOrderConfig.empty,
-      NoProvidedOrderFactory,
+      ParallelExecutionProvidedOrderFactory,
       // text indexes do not support composite indexes
       findTextIndexes = false,
       findRangeIndexes = true,
