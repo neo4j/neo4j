@@ -74,7 +74,11 @@ public class TransactionLogInitializer {
                     String checkpointReason) {
                 try {
                     TransactionLogInitializer initializer = new TransactionLogInitializer(
-                            fileSystem, store, StorageEngineFactory.defaultStorageEngine(), metadataCache);
+                            fileSystem,
+                            store,
+                            StorageEngineFactory.selectStorageEngine(fileSystem, databaseLayout)
+                                    .orElseThrow(),
+                            metadataCache);
                     initializer.initializeEmptyLogFile(
                             databaseLayout, databaseLayout.getTransactionLogsDirectory(), checkpointReason);
                 } catch (IOException e) {
@@ -91,7 +95,11 @@ public class TransactionLogInitializer {
                     String checkpointReason) {
                 try {
                     TransactionLogInitializer initializer = new TransactionLogInitializer(
-                            fileSystem, store, StorageEngineFactory.defaultStorageEngine(), metadataCache);
+                            fileSystem,
+                            store,
+                            StorageEngineFactory.selectStorageEngine(fileSystem, databaseLayout)
+                                    .orElseThrow(),
+                            metadataCache);
                     initializer.migrateExistingLogFiles(
                             databaseLayout, databaseLayout.getTransactionLogsDirectory(), checkpointReason);
                 } catch (Exception e) {
