@@ -79,10 +79,17 @@ case class PlanSingleQuery(headPlanner: HeadPlanner = PlanHead(), tailPlanner: T
 
     remainingPartsWithExtras.foldLeft((plans, context)) {
       case ((plans, context), (plannerQuery, limitSelectivityConfig, prevPlannerQuery)) =>
+        // If the current query graph is empty (except for arguments), that means there is no clause between
+        // a previous WITH (that could have an ORDER BY) and the next WITH/RETURN.
+        // In this case the next WITH/RETURN is allowed to leverage the ORDER BY of the previous one.
+        val previousInterestingOrder =
+          if (plannerQuery.queryGraph.withArgumentIds(Set.empty).isEmpty) Some(prevPlannerQuery.interestingOrder)
+          else None
+
         tailPlanner.plan(
           plans,
           plannerQuery,
-          prevPlannerQuery.interestingOrder,
+          previousInterestingOrder,
           context.withModifiedPlannerState(_
             .withLimitSelectivityConfig(limitSelectivityConfig)
             .withLastSolvedPlannerQuery(prevPlannerQuery))
@@ -107,6 +114,9 @@ trait MatchPlanner {
 
 trait EventHorizonPlanner {
 
+  /**
+   * @param prevInterestingOrder The previous interesting order, if it exists, and only if the plannerQuery has an empty query graph.
+   */
   protected def doPlanHorizon(
     plannerQuery: SinglePlannerQuery,
     incomingPlans: BestResults[LogicalPlan],
@@ -114,6 +124,9 @@ trait EventHorizonPlanner {
     context: LogicalPlanningContext
   ): BestResults[LogicalPlan]
 
+  /**
+   * @param prevInterestingOrder The previous interesting order, if it exists, and only if the plannerQuery has an empty query graph.
+   */
   final def planHorizon(
     plannerQuery: SinglePlannerQuery,
     incomingPlans: BestResults[LogicalPlan],
@@ -134,10 +147,13 @@ trait HeadPlanner {
 
 trait TailPlanner {
 
+  /**
+   * @param previousInterestingOrder The previous interesting order, if it exists, and only if the tailQuery has an empty query graph.
+   */
   def plan(
     lhsPlans: BestPlans,
     tailQuery: SinglePlannerQuery,
-    previousInterestingOrder: InterestingOrder,
+    previousInterestingOrder: Option[InterestingOrder],
     context: LogicalPlanningContext
   ): (BestPlans, LogicalPlanningContext)
 }

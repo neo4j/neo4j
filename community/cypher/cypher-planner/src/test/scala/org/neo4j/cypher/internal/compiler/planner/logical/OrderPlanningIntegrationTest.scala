@@ -2814,4 +2814,19 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
         .build()
     )
   }
+
+  test("Should not try to leverage order for a collect following an ORDER bY, with a MATCH inbetween") {
+    val query =
+      """MATCH (a:A)
+        |WITH a, a.prop AS prop
+        |  ORDER BY prop
+        |MATCH (b:B)
+        |RETURN collect(prop) AS theProps
+        |""".stripMargin
+
+    val planState = defaultConfig.planState(query)
+    val plan = planState.logicalPlan.stripProduceResults
+    val leveragedOrders = planState.planningAttributes.leveragedOrders
+    leveragedOrders.get(plan.id) should be(false)
+  }
 }

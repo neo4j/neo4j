@@ -38,7 +38,7 @@ case class PlanWithTail(
   override def plan(
     lhsPlans: BestPlans,
     tailQuery: SinglePlannerQuery,
-    previousInterestingOrder: InterestingOrder,
+    previousInterestingOrder: Option[InterestingOrder],
     context: LogicalPlanningContext
   ): (BestPlans, LogicalPlanningContext) = {
     val updatedContext = context.withModifiedPlannerState(_
@@ -61,7 +61,7 @@ case class PlanWithTail(
   private def planApply(
     lhsPlans: BestPlans,
     rhsPlan: LogicalPlan,
-    previousInterestingOrder: InterestingOrder,
+    previousInterestingOrder: Option[InterestingOrder],
     tailQuery: SinglePlannerQuery,
     lhsContext: LogicalPlanningContext
   ): (BestPlans, LogicalPlanningContext) = {
@@ -75,7 +75,7 @@ case class PlanWithTail(
       applyPlans.map(p => updatesPlanner.plan(tailQuery, p, firstPlannerQuery = false, applyContext))
 
     val horizonPlans =
-      eventHorizonPlanner.planHorizon(tailQuery, plansWithUpdates, Some(previousInterestingOrder), applyContext)
+      eventHorizonPlanner.planHorizon(tailQuery, plansWithUpdates, previousInterestingOrder, applyContext)
     val contextForTail =
       applyContext.withModifiedPlannerState(_.withUpdatedLabelInfo(
         horizonPlans.bestResult,

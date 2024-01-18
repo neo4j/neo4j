@@ -1922,7 +1922,7 @@ case class LogicalPlanProducer(
    * @param grouping                 must be solved by the ListSubqueryExpressionSolver. This is not done here since that can influence if we plan aggregation or projection, etc,
    *                                 thus this logic is put into [[aggregation]] instead.
    * @param aggregation              must be solved by the ListSubqueryExpressionSolver.
-   * @param previousInterestingOrder the interesting order of the previous query part, if there was a previous part
+   * @param previousInterestingOrder The previous interesting order, if it exists, and only if the plannerQuery has an empty query graph.
    */
   def planAggregation(
     left: LogicalPlan,
@@ -1952,7 +1952,7 @@ case class LogicalPlanProducer(
       case fi: FunctionInvocation => fi.function == Collect || fi.function == UnresolvedFunction
       case _                      => false
     }
-    // Aggregation functions may leverage the order of a preceding ORDER BY.
+    // Aggregation functions may leverage the order of a preceding ORDER BY, if no other clause is inbetween.
     // In practice, this is only collect and potentially user defined aggregations
     if (previousInterestingOrder.exists(_.requiredOrderCandidate.nonEmpty) && hasCollectOrUDF) {
       markOrderAsLeveragedBackwardsUntilOrigin(plan, context.providedOrderFactory)

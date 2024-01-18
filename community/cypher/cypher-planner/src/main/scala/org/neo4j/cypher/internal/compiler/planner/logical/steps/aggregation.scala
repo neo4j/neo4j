@@ -34,7 +34,7 @@ object aggregation {
 
   /**
    * @param interestingOrderToReportForLimit the interesting order to report when planning a LIMIT for aggregation of this query part
-   * @param previousInterestingOrder         the interesting order of the previous query part, if there was a previous part
+   * @param previousInterestingOrder The previous interesting order, if it exists, and only if the plannerQuery has an empty query graph.
    */
   def apply(
     plan: LogicalPlan,
