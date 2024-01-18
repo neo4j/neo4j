@@ -101,6 +101,43 @@ public class AbstractCypherAdapterStreamTest
     }
 
     @Test
+    void shouldComputeTimeSpentStreaming() throws Throwable
+    {
+        // Given
+        QueryExecution queryExecution = mock( QueryExecution.class );
+        when( queryExecution.fieldNames() ).thenReturn( new String[0] );
+        when( queryExecution.executionType() ).thenReturn( query( READ_WRITE ) );
+        when( queryExecution.getNotifications() ).thenReturn( Collections.emptyList() );
+        when( queryExecution.await() ).thenReturn( true ).thenReturn( false );
+
+        BoltAdapterSubscriber subscriber = new BoltAdapterSubscriber();
+        QueryStatistics queryStatistics = mock( QueryStatistics.class );
+        when( queryStatistics.containsUpdates() ).thenReturn( false );
+        when( queryStatistics.getNodesCreated() ).thenReturn( 0 );
+        when( queryStatistics.getNodesDeleted() ).thenReturn( 0 );
+        when( queryStatistics.getRelationshipsCreated() ).thenReturn( 0 );
+        when( queryStatistics.getRelationshipsDeleted() ).thenReturn( 0 );
+        when( queryStatistics.getPropertiesSet() ).thenReturn( 0 );
+        when( queryStatistics.getIndexesAdded() ).thenReturn( 0 );
+        when( queryStatistics.getIndexesRemoved() ).thenReturn( 0 );
+        when( queryStatistics.getConstraintsAdded() ).thenReturn( 0 );
+        when( queryStatistics.getConstraintsRemoved() ).thenReturn( 0 );
+        when( queryStatistics.getLabelsAdded() ).thenReturn( 0 );
+        when( queryStatistics.getLabelsRemoved() ).thenReturn( 0 );
+        subscriber.onResultCompleted( queryStatistics );
+
+        Clock clock = mock( Clock.class );
+        when( clock.millis() ).thenReturn( 0L, 1000L, 1001L, 1002L );
+        var stream = new TestAbstractCypherAdapterStream( queryExecution, subscriber, clock );
+        // When
+        assertThat(stream.handleRecords( mock( BoltResult.RecordConsumer.class ), 1 )).isTrue();
+        assertThat(stream.handleRecords( mock( BoltResult.RecordConsumer.class ), 1 )).isFalse();
+
+        // Then
+        assertThat( stream.timeSpentStreaming ).isEqualTo( 1001L );
+    }
+
+    @Test
     void shouldDiscardAllReadQuery() throws Throwable
     {
         // Given
@@ -543,6 +580,7 @@ public class AbstractCypherAdapterStreamTest
 
     private static class TestAbstractCypherAdapterStream extends AbstractCypherAdapterStream
     {
+        private long timeSpentStreaming;
         TestAbstractCypherAdapterStream( QueryExecution queryExecution, BoltAdapterSubscriber querySubscriber, Clock clock )
         {
             super( queryExecution, querySubscriber, clock );
@@ -556,6 +594,7 @@ public class AbstractCypherAdapterStreamTest
         @Override
         protected void addRecordStreamingTime( long time, RecordConsumer recordConsumer )
         {
+            this.timeSpentStreaming = time;
         }
     }
 }

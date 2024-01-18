@@ -60,6 +60,7 @@ public abstract class AbstractCypherAdapterStream implements BoltResult
     private final String[] fieldNames;
     protected final Clock clock;
     private final BoltAdapterSubscriber querySubscriber;
+    private long timeSpentStreaming;
 
     private static final Long STREAM_UNLIMITED_BATCH_SIZE = Long.MAX_VALUE;
 
@@ -107,9 +108,10 @@ public abstract class AbstractCypherAdapterStream implements BoltResult
         }
 
         querySubscriber.assertSucceeded();
+        timeSpentStreaming += clock.millis() - start;
         if ( !hasMore )
         {
-            addRecordStreamingTime( clock.millis() - start, recordConsumer );
+            addRecordStreamingTime( timeSpentStreaming , recordConsumer );
             addDatabaseName( recordConsumer );
             addMetadata( querySubscriber.queryStatistics(), recordConsumer );
         }
