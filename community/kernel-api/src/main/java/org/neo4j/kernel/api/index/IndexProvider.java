@@ -38,6 +38,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.memory.MemoryTracker;
@@ -124,7 +125,10 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
     }
 
     public static final IndexProvider EMPTY =
-            new IndexProvider(new IndexProviderDescriptor("no-index-provider", "1.0"), IndexDirectoryStructure.NONE) {
+            new IndexProvider(
+                    KernelVersion.EARLIEST,
+                    new IndexProviderDescriptor("no-index-provider", "1.0"),
+                    IndexDirectoryStructure.NONE) {
                 @Override
                 public IndexDescriptor completeConfiguration(
                         IndexDescriptor index, StorageEngineIndexingBehaviour indexingBehaviour) {
@@ -195,20 +199,28 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
                 }
             };
 
+    private final KernelVersion minimumRequiredVersion;
     private final IndexProviderDescriptor providerDescriptor;
     private final IndexDirectoryStructure.Factory directoryStructureFactory;
     private final IndexDirectoryStructure directoryStructure;
 
     protected IndexProvider(IndexProvider copySource) {
-        this(copySource.providerDescriptor, copySource.directoryStructureFactory);
+        this(copySource.minimumRequiredVersion, copySource.providerDescriptor, copySource.directoryStructureFactory);
     }
 
     protected IndexProvider(
-            IndexProviderDescriptor descriptor, IndexDirectoryStructure.Factory directoryStructureFactory) {
+            KernelVersion minimumRequiredVersion,
+            IndexProviderDescriptor descriptor,
+            IndexDirectoryStructure.Factory directoryStructureFactory) {
+        this.minimumRequiredVersion = minimumRequiredVersion;
         this.directoryStructureFactory = directoryStructureFactory;
         assert descriptor != null;
         this.providerDescriptor = descriptor;
         this.directoryStructure = directoryStructureFactory.forProvider(descriptor);
+    }
+
+    public KernelVersion getMinimumRequiredVersion() {
+        return minimumRequiredVersion;
     }
 
     public abstract MinimalIndexAccessor getMinimalIndexAccessor(

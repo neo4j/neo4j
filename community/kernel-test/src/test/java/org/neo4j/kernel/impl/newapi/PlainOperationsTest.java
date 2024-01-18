@@ -86,7 +86,9 @@ import org.neo4j.internal.schema.constraints.ExistenceConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.KeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
@@ -110,6 +112,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 public class PlainOperationsTest extends OperationsTest {
+
     @Override
     FormattedLogFormat getFormat() {
         return FormattedLogFormat.PLAIN;
@@ -1073,8 +1076,12 @@ public class PlainOperationsTest extends OperationsTest {
         LockManager.Client lockClient = mock(LockManager.Client.class);
         when(ktx.lockClient()).thenReturn(lockClient);
         CommandCreationContext commandCreationContext = mock(CommandCreationContext.class);
+        IndexProviderDescriptor indexProviderDescriptor = mock(IndexProviderDescriptor.class);
+        IndexProvider indexProvider = mock(IndexProvider.class);
+        when(indexProvider.getMinimumRequiredVersion()).thenReturn(KernelVersion.EARLIEST);
         IndexingProvidersService indexingProvidersService = mock(IndexingProvidersService.class);
-        when(indexingProvidersService.getDefaultProvider()).thenReturn(mock(IndexProviderDescriptor.class));
+        when(indexingProvidersService.getDefaultProvider()).thenReturn(indexProviderDescriptor);
+        when(indexingProvidersService.getIndexProvider(any())).thenReturn(indexProvider);
         AllStoreHolder allStoreHolder = mock(AllStoreHolder.class);
         when(allStoreHolder.index(any(), any())).thenReturn(IndexDescriptor.NO_INDEX);
         when(allStoreHolder.indexGetForName(any())).thenReturn(IndexDescriptor.NO_INDEX);

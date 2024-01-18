@@ -55,6 +55,7 @@ import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -164,6 +165,7 @@ class IndexCRUDIT {
     @BeforeEach
     void before() {
         when(mockedIndexProvider.getProviderDescriptor()).thenReturn(PROVIDER_DESCRIPTOR);
+        when(mockedIndexProvider.getMinimumRequiredVersion()).thenReturn(KernelVersion.EARLIEST);
         when(mockedIndexProvider.storeMigrationParticipant(
                         any(FileSystemAbstraction.class), any(PageCache.class), any(), any(), any()))
                 .thenReturn(StoreMigrationParticipant.NOT_PARTICIPATING);

@@ -32,6 +32,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.storageengine.api.StorageEngineFactory;
@@ -40,7 +41,7 @@ import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 abstract class BaseTestingIndexProvider extends IndexProvider {
     BaseTestingIndexProvider(
             IndexProviderDescriptor descriptor, IndexDirectoryStructure.Factory directoryStructureFactory) {
-        super(descriptor, directoryStructureFactory);
+        super(KernelVersion.EARLIEST, descriptor, directoryStructureFactory);
     }
 
     @Override

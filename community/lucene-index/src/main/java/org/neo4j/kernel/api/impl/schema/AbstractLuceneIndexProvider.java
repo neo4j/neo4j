@@ -37,6 +37,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.impl.index.LuceneMinimalIndexAccessor;
 import org.neo4j.kernel.api.impl.index.MinimalDatabaseIndex;
 import org.neo4j.kernel.api.impl.index.SchemaIndexMigrator;
@@ -59,6 +60,7 @@ public abstract class AbstractLuceneIndexProvider extends IndexProvider {
     protected final DatabaseReadOnlyChecker readOnlyChecker;
 
     public AbstractLuceneIndexProvider(
+            KernelVersion minimumRequiredVersion,
             IndexType supportedIndexType,
             IndexProviderDescriptor descriptor,
             FileSystemAbstraction fileSystem,
@@ -67,7 +69,7 @@ public abstract class AbstractLuceneIndexProvider extends IndexProvider {
             Monitors monitors,
             Config config,
             DatabaseReadOnlyChecker readOnlyChecker) {
-        super(descriptor, directoryStructureFactory);
+        super(minimumRequiredVersion, descriptor, directoryStructureFactory);
         this.supportedIndexType = supportedIndexType;
         this.readOnlyChecker = readOnlyChecker;
         this.monitor = monitors.newMonitor(Monitor.class, descriptor.toString());

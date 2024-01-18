@@ -24,6 +24,7 @@ import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.impl.index.schema.IndexUpdateIgnoreStrategy;
@@ -36,6 +37,7 @@ public abstract class AbstractTextIndexProvider extends AbstractLuceneIndexProvi
             values -> values[0].valueGroup().category() != ValueCategory.TEXT;
 
     public AbstractTextIndexProvider(
+            KernelVersion minimumRequiredVersion,
             IndexType supportedIndexType,
             IndexProviderDescriptor descriptor,
             FileSystemAbstraction fileSystem,
@@ -45,6 +47,7 @@ public abstract class AbstractTextIndexProvider extends AbstractLuceneIndexProvi
             Config config,
             DatabaseReadOnlyChecker readOnlyChecker) {
         super(
+                minimumRequiredVersion,
                 supportedIndexType,
                 descriptor,
                 fileSystem,

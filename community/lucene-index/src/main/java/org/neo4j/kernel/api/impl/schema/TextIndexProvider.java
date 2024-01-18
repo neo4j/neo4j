@@ -35,6 +35,7 @@ import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.memory.ByteBufferFactory;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.schema.populator.TextIndexPopulator;
@@ -59,6 +60,7 @@ public class TextIndexProvider extends AbstractTextIndexProvider {
             Config config,
             DatabaseReadOnlyChecker readOnlyChecker) {
         super(
+                KernelVersion.VERSION_RANGE_POINT_TEXT_INDEXES_ARE_INTRODUCED,
                 IndexType.TEXT,
                 DESCRIPTOR,
                 fileSystem,

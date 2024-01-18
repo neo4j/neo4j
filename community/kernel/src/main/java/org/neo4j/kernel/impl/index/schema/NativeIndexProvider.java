@@ -43,6 +43,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.impl.index.SchemaIndexMigrator;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure.Factory;
@@ -74,7 +75,7 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>, LAYOUT exten
             Factory directoryStructureFactory,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             Config config) {
-        super(descriptor, directoryStructureFactory);
+        super(KernelVersion.VERSION_RANGE_POINT_TEXT_INDEXES_ARE_INTRODUCED, descriptor, directoryStructureFactory);
         this.databaseIndexContext = databaseIndexContext;
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
         this.monitor =

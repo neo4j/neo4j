@@ -35,6 +35,7 @@ import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.memory.ByteBufferFactory;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.LuceneSettings;
@@ -70,6 +71,7 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
             DatabaseReadOnlyChecker readOnlyChecker,
             JobScheduler scheduler) {
         super(
+                KernelVersion.VERSION_NODE_VECTOR_INDEX_INTRODUCED,
                 IndexType.VECTOR,
                 version.descriptor(),
                 fileSystem,

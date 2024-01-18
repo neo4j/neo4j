@@ -109,7 +109,12 @@ public interface IndexingProvidersService {
     IndexProviderDescriptor getVectorIndexProvider();
 
     /**
-     * Get all registered index providers
+     * @return registered index provider with descriptor.
+     */
+    IndexProvider getIndexProvider(IndexProviderDescriptor descriptor);
+
+    /**
+     * @return all registered index providers
      */
     Collection<IndexProvider> getIndexProviders();
 }

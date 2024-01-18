@@ -35,6 +35,7 @@ import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.memory.ByteBufferFactory;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.schema.AbstractTextIndexProvider;
@@ -61,6 +62,7 @@ public class TrigramIndexProvider extends AbstractTextIndexProvider {
             Config config,
             DatabaseReadOnlyChecker readOnlyChecker) {
         super(
+                KernelVersion.VERSION_TRIGRAM_INDEX_INTRODUCED,
                 IndexType.TEXT,
                 DESCRIPTOR,
                 fileSystem,

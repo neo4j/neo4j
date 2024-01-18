@@ -38,6 +38,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.values.storable.Values.intValue;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import org.eclipse.collections.impl.factory.primitive.IntObjectMaps;
 import org.eclipse.collections.impl.factory.primitive.IntSets;
@@ -69,6 +70,8 @@ import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorImplementation;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaState;
+import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.procedure.ProcedureView;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
@@ -182,15 +185,31 @@ abstract class OperationsTest {
         allStoreHolder.initialize(mock(ProcedureView.class));
         constraintIndexCreator = mock(ConstraintIndexCreator.class);
         creationContext = mock(CommandCreationContext.class);
+
+        IndexProvider fulltextProvider = mock(IndexProvider.class);
+        when(fulltextProvider.getProviderDescriptor()).thenReturn(FulltextIndexProviderFactory.DESCRIPTOR);
+        when(fulltextProvider.getMinimumRequiredVersion()).thenReturn(KernelVersion.EARLIEST);
+        IndexProvider rangeProvider = mock(IndexProvider.class);
+        when(rangeProvider.getProviderDescriptor()).thenReturn(RangeIndexProvider.DESCRIPTOR);
+        when(rangeProvider.getMinimumRequiredVersion())
+                .thenReturn(KernelVersion.VERSION_RANGE_POINT_TEXT_INDEXES_ARE_INTRODUCED);
+        IndexProvider provider = mock(IndexProvider.class);
+        IndexProviderDescriptor providerDescriptor = new IndexProviderDescriptor("provider", "1.0");
+        when(provider.getProviderDescriptor()).thenReturn(providerDescriptor);
+        when(provider.getMinimumRequiredVersion()).thenReturn(KernelVersion.EARLIEST);
+
         IndexingProvidersService indexingProvidersService = mock(IndexingProvidersService.class);
-        when(indexingProvidersService.indexProviderByName("fulltext-1.0"))
-                .thenReturn(FulltextIndexProviderFactory.DESCRIPTOR);
-        when(indexingProvidersService.getFulltextProvider()).thenReturn(FulltextIndexProviderFactory.DESCRIPTOR);
-        when(indexingProvidersService.indexProviderByName("range-1.0")).thenReturn(RangeIndexProvider.DESCRIPTOR);
-        when(indexingProvidersService.getDefaultProvider()).thenReturn(RangeIndexProvider.DESCRIPTOR);
-        when(indexingProvidersService.indexProviderByName("provider-1.0"))
-                .thenReturn(new IndexProviderDescriptor("provider", "1.0"));
+        when(indexingProvidersService.getFulltextProvider())
+                .thenAnswer(inv -> fulltextProvider.getProviderDescriptor());
+        when(indexingProvidersService.getDefaultProvider()).thenAnswer(inv -> rangeProvider.getProviderDescriptor());
+        List.of(fulltextProvider, rangeProvider, provider).forEach(indexProvider -> {
+            IndexProviderDescriptor descriptor = indexProvider.getProviderDescriptor();
+            String name = descriptor.name();
+            when(indexingProvidersService.indexProviderByName(name)).thenReturn(descriptor);
+            when(indexingProvidersService.getIndexProvider(descriptor)).thenReturn(indexProvider);
+        });
         when(indexingProvidersService.completeConfiguration(any())).thenAnswer(inv -> inv.getArgument(0));
+
         operations = new Operations(
                 allStoreHolder,
                 storageReader,

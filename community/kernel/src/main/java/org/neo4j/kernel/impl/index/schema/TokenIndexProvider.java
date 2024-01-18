@@ -47,6 +47,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -72,7 +73,7 @@ public class TokenIndexProvider extends IndexProvider {
             IndexDirectoryStructure.Factory directoryStructureFactory,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             DatabaseLayout databaseLayout) {
-        super(DESCRIPTOR, directoryStructureFactory);
+        super(KernelVersion.VERSION_IN_WHICH_TOKEN_INDEXES_ARE_INTRODUCED, DESCRIPTOR, directoryStructureFactory);
         this.databaseIndexContext = databaseIndexContext;
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
         this.monitor =

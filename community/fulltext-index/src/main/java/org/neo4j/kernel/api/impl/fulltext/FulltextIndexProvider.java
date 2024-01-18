@@ -53,6 +53,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.impl.index.LuceneMinimalIndexAccessor;
 import org.neo4j.kernel.api.impl.index.MinimalDatabaseIndex;
@@ -116,7 +117,7 @@ public class FulltextIndexProvider extends IndexProvider {
             DatabaseReadOnlyChecker readOnlyChecker,
             JobScheduler scheduler,
             InternalLog log) {
-        super(descriptor, directoryStructureFactory);
+        super(KernelVersion.EARLIEST, descriptor, directoryStructureFactory);
         this.fileSystem = fileSystem;
         this.config = config;
         this.tokenHolders = tokenHolders;
