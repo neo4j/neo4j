@@ -42,6 +42,7 @@ import org.neo4j.cypher.internal.expressions.functions.Size
 import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.ir.QueryHorizon
 import org.neo4j.cypher.internal.ir.QueryPagination
 import org.neo4j.cypher.internal.ir.RegularQueryProjection
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
@@ -207,11 +208,61 @@ object QuerySolvableByGetDegree {
   }
 }
 
+object ExistsQuerySolvableByGetDegree {
+
+  object SetExtractor {
+    def unapplySeq[T](s: Set[T]): Option[Seq[T]] = Some(s.toSeq)
+  }
+
+  // TODO REVIEWER: the old AggregatingQueryProjection case looked incorrect to me.
+  //                this rewrite started kicking in because interestingOrder is now empty.
+  private def eligibleHorizon(horizon: QueryHorizon): Boolean = horizon match {
+    case RegularQueryProjection(
+        _,
+        QueryPagination.empty,
+        Selections.empty,
+        _
+      ) => true
+    case AggregatingQueryProjection(groups, _, _, _, _) if groups.nonEmpty => true
+    case _                                                                 => false
+  }
+
+  def unapply(arg: Any)
+    : Option[(LogicalVariable, LogicalVariable, LogicalVariable, Seq[RelTypeName], SemanticDirection)] = arg match {
+    case RegularSinglePlannerQuery(
+        QueryGraph(
+          SetExtractor(PatternRelationship(
+            relationship,
+            (firstNode, secondNode),
+            direction,
+            types,
+            SimplePatternLength
+          )),
+          SetExtractor(),
+          patternNodes,
+          SetExtractor(argument),
+          Selections.empty,
+          IndexedSeq(),
+          SetExtractor(),
+          SetExtractor(),
+          IndexedSeq(),
+          SetExtractor()
+        ),
+        InterestingOrder.empty,
+        horizon,
+        None,
+        None
+      ) if patternNodes.contains(argument) && patternNodes == Set(firstNode, secondNode) && eligibleHorizon(horizon) =>
+      Some((firstNode, relationship, secondNode, types, direction))
+    case _ => None
+  }
+}
+
 object EligibleExistsIRExpression {
 
   def unapply(arg: Any): Option[(LogicalVariable, Seq[RelTypeName], SemanticDirection)] = arg match {
     case e @ ExistsIRExpression(
-        QuerySolvableByGetDegree(
+        ExistsQuerySolvableByGetDegree(
           node,
           rel,
           otherNode,
