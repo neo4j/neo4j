@@ -179,12 +179,25 @@ case object PlanEventHorizon extends EventHorizonPlanner {
             )
           }
 
-        Function.chain(Seq(
+        val sortFirst = Function.chain(Seq(
           planSort,
           planSkipAndLimit,
           planProjection,
           planWhere(regularProjection.selections)
-        ))(selectedPlan)
+        ))
+        val projectFirst = Function.chain(Seq(
+          planProjection,
+          planSort,
+          planSkipAndLimit,
+          planWhere(regularProjection.selections)
+        ))
+
+        // Normally, we will first sort and then apply projections. This is cheaper in the the case of a LIMIT,
+        // where the projection only needs to be applied to fewer rows.
+        // If the runtime is not order preserving, we should do projections (which can break an incoming order)
+        // before sorting.
+        if (context.settings.executionModel.providedOrderPreserving) sortFirst(selectedPlan)
+        else projectFirst(selectedPlan)
 
       case distinctProjection: DistinctQueryProjection =>
         def planDistinct: LogicalPlan => LogicalPlan = distinct(_, distinctProjection, context)

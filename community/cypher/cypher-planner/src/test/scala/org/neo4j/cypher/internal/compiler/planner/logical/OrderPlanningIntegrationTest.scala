@@ -2829,4 +2829,28 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
     val leveragedOrders = planState.planningAttributes.leveragedOrders
     leveragedOrders.get(plan.id) should be(false)
   }
+
+  test("Should plan Sort after RollUpApply - if RollUpApply is not order preserving (parallel runtime)") {
+    val query =
+      """MATCH (a:A)
+        |RETURN a, [(a)-->(b) | b.prop] AS bprops
+        |  ORDER BY a.prop
+        |""".stripMargin
+    val planner = plannerBuilder()
+      .setAllRelationshipsCardinality(100)
+      .setRelationshipCardinality("(:A)-[]->()", 100)
+      .setExecutionModel(BatchedParallel(1, 2))
+      .build()
+    val plan = planner.plan(query).stripProduceResults
+
+    plan should equal(planner.subPlanBuilder()
+      .sort("`a.prop` ASC")
+      .projection("a.prop AS `a.prop`")
+      .rollUpApply("bprops", "anon_0")
+      .|.projection("b.prop AS anon_0")
+      .|.expandAll("(a)-[anon_1]->(b)")
+      .|.argument("a")
+      .nodeByLabelScan("a", "A")
+      .build())
+  }
 }
