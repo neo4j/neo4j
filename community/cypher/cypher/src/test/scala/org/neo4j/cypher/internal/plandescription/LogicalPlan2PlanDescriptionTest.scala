@@ -251,6 +251,8 @@ import org.neo4j.cypher.internal.logical.plans.GrantRoleToUser
 import org.neo4j.cypher.internal.logical.plans.HomeScope
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.IndexSeek.nodeIndexSeek
+import org.neo4j.cypher.internal.logical.plans.IndexSeek.partitionedNodeIndexSeek
+import org.neo4j.cypher.internal.logical.plans.IndexSeek.partitionedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.IndexSeek.relationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.Input
@@ -289,7 +291,13 @@ import org.neo4j.cypher.internal.logical.plans.OrderedDistinct
 import org.neo4j.cypher.internal.logical.plans.PartialSort
 import org.neo4j.cypher.internal.logical.plans.PartialTop
 import org.neo4j.cypher.internal.logical.plans.PartitionedAllNodesScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedRelationshipTypeScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedDirectedUnionRelationshipTypesScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedIntersectionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedNodeByLabelScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedRelationshipTypeScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedUndirectedUnionRelationshipTypesScan
+import org.neo4j.cypher.internal.logical.plans.PartitionedUnionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.PartitionedUnwindCollection
 import org.neo4j.cypher.internal.logical.plans.PointBoundingBoxRange
 import org.neo4j.cypher.internal.logical.plans.PointBoundingBoxSeekRangeWrapper
@@ -710,6 +718,34 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
   }
 
+  test("PartitionedUnionNodeByLabelScan") {
+    assertGood(
+      attach(
+        PartitionedUnionNodeByLabelsScan(varFor("node"), Seq(label("X"), label("Y"), label("Z")), Set.empty),
+        33.0
+      ),
+      planDescription(id, "PartitionedUnionNodeByLabelsScan", NoChildren, Seq(details("node:X|Y|Z")), Set("node"))
+    )
+
+    assertGood(
+      attach(
+        PartitionedUnionNodeByLabelsScan(
+          varFor("  UNNAMED123"),
+          Seq(label("X"), label("Y"), label("Z")),
+          Set.empty
+        ),
+        33.0
+      ),
+      planDescription(
+        id,
+        "PartitionedUnionNodeByLabelsScan",
+        NoChildren,
+        Seq(details(s"${anonVar("123")}:X|Y|Z")),
+        Set(anonVar("123"))
+      )
+    )
+  }
+
   test("UnionRelationshipTypesScan") {
     assertGood(
       attach(
@@ -754,6 +790,48 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
   }
 
+  test("PartitionedUnionRelationshipTypesScan") {
+    assertGood(
+      attach(
+        PartitionedDirectedUnionRelationshipTypesScan(
+          varFor("r"),
+          varFor("x"),
+          Seq(relType("A"), relType("B"), relType("C")),
+          varFor("y"),
+          Set.empty
+        ),
+        23.0
+      ),
+      planDescription(
+        id,
+        "PartitionedDirectedUnionRelationshipTypesScan",
+        NoChildren,
+        Seq(details("(x)-[r:A|B|C]->(y)")),
+        Set("r", "x", "y")
+      )
+    )
+
+    assertGood(
+      attach(
+        PartitionedUndirectedUnionRelationshipTypesScan(
+          varFor("r"),
+          varFor("x"),
+          Seq(relType("A"), relType("B"), relType("C")),
+          varFor("y"),
+          Set.empty
+        ),
+        23.0
+      ),
+      planDescription(
+        id,
+        "PartitionedUndirectedUnionRelationshipTypesScan",
+        NoChildren,
+        Seq(details("(x)-[r:A|B|C]-(y)")),
+        Set("r", "x", "y")
+      )
+    )
+  }
+
   test("IntersectionNodeByLabelScan") {
     assertGood(
       attach(
@@ -781,6 +859,44 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       planDescription(
         id,
         "IntersectionNodeByLabelsScan",
+        NoChildren,
+        Seq(details(s"${anonVar("123")}:X&Y&Z")),
+        Set(anonVar("123"))
+      )
+    )
+  }
+
+  test("PartitionedIntersectionNodeByLabelScan") {
+    assertGood(
+      attach(
+        PartitionedIntersectionNodeByLabelsScan(
+          varFor("node"),
+          Seq(label("X"), label("Y"), label("Z")),
+          Set.empty
+        ),
+        33.0
+      ),
+      planDescription(
+        id,
+        "PartitionedIntersectionNodeByLabelsScan",
+        NoChildren,
+        Seq(details("node:X&Y&Z")),
+        Set("node")
+      )
+    )
+
+    assertGood(
+      attach(
+        PartitionedIntersectionNodeByLabelsScan(
+          varFor("  UNNAMED123"),
+          Seq(label("X"), label("Y"), label("Z")),
+          Set.empty
+        ),
+        33.0
+      ),
+      planDescription(
+        id,
+        "PartitionedIntersectionNodeByLabelsScan",
         NoChildren,
         Seq(details(s"${anonVar("123")}:X&Y&Z")),
         Set(anonVar("123"))
@@ -1234,6 +1350,131 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
   }
 
+  test("PartitionedNodeIndexSeek") {
+    assertGood(
+      attach(partitionedNodeIndexSeek("x:Label(Prop)"), 23.0),
+      planDescription(
+        id,
+        "PartitionedNodeIndexScan",
+        NoChildren,
+        Seq(details("RANGE INDEX x:Label(Prop) WHERE Prop IS NOT NULL")),
+        Set("x")
+      )
+    )
+
+    assertGood(
+      attach(partitionedNodeIndexSeek("x:Label(Prop)"), 23.0),
+      planDescription(
+        id,
+        "PartitionedNodeIndexScan",
+        NoChildren,
+        Seq(details("RANGE INDEX x:Label(Prop) WHERE Prop IS NOT NULL")),
+        Set("x")
+      )
+    )
+
+    assertGood(
+      attach(partitionedNodeIndexSeek("x:Label(Prop)", getValue = _ => GetValue), 23.0),
+      planDescription(
+        id,
+        "PartitionedNodeIndexScan",
+        NoChildren,
+        Seq(details("RANGE INDEX x:Label(Prop) WHERE Prop IS NOT NULL, cache[x.Prop]")),
+        Set("x")
+      )
+    )
+
+    assertGood(
+      attach(partitionedNodeIndexSeek("x:Label(Prop,Foo)"), 23.0),
+      planDescription(
+        id,
+        "PartitionedNodeIndexScan",
+        NoChildren,
+        Seq(details("RANGE INDEX x:Label(Prop, Foo) WHERE Prop IS NOT NULL AND Foo IS NOT NULL")),
+        Set("x")
+      )
+    )
+
+    assertGood(
+      attach(partitionedNodeIndexSeek("x:Label(Prop,Foo)", getValue = _ => GetValue), 23.0),
+      planDescription(
+        id,
+        "PartitionedNodeIndexScan",
+        NoChildren,
+        Seq(details(
+          "RANGE INDEX x:Label(Prop, Foo) WHERE Prop IS NOT NULL AND Foo IS NOT NULL, cache[x.Prop], cache[x.Foo]"
+        )),
+        Set("x")
+      )
+    )
+
+    assertGood(
+      attach(partitionedNodeIndexSeek("x:Label(Prop = 'Andres')"), 23.0),
+      planDescription(
+        id,
+        "PartitionedNodeIndexSeek",
+        NoChildren,
+        Seq(details("RANGE INDEX x:Label(Prop) WHERE Prop = \"Andres\"")),
+        Set("x")
+      )
+    )
+
+    assertGood(
+      attach(partitionedNodeIndexSeek("x:Label(Prop = 'Andres')", getValue = _ => GetValue), 23.0),
+      planDescription(
+        id,
+        "PartitionedNodeIndexSeek",
+        NoChildren,
+        Seq(details("RANGE INDEX x:Label(Prop) WHERE Prop = \"Andres\", cache[x.Prop]")),
+        Set("x")
+      )
+    )
+
+    assertGood(
+      attach(partitionedNodeIndexSeek("x:Label(Prop = 'Andres' OR 'Pontus')"), 23.0),
+      planDescription(
+        id,
+        "PartitionedNodeIndexSeek",
+        NoChildren,
+        Seq(details("RANGE INDEX x:Label(Prop) WHERE Prop IN [\"Andres\", \"Pontus\"]")),
+        Set("x")
+      )
+    )
+
+    assertGood(
+      attach(partitionedNodeIndexSeek("x:Label(Prop > 9)"), 23.0),
+      planDescription(
+        id,
+        "PartitionedNodeIndexSeekByRange",
+        NoChildren,
+        Seq(details("RANGE INDEX x:Label(Prop) WHERE Prop > 9")),
+        Set("x")
+      )
+    )
+
+    assertGood(
+      attach(partitionedNodeIndexSeek("x:Label(Prop < 9)"), 23.0),
+      planDescription(
+        id,
+        "PartitionedNodeIndexSeekByRange",
+        NoChildren,
+        Seq(details("RANGE INDEX x:Label(Prop) WHERE Prop < 9")),
+        Set("x")
+      )
+    )
+
+    assertGood(
+      attach(partitionedNodeIndexSeek("x:Label(9 <= Prop <= 11)"), 23.0),
+      planDescription(
+        id,
+        "PartitionedNodeIndexSeekByRange",
+        NoChildren,
+        Seq(details("RANGE INDEX x:Label(Prop) WHERE Prop >= 9 AND Prop <= 11")),
+        Set("x")
+      )
+    )
+  }
+
   test("RelationshipIndexSeek") {
     assertGood(
       attach(relationshipIndexSeek("(x)-[r:R(Prop)]->(y)"), 23.0),
@@ -1315,6 +1556,50 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         "UndirectedRelationshipIndexEndsWithScan",
         NoChildren,
         Seq(details("RANGE INDEX (x)-[r:R(Prop)]-(y) WHERE Prop ENDS WITH \"Foo\"")),
+        Set("r", "x", "y")
+      )
+    )
+  }
+
+  test("PartitionedRelationshipIndexSeek") {
+    assertGood(
+      attach(partitionedRelationshipIndexSeek("(x)-[r:R(Prop)]->(y)"), 23.0),
+      planDescription(
+        id,
+        "PartitionedDirectedRelationshipIndexScan",
+        NoChildren,
+        Seq(details("RANGE INDEX (x)-[r:R(Prop)]->(y) WHERE Prop IS NOT NULL")),
+        Set("r", "x", "y")
+      )
+    )
+    assertGood(
+      attach(partitionedRelationshipIndexSeek("(x)-[r:R(Prop)]-(y)"), 23.0),
+      planDescription(
+        id,
+        "PartitionedUndirectedRelationshipIndexScan",
+        NoChildren,
+        Seq(details("RANGE INDEX (x)-[r:R(Prop)]-(y) WHERE Prop IS NOT NULL")),
+        Set("r", "x", "y")
+      )
+    )
+
+    assertGood(
+      attach(partitionedRelationshipIndexSeek("(x)-[r:R(Prop = 42)]->(y)", getValue = _ => GetValue), 23.0),
+      planDescription(
+        id,
+        "PartitionedDirectedRelationshipIndexSeek",
+        NoChildren,
+        Seq(details("RANGE INDEX (x)-[r:R(Prop)]->(y) WHERE Prop = 42, cache[r.Prop]")),
+        Set("r", "x", "y")
+      )
+    )
+    assertGood(
+      attach(partitionedRelationshipIndexSeek("(x)-[r:R(Prop = 42)]-(y)", getValue = _ => GetValue), 23.0),
+      planDescription(
+        id,
+        "PartitionedUndirectedRelationshipIndexSeek",
+        NoChildren,
+        Seq(details("RANGE INDEX (x)-[r:R(Prop)]-(y) WHERE Prop = 42, cache[r.Prop]")),
         Set("r", "x", "y")
       )
     )
@@ -1457,6 +1742,48 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       planDescription(
         id,
         "UndirectedRelationshipTypeScan",
+        NoChildren,
+        Seq(details("(x)-[r:R]-(y)")),
+        Set("r", "x", "y")
+      )
+    )
+  }
+
+  test("PartitionedRelationshipTypeScan") {
+    assertGood(
+      attach(
+        PartitionedDirectedRelationshipTypeScan(
+          varFor("r"),
+          varFor("x"),
+          RelTypeName("R")(InputPosition.NONE),
+          varFor("y"),
+          Set.empty
+        ),
+        23.0
+      ),
+      planDescription(
+        id,
+        "PartitionedDirectedRelationshipTypeScan",
+        NoChildren,
+        Seq(details("(x)-[r:R]->(y)")),
+        Set("r", "x", "y")
+      )
+    )
+
+    assertGood(
+      attach(
+        PartitionedUndirectedRelationshipTypeScan(
+          varFor("r"),
+          varFor("x"),
+          RelTypeName("R")(InputPosition.NONE),
+          varFor("y"),
+          Set.empty
+        ),
+        23.0
+      ),
+      planDescription(
+        id,
+        "PartitionedUndirectedRelationshipTypeScan",
         NoChildren,
         Seq(details("(x)-[r:R]-(y)")),
         Set("r", "x", "y")

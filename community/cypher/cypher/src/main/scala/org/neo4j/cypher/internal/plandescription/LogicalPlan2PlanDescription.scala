@@ -1128,7 +1128,7 @@ case class LogicalPlan2PlanDescription(
           pretty"(${asPrettyString(start)})-[${asPrettyString(idName)}:${asPrettyString(typeName.name)}]->(${asPrettyString(end)})"
         PlanDescriptionImpl(
           id,
-          "DirectedRelationshipTypeScan",
+          "PartitionedDirectedRelationshipTypeScan",
           NoChildren,
           Seq(Details(prettyDetails)),
           variables,
@@ -1141,7 +1141,7 @@ case class LogicalPlan2PlanDescription(
           pretty"(${asPrettyString(start)})-[${asPrettyString(idName)}:${asPrettyString(typeName.name)}]-(${asPrettyString(end)})"
         PlanDescriptionImpl(
           id,
-          "UndirectedRelationshipTypeScan",
+          "PartitionedUndirectedRelationshipTypeScan",
           NoChildren,
           Seq(Details(prettyDetails)),
           variables,
