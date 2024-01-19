@@ -19,8 +19,12 @@
  */
 package org.neo4j.commandline.dbms;
 
-import org.jutils.jprocesses.JProcesses;
-import org.jutils.jprocesses.model.ProcessInfo;
+import static java.lang.String.join;
+import static org.apache.commons.text.StringEscapeUtils.escapeCsv;
+import static picocli.CommandLine.Command;
+import static picocli.CommandLine.Help.Visibility.NEVER;
+import static picocli.CommandLine.Option;
+import static picocli.CommandLine.Parameters;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -33,29 +37,27 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
-
+import org.eclipse.collections.impl.factory.Sets;
+import org.jutils.jprocesses.JProcesses;
+import org.jutils.jprocesses.model.ProcessInfo;
 import org.neo4j.cli.AbstractCommand;
 import org.neo4j.cli.CommandFailedException;
+import org.neo4j.cli.Converters;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.ConfigUtils;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.helpers.DatabaseNamePattern;
 import org.neo4j.dbms.diagnostics.jmx.JMXDumper;
 import org.neo4j.dbms.diagnostics.jmx.JmxDump;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.diagnostics.DiagnosticsReportSource;
 import org.neo4j.kernel.diagnostics.DiagnosticsReportSources;
 import org.neo4j.kernel.diagnostics.DiagnosticsReporter;
 import org.neo4j.kernel.diagnostics.DiagnosticsReporterProgress;
 import org.neo4j.kernel.diagnostics.InteractiveProgress;
 import org.neo4j.kernel.diagnostics.NonInteractiveProgress;
-
-import static java.lang.String.join;
-import static org.apache.commons.text.StringEscapeUtils.escapeCsv;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.databases_root_path;
-import static picocli.CommandLine.Command;
-import static picocli.CommandLine.Help.Visibility.NEVER;
-import static picocli.CommandLine.Option;
-import static picocli.CommandLine.Parameters;
 
 @Command(
         name = "report",
@@ -69,6 +71,16 @@ public class DiagnosticsReportCommand extends AbstractCommand
     static final String[] DEFAULT_CLASSIFIERS = {"logs", "config", "plugins", "tree", "metrics", "threads", "sysprop", "ps", "version"};
     private static final DateTimeFormatter filenameDateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HHmmss" );
     private static final long NO_PID = 0;
+
+    @Option(
+            names = "--database",
+            paramLabel = "<database>",
+            defaultValue = "*",
+            description = "Name of the database to report for. Can contain * and ? for globbing. "
+                    + "Note that * and ? have special meaning in some shells "
+                    + "and might need to be escaped or used with quotes.",
+            converter = Converters.DatabaseNamePatternConverter.class )
+    private DatabaseNamePattern database;
 
     @Option( names = "--list", arity = "0", description = "List all available classifiers" )
     private boolean list;
@@ -98,7 +110,8 @@ public class DiagnosticsReportCommand extends AbstractCommand
         Config config = getConfig( configFile() );
 
         jmxDumper = new JMXDumper( config, ctx.fs(), ctx.out(), ctx.err(), verbose );
-        DiagnosticsReporter reporter = createAndRegisterSources( config );
+        Set<String> dbNames = getDbNames(config, ctx.fs(), database);
+        DiagnosticsReporter reporter = createAndRegisterSources(config, dbNames);
 
         if ( list )
         {
@@ -182,13 +195,11 @@ public class DiagnosticsReportCommand extends AbstractCommand
         }
     }
 
-    private DiagnosticsReporter createAndRegisterSources( Config config )
+    private DiagnosticsReporter createAndRegisterSources( Config config, Set<String> databaseNames )
     {
         DiagnosticsReporter reporter = new DiagnosticsReporter();
 
-        Path storeDirectory = config.get( databases_root_path );
-
-        reporter.registerAllOfflineProviders( config, storeDirectory, ctx.fs(), config.get( GraphDatabaseSettings.default_database ) );
+        reporter.registerAllOfflineProviders( config, ctx.fs(), databaseNames );
 
         // Register sources provided by this tool
         reporter.registerSource( "config",
@@ -308,5 +319,42 @@ public class DiagnosticsReportCommand extends AbstractCommand
             }
             return sb.toString();
         } );
+    }
+
+    private Set<String> getDbNames( Config config, FileSystemAbstraction fs, DatabaseNamePattern database )
+    {
+        if ( !database.containsPattern() )
+        {
+            return Set.of( database.getDatabaseName() );
+        }
+        else
+        {
+            Set<String> dbNames = Sets.mutable.empty();
+            Path databasesDir = Neo4jLayout.of( config ).databasesDirectory();
+            try
+            {
+                for ( Path path : fs.listFiles( databasesDir ) )
+                {
+                    if ( fs.isDirectory( path ) )
+                    {
+                        String name = path.getFileName().toString();
+                        if ( database.matches( name ) )
+                        {
+                            dbNames.add( name );
+                        }
+                    }
+                }
+            }
+            catch ( IOException e )
+            {
+                throw new CommandFailedException( "Failed to list databases", e );
+            }
+            if ( dbNames.isEmpty() )
+            {
+                throw new CommandFailedException(
+                        "Pattern '" + database.getDatabaseName() + "' did not match any database" );
+            }
+            return dbNames;
+        }
     }
 }

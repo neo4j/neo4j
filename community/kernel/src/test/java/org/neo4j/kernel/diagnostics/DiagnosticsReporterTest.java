@@ -175,7 +175,7 @@ class DiagnosticsReporterTest
         }
 
         @Override
-        public void init( FileSystemAbstraction fs, String defaultDatabaseName, Config config, Path storeDirectory )
+        public void init( FileSystemAbstraction fs, Config config, Set<String> databaseNames )
         {
         }
 

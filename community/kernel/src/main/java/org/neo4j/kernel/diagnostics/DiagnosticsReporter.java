@@ -143,11 +143,11 @@ public class DiagnosticsReporter
         return availableClassifiers;
     }
 
-    public void registerAllOfflineProviders( Config config, Path storeDirectory, FileSystemAbstraction fs, String defaultDatabaseName )
+    public void registerAllOfflineProviders( Config config, FileSystemAbstraction fs, Set<String> databaseNames )
     {
         for ( DiagnosticsOfflineReportProvider provider : Services.loadAll( DiagnosticsOfflineReportProvider.class ) )
         {
-            provider.init( fs, defaultDatabaseName, config, storeDirectory );
+            provider.init( fs, config, databaseNames );
             registerOfflineProvider( provider );
         }
     }

@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.diagnostics;
 
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -33,7 +32,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
  * Base class for a provider of offline reports. Offline reports does not require a running instance of the database
  * and is intended to be use as a way to gather information even if the database cannot be started. All implementing
  * classes is service loaded and initialized through the
- * {@link DiagnosticsOfflineReportProvider#init(FileSystemAbstraction, String, Config, Path)} method.
+ * {@link DiagnosticsOfflineReportProvider#init(FileSystemAbstraction, Config, Set)} method.
  */
 @Service
 public abstract class DiagnosticsOfflineReportProvider
@@ -55,12 +54,12 @@ public abstract class DiagnosticsOfflineReportProvider
 
     /**
      * Called after service loading to initialize the class.
-     * @param fs filesystem to use for file access.
-     * @param defaultDatabaseName identifier for default database
-     * @param config configuration file in use.
-     * @param storeDirectory directory of the database files.
+     *
+     * @param fs            filesystem to use for file access.
+     * @param config        configuration file in use.
+     * @param databaseNames the databases to report for.
      */
-    public abstract void init( FileSystemAbstraction fs, String defaultDatabaseName, Config config, Path storeDirectory );
+    public abstract void init( FileSystemAbstraction fs, Config config, Set<String> databaseNames );
 
     /**
      * Returns a list of source that matches the given classifiers.

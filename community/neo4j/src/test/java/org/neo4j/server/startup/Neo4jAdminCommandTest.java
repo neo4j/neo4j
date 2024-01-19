@@ -125,10 +125,16 @@ class Neo4jAdminCommandTest
         @DisabledOnOs( OS.WINDOWS )
         void shouldPassThroughAndAcceptVerboseAndExpandCommands() throws Exception
         {
-            addConf( GraphDatabaseSettings.default_database, "$(echo foo)" );
+            // The command will fail if the databases directory doesn't exist.
+            // Exception would be thrown if expand commands didn't work.
+            Path customDbDir = home.resolve("customDbDir");
+            Path databasesDir = customDbDir.resolve("databases");
+            Files.createDirectories(databasesDir.resolve("customDbName"));
+
+            addConf(GraphDatabaseSettings.data_directory, "$(echo " + customDbDir.toAbsolutePath() + ")");
             if ( fork.run( () -> assertThat( execute( "report", "--to", home.toString(), "--verbose", "--expand-commands" ) ).isEqualTo( EXIT_CODE_OK ) ) )
             {
-                assertThat( out.toString() ).containsSubsequence( "Writing report to", "100%" );
+                assertThat(out.toString()).containsSubsequence("Writing report to", "customDbName", "100%");
                 assertThat( err.toString() ).isEmpty();
             }
         }

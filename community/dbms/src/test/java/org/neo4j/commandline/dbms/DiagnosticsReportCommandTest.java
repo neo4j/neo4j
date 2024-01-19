@@ -46,8 +46,8 @@ class DiagnosticsReportCommandTest
                         "%n" +
                         "USAGE%n" +
                         "%n" +
-                        "report [--expand-commands] [--force] [--list] [--verbose] [--pid=<pid>]%n" +
-                        "       [--to=<path>] [<classifier>...]%n" +
+                        "report [--expand-commands] [--force] [--list] [--verbose]%n" +
+                        "       [--database=<database>] [--pid=<pid>] [--to=<path>] [<classifier>...]%n" +
                         "%n" +
                         "DESCRIPTION%n" +
                         "%n" +
@@ -64,6 +64,12 @@ class DiagnosticsReportCommandTest
                         "%n" +
                         "      --verbose           Enable verbose output.%n" +
                         "      --expand-commands   Allow command expansion in config value evaluation.%n" +
+                        "      --database=<database>%n" +
+                        "                          Name of the database to report for. Can contain * and%n" +
+                        "                            ? for globbing. Note that * and ? have special%n" +
+                        "                            meaning in some shells and might need to be escaped%n" +
+                        "                            or used with quotes.%n" +
+                        "                            Default: *%n" +
                         "      --list              List all available classifiers%n" +
                         "      --force             Ignore disk full warning%n" +
                         "      --to=<path>         Destination directory for reports. Defaults to a%n" +

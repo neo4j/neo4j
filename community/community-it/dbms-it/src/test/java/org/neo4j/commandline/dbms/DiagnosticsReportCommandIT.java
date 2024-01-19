@@ -19,6 +19,7 @@
  */
 package org.neo4j.commandline.dbms;
 
+import java.nio.file.StandardOpenOption;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -75,6 +76,7 @@ class DiagnosticsReportCommandIT
     void setUp() throws Exception
     {
         homeDir = testDirectory.directory( "home-dir" );
+        createDatabaseDir(homeDir);
         configDir = testDirectory.directory( "config-dir" );
 
         // Touch config
@@ -85,6 +87,12 @@ class DiagnosticsReportCommandIT
         originalUserDir = System.setProperty( "user.dir", testDirectory.absolutePath().toString() );
 
         ctx = new ExecutionContext( homeDir, configDir, System.out, System.err, fs );
+    }
+
+    private void createDatabaseDir( Path homeDir ) throws IOException
+    {
+        // Database directory needed for command to be able to collect anything
+        Files.createDirectories( homeDir.resolve( "data" ).resolve( "databases" ).resolve( "neo4j" ));
     }
 
     @AfterEach
@@ -100,19 +108,15 @@ class DiagnosticsReportCommandIT
         long pid = getPID();
         assertThat( pid ).isNotEqualTo( 0 );
 
-        // Write config file
-        Files.createFile( testDirectory.file( "neo4j.conf" ) );
-
         // write neo4j.pid file
-        Path run = testDirectory.directory( "run" );
+        Path run = testDirectory.directory( "run", homeDir.getFileName().toString());
         Files.write( run.resolve( "neo4j.pid" ), String.valueOf( pid ).getBytes() );
 
         // Run command, should detect running instance
         try
         {
             String[] args = {"threads", "--to=" + testDirectory.absolutePath() + "/reports"};
-            Path homeDir = testDirectory.homePath();
-            var ctx = new ExecutionContext( homeDir, homeDir, System.out, System.err, testDirectory.getFileSystem() );
+            var ctx = new ExecutionContext( homeDir, configDir, System.out, System.err, testDirectory.getFileSystem() );
             DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand( ctx );
             CommandLine.populateCommand( diagnosticsReportCommand, args );
             diagnosticsReportCommand.execute();
@@ -148,19 +152,15 @@ class DiagnosticsReportCommandIT
         long pid = getPID();
         assertThat( pid ).isNotEqualTo( 0 );
 
-        // Write config file
-        Files.createFile( testDirectory.file( "neo4j.conf" ) );
-
         // write neo4j.pid file
-        Path run = testDirectory.directory( "run" );
-        Files.write( run.resolve( "neo4j.pid" ), String.valueOf( pid ).getBytes() );
+        Path run = testDirectory.directory( "run", homeDir.getFileName().toString() );
+        Files.write( run.resolve( "neo4j.pid" ), String.valueOf( pid ).getBytes(), StandardOpenOption.CREATE );
 
         // Run command, should detect running instance
         try
         {
             String[] args = {"heap", "--to=" + testDirectory.absolutePath() + "/reports"};
-            Path homeDir = testDirectory.homePath();
-            var ctx = new ExecutionContext( homeDir, homeDir, System.out, System.err, testDirectory.getFileSystem() );
+            var ctx = new ExecutionContext( homeDir, configDir, System.out, System.err, testDirectory.getFileSystem() );
             DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand( ctx );
             CommandLine.populateCommand( diagnosticsReportCommand, args );
             diagnosticsReportCommand.execute();
@@ -190,19 +190,20 @@ class DiagnosticsReportCommandIT
     void shouldHandleRotatedLogFiles() throws IOException
     {
         // Write config file and specify a custom name for the neo4j.log file.
-        Path confFile = testDirectory.createFile( "neo4j.conf" );
-        Files.write( confFile, singletonList( GraphDatabaseSettings.store_user_log_path.name() + "=custom.neo4j.log.name" ) );
+        Files.write(
+                configDir.resolve("neo4j.conf"), singletonList(GraphDatabaseSettings.store_user_log_path.name() + "=custom.neo4j.log.name"));
 
-        // Create some log files that should be found. debug.log has already been created during setup.
-        testDirectory.directory( "logs" );
-        testDirectory.createFile( "logs/debug.log" );
-        testDirectory.createFile( "logs/debug.log.1.zip" );
-        testDirectory.createFile( "logs/custom.neo4j.log.name" );
-        testDirectory.createFile( "logs/custom.neo4j.log.name.1" );
+        // Create some log files that should be found.
+        Path logDir =
+                testDirectory.directory( "logs", homeDir.getFileName().toString() );
+        FileSystemAbstraction fs = testDirectory.getFileSystem();
+        fs.write( logDir.resolve( "debug.log" ) );
+        fs.write( logDir.resolve( "debug.log.1.zip" ) );
+        fs.write( logDir.resolve( "custom.neo4j.log.name" ) );
+        fs.write( logDir.resolve( "custom.neo4j.log.name.1" ) );
 
         String[] args = {"logs", "--to=" + testDirectory.absolutePath() + "/reports"};
-        Path homeDir = testDirectory.homePath();
-        var ctx = new ExecutionContext( homeDir, homeDir, System.out, System.err, testDirectory.getFileSystem() );
+        var ctx = new ExecutionContext( homeDir, configDir, System.out, System.err, testDirectory.getFileSystem() );
         DiagnosticsReportCommand diagnosticsReportCommand = new DiagnosticsReportCommand( ctx );
         CommandLine.populateCommand( diagnosticsReportCommand, args );
         diagnosticsReportCommand.execute();
