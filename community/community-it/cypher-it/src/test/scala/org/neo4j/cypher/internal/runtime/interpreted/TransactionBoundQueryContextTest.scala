@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
+import org.apache.commons.lang3.SystemUtils
 import org.assertj.core.api.Assertions.assertThat
 import org.mockito.Mockito.RETURNS_DEEP_STUBS
 import org.mockito.Mockito.verify
@@ -342,7 +343,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite with CreateTempFil
     val tx = graph.beginTransaction(Type.EXPLICIT, AnonymousContext.read())
     val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
     val context = new TransactionBoundQueryContext(transactionalContext, new ResourceManager)(indexSearchMonitor)
-    val fileUrl = createCSVTempFileURL("data.csv")({
+    val fileUrl = createCSVTempFileURL("data")({
       _ => ()
     })
 
@@ -357,8 +358,8 @@ class TransactionBoundQueryContextTest extends CypherFunSuite with CreateTempFil
         )
       }
     )
-    context.getImportDataConnection(new URL(fileUrl)).sourceDescription() should equal(
-      new URL(fileUrl).getFile
+    windowsSafeFileURL(context.getImportDataConnection(new URL(fileUrl)).sourceDescription()) should equal(
+      windowsSafeFileURL(new URL(fileUrl).getFile)
     )
     the[URLAccessValidationError] thrownBy (context.getImportDataConnection(
       new URL("jar:file:/tmp/blah.jar!/tmp/foo/data.csv")
@@ -367,6 +368,15 @@ class TransactionBoundQueryContextTest extends CypherFunSuite with CreateTempFil
     transactionalContext.close()
     tx.close()
   }
+
+  private def windowsSafeFileURL(url: String) =
+    if (SystemUtils.IS_OS_WINDOWS) {
+      // getFile on Windows uses / and has a leading one before `C:`
+      // while sourceDescription uses \ and doesn't have that initial \
+      // Let's normalize to one format: use / but not an initial one
+      val switchedSlashes = url.replaceAll("\\\\", "/")
+      if (switchedSlashes.startsWith("/")) switchedSlashes.tail else switchedSlashes
+    } else url
 
   test("should deny file URLs when not allowed by config") {
     // GIVEN
