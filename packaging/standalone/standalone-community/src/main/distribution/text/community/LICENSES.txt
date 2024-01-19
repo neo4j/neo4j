@@ -91,7 +91,6 @@ Apache Software License, Version 2.0
   jProcesses
   long
   magnolia
-  mercator
   Neo4j Java Driver
   neo4j-driver
   Netty/Buffer

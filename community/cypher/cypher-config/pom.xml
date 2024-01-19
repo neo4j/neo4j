@@ -60,7 +60,7 @@
         </dependency>
 
         <dependency>
-            <groupId>com.propensive</groupId>
+            <groupId>com.softwaremill.magnolia1_2</groupId>
             <artifactId>magnolia_${scala.binary.version}</artifactId>
         </dependency>
 

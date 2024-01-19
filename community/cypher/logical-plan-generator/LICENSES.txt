@@ -21,7 +21,6 @@ Apache Software License, Version 2.0
   Javassist
   Jettison
   magnolia
-  mercator
   openCypher TCK API
   openCypher TCK Features and Graphs
   org.apiguardian:apiguardian-api

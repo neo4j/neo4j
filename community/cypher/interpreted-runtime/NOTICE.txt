@@ -41,7 +41,6 @@ Apache Software License, Version 2.0
   Java Native Access
   Jettison
   magnolia
-  mercator
   Scala Reflect
   scala-collection-contrib
 

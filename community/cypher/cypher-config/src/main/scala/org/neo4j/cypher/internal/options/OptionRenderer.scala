@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.options
 
-import magnolia.CaseClass
-import magnolia.Magnolia
+import magnolia1.CaseClass
+import magnolia1.Magnolia
 
 import scala.language.experimental.macros
 
@@ -45,7 +45,7 @@ object OptionRenderer {
    * Generic OptionRenderer for any case class (given that there are OptionRenderer:s for all its parameter types)
    * that combines smaller rendered strings into a space-separated string
    */
-  def combine[T](caseClass: CaseClass[OptionRenderer, T]): OptionRenderer[T] =
+  def join[T](caseClass: CaseClass[OptionRenderer, T]): OptionRenderer[T] =
     (value: T) =>
       caseClass.parameters
         .map(p => p.typeclass.render(p.dereference(value)))

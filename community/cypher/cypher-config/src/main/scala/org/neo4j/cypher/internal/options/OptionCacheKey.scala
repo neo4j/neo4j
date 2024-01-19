@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.options
 
-import magnolia.CaseClass
-import magnolia.Magnolia
+import magnolia1.CaseClass
+import magnolia1.Magnolia
 
 import scala.language.experimental.macros
 
@@ -45,7 +45,7 @@ object OptionCacheKey {
    * Generic OptionCacheKey for any case class (given that there are OptionCacheKey:s for all its parameter types)
    * that combines smaller cache keys into a space-separated string
    */
-  def combine[T](caseClass: CaseClass[OptionCacheKey, T]): OptionCacheKey[T] =
+  def join[T](caseClass: CaseClass[OptionCacheKey, T]): OptionCacheKey[T] =
     (value: T) =>
       caseClass.parameters
         .map(param => param.typeclass.cacheKey(param.dereference(value)))

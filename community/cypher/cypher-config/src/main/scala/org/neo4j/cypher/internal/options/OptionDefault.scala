@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.options
 
-import magnolia.CaseClass
-import magnolia.Magnolia
+import magnolia1.CaseClass
+import magnolia1.Magnolia
 
 import scala.language.experimental.macros
 
@@ -46,7 +46,7 @@ object OptionDefault {
    * Generic OptionDefault for any case class (given that there are OptionDefault:s for all its parameter types)
    * that gives each parameter its default value
    */
-  def combine[T](caseClass: CaseClass[OptionDefault, T]): OptionDefault[T] = {
+  def join[T](caseClass: CaseClass[OptionDefault, T]): OptionDefault[T] = {
     val value = caseClass.construct(_.typeclass.default)
     OptionDefault.create(value)
   }

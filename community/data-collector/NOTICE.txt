@@ -55,7 +55,6 @@ Apache Software License, Version 2.0
   jPowerShell
   jProcesses
   magnolia
-  mercator
   picocli
   Scala Reflect
   scala-collection-contrib

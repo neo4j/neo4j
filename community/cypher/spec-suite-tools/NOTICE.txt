@@ -84,7 +84,6 @@ Apache Software License, Version 2.0
   jPowerShell
   jProcesses
   magnolia
-  mercator
   Netty/Buffer
   Netty/Codec
   Netty/Codec/HTTP

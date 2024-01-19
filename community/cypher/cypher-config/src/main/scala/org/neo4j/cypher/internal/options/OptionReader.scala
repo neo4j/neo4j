@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.options
 
-import magnolia.CaseClass
-import magnolia.Magnolia
+import magnolia1.CaseClass
+import magnolia1.Magnolia
 import org.neo4j.cypher.internal.config.CypherConfiguration
 
 import java.util.Locale
@@ -86,7 +86,7 @@ object OptionReader {
    * Generic OptionReader for any case class (given that there are OptionReader:s for all its parameter types)
    * that reads each parameter in turn, passing on the remaining input to the next OptionReader
    */
-  def combine[T](caseClass: CaseClass[OptionReader, T]): OptionReader[T] = {
+  def join[T](caseClass: CaseClass[OptionReader, T]): OptionReader[T] = {
     (input: Input) =>
       val results = caseClass.parameters.foldLeft(Result(input, Seq[Any]())) { case (in, p) =>
         val result = p.typeclass.read(in.remainder)

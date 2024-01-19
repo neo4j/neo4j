@@ -66,7 +66,6 @@ Apache Software License, Version 2.0
   json4s-native
   json4s-scalap
   magnolia
-  mercator
   Neo4j Java Driver
   Netty/Buffer
   Netty/Codec
