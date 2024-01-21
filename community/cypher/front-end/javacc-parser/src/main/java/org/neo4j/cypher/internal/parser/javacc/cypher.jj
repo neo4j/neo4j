@@ -70,7 +70,8 @@ import org.neo4j.cypher.internal.ast.factory.ScopeType;
 import org.neo4j.cypher.internal.ast.factory.ShowCommandFilterTypes;
 import org.neo4j.cypher.internal.ast.factory.SimpleEither;
 
-public class Cypher<STATEMENT,
+public class Cypher<STATEMENTS,
+                    STATEMENT,
                     QUERY extends STATEMENT,
                     CLAUSE,
                     RETURN_CLAUSE extends CLAUSE,
@@ -120,7 +121,8 @@ public class Cypher<STATEMENT,
                     PATTERN_ELEMENT> {
 
     ASTExceptionFactory exceptionFactory;
-    ASTFactory<STATEMENT,
+    ASTFactory<STATEMENTS,
+               STATEMENT,
                QUERY,
                CLAUSE,
                RETURN_CLAUSE,
@@ -171,7 +173,8 @@ public class Cypher<STATEMENT,
     // to distinguish a bar that follows a label expression from the or-operator as part of a label expression, this stack keeps track of the current context
     Stack<ExpectBar> labelExpressionStack = new Stack<>();
 
-    public Cypher(ASTFactory<STATEMENT,
+    public Cypher(ASTFactory<STATEMENTS,
+                             STATEMENT,
                              QUERY,
                              CLAUSE,
                              RETURN_CLAUSE,
@@ -1546,7 +1549,7 @@ TOKEN :
 }
 
 /** Root production. */
-List<STATEMENT> Statements() throws Exception:
+STATEMENTS Statements() throws Exception:
 {
     STATEMENT x;
     List<STATEMENT> stmts = new ArrayList<>();
@@ -1556,7 +1559,7 @@ List<STATEMENT> Statements() throws Exception:
         x=Statement() { stmts.add( x ); }
         ( LOOKAHEAD(2) <SEMICOLON> x=Statement() { stmts.add( x ); } )* ( LOOKAHEAD(2) <SEMICOLON> )? <EOF>
         {
-            return stmts;
+            return astFactory.statements(stmts);
         }
     } catch ( ParseException e ) {
         Token t = e.currentToken.next;

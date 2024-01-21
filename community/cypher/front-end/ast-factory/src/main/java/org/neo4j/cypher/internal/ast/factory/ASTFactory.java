@@ -35,6 +35,7 @@ import java.util.Set;
  * @param <POS> type used to mark the input position of the created AST node.
  */
 public interface ASTFactory<
+                STATEMENTS,
                 STATEMENT,
                 QUERY extends STATEMENT,
                 CLAUSE,
@@ -112,6 +113,8 @@ public interface ASTFactory<
             this.pos = pos;
         }
     }
+
+    STATEMENTS statements(List<STATEMENT> statements);
 
     // QUERY
 

@@ -43,6 +43,7 @@ import org.neo4j.cypher.internal.ast.factory.SimpleEither;
  */
 public class NullAstFactory
         implements ASTFactory<
+                NULL, // STATEMENTS
                 NULL, // STATEMENT,
                 NULL, // QUERY extends STATEMENT,
                 NULL, // CLAUSE,
@@ -92,6 +93,11 @@ public class NullAstFactory
                 NULL, // MATCH MODE
                 NULL // PATTERN_ELEMENT
         > {
+
+    @Override
+    public NULL statements(List<NULL> nulls) {
+        return null;
+    }
 
     @Override
     public NULL newVariable(NULL p, String name) {

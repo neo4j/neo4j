@@ -306,6 +306,7 @@ import org.neo4j.cypher.internal.ast.StartDatabase
 import org.neo4j.cypher.internal.ast.StartDatabaseAction
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.StatementWithGraph
+import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.StopDatabase
 import org.neo4j.cypher.internal.ast.StopDatabaseAction
 import org.neo4j.cypher.internal.ast.SubqueryCall
@@ -545,6 +546,7 @@ import org.neo4j.cypher.internal.ast.factory.neo4j.TupleConverter.asScalaEither
 
 class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, logger: InternalNotificationLogger)
     extends ASTFactory[
+      Statements,
       Statement,
       Query,
       Clause,
@@ -594,6 +596,8 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
       MatchMode,
       PatternElement
     ] {
+
+  override def statements(statements: util.List[Statement]): Statements = Statements(statements.asScala.toSeq)
 
   override def newSingleQuery(p: InputPosition, clauses: util.List[Clause]): Query = {
     if (clauses.isEmpty) {

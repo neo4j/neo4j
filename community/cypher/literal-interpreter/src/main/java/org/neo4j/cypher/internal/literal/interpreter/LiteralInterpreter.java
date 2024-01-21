@@ -62,6 +62,7 @@ import org.neo4j.values.virtual.VirtualValues;
  */
 public class LiteralInterpreter
         implements ASTFactory<
+                NULL,
                 NULL, // STATEMENT,
                 NULL, // QUERY extends STATEMENT,
                 NULL, // CLAUSE,
@@ -121,6 +122,11 @@ public class LiteralInterpreter
             "0" + Long.toString(Long.MIN_VALUE, 8).substring(1);
     public static final String LONG_MIN_VALUE_OCTAL_STRING =
             "0o" + Long.toString(Long.MIN_VALUE, 8).substring(1);
+
+    @Override
+    public NULL statements(List<NULL> nulls) {
+        throw new UnsupportedOperationException("statements is not a literal");
+    }
 
     @Override
     public NULL newSingleQuery(NULL p, List<NULL> nulls) {
