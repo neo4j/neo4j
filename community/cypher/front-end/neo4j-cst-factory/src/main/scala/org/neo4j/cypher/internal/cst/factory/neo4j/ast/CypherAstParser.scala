@@ -52,6 +52,11 @@ class CypherAstParser private (input: TokenStream, createAst: Boolean) extends C
     if (localCtx.exception == null) {
       // These could be added using `addParseListener` too, but this is faster
       syntaxChecker.exitEveryRule(localCtx)
+      // TODO!
+      if (syntaxChecker.getErrors.nonEmpty) {
+        throw syntaxChecker.getErrors.next
+      }
+
       astBuilder.exitEveryRule(localCtx)
 
       // Save memory by removing the parse tree as we go.
@@ -77,12 +82,14 @@ class CypherAstParser private (input: TokenStream, createAst: Boolean) extends C
 
   // TODO Tests for this
   private def throwIfEofNotReached(ctx: ParserRuleContext): Unit = {
-    if (!matchedEOF && getInputStream.LA(1) != Token.EOF) {
+    if (!matchedEOF && getTokenStream.LA(1) != Token.EOF) {
       // TODO can be null
-      val tokenText = ctx.stop.getText
-      val tokenLine = ctx.stop.getLine
-      val tokenColumn = ctx.stop.getCharPositionInLine
-      // TODO Exception type
+
+      val stop = Option(ctx).flatMap(c => Option(c.stop))
+      val tokenText = stop.map(_.getText)
+      val tokenLine = stop.map(_.getLine)
+      val tokenColumn = stop.map(_.getCharPositionInLine)
+      // TODO Exception type and message
       throw new RuntimeException(
         s"did not read all input, it stopped at token $tokenText at line $tokenLine, column $tokenColumn"
       )
@@ -94,6 +101,9 @@ object CypherAstParser {
 
   def apply(query: String): CypherAstParser = new CypherAstParser(toStream(query), true)
   def apply(input: TokenStream): CypherAstParser = new CypherAstParser(input, true)
+
+  // Only needed during development
+  def withoutAst(query: String): CypherAstParser = new CypherAstParser(toStream(query), false)
 
   private def toStream(cypher: String) =
     new CommonTokenStream(new CypherLexer(CharStreams.fromStream(new CypherInputStream(cypher))))

@@ -35,13 +35,16 @@ import org.neo4j.cypher.internal.parser.CypherParser.PatternContext
 import org.neo4j.cypher.internal.parser.CypherParser.QuantifierContext
 import org.neo4j.cypher.internal.parser.CypherParser.RelationshipPatternContext
 import org.neo4j.cypher.internal.parser.CypherParser.StatementContext
+import org.neo4j.cypher.internal.parser.CypherParser.StatementsContext
 import org.neo4j.cypher.internal.parser.CypherParser.StringLiteralContext
 import org.neo4j.cypher.internal.parser.CypherParser.SubqueryClauseContext
 import org.neo4j.cypher.internal.parser.CypherParser.UseClauseContext
 import org.neo4j.cypher.internal.parser.CypherParser.VariableContext
+import org.neo4j.cypher.internal.util.ASTNode
 
 abstract class Cst[+T <: ParserRuleContext](val ctx: T) {
   val parsingErrors: List[Exception]
+  def ast: Option[ASTNode]
 }
 
 object Cst {
@@ -64,7 +67,7 @@ object Cst {
   type Pattern = PatternContext
   type Statement = StatementContext
   type UseClause = UseClauseContext
-  type Statements = StatementContext
+  type Statements = StatementsContext
   type StringLiteral = StringLiteralContext
   type SubqueryClause = SubqueryClauseContext
   type Variable = VariableContext
