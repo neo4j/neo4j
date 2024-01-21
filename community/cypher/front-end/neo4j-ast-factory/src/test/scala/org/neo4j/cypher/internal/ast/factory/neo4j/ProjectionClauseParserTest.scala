@@ -18,59 +18,56 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.Clause
-import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
-import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 
-class ProjectionClauseParserTest extends ParserSyntaxTreeBase[Cst.Clause, ast.Clause] {
-
-  implicit val javaccRule: JavaccRule[Clause] = JavaccRule.Clause
-  implicit val antlrRule: AntlrRule[Cst.Clause] = AntlrRule.Clause
+class ProjectionClauseParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   test("WITH *") {
-    yields(ast.With(ast.ReturnItems(includeExisting = true, Seq.empty)(pos)))
+    yields[Clause](ast.With(ast.ReturnItems(includeExisting = true, Seq.empty)(pos)))
   }
 
   test("WITH 1 AS a") {
-    yields(ast.With(ast.ReturnItems(
+    yields[Clause](ast.With(ast.ReturnItems(
       includeExisting = false,
       Seq(ast.AliasedReturnItem(literalInt(1), varFor("a"))(pos))
     )(pos)))
   }
 
   test("WITH *, 1 AS a") {
-    yields(ast.With(ast.ReturnItems(
+    yields[Clause](ast.With(ast.ReturnItems(
       includeExisting = true,
       Seq(ast.AliasedReturnItem(literalInt(1), varFor("a"))(pos))
     )(pos)))
   }
 
   test("WITH ") {
-    failsToParse
+    failsToParse[Clause]()
   }
 
   test("RETURN *") {
-    yields(ast.Return(ast.ReturnItems(includeExisting = true, Seq.empty)(pos)))
+    yields[Clause](ast.Return(ast.ReturnItems(includeExisting = true, Seq.empty)(pos)))
   }
 
   test("RETURN 1 AS a") {
-    yields(ast.Return(ast.ReturnItems(
+    yields[Clause](ast.Return(ast.ReturnItems(
       includeExisting = false,
       Seq(ast.AliasedReturnItem(literalInt(1), varFor("a"))(pos))
     )(pos)))
   }
 
   test("RETURN *, 1 AS a") {
-    yields(ast.Return(ast.ReturnItems(
+    yields[Clause](ast.Return(ast.ReturnItems(
       includeExisting = true,
       Seq(ast.AliasedReturnItem(literalInt(1), varFor("a"))(pos))
     )(pos)))
   }
 
   test("RETURN ") {
-    failsToParse
+    failsToParse[Clause]()
   }
 
   test("RETURN GRAPH *") {
-    failsToParse
+    failsToParse[Clause]()
   }
 }

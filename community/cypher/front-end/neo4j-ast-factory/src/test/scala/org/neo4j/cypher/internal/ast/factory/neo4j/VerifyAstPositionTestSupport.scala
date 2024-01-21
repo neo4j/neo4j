@@ -26,6 +26,8 @@ import org.neo4j.cypher.internal.ast.SetPropertyItem
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.UseGraph
 import org.neo4j.cypher.internal.ast.Yield
+import org.neo4j.cypher.internal.ast.factory.neo4j.VerifyAstPositionTestSupport.Mismatch
+import org.neo4j.cypher.internal.ast.factory.neo4j.VerifyAstPositionTestSupport.findPosMismatch
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.HasLabelsOrTypes
 import org.neo4j.cypher.internal.expressions.ListSlice
@@ -34,19 +36,41 @@ import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.ASTNode
+import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InputPosition
 import org.scalatest.Assertions
 import org.scalatest.matchers.should.Matchers
 
-import scala.language.implicitConversions
-
 trait VerifyAstPositionTestSupport extends Assertions with Matchers {
 
-  def verifyPositions(javaCCAstNode: ASTNode, expectedAstNode: ASTNode): Unit = {
+  def verifyPositions(actual: ASTNode, expected: ASTNode): Unit = {
+    findPosMismatch(expected, actual) match {
+      case Some(Mismatch(expectedNode, actualNode)) =>
+        withClue(s"AST node $actualNode was parsed with different positions:") {
+          actualNode.position shouldBe expectedNode.position
+        }
+      case _ =>
+    }
+  }
+}
 
-    def astWithPosition(astNode: ASTNode) = {
+object VerifyAstPositionTestSupport {
+
+  case class Mismatch(expected: ASTNode, actual: ASTNode) {
+
+    override def toString: String =
+      s"""Mismatched positions
+         |Expected: $expected
+         |          @ ${expected.position}
+         |Actual  : $actual
+         |          @ ${actual.position}
+         |""".stripMargin
+  }
+
+  def findPosMismatch(expected: Any, actual: Any): Option[Mismatch] = {
+    def astWithPosition(astNode: Any) = {
       {
         lazy val containsReadAdministratorCommand = astNode.folder.treeExists {
           case _: ReadAdministrationCommand => true
@@ -76,16 +100,9 @@ trait VerifyAstPositionTestSupport extends Assertions with Matchers {
       }
     }
 
-    astWithPosition(javaCCAstNode).zip(astWithPosition(expectedAstNode))
-      .foreach {
-        case ((_, _), (_, InputPosition(a, 0, b))) if a == b => // Ignore DummyPositions
-        case ((astChildNode1, pos1), (_, pos2)) =>
-          withClue(s"AST node $astChildNode1 was parsed with different positions:") {
-            pos1 shouldBe pos2
-          }
-        case _ => // Do nothing
-      }
+    astWithPosition(expected).zip(astWithPosition(actual)).collectFirst {
+      case ((expNode, p), (actNode, actP)) if p != actP && !(p.offset == p.column && p.line == 0) =>
+        Mismatch(expNode, actNode)
+    }
   }
-
-  implicit protected def lift(pos: (Int, Int, Int)): InputPosition = InputPosition(pos._3, pos._1, pos._2)
 }

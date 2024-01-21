@@ -19,8 +19,8 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 import org.neo4j.cypher.internal.ast.CollectExpression
 import org.neo4j.cypher.internal.ast.CountExpression
 import org.neo4j.cypher.internal.ast.ExistsExpression
-import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
-import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.expressions.AllPropertiesSelector
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.ListSlice
@@ -32,10 +32,7 @@ import org.neo4j.cypher.internal.util.symbols.BooleanType
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.StringType
 
-class ExpressionPrecedenceParsingTest extends ParserSyntaxTreeBase[Cst.Expression, Expression] {
-
-  implicit protected val javaccRule: JavaccRule[Expression] = JavaccRule.Expression
-  implicit protected val antlrRule: AntlrRule[Cst.Expression] = AntlrRule.Expression
+class ExpressionPrecedenceParsingTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   /**
    * Precedence in Cypher:

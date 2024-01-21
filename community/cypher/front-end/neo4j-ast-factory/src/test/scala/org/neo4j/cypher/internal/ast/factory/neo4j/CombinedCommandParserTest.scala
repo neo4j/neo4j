@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.SignedHexIntegerLiteral
 import org.neo4j.cypher.internal.expressions.SignedOctalIntegerLiteral
@@ -1925,61 +1926,60 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
     "UNWIND [1, 2, 3] AS id",
     "SHOW USERS"
   ).foreach(otherClause => {
-
     test(s"SHOW TRANSACTIONS $otherClause") {
-      failsToParse
+      failsToParse[Statements]
     }
 
     test(s"$otherClause SHOW TRANSACTIONS") {
-      failsToParse
+      failsToParse[Statements]
     }
 
     test(s"TERMINATE TRANSACTIONS $otherClause") {
-      failsToParse
+      failsToParse[Statements]
     }
 
     test(s"$otherClause TERMINATE TRANSACTIONS") {
-      failsToParse
+      failsToParse[Statements]
     }
 
     test(s"SHOW SETTINGS $otherClause") {
-      failsToParse
+      failsToParse[Statements]
     }
 
     test(s"$otherClause SHOW SETTINGS") {
-      failsToParse
+      failsToParse[Statements]
     }
 
     test(s"SHOW FUNCTIONS $otherClause") {
-      failsToParse
+      failsToParse[Statements]
     }
 
     test(s"$otherClause SHOW FUNCTIONS") {
-      failsToParse
+      failsToParse[Statements]
     }
 
     test(s"SHOW PROCEDURES $otherClause") {
-      failsToParse
+      failsToParse[Statements]
     }
 
     test(s"$otherClause SHOW PROCEDURES") {
-      failsToParse
+      failsToParse[Statements]
     }
 
     test(s"SHOW CONSTRAINTS $otherClause") {
-      failsToParse
+      failsToParse[Statements]
     }
 
     test(s"$otherClause SHOW CONSTRAINTS") {
-      failsToParse
+      failsToParse[Statements]
     }
 
     test(s"SHOW INDEXES $otherClause") {
-      failsToParse
+      failsToParse[Statements]
     }
 
     test(s"$otherClause SHOW INDEXES") {
-      failsToParse
+      failsToParse[Statements]
     }
 
   })
@@ -1991,7 +1991,7 @@ class CombinedCommandParserTest extends AdministrationAndSchemaCommandParserTest
   }
 
   test("MATCH (n) TERMINATE TRANSACTION") {
-    failsToParse
+    failsToParse[Statements]
   }
 
 }

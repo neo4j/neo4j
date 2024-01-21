@@ -17,44 +17,44 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.Clause
-import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
-import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
-import org.neo4j.cypher.internal.parser.CypherParser
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 
-class ProcedureCallParserTest extends ParserSyntaxTreeBase[Cst.CallClause, Clause] {
-
-  implicit private val javaccRule: JavaccRule[Clause] = JavaccRule.CallClause
-  implicit private val antlrRule: AntlrRule[CypherParser.CallClauseContext] = AntlrRule.CallClause
+class ProcedureCallParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   test("CALL foo") {
-    gives(call(Seq.empty, "foo", None))
+    gives[Clause](call(Seq.empty, "foo", None))
   }
 
   test("CALL foo()") {
-    gives(call(Seq.empty, "foo", Some(Seq.empty)))
+    gives[Clause](call(Seq.empty, "foo", Some(Seq.empty)))
   }
 
   test("CALL foo('Test', 1+2)") {
-    gives(call(Seq.empty, "foo", Some(Vector(literalString("Test"), add(literalInt(1), literalInt(2))))))
+    gives[Clause](call(Seq.empty, "foo", Some(Vector(literalString("Test"), add(literalInt(1), literalInt(2))))))
   }
 
   test("CALL foo.bar.baz('Test', 1+2)") {
-    gives(call(List("foo", "bar"), "baz", Some(Vector(literalString("Test"), add(literalInt(1), literalInt(2))))))
+    gives[Clause](call(
+      List("foo", "bar"),
+      "baz",
+      Some(Vector(literalString("Test"), add(literalInt(1), literalInt(2))))
+    ))
   }
 
   test("CALL foo YIELD bar") {
-    gives(call(Seq.empty, "foo", None, Some(Seq(varFor("bar")))))
+    gives[Clause](call(Seq.empty, "foo", None, Some(Seq(varFor("bar")))))
   }
 
   test("CALL foo YIELD bar, baz") {
-    gives(call(Seq.empty, "foo", None, Some(Seq(varFor("bar"), varFor("baz")))))
+    gives[Clause](call(Seq.empty, "foo", None, Some(Seq(varFor("bar"), varFor("baz")))))
   }
 
   test("CALL foo() YIELD bar") {
-    gives(call(Seq.empty, "foo", Some(Seq.empty), Some(Seq(varFor("bar")))))
+    gives[Clause](call(Seq.empty, "foo", Some(Seq.empty), Some(Seq(varFor("bar")))))
   }
 
   test("CALL foo() YIELD bar, baz") {
-    gives(call(Seq.empty, "foo", Some(Seq.empty), Some(Seq(varFor("bar"), varFor("baz")))))
+    gives[Clause](call(Seq.empty, "foo", Some(Seq.empty), Some(Seq(varFor("bar"), varFor("baz")))))
   }
 }

@@ -33,6 +33,8 @@ import org.neo4j.cypher.internal.ast.PatternQualifier
 import org.neo4j.cypher.internal.ast.PropertiesResource
 import org.neo4j.cypher.internal.ast.ReadAction
 import org.neo4j.cypher.internal.ast.SingleQuery
+import org.neo4j.cypher.internal.ast.Statements
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.ParserSupport.NotAntlr
 import org.neo4j.cypher.internal.expressions.BooleanExpression
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
@@ -53,7 +55,6 @@ import scala.util.Random
 
 class ReadMatchPropertyPrivilegeAdministrationCommandParserTest
     extends PropertyPrivilegeAdministrationCommandParserTestBase {
-
   case class Action(action: GraphAction, verb: String, preposition: String, func: resourcePrivilegeFunc)
 
   case class Resource(properties: String, resource: ActionResource)
@@ -612,71 +613,71 @@ class ReadMatchPropertyPrivilegeAdministrationCommandParserTest
         case _ => fail("Unexpected expression")
       }).foreach { (propertyRule: String) =>
         // Missing ON
-        assertFails(
+        assertFails[Statements](
           s"$verb$immutableString ${action.name} {$properties} $graphKeyword $graphName $patternKeyword $propertyRule $preposition role"
         )
 
         // Missing role
-        assertFails(
+        assertFails[Statements](
           s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $graphName $patternKeyword $propertyRule"
         )
 
         // r:ole is invalid
-        assertFails(
+        assertFails[Statements](
           s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $graphName $patternKeyword $propertyRule $preposition r:ole"
         )
 
         // Invalid graph name
-        assertFails(
+        assertFails[Statements](
           s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword f:oo $patternKeyword $propertyRule $preposition role"
         )
 
         // Mixing specific graph and *
-        assertFails(
+        assertFails[Statements](
           s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword foo, * $patternKeyword $propertyRule $preposition role"
         )
-        assertFails(
+        assertFails[Statements](
           s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword *, foo $patternKeyword $propertyRule $preposition role"
         )
 
         // Invalid property definition
-        assertFails(
+        assertFails[Statements](
           s"$verb$immutableString ${action.name} {b:ar} ON $graphKeyword foo $patternKeyword $propertyRule $preposition role"
         )
 
         // Missing graph name
-        assertFails(
+        assertFails[Statements](
           s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $patternKeyword $propertyRule $preposition role"
         )
-        assertFails(
+        assertFails[Statements](
           s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $patternKeyword $propertyRule (*) $preposition role"
         )
 
         // Missing property definition
-        assertFails(
+        assertFails[Statements](
           s"$verb$immutableString ${action.name} ON $graphKeyword * $patternKeyword $propertyRule $preposition role"
         )
-        assertFails(
+        assertFails[Statements](
           s"$verb$immutableString ${action.name} ON $graphKeyword * $patternKeyword $propertyRule (*) $preposition role"
         )
-        assertFails(
+        assertFails[Statements](
           s"$verb$immutableString ${action.name} ON $graphKeyword foo $patternKeyword $propertyRule $preposition role"
         )
-        assertFails(
+        assertFails[Statements](
           s"$verb$immutableString ${action.name} ON $graphKeyword foo $patternKeyword $propertyRule (*) $preposition role"
         )
 
         // Missing property list
-        assertFails(
+        assertFails[Statements](
           s"$verb$immutableString ${action.name} {} ON $graphKeyword * $patternKeyword $propertyRule $preposition role"
         )
-        assertFails(
+        assertFails[Statements](
           s"$verb$immutableString ${action.name} {} ON $graphKeyword * $patternKeyword $propertyRule (*) $preposition role"
         )
-        assertFails(
+        assertFails[Statements](
           s"$verb$immutableString ${action.name} {} ON $graphKeyword foo $patternKeyword $propertyRule $preposition role"
         )
-        assertFails(
+        assertFails[Statements](
           s"$verb$immutableString ${action.name} {} ON $graphKeyword foo $patternKeyword $propertyRule (*) $preposition role"
         )
       }
@@ -701,7 +702,7 @@ class ReadMatchPropertyPrivilegeAdministrationCommandParserTest
         s"(n:A {prop1:1})"
       ).foreach { (propertyRule: String) =>
         {
-          assertFails(
+          assertFails[Statements](
             s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $graphName $segment $propertyRule $preposition role"
           )
         }
@@ -720,15 +721,15 @@ class ReadMatchPropertyPrivilegeAdministrationCommandParserTest
       val immutableString = immutableOrEmpty(immutable)
 
       disallowedPropertyRules.foreach { (disallowedPropertyRule: String) =>
-        assertFails(
+        assertFails[Statements](
           s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $graphName $patternKeyword $disallowedPropertyRule $preposition role"
         )
       }
 
       // No variable, WHERE gets parsed as variable in javacc
-      assertFailsOnlyJavaCC(
-        s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $graphName $patternKeyword (WHERE n.prop1 = 1) $preposition role"
-      )
+      s"""$verb$immutableString ${action.name} {$properties}
+         |ON $graphKeyword $graphName $patternKeyword (WHERE n.prop1 = 1) $preposition role
+         |""".stripMargin should notParse[Statements](NotAntlr)
     }
   }
 }

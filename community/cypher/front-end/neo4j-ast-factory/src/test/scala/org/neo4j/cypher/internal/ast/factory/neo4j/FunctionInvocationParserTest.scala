@@ -16,36 +16,38 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
-import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
-import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
+import org.neo4j.cypher.internal.expressions.FunctionInvocation
 
-class FunctionInvocationParserTest extends ParserSyntaxTreeBase[Cst.FunctionInvocation, Expression] {
-
-  implicit private val javaccRule: JavaccRule[Expression] = JavaccRule.FunctionInvocation
-  implicit private val antlrRule: AntlrRule[Cst.FunctionInvocation] = AntlrRule.FunctionInvocation
+class FunctionInvocationParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   test("foo()") {
-    gives(function("foo"))
+    gives[FunctionInvocation](function("foo"))
   }
 
   test("foo('test', 1 + 2)") {
-    gives(function("foo", literalString("test"), add(literalInt(1), literalInt(2))))
+    gives[FunctionInvocation](function("foo", literalString("test"), add(literalInt(1), literalInt(2))))
   }
 
   test("my.namespace.foo()") {
-    gives(function(List("my", "namespace"), "foo"))
+    gives[FunctionInvocation](function(List("my", "namespace"), "foo"))
   }
 
   test("my.namespace.foo('test', 1 + 2)") {
-    gives(function(List("my", "namespace"), "foo", literalString("test"), add(literalInt(1), literalInt(2))))
+    gives[FunctionInvocation](function(
+      List("my", "namespace"),
+      "foo",
+      literalString("test"),
+      add(literalInt(1), literalInt(2))
+    ))
   }
 
   test("sum(DISTINCT foo)") {
-    gives(distinctFunction("sum", varFor("foo")))
+    gives[FunctionInvocation](distinctFunction("sum", varFor("foo")))
   }
 
   test("sum(ALL foo)") {
-    gives(function("sum", varFor("foo")))
+    gives[FunctionInvocation](function("sum", varFor("foo")))
   }
 }

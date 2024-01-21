@@ -17,15 +17,12 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.Statement
-import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
-import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.util.UnicodeHelper
 import org.neo4j.cypher.internal.util.symbols.CTAny
 
-class ParameterIdentifiersParserTest extends ParserSyntaxTreeBase[Cst.Statement, Statement] {
-
-  implicit val javaccRule: JavaccRule[Statement] = JavaccRule.Statement
-  implicit val antlrRule: AntlrRule[Cst.Statement] = AntlrRule.Statement
+class ParameterIdentifiersParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   test("Identifier Start characters are allowed in first position") {
     for (c <- Character.MIN_VALUE to Character.MAX_VALUE) {
@@ -34,7 +31,7 @@ class ParameterIdentifiersParserTest extends ParserSyntaxTreeBase[Cst.Statement,
         (UnicodeHelper.isIdentifierStart(c) && Character.getType(c) != Character.CURRENCY_SYMBOL) ||
         (c >= 0x31 && c <= 0x39) // Start with a a digit 1-9
       ) {
-        givesIncludingPositions(
+        givesIncludingPositions[Statement](
           {
             singleQuery(
               return_(aliasedReturnItem(parameter(s"${c}abc", CTAny), paramWithCharName))
@@ -43,7 +40,7 @@ class ParameterIdentifiersParserTest extends ParserSyntaxTreeBase[Cst.Statement,
           s"RETURN $$${c}abc AS `$paramWithCharName`"
         )
       } else if (Character.isWhitespace(c) || Character.isSpaceChar(c)) {
-        givesIncludingPositions(
+        givesIncludingPositions[Statement](
           {
             singleQuery(
               return_(aliasedReturnItem(parameter(s"abc", CTAny), paramWithCharName))
@@ -52,7 +49,7 @@ class ParameterIdentifiersParserTest extends ParserSyntaxTreeBase[Cst.Statement,
           s"RETURN $$${c}abc AS `$paramWithCharName`" // Whitespace gets ignored
         )
       } else if (Character.getType(c) != Character.SURROGATE) { // Surrogate characters fail completely so can't test
-        failsToParse(s"RETURN $$${c}abc AS `$paramWithCharName`")
+        failsToParse[Statement](s"RETURN $$${c}abc AS `$paramWithCharName`")
       }
     }
   }
@@ -61,7 +58,7 @@ class ParameterIdentifiersParserTest extends ParserSyntaxTreeBase[Cst.Statement,
     for (c <- Character.MIN_VALUE to Character.MAX_VALUE) {
       val paramWithCharName = f"paramWithChar_${Integer.valueOf(c)}%04X"
       if (UnicodeHelper.isIdentifierPart(c)) {
-        givesIncludingPositions(
+        givesIncludingPositions[Statement](
           {
             singleQuery(
               return_(aliasedReturnItem(parameter(s"a${c}abc", CTAny), paramWithCharName))
@@ -75,7 +72,7 @@ class ParameterIdentifiersParserTest extends ParserSyntaxTreeBase[Cst.Statement,
         Character.getType(c) != Character.SURROGATE &&
         !List('"', '\'', '/', '*', '%', '+', '-', ',', '.', ':', '<', '>', '=', '^', '`').contains(c)
       ) {
-        failsToParse(s"RETURN $$a${c}abc AS `$paramWithCharName`")
+        failsToParse[Statement](s"RETURN $$a${c}abc AS `$paramWithCharName`")
       }
     }
   }

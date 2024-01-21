@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j.privilege
 
 import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.AdministrationAndSchemaCommandParserTestBase
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.util.InputPosition
@@ -36,7 +37,7 @@ class LoadPrivilegeParserTest extends AdministrationAndSchemaCommandParserTestBa
           val immutableString = immutableOrEmpty(immutable)
 
           test(s"""$verb$immutableString LOAD ON URL "https://my.server.com/some/file.csv" $preposition role""") {
-            yields(func(
+            yields[Statements](func(
               ast.LoadUrlAction,
               ast.LoadUrlQualifier("https://my.server.com/some/file.csv")(InputPosition.NONE),
               Seq(literalRole),
@@ -45,7 +46,7 @@ class LoadPrivilegeParserTest extends AdministrationAndSchemaCommandParserTestBa
           }
 
           test(s"""$verb$immutableString LOAD ON CIDR "192.168.1.0/24" $preposition role""") {
-            yields(func(
+            yields[Statements](func(
               ast.LoadCidrAction,
               ast.LoadCidrQualifier("192.168.1.0/24")(InputPosition.NONE),
               Seq(literalRole),
@@ -54,7 +55,7 @@ class LoadPrivilegeParserTest extends AdministrationAndSchemaCommandParserTestBa
           }
 
           test(s"""$verb$immutableString LOAD ON URL $$foo $preposition role""") {
-            yields(func(
+            yields[Statements](func(
               ast.LoadUrlAction,
               ast.LoadUrlQualifier(paramFoo)(InputPosition.NONE),
               Seq(literalRole),
@@ -63,7 +64,7 @@ class LoadPrivilegeParserTest extends AdministrationAndSchemaCommandParserTestBa
           }
 
           test(s"""$verb$immutableString LOAD ON CIDR $$foo $preposition role""") {
-            yields(func(
+            yields[Statements](func(
               ast.LoadCidrAction,
               ast.LoadCidrQualifier(paramFoo)(InputPosition.NONE),
               Seq(literalRole),
@@ -72,7 +73,7 @@ class LoadPrivilegeParserTest extends AdministrationAndSchemaCommandParserTestBa
           }
 
           test(s"""$verb$immutableString LOAD ON ALL DATA $preposition role""") {
-            yields(func(
+            yields[Statements](func(
               ast.LoadAllDataAction,
               ast.LoadAllQualifier()(InputPosition.NONE),
               Seq(literalRole),
@@ -84,7 +85,7 @@ class LoadPrivilegeParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("""DENY LOAD ON URL "not really a url" TO $role""") {
-    yields(denyLoadPrivilege(
+    yields[Statements](denyLoadPrivilege(
       ast.LoadUrlAction,
       ast.LoadUrlQualifier("not really a url")(InputPosition.NONE),
       Seq(paramRole),
@@ -93,7 +94,7 @@ class LoadPrivilegeParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("""REVOKE GRANT LOAD ON CIDR 'not a cidr' FROM $role""") {
-    yields(revokeGrantLoadPrivilege(
+    yields[Statements](revokeGrantLoadPrivilege(
       ast.LoadCidrAction,
       ast.LoadCidrQualifier("not a cidr")(InputPosition.NONE),
       Seq(paramRole),
@@ -102,7 +103,7 @@ class LoadPrivilegeParserTest extends AdministrationAndSchemaCommandParserTestBa
   }
 
   test("GRANT LOAD ON CIDR $x TO `\u0885`, `x\u0885y`") {
-    yields(grantLoadPrivilege(
+    yields[Statements](grantLoadPrivilege(
       ast.LoadCidrAction,
       ast.LoadCidrQualifier(stringParam("x"))(InputPosition.NONE),
       Seq(Left("\u0885"), Left("x\u0885y")),
@@ -114,64 +115,64 @@ class LoadPrivilegeParserTest extends AdministrationAndSchemaCommandParserTestBa
 
   test("GRANT LOAD ON CIDR $x TO \u0885") {
     // the `\u0885` needs to be escaped to be able to be parsed
-    assertFailsWithMessageStart(testName, "Invalid input '\u0885': expected a parameter or an identifier")
+    assertFailsWithMessageStart[Statements](testName, "Invalid input '\u0885': expected a parameter or an identifier")
   }
 
   test("GRANT LOAD ON CIDR $x TO x\u0885y") {
     // the `\u0885` needs to be escaped to be able to be parsed
-    assertFailsWithMessageStart(testName, "Invalid input '\u0885': expected \",\" or <EOF>")
+    assertFailsWithMessageStart[Statements](testName, "Invalid input '\u0885': expected \",\" or <EOF>")
   }
 
   test("""GRANT LOAD ON DATABASE foo TO role""") {
-    assertFailsWithMessageStart(testName, """Invalid input 'DATABASE': expected""")
+    assertFailsWithMessageStart[Statements](testName, """Invalid input 'DATABASE': expected""")
   }
 
   test("""DENY LOAD ON HOME GRAPH TO role""") {
-    assertFailsWithMessageStart(testName, """Invalid input 'HOME': expected""")
+    assertFailsWithMessageStart[Statements](testName, """Invalid input 'HOME': expected""")
   }
 
   test("""REVOKE GRANT LOAD ON DBMS ON ALL DATA FROM role""") {
-    assertFailsWithMessageStart(testName, """Invalid input 'DBMS': expected""")
+    assertFailsWithMessageStart[Statements](testName, """Invalid input 'DBMS': expected""")
   }
 
   test("""GRANT LOAD ON CIDR TO role""") {
-    assertFailsWithMessageStart(testName, """Invalid input 'TO': expected""")
+    assertFailsWithMessageStart[Statements](testName, """Invalid input 'TO': expected""")
   }
 
   test("""GRANT LOAD ON URL TO role""") {
-    assertFailsWithMessageStart(testName, """Invalid input 'TO': expected""")
+    assertFailsWithMessageStart[Statements](testName, """Invalid input 'TO': expected""")
   }
 
   test("""DENY LOAD TO role""") {
-    assertFailsWithMessageStart(testName, """Invalid input 'TO': expected""")
+    assertFailsWithMessageStart[Statements](testName, """Invalid input 'TO': expected""")
   }
 
   test("""GRANT LOAD ON CIDR "1.2.3.4/22" URL "https://example.com" TO role""") {
-    assertFailsWithMessageStart(testName, """Invalid input 'URL': expected""")
+    assertFailsWithMessageStart[Statements](testName, """Invalid input 'URL': expected""")
   }
 
   test("""DENY LOAD ON CIDR "1.2.3.4/22" ON URL "https://example.com" TO role""") {
-    assertFailsWithMessageStart(testName, """Invalid input 'ON': expected""")
+    assertFailsWithMessageStart[Statements](testName, """Invalid input 'ON': expected""")
   }
 
   test("""GRANT LOAD ON URL "https://www.badger.com","file:///test.csv" TO role""") {
-    assertFailsWithMessageStart(testName, """Invalid input ',': expected""")
+    assertFailsWithMessageStart[Statements](testName, """Invalid input ',': expected""")
   }
 
   test("""REVOKE DENY LOAD ON CIDR "1.2.3.4/22","1.2.3.4/22" FROM role""") {
-    assertFailsWithMessageStart(testName, """Invalid input ',': expected""")
+    assertFailsWithMessageStart[Statements](testName, """Invalid input ',': expected""")
   }
 
   test("""REVOKE DENY LOAD ON ALL DATA "1.2.3.4/22" FROM role""") {
-    assertFailsWithMessageStart(testName, """Invalid input '1.2.3.4/22': expected""")
+    assertFailsWithMessageStart[Statements](testName, """Invalid input '1.2.3.4/22': expected""")
   }
 
   test("GRANT LOAD ON CIDR 'x'+'y' TO role") {
-    assertFailsWithMessageStart(testName, """Invalid input '+': expected "TO""")
+    assertFailsWithMessageStart[Statements](testName, """Invalid input '+': expected "TO""")
   }
 
   test("GRANT LOAD ON URL ['x'] TO role") {
-    assertFailsWithMessageStart(testName, """Invalid input '[': expected "\"", "\'" or a parameter""")
+    assertFailsWithMessageStart[Statements](testName, """Invalid input '[': expected "\"", "\'" or a parameter""")
   }
 
   // help methods

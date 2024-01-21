@@ -16,8 +16,8 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
-import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.label_expressions.LabelExpressionPredicate
 
@@ -25,24 +25,21 @@ import org.neo4j.cypher.internal.label_expressions.LabelExpressionPredicate
  * The aim of this class is to test parsing for all combinations of
  * IS and WHERE used in node patterns e.g. (WHERE IS WHERE WHERE IS)
  */
-class IsWhereNodePatternParserTest extends ParserSyntaxTreeBase[Cst.NodePattern, NodePattern] {
-
-  implicit val javaccRule: JavaccRule[NodePattern] = JavaccRule.NodePattern
-  implicit val antlrRule: AntlrRule[Cst.NodePattern] = AntlrRule.NodePattern
+class IsWhereNodePatternParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   for {
     (maybeVariable, maybeVariableName) <-
       Seq(("", None), ("IS", Some("IS")), ("WHERE", Some("WHERE")))
   } yield {
     test(s"($maybeVariable)") {
-      gives(nodePat(maybeVariableName))
+      gives[NodePattern](nodePat(maybeVariableName))
     }
 
     for {
       isOrWhere <- Seq("IS", "WHERE")
     } yield {
       test(s"($maybeVariable IS $isOrWhere)") {
-        gives(
+        gives[NodePattern](
           nodePat(
             maybeVariableName,
             labelExpression = Some(labelLeaf(isOrWhere, containsIs = true))
@@ -51,7 +48,7 @@ class IsWhereNodePatternParserTest extends ParserSyntaxTreeBase[Cst.NodePattern,
       }
 
       test(s"($maybeVariable WHERE $isOrWhere)") {
-        gives(
+        gives[NodePattern](
           nodePat(
             maybeVariableName,
             predicates = Some(varFor(isOrWhere))
@@ -63,7 +60,7 @@ class IsWhereNodePatternParserTest extends ParserSyntaxTreeBase[Cst.NodePattern,
         isOrWhere2 <- Seq("IS", "WHERE")
       } yield {
         test(s"($maybeVariable IS $isOrWhere WHERE $isOrWhere2)") {
-          gives(
+          gives[NodePattern](
             nodePat(
               maybeVariableName,
               labelExpression = Some(labelLeaf(isOrWhere, containsIs = true)),
@@ -73,7 +70,7 @@ class IsWhereNodePatternParserTest extends ParserSyntaxTreeBase[Cst.NodePattern,
         }
 
         test(s"($maybeVariable WHERE $isOrWhere IS $isOrWhere2)") {
-          gives(
+          gives[NodePattern](
             nodePat(
               maybeVariableName,
               predicates = Some(LabelExpressionPredicate(
@@ -85,17 +82,17 @@ class IsWhereNodePatternParserTest extends ParserSyntaxTreeBase[Cst.NodePattern,
         }
 
         test(s"($maybeVariable WHERE $isOrWhere WHERE $isOrWhere2)") {
-          failsToParse
+          failsToParse[NodePattern]
         }
 
         test(s"($maybeVariable IS $isOrWhere IS $isOrWhere2)") {
-          failsToParse
+          failsToParse[NodePattern]
         }
         for {
           isOrWhere3 <- Seq("IS", "WHERE")
         } yield {
           test(s"($maybeVariable IS $isOrWhere WHERE $isOrWhere2 IS $isOrWhere3)") {
-            gives(
+            gives[NodePattern](
               nodePat(
                 maybeVariableName,
                 labelExpression = Some(labelLeaf(isOrWhere, containsIs = true)),

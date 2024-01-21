@@ -20,15 +20,14 @@
 package org.neo4j.cypher.internal.parser
 
 import org.neo4j.cypher.internal
-import org.neo4j.cypher.internal.ast.factory.neo4j.JavaccRule
-import org.neo4j.cypher.internal.ast.factory.neo4j.ParserTestBase
-import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
-import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.ParserSupport.NotAntlr
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration
 import org.neo4j.cypher.internal.runtime.SelectivityTrackerRegistrator
 import org.neo4j.cypher.internal.runtime.interpreted.commands
-import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
+import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.CommunityExpressionConverter
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
@@ -39,121 +38,120 @@ import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.attribution.Id
 
 // TODO: This should be tested without using the legacy expressions and moved to the semantics module
-class ExpressionsTest
-    extends ParserTestBase[
-      Cst.Expression,
-      internal.expressions.Expression,
-      commands.expressions.Expression
-    ] {
-
-  implicit private val javaccRule: JavaccRule[internal.expressions.Expression] = JavaccRule.Expression
-  implicit private val antlrRule: AntlrRule[Cst.Expression] = AntlrRule.Expression
+class ExpressionsTest extends AstParsingTestBase {
 
   test("simple_cases") {
-    parsing("CASE 1 WHEN 1 THEN 'ONE' END") shouldGive
-      commands.expressions.SimpleCase(literal(1), Seq((literal(1), literal("ONE"))), None)
+    assertCommand(
+      "CASE 1 WHEN 1 THEN 'ONE' END",
+      commands.expressions.SimpleCase(lit(1), Seq((lit(1), lit("ONE"))), None)
+    )
 
-    parsing(
+    assertCommand(
       """CASE 1
            WHEN 1 THEN 'ONE'
            WHEN 2 THEN 'TWO'
-         END"""
-    ) shouldGive
-      commands.expressions.SimpleCase(literal(1), Seq((literal(1), literal("ONE")), (literal(2), literal("TWO"))), None)
-
-    parsing(
+         END""",
+      commands.expressions.SimpleCase(lit(1), Seq((lit(1), lit("ONE")), (lit(2), lit("TWO"))), None)
+    )
+    assertCommand(
       """CASE 1
            WHEN 1 THEN 'ONE'
            WHEN 2 THEN 'TWO'
                   ELSE 'DEFAULT'
-         END"""
-    ) shouldGive
+         END""",
       commands.expressions.SimpleCase(
-        literal(1),
-        Seq((literal(1), literal("ONE")), (literal(2), literal("TWO"))),
-        Some(literal("DEFAULT"))
+        lit(1),
+        Seq((lit(1), lit("ONE")), (lit(2), lit("TWO"))),
+        Some(lit("DEFAULT"))
       )
+    )
   }
 
   test("generic_cases") {
-    parsing("CASE WHEN true THEN 'ONE' END") shouldGive
-      commands.expressions.GenericCase(IndexedSeq((True(), literal("ONE"))), None)
+    assertCommand(
+      "CASE WHEN true THEN 'ONE' END",
+      commands.expressions.GenericCase(IndexedSeq((True(), lit("ONE"))), None)
+    )
 
-    val alt1 = (Equals(literal(1), literal(2)), literal("ONE"))
-    val alt2 = (predicates.Equals(literal(2), literal("apa")), literal("TWO"))
+    val alt1 = (Equals(lit(1), lit(2)), lit("ONE"))
+    val alt2 = (predicates.Equals(lit(2), lit("apa")), lit("TWO"))
 
-    parsing(
+    assertCommand(
       """CASE
            WHEN 1=2     THEN 'ONE'
            WHEN 2='apa' THEN 'TWO'
-         END"""
-    ) shouldGive
+         END""",
       commands.expressions.GenericCase(IndexedSeq(alt1, alt2), None)
-
-    parsing(
+    )
+    assertCommand(
       """CASE
            WHEN 1=2     THEN 'ONE'
            WHEN 2='apa' THEN 'TWO'
                         ELSE 'OTHER'
-         END"""
-    ) shouldGive
-      commands.expressions.GenericCase(IndexedSeq(alt1, alt2), Some(literal("OTHER")))
+         END""",
+      commands.expressions.GenericCase(IndexedSeq(alt1, alt2), Some(lit("OTHER")))
+    )
   }
 
   test("array_indexing") {
-    val collection = commands.expressions.ListLiteral(literal(1), literal(2), literal(3), literal(4))
+    val collection = commands.expressions.ListLiteral(lit(1), lit(2), lit(3), lit(4))
 
-    parsing("[1,2,3,4][1..2]") shouldGive
-      commands.expressions.ListSlice(collection, Some(literal(1)), Some(literal(2)))
+    assertCommand("[1,2,3,4][1..2]", commands.expressions.ListSlice(collection, Some(lit(1)), Some(lit(2))))
 
-    parsing("[1,2,3,4][1..2][2..3]") shouldGive
+    assertCommand(
+      "[1,2,3,4][1..2][2..3]",
       commands.expressions.ListSlice(
-        commands.expressions.ListSlice(collection, Some(literal(1)), Some(literal(2))),
-        Some(literal(2)),
-        Some(literal(3))
+        commands.expressions.ListSlice(collection, Some(lit(1)), Some(lit(2))),
+        Some(lit(2)),
+        Some(lit(3))
       )
+    )
 
-    parsing("collection[1..2]") shouldGive
-      commands.expressions.ListSlice(commands.expressions.Variable("collection"), Some(literal(1)), Some(literal(2)))
-
-    parsing("[1,2,3,4][2]") shouldGive
-      commands.expressions.ContainerIndex(collection, literal(2))
-
-    parsing("[[1,2]][0][6]") shouldGive
+    assertCommand(
+      "collection[1..2]",
+      commands.expressions.ListSlice(commands.expressions.Variable("collection"), Some(lit(1)), Some(lit(2)))
+    )
+    assertCommand("[1,2,3,4][2]", commands.expressions.ContainerIndex(collection, lit(2)))
+    assertCommand(
+      "[[1,2]][0][6]",
       commands.expressions.ContainerIndex(
         commands.expressions.ContainerIndex(
-          commands.expressions.ListLiteral(commands.expressions.ListLiteral(literal(1), literal(2))),
-          literal(0)
+          commands.expressions.ListLiteral(commands.expressions.ListLiteral(lit(1), lit(2))),
+          lit(0)
         ),
-        literal(6)
+        lit(6)
       )
-
-    parsing("collection[1..2][0]") shouldGive
+    )
+    assertCommand(
+      "collection[1..2][0]",
       commands.expressions.ContainerIndex(
-        commands.expressions.ListSlice(commands.expressions.Variable("collection"), Some(literal(1)), Some(literal(2))),
-        literal(0)
+        commands.expressions.ListSlice(commands.expressions.Variable("collection"), Some(lit(1)), Some(lit(2))),
+        lit(0)
       )
-
-    parsing("collection[..-2]") shouldGive
-      commands.expressions.ListSlice(commands.expressions.Variable("collection"), None, Some(literal(-2)))
-
-    parsing("collection[1..]") shouldGive
-      commands.expressions.ListSlice(commands.expressions.Variable("collection"), Some(literal(1)), None)
+    )
+    assertCommand(
+      "collection[..-2]",
+      commands.expressions.ListSlice(commands.expressions.Variable("collection"), None, Some(lit(-2)))
+    )
+    assertCommand(
+      "collection[1..]",
+      commands.expressions.ListSlice(commands.expressions.Variable("collection"), Some(lit(1)), None)
+    )
   }
 
   test("literal_maps") {
-    parsing("{ name: 'Andres' }") shouldGive
-      commands.expressions.LiteralMap(Map("name" -> literal("Andres")))
+    assertCommand("{ name: 'Andres' }", commands.expressions.LiteralMap(Map("name" -> lit("Andres"))))
 
-    parsing("{ meta : { name: 'Andres' } }") shouldGive
-      commands.expressions.LiteralMap(Map("meta" -> commands.expressions.LiteralMap(Map("name" -> literal("Andres")))))
-
-    parsing("{ }") shouldGive
-      commands.expressions.LiteralMap(Map())
+    assertCommand(
+      "{ meta : { name: 'Andres' } }",
+      commands.expressions.LiteralMap(Map("meta" -> commands.expressions.LiteralMap(Map("name" -> lit("Andres")))))
+    )
+    assertCommand("{ }", commands.expressions.LiteralMap(Map()))
   }
 
   test("better_map_support") {
-    parsing("map.key1.key2.key3") shouldGive
+    assertCommand(
+      "map.key1.key2.key3",
       commands.expressions.Property(
         commands.expressions.Property(
           commands.expressions.Property(commands.expressions.Variable("map"), PropertyKey("key1")),
@@ -161,19 +159,29 @@ class ExpressionsTest
         ),
         PropertyKey("key3")
       )
+    )
 
-    parsing("({ key: 'value' }).key") shouldGive
-      commands.expressions.Property(commands.expressions.LiteralMap(Map("key" -> literal("value"))), PropertyKey("key"))
-
-    parsing("({ inner1: { inner2: 'Value' } }).key") shouldGive
+    assertCommand(
+      "({ key: 'value' }).key",
+      commands.expressions.Property(commands.expressions.LiteralMap(Map("key" -> lit("value"))), PropertyKey("key"))
+    )
+    assertCommand(
+      "({ inner1: { inner2: 'Value' } }).key",
       commands.expressions.Property(
         commands.expressions.LiteralMap(
-          Map("inner1" -> commands.expressions.LiteralMap(Map("inner2" -> literal("Value"))))
+          Map("inner1" -> commands.expressions.LiteralMap(Map("inner2" -> lit("Value"))))
         ),
         PropertyKey("key")
       )
+    )
 
   }
+
+  private def assertCommand(cypher: String, expected: commands.expressions.Expression): Unit = {
+    cypher should parse[Expression](NotAntlr).withAstLike(e => convert(e) shouldBe expected)
+  }
+
+  private def lit(o: Any) = LiteralHelper.literal(o)
 
   private val converters =
     new ExpressionConverters(CommunityExpressionConverter(
@@ -183,6 +191,6 @@ class ExpressionsTest
       CypherRuntimeConfiguration.defaultConfiguration
     ))
 
-  def convert(astNode: internal.expressions.Expression): commands.expressions.Expression =
+  private def convert(astNode: internal.expressions.Expression): commands.expressions.Expression =
     converters.toCommandExpression(Id.INVALID_ID, astNode)
 }

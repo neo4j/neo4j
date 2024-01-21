@@ -17,26 +17,23 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.Statement
-import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
-import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 
-class PeriodicCommitParserTest extends ParserSyntaxTreeBase[Cst.Statement, Statement] {
-
-  implicit private val javaccRule: JavaccRule[Statement] = JavaccRule.Statement
-  implicit private val antlrRule: AntlrRule[Cst.Statement] = AntlrRule.Statement
+class PeriodicCommitParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   val message =
     "The PERIODIC COMMIT query hint is no longer supported. Please use CALL { ... } IN TRANSACTIONS instead. (line 1, column 7 (offset: 6))"
 
   test("USING PERIODIC COMMIT LOAD CSV FROM 'foo' AS l RETURN l") {
-    assertFailsWithMessage(testName, message)
+    assertFailsWithMessage[Statement](testName, message)
   }
 
   test("USING PERIODIC COMMIT 200 LOAD CSV FROM 'foo' AS l RETURN l") {
-    assertFailsWithMessage(testName, message)
+    assertFailsWithMessage[Statement](testName, message)
   }
 
   test("USING PERIODIC COMMIT RETURN 1") {
-    assertFailsWithMessage(testName, message)
+    assertFailsWithMessage[Statement](testName, message)
   }
 }

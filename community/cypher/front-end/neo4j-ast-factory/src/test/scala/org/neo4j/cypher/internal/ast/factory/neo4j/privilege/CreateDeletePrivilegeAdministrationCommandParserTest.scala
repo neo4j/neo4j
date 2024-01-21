@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j.privilege
 
 import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.AdministrationAndSchemaCommandParserTestBase
 
 class CreateDeletePrivilegeAdministrationCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
@@ -38,7 +39,7 @@ class CreateDeletePrivilegeAdministrationCommandParserTest extends Administratio
             immutable =>
               val immutableString = immutableOrEmpty(immutable)
               test(s"$verb$immutableString $createOrDelete ON GRAPH foo $preposition role") {
-                yields(func(
+                yields[Statements](func(
                   ast.GraphPrivilege(action, graphScopeFoo)(_),
                   List(ast.ElementsAllQualifier()(_)),
                   Seq(literalRole),
@@ -47,7 +48,7 @@ class CreateDeletePrivilegeAdministrationCommandParserTest extends Administratio
               }
 
               test(s"$verb$immutableString $createOrDelete ON GRAPH foo ELEMENTS A $preposition role") {
-                yields(func(
+                yields[Statements](func(
                   ast.GraphPrivilege(action, graphScopeFoo)(_),
                   List(elemQualifierA),
                   Seq(literalRole),
@@ -56,7 +57,7 @@ class CreateDeletePrivilegeAdministrationCommandParserTest extends Administratio
               }
 
               test(s"$verb$immutableString $createOrDelete ON GRAPH foo NODE A $preposition role") {
-                yields(func(
+                yields[Statements](func(
                   ast.GraphPrivilege(action, graphScopeFoo)(_),
                   List(labelQualifierA),
                   Seq(literalRole),
@@ -65,7 +66,7 @@ class CreateDeletePrivilegeAdministrationCommandParserTest extends Administratio
               }
 
               test(s"$verb$immutableString $createOrDelete ON GRAPH foo RELATIONSHIPS * $preposition role") {
-                yields(func(
+                yields[Statements](func(
                   ast.GraphPrivilege(action, graphScopeFoo)(_),
                   List(ast.RelationshipAllQualifier()(_)),
                   Seq(literalRole),
@@ -76,7 +77,7 @@ class CreateDeletePrivilegeAdministrationCommandParserTest extends Administratio
               // Home graph
 
               test(s"$verb$immutableString $createOrDelete ON HOME GRAPH $preposition role") {
-                yields(func(
+                yields[Statements](func(
                   ast.GraphPrivilege(action, ast.HomeGraphScope()(_))(_),
                   List(ast.ElementsAllQualifier()(_)),
                   Seq(literalRole),
@@ -85,7 +86,7 @@ class CreateDeletePrivilegeAdministrationCommandParserTest extends Administratio
               }
 
               test(s"$verb$immutableString $createOrDelete ON HOME GRAPH $preposition role1, role2") {
-                yields(func(
+                yields[Statements](func(
                   ast.GraphPrivilege(action, ast.HomeGraphScope()(_))(_),
                   List(ast.ElementsAllQualifier()(_)),
                   Seq(literalRole1, literalRole2),
@@ -94,7 +95,7 @@ class CreateDeletePrivilegeAdministrationCommandParserTest extends Administratio
               }
 
               test(s"$verb$immutableString $createOrDelete ON HOME GRAPH $preposition $$role1, role2") {
-                yields(func(
+                yields[Statements](func(
                   ast.GraphPrivilege(action, ast.HomeGraphScope()(_))(_),
                   List(ast.ElementsAllQualifier()(_)),
                   Seq(paramRole1, literalRole2),
@@ -103,7 +104,7 @@ class CreateDeletePrivilegeAdministrationCommandParserTest extends Administratio
               }
 
               test(s"$verb$immutableString $createOrDelete ON HOME GRAPH RELATIONSHIPS * $preposition role") {
-                yields(func(
+                yields[Statements](func(
                   ast.GraphPrivilege(action, ast.HomeGraphScope()(_))(_),
                   List(ast.RelationshipAllQualifier()(_)),
                   Seq(literalRole),
@@ -113,13 +114,13 @@ class CreateDeletePrivilegeAdministrationCommandParserTest extends Administratio
 
               // Both Home and * should not parse
               test(s"$verb$immutableString $createOrDelete ON HOME GRAPH * $preposition role") {
-                failsToParse
+                failsToParse[Statements]
               }
 
               // Default graph
 
               test(s"$verb$immutableString $createOrDelete ON DEFAULT GRAPH $preposition role") {
-                yields(func(
+                yields[Statements](func(
                   ast.GraphPrivilege(action, ast.DefaultGraphScope()(_))(_),
                   List(ast.ElementsAllQualifier()(_)),
                   Seq(literalRole),
@@ -128,7 +129,7 @@ class CreateDeletePrivilegeAdministrationCommandParserTest extends Administratio
               }
 
               test(s"$verb$immutableString $createOrDelete ON DEFAULT GRAPH $preposition role1, role2") {
-                yields(func(
+                yields[Statements](func(
                   ast.GraphPrivilege(action, ast.DefaultGraphScope()(_))(_),
                   List(ast.ElementsAllQualifier()(_)),
                   Seq(literalRole1, literalRole2),
@@ -137,7 +138,7 @@ class CreateDeletePrivilegeAdministrationCommandParserTest extends Administratio
               }
 
               test(s"$verb$immutableString $createOrDelete ON DEFAULT GRAPH $preposition $$role1, role2") {
-                yields(func(
+                yields[Statements](func(
                   ast.GraphPrivilege(action, ast.DefaultGraphScope()(_))(_),
                   List(ast.ElementsAllQualifier()(_)),
                   Seq(paramRole1, literalRole2),
@@ -146,7 +147,7 @@ class CreateDeletePrivilegeAdministrationCommandParserTest extends Administratio
               }
 
               test(s"$verb$immutableString $createOrDelete ON DEFAULT GRAPH RELATIONSHIPS * $preposition role") {
-                yields(func(
+                yields[Statements](func(
                   ast.GraphPrivilege(action, ast.DefaultGraphScope()(_))(_),
                   List(ast.RelationshipAllQualifier()(_)),
                   Seq(literalRole),
@@ -156,12 +157,12 @@ class CreateDeletePrivilegeAdministrationCommandParserTest extends Administratio
 
               // Both Default and * should not parse
               test(s"$verb$immutableString $createOrDelete ON DEFAULT GRAPH * $preposition role") {
-                failsToParse
+                failsToParse[Statements]
               }
 
               test(s"$verb$immutableString $createOrDelete ON DATABASE blah $preposition role") {
                 val offset = verb.length + immutableString.length + createOrDelete.length + 5
-                assertFailsWithMessage(
+                assertFailsWithMessage[Statements](
                   testName,
                   s"""Invalid input 'DATABASE': expected "DEFAULT", "GRAPH", "GRAPHS" or "HOME" (line 1, column ${offset + 1} (offset: $offset))"""
                 )

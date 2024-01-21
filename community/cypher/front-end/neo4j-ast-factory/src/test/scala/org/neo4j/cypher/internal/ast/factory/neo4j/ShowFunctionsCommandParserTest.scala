@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.util.symbols.IntegerType
 
@@ -437,39 +438,39 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
   // Negative tests
 
   test("SHOW FUNCTIONS YIELD (123 + xyz)") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW FUNCTIONS YIELD (123 + xyz) AS foo") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW FUNCTIONS YIELD") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW FUNCTIONS YIELD * YIELD *") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW FUNCTIONS WHERE name = 'my.func' YIELD *") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW FUNCTIONS WHERE name = 'my.func' RETURN *") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW FUNCTIONS YIELD a b RETURN *") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW FUNCTIONS RETURN *") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW EXECUTABLE FUNCTION") {
-    assertFailsWithMessage(
+    assertFailsWithMessage[Statements](
       testName,
       """Invalid input 'EXECUTABLE': expected
         |  "ALIAS"
@@ -524,118 +525,118 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
   }
 
   test("SHOW FUNCTION EXECUTABLE user") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW FUNCTION EXECUTABLE CURRENT USER") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW FUNCTION EXEC") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW FUNCTION EXECUTABLE BY") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW FUNCTION EXECUTABLE BY user1, user2") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW FUNCTION EXECUTABLE BY CURRENT USER user") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW FUNCTION EXECUTABLE BY CURRENT USER, user") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW FUNCTION EXECUTABLE BY user CURRENT USER") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW FUNCTION EXECUTABLE BY user, CURRENT USER") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW FUNCTION CURRENT USER") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW FUNCTION user") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW CURRENT USER FUNCTION") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW user FUNCTION") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW USER user FUNCTION") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW FUNCTION EXECUTABLE BY USER user") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW FUNCTION EXECUTABLE USER user") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW FUNCTION USER user") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW BUILT FUNCTIONS") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW BUILT-IN FUNCTIONS") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW USER FUNCTIONS") {
-    assertFailsWithMessage(
+    assertFailsWithMessage[Statements](
       testName,
       """Invalid input '': expected ",", "PRIVILEGE" or "PRIVILEGES" (line 1, column 20 (offset: 19))"""
     )
   }
 
   test("SHOW USER-DEFINED FUNCTIONS") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW FUNCTIONS ALL") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW FUNCTIONS BUILT IN") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW FUNCTIONS USER DEFINED") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW ALL USER DEFINED FUNCTIONS") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW ALL BUILT IN FUNCTIONS") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW BUILT IN USER DEFINED FUNCTIONS") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW USER DEFINED BUILT IN FUNCTIONS") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   // Invalid clause order
@@ -643,92 +644,92 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
   for (prefix <- Seq("USE neo4j", "")) {
     test(s"$prefix SHOW FUNCTIONS YIELD * WITH * MATCH (n) RETURN n") {
       // Can't parse WITH after SHOW
-      assertFailsWithMessageStart(testName, "Invalid input 'WITH': expected")
+      assertFailsWithMessageStart[Statements](testName, "Invalid input 'WITH': expected")
     }
 
     test(s"$prefix UNWIND range(1,10) as b SHOW FUNCTIONS YIELD * RETURN *") {
       // Can't parse SHOW  after UNWIND
-      assertFailsWithMessageStart(testName, "Invalid input 'SHOW': expected")
+      assertFailsWithMessageStart[Statements](testName, "Invalid input 'SHOW': expected")
     }
 
     test(s"$prefix SHOW FUNCTIONS WITH name, type RETURN *") {
       // Can't parse WITH after SHOW
-      assertFailsWithMessageStart(testName, "Invalid input 'WITH': expected")
+      assertFailsWithMessageStart[Statements](testName, "Invalid input 'WITH': expected")
     }
 
     test(s"$prefix WITH 'n' as n SHOW FUNCTIONS YIELD name RETURN name as numIndexes") {
-      assertFailsWithMessageStart(testName, "Invalid input 'SHOW': expected")
+      assertFailsWithMessageStart[Statements](testName, "Invalid input 'SHOW': expected")
     }
 
     test(s"$prefix SHOW FUNCTIONS RETURN name as numIndexes") {
-      assertFailsWithMessageStart(testName, "Invalid input 'RETURN': expected")
+      assertFailsWithMessageStart[Statements](testName, "Invalid input 'RETURN': expected")
     }
 
     test(s"$prefix SHOW FUNCTIONS WITH 1 as c RETURN name as numIndexes") {
-      assertFailsWithMessageStart(testName, "Invalid input 'WITH': expected")
+      assertFailsWithMessageStart[Statements](testName, "Invalid input 'WITH': expected")
     }
 
     test(s"$prefix SHOW FUNCTIONS WITH 1 as c") {
-      assertFailsWithMessageStart(testName, "Invalid input 'WITH': expected")
+      assertFailsWithMessageStart[Statements](testName, "Invalid input 'WITH': expected")
     }
 
     test(s"$prefix SHOW FUNCTIONS YIELD a WITH a RETURN a") {
-      assertFailsWithMessageStart(testName, "Invalid input 'WITH': expected")
+      assertFailsWithMessageStart[Statements](testName, "Invalid input 'WITH': expected")
     }
 
     test(s"$prefix SHOW FUNCTIONS YIELD as UNWIND as as a RETURN a") {
-      assertFailsWithMessageStart(testName, "Invalid input 'UNWIND': expected")
+      assertFailsWithMessageStart[Statements](testName, "Invalid input 'UNWIND': expected")
     }
 
     test(s"$prefix SHOW FUNCTIONS RETURN name2 YIELD name2") {
-      assertFailsWithMessageStart(testName, "Invalid input 'RETURN': expected")
+      assertFailsWithMessageStart[Statements](testName, "Invalid input 'RETURN': expected")
     }
   }
 
   // Brief/verbose not allowed
 
   test("SHOW FUNCTION BRIEF") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW FUNCTION BRIEF OUTPUT") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW FUNCTIONS BRIEF YIELD *") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW FUNCTIONS BRIEF RETURN *") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW FUNCTIONS BRIEF WHERE name = 'my.func'") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW FUNCTION VERBOSE") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW FUNCTION VERBOSE OUTPUT") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW FUNCTIONS VERBOSE YIELD *") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW FUNCTIONS VERBOSE RETURN *") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW FUNCTIONS VERBOSE WHERE name = 'my.func'") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW FUNCTION OUTPUT") {
-    failsToParse
+    failsToParse[Statements]
   }
 
 }

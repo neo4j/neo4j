@@ -16,41 +16,38 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import org.neo4j.cypher.internal.ast.Statement
-import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
-import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
+import org.neo4j.cypher.internal.ast.Statements
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 
-class UseParserTest extends ParserSyntaxTreeBase[Cst.Statement, Statement] {
-
-  implicit private val javaccRule: JavaccRule[Statement] = JavaccRule.Statements
-  implicit private val antlrRule: AntlrRule[Cst.Statement] = AntlrRule.Statements()
+class UseParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   test("USING PERIODIC COMMIT USE db LOAD CSV FROM 'url' AS line RETURN line") {
-    failsToParse
+    failsToParse[Statements]()
   }
 
   test("USE GRAPH db USING PERIODIC COMMIT LOAD CSV FROM 'url' AS line RETURN line") {
-    failsToParse
+    failsToParse[Statements]()
   }
 
   test("USE 1 RETURN 1") {
-    failsToParse
+    failsToParse[Statements]()
   }
 
   test("USE 'a' RETURN 1") {
-    failsToParse
+    failsToParse[Statements]()
   }
 
   test("USE [x] RETURN 1") {
-    failsToParse
+    failsToParse[Statements]()
   }
 
   test("USE 1 + 2 RETURN 1") {
-    failsToParse
+    failsToParse[Statements]()
   }
 
   test("CALL { USE neo4j RETURN 1 AS y } RETURN y") {
-    gives {
+    gives[Statements] {
       singleQuery(
         subqueryCall(
           use(List("neo4j")),
@@ -62,7 +59,7 @@ class UseParserTest extends ParserSyntaxTreeBase[Cst.Statement, Statement] {
   }
 
   test("WITH 1 AS x CALL { WITH x USE neo4j RETURN x AS y } RETURN x, y") {
-    gives {
+    gives[Statements] {
       singleQuery(
         with_(literal(1) as "x"),
         subqueryCall(
@@ -76,7 +73,7 @@ class UseParserTest extends ParserSyntaxTreeBase[Cst.Statement, Statement] {
   }
 
   test("USE foo UNION ALL RETURN 1") {
-    gives {
+    gives[Statements] {
       union(
         singleQuery(use(List("foo"))),
         singleQuery(return_(returnItem(literal(1), "1")))

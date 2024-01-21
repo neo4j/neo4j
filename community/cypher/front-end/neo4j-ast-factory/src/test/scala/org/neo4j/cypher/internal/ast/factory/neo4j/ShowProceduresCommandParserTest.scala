@@ -21,6 +21,7 @@ import org.neo4j.cypher.internal.ast.CurrentUser
 import org.neo4j.cypher.internal.ast.OrderBy
 import org.neo4j.cypher.internal.ast.ShowProceduresClause
 import org.neo4j.cypher.internal.ast.SingleQuery
+import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.User
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
@@ -375,39 +376,39 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
   // Negative tests
 
   test("SHOW PROCEDURES YIELD (123 + xyz)") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW PROCEDURES YIELD (123 + xyz) AS foo") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW PROCEDURES YIELD") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW PROCEDURES YIELD * YIELD *") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW PROCEDURES WHERE name = 'my.proc' YIELD *") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW PROCEDURES WHERE name = 'my.proc' RETURN *") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW PROCEDURES YIELD a b RETURN *") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW PROCEDURES RETURN *") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW EXECUTABLE PROCEDURE") {
-    assertFailsWithMessage(
+    assertFailsWithMessage[Statements](
       testName,
       """Invalid input 'EXECUTABLE': expected
         |  "ALIAS"
@@ -462,15 +463,15 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
   }
 
   test("SHOW PROCEDURE EXECUTABLE user") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW PROCEDURE EXECUTABLE CURRENT USER") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW PROCEDURE EXEC") {
-    assertFailsWithMessage(
+    assertFailsWithMessage[Statements](
       testName,
       """Invalid input 'EXEC': expected
         |  "EXECUTABLE"
@@ -483,65 +484,65 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
   }
 
   test("SHOW PROCEDURE EXECUTABLE BY") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW PROCEDURE EXECUTABLE BY user1, user2") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW PROCEDURE EXECUTABLE BY CURRENT USER user") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW PROCEDURE EXECUTABLE BY CURRENT USER, user") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW PROCEDURE EXECUTABLE BY user CURRENT USER") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW PROCEDURE EXECUTABLE BY user, CURRENT USER") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW PROCEDURE CURRENT USER") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW PROCEDURE user") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW CURRENT USER PROCEDURE") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW user PROCEDURE") {
-    assertFailsWithMessage(
+    assertFailsWithMessage[Statements](
       testName,
       """Invalid input '': expected ",", "PRIVILEGE" or "PRIVILEGES" (line 1, column 20 (offset: 19))"""
     )
   }
 
   test("SHOW USER user PROCEDURE") {
-    assertFailsWithMessage(
+    assertFailsWithMessage[Statements](
       testName,
       """Invalid input 'PROCEDURE': expected ",", "PRIVILEGE" or "PRIVILEGES" (line 1, column 16 (offset: 15))"""
     )
   }
 
   test("SHOW PROCEDURE EXECUTABLE BY USER user") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW PROCEDURE EXECUTABLE USER user") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW PROCEDURE USER user") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   // Invalid clause order
@@ -549,96 +550,96 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
   for (prefix <- Seq("USE neo4j", "")) {
     test(s"$prefix SHOW PROCEDURES YIELD * WITH * MATCH (n) RETURN n") {
       // Can't parse WITH after SHOW
-      assertFailsWithMessageStart(testName, "Invalid input 'WITH': expected")
+      assertFailsWithMessageStart[Statements](testName, "Invalid input 'WITH': expected")
     }
 
     test(s"$prefix UNWIND range(1,10) as b SHOW PROCEDURES YIELD * RETURN *") {
       // Can't parse SHOW  after UNWIND
-      assertFailsWithMessageStart(testName, "Invalid input 'SHOW': expected")
+      assertFailsWithMessageStart[Statements](testName, "Invalid input 'SHOW': expected")
     }
 
     test(s"$prefix SHOW PROCEDURES WITH name, type RETURN *") {
       // Can't parse WITH after SHOW
-      assertFailsWithMessageStart(testName, "Invalid input 'WITH': expected")
+      assertFailsWithMessageStart[Statements](testName, "Invalid input 'WITH': expected")
     }
 
     test(s"$prefix WITH 'n' as n SHOW PROCEDURES YIELD name RETURN name as numIndexes") {
-      assertFailsWithMessageStart(testName, "Invalid input 'SHOW': expected")
+      assertFailsWithMessageStart[Statements](testName, "Invalid input 'SHOW': expected")
     }
 
     test(s"$prefix SHOW PROCEDURES RETURN name as numIndexes") {
-      assertFailsWithMessageStart(testName, "Invalid input 'RETURN': expected")
+      assertFailsWithMessageStart[Statements](testName, "Invalid input 'RETURN': expected")
     }
 
     test(s"$prefix SHOW PROCEDURES WITH 1 as c RETURN name as numIndexes") {
-      assertFailsWithMessageStart(testName, "Invalid input 'WITH': expected")
+      assertFailsWithMessageStart[Statements](testName, "Invalid input 'WITH': expected")
     }
 
     test(s"$prefix SHOW PROCEDURES WITH 1 as c") {
-      assertFailsWithMessageStart(testName, "Invalid input 'WITH': expected")
+      assertFailsWithMessageStart[Statements](testName, "Invalid input 'WITH': expected")
     }
 
     test(s"$prefix SHOW PROCEDURES YIELD a WITH a RETURN a") {
-      assertFailsWithMessageStart(testName, "Invalid input 'WITH': expected")
+      assertFailsWithMessageStart[Statements](testName, "Invalid input 'WITH': expected")
     }
 
     test(s"$prefix SHOW PROCEDURES YIELD as UNWIND as as a RETURN a") {
-      assertFailsWithMessageStart(testName, "Invalid input 'UNWIND': expected")
+      assertFailsWithMessageStart[Statements](testName, "Invalid input 'UNWIND': expected")
     }
 
     test(s"$prefix SHOW PROCEDURES RETURN name2 YIELD name2") {
-      assertFailsWithMessageStart(testName, "Invalid input 'RETURN': expected")
+      assertFailsWithMessageStart[Statements](testName, "Invalid input 'RETURN': expected")
     }
   }
 
   // Brief/verbose not allowed
 
   test("SHOW PROCEDURE BRIEF") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW PROCEDURE BRIEF OUTPUT") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW PROCEDURES BRIEF YIELD *") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW PROCEDURES BRIEF RETURN *") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW PROCEDURES BRIEF WHERE name = 'my.proc'") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW PROCEDURE VERBOSE") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW PROCEDURE VERBOSE OUTPUT") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW PROCEDURES VERBOSE YIELD *") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW PROCEDURES VERBOSE RETURN *") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW PROCEDURES VERBOSE WHERE name = 'my.proc'") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW PROCEDURE OUTPUT") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW PROCEDURE YIELD name ORDER BY name AST RETURN *") {
-    assertFailsWithMessage(
+    assertFailsWithMessage[Statements](
       testName,
       """Invalid input 'AST': expected
         |  "!="

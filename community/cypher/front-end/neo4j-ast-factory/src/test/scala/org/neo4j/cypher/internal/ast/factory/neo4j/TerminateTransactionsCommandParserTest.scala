@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
@@ -367,7 +368,6 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
   }
 
   test("TERMINATE TRANSACTIONS yield YIELD *") {
-
     assertAst(
       singleQuery(
         ast.TerminateTransactionsClause(
@@ -383,7 +383,6 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
   }
 
   test("TERMINATE TRANSACTIONS show YIELD *") {
-
     assertAst(
       singleQuery(
         ast.TerminateTransactionsClause(
@@ -399,7 +398,6 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
   }
 
   test("TERMINATE TRANSACTIONS terminate YIELD *") {
-
     assertAst(
       singleQuery(
         ast.TerminateTransactionsClause(
@@ -697,139 +695,138 @@ class TerminateTransactionsCommandParserTest extends AdministrationAndSchemaComm
 
   test("TERMINATE TRANSACTIONS 'db1-transaction-123' YIELD") {
     // missing what is yielded
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("TERMINATE TRANSACTIONS 'db1-transaction-123' YIELD * YIELD *") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("TERMINATE TRANSACTIONS 'db1-transaction-123' WHERE transactionId = 'db1-transaction-123' YIELD *") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("TERMINATE TRANSACTIONS 'db1-transaction-123' WHERE transactionId = 'db1-transaction-123' RETURN *") {
     // Missing YIELD
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("TERMINATE TRANSACTIONS 'db1-transaction-123' YIELD a b RETURN *") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("TERMINATE TRANSACTIONS 'db1-transaction-123' YIELD (123 + xyz) AS foo") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("TERMINATE TRANSACTIONS 'db1-transaction-123' RETURN *") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("TERMINATE TRANSACTION db-transaction-123, abc") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("TERMINATE TRANSACTIONS 'db-transaction-123', $param") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("TERMINATE TRANSACTIONS $param, 'db-transaction-123'") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("TERMINATE TRANSACTIONS $param, $param2") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("TERMINATE TRANSACTIONS ['db1-transaction-123', 'db2-transaction-456'], abc") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("TERMINATE TRANSACTION foo, 'abc'") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("TERMINATE TRANSACTION x+2, abc") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("TERMINATE CURRENT USER TRANSACTION") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("TERMINATE USER user TRANSACTION") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("TERMINATE TRANSACTION EXECUTED BY USER user") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("TERMINATE ALL TRANSACTIONS") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   // Invalid clause order
 
   for (prefix <- Seq("USE neo4j", "")) {
-
     test(s"$prefix TERMINATE TRANSACTIONS WITH * MATCH (n) RETURN n") {
       // Can't parse WITH after TERMINATE
       // parses varFor("WITH") * function("MATCH", varFor("n"))
-      assertFailsWithMessageStart(testName, "Invalid input 'RETURN': expected")
+      assertFailsWithMessageStart[Statements](testName, "Invalid input 'RETURN': expected")
     }
 
     test(s"$prefix TERMINATE TRANSACTIONS YIELD * WITH * MATCH (n) RETURN n") {
       // Can't parse WITH after TERMINATE
-      assertFailsWithMessageStart(testName, "Invalid input 'WITH': expected")
+      assertFailsWithMessageStart[Statements](testName, "Invalid input 'WITH': expected")
     }
 
     test(s"$prefix UNWIND range(1,10) as b TERMINATE TRANSACTIONS YIELD * RETURN *") {
       // Can't parse TERMINATE  after UNWIND
-      assertFailsWithMessageStart(testName, "Invalid input 'TERMINATE': expected")
+      assertFailsWithMessageStart[Statements](testName, "Invalid input 'TERMINATE': expected")
     }
 
     test(s"$prefix TERMINATE TRANSACTIONS WITH name, type RETURN *") {
       // Can't parse WITH after TERMINATE
       // parses varFor("WITH")
-      assertFailsWithMessageStart(testName, "Invalid input 'name': expected")
+      assertFailsWithMessageStart[Statements](testName, "Invalid input 'name': expected")
     }
 
     test(s"$prefix WITH 'n' as n TERMINATE TRANSACTIONS YIELD name RETURN name as numIndexes") {
-      assertFailsWithMessageStart(testName, "Invalid input 'TERMINATE': expected")
+      assertFailsWithMessageStart[Statements](testName, "Invalid input 'TERMINATE': expected")
     }
 
     test(s"$prefix TERMINATE TRANSACTIONS RETURN name as numIndexes") {
       // parses varFor("RETURN")
-      assertFailsWithMessageStart(testName, "Invalid input 'name': expected")
+      assertFailsWithMessageStart[Statements](testName, "Invalid input 'name': expected")
     }
 
     test(s"$prefix TERMINATE TRANSACTIONS WITH 1 as c RETURN name as numIndexes") {
       // parses varFor("WITH")
-      assertFailsWithMessageStart(testName, "Invalid input '1': expected")
+      assertFailsWithMessageStart[Statements](testName, "Invalid input '1': expected")
     }
 
     test(s"$prefix TERMINATE TRANSACTIONS WITH 1 as c") {
       // parses varFor("WITH")
-      assertFailsWithMessageStart(testName, "Invalid input '1': expected")
+      assertFailsWithMessageStart[Statements](testName, "Invalid input '1': expected")
     }
 
     test(s"$prefix TERMINATE TRANSACTIONS YIELD a WITH a RETURN a") {
-      assertFailsWithMessageStart(testName, "Invalid input 'WITH': expected")
+      assertFailsWithMessageStart[Statements](testName, "Invalid input 'WITH': expected")
     }
 
     test(s"$prefix TERMINATE TRANSACTIONS UNWIND as as a RETURN a") {
       // parses varFor("UNWIND")
-      assertFailsWithMessageStart(testName, "Invalid input 'as': expected")
+      assertFailsWithMessageStart[Statements](testName, "Invalid input 'as': expected")
     }
 
     test(s"$prefix TERMINATE TRANSACTIONS YIELD as UNWIND as as a RETURN a") {
-      assertFailsWithMessageStart(testName, "Invalid input 'UNWIND': expected")
+      assertFailsWithMessageStart[Statements](testName, "Invalid input 'UNWIND': expected")
     }
 
     test(s"$prefix TERMINATE TRANSACTIONS RETURN id2 YIELD id2") {
       // parses varFor("RETURN")
-      assertFailsWithMessageStart(testName, "Invalid input 'id2': expected")
+      assertFailsWithMessageStart[Statements](testName, "Invalid input 'id2': expected")
     }
   }
 

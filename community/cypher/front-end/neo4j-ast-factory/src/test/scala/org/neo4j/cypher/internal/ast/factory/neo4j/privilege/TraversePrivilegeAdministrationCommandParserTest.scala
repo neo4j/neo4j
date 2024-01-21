@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j.privilege
 
 import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.AdministrationAndSchemaCommandParserTestBase
 
 class TraversePrivilegeAdministrationCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
@@ -33,7 +34,7 @@ class TraversePrivilegeAdministrationCommandParserTest extends AdministrationAnd
         immutable =>
           val immutableString = immutableOrEmpty(immutable)
           test(s"$verb$immutableString TRAVERSE ON HOME GRAPH $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.TraverseAction, ast.HomeGraphScope()(_))(pos),
               List(ast.ElementsAllQualifier() _),
               Seq(literalRole),
@@ -42,7 +43,7 @@ class TraversePrivilegeAdministrationCommandParserTest extends AdministrationAnd
           }
 
           test(s"$verb$immutableString TRAVERSE ON HOME GRAPH NODE A $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.TraverseAction, ast.HomeGraphScope()(_))(pos),
               List(labelQualifierA),
               Seq(literalRole),
@@ -51,7 +52,7 @@ class TraversePrivilegeAdministrationCommandParserTest extends AdministrationAnd
           }
 
           test(s"$verb$immutableString TRAVERSE ON HOME GRAPH RELATIONSHIP * $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.TraverseAction, ast.HomeGraphScope()(_))(pos),
               List(ast.RelationshipAllQualifier() _),
               Seq(literalRole),
@@ -60,7 +61,7 @@ class TraversePrivilegeAdministrationCommandParserTest extends AdministrationAnd
           }
 
           test(s"$verb$immutableString TRAVERSE ON HOME GRAPH ELEMENT A $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.TraverseAction, ast.HomeGraphScope()(_))(pos),
               List(elemQualifierA),
               Seq(literalRole),
@@ -69,7 +70,7 @@ class TraversePrivilegeAdministrationCommandParserTest extends AdministrationAnd
           }
 
           test(s"$verb$immutableString TRAVERSE ON DEFAULT GRAPH $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.TraverseAction, ast.DefaultGraphScope()(_))(pos),
               List(ast.ElementsAllQualifier() _),
               Seq(literalRole),
@@ -78,7 +79,7 @@ class TraversePrivilegeAdministrationCommandParserTest extends AdministrationAnd
           }
 
           test(s"$verb$immutableString TRAVERSE ON DEFAULT GRAPH NODE A $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.TraverseAction, ast.DefaultGraphScope()(_))(pos),
               List(labelQualifierA),
               Seq(literalRole),
@@ -87,7 +88,7 @@ class TraversePrivilegeAdministrationCommandParserTest extends AdministrationAnd
           }
 
           test(s"$verb$immutableString TRAVERSE ON DEFAULT GRAPH RELATIONSHIP * $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.TraverseAction, ast.DefaultGraphScope()(_))(pos),
               List(ast.RelationshipAllQualifier() _),
               Seq(literalRole),
@@ -96,7 +97,7 @@ class TraversePrivilegeAdministrationCommandParserTest extends AdministrationAnd
           }
 
           test(s"$verb$immutableString TRAVERSE ON DEFAULT GRAPH ELEMENT A $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.TraverseAction, ast.DefaultGraphScope()(_))(pos),
               List(elemQualifierA),
               Seq(literalRole),
@@ -107,7 +108,7 @@ class TraversePrivilegeAdministrationCommandParserTest extends AdministrationAnd
           Seq("GRAPH", "GRAPHS").foreach {
             graphKeyword =>
               test(s"$verb$immutableString TRAVERSE ON $graphKeyword * $preposition $$role") {
-                yields(func(
+                yields[Statements](func(
                   ast.GraphPrivilege(ast.TraverseAction, ast.AllGraphsScope() _)(pos),
                   List(ast.ElementsAllQualifier() _),
                   Seq(paramRole),
@@ -116,7 +117,7 @@ class TraversePrivilegeAdministrationCommandParserTest extends AdministrationAnd
               }
 
               test(s"$verb$immutableString TRAVERSE ON $graphKeyword foo $preposition role") {
-                yields(func(
+                yields[Statements](func(
                   ast.GraphPrivilege(ast.TraverseAction, graphScopeFoo)(pos),
                   List(ast.ElementsAllQualifier() _),
                   Seq(literalRole),
@@ -125,7 +126,7 @@ class TraversePrivilegeAdministrationCommandParserTest extends AdministrationAnd
               }
 
               test(s"$verb$immutableString TRAVERSE ON $graphKeyword $$foo $preposition role") {
-                yields(func(
+                yields[Statements](func(
                   ast.GraphPrivilege(ast.TraverseAction, graphScopeParamFoo)(pos),
                   List(ast.ElementsAllQualifier() _),
                   Seq(literalRole),
@@ -136,7 +137,7 @@ class TraversePrivilegeAdministrationCommandParserTest extends AdministrationAnd
               Seq("NODE", "NODES").foreach {
                 nodeKeyword =>
                   test(s"validExpressions $verb$immutableString $graphKeyword $nodeKeyword $preposition") {
-                    parsing(
+                    parsing[Statements](
                       s"$verb$immutableString TRAVERSE ON $graphKeyword * $nodeKeyword * $preposition role"
                     ) shouldGive
                       func(
@@ -145,7 +146,7 @@ class TraversePrivilegeAdministrationCommandParserTest extends AdministrationAnd
                         Seq(literalRole),
                         immutable
                       )
-                    parsing(
+                    parsing[Statements](
                       s"$verb$immutableString TRAVERSE ON $graphKeyword * $nodeKeyword * (*) $preposition role"
                     ) shouldGive
                       func(
@@ -154,7 +155,7 @@ class TraversePrivilegeAdministrationCommandParserTest extends AdministrationAnd
                         Seq(literalRole),
                         immutable
                       )
-                    parsing(
+                    parsing[Statements](
                       s"$verb$immutableString TRAVERSE ON $graphKeyword * $nodeKeyword A $preposition role"
                     ) shouldGive
                       func(
@@ -163,7 +164,7 @@ class TraversePrivilegeAdministrationCommandParserTest extends AdministrationAnd
                         Seq(literalRole),
                         immutable
                       )
-                    parsing(
+                    parsing[Statements](
                       s"$verb$immutableString TRAVERSE ON $graphKeyword * $nodeKeyword A (*) $preposition role"
                     ) shouldGive
                       func(
@@ -172,7 +173,7 @@ class TraversePrivilegeAdministrationCommandParserTest extends AdministrationAnd
                         Seq(literalRole),
                         immutable
                       )
-                    parsing(
+                    parsing[Statements](
                       s"$verb$immutableString TRAVERSE ON $graphKeyword `*` $nodeKeyword A $preposition role"
                     ) shouldGive
                       func(
@@ -181,7 +182,7 @@ class TraversePrivilegeAdministrationCommandParserTest extends AdministrationAnd
                         Seq(literalRole),
                         immutable
                       )
-                    parsing(
+                    parsing[Statements](
                       s"$verb$immutableString TRAVERSE ON $graphKeyword foo $nodeKeyword * $preposition role"
                     ) shouldGive
                       func(
@@ -190,7 +191,7 @@ class TraversePrivilegeAdministrationCommandParserTest extends AdministrationAnd
                         Seq(literalRole),
                         immutable
                       )
-                    parsing(
+                    parsing[Statements](
                       s"$verb$immutableString TRAVERSE ON $graphKeyword foo $nodeKeyword * (*) $preposition role"
                     ) shouldGive
                       func(
@@ -199,7 +200,7 @@ class TraversePrivilegeAdministrationCommandParserTest extends AdministrationAnd
                         Seq(literalRole),
                         immutable
                       )
-                    parsing(
+                    parsing[Statements](
                       s"$verb$immutableString TRAVERSE ON $graphKeyword foo $nodeKeyword A $preposition role"
                     ) shouldGive
                       func(
@@ -208,7 +209,7 @@ class TraversePrivilegeAdministrationCommandParserTest extends AdministrationAnd
                         Seq(literalRole),
                         immutable
                       )
-                    parsing(
+                    parsing[Statements](
                       s"$verb$immutableString TRAVERSE ON $graphKeyword foo $nodeKeyword A (*) $preposition role"
                     ) shouldGive
                       func(
@@ -217,7 +218,7 @@ class TraversePrivilegeAdministrationCommandParserTest extends AdministrationAnd
                         Seq(literalRole),
                         immutable
                       )
-                    parsing(
+                    parsing[Statements](
                       s"$verb$immutableString TRAVERSE ON $graphKeyword foo $nodeKeyword A (*) $preposition role1, $$role2"
                     ) shouldGive
                       func(
@@ -226,7 +227,7 @@ class TraversePrivilegeAdministrationCommandParserTest extends AdministrationAnd
                         Seq(literalRole1, paramRole2),
                         immutable
                       )
-                    parsing(
+                    parsing[Statements](
                       s"$verb$immutableString TRAVERSE ON $graphKeyword `2foo` $nodeKeyword A (*) $preposition role"
                     ) shouldGive
                       func(
@@ -235,7 +236,7 @@ class TraversePrivilegeAdministrationCommandParserTest extends AdministrationAnd
                         Seq(literalRole),
                         immutable
                       )
-                    parsing(
+                    parsing[Statements](
                       s"$verb$immutableString TRAVERSE ON $graphKeyword foo $nodeKeyword A (*) $preposition `r:ole`"
                     ) shouldGive
                       func(
@@ -244,7 +245,7 @@ class TraversePrivilegeAdministrationCommandParserTest extends AdministrationAnd
                         Seq(literalRColonOle),
                         immutable
                       )
-                    parsing(
+                    parsing[Statements](
                       s"$verb$immutableString TRAVERSE ON $graphKeyword foo $nodeKeyword `A B` (*) $preposition role"
                     ) shouldGive
                       func(
@@ -253,7 +254,7 @@ class TraversePrivilegeAdministrationCommandParserTest extends AdministrationAnd
                         Seq(literalRole),
                         immutable
                       )
-                    parsing(
+                    parsing[Statements](
                       s"$verb$immutableString TRAVERSE ON $graphKeyword foo $nodeKeyword A, B (*) $preposition role"
                     ) shouldGive
                       func(
@@ -262,7 +263,7 @@ class TraversePrivilegeAdministrationCommandParserTest extends AdministrationAnd
                         Seq(literalRole),
                         immutable
                       )
-                    parsing(
+                    parsing[Statements](
                       s"$verb$immutableString TRAVERSE ON $graphKeyword foo $nodeKeyword A, B (*) $preposition role1, role2"
                     ) shouldGive
                       func(
@@ -271,7 +272,7 @@ class TraversePrivilegeAdministrationCommandParserTest extends AdministrationAnd
                         Seq(literalRole1, literalRole2),
                         immutable
                       )
-                    parsing(
+                    parsing[Statements](
                       s"$verb$immutableString TRAVERSE ON $graphKeyword foo, baz $nodeKeyword A (*) $preposition role"
                     ) shouldGive
                       func(
@@ -283,24 +284,34 @@ class TraversePrivilegeAdministrationCommandParserTest extends AdministrationAnd
                   }
 
                   test(s"traverseParsingErrors $verb$immutableString $graphKeyword $nodeKeyword $preposition") {
-                    assertFails(s"$verb$immutableString TRAVERSE $graphKeyword * $nodeKeyword * (*) $preposition role")
-                    assertFails(
+                    assertFails[Statements](
+                      s"$verb$immutableString TRAVERSE $graphKeyword * $nodeKeyword * (*) $preposition role"
+                    )
+                    assertFails[Statements](
                       s"$verb$immutableString TRAVERSE ON $graphKeyword foo $nodeKeyword A B (*) $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString TRAVERSE ON $graphKeyword foo $nodeKeyword A (foo) $preposition role"
                     )
-                    assertFails(s"$verb$immutableString TRAVERSE ON $graphKeyword $nodeKeyword * $preposition role")
-                    assertFails(s"$verb$immutableString TRAVERSE ON $graphKeyword $nodeKeyword A $preposition role")
-                    assertFails(s"$verb$immutableString TRAVERSE ON $graphKeyword $nodeKeyword * (*) $preposition role")
-                    assertFails(s"$verb$immutableString TRAVERSE ON $graphKeyword $nodeKeyword A (*) $preposition role")
-                    assertFails(
+                    assertFails[Statements](
+                      s"$verb$immutableString TRAVERSE ON $graphKeyword $nodeKeyword * $preposition role"
+                    )
+                    assertFails[Statements](
+                      s"$verb$immutableString TRAVERSE ON $graphKeyword $nodeKeyword A $preposition role"
+                    )
+                    assertFails[Statements](
+                      s"$verb$immutableString TRAVERSE ON $graphKeyword $nodeKeyword * (*) $preposition role"
+                    )
+                    assertFails[Statements](
+                      s"$verb$immutableString TRAVERSE ON $graphKeyword $nodeKeyword A (*) $preposition role"
+                    )
+                    assertFails[Statements](
                       s"$verb$immutableString TRAVERSE ON $graphKeyword foo $nodeKeyword A (*) $preposition r:ole"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString TRAVERSE ON $graphKeyword 2foo $nodeKeyword A (*) $preposition role"
                     )
-                    assertFails(s"$verb$immutableString TRAVERSE ON $graphKeyword * $nodeKeyword * (*)")
+                    assertFails[Statements](s"$verb$immutableString TRAVERSE ON $graphKeyword * $nodeKeyword * (*)")
                   }
               }
 
@@ -454,30 +465,34 @@ class TraversePrivilegeAdministrationCommandParserTest extends AdministrationAnd
                   }
 
                   test(s"traverseParsingErrors$verb$immutableString $graphKeyword $relTypeKeyword $preposition") {
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString TRAVERSE $graphKeyword * $relTypeKeyword * (*) $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString TRAVERSE ON $graphKeyword foo $relTypeKeyword A B (*) $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString TRAVERSE ON $graphKeyword foo $relTypeKeyword A (foo) $preposition role"
                     )
-                    assertFails(s"$verb$immutableString TRAVERSE ON $graphKeyword $relTypeKeyword * $preposition role")
-                    assertFails(s"$verb$immutableString TRAVERSE ON $graphKeyword $relTypeKeyword A $preposition role")
-                    assertFails(
+                    assertFails[Statements](
+                      s"$verb$immutableString TRAVERSE ON $graphKeyword $relTypeKeyword * $preposition role"
+                    )
+                    assertFails[Statements](
+                      s"$verb$immutableString TRAVERSE ON $graphKeyword $relTypeKeyword A $preposition role"
+                    )
+                    assertFails[Statements](
                       s"$verb$immutableString TRAVERSE ON $graphKeyword $relTypeKeyword * (*) $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString TRAVERSE ON $graphKeyword $relTypeKeyword A (*) $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString TRAVERSE ON $graphKeyword foo $relTypeKeyword A (*) $preposition r:ole"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString TRAVERSE ON $graphKeyword 2foo $relTypeKeyword A (*) $preposition role"
                     )
-                    assertFails(s"$verb$immutableString TRAVERSE ON $graphKeyword * $relTypeKeyword * (*)")
+                    assertFails[Statements](s"$verb$immutableString TRAVERSE ON $graphKeyword * $relTypeKeyword * (*)")
                   }
               }
 
@@ -631,30 +646,34 @@ class TraversePrivilegeAdministrationCommandParserTest extends AdministrationAnd
                   }
 
                   test(s"traverseParsingErrors $verb$immutableString $graphKeyword $elementKeyword $preposition") {
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString TRAVERSE $graphKeyword * $elementKeyword * (*) $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString TRAVERSE ON $graphKeyword foo $elementKeyword A B (*) $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString TRAVERSE ON $graphKeyword foo $elementKeyword A (foo) $preposition role"
                     )
-                    assertFails(s"$verb$immutableString TRAVERSE ON $graphKeyword $elementKeyword * $preposition role")
-                    assertFails(s"$verb$immutableString TRAVERSE ON $graphKeyword $elementKeyword A $preposition role")
-                    assertFails(
+                    assertFails[Statements](
+                      s"$verb$immutableString TRAVERSE ON $graphKeyword $elementKeyword * $preposition role"
+                    )
+                    assertFails[Statements](
+                      s"$verb$immutableString TRAVERSE ON $graphKeyword $elementKeyword A $preposition role"
+                    )
+                    assertFails[Statements](
                       s"$verb$immutableString TRAVERSE ON $graphKeyword $elementKeyword * (*) $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString TRAVERSE ON $graphKeyword $elementKeyword A (*) $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString TRAVERSE ON $graphKeyword foo $elementKeyword A (*) $preposition r:ole"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString TRAVERSE ON $graphKeyword 2foo $elementKeyword A (*) $preposition role"
                     )
-                    assertFails(s"$verb$immutableString TRAVERSE ON $graphKeyword * $elementKeyword * (*)")
+                    assertFails[Statements](s"$verb$immutableString TRAVERSE ON $graphKeyword * $elementKeyword * (*)")
                   }
               }
           }
@@ -662,18 +681,18 @@ class TraversePrivilegeAdministrationCommandParserTest extends AdministrationAnd
           // Mix of specific graph and *
 
           test(s"$verb$immutableString TRAVERSE ON GRAPH foo, * $preposition role") {
-            failsToParse
+            failsToParse[Statements]
           }
 
           test(s"$verb$immutableString TRAVERSE ON GRAPH *, foo $preposition role") {
-            failsToParse
+            failsToParse[Statements]
           }
 
           // Database instead of graph keyword
 
           test(s"$verb$immutableString TRAVERSE ON DATABASES * $preposition role") {
             val offset = verb.length + immutableString.length + 13
-            assertFailsWithMessage(
+            assertFailsWithMessage[Statements](
               testName,
               s"""Invalid input 'DATABASES': expected "DEFAULT", "GRAPH", "GRAPHS" or "HOME" (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
             )
@@ -681,18 +700,18 @@ class TraversePrivilegeAdministrationCommandParserTest extends AdministrationAnd
 
           test(s"$verb$immutableString TRAVERSE ON DATABASE foo $preposition role") {
             val offset = verb.length + immutableString.length + 13
-            assertFailsWithMessage(
+            assertFailsWithMessage[Statements](
               testName,
               s"""Invalid input 'DATABASE': expected "DEFAULT", "GRAPH", "GRAPHS" or "HOME" (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
             )
           }
 
           test(s"$verb$immutableString TRAVERSE ON HOME DATABASE $preposition role") {
-            failsToParse
+            failsToParse[Statements]
           }
 
           test(s"$verb$immutableString TRAVERSE ON DEFAULT DATABASE $preposition role") {
-            failsToParse
+            failsToParse[Statements]
           }
       }
   }

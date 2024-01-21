@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.ast.RelUniqueConstraints
 import org.neo4j.cypher.internal.ast.RemovedSyntax
 import org.neo4j.cypher.internal.ast.ShowConstraintsClause
 import org.neo4j.cypher.internal.ast.ShowIndexesClause
+import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.TextIndexes
 import org.neo4j.cypher.internal.ast.UniqueConstraints
 import org.neo4j.cypher.internal.ast.ValidSyntax
@@ -46,7 +47,6 @@ import org.neo4j.cypher.internal.util.symbols.IntegerType
 
 /* Tests for listing indexes and constraints */
 class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
-
   // Show indexes
 
   Seq("INDEX", "INDEXES").foreach { indexKeyword =>
@@ -669,15 +669,15 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
   // Negative tests for show indexes
 
   test("SHOW INDEX YIELD (123 + xyz)") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW INDEX YIELD (123 + xyz) AS foo") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW ALL BTREE INDEXES") {
-    assertFailsWithMessage(
+    assertFailsWithMessage[Statements](
       testName,
       """Invalid input 'BTREE': expected
         |  "CONSTRAINT"
@@ -694,119 +694,119 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
   }
 
   test("SHOW INDEX OUTPUT") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW INDEX YIELD") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW INDEX VERBOSE BRIEF OUTPUT") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW INDEXES BRIEF YIELD *") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW INDEXES VERBOSE YIELD *") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW INDEXES BRIEF RETURN *") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW INDEXES VERBOSE RETURN *") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW INDEXES BRIEF WHERE uniqueness = 'UNIQUE'") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW INDEXES VERBOSE WHERE uniqueness = 'UNIQUE'") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW INDEXES YIELD * YIELD *") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW INDEXES WHERE uniqueness = 'UNIQUE' YIELD *") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW INDEXES WHERE uniqueness = 'UNIQUE' RETURN *") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW INDEXES YIELD a b RETURN *") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW INDEXES RETURN *") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW NODE INDEXES") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW REL INDEXES") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW RELATIONSHIP INDEXES") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW RANGE INDEXES BRIEF") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW RANGE INDEXES VERBOSE") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW FULLTEXT INDEXES BRIEF") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW FULLTEXT INDEXES VERBOSE") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW TEXT INDEXES BRIEF") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW TEXT INDEXES VERBOSE") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW POINT INDEXES BRIEF") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW POINT INDEXES VERBOSE") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW VECTOR INDEXES BRIEF") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW VECTOR INDEXES VERBOSE") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW LOOKUP INDEXES BRIEF") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW LOOKUP INDEXES VERBOSE") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   // Show constraints
@@ -1292,19 +1292,19 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
   // Negative tests for show constraints
 
   test("SHOW ALL EXISTS CONSTRAINTS") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW NODE CONSTRAINTS") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW EXISTS NODE CONSTRAINTS") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW NODES EXIST CONSTRAINTS") {
-    assertFailsWithMessage(
+    assertFailsWithMessage[Statements](
       testName,
       """Invalid input 'NODES': expected
         |  "ALIAS"
@@ -1359,15 +1359,15 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
   }
 
   test("SHOW RELATIONSHIP CONSTRAINTS") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW EXISTS RELATIONSHIP CONSTRAINTS") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW RELATIONSHIPS EXIST CONSTRAINTS") {
-    assertFailsWithMessage(
+    assertFailsWithMessage[Statements](
       testName,
       """Invalid input 'RELATIONSHIPS': expected
         |  "ALIAS"
@@ -1422,7 +1422,7 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
   }
 
   test("SHOW REL EXISTS CONSTRAINTS") {
-    assertFailsWithMessage(
+    assertFailsWithMessage[Statements](
       testName,
       """Invalid input 'EXISTS': expected
         |  "EXIST"
@@ -1435,142 +1435,142 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
   }
 
   test("SHOW PROPERTY CONSTRAINTS") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW PROP CONSTRAINTS") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW PROPERTY EXISTS CONSTRAINTS") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW NODE TYPE CONSTRAINTS") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW RELATIONSHIP TYPE CONSTRAINTS") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW REL TYPE CONSTRAINTS") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW TYPE CONSTRAINTS") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW CONSTRAINTS OUTPUT") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW CONSTRAINTS VERBOSE BRIEF OUTPUT") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   newConstraintType.foreach {
     case (constraintTypeKeyword, _) =>
       test(s"SHOW $constraintTypeKeyword CONSTRAINTS BRIEF") {
-        failsToParse
+        failsToParse[Statements]
       }
 
       test(s"SHOW $constraintTypeKeyword CONSTRAINT BRIEF OUTPUT") {
-        failsToParse
+        failsToParse[Statements]
       }
 
       test(s"SHOW $constraintTypeKeyword CONSTRAINT VERBOSE") {
-        failsToParse
+        failsToParse[Statements]
       }
 
       test(s"SHOW $constraintTypeKeyword CONSTRAINTS VERBOSE OUTPUT") {
-        failsToParse
+        failsToParse[Statements]
       }
   }
 
   test("SHOW CONSTRAINT YIELD (123 + xyz)") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW CONSTRAINTS YIELD (123 + xyz) AS foo") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW CONSTRAINT YIELD") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW CONSTRAINTS BRIEF YIELD *") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW CONSTRAINTS VERBOSE YIELD *") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW CONSTRAINTS BRIEF RETURN *") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW CONSTRAINTS VERBOSE RETURN *") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW CONSTRAINTS BRIEF WHERE entityType = 'NODE'") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW CONSTRAINTS VERBOSE WHERE entityType = 'NODE'") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW CONSTRAINTS YIELD * YIELD *") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW CONSTRAINTS WHERE entityType = 'NODE' YIELD *") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW CONSTRAINTS WHERE entityType = 'NODE' RETURN *") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW CONSTRAINTS YIELD a b RETURN *") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW EXISTS CONSTRAINT WHERE name = 'foo'") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW NODE EXISTS CONSTRAINT WHERE name = 'foo'") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW RELATIONSHIP EXISTS CONSTRAINT WHERE name = 'foo'") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW EXISTS CONSTRAINT YIELD *") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW NODE EXISTS CONSTRAINT YIELD *") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW RELATIONSHIP EXISTS CONSTRAINT YIELD name") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW EXISTS CONSTRAINT RETURN *") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW EXISTENCE CONSTRAINT RETURN *") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   // Invalid clause order tests for indexes and constraints
@@ -1581,45 +1581,45 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
   } {
     test(s"$prefix SHOW $entity YIELD * WITH * MATCH (n) RETURN n") {
       // Can't parse WITH after SHOW
-      assertFailsWithMessageStart(testName, "Invalid input 'WITH': expected")
+      assertFailsWithMessageStart[Statements](testName, "Invalid input 'WITH': expected")
     }
 
     test(s"$prefix UNWIND range(1,10) as b SHOW $entity YIELD * RETURN *") {
       // Can't parse SHOW  after UNWIND
-      assertFailsWithMessageStart(testName, "Invalid input 'SHOW': expected")
+      assertFailsWithMessageStart[Statements](testName, "Invalid input 'SHOW': expected")
     }
 
     test(s"$prefix SHOW $entity WITH name, type RETURN *") {
       // Can't parse WITH after SHOW
-      assertFailsWithMessageStart(testName, "Invalid input 'WITH': expected")
+      assertFailsWithMessageStart[Statements](testName, "Invalid input 'WITH': expected")
     }
 
     test(s"$prefix WITH 'n' as n SHOW $entity YIELD name RETURN name as numIndexes") {
-      assertFailsWithMessageStart(testName, "Invalid input 'SHOW': expected")
+      assertFailsWithMessageStart[Statements](testName, "Invalid input 'SHOW': expected")
     }
 
     test(s"$prefix SHOW $entity RETURN name as numIndexes") {
-      assertFailsWithMessageStart(testName, "Invalid input 'RETURN': expected")
+      assertFailsWithMessageStart[Statements](testName, "Invalid input 'RETURN': expected")
     }
 
     test(s"$prefix SHOW $entity WITH 1 as c RETURN name as numIndexes") {
-      assertFailsWithMessageStart(testName, "Invalid input 'WITH': expected")
+      assertFailsWithMessageStart[Statements](testName, "Invalid input 'WITH': expected")
     }
 
     test(s"$prefix SHOW $entity WITH 1 as c") {
-      assertFailsWithMessageStart(testName, "Invalid input 'WITH': expected")
+      assertFailsWithMessageStart[Statements](testName, "Invalid input 'WITH': expected")
     }
 
     test(s"$prefix SHOW $entity YIELD a WITH a RETURN a") {
-      assertFailsWithMessageStart(testName, "Invalid input 'WITH': expected")
+      assertFailsWithMessageStart[Statements](testName, "Invalid input 'WITH': expected")
     }
 
     test(s"$prefix SHOW $entity YIELD as UNWIND as as a RETURN a") {
-      assertFailsWithMessageStart(testName, "Invalid input 'UNWIND': expected")
+      assertFailsWithMessageStart[Statements](testName, "Invalid input 'UNWIND': expected")
     }
 
     test(s"$prefix SHOW $entity RETURN name2 YIELD name2") {
-      assertFailsWithMessageStart(testName, "Invalid input 'RETURN': expected")
+      assertFailsWithMessageStart[Statements](testName, "Invalid input 'RETURN': expected")
     }
   }
 }

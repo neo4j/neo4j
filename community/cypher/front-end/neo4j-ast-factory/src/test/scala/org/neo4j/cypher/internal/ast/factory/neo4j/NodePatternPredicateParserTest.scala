@@ -16,18 +16,12 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
-import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.util.test_helpers.TestName
 
-class NodePatternPredicateParserTest extends CypherFunSuite with TestName
-    with ParserSyntaxTreeBase[Cst.NodePattern, NodePattern] {
-
-  implicit val javaccRule: JavaccRule[NodePattern] = JavaccRule.NodePattern
-  implicit val antlrRule: AntlrRule[Cst.NodePattern] = AntlrRule.NodePattern
+class NodePatternPredicateParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   for {
     (maybeLabelExpression, maybeLabelExpressionAst) <-
@@ -35,7 +29,6 @@ class NodePatternPredicateParserTest extends CypherFunSuite with TestName
     (maybeProperties, maybePropertiesAst) <-
       Seq(("", None), ("{prop: 'test'}", Some(mapOf("prop" -> literalString("test")))))
   } yield {
-
     test(s"MATCH (n$maybeLabelExpression $maybeProperties WHERE n.otherProp > 123)") {
       parseNodePatterns(testName) shouldBe Seq(
         nodePat(

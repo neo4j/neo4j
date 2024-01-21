@@ -16,20 +16,14 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import org.neo4j.cypher.internal.ast
-import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
-import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.ast.Clause
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 
-import scala.collection.immutable.Seq
-
-class SetParserTest extends CypherFunSuite with ParserSyntaxTreeBase[Cst.Clause, ast.Clause] {
-
-  implicit val javaccRule: JavaccRule[ast.Clause] = JavaccRule.Clause
-  implicit val antlrRule: AntlrRule[Cst.Clause] = AntlrRule.Clause
+class SetParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   test("SET n:A") {
-    gives(
+    gives[Clause](
       set_(
         Seq(setLabelItem("n", Seq("A")))
       )
@@ -37,7 +31,7 @@ class SetParserTest extends CypherFunSuite with ParserSyntaxTreeBase[Cst.Clause,
   }
 
   test("SET n IS A") {
-    gives(
+    gives[Clause](
       set_(
         Seq(setLabelItem("n", Seq("A"), containsIs = true))
       )
@@ -45,7 +39,7 @@ class SetParserTest extends CypherFunSuite with ParserSyntaxTreeBase[Cst.Clause,
   }
 
   test("SET n:A:B:C") {
-    gives(
+    gives[Clause](
       set_(
         Seq(setLabelItem("n", Seq("A", "B", "C")))
       )
@@ -53,7 +47,7 @@ class SetParserTest extends CypherFunSuite with ParserSyntaxTreeBase[Cst.Clause,
   }
 
   test("SET n:A, n:B") {
-    gives(
+    gives[Clause](
       set_(
         Seq(setLabelItem("n", Seq("A")), setLabelItem("n", Seq("B")))
       )
@@ -61,7 +55,7 @@ class SetParserTest extends CypherFunSuite with ParserSyntaxTreeBase[Cst.Clause,
   }
 
   test("SET n IS A, n IS B") {
-    gives(
+    gives[Clause](
       set_(
         Seq(setLabelItem("n", Seq("A"), containsIs = true), setLabelItem("n", Seq("B"), containsIs = true))
       )
@@ -69,7 +63,7 @@ class SetParserTest extends CypherFunSuite with ParserSyntaxTreeBase[Cst.Clause,
   }
 
   test("SET n IS A, n:B") {
-    gives(
+    gives[Clause](
       set_(
         Seq(setLabelItem("n", Seq("A"), containsIs = true), setLabelItem("n", Seq("B")))
       )
@@ -77,7 +71,7 @@ class SetParserTest extends CypherFunSuite with ParserSyntaxTreeBase[Cst.Clause,
   }
 
   test("SET n:A, r.prop = 1, m IS B") {
-    gives(
+    gives[Clause](
       set_(
         Seq(
           setLabelItem("n", Seq("A")),
@@ -89,7 +83,7 @@ class SetParserTest extends CypherFunSuite with ParserSyntaxTreeBase[Cst.Clause,
   }
 
   test("SET n._1 = 1") {
-    gives(
+    gives[Clause](
       set_(
         Seq(
           setPropertyItem("n", "_1", literalInt(1))
@@ -101,7 +95,7 @@ class SetParserTest extends CypherFunSuite with ParserSyntaxTreeBase[Cst.Clause,
   // Invalid mix of colon conjunction and IS, this will be disallowed in semantic checking
 
   test("SET n IS A:B") {
-    gives(
+    gives[Clause](
       set_(
         Seq(setLabelItem("n", Seq("A", "B"), containsIs = true))
       )
@@ -109,7 +103,7 @@ class SetParserTest extends CypherFunSuite with ParserSyntaxTreeBase[Cst.Clause,
   }
 
   test("SET n IS A, m:A:B") {
-    gives(
+    gives[Clause](
       set_(
         Seq(
           setLabelItem("n", Seq("A"), containsIs = true),
@@ -122,30 +116,30 @@ class SetParserTest extends CypherFunSuite with ParserSyntaxTreeBase[Cst.Clause,
   //  Invalid use of other label expression symbols than :
 
   test("SET n:A|B") {
-    failsToParse
+    failsToParse[Clause]()
   }
 
   test("SET n:!A") {
-    failsToParse
+    failsToParse[Clause]()
   }
 
   test("SET n:%") {
-    failsToParse
+    failsToParse[Clause]()
   }
 
   test("SET n:A&B") {
-    failsToParse
+    failsToParse[Clause]()
   }
 
   test("SET n IS A&B") {
-    failsToParse
+    failsToParse[Clause]()
   }
 
   test("SET :A") {
-    failsToParse
+    failsToParse[Clause]()
   }
 
   test("SET IS A") {
-    failsToParse
+    failsToParse[Clause]()
   }
 }

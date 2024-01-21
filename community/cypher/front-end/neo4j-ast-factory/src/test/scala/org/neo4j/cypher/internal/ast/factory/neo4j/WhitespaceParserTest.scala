@@ -17,13 +17,10 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.Statement
-import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
-import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 
-class WhitespaceParserTest extends ParserSyntaxTreeBase[Cst.Statement, Statement] {
-
-  implicit val javaccRule: JavaccRule[Statement] = JavaccRule.Statement
-  implicit val antlrRule: AntlrRule[Cst.Statement] = AntlrRule.Statement
+class WhitespaceParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   private val whitespaceCharacters =
     Seq(
@@ -132,7 +129,7 @@ class WhitespaceParserTest extends ParserSyntaxTreeBase[Cst.Statement, Statement
         f"Accept the whitespace unicode character in defined set: \\u${Integer.valueOf(whitespace)}%04X"
     ) {
       assert(Character.isWhitespace(whitespace) || nonJavaWhitespace.contains(whitespace))
-      givesIncludingPositions(
+      givesIncludingPositions[Statement](
         {
           singleQuery(
             match_(nodePat(name = Some("m"))),
@@ -149,7 +146,7 @@ class WhitespaceParserTest extends ParserSyntaxTreeBase[Cst.Statement, Statement
       testName =
         s"Accept the escaped whitespace unicode character in defined set: $whitespace"
     ) {
-      givesIncludingPositions(
+      givesIncludingPositions[Statement](
         {
           singleQuery(
             match_(nodePat(name = Some("m"))),
@@ -173,7 +170,7 @@ class WhitespaceParserTest extends ParserSyntaxTreeBase[Cst.Statement, Statement
       test(
         testName = f"Accept the whitespace character included in Character.isWhitespace: \\u$i%04X"
       ) {
-        givesIncludingPositions(
+        givesIncludingPositions[Statement](
           {
             singleQuery(
               match_(nodePat(name = Some("m"))),
@@ -190,7 +187,7 @@ class WhitespaceParserTest extends ParserSyntaxTreeBase[Cst.Statement, Statement
    * test whitespaces in different locations
    */
   test("  MATCH ( m    ) RETURN m  ") {
-    givesIncludingPositions(
+    givesIncludingPositions[Statement](
       {
         singleQuery(
           match_(nodePat(name = Some("m"))),
@@ -204,7 +201,7 @@ class WhitespaceParserTest extends ParserSyntaxTreeBase[Cst.Statement, Statement
    * \u0085 is not supported as whitespace until 6.0
    */
   test("u0085 is nt allowed as whitespace") {
-    failsToParse(
+    failsToParse[Statement](
       s"MATCHs\\0085(m) RETURN m"
     )
   }

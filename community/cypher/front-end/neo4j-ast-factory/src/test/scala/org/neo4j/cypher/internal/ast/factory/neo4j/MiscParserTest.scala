@@ -16,39 +16,32 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import org.antlr.v4.runtime.ParserRuleContext
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.Remove
 import org.neo4j.cypher.internal.ast.RemovePropertyItem
 import org.neo4j.cypher.internal.ast.SetClause
 import org.neo4j.cypher.internal.ast.SetPropertyItem
 import org.neo4j.cypher.internal.ast.Statement
-import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
-import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.Range
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection
-import org.neo4j.cypher.internal.parser.CypherParser
-import org.neo4j.cypher.internal.util.ASTNode
+import org.neo4j.cypher.internal.expressions.StringLiteral
 
-class MiscParserTest extends ParserSyntaxTreeBase[ParserRuleContext, ASTNode] {
+class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   test("RETURN 1 AS x //l33t comment") {
-    implicit val javaccRule: JavaccRule[Statement] = JavaccRule.Statement
-    implicit val antlrRule: AntlrRule[Cst.Statement] = AntlrRule.Statement
-
-    gives {
+    gives[Statement] {
       singleQuery(returnLit(1 -> "x"))
     }
   }
 
   test("keywords are allowed names") {
-    implicit val javaccRule: JavaccRule[Statement] = JavaccRule.Statement
-    implicit val antlrRule: AntlrRule[Cst.Statement] = AntlrRule.Statement
-
     val keywords =
       Seq(
         "TRUE",
@@ -135,42 +128,33 @@ class MiscParserTest extends ParserSyntaxTreeBase[ParserRuleContext, ASTNode] {
       )
 
     for (keyword <- keywords) {
-      parsing(s"WITH $$$keyword AS x RETURN x AS $keyword")
+      parsing[Statement](s"WITH $$$keyword AS x RETURN x AS $keyword")
     }
   }
 
   test("should allow chained map access in SET/REMOVE") {
-    implicit val javaccRule: JavaccRule[Clause] = JavaccRule.Clause
-    implicit val antlrRule: AntlrRule[Cst.Clause] = AntlrRule.Clause
-
     val chainedProperties = prop(prop(varFor("map"), "node"), "property")
 
-    parsing("SET map.node.property = 123") shouldGive
+    parsing[Clause]("SET map.node.property = 123") shouldGive
       SetClause(Seq(
         SetPropertyItem(chainedProperties, literal(123))(pos)
       )) _
 
-    parsing("REMOVE map.node.property") shouldGive
+    parsing[Clause]("REMOVE map.node.property") shouldGive
       Remove(Seq(
         RemovePropertyItem(chainedProperties)
       )) _
   }
 
   test("should allow True and False as label name") {
-    implicit val javaccRule: JavaccRule[NodePattern] = JavaccRule.NodePattern
-    implicit val antlrRule: AntlrRule[Cst.NodePattern] = AntlrRule.NodePattern
+    parsing[NodePattern]("(:True)") shouldGive NodePattern(None, Some(labelLeaf("True")), None, None) _
+    parsing[NodePattern]("(:False)") shouldGive NodePattern(None, Some(labelLeaf("False")), None, None) _
 
-    parsing("(:True)") shouldGive NodePattern(None, Some(labelLeaf("True")), None, None) _
-    parsing("(:False)") shouldGive NodePattern(None, Some(labelLeaf("False")), None, None) _
-
-    parsing("(t:True)") shouldGive nodePat(name = Some("t"), labelExpression = Some(labelLeaf("True")))
-    parsing("(f:False)") shouldGive nodePat(name = Some("f"), labelExpression = Some(labelLeaf("False")))
+    parsing[NodePattern]("(t:True)") shouldGive nodePat(name = Some("t"), labelExpression = Some(labelLeaf("True")))
+    parsing[NodePattern]("(f:False)") shouldGive nodePat(name = Some("f"), labelExpression = Some(labelLeaf("False")))
   }
 
   test("-[:Person*1..2]-") {
-    implicit val javaccRule: JavaccRule[RelationshipPattern] = JavaccRule.RelationshipPattern
-    implicit val antlrRule: AntlrRule[Cst.RelationshipPattern] = AntlrRule.RelationshipPattern
-
     yields {
       RelationshipPattern(
         None,
@@ -189,39 +173,27 @@ class MiscParserTest extends ParserSyntaxTreeBase[ParserRuleContext, ASTNode] {
   }
 
   test("should not parse list literal as pattern comprehension") {
-    implicit val javaccRule: JavaccRule[Expression] = JavaccRule.Expression
-    implicit val antlrRule: AntlrRule[Cst.Expression] = AntlrRule.Expression
-
     val listLiterals = Seq(
       "[x = '1']",
       "[x = ()--()]",
       "[x = ()--()--()--()--()--()--()--()--()--()--()]"
     )
     for (l <- listLiterals) withClue(l) {
-      parsing(l) shouldVerify (_ shouldBe a[ListLiteral])
+      parsing[Expression](l) shouldVerify (_ shouldBe a[ListLiteral])
     }
   }
 
   test("should not parse pattern comprehensions with single nodes") {
-    implicit val javaccRule: JavaccRule[Expression] = JavaccRule.PatternComprehension
-    implicit val antlrRule: AntlrRule[Cst.PatternComprehension] = AntlrRule.PatternComprehension
-
-    assertFails("[p = (x) | p]")
+    assertFails[PatternComprehension]("[p = (x) | p]")
   }
 
   test("should handle escaping in string literals") {
-    implicit val javaccRule: JavaccRule[Expression] = JavaccRule.StringLiteral
-    implicit val antlrRule: AntlrRule[CypherParser.StringLiteralContext] = AntlrRule.StringLiteral
-
-    parsing("""'\\\''""") shouldGive literalString("""\'""")
+    parsing[StringLiteral]("""'\\\''""") shouldGive literalString("""\'""")
   }
 
   test("Normal Form is only converted to strings inside functions, else treated as a variable") {
-    implicit val javaccRule: JavaccRule[Clause] = JavaccRule.Clause
-    implicit val antlrRule: AntlrRule[Cst.Clause] = AntlrRule.Clause
-
     Seq("NFC", "NFD", "NFKC", "NFKD").foreach { normalForm =>
-      parsing(s"RETURN $normalForm") shouldGive
+      parsing[Clause](s"RETURN $normalForm") shouldGive
         return_(variableReturnItem(normalForm))
     }
   }

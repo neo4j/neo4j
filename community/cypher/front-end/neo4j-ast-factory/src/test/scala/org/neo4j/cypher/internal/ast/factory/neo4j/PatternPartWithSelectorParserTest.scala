@@ -16,15 +16,13 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import org.neo4j.cypher.internal.ast
-import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.CountExpression
 import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.SubqueryCall
-import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
-import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.expressions.MatchMode
 import org.neo4j.cypher.internal.expressions.NamedPatternPart
 import org.neo4j.cypher.internal.expressions.PathPatternPart
@@ -34,14 +32,8 @@ import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
 import org.neo4j.cypher.internal.expressions.PlusQuantifier
 import org.neo4j.cypher.internal.expressions.QuantifiedPath
 import org.neo4j.cypher.internal.util.InputPosition
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class PatternPartWithSelectorParserTest extends CypherFunSuite
-    with ParserSyntaxTreeBase[Cst.Clause, ast.Clause]
-    with AstConstructionTestSupport {
-
-  implicit val javaccRule: JavaccRule[Clause] = JavaccRule.Clause
-  implicit val antlrRule: AntlrRule[Cst.Clause] = AntlrRule.Clause
+class PatternPartWithSelectorParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   private val selectors = Map(
     "ALL" -> allPathsSelector(),
@@ -77,7 +69,7 @@ class PatternPartWithSelectorParserTest extends CypherFunSuite
   test("MATCH $selector (a)-[r]->(b)") {
     selectors.foreach { case selector -> astNode =>
       withClue(s"selector = $selector") {
-        parsing(s"MATCH $selector (a)-[r]->(b)") shouldGive {
+        parsing[Clause](s"MATCH $selector (a)-[r]->(b)") shouldGive {
           Match(
             optional = false,
             matchMode = MatchMode.default(pos),
@@ -98,7 +90,7 @@ class PatternPartWithSelectorParserTest extends CypherFunSuite
   test("MATCH path = $selector ((a)-[r]->(b) WHERE a.prop = b.prop)") {
     selectors.foreach { case selector -> astNode =>
       withClue(s"selector = $selector") {
-        parsing(s"MATCH path = $selector ((a)-[r]->(b) WHERE a.prop = b.prop)") shouldGive {
+        parsing[Clause](s"MATCH path = $selector ((a)-[r]->(b) WHERE a.prop = b.prop)") shouldGive {
           Match(
             optional = false,
             matchMode = MatchMode.default(pos),
@@ -129,7 +121,7 @@ class PatternPartWithSelectorParserTest extends CypherFunSuite
   test("MATCH $selector ((a)-[r]->(b))+") {
     selectors.foreach { case selector -> astNode =>
       withClue(s"selector = $selector") {
-        parsing(s"MATCH $selector ((a)-[r]->(b))+") shouldGive {
+        parsing[Clause](s"MATCH $selector ((a)-[r]->(b))+") shouldGive {
           Match(
             optional = false,
             matchMode = MatchMode.default(pos),
@@ -156,7 +148,7 @@ class PatternPartWithSelectorParserTest extends CypherFunSuite
   test("OPTIONAL MATCH $selector (a)-[r]->(b)") {
     selectors.foreach { case selector -> astNode =>
       withClue(s"selector = $selector") {
-        parsing(s"OPTIONAL MATCH $selector (a)-[r]->(b)") shouldGive {
+        parsing[Clause](s"OPTIONAL MATCH $selector (a)-[r]->(b)") shouldGive {
           Match(
             optional = true,
             matchMode = MatchMode.default(pos),
@@ -179,7 +171,7 @@ class PatternPartWithSelectorParserTest extends CypherFunSuite
   test("RETURN COUNT { MATCH $selector (a)-[r]->(b) }") {
     selectors.foreach { case selector -> astNode =>
       withClue(s"selector = $selector") {
-        parsing(s"RETURN COUNT { MATCH $selector (a)-[r]->(b) }") shouldGive {
+        parsing[Clause](s"RETURN COUNT { MATCH $selector (a)-[r]->(b) }") shouldGive {
           return_(
             returnItem(
               CountExpression(
@@ -213,7 +205,7 @@ class PatternPartWithSelectorParserTest extends CypherFunSuite
   test("RETURN EXISTS { MATCH $selector (a)-[r]->(b) }") {
     selectors.foreach { case selector -> astNode =>
       withClue(s"selector = $selector") {
-        parsing(s"RETURN EXISTS { MATCH $selector (a)-[r]->(b) }") shouldGive {
+        parsing[Clause](s"RETURN EXISTS { MATCH $selector (a)-[r]->(b) }") shouldGive {
           return_(
             returnItem(
               ExistsExpression(
@@ -247,7 +239,7 @@ class PatternPartWithSelectorParserTest extends CypherFunSuite
   test("CALL { MATCH $selector (a)-[r]->(b) }") {
     selectors.foreach { case selector -> astNode =>
       withClue(s"selector = $selector") {
-        parsing(s"CALL { MATCH $selector (a)-[r]->(b) }") shouldGive {
+        parsing[Clause](s"CALL { MATCH $selector (a)-[r]->(b) }") shouldGive {
           SubqueryCall(
             singleQuery(
               Match(
@@ -275,7 +267,7 @@ class PatternPartWithSelectorParserTest extends CypherFunSuite
   selectors.foreach { selector =>
     withClue(s"selector = ${selector._1}") {
       test(s"FOREACH (x in [ ${selector._1} (a)-->(b) | a ] | SET x.prop = 12 )") {
-        failsToParse
+        failsToParse[Clause]()
       }
     }
   }
@@ -283,7 +275,7 @@ class PatternPartWithSelectorParserTest extends CypherFunSuite
   selectors.foreach { selector =>
     withClue(s"selector = ${selector._1}") {
       test(s"RETURN reduce(sum=0, x IN [${selector._1} (a)-[:r]->(b) | b.prop] | sum + x)") {
-        failsToParse
+        failsToParse[Clause]()
       }
     }
   }
@@ -291,7 +283,7 @@ class PatternPartWithSelectorParserTest extends CypherFunSuite
   selectors.foreach { selector =>
     withClue(s"selector = ${selector._1}") {
       test(s"MATCH shortestPath(${selector._1} (a)-[r]->(b))") {
-        failsToParse
+        failsToParse[Clause]()
       }
     }
   }
@@ -299,7 +291,7 @@ class PatternPartWithSelectorParserTest extends CypherFunSuite
   selectors.foreach { selector =>
     withClue(s"selector = ${selector._1}") {
       test(s"MATCH allShortestPaths(${selector._1} (a)-[r]->(b))") {
-        failsToParse
+        failsToParse[Clause]()
       }
     }
   }
@@ -307,35 +299,31 @@ class PatternPartWithSelectorParserTest extends CypherFunSuite
   selectors.foreach { selector =>
     withClue(s"selector = ${selector._1}") {
       test(s"RETURN [ ${selector._1} (a)-->(b) | a ]") {
-        failsToParse
+        failsToParse[Clause]()
       }
     }
   }
 
-  // The tests below use `failsToParseOnlyJavaCC` because selectors in QPPs, PPPs, and update clauses are allowed by the grammar.
+  // The tests below use `failsToParse[Clause]()OnlyJavaCC` because selectors in QPPs, PPPs, and update clauses are allowed by the grammar.
   // They are rejected by the AST factory later, but ANTLR doesn't go that far yet.
 
   test("MATCH $selector (() ($selector (a)-[r]->(b))* ()-->())") {
     selectors.foreach { case selector -> _ =>
       withClue(s"selector = $selector") {
-        failsToParseOnlyJavaCC(s"MATCH $selector (() ($selector (a)-[r]->(b))* ()-->())")
+        failsToParseOnlyJavaCC[Clause](s"MATCH $selector (() ($selector (a)-[r]->(b))* ()-->())")
       }
     }
   }
 
   test("CREATE $selector (a)-[r]->(b)") {
     selectors.foreach { case selector -> _ =>
-      withClue(s"selector = $selector") {
-        failsToParseOnlyJavaCC(s"CREATE $selector (a)-[r]->(b)")
-      }
+      failsToParseOnlyJavaCC[Clause](s"CREATE $selector (a)-[r]->(b)")
     }
   }
 
   test("MERGE $selector (a)-[r]->(b)") {
     selectors.foreach { case selector -> _ =>
-      withClue(s"selector = $selector") {
-        failsToParseOnlyJavaCC(s"MERGE $selector (a)-[r]->(b)")
-      }
+      failsToParseOnlyJavaCC[Clause](s"MERGE $selector (a)-[r]->(b)")
     }
   }
 
@@ -343,7 +331,7 @@ class PatternPartWithSelectorParserTest extends CypherFunSuite
     val clausesToTest = Seq(("CREATE", InputPosition(7, 1, 8)), ("MERGE", InputPosition(6, 1, 7)))
     for ((clause, pos) <- clausesToTest) withClue(clause) {
       val q = s"$clause $testName"
-      assertFailsWithMessage(
+      assertFailsWithMessage[Clause](
         q,
         s"Path selectors such as `ANY 1 PATHS` cannot be used in a $clause clause, but only in a MATCH clause. ($pos)",
         failsOnlyJavaCC = true
@@ -356,7 +344,7 @@ class PatternPartWithSelectorParserTest extends CypherFunSuite
     Seq("+", "").foreach { quantifier =>
       test(s"MATCH ($selector (a)-[r]->(b))$quantifier") {
         val pathPatternKind = if (quantifier == "") "parenthesized" else "quantified"
-        assertFailsWithMessageStart(
+        assertFailsWithMessageStart[Clause](
           testName,
           s"Path selectors such as `${astSelector.prettified}` are not supported within $pathPatternKind path patterns.",
           failsOnlyJavaCC = true
@@ -365,7 +353,7 @@ class PatternPartWithSelectorParserTest extends CypherFunSuite
 
       if (quantifier == "+") {
         test(s"MATCH (() ($selector (a)-[r]->(b))$quantifier ()--())") {
-          assertFailsWithMessageStart(
+          assertFailsWithMessageStart[Clause](
             testName,
             s"Path selectors such as `${astSelector.prettified}` are not supported within quantified path patterns.",
             failsOnlyJavaCC = true
@@ -390,7 +378,7 @@ class PatternPartWithSelectorParserTest extends CypherFunSuite
     "SHORTEST -1 GROUP"
   ).foreach { selector =>
     test(s"MATCH $selector (a)-[r]->(b)") {
-      failsToParse
+      failsToParse[Clause]()
     }
   }
 }

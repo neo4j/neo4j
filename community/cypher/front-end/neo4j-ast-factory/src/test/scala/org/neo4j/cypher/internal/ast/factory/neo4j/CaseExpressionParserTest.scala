@@ -16,14 +16,11 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
-import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.expressions.CaseExpression
-import org.neo4j.cypher.internal.expressions.Expression
 
-class CaseExpressionParserTest extends ParserSyntaxTreeBase[Cst.CaseExpression, Expression] {
-  implicit private val javaccRule: JavaccRule[Expression] = JavaccRule.CaseExpression
-  implicit private val antlrRule: AntlrRule[Cst.CaseExpression] = AntlrRule.CaseExpression
+class CaseExpressionParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   test("CASE WHEN (e) THEN e ELSE null END") {
     yields {
@@ -46,6 +43,6 @@ class CaseExpressionParserTest extends ParserSyntaxTreeBase[Cst.CaseExpression, 
   }
 
   test("CASE when(v1) + 1 WHEN THEN v2 ELSE null END") {
-    failsToParse
+    failsToParse[CaseExpression]
   }
 }

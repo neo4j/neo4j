@@ -27,7 +27,9 @@ import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.NamedGraphsScope
 import org.neo4j.cypher.internal.ast.PatternQualifier
 import org.neo4j.cypher.internal.ast.SingleQuery
+import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.TraverseAction
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.ParserSupport.NotAntlr
 import org.neo4j.cypher.internal.expressions.BooleanExpression
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
@@ -46,7 +48,6 @@ import org.neo4j.cypher.internal.expressions.Variable
 
 class TraversePropertyPrivilegeAdministrationCommandParserTest
     extends PropertyPrivilegeAdministrationCommandParserTestBase {
-
   case class Action(verb: String, preposition: String, func: noResourcePrivilegeFunc)
 
   val actions: Seq[Action] = Seq(
@@ -482,38 +483,38 @@ class TraversePropertyPrivilegeAdministrationCommandParserTest
         case _ => fail("Unexpected expression")
       }).foreach { (propertyRule: String) =>
         // Missing ON
-        assertFails(
+        assertFails[Statements](
           s"$verb$immutableString TRAVERSE $graphKeyword $graphName $patternKeyword $propertyRule $preposition role"
         )
 
         // Missing role
-        assertFails(
+        assertFails[Statements](
           s"$verb$immutableString TRAVERSE ON $graphKeyword $graphName $patternKeyword $propertyRule"
         )
 
         // r:ole is invalid
-        assertFails(
+        assertFails[Statements](
           s"$verb$immutableString TRAVERSE ON $graphKeyword $graphName $patternKeyword $propertyRule $preposition r:ole"
         )
 
         // Invalid graph name
-        assertFails(
+        assertFails[Statements](
           s"$verb$immutableString TRAVERSE ON $graphKeyword f:oo $patternKeyword $propertyRule $preposition role"
         )
 
         // Mixing specific graph and *
-        assertFails(
+        assertFails[Statements](
           s"$verb$immutableString TRAVERSE ON $graphKeyword foo, * $patternKeyword $propertyRule $preposition role"
         )
-        assertFails(
+        assertFails[Statements](
           s"$verb$immutableString TRAVERSE ON $graphKeyword *, foo $patternKeyword $propertyRule $preposition role"
         )
 
         // Missing graph name
-        assertFails(
+        assertFails[Statements](
           s"$verb$immutableString TRAVERSE ON $graphKeyword $patternKeyword $propertyRule $preposition role"
         )
-        assertFails(
+        assertFails[Statements](
           s"$verb$immutableString TRAVERSE ON $graphKeyword $patternKeyword $propertyRule (*) $preposition role"
         )
       }
@@ -537,7 +538,7 @@ class TraversePropertyPrivilegeAdministrationCommandParserTest
         s"(n:A {prop1:1})"
       ).foreach { (propertyRule: String) =>
         {
-          assertFails(
+          assertFails[Statements](
             s"$verb$immutableString TRAVERSE ON $graphKeyword $graphName $segment $propertyRule $preposition role"
           )
         }
@@ -554,15 +555,15 @@ class TraversePropertyPrivilegeAdministrationCommandParserTest
     } yield {
       val immutableString = immutableOrEmpty(immutable)
       disallowedPropertyRules.foreach { (disallowedPropertyRule: String) =>
-        assertFails(
+        assertFails[Statements](
           s"$verb$immutableString TRAVERSE ON $graphKeyword $graphName $patternKeyword $disallowedPropertyRule $preposition role"
         )
       }
 
       // No variable, WHERE gets parsed as variable in javacc
-      assertFailsOnlyJavaCC(
-        s"$verb$immutableString TRAVERSE ON $graphKeyword $graphName $patternKeyword (WHERE n.prop1 = 1) $preposition role"
-      )
+      s"""$verb$immutableString TRAVERSE
+         |ON $graphKeyword $graphName $patternKeyword (WHERE n.prop1 = 1) $preposition role
+         |""".stripMargin should notParse[Statements](NotAntlr)
     }
   }
 }

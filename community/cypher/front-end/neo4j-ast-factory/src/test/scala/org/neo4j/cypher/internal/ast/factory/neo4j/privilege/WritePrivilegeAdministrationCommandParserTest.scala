@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j.privilege
 
 import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.AdministrationAndSchemaCommandParserTestBase
 
 class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
@@ -33,7 +34,7 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
         immutable =>
           val immutableString = immutableOrEmpty(immutable)
           test(s"$verb$immutableString WRITE ON GRAPH foo $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.WriteAction, graphScopeFoo)(pos),
               List(ast.ElementsAllQualifier() _),
               Seq(literalRole),
@@ -42,7 +43,7 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
           }
 
           test(s"$verb$immutableString WRITE ON GRAPHS foo $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.WriteAction, graphScopeFoo)(pos),
               List(ast.ElementsAllQualifier() _),
               Seq(literalRole),
@@ -53,7 +54,7 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
           // Multiple graphs should be allowed (with and without plural GRAPHS)
 
           test(s"$verb$immutableString WRITE ON GRAPH * $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.WriteAction, ast.AllGraphsScope()(_))(pos),
               List(ast.ElementsAllQualifier() _),
               Seq(literalRole),
@@ -62,7 +63,7 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
           }
 
           test(s"$verb$immutableString WRITE ON GRAPHS * $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.WriteAction, ast.AllGraphsScope()(_))(pos),
               List(ast.ElementsAllQualifier() _),
               Seq(literalRole),
@@ -71,7 +72,7 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
           }
 
           test(s"$verb$immutableString WRITE ON GRAPH foo, baz $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.WriteAction, graphScopeFooBaz)(pos),
               List(ast.ElementsAllQualifier() _),
               List(literalRole),
@@ -80,7 +81,7 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
           }
 
           test(s"$verb$immutableString WRITE ON GRAPHS foo, baz $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.WriteAction, graphScopeFooBaz)(pos),
               List(ast.ElementsAllQualifier() _),
               List(literalRole),
@@ -91,7 +92,7 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
           // Default and home graph should parse
 
           test(s"$verb$immutableString WRITE ON HOME GRAPH $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.WriteAction, ast.HomeGraphScope()(_))(pos),
               List(ast.ElementsAllQualifier() _),
               Seq(literalRole),
@@ -100,7 +101,7 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
           }
 
           test(s"$verb$immutableString WRITE ON DEFAULT GRAPH $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.WriteAction, ast.DefaultGraphScope()(_))(pos),
               List(ast.ElementsAllQualifier() _),
               Seq(literalRole),
@@ -111,7 +112,7 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
           // Multiple roles should be allowed
 
           test(s"$verb$immutableString WRITE ON GRAPH foo $preposition role1, role2") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.WriteAction, graphScopeFoo)(_),
               List(ast.ElementsAllQualifier() _),
               Seq(literalRole1, literalRole2),
@@ -122,7 +123,7 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
           // Parameters and escaped strings should be allowed
 
           test(s"$verb$immutableString WRITE ON GRAPH $$foo $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.WriteAction, graphScopeParamFoo)(pos),
               List(ast.ElementsAllQualifier() _),
               Seq(literalRole),
@@ -131,7 +132,7 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
           }
 
           test(s"$verb$immutableString WRITE ON GRAPH `f:oo` $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.WriteAction, ast.NamedGraphsScope(Seq(namespacedName("f:oo")))(_))(pos),
               List(ast.ElementsAllQualifier() _),
               Seq(literalRole),
@@ -140,7 +141,7 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
           }
 
           test(s"$verb$immutableString WRITE ON GRAPH foo $preposition $$role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.WriteAction, graphScopeFoo)(pos),
               List(ast.ElementsAllQualifier() _),
               Seq(paramRole),
@@ -149,7 +150,7 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
           }
 
           test(s"$verb$immutableString WRITE ON GRAPH foo $preposition `r:ole`") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.WriteAction, graphScopeFoo)(pos),
               List(ast.ElementsAllQualifier() _),
               Seq(literalRColonOle),
@@ -160,64 +161,64 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
           // Resource or qualifier should not be supported
 
           test(s"$verb$immutableString WRITE {*} ON GRAPH foo $preposition role") {
-            failsToParse
+            failsToParse[Statements]
           }
 
           test(s"$verb$immutableString WRITE {prop} ON GRAPH foo $preposition role") {
-            failsToParse
+            failsToParse[Statements]
           }
 
           test(s"$verb$immutableString WRITE ON GRAPH foo NODE A $preposition role") {
-            failsToParse
+            failsToParse[Statements]
           }
 
           test(s"$verb$immutableString WRITE ON GRAPH foo NODES * $preposition role") {
-            failsToParse
+            failsToParse[Statements]
           }
 
           test(s"$verb$immutableString WRITE ON GRAPH foo RELATIONSHIP R $preposition role") {
-            failsToParse
+            failsToParse[Statements]
           }
 
           test(s"$verb$immutableString WRITE ON GRAPH foo RELATIONSHIPS * $preposition role") {
-            failsToParse
+            failsToParse[Statements]
           }
 
           test(s"$verb$immutableString WRITE ON GRAPH foo ELEMENT A $preposition role") {
-            failsToParse
+            failsToParse[Statements]
           }
 
           test(s"$verb$immutableString WRITE ON GRAPH foo ELEMENTS * $preposition role") {
-            failsToParse
+            failsToParse[Statements]
           }
 
           // Invalid/missing part of the command
 
           test(s"$verb$immutableString WRITE ON GRAPH f:oo $preposition role") {
-            failsToParse
+            failsToParse[Statements]
           }
 
           test(s"$verb$immutableString WRITE ON GRAPH foo $preposition ro:le") {
-            failsToParse
+            failsToParse[Statements]
           }
 
           test(s"$verb$immutableString WRITE ON GRAPH $preposition role") {
-            failsToParse
+            failsToParse[Statements]
           }
 
           test(s"$verb$immutableString WRITE ON GRAPH foo $preposition") {
-            failsToParse
+            failsToParse[Statements]
           }
 
           test(s"$verb$immutableString WRITE GRAPH foo $preposition role") {
-            failsToParse
+            failsToParse[Statements]
           }
 
           // DEFAULT and HOME together with plural GRAPHS
 
           test(s"$verb$immutableString WRITE ON HOME GRAPHS $preposition role") {
             val offset = verb.length + immutableString.length + 15
-            assertFailsWithMessage(
+            assertFailsWithMessage[Statements](
               testName,
               s"""Invalid input 'GRAPHS': expected "GRAPH" (line 1, column ${offset + 1} (offset: $offset))"""
             )
@@ -225,7 +226,7 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
           test(s"$verb$immutableString WRITE ON DEFAULT GRAPHS $preposition role") {
             val offset = verb.length + immutableString.length + 18
-            assertFailsWithMessage(
+            assertFailsWithMessage[Statements](
               testName,
               s"""Invalid input 'GRAPHS': expected "GRAPH" (line 1, column ${offset + 1} (offset: $offset))"""
             )
@@ -234,28 +235,28 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
           // Default and home graph with named graph
 
           test(s"$verb$immutableString WRITE ON HOME GRAPH baz $preposition role") {
-            failsToParse
+            failsToParse[Statements]
           }
 
           test(s"$verb$immutableString WRITE ON DEFAULT GRAPH baz $preposition role") {
-            failsToParse
+            failsToParse[Statements]
           }
 
           // Mix of specific graph and *
 
           test(s"$verb$immutableString WRITE ON GRAPH foo, * $preposition role") {
-            failsToParse
+            failsToParse[Statements]
           }
 
           test(s"$verb$immutableString WRITE ON GRAPH *, foo $preposition role") {
-            failsToParse
+            failsToParse[Statements]
           }
 
           // Database instead of graph keyword
 
           test(s"$verb$immutableString WRITE ON DATABASES * $preposition role") {
             val offset = verb.length + immutableString.length + 10
-            assertFailsWithMessage(
+            assertFailsWithMessage[Statements](
               testName,
               s"""Invalid input 'DATABASES': expected "DEFAULT", "GRAPH", "GRAPHS" or "HOME" (line 1, column ${offset + 1} (offset: $offset))"""
             )
@@ -263,18 +264,18 @@ class WritePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
           test(s"$verb$immutableString WRITE ON DATABASE foo $preposition role") {
             val offset = verb.length + immutableString.length + 10
-            assertFailsWithMessage(
+            assertFailsWithMessage[Statements](
               testName,
               s"""Invalid input 'DATABASE': expected "DEFAULT", "GRAPH", "GRAPHS" or "HOME" (line 1, column ${offset + 1} (offset: $offset))"""
             )
           }
 
           test(s"$verb$immutableString WRITE ON HOME DATABASE $preposition role") {
-            failsToParse
+            failsToParse[Statements]
           }
 
           test(s"$verb$immutableString WRITE ON DEFAULT DATABASE $preposition role") {
-            failsToParse
+            failsToParse[Statements]
           }
       }
   }

@@ -16,8 +16,8 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
-import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.label_expressions.LabelExpressionPredicate
 
@@ -25,25 +25,21 @@ import org.neo4j.cypher.internal.label_expressions.LabelExpressionPredicate
  * The aim of this class is to test parsing for all combinations of
  * IS and WHERE used in relationship patterns e.g. [WHERE IS WHERE WHERE IS]
  */
-class IsWhereRelationshipPatternParserTest
-    extends ParserSyntaxTreeBase[Cst.RelationshipPattern, RelationshipPattern] {
-
-  implicit val javaccRule: JavaccRule[RelationshipPattern] = JavaccRule.RelationshipPattern
-  implicit val antlrRule: AntlrRule[Cst.RelationshipPattern] = AntlrRule.RelationshipPattern
+class IsWhereRelationshipPatternParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   for {
     (maybeVariable, maybeVariableName) <-
       Seq(("", None), ("IS", Some("IS")), ("WHERE", Some("WHERE")))
   } yield {
     test(s"-[$maybeVariable]->") {
-      gives(relPat(maybeVariableName))
+      gives[RelationshipPattern](relPat(maybeVariableName))
     }
 
     for {
       isOrWhere <- Seq("IS", "WHERE")
     } yield {
       test(s"-[$maybeVariable IS $isOrWhere]->") {
-        gives(
+        gives[RelationshipPattern](
           relPat(
             maybeVariableName,
             labelExpression = Some(labelRelTypeLeaf(isOrWhere, containsIs = true))
@@ -52,7 +48,7 @@ class IsWhereRelationshipPatternParserTest
       }
 
       test(s"-[$maybeVariable WHERE $isOrWhere]->") {
-        gives(
+        gives[RelationshipPattern](
           relPat(
             maybeVariableName,
             predicates = Some(varFor(isOrWhere))
@@ -64,7 +60,7 @@ class IsWhereRelationshipPatternParserTest
         isOrWhere2 <- Seq("IS", "WHERE")
       } yield {
         test(s"-[$maybeVariable IS $isOrWhere WHERE $isOrWhere2]->") {
-          gives(
+          gives[RelationshipPattern](
             relPat(
               maybeVariableName,
               labelExpression = Some(labelRelTypeLeaf(isOrWhere, containsIs = true)),
@@ -74,7 +70,7 @@ class IsWhereRelationshipPatternParserTest
         }
 
         test(s"-[$maybeVariable WHERE $isOrWhere IS $isOrWhere2]->") {
-          gives(
+          gives[RelationshipPattern](
             relPat(
               maybeVariableName,
               predicates = Some(LabelExpressionPredicate(
@@ -86,18 +82,18 @@ class IsWhereRelationshipPatternParserTest
         }
 
         test(s"-[$maybeVariable WHERE $isOrWhere WHERE $isOrWhere2]->") {
-          failsToParse
+          failsToParse[RelationshipPattern]()
         }
 
         test(s"-[$maybeVariable IS $isOrWhere IS $isOrWhere2]->") {
-          failsToParse
+          failsToParse[RelationshipPattern]()
         }
 
         for {
           isOrWhere3 <- Seq("IS", "WHERE")
         } yield {
           test(s"-[$maybeVariable IS $isOrWhere WHERE $isOrWhere2 IS $isOrWhere3]->") {
-            gives(
+            gives[RelationshipPattern](
               relPat(
                 maybeVariableName,
                 labelExpression = Some(labelRelTypeLeaf(isOrWhere, containsIs = true)),

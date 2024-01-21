@@ -16,11 +16,9 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import org.neo4j.cypher.internal.ast
-import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.Clause
-import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
-import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.PatternComprehension
@@ -32,20 +30,14 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.util.symbols.CTAny
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 /**
  * Label expression in Node patterns
  */
-class NodeLabelExpressionsParserTest extends CypherFunSuite
-    with ParserSyntaxTreeBase[Cst.NodePattern, NodePattern]
-    with AstConstructionTestSupport {
-
-  implicit val javaccRule: JavaccRule[NodePattern] = JavaccRule.NodePattern
-  implicit val antlrRule: AntlrRule[Cst.NodePattern] = AntlrRule.NodePattern
+class NodeLabelExpressionsParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   test("(n)") {
-    givesIncludingPositions {
+    givesIncludingPositions[NodePattern] {
       nodePat(
         name = Some("n"),
         namePos = (1, 2, 1),
@@ -55,7 +47,7 @@ class NodeLabelExpressionsParserTest extends CypherFunSuite
   }
 
   test("(n:A)") {
-    givesIncludingPositions {
+    givesIncludingPositions[NodePattern] {
       nodePat(
         name = Some("n"),
         labelExpression = Some(labelLeaf("A", (1, 4, 3))),
@@ -68,7 +60,7 @@ class NodeLabelExpressionsParserTest extends CypherFunSuite
   //              000000000111111111122222222223333333333
   //              123456789012345678901234567890123456789
   test("(n:A $param)") {
-    givesIncludingPositions {
+    givesIncludingPositions[NodePattern] {
       nodePat(
         name = Some("n"),
         labelExpression = Some(labelLeaf("A", (1, 4, 3))),
@@ -80,7 +72,7 @@ class NodeLabelExpressionsParserTest extends CypherFunSuite
   }
 
   test("(n:A&B)") {
-    givesIncludingPositions {
+    givesIncludingPositions[NodePattern] {
       nodePat(
         name = Some("n"),
         labelExpression = Some(
@@ -96,7 +88,7 @@ class NodeLabelExpressionsParserTest extends CypherFunSuite
   }
 
   test("(n:A&B|C)") {
-    givesIncludingPositions {
+    givesIncludingPositions[NodePattern] {
       nodePat(
         name = Some("n"),
         labelExpression = Some(
@@ -115,7 +107,7 @@ class NodeLabelExpressionsParserTest extends CypherFunSuite
   }
 
   test("(n:A|B&C)") {
-    givesIncludingPositions {
+    givesIncludingPositions[NodePattern] {
       nodePat(
         name = Some("n"),
         labelExpression = Some(
@@ -134,7 +126,7 @@ class NodeLabelExpressionsParserTest extends CypherFunSuite
   }
 
   test("(n:!(A))") {
-    givesIncludingPositions {
+    givesIncludingPositions[NodePattern] {
       nodePat(
         name = Some("n"),
         labelExpression = Some(
@@ -149,7 +141,7 @@ class NodeLabelExpressionsParserTest extends CypherFunSuite
   }
 
   test("(:A&B)") {
-    givesIncludingPositions {
+    givesIncludingPositions[NodePattern] {
       nodePat(
         labelExpression = Some(
           labelConjunction(
@@ -163,7 +155,7 @@ class NodeLabelExpressionsParserTest extends CypherFunSuite
   }
 
   test("(n:A|B)") {
-    givesIncludingPositions {
+    givesIncludingPositions[NodePattern] {
       nodePat(
         name = Some("n"),
         labelExpression = Some(
@@ -179,7 +171,7 @@ class NodeLabelExpressionsParserTest extends CypherFunSuite
   }
 
   test("(n:!A)") {
-    givesIncludingPositions {
+    givesIncludingPositions[NodePattern] {
       nodePat(
         name = Some("n"),
         labelExpression =
@@ -195,7 +187,7 @@ class NodeLabelExpressionsParserTest extends CypherFunSuite
   }
 
   test("(n:A&B&C)") {
-    givesIncludingPositions {
+    givesIncludingPositions[NodePattern] {
       nodePat(
         name = Some("n"),
         labelExpression = Some(
@@ -215,7 +207,7 @@ class NodeLabelExpressionsParserTest extends CypherFunSuite
   }
 
   test("(n:!A&B)") {
-    givesIncludingPositions {
+    givesIncludingPositions[NodePattern] {
       nodePat(
         name = Some("n"),
         labelExpression = Some(
@@ -233,7 +225,7 @@ class NodeLabelExpressionsParserTest extends CypherFunSuite
   //              000000000111111111122222222223333333333
   //              123456789012345678901234567890123456789
   test("(n:A&(B&C))") {
-    givesIncludingPositions {
+    givesIncludingPositions[NodePattern] {
       nodePat(
         name = Some("n"),
         labelExpression = Some(
@@ -253,7 +245,7 @@ class NodeLabelExpressionsParserTest extends CypherFunSuite
   }
 
   test("(n:!(A&B))") {
-    givesIncludingPositions {
+    givesIncludingPositions[NodePattern] {
       nodePat(
         name = Some("n"),
         labelExpression = Some(
@@ -273,7 +265,7 @@ class NodeLabelExpressionsParserTest extends CypherFunSuite
   //              000000000111111111122222222223333333333
   //              123456789012345678901234567890123456789
   test("(n:(A&B)|C)") {
-    givesIncludingPositions {
+    givesIncludingPositions[NodePattern] {
       nodePat(
         name = Some("n"),
         labelExpression = Some(
@@ -294,7 +286,7 @@ class NodeLabelExpressionsParserTest extends CypherFunSuite
   //              000000000111111111122222222223333333333
   //              123456789012345678901234567890123456789
   test("(n:%)") {
-    givesIncludingPositions {
+    givesIncludingPositions[NodePattern] {
       nodePat(
         name = Some("n"),
         labelExpression = Some(labelWildcard((1, 4, 3))),
@@ -307,7 +299,7 @@ class NodeLabelExpressionsParserTest extends CypherFunSuite
   //              000000000111111111122222222223333333333
   //              123456789012345678901234567890123456789
   test("(n:!%&%)") {
-    givesIncludingPositions {
+    givesIncludingPositions[NodePattern] {
       nodePat(
         name = Some("n"),
         labelExpression = Some(
@@ -326,7 +318,7 @@ class NodeLabelExpressionsParserTest extends CypherFunSuite
   //              000000000111111111122222222223333333333
   //              123456789012345678901234567890123456789
   test("(n WHERE n:A&B)") {
-    givesIncludingPositions {
+    givesIncludingPositions[NodePattern] {
       nodePat(
         name = Some("n"),
         labelExpression = None,
@@ -344,7 +336,7 @@ class NodeLabelExpressionsParserTest extends CypherFunSuite
   //              000000000111111111122222222223333333333
   //              123456789012345678901234567890123456789
   test("(n:A|:B)") {
-    givesIncludingPositions {
+    givesIncludingPositions[NodePattern] {
       nodePat(
         name = Some("n"),
         labelExpression = Some(
@@ -361,7 +353,7 @@ class NodeLabelExpressionsParserTest extends CypherFunSuite
   //              000000000111111111122222222223333333333
   //              123456789012345678901234567890123456789
   test("(n:A|:B:C|:!D&E|!F)") {
-    givesIncludingPositions {
+    givesIncludingPositions[NodePattern] {
       nodePat(
         name = Some("n"),
         labelExpression = Some(
@@ -413,15 +405,10 @@ class NodeLabelExpressionsParserTest extends CypherFunSuite
   }
 }
 
-class RelationshipTypeExpressionParserTest extends CypherFunSuite
-    with ParserSyntaxTreeBase[Cst.RelationshipPattern, RelationshipPattern]
-    with AstConstructionTestSupport {
-
-  implicit val javaccRule: JavaccRule[RelationshipPattern] = JavaccRule.RelationshipPattern
-  implicit val antlrRule: AntlrRule[Cst.RelationshipPattern] = AntlrRule.RelationshipPattern
+class RelationshipTypeExpressionParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   test("-[r:R|S]->") {
-    givesIncludingPositions {
+    givesIncludingPositions[RelationshipPattern] {
       relPat(
         Some("r"),
         Some(labelDisjunction(labelRelTypeLeaf("R"), labelRelTypeLeaf("S"))),
@@ -441,13 +428,13 @@ class RelationshipTypeExpressionParserTest extends CypherFunSuite
   }
 
   test("--") {
-    givesIncludingPositions {
+    givesIncludingPositions[RelationshipPattern] {
       relPat(position = (1, 1, 0), direction = BOTH)
     }
   }
 
   test("-[]-") {
-    givesIncludingPositions {
+    givesIncludingPositions[RelationshipPattern] {
       relPat(position = (1, 1, 0), direction = BOTH)
     }
   }
@@ -466,17 +453,12 @@ class RelationshipTypeExpressionParserTest extends CypherFunSuite
   }
 }
 
-class MatchNodeLabelExpressionsParserTest extends CypherFunSuite
-    with ParserSyntaxTreeBase[Cst.Clause, ast.Clause]
-    with AstConstructionTestSupport {
-
-  implicit val javaccRule: JavaccRule[Clause] = JavaccRule.Clause
-  implicit val antlrRule: AntlrRule[Cst.Clause] = AntlrRule.Clause
+class MatchNodeLabelExpressionsParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   //              000000000111111111122222222223333333333
   //              123456789012345678901234567890123456789
   test("MATCH (n) WHERE n:A&B") {
-    givesIncludingPositions {
+    givesIncludingPositions[Clause] {
       match_(
         nodePat(name = Some("n")),
         where = Some(where(
@@ -495,7 +477,7 @@ class MatchNodeLabelExpressionsParserTest extends CypherFunSuite
   //              000000000111111111122222222223333333333
   //              123456789012345678901234567890123456789
   test("MATCH (n:A|B) WHERE n:A&C") {
-    givesIncludingPositions {
+    givesIncludingPositions[Clause] {
       match_(
         nodePat(
           name = Some("n"),
@@ -522,7 +504,7 @@ class MatchNodeLabelExpressionsParserTest extends CypherFunSuite
   }
 
   test("MATCH (n) WHERE n:A") {
-    givesIncludingPositions {
+    givesIncludingPositions[Clause] {
       match_(
         nodePat(name = Some("n")),
         where = Some(
@@ -535,7 +517,7 @@ class MatchNodeLabelExpressionsParserTest extends CypherFunSuite
   }
 
   test("MATCH ()-[r]-() WHERE r:A|B") {
-    givesIncludingPositions {
+    givesIncludingPositions[Clause] {
       match_(
         RelationshipChain(
           NodePattern(None, None, None, None)(pos),
@@ -552,14 +534,10 @@ class MatchNodeLabelExpressionsParserTest extends CypherFunSuite
   }
 }
 
-class ExpressionLabelExpressionsParserTest extends CypherFunSuite
-    with ParserSyntaxTreeBase[Cst.Expression, Expression]
-    with AstConstructionTestSupport {
-  implicit val javaccRule: JavaccRule[Expression] = JavaccRule.Expression
-  implicit val antlrRule: AntlrRule[Cst.Expression] = AntlrRule.Expression
+class ExpressionLabelExpressionsParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   test("[p = (n)<-[]-() WHERE ()<-[:A|B]-(n) | p]") {
-    gives {
+    gives[Expression] {
       PatternComprehension(
         Some(varFor("p")),
         RelationshipsPattern(
@@ -593,7 +571,7 @@ class ExpressionLabelExpressionsParserTest extends CypherFunSuite
   //              000000000111111111122222222223333333333
   //              123456789012345678901234567890123456789
   test("[(a)-->(b:A|B) | b.prop]") {
-    givesIncludingPositions {
+    givesIncludingPositions[Expression] {
       PatternComprehension(
         namedPath = None,
         pattern = RelationshipsPattern(
@@ -617,7 +595,7 @@ class ExpressionLabelExpressionsParserTest extends CypherFunSuite
   }
 
   test("[x IN [1,2,3] WHERE n:A | x]") {
-    givesIncludingPositions {
+    givesIncludingPositions[Expression] {
       listComprehension(
         varFor("x"),
         listOfInt(1, 2, 3),
@@ -630,7 +608,7 @@ class ExpressionLabelExpressionsParserTest extends CypherFunSuite
   //              000000000111111111122222222223333333333
   //              123456789012345678901234567890123456789
   test("[x IN [1,2,3] WHERE (n:A|B)--() | x]") {
-    givesIncludingPositions {
+    givesIncludingPositions[Expression] {
       listComprehension(
         varFor("x"),
         listOfInt(1, 2, 3),
@@ -656,7 +634,7 @@ class ExpressionLabelExpressionsParserTest extends CypherFunSuite
   //              000000000111111111122222222223333333333
   //              123456789012345678901234567890123456789
   test("[x IN [1,2,3] WHERE (n:A | B) | x]") {
-    givesIncludingPositions {
+    givesIncludingPositions[Expression] {
       listComprehension(
         varFor("x"),
         listOfInt(1, 2, 3),
@@ -674,7 +652,7 @@ class ExpressionLabelExpressionsParserTest extends CypherFunSuite
   }
 
   test("[x IN [1,2,3] WHERE n:(A | x)]") {
-    givesIncludingPositions {
+    givesIncludingPositions[Expression] {
       listComprehension(
         varFor("x"),
         listOfInt(1, 2, 3),
@@ -694,7 +672,7 @@ class ExpressionLabelExpressionsParserTest extends CypherFunSuite
   }
 
   test("[x IN [1,2,3] WHERE n:A&x]") {
-    givesIncludingPositions {
+    givesIncludingPositions[Expression] {
       listComprehension(
         varFor("x"),
         listOfInt(1, 2, 3),
@@ -713,7 +691,7 @@ class ExpressionLabelExpressionsParserTest extends CypherFunSuite
   }
 
   test("[x IN [1,2,3] WHERE n:A & (b | x)]") {
-    givesIncludingPositions {
+    givesIncludingPositions[Expression] {
       listComprehension(
         varFor("x"),
         listOfInt(1, 2, 3),
@@ -734,15 +712,15 @@ class ExpressionLabelExpressionsParserTest extends CypherFunSuite
   }
 
   test("[x IN [1,2,3] WHERE n:A | (b | x)]") {
-    failsToParseOnlyJavaCC
+    failsToParseOnlyJavaCC[Expression]()
   }
 
   test("[x IN [1,2,3] WHERE n:A|B AND n:C|D | x]") {
-    failsToParseOnlyJavaCC
+    failsToParseOnlyJavaCC[Expression]()
   }
 
   test("[x IN [1,2,3] WHERE n:(A | x) | x]") {
-    givesIncludingPositions {
+    givesIncludingPositions[Expression] {
       listComprehension(
         varFor("x"),
         listOfInt(1, 2, 3),
@@ -762,7 +740,7 @@ class ExpressionLabelExpressionsParserTest extends CypherFunSuite
   }
 
   test("[x IN [1,2,3] WHERE n:A | x | x]") {
-    givesIncludingPositions {
+    givesIncludingPositions[Expression] {
       listComprehension(
         varFor("x"),
         listOfInt(1, 2, 3),
@@ -780,7 +758,7 @@ class ExpressionLabelExpressionsParserTest extends CypherFunSuite
   }
 
   test("[x IN [1,2,3] WHERE n:A|:B:C|:!D&E|!F | x]") {
-    givesIncludingPositions {
+    givesIncludingPositions[Expression] {
       listComprehension(
         varFor("x"),
         listOfInt(1, 2, 3),

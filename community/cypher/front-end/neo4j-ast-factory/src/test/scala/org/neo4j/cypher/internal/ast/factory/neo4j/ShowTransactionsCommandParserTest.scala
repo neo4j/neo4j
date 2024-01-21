@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.IntegerType
@@ -778,74 +779,74 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   // Negative tests
 
   test("SHOW TRANSACTION db-transaction-123, abc") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW TRANSACTIONS 'db-transaction-123', $param") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW TRANSACTIONS $param, 'db-transaction-123'") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW TRANSACTIONS $param, $param2") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW TRANSACTIONS ['db1-transaction-123', 'db2-transaction-456'], abc") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW TRANSACTION foo, 'abc'") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW TRANSACTION x+2, abc") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW TRANSACTIONS YIELD * YIELD *") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW TRANSACTIONS YIELD (123 + xyz) AS foo") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW TRANSACTIONS WHERE transactionId = 'db1-transaction-123' YIELD *") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW TRANSACTIONS WHERE transactionId = 'db1-transaction-123' RETURN *") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW TRANSACTIONS YIELD a b RETURN *") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW TRANSACTIONS RETURN *") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW CURRENT USER TRANSACTION") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW USER user TRANSACTION") {
-    assertFailsWithMessage(
+    assertFailsWithMessage[Statements](
       testName,
       """Invalid input 'TRANSACTION': expected ",", "PRIVILEGE" or "PRIVILEGES" (line 1, column 16 (offset: 15))""".stripMargin
     )
   }
 
   test("SHOW TRANSACTION EXECUTED BY USER user") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW ALL TRANSACTIONS") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   // Invalid clause order
@@ -853,50 +854,50 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   for (prefix <- Seq("USE neo4j", "")) {
     test(s"$prefix SHOW TRANSACTIONS YIELD * WITH * MATCH (n) RETURN n") {
       // Can't parse WITH after SHOW
-      assertFailsWithMessageStart(testName, "Invalid input 'WITH': expected")
+      assertFailsWithMessageStart[Statements](testName, "Invalid input 'WITH': expected")
     }
 
     test(s"$prefix UNWIND range(1,10) as b SHOW TRANSACTIONS YIELD * RETURN *") {
       // Can't parse SHOW  after UNWIND
-      assertFailsWithMessageStart(testName, "Invalid input 'SHOW': expected")
+      assertFailsWithMessageStart[Statements](testName, "Invalid input 'SHOW': expected")
     }
 
     test(s"$prefix SHOW TRANSACTIONS WITH name, type RETURN *") {
       // Can't parse WITH after SHOW
       // parses varFor("WITH")
-      assertFailsWithMessageStart(testName, "Invalid input 'name': expected")
+      assertFailsWithMessageStart[Statements](testName, "Invalid input 'name': expected")
     }
 
     test(s"$prefix WITH 'n' as n SHOW TRANSACTIONS YIELD name RETURN name as numIndexes") {
-      assertFailsWithMessageStart(testName, "Invalid input 'SHOW': expected")
+      assertFailsWithMessageStart[Statements](testName, "Invalid input 'SHOW': expected")
     }
 
     test(s"$prefix SHOW TRANSACTIONS RETURN name as numIndexes") {
       // parses varFor("RETURN")
-      assertFailsWithMessageStart(testName, "Invalid input 'name': expected")
+      assertFailsWithMessageStart[Statements](testName, "Invalid input 'name': expected")
     }
 
     test(s"$prefix SHOW TRANSACTIONS WITH 1 as c RETURN name as numIndexes") {
       // parses varFor("WITH")
-      assertFailsWithMessageStart(testName, "Invalid input '1': expected")
+      assertFailsWithMessageStart[Statements](testName, "Invalid input '1': expected")
     }
 
     test(s"$prefix SHOW TRANSACTIONS WITH 1 as c") {
       // parses varFor("WITH")
-      assertFailsWithMessageStart(testName, "Invalid input '1': expected")
+      assertFailsWithMessageStart[Statements](testName, "Invalid input '1': expected")
     }
 
     test(s"$prefix SHOW TRANSACTIONS YIELD a WITH a RETURN a") {
-      assertFailsWithMessageStart(testName, "Invalid input 'WITH': expected")
+      assertFailsWithMessageStart[Statements](testName, "Invalid input 'WITH': expected")
     }
 
     test(s"$prefix SHOW TRANSACTIONS YIELD as UNWIND as as a RETURN a") {
-      assertFailsWithMessageStart(testName, "Invalid input 'UNWIND': expected")
+      assertFailsWithMessageStart[Statements](testName, "Invalid input 'UNWIND': expected")
     }
 
     test(s"$prefix SHOW TRANSACTIONS RETURN id2 YIELD id2") {
       // parses varFor("RETURN")
-      assertFailsWithMessageStart(testName, "Invalid input 'id2': expected")
+      assertFailsWithMessageStart[Statements](testName, "Invalid input 'id2': expected")
     }
   }
 
@@ -957,19 +958,19 @@ class ShowTransactionsCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("SHOW TRANSACTION BRIEF OUTPUT") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW TRANSACTIONS BRIEF RETURN *") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW TRANSACTION VERBOSE OUTPUT") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW TRANSACTIONS VERBOSE RETURN *") {
-    failsToParse
+    failsToParse[Statements]
   }
 
 }

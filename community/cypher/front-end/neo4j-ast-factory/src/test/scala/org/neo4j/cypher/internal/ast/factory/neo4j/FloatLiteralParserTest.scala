@@ -16,46 +16,42 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import org.antlr.v4.runtime.ParserRuleContext
-import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
-import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.util.ASTNode
 
-class FloatLiteralParserTest extends ParserSyntaxTreeBase[ParserRuleContext, ASTNode] {
+class FloatLiteralParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   test("float literals fail to parse in expressions") {
-    implicit val javaccRule: JavaccRule[Expression] = JavaccRule.Expression
-    implicit val antlrRule: AntlrRule[Cst.Expression] = AntlrRule.Expression
+    parsing[Expression]("NaN") shouldGive NaNLiteral
+    parsing[Expression]("nan") shouldGive NaNLiteral
+    parsing[Expression]("nAn") shouldGive NaNLiteral
+    parsing[Expression]("Inf") shouldGive InfinityLiteral
+    parsing[Expression]("inf") shouldGive InfinityLiteral
+    parsing[Expression]("Infinity") shouldGive InfinityLiteral
+    parsing[Expression]("infinity") shouldGive InfinityLiteral
 
-    parsing("NaN") shouldGive NaNLiteral
-    parsing("nan") shouldGive NaNLiteral
-    parsing("nAn") shouldGive NaNLiteral
-    parsing("Inf") shouldGive InfinityLiteral
-    parsing("inf") shouldGive InfinityLiteral
-    parsing("Infinity") shouldGive InfinityLiteral
-    parsing("infinity") shouldGive InfinityLiteral
-
-    parsing("-infinity") shouldGive unarySubtract(InfinityLiteral)
-    parsing("-inf") shouldGive unarySubtract(InfinityLiteral)
-    parsing("1 - infinity") shouldGive subtract(literalInt(1), InfinityLiteral)
-    parsing("infinity > 0") shouldGive greaterThan(InfinityLiteral, literalInt(0))
-    parsing("CASE WHEN NaN THEN infinity END") shouldGive caseExpression(None, None, (NaNLiteral, InfinityLiteral))
-    parsing("{inf: infinity, nan: NaN}") shouldGive mapOf(("inf", InfinityLiteral), ("nan", NaNLiteral))
-    parsing("[inf, Infinity, NaN]") shouldGive listOf(InfinityLiteral, InfinityLiteral, NaNLiteral)
+    parsing[Expression]("-infinity") shouldGive unarySubtract(InfinityLiteral)
+    parsing[Expression]("-inf") shouldGive unarySubtract(InfinityLiteral)
+    parsing[Expression]("1 - infinity") shouldGive subtract(literalInt(1), InfinityLiteral)
+    parsing[Expression]("infinity > 0") shouldGive greaterThan(InfinityLiteral, literalInt(0))
+    parsing[Expression]("CASE WHEN NaN THEN infinity END") shouldGive caseExpression(
+      None,
+      None,
+      (NaNLiteral, InfinityLiteral)
+    )
+    parsing[Expression]("{inf: infinity, nan: NaN}") shouldGive mapOf(("inf", InfinityLiteral), ("nan", NaNLiteral))
+    parsing[Expression]("[inf, Infinity, NaN]") shouldGive listOf(InfinityLiteral, InfinityLiteral, NaNLiteral)
   }
 
   test("float literals parse as a variable name") {
-    implicit val javaccRule: JavaccRule[Variable] = JavaccRule.Variable
-    implicit val antlrRule: AntlrRule[Cst.Variable] = AntlrRule.Variable
-
-    parsing("NaN") shouldGive varFor("NaN")
-    parsing("nan") shouldGive varFor("nan")
-    parsing("nAn") shouldGive varFor("nAn")
-    parsing("Inf") shouldGive varFor("Inf")
-    parsing("inf") shouldGive varFor("inf")
-    parsing("Infinity") shouldGive varFor("Infinity")
-    parsing("infinity") shouldGive varFor("infinity")
+    parsing[Variable]("NaN") shouldGive varFor("NaN")
+    parsing[Variable]("nan") shouldGive varFor("nan")
+    parsing[Variable]("nAn") shouldGive varFor("nAn")
+    parsing[Variable]("Inf") shouldGive varFor("Inf")
+    parsing[Variable]("inf") shouldGive varFor("inf")
+    parsing[Variable]("Infinity") shouldGive varFor("Infinity")
+    parsing[Variable]("infinity") shouldGive varFor("infinity")
   }
 }

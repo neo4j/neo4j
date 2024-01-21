@@ -16,24 +16,18 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import org.neo4j.cypher.internal.ast
-import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.Match
-import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
-import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.expressions.MatchMode
 import org.neo4j.cypher.internal.expressions.NamedPatternPart
 import org.neo4j.cypher.internal.expressions.PathPatternPart
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class MatchModeParserTest extends CypherFunSuite with ParserSyntaxTreeBase[Cst.MatchClause, ast.Clause]
-    with AstConstructionTestSupport {
-
-  implicit val javaccRule: JavaccRule[ast.Clause] = JavaccRule.MatchClause
-  implicit val antlrRule: AntlrRule[Cst.MatchClause] = AntlrRule.MatchClause
+class MatchModeParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   test("MATCH DIFFERENT RELATIONSHIPS (n)-->(m)") {
-    gives {
+    gives[Clause] {
       match_(
         relationshipChain(nodePat(Some("n")), relPat(), nodePat(Some("m"))),
         matchMode = MatchMode.DifferentRelationships()(pos)
@@ -42,7 +36,7 @@ class MatchModeParserTest extends CypherFunSuite with ParserSyntaxTreeBase[Cst.M
   }
 
   test("MATCH DIFFERENT RELATIONSHIP BINDINGS (n)-->(m)") {
-    gives {
+    gives[Clause] {
       match_(
         relationshipChain(nodePat(Some("n")), relPat(), nodePat(Some("m"))),
         matchMode = MatchMode.DifferentRelationships()(pos)
@@ -51,7 +45,7 @@ class MatchModeParserTest extends CypherFunSuite with ParserSyntaxTreeBase[Cst.M
   }
 
   test("MATCH DIFFERENT RELATIONSHIP (n)-->(m)") {
-    gives {
+    gives[Clause] {
       match_(
         relationshipChain(nodePat(Some("n")), relPat(), nodePat(Some("m"))),
         matchMode = MatchMode.DifferentRelationships()(pos)
@@ -60,11 +54,11 @@ class MatchModeParserTest extends CypherFunSuite with ParserSyntaxTreeBase[Cst.M
   }
 
   test("MATCH DIFFERENT RELATIONSHIPS BINDINGS (n)-->(m)") {
-    failsToParse
+    failsToParse[Clause]()
   }
 
   test("MATCH REPEATABLE ELEMENTS (n)-->(m)") {
-    gives {
+    gives[Clause] {
       match_(
         relationshipChain(nodePat(Some("n")), relPat(), nodePat(Some("m"))),
         matchMode = MatchMode.RepeatableElements()(pos)
@@ -73,7 +67,7 @@ class MatchModeParserTest extends CypherFunSuite with ParserSyntaxTreeBase[Cst.M
   }
 
   test("MATCH REPEATABLE ELEMENT BINDINGS (n)-->(m)") {
-    gives {
+    gives[Clause] {
       match_(
         relationshipChain(nodePat(Some("n")), relPat(), nodePat(Some("m"))),
         matchMode = MatchMode.RepeatableElements()(pos)
@@ -82,7 +76,7 @@ class MatchModeParserTest extends CypherFunSuite with ParserSyntaxTreeBase[Cst.M
   }
 
   test("MATCH REPEATABLE ELEMENT (n)-->(m)") {
-    gives {
+    gives[Clause] {
       match_(
         relationshipChain(nodePat(Some("n")), relPat(), nodePat(Some("m"))),
         matchMode = MatchMode.RepeatableElements()(pos)
@@ -91,16 +85,16 @@ class MatchModeParserTest extends CypherFunSuite with ParserSyntaxTreeBase[Cst.M
   }
 
   test("MATCH REPEATABLE ELEMENTS BINDINGS (n)-->(m)") {
-    failsToParse
+    failsToParse[Clause]()
   }
 
   test("MATCH REPEATABLE ELEMENT ELEMENTS (n)-->(m)") {
-    failsToParse
+    failsToParse[Clause]()
   }
 
   test("MATCH () WHERE EXISTS {REPEATABLE ELEMENTS (n)-->(m)}") {
     val pattern = patternForMatch(relationshipChain(nodePat(Some("n")), relPat(), nodePat(Some("m"))))
-    gives {
+    gives[Clause] {
       match_(
         nodePat(),
         where = Some(where(simpleExistsExpression(pattern, None, matchMode = MatchMode.RepeatableElements()(pos))))
@@ -110,7 +104,7 @@ class MatchModeParserTest extends CypherFunSuite with ParserSyntaxTreeBase[Cst.M
 
   test("MATCH () WHERE EXISTS {MATCH REPEATABLE ELEMENTS (n)-->(m)}") {
     val pattern = patternForMatch(relationshipChain(nodePat(Some("n")), relPat(), nodePat(Some("m"))))
-    gives {
+    gives[Clause] {
       match_(
         nodePat(),
         where = Some(where(simpleExistsExpression(pattern, None, matchMode = MatchMode.RepeatableElements()(pos))))
@@ -120,7 +114,7 @@ class MatchModeParserTest extends CypherFunSuite with ParserSyntaxTreeBase[Cst.M
 
   test("MATCH () WHERE EXISTS {(n)-->(m)}") {
     val pattern = patternForMatch(relationshipChain(nodePat(Some("n")), relPat(), nodePat(Some("m"))))
-    gives {
+    gives[Clause] {
       match_(
         nodePat(),
         where = Some(where(simpleExistsExpression(
@@ -134,7 +128,7 @@ class MatchModeParserTest extends CypherFunSuite with ParserSyntaxTreeBase[Cst.M
 
   test("MATCH () WHERE COUNT {REPEATABLE ELEMENTS (n)-->(m)}") {
     val pattern = patternForMatch(relationshipChain(nodePat(Some("n")), relPat(), nodePat(Some("m"))))
-    gives {
+    gives[Clause] {
       match_(
         nodePat(),
         where = Some(where(simpleCountExpression(pattern, None, matchMode = MatchMode.RepeatableElements()(pos))))
@@ -144,7 +138,7 @@ class MatchModeParserTest extends CypherFunSuite with ParserSyntaxTreeBase[Cst.M
 
   test("MATCH () WHERE COLLECT {MATCH DIFFERENT RELATIONSHIPS (n)-->(m) RETURN *}") {
     val pattern = patternForMatch(relationshipChain(nodePat(Some("n")), relPat(), nodePat(Some("m"))))
-    gives {
+    gives[Clause] {
       match_(
         nodePat(),
         where = Some(where(simpleCollectExpression(
@@ -159,7 +153,7 @@ class MatchModeParserTest extends CypherFunSuite with ParserSyntaxTreeBase[Cst.M
 
   test("MATCH () WHERE COLLECT {MATCH REPEATABLE ELEMENTS (n)-->(m) RETURN *}") {
     val pattern = patternForMatch(relationshipChain(nodePat(Some("n")), relPat(), nodePat(Some("m"))))
-    gives {
+    gives[Clause] {
       match_(
         nodePat(),
         where = Some(where(simpleCollectExpression(
@@ -173,7 +167,7 @@ class MatchModeParserTest extends CypherFunSuite with ParserSyntaxTreeBase[Cst.M
   }
 
   test("MATCH REPEATABLE ELEMENTS path = (a)-[r]->(b)") {
-    gives {
+    gives[Clause] {
       Match(
         optional = false,
         matchMode = MatchMode.RepeatableElements()(pos),
@@ -190,7 +184,7 @@ class MatchModeParserTest extends CypherFunSuite with ParserSyntaxTreeBase[Cst.M
   }
 
   test("MATCH REPEATABLE = (a)-[r]->(b)") {
-    gives {
+    gives[Clause] {
       Match(
         optional = false,
         matchMode = MatchMode.default(pos),
@@ -207,7 +201,7 @@ class MatchModeParserTest extends CypherFunSuite with ParserSyntaxTreeBase[Cst.M
   }
 
   test("MATCH DIFFERENT RELATIONSHIPS path = (x)-[p]->(y)") {
-    gives {
+    gives[Clause] {
       Match(
         optional = false,
         matchMode = MatchMode.DifferentRelationships()(pos),
@@ -224,7 +218,7 @@ class MatchModeParserTest extends CypherFunSuite with ParserSyntaxTreeBase[Cst.M
   }
 
   test("MATCH DIFFERENT = (x)-[p]->(y)") {
-    gives {
+    gives[Clause] {
       Match(
         optional = false,
         matchMode = MatchMode.default(pos),
@@ -241,14 +235,14 @@ class MatchModeParserTest extends CypherFunSuite with ParserSyntaxTreeBase[Cst.M
   }
 
   test("MATCH () WHERE COLLECT {REPEATABLE ELEMENTS (n)-->(m) RETURN *}") {
-    failsToParse
+    failsToParse[Clause]()
   }
 
   test("MATCH REPEATABLE ELEMENT BINDINGS = ()-->()") {
-    failsToParseOnlyJavaCC
+    failsToParseOnlyJavaCC[Clause]
   }
 
   test("MATCH DIFFERENT RELATIONSHIP BINDINGS = ()-->()") {
-    failsToParseOnlyJavaCC
+    failsToParseOnlyJavaCC[Clause]
   }
 }

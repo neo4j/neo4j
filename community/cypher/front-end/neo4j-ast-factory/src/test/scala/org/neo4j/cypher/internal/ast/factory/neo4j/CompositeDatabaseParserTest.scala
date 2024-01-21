@@ -25,40 +25,46 @@ import org.neo4j.cypher.internal.ast.IndefiniteWait
 import org.neo4j.cypher.internal.ast.NoOptions
 import org.neo4j.cypher.internal.ast.NoWait
 import org.neo4j.cypher.internal.ast.OptionsMap
+import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.TimeoutAfter
 
 class CompositeDatabaseParserTest extends AdministrationAndSchemaCommandParserTestBase {
 
   test("CREATE COMPOSITE DATABASE name") {
-    yields(ast.CreateCompositeDatabase(namespacedName("name"), IfExistsThrowError, NoOptions, NoWait))
+    yields[Statements](ast.CreateCompositeDatabase(namespacedName("name"), IfExistsThrowError, NoOptions, NoWait))
   }
 
   test("CREATE COMPOSITE DATABASE $name") {
-    yields(ast.CreateCompositeDatabase(stringParamName("name"), IfExistsThrowError, NoOptions, NoWait))
+    yields[Statements](ast.CreateCompositeDatabase(stringParamName("name"), IfExistsThrowError, NoOptions, NoWait))
   }
 
   test("CREATE COMPOSITE DATABASE `db.name`") {
-    yields(ast.CreateCompositeDatabase(namespacedName("db.name"), IfExistsThrowError, NoOptions, NoWait))
+    yields[Statements](ast.CreateCompositeDatabase(namespacedName("db.name"), IfExistsThrowError, NoOptions, NoWait))
   }
 
   test("CREATE COMPOSITE DATABASE db.name") {
-    yields(ast.CreateCompositeDatabase(namespacedName("db", "name"), IfExistsThrowError, NoOptions, NoWait))
+    yields[Statements](ast.CreateCompositeDatabase(namespacedName("db", "name"), IfExistsThrowError, NoOptions, NoWait))
   }
 
   test("CREATE COMPOSITE DATABASE name IF NOT EXISTS") {
-    yields(ast.CreateCompositeDatabase(namespacedName("name"), IfExistsDoNothing, NoOptions, NoWait))
+    yields[Statements](ast.CreateCompositeDatabase(namespacedName("name"), IfExistsDoNothing, NoOptions, NoWait))
   }
 
   test("CREATE OR REPLACE COMPOSITE DATABASE name") {
-    yields(ast.CreateCompositeDatabase(namespacedName("name"), IfExistsReplace, NoOptions, NoWait))
+    yields[Statements](ast.CreateCompositeDatabase(namespacedName("name"), IfExistsReplace, NoOptions, NoWait))
   }
 
   test("CREATE COMPOSITE DATABASE name OPTIONS {}") {
-    yields(ast.CreateCompositeDatabase(namespacedName("name"), IfExistsThrowError, OptionsMap(Map.empty), NoWait))
+    yields[Statements](ast.CreateCompositeDatabase(
+      namespacedName("name"),
+      IfExistsThrowError,
+      OptionsMap(Map.empty),
+      NoWait
+    ))
   }
 
   test("CREATE COMPOSITE DATABASE name OPTIONS {someKey: 'someValue'} NOWAIT") {
-    yields(ast.CreateCompositeDatabase(
+    yields[Statements](ast.CreateCompositeDatabase(
       namespacedName("name"),
       IfExistsThrowError,
       OptionsMap(Map(
@@ -69,7 +75,7 @@ class CompositeDatabaseParserTest extends AdministrationAndSchemaCommandParserTe
   }
 
   test("CREATE COMPOSITE DATABASE name TOPOLOGY 1 PRIMARY") {
-    assertFailsWithMessage(
+    assertFailsWithMessage[Statements](
       testName,
       """Invalid input 'TOPOLOGY': expected
         |  "."
@@ -82,39 +88,73 @@ class CompositeDatabaseParserTest extends AdministrationAndSchemaCommandParserTe
   }
 
   test("CREATE COMPOSITE DATABASE name WAIT") {
-    yields(ast.CreateCompositeDatabase(namespacedName("name"), IfExistsThrowError, NoOptions, IndefiniteWait))
+    yields[Statements](ast.CreateCompositeDatabase(
+      namespacedName("name"),
+      IfExistsThrowError,
+      NoOptions,
+      IndefiniteWait
+    ))
   }
 
   test("CREATE COMPOSITE DATABASE name NOWAIT") {
-    yields(ast.CreateCompositeDatabase(namespacedName("name"), IfExistsThrowError, NoOptions, NoWait))
+    yields[Statements](ast.CreateCompositeDatabase(namespacedName("name"), IfExistsThrowError, NoOptions, NoWait))
   }
 
   test("CREATE COMPOSITE DATABASE name WAIT 10 SECONDS") {
-    yields(ast.CreateCompositeDatabase(namespacedName("name"), IfExistsThrowError, NoOptions, TimeoutAfter(10)))
+    yields[Statements](ast.CreateCompositeDatabase(
+      namespacedName("name"),
+      IfExistsThrowError,
+      NoOptions,
+      TimeoutAfter(10)
+    ))
   }
 
   test("DROP COMPOSITE DATABASE name") {
-    yields(ast.DropDatabase(namespacedName("name"), ifExists = false, composite = true, DestroyData, NoWait))
+    yields[Statements](ast.DropDatabase(
+      namespacedName("name"),
+      ifExists = false,
+      composite = true,
+      DestroyData,
+      NoWait
+    ))
   }
 
   test("DROP COMPOSITE DATABASE `db.name`") {
-    yields(ast.DropDatabase(namespacedName("db.name"), ifExists = false, composite = true, DestroyData, NoWait))
+    yields[Statements](ast.DropDatabase(
+      namespacedName("db.name"),
+      ifExists = false,
+      composite = true,
+      DestroyData,
+      NoWait
+    ))
   }
 
   test("DROP COMPOSITE DATABASE db.name") {
-    yields(ast.DropDatabase(namespacedName("db", "name"), ifExists = false, composite = true, DestroyData, NoWait))
+    yields[Statements](ast.DropDatabase(
+      namespacedName("db", "name"),
+      ifExists = false,
+      composite = true,
+      DestroyData,
+      NoWait
+    ))
   }
 
   test("DROP COMPOSITE DATABASE $name") {
-    yields(ast.DropDatabase(stringParamName("name"), ifExists = false, composite = true, DestroyData, NoWait))
+    yields[Statements](ast.DropDatabase(
+      stringParamName("name"),
+      ifExists = false,
+      composite = true,
+      DestroyData,
+      NoWait
+    ))
   }
 
   test("DROP COMPOSITE DATABASE name IF EXISTS") {
-    yields(ast.DropDatabase(namespacedName("name"), ifExists = true, composite = true, DestroyData, NoWait))
+    yields[Statements](ast.DropDatabase(namespacedName("name"), ifExists = true, composite = true, DestroyData, NoWait))
   }
 
   test("DROP COMPOSITE DATABASE name WAIT") {
-    yields(ast.DropDatabase(
+    yields[Statements](ast.DropDatabase(
       namespacedName("name"),
       ifExists = false,
       composite = true,
@@ -124,7 +164,7 @@ class CompositeDatabaseParserTest extends AdministrationAndSchemaCommandParserTe
   }
 
   test("DROP COMPOSITE DATABASE name WAIT 10 SECONDS") {
-    yields(ast.DropDatabase(
+    yields[Statements](ast.DropDatabase(
       namespacedName("name"),
       ifExists = false,
       composite = true,
@@ -134,7 +174,7 @@ class CompositeDatabaseParserTest extends AdministrationAndSchemaCommandParserTe
   }
 
   test("DROP COMPOSITE DATABASE name NOWAIT") {
-    yields(ast.DropDatabase(
+    yields[Statements](ast.DropDatabase(
       namespacedName("name"),
       ifExists = false,
       composite = true,

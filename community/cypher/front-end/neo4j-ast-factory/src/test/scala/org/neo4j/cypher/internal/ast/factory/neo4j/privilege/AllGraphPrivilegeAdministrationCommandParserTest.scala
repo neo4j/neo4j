@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j.privilege
 
 import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.AdministrationAndSchemaCommandParserTestBase
 
 class AllGraphPrivilegeAdministrationCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
@@ -35,7 +36,7 @@ class AllGraphPrivilegeAdministrationCommandParserTest extends AdministrationAnd
           // All versions of ALL [[GRAPH] PRIVILEGES] should be allowed
 
           test(s"$verb$immutableString ALL ON GRAPH foo $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.AllGraphAction, graphScopeFoo)(_),
               List(ast.AllQualifier()(_)),
               Seq(literalRole),
@@ -44,7 +45,7 @@ class AllGraphPrivilegeAdministrationCommandParserTest extends AdministrationAnd
           }
 
           test(s"$verb$immutableString ALL PRIVILEGES ON GRAPH foo $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.AllGraphAction, graphScopeFoo)(_),
               List(ast.AllQualifier()(_)),
               Seq(literalRole),
@@ -53,7 +54,7 @@ class AllGraphPrivilegeAdministrationCommandParserTest extends AdministrationAnd
           }
 
           test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON GRAPH foo $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.AllGraphAction, graphScopeFoo)(_),
               List(ast.AllQualifier()(_)),
               Seq(literalRole),
@@ -64,7 +65,7 @@ class AllGraphPrivilegeAdministrationCommandParserTest extends AdministrationAnd
           // Home graph should be allowed
 
           test(s"$verb$immutableString ALL ON HOME GRAPH $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.AllGraphAction, ast.HomeGraphScope()(_))(_),
               List(ast.AllQualifier()(_)),
               Seq(literalRole),
@@ -73,7 +74,7 @@ class AllGraphPrivilegeAdministrationCommandParserTest extends AdministrationAnd
           }
 
           test(s"$verb$immutableString ALL PRIVILEGES ON HOME GRAPH $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.AllGraphAction, ast.HomeGraphScope()(_))(_),
               List(ast.AllQualifier()(_)),
               Seq(literalRole),
@@ -82,7 +83,7 @@ class AllGraphPrivilegeAdministrationCommandParserTest extends AdministrationAnd
           }
 
           test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON HOME GRAPH $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.AllGraphAction, ast.HomeGraphScope()(_))(_),
               List(ast.AllQualifier()(_)),
               Seq(literalRole),
@@ -93,7 +94,7 @@ class AllGraphPrivilegeAdministrationCommandParserTest extends AdministrationAnd
           // Default graph should be allowed
 
           test(s"$verb$immutableString ALL ON DEFAULT GRAPH $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.AllGraphAction, ast.DefaultGraphScope()(_))(_),
               List(ast.AllQualifier()(_)),
               Seq(literalRole),
@@ -102,7 +103,7 @@ class AllGraphPrivilegeAdministrationCommandParserTest extends AdministrationAnd
           }
 
           test(s"$verb$immutableString ALL PRIVILEGES ON DEFAULT GRAPH $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.AllGraphAction, ast.DefaultGraphScope()(_))(_),
               List(ast.AllQualifier()(_)),
               Seq(literalRole),
@@ -111,7 +112,7 @@ class AllGraphPrivilegeAdministrationCommandParserTest extends AdministrationAnd
           }
 
           test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON DEFAULT GRAPH $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.AllGraphAction, ast.DefaultGraphScope()(_))(_),
               List(ast.AllQualifier()(_)),
               Seq(literalRole),
@@ -122,7 +123,7 @@ class AllGraphPrivilegeAdministrationCommandParserTest extends AdministrationAnd
           // Multiple graphs should be allowed
 
           test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON GRAPHS * $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.AllGraphAction, ast.AllGraphsScope()(_))(_),
               List(ast.AllQualifier()(_)),
               Seq(literalRole),
@@ -131,7 +132,7 @@ class AllGraphPrivilegeAdministrationCommandParserTest extends AdministrationAnd
           }
 
           test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON GRAPHS foo,baz $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.AllGraphAction, graphScopeFooBaz)(_),
               List(ast.AllQualifier()(_)),
               Seq(literalRole),
@@ -142,7 +143,7 @@ class AllGraphPrivilegeAdministrationCommandParserTest extends AdministrationAnd
           // Multiple roles should be allowed
 
           test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON GRAPHS foo $preposition role1, role2") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.AllGraphAction, graphScopeFoo)(_),
               List(ast.AllQualifier()(_)),
               Seq(literalRole1, literalRole2),
@@ -153,7 +154,7 @@ class AllGraphPrivilegeAdministrationCommandParserTest extends AdministrationAnd
           // Parameter values should be allowed
 
           test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON GRAPH $$foo $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.AllGraphAction, graphScopeParamFoo)(_),
               List(ast.AllQualifier()(_)),
               Seq(literalRole),
@@ -162,7 +163,7 @@ class AllGraphPrivilegeAdministrationCommandParserTest extends AdministrationAnd
           }
 
           test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON GRAPH foo $preposition $$role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.AllGraphAction, graphScopeFoo)(_),
               List(ast.AllQualifier()(_)),
               Seq(paramRole),
@@ -173,49 +174,49 @@ class AllGraphPrivilegeAdministrationCommandParserTest extends AdministrationAnd
           // Qualifier or resource should not be supported
 
           test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON GRAPH foo NODE A $preposition role") {
-            failsToParse
+            failsToParse[Statements]
           }
 
           test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON GRAPH foo ELEMENTS * $preposition role") {
-            failsToParse
+            failsToParse[Statements]
           }
 
           test(s"$verb$immutableString ALL GRAPH PRIVILEGES {prop} ON GRAPH foo $preposition role") {
-            failsToParse
+            failsToParse[Statements]
           }
 
           // Invalid syntax
 
           test(s"$verb$immutableString ALL GRAPH ON GRAPH foo $preposition role") {
-            failsToParse
+            failsToParse[Statements]
           }
 
           test(s"$verb$immutableString GRAPH ON GRAPH foo $preposition role") {
             val expected =
               """Invalid input 'GRAPH': expected
                 |  "ACCESS"""".stripMargin
-            assertFailsWithMessageStart(testName, expected)
+            assertFailsWithMessageStart[Statements](testName, expected)
           }
 
           test(s"$verb$immutableString GRAPH PRIVILEGES ON GRAPH foo $preposition role") {
             val expected =
               """Invalid input 'GRAPH': expected
                 |  "ACCESS"""".stripMargin
-            assertFailsWithMessageStart(testName, expected)
+            assertFailsWithMessageStart[Statements](testName, expected)
           }
 
           test(s"$verb$immutableString PRIVILEGES ON GRAPH foo $preposition role") {
             val expected =
               """Invalid input 'PRIVILEGES': expected
                 |  "ACCESS"""".stripMargin
-            assertFailsWithMessageStart(testName, expected)
+            assertFailsWithMessageStart[Statements](testName, expected)
           }
 
           // Database/dbms instead of graph keyword
 
           test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON DATABASES * $preposition role") {
             val offset = verb.length + immutableString.length + 25
-            assertFailsWithMessage(
+            assertFailsWithMessage[Statements](
               testName,
               s"""Invalid input 'DATABASES': expected "GRAPH" (line 1, column ${offset + 1} (offset: $offset))"""
             )
@@ -223,7 +224,7 @@ class AllGraphPrivilegeAdministrationCommandParserTest extends AdministrationAnd
 
           test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON DATABASE foo $preposition role") {
             val offset = verb.length + immutableString.length + 25
-            assertFailsWithMessage(
+            assertFailsWithMessage[Statements](
               testName,
               s"""Invalid input 'DATABASE': expected "GRAPH" (line 1, column ${offset + 1} (offset: $offset))"""
             )
@@ -231,7 +232,7 @@ class AllGraphPrivilegeAdministrationCommandParserTest extends AdministrationAnd
 
           test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON HOME DATABASE $preposition role") {
             val offset = verb.length + immutableString.length + 25
-            assertFailsWithMessage(
+            assertFailsWithMessage[Statements](
               testName,
               s"""Invalid input 'HOME': expected "GRAPH" (line 1, column ${offset + 1} (offset: $offset))"""
             )
@@ -239,7 +240,7 @@ class AllGraphPrivilegeAdministrationCommandParserTest extends AdministrationAnd
 
           test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON DEFAULT DATABASE $preposition role") {
             val offset = verb.length + immutableString.length + 25
-            assertFailsWithMessage(
+            assertFailsWithMessage[Statements](
               testName,
               s"""Invalid input 'DEFAULT': expected "GRAPH" (line 1, column ${offset + 1} (offset: $offset))"""
             )
@@ -247,7 +248,7 @@ class AllGraphPrivilegeAdministrationCommandParserTest extends AdministrationAnd
 
           test(s"$verb$immutableString ALL GRAPH PRIVILEGES ON DBMS $preposition role") {
             val offset = verb.length + immutableString.length + 25
-            assertFailsWithMessage(
+            assertFailsWithMessage[Statements](
               testName,
               s"""Invalid input 'DBMS': expected "GRAPH" (line 1, column ${offset + 1} (offset: $offset))"""
             )

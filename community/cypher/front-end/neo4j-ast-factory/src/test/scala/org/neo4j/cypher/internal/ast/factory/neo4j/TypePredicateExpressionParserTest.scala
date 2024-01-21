@@ -16,11 +16,9 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
-import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.parser.CypherParser.ExpressionContext
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.AnyType
 import org.neo4j.cypher.internal.util.symbols.BooleanType
@@ -44,13 +42,8 @@ import org.neo4j.cypher.internal.util.symbols.RelationshipType
 import org.neo4j.cypher.internal.util.symbols.StringType
 import org.neo4j.cypher.internal.util.symbols.ZonedDateTimeType
 import org.neo4j.cypher.internal.util.symbols.ZonedTimeType
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class TypePredicateExpressionParserTest extends CypherFunSuite with ParserSyntaxTreeBase[Cst.Expression, Expression]
-    with AstConstructionTestSupport {
-
-  implicit val javaccRule: JavaccRule[Expression] = JavaccRule.Expression
-  implicit val antlrRule: AntlrRule[ExpressionContext] = AntlrRule.Expression
+class TypePredicateExpressionParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   private val allNonListTypes = Seq(
     ("NOTHING", NothingType()(pos)),
@@ -514,92 +507,92 @@ class TypePredicateExpressionParserTest extends CypherFunSuite with ParserSyntax
   (allNonListTypes ++ superTypes ++ listTypes ++ closedUnionOfAllNonListTypes ++ otherClosedUnionTypes).foreach {
     case (typeString, typeExpr: CypherType) =>
       test(s"x IS :: $typeString") {
-        gives {
+        gives[Expression] {
           isTyped(varFor("x"), typeExpr)
         }
       }
 
       test(s"n.prop IS TYPED $typeString") {
-        gives {
+        gives[Expression] {
           isTyped(prop("n", "prop"), typeExpr)
         }
       }
 
       test(s"5 :: $typeString") {
-        gives {
+        gives[Expression] {
           isTyped(literalInt(5L), typeExpr)
         }
       }
 
       test(s"x + y IS NOT :: $typeString") {
-        gives {
+        gives[Expression] {
           isNotTyped(add(varFor("x"), varFor("y")), typeExpr)
         }
       }
 
       test(s"['a', 'b', 'c'] IS NOT TYPED $typeString") {
-        gives {
+        gives[Expression] {
           isNotTyped(listOfString("a", "b", "c"), typeExpr)
         }
       }
 
       // This should not be supported according to CIP-87
       test(s"x NOT :: $typeString") {
-        failsToParse
+        failsToParse[Expression]()
       }
   }
 
   test("x :: BOOLEAN NOT NULL NOT NULL") {
-    failsToParse
+    failsToParse[Expression]()
   }
 
   test("x :: BOOLEAN! NOT NULL") {
-    failsToParse
+    failsToParse[Expression]()
   }
 
   test("x :: BOOLEAN NOT NULL!") {
-    failsToParse
+    failsToParse[Expression]()
   }
 
   test("x :: BOOLEAN!!") {
-    failsToParse
+    failsToParse[Expression]()
   }
 
   test("x :: LIST<BOOLEAN> NOT NULL NOT NULL") {
-    failsToParse
+    failsToParse[Expression]()
   }
 
   test("x :: LIST<BOOLEAN>! NOT NULL") {
-    failsToParse
+    failsToParse[Expression]()
   }
 
   test("x :: LIST<BOOLEAN> NOT NULL!") {
-    failsToParse
+    failsToParse[Expression]()
   }
 
   test("x :: LIST<BOOLEAN>!!") {
-    failsToParse
+    failsToParse[Expression]()
   }
 
   test("x :: BOOLEAN LIST NOT NULL NOT NULL") {
-    failsToParse
+    failsToParse[Expression]()
   }
 
   test("x :: BOOLEAN LIST! NOT NULL") {
-    failsToParse
+    failsToParse[Expression]()
   }
 
   test("x :: BOOLEAN LIST NOT NULL !") {
-    failsToParse
+    failsToParse[Expression]()
   }
 
   test("x :: BOOLEAN LIST!!") {
-    failsToParse
+    failsToParse[Expression]()
   }
 
   // The code that throws these next 2 errors is not inside of Cypher.jj, so the ANTLR parser doesn't know about it
   test("x :: ANY<BOOLEAN> NOT NULL") {
-    assertFailsWithMessage(
+    assertFailsWithMessage[Expression](
       testName,
       "Closed Dynamic Union Types can not be appended with `NOT NULL`, specify `NOT NULL` on all inner types instead. (line 1, column 6 (offset: 5))",
       failsOnlyJavaCC = true
@@ -607,7 +600,7 @@ class TypePredicateExpressionParserTest extends CypherFunSuite with ParserSyntax
   }
 
   test("x :: ANY<BOOLEAN>!") {
-    assertFailsWithMessage(
+    assertFailsWithMessage[Expression](
       testName,
       "Closed Dynamic Union Types can not be appended with `NOT NULL`, specify `NOT NULL` on all inner types instead. (line 1, column 6 (offset: 5))",
       failsOnlyJavaCC = true
@@ -615,7 +608,7 @@ class TypePredicateExpressionParserTest extends CypherFunSuite with ParserSyntax
   }
 
   test("x :: ANY VALUE<BOOLEAN> NOT NULL") {
-    assertFailsWithMessage(
+    assertFailsWithMessage[Expression](
       testName,
       "Closed Dynamic Union Types can not be appended with `NOT NULL`, specify `NOT NULL` on all inner types instead. (line 1, column 6 (offset: 5))",
       failsOnlyJavaCC = true
@@ -623,7 +616,7 @@ class TypePredicateExpressionParserTest extends CypherFunSuite with ParserSyntax
   }
 
   test("x :: ANY VALUE<BOOLEAN>!") {
-    assertFailsWithMessage(
+    assertFailsWithMessage[Expression](
       testName,
       "Closed Dynamic Union Types can not be appended with `NOT NULL`, specify `NOT NULL` on all inner types instead. (line 1, column 6 (offset: 5))",
       failsOnlyJavaCC = true
@@ -631,42 +624,42 @@ class TypePredicateExpressionParserTest extends CypherFunSuite with ParserSyntax
   }
 
   test("x :: ANY VALUE<>") {
-    failsToParse
+    failsToParse[Expression]()
   }
 
   test("x :: ANY <>") {
-    failsToParse
+    failsToParse[Expression]()
   }
 
   test("x :: ") {
-    failsToParse
+    failsToParse[Expression]()
   }
 
   test("x :: ANY VALUE<> NOT NULL") {
-    failsToParse
+    failsToParse[Expression]()
   }
 
   test("x :: ANY <> NOT NULL") {
-    failsToParse
+    failsToParse[Expression]()
   }
 
   test("x :: NOT NULL") {
-    failsToParse
+    failsToParse[Expression]()
   }
 
   test("x :: LIST<>") {
-    failsToParse
+    failsToParse[Expression]()
   }
 
   test("x :: LIST") {
-    failsToParse
+    failsToParse[Expression]()
   }
 
   test("x :: ARRAY") {
-    failsToParse
+    failsToParse[Expression]()
   }
 
   test("x :: ARRAY<>") {
-    failsToParse
+    failsToParse[Expression]()
   }
 }

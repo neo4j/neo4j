@@ -16,20 +16,14 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import org.neo4j.cypher.internal.ast
-import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
-import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.ast.Clause
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 
-import scala.collection.immutable.Seq
-
-class RemoveParserTest extends CypherFunSuite with ParserSyntaxTreeBase[Cst.Clause, ast.Clause] {
-
-  implicit val javaccRule: JavaccRule[ast.Clause] = JavaccRule.Clause
-  implicit val antlrRule: AntlrRule[Cst.Clause] = AntlrRule.Clause
+class RemoveParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   test("REMOVE n:A") {
-    gives(
+    gives[Clause](
       remove(
         Seq(removeLabelItem("n", Seq("A")))
       )
@@ -37,7 +31,7 @@ class RemoveParserTest extends CypherFunSuite with ParserSyntaxTreeBase[Cst.Clau
   }
 
   test("REMOVE n IS A") {
-    gives(
+    gives[Clause](
       remove(
         Seq(removeLabelItem("n", Seq("A"), containsIs = true))
       )
@@ -45,7 +39,7 @@ class RemoveParserTest extends CypherFunSuite with ParserSyntaxTreeBase[Cst.Clau
   }
 
   test("REMOVE n:A:B:C") {
-    gives(
+    gives[Clause](
       remove(
         Seq(removeLabelItem("n", Seq("A", "B", "C")))
       )
@@ -53,7 +47,7 @@ class RemoveParserTest extends CypherFunSuite with ParserSyntaxTreeBase[Cst.Clau
   }
 
   test("REMOVE n:A, n:B") {
-    gives(
+    gives[Clause](
       remove(
         Seq(removeLabelItem("n", Seq("A")), removeLabelItem("n", Seq("B")))
       )
@@ -61,7 +55,7 @@ class RemoveParserTest extends CypherFunSuite with ParserSyntaxTreeBase[Cst.Clau
   }
 
   test("REMOVE n IS A, n IS B") {
-    gives(
+    gives[Clause](
       remove(
         Seq(removeLabelItem("n", Seq("A"), containsIs = true), removeLabelItem("n", Seq("B"), containsIs = true))
       )
@@ -69,7 +63,7 @@ class RemoveParserTest extends CypherFunSuite with ParserSyntaxTreeBase[Cst.Clau
   }
 
   test("REMOVE n IS A, n:B") {
-    gives(
+    gives[Clause](
       remove(
         Seq(removeLabelItem("n", Seq("A"), containsIs = true), removeLabelItem("n", Seq("B")))
       )
@@ -77,7 +71,7 @@ class RemoveParserTest extends CypherFunSuite with ParserSyntaxTreeBase[Cst.Clau
   }
 
   test("REMOVE n:A, r.prop, m IS B") {
-    gives(
+    gives[Clause](
       remove(
         Seq(
           removeLabelItem("n", Seq("A")),
@@ -91,7 +85,7 @@ class RemoveParserTest extends CypherFunSuite with ParserSyntaxTreeBase[Cst.Clau
   // Invalid mix of colon conjunction and IS, this will be disallowed in semantic checking
 
   test("REMOVE n IS A:B") {
-    gives(
+    gives[Clause](
       remove(
         Seq(removeLabelItem("n", Seq("A", "B"), containsIs = true))
       )
@@ -99,7 +93,7 @@ class RemoveParserTest extends CypherFunSuite with ParserSyntaxTreeBase[Cst.Clau
   }
 
   test("REMOVE n IS A, m:A:B") {
-    gives(
+    gives[Clause](
       remove(
         Seq(
           removeLabelItem("n", Seq("A"), containsIs = true),
@@ -112,30 +106,30 @@ class RemoveParserTest extends CypherFunSuite with ParserSyntaxTreeBase[Cst.Clau
   //  Invalid use of other label expression symbols than :
 
   test("REMOVE n:A|B") {
-    failsToParse
+    failsToParse[Clause]()
   }
 
   test("REMOVE n:!A") {
-    failsToParse
+    failsToParse[Clause]()
   }
 
   test("REMOVE n:%") {
-    failsToParse
+    failsToParse[Clause]()
   }
 
   test("REMOVE n:A&B") {
-    failsToParse
+    failsToParse[Clause]()
   }
 
   test("REMOVE n IS A&B") {
-    failsToParse
+    failsToParse[Clause]()
   }
 
   test("REMOVE :A") {
-    failsToParse
+    failsToParse[Clause]()
   }
 
   test("REMOVE IS A") {
-    failsToParse
+    failsToParse[Clause]()
   }
 }

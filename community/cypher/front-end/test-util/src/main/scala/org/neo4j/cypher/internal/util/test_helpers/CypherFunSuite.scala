@@ -44,7 +44,7 @@ abstract class CypherFunSuite
 }
 
 trait TestName extends Suite {
-  final def testName = __testName.get
+  final def testName: String = __testName.get
 
   private var __testName: Option[String] = None
 

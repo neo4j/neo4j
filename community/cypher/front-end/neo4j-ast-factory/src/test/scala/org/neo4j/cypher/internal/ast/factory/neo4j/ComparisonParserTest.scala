@@ -16,37 +16,34 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
-import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.expressions.Expression
 
-class ComparisonParserTest extends ParserSyntaxTreeBase[Cst.Expression, Expression] {
-
-  implicit private val javaccRule: JavaccRule[Expression] = JavaccRule.Expression
-  implicit private val antlrRule: AntlrRule[Cst.Expression] = AntlrRule.Expression
+class ComparisonParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   test("a < b") {
-    gives(lt(id("a"), id("b")))
+    gives[Expression](lt(id("a"), id("b")))
   }
 
   test("a > b") {
-    gives(gt(id("a"), id("b")))
+    gives[Expression](gt(id("a"), id("b")))
   }
 
   test("a > b AND b > c") {
-    gives(and(gt(id("a"), id("b")), gt(id("b"), id("c"))))
+    gives[Expression](and(gt(id("a"), id("b")), gt(id("b"), id("c"))))
   }
 
   test("a > b > c") {
-    gives(ands(gt(id("a"), id("b")), gt(id("b"), id("c"))))
+    gives[Expression](ands(gt(id("a"), id("b")), gt(id("b"), id("c"))))
   }
 
   test("a > b > c > d") {
-    gives(ands(gt(id("a"), id("b")), gt(id("b"), id("c")), gt(id("c"), id("d"))))
+    gives[Expression](ands(gt(id("a"), id("b")), gt(id("b"), id("c")), gt(id("c"), id("d"))))
   }
 
   test("a < b > c = d <= e >= f") {
-    gives(ands(
+    gives[Expression](ands(
       lt(id("a"), id("b")),
       gt(id("b"), id("c")),
       eq(id("c"), id("d")),

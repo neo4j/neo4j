@@ -16,22 +16,16 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import org.antlr.v4.runtime.ParserRuleContext
-import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
-import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.expressions
-import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.util.DummyPosition
 
-class MapProjectionParserTest extends ParserTestBase[Any with ParserRuleContext, Any, Any] {
-
+class MapProjectionParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
   private val t = DummyPosition(0)
 
   test("testIdentifierCanContainASCII") {
-    implicit val javaccRule: JavaccRule[Expression] = JavaccRule.MapProjection
-    implicit val antlrRule: AntlrRule[Cst.MapProjection] = AntlrRule.MapProjection
-
     parsing("abc{}") shouldGive expressions.MapProjection(expressions.Variable("abc")(t), Seq.empty)(t)
 
     parsing("abc{.id}") shouldGive

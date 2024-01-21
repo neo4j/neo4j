@@ -20,49 +20,48 @@
 package org.neo4j.cypher.internal.parser
 
 import org.neo4j.cypher.internal
-import org.neo4j.cypher.internal.ast.factory.neo4j.JavaccRule
-import org.neo4j.cypher.internal.ast.factory.neo4j.ParserTestBase
-import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
-import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.ParserSupport.NotAntlr
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration
 import org.neo4j.cypher.internal.runtime.SelectivityTrackerRegistrator
 import org.neo4j.cypher.internal.runtime.interpreted.commands
-import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal
+import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.CommunityExpressionConverter
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.attribution.Id
 
-class MapLiteralTest
-    extends ParserTestBase[
-      Cst.MapLiteral,
-      internal.expressions.Expression,
-      commands.expressions.Expression
-    ] {
-  implicit val javaccRule: JavaccRule[internal.expressions.Expression] = JavaccRule.MapLiteral
-  implicit val antlrRule: AntlrRule[Cst.MapLiteral] = AntlrRule.MapLiteral
+class MapLiteralTest extends AstParsingTestBase {
 
   test("literal_maps") {
-    parsing("{ name: 'Andres' }") shouldGive
-      commands.expressions.LiteralMap(Map("name" -> literal("Andres")))
+    assertCommand("{ name: 'Andres' }", commands.expressions.LiteralMap(Map("name" -> lit("Andres"))))
 
-    parsing("{ meta : { name: 'Andres' } }") shouldGive
-      commands.expressions.LiteralMap(Map("meta" -> commands.expressions.LiteralMap(Map("name" -> literal("Andres")))))
+    assertCommand(
+      "{ meta : { name: 'Andres' } }",
+      commands.expressions.LiteralMap(Map("meta" -> commands.expressions.LiteralMap(Map("name" -> lit("Andres")))))
+    )
 
-    parsing("{ }") shouldGive
-      commands.expressions.LiteralMap(Map())
+    assertCommand("{ }", commands.expressions.LiteralMap(Map()))
   }
 
   test("nested_map_support") {
-    parsing("{ key: 'value' }") shouldGive
-      commands.expressions.LiteralMap(Map("key" -> literal("value")))
+    assertCommand("{ key: 'value' }", commands.expressions.LiteralMap(Map("key" -> lit("value"))))
 
-    parsing("{ inner1: { inner2: 'Value' } }") shouldGive
+    assertCommand(
+      "{ inner1: { inner2: 'Value' } }",
       commands.expressions.LiteralMap(
-        Map("inner1" -> commands.expressions.LiteralMap(Map("inner2" -> literal("Value"))))
+        Map("inner1" -> commands.expressions.LiteralMap(Map("inner2" -> lit("Value"))))
       )
+    )
   }
+
+  private def assertCommand(cypher: String, expected: commands.expressions.Expression): Unit = {
+    cypher should parse[Expression](NotAntlr).withAstLike(e => convert(e) shouldBe expected)
+  }
+
+  private def lit(o: Any) = LiteralHelper.literal(o)
 
   private val converters =
     new ExpressionConverters(CommunityExpressionConverter(
@@ -72,6 +71,6 @@ class MapLiteralTest
       CypherRuntimeConfiguration.defaultConfiguration
     ))
 
-  def convert(astNode: internal.expressions.Expression): commands.expressions.Expression =
+  private def convert(astNode: internal.expressions.Expression): commands.expressions.Expression =
     converters.toCommandExpression(Id.INVALID_ID, astNode)
 }

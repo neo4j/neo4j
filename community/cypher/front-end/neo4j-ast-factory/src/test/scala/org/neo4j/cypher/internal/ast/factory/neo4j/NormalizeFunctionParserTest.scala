@@ -16,46 +16,43 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
-import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.expressions.Expression
 
-class NormalizeFunctionParserTest extends ParserSyntaxTreeBase[Cst.Expression, Expression] {
-
-  implicit private val javaccRule: JavaccRule[Expression] = JavaccRule.Expression
-  implicit private val antlrRule: AntlrRule[Cst.Expression] = AntlrRule.Expression
+class NormalizeFunctionParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   // Normalize defaults to NFC
   test("normalize(\"hello\")") {
-    gives(function("normalize", literalString("hello"), literalString("NFC")))
+    gives[Expression](function("normalize", literalString("hello"), literalString("NFC")))
   }
 
   // All normal form keywords parse as expected
   Seq("NFC", "NFD", "NFKC", "NFKD").foreach { normalForm =>
     test(s"normalize(foo, $normalForm)") {
-      gives(function("normalize", varFor("foo"), literalString(normalForm)))
+      gives[Expression](function("normalize", varFor("foo"), literalString(normalForm)))
     }
   }
 
   // Failing tests
   test("normalize(\"hello\", \"NFC\")") {
-    failsToParseOnlyJavaCC
+    failsToParseOnlyJavaCC[Expression]()
   }
 
   test("normalize(\"hello\", null)") {
-    failsToParseOnlyJavaCC
+    failsToParseOnlyJavaCC[Expression]()
   }
 
   test("normalize(\"hello\", NFF)") {
-    failsToParseOnlyJavaCC
+    failsToParseOnlyJavaCC[Expression]()
   }
 
   test("normalize(\"hello\", NFC, anotherVar)") {
-    failsToParseOnlyJavaCC
+    failsToParseOnlyJavaCC[Expression]()
   }
 
   test("normalize()") {
-    failsToParseOnlyJavaCC
+    failsToParseOnlyJavaCC[Expression]()
   }
 
 }

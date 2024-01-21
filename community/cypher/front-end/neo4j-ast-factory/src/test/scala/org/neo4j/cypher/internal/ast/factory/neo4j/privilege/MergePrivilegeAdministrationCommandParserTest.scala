@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j.privilege
 
 import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.AdministrationAndSchemaCommandParserTestBase
 
 class MergePrivilegeAdministrationCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
@@ -33,7 +34,7 @@ class MergePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
         immutable =>
           val immutableString = immutableOrEmpty(immutable)
           test(s"$verb$immutableString MERGE { prop } ON GRAPH foo $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.MergeAdminAction, graphScopeFoo)(_),
               ast.PropertiesResource(propSeq)(_),
               List(ast.ElementsAllQualifier()(_)),
@@ -45,7 +46,7 @@ class MergePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
           // Multiple properties should be allowed
 
           test(s"$verb$immutableString MERGE { * } ON GRAPH foo $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.MergeAdminAction, graphScopeFoo)(_),
               ast.AllPropertyResource()(_),
               List(ast.ElementsAllQualifier()(_)),
@@ -55,7 +56,7 @@ class MergePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
           }
 
           test(s"$verb$immutableString MERGE { prop1, prop2 } ON GRAPH foo $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.MergeAdminAction, graphScopeFoo)(_),
               ast.PropertiesResource(Seq("prop1", "prop2"))(_),
               List(ast.ElementsAllQualifier()(_)),
@@ -67,7 +68,7 @@ class MergePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
           // Home graph should be allowed
 
           test(s"$verb$immutableString MERGE { * } ON HOME GRAPH $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.MergeAdminAction, ast.HomeGraphScope()(_))(_),
               ast.AllPropertyResource()(_),
               List(ast.ElementsAllQualifier()(_)),
@@ -77,7 +78,7 @@ class MergePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
           }
 
           test(s"$verb$immutableString MERGE { prop1, prop2 } ON HOME GRAPH RELATIONSHIP * $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.MergeAdminAction, ast.HomeGraphScope()(_))(_),
               ast.PropertiesResource(Seq("prop1", "prop2"))(_),
               List(ast.RelationshipAllQualifier()(_)),
@@ -89,7 +90,7 @@ class MergePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
           // Default graph should be allowed
 
           test(s"$verb$immutableString MERGE { * } ON DEFAULT GRAPH $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.MergeAdminAction, ast.DefaultGraphScope()(_))(_),
               ast.AllPropertyResource()(_),
               List(ast.ElementsAllQualifier()(_)),
@@ -99,7 +100,7 @@ class MergePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
           }
 
           test(s"$verb$immutableString MERGE { prop1, prop2 } ON DEFAULT GRAPH RELATIONSHIP * $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.MergeAdminAction, ast.DefaultGraphScope()(_))(_),
               ast.PropertiesResource(Seq("prop1", "prop2"))(_),
               List(ast.RelationshipAllQualifier()(_)),
@@ -111,7 +112,7 @@ class MergePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
           // Multiple graphs should be allowed
 
           test(s"$verb$immutableString MERGE { prop } ON GRAPHS * $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.MergeAdminAction, ast.AllGraphsScope()(_))(_),
               ast.PropertiesResource(propSeq)(_),
               List(ast.ElementsAllQualifier()(_)),
@@ -121,7 +122,7 @@ class MergePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
           }
 
           test(s"$verb$immutableString MERGE { prop } ON GRAPHS foo,baz $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.MergeAdminAction, graphScopeFooBaz)(_),
               ast.PropertiesResource(propSeq)(_),
               List(ast.ElementsAllQualifier()(_)),
@@ -133,7 +134,7 @@ class MergePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
           // Qualifiers
 
           test(s"$verb$immutableString MERGE { prop } ON GRAPHS foo ELEMENTS A,B $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.MergeAdminAction, graphScopeFoo)(_),
               ast.PropertiesResource(propSeq)(_),
               List(elemQualifierA, elemQualifierB),
@@ -143,7 +144,7 @@ class MergePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
           }
 
           test(s"$verb$immutableString MERGE { prop } ON GRAPHS foo ELEMENT A $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.MergeAdminAction, graphScopeFoo)(_),
               ast.PropertiesResource(propSeq)(_),
               List(elemQualifierA),
@@ -153,7 +154,7 @@ class MergePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
           }
 
           test(s"$verb$immutableString MERGE { prop } ON GRAPHS foo NODES A,B $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.MergeAdminAction, graphScopeFoo)(_),
               ast.PropertiesResource(propSeq)(_),
               List(labelQualifierA, labelQualifierB),
@@ -163,7 +164,7 @@ class MergePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
           }
 
           test(s"$verb$immutableString MERGE { prop } ON GRAPHS foo NODES * $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.MergeAdminAction, graphScopeFoo)(_),
               ast.PropertiesResource(propSeq)(_),
               List(ast.LabelAllQualifier()(_)),
@@ -173,7 +174,7 @@ class MergePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
           }
 
           test(s"$verb$immutableString MERGE { prop } ON GRAPHS foo RELATIONSHIPS A,B $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.MergeAdminAction, graphScopeFoo)(_),
               ast.PropertiesResource(propSeq)(_),
               List(relQualifierA, relQualifierB),
@@ -183,7 +184,7 @@ class MergePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
           }
 
           test(s"$verb$immutableString MERGE { prop } ON GRAPHS foo RELATIONSHIP * $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.MergeAdminAction, graphScopeFoo)(_),
               ast.PropertiesResource(propSeq)(_),
               List(ast.RelationshipAllQualifier()(_)),
@@ -195,7 +196,7 @@ class MergePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
           // Multiple roles should be allowed
 
           test(s"$verb$immutableString MERGE { prop } ON GRAPHS foo $preposition role1, role2") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.MergeAdminAction, graphScopeFoo)(_),
               ast.PropertiesResource(propSeq)(_),
               List(ast.ElementsAllQualifier()(_)),
@@ -207,7 +208,7 @@ class MergePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
           // Parameter values
 
           test(s"$verb$immutableString MERGE { prop } ON GRAPH $$foo $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.MergeAdminAction, graphScopeParamFoo)(_),
               ast.PropertiesResource(propSeq)(_),
               List(ast.ElementsAllQualifier()(_)),
@@ -217,7 +218,7 @@ class MergePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
           }
 
           test(s"$verb$immutableString MERGE { prop } ON GRAPH foo $preposition $$role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.MergeAdminAction, graphScopeFoo)(_),
               ast.PropertiesResource(propSeq)(_),
               List(ast.ElementsAllQualifier()(_)),
@@ -230,7 +231,7 @@ class MergePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
           test(s"$verb$immutableString MERGE { prop } ON DATABASES * $preposition role") {
             val offset = verb.length + immutableString.length + 19
-            assertFailsWithMessage(
+            assertFailsWithMessage[Statements](
               testName,
               s"""Invalid input 'DATABASES': expected "DEFAULT", "GRAPH", "GRAPHS" or "HOME" (line 1, column ${offset + 1} (offset: $offset))"""
             )
@@ -238,18 +239,18 @@ class MergePrivilegeAdministrationCommandParserTest extends AdministrationAndSch
 
           test(s"$verb$immutableString MERGE { prop } ON DATABASE foo $preposition role") {
             val offset = verb.length + immutableString.length + 19
-            assertFailsWithMessage(
+            assertFailsWithMessage[Statements](
               testName,
               s"""Invalid input 'DATABASE': expected "DEFAULT", "GRAPH", "GRAPHS" or "HOME" (line 1, column ${offset + 1} (offset: $offset))"""
             )
           }
 
           test(s"$verb$immutableString MERGE { prop } ON HOME DATABASE $preposition role") {
-            failsToParse
+            failsToParse[Statements]
           }
 
           test(s"$verb$immutableString MERGE { prop } ON DEFAULT DATABASE $preposition role") {
-            failsToParse
+            failsToParse[Statements]
           }
       }
   }

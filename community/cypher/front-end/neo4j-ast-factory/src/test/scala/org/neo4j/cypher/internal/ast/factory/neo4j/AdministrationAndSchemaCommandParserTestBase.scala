@@ -20,9 +20,10 @@ import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.DatabaseName
 import org.neo4j.cypher.internal.ast.NamespacedName
 import org.neo4j.cypher.internal.ast.ParameterName
-import org.neo4j.cypher.internal.ast.Statement
-import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
-import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
+import org.neo4j.cypher.internal.ast.Statements
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.ParserSupport.NotAntlr
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
 import org.neo4j.cypher.internal.expressions.StringLiteral
@@ -32,40 +33,11 @@ import org.neo4j.cypher.internal.util.symbols.CTString
 
 import java.nio.charset.StandardCharsets
 
-import scala.util.Failure
-import scala.util.Success
+class AdministrationAndSchemaCommandParserTestBase extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
-class AdministrationAndSchemaCommandParserTestBase
-    extends ParserSyntaxTreeBase[Cst.Statement, ast.Statement]
-    with VerifyAstPositionTestSupport {
-
-  implicit protected val javaccParser: JavaccRule[Statement] = JavaccRule.Statements
-  implicit protected val antlrParser: AntlrRule[Cst.Statement] = AntlrRule.Statements()
-
-  protected def assertAst(expected: ast.Statement, comparePosition: Boolean = true)(implicit
-  p: JavaccRule[ast.Statement]): Unit = {
-    parseWithJavaccRule(testName)(p) match {
-      case Success(statement) =>
-        statement shouldBe expected
-        if (comparePosition) {
-          // change flag to true to get basic print methods for position of words
-          printQueryPositions(testName, printFlag = false)
-          verifyPositions(statement, expected)
-        }
-      case Failure(exception) =>
-        fail(exception)
-    }
-  }
-
-  // noinspection SameParameterValue
-  private def printQueryPositions(query: String, printFlag: Boolean): Unit = {
-    if (printFlag) {
-      println(query)
-      query.split("[ ,:.()\\[\\]]+").foreach(split =>
-        println(s"$split: ${query.indexOf(split) + 1}, ${query.indexOf(split)}")
-      )
-      println("---")
-    }
+  protected def assertAst(expected: ast.Statement, comparePosition: Boolean = true): Unit = {
+    if (comparePosition) parses[Statements](NotAntlr).toAstPositioned(Statements(Seq(expected)))
+    else parses[Statements](NotAntlr).toAst(Statements(Seq(expected)))
   }
 
   implicit val stringConvertor: String => Either[String, Parameter] = s => Left(s)

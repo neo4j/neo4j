@@ -23,15 +23,12 @@ import org.neo4j.cypher.internal.ast.GraphDirectReference
 import org.neo4j.cypher.internal.ast.GraphFunctionReference
 import org.neo4j.cypher.internal.ast.GraphReference
 import org.neo4j.cypher.internal.ast.GraphSelection
-import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
-import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.util.symbols
 
-class MultipleGraphClausesParsingTest extends ParserSyntaxTreeBase[Cst.Clause, Clause] {
-
-  implicit private val javaccRule: JavaccRule[Clause] = JavaccRule.Clause
-  implicit private val antlrRule: AntlrRule[Cst.Clause] = AntlrRule.Clause
+class MultipleGraphClausesParsingTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   val keywords: Seq[(String, GraphReference => ast.UseGraph)] = Seq(
     "USE" -> use,
@@ -97,7 +94,7 @@ class MultipleGraphClausesParsingTest extends ParserSyntaxTreeBase[Cst.Clause, C
     (input, expected) <- combinations ++ fullGraphSelections
   } {
     test(input) {
-      gives(expected)
+      gives[Clause](expected)
     }
   }
 

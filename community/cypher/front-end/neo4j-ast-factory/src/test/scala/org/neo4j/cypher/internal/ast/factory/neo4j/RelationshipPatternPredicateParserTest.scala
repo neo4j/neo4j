@@ -32,7 +32,6 @@ class RelationshipPatternPredicateParserTest extends CypherFunSuite with TestNam
     (maybeProperties, maybePropertiesAst) <-
       Seq(("", None), ("{prop: 'test'}", Some(mapOf("prop" -> literalString("test")))))
   } yield {
-
     test(s"MATCH (n)-[r$maybeLabelExpression$maybePathLength $maybeProperties WHERE r.otherProp > 123]->()") {
       parseRelationshipPatterns(testName) shouldBe Seq(
         relPat(

@@ -16,15 +16,14 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.CollectExpression
 import org.neo4j.cypher.internal.ast.Match
-import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.ast.UnionDistinct
-import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
-import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.CaseExpression
 import org.neo4j.cypher.internal.expressions.ContainerIndex
@@ -42,10 +41,7 @@ import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.Leaf
 import org.neo4j.cypher.internal.util.InputPosition
 
-class CollectExpressionParserTest extends ParserSyntaxTreeBase[Cst.Statement, ast.Statement] {
-
-  implicit private val javaccRule: JavaccRule[Statement] = JavaccRule.Statement
-  implicit private val antlrRule: AntlrRule[Cst.Statement] = AntlrRule.Statement
+class CollectExpressionParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   test(
     """MATCH (m)
@@ -65,7 +61,7 @@ class CollectExpressionParserTest extends ParserSyntaxTreeBase[Cst.Statement, as
       )
     )(InputPosition(16, 2, 7), None, None)
 
-    givesIncludingPositions {
+    givesIncludingPositions[Statements] {
       singleQuery(
         match_(nodePat(name = Some("m")), where = Some(where(eq(collectExpression, listOfInt(1, 2, 5))))),
         return_(variableReturnItem("m"))
@@ -91,7 +87,7 @@ class CollectExpressionParserTest extends ParserSyntaxTreeBase[Cst.Statement, as
       )
     )(InputPosition(16, 2, 7), None, None)
 
-    givesIncludingPositions {
+    givesIncludingPositions[Statements] {
       singleQuery(
         match_(nodePat(name = Some("m")), where = Some(where(eq(collectExpression, listOfString("hello", "world"))))),
         return_(variableReturnItem("m"))
@@ -113,7 +109,7 @@ class CollectExpressionParserTest extends ParserSyntaxTreeBase[Cst.Statement, as
       )
     )(InputPosition(16, 2, 7), None, None)
 
-    givesIncludingPositions {
+    givesIncludingPositions[Statements] {
       singleQuery(
         match_(
           nodePat(name = Some("m")),
@@ -139,7 +135,7 @@ class CollectExpressionParserTest extends ParserSyntaxTreeBase[Cst.Statement, as
       )
     )(InputPosition(16, 2, 7), None, None)
 
-    givesIncludingPositions {
+    givesIncludingPositions[Statements] {
       singleQuery(
         match_(nodePat(name = Some("m")), where = Some(where(eq(collectExpression, listOfInt(1))))),
         return_(variableReturnItem("m"))
@@ -165,7 +161,7 @@ class CollectExpressionParserTest extends ParserSyntaxTreeBase[Cst.Statement, as
       )
     )(InputPosition(17, 2, 8), None, None)
 
-    givesIncludingPositions {
+    givesIncludingPositions[Statements] {
       singleQuery(
         match_(nodePat(name = Some("m"))),
         return_(returnItem(collectExpression, "COLLECT { MATCH (m)-[]->() RETURN m }", InputPosition(17, 2, 8)))
@@ -188,7 +184,7 @@ class CollectExpressionParserTest extends ParserSyntaxTreeBase[Cst.Statement, as
       )
     )(InputPosition(28, 2, 19), None, None)
 
-    givesIncludingPositions {
+    givesIncludingPositions[Statements] {
       singleQuery(
         match_(nodePat(name = Some("m"))),
         set_(Seq(setPropertyItem("m", "listItems", collectExpression)))
@@ -215,7 +211,7 @@ class CollectExpressionParserTest extends ParserSyntaxTreeBase[Cst.Statement, as
       )
     )(InputPosition(27, 2, 18), None, None)
 
-    givesIncludingPositions {
+    givesIncludingPositions[Statements] {
       singleQuery(
         match_(nodePat(name = Some("m"))),
         return_(UnaliasedReturnItem(
@@ -247,7 +243,7 @@ class CollectExpressionParserTest extends ParserSyntaxTreeBase[Cst.Statement, as
       )
     )(InputPosition(5, 1, 6), None, None)
 
-    givesIncludingPositions {
+    givesIncludingPositions[Statements] {
       singleQuery(
         with_(AliasedReturnItem(collectExpression, Variable("result")(pos))(pos)),
         return_(UnaliasedReturnItem(Variable("result")(pos), "result")(pos))
@@ -270,7 +266,7 @@ class CollectExpressionParserTest extends ParserSyntaxTreeBase[Cst.Statement, as
       )
     )(InputPosition(16, 1, 17), None, None)
 
-    givesIncludingPositions {
+    givesIncludingPositions[Statements] {
       singleQuery(
         match_(
           nodePat(name = Some("a")),
@@ -290,7 +286,7 @@ class CollectExpressionParserTest extends ParserSyntaxTreeBase[Cst.Statement, as
       )
     )(InputPosition(17, 1, 18), None, None)
 
-    givesIncludingPositions {
+    givesIncludingPositions[Statements] {
       singleQuery(
         match_(nodePat(name = Some("a"))),
         return_(returnItem(collectExpression, "COLLECT { MATCH (a) }"))
@@ -325,7 +321,7 @@ class CollectExpressionParserTest extends ParserSyntaxTreeBase[Cst.Statement, as
       )
     )(InputPosition(21, 2, 7), None, None)
 
-    givesIncludingPositions {
+    givesIncludingPositions[Statements] {
       singleQuery(
         match_(
           Seq(
@@ -370,7 +366,7 @@ class CollectExpressionParserTest extends ParserSyntaxTreeBase[Cst.Statement, as
       )
     )(InputPosition(16, 1, 17), None, None)
 
-    givesIncludingPositions {
+    givesIncludingPositions[Statements] {
       singleQuery(
         match_(
           nodePat(name = Some("a")),
@@ -399,7 +395,7 @@ class CollectExpressionParserTest extends ParserSyntaxTreeBase[Cst.Statement, as
       )
     )(InputPosition(16, 2, 7), None, None)
 
-    givesIncludingPositions {
+    givesIncludingPositions[Statements] {
       singleQuery(
         match_(
           nodePat(name = Some("m")),
@@ -428,7 +424,7 @@ class CollectExpressionParserTest extends ParserSyntaxTreeBase[Cst.Statement, as
       )(InputPosition(55, 2, 46))
     )(InputPosition(16, 2, 7), None, None)
 
-    givesIncludingPositions {
+    givesIncludingPositions[Statements] {
       singleQuery(
         match_(nodePat(name = Some("m")), where = Some(where(eq(collectExpression, listOfInt(1, 2, 3))))),
         return_(variableReturnItem("m"))
@@ -448,7 +444,7 @@ class CollectExpressionParserTest extends ParserSyntaxTreeBase[Cst.Statement, as
       )
     )(InputPosition(16, 2, 7), None, None)
 
-    givesIncludingPositions {
+    givesIncludingPositions[Statements] {
       singleQuery(
         match_(nodePat(name = Some("m")), where = Some(where(eq(collectExpression, listOf())))),
         return_(variableReturnItem("m"))
@@ -483,7 +479,7 @@ class CollectExpressionParserTest extends ParserSyntaxTreeBase[Cst.Statement, as
       )
     )(InputPosition(16, 2, 7), None, None)
 
-    givesIncludingPositions {
+    givesIncludingPositions[Statements] {
       singleQuery(
         match_(nodePat(name = Some("m")), where = Some(where(eq(collectExpression, listOf())))),
         return_(variableReturnItem("m"))
@@ -496,6 +492,6 @@ class CollectExpressionParserTest extends ParserSyntaxTreeBase[Cst.Statement, as
       |WHERE COLLECT { MATCH (b) RETURN b WHERE true } = [1, 2, 3]
       |RETURN m""".stripMargin
   ) {
-    failsToParse
+    failsToParse[Statements]
   }
 }

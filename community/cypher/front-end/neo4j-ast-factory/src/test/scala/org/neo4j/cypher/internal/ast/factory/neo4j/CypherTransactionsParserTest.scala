@@ -16,8 +16,6 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import org.neo4j.cypher.internal.ast
-import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.SubqueryCall
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsBatchParameters
@@ -27,20 +25,16 @@ import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsParameters
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsReportParameters
-import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
-import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
-import org.neo4j.cypher.internal.cst.factory.neo4j.Cst.SubqueryClause
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.ParserSupport.NotAntlr
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.symbols.CTAny
 
-class CypherTransactionsParserTest extends ParserSyntaxTreeBase[Cst.SubqueryClause, ast.Clause]
-    with VerifyAstPositionTestSupport {
-
-  implicit private val javaccRule: JavaccRule[Clause] = JavaccRule.SubqueryClause
-  implicit private val antlrRule: AntlrRule[SubqueryClause] = AntlrRule.SubqueryClause
+class CypherTransactionsParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   test("CALL { CREATE (n) } IN TRANSACTIONS") {
-    val expected =
+    parses[SubqueryCall](NotAntlr).toAstPositioned {
       SubqueryCall(
         SingleQuery(
           Seq(create(
@@ -50,39 +44,37 @@ class CypherTransactionsParserTest extends ParserSyntaxTreeBase[Cst.SubqueryClau
         )(defaultPos),
         Some(InTransactionsParameters(None, None, None)((1, 21, 20)))
       )(defaultPos)
-
-    parsing(testName) shouldVerify { actual =>
-      actual shouldBe expected
-      verifyPositions(actual, expected)
     }
   }
 
   test("CALL { CREATE (n) } IN TRANSACTIONS OF 1 ROW") {
-    val expected = subqueryCallInTransactions(
-      inTransactionsParameters(
-        Some(InTransactionsBatchParameters(literalInt(1))(pos)),
-        None,
-        None
-      ),
-      create(nodePat(Some("n")))
-    )
-    gives(expected)
+    parses[SubqueryCall](NotAntlr).toAst {
+      subqueryCallInTransactions(
+        inTransactionsParameters(
+          Some(InTransactionsBatchParameters(literalInt(1))(pos)),
+          None,
+          None
+        ),
+        create(nodePat(Some("n")))
+      )
+    }
   }
 
   test("CALL { CREATE (n) } IN TRANSACTIONS OF 1 ROWS") {
-    val expected = subqueryCallInTransactions(
-      inTransactionsParameters(
-        Some(InTransactionsBatchParameters(literalInt(1))(pos)),
-        None,
-        None
-      ),
-      create(nodePat(Some("n")))
-    )
-    gives(expected)
+    parses[SubqueryCall](NotAntlr).toAst {
+      subqueryCallInTransactions(
+        inTransactionsParameters(
+          Some(InTransactionsBatchParameters(literalInt(1))(pos)),
+          None,
+          None
+        ),
+        create(nodePat(Some("n")))
+      )
+    }
   }
 
   test("CALL { CREATE (n) } IN TRANSACTIONS OF 42 ROW") {
-    val expected =
+    parses[SubqueryCall](NotAntlr).toAst {
       subqueryCallInTransactions(
         inTransactionsParameters(
           Some(InTransactionsBatchParameters(literalInt(42))(pos)),
@@ -91,11 +83,11 @@ class CypherTransactionsParserTest extends ParserSyntaxTreeBase[Cst.SubqueryClau
         ),
         create(nodePat(Some("n")))
       )
-    gives(expected)
+    }
   }
 
   test("CALL { CREATE (n) } IN TRANSACTIONS OF 42 ROWS") {
-    val expected =
+    parses[SubqueryCall](NotAntlr).toAst {
       subqueryCallInTransactions(
         inTransactionsParameters(
           Some(InTransactionsBatchParameters(literalInt(42))(pos)),
@@ -104,11 +96,11 @@ class CypherTransactionsParserTest extends ParserSyntaxTreeBase[Cst.SubqueryClau
         ),
         create(nodePat(Some("n")))
       )
-    gives(expected)
+    }
   }
 
   test("CALL { CREATE (n) } IN TRANSACTIONS OF $param ROWS") {
-    val expected =
+    parses[SubqueryCall](NotAntlr).toAst {
       subqueryCallInTransactions(
         inTransactionsParameters(
           Some(InTransactionsBatchParameters(parameter("param", CTAny))(pos)),
@@ -117,11 +109,11 @@ class CypherTransactionsParserTest extends ParserSyntaxTreeBase[Cst.SubqueryClau
         ),
         create(nodePat(Some("n")))
       )
-    gives(expected)
+    }
   }
 
   test("CALL { CREATE (n) } IN TRANSACTIONS OF NULL ROWS") {
-    val expected =
+    parses[SubqueryCall](NotAntlr).toAst {
       subqueryCallInTransactions(
         inTransactionsParameters(
           Some(InTransactionsBatchParameters(nullLiteral)(pos)),
@@ -130,7 +122,7 @@ class CypherTransactionsParserTest extends ParserSyntaxTreeBase[Cst.SubqueryClau
         ),
         create(nodePat(Some("n")))
       )
-    gives(expected)
+    }
   }
 
   test("CALL { CREATE (n) } IN TRANSACTIONS REPORT STATUS AS status") {
@@ -143,7 +135,7 @@ class CypherTransactionsParserTest extends ParserSyntaxTreeBase[Cst.SubqueryClau
         ),
         create(nodePat(Some("n")))
       )
-    gives(expected)
+    gives[SubqueryCall](expected)
   }
 
   test("CALL { CREATE (n) } IN TRANSACTIONS OF 50 ROWS REPORT STATUS AS status") {
@@ -156,7 +148,7 @@ class CypherTransactionsParserTest extends ParserSyntaxTreeBase[Cst.SubqueryClau
         ),
         create(nodePat(Some("n")))
       )
-    gives(expected)
+    gives[SubqueryCall](expected)
   }
 
   test("CALL { CREATE (n) } IN TRANSACTIONS REPORT STATUS AS status OF 50 ROWS") {
@@ -169,7 +161,7 @@ class CypherTransactionsParserTest extends ParserSyntaxTreeBase[Cst.SubqueryClau
         ),
         create(nodePat(Some("n")))
       )
-    gives(expected)
+    gives[SubqueryCall](expected)
   }
 
   // For each error behaviour, allow all possible orders of OF ROWS, ON ERROR and REPORT STATUS
@@ -179,7 +171,6 @@ class CypherTransactionsParserTest extends ParserSyntaxTreeBase[Cst.SubqueryClau
     ("FAIL", OnErrorFail),
     ("CONTINUE", OnErrorContinue)
   ).foreach {
-
     case (errorKeyword, errorBehaviour) =>
       val errorString = s"ON ERROR $errorKeyword"
       val rowString = "OF 50 ROWS"
@@ -199,7 +190,7 @@ class CypherTransactionsParserTest extends ParserSyntaxTreeBase[Cst.SubqueryClau
             ),
             create(nodePat(Some("n")))
           )
-        gives(expected)
+        gives[SubqueryCall](expected)
       }
 
       errorRowPermutations.foreach(permutation =>
@@ -213,7 +204,7 @@ class CypherTransactionsParserTest extends ParserSyntaxTreeBase[Cst.SubqueryClau
               ),
               create(nodePat(Some("n")))
             )
-          gives(expected)
+          gives[SubqueryCall](expected)
         }
       )
 
@@ -228,7 +219,7 @@ class CypherTransactionsParserTest extends ParserSyntaxTreeBase[Cst.SubqueryClau
               ),
               create(nodePat(Some("n")))
             )
-          gives(expected)
+          gives[SubqueryCall](expected)
         }
       )
 
@@ -243,7 +234,7 @@ class CypherTransactionsParserTest extends ParserSyntaxTreeBase[Cst.SubqueryClau
               ),
               create(nodePat(Some("n")))
             )
-          gives(expected)
+          gives[SubqueryCall](expected)
         }
       )
   }
@@ -251,35 +242,35 @@ class CypherTransactionsParserTest extends ParserSyntaxTreeBase[Cst.SubqueryClau
   // Negative tests
 
   test("CALL { CREATE (n) } IN TRANSACTIONS ON ERROR BREAK ON ERROR CONTINUE") {
-    assertFailsWithMessageStart(
+    assertFailsWithMessageStart[SubqueryCall](
       testName,
       "Duplicated ON ERROR parameter"
     )
   }
 
   test("CALL { CREATE (n) } IN TRANSACTIONS ON ERROR BREAK CONTINUE") {
-    assertFailsWithMessageContains(
+    assertFailsWithMessageContains[SubqueryCall](
       testName,
       "Encountered \" \"CONTINUE\" \"CONTINUE\"\" at line 1, column 52.\n\nWas expecting one of:\n\n<EOF> \n    \"OF\" ...\n    \"ON\" ...\n    \"REPORT\" ..."
     )
   }
 
   test("CALL { CREATE (n) } IN TRANSACTIONS ON ERROR BREAK REPORT STATUS AS status ON ERROR CONTINUE") {
-    assertFailsWithMessageStart(
+    assertFailsWithMessageStart[SubqueryCall](
       testName,
       "Duplicated ON ERROR parameter"
     )
   }
 
   test("CALL { CREATE (n) } IN TRANSACTIONS REPORT STATUS AS status REPORT STATUS AS other") {
-    assertFailsWithMessageStart(
+    assertFailsWithMessageStart[SubqueryCall](
       testName,
       "Duplicated REPORT STATUS parameter"
     )
   }
 
   test("CALL { CREATE (n) } IN TRANSACTIONS OF 5 ROWS ON ERROR BREAK REPORT STATUS AS status OF 42 ROWS") {
-    assertFailsWithMessageStart(
+    assertFailsWithMessageStart[SubqueryCall](
       testName,
       "Duplicated OF ROWS parameter"
     )

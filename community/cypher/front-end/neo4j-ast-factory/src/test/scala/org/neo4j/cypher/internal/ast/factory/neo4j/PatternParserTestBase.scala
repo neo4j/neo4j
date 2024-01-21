@@ -16,15 +16,11 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import org.neo4j.cypher.internal.ast.Statement
-import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
-import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.label_expressions.LabelExpression
 
-trait PatternParserTestBase extends ParserSyntaxTreeBase[Cst.Statement, Statement] {
-
-  implicit val javaccRule: JavaccRule[Statement] = JavaccRule.Statements
-  implicit val antlrRule: AntlrRule[Cst.Statements] = AntlrRule.Statements()
+trait PatternParserTestBase extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   val labelExpressions: Seq[(String, LabelExpression, LabelExpression, LabelExpression)] =
     createLabelExpression("IS", containsIs = true) ++

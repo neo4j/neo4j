@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 import org.neo4j.cypher.internal.ast.OrderBy
 import org.neo4j.cypher.internal.ast.ShowSettingsClause
 import org.neo4j.cypher.internal.ast.SingleQuery
+import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.IntegerType
@@ -520,7 +521,7 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
   // Negative tests
 
   test("SHOW ALL SETTINGS") {
-    assertFailsWithMessageStart(
+    assertFailsWithMessageStart[Statements](
       testName,
       """Invalid input 'SETTINGS': expected
         |  "CONSTRAINT"
@@ -537,7 +538,7 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
   }
 
   test("SHOW SETTING $foo, $bar") {
-    assertFailsWithMessageStart(
+    assertFailsWithMessageStart[Statements](
       testName,
       """Invalid input ',': expected
         |  "!="
@@ -546,7 +547,7 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
   }
 
   test("SHOW SETTING $foo $bar") {
-    assertFailsWithMessageStart(
+    assertFailsWithMessageStart[Statements](
       testName,
       """Invalid input '$': expected
         |  "!="
@@ -555,11 +556,11 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
   }
 
   test("SHOW SETTING 'bar', $foo") {
-    assertFailsWithMessageStart(testName, """Invalid input '$': expected "\"" or "\'" """)
+    assertFailsWithMessageStart[Statements](testName, """Invalid input '$': expected "\"" or "\'" """)
   }
 
   test("SHOW SETTING $foo, 'bar'") {
-    assertFailsWithMessageStart(
+    assertFailsWithMessageStart[Statements](
       testName,
       """Invalid input ',': expected
         |  "!="
@@ -568,7 +569,7 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
   }
 
   test("SHOW SETTING 'foo' 'bar'") {
-    assertFailsWithMessageStart(
+    assertFailsWithMessageStart[Statements](
       testName,
       """Invalid input 'bar': expected
         |  "!="
@@ -577,26 +578,26 @@ class ShowSettingsCommandParserTest extends AdministrationAndSchemaCommandParser
   }
 
   test("SHOW SETTINGS YIELD (123 + xyz) AS foo") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW SETTINGS YIELD * YIELD *") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW SETTINGS WHERE name = 'db.setting' YIELD *") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW SETTINGS WHERE name = 'db.setting' RETURN *") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW SETTINGS YIELD a b RETURN *") {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test("SHOW SETTINGS RETURN *") {
-    failsToParse
+    failsToParse[Statements]
   }
 }

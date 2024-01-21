@@ -16,24 +16,19 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
-import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.expressions
-import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.ExtractScope
 import org.neo4j.cypher.internal.expressions.GreaterThan
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.util.DummyPosition
 
-class ListComprehensionParserTest extends ParserTestBase[Cst.ListComprehension, Expression, Any] {
+class ListComprehensionParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
   private val t = DummyPosition(0)
 
-  implicit private val javaccRule: JavaccRule[Expression] = JavaccRule.ListComprehension
-  implicit private val antlrRule: AntlrRule[Cst.ListComprehension] = AntlrRule.ListComprehension
-
   test("tests") {
-
     parsing("[ a in p WHERE a.foo > 123 ]") shouldGive
       expressions.ListComprehension(
         ExtractScope(
@@ -70,6 +65,4 @@ class ListComprehensionParserTest extends ParserTestBase[Cst.ListComprehension, 
         expressions.Variable("p")(t)
       )(t)
   }
-
-  override def convert(result: Expression): Any = result
 }

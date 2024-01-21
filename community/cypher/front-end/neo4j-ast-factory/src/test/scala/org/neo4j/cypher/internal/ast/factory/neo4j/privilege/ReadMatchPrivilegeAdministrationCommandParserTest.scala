@@ -17,10 +17,10 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j.privilege
 
 import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.AdministrationAndSchemaCommandParserTestBase
 
 class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
-
   // Granting/denying/revoking read and match to/from role
 
   Seq(
@@ -40,7 +40,7 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
         immutable =>
           val immutableString = immutableOrEmpty(immutable)
           test(s"$verb$immutableString ${action.name} { prop } ON HOME GRAPH $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(action, ast.HomeGraphScope()(pos))(pos),
               ast.PropertiesResource(propSeq)(pos),
               List(ast.ElementsAllQualifier() _),
@@ -50,7 +50,7 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
           }
 
           test(s"$verb$immutableString ${action.name} { prop } ON HOME GRAPH NODE A $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(action, ast.HomeGraphScope()(pos))(pos),
               ast.PropertiesResource(propSeq)(pos),
               List(labelQualifierA),
@@ -60,7 +60,7 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
           }
 
           test(s"$verb$immutableString ${action.name} { prop } ON DEFAULT GRAPH $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(action, ast.DefaultGraphScope()(pos))(pos),
               ast.PropertiesResource(propSeq)(pos),
               List(ast.ElementsAllQualifier() _),
@@ -70,7 +70,7 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
           }
 
           test(s"$verb$immutableString ${action.name} { prop } ON DEFAULT GRAPH NODE A $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(action, ast.DefaultGraphScope()(pos))(pos),
               ast.PropertiesResource(propSeq)(pos),
               List(labelQualifierA),
@@ -100,7 +100,7 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                       test(
                         s"validExpressions $verb$immutableString ${action.name} {$properties} $graphKeyword $graphName $nodeKeyword $preposition"
                       ) {
-                        parsing(
+                        parsing[Statements](
                           s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $graphName $nodeKeyword * $preposition $$role"
                         ) shouldGive
                           func(
@@ -185,22 +185,22 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                       test(
                         s"failToParse $verb$immutableString ${action.name} {$properties} $graphKeyword $graphName $nodeKeyword $preposition"
                       ) {
-                        assertFails(
+                        assertFails[Statements](
                           s"$verb$immutableString ${action.name} {$properties} $graphKeyword $graphName $nodeKeyword * (*) $preposition role"
                         )
-                        assertFails(
+                        assertFails[Statements](
                           s"$verb$immutableString ${action.name} {$properties} $graphKeyword $graphName $nodeKeyword A $preposition role"
                         )
-                        assertFails(
+                        assertFails[Statements](
                           s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $graphName $nodeKeyword * (*)"
                         )
-                        assertFails(
+                        assertFails[Statements](
                           s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $graphName $nodeKeyword A B (*) $preposition role"
                         )
-                        assertFails(
+                        assertFails[Statements](
                           s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $graphName $nodeKeyword A (foo) $preposition role"
                         )
-                        assertFails(
+                        assertFails[Statements](
                           s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $graphName $nodeKeyword * $preposition r:ole"
                         )
                       }
@@ -265,96 +265,96 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                     s"parsingFailures $verb$immutableString ${action.name} $graphKeyword $nodeKeyword $preposition"
                   ) {
                     // Invalid graph name
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {*} ON $graphKeyword f:oo $nodeKeyword * $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {bar} ON $graphKeyword f:oo $nodeKeyword * $preposition role"
                     )
                     // mixing specific graph and *
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {*} ON $graphKeyword foo, * $nodeKeyword * $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {*} ON $graphKeyword *, foo $nodeKeyword * $preposition role"
                     )
                     // invalid property definition
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {b:ar} ON $graphKeyword foo $nodeKeyword * $preposition role"
                     )
                     // missing graph name
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {*} ON $graphKeyword $nodeKeyword * $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {*} ON $graphKeyword $nodeKeyword * (*) $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {*} ON $graphKeyword $nodeKeyword A $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {*} ON $graphKeyword $nodeKeyword A (*) $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {bar} ON $graphKeyword $nodeKeyword * $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {bar} ON $graphKeyword $nodeKeyword * (*) $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {bar} ON $graphKeyword $nodeKeyword A $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {bar} ON $graphKeyword $nodeKeyword A (*) $preposition role"
                     )
                     // missing property definition
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} ON $graphKeyword * $nodeKeyword * $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} ON $graphKeyword * $nodeKeyword * (*) $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} ON $graphKeyword * $nodeKeyword A $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} ON $graphKeyword * $nodeKeyword A (*) $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} ON $graphKeyword foo $nodeKeyword * $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} ON $graphKeyword foo $nodeKeyword * (*) $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} ON $graphKeyword foo $nodeKeyword A $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} ON $graphKeyword foo $nodeKeyword A (*) $preposition role"
                     )
                     // missing property list
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {} ON $graphKeyword * $nodeKeyword * $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {} ON $graphKeyword * $nodeKeyword * (*) $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {} ON $graphKeyword * $nodeKeyword A $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {} ON $graphKeyword * $nodeKeyword A (*) $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {} ON $graphKeyword foo $nodeKeyword * $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {} ON $graphKeyword foo $nodeKeyword * (*) $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {} ON $graphKeyword foo $nodeKeyword A $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {} ON $graphKeyword foo $nodeKeyword A (*) $preposition role"
                     )
                   }
@@ -464,22 +464,22 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                       test(
                         s"parsingFailures $verb$immutableString ${action.name} {$properties} $graphKeyword $graphName $relTypeKeyword $preposition"
                       ) {
-                        assertFails(
+                        assertFails[Statements](
                           s"$verb$immutableString ${action.name} {$properties} $graphKeyword $graphName $relTypeKeyword * (*) $preposition role"
                         )
-                        assertFails(
+                        assertFails[Statements](
                           s"$verb$immutableString ${action.name} {$properties} $graphKeyword $graphName $relTypeKeyword A $preposition role"
                         )
-                        assertFails(
+                        assertFails[Statements](
                           s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $graphName $relTypeKeyword * (*)"
                         )
-                        assertFails(
+                        assertFails[Statements](
                           s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $graphName $relTypeKeyword A B (*) $preposition role"
                         )
-                        assertFails(
+                        assertFails[Statements](
                           s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $graphName $relTypeKeyword A (foo) $preposition role"
                         )
-                        assertFails(
+                        assertFails[Statements](
                           s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $graphName $relTypeKeyword * $preposition r:ole"
                         )
                       }
@@ -544,89 +544,89 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                     s"parsingFailures$verb$immutableString ${action.name} $graphKeyword $relTypeKeyword $preposition"
                   ) {
                     // Invalid graph name
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {*} ON $graphKeyword f:oo $relTypeKeyword * $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {bar} ON $graphKeyword f:oo $relTypeKeyword * $preposition role"
                     )
                     // invalid property definition
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {b:ar} ON $graphKeyword foo $relTypeKeyword * $preposition role"
                     )
                     // missing graph name
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {*} ON $graphKeyword $relTypeKeyword * $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {*} ON $graphKeyword $relTypeKeyword * (*) $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {*} ON $graphKeyword $relTypeKeyword A $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {*} ON $graphKeyword $relTypeKeyword A (*) $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {bar} ON $graphKeyword $relTypeKeyword * $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {bar} ON $graphKeyword $relTypeKeyword * (*) $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {bar} ON $graphKeyword $relTypeKeyword A $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {bar} ON $graphKeyword $relTypeKeyword A (*) $preposition role"
                     )
                     // missing property definition
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} ON $graphKeyword * $relTypeKeyword * $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} ON $graphKeyword * $relTypeKeyword * (*) $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} ON $graphKeyword * $relTypeKeyword A $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} ON $graphKeyword * $relTypeKeyword A (*) $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} ON $graphKeyword foo $relTypeKeyword * $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} ON $graphKeyword foo $relTypeKeyword * (*) $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} ON $graphKeyword foo $relTypeKeyword A $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} ON $graphKeyword foo $relTypeKeyword A (*) $preposition role"
                     )
                     // missing property list
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {} ON $graphKeyword * $relTypeKeyword * $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {} ON $graphKeyword * $relTypeKeyword * (*) $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {} ON $graphKeyword * $relTypeKeyword A $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {} ON $graphKeyword * $relTypeKeyword A (*) $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {} ON $graphKeyword foo $relTypeKeyword * $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {} ON $graphKeyword foo $relTypeKeyword * (*) $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {} ON $graphKeyword foo $relTypeKeyword A $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {} ON $graphKeyword foo $relTypeKeyword A (*) $preposition role"
                     )
                   }
@@ -736,22 +736,22 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                       test(
                         s"parsingFailures$verb$immutableString ${action.name} {$properties} $graphKeyword $graphName $elementKeyword $preposition"
                       ) {
-                        assertFails(
+                        assertFails[Statements](
                           s"$verb$immutableString ${action.name} {$properties} $graphKeyword $graphName $elementKeyword * (*) $preposition role"
                         )
-                        assertFails(
+                        assertFails[Statements](
                           s"$verb$immutableString ${action.name} {$properties} $graphKeyword $graphName $elementKeyword A $preposition role"
                         )
-                        assertFails(
+                        assertFails[Statements](
                           s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $graphName $elementKeyword * (*)"
                         )
-                        assertFails(
+                        assertFails[Statements](
                           s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $graphName $elementKeyword A B (*) $preposition role"
                         )
-                        assertFails(
+                        assertFails[Statements](
                           s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $graphName $elementKeyword A (foo) $preposition role"
                         )
-                        assertFails(
+                        assertFails[Statements](
                           s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $graphName $elementKeyword * $preposition r:ole"
                         )
                       }
@@ -816,89 +816,89 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                     s"parsingFailures $verb$immutableString ${action.name} $graphKeyword $elementKeyword $preposition"
                   ) {
                     // Invalid graph name
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {*} ON $graphKeyword f:oo $elementKeyword * $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {bar} ON $graphKeyword f:oo $elementKeyword * $preposition role"
                     )
                     // invalid property definition
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {b:ar} ON $graphKeyword foo $elementKeyword * $preposition role"
                     )
                     // missing graph name
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {*} ON $graphKeyword $elementKeyword * $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {*} ON $graphKeyword $elementKeyword * (*) $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {*} ON $graphKeyword $elementKeyword A $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {*} ON $graphKeyword $elementKeyword A (*) $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {bar} ON $graphKeyword $elementKeyword * $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {bar} ON $graphKeyword $elementKeyword * (*) $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {bar} ON $graphKeyword $elementKeyword A $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {bar} ON $graphKeyword $elementKeyword A (*) $preposition role"
                     )
                     // missing property definition
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} ON $graphKeyword * $elementKeyword * $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} ON $graphKeyword * $elementKeyword * (*) $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} ON $graphKeyword * $elementKeyword A $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} ON $graphKeyword * $elementKeyword A (*) $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} ON $graphKeyword foo $elementKeyword * $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} ON $graphKeyword foo $elementKeyword * (*) $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} ON $graphKeyword foo $elementKeyword A $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} ON $graphKeyword foo $elementKeyword A (*) $preposition role"
                     )
                     // missing property list
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {} ON $graphKeyword * $elementKeyword * $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {} ON $graphKeyword * $elementKeyword * (*) $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {} ON $graphKeyword * $elementKeyword A $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {} ON $graphKeyword * $elementKeyword A (*) $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {} ON $graphKeyword foo $elementKeyword * $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {} ON $graphKeyword foo $elementKeyword * (*) $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {} ON $graphKeyword foo $elementKeyword A $preposition role"
                     )
-                    assertFails(
+                    assertFails[Statements](
                       s"$verb$immutableString ${action.name} {} ON $graphKeyword foo $elementKeyword A (*) $preposition role"
                     )
                   }
@@ -923,7 +923,7 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
                   test(
                     s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $graphName $preposition role"
                   ) {
-                    yields(func(
+                    yields[Statements](func(
                       ast.GraphPrivilege(action, graphScope)(pos),
                       resource,
                       List(ast.ElementsAllQualifier() _),
@@ -937,19 +937,19 @@ class ReadMatchPrivilegeAdministrationCommandParserTest extends AdministrationAn
           // Database instead of graph keyword
 
           test(s"$verb$immutableString ${action.name} ON DATABASES * $preposition role") {
-            failsToParse
+            failsToParse[Statements]
           }
 
           test(s"$verb$immutableString ${action.name} ON DATABASE foo $preposition role") {
-            failsToParse
+            failsToParse[Statements]
           }
 
           test(s"$verb$immutableString ${action.name} ON HOME DATABASE $preposition role") {
-            failsToParse
+            failsToParse[Statements]
           }
 
           test(s"$verb$immutableString ${action.name} ON DEFAULT DATABASE $preposition role") {
-            failsToParse
+            failsToParse[Statements]
           }
       }
   }

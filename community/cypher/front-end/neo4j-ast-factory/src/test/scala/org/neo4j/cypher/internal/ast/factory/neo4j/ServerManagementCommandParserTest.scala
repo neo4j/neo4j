@@ -21,6 +21,7 @@ import org.neo4j.cypher.internal.ast.NoOptions
 import org.neo4j.cypher.internal.ast.OptionsMap
 import org.neo4j.cypher.internal.ast.OptionsParam
 import org.neo4j.cypher.internal.ast.Return
+import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.util.InputPosition
@@ -92,21 +93,21 @@ class ServerManagementCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("SHOW SERVERS RETURN *") {
-    assertFailsWithMessage(
+    assertFailsWithMessage[Statements](
       testName,
       "Invalid input 'RETURN': expected \"WHERE\", \"YIELD\" or <EOF> (line 1, column 14 (offset: 13))"
     )
   }
 
   test("SHOW SERVERS 'name'") {
-    assertFailsWithMessage(
+    assertFailsWithMessage[Statements](
       testName,
       "Invalid input 'name': expected \"WHERE\", \"YIELD\" or <EOF> (line 1, column 14 (offset: 13))"
     )
   }
 
   test("SHOW SERVER 'name'") {
-    assertFailsWithMessage(
+    assertFailsWithMessage[Statements](
       testName,
       "Invalid input 'name': expected \"WHERE\", \"YIELD\" or <EOF> (line 1, column 13 (offset: 12))"
     )
@@ -135,11 +136,11 @@ class ServerManagementCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("ENABLE SERVER name") {
-    assertFailsWithMessageStart(testName, """Invalid input 'name': expected "\"", "\'" or a parameter""")
+    assertFailsWithMessageStart[Statements](testName, """Invalid input 'name': expected "\"", "\'" or a parameter""")
   }
 
   test("ENABLE SERVER") {
-    assertFailsWithMessageStart(testName, """Invalid input '': expected "\"", "\'" or a parameter""")
+    assertFailsWithMessageStart[Statements](testName, """Invalid input '': expected "\"", "\'" or a parameter""")
   }
 
   // ALTER
@@ -159,11 +160,11 @@ class ServerManagementCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("ALTER SERVER 'name'") {
-    assertFailsWithMessageStart(testName, """Invalid input '': expected "SET"""")
+    assertFailsWithMessageStart[Statements](testName, """Invalid input '': expected "SET"""")
   }
 
   test("ALTER SERVER 'name' SET OPTIONS") {
-    assertFailsWithMessageStart(testName, """Invalid input '': expected "{" or a parameter""")
+    assertFailsWithMessageStart[Statements](testName, """Invalid input '': expected "{" or a parameter""")
   }
 
   // RENAME
@@ -177,11 +178,11 @@ class ServerManagementCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("RENAME SERVER `bad,ger` TO $to") {
-    assertFailsWithMessageStart(testName, """Invalid input 'bad,ger': expected "\"", "\'" or a parameter""")
+    assertFailsWithMessageStart[Statements](testName, """Invalid input 'bad,ger': expected "\"", "\'" or a parameter""")
   }
 
   test("RENAME SERVER 'badger' $to") {
-    assertFailsWithMessageStart(testName, "Invalid input '$': expected \"TO\"")
+    assertFailsWithMessageStart[Statements](testName, "Invalid input '$': expected \"TO\"")
   }
 
   // DROP
@@ -195,14 +196,14 @@ class ServerManagementCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("DROP SERVER name") {
-    assertFailsWithMessage(
+    assertFailsWithMessage[Statements](
       testName,
       """Invalid input 'name': expected "\"", "\'" or a parameter (line 1, column 13 (offset: 12))"""
     )
   }
 
   test("DROP SERVER") {
-    assertFailsWithMessage(
+    assertFailsWithMessage[Statements](
       testName,
       """Invalid input '': expected "\"", "\'" or a parameter (line 1, column 12 (offset: 11))"""
     )
@@ -227,7 +228,7 @@ class ServerManagementCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("DEALLOCATE SERVERS $name, 'foo'") {
-    assertFailsWithMessageStart(testName, "Invalid input 'SERVERS': expected \"DATABASE\" or \"DATABASES\"")
+    assertFailsWithMessageStart[Statements](testName, "Invalid input 'SERVERS': expected \"DATABASE\" or \"DATABASES\"")
   }
 
   test("REALLOCATE DATABASE") {
@@ -243,7 +244,7 @@ class ServerManagementCommandParserTest extends AdministrationAndSchemaCommandPa
   }
 
   test("REALLOCATE SERVERS") {
-    assertFailsWithMessage(
+    assertFailsWithMessage[Statements](
       testName,
       "Invalid input 'SERVERS': expected \"DATABASE\" or \"DATABASES\" (line 1, column 12 (offset: 11))"
     )

@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.ast.IfExistsInvalidSyntax
 import org.neo4j.cypher.internal.ast.IfExistsReplace
 import org.neo4j.cypher.internal.ast.IfExistsThrowError
 import org.neo4j.cypher.internal.ast.ShowAliases
+import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.ASTExceptionFactory
 import org.neo4j.cypher.internal.util.symbols.CTMap
 
@@ -204,28 +205,28 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
   }
 
   test("CREATE ALIAS IF") {
-    assertFailsWithMessage(
+    assertFailsWithMessage[Statements](
       testName,
       """Invalid input '': expected ".", "FOR" or "IF" (line 1, column 16 (offset: 15))"""
     )
   }
 
   test("CREATE ALIAS") {
-    assertFailsWithMessage(
+    assertFailsWithMessage[Statements](
       testName,
       """Invalid input '': expected a parameter or an identifier (line 1, column 13 (offset: 12))"""
     )
   }
 
   test("CREATE ALIAS #Malmö FOR DATABASE db1") {
-    assertFailsWithMessage(
+    assertFailsWithMessage[Statements](
       testName,
       s"""Invalid input '#': expected a parameter or an identifier (line 1, column 14 (offset: 13))""".stripMargin
     )
   }
 
   test("CREATE ALIAS Mal#mö FOR DATABASE db1") {
-    assertFailsWithMessage(
+    assertFailsWithMessage[Statements](
       testName,
       s"""Invalid input '#': expected ".", "FOR" or "IF" (line 1, column 17 (offset: 16))""".stripMargin
     )
@@ -244,21 +245,24 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
   }
 
   test("CREATE ALIAS name FOR DATABASE") {
-    assertFailsWithMessage(
+    assertFailsWithMessage[Statements](
       testName,
       s"""Invalid input '': expected a parameter or an identifier (line 1, column 31 (offset: 30))"""
     )
   }
 
   test("""CREATE ALIAS name FOR DATABASE target PROPERTY { key: 'val' }""") {
-    assertFailsWithMessage(
+    assertFailsWithMessage[Statements](
       testName,
       """Invalid input 'PROPERTY': expected ".", "AT", "PROPERTIES" or <EOF> (line 1, column 39 (offset: 38))"""
     )
   }
 
   test("""CREATE ALIAS name FOR DATABASE target PROPERTIES""") {
-    assertFailsWithMessage(testName, "Invalid input '': expected \"{\" or a parameter (line 1, column 49 (offset: 48))")
+    assertFailsWithMessage[Statements](
+      testName,
+      "Invalid input '': expected \"{\" or a parameter (line 1, column 49 (offset: 48))"
+    )
   }
 
   // CREATE REMOTE ALIAS
@@ -289,7 +293,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
   test(
     """CREATE ALIAS namespace.name.illegal FOR DATABASE target AT "neo4j://serverA:7687" USER user PASSWORD 'password'"""
   ) {
-    assertFailsWithMessage(
+    assertFailsWithMessage[Statements](
       testName,
       "'.' is not a valid character in the remote alias name 'namespace.name.illegal'. Remote alias names using '.' must be quoted with backticks e.g. `remote.alias`. (line 1, column 14 (offset: 13))"
     )
@@ -331,7 +335,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
   }
 
   test("""CREATE ALIAS name FOR DATABASE target AT neo4j://serverA:7687" USER user PASSWORD 'password'""") {
-    assertFailsWithMessage(
+    assertFailsWithMessage[Statements](
       testName,
       "Invalid input 'neo4j': expected \"\\\"\", \"\\'\" or a parameter (line 1, column 42 (offset: 41))"
     )
@@ -382,7 +386,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
       |PROPERTIES { key:'value', anotherkey:'anotherValue' }
       |USER user PASSWORD 'password'""".stripMargin
   ) {
-    assertFailsWithMessageStart(testName, """Invalid input 'PROPERTIES': expected "USER"""")
+    assertFailsWithMessageStart[Statements](testName, """Invalid input 'PROPERTIES': expected "USER"""")
   }
 
   test(
@@ -570,19 +574,22 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
   test(
     """CREATE ALIAS name FOR DATABASE target AT "bar" USER user PASSWORD "password" PROPERTIES { bar: true } DRIVER { foo: 1.0 }"""
   ) {
-    assertFailsWithMessageStart(testName, """Invalid input 'DRIVER': expected <EOF>""")
+    assertFailsWithMessageStart[Statements](testName, """Invalid input 'DRIVER': expected <EOF>""")
   }
 
   test("Should fail to parse CREATE ALIAS with driver settings but no remote url") {
     val command = "CREATE ALIAS name FOR DATABASE target DRIVER { ssl_enforced: true }"
-    assertFailsWithMessage(
+    assertFailsWithMessage[Statements](
       command,
       "Invalid input 'DRIVER': expected \".\", \"AT\", \"PROPERTIES\" or <EOF> (line 1, column 39 (offset: 38))"
     )
   }
 
   test("""CREATE ALIAS name FOR DATABASE target AT "bar" OPTIONS { foo: 1.0 }""") {
-    assertFailsWithMessage(testName, "Invalid input 'OPTIONS': expected \"USER\" (line 1, column 48 (offset: 47))")
+    assertFailsWithMessage[Statements](
+      testName,
+      "Invalid input 'OPTIONS': expected \"USER\" (line 1, column 48 (offset: 47))"
+    )
   }
 
   test("""CREATE ALIAS name FOR DATABASE target AT "bar" USER user PASSWORD "password" DRIVER {}""") {
@@ -622,18 +629,24 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
   }
 
   test("""CREATE ALIAS name FOR DATABASE target AT "url" USER user PASSWORD "password" DRIVER""") {
-    assertFailsWithMessage(testName, "Invalid input '': expected \"{\" or a parameter (line 1, column 84 (offset: 83))")
+    assertFailsWithMessage[Statements](
+      testName,
+      "Invalid input '': expected \"{\" or a parameter (line 1, column 84 (offset: 83))"
+    )
   }
 
   test("""CREATE ALIAS name FOR DATABASE target AT "url" USER user PASSWORD "password" PROPERTY { key: 'val' }""") {
-    assertFailsWithMessage(
+    assertFailsWithMessage[Statements](
       testName,
       """Invalid input 'PROPERTY': expected "DRIVER", "PROPERTIES" or <EOF> (line 1, column 78 (offset: 77))"""
     )
   }
 
   test("""CREATE ALIAS name FOR DATABASE target AT "url" USER user PASSWORD "password" PROPERTIES""") {
-    assertFailsWithMessage(testName, "Invalid input '': expected \"{\" or a parameter (line 1, column 88 (offset: 87))")
+    assertFailsWithMessage[Statements](
+      testName,
+      "Invalid input '': expected \"{\" or a parameter (line 1, column 88 (offset: 87))"
+    )
   }
 
   // DROP ALIAS
@@ -674,14 +687,14 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
   }
 
   test("DROP ALIAS name") {
-    assertFailsWithMessage(
+    assertFailsWithMessage[Statements](
       testName,
       "Invalid input '': expected \".\", \"FOR\" or \"IF\" (line 1, column 16 (offset: 15))"
     )
   }
 
   test("DROP ALIAS name IF EXISTS") {
-    assertFailsWithMessage(testName, "Invalid input '': expected \"FOR\" (line 1, column 26 (offset: 25))")
+    assertFailsWithMessage[Statements](testName, "Invalid input '': expected \"FOR\" (line 1, column 26 (offset: 25))")
   }
 
   // ALTER ALIAS
@@ -710,22 +723,28 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
   }
 
   test("ALTER ALIAS name if exists SET db TARGET") {
-    assertFailsWithMessage(testName, """Invalid input 'db': expected "DATABASE" (line 1, column 32 (offset: 31))""")
+    assertFailsWithMessage[Statements](
+      testName,
+      """Invalid input 'db': expected "DATABASE" (line 1, column 32 (offset: 31))"""
+    )
   }
 
   test("ALTER ALIAS name SET TARGET db") {
-    assertFailsWithMessage(testName, """Invalid input 'TARGET': expected "DATABASE" (line 1, column 22 (offset: 21))""")
+    assertFailsWithMessage[Statements](
+      testName,
+      """Invalid input 'TARGET': expected "DATABASE" (line 1, column 22 (offset: 21))"""
+    )
   }
 
   test("ALTER DATABASE ALIAS name SET TARGET db") {
-    assertFailsWithMessage(
+    assertFailsWithMessage[Statements](
       testName,
       """Invalid input 'name': expected ".", "IF", "REMOVE" or "SET" (line 1, column 22 (offset: 21))"""
     )
   }
 
   test("ALTER ALIAS name SET DATABASE") {
-    assertFailsWithMessage(
+    assertFailsWithMessage[Statements](
       testName,
       """Invalid input '': expected
         |  "DRIVER"
@@ -737,7 +756,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
   }
 
   test("ALTER RANDOM name") {
-    assertFailsWithMessage(
+    assertFailsWithMessage[Statements](
       testName,
       """Invalid input 'RANDOM': expected
         |  "ALIAS"
@@ -768,7 +787,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
 
   localAliasClauses.foreach(clause => {
     test(s"""ALTER ALIAS name SET DATABASE $clause $clause""") {
-      assertFailsWithMessageStart(
+      assertFailsWithMessageStart[Statements](
         testName,
         s"Duplicate SET DATABASE ${clause.substring(0, clause.indexOf(" "))} clause"
       )
@@ -795,7 +814,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
   test(
     """ALTER ALIAS namespace.name.illegal SET DATABASE TARGET target AT "neo4j://serverA:7687" USER user PASSWORD "password" DRIVER { ssl_enforced: true }"""
   ) {
-    assertFailsWithMessage(
+    assertFailsWithMessage[Statements](
       testName,
       ASTExceptionFactory.invalidDotsInRemoteAliasName("namespace.name.illegal") + " (line 1, column 13 (offset: 12))"
     )
@@ -851,7 +870,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
 
   remoteAliasClauses.foreach(clause => {
     test(s"""ALTER ALIAS name SET DATABASE $clause $clause""") {
-      assertFailsWithMessageStart(
+      assertFailsWithMessageStart[Statements](
         testName,
         s"Duplicate SET DATABASE ${clause.substring(0, clause.indexOf(" "))} clause"
       )
@@ -872,15 +891,18 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
   test(
     "ALTER ALIAS $name IF EXISTS SET DATABASE TARGET $target AT $url USER $user PASSWORD $password TARGET $target DRIVER $driver"
   ) {
-    assertFailsWithMessage(testName, "Duplicate SET DATABASE TARGET clause (line 1, column 95 (offset: 94))")
+    assertFailsWithMessage[Statements](
+      testName,
+      "Duplicate SET DATABASE TARGET clause (line 1, column 95 (offset: 94))"
+    )
   }
 
   test("ALTER ALIAS name SET DATABASE TARGET AT 'url'") {
-    assertFailsWithMessageStart(testName, "Invalid input 'url': expected")
+    assertFailsWithMessageStart[Statements](testName, "Invalid input 'url': expected")
   }
 
   test("ALTER ALIAS name SET DATABASE AT 'url'") {
-    assertFailsWithMessage(
+    assertFailsWithMessage[Statements](
       testName,
       """Invalid input 'AT': expected
         |  "DRIVER"
@@ -984,7 +1006,10 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
   test(
     "ALTER ALIAS name SET DATABASE TARGET target AT 'neo4j://serverA:7687' TARGET target AT 'neo4j://serverA:7687'"
   ) {
-    assertFailsWithMessage(testName, "Duplicate SET DATABASE TARGET clause (line 1, column 71 (offset: 70))")
+    assertFailsWithMessage[Statements](
+      testName,
+      "Duplicate SET DATABASE TARGET clause (line 1, column 71 (offset: 70))"
+    )
   }
 
   // set user
@@ -1001,7 +1026,7 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
   }
 
   test("ALTER ALIAS name SET DATABASE USER $user USER $user") {
-    assertFailsWithMessage(testName, "Duplicate SET DATABASE USER clause (line 1, column 42 (offset: 41))")
+    assertFailsWithMessage[Statements](testName, "Duplicate SET DATABASE USER clause (line 1, column 42 (offset: 41))")
   }
 
   // set password
@@ -1026,14 +1051,17 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
   }
 
   test("ALTER ALIAS name IF EXISTS SET DATABASE PASSWORD password") {
-    assertFailsWithMessage(
+    assertFailsWithMessage[Statements](
       testName,
       "Invalid input 'password': expected \"\\\"\", \"\\'\" or a parameter (line 1, column 50 (offset: 49))"
     )
   }
 
   test("ALTER ALIAS name SET DATABASE PASSWORD $password PASSWORD $password") {
-    assertFailsWithMessage(testName, "Duplicate SET DATABASE PASSWORD clause (line 1, column 50 (offset: 49))")
+    assertFailsWithMessage[Statements](
+      testName,
+      "Duplicate SET DATABASE PASSWORD clause (line 1, column 50 (offset: 49))"
+    )
   }
 
   // set driver
@@ -1082,11 +1110,14 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
   }
 
   test("""ALTER ALIAS name SET DATABASE DRIVER $driver DRIVER $driver""") {
-    assertFailsWithMessage(testName, "Duplicate SET DATABASE DRIVER clause (line 1, column 46 (offset: 45))")
+    assertFailsWithMessage[Statements](
+      testName,
+      "Duplicate SET DATABASE DRIVER clause (line 1, column 46 (offset: 45))"
+    )
   }
 
   test("""ALTER ALIAS name SET DATABASE PROPERTY { key: 'val' }""") {
-    assertFailsWithMessage(
+    assertFailsWithMessage[Statements](
       testName,
       """Invalid input 'PROPERTY': expected
         |  "DRIVER"
@@ -1098,7 +1129,10 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
   }
 
   test("""ALTER ALIAS name SET DATABASE PROPERTIES""") {
-    assertFailsWithMessage(testName, "Invalid input '': expected \"{\" or a parameter (line 1, column 41 (offset: 40))")
+    assertFailsWithMessage[Statements](
+      testName,
+      "Invalid input '': expected \"{\" or a parameter (line 1, column 41 (offset: 40))"
+    )
   }
 
   // SHOW ALIAS
@@ -1184,38 +1218,38 @@ class AliasAdministrationCommandParserTest extends AdministrationAndSchemaComman
   }
 
   test("SHOW ALIASES FOR DATABASE RETURN *") {
-    assertFailsWithMessage(
+    assertFailsWithMessage[Statements](
       testName,
       "Invalid input 'RETURN': expected \"WHERE\", \"YIELD\" or <EOF> (line 1, column 27 (offset: 26))"
     )
   }
 
   test("SHOW ALIASES FOR DATABASE YIELD") {
-    assertFailsWithMessage(
+    assertFailsWithMessage[Statements](
       testName,
       "Invalid input '': expected \"*\" or an identifier (line 1, column 32 (offset: 31))"
     )
   }
 
   test("SHOW ALIASES FOR DATABASE YIELD (123 + xyz)") {
-    assertFailsWithMessage(
+    assertFailsWithMessage[Statements](
       testName,
       "Invalid input '(': expected \"*\" or an identifier (line 1, column 33 (offset: 32))"
     )
   }
 
   test("SHOW ALIASES FOR DATABASE YIELD (123 + xyz) AS foo") {
-    assertFailsWithMessage(
+    assertFailsWithMessage[Statements](
       testName,
       "Invalid input '(': expected \"*\" or an identifier (line 1, column 33 (offset: 32))"
     )
   }
 
   test("SHOW ALIAS") {
-    assertFailsWithMessage(testName, "Invalid input '': expected \"FOR\" (line 1, column 11 (offset: 10))")
+    assertFailsWithMessage[Statements](testName, "Invalid input '': expected \"FOR\" (line 1, column 11 (offset: 10))")
   }
 
   test("SHOW ALIAS foo, bar FOR DATABASES") {
-    assertFailsWithMessageStart(testName, "Invalid input 'foo': expected \"FOR\"")
+    assertFailsWithMessageStart[Statements](testName, "Invalid input 'foo': expected \"FOR\"")
   }
 }

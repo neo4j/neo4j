@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j.privilege
 
 import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.Statements
 import org.neo4j.cypher.internal.ast.factory.neo4j.AdministrationAndSchemaCommandParserTestBase
 
 class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
@@ -33,7 +34,7 @@ class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationAnd
         immutable =>
           val immutableString = immutableOrEmpty(immutable)
           test(s"$verb$immutableString SET PROPERTY { prop } ON GRAPH foo $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.SetPropertyAction, graphScopeFoo)(_),
               ast.PropertiesResource(propSeq)(_),
               List(ast.ElementsAllQualifier()(_)),
@@ -45,7 +46,7 @@ class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationAnd
           // Multiple properties should be allowed
 
           test(s"$verb$immutableString SET PROPERTY { * } ON GRAPH foo $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.SetPropertyAction, graphScopeFoo)(_),
               ast.AllPropertyResource()(_),
               List(ast.ElementsAllQualifier()(_)),
@@ -55,7 +56,7 @@ class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationAnd
           }
 
           test(s"$verb$immutableString SET PROPERTY { prop1, prop2 } ON GRAPH foo $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.SetPropertyAction, graphScopeFoo)(_),
               ast.PropertiesResource(Seq("prop1", "prop2"))(_),
               List(ast.ElementsAllQualifier()(_)),
@@ -67,7 +68,7 @@ class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationAnd
           // Home graph should be allowed
 
           test(s"$verb$immutableString SET PROPERTY { * } ON HOME GRAPH $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.SetPropertyAction, ast.HomeGraphScope()(_))(_),
               ast.AllPropertyResource()(_),
               List(ast.ElementsAllQualifier()(_)),
@@ -77,7 +78,7 @@ class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationAnd
           }
 
           test(s"$verb$immutableString SET PROPERTY { prop } ON HOME GRAPH $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.SetPropertyAction, ast.HomeGraphScope()(_))(_),
               ast.PropertiesResource(propSeq)(_),
               List(ast.ElementsAllQualifier()(_)),
@@ -87,7 +88,7 @@ class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationAnd
           }
 
           test(s"$verb$immutableString SET PROPERTY { prop } ON HOME GRAPH NODES A,B $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.SetPropertyAction, ast.HomeGraphScope()(_))(_),
               ast.PropertiesResource(propSeq)(_),
               List(labelQualifierA, labelQualifierB),
@@ -99,7 +100,7 @@ class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationAnd
           // Default graph should be allowed
 
           test(s"$verb$immutableString SET PROPERTY { * } ON DEFAULT GRAPH $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.SetPropertyAction, ast.DefaultGraphScope()(_))(_),
               ast.AllPropertyResource()(_),
               List(ast.ElementsAllQualifier()(_)),
@@ -109,7 +110,7 @@ class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationAnd
           }
 
           test(s"$verb$immutableString SET PROPERTY { prop } ON DEFAULT GRAPH $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.SetPropertyAction, ast.DefaultGraphScope()(_))(_),
               ast.PropertiesResource(propSeq)(_),
               List(ast.ElementsAllQualifier()(_)),
@@ -119,7 +120,7 @@ class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationAnd
           }
 
           test(s"$verb$immutableString SET PROPERTY { prop } ON DEFAULT GRAPH NODES A,B $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.SetPropertyAction, ast.DefaultGraphScope()(_))(_),
               ast.PropertiesResource(propSeq)(_),
               List(labelQualifierA, labelQualifierB),
@@ -131,7 +132,7 @@ class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationAnd
           // Multiple graphs should be allowed
 
           test(s"$verb$immutableString SET PROPERTY { prop } ON GRAPHS * $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.SetPropertyAction, ast.AllGraphsScope()(_))(_),
               ast.PropertiesResource(propSeq)(_),
               List(ast.ElementsAllQualifier()(_)),
@@ -141,7 +142,7 @@ class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationAnd
           }
 
           test(s"$verb$immutableString SET PROPERTY { prop } ON GRAPHS foo,baz $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.SetPropertyAction, graphScopeFooBaz)(_),
               ast.PropertiesResource(propSeq)(_),
               List(ast.ElementsAllQualifier()(_)),
@@ -153,7 +154,7 @@ class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationAnd
           // Qualifiers
 
           test(s"$verb$immutableString SET PROPERTY { prop } ON GRAPHS foo ELEMENTS A,B $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.SetPropertyAction, graphScopeFoo)(_),
               ast.PropertiesResource(propSeq)(_),
               List(elemQualifierA, elemQualifierB),
@@ -163,7 +164,7 @@ class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationAnd
           }
 
           test(s"$verb$immutableString SET PROPERTY { prop } ON GRAPHS foo NODES A,B $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.SetPropertyAction, graphScopeFoo)(_),
               ast.PropertiesResource(propSeq)(_),
               List(labelQualifierA, labelQualifierB),
@@ -173,7 +174,7 @@ class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationAnd
           }
 
           test(s"$verb$immutableString SET PROPERTY { prop } ON GRAPHS foo NODES * $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.SetPropertyAction, graphScopeFoo)(_),
               ast.PropertiesResource(propSeq)(_),
               List(ast.LabelAllQualifier()(_)),
@@ -183,7 +184,7 @@ class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationAnd
           }
 
           test(s"$verb$immutableString SET PROPERTY { prop } ON GRAPHS foo RELATIONSHIPS A,B $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.SetPropertyAction, graphScopeFoo)(_),
               ast.PropertiesResource(propSeq)(_),
               List(relQualifierA, relQualifierB),
@@ -193,7 +194,7 @@ class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationAnd
           }
 
           test(s"$verb$immutableString SET PROPERTY { prop } ON GRAPHS foo RELATIONSHIPS * $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.SetPropertyAction, graphScopeFoo)(_),
               ast.PropertiesResource(propSeq)(_),
               List(ast.RelationshipAllQualifier()(_)),
@@ -205,7 +206,7 @@ class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationAnd
           // Multiple roles should be allowed
 
           test(s"$verb$immutableString SET PROPERTY { prop } ON GRAPHS foo $preposition role1, role2") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.SetPropertyAction, graphScopeFoo)(_),
               ast.PropertiesResource(propSeq)(_),
               List(ast.ElementsAllQualifier()(_)),
@@ -217,7 +218,7 @@ class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationAnd
           // Parameter values
 
           test(s"$verb$immutableString SET PROPERTY { prop } ON GRAPH $$foo $preposition role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.SetPropertyAction, graphScopeParamFoo)(_),
               ast.PropertiesResource(propSeq)(_),
               List(ast.ElementsAllQualifier()(_)),
@@ -227,7 +228,7 @@ class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationAnd
           }
 
           test(s"$verb$immutableString SET PROPERTY { prop } ON GRAPH foo $preposition $$role") {
-            yields(func(
+            yields[Statements](func(
               ast.GraphPrivilege(ast.SetPropertyAction, graphScopeFoo)(_),
               ast.PropertiesResource(propSeq)(_),
               List(ast.ElementsAllQualifier()(_)),
@@ -240,7 +241,7 @@ class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationAnd
 
           test(s"$verb$immutableString SET PROPERTYS { prop } ON GRAPH * $preposition role") {
             val offset = verb.length + immutableString.length + 5
-            assertFailsWithMessage(
+            assertFailsWithMessage[Statements](
               testName,
               s"""Invalid input 'PROPERTYS': expected
                  |  "DATABASE"
@@ -254,7 +255,7 @@ class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationAnd
 
           test(s"$verb$immutableString SET PROPERTIES { prop } ON GRAPH * $preposition role") {
             val offset = verb.length + immutableString.length + 5
-            assertFailsWithMessage(
+            assertFailsWithMessage[Statements](
               testName,
               s"""Invalid input 'PROPERTIES': expected
                  |  "DATABASE"
@@ -270,7 +271,7 @@ class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationAnd
 
           test(s"$verb$immutableString SET PROPERTY { prop } ON DATABASES * $preposition role") {
             val offset = verb.length + immutableString.length + 26
-            assertFailsWithMessage(
+            assertFailsWithMessage[Statements](
               testName,
               s"""Invalid input 'DATABASES': expected "DEFAULT", "GRAPH", "GRAPHS" or "HOME" (line 1, column ${offset + 1} (offset: $offset))"""
             )
@@ -278,18 +279,18 @@ class PropertyPrivilegeAdministrationCommandParserTest extends AdministrationAnd
 
           test(s"$verb$immutableString SET PROPERTY { prop } ON DATABASE foo $preposition role") {
             val offset = verb.length + immutableString.length + 26
-            assertFailsWithMessage(
+            assertFailsWithMessage[Statements](
               testName,
               s"""Invalid input 'DATABASE': expected "DEFAULT", "GRAPH", "GRAPHS" or "HOME" (line 1, column ${offset + 1} (offset: $offset))"""
             )
           }
 
           test(s"$verb$immutableString SET PROPERTY { prop } ON HOME DATABASE $preposition role") {
-            failsToParse
+            failsToParse[Statements]
           }
 
           test(s"$verb$immutableString SET PROPERTY { prop } ON DEFAULT DATABASE $preposition role") {
-            failsToParse
+            failsToParse[Statements]
           }
       }
   }

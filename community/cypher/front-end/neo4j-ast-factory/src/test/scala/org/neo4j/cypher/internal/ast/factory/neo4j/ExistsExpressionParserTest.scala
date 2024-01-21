@@ -16,12 +16,11 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.UnionDistinct
-import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
-import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.FilterScope
@@ -34,10 +33,7 @@ import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.InputPosition
 
-class ExistsExpressionParserTest extends ParserSyntaxTreeBase[Cst.Statement, ast.Statement] {
-
-  implicit private val javaccRule: JavaccRule[Statement] = JavaccRule.Statement
-  implicit private val antlrRule: AntlrRule[Cst.Statement] = AntlrRule.Statement
+class ExistsExpressionParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   test(
     """MATCH (m)
@@ -58,7 +54,7 @@ class ExistsExpressionParserTest extends ParserSyntaxTreeBase[Cst.Statement, ast
       )
     )(InputPosition(16, 2, 7), None, None)
 
-    givesIncludingPositions {
+    givesIncludingPositions[Statement] {
       singleQuery(
         match_(nodePat(name = Some("m")), where = Some(where(existsExpression))),
         return_(variableReturnItem("m"))
@@ -86,7 +82,7 @@ class ExistsExpressionParserTest extends ParserSyntaxTreeBase[Cst.Statement, ast
       )
     )(InputPosition(16, 2, 7), None, None)
 
-    givesIncludingPositions {
+    givesIncludingPositions[Statement] {
       singleQuery(
         match_(nodePat(name = Some("m")), where = Some(where(existsExpression))),
         return_(variableReturnItem("m"))
@@ -113,7 +109,7 @@ class ExistsExpressionParserTest extends ParserSyntaxTreeBase[Cst.Statement, ast
       )
     )(InputPosition(16, 2, 7), None, None)
 
-    givesIncludingPositions {
+    givesIncludingPositions[Statement] {
       singleQuery(
         match_(nodePat(name = Some("m")), where = Some(where(existsExpression))),
         return_(variableReturnItem("m"))
@@ -141,7 +137,7 @@ class ExistsExpressionParserTest extends ParserSyntaxTreeBase[Cst.Statement, ast
       )
     )(InputPosition(16, 2, 7), None, None)
 
-    givesIncludingPositions {
+    givesIncludingPositions[Statement] {
       singleQuery(
         match_(nodePat(name = Some("m")), where = Some(where(existsExpression))),
         return_(variableReturnItem("m"))
@@ -167,7 +163,7 @@ class ExistsExpressionParserTest extends ParserSyntaxTreeBase[Cst.Statement, ast
       )(InputPosition(44, 2, 35))
     )(InputPosition(16, 2, 7), None, None)
 
-    givesIncludingPositions {
+    givesIncludingPositions[Statement] {
       singleQuery(
         match_(nodePat(name = Some("m")), where = Some(where(existsExpression))),
         return_(variableReturnItem("m"))
@@ -187,7 +183,7 @@ class ExistsExpressionParserTest extends ParserSyntaxTreeBase[Cst.Statement, ast
       )
     )(InputPosition(16, 2, 7), None, None)
 
-    givesIncludingPositions {
+    givesIncludingPositions[Statement] {
       singleQuery(
         match_(nodePat(name = Some("m")), where = Some(where(existsExpression))),
         return_(variableReturnItem("m"))
@@ -222,7 +218,7 @@ class ExistsExpressionParserTest extends ParserSyntaxTreeBase[Cst.Statement, ast
       )
     )(InputPosition(16, 2, 7), None, None)
 
-    givesIncludingPositions {
+    givesIncludingPositions[Statement] {
       singleQuery(
         match_(nodePat(name = Some("m")), where = Some(where(existsExpression))),
         return_(variableReturnItem("m"))
@@ -235,7 +231,7 @@ class ExistsExpressionParserTest extends ParserSyntaxTreeBase[Cst.Statement, ast
       |WHERE EXISTS { MATCH (b) RETURN b WHERE true }
       |RETURN m""".stripMargin
   ) {
-    failsToParse
+    failsToParse[Statement]
   }
 
   test(
@@ -243,6 +239,6 @@ class ExistsExpressionParserTest extends ParserSyntaxTreeBase[Cst.Statement, ast
       |WHERE EXISTS { (a)-[r]->(b) WHERE a.prop = 1 RETURN r }
       |RETURN m""".stripMargin
   ) {
-    failsToParse
+    failsToParse[Statement]
   }
 }

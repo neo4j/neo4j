@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.util.symbols.CTAny
 
 class PropertyPrivilegeAdministrationCommandParserTestBase extends AdministrationAndSchemaCommandParserTestBase {
-
   case class Scope(graphName: String, graphScope: GraphScope)
 
   case class LiteralExpression(expression: Expression, expectedAst: Expression)

@@ -16,19 +16,13 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j.privilege
 
-import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.Delete
-import org.neo4j.cypher.internal.ast.Statement
-import org.neo4j.cypher.internal.ast.factory.neo4j.JavaccRule
-import org.neo4j.cypher.internal.ast.factory.neo4j.ParserSyntaxTreeBase
-import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
-import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
+import org.neo4j.cypher.internal.ast.Statements
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.util.InputPosition
 
-class DeleteParserTest extends ParserSyntaxTreeBase[Cst.Statement, ast.Statement] {
-
-  implicit private val javaccRule: JavaccRule[Statement] = JavaccRule.Statement
-  implicit private val antlrRule: AntlrRule[Cst.Statement] = AntlrRule.Statement
+class DeleteParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   test(
     """MATCH (n)
@@ -39,7 +33,7 @@ class DeleteParserTest extends ParserSyntaxTreeBase[Cst.Statement, ast.Statement
       forced = false
     )(InputPosition(10, 2, 1))
 
-    givesIncludingPositions {
+    givesIncludingPositions[Statements] {
       singleQuery(
         match_(nodePat(name = Some("n"))),
         deleteClause
@@ -56,7 +50,7 @@ class DeleteParserTest extends ParserSyntaxTreeBase[Cst.Statement, ast.Statement
       forced = false
     )(InputPosition(10, 2, 1))
 
-    givesIncludingPositions {
+    givesIncludingPositions[Statements] {
       singleQuery(
         match_(nodePat(name = Some("n"))),
         deleteClause
@@ -73,7 +67,7 @@ class DeleteParserTest extends ParserSyntaxTreeBase[Cst.Statement, ast.Statement
       forced = true
     )(InputPosition(10, 2, 1))
 
-    givesIncludingPositions {
+    givesIncludingPositions[Statements] {
       singleQuery(
         match_(nodePat(name = Some("n"))),
         deleteClause
@@ -85,13 +79,13 @@ class DeleteParserTest extends ParserSyntaxTreeBase[Cst.Statement, ast.Statement
     """MATCH (n)
       |DETACH NODETACH DELETE n""".stripMargin
   ) {
-    failsToParse
+    failsToParse[Statements]
   }
 
   test(
     """MATCH (n)
       |NODETACH DETACH DELETE n""".stripMargin
   ) {
-    failsToParse
+    failsToParse[Statements]
   }
 }

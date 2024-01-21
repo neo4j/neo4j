@@ -16,13 +16,11 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import org.neo4j.cypher.internal.ast
-import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaccRule.Variable
-import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
-import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.expressions.FixedQuantifier
 import org.neo4j.cypher.internal.expressions.GraphPatternQuantifier
 import org.neo4j.cypher.internal.expressions.IntervalQuantifier
@@ -32,7 +30,6 @@ import org.neo4j.cypher.internal.expressions.ParenthesizedPath
 import org.neo4j.cypher.internal.expressions.PathConcatenation
 import org.neo4j.cypher.internal.expressions.PathPatternPart
 import org.neo4j.cypher.internal.expressions.Pattern
-import org.neo4j.cypher.internal.expressions.PatternAtom
 import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
 import org.neo4j.cypher.internal.expressions.PlusQuantifier
@@ -42,17 +39,11 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.StarQuantifier
 import org.neo4j.cypher.internal.expressions.UnsignedDecimalIntegerLiteral
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class QuantifiedPathPatternParserTest extends CypherFunSuite
-    with ParserSyntaxTreeBase[Cst.Pattern, PatternPart]
-    with AstConstructionTestSupport {
-
-  implicit val javaccRule: JavaccRule[PatternPart] = JavaccRule.PatternPart
-  implicit val antlrRule: AntlrRule[Cst.Pattern] = AntlrRule.PatternPart
+class QuantifiedPathPatternParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   test("(n)") {
-    givesIncludingPositions {
+    givesIncludingPositions[PatternPart] {
       PathPatternPart(
         nodePat(name = Some("n"), position = (1, 1, 0))
       )
@@ -60,7 +51,7 @@ class QuantifiedPathPatternParserTest extends CypherFunSuite
   }
 
   test("(((n)))") {
-    gives {
+    gives[PatternPart] {
       PatternPart(ParenthesizedPath(PatternPart(ParenthesizedPath(PatternPart(
         nodePat(Some("n"))
       ))(pos)))(pos))
@@ -68,7 +59,7 @@ class QuantifiedPathPatternParserTest extends CypherFunSuite
   }
 
   test("((n)-[r]->(m))*") {
-    givesIncludingPositions {
+    givesIncludingPositions[PatternPart] {
       PatternPart(QuantifiedPath(
         PatternPart(
           RelationshipChain(
@@ -84,7 +75,7 @@ class QuantifiedPathPatternParserTest extends CypherFunSuite
   }
 
   test("(p = (n)-[r]->(m))*") {
-    gives {
+    gives[PatternPart] {
       PatternPart(QuantifiedPath(
         NamedPatternPart(
           Variable("p"),
@@ -103,7 +94,7 @@ class QuantifiedPathPatternParserTest extends CypherFunSuite
   }
 
   test("(a) ((n)-[r]->(m))*") {
-    givesIncludingPositions {
+    givesIncludingPositions[PatternPart] {
       PatternPart(
         PathConcatenation(Seq(
           nodePat(name = Some("a"), position = (1, 1, 0)),
@@ -124,7 +115,7 @@ class QuantifiedPathPatternParserTest extends CypherFunSuite
   }
 
   test("((n)-[r]->(m))* (b)") {
-    givesIncludingPositions {
+    givesIncludingPositions[PatternPart] {
       PatternPart(
         PathConcatenation(Seq(
           QuantifiedPath(
@@ -147,7 +138,7 @@ class QuantifiedPathPatternParserTest extends CypherFunSuite
   test(
     """(a) (p = (n)-[r]->(m)){1,3} (b)""".stripMargin
   ) {
-    gives {
+    gives[PatternPart] {
       PatternPart(
         PathConcatenation(Seq(
           nodePat(name = Some("a")),
@@ -178,7 +169,7 @@ class QuantifiedPathPatternParserTest extends CypherFunSuite
 
   // we allow arbitrary juxtaposition in the parser and only disallow it in semantic analysis
   test("(a) ((n)-[r]->(m))* (b) (c) ((p)-[q]->(s))+") {
-    givesIncludingPositions {
+    givesIncludingPositions[PatternPart] {
       PatternPart(
         PathConcatenation(Seq(
           nodePat(name = Some("a"), position = (1, 1, 0)),
@@ -212,7 +203,7 @@ class QuantifiedPathPatternParserTest extends CypherFunSuite
   }
 
   test("p= ( (a)-->(b) )") {
-    gives {
+    gives[PatternPart] {
       NamedPatternPart(
         varFor("p"),
         PatternPart(ParenthesizedPath(PatternPart(RelationshipChain(
@@ -226,7 +217,7 @@ class QuantifiedPathPatternParserTest extends CypherFunSuite
 
   // We parse this and fail later in semantic checking
   test("(p = (q = (n)-[r]->(m))*)*") {
-    gives {
+    gives[PatternPart] {
       PatternPart(
         QuantifiedPath(
           NamedPatternPart(
@@ -253,7 +244,7 @@ class QuantifiedPathPatternParserTest extends CypherFunSuite
 
   // We parse this and fail later in semantic checking
   test("p = (n) (q = (a)-[]->(b))") {
-    gives {
+    gives[PatternPart] {
       NamedPatternPart(
         varFor("p"),
         PatternPart(PathConcatenation(Seq(
@@ -268,7 +259,7 @@ class QuantifiedPathPatternParserTest extends CypherFunSuite
   }
 
   test("((a)-->(b)) ((x)-->(y))*") {
-    gives {
+    gives[PatternPart] {
       PatternPart(PathConcatenation(Seq(
         ParenthesizedPath(PatternPart(RelationshipChain(nodePat(Some("a")), relPat(), nodePat(Some("b")))(pos)))(pos),
         QuantifiedPath(
@@ -281,15 +272,10 @@ class QuantifiedPathPatternParserTest extends CypherFunSuite
   }
 }
 
-class QuantifiedPathPatternInMatchParserTest extends CypherFunSuite
-    with ParserSyntaxTreeBase[Cst.Clause, ast.Clause]
-    with AstConstructionTestSupport {
-
-  implicit val javaccRule: JavaccRule[Clause] = JavaccRule.Clause
-  implicit val antlrRule: AntlrRule[Cst.Clause] = AntlrRule.Clause
+class QuantifiedPathPatternInMatchParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   test("MATCH p= ( (a)-->(b) ) WHERE a.prop") {
-    gives {
+    gives[Clause] {
       Match(
         optional = false,
         matchMode = MatchMode.default(pos),
@@ -313,7 +299,7 @@ class QuantifiedPathPatternInMatchParserTest extends CypherFunSuite
   }
 
   test("MATCH (a), (b)--(c) ((d)--(e))* (f)") {
-    gives {
+    gives[Clause] {
       Match(
         optional = false,
         matchMode = MatchMode.default(pos),
@@ -344,7 +330,7 @@ class QuantifiedPathPatternInMatchParserTest extends CypherFunSuite
   }
 
   test("MATCH (a)-->+(b)") {
-    gives {
+    gives[Clause] {
       match_(pathConcatenation(
         nodePat(Some("a")),
         quantifiedPath(relationshipChain(nodePat(), relPat(), nodePat()), plusQuantifier),
@@ -354,7 +340,7 @@ class QuantifiedPathPatternInMatchParserTest extends CypherFunSuite
   }
 
   test("MATCH (a)<-[r]-*(b)") {
-    gives {
+    gives[Clause] {
       match_(pathConcatenation(
         nodePat(Some("a")),
         quantifiedPath(
@@ -367,7 +353,7 @@ class QuantifiedPathPatternInMatchParserTest extends CypherFunSuite
   }
 
   test("MATCH (a)-[r]-+(b)") {
-    gives {
+    gives[Clause] {
       match_(pathConcatenation(
         nodePat(Some("a")),
         quantifiedPath(
@@ -380,7 +366,7 @@ class QuantifiedPathPatternInMatchParserTest extends CypherFunSuite
   }
 
   test("MATCH (n)-[r:!REL WHERE r.prop > 123]->{2,}(m)") {
-    gives {
+    gives[Clause] {
       match_(pathConcatenation(
         nodePat(Some("n")),
         quantifiedPath(
@@ -402,28 +388,24 @@ class QuantifiedPathPatternInMatchParserTest extends CypherFunSuite
 
   // pattern expressions are not implemented, yet
   test("MATCH (n) WITH [ p = (n)--(m) ((a)-->(b))+ | p ] as paths") {
-    failsToParse
+    failsToParse[Clause]()
   }
 
   // pattern expression are not implemented, yet
   test("MATCH (n), (m) WHERE (n) ((a)-->(b))+ (m)") {
-    failsToParse
+    failsToParse[Clause]()
   }
 
   // node abbreviations are not implemented, yet
   test("MATCH (n)--((a)-->(b))+") {
-    failsToParse
+    failsToParse[Clause]()
   }
 }
 
-class QuantifiedPathParserTest extends CypherFunSuite
-    with ParserSyntaxTreeBase[Cst.ParenthesizedPath, PatternAtom]
-    with AstConstructionTestSupport {
-  implicit val javaccRule: JavaccRule[PatternAtom] = JavaccRule.ParenthesizedPath
-  implicit val antlrRule: AntlrRule[Cst.ParenthesizedPath] = AntlrRule.ParenthesizedPath
+class QuantifiedPathParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   test("((n)-[r]->(m))*") {
-    gives {
+    gives[QuantifiedPath] {
       QuantifiedPath(
         PatternPart(
           RelationshipChain(
@@ -439,7 +421,7 @@ class QuantifiedPathParserTest extends CypherFunSuite
   }
 
   test("(p = (n)-[r]->(m))*") {
-    gives {
+    gives[QuantifiedPath] {
       QuantifiedPath(
         NamedPatternPart(
           Variable("p"),
@@ -458,7 +440,7 @@ class QuantifiedPathParserTest extends CypherFunSuite
   }
 
   test("((n)-[r]->(m) WHERE n.prop = m.prop)*") {
-    gives {
+    gives[QuantifiedPath] {
       QuantifiedPath(
         PatternPart(
           RelationshipChain(
@@ -474,7 +456,7 @@ class QuantifiedPathParserTest extends CypherFunSuite
   }
 
   test("((a)-->(b) WHERE a.prop > b.prop)") {
-    gives {
+    gives[ParenthesizedPath] {
       ParenthesizedPath(
         PatternPart(
           RelationshipChain(
@@ -490,7 +472,7 @@ class QuantifiedPathParserTest extends CypherFunSuite
 
   // combining all previous GPM features
   test("((n:A|B)-[r:REL|LER WHERE r.prop > 0]->(m:% WHERE m.prop IS NOT NULL))*") {
-    gives {
+    gives[QuantifiedPath] {
       QuantifiedPath(
         PatternPart(
           RelationshipChain(
@@ -517,56 +499,52 @@ class QuantifiedPathParserTest extends CypherFunSuite
   }
 }
 
-class QuantifiedPathPatternsQuantifierParserTest extends CypherFunSuite
-    with ParserSyntaxTreeBase[Cst.Quantifier, GraphPatternQuantifier]
-    with AstConstructionTestSupport {
-  implicit val javaccParser: JavaccRule[GraphPatternQuantifier] = JavaccRule.Quantifier
-  implicit val antlrParser: AntlrRule[Cst.Quantifier] = AntlrRule.Quantifier
+class QuantifiedPathPatternsQuantifierParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
   test("+") {
-    givesIncludingPositions {
+    givesIncludingPositions[GraphPatternQuantifier] {
       PlusQuantifier()((1, 1, 0))
     }
   }
 
   test("*") {
-    givesIncludingPositions {
+    givesIncludingPositions[GraphPatternQuantifier] {
       StarQuantifier()((1, 1, 0))
     }
   }
 
   test("{0,3}") {
-    givesIncludingPositions {
+    givesIncludingPositions[GraphPatternQuantifier] {
       IntervalQuantifier(Some(literalUnsignedInt(0)), Some(literalUnsignedInt(3)))((1, 1, 0))
     }
   }
 
   test("{1,}") {
-    givesIncludingPositions {
+    givesIncludingPositions[GraphPatternQuantifier] {
       IntervalQuantifier(Some(literalUnsignedInt(1)), None)((1, 1, 0))
     }
   }
 
   test("{,3}") {
-    givesIncludingPositions {
+    givesIncludingPositions[GraphPatternQuantifier] {
       IntervalQuantifier(None, Some(literalUnsignedInt(3)))((1, 1, 0))
     }
   }
 
   test("{,}") {
-    givesIncludingPositions {
+    givesIncludingPositions[GraphPatternQuantifier] {
       IntervalQuantifier(None, None)((1, 1, 0))
     }
   }
 
   test("{2}") {
-    givesIncludingPositions {
+    givesIncludingPositions[GraphPatternQuantifier] {
       FixedQuantifier(literalUnsignedInt(2))((1, 1, 0))
     }
   }
 
   test("{1_000, 1_000_000}") {
-    givesIncludingPositions {
+    givesIncludingPositions[GraphPatternQuantifier] {
       IntervalQuantifier(
         Some(UnsignedDecimalIntegerLiteral("1_000")((1, 2, 1))),
         Some(UnsignedDecimalIntegerLiteral("1_000_000")((1, 9, 8)))

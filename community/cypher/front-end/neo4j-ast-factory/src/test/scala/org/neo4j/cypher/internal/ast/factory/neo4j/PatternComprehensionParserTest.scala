@@ -16,18 +16,14 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import org.neo4j.cypher.internal.ast.Statement
-import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
-import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
+import org.neo4j.cypher.internal.ast.Statements
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 
 /**
  * This test class was created due to a bug in Javacc code generation and does not cover general pattern comprehensions
  */
-class PatternComprehensionParserTest extends ParserSyntaxTreeBase[Cst.Statement, Statement] {
-
-  implicit private val javaccRule: JavaccRule[Statement] = JavaccRule.Statements
-  implicit private val antlrRule: AntlrRule[Cst.Statement] = AntlrRule.Statements()
-
+class PatternComprehensionParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
   private val variable = Seq("", "x")
   private val labelExpressions = Seq("", ":A", "IS A")
   private val properties = Seq("", "{prop:1}")
@@ -40,10 +36,9 @@ class PatternComprehensionParserTest extends ParserSyntaxTreeBase[Cst.Statement,
     maybeProperties <- properties
     maybeWhere <- where
   } yield {
-
     val nodeReturnText = s"[($maybeVariable $maybeLabelExpr $maybeProperties $maybeWhere)-->() | 1]"
     test(s"RETURN $nodeReturnText") {
-      gives(
+      gives[Statements](
         singleQuery(
           return_(
             returnItem(
@@ -74,7 +69,7 @@ class PatternComprehensionParserTest extends ParserSyntaxTreeBase[Cst.Statement,
     } yield {
       val relReturnText = s"[()-[$maybeVariable $maybeLabelExpr $maybePathLength $maybeProperties $maybeWhere]->() | 1]"
       test(s"RETURN $relReturnText") {
-        gives(
+        gives[Statements](
           singleQuery(
             return_(
               returnItem(
