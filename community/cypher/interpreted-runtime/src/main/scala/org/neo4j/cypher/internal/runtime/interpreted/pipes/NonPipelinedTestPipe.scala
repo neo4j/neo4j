@@ -42,7 +42,7 @@ case class NonPipelinedTestPipe(source: Pipe)(val id: Id = Id.INVALID_ID) extend
 /**
  * Dummy pipe that does duplicates each row into the number of rows given by the factor. Intended for test-use only.
  */
-case class NonPipelinedHeadTestPipe(source: Pipe, expandFactor: Long)(val id: Id = Id.INVALID_ID)
+case class NonPipelinedStreamingTestPipe(source: Pipe, expandFactor: Long)(val id: Id = Id.INVALID_ID)
     extends PipeWithSource(source) {
 
   protected def internalCreateResults(

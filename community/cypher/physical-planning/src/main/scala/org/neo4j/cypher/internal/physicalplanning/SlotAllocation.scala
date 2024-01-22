@@ -93,7 +93,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeIndexLeafPlan
 import org.neo4j.cypher.internal.logical.plans.NodeLogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.NonFuseable
 import org.neo4j.cypher.internal.logical.plans.NonPipelined
-import org.neo4j.cypher.internal.logical.plans.NonPipelinedHead
+import org.neo4j.cypher.internal.logical.plans.NonPipelinedStreaming
 import org.neo4j.cypher.internal.logical.plans.NullifyMetadata
 import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.OptionalExpand
@@ -785,7 +785,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
         _: NonFuseable |
         _: InjectCompilationError |
         _: NonPipelined |
-        _: NonPipelinedHead |
+        _: NonPipelinedStreaming |
         _: Prober |
         _: TriadicBuild |
         _: TriadicFilter |

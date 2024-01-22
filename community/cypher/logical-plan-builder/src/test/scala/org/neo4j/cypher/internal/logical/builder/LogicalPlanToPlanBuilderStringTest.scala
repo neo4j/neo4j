@@ -1351,10 +1351,10 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName wi
   )
 
   testPlan(
-    "nonPipelinedHead",
+    "nonPipelinedStreaming",
     new TestPlanBuilder()
       .produceResults("x", "y")
-      .nonPipelinedHead()
+      .nonPipelinedStreaming()
       .argument()
       .build()
   )

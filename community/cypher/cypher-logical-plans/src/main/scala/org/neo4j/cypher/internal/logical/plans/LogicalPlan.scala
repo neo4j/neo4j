@@ -2996,7 +2996,7 @@ case class NonPipelined(override val source: LogicalPlan)(implicit idGen: IdGen)
 /**
  * NOTE: This plan is only for testing
  */
-case class NonPipelinedHead(override val source: LogicalPlan, expandFactor: Long)(implicit idGen: IdGen)
+case class NonPipelinedStreaming(override val source: LogicalPlan, expandFactor: Long)(implicit idGen: IdGen)
     extends LogicalUnaryPlan(idGen) with TestOnlyPlan {
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)

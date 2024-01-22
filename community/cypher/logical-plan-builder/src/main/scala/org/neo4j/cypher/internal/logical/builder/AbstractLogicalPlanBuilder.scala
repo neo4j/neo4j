@@ -171,7 +171,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeekLeafPlan
 import org.neo4j.cypher.internal.logical.plans.NonFuseable
 import org.neo4j.cypher.internal.logical.plans.NonPipelined
-import org.neo4j.cypher.internal.logical.plans.NonPipelinedHead
+import org.neo4j.cypher.internal.logical.plans.NonPipelinedStreaming
 import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.OptionalExpand
 import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
@@ -2316,8 +2316,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   def nonPipelined(): IMPL =
     appendAtCurrentIndent(UnaryOperator(lp => NonPipelined(lp)(_)))
 
-  def nonPipelinedHead(expandFactor: Long = 1L): IMPL =
-    appendAtCurrentIndent(UnaryOperator(lp => NonPipelinedHead(lp, expandFactor)(_)))
+  def nonPipelinedStreaming(expandFactor: Long = 1L): IMPL =
+    appendAtCurrentIndent(UnaryOperator(lp => NonPipelinedStreaming(lp, expandFactor)(_)))
 
   def prober(probe: Prober.Probe): IMPL =
     appendAtCurrentIndent(UnaryOperator(lp => Prober(lp, probe)(_)))
