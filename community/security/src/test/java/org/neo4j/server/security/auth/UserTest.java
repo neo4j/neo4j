@@ -28,6 +28,7 @@ import org.neo4j.kernel.impl.security.User;
 
 class UserTest {
     @Test
+    @SuppressWarnings("TruthSelfEquals")
     void shouldBuildImmutableUser() {
         SystemGraphCredential abc = credentialFor("123abc");
         SystemGraphCredential fruit = credentialFor("fruit");
@@ -36,6 +37,7 @@ class UserTest {
                 .withRequiredPasswordChange(true)
                 .withFlag("nice_guy")
                 .build();
+
         assertThat(u1).isEqualTo(u1);
         assertThat(u1).isNotEqualTo(u2);
 
@@ -59,6 +61,7 @@ class UserTest {
     }
 
     @Test
+    @SuppressWarnings("TruthSelfEquals")
     void shouldBuildUserWithId() {
         SystemGraphCredential abc = credentialFor("123abc");
         User u1 = new User.Builder("Alice", abc).withId("id1").build();

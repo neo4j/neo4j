@@ -25,6 +25,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
+import java.util.Arrays;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.dynamic.DynamicType;
 import net.bytebuddy.implementation.SuperMethodCall;
@@ -60,7 +61,7 @@ public final class JarBuilder {
                 }
             }
         } catch (IOException exc) {
-            throw new RuntimeException("Could not write %s to %s.".formatted(classes, pth), exc);
+            throw new RuntimeException("Could not write %s to %s.".formatted(Arrays.toString(classes), pth), exc);
         }
     }
 

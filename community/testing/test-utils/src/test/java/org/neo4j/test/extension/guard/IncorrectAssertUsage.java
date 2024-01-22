@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 
 class IncorrectAssertUsage {
     @Test
+    @SuppressWarnings("TruthSelfEquals")
     void anything() {
         assertEquals(0L, 0L);
     }

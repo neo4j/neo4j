@@ -274,7 +274,7 @@ public class RecordPropertyCursorTest {
         while (cursor.next()) {
             int key = cursor.propertyKey();
             Value expectedValue = valueMapping.remove(key);
-            assertThat(expectedValue).isEqualTo(expectedValue);
+            assertThat(cursor.propertyValue()).isEqualTo(expectedValue);
         }
 
         // then
