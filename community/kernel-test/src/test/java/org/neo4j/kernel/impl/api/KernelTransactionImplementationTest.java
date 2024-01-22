@@ -927,7 +927,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
         RuntimeException foo = new RuntimeException("foo");
         RuntimeException bar = new RuntimeException("bar");
         doThrow(foo).when(transactionValidator).validate(anyCollection(), anyLong(), any(), any(), any());
-        doThrow(bar).when(storageEngine).release(any(), any(), anyBoolean());
+        doThrow(bar).when(storageEngine).release(any(), any(), any(), anyBoolean());
         assertThatThrownBy(transaction::commit).isSameAs(foo).hasSuppressedException(bar);
     }
 

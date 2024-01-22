@@ -43,6 +43,12 @@ public interface PageIdRange {
         public void unallocate(IdGenerator.TransactionalMarker marker) {}
 
         @Override
+        public void mark() {}
+
+        @Override
+        public void resetToMark() {}
+
+        @Override
         public long pageId() {
             return -1;
         }
@@ -74,4 +80,14 @@ public interface PageIdRange {
      * Get id of the page that this range is covering.
      */
     long pageId();
+
+    /**
+     * Mark allocation position in the range
+     */
+    void mark();
+
+    /**
+     * Reset to previously marked allocation position, if {@link #mark()} was never called, reset to 0 position.
+     */
+    void resetToMark();
 }

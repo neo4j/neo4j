@@ -526,7 +526,15 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
     }
 
     @Override
-    public void release(ReadableTransactionState txState, CursorContext cursorContext, boolean rolledBack) {
+    public void release(
+            ReadableTransactionState txState,
+            CursorContext cursorContext,
+            CommandCreationContext commandCreationContext,
+            boolean rolledBack) {
+        if (rolledBack && commandCreationContext.resetIds()) {
+            return;
+        }
+
         // Extract allocated IDs from created nodes/relationships from txState
         // (optionally) flick through the commands to try and salvage other types of IDs, like property/dynamic record
         // IDs, but that's way less bang for your buck.

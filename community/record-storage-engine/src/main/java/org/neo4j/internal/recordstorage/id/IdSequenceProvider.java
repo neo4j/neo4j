@@ -30,4 +30,6 @@ public interface IdSequenceProvider {
     IdSequence getIdSequence(StoreType storeType);
 
     void release(CursorContext cursorContext);
+
+    boolean reset();
 }

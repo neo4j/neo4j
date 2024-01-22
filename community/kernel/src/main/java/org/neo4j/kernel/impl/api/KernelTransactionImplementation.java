@@ -1054,6 +1054,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         } finally {
             try {
                 if (!success) {
+                    commit = false;
                     rollback(listenersState);
                 } else {
                     transactionId = txId;
@@ -1142,6 +1143,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             if (hasTxStateWithChanges()) {
                 try (var rollbackEvent = transactionEvent.beginRollback()) {
                     committer.rollback(rollbackEvent);
+                    if (!txState().hasConstraintIndexesCreatedInTx()) {
+                        return;
+                    }
+
                     try {
                         dropCreatedConstraintIndexes();
                     } catch (IllegalStateException | SecurityException e) {
@@ -1285,7 +1290,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             }
             try {
                 if (txState != null) {
-                    storageEngine.release(txState, cursorContext, !commit);
+                    storageEngine.release(txState, cursorContext, commandCreationContext, !commit);
                 }
             } catch (RuntimeException | Error e) {
                 error = Exceptions.chain(error, e);

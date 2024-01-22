@@ -107,4 +107,6 @@ public interface CommandCreationContext extends KernelVersionProvider, AutoClose
             Supplier<Long> startTimeOfOldestActiveTransaction,
             ResourceLocker locks,
             Supplier<LockTracer> lockTracer);
+
+    boolean resetIds();
 }

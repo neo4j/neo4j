@@ -88,6 +88,8 @@ public interface ReadableTransactionState {
 
     boolean nodeIsDeletedInThisBatch(long nodeId);
 
+    boolean hasConstraintIndexesCreatedInTx();
+
     /**
      * @return {@code true} if the relationship was visited in this state, i.e. if it was created
      * by this current transaction, otherwise {@code false} where the relationship might need to be

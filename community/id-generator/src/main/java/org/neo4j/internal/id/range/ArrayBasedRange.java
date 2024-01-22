@@ -29,6 +29,7 @@ public class ArrayBasedRange implements PageIdRange {
     private final long[] ids;
     private final int idsPerPage;
     private int cursor = 0;
+    private int marker;
 
     public ArrayBasedRange(long[] ids, int idsPerPage) {
         this.ids = ids;
@@ -53,12 +54,23 @@ public class ArrayBasedRange implements PageIdRange {
     }
 
     @Override
+    public void mark() {
+        marker = cursor;
+    }
+
+    @Override
+    public void resetToMark() {
+        cursor = marker;
+    }
+
+    @Override
     public long pageId() {
         return ids[0] / idsPerPage;
     }
 
     @Override
     public String toString() {
-        return "ArrayBasedRange{" + "ids=" + Arrays.toString(ids) + ", cursor=" + cursor + '}';
+        return "ArrayBasedRange{" + "ids=" + Arrays.toString(ids) + ", idsPerPage=" + idsPerPage + ", cursor=" + cursor
+                + ", marker=" + marker + '}';
     }
 }

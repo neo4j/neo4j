@@ -38,4 +38,9 @@ public class TransactionIdSequenceProvider implements IdSequenceProvider {
 
     @Override
     public void release(CursorContext cursorContext) {}
+
+    @Override
+    public boolean reset() {
+        return false;
+    }
 }

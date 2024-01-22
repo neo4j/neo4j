@@ -146,7 +146,11 @@ public interface StorageEngine extends ReadableStorageEngine, Lifecycle {
      * @param cursorContext transactional cursor context.
      * @param rolledBack true if transaction was rolled back
      */
-    void release(ReadableTransactionState txState, CursorContext cursorContext, boolean rolledBack);
+    void release(
+            ReadableTransactionState txState,
+            CursorContext cursorContext,
+            CommandCreationContext commandCreationContext,
+            boolean rolledBack);
 
     /**
      * Checkpoints underlying storage. Leaves no guarantee that files are flushed to persistable storage afterwards

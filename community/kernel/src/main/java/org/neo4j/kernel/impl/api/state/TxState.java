@@ -742,10 +742,15 @@ public class TxState implements TransactionState {
 
     @Override
     public Iterator<IndexDescriptor> constraintIndexesCreatedInTx() {
-        if (createdConstraintIndexesByConstraint != null && !createdConstraintIndexesByConstraint.isEmpty()) {
+        if (hasConstraintIndexesCreatedInTx()) {
             return createdConstraintIndexesByConstraint.values().iterator();
         }
         return Collections.emptyIterator();
+    }
+
+    @Override
+    public boolean hasConstraintIndexesCreatedInTx() {
+        return createdConstraintIndexesByConstraint != null && !createdConstraintIndexesByConstraint.isEmpty();
     }
 
     @Override

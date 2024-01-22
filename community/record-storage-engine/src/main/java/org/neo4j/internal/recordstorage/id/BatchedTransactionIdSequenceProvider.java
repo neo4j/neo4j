@@ -69,15 +69,35 @@ public class BatchedTransactionIdSequenceProvider implements IdSequenceProvider 
         Arrays.fill(transactionSequences, null);
     }
 
+    @Override
+    public boolean reset() {
+        for (BatchedIdSequence batchedIdSequence : transactionSequences) {
+            if (batchedIdSequence != null) {
+                if (!batchedIdSequence.isPossibleToReset()) {
+                    return false;
+                }
+            }
+        }
+
+        for (BatchedIdSequence batchedIdSequence : transactionSequences) {
+            if (batchedIdSequence != null) {
+                batchedIdSequence.reset();
+            }
+        }
+        return true;
+    }
+
     private class BatchedIdSequence implements IdSequence {
         private final int recordsPerPage;
         private PageIdRange range = PageIdRange.EMPTY;
         private final IdGenerator idGenerator;
+        private boolean possibleToReset;
 
         public BatchedIdSequence(StoreType storeType) {
             var store = neoStores.getRecordStore(storeType);
             this.idGenerator = store.getIdGenerator();
             this.recordsPerPage = store.getRecordsPerPage();
+            this.possibleToReset = true;
         }
 
         @Override
@@ -85,14 +105,24 @@ public class BatchedTransactionIdSequenceProvider implements IdSequenceProvider 
             if (!range.hasNext()) {
                 close(cursorContext);
                 range = idGenerator.nextPageRange(cursorContext, recordsPerPage);
+                range.mark();
             }
             return range.nextId();
+        }
+
+        public boolean isPossibleToReset() {
+            return possibleToReset;
+        }
+
+        public void reset() {
+            range.resetToMark();
         }
 
         public void close(CursorContext cursorContext) {
             if (range == PageIdRange.EMPTY) {
                 return;
             }
+            possibleToReset = false;
             idGenerator.releasePageRange(range, cursorContext);
             range = PageIdRange.EMPTY;
         }

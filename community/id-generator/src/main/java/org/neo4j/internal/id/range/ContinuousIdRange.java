@@ -29,6 +29,7 @@ public class ContinuousIdRange implements PageIdRange {
     private final int rangeSize;
     private final long idsPerPage;
     private int cursor = 0;
+    private int marker;
 
     public ContinuousIdRange(long rangeStart, int rangeSize, long idsPerPage) {
         this.rangeStart = rangeStart;
@@ -56,6 +57,16 @@ public class ContinuousIdRange implements PageIdRange {
     }
 
     @Override
+    public void mark() {
+        marker = cursor;
+    }
+
+    @Override
+    public void resetToMark() {
+        cursor = marker;
+    }
+
+    @Override
     public long pageId() {
         return rangeStart / idsPerPage;
     }
@@ -66,9 +77,7 @@ public class ContinuousIdRange implements PageIdRange {
 
     @Override
     public String toString() {
-        return "ContinuousIdRange{" + "rangeStart="
-                + rangeStart + ", rangeSize="
-                + rangeSize + ", cursor="
-                + cursor + '}';
+        return "ContinuousIdRange{" + "rangeStart=" + rangeStart + ", rangeSize=" + rangeSize + ", idsPerPage="
+                + idsPerPage + ", cursor=" + cursor + ", marker=" + marker + '}';
     }
 }
