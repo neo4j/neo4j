@@ -28,8 +28,6 @@ public interface TransactionExecutionMonitor {
 
     void rollback(KernelTransaction tx, Throwable failure);
 
-    void rollback(KernelTransaction tx);
-
     TransactionExecutionMonitor NO_OP = new TransactionExecutionMonitor() {
         @Override
         public void start(KernelTransaction tx) {}
@@ -39,8 +37,5 @@ public interface TransactionExecutionMonitor {
 
         @Override
         public void rollback(KernelTransaction tx, Throwable failure) {}
-
-        @Override
-        public void rollback(KernelTransaction tx) {}
     };
 }

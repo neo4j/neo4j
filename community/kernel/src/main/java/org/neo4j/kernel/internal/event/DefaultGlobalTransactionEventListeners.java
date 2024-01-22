@@ -22,6 +22,7 @@ package org.neo4j.kernel.internal.event;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -67,6 +68,7 @@ public class DefaultGlobalTransactionEventListeners implements GlobalTransaction
 
     @Override
     public Collection<TransactionEventListener<?>> getDatabaseTransactionEventListeners(String databaseName) {
-        return globalTransactionEventListeners.getOrDefault(databaseName, Collections.emptyList());
+        var listeners = globalTransactionEventListeners.getOrDefault(databaseName, null);
+        return listeners == null ? Collections.emptyList() : new ArrayList<>(listeners);
     }
 }

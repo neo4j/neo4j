@@ -80,20 +80,22 @@ class DatabaseTransactionEventListenersTest {
 
     @Test
     void shouldCloseTxSnapshotAfterCommit() {
-        shouldCloseTxSnapshot(DatabaseTransactionEventListeners::afterCommit);
+        shouldCloseTxSnapshot(TransactionEventListeners::afterCommit);
     }
 
     @Test
     void shouldCloseTxSnapshotAfterRollback() {
-        shouldCloseTxSnapshot(DatabaseTransactionEventListeners::afterRollback);
+        shouldCloseTxSnapshot(TransactionEventListeners::afterRollback);
     }
 
     @Test
     void shouldCallBeforeCommitOnAllListenersRegardlessOfExceptions() throws Exception {
         // given
+        var databaseId = DatabaseIdFactory.from("db", UUID.randomUUID());
         var db = mock(GraphDatabaseFacade.class);
-        var dbListeners = new DatabaseTransactionEventListeners(
-                db, new DefaultGlobalTransactionEventListeners(), DatabaseIdFactory.from("db", UUID.randomUUID()));
+        when(db.databaseId()).thenReturn(databaseId);
+        var dbListeners =
+                new DatabaseTransactionEventListeners(db, new DefaultGlobalTransactionEventListeners(), databaseId);
         var firstSuccessfulListener = mock(TransactionEventListener.class);
         var secondFailingListener = mock(TransactionEventListener.class);
         var thirdSuccessfulListener = mock(TransactionEventListener.class);
@@ -107,7 +109,15 @@ class DatabaseTransactionEventListenersTest {
         txState.nodeDoCreate(1);
         var tx = mock(KernelTransaction.class);
         when(tx.memoryTracker()).thenReturn(EmptyMemoryTracker.INSTANCE);
-        dbListeners.beforeCommit(txState, tx, mock(StorageReader.class));
+
+        var transactionEventListeners = new TransactionEventListeners(dbListeners, tx, mockedStorageReader());
+
+        transactionEventListeners.beforeCommit(
+                txState,
+                tx,
+                mock(StorageReader.class),
+                dbListeners.getCurrentRegisteredTransactionEventListeners(),
+                true);
 
         // then
         verify(firstSuccessfulListener).beforeCommit(any(), any(), any());
@@ -116,11 +126,13 @@ class DatabaseTransactionEventListenersTest {
     }
 
     @Test
-    void shouldCallAfterCommitOnAllListenersRegardlessOfExceptions() throws Exception {
+    void shouldCallAfterCommitOnAllListenersRegardlessOfExceptions() {
         // given
+        var databaseId = DatabaseIdFactory.from("db", UUID.randomUUID());
         var db = mock(GraphDatabaseFacade.class);
-        var dbListeners = new DatabaseTransactionEventListeners(
-                db, new DefaultGlobalTransactionEventListeners(), DatabaseIdFactory.from("db", UUID.randomUUID()));
+        when(db.databaseId()).thenReturn(databaseId);
+        var dbListeners =
+                new DatabaseTransactionEventListeners(db, new DefaultGlobalTransactionEventListeners(), databaseId);
         TransactionEventListener<?> firstSuccessfulListener = mock(TransactionEventListener.class);
         TransactionEventListener<?> secondFailingListener = mock(TransactionEventListener.class);
         TransactionEventListener<?> thirdSuccessfulListener = mock(TransactionEventListener.class);
@@ -132,10 +144,15 @@ class DatabaseTransactionEventListenersTest {
         txState.nodeDoCreate(1);
         var tx = mock(KernelTransaction.class);
         when(tx.memoryTracker()).thenReturn(EmptyMemoryTracker.INSTANCE);
-        var state = dbListeners.beforeCommit(txState, tx, mockedStorageReader());
+
+        var transactionEventListeners = new TransactionEventListeners(dbListeners, tx, mockedStorageReader());
+
+        var state = transactionEventListeners.beforeCommit(
+                txState, tx, mockedStorageReader(), dbListeners.getCurrentRegisteredTransactionEventListeners(), true);
 
         // when
-        assertThatThrownBy(() -> dbListeners.afterCommit(state)).isInstanceOf(FailingListenerException.class);
+        assertThatThrownBy(() -> transactionEventListeners.afterCommit(state))
+                .isInstanceOf(FailingListenerException.class);
 
         // then
         verify(firstSuccessfulListener).afterCommit(any(), any(), any());
@@ -144,11 +161,13 @@ class DatabaseTransactionEventListenersTest {
     }
 
     @Test
-    void shouldCallAfterRollbackOnAllListenersRegardlessOfExceptions() throws Exception {
+    void shouldCallAfterRollbackOnAllListenersRegardlessOfExceptions() {
         // given
+        var databaseId = DatabaseIdFactory.from("db", UUID.randomUUID());
         var db = mock(GraphDatabaseFacade.class);
-        var dbListeners = new DatabaseTransactionEventListeners(
-                db, new DefaultGlobalTransactionEventListeners(), DatabaseIdFactory.from("db", UUID.randomUUID()));
+        when(db.databaseId()).thenReturn(databaseId);
+        var dbListeners =
+                new DatabaseTransactionEventListeners(db, new DefaultGlobalTransactionEventListeners(), databaseId);
         TransactionEventListener<?> firstSuccessfulListener = mock(TransactionEventListener.class);
         TransactionEventListener<?> secondFailingListener = mock(TransactionEventListener.class);
         TransactionEventListener<?> thirdSuccessfulListener = mock(TransactionEventListener.class);
@@ -160,10 +179,15 @@ class DatabaseTransactionEventListenersTest {
         txState.nodeDoCreate(1);
         var tx = mock(KernelTransaction.class);
         when(tx.memoryTracker()).thenReturn(EmptyMemoryTracker.INSTANCE);
-        var state = dbListeners.beforeCommit(txState, tx, mockedStorageReader());
+
+        var transactionEventListeners = new TransactionEventListeners(dbListeners, tx, mockedStorageReader());
+
+        var state = transactionEventListeners.beforeCommit(
+                txState, tx, mockedStorageReader(), dbListeners.getCurrentRegisteredTransactionEventListeners(), true);
 
         // when
-        assertThatThrownBy(() -> dbListeners.afterRollback(state)).isInstanceOf(FailingListenerException.class);
+        assertThatThrownBy(() -> transactionEventListeners.afterRollback(state))
+                .isInstanceOf(FailingListenerException.class);
 
         // then
         verify(firstSuccessfulListener).afterRollback(any(), any(), any());
@@ -178,13 +202,14 @@ class DatabaseTransactionEventListenersTest {
         return reader;
     }
 
-    private void shouldCloseTxSnapshot(
-            BiConsumer<DatabaseTransactionEventListeners, TransactionListenersState> txAction) {
+    private void shouldCloseTxSnapshot(BiConsumer<TransactionEventListeners, TransactionListenersState> txAction) {
         // Given
+        var databaseId = DatabaseIdFactory.from("db", UUID.randomUUID());
+        var db = mock(GraphDatabaseFacade.class);
+        when(db.databaseId()).thenReturn(databaseId);
         GlobalTransactionEventListeners globalListeners = new DefaultGlobalTransactionEventListeners();
-        NamedDatabaseId databaseId = DatabaseIdFactory.from("foo", UUID.randomUUID());
         DatabaseTransactionEventListeners listeners =
-                new DatabaseTransactionEventListeners(mock(GraphDatabaseFacade.class), globalListeners, databaseId);
+                new DatabaseTransactionEventListeners(db, globalListeners, databaseId);
         TransactionEventListener<?> listener = mock(TransactionEventListener.class);
         listeners.registerTransactionEventListener(listener);
 
@@ -201,9 +226,17 @@ class DatabaseTransactionEventListenersTest {
                 .then(invocationOnMock ->
                         new RelationshipEntity(internalTransaction, invocationOnMock.getArgument(0, Long.class)));
 
+        TransactionEventListeners transactionEventListeners =
+                new TransactionEventListeners(listeners, kernelTransaction, storageReader);
+
         // When
-        TransactionListenersState state = listeners.beforeCommit(txState, kernelTransaction, storageReader);
-        txAction.accept(listeners, state);
+        TransactionListenersState state = transactionEventListeners.beforeCommit(
+                txState,
+                kernelTransaction,
+                storageReader,
+                listeners.getCurrentRegisteredTransactionEventListeners(),
+                false);
+        txAction.accept(transactionEventListeners, state);
 
         // Then
         verify(relationshipScanCursor).close();

@@ -57,21 +57,5 @@ public class TransactionListenersState {
         return states;
     }
 
-    static class ListenerState<T> {
-        private final TransactionEventListener<T> listener;
-        private final T state;
-
-        ListenerState(TransactionEventListener<T> listener, T state) {
-            this.listener = listener;
-            this.state = state;
-        }
-
-        public TransactionEventListener<T> getListener() {
-            return listener;
-        }
-
-        public T getState() {
-            return state;
-        }
-    }
+    record ListenerState<T>(TransactionEventListener<T> listener, T state) {}
 }

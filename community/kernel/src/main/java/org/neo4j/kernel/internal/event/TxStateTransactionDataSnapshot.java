@@ -75,12 +75,17 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
     private final StorageRelationshipScanCursor relationship;
     private final InternalTransaction internalTransaction;
     private final MemoryTracker memoryTracker;
+    private final boolean isLast;
 
     TxStateTransactionDataSnapshot(
-            ReadableTransactionState state, StorageReader storageReader, KernelTransaction transaction) {
+            ReadableTransactionState state,
+            StorageReader storageReader,
+            KernelTransaction transaction,
+            boolean isLast) {
         this.state = state;
         this.store = storageReader;
         this.transaction = transaction;
+        this.isLast = isLast;
         this.internalTransaction = transaction.internalTransaction();
         this.memoryTracker = transaction.memoryTracker();
         this.relationship =
@@ -177,6 +182,16 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
     @Override
     public long getCommitTime() {
         return transaction.getCommitTime();
+    }
+
+    @Override
+    public long transactionIdentityNumber() {
+        return transaction.getTransactionSequenceNumber();
+    }
+
+    @Override
+    public boolean isLast() {
+        return isLast;
     }
 
     private void takeSnapshot(MemoryTracker memoryTracker) {

@@ -31,10 +31,12 @@ import org.neo4j.kernel.impl.api.commit.TransactionCommitter;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.coreapi.DefaultTransactionExceptionMapper;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionEvent;
+import org.neo4j.kernel.internal.event.TransactionEventListeners;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.memory.MemoryTracker;
 
 public final class ChunkSink implements ChunkedTransactionSink {
+    private final TransactionEventListeners eventListeners;
     private final TransactionClockContext clocks;
     private final long chunkSize;
     private final TransactionCommitter committer;
@@ -45,10 +47,15 @@ public final class ChunkSink implements ChunkedTransactionSink {
     private long lastTransactionIdWhenStarted;
     private Supplier<LockTracer> lockTracerSupplier;
 
-    public ChunkSink(TransactionCommitter committer, TransactionClockContext clocks, Config config) {
+    public ChunkSink(
+            TransactionCommitter committer,
+            TransactionEventListeners eventListeners,
+            TransactionClockContext clocks,
+            Config config) {
+        this.committer = committer;
+        this.eventListeners = eventListeners;
         this.clocks = clocks;
         this.chunkSize = config.get(multi_version_transaction_chunk_size);
-        this.committer = committer;
     }
 
     @Override
@@ -56,6 +63,8 @@ public final class ChunkSink implements ChunkedTransactionSink {
         MemoryTracker memoryTracker = txState.memoryTracker();
         if (memoryTracker.estimatedHeapMemory() > chunkSize) {
             try (var chunkWriteEvent = transactionEvent.beginChunkWriteEvent()) {
+                eventListeners.beforeCommit(txState, false);
+
                 committer.commit(
                         chunkWriteEvent,
                         leaseClient,

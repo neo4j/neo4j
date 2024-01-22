@@ -322,13 +322,13 @@ class TestTransactionEvents {
         }
 
         try {
-            Transaction tx = db.beginTx();
-            try {
-                tx.createNode().delete();
-                tx.commit();
-                fail("Should fail commit");
-            } catch (TransactionFailureException e) { // OK
-            }
+            assertThatThrownBy(() -> {
+                        try (Transaction tx = db.beginTx()) {
+                            tx.createNode().delete();
+                            tx.commit();
+                        }
+                    })
+                    .isInstanceOf(TransactionFailureException.class);
             verifyListenerCalls(listeners, false);
 
             dbms.unregisterTransactionEventListener(DEFAULT_DATABASE_NAME, listeners.remove(2));

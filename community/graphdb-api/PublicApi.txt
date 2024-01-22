@@ -372,10 +372,12 @@ org.neo4j.graphdb.event.TransactionData::getCommitTime() long public default
 org.neo4j.graphdb.event.TransactionData::getTransactionId() long public default
 org.neo4j.graphdb.event.TransactionData::isDeleted(org.neo4j.graphdb.Node) boolean public abstract
 org.neo4j.graphdb.event.TransactionData::isDeleted(org.neo4j.graphdb.Relationship) boolean public abstract
+org.neo4j.graphdb.event.TransactionData::isLast() boolean public default
 org.neo4j.graphdb.event.TransactionData::metaData() java.util.Map<java.lang.String,java.lang.Object> public abstract
 org.neo4j.graphdb.event.TransactionData::removedLabels() java.lang.Iterable<org.neo4j.graphdb.event.LabelEntry> public abstract
 org.neo4j.graphdb.event.TransactionData::removedNodeProperties() java.lang.Iterable<org.neo4j.graphdb.event.PropertyEntry<org.neo4j.graphdb.Node>> public abstract
 org.neo4j.graphdb.event.TransactionData::removedRelationshipProperties() java.lang.Iterable<org.neo4j.graphdb.event.PropertyEntry<org.neo4j.graphdb.Relationship>> public abstract
+org.neo4j.graphdb.event.TransactionData::transactionIdentityNumber() long public default
 org.neo4j.graphdb.event.TransactionData::username() java.lang.String public abstract
 org.neo4j.graphdb.event.TransactionEventListener<T extends java.lang.Object> public abstract interface
 org.neo4j.graphdb.event.TransactionEventListener<T>::afterCommit(org.neo4j.graphdb.event.TransactionData, #T, org.neo4j.graphdb.GraphDatabaseService) void public abstract

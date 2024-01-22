@@ -190,4 +190,23 @@ public interface TransactionData {
     default long getCommitTime() {
         throw new IllegalStateException("Transaction commit time it not available.");
     }
+
+    /**
+     * In multi-versioned stores, a transaction may consist of multiple listener-observable chunks of transactional data.
+     * Chunks associated with a single transaction will share the same transaction identity number. Please be aware that there is no correlation of this number with
+     * transaction id that transaction will obtain at some point.
+     * @return transaction identity number.
+     */
+    default long transactionIdentityNumber() {
+        return -1;
+    }
+
+    /**
+     * In multi-versioned stores, a transaction may consist of multiple listener-observable chunks of transactional data.
+     * Chunks associated with a single transaction will share the same transaction identity number, and the final chunk will be designated as the last one.
+     * @return {@code true} if transaction data chunk is the last for this transaction. Transaction that represented by single transactional data will have this flag set to {@code true}.
+     */
+    default boolean isLast() {
+        return true;
+    }
 }

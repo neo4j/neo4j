@@ -75,7 +75,7 @@ class TxStateTransactionDataSnapshotIT {
             var trackingData = resetMemoryTracker(memoryTracker);
 
             try (var snapshot = new TxStateTransactionDataSnapshot(
-                    transactionState, kernelTransaction.newStorageReader(), kernelTransaction)) {
+                    transactionState, kernelTransaction.newStorageReader(), kernelTransaction, true)) {
                 assertThat(memoryTracker.usedNativeMemory()).isZero();
                 assertThat(memoryTracker.estimatedHeapMemory())
                         .isGreaterThanOrEqualTo(emptySnapshotSize
@@ -120,7 +120,7 @@ class TxStateTransactionDataSnapshotIT {
             var trackingData = resetMemoryTracker(memoryTracker);
 
             try (var snapshot = new TxStateTransactionDataSnapshot(
-                    transactionState, kernelTransaction.newStorageReader(), kernelTransaction)) {
+                    transactionState, kernelTransaction.newStorageReader(), kernelTransaction, true)) {
                 assertThat(memoryTracker.usedNativeMemory()).isZero();
                 assertThat(memoryTracker.estimatedHeapMemory())
                         .isGreaterThanOrEqualTo(emptySnapshotSize
@@ -165,7 +165,7 @@ class TxStateTransactionDataSnapshotIT {
             var trackingData = resetMemoryTracker(memoryTracker);
 
             try (var snapshot = new TxStateTransactionDataSnapshot(
-                    transactionState, kernelTransaction.newStorageReader(), kernelTransaction)) {
+                    transactionState, kernelTransaction.newStorageReader(), kernelTransaction, true)) {
                 assertThat(memoryTracker.usedNativeMemory()).isZero();
                 assertThat(memoryTracker.estimatedHeapMemory())
                         .isGreaterThanOrEqualTo(emptySnapshotSize
@@ -209,7 +209,7 @@ class TxStateTransactionDataSnapshotIT {
             var trackingData = resetMemoryTracker(memoryTracker);
 
             try (var snapshot = new TxStateTransactionDataSnapshot(
-                    transactionState, kernelTransaction.newStorageReader(), kernelTransaction)) {
+                    transactionState, kernelTransaction.newStorageReader(), kernelTransaction, false)) {
                 assertThat(memoryTracker.usedNativeMemory()).isZero();
                 assertThat(memoryTracker.estimatedHeapMemory())
                         .isGreaterThanOrEqualTo(emptySnapshotSize
@@ -228,7 +228,7 @@ class TxStateTransactionDataSnapshotIT {
             var transactionState = kernelTransaction.txState();
             var cursorContext = kernelTransaction.cursorContext();
             try (var snapshot = new TxStateTransactionDataSnapshot(
-                    transactionState, kernelTransaction.newStorageReader(), kernelTransaction)) {
+                    transactionState, kernelTransaction.newStorageReader(), kernelTransaction, true)) {
                 // empty
             }
             assertZeroTracer(cursorContext);
@@ -268,7 +268,7 @@ class TxStateTransactionDataSnapshotIT {
             cursorTracer.reportEvents();
 
             try (var snapshot = new TxStateTransactionDataSnapshot(
-                    transactionState, kernelTransaction.newStorageReader(), kernelTransaction)) {
+                    transactionState, kernelTransaction.newStorageReader(), kernelTransaction, true)) {
                 // no work for snapshot
             }
             kernelTransaction.storeCursors().reset(cursorContext);
@@ -300,7 +300,7 @@ class TxStateTransactionDataSnapshotIT {
             resetMemoryTracker(memoryTracker);
 
             try (var snapshot = new TxStateTransactionDataSnapshot(
-                    transactionState, kernelTransaction.newStorageReader(), kernelTransaction)) {
+                    transactionState, kernelTransaction.newStorageReader(), kernelTransaction, false)) {
                 return memoryTracker.estimatedHeapMemory();
             }
         }
@@ -309,31 +309,15 @@ class TxStateTransactionDataSnapshotIT {
     private static MemoryTrackingData resetMemoryTracker(MemoryTracker memoryTracker) {
         var trackingData =
                 new MemoryTrackingData(memoryTracker.estimatedHeapMemory(), memoryTracker.usedNativeMemory());
-        memoryTracker.releaseHeap(trackingData.getHeapUsage());
-        memoryTracker.releaseNative(trackingData.getNativeUsage());
+        memoryTracker.releaseHeap(trackingData.heapUsage());
+        memoryTracker.releaseNative(trackingData.nativeUsage());
         return trackingData;
     }
 
     private static void restoreMemoryTracker(MemoryTracker memoryTracker, MemoryTrackingData restoreData) {
-        memoryTracker.allocateHeap(restoreData.getHeapUsage());
-        memoryTracker.allocateNative(restoreData.getNativeUsage());
+        memoryTracker.allocateHeap(restoreData.heapUsage());
+        memoryTracker.allocateNative(restoreData.nativeUsage());
     }
 
-    private static class MemoryTrackingData {
-        private final long heapUsage;
-        private final long nativeUsage;
-
-        MemoryTrackingData(long heapUsage, long nativeUsage) {
-            this.heapUsage = heapUsage;
-            this.nativeUsage = nativeUsage;
-        }
-
-        public long getHeapUsage() {
-            return heapUsage;
-        }
-
-        public long getNativeUsage() {
-            return nativeUsage;
-        }
-    }
+    private record MemoryTrackingData(long heapUsage, long nativeUsage) {}
 }

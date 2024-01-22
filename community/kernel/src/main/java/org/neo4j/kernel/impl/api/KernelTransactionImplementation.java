@@ -60,7 +60,6 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.UnspecifiedKernelException;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
-import org.neo4j.graphdb.TransientFailureException;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.ExecutionStatistics;
@@ -142,7 +141,7 @@ import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionWriteEvent;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
-import org.neo4j.kernel.internal.event.TransactionListenersState;
+import org.neo4j.kernel.internal.event.TransactionEventListeners;
 import org.neo4j.lock.ActiveLock;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.logging.LogProvider;
@@ -195,7 +194,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final CollectionsFactory collectionsFactory;
 
     // Logic
-    private final DatabaseTransactionEventListeners eventListeners;
+    private final TransactionEventListeners transactionEventListeners;
     private final ConstraintIndexCreator constraintIndexCreator;
     private final StorageEngine storageEngine;
     private final TransactionTracer transactionTracer;
@@ -291,7 +290,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     public KernelTransactionImplementation(
             Config externalConfig,
-            DatabaseTransactionEventListeners eventListeners,
+            DatabaseTransactionEventListeners transactionEventListeners,
             ConstraintIndexCreator constraintIndexCreator,
             TransactionCommitProcess commitProcess,
             TransactionMonitor transactionMonitor,
@@ -340,7 +339,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.databaseHealth = databaseHealth;
         this.transactionMemoryPool = new TransactionMemoryPool(dbTransactionsPool, config, () -> !closed, logProvider);
         this.memoryTracker = transactionMemoryPool.getTransactionTracker();
-        this.eventListeners = eventListeners;
         this.constraintIndexCreator = constraintIndexCreator;
         this.commitProcess = commitProcess;
         this.transactionMonitor = transactionMonitor;
@@ -425,6 +423,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.transactionValidator =
                 transactionValidatorFactory.createTransactionValidator(memoryTracker, transactionMonitor);
         this.committer = createCommitter(commitmentFactory, multiVersioned);
+        this.transactionEventListeners = new TransactionEventListeners(transactionEventListeners, this, storageReader);
         this.txStateWriter = createChunkWriter(multiVersioned);
         registerConfigChangeListeners(config);
     }
@@ -910,7 +909,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             if (canCommit()) {
                 txId = commitTransaction();
             } else {
-                rollback(null);
+                rollbackTransaction();
                 failOnNonExplicitRollbackIfNeeded();
             }
         } catch (TransactionFailureException | RuntimeException | Error e) {
@@ -1011,21 +1010,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         Throwable exception = null;
         boolean success = false;
         long txId = READ_ONLY_ID;
-        TransactionListenersState listenersState = null;
         try (TransactionWriteEvent transactionWriteEvent = transactionEvent.beginCommitEvent()) {
-            listenersState = eventListeners.beforeCommit(txState, this, storageReader);
-            if (listenersState != null && listenersState.isFailed()) {
-                Throwable cause = listenersState.failure();
-                if (cause instanceof TransientFailureException) {
-                    throw (TransientFailureException) cause;
-                }
-                if (cause instanceof Status.HasStatus) {
-                    throw new TransactionFailureException(
-                            ((Status.HasStatus) cause).status(), cause, cause.getMessage());
-                }
-                throw new TransactionFailureException(
-                        Status.Transaction.TransactionHookFailed, cause, cause.getMessage());
-            }
+            transactionEventListeners.beforeCommit(txState, true);
 
             // Convert changes into commands and commit
             if (hasChanges()) {
@@ -1055,10 +1041,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             try {
                 if (!success) {
                     commit = false;
-                    rollback(listenersState);
+                    rollbackTransaction();
                 } else {
                     transactionId = txId;
-                    afterCommit(listenersState);
+                    afterCommit();
                 }
                 transactionMonitor.addHeapTransactionSize(transactionMemoryPool.usedHeap());
                 transactionMonitor.addNativeTransactionSize(transactionMemoryPool.usedNative());
@@ -1138,7 +1124,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
     }
 
-    private void rollback(TransactionListenersState listenersState) throws KernelException {
+    private void rollbackTransaction() throws KernelException {
         try {
             if (hasTxStateWithChanges()) {
                 try (var rollbackEvent = transactionEvent.beginRollback()) {
@@ -1162,7 +1148,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         } catch (Throwable throwable) {
             throw new UnspecifiedKernelException(Status.Transaction.TransactionRollbackFailed, throwable);
         } finally {
-            afterRollback(listenersState);
+            afterRollback();
         }
     }
 
@@ -1242,10 +1228,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return currentStatement.lockTracer();
     }
 
-    private void afterCommit(TransactionListenersState listenersState) {
+    private void afterCommit() {
         try {
             markAsClosed();
-            eventListeners.afterCommit(listenersState);
+            transactionEventListeners.afterCommit();
             kernelTransactionMonitor.afterCommit(this);
         } finally {
             transactionMonitor.transactionFinished(true, hasTxState());
@@ -1253,17 +1239,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
     }
 
-    private void afterRollback(TransactionListenersState listenersState) {
+    private void afterRollback() {
         try {
             markAsClosed();
-            eventListeners.afterRollback(listenersState);
+            transactionEventListeners.afterRollback();
         } finally {
             transactionMonitor.transactionFinished(false, hasTxState());
-            if (listenersState == null || listenersState.failure() == null) {
-                transactionExecutionMonitor.rollback(this);
-            } else {
-                transactionExecutionMonitor.rollback(this, listenersState.failure());
-            }
+            transactionExecutionMonitor.rollback(this, transactionEventListeners.failure());
         }
     }
 
@@ -1295,6 +1277,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             } catch (RuntimeException | Error e) {
                 error = Exceptions.chain(error, e);
             }
+            transactionEventListeners.reset();
             terminationMark = null;
             type = null;
             overridableSecurityContext = null;
@@ -1508,7 +1491,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     private ChunkedTransactionSink createChunkWriter(boolean multiVersioned) {
-        return multiVersioned ? new ChunkSink(committer, clocks, config) : ChunkedTransactionSink.EMPTY;
+        return multiVersioned
+                ? new ChunkSink(committer, transactionEventListeners, clocks, config)
+                : ChunkedTransactionSink.EMPTY;
     }
 
     private TransactionCommitter createCommitter(
