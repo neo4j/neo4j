@@ -530,7 +530,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
                             + "Valid units are `K`, `M` and `G`. "
                             + "Valid types are `files`, `size`, `txs`, `entries`, `hours` and `days`. "
                             + "Valid optional space restriction is a logical log space restriction like `100M`. "
-                            + "For example, `100M size` will limit logical log space on disk to 100MiB per database,"
+                            + "For example, `100M size` will limit logical log space on disk to 100MiB per database, "
                             + "and `200K txs` will limit the number of transactions kept to 200 000 per database."))
             .build();
 
