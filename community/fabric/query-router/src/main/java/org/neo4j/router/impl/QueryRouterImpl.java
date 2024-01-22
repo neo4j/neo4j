@@ -201,14 +201,17 @@ public class QueryRouterImpl implements QueryRouter {
             verifyAccessModeWithStatementType(executionMode, accessMode, statementType, target);
             var location = locationService.locationOf(target);
             updateQueryRouterMetric(location);
-            var databaseTransaction = context.transactionFor(
-                    location,
-                    TransactionMode.from(accessMode, executionMode, statementType.isReadQuery(), target.isComposite()));
             statementLifecycle.doneRouterProcessing(
                     processedQueryInfo.obfuscationMetadata().get(), target.isComposite());
+
             RouterTransaction routerTransaction = context.routerTransaction();
             var constituentTransactionFactory = getConstituentTransactionFactory(context, queryOptions);
             routerTransaction.setConstituentTransactionFactory(constituentTransactionFactory);
+
+            // uses routerTransaction to create transaction
+            var databaseTransaction = context.transactionFor(
+                    location,
+                    TransactionMode.from(accessMode, executionMode, statementType.isReadQuery(), target.isComposite()));
             return databaseTransaction.executeQuery(
                     processedQueryInfo.rewrittenQuery(), subscriber, statementLifecycle);
         } catch (RuntimeException e) {
