@@ -34,7 +34,6 @@ import org.neo4j.cypher.internal.ast.PropertiesResource
 import org.neo4j.cypher.internal.ast.ReadAction
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Statements
-import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.ParserSupport.NotAntlr
 import org.neo4j.cypher.internal.expressions.BooleanExpression
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
@@ -727,9 +726,9 @@ class ReadMatchPropertyPrivilegeAdministrationCommandParserTest
       }
 
       // No variable, WHERE gets parsed as variable in javacc
-      s"""$verb$immutableString ${action.name} {$properties}
-         |ON $graphKeyword $graphName $patternKeyword (WHERE n.prop1 = 1) $preposition role
-         |""".stripMargin should notParse[Statements](NotAntlr)
+      assertFailsOnlyJavaCC[Statements](
+        s"$verb$immutableString ${action.name} {$properties} ON $graphKeyword $graphName $patternKeyword (WHERE n.prop1 = 1) $preposition role"
+      )
     }
   }
 }
