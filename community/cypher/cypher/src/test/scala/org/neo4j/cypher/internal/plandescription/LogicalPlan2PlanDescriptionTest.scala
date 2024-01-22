@@ -7649,6 +7649,26 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         Set("a", "function")
       )
     )
+
+    assertGood(
+      attach(
+        Projection(
+          lhsLP,
+          immutable.Map(varFor("function") -> RuntimeConstant(
+            varFor("y"),
+            RuntimeConstant(varFor("x"), functionInvocation)
+          ))
+        ),
+        12345.0
+      ),
+      planDescription(
+        id,
+        "Projection",
+        SingleChild(lhsPD),
+        Seq(details("ns.datetime(23391882379) AS function")),
+        Set("a", "function")
+      )
+    )
   }
 
   private def assertGood(

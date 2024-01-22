@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.ast
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.runtime.ast.RuntimeConstant.STRINGIFIER
 
 /**
  * A runtime constant is an expression that only needs to be evaluated once per query.
@@ -35,10 +36,28 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
  */
 case class RuntimeConstant(variable: LogicalVariable, inner: Expression) extends RuntimeExpression {
   self =>
+
   override def isConstantForQuery: Boolean = true
 
-  override def asCanonicalStringVal: String = {
-    val stringifier = ExpressionStringifier(preferSingleQuotes = true)
-    stringifier(inner)
+  override def asCanonicalStringVal: String = STRINGIFIER(inner)
+
+}
+
+object RuntimeConstant {
+
+  val STRINGIFIER: ExpressionStringifier = ExpressionStringifier(
+    extensionStringifier = EXTENSION,
+    alwaysParens = false,
+    alwaysBacktick = false,
+    preferSingleQuotes = true,
+    sensitiveParamsAsParams = false
+  )
+
+  private object EXTENSION extends ExpressionStringifier.Extension {
+
+    override def apply(ctx: ExpressionStringifier)(expression: Expression): String = expression match {
+      case RuntimeConstant(_, inner) => ctx(inner)
+      case e                         => ctx(e)
+    }
   }
 }
