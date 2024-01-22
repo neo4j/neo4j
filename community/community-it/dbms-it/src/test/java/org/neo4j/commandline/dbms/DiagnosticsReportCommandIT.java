@@ -215,7 +215,6 @@ class DiagnosticsReportCommandIT {
 
         try (FileSystem fileSystem = FileSystems.newFileSystem(files[0])) {
             Path logsDir = fileSystem.getPath("logs");
-            System.out.println(Files.list(logsDir).toList());
             assertTrue(Files.exists(logsDir.resolve("debug.log")));
             assertTrue(Files.exists(logsDir.resolve("debug.log.01.zip")));
             assertTrue(Files.exists(logsDir.resolve("neo4j.log")));

@@ -124,7 +124,6 @@ class Neo4jAdminCommandTest {
             if (fork.run(() -> assertThat(
                             execute("server", "report", "--to-path", home.toString(), "--verbose", "--expand-commands"))
                     .isEqualTo(EXIT_CODE_OK))) {
-                System.out.println(out.toString());
                 assertThat(out.toString()).containsSubsequence("Writing report to", "customDbName", "100%");
                 assertThat(err.toString()).contains("WARNING: Using incubator modules: jdk.incubator.vector");
             }
