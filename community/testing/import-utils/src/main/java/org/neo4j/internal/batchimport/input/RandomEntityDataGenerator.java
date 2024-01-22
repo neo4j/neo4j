@@ -56,9 +56,10 @@ public class RandomEntityDataGenerator extends GeneratingInputIterator<RandomVal
                                         id = randoms.nextLong(id);
                                     }
                                 }
-                                visitor.id(idValue(entry, id), entry.group());
+                                Object idValue = idValue(entry, id);
+                                visitor.id(idValue, entry.group());
                                 if (entry.name() != null) {
-                                    visitor.property(entry.name(), id);
+                                    visitor.property(entry.name(), idValue);
                                 }
                             }
                             case PROPERTY -> {
