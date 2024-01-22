@@ -1538,8 +1538,16 @@ object LogicalPlanToPlanBuilderString {
         RangeStr(None, propName, (">", expressionStringifier(expression)))
       case RangeGreaterThan(NonEmptyList(InclusiveBound(expression))) =>
         RangeStr(None, propName, (">=", expressionStringifier(expression)))
+      case RangeGreaterThan(NonEmptyList(preBound, postBound)) =>
+        val pre = boundStringifier(preBound, "<")
+        val post = boundStringifier(postBound, ">")
+        RangeStr(Some(pre.swap), propName, post)
       case RangeLessThan(NonEmptyList(ExclusiveBound(expression))) =>
         RangeStr(None, propName, ("<", expressionStringifier(expression)))
+      case RangeLessThan(NonEmptyList(preBound, postBound)) =>
+        val pre = boundStringifier(preBound, ">")
+        val post = boundStringifier(postBound, "<")
+        RangeStr(Some(pre.swap), propName, post)
       case RangeLessThan(NonEmptyList(InclusiveBound(expression))) =>
         RangeStr(None, propName, ("<=", expressionStringifier(expression)))
       case RangeBetween(greaterThan, lessThan) =>
@@ -1550,6 +1558,13 @@ object LogicalPlanToPlanBuilderString {
       case _ =>
         // Should never come here
         throw new IllegalStateException(s"Unknown range expression: $range")
+    }
+  }
+
+  private def boundStringifier(expression: Bound[Expression], exclusiveSign: String) = {
+    expression match {
+      case InclusiveBound(endPoint) => (exclusiveSign + "=", expressionStringifier(endPoint))
+      case ExclusiveBound(endPoint) => (exclusiveSign, expressionStringifier(endPoint))
     }
   }
 

@@ -1764,6 +1764,30 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName wi
   )
 
   testPlan(
+    "nodeIndexOperator - multiple range bounds of different types", {
+      val builder = new TestPlanBuilder().produceResults("r")
+
+      builder
+        .apply()
+        .|.nodeIndexOperator("x:Honey(10 < prop > 'foo')", indexType = IndexType.RANGE)
+        .apply()
+        .|.nodeIndexOperator("x:Honey(10 <= prop > 'foo')", indexType = IndexType.RANGE)
+        .apply()
+        .|.nodeIndexOperator("x:Honey(10 < prop >= 'foo')", indexType = IndexType.RANGE)
+        .apply()
+        .|.nodeIndexOperator("x:Honey('foo' <= prop >= 20)", indexType = IndexType.RANGE)
+        .apply()
+        .|.nodeIndexOperator("x:Honey(10 > prop < 'foo')", indexType = IndexType.RANGE)
+        .apply()
+        .|.nodeIndexOperator("x:Honey(10 >= prop < 'foo')", indexType = IndexType.RANGE)
+        .apply()
+        .|.nodeIndexOperator("x:Honey(10 > prop <= 'foo')", indexType = IndexType.RANGE)
+        .nodeIndexOperator("x:Honey('foo' >= prop <= 20)", indexType = IndexType.RANGE)
+        .build()
+    }
+  )
+
+  testPlan(
     "nodeIndexOperator - scans", {
       val builder = new TestPlanBuilder().produceResults("r")
 
