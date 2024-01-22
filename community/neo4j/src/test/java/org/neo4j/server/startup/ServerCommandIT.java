@@ -20,19 +20,24 @@
 package org.neo4j.server.startup;
 
 import static java.lang.System.currentTimeMillis;
+import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assumptions.assumeThat;
 import static org.neo4j.internal.helpers.Exceptions.stringify;
+import static org.neo4j.server.NeoBootstrapper.WEB_SERVER_STARTUP_ERROR_CODE;
 import static org.neo4j.server.startup.Bootloader.EXIT_CODE_OK;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.net.ServerSocket;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -42,8 +47,10 @@ import org.junit.jupiter.api.condition.OS;
 import org.neo4j.cli.ExitCode;
 import org.neo4j.configuration.BootloaderSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.io.fs.FileSystemUtils;
 import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.test.extension.DisabledForRoot;
 
 /**
  * A base test for some commands in 'neo4j-admin server' and 'neo4j' group.
@@ -61,6 +68,32 @@ abstract class ServerCommandIT extends ServerProcessTestBase {
     @AfterAll
     public static void afterAll() {
         Locale.setDefault(defaultLocale);
+    }
+
+    @Test
+    @DisabledOnOs(OS.WINDOWS)
+    @DisabledForRoot
+    void startShouldFailWithNiceOutputOnFilePermissions() throws IOException {
+        Path data = config.get(GraphDatabaseSettings.data_directory);
+        fs.mkdirs(data);
+        Files.setPosixFilePermissions(data, Set.of(OWNER_READ));
+        var exitCode = execute("start");
+        assertThat(exitCode).isEqualTo(WEB_SERVER_STARTUP_ERROR_CODE);
+        assertThat(err.toString()).contains("Neo4j web server failed to start");
+        assertThat(getUserLogLines()).contains("AccessDeniedException:");
+    }
+
+    @Test
+    void startShouldFailWithNiceOutputOnPortConflict() throws IOException {
+        try (ServerSocket socket = new ServerSocket(0)) {
+            addConf(HttpConnector.listen_address, "localhost:" + socket.getLocalPort());
+            var exitCode = execute("start");
+            assertThat(exitCode).isEqualTo(WEB_SERVER_STARTUP_ERROR_CODE);
+            assertThat(err.toString()).contains("Neo4j web server failed to start");
+            assertThat(getDebugLogLines())
+                    .contains("Starting Neo4j failed: Address localhost:" + socket.getLocalPort()
+                            + " is already in use, cannot bind to it.");
+        }
     }
 
     @Test

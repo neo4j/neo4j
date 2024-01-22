@@ -168,25 +168,25 @@ public abstract class NeoBootstrapper implements Bootstrapper {
             return INVALID_CONFIGURATION_ERROR_CODE;
         }
 
-        // Signal parent process we are ready to detach
+        PrintStream daemonErr = daemonMode ? System.err : null;
+        PrintStream daemonOut = daemonMode ? System.out : null;
         if (daemonMode) {
-            System.err.println(Environment.FULLY_FLEDGED);
-
             // Redirect output to the log files
-            PrintStream oldErr = System.err;
-            PrintStream oldOut = System.out;
             SystemLogger.installStdRedirects(userLogProvider);
-            closeAllUnchecked(oldErr, oldOut);
         }
 
-        try {
+        try (daemonOut;
+                daemonErr) {
             serverAddress = config.get(HttpConnector.listen_address).toString();
             serverLocation = config.get(databases_root_path).toString();
 
             log.info("Starting...");
             databaseManagementService = createNeo(config, daemonMode, dependencies);
+            if (daemonMode) {
+                // Signal parent process we are ready to detach
+                daemonErr.println(Environment.FULLY_FLEDGED);
+            }
             log.info("Started.");
-
             return OK;
         } catch (ServerStartupException e) {
             e.describeTo(log);
