@@ -135,21 +135,27 @@ public class QueryProcessorImpl implements QueryProcessor {
 
     private ProcessedQueryInfoCache.Value getFromCache(
             Query query, CancellationChecker cancellationChecker, boolean targetsComposite) {
-        var cachedValue = cache.get(query.text());
+        var notificationLogger = new RecordingNotificationLogger();
+        var preParsedQuery = preParser.preParse(query.text(), notificationLogger);
+
+        var cachedValue = cache.get(preParsedQuery, query.parameters());
 
         if (cachedValue == null) {
-            var preparedForCacheQuery = prepareQueryForCache(query, cancellationChecker, targetsComposite);
-            cache.put(query.text(), preparedForCacheQuery);
+            var preparedForCacheQuery = prepareQueryForCache(
+                    preParsedQuery, notificationLogger, query, cancellationChecker, targetsComposite);
+            cache.put(preParsedQuery, query.parameters(), preparedForCacheQuery);
             cachedValue = preparedForCacheQuery;
         }
         return cachedValue;
     }
 
     private ProcessedQueryInfoCache.Value prepareQueryForCache(
-            Query query, CancellationChecker cancellationChecker, boolean targetsComposite) {
+            PreParsedQuery preParsedQuery,
+            RecordingNotificationLogger notificationLogger,
+            Query query,
+            CancellationChecker cancellationChecker,
+            boolean targetsComposite) {
         var queryTracer = tracer.compileQuery(query.text());
-        var notificationLogger = new RecordingNotificationLogger();
-        var preParsedQuery = preParser.preParse(query.text(), notificationLogger);
         var resolver = SignatureResolver.from(globalProcedures.getCurrentView());
         var parsedQuery = parse(
                 query,

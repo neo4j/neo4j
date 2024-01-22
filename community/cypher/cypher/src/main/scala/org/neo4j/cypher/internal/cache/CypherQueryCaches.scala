@@ -213,16 +213,25 @@ object CypherQueryCaches {
     }
   }
 
-  object AstCache extends CacheCompanion("ast") with CacheMonitorHelpers {
-    type Key = AstCacheKey
-    type Value = AstCacheValue
+  case class CacheKeyWithParameterType(key: InputQuery.CacheKey, parameterTypes: ParameterTypeMap)
 
-    case class AstCacheKey(key: InputQuery.CacheKey, parameterTypes: ParameterTypeMap)
+  def astKey(preParsedQuery: PreParsedQuery, params: MapValue, useParameterSizeHint: Boolean): AstCache.Key =
+    CacheKeyWithParameterType(preParsedQuery.cacheKey, QueryCache.extractParameterTypeMap(params, useParameterSizeHint))
+
+  def astKeyRawQuery(preParsedQuery: PreParsedQuery, params: MapValue, useParameterSizeHint: Boolean): AstCache.Key =
+    CacheKeyWithParameterType(
+      preParsedQuery.cacheKeyWithRawStatement,
+      QueryCache.extractParameterTypeMap(params, useParameterSizeHint)
+    )
+
+  object AstCache extends CacheCompanion("ast") with CacheMonitorHelpers {
+    type Key = CacheKeyWithParameterType
+    type Value = AstCacheValue
 
     case class AstCacheValue(parsedQuery: BaseState, notifications: Set[InternalNotification])
 
     def key(preParsedQuery: PreParsedQuery, params: MapValue, useParameterSizeHint: Boolean): AstCache.Key =
-      AstCacheKey(preParsedQuery.cacheKey, QueryCache.extractParameterTypeMap(params, useParameterSizeHint))
+      astKey(preParsedQuery, params, useParameterSizeHint)
 
     class Cache(
       cacheFactory: CacheFactory,

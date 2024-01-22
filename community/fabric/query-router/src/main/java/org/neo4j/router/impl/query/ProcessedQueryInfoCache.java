@@ -24,6 +24,8 @@ import org.neo4j.cypher.internal.PreParsedQuery;
 import org.neo4j.cypher.internal.cache.CacheSize;
 import org.neo4j.cypher.internal.cache.CacheTracer;
 import org.neo4j.cypher.internal.cache.CaffeineCacheFactory;
+import org.neo4j.cypher.internal.cache.CypherQueryCaches;
+import org.neo4j.cypher.internal.cache.CypherQueryCaches.CacheKeyWithParameterType;
 import org.neo4j.cypher.internal.cache.LFUCache;
 import org.neo4j.cypher.internal.frontend.phases.BaseState;
 import org.neo4j.cypher.internal.util.InternalNotification;
@@ -36,32 +38,31 @@ public class ProcessedQueryInfoCache {
 
     public static final String MONITOR_TAG = "cypher.cache.router";
 
-    private final LFUCache<String, Value> cache;
+    private final LFUCache<CacheKeyWithParameterType, Value> cache;
 
     @VisibleForTesting
     public ProcessedQueryInfoCache(
-            CaffeineCacheFactory cacheFactory, Observable<Integer> cacheSize, CacheTracer<String> tracer) {
+            CaffeineCacheFactory cacheFactory,
+            Observable<Integer> cacheSize,
+            CacheTracer<CacheKeyWithParameterType> tracer) {
         this.cache = new LFUCache<>(cacheFactory, new CacheSize.Dynamic(cacheSize), tracer);
     }
 
-    public ProcessedQueryInfoCache(CaffeineCacheFactory cacheFactory, int cacheSize, CacheTracer<String> tracer) {
+    public ProcessedQueryInfoCache(
+            CaffeineCacheFactory cacheFactory, int cacheSize, CacheTracer<CacheKeyWithParameterType> tracer) {
         this.cache = new LFUCache<>(cacheFactory, new CacheSize.Static(cacheSize), tracer);
     }
 
-    public Value get(String query) {
-        var maybeValue = cache.get(query);
+    public Value get(PreParsedQuery query, MapValue parameters) {
+        var maybeValue = cache.get(CypherQueryCaches.astKeyRawQuery(query, parameters, true));
         if (maybeValue.isEmpty()) {
             return null;
         }
         return maybeValue.get();
     }
 
-    public void put(String query, Value value) {
-        cache.put(query, value);
-    }
-
-    public void remove(String query) {
-        cache.invalidate(query);
+    public void put(PreParsedQuery query, MapValue parameters, Value value) {
+        cache.put(CypherQueryCaches.astKeyRawQuery(query, parameters, true), value);
     }
 
     public record Value(
