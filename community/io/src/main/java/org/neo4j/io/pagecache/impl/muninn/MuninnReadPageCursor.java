@@ -128,6 +128,19 @@ final class MuninnReadPageCursor extends MuninnPageCursor {
         return false;
     }
 
+    @Override
+    public boolean retrySnapshot() {
+        MuninnReadPageCursor cursor = this;
+        do {
+            long pageRef = cursor.pinnedPageRef;
+            if (pageRef != 0 && !PageList.validateReadLock(pageRef, cursor.lockStamp)) {
+                return true;
+            }
+            cursor = (MuninnReadPageCursor) cursor.linkedCursor;
+        } while (cursor != null);
+        return false;
+    }
+
     private void startRetryLinkedChain() throws IOException {
         MuninnReadPageCursor cursor = this;
         do {

@@ -474,6 +474,12 @@ public abstract class MuninnPageCursor extends PageCursor {
 
     protected abstract void unlockPage(long pageRef);
 
+    /**
+     * Returns true if the page has entered an inconsistent state since the last call to next() or shouldRetry().
+     * This method must be equialent of shouldRetry without triggering retry and changing cursor state
+     */
+    public abstract boolean retrySnapshot();
+
     // --- IO methods:
 
     /**
