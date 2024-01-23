@@ -115,7 +115,8 @@ public class BatchedTransactionIdSequenceProvider implements IdSequenceProvider 
         }
 
         public void reset() {
-            range.resetToMark();
+            // TODO find out why this corrupts store
+            // range.resetToMark();
         }
 
         public void close(CursorContext cursorContext) {
