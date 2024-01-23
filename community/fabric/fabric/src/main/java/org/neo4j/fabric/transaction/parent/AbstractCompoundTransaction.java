@@ -296,6 +296,10 @@ public abstract class AbstractCompoundTransaction<Child extends ChildTransaction
     @Override
     public void registerAutocommitQuery(AutocommitQuery autocommitQuery) {
         autocommitQueries.add(autocommitQuery);
+        // Handle a case when we are registering to an already terminated transaction
+        if (state == State.TERMINATED) {
+            autocommitQuery.terminate(terminationMark.getReason());
+        }
     }
 
     @Override

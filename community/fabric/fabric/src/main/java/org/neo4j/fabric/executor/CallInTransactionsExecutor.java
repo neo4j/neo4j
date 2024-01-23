@@ -47,6 +47,7 @@ import org.neo4j.graphdb.Notification;
 import org.neo4j.kernel.impl.query.QueryRoutingMonitor;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.BooleanValue;
+import org.neo4j.values.storable.IntegralValue;
 import org.neo4j.values.storable.LongValue;
 import org.neo4j.values.storable.NoValue;
 import org.neo4j.values.storable.Values;
@@ -235,8 +236,9 @@ class CallInTransactionsExecutor extends SingleQueryFragmentExecutor {
     private Record getMatchingInputRecord(Record outputRecord, List<BufferedInputRow> inputRecords) {
         // We are using the knowledge that Stitcher adds this always as the last column.
         var rowIdColumn = innerFragment.outputColumns().size() - 1;
-        var rowId = (LongValue) outputRecord.getValue(rowIdColumn);
-        return inputRecords.get((int) rowId.value()).record;
+        var rowId = (IntegralValue) outputRecord.getValue(rowIdColumn);
+        var rowIdAsInt = rowId instanceof LongValue ? (int) ((LongValue) rowId).value() : rowId.intValue();
+        return inputRecords.get(rowIdAsInt).record;
     }
 
     private Record checkBreakCondition(Record outputRecord) {
@@ -294,7 +296,8 @@ class CallInTransactionsExecutor extends SingleQueryFragmentExecutor {
             Flux<Record> input,
             ExecutionOptions executionOptions,
             Boolean targetsComposite) {
-        throw new IllegalStateException("Local execution is not supported yet");
+        return ctx().getLocal()
+                .runInAutocommitTransaction(location, parentLifecycle, query, params, input, executionOptions);
     }
 
     private record BufferedInputRow(Map<String, AnyValue> argumentValues, Record record) {}

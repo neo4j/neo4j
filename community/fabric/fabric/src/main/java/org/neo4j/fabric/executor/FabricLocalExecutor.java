@@ -98,6 +98,23 @@ public class FabricLocalExecutor {
             return kernelTransaction.run(query, params, input, parentLifecycle, executionOptions);
         }
 
+        public StatementResult runInAutocommitTransaction(
+                Location.Local location,
+                StatementLifecycle parentLifecycle,
+                FullyParsedQuery query,
+                MapValue params,
+                Flux<Record> input,
+                ExecutionOptions executionOptions) {
+            var databaseFacade = getDatabaseFacade(location);
+            var kernelTransaction = beginKernelTx(databaseFacade);
+
+            var driverResult = kernelTransaction.run(query, params, input, parentLifecycle, executionOptions);
+            var result = new AutocommitLocalStatementResult(
+                    driverResult, kernelTransaction, bookmarkManager, transactionIdTracker, location);
+            parentTransaction.registerAutocommitQuery(result);
+            return result;
+        }
+
         @Override
         public void close() {}
 
