@@ -159,8 +159,7 @@ public class AcrossEngineMigrationParticipant extends AbstractStoreMigrationPart
                 localConfig,
                 memoryTracker,
                 ReadBehaviour.INCLUSIVE_STRICT,
-                // We could keep node ids, but let's compact since we are rewriting everything anyway
-                true,
+                false,
                 contextFactory,
                 tailMetadata)) {
             importer.doImport(fromInput);
