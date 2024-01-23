@@ -126,5 +126,10 @@ public class BatchedTransactionIdSequenceProvider implements IdSequenceProvider 
             idGenerator.releasePageRange(range, cursorContext);
             range = PageIdRange.EMPTY;
         }
+
+        @Override
+        public String toString() {
+            return "BatchedIdSequence{recordsPerPage=" + recordsPerPage + ", range=" + range + '}';
+        }
     }
 }
