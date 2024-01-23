@@ -23,6 +23,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static javax.ws.rs.core.HttpHeaders.AUTHORIZATION;
+import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static javax.ws.rs.core.HttpHeaders.USER_AGENT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.data.Index.atIndex;
@@ -37,6 +38,8 @@ import static org.neo4j.internal.helpers.collection.Iterators.single;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.Terminated;
 import static org.neo4j.net.ConnectionTrackingIT.TestConnector.BOLT;
 import static org.neo4j.net.ConnectionTrackingIT.TestConnector.HTTP;
+import static org.neo4j.net.ConnectionTrackingIT.TestConnector.HTTP2;
+import static org.neo4j.net.ConnectionTrackingIT.TestConnector.HTTP2S;
 import static org.neo4j.net.ConnectionTrackingIT.TestConnector.HTTPS;
 import static org.neo4j.server.configuration.ServerSettings.webserver_max_threads;
 import static org.neo4j.test.assertion.Assert.assertEventually;
@@ -95,6 +98,8 @@ import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.api.net.TrackedNetworkConnection;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.server.configuration.ConfigurableTransports;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
@@ -129,6 +134,9 @@ class ConnectionTrackingIT {
                 .withConfig(auth_enabled, true)
                 .withConfig(HttpConnector.enabled, true)
                 .withConfig(HttpsConnector.enabled, true)
+                .withConfig(
+                        ServerSettings.http_enabled_transports,
+                        Set.of(ConfigurableTransports.HTTP1_1, ConfigurableTransports.HTTP2))
                 .withConfig(webserver_max_threads, 50) /* higher than the amount of concurrent requests tests execute*/
                 .build();
         neo4j.start();
@@ -169,32 +177,42 @@ class ConnectionTrackingIT {
 
     @Test
     void shouldListUnauthenticatedHttpConnections() throws Exception {
-        testListingOfUnauthenticatedConnections(5, 0, 0);
+        testListingOfUnauthenticatedConnections(5, 0, 0, 0, 0);
+    }
+
+    @Test
+    void shouldListUnauthenticatedHttp2Connections() throws Exception {
+        testListingOfUnauthenticatedConnections(0, 0, 0, 5, 0);
     }
 
     @Test
     void shouldListUnauthenticatedHttpsConnections() throws Exception {
-        testListingOfUnauthenticatedConnections(0, 2, 0);
+        testListingOfUnauthenticatedConnections(0, 2, 0, 0, 0);
+    }
+
+    @Test
+    void shouldListUnauthenticatedHttp2sConnections() throws Exception {
+        testListingOfUnauthenticatedConnections(0, 0, 0, 0, 5);
     }
 
     @Test
     void shouldListUnauthenticatedBoltConnections() throws Exception {
-        testListingOfUnauthenticatedConnections(0, 0, 4);
+        testListingOfUnauthenticatedConnections(0, 0, 4, 0, 0);
     }
 
     @Test
     void shouldListUnauthenticatedConnections() throws Exception {
-        testListingOfUnauthenticatedConnections(3, 2, 7);
+        testListingOfUnauthenticatedConnections(3, 2, 7, 0, 0);
     }
 
     @Test
     void shouldListAuthenticatedHttpConnections() throws Exception {
         lockNodeAndExecute(dummyNodeId, () -> {
             for (int i = 0; i < 4; i++) {
-                updateNodeViaHttp(dummyNodeId, "neo4j", NEO4J_USER_PWD);
+                updateNodeViaHttp(dummyNodeId, "neo4j", NEO4J_USER_PWD, HttpClient.Version.HTTP_1_1);
             }
             for (int i = 0; i < 3; i++) {
-                updateNodeViaHttp(dummyNodeId, OTHER_USER, OTHER_USER_PWD);
+                updateNodeViaHttp(dummyNodeId, OTHER_USER, OTHER_USER_PWD, HttpClient.Version.HTTP_1_1);
             }
         });
         awaitNumberOfAuthenticatedConnectionsToBe(7);
@@ -206,10 +224,10 @@ class ConnectionTrackingIT {
     void shouldListAuthenticatedHttpsConnections() throws Exception {
         lockNodeAndExecute(dummyNodeId, () -> {
             for (int i = 0; i < 4; i++) {
-                updateNodeViaHttps(dummyNodeId, "neo4j", NEO4J_USER_PWD);
+                updateNodeViaHttps(dummyNodeId, "neo4j", NEO4J_USER_PWD, HttpClient.Version.HTTP_1_1);
             }
             for (int i = 0; i < 5; i++) {
-                updateNodeViaHttps(dummyNodeId, OTHER_USER, OTHER_USER_PWD);
+                updateNodeViaHttps(dummyNodeId, OTHER_USER, OTHER_USER_PWD, HttpClient.Version.HTTP_1_1);
             }
 
             awaitNumberOfAuthenticatedConnectionsToBe(9);
@@ -240,17 +258,21 @@ class ConnectionTrackingIT {
                 updateNodeViaBolt(dummyNodeId, OTHER_USER, OTHER_USER_PWD);
             }
             for (int i = 0; i < 1; i++) {
-                updateNodeViaHttp(dummyNodeId, "neo4j", NEO4J_USER_PWD);
+                updateNodeViaHttp(dummyNodeId, "neo4j", NEO4J_USER_PWD, HttpClient.Version.HTTP_1_1);
             }
             for (int i = 0; i < 5; i++) {
-                updateNodeViaHttps(dummyNodeId, "neo4j", NEO4J_USER_PWD);
+                updateNodeViaHttps(dummyNodeId, "neo4j", NEO4J_USER_PWD, HttpClient.Version.HTTP_1_1);
+            }
+            for (int i = 0; i < 5; i++) {
+                updateNodeViaHttps(dummyNodeId, "neo4j", NEO4J_USER_PWD, HttpClient.Version.HTTP_2);
             }
 
-            awaitNumberOfAuthenticatedConnectionsToBe(10);
+            awaitNumberOfAcceptedConnectionsToBe(15);
         });
         verifyConnectionCount(BOLT, OTHER_USER, 4);
         verifyConnectionCount(HTTP, "neo4j", 1);
         verifyConnectionCount(HTTPS, "neo4j", 5);
+        verifyConnectionCount(HTTP2S, null, 5);
     }
 
     @Test
@@ -260,7 +282,29 @@ class ConnectionTrackingIT {
 
     @Test
     void shouldKillHttpsConnection() throws Exception {
-        testKillingOfConnections(neo4j.httpsURI(), HTTPS, 2);
+        testKillingOfHttpConnections(neo4j.httpURI(), HTTP);
+    }
+
+    @Test
+    void shouldKillHttp2Connection() throws Exception {
+        testKillingOfHttpConnections(neo4j.httpURI(), HTTP2);
+    }
+
+    @Test
+    void shouldKillHttp2sConnection() throws Exception {
+        testKillingOfHttpConnections(neo4j.httpsURI(), HTTP2S);
+    }
+
+    private void testKillingOfHttpConnections(URI uri, TestConnector testConnector) throws Exception {
+        for (int i = 0; i < 2; i++) {
+            initiatedHttpClient(uri, testConnector.httpVersion);
+        }
+
+        awaitNumberOfAcceptedConnectionsToBe(2);
+        verifyConnectionCount(testConnector, null, 2);
+
+        killAcceptedConnectionViaBolt();
+        verifyConnectionCount(testConnector, null, 0);
     }
 
     @Test
@@ -268,24 +312,34 @@ class ConnectionTrackingIT {
         testKillingOfConnections(neo4j.boltURI(), BOLT, 3);
     }
 
-    private void testListingOfUnauthenticatedConnections(int httpCount, int httpsCount, int boltCount)
-            throws Exception {
+    private void testListingOfUnauthenticatedConnections(
+            int httpCount, int httpsCount, int boltCount, int http2Count, int http2sCount) throws Exception {
         for (int i = 0; i < httpCount; i++) {
             connectSocketTo(neo4j.httpURI());
         }
 
         for (int i = 0; i < httpsCount; i++) {
-            connectSocketTo(neo4j.httpsURI());
+            initiatedHttpClient(neo4j.httpsURI(), HttpClient.Version.HTTP_1_1);
+        }
+
+        for (int i = 0; i < http2Count; i++) {
+            initiatedHttpClient(neo4j.httpURI(), HttpClient.Version.HTTP_2);
+        }
+
+        for (int i = 0; i < http2sCount; i++) {
+            initiatedHttpClient(neo4j.httpsURI(), HttpClient.Version.HTTP_2);
         }
 
         for (int i = 0; i < boltCount; i++) {
             connectSocketTo(neo4j.boltURI());
         }
 
-        awaitNumberOfAcceptedConnectionsToBe(httpCount + httpsCount + boltCount);
+        awaitNumberOfAcceptedConnectionsToBe(httpCount + httpsCount + boltCount + http2Count + http2sCount);
 
         verifyConnectionCount(HTTP, null, httpCount);
         verifyConnectionCount(HTTPS, null, httpsCount);
+        verifyConnectionCount(HTTP2, null, http2Count);
+        verifyConnectionCount(HTTP2S, null, http2sCount);
         verifyConnectionCount(BOLT, null, boltCount);
     }
 
@@ -312,6 +366,17 @@ class ConnectionTrackingIT {
         connections.add(connection);
 
         return connection;
+    }
+
+    private HttpClient initiatedHttpClient(URI uri, HttpClient.Version version)
+            throws IOException, InterruptedException {
+        var httpClient = newClient(version);
+        httpClients.add(httpClient);
+
+        var httpRequest = HttpRequest.newBuilder(uri).GET().build();
+
+        httpClient.send(httpRequest, BodyHandlers.ofString());
+        return httpClient;
     }
 
     private void awaitNumberOfAuthenticatedConnectionsToBe(int n) {
@@ -438,25 +503,28 @@ class ConnectionTrackingIT {
         }
     }
 
-    private Future<HttpResponse<String>> updateNodeViaHttp(long id, String username, String password) {
-        return updateNodeViaHttp(id, false, username, password);
+    private Future<HttpResponse<String>> updateNodeViaHttp(
+            long id, String username, String password, HttpClient.Version httpVersion) {
+        return updateNodeViaHttp(id, false, username, password, httpVersion);
     }
 
-    private Future<HttpResponse<String>> updateNodeViaHttps(long id, String username, String password) {
-        return updateNodeViaHttp(id, true, username, password);
+    private Future<HttpResponse<String>> updateNodeViaHttps(
+            long id, String username, String password, HttpClient.Version httpVersion) {
+        return updateNodeViaHttp(id, true, username, password, httpVersion);
     }
 
     private Future<HttpResponse<String>> updateNodeViaHttp(
-            long id, boolean encrypted, String username, String password) {
+            long id, boolean encrypted, String username, String password, HttpClient.Version version) {
         URI uri = txCommitUri(encrypted);
         String userAgent = encrypted ? HTTPS.userAgent : HTTP.userAgent;
 
         return executor.submit(() -> {
-            var httpClient = newClient();
+            var httpClient = newClient(version);
             httpClients.add(httpClient);
 
             var httpRequest = HttpRequest.newBuilder(uri)
                     .header(USER_AGENT, userAgent)
+                    .header(CONTENT_TYPE, "application/json")
                     .header(AUTHORIZATION, basicAuthHeader(username, password))
                     .POST(BodyPublishers.ofString(
                             query("MATCH (n) WHERE id(n) = " + id + " SET n.prop = 42")
@@ -543,16 +611,20 @@ class ConnectionTrackingIT {
     }
 
     enum TestConnector {
-        HTTP("http", "http-user-agent"),
-        HTTPS("https", "https-user-agent"),
-        BOLT("bolt", "BoltDefaultWire/0.0");
+        HTTP("http", "http-user-agent", HttpClient.Version.HTTP_1_1),
+        HTTPS("https", "https-user-agent", HttpClient.Version.HTTP_1_1),
+        HTTP2("http2", "http2-user-agent", HttpClient.Version.HTTP_2),
+        HTTP2S("https2", "http2s-user-agent", HttpClient.Version.HTTP_2),
+        BOLT("bolt", "BoltDefaultWire/0.0", null);
 
         final String name;
         final String userAgent;
+        final HttpClient.Version httpVersion;
 
-        TestConnector(String name, String userAgent) {
+        TestConnector(String name, String userAgent, HttpClient.Version httpVersion) {
             this.name = name;
             this.userAgent = userAgent;
+            this.httpVersion = httpVersion;
         }
     }
 }

@@ -46,7 +46,12 @@ Apache Software License, Version 2.0
   jersey-core-server
   jersey-inject-hk2
   Jettison
+  Jetty :: ALPN :: JDK9 Server Implementation
+  Jetty :: ALPN :: Server
   Jetty :: Http Utility
+  Jetty :: HTTP2 :: Common
+  Jetty :: HTTP2 :: HPACK
+  Jetty :: HTTP2 :: Server
   Jetty :: IO Utility
   Jetty :: Security
   Jetty :: Server Core

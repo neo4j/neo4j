@@ -249,7 +249,8 @@ public class DatabaseManagementServiceFactory {
 
     private static boolean shouldEnableWebServer(Config config) {
         return (config.get(HttpConnector.enabled) || config.get(HttpsConnector.enabled))
-                && !config.get(ServerSettings.http_enabled_modules).isEmpty();
+                && !config.get(ServerSettings.http_enabled_modules).isEmpty()
+                && !config.get(ServerSettings.http_enabled_transports).isEmpty();
     }
 
     private static void startDatabaseServer(

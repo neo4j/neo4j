@@ -19,7 +19,10 @@
  */
 package org.neo4j.server.web;
 
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
+import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
+import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -28,19 +31,21 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
+import org.neo4j.server.configuration.ConfigurableTransports;
 import org.neo4j.server.configuration.ServerSettings;
 
 public class HttpConnectorFactory {
-    private static final String NAME = "http";
+    private static final String HTTP_NAME = "http";
+    private static final String HTTP2_NAME = "http2";
 
     private final String name;
-    private final NetworkConnectionTracker connectionTracker;
-    private final Config configuration;
+    protected final NetworkConnectionTracker connectionTracker;
+    protected final Config configuration;
     private final ByteBufferPool byteBufferPool;
 
     public HttpConnectorFactory(
             NetworkConnectionTracker connectionTracker, Config config, ByteBufferPool byteBufferPool) {
-        this(NAME, connectionTracker, config, byteBufferPool);
+        this(HTTP_NAME, connectionTracker, config, byteBufferPool);
     }
 
     protected HttpConnectorFactory(
@@ -54,8 +59,25 @@ public class HttpConnectorFactory {
         this.byteBufferPool = byteBufferPool;
     }
 
-    public ConnectionFactory createHttpConnectionFactory(boolean requiresHostnameVerification) {
-        return new JettyHttpConnectionFactory(connectionTracker, createHttpConfig(requiresHostnameVerification));
+    public List<ConnectionFactory> createHttpConnectionFactories(boolean requiresHostnameVerification) {
+        var httpConfig = createHttpConfig(requiresHostnameVerification);
+        var connectionFactories = new ArrayList<ConnectionFactory>();
+
+        if (configuration.get(ServerSettings.http_enabled_transports).contains(ConfigurableTransports.HTTP1_1)) {
+            connectionFactories.add(new JettyHttpConnectionFactory(connectionTracker, httpConfig));
+        }
+
+        if (configuration.get(ServerSettings.http_enabled_transports).contains(ConfigurableTransports.HTTP2)) {
+            var http2ConnectionListener = new JettyHttp2ConnectionListener(connectionTracker, HTTP2_NAME);
+            var h2c = new HTTP2CServerConnectionFactory(httpConfig);
+            h2c.addBean(http2ConnectionListener);
+            var directHttp2 = new HTTP2ServerConnectionFactory(httpConfig);
+            directHttp2.addBean(http2ConnectionListener);
+            connectionFactories.add(h2c);
+            connectionFactories.add(directHttp2);
+        }
+
+        return connectionFactories;
     }
 
     protected HttpConfiguration createHttpConfig(boolean ignored) {
@@ -68,24 +90,30 @@ public class HttpConnectorFactory {
 
     public ServerConnector createConnector(
             Server server, SocketAddress address, JettyThreadCalculator jettyThreadCalculator) {
-        ConnectionFactory httpFactory = createHttpConnectionFactory(false);
-        return createConnector(server, address, jettyThreadCalculator, httpFactory);
+        List<ConnectionFactory> httpFactories = createHttpConnectionFactories(false);
+        return createConnector(server, address, jettyThreadCalculator, httpFactories);
     }
 
     public ServerConnector createConnector(
             Server server,
             SocketAddress address,
             JettyThreadCalculator jettyThreadCalculator,
-            ConnectionFactory... httpFactories) {
+            List<ConnectionFactory> httpFactories) {
         int acceptors = jettyThreadCalculator.getAcceptors();
         int selectors = jettyThreadCalculator.getSelectors();
 
-        ServerConnector connector =
-                new ServerConnector(server, null, null, byteBufferPool, acceptors, selectors, httpFactories);
+        ServerConnector connector = new ServerConnector(
+                server,
+                null,
+                null,
+                byteBufferPool,
+                acceptors,
+                selectors,
+                httpFactories.toArray(new ConnectionFactory[0]));
 
         connector.setName(name);
 
-        connector.setConnectionFactories(Arrays.asList(httpFactories));
+        connector.setConnectionFactories(httpFactories);
 
         // TCP backlog, per socket, 50 is the default, consider adapting if needed
         connector.setAcceptQueueSize(50);

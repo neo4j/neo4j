@@ -55,7 +55,7 @@ import org.neo4j.server.rest.domain.JsonParseException;
  */
 public final class HTTP {
     private static final Builder BUILDER = new Builder();
-    private static final HttpClient CLIENT = newClient();
+    private static final HttpClient CLIENT = newClient(HttpClient.Version.HTTP_1_1);
 
     private HTTP() {}
 
@@ -96,13 +96,14 @@ public final class HTTP {
         return BUILDER.request(method, uri, payload);
     }
 
-    public static HttpClient newClient() {
+    public static HttpClient newClient(HttpClient.Version httpVersion) {
         try {
             var sslContext = SSLContext.getInstance("TLS");
             sslContext.init(null, new TrustManager[] {new InsecureTrustManager()}, null);
 
             return HttpClient.newBuilder()
                     .followRedirects(NEVER)
+                    .version(httpVersion)
                     .sslContext(sslContext)
                     .build();
         } catch (Exception e) {

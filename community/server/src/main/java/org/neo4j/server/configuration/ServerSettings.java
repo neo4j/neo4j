@@ -150,6 +150,13 @@ public class ServerSettings implements SettingsDeclaration {
                     EnumSet.allOf(ConfigurableServerModules.class))
             .build();
 
+    @Description("Defines the set of transports available on the HTTP server")
+    public static final Setting<Set<ConfigurableTransports>> http_enabled_transports = newBuilder(
+                    "server.http_enabled_transports",
+                    setOfEnums(ConfigurableTransports.class),
+                    EnumSet.allOf(ConfigurableTransports.class))
+            .build();
+
     @Internal
     @Description("Publicly discoverable bolt:// URI to use for Neo4j Drivers wanting to access the data in this "
             + "particular database instance. Normally this is the same as the advertised address configured for the "
