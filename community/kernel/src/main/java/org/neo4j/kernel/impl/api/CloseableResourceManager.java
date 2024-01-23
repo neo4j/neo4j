@@ -59,7 +59,7 @@ public class CloseableResourceManager implements ResourceTracker {
             MutableSet<AutoCloseable> resources = this.closeableResources;
             closeableResources = null;
 
-            IOUtils.close(ResourceCloseFailureException::new, resources.toArray(AutoCloseable[]::new));
+            IOUtils.close(ResourceCloseFailureException::new, resources);
         }
     }
 }
