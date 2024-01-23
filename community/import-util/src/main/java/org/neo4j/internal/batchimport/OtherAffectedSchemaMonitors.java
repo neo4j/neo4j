@@ -73,6 +73,20 @@ import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
+/**
+ * uniqueness constraint index (prepare copies these):
+ * - neo4j/schema/index/range-1.0/3
+ * - copy to neo4j-incremental-12345/schema/index/range-1.0/3
+ * - build: neo4j-incremental-12345/temp-schema/index/range-1.0/3
+ *    - validate(): merge neo4j-incremental-12345/temp-schema/index/range-1.0/3 --> neo4j-incremental-12345/schema/index/range-1.0/3
+ * - merge: move neo4j-incremental-12345/schema/index/range-1.0/3 --> neo4j/schema/index/range-1.0/3
+ *
+ * non-uniqueness constraint index (prepare does not copy these):
+ * - neo4j/schema/index/range-1.0/3
+ * - build: neo4j-incremental-12345/temp-schema/index/range-1.0/3
+ *    - validate(): move neo4j-incremental-12345/temp-schema/index/range-1.0/3 --> neo4j-incremental-12345/schema/index/range-1.0/3
+ * - merge: merge neo4j-incremental-12345/schema/index/range-1.0/3 --> neo4j/schema/index/range-1.0/3
+ */
 public class OtherAffectedSchemaMonitors implements Supplier<SchemaMonitor>, Closeable {
     private final FileSystemAbstraction fileSystem;
     private final IndexProviderMap indexProviderMap;
@@ -286,7 +300,11 @@ public class OtherAffectedSchemaMonitors implements Supplier<SchemaMonitor>, Clo
 
         @Override
         public void property(int propertyKeyId, Object value) {
-            properties.put(propertyKeyId, Values.of(value));
+            if (value instanceof Value propValue) {
+                properties.put(propertyKeyId, propValue);
+            } else {
+                properties.put(propertyKeyId, Values.of(value));
+            }
         }
 
         @Override
