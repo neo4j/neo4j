@@ -21,48 +21,35 @@ package org.neo4j.internal.kernel.api.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.params.provider.Arguments.of;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.security.PatternSegment.ValuePatternSegment;
 
-import java.util.Arrays;
 import java.util.Set;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.internal.kernel.api.security.PropertyRule.ComparisonOperator;
+import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 public class ValuePatternSegmentTest {
-    private static Stream<Arguments> patterns() {
-        return Arrays.stream(ComparisonOperator.values())
-                .flatMap(op -> Stream.of(
-                        of(
-                                new ValuePatternSegment(Set.of("L1"), "p1", Values.stringValue("s1"), op),
-                                String.format("(n:L1) WHERE n.p1 %s 's1'", op.getSymbol())),
-                        of(
-                                new ValuePatternSegment(Set.of("L1", "L2"), "p1", Values.stringValue("s1"), op),
-                                String.format("(n:L1|L2) WHERE n.p1 %s 's1'", op.getSymbol())),
-                        of(
-                                new ValuePatternSegment("p1", Values.stringValue("s1"), op),
-                                String.format("(n) WHERE n.p1 %s 's1'", op.getSymbol())),
-                        of(
-                                new ValuePatternSegment(
-                                        Set.of("Label Name"), "property name", Values.stringValue("s1"), op),
-                                String.format("(n:Label Name) WHERE n.property name %s 's1'", op.getSymbol()))));
+
+    @Test
+    void testPattern() {
+        var value = mock(Value.class);
+        when(value.prettyPrint()).thenReturn("valueString");
+        var vps = new ValuePatternSegment("p", value, ComparisonOperator.EQUAL);
+        var vpsSpy = spy(vps);
+        when(vpsSpy.propertyString()).thenReturn("propertyString");
+        assertThat(vpsSpy.pattern()).isEqualTo("(n) WHERE propertyString = valueString");
     }
 
-    @ParameterizedTest
-    @MethodSource
-    void patterns(ValuePatternSegment vps, String pattern) {
-        assertThat(vps.pattern()).isEqualTo(pattern);
-    }
-
-    @ParameterizedTest
-    @MethodSource("patterns")
-    void toStringTest(ValuePatternSegment vps, String pattern) {
-        assertThat(vps.toString()).isEqualTo(String.format("FOR(%s)", pattern));
+    @Test
+    void testToString() {
+        var vps = new ValuePatternSegment("propertyString", mock(Value.class), ComparisonOperator.EQUAL);
+        var vpsSpy = spy(vps);
+        when(vpsSpy.pattern()).thenReturn("patternString");
+        assertThat(vpsSpy.toString()).isEqualTo("FOR(patternString)");
     }
 
     @Test

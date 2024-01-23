@@ -76,6 +76,23 @@ public interface PropertyRule extends Predicate<Value> {
             public boolean test(Value lhs, Value rhs) {
                 return ValueBooleanLogic.notEquals(lhs, rhs).equals(TRUE);
             }
+        },
+        IN("IN") {
+            @Override
+            public boolean test(Value lhs, Value rhs) {
+                return ValueBooleanLogic.in(lhs, rhs).equals(TRUE);
+            }
+        },
+        NOT_IN("NOT IN") {
+            @Override
+            public boolean test(Value lhs, Value rhs) {
+                return ValueBooleanLogic.not(ValueBooleanLogic.in(lhs, rhs)).equals(TRUE);
+            }
+
+            @Override
+            public String toPredicateString(String lhs, String rhs) {
+                return String.format("NOT %s IN %s", lhs, rhs);
+            }
         };
 
         private final String symbol;
@@ -86,6 +103,10 @@ public interface PropertyRule extends Predicate<Value> {
 
         public String getSymbol() {
             return symbol;
+        }
+
+        public String toPredicateString(String lhs, String rhs) {
+            return String.format("%s %s %s", lhs, getSymbol(), rhs);
         }
     }
 
@@ -111,6 +132,10 @@ public interface PropertyRule extends Predicate<Value> {
 
         public String getSymbol() {
             return symbol;
+        }
+
+        public String toPredicateString(String lhs) {
+            return String.format("%s %s", lhs, getSymbol());
         }
     }
 

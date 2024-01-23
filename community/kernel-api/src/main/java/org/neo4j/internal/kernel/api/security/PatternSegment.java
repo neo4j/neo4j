@@ -76,8 +76,8 @@ public interface PatternSegment extends Segment {
         @Override
         public String pattern() {
             return String.format(
-                    "%s WHERE %s %s %s",
-                    nodeString(), propertyString(), this.operator.getSymbol(), this.value.prettyPrint());
+                    "%s WHERE %s",
+                    nodeString(), this.operator.toPredicateString(propertyString(), this.value.prettyPrint()));
         }
 
         @Override
@@ -100,7 +100,7 @@ public interface PatternSegment extends Segment {
 
         @Override
         public String pattern() {
-            return String.format("%s WHERE %s %s", nodeString(), propertyString(), this.operator.getSymbol());
+            return String.format("%s WHERE %s", nodeString(), this.operator.toPredicateString(propertyString()));
         }
 
         @Override
