@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.transaction.log.files.checkpoint;
 
 import static java.util.Collections.emptyList;
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.checkpoint_logical_log_rotation_threshold;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.BIGGEST_HEADER;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
@@ -84,7 +83,7 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
     public CheckpointLogFile(LogFiles logFiles, TransactionLogFilesContext context) {
         this.context = context;
         this.logFiles = logFiles;
-        this.rotationsSize = context.getConfig().get(checkpoint_logical_log_rotation_threshold);
+        this.rotationsSize = context.getCheckpointRotationThreshold();
         this.fileHelper = new TransactionLogFilesHelper(
                 context.getFileSystem(), logFiles.logFilesDirectory(), CHECKPOINT_FILE_PREFIX);
         this.channelAllocator = new CheckpointLogChannelAllocator(context, fileHelper);

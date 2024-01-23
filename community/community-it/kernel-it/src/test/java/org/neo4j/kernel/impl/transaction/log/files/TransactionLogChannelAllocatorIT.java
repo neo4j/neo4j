@@ -222,6 +222,7 @@ class TransactionLogChannelAllocatorIT {
     private TransactionLogFilesContext createLogFileContext(long rotationThreshold, NativeAccess nativeAccess) {
         return new TransactionLogFilesContext(
                 new AtomicLong(rotationThreshold),
+                0L,
                 new AtomicBoolean(true),
                 TestCommandReaderFactory.INSTANCE,
                 any -> 1L,

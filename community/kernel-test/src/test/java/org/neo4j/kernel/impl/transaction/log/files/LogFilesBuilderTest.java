@@ -26,6 +26,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.collection.Dependencies.dependenciesOf;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.checkpoint_logical_log_rotation_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 import static org.neo4j.internal.helpers.MathUtil.roundUp;
@@ -48,6 +49,7 @@ import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.entry.LogSegments;
 import org.neo4j.logging.NullLog;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.HealthEventGenerator;
@@ -156,6 +158,31 @@ class LogFilesBuilderTest {
                 context.getLogVersionRepositoryProvider()
                         .logVersionRepository(null)
                         .getCurrentLogVersion());
+    }
+
+    @Test
+    void guaranteeMinimumTwoSegmentsForCheckpointRotation() {
+        TransactionLogFilesContext context = builder(
+                        databaseLayout, fileSystem, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
+                .withLogVersionRepository(new SimpleLogVersionRepository(2))
+                .withTransactionIdStore(new SimpleTransactionIdStore())
+                .withCommandReaderFactory(CommandReaderFactory.NO_COMMANDS)
+                .withConfig(Config.defaults(checkpoint_logical_log_rotation_threshold, kibiBytes(128)))
+                .buildContext();
+        assertEquals(context.getEnvelopeSegmentBlockSizeBytes() * 2L, context.getCheckpointRotationThreshold());
+    }
+
+    @Test
+    void keepConfigWhenBiggerThanTwoSegmentsForCheckpointRotation() {
+        TransactionLogFilesContext context = builder(
+                        databaseLayout, fileSystem, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
+                .withLogVersionRepository(new SimpleLogVersionRepository(2))
+                .withTransactionIdStore(new SimpleTransactionIdStore())
+                .withCommandReaderFactory(CommandReaderFactory.NO_COMMANDS)
+                .withConfig(Config.defaults(
+                        checkpoint_logical_log_rotation_threshold, LogSegments.DEFAULT_LOG_SEGMENT_SIZE * 4L))
+                .buildContext();
+        assertEquals(context.getEnvelopeSegmentBlockSizeBytes() * 4L, context.getCheckpointRotationThreshold());
     }
 
     @Test

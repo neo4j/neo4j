@@ -34,8 +34,8 @@ import java.time.Instant;
 import org.assertj.core.api.Condition;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.entry.LogSegments;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.test.LatestVersions;
@@ -46,17 +46,21 @@ import org.neo4j.test.extension.Inject;
 
 @DbmsExtension(configurationCallback = "configure")
 public class CheckpointLogFileRotationIT {
-    static final long ROTATION_THRESHOLD = kibiBytes(1);
+    static final long CONFIG_ROTATION_THRESHOLD = kibiBytes(1);
+    // Checkpoint log files should always have space for at least 2 envelop segments, so even if the
+    // threshold passed to the DBMS is very small we should be seeing bigger files.
+    static final long ACTUAL_ROTATION_THRESHOLD = LogSegments.DEFAULT_LOG_SEGMENT_SIZE * 2L;
 
-    @Inject
-    private GraphDatabaseService database;
+    static final String CHECKPOINT_REASON = "checkpoint for rotation test";
+    static final LogPosition LOG_POSITION = new LogPosition(1000, 12345);
+    static final TransactionId TRANSACTION_ID = new TransactionId(100, 101, 102, 103);
 
     @Inject
     LogFiles logFiles;
 
     @ExtensionCallback
     void configure(TestDatabaseManagementServiceBuilder builder) {
-        builder.setConfig(checkpoint_logical_log_rotation_threshold, ROTATION_THRESHOLD)
+        builder.setConfig(checkpoint_logical_log_rotation_threshold, CONFIG_ROTATION_THRESHOLD)
                 .setConfig(checkpoint_logical_log_keep_threshold, 100)
                 .setConfig(GraphDatabaseSettings.preallocate_logical_logs, preallocateLogs());
     }
@@ -65,21 +69,15 @@ public class CheckpointLogFileRotationIT {
     void rotateCheckpointLogFiles() throws IOException {
         var checkpointFile = logFiles.getCheckpointFile();
         var checkpointAppender = checkpointFile.getCheckpointAppender();
-        var logPosition = new LogPosition(1000, 12345);
-        var transactionId = new TransactionId(100, 101, 102, 103);
-        var reason = "checkpoint for rotation test";
-        for (int i = 0; i < 105; i++) {
-            checkpointAppender.checkPoint(
-                    NULL, transactionId, LatestVersions.LATEST_KERNEL_VERSION, logPosition, Instant.now(), reason);
-        }
+        fillWithCheckpoints(5, checkpointAppender);
         var matchedFiles = checkpointFile.getDetachedCheckpointFiles();
-        assertThat(matchedFiles).hasSize(27);
+        assertThat(matchedFiles).hasSize(6); // 5 filled + 1 new rotation with only headers
         for (var fileWithCheckpoints : matchedFiles) {
             assertThat(fileWithCheckpoints).satisfies(new Condition<>() {
                 @Override
                 public boolean matches(Path file) {
                     long length = file.toFile().length();
-                    return length < ROTATION_THRESHOLD + RECORD_LENGTH_BYTES;
+                    return length < ACTUAL_ROTATION_THRESHOLD + RECORD_LENGTH_BYTES;
                 }
             });
         }
@@ -89,14 +87,16 @@ public class CheckpointLogFileRotationIT {
     void doNotRotateWhileCheckpointsAreFitting() throws IOException {
         var checkpointFile = logFiles.getCheckpointFile();
         var checkpointAppender = checkpointFile.getCheckpointAppender();
-        LogPosition logPosition = new LogPosition(1000, 12345);
-        var transactionId = new TransactionId(100, 101, 102, 103);
-        var reason = "checkpoint for rotation test";
         for (int i = LATEST_LOG_FORMAT.getHeaderSize() + 2 * RECORD_LENGTH_BYTES;
-                i < ROTATION_THRESHOLD;
+                i < ACTUAL_ROTATION_THRESHOLD;
                 i += RECORD_LENGTH_BYTES) {
             checkpointAppender.checkPoint(
-                    NULL, transactionId, LatestVersions.LATEST_KERNEL_VERSION, logPosition, Instant.now(), reason);
+                    NULL,
+                    TRANSACTION_ID,
+                    LatestVersions.LATEST_KERNEL_VERSION,
+                    LOG_POSITION,
+                    Instant.now(),
+                    CHECKPOINT_REASON);
         }
         assertThat(checkpointFile.getDetachedCheckpointFiles()).hasSize(1);
     }
@@ -105,16 +105,7 @@ public class CheckpointLogFileRotationIT {
     void afterRotationNewFileHaveHeader() throws IOException {
         var checkpointFile = logFiles.getCheckpointFile();
         var checkpointAppender = checkpointFile.getCheckpointAppender();
-        LogPosition logPosition = new LogPosition(1000, 12345);
-        var transactionId = new TransactionId(100, 101, 102, 103);
-        var reason = "checkpoint for rotation test";
-        // there is one post init checkpoint
-        for (int i = LATEST_LOG_FORMAT.getHeaderSize() + RECORD_LENGTH_BYTES;
-                i < ROTATION_THRESHOLD;
-                i += RECORD_LENGTH_BYTES) {
-            checkpointAppender.checkPoint(
-                    NULL, transactionId, LatestVersions.LATEST_KERNEL_VERSION, logPosition, Instant.now(), reason);
-        }
+        fillWithCheckpoints(1, checkpointAppender);
         Path[] matchedFiles = checkpointFile.getDetachedCheckpointFiles();
         assertThat(matchedFiles).hasSize(2);
         boolean headerFileFound = false;
@@ -125,6 +116,25 @@ public class CheckpointLogFileRotationIT {
             }
         }
         assertTrue(headerFileFound);
+    }
+
+    /**
+     * This method create enough checkpoint entries to fill {@param files} checkpoint files.
+     */
+    private static void fillWithCheckpoints(int files, CheckpointAppender appender) throws IOException {
+        for (int fileCount = 0; fileCount < files; fileCount++) {
+            // the first file already contains one initial checkpoint
+            int startOffset = LATEST_LOG_FORMAT.getHeaderSize() + (fileCount == 0 ? RECORD_LENGTH_BYTES : 0);
+            for (int i = startOffset; i < ACTUAL_ROTATION_THRESHOLD; i += RECORD_LENGTH_BYTES) {
+                appender.checkPoint(
+                        NULL,
+                        TRANSACTION_ID,
+                        LatestVersions.LATEST_KERNEL_VERSION,
+                        LOG_POSITION,
+                        Instant.now(),
+                        CHECKPOINT_REASON);
+            }
+        }
     }
 
     protected long expectedNewFileSize() {

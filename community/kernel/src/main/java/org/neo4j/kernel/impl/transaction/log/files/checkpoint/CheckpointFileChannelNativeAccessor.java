@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files.checkpoint;
 
-import static org.neo4j.configuration.GraphDatabaseInternalSettings.checkpoint_logical_log_rotation_threshold;
-
 import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.kernel.impl.transaction.log.files.LogFileChannelNativeAccessor;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesContext;
@@ -31,12 +29,8 @@ class CheckpointFileChannelNativeAccessor extends LogFileChannelNativeAccessor {
                 context.getFileSystem(),
                 context.getNativeAccess(),
                 context.getLogProvider(),
-                checkpointRotation(context),
+                new AtomicLong(context.getCheckpointRotationThreshold()),
                 context.getConfig(),
                 context.getDatabaseName());
-    }
-
-    private static AtomicLong checkpointRotation(TransactionLogFilesContext context) {
-        return new AtomicLong(context.getConfig().get(checkpoint_logical_log_rotation_threshold));
     }
 }

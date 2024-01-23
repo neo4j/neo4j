@@ -45,7 +45,7 @@ class PreallocatedCheckpointLogFileRotationIT extends CheckpointLogFileRotationI
 
     @Override
     protected long expectedNewFileSize() {
-        return ROTATION_THRESHOLD;
+        return ACTUAL_ROTATION_THRESHOLD;
     }
 
     @Test
@@ -74,7 +74,7 @@ class PreallocatedCheckpointLogFileRotationIT extends CheckpointLogFileRotationI
         checkpointFile.rotate();
 
         for (int fileCount = 2; fileCount < 6; fileCount++) {
-            for (int i = LATEST_LOG_FORMAT.getHeaderSize(); i < ROTATION_THRESHOLD; i += RECORD_LENGTH_BYTES) {
+            for (int i = LATEST_LOG_FORMAT.getHeaderSize(); i < ACTUAL_ROTATION_THRESHOLD; i += RECORD_LENGTH_BYTES) {
                 assertThat(checkpointFile.getDetachedCheckpointFiles())
                         .hasSize(fileCount)
                         .allMatch(this::sizeEqualsToPreallocatedFile);
@@ -88,7 +88,7 @@ class PreallocatedCheckpointLogFileRotationIT extends CheckpointLogFileRotationI
 
     private boolean sizeEqualsToPreallocatedFile(Path path) {
         try {
-            return Files.size(path) < ROTATION_THRESHOLD + RECORD_LENGTH_BYTES;
+            return Files.size(path) < ACTUAL_ROTATION_THRESHOLD + RECORD_LENGTH_BYTES;
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

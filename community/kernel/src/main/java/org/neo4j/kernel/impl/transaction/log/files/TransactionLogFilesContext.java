@@ -40,6 +40,7 @@ import org.neo4j.storageengine.api.StoreId;
 
 public class TransactionLogFilesContext {
     private final AtomicLong rotationThreshold;
+    private final long checkpointRotationThreshold;
     private final AtomicBoolean tryPreallocateTransactionLogs;
     private final CommandReaderFactory commandReaderFactory;
     private final LastCommittedTransactionIdProvider lastCommittedTransactionIdSupplier;
@@ -68,6 +69,7 @@ public class TransactionLogFilesContext {
 
     public TransactionLogFilesContext(
             AtomicLong rotationThreshold,
+            long checkpointRotationThreshold,
             AtomicBoolean tryPreallocateTransactionLogs,
             CommandReaderFactory commandReaderFactory,
             LastCommittedTransactionIdProvider lastCommittedTransactionIdSupplier,
@@ -94,6 +96,7 @@ public class TransactionLogFilesContext {
             int envelopeSegmentBlockSizeBytes,
             int bufferSizeBytes) {
         this.rotationThreshold = rotationThreshold;
+        this.checkpointRotationThreshold = checkpointRotationThreshold;
         this.tryPreallocateTransactionLogs = tryPreallocateTransactionLogs;
         this.commandReaderFactory = commandReaderFactory;
         this.lastCommittedTransactionIdSupplier = lastCommittedTransactionIdSupplier;
@@ -123,6 +126,10 @@ public class TransactionLogFilesContext {
 
     AtomicLong getRotationThreshold() {
         return rotationThreshold;
+    }
+
+    public long getCheckpointRotationThreshold() {
+        return checkpointRotationThreshold;
     }
 
     public CommandReaderFactory getCommandReaderFactory() {

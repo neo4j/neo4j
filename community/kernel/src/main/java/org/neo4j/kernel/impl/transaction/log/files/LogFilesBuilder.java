@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.log.files;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElseGet;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.checkpoint_logical_log_rotation_threshold;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.fail_on_corrupted_log_files;
 import static org.neo4j.configuration.GraphDatabaseSettings.logical_log_rotation_threshold;
 import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_logical_logs;
@@ -84,6 +85,7 @@ public class LogFilesBuilder {
     private Path logsDirectory;
     private Config config;
     private Long rotationThreshold;
+    private Long checkpointRotationThreshold;
     private InternalLogProvider logProvider = NullLogProvider.getInstance();
     private DependencyResolver dependencies;
     private FileSystemAbstraction fileSystem;
@@ -240,6 +242,11 @@ public class LogFilesBuilder {
         return this;
     }
 
+    public LogFilesBuilder withCheckpointRotationThreshold(long checkpointRotationThreshold) {
+        this.checkpointRotationThreshold = checkpointRotationThreshold;
+        return this;
+    }
+
     public LogFilesBuilder withDependencies(DependencyResolver dependencies) {
         this.dependencies = dependencies;
         return this;
@@ -330,6 +337,7 @@ public class LogFilesBuilder {
 
         // Register listener for rotation threshold
         AtomicLong rotationThreshold = getRotationThresholdAndRegisterForUpdates();
+        long checkpointThreshold = getCheckpointRotationThreshold();
         AtomicBoolean tryPreallocateTransactionLogs = getTryToPreallocateTransactionLogs();
         var nativeAccess = getNativeAccess();
         var monitors = getMonitors();
@@ -338,6 +346,7 @@ public class LogFilesBuilder {
 
         return new TransactionLogFilesContext(
                 rotationThreshold,
+                checkpointThreshold,
                 tryPreallocateTransactionLogs,
                 commandReaderFactory(),
                 lastCommittedIdSupplier,
@@ -419,27 +428,39 @@ public class LogFilesBuilder {
 
     private int getBufferSizeBytes() {
         if (bufferSizeBytes == 0) {
-            return (int) roundUp(config.get(transaction_log_buffer_size), envelopeSegmentBlockSizeBytes);
+            return (int) roundUpToEnvelopeSegment(config.get(transaction_log_buffer_size));
         }
-        return (int) roundUp(bufferSizeBytes, envelopeSegmentBlockSizeBytes);
+        return (int) roundUpToEnvelopeSegment(bufferSizeBytes);
     }
 
     private AtomicLong getRotationThresholdAndRegisterForUpdates() {
         if (rotationThreshold != null) {
-            return new AtomicLong(
-                    guaranteeAtLeastTwoSegments(roundUp(rotationThreshold, envelopeSegmentBlockSizeBytes)));
+            return new AtomicLong(guaranteeAtLeastTwoSegments(roundUpToEnvelopeSegment(rotationThreshold)));
         }
         if (readOnlyStores) {
-            return new AtomicLong(
-                    roundUp(Long.MAX_VALUE - envelopeSegmentBlockSizeBytes, envelopeSegmentBlockSizeBytes));
+            return new AtomicLong(roundUpToEnvelopeSegment(Long.MAX_VALUE - envelopeSegmentBlockSizeBytes));
         }
-        AtomicLong configThreshold = new AtomicLong(guaranteeAtLeastTwoSegments(
-                roundUp(config.get(logical_log_rotation_threshold), envelopeSegmentBlockSizeBytes)));
+        AtomicLong configThreshold = new AtomicLong(
+                guaranteeAtLeastTwoSegments(roundUpToEnvelopeSegment(config.get(logical_log_rotation_threshold))));
         config.addListener(
                 logical_log_rotation_threshold,
-                (prev, update) -> configThreshold.set(
-                        guaranteeAtLeastTwoSegments(roundUp(update, envelopeSegmentBlockSizeBytes))));
+                (prev, update) -> configThreshold.set(guaranteeAtLeastTwoSegments(roundUpToEnvelopeSegment(update))));
         return configThreshold;
+    }
+
+    private long getCheckpointRotationThreshold() {
+        if (checkpointRotationThreshold != null) {
+            return guaranteeAtLeastTwoSegments(roundUpToEnvelopeSegment(checkpointRotationThreshold));
+        }
+        if (readOnlyLogs) {
+            return roundUpToEnvelopeSegment(Long.MAX_VALUE - envelopeSegmentBlockSizeBytes);
+        }
+        return guaranteeAtLeastTwoSegments(
+                roundUpToEnvelopeSegment(config.get(checkpoint_logical_log_rotation_threshold)));
+    }
+
+    private long roundUpToEnvelopeSegment(long bytes) {
+        return roundUp(bytes, envelopeSegmentBlockSizeBytes);
     }
 
     private long guaranteeAtLeastTwoSegments(long rotationThreshold) {
