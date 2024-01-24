@@ -6,7 +6,7 @@
     "worksOnSystem": false,
     "signature": "cdc.current() :: (id :: STRING)",
     "argumentDescription": [],
-    "returnDescription" : [
+    "returnDescription": [
       {
         "name": "id",
         "description": "id :: STRING",
@@ -35,7 +35,7 @@
     "worksOnSystem": false,
     "signature": "cdc.earliest() :: (id :: STRING)",
     "argumentDescription": [],
-    "returnDescription" : [
+    "returnDescription": [
       {
         "name": "id",
         "description": "id :: STRING",
@@ -383,7 +383,7 @@
     "description": "Set a vector property on a given node in a more space efficient representation than Cypher's SET.",
     "mode": "WRITE",
     "worksOnSystem": false,
-    "signature": "db.create.setNodeVectorProperty(node :: NODE, key :: STRING, vector :: LIST<FLOAT>)",
+    "signature": "db.create.setNodeVectorProperty(node :: NODE, key :: STRING, vector :: ANY)",
     "argumentDescription": [
       {
         "name": "node",
@@ -399,8 +399,8 @@
       },
       {
         "name": "vector",
-        "description": "vector :: LIST<FLOAT>",
-        "type": "LIST<FLOAT>",
+        "description": "vector :: ANY",
+        "type": "ANY",
         "isDeprecated": false
       }
     ],
@@ -424,7 +424,7 @@
     "description": "Set a vector property on a given node in a more space efficient representation than Cypher's SET.",
     "mode": "WRITE",
     "worksOnSystem": false,
-    "signature": "db.create.setVectorProperty(node :: NODE, key :: STRING, vector :: LIST<FLOAT>) :: (node :: NODE)",
+    "signature": "db.create.setVectorProperty(node :: NODE, key :: STRING, vector :: ANY) :: (node :: NODE)",
     "argumentDescription": [
       {
         "name": "node",
@@ -440,8 +440,8 @@
       },
       {
         "name": "vector",
-        "description": "vector :: LIST<FLOAT>",
-        "type": "LIST<FLOAT>",
+        "description": "vector :: ANY",
+        "type": "ANY",
         "isDeprecated": false
       }
     ],
@@ -782,10 +782,10 @@
   },
   {
     "name": "db.index.vector.queryNodes",
-    "description": "Query the given vector index.\nReturns requested number of nearest neighbors to the provided query vector,\nand their similarity score to that query vector, based on the configured similarity function for the index.\nThe similarity score is a value between [0, 1]; where 0 indicates least similar, 1 most similar.\n",
+    "description": "Query the given node vector index.\nReturns requested number of nearest neighbors to the provided query vector,\nand their similarity score to that query vector, based on the configured similarity function for the index.\nThe similarity score is a value between [0, 1]; where 0 indicates least similar, 1 most similar.\n",
     "mode": "READ",
     "worksOnSystem": false,
-    "signature": "db.index.vector.queryNodes(indexName :: STRING, numberOfNearestNeighbours :: INTEGER, query :: LIST<FLOAT>) :: (node :: NODE, score :: FLOAT)",
+    "signature": "db.index.vector.queryNodes(indexName :: STRING, numberOfNearestNeighbours :: INTEGER, query :: ANY) :: (node :: NODE, score :: FLOAT)",
     "argumentDescription": [
       {
         "name": "indexName",
@@ -801,8 +801,8 @@
       },
       {
         "name": "query",
-        "description": "query :: LIST<FLOAT>",
-        "type": "LIST<FLOAT>",
+        "description": "query :: ANY",
+        "type": "ANY",
         "isDeprecated": false
       }
     ],
@@ -834,6 +834,7 @@
     },
     "enterpriseOnly": false
   },
+
   {
     "name": "db.info",
     "description": "Provides information regarding the database.",

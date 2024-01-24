@@ -183,15 +183,15 @@ public abstract class PropertyIndexQuery implements IndexQuery {
         return new StringSuffixPredicate(propertyKeyId, suffix);
     }
 
-    public static PropertyIndexQuery fulltextSearch(String query) {
+    public static FulltextSearchPredicate fulltextSearch(String query) {
         return new FulltextSearchPredicate(query);
     }
 
-    public static PropertyIndexQuery fulltextSearch(String query, String queryAnalyzer) {
+    public static FulltextSearchPredicate fulltextSearch(String query, String queryAnalyzer) {
         return new FulltextSearchPredicate(query, queryAnalyzer);
     }
 
-    public static PropertyIndexQuery nearestNeighbors(int k, float[] query) {
+    public static NearestNeighborsPredicate nearestNeighbors(int k, float[] query) {
         return new NearestNeighborsPredicate(k, query);
     }
 
