@@ -55,6 +55,7 @@
                     </execution>
                 </executions>
                 <configuration>
+                    <options><contextSuperClass>org.neo4j.cypher.internal.parser.AstRuleCtx</contextSuperClass></options>
                     <listener>false</listener> <!-- We have our own optimised listener -->
                     <visitor>false</visitor>
                 </configuration>

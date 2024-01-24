@@ -16,10 +16,8 @@
  */
 parser grammar CypherParser;
 
-
 options {
    tokenVocab = CypherLexer;
-   contextSuperClass = 'org.neo4j.cypher.internal.parser.AstRuleCtx';
 }
 
 statements:
