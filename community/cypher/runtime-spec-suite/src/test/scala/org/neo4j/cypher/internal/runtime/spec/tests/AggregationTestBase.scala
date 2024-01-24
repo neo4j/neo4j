@@ -24,9 +24,9 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings.cypher_pipelined_ba
 import org.neo4j.configuration.GraphDatabaseInternalSettings.cypher_pipelined_batch_size_small
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
-import org.neo4j.cypher.internal.expressions.ArgumentAsc
-import org.neo4j.cypher.internal.expressions.ArgumentDesc
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.FunctionInvocation.ArgumentAsc
+import org.neo4j.cypher.internal.expressions.FunctionInvocation.ArgumentDesc
 import org.neo4j.cypher.internal.expressions.functions.Avg
 import org.neo4j.cypher.internal.expressions.functions.Collect
 import org.neo4j.cypher.internal.expressions.functions.Count

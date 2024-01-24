@@ -43,7 +43,7 @@ object distinct {
     val rewrittenPlan = solver.rewrittenPlan()
 
     val inputProvidedOrder = context.staticComponents.planningAttributes.providedOrders(plan.id)
-    val OrderToLeverageWithAliases(orderToLeverage, newGroupingExpressionsMap, _) =
+    val OrderToLeverageWithAliases(orderToLeverageForGrouping, newGroupingExpressionsMap, _) =
       leverageOrder(inputProvidedOrder, groupingExpressionsMap, Map.empty, plan.availableSymbols)
 
     val previousDistinctness = rewrittenPlan.distinctness
@@ -68,7 +68,7 @@ object distinct {
           context
         )
       }
-    } else if (orderToLeverage.isEmpty) {
+    } else if (orderToLeverageForGrouping.isEmpty) {
       context.staticComponents.logicalPlanProducer.planDistinct(
         rewrittenPlan,
         newGroupingExpressionsMap,
@@ -79,7 +79,7 @@ object distinct {
       context.staticComponents.logicalPlanProducer.planOrderedDistinct(
         rewrittenPlan,
         newGroupingExpressionsMap,
-        orderToLeverage,
+        orderToLeverageForGrouping,
         distinctQueryProjection.groupingExpressions,
         context
       )

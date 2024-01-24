@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.helpers.AggregationHelper
-import org.neo4j.cypher.internal.expressions.ArgumentAsc
-import org.neo4j.cypher.internal.expressions.ArgumentDesc
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.FunctionInvocation.ArgumentAsc
+import org.neo4j.cypher.internal.expressions.FunctionInvocation.ArgumentDesc
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder
@@ -34,7 +34,7 @@ import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 object leverageOrder {
 
   final case class OrderToLeverageWithAliases(
-    orderToLeverage: Seq[Expression],
+    orderToLeverageForGrouping: Seq[Expression],
     groupingExpressionsMap: Map[LogicalVariable, Expression],
     aggregationExpressionsMap: Map[LogicalVariable, Expression]
   )

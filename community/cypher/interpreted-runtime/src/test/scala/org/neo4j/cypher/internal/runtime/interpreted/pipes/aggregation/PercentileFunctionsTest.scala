@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation
 
-import org.neo4j.cypher.internal.expressions.ArgumentAsc
-import org.neo4j.cypher.internal.expressions.ArgumentDesc
-import org.neo4j.cypher.internal.expressions.ArgumentOrder
-import org.neo4j.cypher.internal.expressions.ArgumentUnordered
+import org.neo4j.cypher.internal.expressions.FunctionInvocation.ArgumentAsc
+import org.neo4j.cypher.internal.expressions.FunctionInvocation.ArgumentDesc
+import org.neo4j.cypher.internal.expressions.FunctionInvocation.ArgumentOrder
+import org.neo4j.cypher.internal.expressions.FunctionInvocation.ArgumentUnordered
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.literal

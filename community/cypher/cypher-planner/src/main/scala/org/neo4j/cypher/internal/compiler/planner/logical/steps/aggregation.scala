@@ -97,10 +97,10 @@ object aggregation {
       )
     } else {
       val inputProvidedOrder = context.staticComponents.planningAttributes.providedOrders(plan.id)
-      val OrderToLeverageWithAliases(orderToLeverage, newGroupingExpressionsMap, newAggregationExpressions) =
+      val OrderToLeverageWithAliases(orderToLeverageForGrouping, newGroupingExpressionsMap, newAggregationExpressions) =
         leverageOrder(inputProvidedOrder, groupingExpressionsMap, aggregations, plan.availableSymbols)
 
-      if (orderToLeverage.isEmpty) {
+      if (orderToLeverageForGrouping.isEmpty) {
         context.staticComponents.logicalPlanProducer.planAggregation(
           rewrittenPlan,
           newGroupingExpressionsMap,
@@ -115,7 +115,7 @@ object aggregation {
           rewrittenPlan,
           newGroupingExpressionsMap,
           newAggregationExpressions,
-          orderToLeverage,
+          orderToLeverageForGrouping,
           aggregation.groupingExpressions,
           aggregation.aggregationExpressions,
           context

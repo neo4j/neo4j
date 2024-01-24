@@ -16,6 +16,8 @@
  */
 package org.neo4j.cypher.internal.expressions
 
+import org.neo4j.cypher.internal.expressions.FunctionInvocation.ArgumentOrder
+import org.neo4j.cypher.internal.expressions.FunctionInvocation.ArgumentUnordered
 import org.neo4j.cypher.internal.expressions.functions.DeterministicFunction
 import org.neo4j.cypher.internal.expressions.functions.UnresolvedFunction
 import org.neo4j.cypher.internal.util.InputPosition
@@ -23,6 +25,11 @@ import org.neo4j.cypher.internal.util.InputPosition
 import java.util.Locale
 
 object FunctionInvocation {
+
+  sealed trait ArgumentOrder
+  case object ArgumentUnordered extends ArgumentOrder
+  case object ArgumentAsc extends ArgumentOrder
+  case object ArgumentDesc extends ArgumentOrder
 
   def apply(name: FunctionName, argument: Expression)(position: InputPosition): FunctionInvocation =
     FunctionInvocation(Namespace()(position), name, distinct = false, IndexedSeq(argument))(position)
@@ -65,11 +72,6 @@ object DeterministicFunctionInvocation {
   }
 }
 
-sealed trait ArgumentOrder
-case object ArgumentUnordered extends ArgumentOrder
-case object ArgumentAsc extends ArgumentOrder
-case object ArgumentDesc extends ArgumentOrder
-
 case class FunctionInvocation(
   namespace: Namespace,
   functionName: FunctionName,
@@ -82,7 +84,9 @@ case class FunctionInvocation(
   val function: functions.Function =
     functions.Function.lookup.getOrElse(name.toLowerCase(Locale.ROOT), UnresolvedFunction)
 
-  val isOrdered = order != ArgumentUnordered
+  val isOrdered: Boolean = order != ArgumentUnordered
+
+  def withOrder(o: ArgumentOrder): FunctionInvocation = copy(order = o)(position)
 
   def needsToBeResolved: Boolean = function match {
     case UnresolvedFunction => true

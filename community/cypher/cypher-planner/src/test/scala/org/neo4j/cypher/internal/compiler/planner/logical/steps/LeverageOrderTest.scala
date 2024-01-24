@@ -22,11 +22,9 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.leverageOrder.OrderToLeverageWithAliases
-import org.neo4j.cypher.internal.expressions.ArgumentAsc
-import org.neo4j.cypher.internal.expressions.ArgumentDesc
-import org.neo4j.cypher.internal.expressions.ArgumentOrder
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.FunctionInvocation.ArgumentAsc
+import org.neo4j.cypher.internal.expressions.FunctionInvocation.ArgumentDesc
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.functions.Count
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
@@ -37,17 +35,14 @@ import scala.collection.immutable.SortedMap
 
 class LeverageOrderTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  private def withOrder(f: FunctionInvocation, o: ArgumentOrder): FunctionInvocation =
-    f.copy(order = o)(f.position)
-
   test("should leverage order for exact match on grouping column and exact match on aggregation expression") {
-    val po = ProvidedOrder.asc(varFor("a")).asc(varFor("b"))
-    val grouping = Map[LogicalVariable, Expression](v"newA" -> varFor("a"))
-    val function = distinctFunction(Count.name, varFor("b"))
+    val po = ProvidedOrder.asc(v"a").asc(v"b")
+    val grouping = Map[LogicalVariable, Expression](v"newA" -> v"a")
+    val function = distinctFunction(Count.name, v"b")
     val aggregation = Map[LogicalVariable, Expression](v"agg" -> function)
-    val newAggregation = Map[LogicalVariable, Expression](v"agg" -> withOrder(function, ArgumentAsc))
+    val newAggregation = Map[LogicalVariable, Expression](v"agg" -> function.withOrder(ArgumentAsc))
     leverageOrder(po, grouping, aggregation, Set.empty) should be(OrderToLeverageWithAliases(
-      Seq(varFor("a")),
+      Seq(v"a"),
       grouping,
       newAggregation
     ))
@@ -57,33 +52,33 @@ class LeverageOrderTest extends CypherFunSuite with AstConstructionTestSupport {
   test(
     "should leverage order for exact match on grouping column but not on aggregation expression when they are on same ordered column"
   ) {
-    val po = ProvidedOrder.asc(varFor("a"))
-    val grouping = Map[LogicalVariable, Expression](v"newA" -> varFor("a"))
-    val aggregation = Map[LogicalVariable, Expression](v"agg" -> distinctFunction(Count.name, varFor("a")))
+    val po = ProvidedOrder.asc(v"a")
+    val grouping = Map[LogicalVariable, Expression](v"newA" -> v"a")
+    val aggregation = Map[LogicalVariable, Expression](v"agg" -> distinctFunction(Count.name, v"a"))
     leverageOrder(po, grouping, aggregation, Set.empty) should be(OrderToLeverageWithAliases(
-      Seq(varFor("a")),
+      Seq(v"a"),
       grouping,
       aggregation
     ))
   }
 
   test("should leverage order for exact match on grouping column and no match on aggregation expression") {
-    val po = ProvidedOrder.asc(varFor("a")).asc(varFor("b"))
-    val grouping = Map[LogicalVariable, Expression](v"newA" -> varFor("a"))
-    val aggregation = Map[LogicalVariable, Expression](v"agg" -> distinctFunction(Count.name, varFor("c")))
+    val po = ProvidedOrder.asc(v"a").asc(v"b")
+    val grouping = Map[LogicalVariable, Expression](v"newA" -> v"a")
+    val aggregation = Map[LogicalVariable, Expression](v"agg" -> distinctFunction(Count.name, v"c"))
     leverageOrder(po, grouping, aggregation, Set.empty) should be(OrderToLeverageWithAliases(
-      Seq(varFor("a")),
+      Seq(v"a"),
       grouping,
       aggregation
     ))
   }
 
   test("should leverage order for exact match on aggregation expression when there are no groups") {
-    val po = ProvidedOrder.desc(varFor("a"))
+    val po = ProvidedOrder.desc(v"a")
     val grouping = Map.empty[LogicalVariable, Expression]
-    val function = distinctFunction(Count.name, varFor("a"))
+    val function = distinctFunction(Count.name, v"a")
     val aggregation = Map[LogicalVariable, Expression](v"agg" -> function)
-    val newAggregation = Map[LogicalVariable, Expression](v"agg" -> withOrder(function, ArgumentDesc))
+    val newAggregation = Map[LogicalVariable, Expression](v"agg" -> function.withOrder(ArgumentDesc))
     leverageOrder(po, grouping, aggregation, Set.empty) should be(OrderToLeverageWithAliases(
       Seq.empty,
       grouping,
@@ -92,11 +87,11 @@ class LeverageOrderTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("should leverage order for exact match on aggregation expression when there is no match on group") {
-    val po = ProvidedOrder.desc(varFor("a"))
-    val grouping = Map[LogicalVariable, Expression](v"newX" -> varFor("x"))
-    val function = distinctFunction(Count.name, varFor("a"))
+    val po = ProvidedOrder.desc(v"a")
+    val grouping = Map[LogicalVariable, Expression](v"newX" -> v"x")
+    val function = distinctFunction(Count.name, v"a")
     val aggregation = Map[LogicalVariable, Expression](v"agg" -> function)
-    val newAggregation = Map[LogicalVariable, Expression](v"agg" -> withOrder(function, ArgumentDesc))
+    val newAggregation = Map[LogicalVariable, Expression](v"agg" -> function.withOrder(ArgumentDesc))
     leverageOrder(po, grouping, aggregation, Set.empty) should be(OrderToLeverageWithAliases(
       Seq.empty,
       grouping,
@@ -107,11 +102,11 @@ class LeverageOrderTest extends CypherFunSuite with AstConstructionTestSupport {
   test(
     "should leverage order for exact match on aggregation expression when aggregation ordered column is a prefix of grouping ordered columns"
   ) {
-    val po = ProvidedOrder.desc(varFor("a")).desc(varFor("b"))
-    val grouping = Map[LogicalVariable, Expression](v"newB" -> varFor("b"))
-    val function = distinctFunction(Count.name, varFor("a"))
+    val po = ProvidedOrder.desc(v"a").desc(v"b")
+    val grouping = Map[LogicalVariable, Expression](v"newB" -> v"b")
+    val function = distinctFunction(Count.name, v"a")
     val aggregation = Map[LogicalVariable, Expression](v"agg" -> function)
-    val newAggregation = Map[LogicalVariable, Expression](v"agg" -> withOrder(function, ArgumentDesc))
+    val newAggregation = Map[LogicalVariable, Expression](v"agg" -> function.withOrder(ArgumentDesc))
     leverageOrder(po, grouping, aggregation, Set.empty) should be(OrderToLeverageWithAliases(
       Seq.empty,
       grouping,
@@ -122,9 +117,9 @@ class LeverageOrderTest extends CypherFunSuite with AstConstructionTestSupport {
   test(
     "should not leverage order for exact match on aggregation expression if there is an unused provided order prefix"
   ) {
-    val po = ProvidedOrder.asc(varFor("a")).desc(varFor("b"))
+    val po = ProvidedOrder.asc(v"a").desc(v"b")
     val grouping = Map.empty[LogicalVariable, Expression]
-    val aggregation = Map[LogicalVariable, Expression](v"agg" -> distinctFunction(Count.name, varFor("b")))
+    val aggregation = Map[LogicalVariable, Expression](v"agg" -> distinctFunction(Count.name, v"b"))
     leverageOrder(po, grouping, aggregation, Set.empty) should be(OrderToLeverageWithAliases(
       Seq.empty,
       grouping,
@@ -135,13 +130,13 @@ class LeverageOrderTest extends CypherFunSuite with AstConstructionTestSupport {
   test(
     "should leverage order for prefix match with one of grouping columns, and leverage next ordered column when it matches on aggregation column"
   ) {
-    val po = ProvidedOrder.asc(varFor("a")).desc(varFor("b"))
-    val grouping = Map[LogicalVariable, Expression](v"newA" -> varFor("a"), v"newC" -> varFor("c"))
-    val function = distinctFunction(Count.name, varFor("b"))
+    val po = ProvidedOrder.asc(v"a").desc(v"b")
+    val grouping = Map[LogicalVariable, Expression](v"newA" -> v"a", v"newC" -> v"c")
+    val function = distinctFunction(Count.name, v"b")
     val aggregation = Map[LogicalVariable, Expression](v"agg" -> function)
-    val newAggregation = Map[LogicalVariable, Expression](v"agg" -> withOrder(function, ArgumentDesc))
+    val newAggregation = Map[LogicalVariable, Expression](v"agg" -> function.withOrder(ArgumentDesc))
     leverageOrder(po, grouping, aggregation, Set.empty) should be(OrderToLeverageWithAliases(
-      Seq(varFor("a")),
+      Seq(v"a"),
       grouping,
       newAggregation
     ))
@@ -150,11 +145,11 @@ class LeverageOrderTest extends CypherFunSuite with AstConstructionTestSupport {
   test(
     "should leverage order for prefix match with one of grouping columns, and not leverage next ordered column when it does not match on aggregation column"
   ) {
-    val po = ProvidedOrder.asc(varFor("a")).desc(varFor("b"))
-    val grouping = Map[LogicalVariable, Expression](v"newA" -> varFor("a"), v"newC" -> varFor("c"))
-    val aggregation = Map[LogicalVariable, Expression](v"agg" -> distinctFunction(Count.name, varFor("c")))
+    val po = ProvidedOrder.asc(v"a").desc(v"b")
+    val grouping = Map[LogicalVariable, Expression](v"newA" -> v"a", v"newC" -> v"c")
+    val aggregation = Map[LogicalVariable, Expression](v"agg" -> distinctFunction(Count.name, v"c"))
     leverageOrder(po, grouping, aggregation, Set.empty) should be(OrderToLeverageWithAliases(
-      Seq(varFor("a")),
+      Seq(v"a"),
       grouping,
       aggregation
     ))
@@ -163,13 +158,13 @@ class LeverageOrderTest extends CypherFunSuite with AstConstructionTestSupport {
   test(
     "should leverage order for prefix match with one of grouping columns as prefix and one as suffix, and leverage next ordered column when it matches on aggregation column"
   ) {
-    val po = ProvidedOrder.asc(varFor("a")).desc(varFor("b")).asc(varFor("c")).asc(varFor("d"))
-    val grouping = Map[LogicalVariable, Expression](v"newA" -> varFor("a"), v"newC" -> varFor("c"))
-    val function = distinctFunction(Count.name, varFor("b"))
+    val po = ProvidedOrder.asc(v"a").desc(v"b").asc(v"c").asc(v"d")
+    val grouping = Map[LogicalVariable, Expression](v"newA" -> v"a", v"newC" -> v"c")
+    val function = distinctFunction(Count.name, v"b")
     val aggregation = Map[LogicalVariable, Expression](v"agg" -> function)
-    val newAggregation = Map[LogicalVariable, Expression](v"agg" -> withOrder(function, ArgumentDesc))
+    val newAggregation = Map[LogicalVariable, Expression](v"agg" -> function.withOrder(ArgumentDesc))
     leverageOrder(po, grouping, aggregation, Set.empty) should be(OrderToLeverageWithAliases(
-      Seq(varFor("a")),
+      Seq(v"a"),
       grouping,
       newAggregation
     ))
@@ -279,7 +274,7 @@ class LeverageOrderTest extends CypherFunSuite with AstConstructionTestSupport {
 
     leverageOrder(po, grouping, Map.empty, Set.empty) match {
       case OrderToLeverageWithAliases(Seq(v), _, _) =>
-        v should be theSameInstanceAs (groupingInstance)
+        v should be theSameInstanceAs groupingInstance
       case order => throw new IllegalArgumentException(s"Unexpected order: $order")
     }
   }
