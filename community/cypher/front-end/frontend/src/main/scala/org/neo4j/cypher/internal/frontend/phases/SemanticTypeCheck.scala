@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.frontend.phases
 
-import org.neo4j.cypher.internal.ast.Create
+import org.neo4j.cypher.internal.ast.CreateOrInsert
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
@@ -134,9 +134,9 @@ object CreatePatternSelfReferenceCheck {
   def check: SemanticErrorCheck = (baseState, baseContext) => {
     val semanticTable = baseState.semanticTable()
     baseState.statement().folder.treeFold(Seq.empty[SemanticError]) {
-      case Create(p) =>
+      case c: CreateOrInsert =>
         accErrors =>
-          val errors = findSelfReferenceVariablesInPattern(p, semanticTable)
+          val errors = findSelfReferenceVariablesInPattern(c.pattern, semanticTable)
             .map(createError(_, semanticTable, baseContext.errorMessageProvider))
             .toSeq
           SkipChildren(accErrors ++ errors)

@@ -18,7 +18,7 @@ package org.neo4j.cypher.internal.frontend.phases
 
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.Clause
-import org.neo4j.cypher.internal.ast.Create
+import org.neo4j.cypher.internal.ast.CreateOrInsert
 import org.neo4j.cypher.internal.ast.Foreach
 import org.neo4j.cypher.internal.ast.Merge
 import org.neo4j.cypher.internal.ast.ReturnItems
@@ -194,7 +194,7 @@ case object IsolateSubqueriesInMutatingPatterns extends StatementRewriter
     updateClause match {
       // For CREATE, filter out subqueries that have dependencies on entities created in the same clause.
       // Those are deprecated and rewriting them here would change the semantics of the query.
-      case Create(pattern) =>
+      case c: CreateOrInsert =>
         def getDefinedSymbols(previousClause: ASTNode): Set[LogicalVariable] =
           semanticTable
             .recordedScopes(previousClause)
@@ -206,7 +206,7 @@ case object IsolateSubqueriesInMutatingPatterns extends StatementRewriter
           .map(getDefinedSymbols)
           .getOrElse(Set.empty)
         // ... and what is defined now?
-        val allDefinedSymbols = getDefinedSymbols(pattern)
+        val allDefinedSymbols = getDefinedSymbols(c.pattern)
         // The difference is what is introduced in this CREATE.
         val newlyIntroducedSymbols = allDefinedSymbols -- previouslyDefinedSymbols
         newlyIntroducedSymbols.intersect(subqueryExpression.scopeDependencies).nonEmpty

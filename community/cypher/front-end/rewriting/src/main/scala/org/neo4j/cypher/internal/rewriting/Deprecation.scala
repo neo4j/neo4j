@@ -17,8 +17,8 @@
 package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.ast
-import org.neo4j.cypher.internal.ast.Create
 import org.neo4j.cypher.internal.ast.CreateDatabase
+import org.neo4j.cypher.internal.ast.CreateOrInsert
 import org.neo4j.cypher.internal.ast.CreateTextNodeIndex
 import org.neo4j.cypher.internal.ast.CreateTextRelationshipIndex
 import org.neo4j.cypher.internal.ast.NamespacedName
@@ -228,7 +228,7 @@ object Deprecations {
           ))
         ))
 
-      case Create(pattern) =>
+      case c: CreateOrInsert =>
         /*
         Note: When this deprecation turns into a semantic error in 6.0,
         we can clean up some code.
@@ -239,7 +239,7 @@ object Deprecations {
         Even though it won't need to look at the SemanticTable any more, it will still depend on
         SemanticAnalysis having run, so that these queries don't reach the IsolateSubqueriesInMutatingPatterns.
          */
-        propertyUsageOfNewVariable(pattern, semanticTable).collectFirst { e =>
+        propertyUsageOfNewVariable(c.pattern, semanticTable).collectFirst { e =>
           Deprecation(None, Some(DeprecatedPropertyReferenceInCreate(e.position, e.name)))
         }
 

@@ -376,6 +376,8 @@ object Neo4jExceptionToExecutionFailed {
       INVALID_CLAUSE_COMPOSITION
     else if (msg.startsWith("An Exists Expression cannot contain any updates"))
       INVALID_CLAUSE_COMPOSITION
+    else if (msg.startsWith("Only directed relationships are supported in INSERT"))
+      REQUIRES_DIRECTED_RELATIONSHIP
     else
       msg.replaceAll(DOTALL + POSITION_PATTERN, "")
   }

@@ -450,6 +450,36 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
     assertNoDeprecations(notDeprecated)
   }
 
+  test("Deprecate property references across patterns in INSERT") {
+    val deprecated = Seq(
+      "INSERT (a {foo:1}), (b {foo:a.foo})",
+      "INSERT (b {prop: a.prop}), (a)",
+      "INSERT (a), (b)-[r: REL {prop: a.prop}]->(c)",
+      "INSERT (b)-[r: REL {prop: a.prop}]->(c), (a)",
+      "INSERT (b)-[a: REL]->(c), (d {prop:a.prop})",
+      "INSERT (a), (b {prop: EXISTS {(a)-->()}})",
+      "INSERT (b {prop: EXISTS {(a)-->()}}), (a)",
+      "INSERT (a), (a)-[:REL]->({prop:a.prop})",
+      "INSERT (a), (b {prop: labels(a)})"
+    )
+
+    val notDeprecated = Seq(
+      "MATCH (n) INSERT (a {prop: n.prop})",
+      "MATCH (a) INSERT (a)-[:REL]->({prop:a.prop})",
+      "INSERT (a)-[:REL]->(a)",
+      "INSERT (a), (a)-[:REL]->(b)"
+    )
+
+    assertNotification(
+      deprecated,
+      shouldContainNotification = true,
+      "a",
+      deprecatedPropertyReferenceInCreate
+    )
+
+    assertNoDeprecations(notDeprecated)
+  }
+
   test("Deprecate unicode '\\u0085' if used in identifiers") {
     val deprecated = Seq(
       "CREATE (a {f\\u0085oo:1})",

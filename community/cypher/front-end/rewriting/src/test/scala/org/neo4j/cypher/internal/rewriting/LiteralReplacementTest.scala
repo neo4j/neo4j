@@ -153,8 +153,21 @@ class LiteralReplacementTest extends CypherFunSuite with AstConstructionTestSupp
 
   test("should extract literals in create statement clause") {
     assertRewrite(
-      "create (a {a:0, b:'name 0', c:10000000, d:'a very long string 0'})",
-      "create (a {a:$`  AUTOINT0`, b:$`  AUTOSTRING1`, c:$`  AUTOINT2`, d:$`  AUTOSTRING3`})",
+      "CREATE (a {a:0, b:'name 0', c:10000000, d:'a very long string 0'})",
+      "CREATE (a {a:$`  AUTOINT0`, b:$`  AUTOSTRING1`, c:$`  AUTOINT2`, d:$`  AUTOSTRING3`})",
+      Map(
+        autoParameter("  AUTOINT0", CTInteger) -> 0,
+        autoParameter("  AUTOSTRING1", CTString, Some(6)) -> "name 0",
+        autoParameter("  AUTOINT2", CTInteger) -> 10000000,
+        autoParameter("  AUTOSTRING3", CTString, Some(20)) -> "a very long string 0"
+      )
+    )
+  }
+
+  test("should extract literals in insert statement clause") {
+    assertRewrite(
+      "INSERT (a {a:0, b:'name 0', c:10000000, d:'a very long string 0'})",
+      "INSERT (a {a:$`  AUTOINT0`, b:$`  AUTOSTRING1`, c:$`  AUTOINT2`, d:$`  AUTOSTRING3`})",
       Map(
         autoParameter("  AUTOINT0", CTInteger) -> 0,
         autoParameter("  AUTOSTRING1", CTString, Some(6)) -> "name 0",

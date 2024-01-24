@@ -2202,7 +2202,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     query.tail shouldBe empty
   }
 
-  test("Should combine two patterns into one") {
+  test("Should combine two CREATE patterns into one") {
     val query = buildSinglePlannerQuery(
       """CREATE (a)-[r1:R {p: 1}]->(b)
         |CREATE (c)-[r2: R {p: 1}]->(d)""".stripMargin

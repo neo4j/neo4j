@@ -87,7 +87,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
     semanticCheckFold(pattern.patternParts)(declareVariables(ctx)) chain
       semanticCheckFold(pattern.patternParts)(check(ctx)) ifOkChain
       semanticCheckFold(pattern.patternParts)(checkMinimumNodeCount) ifOkChain
-      when(ctx != SemanticContext.Create) {
+      when(ctx != SemanticContext.Create && ctx != SemanticContext.Insert) {
         ensureNoIllegalReferencesOut(pattern) chain
           ensureNoRepeatedRelationships(pattern) chain
           ensureNoRepeatedVarLengthRelationships(pattern)
@@ -452,6 +452,8 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
     def checkNotUndirectedWhenCreating: SemanticCheck = {
       ctx match {
         case SemanticContext.Create if x.direction == SemanticDirection.BOTH =>
+          error(s"Only directed relationships are supported in ${name(ctx)}", x.position)
+        case SemanticContext.Insert if x.direction == SemanticDirection.BOTH =>
           error(s"Only directed relationships are supported in ${name(ctx)}", x.position)
         case _ =>
           SemanticCheck.success

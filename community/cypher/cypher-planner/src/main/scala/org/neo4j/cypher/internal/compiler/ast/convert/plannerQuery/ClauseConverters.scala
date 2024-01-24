@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.AscSortItem
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.CommandClause
-import org.neo4j.cypher.internal.ast.Create
+import org.neo4j.cypher.internal.ast.CreateOrInsert
 import org.neo4j.cypher.internal.ast.Delete
 import org.neo4j.cypher.internal.ast.DescSortItem
 import org.neo4j.cypher.internal.ast.Foreach
@@ -173,7 +173,7 @@ object ClauseConverters {
     case c: With            => addWithToLogicalPlanInput(acc, c, nextClause)
     case c: Unwind          => addUnwindToLogicalPlanInput(acc, c)
     case c: ResolvedCall    => addCallToLogicalPlanInput(acc, c)
-    case c: Create          => addCreateToLogicalPlanInput(acc, c)
+    case c: CreateOrInsert  => addCreateToLogicalPlanInput(acc, c)
     case c: SetClause       => addSetClauseToLogicalPlanInput(acc, c)
     case c: Delete          => addDeleteToLogicalPlanInput(acc, c)
     case c: Remove          => addRemoveToLogicalPlanInput(acc, c)
@@ -386,7 +386,7 @@ object ClauseConverters {
         builder.amendQueryGraph(_.addMutatingPatterns(toSetPattern(acc.semanticTable)(item)))
     }
 
-  private def addCreateToLogicalPlanInput(builder: PlannerQueryBuilder, clause: Create): PlannerQueryBuilder = {
+  private def addCreateToLogicalPlanInput(builder: PlannerQueryBuilder, clause: CreateOrInsert): PlannerQueryBuilder = {
     val commands = new ArrayBuffer[CreateCommand]()
 
     // We need this locally to avoid creating nodes twice if they occur

@@ -58,12 +58,14 @@ object Pattern {
     case object Match extends SemanticContext
     case object Merge extends SemanticContext
     case object Create extends SemanticContext
+    case object Insert extends SemanticContext
     case object Expression extends SemanticContext
 
     def name(ctx: SemanticContext): String = ctx match {
       case Match      => "MATCH"
       case Merge      => "MERGE"
       case Create     => "CREATE"
+      case Insert     => "INSERT"
       case Expression => "expression"
     }
 
@@ -71,6 +73,7 @@ object Pattern {
       case Match      => "a MATCH clause"
       case Merge      => "a MERGE clause"
       case Create     => "a CREATE clause"
+      case Insert     => "an INSERT clause"
       case Expression => "an expression"
     }
   }

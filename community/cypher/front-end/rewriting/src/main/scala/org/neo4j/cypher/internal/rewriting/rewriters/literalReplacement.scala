@@ -18,7 +18,7 @@ package org.neo4j.cypher.internal.rewriting.rewriters
 
 import org.neo4j.cypher.internal.ast.CallClause
 import org.neo4j.cypher.internal.ast.Clause
-import org.neo4j.cypher.internal.ast.Create
+import org.neo4j.cypher.internal.ast.CreateOrInsert
 import org.neo4j.cypher.internal.ast.Limit
 import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.Merge
@@ -73,7 +73,7 @@ object literalReplacement {
   private val literalMatcher
     : PartialFunction[Any, LiteralReplacements => Foldable.FoldingBehavior[LiteralReplacements]] = {
     case _: Match |
-      _: Create |
+      _: CreateOrInsert |
       _: Merge |
       _: SetClause |
       _: Return |
