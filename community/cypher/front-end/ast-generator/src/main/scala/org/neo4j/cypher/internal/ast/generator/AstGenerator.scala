@@ -156,6 +156,7 @@ import org.neo4j.cypher.internal.ast.IfExistsReplace
 import org.neo4j.cypher.internal.ast.IfExistsThrowError
 import org.neo4j.cypher.internal.ast.ImpersonateUserAction
 import org.neo4j.cypher.internal.ast.IndefiniteWait
+import org.neo4j.cypher.internal.ast.Insert
 import org.neo4j.cypher.internal.ast.IsNormalized
 import org.neo4j.cypher.internal.ast.IsNotNormalized
 import org.neo4j.cypher.internal.ast.IsNotTyped
@@ -1217,6 +1218,59 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     parts <- oneOrMore(_nonPrefixedPatternPart)
   } yield Pattern.ForUpdate(parts)(pos)
 
+  def _patternForInsert: Gen[Pattern.ForUpdate] = for {
+    parts <- oneOrMore(_insertPatternPart)
+  } yield Pattern.ForUpdate(parts)(pos)
+
+  def _insertPatternPart: Gen[AnonymousPatternPart] = for {
+    element <- _insertPatternElement
+    part <- PathPatternPart(element)
+  } yield part
+
+  def _insertPatternElement: Gen[SimplePattern] = oneOf(
+    _insertNodePattern,
+    lzy(_insertRelationshipChain)
+  )
+
+  def _insertNodePattern: Gen[NodePattern] = for {
+    variable <- option(_variable)
+    containsIs <- boolean
+    labelExpression <- option(_insertNodeLabelExpression(containsIs))
+    properties <- option(oneOf(_map, _parameter))
+  } yield NodePattern(variable, labelExpression, properties, None)(pos)
+
+  def _insertNodeLabelExpression(containsIs: Boolean): Gen[LabelExpression] = {
+
+    def _insertLabelExpressionConjunction(): Gen[LabelExpression.Conjunctions] = for {
+      lhs <- _insertNodeLabelExpression(containsIs)
+      rhs <- _insertNodeLabelExpression(containsIs)
+    } yield LabelExpression.Conjunctions.flat(lhs, rhs, pos, containsIs)
+
+    for {
+      labelExpr <- frequency(
+        5 ->
+          lzy(Some(NODE_TYPE) match {
+            case Some(NODE_TYPE) => _labelName.map(Leaf(_, containsIs))
+          }),
+        1 -> lzy(_insertLabelExpressionConjunction())
+      )
+    } yield labelExpr
+  }
+
+  def _insertRelationshipChain: Gen[RelationshipChain] = for {
+    element <- _insertPatternElement
+    relationship <- _insertRelationshipPattern
+    rightNode <- _insertNodePattern
+  } yield RelationshipChain(element, relationship, rightNode)(pos)
+
+  def _insertRelationshipPattern: Gen[RelationshipPattern] = for {
+    variable <- option(_variable)
+    containsIs <- boolean
+    labelExpression <- _relTypeName.map(Leaf(_, containsIs))
+    properties <- option(oneOf(_map, _parameter))
+    direction <- _semanticDirection
+  } yield RelationshipPattern(variable, Some(labelExpression), None, properties, None, direction)(pos)
+
   // CLAUSES
   // ==========================================================================
 
@@ -1295,6 +1349,10 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   def _create: Gen[Create] = for {
     pattern <- _patternForUpdate
   } yield Create(pattern)(pos)
+
+  def _insert: Gen[Insert] = for {
+    pattern <- _patternForInsert
+  } yield Insert(pattern)(pos)
 
   def _unwind: Gen[Unwind] = for {
     expression <- _expression
@@ -1451,6 +1509,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     lzy(_return),
     lzy(_match),
     lzy(_create),
+    lzy(_insert),
     lzy(_unwind),
     lzy(_set),
     lzy(_remove),

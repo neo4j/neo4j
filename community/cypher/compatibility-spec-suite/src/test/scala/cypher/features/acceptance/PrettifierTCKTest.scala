@@ -99,9 +99,6 @@ class PrettifierTCKTest extends FeatureTest with FeatureQueryTest with Matchers 
     """Feature "GpmSyntaxMixingAcceptance": Scenario "Mixing QPP and var-length relationship quantifiers in pattern expressions in same statement - syntax error"""",
     """Feature "GpmSyntaxMixingAcceptance": Scenario "Mixing IS in SET with colon conjunction in MATCH and REMOVE - OK"""",
 
-    // INSERT synonym to CREATE is not yet implemented
-    """Feature "GpmSyntaxMixingAcceptance": Scenario "INSERT with only & conjunction - OK"""",
-
     // DIFFERENT NODES is not yet implemented
     """Feature "GpmSyntaxMixingAcceptance": Scenario "DIFFERENT NODES with var-length relationship - OK"""",
     """Feature "GpmSyntaxMixingAcceptance": Scenario "Explicit match mode with shortestPath - syntax error""""

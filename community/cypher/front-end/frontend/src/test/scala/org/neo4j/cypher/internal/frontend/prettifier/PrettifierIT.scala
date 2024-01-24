@@ -70,6 +70,10 @@ class PrettifierIT extends CypherFunSuite {
     "create (a)--(b) RETURN a" ->
       """CREATE (a)--(b)
         |RETURN a""".stripMargin,
+    "insert (n :label{prop:1})" -> "INSERT (n:label {prop: 1})",
+    "insert (a)-[:R]->(b) RETURN a" ->
+      """INSERT (a)-[:R]->(b)
+        |RETURN a""".stripMargin,
     "match (a:Label {prop: 1}) RETURN a" ->
       """MATCH (a:Label {prop: 1})
         |RETURN a""".stripMargin,

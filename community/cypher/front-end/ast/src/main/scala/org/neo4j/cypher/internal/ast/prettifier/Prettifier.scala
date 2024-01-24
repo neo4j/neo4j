@@ -106,6 +106,7 @@ import org.neo4j.cypher.internal.ast.IfExistsDoNothing
 import org.neo4j.cypher.internal.ast.IfExistsInvalidSyntax
 import org.neo4j.cypher.internal.ast.IfExistsReplace
 import org.neo4j.cypher.internal.ast.IfExistsThrowError
+import org.neo4j.cypher.internal.ast.Insert
 import org.neo4j.cypher.internal.ast.LabelAllQualifier
 import org.neo4j.cypher.internal.ast.LabelQualifier
 import org.neo4j.cypher.internal.ast.LabelResource
@@ -1037,6 +1038,7 @@ case class Prettifier(
       case w: With                        => asString(w)
       case y: Yield                       => asString(y)
       case c: Create                      => asString(c)
+      case i: Insert                      => asString(i)
       case u: Unwind                      => asString(u)
       case u: UnresolvedCall              => asString(u)
       case s: ShowIndexesClause           => asString(s)
@@ -1233,6 +1235,11 @@ case class Prettifier(
     def asString(c: Create): String = {
       val p = expr.patterns.apply(c.pattern)
       s"${INDENT}CREATE $p"
+    }
+
+    def asString(i: Insert): String = {
+      val p = expr.patterns.apply(i.pattern)
+      s"${INDENT}INSERT $p"
     }
 
     def asString(u: Unwind): String = {
