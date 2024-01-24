@@ -140,6 +140,7 @@ sealed abstract class CypherExecutionMode(val modeName: String) extends CypherOp
   override def render: String = super.render.toUpperCase(Locale.ROOT)
   override def cacheKey: String = super.cacheKey.toUpperCase(Locale.ROOT)
   def isExplain: Boolean = this == CypherExecutionMode.explain
+  def isProfile: Boolean = this == CypherExecutionMode.profile
 }
 
 case object CypherExecutionMode extends CypherOptionCompanion[CypherExecutionMode](

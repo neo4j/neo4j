@@ -35,6 +35,7 @@ import org.neo4j.fabric.executor.Location;
 import org.neo4j.fabric.executor.QueryStatementLifecycles;
 import org.neo4j.fabric.transaction.ErrorReporter;
 import org.neo4j.fabric.transaction.TransactionMode;
+import org.neo4j.fabric.util.Errors;
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -153,6 +154,14 @@ public class QueryRouterImpl implements QueryRouter {
         }
     }
 
+    private CypherExecutionMode executionMode(QueryOptions queryOptions, Boolean isComposite) {
+        CypherExecutionMode cypherExecutionMode = queryOptions.queryOptions().executionMode();
+        if (isComposite && cypherExecutionMode.isProfile()) {
+            Errors.semantic("'PROFILE' is not supported on composite databases.");
+        }
+        return cypherExecutionMode;
+    }
+
     private LocationService createLocationService(RoutingInfo routingInfo) {
         return locationServiceFactory.apply(routingInfo);
     }
@@ -194,7 +203,7 @@ public class QueryRouterImpl implements QueryRouter {
                     context.transactionInfo().isComposite());
             StatementType statementType = processedQueryInfo.statementType();
             QueryOptions queryOptions = processedQueryInfo.queryOptions();
-            CypherExecutionMode executionMode = queryOptions.queryOptions().executionMode();
+            CypherExecutionMode executionMode = executionMode(queryOptions, transactionInfo.isComposite());
             AccessMode accessMode = transactionInfo.accessMode();
             context.verifyStatementType(statementType);
             var target = processedQueryInfo.target();
