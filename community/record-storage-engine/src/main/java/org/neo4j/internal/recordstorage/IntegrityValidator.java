@@ -24,8 +24,8 @@ import static org.neo4j.kernel.KernelVersion.VERSION_NODE_VECTOR_INDEX_INTRODUCE
 import static org.neo4j.kernel.KernelVersion.VERSION_REL_UNIQUE_CONSTRAINTS_INTRODUCED;
 import static org.neo4j.kernel.KernelVersion.VERSION_TYPE_CONSTRAINTS_INTRODUCED;
 import static org.neo4j.kernel.KernelVersion.VERSION_UNIONS_AND_LIST_TYPE_CONSTRAINTS_INTRODUCED;
+import static org.neo4j.kernel.KernelVersion.VERSION_VECTOR_2_INTRODUCED;
 
-import org.neo4j.common.EntityType;
 import org.neo4j.internal.kernel.api.exceptions.DeletedNodeStillHasRelationshipsException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
@@ -65,11 +65,20 @@ class IntegrityValidator {
             final var schemaType = "index";
 
             if (index.getIndexType() == IndexType.VECTOR) {
-                if (index.schema().entityType() == EntityType.NODE
-                        && kernelVersion.isLessThan(VERSION_NODE_VECTOR_INDEX_INTRODUCED)) {
-                    throw upgradeNeededForSchemaRule(
-                            schemaType, index, kernelVersion, VERSION_NODE_VECTOR_INDEX_INTRODUCED);
-                } // Relationship vector index is not _currently_ supported
+                switch (index.schema().entityType()) {
+                    case NODE -> {
+                        if (kernelVersion.isLessThan(VERSION_NODE_VECTOR_INDEX_INTRODUCED)) {
+                            throw upgradeNeededForSchemaRule(
+                                    schemaType, index, kernelVersion, VERSION_NODE_VECTOR_INDEX_INTRODUCED);
+                        }
+                    }
+                    case RELATIONSHIP -> {
+                        if (kernelVersion.isLessThan(VERSION_VECTOR_2_INTRODUCED)) {
+                            throw upgradeNeededForSchemaRule(
+                                    schemaType, index, kernelVersion, VERSION_VECTOR_2_INTRODUCED);
+                        }
+                    }
+                }
             }
 
         } else if (schemaRule instanceof final ConstraintDescriptor constraint) {

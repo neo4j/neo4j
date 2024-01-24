@@ -140,6 +140,7 @@ import org.neo4j.kernel.api.exceptions.schema.RepeatedRelationshipTypeInSchemaEx
 import org.neo4j.kernel.api.exceptions.schema.RepeatedSchemaComponentException;
 import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
+import org.neo4j.kernel.api.impl.schema.vector.VectorIndexVersion;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.index.IndexingProvidersService;
@@ -1576,13 +1577,24 @@ public class Operations implements Write, SchemaWrite, Upgrade {
 
         // valid schema checks
         final var indexType = prototype.getIndexType();
+        exclusiveSchemaLock(prototype.schema());
 
         if (indexType == IndexType.VECTOR) {
             switch (prototype.schema().entityType()) {
                 case NODE -> assertSupportedInVersion(
                         "Failed to create node vector index.", KernelVersion.VERSION_NODE_VECTOR_INDEX_INTRODUCED);
-                case RELATIONSHIP -> throw new UnsupportedOperationException(
-                        "Relationship indexes are not supported for " + indexType.name() + " index type");
+                case RELATIONSHIP -> {
+                    assertSupportedInVersion(
+                            "Failed to create relationship vector index.", KernelVersion.VERSION_VECTOR_2_INTRODUCED);
+
+                    final var descriptor = prototype.getIndexProvider();
+                    final var version = VectorIndexVersion.fromDescriptor(descriptor);
+                    if (version == VectorIndexVersion.V1_0) {
+                        throw new UnsupportedOperationException(
+                                "Relationship vector indexes with provider '%s' are not supported."
+                                        .formatted(descriptor.name()));
+                    }
+                }
             }
         }
 

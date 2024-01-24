@@ -566,6 +566,18 @@ class SpecialisedIndexFullCheckTest {
         }
 
         @Override
+        IndexPrototype relIndex(KernelTransaction ktx, String propKey) throws KernelException {
+            return super.relIndex(ktx, propKey).withIndexProvider(descriptor).withIndexConfig(CONFIG);
+        }
+    }
+
+    @Nested
+    class VectorV1Index extends VectorIndexBase {
+        VectorV1Index() {
+            super(VectorIndexVersion.V1_0);
+        }
+
+        @Override
         IndexPrototype relIndex(KernelTransaction ktx, String propKey) {
             // relationship vector index is unsupported
             return null;
@@ -576,13 +588,6 @@ class SpecialisedIndexFullCheckTest {
         @ParameterizedTest
         @EnumSource(IndexSize.class)
         void shouldReportRelationshipsThatAreNotIndexed(IndexSize indexSize) {}
-    }
-
-    @Nested
-    class VectorV1Index extends VectorIndexBase {
-        VectorV1Index() {
-            super(VectorIndexVersion.V1_0);
-        }
     }
 
     @Nested

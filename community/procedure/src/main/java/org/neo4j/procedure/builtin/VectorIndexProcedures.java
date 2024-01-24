@@ -37,6 +37,7 @@ import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.internal.kernel.api.Cursor;
@@ -48,6 +49,7 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery.NearestNeighborsPredicate;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.kernel.api.ValueIndexCursor;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -149,6 +151,26 @@ public class VectorIndexProcedures {
         return new NodeIndexQuery(tx, ktx, name).query(Math.toIntExact(numberOfNearestNeighbours), query);
     }
 
+    @Description(
+            """
+            Query the given relationship vector index.
+            Returns requested number of nearest neighbors to the provided query vector,
+            and their similarity score to that query vector, based on the configured similarity function for the index.
+            The similarity score is a value between [0, 1]; where 0 indicates least similar, 1 most similar.
+            """)
+    @Procedure(name = "db.index.vector.queryRelationships", mode = READ)
+    public Stream<RelationshipNeighbor> queryRelationshipVectorIndex(
+            @Name("indexName") String name,
+            @Name("numberOfNearestNeighbours") Long numberOfNearestNeighbours,
+            @Name("query") AnyValue candidateQuery)
+            throws KernelException {
+        final var query = validateQueryArguments(name, numberOfNearestNeighbours, candidateQuery);
+        if (callContext.isSystemDatabase()) {
+            return Stream.empty();
+        }
+        return new RelationshipIndexQuery(tx, ktx, name).query(Math.toIntExact(numberOfNearestNeighbours), query);
+    }
+
     private static VectorCandidate validateQueryArguments(
             String name, Long numberOfNearestNeighbours, AnyValue candidateQuery) {
         Objects.requireNonNull(name, "'indexName' must not be null");
@@ -186,6 +208,17 @@ public class VectorIndexProcedures {
 
     // specifically for the deprecated `db.create.setVectorProperty`
     public record NodeRecord(Node node) {}
+
+    @Description(
+            "Set a vector property on a given relationship in a more space efficient representation than Cypher's SET.")
+    @Procedure(name = "db.create.setRelationshipVectorProperty", mode = WRITE)
+    public void setRelationshipVectorProperty(
+            @Name("relationship") Relationship relationship,
+            @Name("key") String propKey,
+            @Name("vector") AnyValue candidateQuery) {
+        setVectorProperty(
+                Objects.requireNonNull(relationship, "'relationship' must not be null"), propKey, candidateQuery);
+    }
 
     public void setVectorProperty(Entity entity, String propKey, AnyValue candidateVector) {
         Objects.requireNonNull(propKey, "'key' must not be null");
@@ -250,6 +283,35 @@ public class VectorIndexProcedures {
         @Override
         Stream<NodeNeighbor> stream(NodeValueIndexCursor cursor, int k) {
             return new NodeNeighborSpliterator(tx, cursor, k).stream();
+        }
+    }
+
+    private static class RelationshipIndexQuery extends IndexQuery<RelationshipValueIndexCursor, RelationshipNeighbor> {
+        private RelationshipIndexQuery(Transaction tx, KernelTransaction ktx, String name) {
+            super(EntityType.RELATIONSHIP, tx, ktx, name);
+        }
+
+        @Override
+        RelationshipValueIndexCursor cursor(
+                CursorFactory cursorFactory, CursorContext cursorContext, MemoryTracker memoryTracker) {
+            return cursorFactory.allocateRelationshipValueIndexCursor(cursorContext, memoryTracker);
+        }
+
+        @Override
+        void seek(
+                Read read,
+                QueryContext queryContext,
+                IndexReadSession session,
+                RelationshipValueIndexCursor cursor,
+                IndexQueryConstraints constraints,
+                NearestNeighborsPredicate query)
+                throws KernelException {
+            read.relationshipIndexSeek(queryContext, session, cursor, constraints, query);
+        }
+
+        @Override
+        Stream<RelationshipNeighbor> stream(RelationshipValueIndexCursor cursor, int k) {
+            return new RelationshipNeighborSpliterator(tx, cursor, k).stream();
         }
     }
 
@@ -344,6 +406,27 @@ public class VectorIndexProcedures {
         }
     }
 
+    /**
+     * @param relationship a relationship within the query point's neighborhood
+     * @param score similarity in [0, 1]; 0 indicates furthest, 1 closest.
+     */
+    public record RelationshipNeighbor(Relationship relationship, double score)
+            implements Neighbor<Relationship, RelationshipNeighbor> {
+        @Override
+        public Relationship entity() {
+            return relationship;
+        }
+
+        public static RelationshipNeighbor forExistingEntityOrNull(Transaction tx, long relId, float score) {
+            try {
+                return new RelationshipNeighbor(tx.getRelationshipById(relId), score);
+            } catch (NotFoundException ignore) {
+                // This relationship was most likely deleted by a concurrent transaction, so we just ignore it.
+                return null;
+            }
+        }
+    }
+
     public interface Neighbor<ENTITY extends Entity, NEIGHBOR extends Neighbor<ENTITY, NEIGHBOR>>
             extends Comparable<NEIGHBOR> {
         ENTITY entity();
@@ -368,6 +451,14 @@ public class VectorIndexProcedures {
         @Override
         public NodeNeighbor neighbor() {
             return NodeNeighbor.forExistingEntityOrNull(tx, cursor.nodeReference(), cursor.score());
+        }
+    }
+
+    private record RelationshipNeighborSpliterator(Transaction tx, RelationshipValueIndexCursor cursor, int k)
+            implements NeighborSpliterator<RelationshipNeighbor> {
+        @Override
+        public RelationshipNeighbor neighbor() {
+            return RelationshipNeighbor.forExistingEntityOrNull(tx, cursor.relationshipReference(), cursor.score());
         }
     }
 

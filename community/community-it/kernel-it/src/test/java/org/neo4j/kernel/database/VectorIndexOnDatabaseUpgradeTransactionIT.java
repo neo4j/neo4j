@@ -143,7 +143,8 @@ class VectorIndexOnDatabaseUpgradeTransactionIT {
     private static Stream<Arguments> indexes() {
         return Stream.of(
                 Arguments.of(EntityType.NODE, VectorIndexVersion.V1_0),
-                Arguments.of(EntityType.NODE, VectorIndexVersion.V2_0));
+                Arguments.of(EntityType.NODE, VectorIndexVersion.V2_0),
+                Arguments.of(EntityType.RELATIONSHIP, VectorIndexVersion.V2_0));
     }
 
     private void createIndex(Transaction tx, EntityType entityType, VectorIndexVersion indexVersion) {

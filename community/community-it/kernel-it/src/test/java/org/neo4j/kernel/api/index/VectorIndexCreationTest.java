@@ -45,6 +45,7 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.database.DbmsRuntimeVersion;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
@@ -436,6 +437,32 @@ public class VectorIndexCreationTest {
         @Override
         protected IndexCreator indexCreator(Transaction tx) {
             return tx.schema().indexFor(LABEL);
+        }
+    }
+
+    @Nested
+    class RelIndex extends VectorIndexCreationTestBase {
+
+        private static final RelationshipType REL_TYPE = Tokens.Factories.RELATIONSHIP_TYPE.fromName("VECTOR");
+        private int relTypeId;
+
+        RelIndex() {
+            super(KernelVersion.VERSION_VECTOR_2_INTRODUCED);
+        }
+
+        @Override
+        void setup(KernelTransaction ktx) throws KernelException {
+            relTypeId = Tokens.Factories.RELATIONSHIP_TYPE.getId(ktx, REL_TYPE);
+        }
+
+        @Override
+        protected SchemaDescriptor schemaDescriptor(int... propKeyIds) {
+            return SchemaDescriptors.forRelType(relTypeId, propKeyIds);
+        }
+
+        @Override
+        protected IndexCreator indexCreator(Transaction tx) {
+            return tx.schema().indexFor(REL_TYPE);
         }
     }
 }
