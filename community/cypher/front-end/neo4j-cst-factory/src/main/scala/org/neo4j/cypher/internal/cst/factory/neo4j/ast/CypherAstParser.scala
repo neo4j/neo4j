@@ -20,6 +20,7 @@ import org.antlr.v4.runtime.BailErrorStrategy
 import org.antlr.v4.runtime.CharStreams
 import org.antlr.v4.runtime.CommonTokenStream
 import org.antlr.v4.runtime.ParserRuleContext
+import org.antlr.v4.runtime.Token
 import org.antlr.v4.runtime.TokenStream
 import org.antlr.v4.runtime.tree.ErrorNode
 import org.antlr.v4.runtime.tree.ParseTreeListener
@@ -40,10 +41,6 @@ class CypherAstParser private (input: TokenStream, createAst: Boolean) extends C
   private[this] var syntaxChecker: SyntaxChecker = _
   private[this] var errorListener: SyntaxErrorListener = _
 
-  // Saves significant amounts of memory during parsing.
-  // One alternative is to build parse tree, but manually clear children as we go.
-  setBuildParseTree(false)
-
   removeErrorListeners() // Avoid printing errors to stdout
   addErrorListener(errorListener) // TODO Is this necessary when we have BailErrorStrategy?
   setErrorHandler(new BailErrorStrategy) // Is this the right choice?
@@ -56,6 +53,11 @@ class CypherAstParser private (input: TokenStream, createAst: Boolean) extends C
       // These could be added using `addParseListener` too, but this is faster
       syntaxChecker.exitEveryRule(localCtx)
       astBuilder.exitEveryRule(localCtx)
+
+      // Save memory by removing the parse tree as we go.
+      // Alternatively we could use setBuildParseTree(false) which would be even more efficient,
+      // but requires changes to the listeners (work without accessing the children) and grammar (label everything).
+      localCtx.children = null
 
       // Throw exception if EOF is not reached
       if (_ctx == null) {
@@ -75,7 +77,7 @@ class CypherAstParser private (input: TokenStream, createAst: Boolean) extends C
 
   // TODO Tests for this
   private def throwIfEofNotReached(ctx: ParserRuleContext): Unit = {
-    if (!matchedEOF) {
+    if (!matchedEOF && getInputStream.LA(1) != Token.EOF) {
       // TODO can be null
       val tokenText = ctx.stop.getText
       val tokenLine = ctx.stop.getLine
