@@ -106,6 +106,9 @@ public class FabricLocalExecutor {
                 Flux<Record> input,
                 ExecutionOptions executionOptions) {
             var databaseFacade = getDatabaseFacade(location);
+            bookmarkManager
+                    .getBookmarkForLocal(location)
+                    .ifPresent(bookmark -> transactionIdTracker.awaitGraphUpToDate(location, bookmark.transactionId()));
             var kernelTransaction = beginKernelTx(databaseFacade);
 
             var driverResult = kernelTransaction.run(query, params, input, parentLifecycle, executionOptions);
