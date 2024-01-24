@@ -224,8 +224,8 @@ class CallInTransactionsExecutor extends SingleQueryFragmentExecutor {
         if (callInTransactions.outputColumns().isEmpty()) {
             resultStream = resultStream.map(outputRecord -> getMatchingInputRecord(outputRecord, inputRecords));
         } else {
-            resultStream = resultStream.map(
-                    outputRecord -> Records.join(getMatchingInputRecord(outputRecord, inputRecords), outputRecord));
+            resultStream = resultStream.map(outputRecord ->
+                    Records.join(getMatchingInputRecord(outputRecord, inputRecords), stripRowIdColumn(outputRecord)));
         }
         batchGraph = null;
         batchTransactionMode = null;
@@ -239,6 +239,16 @@ class CallInTransactionsExecutor extends SingleQueryFragmentExecutor {
         var rowId = (IntegralValue) outputRecord.getValue(rowIdColumn);
         var rowIdAsInt = rowId instanceof LongValue ? (int) ((LongValue) rowId).value() : rowId.intValue();
         return inputRecords.get(rowIdAsInt).record;
+    }
+
+    private Record stripRowIdColumn(Record record) {
+        AnyValue[] values = new AnyValue[record.size() - 1];
+        // We are using the knowledge that Stitcher adds Row ID column always as the last column.
+        for (int i = 0; i < record.size() - 1; i++) {
+            values[i] = record.getValue(i);
+        }
+
+        return Records.of(values);
     }
 
     private Record checkBreakCondition(Record outputRecord) {

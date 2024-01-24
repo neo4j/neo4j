@@ -104,9 +104,10 @@ case class FabricStitcher(
       }
       apply.copy(input = processCompositeCallInTx(apply.input), inner = newExec)(apply.pos)
     }
-    case init: Init => init
-    case exec: Exec => exec.copy(input = processCompositeCallInTx(exec.input))
-    case f          => throw new IllegalArgumentException("Unexpected fragment: " + f);
+    case apply: Apply => apply.copy(input = processCompositeCallInTx(apply.input))(apply.pos)
+    case init: Init   => init
+    case exec: Exec   => exec.copy(input = processCompositeCallInTx(exec.input))
+    case f            => throw new IllegalArgumentException("Unexpected fragment: " + f);
   }
 
   private def constructCallInTransactionExec(
