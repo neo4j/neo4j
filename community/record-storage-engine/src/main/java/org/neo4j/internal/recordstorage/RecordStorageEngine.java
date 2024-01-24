@@ -531,7 +531,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
             CursorContext cursorContext,
             CommandCreationContext commandCreationContext,
             boolean rolledBack) {
-        if (rolledBack && commandCreationContext.resetIds()) {
+        if (rolledBack && !txState.isMultiChunk() && commandCreationContext.resetIds()) {
             return;
         }
 

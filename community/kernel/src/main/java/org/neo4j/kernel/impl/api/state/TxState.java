@@ -123,6 +123,7 @@ public class TxState implements TransactionState {
     private long revision;
     private long dataRevision;
     private final TransactionEvent transactionEvent;
+    private boolean isMultiChunk;
 
     @VisibleForTesting
     public TxState() {
@@ -845,6 +846,15 @@ public class TxState implements TransactionState {
     public <EX extends Exception> boolean deletedRelationshipVisit(
             long relId, RelationshipVisitorWithProperties<EX> visitor) throws EX {
         return getRelationshipStateEvenThoDeleted(relId).accept(visitor);
+    }
+
+    public void markAsMultiChunk() {
+        isMultiChunk = true;
+    }
+
+    @Override
+    public boolean isMultiChunk() {
+        return isMultiChunk;
     }
 
     @Override

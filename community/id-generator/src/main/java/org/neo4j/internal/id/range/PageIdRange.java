@@ -52,6 +52,11 @@ public interface PageIdRange {
         public long pageId() {
             return -1;
         }
+
+        @Override
+        public String toString() {
+            return "EMPTY_RANGE";
+        }
     };
 
     static PageIdRange wrap(long[] ids, int idsPerPage) {

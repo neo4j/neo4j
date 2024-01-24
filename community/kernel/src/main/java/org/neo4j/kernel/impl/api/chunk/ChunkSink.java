@@ -62,6 +62,7 @@ public final class ChunkSink implements ChunkedTransactionSink {
     public void write(TxState txState, TransactionEvent transactionEvent) {
         MemoryTracker memoryTracker = txState.memoryTracker();
         if (memoryTracker.estimatedHeapMemory() > chunkSize) {
+            txState.markAsMultiChunk();
             try (var chunkWriteEvent = transactionEvent.beginChunkWriteEvent()) {
                 eventListeners.beforeCommit(txState, false);
 

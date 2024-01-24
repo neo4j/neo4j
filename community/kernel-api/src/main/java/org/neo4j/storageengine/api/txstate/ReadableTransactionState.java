@@ -165,4 +165,9 @@ public interface ReadableTransactionState {
      * @return {@code true} if there are any <em>data</em> changes in the transaction.
      */
     boolean hasDataChanges();
+
+    /**
+     * @return {@code true} if this transaction state is multi chunked
+     */
+    boolean isMultiChunk();
 }
