@@ -620,6 +620,11 @@ public class NullAstFactory
     }
 
     @Override
+    public NULL insertClause(NULL p, List<NULL> nulls) {
+        return null;
+    }
+
+    @Override
     public NULL setClause(NULL p, List<NULL> nulls) {
         return null;
     }
@@ -717,6 +722,11 @@ public class NullAstFactory
 
     @Override
     public NULL pathPattern(NULL aNull) {
+        return null;
+    }
+
+    @Override
+    public NULL insertPathPattern(List<NULL> nulls) {
         return null;
     }
 

@@ -423,6 +423,26 @@ class CountExpressionParserTest extends AstParsingTestBase with LegacyAstParsing
 
   test(
     """MATCH (m)
+      |WHERE COUNT { INSERT (n) } > 9
+      |RETURN m""".stripMargin
+  ) {
+    val countExpression: CountExpression = CountExpression(
+      singleQuery(
+        insert(nodePat(name = Some("n"), namePos = InputPosition(32, 2, 23), position = InputPosition(31, 2, 22))),
+        InputPosition(24, 2, 15)
+      )
+    )(InputPosition(16, 2, 7), None, None)
+
+    givesIncludingPositions {
+      singleQuery(
+        match_(nodePat(name = Some("m")), where = Some(where(greaterThan(countExpression, literal(9))))),
+        return_(variableReturnItem("m"))
+      )
+    }
+  }
+
+  test(
+    """MATCH (m)
       |WHERE COUNT { MATCH (n) WHERE all(i in n.prop WHERE i = 4) RETURN n } = 1
       |RETURN m""".stripMargin
   ) {

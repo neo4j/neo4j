@@ -59,6 +59,12 @@ public interface ASTExceptionFactory {
     String periodicCommitNotSupported =
             "The PERIODIC COMMIT query hint is no longer supported. Please use CALL { ... } IN TRANSACTIONS instead.";
 
+    String namedPatternInInsertNotSupported =
+            "Named patterns are not allowed in `INSERT`. Use `CREATE` instead or remove the name.";
+
+    String colonConjunctionInInsertNotSupported =
+            "Colon conjunction is not allowed in INSERT. Use `CREATE` instead or conjunction with `&` instead.";
+
     static String invalidHintIndexType(HintIndexType got) {
         final String HINT_TYPES = Arrays.stream(HintIndexType.values())
                 .filter(hintIndexType -> !(hintIndexType == HintIndexType.BTREE || hintIndexType == HintIndexType.ANY))

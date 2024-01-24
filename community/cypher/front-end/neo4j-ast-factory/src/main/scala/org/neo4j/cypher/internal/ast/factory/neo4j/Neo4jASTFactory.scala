@@ -166,6 +166,7 @@ import org.neo4j.cypher.internal.ast.IfExistsReplace
 import org.neo4j.cypher.internal.ast.IfExistsThrowError
 import org.neo4j.cypher.internal.ast.ImpersonateUserAction
 import org.neo4j.cypher.internal.ast.IndefiniteWait
+import org.neo4j.cypher.internal.ast.Insert
 import org.neo4j.cypher.internal.ast.IsNormalized
 import org.neo4j.cypher.internal.ast.IsNotNormalized
 import org.neo4j.cypher.internal.ast.IsNotTyped
@@ -691,6 +692,11 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     Create(Pattern.ForUpdate(patternList)(patterns.asScala.map(_.position).minBy(_.offset)))(p)
   }
 
+  override def insertClause(p: InputPosition, patterns: util.List[PatternPart]): Clause = {
+    val patternList: Seq[NonPrefixedPatternPart] = patterns.asScala.toList.asInstanceOf[List[NonPrefixedPatternPart]]
+    Insert(Pattern.ForUpdate(patternList)(patterns.asScala.map(_.position).minBy(_.offset)))(p)
+  }
+
   override def matchClause(
     p: InputPosition,
     optional: Boolean,
@@ -913,6 +919,10 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
   override def pathPattern(patternElement: PatternElement): PatternPart =
     PathPatternPart(patternElement)
 
+  override def insertPathPattern(atoms: util.List[PatternAtom]): PatternPart = {
+    PathPatternPart(getPatternElement(atoms))
+  }
+
   override def patternWithSelector(
     selector: PatternPart.Selector,
     patternPart: PatternPart
@@ -929,7 +939,10 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
   }
 
   override def patternElement(atoms: util.List[PatternAtom]): PatternElement = {
+    getPatternElement(atoms)
+  }
 
+  private def getPatternElement(atoms: util.List[PatternAtom]): PatternElement = {
     val iterator = atoms.iterator().asScala.buffered
 
     var factors = Seq.empty[PathFactor]

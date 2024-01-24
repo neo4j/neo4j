@@ -176,6 +176,8 @@ public interface ASTFactory<
 
     CLAUSE createClause(POS p, List<PATTERN> patterns);
 
+    CLAUSE insertClause(POS p, List<PATTERN> patterns);
+
     SET_CLAUSE setClause(POS p, List<SET_ITEM> setItems);
 
     SET_ITEM setProperty(PROPERTY property, EXPRESSION value);
@@ -231,6 +233,8 @@ public interface ASTFactory<
     PATTERN allShortestPathsPattern(POS p, PATTERN_ELEMENT patternElement);
 
     PATTERN pathPattern(PATTERN_ELEMENT patternElement);
+
+    PATTERN insertPathPattern(List<PATTERN_ATOM> atoms);
 
     PATTERN_ELEMENT patternElement(List<PATTERN_ATOM> atoms);
 

@@ -521,6 +521,7 @@ TOKEN [IGNORE_CASE] :
     | < INDEXES: "INDEXES" >
     | < INF: "INF" >
     | < INFINITY: "INFINITY" >
+    | < INSERT: "INSERT">
     | < INT: "INT" >
     | < INTEGER: "INTEGER" >
     | < IS: "IS" >
@@ -1713,6 +1714,7 @@ CLAUSE Clause() throws Exception:
         x=UseClause()
         | x=ReturnClause()
         | x=CreateClause() // because create index/constraint
+        | x=InsertClause()
         | x=DeleteClause()
         | x=SetClause()
         | x=RemoveClause()
@@ -1910,6 +1912,20 @@ CLAUSE CreateClause() throws Exception:
     t=<CREATE> patterns=PatternList()
     {
         return astFactory.createClause( pos( t ), patterns );
+    }
+}
+
+// INSERT
+
+CLAUSE InsertClause() throws Exception:
+{
+    Token t;
+    List<PATTERN> patterns;
+}
+{
+    t=<INSERT> patterns=InsertPatternList()
+    {
+        return astFactory.insertClause( pos( t ), patterns );
     }
 }
 
@@ -2316,6 +2332,18 @@ List<PATTERN> PatternList() throws Exception:
     }
 }
 
+List<PATTERN> InsertPatternList() throws Exception:
+{
+    PATTERN p;
+    List<PATTERN> patterns = new ArrayList<>();
+}
+{
+    p=InsertPattern() { patterns.add( p ); } ( <COMMA> p=InsertPattern() { patterns.add( p ); } )*
+    {
+        return patterns;
+    }
+}
+
 PATTERN Pattern() throws Exception:
 {
     VARIABLE v = null;
@@ -2332,6 +2360,25 @@ PATTERN Pattern() throws Exception:
         if (v != null) p = astFactory.namedPattern( v, p );
         if (s != null) p = astFactory.patternWithSelector( s, p );
         return p;
+    }
+}
+
+PATTERN InsertPattern() throws Exception:
+{
+    Token errorStart = null;
+    List<PATTERN_ATOM> patternAtoms = new ArrayList<>();
+}
+{
+     ( LOOKAHEAD(2) errorStart = SymbolicNameString() <EQ>)?
+     patternAtoms = InsertPathPatternAtoms()
+    {
+        if (errorStart != null)
+        {
+            throw exceptionFactory.syntaxException(
+                new ParseException( ASTExceptionFactory.namedPatternInInsertNotSupported ),
+                errorStart.beginOffset, errorStart.beginLine, errorStart.beginColumn );
+        }
+        return astFactory.insertPathPattern( patternAtoms );
     }
 }
 
@@ -2433,6 +2480,25 @@ List<PATTERN_ATOM> PathPatternAtoms() throws Exception:
      }
 }
 
+List<PATTERN_ATOM> InsertPathPatternAtoms() throws Exception:
+{
+     NODE_PATTERN n;
+     REL_PATTERN r;
+     List<PATTERN_ATOM> patternAtoms = new ArrayList<>();
+}
+{
+     (
+         n=InsertNodePattern() { patternAtoms.add( n ); }
+         (
+            LOOKAHEAD( 2 ) r=InsertRelationshipPattern() { patternAtoms.add( r ); }
+            n=InsertNodePattern() { patternAtoms.add( n ); }
+         )*
+     )
+     {
+         return patternAtoms;
+     }
+}
+
 PATTERN_SELECTOR Selector() throws Exception:
 {
     Token k = null;
@@ -2490,7 +2556,6 @@ NODE_PATTERN NodePattern() throws Exception:
     { return n; }
 }
 
-
 NODE_PATTERN NodePatternEmpty(Token t) throws Exception:
 {}
 {
@@ -2499,7 +2564,6 @@ NODE_PATTERN NodePatternEmpty(Token t) throws Exception:
         return astFactory.nodePattern( pos( t ), null, null, null, null );
     }
 }
-
 
 NODE_PATTERN NodePatternOnlyVariable(Token t) throws Exception:
 {
@@ -2604,6 +2668,27 @@ NODE_PATTERN NodePatternComplex(Token t) throws Exception:
     {
         return astFactory.nodePattern( pos( t ), v, labelExpression, properties, predicate );
     }
+}
+
+NODE_PATTERN InsertNodePattern() throws Exception:
+{
+    Token t;
+    VARIABLE v = null;
+    LABEL_EXPRESSION labelExpression = null;
+    EXPRESSION properties = null;
+}
+{
+    t=<LPAREN>
+    (
+       LOOKAHEAD(3) v=Variable() labelExpression = InsertNodeLabelExpression() ( properties=Properties() )?
+       | LOOKAHEAD(2) v=Variable() properties=Properties()
+       | LOOKAHEAD(2) labelExpression = InsertNodeLabelExpression() ( properties=Properties() )?
+       | properties=Properties()
+       | ( v = Variable() )?
+    )
+    <RPAREN>
+
+    { return astFactory.nodePattern( pos( t ), v, labelExpression, properties, null); }
 }
 
 PATTERN_ATOM ParenthesizedPath() throws Exception:
@@ -2746,7 +2831,6 @@ REL_PATTERN RelationshipPatternEmpty(Token firstToken, boolean left) throws Exce
         return astFactory.relationshipPattern( pos( firstToken.next ), left, right, null, null, null, null, null );
     }
 }
-
 
 REL_PATTERN RelationshipPatternOnlyVariable(Token firstToken, boolean left) throws Exception:
 {
@@ -2907,6 +2991,29 @@ REL_PATTERN RelationshipPatternComplex(Token firstToken, boolean left) throws Ex
     ArrowLine() ( RightArrow() { right = true; } )?
     {
         return astFactory.relationshipPattern( pos( firstToken.next ), left, right, v, labelExpression, pathLength, properties, predicate );
+    }
+}
+
+REL_PATTERN InsertRelationshipPattern() throws Exception:
+{
+    Token firstToken = token;
+    boolean left = false;
+    boolean right = false;
+    VARIABLE v = null;
+    LABEL_EXPRESSION labelExpression = null;
+    EXPRESSION properties = null;
+}
+{
+    ( LeftArrow() { left = true; })? ArrowLine()
+    <LBRACKET>
+   (
+   LOOKAHEAD(3) v=Variable() labelExpression = InsertRelationshipLabelExpression() ( properties=Properties() )?
+   | labelExpression = InsertRelationshipLabelExpression() ( properties=Properties() )?
+    )
+    <RBRACKET>
+    ArrowLine() ( RightArrow() { right = true; } )?
+    {
+        return astFactory.relationshipPattern( pos( firstToken.next ), left, right, v, labelExpression, null, properties, null );
     }
 }
 
@@ -3166,7 +3273,6 @@ LABEL_EXPRESSION LabelExpression1( ENTITY_TYPE type ) :
     }
 }
 
-
 LABEL_EXPRESSION LabelExpression1Is( ENTITY_TYPE type ) :
 {
     LABEL_EXPRESSION e = null;
@@ -3183,6 +3289,78 @@ LABEL_EXPRESSION LabelExpression1Is( ENTITY_TYPE type ) :
     {
         labelExpressionStack.pop();
         return e;
+    }
+}
+
+LABEL_EXPRESSION InsertNodeLabelExpression() throws Exception:
+{
+    Token t;
+    LABEL_EXPRESSION e;
+    LABEL_EXPRESSION temp;
+}
+{
+    (
+        (<COLON> e = InsertLabelConjunction(astFactory.nodeType(),false))
+        |
+        (<IS> e = InsertLabelConjunction(astFactory.nodeType(),true))
+    )
+    {
+        return e;
+    }
+}
+
+LABEL_EXPRESSION InsertRelationshipLabelExpression() throws Exception:
+{
+    LABEL_EXPRESSION e;
+}
+{
+    (
+        (<COLON> e = InsertLabelLeaf(astFactory.relationshipType(),false))
+        |
+        (<IS> e = InsertLabelLeaf(astFactory.relationshipType(),true))
+    )
+    {
+        return e;
+    }
+}
+
+LABEL_EXPRESSION InsertLabelConjunction( ENTITY_TYPE type, boolean containsIs) throws Exception:
+{
+    Token t;
+    Token errorStart = null;
+    LABEL_EXPRESSION e;
+    LABEL_EXPRESSION temp;
+}
+{
+    e=InsertLabelLeaf(type, containsIs)
+    (
+        LOOKAHEAD(2)
+        (
+            t=<AMPERSAND> temp=InsertLabelLeaf(type, containsIs) { e = astFactory.labelConjunction( pos( t ), e, temp, containsIs ); }
+        |
+            errorStart=<COLON>
+        )
+    )*
+    {
+        if (errorStart != null)
+        {
+            throw exceptionFactory.syntaxException(
+                new ParseException( ASTExceptionFactory.colonConjunctionInInsertNotSupported ),
+                errorStart.beginOffset, errorStart.beginLine, errorStart.beginColumn );
+        }
+        return e;
+    }
+}
+
+
+LABEL_EXPRESSION InsertLabelLeaf( ENTITY_TYPE type, boolean containsIs ) :
+{
+    Token t;
+}
+{
+    t=SymbolicNameString()
+    {
+        return astFactory.labelLeaf( pos ( t ), t.image, type, containsIs );
     }
 }
 
@@ -7149,6 +7327,7 @@ Token UnescapedLabelSymbolicNameString() :
         | t=<INDEXES>
         | t=<INF>
         | t=<INFINITY>
+        | t=<INSERT>
         | t=<INT>
         | t=<INTEGER>
         | t=<IS>

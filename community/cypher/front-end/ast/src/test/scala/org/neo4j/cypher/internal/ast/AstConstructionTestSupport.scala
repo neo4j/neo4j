@@ -849,6 +849,14 @@ trait AstConstructionTestSupport {
   def create(pattern: PatternElement, position: InputPosition = pos): Create =
     Create(Pattern.ForUpdate(Seq(PatternPart(pattern)))(pattern.position))(position)
 
+  def insert(pattern: PatternElement, position: InputPosition = pos): Insert =
+    Insert(Pattern.ForUpdate(Seq(PatternPart(pattern)))(pattern.position))(position)
+
+  def insert(patterns: Seq[PatternElement]): Insert = {
+    val patternParts = patterns.map(pattern => PatternPart(pattern))
+    Insert(Pattern.ForUpdate(patternParts)(patterns.head.position))(pos)
+  }
+
   def merge(pattern: PatternElement): Merge =
     Merge(PatternPart(pattern), Seq.empty)(pos)
 

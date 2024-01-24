@@ -454,6 +454,26 @@ class CollectExpressionParserTest extends AstParsingTestBase with LegacyAstParsi
 
   test(
     """MATCH (m)
+      |WHERE COLLECT { INSERT (n) } = []
+      |RETURN m""".stripMargin
+  ) {
+    val collectExpression: CollectExpression = CollectExpression(
+      singleQuery(
+        insert(nodePat(name = Some("n"), namePos = InputPosition(34, 2, 25), position = InputPosition(33, 2, 24))),
+        InputPosition(24, 2, 15)
+      )
+    )(InputPosition(16, 2, 7), None, None)
+
+    givesIncludingPositions {
+      singleQuery(
+        match_(nodePat(name = Some("m")), where = Some(where(eq(collectExpression, listOf())))),
+        return_(variableReturnItem("m"))
+      )
+    }
+  }
+
+  test(
+    """MATCH (m)
       |WHERE COLLECT { MATCH (n) WHERE all(i in n.prop WHERE i = 4) RETURN n } = []
       |RETURN m""".stripMargin
   ) {

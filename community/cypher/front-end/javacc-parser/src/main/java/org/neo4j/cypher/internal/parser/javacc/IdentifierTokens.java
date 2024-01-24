@@ -125,6 +125,7 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.INDEX;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.INDEXES;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.INF;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.INFINITY;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.INSERT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.INT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.INTEGER;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.IS;
@@ -385,6 +386,7 @@ public class IdentifierTokens {
             INDEXES,
             INF,
             INFINITY,
+            INSERT,
             INT,
             INTEGER,
             IS,

@@ -358,4 +358,30 @@ final class SyntaxChecker extends ParseTreeListener {
       }
     }
   }
+
+  override def exitInsertPattern(ctx: CypherParser.InsertPatternContext): Unit = {
+    val firstEquality = ctx.children.asScala.collectFirst {
+      case x: TerminalNode if x.getText.equals("=") => x.getSymbol
+    }
+
+    if (firstEquality.nonEmpty) {
+      errors :+= exceptionFactory.syntaxException(
+        "Named patterns are not allowed in `INSERT`. Use `CREATE` instead or remove the name.",
+        inputPosition(firstEquality.get)
+      )
+    }
+  }
+
+  override def exitInsertLabelConjunction(ctx: CypherParser.InsertLabelConjunctionContext): Unit = {
+    val firstColon = ctx.children.asScala.collectFirst {
+      case x: TerminalNode if x.getText.equals(":") => x.getSymbol
+    }
+
+    if (firstColon.nonEmpty) {
+      errors :+= exceptionFactory.syntaxException(
+        "Colon conjunction is not allowed in INSERT. Use `CREATE` instead or conjunction with `&` instead.",
+        inputPosition(firstColon.get)
+      )
+    }
+  }
 }

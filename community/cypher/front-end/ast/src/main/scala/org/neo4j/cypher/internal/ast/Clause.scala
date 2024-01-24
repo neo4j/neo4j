@@ -366,6 +366,10 @@ sealed trait UpdateClause extends Clause with HasMappableExpressions[UpdateClaus
   }
 }
 
+sealed trait CreateOrInsert extends UpdateClause {
+  def pattern: Pattern.ForUpdate
+}
+
 case class LoadCSV(
   withHeaders: Boolean,
   urlString: Expression,
@@ -1028,13 +1032,27 @@ case class Merge(pattern: NonPrefixedPatternPart, actions: Seq[MergeAction], whe
       }
 }
 
-case class Create(pattern: Pattern.ForUpdate)(val position: InputPosition) extends UpdateClause
+case class Create(pattern: Pattern.ForUpdate)(val position: InputPosition) extends CreateOrInsert
     with SingleRelTypeCheck {
   override def name = "CREATE"
 
   override def clauseSpecificSemanticCheck: SemanticCheck =
     SemanticPatternCheck.check(Pattern.SemanticContext.Create, pattern) chain
       checkRelTypes(pattern) chain
+      SemanticState.recordCurrentScope(pattern)
+
+  override protected def shouldRunQPPChecks: Boolean = false
+
+  override def mapExpressions(f: Expression => Expression): UpdateClause =
+    copy(pattern.mapExpressions(f))(this.position)
+}
+
+case class Insert(pattern: Pattern.ForUpdate)(val position: InputPosition) extends CreateOrInsert
+    with SingleRelTypeCheck {
+  override def name = "INSERT"
+
+  override def clauseSpecificSemanticCheck: SemanticCheck =
+    SemanticPatternCheck.check(Pattern.SemanticContext.Insert, pattern) chain
       SemanticState.recordCurrentScope(pattern)
 
   override protected def shouldRunQPPChecks: Boolean = false

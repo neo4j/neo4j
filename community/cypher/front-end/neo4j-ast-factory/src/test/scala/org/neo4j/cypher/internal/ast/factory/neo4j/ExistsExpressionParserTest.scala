@@ -193,6 +193,26 @@ class ExistsExpressionParserTest extends AstParsingTestBase with LegacyAstParsin
 
   test(
     """MATCH (m)
+      |WHERE EXISTS { INSERT (n) }
+      |RETURN m""".stripMargin
+  ) {
+    val existsExpression: ExistsExpression = ExistsExpression(
+      singleQuery(
+        insert(nodePat(name = Some("n"))),
+        InputPosition(25, 2, 16)
+      )
+    )(InputPosition(16, 2, 7), None, None)
+
+    givesIncludingPositions {
+      singleQuery(
+        match_(nodePat(name = Some("m")), where = Some(where(existsExpression))),
+        return_(variableReturnItem("m"))
+      )
+    }
+  }
+
+  test(
+    """MATCH (m)
       |WHERE EXISTS { MATCH (n) WHERE all(i in n.prop WHERE i = 4) RETURN n }
       |RETURN m""".stripMargin
   ) {

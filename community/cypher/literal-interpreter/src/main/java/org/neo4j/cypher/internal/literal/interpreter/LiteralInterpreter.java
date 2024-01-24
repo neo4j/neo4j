@@ -241,6 +241,11 @@ public class LiteralInterpreter
     }
 
     @Override
+    public NULL insertClause(NULL p, List<NULL> nulls) {
+        throw new UnsupportedOperationException("insertClause is not a literal");
+    }
+
+    @Override
     public NULL setClause(NULL p, List<NULL> nulls) {
         throw new UnsupportedOperationException("setClause is not a literal");
     }
@@ -339,6 +344,11 @@ public class LiteralInterpreter
     @Override
     public NULL pathPattern(NULL aNull) {
         throw new UnsupportedOperationException("pathPattern is not a literal");
+    }
+
+    @Override
+    public NULL insertPathPattern(List<NULL> nulls) {
+        throw new UnsupportedOperationException("insertPathPattern is not a literal");
     }
 
     @Override

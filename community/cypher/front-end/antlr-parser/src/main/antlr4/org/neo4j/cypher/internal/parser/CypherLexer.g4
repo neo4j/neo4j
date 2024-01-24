@@ -465,6 +465,9 @@ INF:
 INFINITY:
    I N F I N I T Y;
 
+INSERT:
+   I N S E R T;
+
 INT:
    I N T;
 

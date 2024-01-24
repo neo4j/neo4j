@@ -48,7 +48,7 @@ singleQueryWithUseClause:
    clause*;
 
 clause:
-   (useClause | returnClause | createClause | deleteClause | setClause | removeClause | matchClause | mergeClause | withClause | unwindClause | callClause | subqueryClause | loadCSVClause | foreachClause);
+   (useClause | returnClause | createClause | insertClause | deleteClause | setClause | removeClause | matchClause | mergeClause | withClause | unwindClause | callClause | subqueryClause | loadCSVClause | foreachClause);
 
 useClause:
    USE (GRAPH graphReference | graphReference);
@@ -85,6 +85,9 @@ withClause:
 
 createClause:
    CREATE patternList;
+
+insertClause:
+   INSERT insertPatternList;
 
 setClause:
    SET setItem (COMMA setItem)*;
@@ -155,8 +158,14 @@ subqueryInTransactionsReportParameters:
 patternList:
    pattern (COMMA pattern)*;
 
+insertPatternList:
+   insertPattern (COMMA insertPattern)*;
+
 pattern:
    (variable EQ selector? | selector?) anonymousPattern;
+
+insertPattern:
+   (symbolicNameString EQ)? insertPathPatternAtoms;
 
 quantifier:
    (LCURLY UNSIGNED_DECIMAL_INTEGER RCURLY | LCURLY UNSIGNED_DECIMAL_INTEGER? COMMA UNSIGNED_DECIMAL_INTEGER? RCURLY | PLUS | TIMES);
@@ -176,6 +185,9 @@ patternElement:
 pathPatternAtoms:
    (nodePattern (maybeQuantifiedRelationshipPattern nodePattern)* | parenthesizedPath)+;
 
+insertPathPatternAtoms:
+   insertNodePattern (insertRelationshipPattern insertNodePattern)*;
+
 selector:
    (ANY SHORTEST (PATH | PATHS)? | ALL SHORTEST (PATH | PATHS)? | ANY UNSIGNED_DECIMAL_INTEGER? (PATH | PATHS)? | ALL (PATH | PATHS)? | SHORTEST UNSIGNED_DECIMAL_INTEGER? (PATH | PATHS)? (GROUP | GROUPS) | SHORTEST UNSIGNED_DECIMAL_INTEGER (PATH | PATHS)?);
 
@@ -184,6 +196,9 @@ pathPatternNonEmpty:
 
 nodePattern:
    LPAREN variable? labelExpression? properties? (WHERE expression)? RPAREN;
+
+insertNodePattern:
+   LPAREN variable? insertNodeLabelExpression? properties? RPAREN;
 
 parenthesizedPath:
    LPAREN pattern (WHERE expression)? RPAREN quantifier?;
@@ -212,6 +227,11 @@ relationshipPattern:
         variable? labelExpression? pathLength? properties? (WHERE expression)?
         RBRACKET
    )? arrowLine rightArrow?;
+
+insertRelationshipPattern:
+   leftArrow? arrowLine LBRACKET
+   variable? insertRelationshipLabelExpression properties?
+   RBRACKET arrowLine rightArrow?;
 
 leftArrow:
    (LT | ARROW_LEFT_HEAD);
@@ -254,6 +274,18 @@ labelExpression1:
 
 labelExpression1Is:
    (LPAREN labelExpression4Is RPAREN | PERCENT | symbolicLabelNameString);
+
+insertNodeLabelExpression:
+   (COLON insertLabelConjunction | IS insertLabelConjunction);
+
+insertRelationshipLabelExpression:
+   (COLON insertLabelLeaf | IS insertLabelLeaf);
+
+insertLabelConjunction:
+   insertLabelLeaf (AMPERSAND insertLabelLeaf | COLON insertLabelLeaf)*;
+
+insertLabelLeaf:
+   symbolicNameString;
 
 expression:
    expression12;
