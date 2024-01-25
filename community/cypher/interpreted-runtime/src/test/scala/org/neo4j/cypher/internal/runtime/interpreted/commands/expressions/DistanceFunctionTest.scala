@@ -95,6 +95,40 @@ class DistanceFunctionTest extends CypherFunSuite {
     topRight1.coordinate()(1) should be(topRight2.coordinate()(1))
   }
 
+  test("bounding box passing the north-pole") {
+    val point = Values.pointValue(CoordinateReferenceSystem.WGS_84, 0, 89.99)
+    val boxes = boundingBox(point, 1000_000)
+    boxes should have length 1
+    val (bottomLeft, topRight) = boxes.head
+    bottomLeft.coordinate()(0) shouldBe -180
+    bottomLeft.coordinate()(1) shouldBe <(89.99)
+    topRight.coordinate()(0) shouldBe 180
+    topRight.coordinate()(1) shouldBe 90
+  }
+
+  test("bounding box passing the south-pole") {
+    val point = Values.pointValue(CoordinateReferenceSystem.WGS_84, 0, -89.99)
+    val boxes = boundingBox(point, 1000_000)
+    boxes should have length 1
+    val (bottomLeft, topRight) = boxes.head
+    bottomLeft.coordinate()(0) shouldBe -180
+    bottomLeft.coordinate()(1) shouldBe -90
+    topRight.coordinate()(0) shouldBe 180
+    topRight.coordinate()(1) shouldBe >(-89.99)
+  }
+
+  test("bounding box passing both poles") {
+    val point = Values.pointValue(CoordinateReferenceSystem.WGS_84, 0, 0)
+    val boxes = boundingBox(point, 2.1 * EARTH_RADIUS_METERS)
+    boxes should have length 1
+    val (bottomLeft, topRight) = boxes.head
+    // the world is not enough
+    bottomLeft.coordinate()(0) shouldBe -180
+    bottomLeft.coordinate()(1) shouldBe -90
+    topRight.coordinate()(0) shouldBe 180
+    topRight.coordinate()(1) shouldBe 90
+  }
+
   test("distance should account for wraparound in longitude in WGS84") {
     val farWest = Values.pointValue(CoordinateReferenceSystem.WGS_84, -179.99, 0)
     val farEast = Values.pointValue(CoordinateReferenceSystem.WGS_84, 179.99, 0)

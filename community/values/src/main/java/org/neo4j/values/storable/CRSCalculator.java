@@ -196,7 +196,9 @@ public abstract class CRSCalculator {
             double latMax = lat + toDegrees(r);
 
             // If your query circle includes one of the poles
-            if (latMax >= 90) {
+            if (latMax >= 90 && latMin <= -90) {
+                return Collections.singletonList(boundingBoxOf(-180, 180, -90, 90, center, distance));
+            } else if (latMax >= 90) {
                 return Collections.singletonList(boundingBoxOf(-180, 180, latMin, 90, center, distance));
             } else if (latMin <= -90) {
                 return Collections.singletonList(boundingBoxOf(-180, 180, -90, latMax, center, distance));
