@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.VariableStringInterpolator
+import org.neo4j.cypher.internal.compiler.ExecutionModel.BatchedParallel
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.helpers.WindowsSafeAnyRef
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher
@@ -58,6 +59,7 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.crea
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationshipExpression
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.Ascending
+import org.neo4j.cypher.internal.logical.plans.CoerceToPredicate
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
@@ -3965,6 +3967,77 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       .|.argument("a")
       .nodeByLabelScan("a", "A")
       .build()
+  }
+
+  test(
+    "Should plan horizon subquery expression with a NestedPlanExpression if that is needed to preserve ordering (parallel runtime)"
+  ) {
+    // We compare "solvedExpressionAsString" nested inside NestedPlanExpressions.
+    // This saves us from windows line break mismatches in those strings.
+    implicit val windowsSafe: WindowsSafeAnyRef[LogicalPlan] = new WindowsSafeAnyRef[LogicalPlan]
+
+    val query =
+      """MATCH (a:A)
+        |WITH a, a.prop AS prop
+        |  ORDER BY prop
+        |  WHERE (a)-[:R]->({prop: prop})
+        |RETURN collect(prop) AS theProps
+        |""".stripMargin
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("A", 10)
+      .setRelationshipCardinality("()-[:R]-()", 10)
+      .setExecutionModel(BatchedParallel(1, 2))
+      .build()
+
+    val expectedNestedPlan = planner.subPlanBuilder()
+      .filter("anon_1.prop = prop")
+      .expandAll("(a)-[anon_0:R]->(anon_1)")
+      .argument("a", "prop")
+      .build()
+
+    val nestedPlanExpression = NestedPlanExistsExpression(
+      expectedNestedPlan,
+      """EXISTS { MATCH (a)-[`anon_0`:R]->(`anon_1`)
+        |  WHERE `anon_1`.prop IN [prop] }""".stripMargin
+    )(pos)
+
+    val plan = planner.plan(query)
+    plan should equal(planner.subPlanBuilder()
+      .produceResults("theProps")
+      .aggregation(Seq(), Seq("collect(prop) AS theProps"))
+      .filterExpression(CoerceToPredicate(nestedPlanExpression))
+      .sort("prop ASC")
+      .projection("a.prop AS prop")
+      .nodeByLabelScan("a", "A", IndexOrderNone)
+      .build())
+  }
+
+  test("Should plan horizon subquery expression with a SemiApply if there is no ordering (parallel runtime)") {
+    val query =
+      """MATCH (a:A)
+        |WITH a, a.prop AS prop
+        |  WHERE (a)-[:R]->({prop: prop})
+        |RETURN collect(prop) AS theProps
+        |""".stripMargin
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("A", 10)
+      .setRelationshipCardinality("()-[:R]-()", 10)
+      .setExecutionModel(BatchedParallel(1, 2))
+      .build()
+
+    val plan = planner.plan(query)
+    plan should equal(planner.subPlanBuilder()
+      .produceResults("theProps")
+      .aggregation(Seq(), Seq("collect(prop) AS theProps"))
+      .semiApply()
+      .|.filter("anon_1.prop = prop")
+      .|.expandAll("(a)-[anon_0:R]->(anon_1)")
+      .|.argument("a", "prop")
+      .projection("a.prop AS prop")
+      .nodeByLabelScan("a", "A", IndexOrderNone)
+      .build())
   }
 
   object VariableSet {

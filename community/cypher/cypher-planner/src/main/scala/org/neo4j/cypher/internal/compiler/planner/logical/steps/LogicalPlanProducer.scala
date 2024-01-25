@@ -1679,16 +1679,26 @@ case class LogicalPlanProducer(
       case _ => throw new IllegalArgumentException("You can only plan HorizonSelection after a projection")
     })
 
-    // solve existential subquery predicates
-    val (solvedPredicates, existsPlan) =
-      SubqueryExpressionSolver.ForExistentialSubquery.solve(source, predicates, interestingOrderConfig, context)
-    val unsolvedPredicates = predicates.filterNot(solvedPredicates.contains(_))
-
-    // solve remaining predicates
     val (rewrittenPredicates, rewrittenSource) =
-      SubqueryExpressionSolver.ForMulti.solve(existsPlan, unsolvedPredicates, context)
+      if (
+        context.settings.executionModel.providedOrderPreserving || interestingOrderConfig.orderToSolve.requiredOrderCandidate.isEmpty
+      ) {
+        // solve existential subquery predicates
+        val (solvedPredicates, existsPlan) =
+          SubqueryExpressionSolver.ForExistentialSubquery.solve(source, predicates, interestingOrderConfig, context)
+        val unsolvedPredicates = predicates.filterNot(solvedPredicates.contains(_))
 
-    coercePredicatesWithAnds(rewrittenPredicates).fold(existsPlan) { coercedRewrittenPredicates =>
+        // solve remaining predicates
+        SubqueryExpressionSolver.ForMulti.solve(existsPlan, unsolvedPredicates, context)
+      } else {
+        // If the execution model does not preserve order and there is an ORDER BY, we are not allowed to use
+        // NestedPlanExpressions here.
+        val rewriter = irExpressionRewriter(source, context)
+        val rewrittenPredicates = predicates.endoRewrite(rewriter)
+        (rewrittenPredicates, source)
+      }
+
+    coercePredicatesWithAnds(rewrittenPredicates).fold(rewrittenSource) { coercedRewrittenPredicates =>
       annotateSelection(
         Selection(coercedRewrittenPredicates, rewrittenSource),
         solved,

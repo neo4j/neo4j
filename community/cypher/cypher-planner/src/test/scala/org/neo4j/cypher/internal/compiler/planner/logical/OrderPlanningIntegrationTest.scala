@@ -468,7 +468,14 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
   test(
     "should not use ordered aggregation if the execution model does not preserve order, if order invalidated after sort"
   ) {
-    val query = "MATCH (a:A) WITH a, a.foo AS foo ORDER BY foo WHERE (a)-[:R]->({prop: foo}) RETURN foo, count(foo)"
+    val query =
+      """MATCH (a:A)
+        |WITH a, a.foo AS foo
+        |  ORDER BY foo
+        |WITH *
+        |  SKIP 0
+        |  WHERE (a)-[:R]->({prop: foo})
+        |RETURN foo, count(foo)""".stripMargin
     val planner = plannerBuilder()
       .setExecutionModel(BatchedParallel(1, 2))
       .build()
@@ -480,6 +487,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       .|.filter("anon_1.prop = foo")
       .|.expandAll("(a)-[anon_0:R]->(anon_1)")
       .|.argument("a", "foo")
+      .skip(0)
       .sort("foo ASC")
       .projection("a.foo AS foo")
       .nodeByLabelScan("a", "A")
@@ -628,7 +636,13 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
   test(
     "should not use ordered distinct if the execution model does not preserve order, if order invalidated after sort"
   ) {
-    val query = "MATCH (a:A) WITH a, a.foo AS foo ORDER BY foo WHERE (a)-[:R]->({prop: foo}) RETURN DISTINCT foo"
+    val query =
+      """MATCH (a:A)
+        |WITH a, a.foo AS foo
+        |  ORDER BY foo
+        |WITH * SKIP 0
+        |  WHERE (a)-[:R]->({prop: foo})
+        |RETURN DISTINCT foo""".stripMargin
     val planner = plannerBuilder()
       .setExecutionModel(BatchedParallel(1, 2))
       .build()
@@ -640,6 +654,7 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       .|.filter("anon_1.prop = foo")
       .|.expandAll("(a)-[anon_0:R]->(anon_1)")
       .|.argument("a", "foo")
+      .skip(0)
       .sort("foo ASC")
       .projection("a.foo AS foo")
       .nodeByLabelScan("a", "A")
