@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import static java.lang.String.format;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.HIGH;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.LOW;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
@@ -212,7 +211,7 @@ public abstract class GenericKey<KEY extends GenericKey<KEY>> extends NativeInde
     }
 
     static void setCursorException(PageCursor cursor, String reason) {
-        cursor.setCursorException(format("Unable to read generic key slot due to %s", reason));
+        cursor.setCursorException("Unable to read generic key slot due to " + reason);
     }
 
     @Override
@@ -290,10 +289,7 @@ public abstract class GenericKey<KEY extends GenericKey<KEY>> extends NativeInde
     boolean get(PageCursor cursor, int size) {
         if (size < ENTITY_ID_SIZE) {
             initializeToDummyValue();
-            cursor.setCursorException(format(
-                    "Failed to read " + getClass().getSimpleName()
-                            + " due to keySize < ENTITY_ID_SIZE, more precisely %d",
-                    size));
+            cursor.setCursorException("Failed to read GenericKey due to keySize < ENTITY_ID_SIZE");
             return false;
         }
 
