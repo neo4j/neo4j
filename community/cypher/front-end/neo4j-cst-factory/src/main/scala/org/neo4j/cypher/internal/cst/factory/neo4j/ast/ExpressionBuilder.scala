@@ -436,4 +436,6 @@ trait ExpressionBuilder extends CypherParserListener {
   override def exitFunctionArgument(
     ctx: CypherParser.FunctionArgumentContext
   ): Unit = {}
+
+  override def exitNormalForm(ctx: CypherParser.NormalFormContext): Unit = {}
 }
