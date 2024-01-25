@@ -419,7 +419,7 @@ class SchemeFileSystemAbstractionTest {
         schemeFs.close();
 
         verify(systemProvider, never()).close();
-        verify(fs).close();
+        verify(fs, never()).close();
     }
 
     @Test
@@ -428,7 +428,7 @@ class SchemeFileSystemAbstractionTest {
         schemeFs.close();
 
         verify(systemProvider).close();
-        verify(fs).close();
+        verify(fs, never()).close();
     }
 
     private void verifyFileSystemCall(String methodName, Object... parameters) throws Exception {

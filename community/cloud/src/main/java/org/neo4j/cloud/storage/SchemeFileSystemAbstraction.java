@@ -331,7 +331,6 @@ public class SchemeFileSystemAbstraction implements FileSystemAbstraction, Stora
             IOUtils.closeAll(schemesToProvider.values());
         } finally {
             schemesToProvider.clear();
-            fs.close();
         }
     }
 
