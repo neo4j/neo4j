@@ -84,6 +84,10 @@ class GenerateListenerMavenPlugin extends AbstractMojo {
     project.addCompileSourceRoot(outputDirectory.getPath)
   }
 
+  /*
+   * Generate exit methods for all rule context classes,
+   * for example: void exitStatement(CypherParser.StatementContext ctx);
+   */
   private def genExitMethods(meta: ParserMeta) = {
     meta.allCtxClasses.map { cls =>
       MethodSpec.methodBuilder(exitName(cls))
@@ -94,7 +98,11 @@ class GenerateListenerMavenPlugin extends AbstractMojo {
     }
   }
 
+  /*
+   * Generate the optimised exitEveryRule method.
+   */
   private def genExitAllMethod(meta: ParserMeta) = {
+    // Override the exit method for rule contexts that have multiple subclasses (that share the same rule index).
     val groupExits = meta.indexGroups
       .filter(_.rules.size > 1)
       .map { group =>
@@ -116,8 +124,7 @@ class GenerateListenerMavenPlugin extends AbstractMojo {
           .build()
       }
 
-    val caseStatements = meta.indexGroups
-      .map(g => genCase(g.index, g.targetCls))
+    // Generate exitEveryRule
     val exitAllMethod = MethodSpec.methodBuilder("exitEveryRule")
       .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
       .addAnnotation(classOf[Override])
@@ -134,7 +141,7 @@ class GenerateListenerMavenPlugin extends AbstractMojo {
       .addCode(
         s"""
            |switch (ctx.getRuleIndex()) {
-           |${caseStatements.mkString("\n")}
+           |${meta.indexGroups.map(g => genCase(g.index, g.targetCls)).mkString("\n")}
            |  default -> throw new IllegalStateException("Unknown rule index " + ctx.getRuleIndex());
            |}
            |""".stripMargin.trim
@@ -168,14 +175,19 @@ class GenerateListenerMavenPlugin extends AbstractMojo {
         case (index, Seq(field)) => index -> field
         case other               => throw new IllegalStateException("Assumptions broken " + other)
       }
+
+    // Find all antlr parser rule classes in the CypherParser (subclasses of AstRuleCtx)
     val allCtxClasses = classOf[CypherParser].getDeclaredClasses.toSeq
       .filter(classOf[AstRuleCtx].isAssignableFrom)
       .filter(c => isStatic(c.getModifiers))
+
+    // Map antlr rule class to it's rule index
     val indexGroups = allCtxClasses
       .map { ctxClass =>
         val ruleIndex = newCtxInstance(ctxClass).getRuleIndex
         ruleIndex -> ctxClass
       }
+      // Rule index is sometimes shared between multiple context objects
       .groupMap { case (index, _) => index } { case (_, cls) => cls }
       .toSeq
       .map {
@@ -194,6 +206,8 @@ class GenerateListenerMavenPlugin extends AbstractMojo {
   }
 
   /*
+   * Get an instance of a AstRuleCtx subclass.
+   *
    * This is a hack, but provides some additional safety.
    * It enables us to check that our assumptions about the mappings
    * between antlr rule contexts and rule index are correct.
@@ -201,12 +215,14 @@ class GenerateListenerMavenPlugin extends AbstractMojo {
   private def newCtxInstance(cls: Class[_]): AstRuleCtx = {
     val superCls = cls.getSuperclass.asInstanceOf[Class[_]]
     val parent = if (classOf[AstRuleCtx].isAssignableFrom(superCls) && !isAbstract(superCls.getModifiers)) {
+      // Some rule contexts need a parent of specific type in their constructor
       newCtxInstance(superCls)
     } else {
       new ParserRuleContext()
     }
     cls.getDeclaredConstructors
       .flatMap { c =>
+        // We assume one of these constructors will work
         c.getParameterCount match {
           case 0 => Try(c.newInstance().asInstanceOf[AstRuleCtx]).toOption
           case 1 => Try(c.newInstance(parent).asInstanceOf[AstRuleCtx]).toOption
@@ -245,6 +261,21 @@ class GenerateListenerMavenPlugin extends AbstractMojo {
   private def name(field: Field): String = name(field.getDeclaringClass) + "." + field.getName
 }
 
+/**
+ * @param allCtxClasses all existing rule context classes (subclasses of [[AstRuleCtx]]) in the antlr parser
+ * @param indexGroups all rule index groups (rule index is sometimes shared)
+ */
 case class ParserMeta(allCtxClasses: Seq[Class[_]], indexGroups: Seq[IndexGroup])
+
+/**
+ * @param index antlr parser rule index (for example CypherParser.RULE_statements)
+ * @param targetCls rule context class that use the rule index
+ * @param rules other rule context classes that share this rule index (because they're subclasses of targetCls)
+ */
 case class IndexGroup(index: IndexMeta, targetCls: Class[_], rules: Seq[Class[_]])
+
+/**
+ * @param index antlr parser rule index (for example CypherParser.RULE_statements)
+ * @param field the field where this rule index is stored (like CypherParser.RULE_statements)
+ */
 case class IndexMeta(index: Int, field: Field)
