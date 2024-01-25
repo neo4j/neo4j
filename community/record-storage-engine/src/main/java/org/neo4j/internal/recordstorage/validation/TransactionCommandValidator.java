@@ -75,7 +75,7 @@ public class TransactionCommandValidator implements CommandVisitor, TransactionV
     private final TransactionMonitor transactionMonitor;
     private final PageCursor[] validationCursors;
     private final Log log;
-    private EnumMap<StoreType, MutableLongSet> checkedPages;
+    private final EnumMap<StoreType, MutableLongSet> checkedPages;
     private LockTracer lockTracer;
     private CursorContext cursorContext;
     private boolean dumpLocks;
@@ -251,7 +251,7 @@ public class TransactionCommandValidator implements CommandVisitor, TransactionV
     }
 
     private void closeCursors() {
-        checkedPages = new EnumMap<>(StoreType.class);
+        checkedPages.clear();
         for (int i = 0; i < validationCursors.length; i++) {
             var cursor = validationCursors[i];
             if (cursor != null) {
