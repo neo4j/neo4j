@@ -24,6 +24,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
@@ -93,6 +94,7 @@ import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.ExecutionContext;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.KernelTransaction.Revertable;
 import org.neo4j.kernel.api.KernelTransaction.Type;
 import org.neo4j.kernel.api.TransactionTimeout;
 import org.neo4j.kernel.api.database.enrichment.TxEnrichmentVisitor;
@@ -991,6 +993,75 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
 
         verify(txPool, never()).release(transaction);
         verify(txPool, times(1)).dispose(transaction);
+    }
+
+    @Test
+    void securityContextNotAvailableOnNotInitializedTransaction() throws TransactionFailureException {
+        try (KernelTransactionImplementation tx = newNotInitializedTransaction()) {
+            assertThat(tx.isOpen()).isFalse();
+            assertThat(tx.isClosing()).isFalse();
+            assertThrows(NotInTransactionException.class, tx::securityContext);
+            assertThrows(NotInTransactionException.class, () -> {
+                tx.overrideWith(SecurityContext.AUTH_DISABLED);
+            });
+        }
+    }
+
+    @Test
+    void securityContextNotAvailableOnFullyClosedTransaction() throws TransactionFailureException {
+        try (KernelTransactionImplementation tx = newTransaction(AUTH_DISABLED)) {
+            tx.commit();
+            assertThat(tx.isOpen()).isFalse();
+            assertThat(tx.isClosing()).isFalse();
+            assertThrows(NotInTransactionException.class, tx::securityContext);
+            assertThrows(NotInTransactionException.class, () -> {
+                tx.overrideWith(SecurityContext.AUTH_DISABLED);
+            });
+        }
+    }
+
+    /**
+     * This verifies that when the transaction is closing and already marked as closed, we still can fetch/use
+     * the security context object.
+     */
+    @Test
+    void securityContextAvailableOnClosingTransactionOnCommit() throws TransactionFailureException {
+        try (KernelTransactionImplementation tx = newTransaction(AUTH_DISABLED)) {
+            transactionExecutionMonitor.setCommitAssertion((t) -> {
+                assertThat(t.isClosing()).isTrue();
+                assertThat(t.isOpen()).isFalse();
+                assertDoesNotThrow(() -> {
+                    t.securityContext();
+                });
+                assertDoesNotThrow(() -> {
+                    Revertable r = t.overrideWith(SecurityContext.AUTH_DISABLED);
+                    r.close();
+                });
+            });
+            tx.commit();
+        }
+    }
+
+    /**
+     * This verifies that when the transaction is closing and already marked as closed, we still can fetch/use
+     * the security context object.
+     */
+    @Test
+    void securityContextAvailableOnClosingTransactionOnRollback() throws TransactionFailureException {
+        try (KernelTransactionImplementation tx = newTransaction(AUTH_DISABLED)) {
+            transactionExecutionMonitor.setRollbackAssertion((t) -> {
+                assertThat(t.isClosing()).isTrue();
+                assertThat(t.isOpen()).isFalse();
+                assertDoesNotThrow(() -> {
+                    t.securityContext();
+                });
+                assertDoesNotThrow(() -> {
+                    Revertable r = t.overrideWith(SecurityContext.AUTH_DISABLED);
+                    r.close();
+                });
+            });
+            tx.rollback();
+        }
     }
 
     private static LoginContext loginContext(boolean isWriteTx) {

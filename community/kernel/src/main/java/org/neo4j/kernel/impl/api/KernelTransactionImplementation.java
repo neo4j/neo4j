@@ -721,11 +721,16 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     @Override
     public SecurityContext securityContext() {
-        var ctx = overridableSecurityContext;
-        if (ctx == null) {
-            throw new NotInTransactionException();
+        // During the closing phase of the transaction, we have a brief window where the transaction
+        // has already been marked as closed, but the security context has not been reset yet and might
+        // be needed by the transactionExecutionMonitor (see afterCommit/afterRollback). So we only assert
+        // if the transaction is fully closed when we're outside the closing phase.
+        // If we're in the closing phase (independently if it has been marked as closed or not), we know
+        // the security context object is still available to be used.
+        if (!closing) {
+            assertTransactionOpen();
         }
-        return ctx.currentSecurityContext();
+        return overridableSecurityContext.currentSecurityContext();
     }
 
     @Override
@@ -1396,6 +1401,15 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     @Override
     public Revertable overrideWith(SecurityContext context) {
+        // During the closing phase of the transaction, we have a brief window where the transaction
+        // has already been marked as closed, but the security context has not been reset yet and might
+        // be needed by the transactionExecutionMonitor (see afterCommit/afterRollback). So we only assert
+        // if the transaction is fully closed when we're outside the closing phase.
+        // If we're in the closing phase (independently if it has been marked as closed or not), we know
+        // the security context object is still available to be used.
+        if (!closing) {
+            assertTransactionOpen();
+        }
         return overridableSecurityContext.overrideWith(context)::close;
     }
 

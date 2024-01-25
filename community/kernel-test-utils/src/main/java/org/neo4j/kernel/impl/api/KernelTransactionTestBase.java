@@ -42,6 +42,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
@@ -132,6 +133,7 @@ class KernelTransactionTestBase {
     protected final LockManager.Client locksClient = mock(LockManager.Client.class);
     protected final TransactionValidator transactionValidator = mock(TransactionValidator.class);
     protected CollectionsFactory collectionsFactory;
+    protected AssertionRunnerTxExecutionMonitor transactionExecutionMonitor = new AssertionRunnerTxExecutionMonitor();
 
     private final ProcedureView procedureView = mock(ProcedureView.class);
 
@@ -160,6 +162,8 @@ class KernelTransactionTestBase {
         when(enrichmentStrategy.check()).thenReturn(EnrichmentMode.OFF);
         when(transactionValidator.validate(any(), anyLong(), any(), any(), any()))
                 .thenReturn(EMPTY_VALIDATION_RESOURCE);
+
+        transactionExecutionMonitor.reset();
     }
 
     public KernelTransactionImplementation newTransaction(long transactionTimeoutMillis) {
@@ -258,7 +262,7 @@ class KernelTransactionTestBase {
                 leaseService,
                 memoryPool,
                 readOnlyChecker.forDatabase(databaseId),
-                TransactionExecutionMonitor.NO_OP,
+                transactionExecutionMonitor,
                 CommunitySecurityLog.NULL_LOG,
                 locks,
                 mock(TransactionCommitmentFactory.class),
@@ -317,6 +321,45 @@ class KernelTransactionTestBase {
         @Override
         public void release() {
             // nop
+        }
+    }
+
+    /**
+     * This TransactionExecutionMonitor can be used perform assertions in specific parts of the
+     * KernelTransactionImplementation flow.
+     */
+    protected static final class AssertionRunnerTxExecutionMonitor implements TransactionExecutionMonitor {
+        private Consumer<KernelTransaction> commitAssertion;
+        private Consumer<KernelTransaction> rollbackAssertion;
+
+        public void setCommitAssertion(Consumer<KernelTransaction> commitAssertion) {
+            this.commitAssertion = commitAssertion;
+        }
+
+        public void setRollbackAssertion(Consumer<KernelTransaction> rollbackAssertion) {
+            this.rollbackAssertion = rollbackAssertion;
+        }
+
+        private void reset() {
+            commitAssertion = null;
+            rollbackAssertion = null;
+        }
+
+        @Override
+        public void start(KernelTransaction tx) {}
+
+        @Override
+        public void commit(KernelTransaction tx) {
+            if (commitAssertion != null) {
+                commitAssertion.accept(tx);
+            }
+        }
+
+        @Override
+        public void rollback(KernelTransaction tx, Throwable failure) {
+            if (rollbackAssertion != null) {
+                rollbackAssertion.accept(tx);
+            }
         }
     }
 }
