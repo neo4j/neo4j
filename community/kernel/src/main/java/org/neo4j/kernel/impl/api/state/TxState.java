@@ -412,6 +412,18 @@ public class TxState implements TransactionState {
     }
 
     @Override
+    public boolean nodeIsModifiedInThisBatch(long nodeId) {
+        if (nodeStatesMap == null) {
+            return false;
+        }
+        final var nodeState = nodeStatesMap.get(nodeId);
+        return nodeState != null
+                && !nodeState.isAddedInThisBatch()
+                && !nodeState.isDeleted()
+                && (!nodeState.labelDiffSets().isEmpty() || nodeState.hasPropertyChanges());
+    }
+
+    @Override
     public boolean nodeIsDeletedInThisBatch(long nodeId) {
         return nodes != null && nodes.wasRemoved(nodeId);
     }

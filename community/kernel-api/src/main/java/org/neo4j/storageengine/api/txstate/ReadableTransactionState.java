@@ -86,6 +86,8 @@ public interface ReadableTransactionState {
 
     boolean nodeIsAddedInThisBatch(long nodeId);
 
+    boolean nodeIsModifiedInThisBatch(long nodeId);
+
     boolean nodeIsDeletedInThisBatch(long nodeId);
 
     boolean hasConstraintIndexesCreatedInTx();

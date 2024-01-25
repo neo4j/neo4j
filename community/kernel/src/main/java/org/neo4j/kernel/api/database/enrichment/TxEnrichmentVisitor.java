@@ -210,8 +210,10 @@ public class TxEnrichmentVisitor extends TxStateVisitor.Delegator implements Enr
             throws ConstraintValidationException {
         super.visitRelationshipModifications(modifications);
         modifications.creations().forEach((relationshipId, typeId, startNodeId, endNodeId, addedProperties) -> {
-            final var startPos = captureNodeState(startNodeId, DeltaType.STATE, false);
-            final var endPos = captureNodeState(endNodeId, DeltaType.STATE, false);
+            final var startPos =
+                    captureNodeState(startNodeId, DeltaType.STATE, txState.nodeIsModifiedInThisBatch(startNodeId));
+            final var endPos =
+                    captureNodeState(endNodeId, DeltaType.STATE, txState.nodeIsModifiedInThisBatch(endNodeId));
             setRelationshipChangeType(relationshipId, DeltaType.ADDED, typeId, startPos, endPos);
             captureRelTypeConstraints(relationshipId, typeId);
             setRelationshipChangeDelta(
@@ -219,8 +221,10 @@ public class TxEnrichmentVisitor extends TxStateVisitor.Delegator implements Enr
         });
 
         modifications.deletions().forEach((relationshipId, typeId, startNodeId, endNodeId, addedProperties) -> {
-            final var startPos = captureNodeState(startNodeId, DeltaType.STATE, false);
-            final var endPos = captureNodeState(endNodeId, DeltaType.STATE, false);
+            final var startPos =
+                    captureNodeState(startNodeId, DeltaType.STATE, txState.nodeIsModifiedInThisBatch(startNodeId));
+            final var endPos =
+                    captureNodeState(endNodeId, DeltaType.STATE, txState.nodeIsModifiedInThisBatch(endNodeId));
             setRelationshipChangeType(relationshipId, DeltaType.DELETED, typeId, startPos, endPos);
             captureRelTypeConstraints(relationshipId, typeId);
             captureRelationshipState(relationshipId, typeId, startNodeId, endNodeId, PropertySelection.ALL_PROPERTIES);
@@ -283,8 +287,8 @@ public class TxEnrichmentVisitor extends TxStateVisitor.Delegator implements Enr
 
         checkState(!relationshipPositions.containsKey(id), "Already tracking the relationship: " + id);
 
-        final var startPos = captureNodeState(startNode, DeltaType.STATE, false);
-        final var endPos = captureNodeState(endNode, DeltaType.STATE, false);
+        final var startPos = captureNodeState(startNode, DeltaType.STATE, txState.nodeIsModifiedInThisBatch(startNode));
+        final var endPos = captureNodeState(endNode, DeltaType.STATE, txState.nodeIsModifiedInThisBatch(endNode));
         setRelationshipChangeType(id, DeltaType.MODIFIED, type, startPos, endPos);
 
         // always capture constraints - so don't inline this

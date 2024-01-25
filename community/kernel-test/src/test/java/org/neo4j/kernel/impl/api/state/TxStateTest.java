@@ -47,6 +47,7 @@ import java.util.List;
 import java.util.NavigableMap;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.stream.Stream;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.eclipse.collections.api.IntIterable;
 import org.eclipse.collections.api.set.primitive.LongSet;
@@ -59,6 +60,8 @@ import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.collection.diffset.DiffSets;
 import org.neo4j.collection.diffset.LongDiffSets;
@@ -613,6 +616,14 @@ abstract class TxStateTest {
 
         // Then
         assertFalse(state.nodeIsDeletedInThisBatch(nodeId));
+    }
+
+    @ParameterizedTest
+    @MethodSource("nodeModificationChanges")
+    void testNodeIsModifiedInThisBatch(NodeStateModifier modifier, boolean reportAsModified) {
+        final var nodeId = 42L;
+        modifier.tweak(state, nodeId);
+        assertThat(state.nodeIsModifiedInThisBatch(nodeId)).isEqualTo(reportAsModified);
     }
 
     @Test
@@ -1260,5 +1271,37 @@ abstract class TxStateTest {
     private static void assertEqualDiffSets(LongDiffSets expected, LongDiffSets actual) {
         assertEquals(expected.getRemoved(), actual.getRemoved());
         assertEquals(expected.getAdded(), actual.getAdded());
+    }
+
+    @FunctionalInterface
+    private interface NodeStateModifier {
+        void tweak(TxState state, long nodeId);
+    }
+
+    private static Stream<Arguments> nodeModificationChanges() {
+        return Stream.of(
+                Arguments.of(
+                        (NodeStateModifier)
+                                (state, nodeId) -> state.nodeDoAddProperty(nodeId, 42, Values.stringValue("changed")),
+                        true),
+                Arguments.of(
+                        (NodeStateModifier) (state, nodeId) ->
+                                state.nodeDoChangeProperty(nodeId, 42, Values.stringValue("changed")),
+                        true),
+                Arguments.of((NodeStateModifier) (state, nodeId) -> state.nodeDoRemoveProperty(nodeId, 42), true),
+                Arguments.of((NodeStateModifier) (state, nodeId) -> state.nodeDoAddLabel(42, nodeId), true),
+                Arguments.of((NodeStateModifier) (state, nodeId) -> state.nodeDoRemoveLabel(42, nodeId), true),
+                Arguments.of(
+                        (NodeStateModifier) (state, nodeId) -> {
+                            state.nodeDoCreate(nodeId);
+                            state.nodeDoAddProperty(nodeId, 42, Values.stringValue("changed"));
+                        },
+                        false),
+                Arguments.of(
+                        (NodeStateModifier) (state, nodeId) -> {
+                            state.nodeDoChangeProperty(nodeId, 42, Values.stringValue("changed"));
+                            state.nodeDoDelete(nodeId);
+                        },
+                        false));
     }
 }
