@@ -2555,6 +2555,61 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     )
   }
 
+  test("Should not inline relationship local (start and end node) predicate into NFA: NestedPlanExpression") {
+    // We compare "solvedExpressionAsString" nested inside NestedPlanCollectExpressions.
+    // This saves us from windows line break mismatches in those strings.
+    implicit val windowsSafe: WindowsSafeAnyRef[LogicalPlan] = new WindowsSafeAnyRef[LogicalPlan]
+
+    val query = "MATCH ANY SHORTEST ((u:User)((n)-[r]->(m))+(v)-[r2]->(w) WHERE EXISTS { (v)-->({prop: v.prop + r2.prop + w.prop}) } ) RETURN *"
+
+    val expectedNestedPlan = planner.subPlanBuilder()
+      .filter("anon_1.prop = v.prop + r2.prop + w.prop")
+      .expandAll("(v)-[anon_0]->(anon_1)")
+      .argument("w", "r2", "v")
+      .build()
+
+    val solvedNestedExpressionAsString =
+      """EXISTS { MATCH (v)-[`anon_0`]->(`anon_1`)
+        |  WHERE `anon_1`.prop IN [(v.prop + r2.prop) + w.prop] }""".stripMargin
+    val nestedPlanExpression = NestedPlanExistsExpression(
+      plan = expectedNestedPlan,
+      solvedExpressionAsString =
+        solvedNestedExpressionAsString
+    )(pos)
+
+    val nfa = new TestNFABuilder(0, "u")
+      .addTransition(0, 1, "(u) (n)")
+      .addTransition(1, 2, "(n)-[r]->(m)")
+      .addTransition(2, 1, "(m) (n)")
+      .addTransition(2, 3, "(m) (v)")
+      .addTransition(3, 4, "(v)-[r2]->(w)")
+      .setFinalState(4)
+      .build()
+
+    val plan = planner.plan(query).stripProduceResults
+    plan should equal(
+      planner.subPlanBuilder()
+        .statefulShortestPathExpr(
+          "u",
+          "w",
+          s"SHORTEST 1 ((u) ((n)-[r]->(m)){1, } (v)-[r2]->(w) WHERE $solvedNestedExpressionAsString AND NOT r2 IN `r` AND unique(`r`))",
+          Some(nestedPlanExpression),
+          groupNodes = Set(("n", "n"), ("m", "m")),
+          groupRelationships = Set(("r", "r")),
+          singletonNodeVariables = Set("v" -> "v"),
+          singletonRelationshipVariables = Set("r2" -> "r2"),
+          StatefulShortestPath.Selector.Shortest(1),
+          nfa,
+          ExpandInto,
+          reverseGroupVariableProjections = false
+        )
+        .cartesianProduct()
+        .|.allNodeScan("w")
+        .nodeByLabelScan("u", "User")
+        .build()
+    )
+  }
+
   test("Should inline relationship local (start and end node) predicate into NFA: DesugaredMapProjection") {
     val query =
       "MATCH ANY SHORTEST ((u:User)((n)-[r]->(m))+(v)-[r2]->(w) WHERE v{.foo,.bar} = w{.foo,.bar, baz: r2.baz}) RETURN *"

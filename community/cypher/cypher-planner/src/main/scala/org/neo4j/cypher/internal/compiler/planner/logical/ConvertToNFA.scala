@@ -190,7 +190,7 @@ object ConvertToNFA {
         relationshipVariable,
         targetVariable
       ))
-        // We cannot rewrite IRExpressions, since they contain Variables as strings
+        // We cannot rewrite IRExpressions, since in QueryGraphs Variables cannot be replaced by Expressions.
         .filter(_.folder.treeFindByClass[IRExpression].isEmpty)
 
       val allApplicablePredicates = allPredicatesGiven -- alreadySolvedPredicates
