@@ -93,21 +93,19 @@ object leverageOrder {
     groupingExpressions: Set[Expression],
     aggregationExpressionsMap: Map[LogicalVariable, Expression]
   ): (Seq[Expression], Map[LogicalVariable, Expression]) = {
-    var aggregationOrderCandidate: Option[ColumnOrder] = None
     // We use the instances of expressions from the groupingExpressions (instead of the instance of expressions from the ProvidedOrder).
     // This is important because some rewriters will rewrite expressions based on reference equality
     // and we need to make sure that orderToLeverage expressions are equal to grouping expressions, even after those rewriters.
     // Likewise, we do the same for the aggregation order expression.
-    val groupingOrderPrefix = inputProvidedOrder.columns
-      .map { column =>
-        (column, groupingExpressions.find(_ == column.expression))
-      }
-      .takeWhile {
-        case (_, _: Some[_]) => true
-        case (column, None) =>
-          aggregationOrderCandidate = Some(column)
-          false
-      }.flatMap(_._2)
+    val groupingOrderPrefixOptions: Seq[Option[Expression]] =
+      inputProvidedOrder.columns.map(_.expression)
+        .map { exp =>
+          groupingExpressions.find(_ == exp)
+        }
+        .takeWhile(_.isDefined)
+    val aggregationOrderCandidate: Option[ColumnOrder] =
+      inputProvidedOrder.columns.lift(groupingOrderPrefixOptions.length)
+    val groupingOrderPrefix = groupingOrderPrefixOptions.flatten
 
     val newAggregationExpressionsMap = aggregationExpressionsMap.map {
       case (v, f: FunctionInvocation) if AggregationHelper.hasInterestingOrder(f) =>
