@@ -19,7 +19,7 @@ package org.neo4j.cypher.internal.cst.factory.neo4j.ast
 import org.neo4j.cypher.internal.parser.CypherParser
 import org.neo4j.cypher.internal.parser.CypherParserListener
 
-trait CommandBuilder extends CypherParserListener {
+trait DdlBuilder extends CypherParserListener {
 
   final override def exitCreateCommand(
     ctx: CypherParser.CreateCommandContext

@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.parser.CypherParser
 final class AstBuilder extends AbstractAstBuilder
     with LiteralBuilder
     with LabelExpressionBuilder
-    with CommandBuilder
+    with DdlBuilder
     with ExpressionBuilder
     with StatementBuilder {
   override def visitTerminal(node: TerminalNode): Unit = {}
