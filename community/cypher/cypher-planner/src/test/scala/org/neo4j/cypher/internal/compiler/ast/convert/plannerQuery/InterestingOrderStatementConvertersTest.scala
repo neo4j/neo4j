@@ -196,6 +196,57 @@ class InterestingOrderStatementConvertersTest extends CypherFunSuite with Logica
     ))
   }
 
+  test("Extracts interesting order from collect(DISTINCT)") {
+    val result = buildSinglePlannerQuery("MATCH (n) RETURN collect(DISTINCT n.prop)")
+
+    val func = collect(prop("n", "prop"), distinct = true)
+    val interestingOrderCandidates =
+      Seq(Asc(prop("n", "prop")), Desc(prop("n", "prop"))).map(o => InterestingOrderCandidate(Seq(o)))
+    val interestingOrder = new InterestingOrder(RequiredOrderCandidate.empty, interestingOrderCandidates)
+    val expectation = RegularSinglePlannerQuery(
+      queryGraph = QueryGraph(patternNodes = Set(v"n")),
+      interestingOrder = interestingOrder,
+      horizon = AggregatingQueryProjection(Map.empty, Map(v"collect(DISTINCT n.prop)" -> func), isTerminating = true)
+    )
+
+    result should equal(expectation)
+    result.interestingOrder.interestingOrderCandidates should equal(interestingOrderCandidates)
+  }
+
+  test("Extracts interesting order from sum(DISTINCT n.prop) order by sum(DISTINCT n.prop)") {
+    val result = buildSinglePlannerQuery("MATCH (n) RETURN sum(DISTINCT n.prop) ORDER BY sum(DISTINCT n.prop)")
+
+    val func = sum(prop("n", "prop"), distinct = true)
+    val interestingOrderCandidates =
+      Seq(Asc(prop("n", "prop")), Desc(prop("n", "prop"))).map(o => InterestingOrderCandidate(Seq(o)))
+    val interestingOrder =
+      new InterestingOrder(RequiredOrderCandidate(Seq(Asc(v"sum(DISTINCT n.prop)"))), interestingOrderCandidates)
+    val expectation = RegularSinglePlannerQuery(
+      queryGraph = QueryGraph(patternNodes = Set(v"n")),
+      interestingOrder = interestingOrder,
+      horizon = AggregatingQueryProjection(Map.empty, Map(v"sum(DISTINCT n.prop)" -> func), isTerminating = true)
+    )
+
+    result should equal(expectation)
+    result.interestingOrder.interestingOrderCandidates should equal(interestingOrderCandidates)
+  }
+
+  test(s"Interesting order for sum(DISTINCT n.prop) in WITH and required order for ORDER BY sum") {
+    val result = buildSinglePlannerQuery(
+      s"""MATCH (n:Awesome)
+         |WHERE n.prop > 0
+         |WITH sum(DISTINCT n.prop) AS sum
+         |RETURN sum
+         |ORDER BY sum""".stripMargin
+    )
+
+    interestingOrders(result) should be(List(
+      InterestingOrder.interested(InterestingOrderCandidate.asc(prop("n", "prop")))
+        .interesting(InterestingOrderCandidate.desc(prop("n", "prop"))),
+      InterestingOrder.required(RequiredOrderCandidate.asc(v"sum", Map(v"sum" -> v"sum")))
+    ))
+  }
+
   test("Extracts required order from query not returning the sort column") {
     val result = buildSinglePlannerQuery("MATCH (n) RETURN n.prop2 ORDER BY n.prop")
 

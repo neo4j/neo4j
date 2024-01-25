@@ -461,8 +461,8 @@ trait AstConstructionTestSupport {
     )(pos)
   }
 
-  def sum(expression: Expression): FunctionInvocation =
-    FunctionInvocation(expression, FunctionName(Sum.name)(pos))
+  def sum(expression: Expression, distinct: Boolean = false): FunctionInvocation =
+    FunctionInvocation(FunctionName(Sum.name)(pos), distinct, IndexedSeq(expression))(pos)
 
   def id(expression: Expression): FunctionInvocation =
     FunctionInvocation(expression, FunctionName(Id.name)(pos))

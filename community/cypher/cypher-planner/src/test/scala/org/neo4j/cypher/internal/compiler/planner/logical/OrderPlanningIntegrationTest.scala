@@ -29,11 +29,14 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.Qu
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverWithIDPConnectComponents
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
 import org.neo4j.cypher.internal.expressions.DesugaredMapProjection
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.FunctionInvocation.ArgumentAsc
 import org.neo4j.cypher.internal.expressions.LiteralEntry
 import org.neo4j.cypher.internal.expressions.LogicalProperty
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.expressions.functions.PercentileDisc
 import org.neo4j.cypher.internal.frontend.phases.ProcedureReadOnlyAccess
 import org.neo4j.cypher.internal.frontend.phases.ProcedureSignature
 import org.neo4j.cypher.internal.frontend.phases.QualifiedName
@@ -123,7 +126,14 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
       .setLabelCardinality("A", nodeCount)
       .setRelationshipCardinality("(:A)-[]->()", nodeCount * nodeCount)
       .setRelationshipCardinality("()-[]->()", nodeCount * nodeCount)
-      .addNodeIndex("A", Seq("prop"), 0.9, uniqueSelectivity = 0.9, providesOrder = IndexOrderCapability.BOTH)
+      .addNodeIndex(
+        "A",
+        Seq("prop"),
+        0.9,
+        uniqueSelectivity = 0.9,
+        providesOrder = IndexOrderCapability.BOTH,
+        withValues = true
+      )
       .addNodeIndex("A", Seq("foo"), 0.8, uniqueSelectivity = 0.8) // Make it cheapest to start on a.foo.
       .build()
   }
@@ -1699,6 +1709,99 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
     plan should beLike {
       case Sort(_: Distinct, _) => ()
     }
+  }
+
+  test("should leverage order from ORDER BY in DISTINCT aggregation") {
+    val query =
+      """MATCH (a)
+        |WITH a
+        |ORDER BY a.prop
+        |RETURN count(DISTINCT a.prop) AS c""".stripMargin
+
+    val plan = wideningExpandConfig
+      .plan(query)
+      .stripProduceResults
+
+    plan.stripProduceResults should equal(
+      wideningExpandConfig.subPlanBuilder()
+        .aggregation(
+          Map.empty[String, Expression],
+          Map("c" -> count(cachedNodeProp("a", "prop"), isDistinct = true, ArgumentAsc))
+        )
+        .sort("`a.prop` ASC")
+        .projection("cacheNFromStore[a.prop] AS `a.prop`")
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test("should leverage order from ORDER BY in DISTINCT ordered aggregation") {
+    val query =
+      """MATCH (a)
+        |WITH a
+        |ORDER BY a.foo, a.prop
+        |RETURN a.foo, count(DISTINCT a.prop) AS c""".stripMargin
+
+    val plan = wideningExpandConfig
+      .plan(query)
+      .stripProduceResults
+
+    plan.stripProduceResults should equal(
+      wideningExpandConfig.subPlanBuilder()
+        .orderedAggregation(
+          Map("a.foo" -> cachedNodeProp("a", "foo")),
+          Map("c" -> count(cachedNodeProp("a", "prop"), isDistinct = true, ArgumentAsc)),
+          Seq("cacheN[a.foo]")
+        )
+        .sort("`a.foo` ASC", "`a.prop` ASC")
+        .projection("cacheN[a.foo] AS `a.foo`", "cacheN[a.prop] AS `a.prop`")
+        .cacheProperties("cacheNFromStore[a.prop]", "cacheNFromStore[a.foo]")
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test("should leverage index order in DISTINCT aggregation") {
+    val query = """
+                  |MATCH (a:A)
+                  |WHERE a.prop IS NOT NULL
+                  |RETURN count(DISTINCT a.prop) AS c""".stripMargin
+
+    val plan = chooseLargerIndexConfig
+      .plan(query)
+      .stripProduceResults
+
+    plan.stripProduceResults should equal(
+      chooseLargerIndexConfig.subPlanBuilder()
+        .aggregation(
+          Map.empty[String, Expression],
+          Map("c" -> count(cachedNodeProp("a", "prop"), isDistinct = true, ArgumentAsc))
+        )
+        .nodeIndexOperator("a:A(prop)", indexOrder = IndexOrderAscending, getValue = _ => GetValue)
+        .build()
+    )
+  }
+
+  test("should leverage index order in non-DISTINCT percentile aggregation") {
+    val query =
+      """
+        |MATCH (a:A)
+        |WHERE a.prop IS NOT NULL
+        |RETURN percentileDisc(a.prop, 0.5) AS c""".stripMargin
+
+    val plan = chooseLargerIndexConfig
+      .plan(query)
+      .stripProduceResults
+
+    plan.stripProduceResults should equal(
+      chooseLargerIndexConfig.subPlanBuilder()
+        .aggregation(
+          Map.empty[String, Expression],
+          Map("c" -> function(PercentileDisc.name, ArgumentAsc, cachedNodeProp("a", "prop"), literalFloat(0.5)))
+        )
+        .nodeIndexOperator("a:A(prop)", indexOrder = IndexOrderAscending, getValue = _ => GetValue)
+        .build()
+    )
   }
 
   test("should sort before widening expand and aggregation") {
