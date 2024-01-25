@@ -179,6 +179,7 @@
     <antlr.version>4.13.1</antlr.version>
     <error_prone_annotations.version>2.24.1</error_prone_annotations.version>
     <teavm.version>0.9.1</teavm.version>
+    <javapoet.version>1.13.0</javapoet.version>
   </properties>
 
   <modules>

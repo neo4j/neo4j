@@ -62,7 +62,7 @@
         <dependency>
             <groupId>com.squareup</groupId>
             <artifactId>javapoet</artifactId>
-            <version>1.13.0</version>
+            <version>${javapoet.version}</version>
         </dependency>
     </dependencies>
 
