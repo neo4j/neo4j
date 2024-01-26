@@ -108,7 +108,10 @@ public class CheckCommand extends AbstractAdminCommand {
                     names = "--from-path",
                     paramLabel = "<path>",
                     required = true,
-                    description = "Path to directory containing dump/backup artifacts to check the consistency of.")
+                    description =
+                            "Path to the directory containing dump/backup artifacts that need to be checked for consistency. "
+                                    + "If the directory contains multiple backups, it will select the most recent backup chain, "
+                                    + "based on the transaction IDs found, to perform the consistency check. ")
             private Path fromPath;
 
             public Path fromPath() {

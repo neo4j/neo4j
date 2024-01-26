@@ -165,7 +165,9 @@ class CheckCommandIT {
                               --from-path-txn=<path> Path to the transactions directory, containing the transaction directory for the database
                                                        to source from.
                                                        Default: <config: server.directories.transaction.logs.root>
-                              --from-path=<path>     Path to directory containing dump/backup artifacts to check the consistency of.
+                              --from-path=<path>     Path to the directory containing dump/backup artifacts that need to be checked for
+                                                       consistency. If the directory contains multiple backups, it will select the most recent
+                                                       backup chain, based on the transaction IDs found, to perform the consistency check.
                               --temp-path=<path>     Path to directory to be used as a staging area to extract dump/backup artifacts, if needed.
                                                        Default:  <from-path>""");
     }
