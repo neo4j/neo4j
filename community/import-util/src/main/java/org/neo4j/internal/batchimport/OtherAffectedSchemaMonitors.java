@@ -106,6 +106,7 @@ public class OtherAffectedSchemaMonitors implements Supplier<SchemaMonitor>, Clo
     private final ByteBufferFactory bufferFactory;
     private final MutableLongSet violatingEntities = LongSets.mutable.empty().asSynchronized();
     private final StorageEngineIndexingBehaviour indexingBehaviour;
+    private final boolean incrementalIndexing;
 
     public OtherAffectedSchemaMonitors(
             FileSystemAbstraction fileSystem,
@@ -120,7 +121,8 @@ public class OtherAffectedSchemaMonitors implements Supplier<SchemaMonitor>, Clo
             LongToLongFunction entityIdFromIndexIdConverter,
             Configuration configuration,
             IndexStatisticsStore indexStatisticsStore,
-            StorageEngineIndexingBehaviour indexingBehaviour) {
+            StorageEngineIndexingBehaviour indexingBehaviour,
+            boolean incrementalIndexing) {
         this.fileSystem = fileSystem;
         this.indexProviderMap = indexProviderMap;
         this.tempIndexes = tempIndexes;
@@ -134,6 +136,7 @@ public class OtherAffectedSchemaMonitors implements Supplier<SchemaMonitor>, Clo
         this.configuration = configuration;
         this.indexStatisticsStore = indexStatisticsStore;
         this.indexingBehaviour = indexingBehaviour;
+        this.incrementalIndexing = incrementalIndexing;
         this.propertyExistenceConstraints = buildPropertyExistenceConstraintsMap(schemaCache, entityType);
         this.bufferFactory = new ByteBufferFactory(
                 UnsafeDirectByteBufferAllocator::new,
@@ -239,7 +242,7 @@ public class OtherAffectedSchemaMonitors implements Supplier<SchemaMonitor>, Clo
                     : indexEntityId -> !skippedEntityIds.contains(indexEntityId)
                             && !violatingEntities.contains(entityIdFromIndexIdConverter.applyAsLong(indexEntityId));
             for (var descriptor : indexPopulators.keySet()) {
-                if (!descriptor.isUnique() && filter == null) {
+                if (!descriptor.isUnique() && filter == null && incrementalIndexing) {
                     // For non-constraint indexes we can simply move the increment index into place
                     // if there are no violations.
                     moveIndex(fileSystem, tempIndexes, indexProviderMap, descriptor);

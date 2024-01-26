@@ -32,15 +32,19 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.OptionalLong;
 import java.util.stream.Collectors;
+import org.eclipse.collections.api.block.function.primitive.LongToLongFunction;
 import org.eclipse.collections.api.set.ImmutableSet;
+import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.batchimport.cache.idmapping.IndexIdMapper;
 import org.neo4j.internal.batchimport.input.Input;
+import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaCache;
@@ -53,14 +57,19 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.PlainDatabaseLayout;
 import org.neo4j.io.locker.Locker;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexEntryConflictHandler;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexProvidersAccess;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.util.Preconditions;
 
@@ -326,6 +335,106 @@ public class IncrementalBatchImportUtil {
                 indexStatisticsStore,
                 input.groups(),
                 indexingBehaviour);
+    }
+
+    public static void mergeIndexes(
+            LongSet affectedIndexes,
+            SchemaCache targetSchemaCache,
+            TokenHolders targetTokenHolders,
+            IndexProviderMap targetIndexProviders,
+            TokenHolders incrementalTokenHolders,
+            IndexProviderMap incrementalIndexProviders,
+            ImmutableSet<OpenOption> openOptions,
+            LongToLongFunction entityIdConverter,
+            ProgressListener progress,
+            List<Closeable> toCloseBeforePageCacheClose,
+            StorageEngineIndexingBehaviour indexingBehaviour,
+            FileSystemAbstraction fileSystem,
+            Config dbConfig,
+            CursorContextFactory contextFactory,
+            Configuration config,
+            JobScheduler jobScheduler)
+            throws IOException {
+        // This method assumes that no writes were made on target while building the increment
+
+        // Just copy the affected indexes from the increment to target
+        var indexIds = affectedIndexes.longIterator();
+        while (indexIds.hasNext()) {
+            var indexId = indexIds.next();
+            var index = targetSchemaCache.getIndex(indexId);
+
+            // If this is a constraint index then copy it from what we built
+            if (index.isUnique()) {
+                progress.add(estimateIndexSize(
+                        targetSchemaCache.getIndex(indexId),
+                        incrementalIndexProviders,
+                        incrementalTokenHolders,
+                        openOptions,
+                        indexingBehaviour,
+                        dbConfig,
+                        contextFactory));
+                moveIndex(fileSystem, incrementalIndexProviders, targetIndexProviders, index);
+            } else {
+                try (var incrementalIndex = incrementalIndexProviders
+                        .lookup(index.getIndexProvider())
+                        .getOnlineAccessor(
+                                index,
+                                new IndexSamplingConfig(Config.defaults()),
+                                incrementalTokenHolders,
+                                openOptions,
+                                indexingBehaviour)) {
+                    var targetIndex = targetIndexProviders
+                            .lookup(index.getIndexProvider())
+                            .getOnlineAccessor(
+                                    index,
+                                    new IndexSamplingConfig(Config.defaults()),
+                                    targetTokenHolders,
+                                    openOptions,
+                                    indexingBehaviour);
+                    try {
+                        targetIndex.insertFrom(
+                                incrementalIndex,
+                                entityIdConverter,
+                                false,
+                                IndexEntryConflictHandler.THROW,
+                                null,
+                                config.maxNumberOfWorkerThreads(),
+                                jobScheduler,
+                                progress);
+                        toCloseBeforePageCacheClose.add(() -> {
+                            try (targetIndex) {
+                                targetIndex.force(FileFlushEvent.NULL, CursorContext.NULL_CONTEXT);
+                            }
+                        });
+                    } catch (IndexEntryConflictException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            }
+            progress.mark('-');
+        }
+    }
+
+    public static long estimateIndexSize(
+            IndexDescriptor indexDescriptor,
+            IndexProviderMap indexProviders,
+            TokenHolders tokenHolders,
+            ImmutableSet<OpenOption> openOptions,
+            StorageEngineIndexingBehaviour indexingBehaviour,
+            Config dbConfig,
+            CursorContextFactory contextFactory)
+            throws IOException {
+        try (var incrementalIndex = indexProviders
+                        .lookup(indexDescriptor.getIndexProvider())
+                        .getOnlineAccessor(
+                                indexDescriptor,
+                                new IndexSamplingConfig(dbConfig),
+                                tokenHolders,
+                                openOptions,
+                                indexingBehaviour);
+                var context = contextFactory.create("estimate index size")) {
+            return incrementalIndex.estimateNumberOfEntries(context);
+        }
     }
 
     private static Map<String, SchemaDescriptor> asSchemaDescriptors(Map<String, IndexDescriptor> indexDescriptors) {
