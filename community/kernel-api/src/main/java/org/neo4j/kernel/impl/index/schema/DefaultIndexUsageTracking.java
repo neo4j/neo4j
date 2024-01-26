@@ -20,13 +20,14 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.time.Clock;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAccumulator;
+import java.util.concurrent.atomic.LongAdder;
 import org.neo4j.kernel.api.index.IndexUsageStats;
 
 public class DefaultIndexUsageTracking implements IndexUsageTracking {
     private final long trackedSince;
-    private final AtomicLong readCount = new AtomicLong();
-    private final AtomicLong lastRead = new AtomicLong();
+    private final LongAdder readCount = new LongAdder();
+    private final LongAccumulator lastRead = new LongAccumulator(Long::max, 0);
     private final Clock clock;
 
     public DefaultIndexUsageTracking(Clock clock) {
@@ -41,14 +42,13 @@ public class DefaultIndexUsageTracking implements IndexUsageTracking {
 
     @Override
     public IndexUsageStats getAndReset() {
-        long queryCount = this.readCount.get();
-        this.readCount.addAndGet(-queryCount);
-        return new IndexUsageStats(lastRead.get(), queryCount, trackedSince);
+        long queryCount = this.readCount.sumThenReset();
+        return new IndexUsageStats(lastRead.longValue(), queryCount, trackedSince);
     }
 
     private void add(long queryCount, long lastTimeUsed) {
-        this.readCount.addAndGet(queryCount);
-        this.lastRead.getAndUpdate(operand -> Long.max(operand, lastTimeUsed));
+        this.readCount.add(queryCount);
+        this.lastRead.accumulate(lastTimeUsed);
     }
 
     private class DefaultIndexUsageTracker implements IndexUsageTracker {
