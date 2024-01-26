@@ -450,13 +450,14 @@ case class OrLeafPlanner(inner: Seq[LeafPlanner]) extends LeafPlanner {
 
           // Plan a single Distinct on top
           val orPlan = maybeSortColumn match {
-            case Some((sortVariable, _)) =>
+            // Pipelined runtime does currently not support OrderedDistinct
+            case Some((sortVariable, _)) if context.settings.executionModel.providedOrderPreserving =>
               context.staticComponents.logicalPlanProducer.planOrderedDistinctForUnion(
                 unionPlan,
                 Seq(sortVariable),
                 context
               )
-            case None => context.staticComponents.logicalPlanProducer.planDistinctForUnion(unionPlan, context)
+            case _ => context.staticComponents.logicalPlanProducer.planDistinctForUnion(unionPlan, context)
           }
 
           // Update solved with the joinedSolvedQueryGraph

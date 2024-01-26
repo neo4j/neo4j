@@ -111,6 +111,7 @@ case object PlanRewriter extends LogicalPlanRewriter with StepSequencer.Step wit
         // Only used on read-only queries, until rewriter is tested to work with cleanUpEager
         if (readOnly) bfsAggregationRemover else identity,
         // Only used on read-only queries, until rewriter is tested to work with cleanUpEager
+        // Pipelined runtime does currently not support PartialSort/PartialTop, which is introduced in bfsDepthOrderer
         if (context.executionModel.providedOrderPreserving && readOnly) bfsDepthOrderer else identity,
         useTop,
         skipInPartialSort,
