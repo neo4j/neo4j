@@ -46,14 +46,18 @@ import scala.collection.immutable.ListSet
 object EagerAnalyzer {
 
   def apply(context: LogicalPlanningContext): EagerAnalyzer = {
-    if (context.settings.eagerAnalyzer == CypherEagerAnalyzerOption.ir) {
-      if (context.settings.updateStrategy.alwaysEager) {
-        new AlwaysEagerEagerAnalyzer(context)
-      } else {
-        EagerAnalyzerImpl(context)
-      }
+    if (context.staticComponents.readOnly) {
+      return NoopEagerAnalyzer
+    }
+
+    if (context.settings.eagerAnalyzer != CypherEagerAnalyzerOption.ir) {
+      return NoopEagerAnalyzer
+    }
+
+    if (context.settings.updateStrategy.alwaysEager) {
+      new AlwaysEagerEagerAnalyzer(context)
     } else {
-      NoopEagerAnalyzer
+      EagerAnalyzerImpl(context)
     }
   }
 }

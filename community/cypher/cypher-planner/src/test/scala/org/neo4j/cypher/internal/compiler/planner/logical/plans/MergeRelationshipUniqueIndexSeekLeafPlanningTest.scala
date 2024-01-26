@@ -111,7 +111,8 @@ class MergeRelationshipUniqueIndexSeekLeafPlanningTest
       anonymousVariableNameGenerator = new AnonymousVariableNameGenerator(),
       cancellationChecker = CancellationChecker.NeverCancelled,
       semanticTable = config.semanticTable,
-      costComparisonListener = devNullListener
+      costComparisonListener = devNullListener,
+      readOnly = false
     )
 
     val settings = Settings(

@@ -525,7 +525,8 @@ trait LogicalPlanningTestSupport2 extends AstConstructionTestSupport with Logica
         anonymousVariableNameGenerator = new AnonymousVariableNameGenerator(),
         cancellationChecker = CancellationChecker.NeverCancelled,
         semanticTable = semanticTable,
-        costComparisonListener = devNullListener
+        costComparisonListener = devNullListener,
+        readOnly = false
       )
 
       val settings = Settings(

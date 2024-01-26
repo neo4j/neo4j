@@ -90,7 +90,8 @@ case object QueryPlanner
       anonymousVariableNameGenerator = from.anonymousVariableNameGenerator,
       cancellationChecker = context.cancellationChecker,
       semanticTable = from.semanticTable(),
-      costComparisonListener = CostComparisonListener.givenDebugOptions(context.debugOptions, context.log)
+      costComparisonListener = CostComparisonListener.givenDebugOptions(context.debugOptions, context.log),
+      readOnly = from.query.readOnly
     )
 
     val settings = Settings(

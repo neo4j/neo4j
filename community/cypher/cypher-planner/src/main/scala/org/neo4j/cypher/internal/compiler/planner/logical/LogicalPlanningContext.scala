@@ -90,7 +90,8 @@ object LogicalPlanningContext {
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
     cancellationChecker: CancellationChecker,
     semanticTable: SemanticTable,
-    costComparisonListener: CostComparisonListener
+    costComparisonListener: CostComparisonListener,
+    readOnly: Boolean
   )
 
   /**

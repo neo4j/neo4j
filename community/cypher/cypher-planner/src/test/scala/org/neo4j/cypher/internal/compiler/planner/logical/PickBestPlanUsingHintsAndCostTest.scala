@@ -223,7 +223,8 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
       anonymousVariableNameGenerator = new AnonymousVariableNameGenerator(),
       cancellationChecker = CancellationChecker.NeverCancelled,
       semanticTable = null,
-      costComparisonListener = devNullListener
+      costComparisonListener = devNullListener,
+      readOnly = false
     )
 
     val settings = Settings(

@@ -324,7 +324,8 @@ trait LogicalPlanningTestSupport extends AstConstructionTestSupport with Logical
       anonymousVariableNameGenerator = new AnonymousVariableNameGenerator(),
       cancellationChecker = CancellationChecker.NeverCancelled,
       semanticTable = semanticTable,
-      costComparisonListener = costComparisonListener
+      costComparisonListener = costComparisonListener,
+      readOnly = false
     )
 
     val settings = Settings(
