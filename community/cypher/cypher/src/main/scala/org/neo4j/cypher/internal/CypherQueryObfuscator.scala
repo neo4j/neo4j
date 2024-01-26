@@ -34,20 +34,20 @@ class CypherQueryObfuscator(state: ObfuscationMetadata) extends QueryObfuscator 
     else {
       val sb = new mutable.StringBuilder()
       var i = 0
-      val adjacentCharacters = rawQueryText.sliding(2).toVector
       for (literalOffset <- state.sensitiveLiteralOffsets) {
         val start = literalOffset.start
-        if (start >= rawQueryText.length || start < i)
+        if (start >= rawQueryText.length || start < i) {
           throw new IllegalStateException(s"Literal offset out of bounds: $literalOffset.")
+        }
 
         sb.append(rawQueryText.substring(i, start))
         sb.append(CypherQueryObfuscator.OBFUSCATED_LITERAL)
-        i = start + literalOffset.length.getOrElse(literalStringLength(adjacentCharacters, rawQueryText, start))
+        i = start + literalOffset.length.getOrElse(literalStringLength(rawQueryText, start))
       }
-      if (i < rawQueryText.length)
+      if (i < rawQueryText.length) {
         sb.append(rawQueryText.substring(i))
-
-      sb.toString()
+      }
+      sb.toString
     }
 
   override def obfuscateParameters(rawQueryParameters: MapValue): MapValue =
@@ -60,19 +60,27 @@ class CypherQueryObfuscator(state: ObfuscationMetadata) extends QueryObfuscator 
       params
     }
 
-  // We don't know the length of strings ahead of time since the amount of characters they use in the raw query text
-  // depends on if we use single quotes or double quotes.
-  private def literalStringLength(adjacentCharacters: Seq[String], rawQueryText: String, fromIndex: Int): Int = {
-    val openingQuote = rawQueryText(fromIndex)
-    if (openingQuote != '"' && openingQuote != '\'')
-      throw new IllegalStateException(s"Expected opening quote at offset $fromIndex.")
-
-    val lastCharacterIndex = adjacentCharacters.indexWhere(s => s(0) != '\\' && s(1) == openingQuote, fromIndex)
-    if (lastCharacterIndex == -1)
+  // This should no longer be necessary, we should always know the length ahead of getting here.
+  // However, at this point in time there is still one code-path leading to an unknown length and at the
+  // moment of writing this I didn't have the guts to remove this method.
+  private def literalStringLength(rawQueryText: String, fromIndex: Int): Int = {
+    val first = rawQueryText.charAt(fromIndex)
+    if (first == '"' || first == '\'') {
+      // This literal starts with a quote so it must be a string-literal
+      var lastCharacterIndex = fromIndex
+      while (lastCharacterIndex < rawQueryText.length - 1) {
+        if (rawQueryText(lastCharacterIndex) != '\\' && rawQueryText(lastCharacterIndex + 1) == first) {
+          return lastCharacterIndex - fromIndex + 2
+        }
+        lastCharacterIndex += 1
+      }
       throw new IllegalStateException("Expected to find closing quote.")
-
-    lastCharacterIndex - fromIndex + 2 // + 2 to account for quotes
+    } else {
+      // this shouldn't happen but let's err on the side of caution and obfuscate the rest of the query
+      rawQueryText.length - fromIndex
+    }
   }
+
 }
 
 object CypherQueryObfuscator {

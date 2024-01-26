@@ -27,6 +27,7 @@ public interface QueryObfuscator {
     MapValue obfuscateParameters(MapValue rawQueryParameters);
 
     QueryObfuscator PASSTHROUGH = new QueryObfuscator() {
+
         @Override
         public String obfuscateText(String rawQueryText) {
             return rawQueryText;

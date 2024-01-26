@@ -153,8 +153,9 @@ class CypherQueryObfuscatorTest extends CypherFunSuite {
     ob.obfuscateParameters(originalParams) should equal(expectedParams)
   }
 
-  test("should throw when missing opening quote") {
+  test("should obfuscate everything if missing an end quote") {
     val originalText = "password is here'"
+    val expectedText = "password is ******"
     val ob =
       CypherQueryObfuscator(
         ObfuscationMetadata(
@@ -163,7 +164,7 @@ class CypherQueryObfuscatorTest extends CypherFunSuite {
         )
       )
 
-    an[IllegalStateException] should be thrownBy ob.obfuscateText(originalText)
+    ob.obfuscateText(originalText) should equal(expectedText)
   }
 
   test("should throw when missing closing quote") {
