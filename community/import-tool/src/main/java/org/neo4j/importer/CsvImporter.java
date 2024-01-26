@@ -281,7 +281,7 @@ class CsvImporter implements Importer {
                 }
                 stdOut.println();
                 stdOut.println("We recommend that data should be cleaned before importing. The fault-tolerance can be "
-                        + "increased using –fault-tolerance=<num>, however this will dramatically affect the tool’s"
+                        + "increased using --bad-tolerance=<num>, however this will dramatically affect the tool’s"
                         + " performance.");
                 stdOut.println();
             }
