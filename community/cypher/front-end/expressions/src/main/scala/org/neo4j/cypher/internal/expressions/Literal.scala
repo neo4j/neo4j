@@ -57,7 +57,7 @@ case class SignedDecimalIntegerLiteral(stringVal: String)(val position: InputPos
 
   override def asSensitiveLiteral: Literal with SensitiveLiteral =
     new SignedDecimalIntegerLiteral(stringVal)(position) with SensitiveLiteral {
-      override def literalLength: Option[Int] = Some(stringVal.length)
+      override def literalLength: Int = stringVal.length
     }
 }
 
@@ -66,7 +66,7 @@ case class UnsignedDecimalIntegerLiteral(stringVal: String)(val position: InputP
 
   override def asSensitiveLiteral: Literal with SensitiveLiteral =
     new UnsignedDecimalIntegerLiteral(stringVal)(position) with SensitiveLiteral {
-      override def literalLength: Option[Int] = Some(stringVal.length)
+      override def literalLength: Int = stringVal.length
     }
 }
 
@@ -85,7 +85,7 @@ case class SignedOctalIntegerLiteral(stringVal: String)(val position: InputPosit
 
   override def asSensitiveLiteral: Literal with SensitiveLiteral =
     new SignedOctalIntegerLiteral(stringVal)(position) with SensitiveLiteral {
-      override def literalLength: Option[Int] = Some(stringVal.length)
+      override def literalLength: Int = stringVal.length
     }
 }
 
@@ -104,7 +104,7 @@ case class SignedHexIntegerLiteral(stringVal: String)(val position: InputPositio
 
   override def asSensitiveLiteral: Literal with SensitiveLiteral =
     new SignedHexIntegerLiteral(stringVal)(position) with SensitiveLiteral {
-      override def literalLength: Option[Int] = Some(stringVal.length)
+      override def literalLength: Int = stringVal.length
     }
 }
 
@@ -123,7 +123,7 @@ case class DecimalDoubleLiteral(stringVal: String)(val position: InputPosition) 
 
   override def asSensitiveLiteral: Literal with SensitiveLiteral =
     new DecimalDoubleLiteral(stringVal)(position) with SensitiveLiteral {
-      override def literalLength: Option[Int] = Some(stringVal.length)
+      override def literalLength: Int = stringVal.length
     }
 }
 
@@ -137,7 +137,7 @@ case class StringLiteral(value: String)(val position: InputPosition, val endPosi
 
   override def asSensitiveLiteral: Literal with SensitiveLiteral =
     new StringLiteral(value)(position, endPosition) with SensitiveLiteral {
-      override def literalLength: Option[Int] = Some(endPosition.offset - position.offset + 1)
+      override def literalLength: Int = endPosition.offset - position.offset + 1
     }
 }
 
@@ -156,7 +156,7 @@ final case class SensitiveStringLiteral(value: Array[Byte])(val position: InputP
 
   override def hashCode(): Int = util.Arrays.hashCode(value)
 
-  override def literalLength: Option[Int] = Some(endPosition.offset - position.offset + 1)
+  override def literalLength: Int = endPosition.offset - position.offset + 1
 
   override def isConstantForQuery: Boolean = true
 }
@@ -167,7 +167,7 @@ trait SensitiveLiteral {
   /**
    * Number of characters of the literal including quotes
    */
-  def literalLength: Option[Int]
+  def literalLength: Int
 }
 
 case class Null()(val position: InputPosition) extends Literal {
@@ -176,7 +176,7 @@ case class Null()(val position: InputPosition) extends Literal {
   override def asCanonicalStringVal = "NULL"
 
   override def asSensitiveLiteral: Literal with SensitiveLiteral = new Null()(position) with SensitiveLiteral {
-    override def literalLength: Option[Int] = Some(4)
+    override def literalLength: Int = 4
   }
 }
 
@@ -190,7 +190,7 @@ case class Infinity()(val position: InputPosition) extends Literal {
   override def asCanonicalStringVal = "Infinity"
 
   override def asSensitiveLiteral: Literal with SensitiveLiteral = new Infinity()(position) with SensitiveLiteral {
-    override def literalLength: Option[Int] = Some(8)
+    override def literalLength: Int = 8
   }
 }
 
@@ -199,7 +199,7 @@ case class NaN()(val position: InputPosition) extends Literal {
   override def asCanonicalStringVal = "NaN"
 
   override def asSensitiveLiteral: Literal with SensitiveLiteral = new NaN()(position) with SensitiveLiteral {
-    override def literalLength: Option[Int] = Some(3)
+    override def literalLength: Int = 3
   }
 }
 
@@ -211,7 +211,7 @@ case class True()(val position: InputPosition) extends BooleanLiteral {
   override def asCanonicalStringVal = "true"
 
   override def asSensitiveLiteral: Literal with SensitiveLiteral = new True()(position) with SensitiveLiteral {
-    override def literalLength: Option[Int] = Some(4)
+    override def literalLength: Int = 4
   }
 }
 
@@ -220,6 +220,6 @@ case class False()(val position: InputPosition) extends BooleanLiteral {
   override def asCanonicalStringVal = "false"
 
   override def asSensitiveLiteral: Literal with SensitiveLiteral = new False()(position) with SensitiveLiteral {
-    override def literalLength: Option[Int] = Some(5)
+    override def literalLength: Int = 5
   }
 }
