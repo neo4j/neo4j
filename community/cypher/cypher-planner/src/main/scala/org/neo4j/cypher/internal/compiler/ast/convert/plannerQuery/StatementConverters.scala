@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.Create
+import org.neo4j.cypher.internal.ast.CreateOrInsert
 import org.neo4j.cypher.internal.ast.ProjectingUnionAll
 import org.neo4j.cypher.internal.ast.ProjectingUnionDistinct
 import org.neo4j.cypher.internal.ast.Query
@@ -187,23 +188,24 @@ object StatementConverters {
   }
 
   /**
-   * Flatten consecutive CREATE clauses into one.
+   * Flatten consecutive CREATE and INSERT clauses into one CREATE clause.
    *
    *   CREATE (a) CREATE (b) => CREATE (a),(b)
+   *   INSERT (a) INSERT (b) => CREATE (a),(b)
    */
   private def flattenCreates(clauses: Seq[Clause]): Seq[Clause] = {
     val builder = ArrayBuffer.empty[Clause]
     var prevCreate: Option[(Seq[NonPrefixedPatternPart], InputPosition)] = None
     for (clause <- clauses) {
       (clause, prevCreate) match {
-        case (c: Create, None) if containsIrExpression(c) =>
+        case (c: CreateOrInsert, None) if containsIrExpression(c) =>
           builder += c
           prevCreate = None
 
-        case (c: Create, None) =>
+        case (c: CreateOrInsert, None) =>
           prevCreate = Some((c.pattern.patternParts, c.position))
 
-        case (c: Create, Some((prevParts, pos))) if !containsIrExpression(c) =>
+        case (c: CreateOrInsert, Some((prevParts, pos))) if !containsIrExpression(c) =>
           prevCreate = Some((prevParts ++ c.pattern.patternParts, pos))
 
         case (nonMixingClause, Some((prevParts, pos))) =>
@@ -220,7 +222,7 @@ object StatementConverters {
     builder
   }.toSeq
 
-  private def containsIrExpression(c: Create): Boolean =
+  private def containsIrExpression(c: CreateOrInsert): Boolean =
     c.pattern.patternParts.exists(part => containsIrExpression(part.element))
 
   private def containsIrExpression(element: PatternElement): Boolean =
