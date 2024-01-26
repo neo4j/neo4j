@@ -536,45 +536,6 @@ class FabricStitcherTest
         )
       }
 
-      "disallows call in transactions as apply under union" in {
-        // Think this case is illegal in cypher anyway due to
-        // org.neo4j.exceptions.SyntaxException: CALL { ... } IN TRANSACTIONS in a UNION is not supported
-        /*
-        RETURN 3 as c
-        UNION
-        WITH 1 as a
-        CALL {
-          WITH a as a
-          USE foo
-          RETURN 2 as b
-        } IN TRANSACTIONS
-        RETURN 3 as c
-         */
-        val e = the[SyntaxException].thrownBy(
-          stitching(
-            init(defaultUse)
-              .union(
-                init(defaultUse)
-                  .leaf(Seq(return_(literal(3).as("c"))), Seq("c")),
-                init(defaultUse)
-                  .leaf(Seq(with_(literal(1).as("a"))), Seq("a"))
-                  .apply(
-                    _ =>
-                      init(Declared(use("foo")), Seq("a"), Seq("a"))
-                        .leaf(Seq(with_(varFor("a").as("a")), use("foo"), return_(literal(2).as("b"))), Seq("b")),
-                    inTransactionParameters
-                  )
-                  .leaf(Seq(return_(literal(3).as("c"))), Seq("c"))
-              ),
-            callInTransactionsEnabled = false
-          )
-        )
-
-        e.getMessage.should(
-          include("Transactional subquery is not allowed here. This feature is not supported on composite databases.")
-        )
-      }
-
       "disallows call in transactions as subquery call" in {
         val e = the[SyntaxException].thrownBy(
           stitching(

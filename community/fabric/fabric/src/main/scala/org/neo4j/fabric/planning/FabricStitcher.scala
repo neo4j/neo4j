@@ -71,27 +71,25 @@ case class FabricStitcher(
    * Exec fragments formed by recursively stitching same-graph Leaf:s together
    * and adding appropriate glue clauses
    */
-  def convert(fragment: Fragment): Fragment = {
-    val result = fragment match {
-      case chain: Fragment.Chain => convertChain(chain)
-      case union: Fragment.Union => convertUnion(union)
-      case command: Fragment.Command =>
-        if (!compositeContext && !UseEvaluation.isStatic(command.use.graphSelection)) {
-          failDynamicGraph(command.use)
-        }
-        asExec(
-          Fragment.Init(command.use),
-          command.command,
-          command.outputColumns
-        )
-    }
-
-    if (callInTransactionsEnabled) {
-      if (compositeContext) processCompositeCallInTx(result) else result
-    } else {
-      if (compositeContext) validateNoTransactionalSubquery(result)
-      result
-    }
+  def convert(fragment: Fragment): Fragment = fragment match {
+    case chain: Fragment.Chain =>
+      val convertedChain = convertChain(chain)
+      if (callInTransactionsEnabled) {
+        if (compositeContext) processCompositeCallInTx(convertedChain) else convertedChain
+      } else {
+        if (compositeContext) validateNoTransactionalSubquery(convertedChain)
+        convertedChain
+      }
+    case union: Fragment.Union => convertUnion(union)
+    case command: Fragment.Command =>
+      if (!compositeContext && !UseEvaluation.isStatic(command.use.graphSelection)) {
+        failDynamicGraph(command.use)
+      }
+      asExec(
+        Fragment.Init(command.use),
+        command.command,
+        command.outputColumns
+      )
   }
 
   private def processCompositeCallInTx(fragment: Fragment): Fragment.Chain = fragment match {
