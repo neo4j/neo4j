@@ -99,9 +99,10 @@ class FabricParsingPropertyTest extends CypherFunSuite
 
   // The result of fabricParsing gets prettified later on in FabricStitcher.
   // The resulting string gets sent to a remote instance.
-  // This string must not contain any anonymous variable names, otherwise newly generated anonymous variable names
+  // This string must may contain anonymous variable names, but they must use negative numbers.
+  // Otherwise newly generated anonymous variable names
   // on the remote instance can clash with the existing anonymous variable names.
-  test("fabricParsing should not introduce anonymous variable names.") {
+  test("fabricParsing should not introduce anonymous variable names with non-negative numbers.") {
     // To reproduce test failures, enable the following line with the seed from the TC build
     // setScalaCheckInitialSeed(seed)
     forAll(astGenerator._statement) { statement =>
@@ -111,7 +112,7 @@ class FabricParsingPropertyTest extends CypherFunSuite
           queryString,
           None,
           IDPPlannerName,
-          new AnonymousVariableNameGenerator
+          new AnonymousVariableNameGenerator(negativeNumbers = true)
         )
 
         val context = new BaseContext {
@@ -129,7 +130,9 @@ class FabricParsingPropertyTest extends CypherFunSuite
           val fabricParsed = fabricParsing.transform(state, context).statement()
           val rewrittenQueryString = prettifier.asString(fabricParsed)
           withClue(s"Rewritten queryString: $rewrittenQueryString\n") {
-            UNNAMED_PATTERN.findAllIn(rewrittenQueryString).toList should be(empty)
+            UNNAMED_PATTERN.findAllMatchIn(rewrittenQueryString).foreach(
+              _.group(2).toInt should be < 0
+            )
           }
         } catch {
           case _: DummyException =>
