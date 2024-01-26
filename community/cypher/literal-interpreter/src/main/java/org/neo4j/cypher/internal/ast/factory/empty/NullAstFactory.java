@@ -145,7 +145,7 @@ public class NullAstFactory
     }
 
     @Override
-    public NULL newString(NULL p, String image) {
+    public NULL newString(NULL s, NULL e, String image) {
         return null;
     }
 
@@ -1096,7 +1096,7 @@ public class NullAstFactory
     }
 
     @Override
-    public NULL passwordExpression(NULL p, String password) {
+    public NULL passwordExpression(NULL s, NULL e, String password) {
         return null;
     }
 

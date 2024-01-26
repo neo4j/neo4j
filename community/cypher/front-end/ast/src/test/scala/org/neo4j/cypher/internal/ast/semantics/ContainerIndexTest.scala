@@ -99,7 +99,7 @@ class ContainerIndexTest extends SemanticFunSuite {
   }
 
   test("should raise error if indexing list by string") {
-    val index = ContainerIndex(dummyList, StringLiteral("1.3")(DummyPosition(5)))(DummyPosition(4))
+    val index = ContainerIndex(dummyList, StringLiteral("1.3")(DummyPosition(5), DummyPosition(6)))(DummyPosition(4))
 
     val result = SemanticExpressionCheck.simple(index).run(SemanticState.clean)
     result.errors should equal(Seq(SemanticError(

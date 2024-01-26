@@ -155,7 +155,8 @@ case class idSeekLeafPlanner(skipIDs: Set[LogicalVariable]) extends LeafPlanner 
     }
   }
 
-  private def relTypeAsStringLiteral(relType: RelTypeName) = StringLiteral(relType.name)(relType.position)
+  private def relTypeAsStringLiteral(relType: RelTypeName) =
+    StringLiteral(relType.name)(relType.position, relType.position)
 
   private def typeOfRelExpr(idExpr: LogicalVariable) =
     FunctionInvocation(FunctionName("type")(idExpr.position), idExpr)(idExpr.position)

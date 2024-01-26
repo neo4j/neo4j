@@ -82,7 +82,7 @@ case object DebugPrinter extends Phase[PlannerContext, LogicalPlanState, Logical
     implicit val idGen = new SequentialIdGen()
     val pos = InputPosition(0, 0, 0)
     val stringValues = string.split("\r\n").flatMap(_.split(System.lineSeparator())).flatMap(_.split("\n")).map(s =>
-      StringLiteral(s)(pos)
+      StringLiteral(s)(pos, pos)
     )
     val expression = ListLiteral(stringValues.toSeq)(pos)
     val unwind = UnwindCollection(Argument(Set.empty), varFor("col"), expression)

@@ -127,19 +127,27 @@ case class DecimalDoubleLiteral(stringVal: String)(val position: InputPosition) 
     }
 }
 
-case class StringLiteral(value: String)(val position: InputPosition) extends Literal {
-  override def asCanonicalStringVal = value
+case class StringLiteral(value: String)(val position: InputPosition, val endPosition: InputPosition) extends Literal {
+
+  override def asCanonicalStringVal: String = value
+
+  override def dup(children: Seq[AnyRef]): this.type = {
+    StringLiteral(children.head.asInstanceOf[String])(position, endPosition).asInstanceOf[this.type]
+  }
 
   override def asSensitiveLiteral: Literal with SensitiveLiteral =
-    new StringLiteral(value)(position) with SensitiveLiteral {
-      // we can't trust the value.length here because the length of the literal in
-      // the query depends on how we quote it
-      override def literalLength: Option[Int] = None
+    new StringLiteral(value)(position, endPosition) with SensitiveLiteral {
+      override def literalLength: Option[Int] = Some(endPosition.offset - position.offset + 1)
     }
 }
 
-final case class SensitiveStringLiteral(value: Array[Byte])(val position: InputPosition) extends Expression
+final case class SensitiveStringLiteral(value: Array[Byte])(val position: InputPosition, val endPosition: InputPosition)
+    extends Expression
     with SensitiveLiteral {
+
+  override def dup(children: Seq[AnyRef]): this.type = {
+    SensitiveStringLiteral(children.head.asInstanceOf[Array[Byte]])(position, endPosition).asInstanceOf[this.type]
+  }
 
   override def equals(obj: Any): Boolean = obj match {
     case o: SensitiveStringLiteral => util.Arrays.equals(o.value, value)
@@ -148,9 +156,7 @@ final case class SensitiveStringLiteral(value: Array[Byte])(val position: InputP
 
   override def hashCode(): Int = util.Arrays.hashCode(value)
 
-  // we can't trust the value.length here because the length of the literal in
-  // the query depends on how we quote it
-  override def literalLength: Option[Int] = None
+  override def literalLength: Option[Int] = Some(endPosition.offset - position.offset + 1)
 
   override def isConstantForQuery: Boolean = true
 }

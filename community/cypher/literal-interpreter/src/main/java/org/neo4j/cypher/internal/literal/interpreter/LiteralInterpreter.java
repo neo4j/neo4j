@@ -733,7 +733,7 @@ public class LiteralInterpreter
     }
 
     @Override
-    public Object passwordExpression(NULL p, String password) {
+    public Object passwordExpression(NULL s, NULL e, String password) {
         throw new UnsupportedOperationException("passwordExpression is not a literal");
     }
 
@@ -1193,7 +1193,7 @@ public class LiteralInterpreter
     }
 
     @Override
-    public Object newString(NULL p, String image) {
+    public Object newString(NULL s, NULL e, String image) {
         return image;
     }
 

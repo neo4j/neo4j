@@ -484,7 +484,7 @@ public interface ASTFactory<
 
     EXPRESSION passwordExpression(PARAMETER password);
 
-    EXPRESSION passwordExpression(POS p, String password);
+    EXPRESSION passwordExpression(POS s, POS e, String password);
 
     ADMINISTRATION_COMMAND showUsers(POS p, YIELD yieldExpr, RETURN_CLAUSE returnWithoutGraph, WHERE where);
 

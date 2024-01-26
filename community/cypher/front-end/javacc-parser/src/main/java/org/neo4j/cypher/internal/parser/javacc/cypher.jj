@@ -234,6 +234,11 @@ public class Cypher<STATEMENTS,
         return t != null ? astFactory.inputPosition( t.beginOffset, t.beginLine, t.beginColumn ) : null;
     }
 
+    private POS endPos( Token t )
+        {
+            return t != null ? astFactory.inputPosition( t.endOffset, t.endLine, t.endColumn ) : null;
+        }
+
     private ENTITY_TYPE nodeType()
     {
         return astFactory.nodeType();
@@ -3785,7 +3790,7 @@ EXPRESSION StringLiteral() :
     Token t;
 }
 {
-    t=StringToken() { return astFactory.newString( pos( t ), token.image ); }
+    t=StringToken() { return astFactory.newString( pos( t ), endPos( t ), token.image ); }
 }
 
 EXPRESSION NumberLiteral() :
@@ -5652,7 +5657,7 @@ EXPRESSION passwordExpression():
     {
         if ( name != null )
         {
-            return astFactory.passwordExpression( pos(name), name.image );
+            return astFactory.passwordExpression( pos(name), endPos(name), name.image );
         }
         else
         {

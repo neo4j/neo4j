@@ -1442,7 +1442,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
             try {
               Parser.parseExpression(x)
             } catch {
-              case _: Exception => StringLiteral(x)(pos)
+              case _: Exception => StringLiteral(x)(pos, pos)
             }
           case x @ (_: Long | _: Int)     => SignedDecimalIntegerLiteral(x.toString)(pos)
           case x @ (_: Float | _: Double) => DecimalDoubleLiteral(x.toString)(pos)
@@ -2902,7 +2902,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   private def literalFloat(value: Double): DecimalDoubleLiteral =
     DecimalDoubleLiteral(value.toString)(pos)
-  def literalString(str: String): StringLiteral = StringLiteral(str)(pos)
+  def literalString(str: String): StringLiteral = StringLiteral(str)(pos, pos)
 
   def function(name: String, args: Expression*): FunctionInvocation =
     FunctionInvocation(FunctionName(name)(pos), distinct = false, args.toIndexedSeq)(pos)

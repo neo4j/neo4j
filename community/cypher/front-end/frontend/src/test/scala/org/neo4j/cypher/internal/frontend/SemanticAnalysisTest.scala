@@ -161,7 +161,7 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
         val initialState = initialStateWithQuery(query).withParams(Map(AutoExtractedParameter(
           "p",
           CTAny
-        )(InputPosition.NONE) -> StringLiteral("hello")(InputPosition.NONE)))
+        )(InputPosition.NONE) -> StringLiteral("hello")(InputPosition.NONE, InputPosition.NONE)))
         val result = runSemanticAnalysisWithPipelineAndState(pipeline, initialState)
 
         result.errors shouldBe empty

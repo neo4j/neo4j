@@ -848,7 +848,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     v: Variable,
     fieldTerminator: String
   ): Clause = {
-    LoadCSV.fromUrl(headers, source, v, Option(fieldTerminator).map(StringLiteral(_)(p)))(p)
+    LoadCSV.fromUrl(headers, source, v, Option(fieldTerminator).map(StringLiteral(_)(p, p)))(p)
   }
 
   override def foreachClause(p: InputPosition, v: Variable, list: Expression, clauses: util.List[Clause]): Clause =
@@ -1205,7 +1205,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     if (negated) SignedOctalIntegerLiteral("-" + image)(p)
     else SignedOctalIntegerLiteral(image)(p)
 
-  override def newString(p: InputPosition, image: String): Expression = StringLiteral(image)(p)
+  override def newString(s: InputPosition, e: InputPosition, image: String): Expression = StringLiteral(image)(s, e)
 
   override def newTrueLiteral(p: InputPosition): Expression = True()(p)
 
@@ -1396,7 +1396,7 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
     FunctionInvocation(
       FunctionName(Normalize.name)(p),
       distinct = false,
-      IndexedSeq(i, newString(p, normalForm.description()))
+      IndexedSeq(i, newString(p, p, normalForm.description()))
     )(p)
   }
 
@@ -2296,8 +2296,8 @@ class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory, l
   override def passwordExpression(password: Parameter): Expression =
     new ExplicitParameter(password.name, CTString)(password.position) with SensitiveParameter
 
-  override def passwordExpression(p: InputPosition, password: String): Expression =
-    SensitiveStringLiteral(password.getBytes(StandardCharsets.UTF_8))(p)
+  override def passwordExpression(s: InputPosition, e: InputPosition, password: String): Expression =
+    SensitiveStringLiteral(password.getBytes(StandardCharsets.UTF_8))(s, e)
 
   override def showUsers(p: InputPosition, yieldExpr: Yield, returnWithoutGraph: Return, where: Where): ShowUsers = {
     ShowUsers(yieldOrWhere(yieldExpr, returnWithoutGraph, where))(p)

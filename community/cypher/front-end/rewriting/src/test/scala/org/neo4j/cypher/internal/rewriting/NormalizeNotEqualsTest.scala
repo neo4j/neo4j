@@ -28,8 +28,8 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 class NormalizeNotEqualsTest extends CypherFunSuite {
 
   val pos = DummyPosition(0)
-  val lhs: Expression = StringLiteral("42")(pos)
-  val rhs: Expression = StringLiteral("42")(pos)
+  val lhs: Expression = StringLiteral("42")(pos, pos)
+  val rhs: Expression = StringLiteral("42")(pos, pos)
 
   test("notEquals  iff  not(equals)") {
     val notEquals = NotEquals(lhs, rhs)(pos)

@@ -7112,7 +7112,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           Some(util.Left("user")),
           Some(varFor("password")),
           None,
-          Some(Left(Map("some" -> StringLiteral("prop")(pos))))
+          Some(Left(Map("some" -> StringLiteral("prop")(pos, pos))))
         ),
         1.0
       ),
@@ -7777,5 +7777,5 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
   private def number(i: String): SignedDecimalIntegerLiteral = SignedDecimalIntegerLiteral(i)(pos)
 
-  private def stringLiteral(s: String): StringLiteral = StringLiteral(s)(pos)
+  private def stringLiteral(s: String): StringLiteral = StringLiteral(s)(pos, pos)
 }

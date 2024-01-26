@@ -86,7 +86,7 @@ class ShowProceduresCommandParserTest extends AdministrationAndSchemaCommandPars
       Some(Where(
         Equals(
           varFor("name", (1, 22, 21)),
-          StringLiteral("my.proc")((1, 29, 28))
+          StringLiteral("my.proc")((1, 29, 28), (1, 36, 35))
         )((1, 27, 26))
       )((1, 16, 15))),
       List.empty,

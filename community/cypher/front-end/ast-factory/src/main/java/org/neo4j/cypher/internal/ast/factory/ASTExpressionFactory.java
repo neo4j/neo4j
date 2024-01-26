@@ -61,7 +61,7 @@ public interface ASTExpressionFactory<
 
     EXPRESSION newOctalInteger(POS p, String image, boolean negated);
 
-    EXPRESSION newString(POS p, String image);
+    EXPRESSION newString(POS start, POS end, String image);
 
     EXPRESSION newTrueLiteral(POS p);
 

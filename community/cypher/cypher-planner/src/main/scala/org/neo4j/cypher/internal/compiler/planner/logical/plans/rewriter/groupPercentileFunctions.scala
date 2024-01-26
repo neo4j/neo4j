@@ -192,7 +192,7 @@ case class groupPercentileFunctions(
       val (variables, percentiles, isDiscretes) = toVariablePercentilePairs(percentileGroup)
 
       val percentilesLiteral = ListLiteral(percentiles)(pos)
-      val propertyKeys = ListLiteral(variables.map(v => StringLiteral(varToKey(v))(pos)))(pos)
+      val propertyKeys = ListLiteral(variables.map(v => StringLiteral(varToKey(v))(pos, pos)))(pos)
       val isDiscretesLiteral = ListLiteral(isDiscretes)(pos)
       val percentilesFunction = FunctionInvocation(
         FunctionName(Percentiles.name)(pos),

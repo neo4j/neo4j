@@ -75,10 +75,10 @@ public class LiteralInterpreterTest {
     void shouldInterpretString() {
         final var x = new LiteralInterpreter();
 
-        assertEquals("a string", x.newString(POS, "a string"));
-        assertEquals("ÅÄü", x.newString(POS, "ÅÄü"));
-        assertEquals("Ελληνικά", x.newString(POS, "Ελληνικά"));
-        assertEquals("\uD83D\uDCA9", x.newString(POS, "\uD83D\uDCA9"));
+        assertEquals("a string", x.newString(POS, POS, "a string"));
+        assertEquals("ÅÄü", x.newString(POS, POS, "ÅÄü"));
+        assertEquals("Ελληνικά", x.newString(POS, POS, "Ελληνικά"));
+        assertEquals("\uD83D\uDCA9", x.newString(POS, POS, "\uD83D\uDCA9"));
     }
 
     @Test

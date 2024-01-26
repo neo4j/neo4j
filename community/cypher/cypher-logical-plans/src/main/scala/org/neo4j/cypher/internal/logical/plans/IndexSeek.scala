@@ -640,7 +640,7 @@ object IndexSeek {
     def value(value: String): Expression =
       value match {
         case INT(int)             => SignedDecimalIntegerLiteral(int)(pos)
-        case STRING(str)          => StringLiteral(str)(pos)
+        case STRING(str)          => StringLiteral(str)(pos, pos)
         case ID_PATTERN(variable) => Variable(variable)(pos)
         case PARAM =>
           if (paramQueue.isEmpty) throw new IllegalArgumentException(

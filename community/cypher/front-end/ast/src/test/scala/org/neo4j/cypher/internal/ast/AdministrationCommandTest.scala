@@ -162,8 +162,8 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
           qualifierFn(
             None,
             MapExpression(Seq(
-              (PropertyKeyName("prop1")(p), StringLiteral("val1")(p)),
-              (PropertyKeyName("prop2")(p), StringLiteral("val2")(p))
+              (PropertyKeyName("prop1")(p), StringLiteral("val1")(p, p)),
+              (PropertyKeyName("prop2")(p), StringLiteral("val2")(p, p))
             ))(p)
           ),
           Seq(Left("role1"))
@@ -950,7 +950,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
             qualifierFn(
               None,
               MapExpression(Seq(
-                (PropertyKeyName("prop1")(p), StringLiteral("val1")(p))
+                (PropertyKeyName("prop1")(p), StringLiteral("val1")(p, p))
               ))(p)
             ),
             Seq(Left("role1"))
