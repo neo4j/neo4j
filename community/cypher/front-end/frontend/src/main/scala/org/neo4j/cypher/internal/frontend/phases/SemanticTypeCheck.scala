@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.frontend.phases
 
 import org.neo4j.cypher.internal.ast.CreateOrInsert
+import org.neo4j.cypher.internal.ast.Insert
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
@@ -38,6 +39,7 @@ import org.neo4j.cypher.internal.frontend.phases.SemanticTypeCheck.SemanticError
 import org.neo4j.cypher.internal.frontend.phases.factories.ParsePipelineTransformerFactory
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtractionStrategy
+import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.ErrorMessageProvider
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
@@ -48,7 +50,10 @@ import org.neo4j.cypher.internal.util.StepSequencer.DefaultPostCondition
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
 import org.neo4j.cypher.internal.util.symbols.CTList
+import org.neo4j.cypher.internal.util.symbols.CTNode
+import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
+import org.neo4j.cypher.internal.util.symbols.TypeSpec
 
 /**
  * Checks for semantic errors when semantic table has been initialized.
@@ -65,6 +70,7 @@ case object SemanticTypeCheck extends VisitorPhase[BaseContext, BaseState]
   val checks: Seq[SemanticErrorCheck] = Seq(
     patternExpressionInNonExistenceCheck,
     CreatePatternSelfReferenceCheck.check,
+    UpdatePatternPropertyUsageOfNewVariable.check,
     listCoercedToBooleanCheck
   )
 
@@ -129,41 +135,65 @@ object PatternExpressionInNonExistenceCheck extends ExpectedBooleanTypeCheck {
       "It can no longer be used inside the function size(), an alternative is to replace size() with COUNT {}."
 }
 
-object CreatePatternSelfReferenceCheck {
+trait VariableReferenceCheck {
+
+  def findSelfReferenceVariablesInPattern(
+    pattern: Pattern,
+    ast: ASTNode,
+    semanticTable: SemanticTable,
+    checkOnlyDefinitions: Boolean
+  ): Set[LogicalVariable] = {
+
+    val allSymbolDefinitions = semanticTable.recordedScopes(pattern).allSymbolDefinitions
+
+    def findAllVariables(e: Option[Expression]): Set[LogicalVariable] = e.folder.findAllByClass[LogicalVariable].toSet
+
+    def findRefVariables(e: Option[Expression]): Set[LogicalVariable] =
+      e.fold(Set.empty[LogicalVariable])(_.dependencies)
+
+    def findVariables(e: Option[Expression]): Set[LogicalVariable] = {
+      if (checkOnlyDefinitions) {
+        findAllVariables(e).filter(v => !isDefinition(v))
+      } else {
+        findRefVariables(e)
+      }
+    }
+
+    def isDefinition(variable: LogicalVariable): Boolean =
+      allSymbolDefinitions(variable.name).map(_.use).contains(Ref(variable))
+
+    val (declaredVariables, referencedVariables) =
+      ast.folder.treeFold[(Set[LogicalVariable], Set[LogicalVariable])]((Set.empty, Set.empty)) {
+        case NodePattern(maybeVariable, _, maybeProperties, _) => acc =>
+            SkipChildren((acc._1 ++ maybeVariable.filter(isDefinition), acc._2 ++ findVariables(maybeProperties)))
+        case RelationshipPattern(maybeVariable, _, _, maybeProperties, _, _) => acc =>
+            SkipChildren((acc._1 ++ maybeVariable.filter(isDefinition), acc._2 ++ findVariables(maybeProperties)))
+        case NamedPatternPart(variable, _) => acc => TraverseChildren((acc._1 + variable, acc._2))
+      }
+    referencedVariables.intersect(declaredVariables)
+  }
+}
+
+object CreatePatternSelfReferenceCheck extends VariableReferenceCheck {
 
   def check: SemanticErrorCheck = (baseState, baseContext) => {
     val semanticTable = baseState.semanticTable()
     baseState.statement().folder.treeFold(Seq.empty[SemanticError]) {
       case c: CreateOrInsert =>
         accErrors =>
-          val errors = findSelfReferenceVariablesInPattern(c.pattern, semanticTable)
+          val errors = findSelfReferenceVariablesWithinPatternParts(c.pattern, semanticTable)
             .map(createError(_, semanticTable, baseContext.errorMessageProvider))
             .toSeq
           SkipChildren(accErrors ++ errors)
     }
   }
 
-  private def findSelfReferenceVariablesInPattern(
+  private def findSelfReferenceVariablesWithinPatternParts(
     pattern: Pattern,
     semanticTable: SemanticTable
   ): Set[LogicalVariable] = {
-    val allSymbolDefinitions = semanticTable.recordedScopes(pattern).allSymbolDefinitions
-
-    def findAllVariables(e: Any): Set[LogicalVariable] =
-      e.folder.findAllByClass[LogicalVariable].toSet.filter(v => !isDefinition(v))
-    def isDefinition(variable: LogicalVariable): Boolean =
-      allSymbolDefinitions(variable.name).map(_.use).contains(Ref(variable))
-
-    pattern.patternParts.flatMap { patternParts =>
-      val (declaredVariables, referencedVariables) =
-        patternParts.folder.treeFold[(Set[LogicalVariable], Set[LogicalVariable])]((Set.empty, Set.empty)) {
-          case NodePattern(maybeVariable, _, maybeProperties, _) => acc =>
-              SkipChildren((acc._1 ++ maybeVariable.filter(isDefinition), acc._2 ++ findAllVariables(maybeProperties)))
-          case RelationshipPattern(maybeVariable, _, _, maybeProperties, _, _) => acc =>
-              SkipChildren((acc._1 ++ maybeVariable.filter(isDefinition), acc._2 ++ findAllVariables(maybeProperties)))
-          case NamedPatternPart(variable, _) => acc => TraverseChildren((acc._1 + variable, acc._2))
-        }
-      referencedVariables.intersect(declaredVariables)
+    pattern.patternParts.flatMap { patternPart =>
+      findSelfReferenceVariablesInPattern(pattern, patternPart, semanticTable, checkOnlyDefinitions = true)
     }.toSet
   }
 
@@ -178,6 +208,28 @@ object CreatePatternSelfReferenceCheck {
     }
 
     SemanticError(msg, variable.position)
+  }
+}
+
+object UpdatePatternPropertyUsageOfNewVariable extends VariableReferenceCheck {
+
+  def check: SemanticErrorCheck = (baseState, _) => {
+    val semanticTable = baseState.semanticTable()
+    baseState.statement().folder.treeFold(Seq.empty[SemanticError]) {
+      case i: Insert =>
+        accErrors =>
+          // Returns the set of variables that are defined in an update clause and then used in the same update clause for property read
+          // E.g. `CREATE (a {prop: 5}), (b {prop: a.prop})
+          val errors =
+            findSelfReferenceVariablesInPattern(i.pattern, i.pattern, semanticTable, checkOnlyDefinitions = false)
+              .map(e =>
+                SemanticError(
+                  s"Creating an entity (${e.name}) and referencing that entity in a property definition in the same ${i.name} is not allowed. Only reference variables created in earlier clauses.",
+                  e.position
+                )
+              ).toSeq
+          SkipChildren(accErrors ++ errors)
+    }
   }
 }
 

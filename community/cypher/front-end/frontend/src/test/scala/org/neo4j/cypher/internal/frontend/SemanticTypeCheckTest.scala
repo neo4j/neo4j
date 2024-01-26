@@ -171,6 +171,53 @@ class SemanticTypeCheckTest extends CypherFunSuite {
     }
   }
 
+  test("property references across patterns should not be allowed in INSERT ") {
+    val disallowed = Seq(
+      "INSERT (a {foo:1}), (b {foo:a.foo})",
+      "INSERT (b {prop: a.prop}), (a)",
+      "INSERT (a), (b)-[r: REL {prop: a.prop}]->(c)",
+      "INSERT (b)-[r: REL {prop: a.prop}]->(c), (a)",
+      "INSERT (b)-[a: REL]->(c), (d {prop:a.prop})",
+      "INSERT (a), (b {prop: EXISTS {(a)-->()}})",
+      "INSERT (b {prop: EXISTS {(a)-->()}}), (a)",
+      "INSERT (a), (a)-[:REL]->({prop:a.prop})",
+      "INSERT (a), (b {prop: labels(a)})",
+      "INSERT (a), (b {prop: true IN [x IN labels(a) | true]})"
+    )
+
+    val allowed = Seq(
+      "MATCH (n) INSERT (a {prop: n.prop})",
+      "MATCH (a) INSERT (a)-[:REL]->({prop:a.prop})",
+      "INSERT (a)-[:REL]->(a)",
+      "INSERT (a), (a)-[:REL]->(b)",
+
+      // These cases are shadowing and not references so should not be disallowed
+      "INSERT (n {prop: true IN [n IN [false] | true]})",
+      "INSERT (n {prop: true IN [n IN [false] | n]})",
+      "INSERT (a)-[r:R {prop: true IN [r IN [false] | true]}]->(b)",
+      "INSERT (a)-[r:R {prop: true IN [r IN [false] | r]}]->(b)",
+      "INSERT (a)-[r:R {prop: true IN [a IN [false] | a]}]->(b)",
+      "INSERT (a)-[r:R]->(b {prop: true IN [r IN [false] | r]})",
+      "INSERT (a)-[r:R]->(b {prop: true IN [a IN [false] | a]})",
+      "MATCH p=()-[]->() INSERT (a)-[r:R {prop: true IN [a in nodes(p) | a.prop = 1]}]->(b)"
+    )
+
+    val errorMessage =
+      "Creating an entity (a) and referencing that entity in a property definition in the same INSERT is not allowed. Only reference variables created in earlier clauses."
+
+    for (query <- disallowed) {
+      withClue(s"Failing query: $query") {
+        runPipeline(query).errors.map(e => e.msg) should equal(List(errorMessage))
+      }
+    }
+
+    for (query <- allowed) {
+      withClue(s"Failing query: $query") {
+        runPipeline(query).errors.size shouldBe 0
+      }
+    }
+  }
+
   private def runPipeline(query: String): ErrorCollectingContext = {
     val startState = InitialState(query, None, NoPlannerName, new AnonymousVariableNameGenerator)
     val context = new ErrorCollectingContext()
