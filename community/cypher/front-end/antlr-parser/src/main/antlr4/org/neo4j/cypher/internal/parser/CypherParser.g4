@@ -276,16 +276,13 @@ labelExpression1Is:
    (LPAREN labelExpression4Is RPAREN | PERCENT | symbolicLabelNameString);
 
 insertNodeLabelExpression:
-   (COLON insertLabelConjunction | IS insertLabelConjunction);
+   (COLON|IS) insertLabelConjunction;
 
 insertRelationshipLabelExpression:
-   (COLON insertLabelLeaf | IS insertLabelLeaf);
+   (COLON|IS) symbolicNameString;
 
 insertLabelConjunction:
-   insertLabelLeaf (AMPERSAND insertLabelLeaf | COLON insertLabelLeaf)*;
-
-insertLabelLeaf:
-   symbolicNameString;
+   symbolicNameString ((AMPERSAND|COLON) symbolicNameString)*;
 
 expression:
    expression12;

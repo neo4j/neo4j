@@ -3297,12 +3297,11 @@ LABEL_EXPRESSION InsertNodeLabelExpression() throws Exception:
     Token t;
     LABEL_EXPRESSION e;
     LABEL_EXPRESSION temp;
+    boolean containsIs = false;
 }
 {
     (
-        (<COLON> e = InsertLabelConjunction(astFactory.nodeType(),false))
-        |
-        (<IS> e = InsertLabelConjunction(astFactory.nodeType(),true))
+        <COLON> | <IS>  { containsIs = true; } ) e = InsertLabelConjunction(astFactory.nodeType(), containsIs
     )
     {
         return e;
@@ -3312,12 +3311,11 @@ LABEL_EXPRESSION InsertNodeLabelExpression() throws Exception:
 LABEL_EXPRESSION InsertRelationshipLabelExpression() throws Exception:
 {
     LABEL_EXPRESSION e;
+    boolean containsIs = false;
 }
 {
     (
-        (<COLON> e = InsertLabelLeaf(astFactory.relationshipType(),false))
-        |
-        (<IS> e = InsertLabelLeaf(astFactory.relationshipType(),true))
+        <COLON> | <IS>  { containsIs = true; } ) e = InsertLabelLeaf(astFactory.relationshipType(), containsIs
     )
     {
         return e;

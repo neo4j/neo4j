@@ -792,21 +792,21 @@ class InsertParserTest extends ParserSyntaxTreeBase[Cst.Statement, ast.Statement
   test("INSERT (:A:B)") {
     assertFailsWithMessage(
       testName,
-      "Colon conjunction is not allowed in INSERT. Use `CREATE` instead or conjunction with `&` instead. (line 1, column 11 (offset: 10))"
+      "Colon conjunction is not allowed in INSERT. Use `CREATE` or conjunction with `&` instead. (line 1, column 11 (offset: 10))"
     )
   }
 
   test("INSERT (n:A&B:C)") {
     assertFailsWithMessage(
       testName,
-      "Colon conjunction is not allowed in INSERT. Use `CREATE` instead or conjunction with `&` instead. (line 1, column 14 (offset: 13))"
+      "Colon conjunction is not allowed in INSERT. Use `CREATE` or conjunction with `&` instead. (line 1, column 14 (offset: 13))"
     )
   }
 
   test("INSERT (n:A)-[:R]->(:B:C)") {
     assertFailsWithMessage(
       testName,
-      "Colon conjunction is not allowed in INSERT. Use `CREATE` instead or conjunction with `&` instead. (line 1, column 23 (offset: 22))"
+      "Colon conjunction is not allowed in INSERT. Use `CREATE` or conjunction with `&` instead. (line 1, column 23 (offset: 22))"
     )
   }
 

@@ -379,7 +379,7 @@ final class SyntaxChecker extends ParseTreeListener {
 
     if (firstColon.nonEmpty) {
       errors :+= exceptionFactory.syntaxException(
-        "Colon conjunction is not allowed in INSERT. Use `CREATE` instead or conjunction with `&` instead.",
+        "Colon conjunction is not allowed in INSERT. Use `CREATE` or conjunction with `&` instead.",
         inputPosition(firstColon.get)
       )
     }

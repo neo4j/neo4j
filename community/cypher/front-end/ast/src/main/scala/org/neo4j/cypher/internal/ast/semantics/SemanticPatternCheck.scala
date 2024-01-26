@@ -451,9 +451,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
   private def check(ctx: SemanticContext, x: RelationshipPattern): SemanticCheck = {
     def checkNotUndirectedWhenCreating: SemanticCheck = {
       ctx match {
-        case SemanticContext.Create if x.direction == SemanticDirection.BOTH =>
-          error(s"Only directed relationships are supported in ${name(ctx)}", x.position)
-        case SemanticContext.Insert if x.direction == SemanticDirection.BOTH =>
+        case SemanticContext.Create | SemanticContext.Insert if x.direction == SemanticDirection.BOTH =>
           error(s"Only directed relationships are supported in ${name(ctx)}", x.position)
         case _ =>
           SemanticCheck.success

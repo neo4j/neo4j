@@ -63,7 +63,7 @@ public interface ASTExceptionFactory {
             "Named patterns are not allowed in `INSERT`. Use `CREATE` instead or remove the name.";
 
     String colonConjunctionInInsertNotSupported =
-            "Colon conjunction is not allowed in INSERT. Use `CREATE` instead or conjunction with `&` instead.";
+            "Colon conjunction is not allowed in INSERT. Use `CREATE` or conjunction with `&` instead.";
 
     static String invalidHintIndexType(HintIndexType got) {
         final String HINT_TYPES = Arrays.stream(HintIndexType.values())
