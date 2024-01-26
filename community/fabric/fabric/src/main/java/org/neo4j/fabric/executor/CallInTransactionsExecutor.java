@@ -112,7 +112,7 @@ class CallInTransactionsExecutor extends SingleQueryFragmentExecutor {
         }
 
         int variableOffset = extractBreakReportVariableOffset(parameters);
-        return new OnErrorBreakContext(variableOffset, false);
+        return new OnErrorBreakContext(variableOffset, parameters.reportParams().isEmpty(), false);
     }
 
     private int extractBreakReportVariableOffset(SubqueryCall.InTransactionsParameters parameters) {
@@ -183,8 +183,9 @@ class CallInTransactionsExecutor extends SingleQueryFragmentExecutor {
 
     private Flux<Record> produceBreakOutput(Record argument) {
         List<String> columns = asJava(innerFragment.outputColumns());
-        List<AnyValue> values = new ArrayList<>(columns.size());
-        for (int i = 0; i < columns.size(); i++) {
+        int columnCount = columns.size() - addedColumnsCount();
+        List<AnyValue> values = new ArrayList<>(columnCount);
+        for (int i = 0; i < columnCount; i++) {
             if (i == onErrorBreakContext.reportVariableOffset) {
                 MapValueBuilder builder = new MapValueBuilder(4);
                 builder.add("started", BooleanValue.FALSE);
@@ -225,7 +226,7 @@ class CallInTransactionsExecutor extends SingleQueryFragmentExecutor {
             resultStream = resultStream.map(outputRecord -> getMatchingInputRecord(outputRecord, inputRecords));
         } else {
             resultStream = resultStream.map(outputRecord ->
-                    Records.join(getMatchingInputRecord(outputRecord, inputRecords), stripRowIdColumn(outputRecord)));
+                    Records.join(getMatchingInputRecord(outputRecord, inputRecords), stripAddedColumns(outputRecord)));
         }
         batchGraph = null;
         batchTransactionMode = null;
@@ -241,21 +242,33 @@ class CallInTransactionsExecutor extends SingleQueryFragmentExecutor {
         return inputRecords.get(rowIdAsInt).record;
     }
 
-    private Record stripRowIdColumn(Record record) {
-        AnyValue[] values = new AnyValue[record.size() - 1];
+    private Record stripAddedColumns(Record record) {
+        // Stitcher adds 1-2 columns always as the last columns
+        int columnCount = record.size() - addedColumnsCount();
+        AnyValue[] values = new AnyValue[columnCount];
         // We are using the knowledge that Stitcher adds Row ID column always as the last column.
-        for (int i = 0; i < record.size() - 1; i++) {
+        for (int i = 0; i < columnCount; i++) {
             values[i] = record.getValue(i);
         }
 
         return Records.of(values);
     }
 
+    private int addedColumnsCount() {
+        int addedColumnsCount = 1;
+        if (onErrorBreakContext != null && onErrorBreakContext.reportVariableAdded) {
+            addedColumnsCount++;
+        }
+
+        return addedColumnsCount;
+    }
+
     private Record checkBreakCondition(Record outputRecord) {
         var value = outputRecord.getValue(onErrorBreakContext.reportVariableOffset);
         var mapValue = (MapValue) value;
         if (mapValue.get("errorMessage") != NoValue.NO_VALUE) {
-            onErrorBreakContext = new OnErrorBreakContext(onErrorBreakContext.reportVariableOffset, true);
+            onErrorBreakContext = new OnErrorBreakContext(
+                    onErrorBreakContext.reportVariableOffset, onErrorBreakContext.reportVariableAdded, true);
         }
 
         return outputRecord;
@@ -312,5 +325,5 @@ class CallInTransactionsExecutor extends SingleQueryFragmentExecutor {
 
     private record BufferedInputRow(Map<String, AnyValue> argumentValues, Record record) {}
 
-    private record OnErrorBreakContext(int reportVariableOffset, boolean breakExecution) {}
+    private record OnErrorBreakContext(int reportVariableOffset, boolean reportVariableAdded, boolean breakExecution) {}
 }
