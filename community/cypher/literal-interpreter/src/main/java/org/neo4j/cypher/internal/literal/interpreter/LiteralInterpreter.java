@@ -62,7 +62,7 @@ import org.neo4j.values.virtual.VirtualValues;
  */
 public class LiteralInterpreter
         implements ASTFactory<
-                NULL,
+                NULL, // STATEMENTS,
                 NULL, // STATEMENT,
                 NULL, // QUERY extends STATEMENT,
                 NULL, // CLAUSE,
