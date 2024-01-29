@@ -45,15 +45,15 @@ import org.neo4j.kernel.api.impl.schema.vector.VectorSimilarityFunction;
 import org.neo4j.kernel.api.impl.schema.vector.VectorUtils;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.Tags;
+import org.neo4j.test.Tokens;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
 @ImpermanentDbmsExtension
 public class VectorIndexCreationTest {
-    private static final Label LABEL = Tags.Suppliers.UUID.LABEL.get();
-    private static final RelationshipType REL_TYPE = Tags.Suppliers.UUID.RELATIONSHIP_TYPE.get();
-    private static final List<String> PROP_KEYS = Tags.Suppliers.UUID.PROPERTY_KEY.get(2);
+    private static final Label LABEL = Tokens.Suppliers.UUID.LABEL.get();
+    private static final RelationshipType REL_TYPE = Tokens.Suppliers.UUID.RELATIONSHIP_TYPE.get();
+    private static final List<String> PROP_KEYS = Tokens.Suppliers.UUID.PROPERTY_KEY.get(2);
 
     @Inject
     private GraphDatabaseAPI db;
@@ -66,11 +66,9 @@ public class VectorIndexCreationTest {
     void setup() throws Exception {
         try (final var tx = db.beginTx()) {
             final var ktx = ((InternalTransaction) tx).kernelTransaction();
-            labelId = Tags.Factories.LABEL.getId(ktx, LABEL);
-            relTypeId = Tags.Factories.RELATIONSHIP_TYPE.getId(ktx, REL_TYPE);
-            propKeyIds = Tags.Factories.PROPERTY_KEY.getIds(ktx, PROP_KEYS).stream()
-                    .mapToInt(k -> k)
-                    .toArray();
+            labelId = Tokens.Factories.LABEL.getId(ktx, LABEL);
+            relTypeId = Tokens.Factories.RELATIONSHIP_TYPE.getId(ktx, REL_TYPE);
+            propKeyIds = Tokens.Factories.PROPERTY_KEY.getIds(ktx, PROP_KEYS);
             tx.commit();
         }
     }

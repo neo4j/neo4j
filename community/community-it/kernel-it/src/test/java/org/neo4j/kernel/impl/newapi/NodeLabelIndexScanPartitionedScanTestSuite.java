@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.newapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.test.Tags.Suppliers.UUID.LABEL;
+import static org.neo4j.test.Tokens.Suppliers.UUID.LABEL;
 
 import java.util.List;
 import java.util.Map;
@@ -48,7 +48,7 @@ abstract class NodeLabelIndexScanPartitionedScanTestSuite
         Queries<TokenScanQuery> setupDatabase() {
             final var numberOfLabels = 3;
 
-            final var labelIds = createTags(numberOfLabels, LABEL);
+            final var labelIds = createTokens(numberOfLabels, LABEL);
             return emptyQueries(EntityType.NODE, labelIds);
         }
     }

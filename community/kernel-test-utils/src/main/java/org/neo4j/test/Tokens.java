@@ -19,20 +19,20 @@
  */
 package org.neo4j.test;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
+import org.eclipse.collections.impl.factory.primitive.IntLists;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.kernel.api.KernelTransaction;
 
 /**
- * Utility classes for tags, a general term to try and encompass both tokens (labels, and types), and property keys.
+ * Utility classes for unifying concepts around tokens for testing.
  */
-public class Tags {
+public class Tokens {
     /**
-     * A set of factory helpers that normalize the creation of tags.
+     * A set of factory helpers that normalize the creation of tokens.
      */
     public static class Factories {
         public static final Label LABEL = new Label();
@@ -92,58 +92,62 @@ public class Tags {
             private PropertyKey() {}
         }
         /**
-         * An abstract factory helper to normalize the creation of {@code TAG}s.
+         * An abstract factory helper to normalize the creation of {@code TOKEN}s.
          *
-         * @param <TAG> the type of tags to be created
+         * @param <TOKEN> the type of tokens to be created
          */
-        public abstract static sealed class Factory<TAG> permits Label, RelationshipType, PropertyKey {
+        public abstract static sealed class Factory<TOKEN> permits Label, RelationshipType, PropertyKey {
             /**
-             * @param name the name of a {@code TAG}
-             * @return a {@code TAG} corresponding to {@code name}
+             * @param name the name of a {@code TOKEN}
+             * @return a {@code TOKEN} corresponding to {@code name}
              */
-            public abstract TAG fromName(String name);
+            public abstract TOKEN fromName(String name);
 
             /**
-             * Get the ID for the given {@code tag}.
+             * Get the ID for the given {@code token}.
              * <p>
-             * If the {@code tag} has a corresponding ID, fetch that ID; otherwise, create and write token, returning its ID.
+             * If the {@code token} has a corresponding ID, fetch that ID; otherwise, create and write token, returning its ID.
              *
              * @param tx  the transaction in which to acquire the ID
-             * @param tag the {@code TAG} who's ID is to be acquired
-             * @return the ID of the corresponding {@code TAG} token
-             * @throws KernelException if the corresponding ID of the given {@code tag} cannot be acquired
+             * @param token the {@code TOKEN} who's ID is to be acquired
+             * @return the ID of the corresponding {@code TOKEN} token
+             * @throws KernelException if the corresponding ID of the given {@code token} cannot be acquired
              */
-            public abstract int getId(KernelTransaction tx, TAG tag) throws KernelException;
+            public abstract int getId(KernelTransaction tx, TOKEN token) throws KernelException;
 
             /**
-             * Get the IDs for the given {@code tags}.
+             * Get the IDs for the given {@code token}.
              *
              * @param tx   the transaction in which to acquire the ID
-             * @param tags the {@code TAG}s who's IDs are to be acquired
-             * @return the IDs of the corresponding {@code TAG} tokens
-             * @throws KernelException if the corresponding ID of the given {@code tags} cannot be acquired
+             * @param tokens the {@code TOKEN}s who's IDs are to be acquired
+             * @return the IDs of the corresponding {@code TOKEN} tokens
+             * @throws KernelException if the corresponding ID of the given {@code tokens} cannot be acquired
              * @see Factory#getId(KernelTransaction, Object)
              */
             @SafeVarargs
-            public final List<Integer> getIds(KernelTransaction tx, TAG... tags) throws KernelException {
-                return getIds(tx, List.of(tags));
+            public final int[] getIds(KernelTransaction tx, TOKEN... tokens) throws KernelException {
+                final var ids = new int[tokens.length];
+                for (int i = 0; i < tokens.length; i++) {
+                    ids[i] = getId(tx, tokens[i]);
+                }
+                return ids;
             }
 
             /**
-             * Get the IDs for the given {@code tags}.
+             * Get the IDs for the given {@code tokens}.
              *
              * @param tx   the transaction in which to acquire the ID
-             * @param tags the {@code TAG}s who's IDs are to be acquired
-             * @return the IDs of the corresponding {@code TAG} tokens
-             * @throws KernelException if the corresponding ID of the given {@code tags} cannot be acquired
+             * @param tokens the {@code TOKEN}s who's IDs are to be acquired
+             * @return the IDs of the corresponding {@code TOKEN} tokens
+             * @throws KernelException if the corresponding ID of the given {@code tokens} cannot be acquired
              * @see Factory#getId(KernelTransaction, Object)
              */
-            public final List<Integer> getIds(KernelTransaction tx, Iterable<TAG> tags) throws KernelException {
-                final var ids = new ArrayList<Integer>();
-                for (final var tag : tags) {
-                    ids.add(getId(tx, tag));
+            public final int[] getIds(KernelTransaction tx, Iterable<TOKEN> tokens) throws KernelException {
+                final var ids = IntLists.mutable.empty();
+                for (final var token : tokens) {
+                    ids.add(getId(tx, token));
                 }
-                return ids;
+                return ids.toArray();
             }
         }
 
@@ -151,14 +155,14 @@ public class Tags {
     }
 
     /**
-     * A set of suppliers that can autogenerate tags.
+     * A set of suppliers that can autogenerate tokens.
      */
     public static class Suppliers {
         /**
          * A namespace for a {@code static} set of {@link Supplier}s using {@link Suffixes#incrementing()}.
          * <p>
          * Note that the underlying value for the incrementing suffix will be shared across threads, and the lifetime of the program; for each factory
-         * respectively. If you wish to have tags named locally to your scope/thread/test/etc; it would be best to construct your own.
+         * respectively. If you wish to have tokens named locally to your scope/thread/test/etc; it would be best to construct your own.
          * <pre>{@code
          * final var global = Tags.Suppliers.Incrementing.LABEL;
          * final var local  = new Tags.Suppliers.Label(Tags.Suppliers.Suffixes.incrementing());
@@ -368,28 +372,28 @@ public class Tags {
         }
 
         /**
-         * An abstract {@link java.util.function.Supplier} that autogenerates {@code TAG}s.
+         * An abstract {@link java.util.function.Supplier} that autogenerates {@code TOKEN}s.
          *
-         * @param <TAG> the type of tags to be supplied
+         * @param <TOKEN> the type of tokens to be supplied
          */
-        public abstract static sealed class Supplier<TAG> implements java.util.function.Supplier<TAG>
+        public abstract static sealed class Supplier<TOKEN> implements java.util.function.Supplier<TOKEN>
                 permits Label, RelationshipType, PropertyKey {
             private final String name;
             private final String separator;
             private final java.util.function.Supplier<String> suffix;
-            private final Factories.Factory<TAG> factory;
+            private final Factories.Factory<TOKEN> factory;
 
             /**
-             * @param name      the name of the tag
+             * @param name      the name of the token
              * @param separator the separator between the {@code name} and the supplied {@code suffix}
-             * @param suffix    a {@link java.util.function.Supplier} of suffixes to append to the name of autogenerated {@code TAG}s
+             * @param suffix    a {@link java.util.function.Supplier} of suffixes to append to the name of autogenerated {@code TOKEN}s
              * @param factory
              */
             protected Supplier(
                     String name,
                     String separator,
                     java.util.function.Supplier<String> suffix,
-                    Factories.Factory<TAG> factory) {
+                    Factories.Factory<TOKEN> factory) {
                 this.name = name;
                 this.separator = separator;
                 this.suffix = suffix;
@@ -399,18 +403,18 @@ public class Tags {
             /**
              * Constructs with a default separator of {@code "_"}.
              *
-             * @param name    the name of the tag
-             * @param suffix  a {@link java.util.function.Supplier} of suffixes to append to the name of autogenerated {@code TAG}s
+             * @param name    the name of the token
+             * @param suffix  a {@link java.util.function.Supplier} of suffixes to append to the name of autogenerated {@code TOKEN}s
              * @param factory
              * @see Supplier#Supplier(String, String, java.util.function.Supplier, Factories.Factory)
              */
             protected Supplier(
-                    String name, java.util.function.Supplier<String> suffix, Factories.Factory<TAG> factory) {
+                    String name, java.util.function.Supplier<String> suffix, Factories.Factory<TOKEN> factory) {
                 this(name, "_", suffix, factory);
             }
 
             /**
-             * The name of the {@link Supplier} class to be used as a prefix to autogenerated {@code TAG}s, and for debugging purposes.
+             * The name of the {@link Supplier} class to be used as a prefix to autogenerated {@code TOKEN}s, and for debugging purposes.
              *
              * @return the name of the {@link Supplier} class
              */
@@ -419,33 +423,33 @@ public class Tags {
             }
 
             /**
-             * Supply a {@code TAG}.
+             * Supply a {@code TOKEN}.
              *
-             * @return an autogenerated {@code TAG}
+             * @return an autogenerated {@code TOKEN}
              * @implSpec <p>behaves as if generated from <pre>{@code factory.fromName(name + separator + suffix.get())}</pre>
              */
             @Override
-            public final TAG get() {
+            public final TOKEN get() {
                 return factory.fromName(name + separator + suffix.get());
             }
 
             /**
-             * Supply a given number of {@code TAG}s.
+             * Supply a given number of {@code TOKEN}s.
              *
-             * @param numberOfTags the number of {@code TAG}s to generate
-             * @return autogenerated {@code TAG}s
+             * @param numberOfTags the number of {@code TOKEN}s to generate
+             * @return autogenerated {@code TOKEN}s
              * @see Supplier#get()
              */
-            public final List<TAG> get(int numberOfTags) {
+            public final List<TOKEN> get(int numberOfTags) {
                 return Stream.generate(this).limit(numberOfTags).toList();
             }
 
             /**
-             * Get the corresponding ID of an autogenerated {@code TAG}.
+             * Get the corresponding ID of an autogenerated {@code TOKEN}.
              *
              * @param tx the transaction in which to acquire the ID
-             * @return the ID of the corresponding {@code TAG} token as if from {@link Supplier#get()}
-             * @throws KernelException if the corresponding ID of the generated {@code TAG} cannot be acquired
+             * @return the ID of the corresponding {@code TOKEN} token as if from {@link Supplier#get()}
+             * @throws KernelException if the corresponding ID of the generated {@code TOKEN} cannot be acquired
              * @see Supplier#getId(KernelTransaction)
              */
             public final int getId(KernelTransaction tx) throws KernelException {
@@ -453,14 +457,14 @@ public class Tags {
             }
 
             /**
-             * Get the IDs for a given number of autogenerated {@code TAG}s.
+             * Get the IDs for a given number of autogenerated {@code TOKEN}s.
              *
              * @param tx           the transaction in which to acquire the IDs
-             * @param numberOfTags the number of {@code TAG}s to generate
-             * @return the IDs of the corresponding autogenerated {@code TAG}s
-             * @throws KernelException if any of the corresponding IDs of the generated {@code TAG}s cannot be acquired
+             * @param numberOfTags the number of {@code TOKEN}s to generate
+             * @return the IDs of the corresponding autogenerated {@code TOKEN}s
+             * @throws KernelException if any of the corresponding IDs of the generated {@code TOKEN}s cannot be acquired
              */
-            public final List<Integer> getIds(KernelTransaction tx, int numberOfTags) throws KernelException {
+            public final int[] getIds(KernelTransaction tx, int numberOfTags) throws KernelException {
                 return factory.getIds(tx, get(numberOfTags));
             }
         }
@@ -468,5 +472,5 @@ public class Tags {
         private Suppliers() {}
     }
 
-    private Tags() {}
+    private Tokens() {}
 }

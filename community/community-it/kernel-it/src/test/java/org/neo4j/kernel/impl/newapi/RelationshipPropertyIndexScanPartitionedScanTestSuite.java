@@ -50,11 +50,8 @@ abstract class RelationshipPropertyIndexScanPartitionedScanTestSuite
             final var numberOfRelTypes = 1;
             final var numberOfPropKeys = 2;
 
-            final var relTypeId =
-                    createTags(numberOfRelTypes, factory.getTokenSupplier()).get(0);
-            final var propKeyIds = createTags(numberOfPropKeys, factory.getPropKeySupplier()).stream()
-                    .mapToInt(i -> i)
-                    .toArray();
+            final var relTypeId = createTokens(numberOfRelTypes, factory.getTokenSupplier())[0];
+            final var propKeyIds = createTokens(numberOfPropKeys, factory.getPropKeySupplier());
 
             final var data = emptyQueries(relTypeId, propKeyIds);
             createIndexes(createIndexPrototypes(relTypeId, propKeyIds));
@@ -74,11 +71,8 @@ abstract class RelationshipPropertyIndexScanPartitionedScanTestSuite
             final var numberOfPropKeys = 2;
             final var numberOfProperties = 1 << 12;
 
-            final var relTypeId =
-                    createTags(numberOfRelTypes, factory.getTokenSupplier()).get(0);
-            final var propKeyIds = createTags(numberOfPropKeys, factory.getPropKeySupplier()).stream()
-                    .mapToInt(i -> i)
-                    .toArray();
+            final var relTypeId = createTokens(numberOfRelTypes, factory.getTokenSupplier())[0];
+            final var propKeyIds = createTokens(numberOfPropKeys, factory.getPropKeySupplier());
 
             final var data = createData(numberOfProperties, relTypeId, propKeyIds);
             createIndexes(createIndexPrototypes(relTypeId, propKeyIds));

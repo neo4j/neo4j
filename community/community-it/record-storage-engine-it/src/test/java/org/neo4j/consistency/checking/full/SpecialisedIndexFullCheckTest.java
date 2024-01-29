@@ -27,9 +27,9 @@ import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.test.Tags.Factories.LABEL;
-import static org.neo4j.test.Tags.Factories.PROPERTY_KEY;
-import static org.neo4j.test.Tags.Factories.RELATIONSHIP_TYPE;
+import static org.neo4j.test.Tokens.Factories.LABEL;
+import static org.neo4j.test.Tokens.Factories.PROPERTY_KEY;
+import static org.neo4j.test.Tokens.Factories.RELATIONSHIP_TYPE;
 import static org.neo4j.test.mockito.mock.Property.property;
 import static org.neo4j.test.mockito.mock.Property.set;
 

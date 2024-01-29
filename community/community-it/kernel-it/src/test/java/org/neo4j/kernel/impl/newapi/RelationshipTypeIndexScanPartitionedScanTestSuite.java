@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.newapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.test.Tags.Suppliers.UUID.RELATIONSHIP_TYPE;
+import static org.neo4j.test.Tokens.Suppliers.UUID.RELATIONSHIP_TYPE;
 
 import java.util.List;
 import java.util.Map;
@@ -52,7 +52,7 @@ abstract class RelationshipTypeIndexScanPartitionedScanTestSuite
         Queries<TokenScanQuery> setupDatabase() {
             final var numberOfRelTypes = 3;
 
-            final var relTypeIds = createTags(numberOfRelTypes, RELATIONSHIP_TYPE);
+            final var relTypeIds = createTokens(numberOfRelTypes, RELATIONSHIP_TYPE);
             return emptyQueries(EntityType.RELATIONSHIP, relTypeIds);
         }
     }
@@ -71,7 +71,7 @@ abstract class RelationshipTypeIndexScanPartitionedScanTestSuite
 
             final var relTypeRanges =
                     tokenRangesFromTokenId(RELATIONSHIP_TYPE, createTokenRanges(numberOfRelationships));
-            defaultRelType = createTag(RELATIONSHIP_TYPE);
+            defaultRelType = createToken(RELATIONSHIP_TYPE);
             return createData(numberOfRelationships, relTypeRanges);
         }
 

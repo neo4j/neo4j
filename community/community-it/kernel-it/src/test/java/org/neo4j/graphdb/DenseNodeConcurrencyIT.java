@@ -99,8 +99,8 @@ import org.neo4j.test.Barrier;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.Race;
 import org.neo4j.test.RandomSupport;
-import org.neo4j.test.Tags;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.Tokens;
 import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
@@ -113,11 +113,12 @@ class DenseNodeConcurrencyIT {
     private static final int NUM_INITIAL_RELATIONSHIPS_PER_SPARSE_NODE = 10;
     private static final int NUM_DENSE_NODES_IN_MULTI_SETUP = 10;
     private static final int NUM_TASKS = 1_000;
-    private static final List<Label> LABELS = new Tags.Suppliers.Label(Tags.Suppliers.Suffixes.incrementing(0)).get(4);
+    private static final List<Label> LABELS =
+            new Tokens.Suppliers.Label(Tokens.Suppliers.Suffixes.incrementing(0)).get(4);
     private static final List<String> PROPERTY_KEYS =
-            new Tags.Suppliers.PropertyKey(Tags.Suppliers.Suffixes.incrementing(0)).get(3);
+            new Tokens.Suppliers.PropertyKey(Tokens.Suppliers.Suffixes.incrementing(0)).get(3);
     private static final List<RelationshipType> RELATIONSHIP_TYPES =
-            new Tags.Suppliers.RelationshipType(Tags.Suppliers.Suffixes.incrementing(0)).get(3);
+            new Tokens.Suppliers.RelationshipType(Tokens.Suppliers.Suffixes.incrementing(0)).get(3);
     private static final RelationshipType INITIAL_DENSE_NODE_TYPE = RELATIONSHIP_TYPES.get(0);
 
     @Inject

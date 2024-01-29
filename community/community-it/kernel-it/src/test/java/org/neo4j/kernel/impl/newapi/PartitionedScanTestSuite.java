@@ -24,7 +24,6 @@ import static org.assertj.core.api.Assumptions.assumeThat;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -62,7 +61,7 @@ import org.neo4j.kernel.impl.newapi.TestUtils.PartitionedScanAPI;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.test.Race;
 import org.neo4j.test.RandomSupport;
-import org.neo4j.test.Tags;
+import org.neo4j.test.Tokens;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -555,26 +554,26 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
         }
     }
 
-    protected final <TAG> int createTag(Tags.Suppliers.Supplier<TAG> tag) {
-        final int tagId;
+    protected final <TOKEN> int createToken(Tokens.Suppliers.Supplier<TOKEN> token) {
+        final int tokenId;
         try (var tx = beginTx()) {
-            tagId = tag.getId(tx);
+            tokenId = token.getId(tx);
             tx.commit();
         } catch (KernelException e) {
-            throw new AssertionError(String.format("failed to create %ss in database", tag.name()), e);
+            throw new AssertionError(String.format("failed to create %ss in database", token.name()), e);
         }
-        return tagId;
+        return tokenId;
     }
 
-    protected final <TAG> List<Integer> createTags(int numberOfTags, Tags.Suppliers.Supplier<TAG> tag) {
-        final List<Integer> tagIds;
+    protected final <TOKEN> int[] createTokens(int numberOfTags, Tokens.Suppliers.Supplier<TOKEN> token) {
+        final int[] tokenIds;
         try (var tx = beginTx()) {
-            tagIds = tag.getIds(tx, numberOfTags);
+            tokenIds = token.getIds(tx, numberOfTags);
             tx.commit();
         } catch (KernelException e) {
-            throw new AssertionError(String.format("failed to create %ss in database", tag.name()), e);
+            throw new AssertionError(String.format("failed to create %ss in database", token.name()), e);
         }
-        return tagIds;
+        return tokenIds;
     }
 
     protected interface Query<QUERY> {

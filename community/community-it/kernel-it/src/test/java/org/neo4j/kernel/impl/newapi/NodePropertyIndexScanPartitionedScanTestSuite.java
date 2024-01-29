@@ -49,11 +49,8 @@ abstract class NodePropertyIndexScanPartitionedScanTestSuite
             final var numberOfLabels = 1;
             final var numberOfPropKeys = 2;
 
-            final var labelId =
-                    createTags(numberOfLabels, factory.getTokenSupplier()).get(0);
-            final var propKeyIds = createTags(numberOfPropKeys, factory.getPropKeySupplier()).stream()
-                    .mapToInt(i -> i)
-                    .toArray();
+            final var labelId = createTokens(numberOfLabels, factory.getTokenSupplier())[0];
+            final var propKeyIds = createTokens(numberOfPropKeys, factory.getPropKeySupplier());
 
             final var data = emptyQueries(labelId, propKeyIds);
             createIndexes(createIndexPrototypes(labelId, propKeyIds));
@@ -73,11 +70,8 @@ abstract class NodePropertyIndexScanPartitionedScanTestSuite
             final var numberOfPropKeys = 2;
             final var numberOfProperties = 1 << 12;
 
-            final var labelId =
-                    createTags(numberOfLabels, factory.getTokenSupplier()).get(0);
-            final var propKeyIds = createTags(numberOfPropKeys, factory.getPropKeySupplier()).stream()
-                    .mapToInt(i -> i)
-                    .toArray();
+            final var labelId = createTokens(numberOfLabels, factory.getTokenSupplier())[0];
+            final var propKeyIds = createTokens(numberOfPropKeys, factory.getPropKeySupplier());
 
             final var data = createData(numberOfProperties, labelId, propKeyIds);
             createIndexes(createIndexPrototypes(labelId, propKeyIds));

@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assumptions.assumeThat;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
@@ -42,7 +43,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.newapi.PartitionedScanFactories.TokenIndex;
 import org.neo4j.kernel.impl.newapi.PartitionedScanTestSuite.Query;
 import org.neo4j.kernel.impl.newapi.TokenIndexScanPartitionedScanTestSuite.TokenScanQuery;
-import org.neo4j.test.Tags;
+import org.neo4j.test.Tokens;
 
 public abstract class TokenIndexScanPartitionedScanTestSuite<CURSER extends Cursor>
         implements PartitionedScanTestSuite.TestSuite<TokenScanQuery, TokenReadSession, CURSER> {
@@ -52,10 +53,10 @@ public abstract class TokenIndexScanPartitionedScanTestSuite<CURSER extends Curs
             super(testSuite);
         }
 
-        Queries<TokenScanQuery> emptyQueries(EntityType entityType, List<Integer> tokenIds) {
+        Queries<TokenScanQuery> emptyQueries(EntityType entityType, int[] tokenIds) {
             final var tokenIndexName = getTokenIndexName(entityType);
-            final var empty = tokenIds.stream()
-                    .map(TokenPredicate::new)
+            final var empty = Arrays.stream(tokenIds)
+                    .mapToObj(TokenPredicate::new)
                     .map(pred -> new TokenScanQuery(tokenIndexName, pred))
                     .collect(EntityIdsMatchingQuery.collector());
             return new Queries<>(empty);
@@ -135,12 +136,12 @@ public abstract class TokenIndexScanPartitionedScanTestSuite<CURSER extends Curs
                             saneSpanningRangeFromRanges(random.random(), after, after)));
         }
 
-        protected final <TAG> SortedMap<Integer, List<Range>> tokenRangesFromTokenId(
-                Tags.Suppliers.Supplier<TAG> token, List<List<Range>> ranges) {
-            final var tokenIds = createTags(ranges.size(), token);
+        protected final <TOKEN> SortedMap<Integer, List<Range>> tokenRangesFromTokenId(
+                Tokens.Suppliers.Supplier<TOKEN> token, List<List<Range>> ranges) {
+            final var tokenIds = createTokens(ranges.size(), token);
             final var tokenRanges = new TreeMap<Integer, List<Range>>();
             for (int i = 0; i < ranges.size(); i++) {
-                tokenRanges.put(tokenIds.get(i), ranges.get(i));
+                tokenRanges.put(tokenIds[i], ranges.get(i));
             }
             return tokenRanges;
         }

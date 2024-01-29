@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import static org.neo4j.test.Tags.Suppliers.UUID.LABEL;
-import static org.neo4j.test.Tags.Suppliers.UUID.PROPERTY_KEY;
-import static org.neo4j.test.Tags.Suppliers.UUID.RELATIONSHIP_TYPE;
+import static org.neo4j.test.Tokens.Suppliers.UUID.LABEL;
+import static org.neo4j.test.Tokens.Suppliers.UUID.PROPERTY_KEY;
+import static org.neo4j.test.Tokens.Suppliers.UUID.RELATIONSHIP_TYPE;
 
 import java.util.Arrays;
 import java.util.List;
@@ -48,7 +48,7 @@ import org.neo4j.kernel.impl.newapi.PropertyIndexScanPartitionedScanTestSuite.Pr
 import org.neo4j.kernel.impl.newapi.PropertyIndexSeekPartitionedScanTestSuite.PropertyKeySeekQuery;
 import org.neo4j.kernel.impl.newapi.TokenIndexScanPartitionedScanTestSuite.TokenScanQuery;
 import org.neo4j.memory.EmptyMemoryTracker;
-import org.neo4j.test.Tags;
+import org.neo4j.test.Tokens;
 
 class PartitionedScanFactories {
     abstract static class PartitionedScanFactory<QUERY extends Query<?>, SESSION, CURSOR extends Cursor> {
@@ -231,9 +231,9 @@ class PartitionedScanFactories {
             extends PartitionedScanFactory<QUERY, IndexReadSession, CURSOR> {
         abstract SchemaDescriptor getSchemaDescriptor(int tokenId, int... propKeyIds);
 
-        abstract Tags.Suppliers.Supplier<?> getTokenSupplier();
+        abstract Tokens.Suppliers.Supplier<?> getTokenSupplier();
 
-        final Tags.Suppliers.PropertyKey getPropKeySupplier() {
+        final Tokens.Suppliers.PropertyKey getPropKeySupplier() {
             return PROPERTY_KEY;
         }
 
@@ -294,7 +294,7 @@ class PartitionedScanFactories {
         }
 
         @Override
-        Tags.Suppliers.Label getTokenSupplier() {
+        Tokens.Suppliers.Label getTokenSupplier() {
             return LABEL;
         }
 
@@ -335,7 +335,7 @@ class PartitionedScanFactories {
         }
 
         @Override
-        Tags.Suppliers.Label getTokenSupplier() {
+        Tokens.Suppliers.Label getTokenSupplier() {
             return LABEL;
         }
 
@@ -379,7 +379,7 @@ class PartitionedScanFactories {
         }
 
         @Override
-        Tags.Suppliers.RelationshipType getTokenSupplier() {
+        Tokens.Suppliers.RelationshipType getTokenSupplier() {
             return RELATIONSHIP_TYPE;
         }
 
@@ -421,7 +421,7 @@ class PartitionedScanFactories {
         }
 
         @Override
-        Tags.Suppliers.RelationshipType getTokenSupplier() {
+        Tokens.Suppliers.RelationshipType getTokenSupplier() {
             return RELATIONSHIP_TYPE;
         }
 
