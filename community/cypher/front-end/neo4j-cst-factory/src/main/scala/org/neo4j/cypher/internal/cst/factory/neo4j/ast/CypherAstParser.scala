@@ -59,10 +59,10 @@ class CypherAstParser private (input: TokenStream, createAst: Boolean) extends C
 
       astBuilder.exitEveryRule(localCtx)
 
-      // Save memory by removing the parse tree as we go.
+      // TODO Save memory by removing the parse tree as we go.
+      // localCtx.children = null
       // Alternatively we could use setBuildParseTree(false) which would be even more efficient,
       // but requires changes to the listeners (work without accessing the children) and grammar (label everything).
-      localCtx.children = null
 
       // Throw exception if EOF is not reached
       if (_ctx == null) {
