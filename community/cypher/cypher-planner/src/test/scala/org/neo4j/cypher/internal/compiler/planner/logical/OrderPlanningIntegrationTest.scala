@@ -1718,12 +1718,12 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
         |ORDER BY a.prop
         |RETURN count(DISTINCT a.prop) AS c""".stripMargin
 
-    val plan = wideningExpandConfig
+    val plan = defaultConfig
       .plan(query)
       .stripProduceResults
 
     plan.stripProduceResults should equal(
-      wideningExpandConfig.subPlanBuilder()
+      defaultConfig.subPlanBuilder()
         .aggregation(
           Map.empty[String, Expression],
           Map("c" -> count(cachedNodeProp("a", "prop"), isDistinct = true, ArgumentAsc))
@@ -1742,12 +1742,12 @@ abstract class OrderPlanningIntegrationTest(queryGraphSolverSetup: QueryGraphSol
         |ORDER BY a.foo, a.prop
         |RETURN a.foo, count(DISTINCT a.prop) AS c""".stripMargin
 
-    val plan = wideningExpandConfig
+    val plan = defaultConfig
       .plan(query)
       .stripProduceResults
 
     plan.stripProduceResults should equal(
-      wideningExpandConfig.subPlanBuilder()
+      defaultConfig.subPlanBuilder()
         .orderedAggregation(
           Map("a.foo" -> cachedNodeProp("a", "foo")),
           Map("c" -> count(cachedNodeProp("a", "prop"), isDistinct = true, ArgumentAsc)),
