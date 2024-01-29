@@ -36,8 +36,9 @@ import org.neo4j.cypher.internal.ast.UnionAll
 import org.neo4j.cypher.internal.ast.UnionDistinct
 import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.expressions.Parameter
-import org.neo4j.cypher.internal.expressions.SensitiveLiteral
+import org.neo4j.cypher.internal.expressions.SensitiveAutoParameter
 import org.neo4j.cypher.internal.expressions.SensitiveParameter
+import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
 import org.neo4j.cypher.internal.rewriting.rewriters.sensitiveLiteralReplacement
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
@@ -182,9 +183,13 @@ case class FabricStitcher(
 
     val updatedStatement = withPeriodicCommitHint(statement)
 
-    val sensitive = updatedStatement.folder.treeExists {
+    val sensitive = statement.folder.treeExists {
+      // these are used for auto-parameterization when query-obfuscation
+      // is enabled, we should still cache these.
+      case _: SensitiveAutoParameter => false
+      // these two are used for password fields
       case _: SensitiveParameter => true
-      case _: SensitiveLiteral => true
+      case _: SensitiveStringLiteral => true
     }
 
     val local = pipeline.checkAndFinalize.process(updatedStatement)

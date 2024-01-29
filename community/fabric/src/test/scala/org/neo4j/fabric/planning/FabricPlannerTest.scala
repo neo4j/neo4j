@@ -606,6 +606,29 @@ class FabricPlannerTest
       newPlanner.queryCache.getHits.shouldEqual(1)
     }
 
+    "cache hit on equal input with query-obfuscation" in {
+      val newPlanner = FabricPlanner(config, cypherConfigWithQueryObfuscation, monitors, cacheFactory, signatures)
+
+      val q =
+        """WITH 1 AS x
+          |CALL {
+          |  RETURN 2 AS y
+          |}
+          |WITH 3 AS z, y AS y
+          |CALL {
+          |  WITH 0 AS a
+          |  RETURN 4 AS w
+          |}
+          |RETURN w, y
+          |""".stripMargin
+
+      newPlanner.instance(q, params, defaultGraphName).plan
+      newPlanner.instance(q, params, defaultGraphName).plan
+
+      newPlanner.queryCache.getMisses.shouldEqual(1)
+      newPlanner.queryCache.getHits.shouldEqual(1)
+    }
+
     "cache miss on different query" in {
       val newPlanner = FabricPlanner(config, cypherConfig, monitors, cacheFactory, signatures)
 
@@ -725,6 +748,20 @@ class FabricPlannerTest
       newPlanner.queryCache.getHits.shouldEqual(0)
     }
 
+    "sensitive statements are not cached using parameters" in {
+      val newPlanner = FabricPlanner(config, cypherConfig, monitors, cacheFactory, signatures)
+
+      val q =
+        """CREATE USER foo SET PASSWORD $p
+          |""".stripMargin
+
+      val secretParams = VirtualValues.map(Array("p"), Array(Values.stringValue("secret")))
+      newPlanner.instance(q, secretParams, defaultGraphName).plan
+      newPlanner.instance(q, secretParams, defaultGraphName).plan
+
+      newPlanner.queryCache.getMisses.shouldEqual(2)
+      newPlanner.queryCache.getHits.shouldEqual(0)
+    }
     "cache miss on literal vs variable with same name" in {
       val newPlanner = FabricPlanner(config, cypherConfig, monitors, cacheFactory, signatures)
 
