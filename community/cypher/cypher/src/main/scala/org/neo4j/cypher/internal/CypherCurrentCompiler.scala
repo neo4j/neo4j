@@ -452,9 +452,15 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
 
       val notificationConfig =
         transactionalContext.queryExecutingConfiguration().notificationFilters()
-      val filteredPlannerNotifications = (planningNotifications ++ executionPlan.notifications)
-        .map(asKernelNotification(Some(queryOptions.offset)))
-        .filter(notificationConfig.includes(_))
+      val filteredPlannerNotifications: Seq[NotificationImplementation] =
+        if (notificationConfig eq NotificationConfiguration.NONE) {
+          Seq.empty[NotificationImplementation]
+        } else {
+          (planningNotifications ++ executionPlan.notifications)
+            .map(asKernelNotification(Some(queryOptions.offset)))
+            .filter(notificationConfig.includes(_))
+        }
+
       val inner =
         if (innerExecutionMode == ExplainMode) {
           taskCloser.close(Success)
