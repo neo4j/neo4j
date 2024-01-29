@@ -190,6 +190,38 @@ class GetDegreeRewriterExistsExpressionTest extends GetDegreeRewriterExistsLikeT
     getDegreeRewriter(incoming) should equal(incoming)
   }
 
+  test("does not rewrite EXISTS with aggregation in RETURN") {
+    val a = nodePat(Some("a"))
+    val b = nodePat(Some("b"))
+    val `(a)-[r]-(b)` = RelationshipChain(a, relPat(Some("r")), b)(pos)
+    val incoming = createIrExpressions(
+      ExistsExpression(
+        singleQuery(
+          match_(`(a)-[r]-(b)`),
+          return_(collect(v"a").as("a"))
+        )
+      )(pos, None, Some(Set(v"a")))
+    )
+
+    getDegreeRewriter(incoming) should equal(incoming)
+  }
+
+  test("does rewrite EXISTS with grouped aggregation in RETURN") {
+    val a = nodePat(Some("a"))
+    val b = nodePat(Some("b"))
+    val `(a)-[r]-(b)` = RelationshipChain(a, relPat(Some("r")), b)(pos)
+    val incoming = createIrExpressions(
+      ExistsExpression(
+        singleQuery(
+          match_(`(a)-[r]-(b)`),
+          return_(v"a".as("a"), collect(literal(1)).as("c"))
+        )
+      )(pos, None, Some(Set(v"a", v"c")))
+    )
+
+    getDegreeRewriter(incoming) should equal(incoming)
+  }
+
   test("does not rewrite EXISTS with ORDER BY, SKIP and LIMIT in RETURN") {
     val incoming = createIrExpressions(
       ExistsExpression(

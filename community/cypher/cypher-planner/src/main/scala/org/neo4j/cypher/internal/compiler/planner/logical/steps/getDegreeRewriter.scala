@@ -214,8 +214,6 @@ object ExistsQuerySolvableByGetDegree {
     def unapplySeq[T](s: Set[T]): Option[Seq[T]] = Some(s.toSeq)
   }
 
-  // TODO REVIEWER: the old AggregatingQueryProjection case looked incorrect to me.
-  //                this rewrite started kicking in because interestingOrder is now empty.
   private def eligibleHorizon(horizon: QueryHorizon): Boolean = horizon match {
     case RegularQueryProjection(
         _,
