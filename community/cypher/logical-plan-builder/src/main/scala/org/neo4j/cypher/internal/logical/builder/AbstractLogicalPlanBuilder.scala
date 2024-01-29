@@ -583,12 +583,20 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     val singletonNodeMappings = singletonNodeVariables.map { case (x, y) => Mapping(varFor(x), varFor(y)) }
     val singletonRelMappings = singletonRelationshipVariables.map { case (x, y) => Mapping(varFor(x), varFor(y)) }
 
-    newNodes(nfa.nodes.map(_.name) + targetNode)
-    newRelationships(nfa.relationships.map(_.name))
+    // Assign types to group variables
     nodeVariableGroupings.map(_.group.asInstanceOf[Variable])
       .foreach(newVariable(_, CTList(CTNode)))
     relationshipVariableGroupings.map(_.group.asInstanceOf[Variable])
       .foreach(newVariable(_, CTList(CTRelationship)))
+
+    // Assign types to singleton variables.
+    // Be aware that this will override the types from the group variables if they share the same name with
+    // the singleton variables. This will for instance happen if you use .enableDeduplicateNames(true),
+    // which is the default setting in any LogicalPlanning integration test.
+    // Overriding the type of the group variable is usually fine, except for Eagerness analysis on logical plans.
+    // For these tests, you might want to consider setting .enableDeduplicateNames(false).
+    newNodes(nfa.nodes.map(_.name) + targetNode)
+    newRelationships(nfa.relationships.map(_.name))
     singletonNodeMappings.map(_.rowVar.asInstanceOf[Variable])
       .foreach(newVariable(_, CTNode))
     singletonRelMappings.map(_.rowVar.asInstanceOf[Variable])
