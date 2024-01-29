@@ -18,33 +18,61 @@ lexer grammar CypherLexer;
 
 SPACE:
    (     '\u0009'
+           | '\\u0009'
            | '\n' //can't parse this in unicode
+           | '\\u000A'
            | '\u000B'
+           | '\\u000B'
            | '\u000C'
+           | '\\u000C'
            | '\r' //can't parse this in unicode
+           | '\\u000D'
            | '\u001C'
+           | '\\u001C'
            | '\u001D'
+           | '\\u001D'
            | '\u001E'
+           | '\\u001E'
            | '\u001F'
+           | '\\u001F'
            | '\u0020'
+           | '\\u0020'
            | '\u00A0'
+           | '\\u00A0'
            | '\u1680'
+           | '\\u1680'
            | '\u2000'
+           | '\\u2000'
            | '\u2001'
+           | '\\u2001'
            | '\u2002'
+           | '\\u2002'
            | '\u2003'
+           | '\\u2003'
            | '\u2004'
+           | '\\u2004'
            | '\u2005'
+           | '\\u2005'
            | '\u2006'
+           | '\\u2006'
            | '\u2007'
+           | '\\u2007'
            | '\u2008'
+           | '\\u2008'
            | '\u2009'
+           | '\\u2009'
            | '\u200A'
+           | '\\u200A'
            | '\u2028'
+           | '\\u2028'
            | '\u2029'
+           | '\\u2029'
            | '\u202F'
+           | '\\u202F'
            | '\u205F'
+           | '\\u205F'
            | '\u3000'
+           | '\\u3000'
        ) -> channel (HIDDEN);
 
 SINGLE_LINE_COMMENT:
@@ -432,7 +460,7 @@ INDEXES:
    I N D E X E S;
 
 INF:
-   I N F;
+   I N F -> type(INFINITY);
 
 INFINITY:
    I N F I N I T Y;

@@ -369,16 +369,8 @@ trait ExpressionBuilder extends CypherParserListener {
     ctx: CypherParser.SymbolicNameOrStringParameterContext
   ): Unit = {}
 
-  final override def exitStringImage(
-    ctx: CypherParser.StringImageContext
-  ): Unit = {}
-
   final override def exitStringList(
     ctx: CypherParser.StringListContext
-  ): Unit = {}
-
-  final override def exitStringToken(
-    ctx: CypherParser.StringTokenContext
   ): Unit = {}
 
   final override def exitStringOrParameter(

@@ -116,7 +116,7 @@ case class DecimalDoubleLiteral(stringVal: String)(val position: InputPosition) 
   lazy val doubleMatcher: Regex = """-?(\d+((_\d+)?)*)?(\.\d+((_\d+)?)*)?([eE]([+-])?\d+((_\d+)?)*)?""" r
 
   lazy val value: java.lang.Double = stringVal match {
-    case doubleMatcher(_*) => java.lang.Double.parseDouble(stringVal.toList.filter(c => c != '_').mkString)
+    case doubleMatcher(_*) => java.lang.Double.parseDouble(stringVal.replace("_", ""))
     // pass along to keep the same error message
     case _ => java.lang.Double.parseDouble(stringVal)
   }

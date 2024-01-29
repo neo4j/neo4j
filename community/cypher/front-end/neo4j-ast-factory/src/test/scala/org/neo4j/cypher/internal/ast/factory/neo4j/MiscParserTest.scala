@@ -188,7 +188,7 @@ class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport
   }
 
   test("should handle escaping in string literals") {
-    parsing[StringLiteral]("""'\\\''""") shouldGive literalString("""\'""")
+    """'\\\''""" should parseTo[StringLiteral](literalString("""\'"""))
   }
 
   test("Normal Form is only converted to strings inside functions, else treated as a variable") {

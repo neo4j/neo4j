@@ -25,7 +25,6 @@ import org.antlr.v4.runtime.TokenStream
 import org.antlr.v4.runtime.tree.ErrorNode
 import org.antlr.v4.runtime.tree.ParseTreeListener
 import org.antlr.v4.runtime.tree.TerminalNode
-import org.neo4j.cypher.internal.cst.factory.neo4j.CypherInputStream
 import org.neo4j.cypher.internal.cst.factory.neo4j.SyntaxChecker
 import org.neo4j.cypher.internal.cst.factory.neo4j.SyntaxErrorListener
 import org.neo4j.cypher.internal.parser.CypherLexer
@@ -106,7 +105,7 @@ object CypherAstParser {
   def withoutAst(query: String): CypherAstParser = new CypherAstParser(toStream(query), false)
 
   private def toStream(cypher: String) =
-    new CommonTokenStream(new CypherLexer(CharStreams.fromStream(new CypherInputStream(cypher))))
+    new CommonTokenStream(new CypherLexer(CharStreams.fromString(cypher)))
 }
 
 object NoOpParseTreeListener extends ParseTreeListener {

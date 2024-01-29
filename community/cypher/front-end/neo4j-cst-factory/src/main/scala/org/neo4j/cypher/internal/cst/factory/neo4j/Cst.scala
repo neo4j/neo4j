@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.parser.CypherParser.ClauseContext
 import org.neo4j.cypher.internal.parser.CypherParser.ExpressionContext
 import org.neo4j.cypher.internal.parser.CypherParser.FunctionInvocationContext
 import org.neo4j.cypher.internal.parser.CypherParser.ListComprehensionContext
+import org.neo4j.cypher.internal.parser.CypherParser.LiteralContext
 import org.neo4j.cypher.internal.parser.CypherParser.MapLiteralContext
 import org.neo4j.cypher.internal.parser.CypherParser.MapProjectionContext
 import org.neo4j.cypher.internal.parser.CypherParser.MatchClauseContext
@@ -71,4 +72,5 @@ object Cst {
   type StringLiteral = StringLiteralContext
   type SubqueryClause = SubqueryClauseContext
   type Variable = VariableContext
+  type Literal = LiteralContext
 }

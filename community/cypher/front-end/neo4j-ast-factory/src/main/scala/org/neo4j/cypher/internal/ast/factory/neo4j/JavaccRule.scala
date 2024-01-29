@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.GraphPatternQuantifier
 import org.neo4j.cypher.internal.expressions.ListComprehension
+import org.neo4j.cypher.internal.expressions.Literal
 import org.neo4j.cypher.internal.expressions.MapProjection
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.NumberLiteral
@@ -122,6 +123,7 @@ object JavaccRule {
     case AstTypes.StringLiteralCls        => StringLiteral.asInstanceOf[JavaccRule[T]]
     case AstTypes.SubqueryClauseCls       => SubqueryClause.asInstanceOf[JavaccRule[T]]
     case AstTypes.QuantifiedPathCls       => ParenthesizedPath.asInstanceOf[JavaccRule[T]]
+    case AstTypes.LiteralCls              => Expression.asInstanceOf[JavaccRule[T]] // JavaCC have no literal parser
     case other                            => throw new IllegalArgumentException(s"Unsupported type $other")
   }
 
@@ -170,4 +172,5 @@ object AstTypes {
   val StringLiteralCls: Class[StringLiteral] = classOf[StringLiteral]
   val SubqueryClauseCls: Class[SubqueryCall] = classOf[SubqueryCall]
   val QuantifiedPathCls: Class[QuantifiedPath] = classOf[QuantifiedPath]
+  val LiteralCls: Class[Literal] = classOf[Literal]
 }

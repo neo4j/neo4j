@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.GraphPatternQuantifier
 import org.neo4j.cypher.internal.expressions.ListComprehension
+import org.neo4j.cypher.internal.expressions.Literal
 import org.neo4j.cypher.internal.expressions.MapProjection
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.NumberLiteral
@@ -102,6 +103,7 @@ object AntlrRule {
   def StringLiteral: AntlrRule[Cst.StringLiteral] = fromParser(_.stringLiteral())
   def SubqueryClause: AntlrRule[Cst.SubqueryClause] = fromParser(_.subqueryClause())
   def Variable: AntlrRule[Cst.Variable] = fromParser(_.variable())
+  def Literal: AntlrRule[Cst.Literal] = fromParser(_.literal())
 
   // The reason for using Statements rather than Statement, is that Statements exhausts the input
   // reading until the EOF, even if it does not know how to parse all of it, whereas Statement
@@ -131,6 +133,7 @@ object AntlrRule {
     case AstTypes.StringLiteralCls        => StringLiteral
     case AstTypes.SubqueryClauseCls       => SubqueryClause
     case AstTypes.QuantifiedPathCls       => ParenthesizedPath
+    case AstTypes.LiteralCls              => Literal
     case other                            => throw new IllegalArgumentException(s"Unsupported type $other")
   }
 }
@@ -159,4 +162,5 @@ object AstTypes {
   val StringLiteralCls: Class[StringLiteral] = classOf[StringLiteral]
   val SubqueryClauseCls: Class[SubqueryCall] = classOf[SubqueryCall]
   val QuantifiedPathCls: Class[QuantifiedPath] = classOf[QuantifiedPath]
+  val LiteralCls: Class[Literal] = classOf[Literal]
 }
