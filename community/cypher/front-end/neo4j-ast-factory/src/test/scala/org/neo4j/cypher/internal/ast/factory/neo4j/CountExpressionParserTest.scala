@@ -433,7 +433,7 @@ class CountExpressionParserTest extends AstParsingTestBase with LegacyAstParsing
       )
     )(InputPosition(16, 2, 7), None, None)
 
-    givesIncludingPositions {
+    givesIncludingPositions[Statement] {
       singleQuery(
         match_(nodePat(name = Some("m")), where = Some(where(greaterThan(countExpression, literal(9))))),
         return_(variableReturnItem("m"))

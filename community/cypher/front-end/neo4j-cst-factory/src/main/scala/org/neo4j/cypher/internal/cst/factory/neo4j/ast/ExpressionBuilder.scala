@@ -53,8 +53,16 @@ trait ExpressionBuilder extends CypherParserListener {
     ctx: CypherParser.PatternListContext
   ): Unit = {}
 
+  final override def exitInsertPatternList(
+    ctx: CypherParser.InsertPatternListContext
+  ): Unit = {}
+
   final override def exitPattern(
     ctx: CypherParser.PatternContext
+  ): Unit = {}
+
+  final override def exitInsertPattern(
+    ctx: CypherParser.InsertPatternContext
   ): Unit = {}
 
   final override def exitQuantifier(
@@ -81,6 +89,10 @@ trait ExpressionBuilder extends CypherParserListener {
     ctx: CypherParser.PathPatternAtomsContext
   ): Unit = {}
 
+  final override def exitInsertPathPatternAtoms(
+    ctx: CypherParser.InsertPathPatternAtomsContext
+  ): Unit = {}
+
   final override def exitSelector(
     ctx: CypherParser.SelectorContext
   ): Unit = {}
@@ -93,6 +105,10 @@ trait ExpressionBuilder extends CypherParserListener {
     ctx: CypherParser.NodePatternContext
   ): Unit = {}
 
+  final override def exitInsertNodePattern(
+    ctx: CypherParser.InsertNodePatternContext
+  ): Unit = {}
+
   final override def exitParenthesizedPath(
     ctx: CypherParser.ParenthesizedPathContext
   ): Unit = {}
@@ -103,6 +119,10 @@ trait ExpressionBuilder extends CypherParserListener {
 
   final override def exitRelationshipPattern(
     ctx: CypherParser.RelationshipPatternContext
+  ): Unit = {}
+
+  final override def exitInsertRelationshipPattern(
+    ctx: CypherParser.InsertRelationshipPatternContext
   ): Unit = {}
 
   final override def exitLeftArrow(

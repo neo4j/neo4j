@@ -64,6 +64,8 @@ final class SyntaxChecker extends ParseTreeListener {
       case CypherParser.RULE_createAlias                      => checkCreateAlias(cast(ctx))
       case CypherParser.RULE_alterAlias                       => checkAlterAlias(cast(ctx))
       case CypherParser.RULE_globPart                         => checkGlobPart(cast(ctx))
+      case CypherParser.RULE_insertPattern                    => checkInsertPattern(cast(ctx))
+      case CypherParser.RULE_insertLabelConjunction           => checkInsertLabelConjunction(cast(ctx))
       case _                                                  =>
     }
   }
@@ -359,7 +361,7 @@ final class SyntaxChecker extends ParseTreeListener {
     }
   }
 
-  override def exitInsertPattern(ctx: CypherParser.InsertPatternContext): Unit = {
+  private def checkInsertPattern(ctx: CypherParser.InsertPatternContext): Unit = {
     val firstEquality = ctx.children.asScala.collectFirst {
       case x: TerminalNode if x.getText.equals("=") => x.getSymbol
     }
@@ -372,7 +374,7 @@ final class SyntaxChecker extends ParseTreeListener {
     }
   }
 
-  override def exitInsertLabelConjunction(ctx: CypherParser.InsertLabelConjunctionContext): Unit = {
+  private def checkInsertLabelConjunction(ctx: CypherParser.InsertLabelConjunctionContext): Unit = {
     val firstColon = ctx.children.asScala.collectFirst {
       case x: TerminalNode if x.getText.equals(":") => x.getSymbol
     }

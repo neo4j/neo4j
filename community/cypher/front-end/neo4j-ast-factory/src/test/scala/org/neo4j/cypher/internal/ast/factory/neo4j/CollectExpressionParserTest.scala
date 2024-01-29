@@ -464,7 +464,7 @@ class CollectExpressionParserTest extends AstParsingTestBase with LegacyAstParsi
       )
     )(InputPosition(16, 2, 7), None, None)
 
-    givesIncludingPositions {
+    givesIncludingPositions[Statements] {
       singleQuery(
         match_(nodePat(name = Some("m")), where = Some(where(eq(collectExpression, listOf())))),
         return_(variableReturnItem("m"))

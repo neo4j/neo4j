@@ -77,4 +77,15 @@ trait LabelExpressionBuilder extends CypherParserListener {
     ctx: CypherParser.LabelExpression1IsContext
   ): Unit = {}
 
+  final override def exitInsertNodeLabelExpression(
+    ctx: CypherParser.InsertNodeLabelExpressionContext
+  ): Unit = {}
+
+  final override def exitInsertRelationshipLabelExpression(
+    ctx: CypherParser.InsertRelationshipLabelExpressionContext
+  ): Unit = {}
+
+  final override def exitInsertLabelConjunction(
+    ctx: CypherParser.InsertLabelConjunctionContext
+  ): Unit = {}
 }

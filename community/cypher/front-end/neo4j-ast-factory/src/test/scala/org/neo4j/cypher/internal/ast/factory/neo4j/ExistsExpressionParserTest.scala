@@ -203,7 +203,7 @@ class ExistsExpressionParserTest extends AstParsingTestBase with LegacyAstParsin
       )
     )(InputPosition(16, 2, 7), None, None)
 
-    givesIncludingPositions {
+    givesIncludingPositions[Statement] {
       singleQuery(
         match_(nodePat(name = Some("m")), where = Some(where(existsExpression))),
         return_(variableReturnItem("m"))

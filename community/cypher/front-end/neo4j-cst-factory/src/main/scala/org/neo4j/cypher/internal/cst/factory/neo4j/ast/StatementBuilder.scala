@@ -109,6 +109,10 @@ trait StatementBuilder extends CypherParserListener {
     ctx: CypherParser.CreateClauseContext
   ): Unit = {}
 
+  final override def exitInsertClause(
+    ctx: CypherParser.InsertClauseContext
+  ): Unit = {}
+
   final override def exitSetClause(
     ctx: CypherParser.SetClauseContext
   ): Unit = {}
