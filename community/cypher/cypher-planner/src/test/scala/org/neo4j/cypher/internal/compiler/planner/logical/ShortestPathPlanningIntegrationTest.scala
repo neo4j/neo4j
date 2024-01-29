@@ -2764,4 +2764,140 @@ class ShortestPathPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         .build()
     )
   }
+
+  test("long pattern with lots of anonymous variables") {
+    val query =
+      s"""
+         |MATCH SHORTEST 1
+         |  (u:User {prop: 5})<-[:R]-
+         |  (:B)-[:R]->
+         |  (:B)-[:R]->+()
+         |  (
+         |    (sx1:B)<-[:R]-
+         |    (:B)-[:R]->
+         |    (x:B)<-[:R]-
+         |    (:B)-[:R]->
+         |    (sx2:B)
+         |    WHERE  sx1.prop + sx2.prop <= 60
+         |  ){0,1}
+         |  ()-[:R]->*
+         |  (:B)<-[:R]-
+         |  (:B)-[:R]->
+         |  (end:B)
+         |RETURN *
+         |""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+
+    val nfa = new TestNFABuilder(0, "u")
+      .addTransition(0, 1, "(u)<-[anon_22:R]-(anon_23 WHERE anon_23:B)")
+      .addTransition(1, 2, "(anon_23)-[anon_24:R]->(anon_25 WHERE anon_25:B)")
+      .addTransition(2, 3, "(anon_25) (anon_10)")
+      .addTransition(3, 4, "(anon_10)-[anon_11:R]->(anon_12)")
+      .addTransition(4, 3, "(anon_12) (anon_10)")
+      .addTransition(4, 5, "(anon_12) (anon_26)")
+      .addTransition(5, 6, "(anon_26) (sx1 WHERE sx1:B)")
+      .addTransition(5, 11, "(anon_26) (anon_27)")
+      .addTransition(6, 7, "(sx1)<-[anon_13:R]-(anon_14 WHERE anon_14:B)")
+      .addTransition(7, 8, "(anon_14)-[anon_15:R]->(x WHERE x:B)")
+      .addTransition(8, 9, "(x)<-[anon_16:R]-(anon_17 WHERE anon_17:B)")
+      .addTransition(9, 10, "(anon_17)-[anon_18:R]->(sx2 WHERE sx2:B)")
+      .addTransition(10, 11, "(sx2) (anon_27)")
+      .addTransition(11, 12, "(anon_27) (anon_19)")
+      .addTransition(11, 14, "(anon_27) (anon_28 WHERE anon_28:B)")
+      .addTransition(12, 13, "(anon_19)-[anon_20:R]->(anon_21)")
+      .addTransition(13, 12, "(anon_21) (anon_19)")
+      .addTransition(13, 14, "(anon_21) (anon_28 WHERE anon_28:B)")
+      .addTransition(14, 15, "(anon_28)<-[anon_29:R]-(anon_30 WHERE anon_30:B)")
+      .addTransition(15, 16, "(anon_30)-[anon_31:R]->(end)")
+      .setFinalState(16)
+      .build()
+
+    plan should equal(planner.subPlanBuilder()
+      .statefulShortestPath(
+        "u",
+        "end",
+        "SHORTEST 1 ((u)<-[anon_0:R]-(anon_1)-[anon_2:R]->(anon_3) ((anon_10)-[anon_11:R]->(anon_12)){1, } (anon_4) ((sx1)<-[anon_13:R]-(anon_14)-[anon_15:R]->(x)<-[anon_16:R]-(anon_17)-[anon_18:R]->(sx2) WHERE `sx1`:B AND `anon_17`:B AND `x`:B AND `sx2`:B AND `anon_14`:B){0, 1} (anon_5) ((anon_19)-[anon_20:R]->(anon_21)){0, } (anon_6)<-[anon_7:R]-(anon_8)-[anon_9:R]->(end) WHERE NOT `anon_0` = `anon_7` AND NOT `anon_0` = `anon_9` AND NOT `anon_0` IN ((`anon_37` + `anon_38`) + `anon_42`) + `anon_40` AND NOT `anon_0` IN `anon_26` AND NOT `anon_0` IN `anon_50` AND NOT `anon_7` IN ((`anon_37` + `anon_38`) + `anon_42`) + `anon_40` AND NOT `anon_7` IN `anon_26` AND NOT `anon_7` IN `anon_50` AND NOT `anon_9` = `anon_7` AND NOT `anon_9` IN ((`anon_37` + `anon_38`) + `anon_42`) + `anon_40` AND NOT `anon_9` IN `anon_26` AND NOT `anon_9` IN `anon_50` AND NOT `anon_2` = `anon_0` AND NOT `anon_2` = `anon_7` AND NOT `anon_2` = `anon_9` AND NOT `anon_2` IN ((`anon_37` + `anon_38`) + `anon_42`) + `anon_40` AND NOT `anon_2` IN `anon_26` AND NOT `anon_2` IN `anon_50` AND NOT `anon_15` = `anon_13` AND NOT `anon_16` = `anon_13` AND NOT `anon_16` = `anon_15` AND NOT `anon_18` = `anon_13` AND NOT `anon_18` = `anon_15` AND NOT `anon_18` = `anon_16` AND `anon_6`:B AND `anon_1`:B AND `anon_8`:B AND `anon_3`:B AND `sx1`.prop + `sx2`.prop <= 60 AND disjoint(((`anon_37` + `anon_38`) + `anon_42`) + `anon_40`, `anon_50`) AND disjoint(`anon_26`, ((`anon_37` + `anon_38`) + `anon_42`) + `anon_40`) AND disjoint(`anon_26`, `anon_50`) AND unique(((`anon_37` + `anon_38`) + `anon_42`) + `anon_40`) AND unique(`anon_26`) AND unique(`anon_50`))",
+        Some("all(anon_32 IN range(0, size(sx1) - 1) WHERE (sx1[anon_32]).prop + (sx2[anon_32]).prop <= 60)"),
+        Set(("sx1", "sx1"), ("x", "x"), ("sx2", "sx2")),
+        Set(),
+        Set(("anon_28", "anon_6"), ("anon_30", "anon_8"), ("anon_25", "anon_3"), ("anon_23", "anon_1"), ("anon_26", "anon_4"), ("anon_27", "anon_5")),
+        Set(("anon_22", "anon_0"), ("anon_24", "anon_2"), ("anon_29", "anon_7"), ("anon_31", "anon_9")),
+        StatefulShortestPath.Selector.Shortest(1),
+        nfa,
+        ExpandInto)
+      .cartesianProduct()
+      .|.nodeByLabelScan("end", "B")
+      .nodeIndexOperator("u:User(prop = 5)")
+      .build()
+    )
+  }
+
+  test("long pattern and everything is named") {
+    val query =
+      s"""
+         |MATCH SHORTEST 1
+         |  (u:User {prop: 5})<-[r1:R]-
+         |  (b1:B)-[r2:R]->
+         |  (b2:B) ((b3)-[r3:R]->(b4))+ (b5)
+         |  (
+         |    (sx1:B)<-[r4:R]-
+         |    (b6:B)-[r5:R]->
+         |    (x:B)<-[r6:R]-
+         |    (b7:B)-[r7:R]->
+         |    (sx2:B)
+         |    WHERE  sx1.prop + sx2.prop <= 60
+         |  ){0,1}
+         |  (b8) ((b9)-[r8:R]->(b10))*
+         |  (b11:B)<-[r9:R]-
+         |  (b12:B)-[r10:R]->
+         |  (end:B)
+         |RETURN *
+         |""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+
+    val nfa = new TestNFABuilder(0, "u")
+      .addTransition(0, 1, "(u)<-[r1:R]-(b1 WHERE b1:B)")
+      .addTransition(1, 2, "(b1)-[r2:R]->(b2 WHERE b2:B)")
+      .addTransition(2, 3, "(b2) (b3)")
+      .addTransition(3, 4, "(b3)-[r3:R]->(b4)")
+      .addTransition(4, 3, "(b4) (b3)")
+      .addTransition(4, 5, "(b4) (b5)")
+      .addTransition(5, 6, "(b5) (sx1 WHERE sx1:B)")
+      .addTransition(5, 11, "(b5) (b8)")
+      .addTransition(6, 7, "(sx1)<-[r4:R]-(b6 WHERE b6:B)")
+      .addTransition(7, 8, "(b6)-[r5:R]->(x WHERE x:B)")
+      .addTransition(8, 9, "(x)<-[r6:R]-(b7 WHERE b7:B)")
+      .addTransition(9, 10, "(b7)-[r7:R]->(sx2 WHERE sx2:B)")
+      .addTransition(10, 11, "(sx2) (b8)")
+      .addTransition(11, 12, "(b8) (b9)")
+      .addTransition(11, 14, "(b8) (b11 WHERE b11:B)")
+      .addTransition(12, 13, "(b9)-[r8:R]->(b10)")
+      .addTransition(13, 12, "(b10) (b9)")
+      .addTransition(13, 14, "(b10) (b11 WHERE b11:B)")
+      .addTransition(14, 15, "(b11)<-[r9:R]-(b12 WHERE b12:B)")
+      .addTransition(15, 16, "(b12)-[r10:R]->(end)")
+      .setFinalState(16)
+      .build()
+
+    plan should equal(planner.subPlanBuilder()
+      .statefulShortestPath(
+        "u",
+        "end",
+        "SHORTEST 1 ((u)<-[r1:R]-(b1)-[r2:R]->(b2) ((b3)-[r3:R]->(b4)){1, } (b5) ((sx1)<-[r4:R]-(b6)-[r5:R]->(x)<-[r6:R]-(b7)-[r7:R]->(sx2) WHERE `sx1`:B AND `b6`:B AND `x`:B AND `b7`:B AND `sx2`:B){0, 1} (b8) ((b9)-[r8:R]->(b10)){0, } (b11)<-[r9:R]-(b12)-[r10:R]->(end) WHERE NOT `r5` = `r4` AND NOT `r6` = `r4` AND NOT `r6` = `r5` AND NOT `r7` = `r4` AND NOT `r7` = `r5` AND NOT `r7` = `r6` AND NOT r1 = r10 AND NOT r1 = r9 AND NOT r1 IN ((`r4` + `r5`) + `r6`) + `r7` AND NOT r1 IN `r3` AND NOT r1 IN `r8` AND NOT r10 = r9 AND NOT r10 IN ((`r4` + `r5`) + `r6`) + `r7` AND NOT r10 IN `r3` AND NOT r10 IN `r8` AND NOT r2 = r1 AND NOT r2 = r10 AND NOT r2 = r9 AND NOT r2 IN ((`r4` + `r5`) + `r6`) + `r7` AND NOT r2 IN `r3` AND NOT r2 IN `r8` AND NOT r9 IN ((`r4` + `r5`) + `r6`) + `r7` AND NOT r9 IN `r3` AND NOT r9 IN `r8` AND `sx1`.prop + `sx2`.prop <= 60 AND b11:B AND b12:B AND b1:B AND b2:B AND disjoint(((`r4` + `r5`) + `r6`) + `r7`, `r8`) AND disjoint(`r3`, ((`r4` + `r5`) + `r6`) + `r7`) AND disjoint(`r3`, `r8`) AND unique(((`r4` + `r5`) + `r6`) + `r7`) AND unique(`r3`) AND unique(`r8`))",
+        Some("all(anon_0 IN range(0, size(sx1) - 1) WHERE (sx1[anon_0]).prop + (sx2[anon_0]).prop <= 60)"),
+        Set(("b10", "b10"), ("b7", "b7"), ("b3", "b3"), ("sx1", "sx1"), ("b6", "b6"), ("sx2", "sx2"), ("x", "x"), ("b4", "b4"), ("b9", "b9")),
+        Set(("r4", "r4"), ("r6", "r6"), ("r7", "r7"), ("r5", "r5"), ("r8", "r8"), ("r3", "r3")),
+        Set(("b1", "b1"), ("b11", "b11"), ("b2", "b2"), ("b8", "b8"), ("b12", "b12"), ("b5", "b5")),
+        Set(("r1", "r1"), ("r2", "r2"), ("r9", "r9"), ("r10", "r10")),
+        StatefulShortestPath.Selector.Shortest(1),
+        nfa,
+        ExpandInto)
+      .cartesianProduct()
+      .|.nodeByLabelScan("end", "B")
+      .nodeIndexOperator("u:User(prop = 5)")
+      .build()
+    )
+  }
 }

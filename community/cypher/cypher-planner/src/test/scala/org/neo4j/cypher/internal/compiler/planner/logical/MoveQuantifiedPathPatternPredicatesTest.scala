@@ -151,4 +151,17 @@ class MoveQuantifiedPathPatternPredicatesTest extends CypherFunSuite with Logica
     q.queryGraph.selectivePathPatterns.flatMap(_.allQuantifiedPathPatterns) shouldEqual Set(qpp)
     q.queryGraph.selectivePathPatterns.flatMap(_.selections.flatPredicates) should contain(pred)
   }
+
+  test("should keep the order of the node connections in the selective path pattern") {
+    val query =
+      """MATCH ANY SHORTEST (start)
+        |                   ((a)-[r]->(b))+
+        |                   (middle)-->(shmiddle)-->(quiddle)-->(doolittle)
+        |                   ((c)-[r2]->(d))+
+        |                   (end)-->(oneMore)-->(reallyTheEnd)-->(endFinal)-->(endFinal2)
+        |RETURN 1 AS one""".stripMargin
+    buildSinglePlannerQueryAndRewrite(query) should equal(
+      buildSinglePlannerQuery(query)
+    )
+  }
 }

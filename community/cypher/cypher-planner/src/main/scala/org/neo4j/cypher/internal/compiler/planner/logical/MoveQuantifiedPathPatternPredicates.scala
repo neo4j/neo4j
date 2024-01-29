@@ -63,21 +63,30 @@ case object MoveQuantifiedPathPatternPredicates extends PlannerQueryRewriter wit
           .addPredicates(liftedQppPredicates.toSeq: _*)
 
       case spp: SelectivePathPattern if spp.allQuantifiedPathPatterns.nonEmpty =>
-        val (newConnections, liftedPredicates) =
-          spp.pathPattern.connections.foldLeft((Set[ExhaustiveNodeConnection](), Set[ForAllRepetitions]())) {
+        val (newConnectionsBuilder, liftedPredicates) =
+          spp.pathPattern.connections.foldLeft((
+            NonEmptyList.newBuilder[ExhaustiveNodeConnection],
+            Set[ForAllRepetitions]()
+          )) {
             case ((newNodeConnections, extractedPredicates), nodeConnection) => nodeConnection match {
-                case pr: PatternRelationship => (newNodeConnections + pr, extractedPredicates)
+                case pr: PatternRelationship => (newNodeConnections.addOne(pr), extractedPredicates)
                 case qpp: QuantifiedPathPattern =>
                   val foo = for {
                     predicate <- qpp.selections.predicates
                   } yield ForAllRepetitions(qpp, predicate.expr)
-                  (newNodeConnections + qpp.copy(selections = Selections.empty), extractedPredicates ++ foo)
+                  (newNodeConnections.addOne(qpp.copy(selections = Selections.empty)), extractedPredicates ++ foo)
               }
           }
         val newSelections = Selections(liftedPredicates.flatMap(_.asPredicates))
 
         spp.copy(
-          pathPattern = spp.pathPattern.copy(connections = NonEmptyList.from(newConnections)),
+          pathPattern = spp.pathPattern.copy(connections =
+            newConnectionsBuilder.result().getOrElse(
+              throw new IllegalArgumentException(
+                s"Attempt to construct empty non-empty list in ${this.getClass.getSimpleName}"
+              )
+            )
+          ),
           selections = spp.selections ++ newSelections
         )
     }

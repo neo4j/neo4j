@@ -360,6 +360,15 @@ object ExhaustivePathPattern {
   final case class NodeConnections[+A <: ExhaustiveNodeConnection](connections: NonEmptyList[A])
       extends ExhaustivePathPattern[A] {
 
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+      connections.toIndexedSeq.sliding(2).forall {
+        case Seq(_)    => true
+        case Seq(a, b) => a.right == b.left
+        case _         => false
+      },
+      s"NodeConnections.connections seem to be out-of order: $connections"
+    )
+
     override def allQuantifiedPathPatterns: Set[QuantifiedPathPattern] = {
       connections.toSet[ExhaustiveNodeConnection].collect {
         case qpp: QuantifiedPathPattern => qpp
