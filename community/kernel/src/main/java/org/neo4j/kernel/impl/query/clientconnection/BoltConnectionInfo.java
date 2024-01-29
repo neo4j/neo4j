@@ -50,7 +50,7 @@ public class BoltConnectionInfo extends ClientConnectionInfo {
 
     @Override
     public String asConnectionDetails() {
-        return String.format("bolt-session\tbolt\t%s\t\tclient%s\tserver%s>", clientName, clientAddress, serverAddress);
+        return "bolt-session\tbolt\t" + clientName + "\t\tclient" + clientAddress + "\tserver" + serverAddress + ">";
     }
 
     @Override
