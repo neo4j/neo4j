@@ -301,7 +301,10 @@ object ClauseConverters {
       val value = aggregationExpressions(aggregationExpressions.keys.head)
       val columns: Seq[ColumnOrder] =
         AggregationHelper.checkMinOrMax(value, e => Seq(Asc(e)), e => Seq(Desc(e)), Seq.empty)
-      Some(InterestingOrderCandidate(columns))
+      if (columns.nonEmpty)
+        Some(InterestingOrderCandidate(columns))
+      else
+        None
     } else {
       None
     }

@@ -88,7 +88,7 @@ case class InterestingOrder(
   def mapOrderCandidates(f: Seq[ColumnOrder] => Seq[ColumnOrder]): InterestingOrder =
     copy(
       requiredOrderCandidate.copy(f(requiredOrderCandidate.order)),
-      interestingOrderCandidates.map(ioc => ioc.copy(f(ioc.order)))
+      interestingOrderCandidates.map(ioc => ioc.copy(f(ioc.order))).filter(_.order.nonEmpty)
     )
 
   /**
