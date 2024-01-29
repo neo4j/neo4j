@@ -20,6 +20,7 @@
 package org.neo4j.fabric
 
 import org.neo4j.configuration.Config
+import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.PreParsedQuery
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
@@ -152,6 +153,11 @@ trait FragmentTestUtils {
   def signatures: ProcedureSignatureResolver
 
   val cypherConfig: CypherConfiguration = CypherConfiguration.fromConfig(Config.defaults())
+
+  val cypherConfigWithQueryObfuscation: CypherConfiguration =
+    CypherConfiguration.fromConfig(Config.newBuilder()
+      .set(GraphDatabaseSettings.log_queries_obfuscate_literals, java.lang.Boolean.TRUE)
+      .build())
   val monitors: Monitors = new Monitors
 
   val cacheFactory = new ExecutorBasedCaffeineCacheFactory(Executors.newWorkStealingPool)
