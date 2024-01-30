@@ -260,7 +260,7 @@ class NodeChecker implements Checker {
         int prevLabel = -1;
         for (int i = 0; i < labels.length; i++) {
             int label = labels[i];
-            checkValidToken(
+            if (!checkValidToken(
                     nodeRecord,
                     label,
                     tokenHolders.labelTokens(),
@@ -269,7 +269,9 @@ class NodeChecker implements Checker {
                             .illegalLabel(),
                     (node, token) -> reporter.forNode(recordLoader.node(node.getId(), storeCursors))
                             .labelNotInUse(token),
-                    storeCursors);
+                    storeCursors)) {
+                valid = false;
+            }
             if (prevLabel != label) {
                 observedCounts.incrementNodeLabel(label, 1);
                 prevLabel = label;

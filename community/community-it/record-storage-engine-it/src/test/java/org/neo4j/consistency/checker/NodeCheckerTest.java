@@ -58,6 +58,7 @@ class NodeCheckerTest extends CheckerTestBase {
     private int label3;
     private int[] otherLabels;
     private int unusedLabel;
+    private int negativeLabel;
 
     @Override
     void initialData(KernelTransaction tx) throws KernelException {
@@ -72,6 +73,7 @@ class NodeCheckerTest extends CheckerTestBase {
         label3 = labelIds[2];
         otherLabels = Arrays.copyOfRange(labelIds, 3, labelIds.length);
         unusedLabel = labelIds[labelIds.length - 1] + 99;
+        negativeLabel = -1234;
     }
 
     void testReportLabelInconsistency(Consumer<NodeConsistencyReport> report, int... labels) throws Exception {
@@ -101,6 +103,11 @@ class NodeCheckerTest extends CheckerTestBase {
     @Test
     void shouldReportLabelsOutOfOrder() throws Exception {
         testReportLabelInconsistency(report -> report.labelsOutOfOrder(anyInt(), anyInt()), label3, label1, label2);
+    }
+
+    @Test
+    void shouldReportLabelNegativeLabel() throws Exception {
+        testReportLabelInconsistency(NodeConsistencyReport::illegalLabel, negativeLabel);
     }
 
     @Test
