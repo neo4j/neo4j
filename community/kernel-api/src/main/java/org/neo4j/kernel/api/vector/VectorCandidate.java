@@ -27,6 +27,8 @@ import org.neo4j.values.storable.Values;
 public interface VectorCandidate {
     float floatElement(int index);
 
+    double doubleElement(int index);
+
     int dimensions();
 
     static VectorCandidate maybeFrom(Object candidate) {
@@ -61,6 +63,11 @@ public interface VectorCandidate {
         }
 
         @Override
+        public double doubleElement(int index) {
+            return array.doubleValue(index);
+        }
+
+        @Override
         public int dimensions() {
             return array.length();
         }
@@ -70,6 +77,11 @@ public interface VectorCandidate {
         @Override
         public float floatElement(int index) {
             return list.get(index).floatValue();
+        }
+
+        @Override
+        public double doubleElement(int index) {
+            return list.get(index);
         }
 
         @Override
