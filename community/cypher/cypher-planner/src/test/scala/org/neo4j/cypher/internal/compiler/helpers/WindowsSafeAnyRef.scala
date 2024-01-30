@@ -34,7 +34,7 @@ class WindowsSafeAnyRef[T <: AnyRef] extends Equality[T] {
   override def areEqual(a: T, b: Any): Boolean = b match {
     case b: AnyRef =>
       val rewriter = topDown(Rewriter.lift {
-        case s: String => s.replaceAll("\r\n", "\n")
+        case s: String => s.replace("\r\n", "\n")
       })
       a.endoRewrite(rewriter) equals b.endoRewrite(rewriter)
     case _ => false

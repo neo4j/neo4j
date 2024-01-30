@@ -141,10 +141,10 @@ public abstract class AbstractSecurityLog {
             if (database != null) {
                 with("database", database);
             }
-            if (executingUser != null && executingUser.length() > 0) {
+            if (executingUser != null && !executingUser.isEmpty()) {
                 with("executingUser", executingUser);
             }
-            if (authenticatedUser != null && authenticatedUser.length() > 0) {
+            if (authenticatedUser != null && !authenticatedUser.isEmpty()) {
                 with("authenticatedUser", authenticatedUser);
             }
             with("message", this.message);
@@ -152,7 +152,7 @@ public abstract class AbstractSecurityLog {
 
         @Override
         protected void formatAsString(StringBuilder sb) {
-            if (executingUser != null && executingUser.length() > 0) {
+            if (executingUser != null && !executingUser.isEmpty()) {
                 if (executingUser.equals(authenticatedUser)) {
                     sb.append("[").append(escape(executingUser)).append("]: ");
                 } else {

@@ -323,7 +323,7 @@ public final class HTTP {
         }
 
         public static RawPayload quotedJson(String json) {
-            return new RawPayload(json.replaceAll("'", "\""));
+            return new RawPayload(json.replace("'", "\""));
         }
 
         private RawPayload(String payload) {

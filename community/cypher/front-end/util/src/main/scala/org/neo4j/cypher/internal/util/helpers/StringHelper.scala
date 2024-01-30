@@ -29,7 +29,7 @@ object StringHelper {
     def cypherEscape: String =
       text.replace("\\", "\\\\")
 
-    def fixNewLines: String = text.replaceAll("\r\n", "\n")
+    def fixNewLines: String = text.replace("\r\n", "\n")
 
     // (line 1, column 8 (offset: 7))
     def fixPosition: String =

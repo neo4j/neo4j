@@ -26,7 +26,7 @@ object WindowsStringSafe extends Equality[String] {
 
   override def areEqual(a: String, b: Any): Boolean = b match {
     case b: String =>
-      a.replaceAll("\r\n", "\n") equals b.replaceAll("\r\n", "\n")
+      a.replace("\r\n", "\n") equals b.replace("\r\n", "\n")
     case _ => false
   }
 }

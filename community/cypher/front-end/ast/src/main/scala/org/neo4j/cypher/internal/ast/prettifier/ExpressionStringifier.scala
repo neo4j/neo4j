@@ -628,7 +628,7 @@ object ExpressionStringifier {
    * non-identifier characters can be used to recover that knowledge.
    */
   def backtick(txt: String, alwaysBacktick: Boolean = false, globbing: Boolean = false): String = {
-    def escaped = txt.replaceAll("`", "``")
+    def escaped = txt.replace("`", "``")
     def orGlobbedCharacter(p: Int) = globbing && (p == '*'.asInstanceOf[Int] || p == '?'.asInstanceOf[Int])
 
     if (alwaysBacktick)

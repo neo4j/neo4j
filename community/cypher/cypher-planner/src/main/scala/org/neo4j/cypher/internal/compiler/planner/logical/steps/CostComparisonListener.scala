@@ -97,7 +97,7 @@ abstract class CostLogger extends CostComparisonListener {
 
   private def indent(level: Int, str: String): String = {
     val ind = prefix * level
-    ind + str.replaceAll(System.lineSeparator(), System.lineSeparator() + ind)
+    ind + str.replace(System.lineSeparator(), System.lineSeparator() + ind)
   }
 
   protected def blue(str: String): String

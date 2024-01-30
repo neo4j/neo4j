@@ -148,7 +148,7 @@ public class MemoryRecommendationsCommand extends AbstractAdminCommand {
         if (!dockerOutput) {
             print(setting.name() + "=" + value);
         } else {
-            var nameWithFixedUnderscores = setting.name().replaceAll("_", "__");
+            var nameWithFixedUnderscores = setting.name().replace("_", "__");
             var nameWithFixedUnderscoresAndDots = nameWithFixedUnderscores.replace('.', '_');
             print("NEO4J_" + nameWithFixedUnderscoresAndDots + "='" + value + "'");
         }

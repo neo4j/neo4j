@@ -433,6 +433,6 @@ class WindowsBootloaderOs extends BootloaderOsAbstraction {
         // Using single quotes stops powershell from trying to evaluate the contents of the string
         // replace pre-existing single quotes with double single quotes - this is the correct escape mechanism for
         // powershell
-        return format("'%s'", str.replaceAll("'", "''"));
+        return format("'%s'", str.replace("'", "''"));
     }
 }

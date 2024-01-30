@@ -74,8 +74,8 @@ case class CountIRExpression(
     case ce: CountIRExpression =>
       this.query.equals(ce.query) &&
       this.countVariable.equals(ce.countVariable) &&
-      this.solvedExpressionAsString.replaceAll("\r\n", "\n")
-        .equals(ce.solvedExpressionAsString.replaceAll("\r\n", "\n"))
+      this.solvedExpressionAsString.replace("\r\n", "\n")
+        .equals(ce.solvedExpressionAsString.replace("\r\n", "\n"))
     case _ => false
   }
 }

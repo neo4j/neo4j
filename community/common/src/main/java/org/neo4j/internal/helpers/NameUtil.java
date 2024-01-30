@@ -33,7 +33,7 @@ public class NameUtil {
     private static final Pattern ALPHA_NUMERIC = Pattern.compile("^[\\p{L}_][\\p{L}0-9_]*");
 
     public static String escapeBackticks(String string) {
-        return BACKTICK_UNICODE_ESCAPED.matcher(string).replaceAll(BACKTICK).replaceAll(BACKTICK, BACKTICK_ESCAPED);
+        return BACKTICK_UNICODE_ESCAPED.matcher(string).replaceAll(BACKTICK).replace(BACKTICK, BACKTICK_ESCAPED);
     }
 
     public static String escapeSingleQuotes(String string) {

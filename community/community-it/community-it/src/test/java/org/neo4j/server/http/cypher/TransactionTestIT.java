@@ -365,7 +365,7 @@ public class TransactionTestIT extends AbstractRestFunctionalTestBase {
     }
 
     private static String quotedJson(String singleQuoted) {
-        return singleQuoted.replaceAll("'", "\"");
+        return singleQuoted.replace("'", "\"");
     }
 
     private static long expirationTime(Map<String, Object> entity) {

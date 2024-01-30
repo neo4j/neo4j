@@ -63,8 +63,8 @@ case class ExistsIRExpression(
     case ee: ExistsIRExpression =>
       this.query.equals(ee.query) &&
       this.existsVariable.equals(ee.existsVariable) &&
-      this.solvedExpressionAsString.replaceAll("\r\n", "\n")
-        .equals(ee.solvedExpressionAsString.replaceAll("\r\n", "\n"))
+      this.solvedExpressionAsString.replace("\r\n", "\n")
+        .equals(ee.solvedExpressionAsString.replace("\r\n", "\n"))
     case _ => false
   }
 }
