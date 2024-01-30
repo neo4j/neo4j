@@ -450,12 +450,14 @@ public class EnvelopeReadChannel implements ReadableLogChannel {
                     nextEnvelopeChecksum == 0, "Unexpected trailing data, expected zero, was: " + nextEnvelopeChecksum);
 
             // Found zeroes, figure out if we are in padding or end of pre-allocated file
-            if (buffer.remaining() >= MAX_ZERO_PADDING_SIZE) {
-                // Must be the end of pre-allocated file
+            final var remaining = buffer.remaining();
+            enforceTerminalZeros();
+            if (remaining >= MAX_ZERO_PADDING_SIZE) {
+                // Must be the end of actual content in a longer pre-allocated file
+                // So we throw, to avoid the loop to keep going and just read a lot of zeroes
+                // until the end of the file.
                 throw ReadPastEndException.INSTANCE;
             }
-            // Consume rest of the segment and try the next one
-            enforceTerminalZeros();
         }
 
         int nextPayloadLength = buffer.getInt();

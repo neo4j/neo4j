@@ -379,6 +379,30 @@ class EnvelopeReadChannelTest {
 
     @ParameterizedTest
     @ValueSource(ints = {128, 256})
+    void shouldEnforceZeroEnvelopesBiggerThanMaxPaddingContainsOnlyZeroes(int segmentSize) throws Exception {
+        // GIVEN
+        final var file = file(0);
+        final var zerosWithGibberish = new byte[segmentSize];
+        final var gibberishPosition = random.nextInt(segmentSize / 4, 3 * segmentSize / 4);
+        zerosWithGibberish[gibberishPosition] = 42;
+
+        writeSomeData(file, buffer -> {
+            writeZeroSegment(buffer, segmentSize);
+            buffer.put(zerosWithGibberish);
+        });
+
+        final var logChannel = logChannel(fileSystem, file);
+        try (var channel = new EnvelopeReadChannel(
+                logChannel, segmentSize, NO_MORE_CHANNELS, EmptyMemoryTracker.INSTANCE, false)) {
+            // THEN
+            assertThatThrownBy(channel::get)
+                    .isInstanceOf(InvalidLogEnvelopeReadException.class)
+                    .hasMessageContaining("Expecting only zero padding at this point");
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {128, 256})
     void readingPreAllocatedFile(int segmentSize) throws Exception {
         final var file = file(0);
         final var zeros = new byte[segmentSize * 3];
