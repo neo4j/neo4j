@@ -571,16 +571,16 @@ class FabricPlannerTest
       val newPlanner = FabricPlanner(config, cypherConfigWithQueryObfuscation, monitors, cacheFactory)
 
       val q =
-        """WITH 1 AS x
+        """WITH [1, "2", "three"] AS a, "A literal" AS b
           |CALL {
-          |  RETURN 2 AS y
+          |  RETURN 2 AS c
           |}
-          |WITH 3 AS z, y AS y
+          |WITH {p1: "v", p2: ["1", 2, "three"]} AS d, b AS b
           |CALL {
-          |  WITH 0 AS a
-          |  RETURN 4 AS w
+          |  WITH "0" AS e
+          |  RETURN 4 AS f
           |}
-          |RETURN w, y
+          |RETURN f, b
           |""".stripMargin
 
       newPlanner.instance(signatures, q, params, defaultGraphName, Catalog(Map())).plan
