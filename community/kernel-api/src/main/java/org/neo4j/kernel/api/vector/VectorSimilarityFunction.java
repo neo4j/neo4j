@@ -19,14 +19,16 @@
  */
 package org.neo4j.kernel.api.vector;
 
+import org.neo4j.values.AnyValue;
+
 public interface VectorSimilarityFunction {
     String name();
 
-    default float[] maybeToValidVector(Object candidate) {
+    default float[] maybeToValidVector(AnyValue candidate) {
         return maybeToValidVector(VectorCandidate.maybeFrom(candidate));
     }
 
-    default float[] toValidVector(Object candidate) {
+    default float[] toValidVector(AnyValue candidate) {
         return toValidVector(VectorCandidate.from(candidate));
     }
 

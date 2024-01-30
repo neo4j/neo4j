@@ -19,10 +19,14 @@
  */
 package org.neo4j.kernel.api.vector;
 
-import java.util.List;
+import static org.neo4j.values.storable.Values.NO_VALUE;
+
 import java.util.Objects;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.SequenceValue;
 import org.neo4j.values.storable.FloatingPointArray;
-import org.neo4j.values.storable.Values;
+import org.neo4j.values.storable.NumberArray;
+import org.neo4j.values.storable.NumberValue;
 
 public interface VectorCandidate {
     float floatElement(int index);
@@ -31,22 +35,25 @@ public interface VectorCandidate {
 
     int dimensions();
 
-    static VectorCandidate maybeFrom(Object candidate) {
-        if (candidate == null || candidate == Values.NO_VALUE) {
+    static VectorCandidate maybeFrom(AnyValue candidate) {
+        if (candidate == null || candidate == NO_VALUE) {
             return null;
         }
 
         if (candidate instanceof final FloatingPointArray floatingPointArray) {
             return new FloatingPointArrayVectorCandidate(floatingPointArray);
         }
-        if (candidate instanceof final List<?> list && (list.isEmpty() || list.get(0) instanceof Double)) {
-            return new ListVectorCandidate((List<Double>) list);
+        if (candidate instanceof final NumberArray numberArray) {
+            return new NumberArrayVectorCandidate(numberArray);
+        }
+        if (candidate instanceof final SequenceValue sequenceValue) {
+            return new SequenceValueVectorCandidate(sequenceValue);
         }
 
         return null;
     }
 
-    static VectorCandidate from(Object candidate) {
+    static VectorCandidate from(AnyValue candidate) {
         final var vectorCandidate = maybeFrom(candidate);
         if (vectorCandidate == null) {
             Objects.requireNonNull(candidate, "Value cannot be null");
@@ -73,20 +80,39 @@ public interface VectorCandidate {
         }
     }
 
-    record ListVectorCandidate(List<Double> list) implements VectorCandidate {
+    record NumberArrayVectorCandidate(NumberArray array) implements VectorCandidate {
+
         @Override
         public float floatElement(int index) {
-            return list.get(index).floatValue();
+            return array.value(index).floatValue();
         }
 
         @Override
         public double doubleElement(int index) {
-            return list.get(index);
+            return array.value(index).doubleValue();
         }
 
         @Override
         public int dimensions() {
-            return list.size();
+            return array.length();
+        }
+    }
+
+    record SequenceValueVectorCandidate(SequenceValue sequence) implements VectorCandidate {
+
+        @Override
+        public float floatElement(int index) {
+            return sequence.value(index) instanceof final NumberValue number ? number.floatValue() : Float.NaN;
+        }
+
+        @Override
+        public double doubleElement(int index) {
+            return sequence.value(index) instanceof final NumberValue number ? number.doubleValue() : Double.NaN;
+        }
+
+        @Override
+        public int dimensions() {
+            return sequence.length();
         }
     }
 }
