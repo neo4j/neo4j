@@ -59,6 +59,12 @@ public final class ByteArray extends IntegralArray {
     }
 
     @Override
+    public ByteValue value(int offset) {
+        checkValid();
+        return Values.byteValue(value[offset]);
+    }
+
+    @Override
     protected int computeHashToMemoize() {
         checkValid();
         return NumberValues.hash(value);
@@ -144,12 +150,6 @@ public final class ByteArray extends IntegralArray {
     public String prettyPrint() {
         checkValid();
         return Arrays.toString(value);
-    }
-
-    @Override
-    public AnyValue value(int offset) {
-        checkValid();
-        return Values.byteValue(value[offset]);
     }
 
     @Override

@@ -38,12 +38,7 @@ public final class ByteValue extends IntegralValue {
     }
 
     @Override
-    public long longValue() {
-        return value;
-    }
-
-    @Override
-    public int intValue() {
+    public byte byteValue() {
         return value;
     }
 
@@ -53,7 +48,17 @@ public final class ByteValue extends IntegralValue {
     }
 
     @Override
-    public byte byteValue() {
+    public int intValue() {
+        return value;
+    }
+
+    @Override
+    public long longValue() {
+        return value;
+    }
+
+    @Override
+    public float floatValue() {
         return value;
     }
 

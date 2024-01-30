@@ -43,13 +43,18 @@ public class ShortArray extends IntegralArray {
         return value.length;
     }
 
+    public short shortValue(int index) {
+        return value[index];
+    }
+
     @Override
     public long longValue(int index) {
         return value[index];
     }
 
-    public short shortValue(int index) {
-        return value[index];
+    @Override
+    public ShortValue value(int offset) {
+        return Values.shortValue(value[offset]);
     }
 
     @Override
@@ -125,11 +130,6 @@ public class ShortArray extends IntegralArray {
     @Override
     public String prettyPrint() {
         return Arrays.toString(value);
-    }
-
-    @Override
-    public AnyValue value(int offset) {
-        return Values.shortValue(value[offset]);
     }
 
     @Override

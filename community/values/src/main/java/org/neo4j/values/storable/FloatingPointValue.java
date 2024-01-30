@@ -24,6 +24,11 @@ import org.neo4j.values.utils.ValueMath;
 
 public abstract class FloatingPointValue extends NumberValue {
     @Override
+    public long longValue() {
+        return (long) doubleValue();
+    }
+
+    @Override
     public final boolean equals(long x) {
         return NumberValues.numbersEqual(doubleValue(), x);
     }
@@ -81,11 +86,6 @@ public abstract class FloatingPointValue extends NumberValue {
     @Override
     boolean ternaryUndefined() {
         return isNaN();
-    }
-
-    @Override
-    public long longValue() {
-        return (long) doubleValue();
     }
 
     @Override

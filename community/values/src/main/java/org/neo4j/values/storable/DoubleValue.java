@@ -38,6 +38,11 @@ public final class DoubleValue extends FloatingPointValue {
     }
 
     @Override
+    public float floatValue() {
+        return (float) value;
+    }
+
+    @Override
     public double doubleValue() {
         return value;
     }

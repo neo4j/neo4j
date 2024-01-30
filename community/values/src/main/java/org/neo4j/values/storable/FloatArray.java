@@ -53,6 +53,11 @@ public final class FloatArray extends FloatingPointArray {
     }
 
     @Override
+    public FloatValue value(int offset) {
+        return Values.floatValue(value[offset]);
+    }
+
+    @Override
     protected int computeHashToMemoize() {
         return NumberValues.hash(value);
     }
@@ -116,11 +121,6 @@ public final class FloatArray extends FloatingPointArray {
     @Override
     public String prettyPrint() {
         return Arrays.toString(value);
-    }
-
-    @Override
-    public AnyValue value(int offset) {
-        return Values.floatValue(value[offset]);
     }
 
     @Override

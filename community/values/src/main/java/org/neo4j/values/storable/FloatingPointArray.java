@@ -27,6 +27,9 @@ public abstract class FloatingPointArray extends NumberArray {
     public abstract double doubleValue(int offset);
 
     @Override
+    public abstract FloatingPointValue value(int offset);
+
+    @Override
     public int compareTo(IntegralArray other) {
         return -NumberValues.compareIntegerVsFloatArrays(other, this);
     }

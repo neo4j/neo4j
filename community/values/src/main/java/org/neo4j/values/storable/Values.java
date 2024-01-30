@@ -519,7 +519,7 @@ public final class Values {
         return legacy;
     }
 
-    public static Value arrayValue(Object[] value, boolean copyDefensively) {
+    public static ArrayValue arrayValue(Object[] value, boolean copyDefensively) {
         if (value instanceof String[] array) {
             return stringArray(copyDefensively ? copy(value, new String[value.length]) : array);
         }

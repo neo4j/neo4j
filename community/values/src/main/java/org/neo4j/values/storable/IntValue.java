@@ -38,13 +38,8 @@ public final class IntValue extends IntegralValue {
     }
 
     @Override
-    public long longValue() {
-        return value;
-    }
-
-    @Override
-    public int intValue() {
-        return value;
+    public byte byteValue() {
+        throw new IllegalStateException("A 32 bit integer doesn't fit in a 8 bit value");
     }
 
     @Override
@@ -53,8 +48,18 @@ public final class IntValue extends IntegralValue {
     }
 
     @Override
-    public byte byteValue() {
-        throw new IllegalStateException("A 32 bit integer doesn't fit in a 8 bit value");
+    public int intValue() {
+        return value;
+    }
+
+    @Override
+    public long longValue() {
+        return value;
+    }
+
+    @Override
+    public float floatValue() {
+        return value;
     }
 
     @Override

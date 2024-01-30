@@ -68,6 +68,11 @@ public final class LongArray extends IntegralArray {
     }
 
     @Override
+    public LongValue value(int offset) {
+        return Values.longValue(longValue(offset));
+    }
+
+    @Override
     public boolean equals(Value other) {
         return other.equals(value);
     }
@@ -121,11 +126,6 @@ public final class LongArray extends IntegralArray {
     @Deprecated
     public long[] asObject() {
         return value;
-    }
-
-    @Override
-    public AnyValue value(int offset) {
-        return Values.longValue(longValue(offset));
     }
 
     @Override

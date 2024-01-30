@@ -59,6 +59,11 @@ public final class DoubleArray extends FloatingPointArray {
     }
 
     @Override
+    public DoubleValue value(int position) {
+        return Values.doubleValue(doubleValue(position));
+    }
+
+    @Override
     protected int computeHashToMemoize() {
         return NumberValues.hash(value);
     }
@@ -131,11 +136,6 @@ public final class DoubleArray extends FloatingPointArray {
     @Override
     public String prettyPrint() {
         return Arrays.toString(value);
-    }
-
-    @Override
-    public AnyValue value(int position) {
-        return Values.doubleValue(doubleValue(position));
     }
 
     @Override

@@ -25,6 +25,9 @@ public abstract class IntegralArray extends NumberArray {
     public abstract long longValue(int offset);
 
     @Override
+    public abstract IntegralValue value(int offset);
+
+    @Override
     public int compareTo(IntegralArray other) {
         return NumberValues.compareIntegerArrays(this, other);
     }

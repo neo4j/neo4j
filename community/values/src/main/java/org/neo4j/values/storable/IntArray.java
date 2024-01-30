@@ -43,13 +43,18 @@ public final class IntArray extends IntegralArray {
         return value.length;
     }
 
+    public int intValue(int index) {
+        return value[index];
+    }
+
     @Override
     public long longValue(int index) {
         return value[index];
     }
 
-    public int intValue(int index) {
-        return value[index];
+    @Override
+    public IntegralValue value(int offset) {
+        return Values.intValue(value[offset]);
     }
 
     @Override
@@ -125,11 +130,6 @@ public final class IntArray extends IntegralArray {
     @Override
     public String prettyPrint() {
         return Arrays.toString(value);
-    }
-
-    @Override
-    public AnyValue value(int offset) {
-        return Values.intValue(value[offset]);
     }
 
     @Override

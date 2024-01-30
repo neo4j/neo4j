@@ -25,9 +25,12 @@ public abstract class NumberValue extends ScalarValue {
     static long castToLong(String name, AnyValue value) {
         if (value == null) {
             return 0L;
-        } else if (value instanceof IntegralValue) {
-            return ((IntegralValue) value).longValue();
         }
+
+        if (value instanceof final IntegralValue integralValue) {
+            return integralValue.longValue();
+        }
+
         throw new IllegalArgumentException(name + " must be an integral value, but was a "
                 + value.getClass().getSimpleName());
     }
@@ -36,19 +39,20 @@ public abstract class NumberValue extends ScalarValue {
         if (value == null) {
             return defaultValue;
         }
-        if (value instanceof IntegralValue) {
-            return ((IntegralValue) value).doubleValue();
+
+        if (!(value instanceof final NumberValue numberValue)) {
+            throw new IllegalArgumentException(name + " must be a number value, but was a "
+                    + value.getClass().getSimpleName());
         }
-        if (value instanceof FloatingPointValue) {
-            return ((FloatingPointValue) value).doubleValue();
-        }
-        throw new IllegalArgumentException(
-                name + " must be a number value, but was a " + value.getClass().getSimpleName());
+
+        return numberValue.doubleValue();
     }
 
-    public abstract double doubleValue();
-
     public abstract long longValue();
+
+    public abstract float floatValue();
+
+    public abstract double doubleValue();
 
     public abstract int compareTo(IntegralValue other);
 
@@ -56,13 +60,13 @@ public abstract class NumberValue extends ScalarValue {
 
     @Override
     protected int unsafeCompareTo(Value otherValue) {
-        if (otherValue instanceof IntegralValue) {
-            return compareTo((IntegralValue) otherValue);
-        } else if (otherValue instanceof FloatingPointValue) {
-            return compareTo((FloatingPointValue) otherValue);
-        } else {
-            throw new IllegalArgumentException("Cannot compare different values");
+        if (otherValue instanceof final IntegralValue integralValue) {
+            return compareTo(integralValue);
         }
+        if (otherValue instanceof final FloatingPointValue floatingPointValue) {
+            return compareTo(floatingPointValue);
+        }
+        throw new IllegalArgumentException("Cannot compare different values");
     }
 
     @Override
@@ -107,40 +111,40 @@ public abstract class NumberValue extends ScalarValue {
     public NumberValue minus(NumberValue numberValue) {
         if (numberValue instanceof IntegralValue) {
             return minus(numberValue.longValue());
-        } else if (numberValue instanceof FloatingPointValue) {
-            return minus(numberValue.doubleValue());
-        } else {
-            throw new IllegalArgumentException("Cannot subtract " + numberValue);
         }
+        if (numberValue instanceof FloatingPointValue) {
+            return minus(numberValue.doubleValue());
+        }
+        throw new IllegalArgumentException("Cannot subtract " + numberValue);
     }
 
     public NumberValue plus(NumberValue numberValue) {
         if (numberValue instanceof IntegralValue) {
             return plus(numberValue.longValue());
-        } else if (numberValue instanceof FloatingPointValue) {
-            return plus(numberValue.doubleValue());
-        } else {
-            throw new IllegalArgumentException("Cannot add " + numberValue);
         }
+        if (numberValue instanceof FloatingPointValue) {
+            return plus(numberValue.doubleValue());
+        }
+        throw new IllegalArgumentException("Cannot subtract " + numberValue);
     }
 
     public NumberValue times(NumberValue numberValue) {
         if (numberValue instanceof IntegralValue) {
             return times(numberValue.longValue());
-        } else if (numberValue instanceof FloatingPointValue) {
-            return times(numberValue.doubleValue());
-        } else {
-            throw new IllegalArgumentException("Cannot multiply with " + numberValue);
         }
+        if (numberValue instanceof FloatingPointValue) {
+            return times(numberValue.doubleValue());
+        }
+        throw new IllegalArgumentException("Cannot multiply with " + numberValue);
     }
 
     public NumberValue divideBy(NumberValue numberValue) {
         if (numberValue instanceof IntegralValue) {
             return dividedBy(numberValue.longValue());
-        } else if (numberValue instanceof FloatingPointValue) {
-            return dividedBy(numberValue.doubleValue());
-        } else {
-            throw new IllegalArgumentException("Cannot divide by " + numberValue);
         }
+        if (numberValue instanceof FloatingPointValue) {
+            return dividedBy(numberValue.doubleValue());
+        }
+        throw new IllegalArgumentException("Cannot divide by " + numberValue);
     }
 }

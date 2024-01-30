@@ -35,11 +35,16 @@ public abstract class IntegralValue extends NumberValue {
                 + value.getClass().getSimpleName());
     }
 
-    public abstract int intValue();
+    public abstract byte byteValue();
 
     public abstract short shortValue();
 
-    public abstract byte byteValue();
+    public abstract int intValue();
+
+    @Override
+    public double doubleValue() {
+        return longValue();
+    }
 
     @Override
     public boolean equals(long x) {
@@ -90,11 +95,6 @@ public abstract class IntegralValue extends NumberValue {
     @Override
     public NumberType numberType() {
         return NumberType.INTEGRAL;
-    }
-
-    @Override
-    public double doubleValue() {
-        return longValue();
     }
 
     @Override

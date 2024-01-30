@@ -38,7 +38,12 @@ public final class ShortValue extends IntegralValue {
     }
 
     @Override
-    public long longValue() {
+    public byte byteValue() {
+        throw new IllegalStateException("A 16 bit integer doesn't fit in a 8 bit value");
+    }
+
+    @Override
+    public short shortValue() {
         return value;
     }
 
@@ -48,13 +53,13 @@ public final class ShortValue extends IntegralValue {
     }
 
     @Override
-    public short shortValue() {
+    public long longValue() {
         return value;
     }
 
     @Override
-    public byte byteValue() {
-        throw new IllegalStateException("A 16 bit integer doesn't fit in a 8 bit value");
+    public float floatValue() {
+        return value;
     }
 
     @Override
