@@ -493,7 +493,6 @@ public class EnvelopeReadChannel implements ReadableLogChannel {
     private void nextSegment() throws IOException {
         int read = loadSegmentIntoBuffer(currentSegment + 1);
         if (read == -1) {
-            currentSegment--;
             goToNextFileOrThrow();
             // Read the first data segment
             read = loadSegmentIntoBuffer(1);
