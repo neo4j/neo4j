@@ -20,10 +20,8 @@
 package org.neo4j.kernel.api.impl.schema.vector;
 
 import java.util.EnumSet;
-import java.util.List;
 import java.util.Locale;
-import org.neo4j.values.storable.FloatingPointArray;
-import org.neo4j.values.storable.Value;
+import org.neo4j.kernel.api.vector.VectorCandidate;
 
 public enum VectorSimilarityFunction {
     // TODO VECTOR: perhaps some unrolling and/or vector api (when available) could be used here
@@ -31,35 +29,16 @@ public enum VectorSimilarityFunction {
 
     EUCLIDEAN {
         @Override
-        public float[] maybeToValidVector(FloatingPointArray candidate) {
-            if (candidate == null || candidate.isEmpty()) {
+        public float[] maybeToValidVector(VectorCandidate candidate) {
+            final int dimensions;
+            if (candidate == null || (dimensions = candidate.dimensions()) == 0) {
                 return null;
             }
 
-            final var dimensions = candidate.length();
             final var vector = new float[dimensions];
             for (int i = 0; i < dimensions; i++) {
-                final var element = candidate.floatValue(i);
+                final var element = candidate.floatElement(i);
                 if (!Float.isFinite(element)) {
-                    return null;
-                }
-                vector[i] = element;
-            }
-            return vector;
-        }
-
-        @Override
-        public float[] maybeToValidVector(List<Double> candidate) {
-            if (candidate == null || candidate.isEmpty()) {
-                return null;
-            }
-
-            final var dimensions = candidate.size();
-            final var vector = new float[dimensions];
-            for (int i = 0; i < dimensions; i++) {
-                final var rawElement = candidate.get(i);
-                final float element;
-                if (rawElement == null || !Float.isFinite(element = rawElement.floatValue())) {
                     return null;
                 }
                 vector[i] = element;
@@ -70,45 +49,17 @@ public enum VectorSimilarityFunction {
 
     COSINE {
         @Override
-        public float[] maybeToValidVector(FloatingPointArray candidate) {
-            if (candidate == null || candidate.isEmpty()) {
+        public float[] maybeToValidVector(VectorCandidate candidate) {
+            final int dimensions;
+            if (candidate == null || (dimensions = candidate.dimensions()) == 0) {
                 return null;
             }
 
-            final var dimensions = candidate.length();
-
-            var square = 0.f;
-            final var vector = new float[dimensions];
-            for (int i = 0; i < candidate.length(); i++) {
-                final var element = candidate.floatValue(i);
-                if (!Float.isFinite(element)) {
-                    return null;
-                }
-                square += element * element;
-                vector[i] = element;
-            }
-
-            if (square <= 0.f || !Float.isFinite(square)) {
-                return null;
-            }
-
-            return vector;
-        }
-
-        @Override
-        public float[] maybeToValidVector(List<Double> candidate) {
-            if (candidate == null || candidate.isEmpty()) {
-                return null;
-            }
-
-            final var dimensions = candidate.size();
-
-            var square = 0.f;
+            float square = 0.f;
             final var vector = new float[dimensions];
             for (int i = 0; i < dimensions; i++) {
-                final var rawElement = candidate.get(i);
-                final float element;
-                if (rawElement == null || !Float.isFinite(element = rawElement.floatValue())) {
+                final var element = candidate.floatElement(i);
+                if (!Float.isFinite(element)) {
                     return null;
                 }
                 square += element * element;
@@ -136,16 +87,11 @@ public enum VectorSimilarityFunction {
         }
     }
 
-    public final float[] maybeToValidVector(Value candidate) {
-        if (!(candidate instanceof final FloatingPointArray array)) {
-            return null;
-        }
-        return maybeToValidVector(array);
+    public final float[] maybeToValidVector(Object candidate) {
+        return maybeToValidVector(VectorCandidate.maybeFrom(candidate));
     }
 
-    public abstract float[] maybeToValidVector(FloatingPointArray candidate);
-
-    public abstract float[] maybeToValidVector(List<Double> candidate);
+    public abstract float[] maybeToValidVector(VectorCandidate candidate);
 
     public float compare(float[] vector1, float[] vector2) {
         return toLucene().compare(vector1, vector2);
