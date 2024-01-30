@@ -105,6 +105,13 @@ object Parser {
     }.toMap
   }
 
+  def parseAggregationProjections(projections: String*): Map[String, Expression] = {
+    projections.map {
+      case regex(AggregationParser(expression), VariableParser(alias)) => (alias, expression)
+      case x => throw new IllegalArgumentException(s"'$x' cannot be parsed as an aggregation projection")
+    }.toMap
+  }
+
   def parseExpression(text: String): Expression = {
     val expression = JavaccRule.Expression.apply(text)
     Parser.cleanup(expression)

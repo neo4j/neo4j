@@ -201,11 +201,11 @@ private class DefaultExpressionStringifier(
         val as = args.map(inner(ast)).mkString(", ")
         // NOTE: because order is rendered this will produce Cypher that cannot be parsed
         val o = order match {
-          case ArgumentAsc       => "ASC "
-          case ArgumentDesc      => "DESC "
+          case ArgumentAsc       => " ASC"
+          case ArgumentDesc      => " DESC"
           case ArgumentUnordered => ""
         }
-        s"$ns$np${apply(functionName)}($o$ds$as)"
+        s"$ns$np${apply(functionName)}($ds$as)$o"
 
       case functionInvocation: UserDefinedFunctionInvocation =>
         apply(functionInvocation.asUnresolvedFunction)

@@ -568,11 +568,30 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName wi
   )
 
   testPlan(
+    "aggregation with order",
+    new TestPlanBuilder()
+      .produceResults("x", "y")
+      .aggregation(Seq("x AS x"), Seq("collect(y) aSc AS y"))
+      .argument()
+      .build()
+  )
+
+  testPlan(
     "orderedAggregation",
     new TestPlanBuilder()
       .produceResults("x", "y")
       .orderedAggregation(Seq("x AS x"), Seq("collect(y) AS y"), Seq("x"))
       .orderedAggregation(Seq("x AS x", "1 + n.foo AS y"), Seq("collect(y) AS y"), Seq("x", "1 + n.foo"))
+      .argument()
+      .build()
+  )
+
+  testPlan(
+    "orderedAggregation with order",
+    new TestPlanBuilder()
+      .produceResults("x", "y")
+      .orderedAggregation(Seq("x AS x"), Seq("collect(y) deSc AS y"), Seq("x"))
+      .orderedAggregation(Seq("x AS x", "1 + n.foo AS y"), Seq("collect(y) asC AS y"), Seq("x", "1 + n.foo"))
       .argument()
       .build()
   )

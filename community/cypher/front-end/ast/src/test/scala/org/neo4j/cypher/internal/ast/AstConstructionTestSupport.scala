@@ -375,7 +375,7 @@ trait AstConstructionTestSupport {
     function(name, ArgumentUnordered, args: _*)
 
   def function(name: String, order: ArgumentOrder, args: Expression*): FunctionInvocation =
-    FunctionInvocation(FunctionName(name)(pos), distinct = false, args.toIndexedSeq, order)(pos)
+    FunctionInvocation(FunctionName(name)(pos), distinct = false, args.toIndexedSeq, order)
 
   def function(ns: Seq[String], name: String, args: Expression*): FunctionInvocation =
     FunctionInvocation(Namespace(ns.toList)(pos), FunctionName(name)(pos), distinct = false, args.toIndexedSeq)(pos)
@@ -384,13 +384,13 @@ trait AstConstructionTestSupport {
     distinctFunction(name, ArgumentUnordered, args: _*)
 
   def distinctFunction(name: String, order: ArgumentOrder, args: Expression*): FunctionInvocation =
-    FunctionInvocation(FunctionName(name)(pos), distinct = true, args.toIndexedSeq, order)(pos)
+    FunctionInvocation(FunctionName(name)(pos), distinct = true, args.toIndexedSeq, order)
 
   def count(expression: Expression): FunctionInvocation =
     FunctionInvocation(expression, FunctionName(Count.name)(pos))
 
   def count(expression: Expression, isDistinct: Boolean, order: ArgumentOrder): FunctionInvocation =
-    FunctionInvocation(FunctionName(Count.name)(pos), isDistinct, IndexedSeq(expression), order)(pos)
+    FunctionInvocation(FunctionName(Count.name)(pos), isDistinct, IndexedSeq(expression), order)
 
   def countStar(): CountStar =
     CountStar()(pos)
@@ -429,7 +429,7 @@ trait AstConstructionTestSupport {
       distinct,
       IndexedSeq(input, listOfFloat(percentiles: _*), listOfString(propertyKeys: _*), listOfBoolean(isDiscretes: _*)),
       order
-    )(pos)
+    )
   }
 
   def varLengthPathExpression(

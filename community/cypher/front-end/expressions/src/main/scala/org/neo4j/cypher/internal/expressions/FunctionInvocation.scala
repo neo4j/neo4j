@@ -55,8 +55,8 @@ object FunctionInvocation {
     distinct: Boolean,
     args: IndexedSeq[Expression],
     order: ArgumentOrder
-  )(position: InputPosition): FunctionInvocation =
-    FunctionInvocation(Namespace()(position), functionName, distinct, args, order)(position)
+  ): FunctionInvocation =
+    FunctionInvocation(Namespace()(functionName.position), functionName, distinct, args, order)(functionName.position)
 }
 
 /**

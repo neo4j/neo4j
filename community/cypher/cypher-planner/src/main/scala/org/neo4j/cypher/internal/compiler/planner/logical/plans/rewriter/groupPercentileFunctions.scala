@@ -199,7 +199,7 @@ case class groupPercentileFunctions(
         distinct,
         IndexedSeq(input, percentilesLiteral, propertyKeys, isDiscretesLiteral),
         order
-      )(pos)
+      )
 
       (percentilesFunction, variables)
     }

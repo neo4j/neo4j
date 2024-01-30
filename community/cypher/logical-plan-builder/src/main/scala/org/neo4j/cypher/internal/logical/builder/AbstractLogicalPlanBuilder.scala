@@ -2185,7 +2185,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       Aggregation(
         lp,
         toVarMap(Parser.parseProjections(groupingExpressions: _*)),
-        parseProjections(aggregationExpression: _*)
+        parseAggregationProjections(aggregationExpression: _*)
       )(_)
     }))
   }
@@ -2209,7 +2209,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       OrderedAggregation(
         lp,
         toVarMap(Parser.parseProjections(groupingExpressions: _*)),
-        toVarMap(Parser.parseProjections(aggregationExpression: _*)),
+        parseAggregationProjections(aggregationExpression: _*),
         order
       )(_)
     ))
@@ -2840,6 +2840,14 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   private def parseProjections(projections: String*): Map[LogicalVariable, Expression] = {
     toVarMap(Parser.parseProjections(projections: _*)).view.mapValues {
+      case f: FunctionInvocation if f.needsToBeResolved =>
+        ResolvedFunctionInvocation(resolver.functionSignature)(f).coerceArguments
+      case e => e
+    }.toMap
+  }
+
+  private def parseAggregationProjections(projections: String*): Map[LogicalVariable, Expression] = {
+    toVarMap(Parser.parseAggregationProjections(projections: _*)).view.mapValues {
       case f: FunctionInvocation if f.needsToBeResolved =>
         ResolvedFunctionInvocation(resolver.functionSignature)(f).coerceArguments
       case e => e

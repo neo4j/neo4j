@@ -32,8 +32,6 @@ import org.neo4j.cypher.internal.expressions.functions.Collect
 import org.neo4j.cypher.internal.expressions.functions.Count
 import org.neo4j.cypher.internal.expressions.functions.Max
 import org.neo4j.cypher.internal.expressions.functions.Min
-import org.neo4j.cypher.internal.expressions.functions.PercentileCont
-import org.neo4j.cypher.internal.expressions.functions.PercentileDisc
 import org.neo4j.cypher.internal.expressions.functions.StdDev
 import org.neo4j.cypher.internal.expressions.functions.StdDevP
 import org.neo4j.cypher.internal.expressions.functions.Sum
@@ -470,12 +468,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("c")
-      .aggregation(
-        Map.empty[String, Expression],
-        Map(
-          "c" -> count(prop(varFor("x"), "num"), isDistinct = true, order = ArgumentAsc)
-        )
-      )
+      .aggregation(Seq.empty, Seq("count(DISTINCT num) ASC AS c"))
       .sort("num ASC")
       .projection("x.num AS num")
       .allNodeScan("x")
@@ -503,13 +496,8 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("c")
-      .aggregation(
-        Map.empty[String, Expression],
-        Map(
-          "c" -> count(prop(varFor("x"), "num"), isDistinct = true, order = ArgumentDesc)
-        )
-      )
-      .sort("num ASC")
+      .aggregation(Seq.empty, Seq("count(DISTINCT num) DESC AS c"))
+      .sort("num DESC")
       .projection("x.num AS num")
       .allNodeScan("x")
       .build()
@@ -1614,15 +1602,9 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     }
 
     // when
-    val percentileDisc = function(PercentileDisc.name, varFor("num"), literalFloat(0.5))
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("p")
-      .aggregation(
-        Map.empty[String, Expression],
-        Map(
-          "p" -> percentileDisc.copy(order = ArgumentAsc)(pos)
-        )
-      )
+      .aggregation(Seq.empty, Seq("percentileDisc(num,0.5) ASC AS p"))
       .sort("num ASC")
       .projection("x.num AS num")
       .allNodeScan("x")
@@ -1648,15 +1630,9 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     }
 
     // when
-    val percentileDisc = function(PercentileDisc.name, varFor("num"), literalFloat(0.5))
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("p")
-      .aggregation(
-        Map.empty[String, Expression],
-        Map(
-          "p" -> percentileDisc.copy(order = ArgumentDesc)(pos)
-        )
-      )
+      .aggregation(Seq.empty, Seq("percentileDisc(num,0.5) DESC AS p"))
       .sort("num DESC")
       .projection("x.num AS num")
       .allNodeScan("x")
@@ -1795,15 +1771,9 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     }
 
     // when
-    val percentileCont = function(PercentileCont.name, varFor("num"), literalFloat(0.5))
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("p")
-      .aggregation(
-        Map.empty[String, Expression],
-        Map(
-          "p" -> percentileCont.copy(order = ArgumentAsc)(pos)
-        )
-      )
+      .aggregation(Seq.empty, Seq("percentileCont(num,0.5) ASC AS p"))
       .sort("num ASC")
       .projection("x.num AS num")
       .allNodeScan("x")
@@ -1829,15 +1799,9 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     }
 
     // when
-    val percentileCont = function(PercentileCont.name, varFor("num"), literalFloat(0.5))
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("p")
-      .aggregation(
-        Map.empty[String, Expression],
-        Map(
-          "p" -> percentileCont.copy(order = ArgumentDesc)(pos)
-        )
-      )
+      .aggregation(Seq.empty, Seq("percentileCont(num,0.5) DESC AS p"))
       .sort("num DESC")
       .projection("x.num AS num")
       .allNodeScan("x")

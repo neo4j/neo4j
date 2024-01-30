@@ -4705,7 +4705,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     val collectDistinctFunction =
       FunctionInvocation(FunctionName(Collect.name)(pos), distinct = true, IndexedSeq(varFor("c")))(pos)
     val orderedCollectDistinctFunction =
-      FunctionInvocation(FunctionName(Collect.name)(pos), distinct = true, IndexedSeq(varFor("c")), ArgumentAsc)(pos)
+      FunctionInvocation(FunctionName(Collect.name)(pos), distinct = true, IndexedSeq(varFor("c")), ArgumentAsc)
 
     // Aggregation 1 grouping, 1 aggregating
     assertGood(
@@ -4751,7 +4751,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         id,
         "EagerAggregation",
         SingleChild(lhsPD),
-        Seq(details("a, c AS b, count(c) AS `count(c)`, collect(ASC DISTINCT c) AS collect")),
+        Seq(details("a, c AS b, count(c) AS `count(c)`, collect(DISTINCT c) ASC AS collect")),
         Set("a", "b", "`count(c)`", "collect")
       )
     )
@@ -4861,7 +4861,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         id,
         "OrderedAggregation",
         SingleChild(lhsPD),
-        Seq(details("d, a, c AS b, collect(ASC DISTINCT c) AS `collect(DISTINCT c)`")),
+        Seq(details("d, a, c AS b, collect(DISTINCT c) ASC AS `collect(DISTINCT c)`")),
         Set("a", "b", "d", "`collect(DISTINCT c)`")
       )
     )
