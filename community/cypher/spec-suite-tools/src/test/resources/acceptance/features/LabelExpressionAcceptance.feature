@@ -584,7 +584,7 @@ Feature: LabelExpressionAcceptance
       MATCH (n)
       RETURN labels(n) AS result
       """
-    Then the result should be, in any order:
+    Then the result should be (ignoring element order for lists):
       | result     |
       | ['A', 'B'] |
     And no side effects
@@ -601,7 +601,7 @@ Feature: LabelExpressionAcceptance
       MATCH (n)
       RETURN labels(n) AS result
       """
-    Then the result should be, in any order:
+    Then the result should be (ignoring element order for lists):
       | result     |
       | ['A', 'B'] |
     And no side effects
