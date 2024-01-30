@@ -65,8 +65,9 @@ public final class BadCollector implements Collector {
     static final int DUPLICATE_NODES = 0x2;
     static final int EXTRA_COLUMNS = 0x4;
     static final int VIOLATING_NODES = 0x8;
+    static final int BAD_NODES = DUPLICATE_NODES | VIOLATING_NODES;
 
-    static final int COLLECT_ALL = BAD_RELATIONSHIPS | DUPLICATE_NODES | EXTRA_COLUMNS;
+    static final int COLLECT_ALL = BAD_RELATIONSHIPS | BAD_NODES | EXTRA_COLUMNS;
     public static final long UNLIMITED_TOLERANCE = -1;
     static final int DEFAULT_BACK_PRESSURE_THRESHOLD = 10_000;
 
