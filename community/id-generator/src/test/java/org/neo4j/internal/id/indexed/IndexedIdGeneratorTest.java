@@ -51,6 +51,7 @@ import static org.neo4j.internal.id.IdSlotDistribution.evenSlotDistribution;
 import static org.neo4j.internal.id.IdSlotDistribution.powerTwoSlotSizesDownwards;
 import static org.neo4j.internal.id.indexed.IndexedIdGenerator.IDS_PER_ENTRY;
 import static org.neo4j.internal.id.indexed.IndexedIdGenerator.NO_MONITOR;
+import static org.neo4j.internal.id.indexed.IndexedIdGenerator.SMALL_CACHE_CAPACITY;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.FixedVersionContextSupplier.EMPTY_CONTEXT_SUPPLIER;
 import static org.neo4j.test.Race.throwing;
@@ -1053,14 +1054,12 @@ class IndexedIdGeneratorTest {
     void shouldAwaitConcurrentOngoingMaintenanceIfToldTo() throws Exception {
         // given
         Barrier.Control barrier = new Barrier.Control();
+        AtomicBoolean enabled = new AtomicBoolean(false);
         IndexedIdGenerator.Monitor monitor = new IndexedIdGenerator.Monitor.Adapter() {
-            private boolean first = true;
-
             @Override
             public void cached(long cachedId, int numberOfIds) {
-                if (first) {
+                if (enabled.compareAndSet(true, false)) {
                     barrier.reached();
-                    first = false;
                 }
                 super.cached(cachedId, numberOfIds);
             }
@@ -1068,12 +1067,17 @@ class IndexedIdGeneratorTest {
         open(Config.defaults(), monitor, false, SINGLE_IDS);
         idGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
         try (var marker = idGenerator.transactionalMarker(NULL_CONTEXT)) {
-            for (int i = 0; i < 5; i++) {
+            for (int i = 0; i < SMALL_CACHE_CAPACITY + 10; i++) {
                 marker.markDeletedAndFree(i);
             }
         }
+        for (int i = 0; i < 12; i++) {
+            idGenerator.nextId(NULL_CONTEXT);
+        }
+        // Now the cache shouldn't be full and there should be some IDs that maintenance could load
 
         // when
+        enabled.set(true);
         try (OtherThreadExecutor t2 = new OtherThreadExecutor("T2");
                 OtherThreadExecutor t3 = new OtherThreadExecutor("T3")) {
             Future<Object> t2Future = t2.executeDontWait(() -> {
@@ -1099,12 +1103,11 @@ class IndexedIdGeneratorTest {
         // given
         Barrier.Control barrier = new Barrier.Control();
         AtomicInteger numCached = new AtomicInteger();
-        AtomicBoolean enabled = new AtomicBoolean(true);
+        AtomicBoolean enabled = new AtomicBoolean(false);
         IndexedIdGenerator.Monitor monitor = new IndexedIdGenerator.Monitor.Adapter() {
             @Override
             public void cached(long cachedId, int numberOfIds) {
-                int cached = numCached.incrementAndGet();
-                if (cached == IndexedIdGenerator.SMALL_CACHE_CAPACITY && enabled.get()) {
+                if (enabled.get()) {
                     enabled.set(false);
                     barrier.reached();
                 }
@@ -1120,7 +1123,7 @@ class IndexedIdGeneratorTest {
 
         // delete and free more than cache-size IDs
         try (var marker = idGenerator.transactionalMarker(NULL_CONTEXT)) {
-            for (int i = 0; i < IndexedIdGenerator.SMALL_CACHE_CAPACITY + 10; i++) {
+            for (int i = 0; i < SMALL_CACHE_CAPACITY * 2 + 10; i++) {
                 marker.markDeletedAndFree(i);
             }
         }
@@ -1128,10 +1131,12 @@ class IndexedIdGeneratorTest {
         // when
         // let one thread call nextId() and block when it has filled the cache (the above monitor will see to that it
         // happens)
+        enabled.set(true);
         try (OtherThreadExecutor t2 = new OtherThreadExecutor("T2")) {
             Future<Void> nextIdFuture = t2.executeDontWait(() -> {
-                long id = idGenerator.nextId(NULL_CONTEXT);
-                assertEquals(IndexedIdGenerator.SMALL_CACHE_CAPACITY, id);
+                for (int i = 0; i < SMALL_CACHE_CAPACITY + 10; i++) {
+                    idGenerator.nextId(NULL_CONTEXT);
+                }
                 return null;
             });
 

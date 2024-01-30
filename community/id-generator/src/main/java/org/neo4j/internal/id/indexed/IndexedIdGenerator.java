@@ -592,7 +592,18 @@ public class IndexedIdGenerator implements IdGenerator {
             return NOOP_MARKER;
         }
 
-        return lockAndInstantiateMarker(true, useDirectToCache && !scanner.allocationEnabled(), cursorContext);
+        var realMarker =
+                lockAndInstantiateMarker(true, useDirectToCache && !scanner.allocationEnabled(), cursorContext);
+        if (!useDirectToCache) {
+            return realMarker;
+        }
+        return new TransactionalMarker.Delegate(realMarker) {
+            @Override
+            public void markDeletedAndFree(long id, int numberOfIds) {
+                realMarker.markDeleted(id, numberOfIds);
+                feedDirectlyToCache(id, numberOfIds, realMarker);
+            }
+        };
     }
 
     @Override
@@ -614,24 +625,28 @@ public class IndexedIdGenerator implements IdGenerator {
         return new ContextualMarker.Delegate(realMarker) {
             @Override
             public void markFree(long id, int numberOfIds) {
-                // Take a short-cut if possible, which is to place the free ID into cache right away
-                // The ones that gets accepted... let's not mark those at all. This has two benefits:
-                // - Reduce mark calls for free
-                // - Avoid a race where an ID would be added to cache and before we would mark it as free/reserved
-                //   the ID would be allocated and committed and race with our updates here
-                // We just have to make sure that these IDs gets marked as free/reserved or similar if leaving
-                // the cache w/o getting marked as used, e.g. for:
-                // - rollback
-                // - only a subset of the ID gets allocated
-                // - clear cache
-                var accepted = cache.offer(id, numberOfIds, monitor);
-
-                // Mark those that weren't added to the cache as free (the "slow" route)
-                if (accepted < numberOfIds) {
-                    realMarker.markFree(id + accepted, numberOfIds - accepted);
-                }
+                feedDirectlyToCache(id, numberOfIds, realMarker);
             }
         };
+    }
+
+    private void feedDirectlyToCache(long id, int numberOfIds, IdRangeMarker realMarker) {
+        // Take a short-cut if possible, which is to place the free ID into cache right away
+        // The ones that gets accepted... let's not mark those at all. This has two benefits:
+        // - Reduce mark calls for free
+        // - Avoid a race where an ID would be added to cache and before we would mark it as free/reserved
+        //   the ID would be allocated and committed and race with our updates here
+        // We just have to make sure that these IDs gets marked as free/reserved or similar if leaving
+        // the cache w/o getting marked as used, e.g. for:
+        // - rollback
+        // - only a subset of the ID gets allocated
+        // - clear cache
+        var accepted = cache.offer(id, numberOfIds, monitor);
+
+        // Mark those that weren't added to the cache as free (the "slow" route)
+        if (accepted < numberOfIds) {
+            realMarker.markFree(id + accepted, numberOfIds - accepted);
+        }
     }
 
     IdRangeMarker lockAndInstantiateMarker(boolean bridgeIdGaps, boolean deleteAlsoFrees, CursorContext cursorContext) {
