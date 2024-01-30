@@ -2044,6 +2044,10 @@ class PrettifierIT extends CypherFunSuite {
             s"$action TRAVERSE ON GRAPH FoO FOR (Bar) WHERE Bar.fOO IN [$$foo] $preposition role",
           s"$action traverse on graph FoO for (Bar) where not Bar.fOO in [1] $preposition role" ->
             s"$action TRAVERSE ON GRAPH FoO FOR (Bar) WHERE NOT Bar.fOO IN [1] $preposition role",
+          s"$action traverse on graph FoO for (Bar) where not Bar.fOO in [1,2,3] $preposition role" ->
+            s"$action TRAVERSE ON GRAPH FoO FOR (Bar) WHERE NOT Bar.fOO IN [1, 2, 3] $preposition role",
+          s"$action traverse on graph FoO for (Bar) where not Bar.fOO in [1,'string',false] $preposition role" ->
+            s"""$action TRAVERSE ON GRAPH FoO FOR (Bar) WHERE NOT Bar.fOO IN [1, "string", false] $preposition role""",
           s"$action traverse on graph FoO FOR (Bar) WHERE not Bar.fOO in $$foo $preposition role" ->
             s"$action TRAVERSE ON GRAPH FoO FOR (Bar) WHERE NOT Bar.fOO IN $$foo $preposition role",
           s"$action traverse on graph FoO FOR (Bar) WHERE 1 > Bar.fOO $preposition role" ->
@@ -2134,6 +2138,8 @@ class PrettifierIT extends CypherFunSuite {
             s"$action READ {*} ON GRAPH FoO FOR (Bar) WHERE Bar.fOO IN [1] $preposition role",
           s"$action read {*} on graph FoO FOR (Bar) WHERE not Bar.fOO in [$$foo] $preposition role" ->
             s"$action READ {*} ON GRAPH FoO FOR (Bar) WHERE NOT Bar.fOO IN [$$foo] $preposition role",
+          s"$action read {*} on graph FoO FOR (Bar) WHERE not Bar.fOO in [$$foo, $$bar] $preposition role" ->
+            s"$action READ {*} ON GRAPH FoO FOR (Bar) WHERE NOT Bar.fOO IN [$$foo, $$bar] $preposition role",
           s"$action read {*} on graph FoO FOR (Bar) WHERE not Bar.fOO in $$foo $preposition role" ->
             s"$action READ {*} ON GRAPH FoO FOR (Bar) WHERE NOT Bar.fOO IN $$foo $preposition role",
           s"$action read {*} on graph FoO FOR (Bar) WHERE Bar.fOO > 1 $preposition role" ->
@@ -2206,6 +2212,8 @@ class PrettifierIT extends CypherFunSuite {
             s"$action MATCH {*} ON GRAPH foo FOR (n:A|B|C) WHERE NOT n.prop IS NOT NULL $preposition x, y, z",
           s"$action match {*} on graph FoO FOR (Bar) WHERE Bar.fOO in [TRUE] $preposition role" ->
             s"$action MATCH {*} ON GRAPH FoO FOR (Bar) WHERE Bar.fOO IN [true] $preposition role",
+          s"$action match {*} on graph FoO FOR (Bar) WHERE Bar.fOO in [TRUE, false] $preposition role" ->
+            s"$action MATCH {*} ON GRAPH FoO FOR (Bar) WHERE Bar.fOO IN [true, false] $preposition role",
           s"$action match {*} on graph FoO FOR (Bar) WHERE not Bar.fOO in [$$foo] $preposition role" ->
             s"$action MATCH {*} ON GRAPH FoO FOR (Bar) WHERE NOT Bar.fOO IN [$$foo] $preposition role",
           s"$action match {*} on graph FoO FOR (Bar) WHERE not Bar.fOO in $$foo $preposition role" ->

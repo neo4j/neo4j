@@ -2542,7 +2542,8 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
       _propertyRuleUnaryPredicate(Property(variable, propertyName)(pos)),
       _propertyRuleComparisonPredicate(Property(variable, propertyName)(pos), rhs),
       _propertyRuleUnaryPredicate(Property(v, propertyName)(pos)),
-      _propertyRuleComparisonPredicate(Property(v, propertyName)(pos), rhs)
+      _propertyRuleComparisonPredicate(Property(v, propertyName)(pos), rhs),
+      _propertyRulePropertyInList(Property(v, propertyName)(pos))
     )
   } yield pred
 
@@ -2589,6 +2590,13 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     IsNotNull(p)(pos),
     Not(IsNotNull(p)(pos))(pos)
   )
+
+  def _propertyRulePropertyInList(p: Expression): Gen[Expression] =
+    for {
+      list <- oneOrMore(_propertyRuleLiteral)
+      in = In(p, ListLiteral(list)(pos))(pos)
+      expression <- oneOf(in, Not(in)(pos))
+    } yield expression
 
   def _graphQualifierAndResource(graphAction: GraphAction)
     : Gen[(List[GraphPrivilegeQualifier], Option[ActionResource])] =

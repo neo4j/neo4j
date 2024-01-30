@@ -46,7 +46,8 @@ class PropertyPrivilegeAdministrationCommandParserTestBase extends Administratio
   ).flatMap(l =>
     Seq(
       l,
-      listOf(l, l) // Semantically invalid
+      listOf(l, l),
+      listOf(listOf(l)) // Semantically invalid
     ).flatMap(literal =>
       Seq(
         // equals

@@ -723,7 +723,7 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
 
       // e.g. FOR (n) WHERE n.prop1 IN [1, 2]
       test(
-        s"property rules using WHERE syntax with property IN List of more than one literal should fail semantic checking($qualifierDescription)"
+        s"property rules using WHERE syntax with property IN List of more than one literal should pass semantic checking($qualifierDescription)"
       ) {
         val expressionStringifier = ExpressionStringifier()
 
@@ -779,9 +779,40 @@ class AdministrationCommandTest extends CypherFunSuite with AstConstructionTestS
               s.msg == "Failed to administer property rule. " +
                 s"The expression: `${expressionStringifier(expression)}` is not supported. " +
                 "Only single, literal-based predicate expressions are allowed for property-based access control."
-            }) shouldBe true
+            }) shouldBe false
+
+            result.errors.exists(e => {
+              e.msg == "Failed to administer property rule. " +
+                s"The expression: `${expressionStringifier(expression)}` is not supported. " +
+                "All elements in a list must be literals of the same type for property-based access control."
+            }) shouldBe false
           }
         }
+      }
+
+      // e.g. FOR (n) WHERE n.prop1 IN [1, [2]]
+      test(
+        s"property rules using WHERE syntax with property IN List of literal value and non literal value should fail semantic checking($qualifierDescription)"
+      ) {
+        val expressionStringifier = ExpressionStringifier()
+        val expression =
+          In(
+            prop(varFor("n"), "prop1"),
+            listOf(literalInt(1), listOfString("stringValue"))
+          )(p) // n.prop IN [1, ['stringValue']]
+
+        val privilege = new GrantPrivilege(
+          GraphPrivilege(TraverseAction, HomeGraphScope()(p))(p),
+          false,
+          None,
+          qualifierFn(Some(Variable("n")(p)), expression),
+          Seq(Left("role1"))
+        )(p)
+
+        val result = privilege.semanticCheck.run(initialState, SemanticCheckContext.default)
+        result.errors.exists(_.msg == "Failed to administer property rule. " +
+          s"The expression: `${expressionStringifier(expression)}` is not supported. " +
+          "All elements in a list must be literals of the same type for property-based access control.") shouldBe true
       }
 
       // e.g. FOR (node) WHERE n.prop1 = 1

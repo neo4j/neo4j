@@ -622,6 +622,19 @@ sealed abstract class PrivilegeCommand(
       ExpressionStringifier.apply(_.asCanonicalStringVal).apply(expression)
     }
 
+    def checkTypesInList(listLiteral: ListLiteral): SemanticCheck =
+      if (
+        listLiteral.expressions.forall {
+          case _: Literal | _: ExplicitParameter => true
+          case _                                 => false
+        }
+      ) SemanticCheck.success
+      else error(
+        s"$FAILED_PROPERTY_RULE The expression: `$stringifyExpression` is not supported. " +
+          s"All elements in a list must be literals of the same type for property-based access control.",
+        expression.position
+      )
+
     (expression match {
       case Not(e: BooleanExpression) => e
       case e                         => e
@@ -681,9 +694,7 @@ sealed abstract class PrivilegeCommand(
         )
       case Equals(_: Property, _: Literal) | NotEquals(_: Property, _: Literal) |
         Equals(_: Property, _: ExplicitParameter) | NotEquals(_: Property, _: ExplicitParameter) |
-        In(_: Property, _ @ListLiteral(Seq(_: Literal))) | In(_: Property, _ @ListLiteral(Seq(_: ExplicitParameter))) |
-        In(_: Property, _: ExplicitParameter) | Not(In(_: Property, _ @ListLiteral(Seq(_: Literal)))) |
-        Not(In(_: Property, _ @ListLiteral(Seq(_: ExplicitParameter)))) |
+        In(_: Property, _: ExplicitParameter) |
         Not(In(_: Property, _: ExplicitParameter)) |
         IsNull(_: Property) | IsNotNull(_: Property) |
         MapExpression(Seq((_: PropertyKeyName, _: Literal))) |
@@ -693,6 +704,8 @@ sealed abstract class PrivilegeCommand(
         LessThan(_: Property, _: Literal) | LessThan(_: Property, _: ExplicitParameter) |
         LessThanOrEqual(_: Property, _: Literal) | LessThanOrEqual(_: Property, _: ExplicitParameter) =>
         SemanticCheck.success
+      case In(_: Property, listLiteral: ListLiteral)      => checkTypesInList(listLiteral)
+      case Not(In(_: Property, listLiteral: ListLiteral)) => checkTypesInList(listLiteral)
       case _ => error(
           s"$FAILED_PROPERTY_RULE The expression: `$stringifyExpression` is not supported. " +
             s"Only single, literal-based predicate expressions are allowed for property-based access control.",
