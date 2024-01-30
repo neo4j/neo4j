@@ -339,6 +339,9 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
   def restartTx(txType: KernelTransaction.Type = runtimeTestSupport.defaultTransactionType): Unit =
     runtimeTestSupport.restartTx(txType)
 
+  def rollbackAndRestartTx(txType: KernelTransaction.Type = runtimeTestSupport.defaultTransactionType): Unit =
+    runtimeTestSupport.rollbackAndRestartTx(txType)
+
   def consume(left: RecordingRuntimeResult): IndexedSeq[Array[AnyValue]] = left.awaitAll()
 
   def request(numberOfRows: Long, left: RecordingRuntimeResult): Unit = {
