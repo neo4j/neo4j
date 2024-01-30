@@ -94,7 +94,7 @@ public class IndexIdMapper implements IdMapper {
     private final Map<String, Populator> populators = new HashMap<>();
     private final ByteBufferFactory bufferFactory;
     private final StorageEngineIndexingBehaviour indexingBehaviour;
-    private final MutableLongSet duplicateNodeIds = LongSets.mutable.empty().asSynchronized();
+    private final MutableLongSet duplicateNodeIds = LongSets.mutable.empty();
     private final LongAdder numAdded = new LongAdder();
 
     // key is groupName, and for some reason accessors doesn't expose which descriptor they're for, so pass that in too
@@ -196,7 +196,9 @@ public class IndexIdMapper implements IdMapper {
 
     private IndexEntryConflictHandler conflictHandler(Collector collector, Map.Entry<String, Populator> entry) {
         return (firstEntityId, otherEntityId, values) -> {
-            duplicateNodeIds.add(otherEntityId);
+            synchronized (duplicateNodeIds) {
+                duplicateNodeIds.add(otherEntityId);
+            }
             collector.collectDuplicateNode(values[0].asObjectCopy(), otherEntityId, groups.get(entry.getKey()));
             return IndexEntryConflictHandler.IndexEntryConflictAction.DELETE;
         };
@@ -313,7 +315,9 @@ public class IndexIdMapper implements IdMapper {
     }
 
     public void additionalViolatingNodes(LongSet violatingNodes) {
-        duplicateNodeIds.addAll(violatingNodes);
+        synchronized (duplicateNodeIds) {
+            duplicateNodeIds.addAll(violatingNodes);
+        }
     }
 
     @Override
