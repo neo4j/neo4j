@@ -48,6 +48,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.storageengine.api.cursor.CursorType;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 public class Loaders {
@@ -161,7 +162,7 @@ public class Loaders {
 
     public static RecordLoader<NodeRecord, Void> nodeLoader(
             final RecordStore<NodeRecord> store, StoreCursors storeCursors) {
-        return new RecordLoader<>(store, storeCursors.readCursor(NODE_CURSOR), NodeRecord.SHALLOW_SIZE) {
+        return new RecordLoader<>(store, storeCursors, NODE_CURSOR, NodeRecord.SHALLOW_SIZE) {
             @Override
             public NodeRecord newUnused(long key, Void additionalData, MemoryTracker memoryTracker) {
                 memoryTracker.allocateHeap(NodeRecord.SHALLOW_SIZE);
@@ -178,7 +179,7 @@ public class Loaders {
 
     public static RecordLoader<PropertyRecord, PrimitiveRecord> propertyLoader(
             final PropertyStore store, StoreCursors storeCursors) {
-        return new RecordLoader<>(store, storeCursors.readCursor(PROPERTY_CURSOR), PropertyRecord.INITIAL_SIZE) {
+        return new RecordLoader<>(store, storeCursors, PROPERTY_CURSOR, PropertyRecord.INITIAL_SIZE) {
             @Override
             public PropertyRecord newUnused(long key, PrimitiveRecord additionalData, MemoryTracker memoryTracker) {
                 memoryTracker.allocateHeap(PropertyRecord.INITIAL_SIZE);
@@ -212,8 +213,7 @@ public class Loaders {
 
     public static RecordLoader<RelationshipRecord, Void> relationshipLoader(
             final RecordStore<RelationshipRecord> store, StoreCursors storeCursors) {
-        return new RecordLoader<>(
-                store, storeCursors.readCursor(RELATIONSHIP_CURSOR), RelationshipRecord.SHALLOW_SIZE) {
+        return new RecordLoader<>(store, storeCursors, RELATIONSHIP_CURSOR, RelationshipRecord.SHALLOW_SIZE) {
             @Override
             public RelationshipRecord newUnused(long key, Void additionalData, MemoryTracker memoryTracker) {
                 memoryTracker.allocateHeap(RelationshipRecord.SHALLOW_SIZE);
@@ -230,7 +230,7 @@ public class Loaders {
 
     public static RecordLoader<RelationshipGroupRecord, Integer> relationshipGroupLoader(
             final RecordStore<RelationshipGroupRecord> store, StoreCursors storeCursors) {
-        return new RecordLoader<>(store, storeCursors.readCursor(GROUP_CURSOR), RelationshipGroupRecord.SHALLOW_SIZE) {
+        return new RecordLoader<>(store, storeCursors, GROUP_CURSOR, RelationshipGroupRecord.SHALLOW_SIZE) {
             @Override
             public RelationshipGroupRecord newUnused(long key, Integer type, MemoryTracker memoryTracker) {
                 memoryTracker.allocateHeap(RelationshipGroupRecord.SHALLOW_SIZE);
@@ -249,7 +249,7 @@ public class Loaders {
 
     private static RecordLoader<SchemaRecord, SchemaRule> schemaRuleLoader(
             final SchemaStore store, StoreCursors storeCursors) {
-        return new RecordLoader<>(store, storeCursors.readCursor(SCHEMA_CURSOR), SchemaRecord.SHALLOW_SIZE) {
+        return new RecordLoader<>(store, storeCursors, SCHEMA_CURSOR, SchemaRecord.SHALLOW_SIZE) {
             @Override
             public SchemaRecord newUnused(long key, SchemaRule additionalData, MemoryTracker memoryTracker) {
                 memoryTracker.allocateHeap(SchemaRecord.SHALLOW_SIZE);
@@ -266,8 +266,7 @@ public class Loaders {
 
     public static RecordLoader<PropertyKeyTokenRecord, Void> propertyKeyTokenLoader(
             final RecordStore<PropertyKeyTokenRecord> store, StoreCursors storeCursors) {
-        return new RecordLoader<>(
-                store, storeCursors.readCursor(PROPERTY_KEY_TOKEN_CURSOR), PropertyKeyTokenRecord.SHALLOW_SIZE) {
+        return new RecordLoader<>(store, storeCursors, PROPERTY_KEY_TOKEN_CURSOR, PropertyKeyTokenRecord.SHALLOW_SIZE) {
             @Override
             public PropertyKeyTokenRecord newUnused(long key, Void additionalData, MemoryTracker memoryTracker) {
                 memoryTracker.allocateHeap(PropertyKeyTokenRecord.SHALLOW_SIZE);
@@ -284,7 +283,7 @@ public class Loaders {
 
     public static RecordLoader<LabelTokenRecord, Void> labelTokenLoader(
             final RecordStore<LabelTokenRecord> store, StoreCursors storeCursors) {
-        return new RecordLoader<>(store, storeCursors.readCursor(LABEL_TOKEN_CURSOR), LabelTokenRecord.SHALLOW_SIZE) {
+        return new RecordLoader<>(store, storeCursors, LABEL_TOKEN_CURSOR, LabelTokenRecord.SHALLOW_SIZE) {
             @Override
             public LabelTokenRecord newUnused(long key, Void additionalData, MemoryTracker memoryTracker) {
                 memoryTracker.allocateHeap(LabelTokenRecord.SHALLOW_SIZE);
@@ -302,7 +301,7 @@ public class Loaders {
     public static RecordLoader<RelationshipTypeTokenRecord, Void> relationshipTypeTokenLoader(
             final RecordStore<RelationshipTypeTokenRecord> store, StoreCursors storeCursors) {
         return new RecordLoader<>(
-                store, storeCursors.readCursor(REL_TYPE_TOKEN_CURSOR), RelationshipTypeTokenRecord.SHALLOW_SIZE) {
+                store, storeCursors, REL_TYPE_TOKEN_CURSOR, RelationshipTypeTokenRecord.SHALLOW_SIZE) {
             @Override
             public RelationshipTypeTokenRecord newUnused(long key, Void additionalData, MemoryTracker memoryTracker) {
                 memoryTracker.allocateHeap(RelationshipTypeTokenRecord.SHALLOW_SIZE);
@@ -324,12 +323,15 @@ public class Loaders {
 
     private abstract static class RecordLoader<R extends AbstractBaseRecord, A> implements Loader<R, A> {
         private final RecordStore<R> store;
-        private final PageCursor pageCursor;
+        private PageCursor pageCursor;
+        private final StoreCursors storeCursors;
+        private final CursorType cursorType;
         private final long recordHeapSize;
 
-        RecordLoader(RecordStore<R> store, PageCursor pageCursor, long recordHeapSize) {
+        RecordLoader(RecordStore<R> store, StoreCursors storeCursors, CursorType cursorType, long recordHeapSize) {
             this.store = store;
-            this.pageCursor = pageCursor;
+            this.storeCursors = storeCursors;
+            this.cursorType = cursorType;
             this.recordHeapSize = recordHeapSize;
         }
 
@@ -342,8 +344,15 @@ public class Loaders {
         public R load(long key, A additionalData, RecordLoad load, MemoryTracker memoryTracker) {
             memoryTracker.allocateHeap(recordHeapSize);
             R record = store.newRecord();
-            store.getRecordByCursor(key, record, load, pageCursor);
+            store.getRecordByCursor(key, record, load, getPageCursor());
             return record;
+        }
+
+        private PageCursor getPageCursor() {
+            if (pageCursor == null) {
+                pageCursor = storeCursors.readCursor(cursorType);
+            }
+            return pageCursor;
         }
     }
 }
