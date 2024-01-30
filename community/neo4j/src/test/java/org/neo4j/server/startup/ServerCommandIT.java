@@ -31,7 +31,10 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.EnabledOnOs;
@@ -46,6 +49,20 @@ import org.neo4j.memory.EmptyMemoryTracker;
  * A base test for some commands in 'neo4j-admin server' and 'neo4j' group.
  */
 abstract class ServerCommandIT extends ServerProcessTestBase {
+
+    // Test is locale sensitive, error messages will change in non-English locale
+    private static final Locale defaultLocale = Locale.getDefault();
+
+    @BeforeAll
+    public static void beforeAll() {
+        Locale.setDefault(Locale.ROOT);
+    }
+
+    @AfterAll
+    public static void afterAll() {
+        Locale.setDefault(defaultLocale);
+    }
+
     @Test
     void startShouldFailWithNiceOutputOnInvalidNeo4jConfig() {
         addConf(GraphDatabaseSettings.pagecache_memory, "hgb!C2/#C");
