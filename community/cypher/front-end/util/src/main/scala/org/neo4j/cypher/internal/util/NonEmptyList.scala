@@ -213,6 +213,19 @@ sealed trait NonEmptyList[+T] extends IterableOnce[T] {
     case Last(elem)      => Last(f(elem))
   }
 
+  final def foldMap[A, B](acc: A)(f: (A, T) => (A, B)): (A, NonEmptyList[B]) = {
+    val builder = NonEmptyList.newBuilder[B]
+    var current = acc
+
+    for (element <- this) {
+      val (newAcc, newElement) = f(current, element)
+      current = newAcc
+      builder += newElement
+    }
+
+    (current, builder.result().get)
+  }
+
   final def collect[S](pf: PartialFunction[T, S]): Seq[S] =
     foldLeft(Vector.newBuilder[S]) { (builder, elem) =>
       if (pf.isDefinedAt(elem)) builder += pf(elem) else builder

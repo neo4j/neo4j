@@ -21,8 +21,14 @@ import org.neo4j.cypher.internal.util.Last
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.NonEmptyList.IterableConverter
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.test_helpers.CypherScalaCheckDrivenPropertyChecks
+import org.scalacheck.Arbitrary
+import org.scalacheck.Gen
 
-class NonEmptyListTest extends CypherFunSuite {
+class NonEmptyListTest extends CypherFunSuite with CypherScalaCheckDrivenPropertyChecks {
+
+  private implicit def arbitraryNonEmptyList[T](implicit a: Arbitrary[T]): Arbitrary[NonEmptyList[T]] =
+    Arbitrary(Gen.nonEmptyListOf(a.arbitrary).map(_.toNonEmptyList))
 
   test("Should construct NonEmptyLists") {
     NonEmptyList(1) should equal(Last(1))
@@ -276,4 +282,31 @@ class NonEmptyListTest extends CypherFunSuite {
         case (i, c) => s"$i $c"
       } shouldEqual NonEmptyList("1 a", "2 b", "3 c")
   }
+
+  test("prefix strings with their offset using foldMap") {
+    val strings = NonEmptyList("foo", "", "a", "bar", "", "b", "a")
+    val result = strings.foldMap(0) {
+      case (offset, string) => (offset + string.length, s"$offset:$string")
+    }
+    result shouldEqual(9, NonEmptyList("0:foo", "3:", "3:a", "4:bar", "7:", "7:b", "8:a"))
+  }
+
+  test("prefix strings with their indices using foldMap") {
+    forAll { (is: NonEmptyList[String]) =>
+      val result = is.foldMap(0) {
+        case (index, string) => (index + 1, s"$index.$string")
+      }
+      val expected = is.toIndexedSeq.zipWithIndex.map {
+        case (string, index) => s"$index.$string"
+      }.toNonEmptyList
+      result shouldEqual(is.size, expected)
+    }
+  }
+
+  test("foldMap using the identity function returns the initial accumulator and the original sequence") {
+    forAll { (is: NonEmptyList[Int], c: Char) =>
+      is.foldMap(c)((x, y) => (x, y)) shouldEqual ((c, is))
+    }
+  }
+
 }
