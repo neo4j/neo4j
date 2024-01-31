@@ -22,9 +22,9 @@
     "rolesBoostedExecution": [
       "admin"
     ],
-    "isDeprecated": false,
+    "isDeprecated": true,
     "option": {
-      "deprecated": false
+      "deprecated": true
     },
     "enterpriseOnly": true
   },
@@ -51,9 +51,9 @@
     "rolesBoostedExecution": [
       "admin"
     ],
-    "isDeprecated": false,
+    "isDeprecated": true,
     "option": {
-      "deprecated": false
+      "deprecated": true
     },
     "enterpriseOnly": true
   },
@@ -118,9 +118,9 @@
     "rolesBoostedExecution": [
       "admin"
     ],
-    "isDeprecated": false,
+    "isDeprecated": true,
     "option": {
-      "deprecated": false
+      "deprecated": true
     },
     "enterpriseOnly": true
   },
@@ -189,6 +189,131 @@
       "deprecated": false
     },
     "enterpriseOnly": false
+  },
+  {
+    "name": "db.cdc.current",
+    "description": "Returns the current change identifier that can be used to stream changes from.",
+    "mode": "READ",
+    "worksOnSystem": false,
+    "signature": "db.cdc.current() :: (id :: STRING)",
+    "argumentDescription": [],
+    "returnDescription" : [
+      {
+        "name": "id",
+        "description": "id :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      }
+    ],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "isDeprecated": false,
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": true
+  },
+  {
+    "name": "db.cdc.earliest",
+    "description": "Returns the earliest change identifier that can be used to stream changes from.",
+    "mode": "READ",
+    "worksOnSystem": false,
+    "signature": "db.cdc.earliest() :: (id :: STRING)",
+    "argumentDescription": [],
+    "returnDescription" : [
+      {
+        "name": "id",
+        "description": "id :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      }
+    ],
+    "admin": false,
+    "rolesExecution": [
+      "PUBLIC",
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "isDeprecated": false,
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": true
+  },
+  {
+    "name": "db.cdc.query",
+    "description": "Query changes happened from the provided change identifier.",
+    "mode": "READ",
+    "worksOnSystem": false,
+    "signature": "db.cdc.query(from =  :: STRING, selectors = [] :: LIST<MAP>) :: (id :: STRING, txId :: INTEGER, seq :: INTEGER, metadata :: MAP, event :: MAP)",
+    "argumentDescription": [
+      {
+        "default": "DefaultParameterValue{value=, type=STRING}",
+        "name": "from",
+        "description": "from =  :: STRING",
+        "type": "STRING",
+        "isDeprecated": false
+      },
+      {
+        "default": "DefaultParameterValue{value=[], type=LIST<MAP>}",
+        "name": "selectors",
+        "description": "selectors = [] :: LIST<MAP>",
+        "type": "LIST<MAP>",
+        "isDeprecated": false
+      }
+    ],
+    "returnDescription": [
+      {
+        "isDeprecated": false,
+        "name": "id",
+        "description": "id :: STRING",
+        "type": "STRING"
+      },
+      {
+        "isDeprecated": false,
+        "name": "txId",
+        "description": "txId :: INTEGER",
+        "type": "INTEGER"
+      },
+      {
+        "isDeprecated": false,
+        "name": "seq",
+        "description": "seq :: INTEGER",
+        "type": "INTEGER"
+      },
+      {
+        "isDeprecated": false,
+        "name": "metadata",
+        "description": "metadata :: MAP",
+        "type": "MAP"
+      },
+      {
+        "isDeprecated": false,
+        "name": "event",
+        "description": "event :: MAP",
+        "type": "MAP"
+      }
+    ],
+    "admin": true,
+    "rolesExecution": [
+      "admin"
+    ],
+    "rolesBoostedExecution": [
+      "admin"
+    ],
+    "isDeprecated": false,
+    "option": {
+      "deprecated": false
+    },
+    "enterpriseOnly": true
   },
   {
     "name": "db.checkpoint",
