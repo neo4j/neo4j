@@ -19,9 +19,9 @@
  */
 package org.neo4j.exceptions;
 
-import org.neo4j.kernel.api.exceptions.Status;
-
 import static java.lang.String.format;
+
+import org.neo4j.kernel.api.exceptions.Status;
 
 public class MergeConstraintConflictException extends Neo4jException {
     public MergeConstraintConflictException(String message) {

@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.options
 
 import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.config.CypherConfiguration
+import org.neo4j.exceptions.InvalidCypherOption.conflictingOptionForName
+import org.neo4j.exceptions.InvalidCypherOption.invalidOption
 import org.neo4j.graphdb.config.Setting
 
 object CypherOption {
@@ -133,20 +135,12 @@ abstract class CypherOptionCompanion[Opt <: CypherOption](
   private def fromValues(input: Set[String]): Set[Opt] = input.size match {
     case 0 => Set.empty
     case 1 => Set(fromValue(input.head))
-    case _ => conflictingValuesError()
+    case _ => conflictingOptionForName(name)
   }
 
   protected def fromValue(input: String): Opt = OptionReader.canonical(input) match {
     case CypherOption.DEFAULT => default
-    case value                => values.find(_.name == value).getOrElse(invalidValueError(input))
+    case value => values.find(_.name == value).getOrElse(invalidOption(input, name, values.map(_.name).toArray: _*))
 
   }
-
-  private def invalidValueError(input: String): Nothing =
-    throw new InvalidCypherOption(
-      s"$input is not a valid option for $name. Valid options are: ${values.map(_.name).mkString(", ")}"
-    )
-
-  private def conflictingValuesError(): Nothing =
-    throw new InvalidCypherOption(s"Can't specify multiple conflicting values for $name")
 }

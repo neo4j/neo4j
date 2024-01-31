@@ -25,6 +25,7 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings.CypherParallelRunti
 import org.neo4j.configuration.GraphDatabaseInternalSettings.cypher_parallel_runtime_support
 import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.exceptions.InvalidCypherOption
 
 class OptionReaderTest extends CypherFunSuite {
 

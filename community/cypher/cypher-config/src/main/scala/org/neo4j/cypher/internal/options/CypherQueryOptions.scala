@@ -26,6 +26,10 @@ import org.neo4j.cypher.internal.options.CypherQueryOptions.ILLEGAL_EXPRESSION_E
 import org.neo4j.cypher.internal.options.CypherQueryOptions.ILLEGAL_INTERPRETED_PIPES_FALLBACK_RUNTIME_COMBINATIONS
 import org.neo4j.cypher.internal.options.CypherQueryOptions.ILLEGAL_OPERATOR_ENGINE_RUNTIME_COMBINATIONS
 import org.neo4j.cypher.internal.options.CypherQueryOptions.ILLEGAL_PARALLEL_RUNTIME_COMBINATIONS
+import org.neo4j.exceptions.InvalidCypherOption.failWithInvalidCypherOptionCombination
+import org.neo4j.exceptions.InvalidCypherOption.parallelRuntimeIsDisabled
+import org.neo4j.exceptions.InvalidCypherOption.sourceGenerationDisabled
+import org.neo4j.exceptions.InvalidCypherOption.unsupportedOptions
 
 import java.util.Locale
 
@@ -50,24 +54,21 @@ case class CypherQueryOptions(
 ) {
 
   if (ILLEGAL_EXPRESSION_ENGINE_RUNTIME_COMBINATIONS((expressionEngine, runtime)))
-    throw new InvalidCypherOption(
-      s"Cannot combine EXPRESSION ENGINE '${expressionEngine.name}' with RUNTIME '${runtime.name}'"
-    )
+    failWithInvalidCypherOptionCombination("EXPRESSION ENGINE", expressionEngine.name, "RUNTIME", runtime.name)
 
   if (ILLEGAL_OPERATOR_ENGINE_RUNTIME_COMBINATIONS((operatorEngine, runtime)))
-    throw new InvalidCypherOption(
-      s"Cannot combine OPERATOR ENGINE '${operatorEngine.name}' with RUNTIME '${runtime.name}'"
-    )
+    failWithInvalidCypherOptionCombination("OPERATOR ENGINE", operatorEngine.name, "RUNTIME", runtime.name)
 
   if (ILLEGAL_INTERPRETED_PIPES_FALLBACK_RUNTIME_COMBINATIONS((interpretedPipesFallback, runtime)))
-    throw new InvalidCypherOption(
-      s"Cannot combine INTERPRETED PIPES FALLBACK '${interpretedPipesFallback.name}' with RUNTIME '${runtime.name}'"
+    failWithInvalidCypherOptionCombination(
+      "INTERPRETED PIPES FALLBACK",
+      interpretedPipesFallback.name,
+      "RUNTIME",
+      runtime.name
     )
 
   if (ILLEGAL_PARALLEL_RUNTIME_COMBINATIONS((parallelRuntimeSupportOption, runtime))) {
-    throw new InvalidCypherOption(
-      "Parallel runtime has been disabled, please enable it or upgrade to a bigger Aura instance."
-    )
+    parallelRuntimeIsDisabled()
   }
 
   def render: String = CypherQueryOptions.renderer.render(this)
@@ -88,12 +89,10 @@ object CypherQueryOptions {
     reader.read(OptionReader.Input(config, keyValues)) match {
 
       case OptionReader.Result(remainder, _) if remainder.keyValues.nonEmpty =>
-        val keys = remainder.keyValues.map(_._1).mkString(", ")
-        throw new InvalidCypherOption(s"Unsupported options: $keys")
+        unsupportedOptions(remainder.keyValues.map(_._1).toArray: _*)
       case OptionReader.Result(_, options) =>
         if (options.debugOptions.generateJavaSourceEnabled && !config.allowSourceGeneration) {
-          throw new InvalidCypherOption("In order to use source generation you need to enable " +
-            "`internal.cypher.pipelined.allow_source_generation`")
+          sourceGenerationDisabled()
         }
         options
     }
