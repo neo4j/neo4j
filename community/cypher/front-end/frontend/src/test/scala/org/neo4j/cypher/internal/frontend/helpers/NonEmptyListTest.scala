@@ -27,7 +27,7 @@ import org.scalacheck.Gen
 
 class NonEmptyListTest extends CypherFunSuite with CypherScalaCheckDrivenPropertyChecks {
 
-  private implicit def arbitraryNonEmptyList[T](implicit a: Arbitrary[T]): Arbitrary[NonEmptyList[T]] =
+  implicit private def arbitraryNonEmptyList[T](implicit a: Arbitrary[T]): Arbitrary[NonEmptyList[T]] =
     Arbitrary(Gen.nonEmptyListOf(a.arbitrary).map(_.toNonEmptyList))
 
   test("Should construct NonEmptyLists") {
@@ -288,7 +288,7 @@ class NonEmptyListTest extends CypherFunSuite with CypherScalaCheckDrivenPropert
     val result = strings.foldMap(0) {
       case (offset, string) => (offset + string.length, s"$offset:$string")
     }
-    result shouldEqual(9, NonEmptyList("0:foo", "3:", "3:a", "4:bar", "7:", "7:b", "8:a"))
+    result shouldEqual (9, NonEmptyList("0:foo", "3:", "3:a", "4:bar", "7:", "7:b", "8:a"))
   }
 
   test("prefix strings with their indices using foldMap") {
@@ -299,7 +299,7 @@ class NonEmptyListTest extends CypherFunSuite with CypherScalaCheckDrivenPropert
       val expected = is.toIndexedSeq.zipWithIndex.map {
         case (string, index) => s"$index.$string"
       }.toNonEmptyList
-      result shouldEqual(is.size, expected)
+      result shouldEqual (is.size, expected)
     }
   }
 

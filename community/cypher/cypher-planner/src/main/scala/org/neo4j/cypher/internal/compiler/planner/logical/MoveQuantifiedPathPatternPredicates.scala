@@ -74,7 +74,6 @@ case object MoveQuantifiedPathPatternPredicates extends PlannerQueryRewriter wit
             }
           }
 
-
         val newSelections = Selections(liftedPredicates.flatMap(_.asPredicates))
 
         spp.copy(
