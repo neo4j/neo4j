@@ -171,7 +171,7 @@
     <awaitility.version>4.2.0</awaitility.version>
     <log4j.version>2.20.0</log4j.version>
     <slf4j.version>2.0.9</slf4j.version>
-    <neo4j-java-driver.version>5.16.0</neo4j-java-driver.version>
+    <neo4j-java-driver.version>5.17.0</neo4j-java-driver.version>
     <eclipse-collections.version>11.1.0</eclipse-collections.version>
     <picocli.version>4.7.5</picocli.version>
     <jakarta.activation-api.version>1.2.2</jakarta.activation-api.version>
