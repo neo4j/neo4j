@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal.compiler.helpers
 
 import org.neo4j.cypher.internal.compiler.helpers.SeqSupport.RichSeq
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.CypherScalaCheckDrivenPropertyChecks
-import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
 
-class SeqSupportTest extends AnyFunSuite with Matchers with CypherScalaCheckDrivenPropertyChecks {
+class SeqSupportTest extends CypherFunSuite with Matchers with CypherScalaCheckDrivenPropertyChecks {
 
   test("prefix strings with their offset using foldMap") {
     val strings = Seq("foo", "", "a", "bar", "", "b", "a")
