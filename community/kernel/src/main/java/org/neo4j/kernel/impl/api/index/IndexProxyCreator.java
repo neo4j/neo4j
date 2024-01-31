@@ -59,8 +59,7 @@ class IndexProxyCreator
         this.logProvider = logProvider;
     }
 
-    IndexProxy createPopulatingIndexProxy( IndexDescriptor index, boolean flipToTentative, IndexMonitor monitor,
-            IndexPopulationJob populationJob )
+    IndexProxy createPopulatingIndexProxy( IndexDescriptor index, IndexMonitor monitor, IndexPopulationJob populationJob )
     {
         final FlippableIndexProxy flipper = new FlippableIndexProxy();
 
@@ -68,8 +67,8 @@ class IndexProxyCreator
 
         IndexProxyStrategy indexProxyStrategy = createIndexProxyStrategy( index );
         FailedIndexProxyFactory failureDelegateFactory = new FailedPopulatingIndexProxyFactory( indexProxyStrategy,
-                populator,
-                logProvider );
+                                                                                                populator,
+                                                                                                logProvider );
 
         MultipleIndexPopulator.IndexPopulation indexPopulation = populationJob
                 .addPopulator( populator, indexProxyStrategy, flipper, failureDelegateFactory );
@@ -83,7 +82,7 @@ class IndexProxyCreator
             monitor.populationCompleteOn( index );
             IndexAccessor accessor = onlineAccessorFromProvider( index, samplingConfig );
             OnlineIndexProxy onlineProxy = new OnlineIndexProxy( indexProxyStrategy, accessor, true );
-            if ( flipToTentative )
+            if ( requiresTentativeState( index ) )
             {
                 return new TentativeConstraintIndexProxy( flipper, onlineProxy, tokenNameLookup );
             }
@@ -106,7 +105,16 @@ class IndexProxyCreator
         {
             IndexAccessor onlineAccessor = onlineAccessorFromProvider( descriptor, samplingConfig );
             IndexProxyStrategy indexProxyStrategy = createIndexProxyStrategy( descriptor );
-            IndexProxy proxy = new OnlineIndexProxy( indexProxyStrategy, onlineAccessor, false );
+            OnlineIndexProxy onlineProxy = new OnlineIndexProxy( indexProxyStrategy, onlineAccessor, false );
+
+            IndexProxy proxy = onlineProxy;
+            if ( requiresTentativeState( descriptor ) )
+            {
+                final var flipper = new FlippableIndexProxy();
+                flipper.flipTo( new TentativeConstraintIndexProxy( flipper, onlineProxy, tokenNameLookup ) );
+                proxy = flipper;
+            }
+
             // it will be started later, when recovery is completed
             return new ContractCheckingIndexProxy( proxy );
         }
@@ -163,5 +171,17 @@ class IndexProxyCreator
     {
         IndexProvider provider = providerMap.lookup( index.getIndexProvider() );
         return provider.getOnlineAccessor( index, samplingConfig, tokenNameLookup );
+    }
+
+    private static boolean requiresTentativeState( IndexDescriptor index )
+    {
+        // Indexes that back uniqueness constraints but whose constraint has not
+        // yet been created should pass through a tentative state (see TentativeConstraintIndexProxy).
+        //
+        // Note for future reference: descriptors in a running IndexingService will not be updated
+        // to reference their owning constraint when the constraint is created - it will just
+        // get written to the schema store - but this should only be relevant on startup.
+
+        return index.isUnique() && index.getOwningConstraintId().isEmpty();
     }
 }

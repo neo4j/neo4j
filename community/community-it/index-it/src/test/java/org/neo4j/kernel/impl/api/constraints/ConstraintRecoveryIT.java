@@ -32,8 +32,13 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.IndexMonitor;
+import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
+import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
+import org.neo4j.kernel.impl.api.index.IndexProxy;
+import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -122,9 +127,23 @@ class ConstraintRecoveryIT
         db = (GraphDatabaseAPI) secondManagementService.database( DEFAULT_DATABASE_NAME );
 
         // then
+        // await all indexes' store scans (orphans will not come online)
+        final IndexingService indexingService = db.getDependencyResolver().resolveDependency( IndexingService.class );
         try ( Transaction tx = db.beginTx() )
         {
-            tx.schema().awaitIndexesOnline( 10, TimeUnit.MINUTES );
+            tx.schema().getIndexes().forEach( index ->
+                                              {
+                                                  try
+                                                  {
+                                                      final IndexProxy proxy =
+                                                              indexingService.getIndexProxy( ((IndexDefinitionImpl) index).getIndexReference() );
+                                                      proxy.awaitStoreScanCompleted( 10, TimeUnit.MINUTES );
+                                                  }
+                                                  catch ( IndexNotFoundKernelException | IndexPopulationFailedKernelException | InterruptedException e )
+                                                  {
+                                                      throw new RuntimeException( e );
+                                                  }
+                                              } );
         }
 
         try ( Transaction transaction = db.beginTx() )

@@ -101,6 +101,7 @@ import org.neo4j.values.storable.Values;
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
 import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.HOURS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -1241,7 +1242,7 @@ class IndexingServiceTest
         when( indexProxy.getState() ).thenReturn( POPULATING, POPULATING, POPULATING, POPULATING, ONLINE );
         when( indexProxyCreator.createRecoveringIndexProxy( any() ) ).thenReturn( indexProxy );
         when( indexProxyCreator.createFailedIndexProxy( any(), any() ) ).thenReturn( indexProxy );
-        when( indexProxyCreator.createPopulatingIndexProxy( any(), anyBoolean(), any(), any() ) ).thenReturn( indexProxy );
+        when( indexProxyCreator.createPopulatingIndexProxy( any(), any(), any() ) ).thenReturn( indexProxy );
         JobScheduler scheduler = mock( JobScheduler.class );
         IndexSamplingController samplingController = mock( IndexSamplingController.class );
         IndexMonitor monitor = mock( IndexMonitor.class );
@@ -1274,6 +1275,8 @@ class IndexingServiceTest
 
         // when
         IndexProxy proxy = indexingService.getIndexProxy( indexDescriptor );
+        proxy.awaitStoreScanCompleted( 1, HOURS );
+        proxy.activate();
         try ( IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE, NULL ) )
         {
             updater.process( IndexEntryUpdate.add( 123, indexDescriptor, stringValue( "some value" ) ) );

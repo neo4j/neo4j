@@ -150,7 +150,7 @@ public class FlippableIndexProxy extends AbstractDelegatingIndexProxy
     @Override
     public void refresh() throws IOException
     {
-        lock.readLock();
+        lock.readLock().lock();
         try
         {
             delegate.refresh();

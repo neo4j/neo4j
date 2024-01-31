@@ -375,8 +375,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     {
         rebuildingDescriptors.forEachKeyValue( ( indexId, descriptor ) ->
         {
-            boolean flipToTentative = false; // Never pass through a tentative online state during recovery.
-            IndexProxy proxy = indexProxyCreator.createPopulatingIndexProxy( descriptor, flipToTentative, monitor, populationJob );
+            IndexProxy proxy = indexProxyCreator.createPopulatingIndexProxy( descriptor, monitor, populationJob );
             proxy.start();
             indexMap.putIndexProxy( proxy );
         } );
@@ -914,23 +913,20 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
                     // This index already has a proxy. No need to build another.
                     continue;
                 }
-                boolean flipToTentative = descriptor.isUnique();
                 if ( state == State.RUNNING )
                 {
                     if ( descriptor.schema().entityType() == NODE )
                     {
                         nodePopulationJob =
                                 nodePopulationJob == null ? newIndexPopulationJob( NODE, verifyBeforeFlipping, subject ) : nodePopulationJob;
-                        index = indexProxyCreator.createPopulatingIndexProxy( descriptor, flipToTentative, monitor,
-                                nodePopulationJob );
+                        index = indexProxyCreator.createPopulatingIndexProxy( descriptor, monitor, nodePopulationJob );
                         index.start();
                     }
                     else
                     {
                         relationshipPopulationJob = relationshipPopulationJob == null ? newIndexPopulationJob( RELATIONSHIP, verifyBeforeFlipping, subject )
                                                                                       : relationshipPopulationJob;
-                        index = indexProxyCreator.createPopulatingIndexProxy( descriptor, flipToTentative, monitor,
-                                relationshipPopulationJob );
+                        index = indexProxyCreator.createPopulatingIndexProxy( descriptor, monitor, relationshipPopulationJob );
                         index.start();
                     }
                 }
