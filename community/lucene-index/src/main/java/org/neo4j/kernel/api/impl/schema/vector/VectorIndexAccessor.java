@@ -30,9 +30,9 @@ import org.neo4j.kernel.api.impl.index.AbstractLuceneIndexAccessor;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.impl.schema.vector.VectorSimilarityFunctions.LuceneVectorSimilarityFunction;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.vector.VectorCandidate;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.index.schema.IndexUpdateIgnoreStrategy;
-import org.neo4j.values.storable.FloatingPointArray;
 import org.neo4j.values.storable.Value;
 
 class VectorIndexAccessor extends AbstractLuceneIndexAccessor<VectorIndexReader, DatabaseIndex<VectorIndexReader>> {
@@ -74,7 +74,7 @@ class VectorIndexAccessor extends AbstractLuceneIndexAccessor<VectorIndexReader,
         protected void addIdempotent(long entityId, Value[] values) {
             try {
                 final var document = VectorDocumentStructure.createLuceneDocument(
-                        entityId, (FloatingPointArray) values[0], similarityFunction);
+                        entityId, VectorCandidate.maybeFrom(values[0]), similarityFunction);
                 writer.updateOrDeleteDocument(VectorDocumentStructure.newTermForChangeOrRemove(entityId), document);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
@@ -85,7 +85,7 @@ class VectorIndexAccessor extends AbstractLuceneIndexAccessor<VectorIndexReader,
         protected void add(long entityId, Value[] values) {
             try {
                 final var document = VectorDocumentStructure.createLuceneDocument(
-                        entityId, (FloatingPointArray) values[0], similarityFunction);
+                        entityId, VectorCandidate.maybeFrom(values[0]), similarityFunction);
                 writer.nullableAddDocument(document);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
@@ -97,7 +97,7 @@ class VectorIndexAccessor extends AbstractLuceneIndexAccessor<VectorIndexReader,
             try {
                 final var term = VectorDocumentStructure.newTermForChangeOrRemove(entityId);
                 final var document = VectorDocumentStructure.createLuceneDocument(
-                        entityId, (FloatingPointArray) values[0], similarityFunction);
+                        entityId, VectorCandidate.maybeFrom(values[0]), similarityFunction);
                 writer.updateOrDeleteDocument(term, document);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);

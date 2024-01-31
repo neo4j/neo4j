@@ -26,10 +26,10 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.vector.VectorSimilarityFunctions.LuceneVectorSimilarityFunction;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.vector.VectorCandidate;
 import org.neo4j.kernel.impl.index.schema.IndexUpdateIgnoreStrategy;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
-import org.neo4j.values.storable.FloatingPointArray;
 
 class VectorIndexPopulatingUpdater implements IndexUpdater {
     private final LuceneIndexWriter writer;
@@ -55,15 +55,15 @@ class VectorIndexPopulatingUpdater implements IndexUpdater {
         try {
             final var entityId = valueUpdate.getEntityId();
             final var values = valueUpdate.values();
-            final var value = (FloatingPointArray) values[0];
+            final var candidate = VectorCandidate.maybeFrom(values[0]);
             final var updateMode = valueUpdate.updateMode();
             switch (updateMode) {
                 case ADDED -> writer.updateDocument(
                         VectorDocumentStructure.newTermForChangeOrRemove(entityId),
-                        VectorDocumentStructure.createLuceneDocument(entityId, value, similarityFunction));
+                        VectorDocumentStructure.createLuceneDocument(entityId, candidate, similarityFunction));
                 case CHANGED -> writer.updateOrDeleteDocument(
                         VectorDocumentStructure.newTermForChangeOrRemove(entityId),
-                        VectorDocumentStructure.createLuceneDocument(entityId, value, similarityFunction));
+                        VectorDocumentStructure.createLuceneDocument(entityId, candidate, similarityFunction));
                 case REMOVED -> writer.deleteDocuments(VectorDocumentStructure.newTermForChangeOrRemove(entityId));
             }
         } catch (IOException e) {

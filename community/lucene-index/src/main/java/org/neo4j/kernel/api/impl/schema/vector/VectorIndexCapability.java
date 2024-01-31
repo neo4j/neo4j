@@ -21,24 +21,21 @@ package org.neo4j.kernel.api.impl.schema.vector;
 
 import org.neo4j.internal.schema.IndexBehaviour;
 import org.neo4j.internal.schema.IndexCapability;
-import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexQuery;
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
+import org.neo4j.kernel.api.impl.schema.vector.VectorIndexProvider.IgnoreStrategy;
 import org.neo4j.kernel.api.vector.VectorSimilarityFunction;
 import org.neo4j.util.Preconditions;
-import org.neo4j.values.storable.FloatingPointArray;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueCategory;
 
 public class VectorIndexCapability implements IndexCapability {
-    private final VectorIndexVersion version;
-    private final int dimensions;
+    private final IgnoreStrategy ignoreStrategy;
     private final VectorSimilarityFunction similarityFunction;
 
-    VectorIndexCapability(VectorIndexVersion version, IndexConfig config) {
-        this.version = version;
-        this.dimensions = VectorUtils.vectorDimensionsFrom(config);
-        this.similarityFunction = VectorUtils.vectorSimilarityFunctionFrom(version, config);
+    VectorIndexCapability(IgnoreStrategy ignoreStrategy, VectorSimilarityFunction similarityFunction) {
+        this.similarityFunction = similarityFunction;
+        this.ignoreStrategy = ignoreStrategy;
     }
 
     @Override
@@ -55,18 +52,7 @@ public class VectorIndexCapability implements IndexCapability {
     public boolean areValuesAccepted(Value... values) {
         Preconditions.requireNonEmpty(values);
         Preconditions.requireNoNullElements(values);
-        if (values.length != 1) {
-            return false;
-        }
-
-        final var value = values[0];
-        if (!version.acceptsValueInstanceType(value)) {
-            return false;
-        }
-
-        return value instanceof final FloatingPointArray candidate
-                && candidate.length() == dimensions
-                && similarityFunction.maybeToValidVector(candidate) != null;
+        return !ignoreStrategy.ignore(values) && similarityFunction.maybeToValidVector(values[0]) != null;
     }
 
     @Override

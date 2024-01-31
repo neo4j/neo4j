@@ -35,7 +35,6 @@ import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.memory.ByteBufferFactory;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.LuceneSettings;
@@ -46,6 +45,7 @@ import org.neo4j.kernel.api.impl.schema.vector.VectorSimilarityFunctions.LuceneV
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.vector.VectorCandidate;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.IndexUpdateIgnoreStrategy;
 import org.neo4j.memory.MemoryTracker;
@@ -53,7 +53,6 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobMonitoringParams;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.values.storable.FloatingPointArray;
 import org.neo4j.values.storable.Value;
 
 public class VectorIndexProvider extends AbstractLuceneIndexProvider {
@@ -71,7 +70,7 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
             DatabaseReadOnlyChecker readOnlyChecker,
             JobScheduler scheduler) {
         super(
-                KernelVersion.VERSION_NODE_VECTOR_INDEX_INTRODUCED,
+                version.minimumRequiredKernelVersion(),
                 IndexType.VECTOR,
                 version.descriptor(),
                 fileSystem,
@@ -161,10 +160,12 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
     }
 
     public static IndexCapability capability(VectorIndexVersion version, IndexConfig config) {
-        return new VectorIndexCapability(version, config);
+        final var dimensions = VectorUtils.vectorDimensionsFrom(config);
+        final var similarityFunction = VectorUtils.vectorSimilarityFunctionFrom(version, config);
+        return new VectorIndexCapability(new IgnoreStrategy(version, dimensions), similarityFunction);
     }
 
-    private record IgnoreStrategy(VectorIndexVersion version, int dimensions) implements IndexUpdateIgnoreStrategy {
+    record IgnoreStrategy(VectorIndexVersion version, int dimensions) implements IndexUpdateIgnoreStrategy {
         @Override
         public boolean ignore(Value... values) {
             if (values.length != 1) {
@@ -176,7 +177,8 @@ public class VectorIndexProvider extends AbstractLuceneIndexProvider {
                 return true;
             }
 
-            return !(value instanceof final FloatingPointArray candidate && candidate.length() == dimensions);
+            final var candidate = VectorCandidate.maybeFrom(value);
+            return candidate == null || candidate.dimensions() != dimensions;
         }
     }
 

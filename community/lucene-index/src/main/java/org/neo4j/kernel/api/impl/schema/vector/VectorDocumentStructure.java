@@ -27,7 +27,7 @@ import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.Term;
 import org.neo4j.kernel.api.impl.schema.vector.VectorSimilarityFunctions.LuceneVectorSimilarityFunction;
-import org.neo4j.values.storable.FloatingPointArray;
+import org.neo4j.kernel.api.vector.VectorCandidate;
 
 class VectorDocumentStructure {
     static final String ENTITY_ID_KEY = "id";
@@ -38,8 +38,8 @@ class VectorDocumentStructure {
     }
 
     static Document createLuceneDocument(
-            long id, FloatingPointArray value, LuceneVectorSimilarityFunction similarityFunction) {
-        final var vector = similarityFunction.maybeToValidVector(value);
+            long id, VectorCandidate candidate, LuceneVectorSimilarityFunction similarityFunction) {
+        final var vector = similarityFunction.maybeToValidVector(candidate);
         if (vector == null) {
             return null;
         }

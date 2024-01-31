@@ -25,9 +25,9 @@ import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.impl.schema.populator.LuceneIndexPopulator;
 import org.neo4j.kernel.api.impl.schema.vector.VectorSimilarityFunctions.LuceneVectorSimilarityFunction;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.vector.VectorCandidate;
 import org.neo4j.kernel.impl.index.schema.IndexUpdateIgnoreStrategy;
 import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
-import org.neo4j.values.storable.FloatingPointArray;
 
 class VectorIndexPopulator extends LuceneIndexPopulator<DatabaseIndex<VectorIndexReader>> {
     private final LuceneVectorSimilarityFunction similarityFunction;
@@ -48,7 +48,7 @@ class VectorIndexPopulator extends LuceneIndexPopulator<DatabaseIndex<VectorInde
     @Override
     protected Document updateAsDocument(ValueIndexEntryUpdate<?> update) {
         final var entityId = update.getEntityId();
-        final var value = (FloatingPointArray) update.values()[0];
-        return VectorDocumentStructure.createLuceneDocument(entityId, value, similarityFunction);
+        final var candidate = VectorCandidate.maybeFrom(update.values()[0]);
+        return VectorDocumentStructure.createLuceneDocument(entityId, candidate, similarityFunction);
     }
 }
