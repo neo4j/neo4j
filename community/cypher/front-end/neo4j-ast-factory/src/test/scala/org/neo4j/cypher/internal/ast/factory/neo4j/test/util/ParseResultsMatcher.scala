@@ -74,11 +74,11 @@ trait FluentMatchers[Self <: FluentMatchers[Self, T], T <: ASTNode] extends AstM
   def toAsts(expected: PartialFunction[ParserInTest, T]): Self = and(expected.andThen(haveAst(_)))
   def containing[C <: ASTNode : ClassTag](expected: C*): Self = and(haveAstContaining(expected: _*))
   def errorShould(matcher: Matcher[Throwable]): Self = and(matcher.compose(forceError))
-  def messageShould(matcher: Matcher[String]): Self = errorShould(matcher.compose(_.getMessage))
+  def messageShould(matcher: Matcher[String]): Self = errorShould(matcher.compose(t => norm(t.getMessage)))
   def withError(assertion: Throwable => Unit): Self = errorShould(beLike(assertion))
-  def withMessage(expected: String): Self = messageShould(be(expected))
-  def withMessageStart(expected: String): Self = messageShould(startWith(expected))
-  def withMessageContaining(expected: String): Self = messageShould(include(expected))
+  def withMessage(expected: String): Self = messageShould(be(norm(expected)))
+  def withMessageStart(expected: String): Self = messageShould(startWith(norm(expected)))
+  def withMessageContaining(expected: String): Self = messageShould(include(norm(expected)))
   def throws[E <: Throwable](implicit ct: ClassTag[E]): Self = and(AstMatchers.beFailure[E])
   def throws(expected: Class[_ <: Throwable]): Self = and(AstMatchers.beFailure(expected))
   def similarTo(expected: Throwable): Self = throws(expected.getClass).withMessage(expected.getMessage)
@@ -195,6 +195,7 @@ trait AstMatchers {
   protected def errorMessage(result: ParseResult): String = forceError(result).getMessage
   protected def toTryUnit(result: ParseResult): Try[Unit] = result.toTry.map(_ => ())
   protected def subAsts[S <: ASTNode : ClassTag](ast: ASTNode): Seq[S] = ast.folder.findAllByClass[S]
+  protected def norm(in: String): String = if (in == null) "" else in.replaceAll("\\r?\\n", "\n")
 }
 
 object AstMatchers extends AstMatchers
