@@ -22,6 +22,8 @@ package org.neo4j.values.storable;
 import static java.lang.Integer.parseInt;
 import static java.time.ZoneOffset.UTC;
 import static java.util.Objects.requireNonNull;
+import static org.neo4j.exceptions.InvalidTemporalArgumentException.invalidOffset;
+import static org.neo4j.exceptions.InvalidTemporalArgumentException.namedTimeZoneWithoutDate;
 import static org.neo4j.memory.HeapEstimator.OFFSET_TIME_SIZE;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.values.storable.DateTimeValue.parseZoneName;
@@ -345,7 +347,7 @@ public final class TimeValue extends TemporalValue<OffsetTime, TimeValue> {
         if (matcher.matches()) {
             return parseOffset(matcher);
         }
-        throw new InvalidArgumentException("Not a valid offset: " + offset);
+        return invalidOffset(offset);
     }
 
     static ZoneOffset parseOffset(Matcher matcher) {
@@ -365,8 +367,7 @@ public final class TimeValue extends TemporalValue<OffsetTime, TimeValue> {
     private static TimeValue parse(Matcher matcher, Supplier<ZoneId> defaultZone) {
         String zoneName = matcher.group("zoneName");
         if (null != zoneName) {
-            throw new InvalidArgumentException(
-                    "Using a named time zone e.g. [UTC] is not valid for a time without a date. Instead, use a specific time zone string e.g. +00:00.");
+            return namedTimeZoneWithoutDate();
         }
         return new TimeValue(OffsetTime.of(parseTime(matcher), parseOffset(matcher, defaultZone)));
     }
