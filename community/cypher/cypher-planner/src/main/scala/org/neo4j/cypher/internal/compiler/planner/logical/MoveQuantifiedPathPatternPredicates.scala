@@ -63,30 +63,22 @@ case object MoveQuantifiedPathPatternPredicates extends PlannerQueryRewriter wit
           .addPredicates(liftedQppPredicates.toSeq: _*)
 
       case spp: SelectivePathPattern if spp.allQuantifiedPathPatterns.nonEmpty =>
-        val (newConnectionsBuilder, liftedPredicates) =
-          spp.pathPattern.connections.foldLeft((
-            NonEmptyList.newBuilder[ExhaustiveNodeConnection],
-            Set[ForAllRepetitions]()
-          )) {
-            case ((newNodeConnections, extractedPredicates), nodeConnection) => nodeConnection match {
-                case pr: PatternRelationship => (newNodeConnections.addOne(pr), extractedPredicates)
-                case qpp: QuantifiedPathPattern =>
-                  val foo = for {
-                    predicate <- qpp.selections.predicates
-                  } yield ForAllRepetitions(qpp, predicate.expr)
-                  (newNodeConnections.addOne(qpp.copy(selections = Selections.empty)), extractedPredicates ++ foo)
-              }
+        val (liftedPredicates, newConnections) =
+          spp.pathPattern.connections.foldMap(Set.empty[ForAllRepetitions]) { (extractedPredicates, nodeConnection) =>
+            nodeConnection match {
+              case pr: PatternRelationship => (extractedPredicates, pr)
+              case qpp: QuantifiedPathPattern =>
+                val qppPredicates = qpp.selections.predicates.map(predicate => ForAllRepetitions(qpp, predicate.expr))
+                val qppWithoutPredicates = qpp.copy(selections = Selections.empty)
+                (extractedPredicates ++ qppPredicates, qppWithoutPredicates)
+            }
           }
+
+
         val newSelections = Selections(liftedPredicates.flatMap(_.asPredicates))
 
         spp.copy(
-          pathPattern = spp.pathPattern.copy(connections =
-            newConnectionsBuilder.result().getOrElse(
-              throw new IllegalArgumentException(
-                s"Attempt to construct empty non-empty list in ${this.getClass.getSimpleName}"
-              )
-            )
-          ),
+          pathPattern = spp.pathPattern.copy(connections = newConnections),
           selections = spp.selections ++ newSelections
         )
     }
