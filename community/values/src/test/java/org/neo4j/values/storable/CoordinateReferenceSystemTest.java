@@ -40,7 +40,7 @@ class CoordinateReferenceSystemTest {
     void shouldFailToGetWithIncorrectCode() {
         InvalidArgumentException exception =
                 assertThrows(InvalidArgumentException.class, () -> CoordinateReferenceSystem.get(42));
-        assertEquals("Unknown coordinate reference system code: 42", exception.getMessage());
+        assertEquals("Unknown coordinate reference system: code=42", exception.getMessage());
     }
 
     @Test

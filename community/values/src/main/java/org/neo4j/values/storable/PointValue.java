@@ -21,6 +21,9 @@ package org.neo4j.values.storable;
 
 import static java.lang.String.format;
 import static java.util.Collections.singletonList;
+import static org.neo4j.exceptions.InvalidSpatialArgumentException.infiniteCoordinateValue;
+import static org.neo4j.exceptions.InvalidSpatialArgumentException.invalidDimension;
+import static org.neo4j.exceptions.InvalidSpatialArgumentException.invalidGeographicCoordinates;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.memory.HeapEstimator.sizeOf;
 import static org.neo4j.values.utils.ValueMath.HASH_CONSTANT;
@@ -99,22 +102,18 @@ public class PointValue extends HashMemoizingScalarValue implements Point, Compa
         this.coordinate = coordinate;
         for (double c : coordinate) {
             if (!Double.isFinite(c)) {
-                throw new InvalidArgumentException(
-                        "Cannot create a point with non-finite coordinate values: " + Arrays.toString(coordinate));
+                infiniteCoordinateValue(coordinate);
             }
         }
         if (coordinate.length != crs.getDimension()) {
-            throw new IllegalArgumentException(format(
-                    "Cannot create point, CRS %s expects %d dimensions, but got coordinates %s",
-                    crs, crs.getDimension(), Arrays.toString(coordinate)));
+            invalidDimension(crs.toString(), crs.getDimension(), coordinate);
         }
         if (crs.isGeographic() && (coordinate.length == 2 || coordinate.length == 3)) {
             // anything with less or more coordinates gets a pass as it is and needs to be stopped from other places
             // like bolt does
             //   (@see org.neo4j.bolt.v2.messaging.Neo4jPackV2Test#shouldFailToPackPointWithIllegalDimensions )
             if (coordinate[1] > 90 || coordinate[1] < -90) {
-                throw new InvalidArgumentException("Cannot create WGS84 point with invalid coordinate: "
-                        + Arrays.toString(coordinate) + ". Valid range for Y coordinate is [-90, 90].");
+                invalidGeographicCoordinates(coordinate);
             }
 
             double x = coordinate[0];
