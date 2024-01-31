@@ -99,8 +99,8 @@ import org.neo4j.cypher.internal.util.InternalNotificationStats
 import org.neo4j.cypher.internal.util.RecordingNotificationLogger
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.devNullLogger
-import org.neo4j.exceptions.DatabaseAdministrationException
 import org.neo4j.exceptions.Neo4jException
+import org.neo4j.exceptions.NotSystemDatabaseException
 import org.neo4j.exceptions.SyntaxException
 import org.neo4j.kernel.api.query.QueryObfuscator
 import org.neo4j.kernel.database.DatabaseReferenceRepository
@@ -546,10 +546,10 @@ case class CypherPlanner(
             case Some(ProcedureCall(_, ResolvedCall(signature, _, _, _, _, _))) if signature.systemProcedure =>
               (FineToReuse, false)
             case Some(_: ProcedureCall) =>
-              throw new DatabaseAdministrationException("Attempting invalid procedure call in administration runtime")
+              throw new NotSystemDatabaseException("Attempting invalid procedure call in administration runtime")
             case Some(plan: AdministrationCommandLogicalPlan) =>
               throw plan.invalid("Unsupported administration command: " + logicalPlanState.queryText)
-            case _ => throw new DatabaseAdministrationException(
+            case _ => throw new NotSystemDatabaseException(
                 "Attempting invalid administration command in administration runtime"
               )
           }

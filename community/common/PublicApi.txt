@@ -165,6 +165,7 @@ org.neo4j.kernel.api.exceptions.Status.Statement::ExecutionTimeout org.neo4j.ker
 org.neo4j.kernel.api.exceptions.Status.Statement::ExhaustiveShortestPath org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::ExternalResourceFailed org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::FeatureDeprecationWarning org.neo4j.kernel.api.exceptions.Status.Statement public static final
+org.neo4j.kernel.api.exceptions.Status.Statement::InvalidTargetDatabaseError org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::JoinHintUnfulfillableWarning org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::NoApplicableIndex org.neo4j.kernel.api.exceptions.Status.Statement public static final
 org.neo4j.kernel.api.exceptions.Status.Statement::NotSystemDatabaseError org.neo4j.kernel.api.exceptions.Status.Statement public static final

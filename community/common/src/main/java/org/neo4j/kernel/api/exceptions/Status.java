@@ -231,6 +231,7 @@ public interface Status {
         NotSystemDatabaseError(
                 ClientError,
                 "This is an administration command and it should be executed against the system database."),
+        InvalidTargetDatabaseError(ClientError, "The specified database is not a valid target for this command."),
         AccessMode(ClientError, "The request could not be completed due to access mode violation"),
         UnsupportedOperationError(
                 ClientError, "This query performed an operation that is not supported in this context."),

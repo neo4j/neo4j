@@ -45,6 +45,7 @@ import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.logical.plans.DatabaseTypeFilter.All
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.exceptions.DatabaseAdministrationException
+import org.neo4j.exceptions.NotSystemDatabaseException
 import org.neo4j.exceptions.SecurityAdministrationException
 
 abstract class AdministrationCommandLogicalPlan(
@@ -63,7 +64,7 @@ abstract class AdministrationCommandLogicalPlan(
 
 abstract class DatabaseAdministrationLogicalPlan(source: Option[AdministrationCommandLogicalPlan] = None)(implicit
 idGen: IdGen) extends AdministrationCommandLogicalPlan(source) {
-  override def invalid(message: String): DatabaseAdministrationException = new DatabaseAdministrationException(message)
+  override def invalid(message: String): DatabaseAdministrationException = new NotSystemDatabaseException(message)
 }
 
 abstract class SecurityAdministrationLogicalPlan(source: Option[AdministrationCommandLogicalPlan] = None)(implicit

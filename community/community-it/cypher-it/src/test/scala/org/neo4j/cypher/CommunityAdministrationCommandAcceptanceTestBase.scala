@@ -21,7 +21,7 @@ package org.neo4j.cypher
 
 import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
-import org.neo4j.exceptions.DatabaseAdministrationException
+import org.neo4j.exceptions.NotSystemDatabaseException
 
 abstract class CommunityAdministrationCommandAcceptanceTestBase extends ExecutionEngineFunSuite
     with GraphDatabaseTestSupport {
@@ -44,7 +44,7 @@ abstract class CommunityAdministrationCommandAcceptanceTestBase extends Executio
 
   def assertFailWhenNotOnSystem(command: String, errorMsgCommand: String): Unit = {
     selectDatabase(DEFAULT_DATABASE_NAME)
-    the[DatabaseAdministrationException] thrownBy {
+    the[NotSystemDatabaseException] thrownBy {
       // WHEN
       execute(command)
       // THEN

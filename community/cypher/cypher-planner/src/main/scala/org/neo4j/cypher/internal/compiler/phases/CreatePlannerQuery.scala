@@ -42,8 +42,8 @@ import org.neo4j.cypher.internal.rewriting.conditions.aggregationsAreIsolated
 import org.neo4j.cypher.internal.rewriting.conditions.containsNamedPathOnlyForShortestPath
 import org.neo4j.cypher.internal.rewriting.conditions.containsNoNodesOfType
 import org.neo4j.cypher.internal.util.StepSequencer
-import org.neo4j.exceptions.DatabaseAdministrationException
 import org.neo4j.exceptions.InternalException
+import org.neo4j.exceptions.NotSystemDatabaseException
 
 /**
  * From the normalized ast, create the corresponding PlannerQuery.
@@ -58,7 +58,7 @@ case object CreatePlannerQuery extends Phase[BaseContext, BaseState, LogicalPlan
         toPlannerQuery(query, from.semanticTable(), from.anonymousVariableNameGenerator, context.cancellationChecker)
       LogicalPlanState(from).copy(maybeQuery = Some(plannerQuery))
 
-    case command: AdministrationCommand => throw new DatabaseAdministrationException(
+    case command: AdministrationCommand => throw new NotSystemDatabaseException(
         s"This is an administration command and it should be executed against the system database: ${command.name}"
       )
 

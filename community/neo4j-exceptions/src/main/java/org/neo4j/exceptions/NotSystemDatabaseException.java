@@ -19,8 +19,15 @@
  */
 package org.neo4j.exceptions;
 
-public abstract class DatabaseAdministrationException extends CypherExecutionException {
-    public DatabaseAdministrationException(String message) {
+import org.neo4j.kernel.api.exceptions.Status;
+
+public class NotSystemDatabaseException extends InvalidTargetDatabaseException {
+    public NotSystemDatabaseException(String message) {
         super(message);
+    }
+
+    @Override
+    public Status status() {
+        return Status.Statement.NotSystemDatabaseError;
     }
 }
