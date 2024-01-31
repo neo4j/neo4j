@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.PipeWithSource
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.exceptions.MergeConstraintConflictException
+import org.neo4j.exceptions.MergeConstraintConflictException.relationshipConflict
 
 case class AssertSameRelationshipSlottedPipe(source: Pipe, inner: Pipe, relationship: String, relSlot: Slot)(
   val id: Id = Id.INVALID_ID
@@ -41,9 +41,7 @@ case class AssertSameRelationshipSlottedPipe(source: Pipe, inner: Pipe, relation
   ): ClosingIterator[CypherRow] = {
     val rhsResults = inner.createResults(state)
     if (input.isEmpty != rhsResults.isEmpty) {
-      throw new MergeConstraintConflictException(
-        s"Merge did not find a matching relationship $relationship and can not create a new relationship due to conflicts with existing unique relationships"
-      )
+      relationshipConflict(relationship)
     }
 
     input.map { leftRow =>
@@ -51,9 +49,7 @@ case class AssertSameRelationshipSlottedPipe(source: Pipe, inner: Pipe, relation
       rhsResults.foreach { rightRow =>
         val rhsRelationship = getRelFunction.applyAsLong(rightRow)
         if (lhsRelationship != rhsRelationship) {
-          throw new MergeConstraintConflictException(
-            s"Merge did not find a matching relationship $relationship and can not create a new relationship due to conflicts with existing unique relationships"
-          )
+          relationshipConflict(relationship)
         }
       }
 

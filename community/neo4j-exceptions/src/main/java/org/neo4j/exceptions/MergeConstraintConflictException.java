@@ -21,6 +21,8 @@ package org.neo4j.exceptions;
 
 import org.neo4j.kernel.api.exceptions.Status;
 
+import static java.lang.String.format;
+
 public class MergeConstraintConflictException extends Neo4jException {
     public MergeConstraintConflictException(String message) {
         super(message);
@@ -29,5 +31,17 @@ public class MergeConstraintConflictException extends Neo4jException {
     @Override
     public Status status() {
         return Status.Schema.ConstraintValidationFailed;
+    }
+
+    public static <T> T nodeConflict(String node) {
+        throw new MergeConstraintConflictException(format(
+                "Merge did not find a matching node %s and can not create a new node due to conflicts with existing unique nodes",
+                node));
+    }
+
+    public static <T> T relationshipConflict(String relationship) {
+        throw new MergeConstraintConflictException(format(
+                "Merge did not find a matching relationship %s and can not create a new relationship due to conflicts with existing unique relationships",
+                relationship));
     }
 }
