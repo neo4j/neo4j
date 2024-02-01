@@ -125,21 +125,26 @@ class EagerAnalyzerImpl private (context: LogicalPlanningContext) extends EagerA
    * Get a LeafPlansPredicatesResolver that looks at the leaves of the given plan.
    */
   private def getLeafPlansPredicatesResolver(plan: LogicalPlan): LeafPlansPredicatesResolver =
-    (entity: LogicalVariable) => {
-      val leaves: Seq[LogicalLeafPlan] = plan.leaves.collect {
-        case n: NodeLogicalLeafPlan if n.idName == entity         => n
-        case r: RelationshipLogicalLeafPlan if r.idName == entity => r
-      }
+    new LeafPlansPredicatesResolver {
 
-      leaves.map { p =>
-        val solvedPredicates =
-          context.staticComponents.planningAttributes.solveds(
-            p.id
-          ).asSinglePlannerQuery.queryGraph.selections.predicates
-        SolvedPredicatesOfOneLeafPlan(solvedPredicates.map(_.expr).toSeq)
-      }.toList match {
-        case head :: tail => LeafPlansPredicatesResolver.LeafPlansFound(NonEmptyList(head, tail: _*))
-        case Nil          => LeafPlansPredicatesResolver.NoLeafPlansFound
+      private lazy val allLeaves: Seq[LogicalPlan] = plan.leaves
+
+      override def apply(entity: LogicalVariable): LeafPlansPredicatesResolver.LeafPlansWithSolvedPredicates = {
+        val leaves: Seq[LogicalLeafPlan] = allLeaves.collect {
+          case n: NodeLogicalLeafPlan if n.idName == entity         => n
+          case r: RelationshipLogicalLeafPlan if r.idName == entity => r
+        }
+
+        leaves.map { p =>
+          val solvedPredicates =
+            context.staticComponents.planningAttributes.solveds(
+              p.id
+            ).asSinglePlannerQuery.queryGraph.selections.predicates
+          SolvedPredicatesOfOneLeafPlan(solvedPredicates.map(_.expr).toSeq)
+        }.toList match {
+          case head :: tail => LeafPlansPredicatesResolver.LeafPlansFound(NonEmptyList(head, tail: _*))
+          case Nil          => LeafPlansPredicatesResolver.NoLeafPlansFound
+        }
       }
     }
 
