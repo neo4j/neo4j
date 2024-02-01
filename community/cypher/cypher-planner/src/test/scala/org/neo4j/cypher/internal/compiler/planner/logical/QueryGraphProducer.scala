@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.compiler.SyntaxExceptionCreator
 import org.neo4j.cypher.internal.compiler.TestSignatureResolvingPlanContext
-import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.StatementConverters.toPlannerQuery
+import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.StatementConverters
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.RewriteProcedureCalls
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
@@ -120,7 +120,7 @@ trait QueryGraphProducer {
 
     val semanticTable = output.semanticTable()
     val plannerQuery =
-      toPlannerQuery(
+      StatementConverters.convertToPlannerQuery(
         output.statement().asInstanceOf[Query],
         semanticTable,
         anonymousVariableNameGenerator,

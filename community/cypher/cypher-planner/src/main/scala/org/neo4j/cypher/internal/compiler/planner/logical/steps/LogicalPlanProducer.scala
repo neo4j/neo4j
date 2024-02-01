@@ -99,7 +99,7 @@ import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.QueryProjection
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.RemoveLabelPattern
-import org.neo4j.cypher.internal.ir.RunQueryAtHorizon
+import org.neo4j.cypher.internal.ir.RunQueryAtProjection
 import org.neo4j.cypher.internal.ir.SelectivePathPattern
 import org.neo4j.cypher.internal.ir.SetLabelPattern
 import org.neo4j.cypher.internal.ir.SetMutatingPattern
@@ -3218,11 +3218,12 @@ case class LogicalPlanProducer(
     columns: Set[LogicalVariable],
     context: LogicalPlanningContext
   ): LogicalPlan = {
+    val horizon = RunQueryAtProjection(graphReference, queryString, parameters, columns)
     val solved =
       solveds
         .get(inner.id)
         .asSinglePlannerQuery
-        .updateTailOrSelf(_.withHorizon(RunQueryAtHorizon(graphReference, queryString, parameters, columns)))
+        .updateTailOrSelf(_.withHorizon(horizon))
     val runQueryAt = RunQueryAt(inner, queryString, graphReference, parameters, columns)
     annotate(runQueryAt, solved, ProvidedOrder.empty, context)
   }

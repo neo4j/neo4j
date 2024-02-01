@@ -24,11 +24,10 @@ import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.UnionAll
 import org.neo4j.cypher.internal.ast.UnionDistinct
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
-import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.StatementConverters.toPlannerQuery
+import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.StatementConverters
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
-import org.neo4j.cypher.internal.frontend.phases.FragmentCompositeQueries
 import org.neo4j.cypher.internal.frontend.phases.Namespacer
 import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.frontend.phases.StatementCondition
@@ -37,6 +36,7 @@ import org.neo4j.cypher.internal.frontend.phases.collapseMultipleInPredicates
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.CNFNormalizer.PredicatesInCNF
 import org.neo4j.cypher.internal.ir.PlannerQuery
+import org.neo4j.cypher.internal.ir.QueryProjection
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.conditions.aggregationsAreIsolated
 import org.neo4j.cypher.internal.rewriting.conditions.containsNamedPathOnlyForShortestPath
@@ -48,14 +48,31 @@ import org.neo4j.exceptions.NotSystemDatabaseException
 /**
  * From the normalized ast, create the corresponding PlannerQuery.
  */
-case object CreatePlannerQuery extends Phase[BaseContext, BaseState, LogicalPlanState] with StepSequencer.Step
-    with PlanPipelineTransformerFactory {
+case class CreatePlannerQuery(semanticFeatures: Set[SemanticFeature])
+    extends Phase[BaseContext, BaseState, LogicalPlanState] {
+
   override def phase = LOGICAL_PLANNING
 
   override def process(from: BaseState, context: BaseContext): LogicalPlanState = from.statement() match {
     case query: Query =>
       val plannerQuery: PlannerQuery =
-        toPlannerQuery(query, from.semanticTable(), from.anonymousVariableNameGenerator, context.cancellationChecker)
+        if (semanticFeatures.contains(SemanticFeature.UseAsMultipleGraphsSelector))
+          StatementConverters.convertCompositePlannerQuery(
+            query = query,
+            semanticTable = from.semanticTable(),
+            anonymousVariableNameGenerator = from.anonymousVariableNameGenerator,
+            cancellationChecker = context.cancellationChecker
+          )
+        else
+          StatementConverters.convertToPlannerQuery(
+            query = query,
+            semanticTable = from.semanticTable(),
+            anonymousVariableNameGenerator = from.anonymousVariableNameGenerator,
+            cancellationChecker = context.cancellationChecker,
+            importedVariables = Set.empty,
+            position = QueryProjection.Position.Final
+          )
+
       LogicalPlanState(from).copy(maybeQuery = Some(plannerQuery))
 
     case command: AdministrationCommand => throw new NotSystemDatabaseException(
@@ -64,6 +81,11 @@ case object CreatePlannerQuery extends Phase[BaseContext, BaseState, LogicalPlan
 
     case x => throw new InternalException(s"Expected a Query and not `$x`")
   }
+
+  override def postConditions: Set[StepSequencer.Condition] = CreatePlannerQuery.postConditions
+}
+
+object CreatePlannerQuery extends StepSequencer.Step with PlanPipelineTransformerFactory {
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     // We would get MatchErrors if the first 3 conditions would not be met.
@@ -74,8 +96,7 @@ case object CreatePlannerQuery extends Phase[BaseContext, BaseState, LogicalPlan
     Namespacer.completed,
     // and we want to take advantage of isolated aggregations in the planner
     StatementCondition(aggregationsAreIsolated),
-    collapseMultipleInPredicates.completed,
-    FragmentCompositeQueries.completed
+    collapseMultipleInPredicates.completed
   ) ++
     // The PlannerQuery should be created based on normalised predicates
     PredicatesInCNF ++
@@ -89,5 +110,6 @@ case object CreatePlannerQuery extends Phase[BaseContext, BaseState, LogicalPlan
   override def getTransformer(
     pushdownPropertyReads: Boolean,
     semanticFeatures: Seq[SemanticFeature]
-  ): Transformer[BaseContext, BaseState, LogicalPlanState] = this
+  ): Transformer[BaseContext, BaseState, LogicalPlanState] =
+    CreatePlannerQuery(semanticFeatures.toSet)
 }

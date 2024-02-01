@@ -113,7 +113,7 @@ trait PlannerQueryRewriterTest {
       types = result.state.typeTable,
       recordedScopes = result.state.recordedScopes.view.mapValues(_.scope).toMap
     )
-    StatementConverters.toPlannerQuery(
+    StatementConverters.convertToPlannerQuery(
       ast.asInstanceOf[Query],
       table,
       anonymousVariableNameGenerator,

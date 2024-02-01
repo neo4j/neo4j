@@ -119,7 +119,6 @@ class CompositeQueryPlanningIntegrationTest extends CypherFunSuite with LogicalP
     plan shouldEqual planner
       .planBuilder()
       .produceResults()
-      .emptyResult()
       .runQueryAt(
         query =
           """MATCH (`product`)

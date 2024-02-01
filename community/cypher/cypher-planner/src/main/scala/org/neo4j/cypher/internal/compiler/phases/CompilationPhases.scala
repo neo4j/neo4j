@@ -48,7 +48,6 @@ import org.neo4j.cypher.internal.frontend.phases.AstRewriting
 import org.neo4j.cypher.internal.frontend.phases.BaseContains
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CopyQuantifiedPathPatternPredicatesToJuxtaposedNodes
-import org.neo4j.cypher.internal.frontend.phases.FragmentCompositeQueries
 import org.neo4j.cypher.internal.frontend.phases.FrontEndCompilationPhases
 import org.neo4j.cypher.internal.frontend.phases.If
 import org.neo4j.cypher.internal.frontend.phases.MoveBoundaryNodePredicates
@@ -88,8 +87,7 @@ object CompilationPhases extends FrontEndCompilationPhases {
           VerifyGraphTarget,
           CopyQuantifiedPathPatternPredicatesToJuxtaposedNodes,
           MoveBoundaryNodePredicates,
-          ShortestPathVariableDeduplicator,
-          FragmentCompositeQueries
+          ShortestPathVariableDeduplicator
         ) ++ CNFNormalizer.steps,
         initialConditions =
           Set(BaseContains[Statement]())

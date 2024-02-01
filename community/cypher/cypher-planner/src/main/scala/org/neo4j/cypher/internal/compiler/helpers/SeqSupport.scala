@@ -93,5 +93,23 @@ object SeqSupport {
         }
       }
     }
+
+    /**
+     * The combination of `init` and `last`, sometimes known as `unsnoc`.
+     * @return None if the sequence is empty, the initial elements and the last element otherwise.
+     */
+    def initAndLastOption: Option[(Seq[T], T)] =
+      if (inner.isEmpty)
+        None
+      else {
+        val values = inner.iterator
+        val init = Seq.newBuilder[T]
+        var last = values.next()
+        while (values.hasNext) {
+          init.addOne(last)
+          last = values.next()
+        }
+        Some((init.result(), last))
+      }
   }
 }

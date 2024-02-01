@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.ast.CountExpression
 import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.StatementConverters.toPlannerQuery
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.QuerySolvableByGetDegree.SetExtractor
 import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.Expression
@@ -154,7 +153,7 @@ case class CreateIrExpressions(
      */
     case existsExpression @ ExistsExpression(q) =>
       val existsVariable = varFor(anonymousVariableNameGenerator.nextName)
-      val plannerQuery = toPlannerQuery(
+      val plannerQuery = StatementConverters.convertToPlannerQuery(
         q,
         semanticTable,
         anonymousVariableNameGenerator,
@@ -195,7 +194,7 @@ case class CreateIrExpressions(
     case countExpression @ CountExpression(q) =>
       val countVariable = varFor(anonymousVariableNameGenerator.nextName)
       val arguments = countExpression.dependencies
-      val plannerQuery = toPlannerQuery(
+      val plannerQuery = StatementConverters.convertToPlannerQuery(
         q,
         semanticTable,
         anonymousVariableNameGenerator,
@@ -268,7 +267,7 @@ case class CreateIrExpressions(
     case collectExpression @ CollectExpression(q) =>
       val collectVariable = varFor(anonymousVariableNameGenerator.nextName)
       val arguments = collectExpression.dependencies
-      val plannerQuery = toPlannerQuery(
+      val plannerQuery = StatementConverters.convertToPlannerQuery(
         q,
         semanticTable,
         anonymousVariableNameGenerator,

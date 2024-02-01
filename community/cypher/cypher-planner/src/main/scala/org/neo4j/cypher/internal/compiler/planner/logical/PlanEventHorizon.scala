@@ -33,7 +33,7 @@ import org.neo4j.cypher.internal.ir.DistinctQueryProjection
 import org.neo4j.cypher.internal.ir.LoadCSVProjection
 import org.neo4j.cypher.internal.ir.PassthroughAllHorizon
 import org.neo4j.cypher.internal.ir.RegularQueryProjection
-import org.neo4j.cypher.internal.ir.RunQueryAtHorizon
+import org.neo4j.cypher.internal.ir.RunQueryAtProjection
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.UnwindProjection
@@ -259,7 +259,7 @@ case object PlanEventHorizon extends EventHorizonPlanner {
         val commandPlan = context.staticComponents.logicalPlanProducer.planCommand(plan, clause, context)
         SortPlanner.ensureSortedPlanWithSolved(commandPlan, interestingOrderConfig, context, updateSolvedOrdering)
 
-      case RunQueryAtHorizon(graphReference, queryString, parameters, columns) =>
+      case RunQueryAtProjection(graphReference, queryString, parameters, columns) =>
         val runQueryAt =
           context
             .staticComponents

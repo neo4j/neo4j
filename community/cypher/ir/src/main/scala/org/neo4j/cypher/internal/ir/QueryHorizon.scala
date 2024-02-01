@@ -137,26 +137,6 @@ case class LoadCSVProjection(
   override def withoutHints(hintsToIgnore: Set[Hint]): QueryHorizon = this
 }
 
-/**
- * Query fragment, part of a composite query.
- *
- * @param graphReference the graph on which to execute the query fragment
- * @param queryString the query to execute, serialised as a standalone Cypher query string
- * @param parameters a mapping from the parameters in the inner query to the variables in the outer query
- * @param columns the variables returned by the query fragment
- */
-case class RunQueryAtHorizon(
-  graphReference: GraphReference,
-  queryString: String,
-  parameters: Map[Parameter, LogicalVariable],
-  columns: Set[LogicalVariable]
-) extends QueryHorizon {
-  override def exposedSymbols(coveredIds: Set[LogicalVariable]): Set[LogicalVariable] = coveredIds ++ columns
-  override def dependingExpressions: Iterable[Expression] = Nil
-  override def allHints: Set[Hint] = Set.empty
-  override def withoutHints(hintsToIgnore: Set[Hint]): QueryHorizon = this
-}
-
 case class CallSubqueryHorizon(
   callSubquery: PlannerQuery,
   correlated: Boolean,
@@ -341,6 +321,40 @@ final case class DistinctQueryProjection(
   override def withSelection(selections: Selections): QueryProjection = copy(selections = selections)
 
   override def markAsFinal: QueryProjection = copy(position = QueryProjection.Position.Final)
+}
+
+/**
+ * Query fragment, part of a composite query.
+ *
+ * @param graphReference the graph on which to execute the query fragment
+ * @param queryString the query to execute, serialised as a standalone Cypher query string
+ * @param parameters a mapping from the parameters in the inner query to the variables in the outer query
+ * @param columns the variables returned by the query fragment
+ */
+case class RunQueryAtProjection(
+  graphReference: GraphReference,
+  queryString: String,
+  parameters: Map[Parameter, LogicalVariable],
+  columns: Set[LogicalVariable]
+) extends QueryProjection {
+  override def exposedSymbols(coveredIds: Set[LogicalVariable]): Set[LogicalVariable] = coveredIds ++ columns
+  override def selections: Selections = Selections.empty
+  override def projections: Map[LogicalVariable, Expression] = columns.view.map(column => column -> column).toMap
+  override def queryPagination: QueryPagination = QueryPagination.empty
+  override def keySet: Set[LogicalVariable] = columns
+
+  override def position: QueryProjection.Position =
+    QueryProjection.Position.Intermediate // No eagerness analysis for composite queries as it stands
+
+  override def withSelection(selections: Selections): QueryProjection =
+    throw new UnsupportedOperationException("Cannot modify the selections of a RunQueryAt projection")
+
+  override def withAddedProjections(projections: Map[LogicalVariable, Expression]): QueryProjection =
+    throw new UnsupportedOperationException("Cannot add projections to a RunQueryAt projection")
+
+  override def withPagination(queryPagination: QueryPagination): QueryProjection =
+    throw new UnsupportedOperationException("Cannot modify the pagination of a RunQueryAt projection")
+  override def markAsFinal: QueryProjection = this // No eagerness analysis for composite queries as it stands
 }
 
 case class CommandProjection(clause: CommandClause) extends QueryHorizon {

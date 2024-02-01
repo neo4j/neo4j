@@ -454,7 +454,7 @@ trait LogicalPlanningTestSupport extends AstConstructionTestSupport with Logical
       cnfNormalizerTransformer andThen
       collapseMultipleInPredicates andThen
       MoveBoundaryNodePredicates andThen
-      CreatePlannerQuery andThen
+      CreatePlannerQuery(semanticFeatures.toSet) andThen
       NameDeduplication
 
   def buildPlannerQuery(

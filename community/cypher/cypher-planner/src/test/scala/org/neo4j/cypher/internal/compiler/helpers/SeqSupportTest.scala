@@ -64,4 +64,11 @@ class SeqSupportTest extends CypherFunSuite with Matchers with CypherScalaCheckD
 
     groups shouldEqual expected
   }
+
+  test("initAndLastOption is equivalent to the combination of init and last") {
+    forAll { is: List[Int] =>
+      val expected = is.lastOption.map(last => (is.init, last))
+      is.initAndLastOption shouldEqual expected
+    }
+  }
 }

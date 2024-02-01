@@ -34,6 +34,8 @@ import org.neo4j.cypher.internal.ast.UnionDistinct
 import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.ClauseConverters.addToLogicalPlanInput
+import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.composite.CompositeQueryConverter
+import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.composite.CompositeQueryFragmenter
 import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.NonPrefixedPatternPart
@@ -131,21 +133,54 @@ object StatementConverters {
     }
   }
 
-  def toPlannerQuery(
+  private def rewriteAndCheckQuery(
+    query: Query,
+    semanticTable: SemanticTable,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+  ): Query = {
+    val rewrittenQuery = query.endoRewrite(CreateIrExpressions(anonymousVariableNameGenerator, semanticTable))
+    val nodes = findBlacklistedNodes(query)
+    require(nodes.isEmpty, "Found a blacklisted AST node: " + nodes.head.toString)
+    rewrittenQuery
+  }
+
+  /**
+   * Converts an AST query into a planner query.
+   * It first rewrites sub-query expressions to IR expressions and traverses the whole AST to ensure the absence of blacklisted nodes.
+   * If the AST has already been rewritten and checked, like in the case of the nested member of a union or a sub-query, consider calling [[convertToNestedPlannerQuery]] instead.
+   */
+  def convertToPlannerQuery(
     query: Query,
     semanticTable: SemanticTable,
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
     cancellationChecker: CancellationChecker,
     importedVariables: Set[LogicalVariable] = Set.empty,
-    rewrite: Boolean = true,
     position: QueryProjection.Position = QueryProjection.Position.Final
   ): PlannerQuery = {
-    val rewrittenQuery =
-      if (rewrite) query.endoRewrite(CreateIrExpressions(anonymousVariableNameGenerator, semanticTable)) else query
-    val nodes = findBlacklistedNodes(rewrittenQuery)
-    require(nodes.isEmpty, "Found a blacklisted AST node: " + nodes.head.toString)
+    val rewrittenQuery = rewriteAndCheckQuery(query, semanticTable, anonymousVariableNameGenerator)
+    convertToNestedPlannerQuery(
+      rewrittenQuery,
+      semanticTable,
+      anonymousVariableNameGenerator,
+      cancellationChecker,
+      importedVariables,
+      position
+    )
+  }
 
-    rewrittenQuery match {
+  /**
+   * Converts an AST query into a planner query.
+   * This function assumes that sub-query expressions have already been rewritten, see [[convertToPlannerQuery]].
+   */
+  def convertToNestedPlannerQuery(
+    query: Query,
+    semanticTable: SemanticTable,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
+    cancellationChecker: CancellationChecker,
+    importedVariables: Set[LogicalVariable] = Set.empty,
+    position: QueryProjection.Position = QueryProjection.Position.Final
+  ): PlannerQuery = {
+    query match {
       case singleQuery: SingleQuery =>
         toSinglePlannerQuery(
           singleQuery,
@@ -158,13 +193,12 @@ object StatementConverters {
 
       case unionQuery: ast.ProjectingUnion =>
         val lhs: PlannerQuery =
-          toPlannerQuery(
+          convertToNestedPlannerQuery(
             unionQuery.lhs,
             semanticTable,
             anonymousVariableNameGenerator,
             cancellationChecker,
             importedVariables,
-            rewrite = false,
             QueryProjection.Position.Intermediate
           )
         val rhs: SinglePlannerQuery =
@@ -184,8 +218,24 @@ object StatementConverters {
 
         UnionQuery(lhs, rhs, distinct, unionQuery.unionMappings)
       case _ =>
-        throw new InternalException(s"Received an AST-clause that has no representation the QG: $rewrittenQuery")
+        throw new InternalException(s"Received an AST-clause that has no representation the QG: $query")
     }
+  }
+
+  /**
+   * Converts an AST query into a planner query, in the context of a composite database, packaging up queries starting with USE to be executed on the targeted graph.
+   * First rewrites sub-query expressions to IR expressions and traverses the whole AST to ensure the absence of blacklisted nodes.
+   */
+  def convertCompositePlannerQuery(
+    query: Query,
+    semanticTable: SemanticTable,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
+    cancellationChecker: CancellationChecker
+  ): PlannerQuery = {
+    val rewrittenQuery = rewriteAndCheckQuery(query, semanticTable, anonymousVariableNameGenerator)
+    val compositeQuery =
+      CompositeQueryFragmenter.fragment(cancellationChecker, anonymousVariableNameGenerator, rewrittenQuery)
+    CompositeQueryConverter.convert(cancellationChecker, anonymousVariableNameGenerator, semanticTable, compositeQuery)
   }
 
   /**

@@ -39,7 +39,6 @@ import org.neo4j.cypher.internal.ast.RemoveLabelItem
 import org.neo4j.cypher.internal.ast.RemovePropertyItem
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItems
-import org.neo4j.cypher.internal.ast.RunQueryAt
 import org.neo4j.cypher.internal.ast.SetClause
 import org.neo4j.cypher.internal.ast.SetExactPropertiesFromMapItem
 import org.neo4j.cypher.internal.ast.SetIncludingPropertiesFromMapItem
@@ -105,7 +104,6 @@ import org.neo4j.cypher.internal.ir.QueryProjection
 import org.neo4j.cypher.internal.ir.RegularQueryProjection
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.RemoveLabelPattern
-import org.neo4j.cypher.internal.ir.RunQueryAtHorizon
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SetLabelPattern
 import org.neo4j.cypher.internal.ir.SetMutatingPattern
@@ -142,7 +140,6 @@ import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
-import org.neo4j.cypher.rendering.QueryRenderer
 import org.neo4j.exceptions.InternalException
 import org.neo4j.exceptions.SyntaxException
 
@@ -187,8 +184,7 @@ object ClauseConverters {
     case c: CommandClause => addCommandClauseToLogicalPlanInput(acc, c)
     case c: Yield         => addYieldToLogicalPlanInput(acc, c)
     // Graph target is handled in upper layers and is a NOOP down here
-    case _: UseGraph   => acc
-    case c: RunQueryAt => addRunQueryAtToLogicalPlanInput(acc, c)
+    case _: UseGraph => acc
 
     case x: UnresolvedCall => throw new IllegalArgumentException(s"$x is not expected here")
     case x => throw new InternalException(s"Received an AST-clause that has no representation the QG: $x")
@@ -627,29 +623,15 @@ object ClauseConverters {
   ): PlannerQueryBuilder = {
     val subquery = clause.innerQuery
     val callSubquery =
-      StatementConverters.toPlannerQuery(
+      StatementConverters.convertToNestedPlannerQuery(
         subquery,
         acc.semanticTable,
         anonymousVariableNameGenerator,
         cancellationChecker,
-        rewrite = false,
         position = QueryProjection.Position.Intermediate
       )
     acc.withCallSubquery(callSubquery, subquery.isCorrelated, subquery.isReturning, clause.inTransactionsParameters)
   }
-
-  private def addRunQueryAtToLogicalPlanInput(
-    builder: PlannerQueryBuilder,
-    runQueryAt: RunQueryAt
-  ): PlannerQueryBuilder =
-    builder
-      .withHorizon(RunQueryAtHorizon(
-        runQueryAt.graphReference,
-        QueryRenderer.render(runQueryAt.innerQuery),
-        runQueryAt.parameters,
-        runQueryAt.innerQuery.returnColumns.toSet
-      ))
-      .withTail(SinglePlannerQuery.empty)
 
   private def addCommandClauseToLogicalPlanInput(
     acc: PlannerQueryBuilder,
