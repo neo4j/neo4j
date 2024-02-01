@@ -419,14 +419,25 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       "CREATE (a), (b {prop: EXISTS {(a)-->()}})",
       "CREATE (b {prop: EXISTS {(a)-->()}}), (a)",
       "CREATE (a), (a)-[:REL]->({prop:a.prop})",
-      "CREATE (a), (b {prop: labels(a)})"
+      "CREATE (a), (b {prop: labels(a)})",
+      "CREATE (a), (b {prop: true IN [x IN labels(a) | true]})"
     )
 
     val notDeprecated = Seq(
       "MATCH (n) CREATE (a {prop: n.prop})",
       "MATCH (a) CREATE (a)-[:REL]->({prop:a.prop})",
       "CREATE (a)-[:REL]->(a)",
-      "CREATE (a), (a)-[:REL]->(b)"
+      "CREATE (a), (a)-[:REL]->(b)",
+
+      // These cases are shadowing and not references so should not be deprecated
+      "CREATE (n {prop: true IN [n IN [false] | true]})",
+      "CREATE (n {prop: true IN [n IN [false] | n]})",
+      "CREATE (a)-[r:R {prop: true IN [r IN [false] | true]}]->(b)",
+      "CREATE (a)-[r:R {prop: true IN [r IN [false] | r]}]->(b)",
+      "CREATE (a)-[r:R {prop: true IN [a IN [false] | a]}]->(b)",
+      "CREATE (a)-[r:R]->(b {prop: true IN [r IN [false] | r]})",
+      "CREATE (a)-[r:R]->(b {prop: true IN [a IN [false] | a]})",
+      "MATCH p=()-[]->() CREATE (a)-[r:R {prop: true IN [a in nodes(p) | a.prop = 1]}]->(b)"
     )
 
     assertNotification(

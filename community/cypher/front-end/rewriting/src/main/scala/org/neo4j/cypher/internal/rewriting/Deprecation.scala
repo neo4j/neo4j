@@ -188,16 +188,18 @@ object Deprecations {
     def propertyUsageOfNewVariable(pattern: Pattern, semanticTable: SemanticTable): Set[LogicalVariable] = {
       val allSymbolDefinitions = semanticTable.recordedScopes(pattern).allSymbolDefinitions
 
-      def findAllVariables(e: Option[Expression]): Set[LogicalVariable] = e.folder.findAllByClass[LogicalVariable].toSet
+      def findRefVariables(e: Option[Expression]): Set[LogicalVariable] =
+        e.fold(Set.empty[LogicalVariable])(_.dependencies)
+
       def isDefinition(variable: LogicalVariable): Boolean =
         allSymbolDefinitions(variable.name).map(_.use).contains(Ref(variable))
 
       val (declaredVariables, referencedVariables) =
         pattern.folder.treeFold[(Set[LogicalVariable], Set[LogicalVariable])]((Set.empty, Set.empty)) {
           case NodePattern(maybeVariable, _, maybeProperties, _) => acc =>
-              SkipChildren((acc._1 ++ maybeVariable.filter(isDefinition), acc._2 ++ findAllVariables(maybeProperties)))
+              SkipChildren((acc._1 ++ maybeVariable.filter(isDefinition), acc._2 ++ findRefVariables(maybeProperties)))
           case RelationshipPattern(maybeVariable, _, _, maybeProperties, _, _) => acc =>
-              SkipChildren((acc._1 ++ maybeVariable.filter(isDefinition), acc._2 ++ findAllVariables(maybeProperties)))
+              SkipChildren((acc._1 ++ maybeVariable.filter(isDefinition), acc._2 ++ findRefVariables(maybeProperties)))
           case NamedPatternPart(variable, _) => acc =>
               TraverseChildren((acc._1 + variable, acc._2))
         }
