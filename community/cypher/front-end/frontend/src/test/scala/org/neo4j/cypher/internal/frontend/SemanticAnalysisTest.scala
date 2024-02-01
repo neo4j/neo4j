@@ -550,6 +550,58 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
     )
   }
 
+  test("should not allow multiple USE referencing multiple graphs in subquery") {
+    val query =
+      """
+        |CALL {
+        |  USE A
+        |  CALL {
+        |    USE B
+        |    RETURN 1 as n
+        |  }
+        |  RETURN n
+        |}
+        |RETURN n;
+        |""".stripMargin
+
+    expectErrorsFrom(
+      query,
+      Set(
+        SemanticError(
+          messageProvider.createMultipleGraphReferencesError("B"),
+          InputPosition(29, 5, 5)
+        )
+      ),
+      pipelineWithUseAsSingleGraphSelector
+    )
+  }
+
+  test("should not allow multiple USE referencing multiple graphs in nested inner subquery") {
+    val query =
+      """
+        |USE A
+        |CALL {
+        |  CALL {
+        |    USE B
+        |    RETURN 1 as n
+        |  }
+        |  RETURN n
+        |}
+        |RETURN n;
+        |""".stripMargin
+
+    expectErrorsFrom(
+      query,
+      Set(
+        SemanticError(
+          messageProvider.createMultipleGraphReferencesError("B"),
+          InputPosition(27, 5, 5)
+        )
+      ),
+      pipelineWithUseAsSingleGraphSelector
+    )
+  }
+
   test("should allow combining explicit and ambient graph selection") {
     val query =
       """
