@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.runtime.GrowingArray
 import org.neo4j.cypher.internal.runtime.debug.DebugSupport.DEBUG_MEMORY_TRACKING
 import org.neo4j.cypher.internal.runtime.memory.TrackingQueryMemoryTracker.MemoryTrackerPerOperator
 import org.neo4j.cypher.internal.runtime.memory.TrackingQueryMemoryTracker.OperatorMemoryTracker
-import org.neo4j.memory.EmptyMemoryTracker
 import org.neo4j.memory.HeapHighWaterMarkTracker
 import org.neo4j.memory.HeapMemoryTracker
 import org.neo4j.memory.LocalMemoryTracker
@@ -48,7 +47,7 @@ import java.util.concurrent.atomic.LongAdder
  */
 trait QueryMemoryTracker
     extends TransactionSpanningMemoryTrackerForOperatorProvider
-    with HeapMemoryTracker {
+    with HeapHighWaterMarkTracker {
 
   /**
    * Return a new [[MemoryTrackerForOperatorProvider]] that wraps the given transactionMemoryTracker,
@@ -95,7 +94,7 @@ object TrackingQueryMemoryTracker {
  * Tracks the heap high water mark for one Cypher query using a [[LocalMemoryTracker]].
  * Provides operator memory trackers that are not bound to any transaction.
  */
-class TrackingQueryMemoryTracker extends QueryMemoryTracker {
+class TrackingQueryMemoryTracker extends QueryMemoryTracker with HeapMemoryTracker {
 
   /**
    * The memory is also tracked by the transactions executing the query, so using a LocalMemoryTracker
@@ -155,10 +154,6 @@ case object NoOpQueryMemoryTracker extends QueryMemoryTracker {
 
   override def heapHighWaterMark(): Long = HeapHighWaterMarkTracker.ALLOCATIONS_NOT_TRACKED
 
-  override def allocateHeap(bytes: Long): Unit = ()
-
-  override def releaseHeap(bytes: Long): Unit = ()
-
   override def newMemoryTrackerForOperatorProvider(transactionMemoryTracker: MemoryTracker)
     : MemoryTrackerForOperatorProvider = NoOpMemoryTrackerForOperatorProvider
 
@@ -178,10 +173,6 @@ class ParallelTrackingQueryMemoryTracker extends QueryMemoryTracker {
   }
 
   override def heapHighWaterMark(): Long = HeapHighWaterMarkTracker.ALLOCATIONS_NOT_TRACKED
-
-  override def allocateHeap(bytes: Long): Unit = ???
-
-  override def releaseHeap(bytes: Long): Unit = ???
 
   override def newMemoryTrackerForOperatorProvider(transactionMemoryTracker: MemoryTracker)
     : MemoryTrackerForOperatorProvider = {

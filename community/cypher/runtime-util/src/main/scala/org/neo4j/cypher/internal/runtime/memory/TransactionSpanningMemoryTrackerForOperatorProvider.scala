@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.memory
 
-import org.neo4j.memory.HeapMemoryTracker
-
 /**
  * Gives the ability to track heap memory per operator, spanning multiple transactions.
  * Also allows to inspect the maximum memory per operator.
