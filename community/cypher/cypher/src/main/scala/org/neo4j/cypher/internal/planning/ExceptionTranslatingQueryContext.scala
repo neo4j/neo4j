@@ -30,8 +30,10 @@ import org.neo4j.cypher.internal.macros.TranslateExceptionMacros.translateExcept
 import org.neo4j.cypher.internal.macros.TranslateExceptionMacros.translateIterator
 import org.neo4j.cypher.internal.runtime.ClosingLongIterator
 import org.neo4j.cypher.internal.runtime.ConstraintInfo
+import org.neo4j.cypher.internal.runtime.ConstraintInformation
 import org.neo4j.cypher.internal.runtime.EntityTransformer
 import org.neo4j.cypher.internal.runtime.IndexInfo
+import org.neo4j.cypher.internal.runtime.IndexInformation
 import org.neo4j.cypher.internal.runtime.NodeOperations
 import org.neo4j.cypher.internal.runtime.NodeReadOperations
 import org.neo4j.cypher.internal.runtime.Operations
@@ -124,6 +126,12 @@ class ExceptionTranslatingReadQueryContext(val inner: ReadQueryContext) extends 
 
   override def getIndexUsageStatistics(index: IndexDescriptor): IndexUsageStats =
     translateException(tokenNameLookup, inner.getIndexUsageStatistics(index))
+
+  override def getIndexInformation(name: String): IndexInformation =
+    translateException(tokenNameLookup, inner.getIndexInformation(name))
+
+  override def getIndexInformation(index: IndexDescriptor): IndexInformation =
+    translateException(tokenNameLookup, inner.getIndexInformation(index))
 
   override def indexExists(name: String): Boolean =
     translateException(tokenNameLookup, inner.indexExists(name))
@@ -268,6 +276,16 @@ class ExceptionTranslatingReadQueryContext(val inner: ReadQueryContext) extends 
 
   override def nodeGetTotalDegree(node: Long, relationship: Int, nodeCursor: NodeCursor): Int =
     translateException(tokenNameLookup, inner.nodeGetTotalDegree(node, relationship, nodeCursor))
+
+  override def getConstraintInformation(name: String): ConstraintInformation =
+    translateException(tokenNameLookup, inner.getConstraintInformation(name))
+
+  override def getConstraintInformation(
+    matchFn: ConstraintDescriptor => Boolean,
+    entityId: Int,
+    properties: Int*
+  ): ConstraintInformation =
+    translateException(tokenNameLookup, inner.getConstraintInformation(matchFn, entityId, properties: _*))
 
   override def getAllConstraints(): Map[ConstraintDescriptor, ConstraintInfo] =
     translateException(tokenNameLookup, inner.getAllConstraints())

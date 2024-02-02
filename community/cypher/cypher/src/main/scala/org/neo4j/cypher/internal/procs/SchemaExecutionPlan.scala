@@ -59,18 +59,22 @@ case class SchemaExecutionPlan(
 
     ctx.assertSchemaWritesAllowed()
 
-    if (schemaWrite(ctx, params) == SuccessResult) {
-      // TODO: Do we really need to close transactional context here?
-      ctx.transactionalContext.close()
-      val runtimeResult = SchemaRuntimeResult(ctx, subscriber)
-      runtimeResult
-    } else {
-      IgnoredRuntimeResult(previousNotifications)
+    schemaWrite(ctx, params) match {
+      case SuccessResult(notifications) =>
+        // TODO: Do we really need to close transactional context here?
+        ctx.transactionalContext.close()
+        val runtimeResult = SchemaRuntimeResult(ctx, subscriber, previousNotifications ++ notifications)
+        runtimeResult
+      case IgnoredResult(notifications) =>
+        IgnoredRuntimeResult(previousNotifications ++ notifications)
     }
   }
 }
 
-sealed trait SchemaExecutionResult
+sealed trait SchemaExecutionResult {
+  def notifications: Set[InternalNotification]
+}
 
-case object SuccessResult extends SchemaExecutionResult
-case object IgnoredResult extends SchemaExecutionResult
+case class SuccessResult(notifications: Set[InternalNotification] = Set.empty) extends SchemaExecutionResult
+
+case class IgnoredResult(notifications: Set[InternalNotification] = Set.empty) extends SchemaExecutionResult

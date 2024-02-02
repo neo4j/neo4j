@@ -23,7 +23,9 @@ import org.eclipse.collections.api.map.primitive.IntObjectMap
 import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.runtime.ConstraintInfo
+import org.neo4j.cypher.internal.runtime.ConstraintInformation
 import org.neo4j.cypher.internal.runtime.IndexInfo
+import org.neo4j.cypher.internal.runtime.IndexInformation
 import org.neo4j.cypher.internal.runtime.NodeOperations
 import org.neo4j.cypher.internal.runtime.Operations
 import org.neo4j.cypher.internal.runtime.QueryContext
@@ -214,6 +216,12 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     inner.getAllIndexes()
   }
 
+  override def getIndexInformation(name: String): IndexInformation =
+    inner.getIndexInformation(name)
+
+  override def getIndexInformation(index: IndexDescriptor): IndexInformation =
+    inner.getIndexInformation(index)
+
   override def indexExists(name: String): Boolean = {
     inner.indexExists(name)
   }
@@ -304,6 +312,15 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     inner.dropNamedConstraint(name)
     constraintsRemoved.increase()
   }
+
+  override def getConstraintInformation(name: String): ConstraintInformation = inner.getConstraintInformation(name)
+
+  override def getConstraintInformation(
+    matchFn: ConstraintDescriptor => Boolean,
+    entityId: Int,
+    properties: Int*
+  ): ConstraintInformation =
+    inner.getConstraintInformation(matchFn, entityId, properties: _*)
 
   override def getAllConstraints(): Map[ConstraintDescriptor, ConstraintInfo] = inner.getAllConstraints()
 

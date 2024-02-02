@@ -60,6 +60,7 @@ import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.internal.schema.ConstraintDescriptor
+import org.neo4j.internal.schema.ConstraintType
 import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.internal.schema.IndexProviderDescriptor
@@ -152,6 +153,10 @@ trait ReadQueryContext extends ReadTokenContext with DbAccess with AutoCloseable
 
   def getIndexUsageStatistics(index: IndexDescriptor): IndexUsageStats
 
+  def getIndexInformation(name: String): IndexInformation
+
+  def getIndexInformation(index: IndexDescriptor): IndexInformation
+
   def indexExists(name: String): Boolean
 
   def constraintExists(name: String): Boolean
@@ -219,6 +224,14 @@ trait ReadQueryContext extends ReadTokenContext with DbAccess with AutoCloseable
   ): RelationshipValueIndexCursor
 
   def getNodesByLabel(tokenReadSession: TokenReadSession, id: Int, indexOrder: IndexOrder): ClosingLongIterator
+
+  def getConstraintInformation(name: String): ConstraintInformation
+
+  def getConstraintInformation(
+    matchFn: ConstraintDescriptor => Boolean,
+    entityId: Int,
+    properties: Int*
+  ): ConstraintInformation
 
   def getAllConstraints(): Map[ConstraintDescriptor, ConstraintInfo]
 
@@ -921,3 +934,20 @@ trait EntityTransformer {
 class NoopEntityTransformer extends EntityTransformer {
   override def rebindEntityWrappingValue(value: AnyValue): AnyValue = value
 }
+
+case class IndexInformation(
+  isNode: Boolean,
+  indexType: IndexType,
+  name: String,
+  labelsOrRelTypes: List[String],
+  properties: List[String]
+)
+
+case class ConstraintInformation(
+  isNode: Boolean,
+  constraintType: ConstraintType,
+  name: String,
+  labelOrRelType: String,
+  properties: List[String],
+  propertyType: Option[String]
+)

@@ -121,6 +121,8 @@ org.neo4j.kernel.api.exceptions.Status.Schema::IndexDropFailed org.neo4j.kernel.
 org.neo4j.kernel.api.exceptions.Status.Schema::IndexMultipleFound org.neo4j.kernel.api.exceptions.Status.Schema public static final
 org.neo4j.kernel.api.exceptions.Status.Schema::IndexNotApplicable org.neo4j.kernel.api.exceptions.Status.Schema public static final
 org.neo4j.kernel.api.exceptions.Status.Schema::IndexNotFound org.neo4j.kernel.api.exceptions.Status.Schema public static final
+org.neo4j.kernel.api.exceptions.Status.Schema::IndexOrConstraintAlreadyExists org.neo4j.kernel.api.exceptions.Status.Schema public static final
+org.neo4j.kernel.api.exceptions.Status.Schema::IndexOrConstraintDoesNotExist org.neo4j.kernel.api.exceptions.Status.Schema public static final
 org.neo4j.kernel.api.exceptions.Status.Schema::IndexWithNameAlreadyExists org.neo4j.kernel.api.exceptions.Status.Schema public static final
 org.neo4j.kernel.api.exceptions.Status.Schema::LabelAccessFailed org.neo4j.kernel.api.exceptions.Status.Schema public static final
 org.neo4j.kernel.api.exceptions.Status.Schema::PropertyKeyAccessFailed org.neo4j.kernel.api.exceptions.Status.Schema public static final

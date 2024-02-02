@@ -30,13 +30,17 @@ import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.memory.HeapHighWaterMarkTracker
 
 import java.util
-import java.util.Collections
+
+import scala.jdk.CollectionConverters.SetHasAsJava
 
 /**
  * Empty result, as produced by a schema write.
  */
-case class SchemaRuntimeResult(ctx: QueryContext, subscriber: QuerySubscriber)
-    extends EmptyQuerySubscription(subscriber) with RuntimeResult {
+case class SchemaRuntimeResult(
+  ctx: QueryContext,
+  subscriber: QuerySubscriber,
+  runtimeNotifications: Set[InternalNotification]
+) extends EmptyQuerySubscription(subscriber) with RuntimeResult {
 
   override def fieldNames(): Array[String] = Array.empty
 
@@ -50,7 +54,7 @@ case class SchemaRuntimeResult(ctx: QueryContext, subscriber: QuerySubscriber)
 
   override def queryProfile(): QueryProfile = QueryProfile.NONE
 
-  override def notifications(): util.Set[InternalNotification] = Collections.emptySet()
+  override def notifications(): util.Set[InternalNotification] = runtimeNotifications.asJava
 
   override def getErrorOrNull: Throwable = null
 }

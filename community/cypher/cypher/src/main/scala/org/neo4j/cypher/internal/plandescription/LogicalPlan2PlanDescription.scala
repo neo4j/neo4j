@@ -287,6 +287,7 @@ import org.neo4j.cypher.internal.plandescription.Arguments.Planner
 import org.neo4j.cypher.internal.plandescription.Arguments.PlannerImpl
 import org.neo4j.cypher.internal.plandescription.Arguments.PlannerVersion
 import org.neo4j.cypher.internal.plandescription.Arguments.RuntimeVersion
+import org.neo4j.cypher.internal.plandescription.LogicalPlan2PlanDescription.prettyOptions
 import org.neo4j.cypher.internal.plandescription.asPrettyString.PrettyStringInterpolator
 import org.neo4j.cypher.internal.plandescription.asPrettyString.PrettyStringMaker
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
@@ -326,6 +327,15 @@ object LogicalPlan2PlanDescription {
       .addArgument(Planner(plannerName.toTextOutput))
       .addArgument(PlannerImpl(plannerName.name))
       .addArgument(PlannerVersion.currentVersion)
+  }
+
+  def prettyOptions(options: Options): PrettyString = options match {
+    case NoOptions               => pretty""
+    case OptionsParam(parameter) => pretty" OPTIONS ${asPrettyString(parameter)}"
+    case OptionsMap(options) =>
+      pretty" OPTIONS ${options.map({
+          case (s, e) => pretty"${asPrettyString(s)}: ${asPrettyString(e)}"
+        }).mkPrettyString("{", ", ", "}")}"
   }
 }
 
@@ -3472,15 +3482,6 @@ case class LogicalPlan2PlanDescription(
     val assertOrRequire = if (useForAndRequire) pretty"REQUIRE" else pretty"ASSERT"
 
     pretty"CONSTRAINT$name $onOrFor $entityInfo $assertOrRequire $propertyString $prettyAssertion${prettyOptions(options)}"
-  }
-
-  private def prettyOptions(options: Options): PrettyString = options match {
-    case NoOptions               => pretty""
-    case OptionsParam(parameter) => pretty" OPTIONS ${asPrettyString(parameter)}"
-    case OptionsMap(options) =>
-      pretty" OPTIONS ${options.map({
-          case (s, e) => pretty"${asPrettyString(s)}: ${asPrettyString(e)}"
-        }).mkPrettyString("{", SEPARATOR, "}")}"
   }
 
   private def setPropertyInfo(idName: PrettyString, expression: Expression, removeOtherProps: Boolean): PrettyString = {

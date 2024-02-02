@@ -50,6 +50,8 @@ import static org.neo4j.notifications.NotificationCodeWithDescription.homeDataba
 import static org.neo4j.notifications.NotificationCodeWithDescription.impossibleRevokeCommand;
 import static org.neo4j.notifications.NotificationCodeWithDescription.indexHintUnfulfillable;
 import static org.neo4j.notifications.NotificationCodeWithDescription.indexLookupForDynamicProperty;
+import static org.neo4j.notifications.NotificationCodeWithDescription.indexOrConstraintAlreadyExists;
+import static org.neo4j.notifications.NotificationCodeWithDescription.indexOrConstraintDoesNotExist;
 import static org.neo4j.notifications.NotificationCodeWithDescription.joinHintUnfulfillable;
 import static org.neo4j.notifications.NotificationCodeWithDescription.largeLabelLoadCsv;
 import static org.neo4j.notifications.NotificationCodeWithDescription.missingLabel;
@@ -929,6 +931,63 @@ class NotificationCodeWithDescriptionTest {
                 "`ALTER DATABASE` has no effect. The requested topology matched the current topology. No allocations were changed.");
     }
 
+    @Test
+    void shouldConstructNotificationsFor_INDEX_OR_CONSTRAINT_ALREADY_EXISTS() {
+        NotificationImplementation notification = indexOrConstraintAlreadyExists(
+                InputPosition.empty,
+                "CREATE INDEX foo IF NOT EXISTS FOR (n:L) ON (n.p1)",
+                "INDEX foo FOR (n:L) ON (n.p2)");
+
+        verifyNotification(
+                notification,
+                "`CREATE INDEX foo IF NOT EXISTS FOR (n:L) ON (n.p1)` has no effect.",
+                SeverityLevel.INFORMATION,
+                "Neo.ClientNotification.Schema.IndexOrConstraintAlreadyExists",
+                "`INDEX foo FOR (n:L) ON (n.p2)` already exists.",
+                NotificationCategory.SCHEMA,
+                "`CREATE INDEX foo IF NOT EXISTS FOR (n:L) ON (n.p1)` has no effect. `INDEX foo FOR (n:L) ON (n.p2)` already exists.");
+
+        notification = indexOrConstraintAlreadyExists(
+                InputPosition.empty,
+                "CREATE CONSTRAINT bar IF NOT EXISTS FOR (n:L) REQUIRE (n.p1) IS NODE KEY",
+                "CONSTRAINT baz FOR (n:L) REQUIRE (n.p1) IS NODE KEY");
+
+        verifyNotification(
+                notification,
+                "`CREATE CONSTRAINT bar IF NOT EXISTS FOR (n:L) REQUIRE (n.p1) IS NODE KEY` has no effect.",
+                SeverityLevel.INFORMATION,
+                "Neo.ClientNotification.Schema.IndexOrConstraintAlreadyExists",
+                "`CONSTRAINT baz FOR (n:L) REQUIRE (n.p1) IS NODE KEY` already exists.",
+                NotificationCategory.SCHEMA,
+                "`CREATE CONSTRAINT bar IF NOT EXISTS FOR (n:L) REQUIRE (n.p1) IS NODE KEY` has no effect. `CONSTRAINT baz FOR (n:L) REQUIRE (n.p1) IS NODE KEY` already exists.");
+    }
+
+    @Test
+    void shouldConstructNotificationsFor_INDEX_OR_CONSTRAINT_DOES_NOT_EXIST() {
+        NotificationImplementation notification =
+                indexOrConstraintDoesNotExist(InputPosition.empty, "DROP INDEX foo IF EXISTS", "foo");
+
+        verifyNotification(
+                notification,
+                "`DROP INDEX foo IF EXISTS` has no effect.",
+                SeverityLevel.INFORMATION,
+                "Neo.ClientNotification.Schema.IndexOrConstraintDoesNotExist",
+                "`foo` does not exist.",
+                NotificationCategory.SCHEMA,
+                "`DROP INDEX foo IF EXISTS` has no effect. `foo` does not exist.");
+
+        notification = indexOrConstraintDoesNotExist(InputPosition.empty, "DROP CONSTRAINT bar IF EXISTS", "foo");
+
+        verifyNotification(
+                notification,
+                "`DROP CONSTRAINT bar IF EXISTS` has no effect.",
+                SeverityLevel.INFORMATION,
+                "Neo.ClientNotification.Schema.IndexOrConstraintDoesNotExist",
+                "`foo` does not exist.",
+                NotificationCategory.SCHEMA,
+                "`DROP CONSTRAINT bar IF EXISTS` has no effect. `foo` does not exist.");
+    }
+
     private void verifyNotification(
             NotificationImplementation notification,
             String title,
@@ -985,8 +1044,8 @@ class NotificationCodeWithDescriptionTest {
         byte[] notificationHash = DigestUtils.sha256(notificationBuilder.toString());
 
         byte[] expectedHash = new byte[] {
-            -72, 3, 40, -74, 111, -1, -60, 68, -69, -92, 5, -119, 105, 34, -50, 44, -115, 6, -67, 59, 65, 64, 69, -74,
-            8, 51, 54, -65, 48, 123, -26, -54
+            57, 74, -16, -23, 66, -53, 118, -63, 56, -66, -67, -88, -116, -19, 71, -75, -87, 75, 65, -56, 68, -33, -33,
+            -79, -76, 20, -78, -111, -21, 94, -104, 25
         };
 
         if (!Arrays.equals(notificationHash, expectedHash)) {

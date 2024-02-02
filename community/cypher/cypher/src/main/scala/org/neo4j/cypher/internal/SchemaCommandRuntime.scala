@@ -20,12 +20,17 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.common.EntityType
+import org.neo4j.cypher.internal.ast.Options
+import org.neo4j.cypher.internal.ast.prettifier.Prettifier
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.expressions.ElementTypeName
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
+import org.neo4j.cypher.internal.expressions.functions.Labels
+import org.neo4j.cypher.internal.expressions.functions.Type
 import org.neo4j.cypher.internal.logical.plans.ConstraintType
 import org.neo4j.cypher.internal.logical.plans.CreateConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateFulltextIndex
@@ -47,13 +52,23 @@ import org.neo4j.cypher.internal.logical.plans.RelationshipPropertyExistence
 import org.neo4j.cypher.internal.logical.plans.RelationshipPropertyType
 import org.neo4j.cypher.internal.logical.plans.RelationshipUniqueness
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
+import org.neo4j.cypher.internal.plandescription.LogicalPlan2PlanDescription.prettyOptions
+import org.neo4j.cypher.internal.plandescription.PrettyString
+import org.neo4j.cypher.internal.plandescription.asPrettyString
+import org.neo4j.cypher.internal.plandescription.asPrettyString.PrettyStringInterpolator
+import org.neo4j.cypher.internal.plandescription.asPrettyString.PrettyStringMaker
 import org.neo4j.cypher.internal.procs.IgnoredResult
 import org.neo4j.cypher.internal.procs.PropertyTypeMapper
 import org.neo4j.cypher.internal.procs.SchemaExecutionPlan
 import org.neo4j.cypher.internal.procs.SuccessResult
+import org.neo4j.cypher.internal.runtime.ConstraintInformation
+import org.neo4j.cypher.internal.runtime.IndexInformation
 import org.neo4j.cypher.internal.runtime.InternalQueryType
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.SCHEMA_WRITE
+import org.neo4j.cypher.internal.util.IndexOrConstraintAlreadyExistsNotification
+import org.neo4j.cypher.internal.util.IndexOrConstraintDoesNotExistNotification
+import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.exceptions.CantCompileQueryException
@@ -62,7 +77,12 @@ import org.neo4j.graphdb.schema.IndexType.POINT
 import org.neo4j.graphdb.schema.IndexType.RANGE
 import org.neo4j.graphdb.schema.IndexType.TEXT
 import org.neo4j.graphdb.schema.IndexType.VECTOR
+import org.neo4j.graphdb.security.AuthorizationViolationException
 import org.neo4j.internal.schema.ConstraintDescriptor
+import org.neo4j.internal.schema.ConstraintType.EXISTS
+import org.neo4j.internal.schema.ConstraintType.PROPERTY_TYPE
+import org.neo4j.internal.schema.ConstraintType.UNIQUE
+import org.neo4j.internal.schema.ConstraintType.UNIQUE_EXISTS
 import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexType
 import org.neo4j.internal.schema.constraints.PropertyTypeSet
@@ -109,7 +129,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
             val labelId = ctx.getOrCreateLabelId(label.name)
             val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey).id)
             ctx.createNodeKeyConstraint(labelId, propertyKeyIds, constraintName, indexProvider)
-            SuccessResult
+            SuccessResult()
           },
           source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context))
         )
@@ -127,7 +147,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
             val relId = ctx.getOrCreateRelTypeId(relType.name)
             val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey).id)
             ctx.createRelationshipKeyConstraint(relId, propertyKeyIds, constraintName, indexProvider)
-            SuccessResult
+            SuccessResult()
           },
           source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context))
         )
@@ -146,7 +166,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
             val labelId = ctx.getOrCreateLabelId(label.name)
             val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey).id)
             ctx.createNodeUniqueConstraint(labelId, propertyKeyIds, constraintName, indexProvider)
-            SuccessResult
+            SuccessResult()
           },
           source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context))
         )
@@ -165,7 +185,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
             val relTypeId = ctx.getOrCreateRelTypeId(relType.name)
             val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey).id)
             ctx.createRelationshipUniqueConstraint(relTypeId, propertyKeyIds, constraintName, indexProvider)
-            SuccessResult
+            SuccessResult()
           },
           source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context))
         )
@@ -183,7 +203,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
               prop.head.propertyKey,
               constraintName
             ))
-            SuccessResult
+            SuccessResult()
           },
           source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context))
         )
@@ -202,7 +222,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
               prop.head.propertyKey,
               constraintName
             ))
-            SuccessResult
+            SuccessResult()
           },
           source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context))
         )
@@ -222,7 +242,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
               PropertyTypeMapper.asPropertyTypeSet(propertyType),
               constraintName
             )
-            SuccessResult
+            SuccessResult()
           },
           source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context))
         )
@@ -243,7 +263,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
               PropertyTypeMapper.asPropertyTypeSet(propertyType),
               constraintName
             )
-            SuccessResult
+            SuccessResult()
           },
           source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context))
         )
@@ -254,10 +274,17 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
           "DropConstraint",
           (ctx, params) => {
             val constraintName = getName(name, params)
-            if (!ifExists || ctx.constraintExists(constraintName)) {
+            val notifications: Set[InternalNotification] = if (!ifExists || ctx.constraintExists(constraintName)) {
               ctx.dropNamedConstraint(constraintName)
+              Set.empty
+            } else {
+              // Notify on non-existing constraint, replace potential parameter names with their actual value
+              Set(IndexOrConstraintDoesNotExistNotification(
+                s"DROP CONSTRAINT ${Prettifier.escapeName(Left(constraintName))} IF EXISTS",
+                constraintName
+              ))
             }
-            SuccessResult
+            SuccessResult(notifications)
           }
         )
 
@@ -277,7 +304,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
               CreateRangeIndexOptionsConverter(schemaType, ctx).convert(options, params).flatMap(_.provider)
             val propertyKeyIds = props.map(p => propertyToId(ctx)(p).id)
             ctx.addRangeIndexRule(entityId, entityType, propertyKeyIds, indexName, provider)
-            SuccessResult
+            SuccessResult()
           },
           source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context))
         )
@@ -291,7 +318,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
             val indexName = getName(name, params)
             val provider = CreateLookupIndexOptionsConverter(ctx).convert(options, params).flatMap(_.provider)
             ctx.addLookupIndexRule(entityType, indexName, provider)
-            SuccessResult
+            SuccessResult()
           },
           source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context))
         )
@@ -310,7 +337,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
             val (entityIds, entityType) = getMultipleEntityInfo(entityNames, ctx)
             val propertyKeyIds = props.map(p => propertyToId(ctx)(p).id)
             ctx.addFulltextIndexRule(entityIds, entityType, propertyKeyIds, indexName, indexProvider, indexConfig)
-            SuccessResult
+            SuccessResult()
           },
           source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context))
         )
@@ -326,7 +353,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
             val (entityId, entityType) = getEntityInfo(entityName, ctx)
             val propertyKeyIds = props.map(p => propertyToId(ctx)(p).id)
             ctx.addTextIndexRule(entityId, entityType, propertyKeyIds, indexName, provider)
-            SuccessResult
+            SuccessResult()
           },
           source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context))
         )
@@ -345,7 +372,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
             val (entityId, entityType) = getEntityInfo(entityName, ctx)
             val propertyKeyIds = props.map(p => propertyToId(ctx)(p).id)
             ctx.addPointIndexRule(entityId, entityType, propertyKeyIds, indexName, indexProvider, indexConfig)
-            SuccessResult
+            SuccessResult()
           },
           source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context))
         )
@@ -366,7 +393,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
             val (entityId, entityType) = getEntityInfo(entityName, ctx)
             val propertyKeyIds = props.map(p => propertyToId(ctx)(p).id)
             ctx.addVectorIndexRule(entityId, entityType, propertyKeyIds, indexName, indexProvider, indexConfig)
-            SuccessResult
+            SuccessResult()
           },
           source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context))
         )
@@ -377,10 +404,17 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
           "DropIndex",
           (ctx, params) => {
             val indexName = getName(name, params)
-            if (!ifExists || ctx.indexExists(indexName)) {
+            val notifications: Set[InternalNotification] = if (!ifExists || ctx.indexExists(indexName)) {
               ctx.dropIndexRule(indexName)
+              Set.empty
+            } else {
+              // Notify on non-existing index, replace potential parameter names with their actual value
+              Set(IndexOrConstraintDoesNotExistNotification(
+                s"DROP INDEX ${Prettifier.escapeName(Left(indexName))} IF EXISTS",
+                indexName
+              ))
             }
-            SuccessResult
+            SuccessResult(notifications)
           }
         )
 
@@ -404,12 +438,30 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
 
             val (entityId, entityType) = getEntityInfo(entityName, ctx)
             val propertyKeyIds = propertyKeyNames.map(p => propertyToId(ctx)(p).id)
-            if (Try(ctx.indexReference(innerIndexType, entityId, entityType, propertyKeyIds: _*).getName).isSuccess) {
-              IgnoredResult
+            val existingIndexDescriptor =
+              Try(ctx.indexReference(innerIndexType, entityId, entityType, propertyKeyIds: _*))
+            if (existingIndexDescriptor.isSuccess) {
+              // Notify on pre-existing index, replace potential parameter names with their actual value
+              val indexDescription = indexInfo(indexType.name(), indexName, entityName, propertyKeyNames, options)
+              val conflictingIndex = existingIndexInfo(ctx, () => ctx.getIndexInformation(existingIndexDescriptor.get))
+
+              val notification = IndexOrConstraintAlreadyExistsNotification(
+                s"CREATE $indexDescription",
+                conflictingIndex
+              )
+              IgnoredResult(Set(notification))
             } else if (indexName.exists(ctx.indexExists)) {
-              IgnoredResult
+              // Notify on pre-existing index, replace potential parameter names with their actual value
+              val indexDescription = indexInfo(indexType.name(), indexName, entityName, propertyKeyNames, options)
+              val conflictingIndex = existingIndexInfo(ctx, () => ctx.getIndexInformation(indexName.get))
+
+              val notification = IndexOrConstraintAlreadyExistsNotification(
+                s"CREATE $indexDescription",
+                conflictingIndex
+              )
+              IgnoredResult(Set(notification))
             } else {
-              SuccessResult
+              SuccessResult()
             }
           },
           None
@@ -423,12 +475,29 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
             // Assert correct options to get errors even if matching index already exists
             CreateLookupIndexOptionsConverter(ctx).convert(options, params)
 
-            if (Try(ctx.lookupIndexReference(entityType).getName).isSuccess) {
-              IgnoredResult
+            val existingIndexDescriptor = Try(ctx.lookupIndexReference(entityType))
+            if (existingIndexDescriptor.isSuccess) {
+              // Notify on pre-existing index, replace potential parameter names with their actual value
+              val indexDescription = lookupIndexInfo(indexName, entityType, options)
+              val conflictingIndex = existingIndexInfo(ctx, () => ctx.getIndexInformation(existingIndexDescriptor.get))
+
+              val notification = IndexOrConstraintAlreadyExistsNotification(
+                s"CREATE $indexDescription",
+                conflictingIndex
+              )
+              IgnoredResult(Set(notification))
             } else if (indexName.exists(ctx.indexExists)) {
-              IgnoredResult
+              // Notify on pre-existing index, replace potential parameter names with their actual value
+              val indexDescription = lookupIndexInfo(indexName, entityType, options)
+              val conflictingIndex = existingIndexInfo(ctx, () => ctx.getIndexInformation(indexName.get))
+
+              val notification = IndexOrConstraintAlreadyExistsNotification(
+                s"CREATE $indexDescription",
+                conflictingIndex
+              )
+              IgnoredResult(Set(notification))
             } else {
-              SuccessResult
+              SuccessResult()
             }
           },
           None
@@ -444,12 +513,29 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
 
             val (entityIds, entityType) = getMultipleEntityInfo(entityNames, ctx)
             val propertyKeyIds = propertyKeyNames.map(p => propertyToId(ctx)(p).id)
-            if (Try(ctx.fulltextIndexReference(entityIds, entityType, propertyKeyIds: _*).getName).isSuccess) {
-              IgnoredResult
+            val existingIndexDescriptor = Try(ctx.fulltextIndexReference(entityIds, entityType, propertyKeyIds: _*))
+            if (existingIndexDescriptor.isSuccess) {
+              // Notify on pre-existing index, replace potential parameter names with their actual value
+              val indexDescription = fulltextIndexInfo(indexName, entityNames, propertyKeyNames, options)
+              val conflictingIndex = existingIndexInfo(ctx, () => ctx.getIndexInformation(existingIndexDescriptor.get))
+
+              val notification = IndexOrConstraintAlreadyExistsNotification(
+                s"CREATE $indexDescription",
+                conflictingIndex
+              )
+              IgnoredResult(Set(notification))
             } else if (indexName.exists(ctx.indexExists)) {
-              IgnoredResult
+              // Notify on pre-existing index, replace potential parameter names with their actual value
+              val indexDescription = fulltextIndexInfo(indexName, entityNames, propertyKeyNames, options)
+              val conflictingIndex = existingIndexInfo(ctx, () => ctx.getIndexInformation(indexName.get))
+
+              val notification = IndexOrConstraintAlreadyExistsNotification(
+                s"CREATE $indexDescription",
+                conflictingIndex
+              )
+              IgnoredResult(Set(notification))
             } else {
-              SuccessResult
+              SuccessResult()
             }
           },
           None
@@ -484,14 +570,33 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
 
             val (entityId, _) = getEntityInfo(entityName, ctx)
             val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey).id)
-            if (
-              ctx.constraintExists(convertConstraintTypeToConstraintMatcher(assertion), entityId, propertyKeyIds: _*)
-            ) {
-              IgnoredResult
+            val constraintMatcher = convertConstraintTypeToConstraintMatcher(assertion)
+            if (ctx.constraintExists(constraintMatcher, entityId, propertyKeyIds: _*)) {
+              // Notify on pre-existing constraint, replace potential parameter names with their actual value
+              val constraintDescription = constraintInfo(constraintName, entityName, props, assertion, options)
+              val conflictingConstraint = existingConstraintInfo(
+                ctx,
+                () => ctx.getConstraintInformation(constraintMatcher, entityId, propertyKeyIds: _*)
+              )
+
+              val notification = IndexOrConstraintAlreadyExistsNotification(
+                s"CREATE $constraintDescription",
+                conflictingConstraint
+              )
+              IgnoredResult(Set(notification))
             } else if (constraintName.exists(ctx.constraintExists)) {
-              IgnoredResult
+              // Notify on pre-existing constraint, replace potential parameter names with their actual value
+              val constraintDescription = constraintInfo(constraintName, entityName, props, assertion, options)
+              val conflictingConstraint =
+                existingConstraintInfo(ctx, () => ctx.getConstraintInformation(constraintName.get))
+
+              val notification = IndexOrConstraintAlreadyExistsNotification(
+                s"CREATE $constraintDescription",
+                conflictingConstraint
+              )
+              IgnoredResult(Set(notification))
             } else {
-              SuccessResult
+              SuccessResult()
             }
           },
           None
@@ -556,4 +661,161 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
 
   private def typePropWithName(ctx: QueryContext)(relType: RelTypeName, prop: PropertyKeyName, name: Option[String]) =
     (ctx.getOrCreateRelTypeId(relType.name), ctx.getOrCreatePropertyKeyId(prop.name), name)
+
+  private def indexInfo(
+    indexType: String,
+    nameOption: Option[String],
+    entityName: ElementTypeName,
+    properties: Seq[PropertyKeyName],
+    options: Options
+  ): String = {
+    val name = getPrettyName(nameOption)
+    val pattern = getPrettyEntityPattern(entityName)
+    val propertyString = getPrettyPropertyPattern(properties, "(", ")")
+    pretty"${asPrettyString.raw(indexType)} INDEX$name IF NOT EXISTS FOR $pattern ON $propertyString${prettyOptions(options)}".prettifiedString
+  }
+
+  private def fulltextIndexInfo(
+    nameOption: Option[String],
+    entityNames: Either[List[LabelName], List[RelTypeName]],
+    properties: Seq[PropertyKeyName],
+    options: Options
+  ): String = {
+    val name = getPrettyName(nameOption)
+    val pattern = entityNames match {
+      case Left(labels) =>
+        val innerPattern = labels.map(l => asPrettyString(l.name)).mkPrettyString("e:", "|", "")
+        pretty"($innerPattern)"
+      case Right(relTypes) =>
+        val innerPattern = relTypes.map(r => asPrettyString(r.name)).mkPrettyString("e:", "|", "")
+        pretty"()-[$innerPattern]-()"
+    }
+    val propertyString = getPrettyPropertyPattern(properties, "[", "]")
+    pretty"FULLTEXT INDEX$name IF NOT EXISTS FOR $pattern ON EACH $propertyString${prettyOptions(options)}".prettifiedString
+  }
+
+  def lookupIndexInfo(
+    nameOption: Option[String],
+    entityType: EntityType,
+    options: Options
+  ): String = {
+    val name = getPrettyName(nameOption)
+    val (pattern, function) = getPrettyLookupIndexPatternAndFunction(entityType == EntityType.NODE)
+    pretty"LOOKUP INDEX$name IF NOT EXISTS FOR $pattern ON EACH $function${prettyOptions(options)}".prettifiedString
+  }
+
+  private def existingIndexInfo(
+    ctx: QueryContext,
+    getInfoParts: () => IndexInformation
+  ): String = {
+    try {
+      // Assert we are allowed to see the index description
+      ctx.assertShowIndexAllowed()
+
+      // Fetch the relevant index parts
+      val IndexInformation(isNode, indexType, name, entityNames, properties) = getInfoParts()
+
+      // Create string description
+      val nameString = getPrettyName(Some(name))
+      val (pattern, on) = indexType match {
+        case IndexType.LOOKUP =>
+          val (pattern, function) = getPrettyLookupIndexPatternAndFunction(isNode)
+          (pattern, pretty"EACH $function")
+        case IndexType.FULLTEXT =>
+          val innerPattern = entityNames.map(e => asPrettyString(e)).mkPrettyString("e:", "|", "")
+          val pattern = if (isNode) pretty"($innerPattern)" else pretty"()-[$innerPattern]-()"
+          val propertyString = getPrettyPropertyPattern(properties, "[", "]")
+          (pattern, pretty"EACH $propertyString")
+        case _ =>
+          // indexes have exactly one label/relType, unless FULLTEXT or LOOKUP which is handled above
+          val pattern = getPrettyEntityPattern(isNode, entityNames.head)
+          val propertyString = getPrettyPropertyPattern(properties, "(", ")")
+          (pattern, propertyString)
+      }
+      pretty"${asPrettyString.raw(indexType.name())} INDEX$nameString FOR $pattern ON $on".prettifiedString
+    } catch {
+      // Not allowed to see index description, only show `index`
+      case _: AuthorizationViolationException => "index"
+    }
+  }
+
+  private def constraintInfo(
+    nameOption: Option[String],
+    entityName: ElementTypeName,
+    properties: Seq[Property],
+    constraintType: ConstraintType,
+    options: Options
+  ): String = {
+    val name = getPrettyName(nameOption)
+    val pattern = getPrettyEntityPattern(entityName)
+    val propertyString = getPrettyPropertyPattern(properties.map(p => p.propertyKey), "(", ")")
+    val assertion = constraintType match {
+      case NodePropertyExistence | RelationshipPropertyExistence => "IS NOT NULL"
+      case NodeKey                                               => "IS NODE KEY"
+      case RelationshipKey                                       => "IS RELATIONSHIP KEY"
+      case NodeUniqueness | RelationshipUniqueness               => "IS UNIQUE"
+      case NodePropertyType(t)                                   => s"IS :: ${t.description}"
+      case RelationshipPropertyType(t)                           => s"IS :: ${t.description}"
+    }
+    val prettyAssertion = asPrettyString.raw(assertion)
+    pretty"CONSTRAINT$name IF NOT EXISTS FOR $pattern REQUIRE $propertyString $prettyAssertion${prettyOptions(options)}".prettifiedString
+  }
+
+  private def existingConstraintInfo(
+    ctx: QueryContext,
+    getInfoParts: () => ConstraintInformation
+  ): String = {
+    try {
+      // Assert we are allowed to see the constraint description
+      ctx.assertShowConstraintAllowed()
+
+      // Fetch the relevant constraint parts
+      val ConstraintInformation(isNode, constraintType, name, entityName, properties, propertyType) = getInfoParts()
+
+      // Create string description
+      val nameString = getPrettyName(Some(name))
+      val pattern = getPrettyEntityPattern(isNode, entityName)
+      val propertyString = getPrettyPropertyPattern(properties, "(", ")")
+      val assertion = constraintType match {
+        case EXISTS        => "IS NOT NULL"
+        case UNIQUE_EXISTS => if (isNode) "IS NODE KEY" else "IS RELATIONSHIP KEY"
+        case UNIQUE        => "IS UNIQUE"
+        case PROPERTY_TYPE => s"IS :: ${propertyType.get}"
+      }
+      val prettyAssertion = asPrettyString.raw(assertion)
+      pretty"CONSTRAINT$nameString FOR $pattern REQUIRE $propertyString $prettyAssertion".prettifiedString
+    } catch {
+      // Not allowed to see constraint description, only show `constraint`
+      case _: AuthorizationViolationException => "constraint"
+    }
+  }
+
+  private def getPrettyName(nameOption: Option[String]): PrettyString =
+    nameOption.map(n => pretty" ${PrettyString(Prettifier.escapeName(Left(n)))}").getOrElse(pretty"")
+
+  private def getPrettyEntityPattern(entityName: ElementTypeName): PrettyString = entityName match {
+    case label: LabelName     => pretty"(e:${asPrettyString(label)})"
+    case relType: RelTypeName => pretty"()-[e:${asPrettyString(relType)}]-()"
+  }
+
+  private def getPrettyEntityPattern(isNode: Boolean, entityName: String): PrettyString =
+    if (isNode) {
+      pretty"(e:${asPrettyString(entityName)})"
+    } else {
+      pretty"()-[e:${asPrettyString(entityName)}]-()"
+    }
+
+  private def getPrettyLookupIndexPatternAndFunction(isNode: Boolean): (PrettyString, PrettyString) =
+    if (isNode) {
+      (pretty"(e)", pretty"${asPrettyString.raw(Labels.name)}(e)")
+    } else {
+      (pretty"()-[e]-()", pretty"${asPrettyString.raw(Type.name)}(e)")
+    }
+
+  private def getPrettyPropertyPattern(properties: Seq[PropertyKeyName], start: String, end: String): PrettyString =
+    properties.map(asPrettyString(_)).mkPrettyString(s"${start}e.", ", e.", end)
+
+  private def getPrettyPropertyPattern(properties: List[String], start: String, end: String): PrettyString =
+    properties.map(asPrettyString(_)).mkPrettyString(s"${start}e.", ", e.", end)
+
 }

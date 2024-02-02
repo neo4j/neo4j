@@ -23,6 +23,7 @@ import org.eclipse.collections.api.map.primitive.IntObjectMap
 import org.eclipse.collections.api.set.primitive.IntSet
 import org.eclipse.collections.impl.factory.primitive.IntSets
 import org.neo4j.common.EntityType
+import org.neo4j.common.TokenNameLookup
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
 import org.neo4j.csv.reader.CharReadable
@@ -36,8 +37,10 @@ import org.neo4j.cypher.internal.runtime
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.ClosingLongIterator
 import org.neo4j.cypher.internal.runtime.ConstraintInfo
+import org.neo4j.cypher.internal.runtime.ConstraintInformation
 import org.neo4j.cypher.internal.runtime.EntityTransformer
 import org.neo4j.cypher.internal.runtime.IndexInfo
+import org.neo4j.cypher.internal.runtime.IndexInformation
 import org.neo4j.cypher.internal.runtime.IndexStatus
 import org.neo4j.cypher.internal.runtime.IsNoValue
 import org.neo4j.cypher.internal.runtime.KernelAPISupport.asKernelIndexOrder
@@ -1516,6 +1519,32 @@ private[internal] class TransactionBoundReadQueryContext(
   override def getIndexUsageStatistics(index: IndexDescriptor): IndexUsageStats =
     transactionalContext.schemaRead.indexUsageStats(index)
 
+  override def getIndexInformation(name: String): IndexInformation =
+    getIndexInformation(transactionalContext.schemaRead.indexGetForName(name))
+
+  override def getIndexInformation(index: IndexDescriptor): IndexInformation = {
+    val name = index.getName
+    val indexType = index.getIndexType
+
+    val schema = index.schema()
+    val entityType = schema.entityType()
+    val (entities, props) = indexType match {
+      case IndexType.LOOKUP =>
+        (List.empty, List.empty)
+      case _ =>
+        val entities = schema.entityType() match {
+          case EntityType.NODE =>
+            schema.getEntityTokenIds.map(tokenNameLookup.labelGetName).toList
+          case EntityType.RELATIONSHIP =>
+            schema.getEntityTokenIds.map(tokenNameLookup.relationshipTypeGetName).toList
+        }
+        val props = schema.getPropertyIds.map(tokenNameLookup.propertyKeyGetName).toList
+        (entities, props)
+    }
+
+    IndexInformation(entityType == EntityType.NODE, indexType, name, entities, props)
+  }
+
   override def indexExists(name: String): Boolean =
     transactionalContext.schemaRead.indexGetForName(name) != IndexDescriptor.NO_INDEX
 
@@ -1529,6 +1558,43 @@ private[internal] class TransactionBoundReadQueryContext(
       transactionalContext.schemaRead.constraintsGetForSchema(
         SchemaDescriptors.forRelType(entityId, properties: _*)
       ).asScala.exists(matchFn)
+
+  override def getConstraintInformation(name: String): ConstraintInformation =
+    getConstraintInfo(transactionalContext.schemaRead.constraintGetForName(name))
+
+  override def getConstraintInformation(
+    matchFn: ConstraintDescriptor => Boolean,
+    entityId: Int,
+    properties: Int*
+  ): ConstraintInformation = {
+    val nodeConstraints = transactionalContext.schemaRead.constraintsGetForSchema(
+      SchemaDescriptors.forLabel(entityId, properties: _*)
+    ).asScala.filter(matchFn)
+    val relationshipConstraints = transactionalContext.schemaRead.constraintsGetForSchema(
+      SchemaDescriptors.forRelType(entityId, properties: _*)
+    ).asScala.filter(matchFn)
+    // Return first found that matches
+    val found = (nodeConstraints ++ relationshipConstraints).next()
+    getConstraintInfo(found)
+  }
+
+  private def getConstraintInfo(constraint: ConstraintDescriptor): ConstraintInformation = {
+    val name = constraint.getName
+
+    val schema = constraint.schema()
+    val (entity, isNode) = schema.entityType() match {
+      case EntityType.NODE         => (tokenNameLookup.labelGetName(schema.getLabelId), true)
+      case EntityType.RELATIONSHIP => (tokenNameLookup.relationshipTypeGetName(schema.getRelTypeId), false)
+    }
+    val props = schema.getPropertyIds.map(tokenNameLookup.propertyKeyGetName).toList
+    val constraintType = constraint.`type`()
+
+    val propertyType = if (constraint.isPropertyTypeConstraint) {
+      Some(constraint.asPropertyTypeConstraint().propertyType().userDescription())
+    } else None
+
+    ConstraintInformation(isNode, constraintType, name, entity, props, propertyType)
+  }
 
   override def getAllConstraints(): Map[ConstraintDescriptor, ConstraintInfo] = {
     val schemaRead: SchemaReadCore = transactionalContext.schemaRead.snapshot()
@@ -1547,6 +1613,14 @@ private[internal] class TransactionBoundReadQueryContext(
           }
         map + (constraint -> runtime.ConstraintInfo(labelsOrTypes, properties, maybeIndex))
     }
+  }
+
+  private val tokenNameLookup: TokenNameLookup = new TokenNameLookup {
+    def propertyKeyGetName(propertyKeyId: Int): String = getPropertyKeyName(propertyKeyId)
+
+    def labelGetName(labelId: Int): String = getLabelName(labelId)
+
+    def relationshipTypeGetName(relTypeId: Int): String = getRelTypeName(relTypeId)
   }
 
   override def getImportDataConnection(url: URL): CharReadable = {

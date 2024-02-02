@@ -414,11 +414,6 @@ public interface Status {
         IndexAlreadyExists(
                 ClientError, "Unable to perform operation because it would clash with a pre-existing index."),
         IndexNotFound(ClientError, "The request (directly or indirectly) referred to an index that does not exist."),
-        HintedIndexNotFound(
-                ClientNotification,
-                "The request (directly or indirectly) referred to an index that does not exist.",
-                SeverityLevel.WARNING,
-                NotificationCategory.HINT),
         IndexMultipleFound(
                 ClientError,
                 "The request referenced an index by its schema, and multiple matching indexes were found."),
@@ -435,6 +430,17 @@ public interface Status {
                 ClientError,
                 "A token name, such as a label, relationship type or property key, used is not valid. Tokens cannot "
                         + "be empty strings and cannot be null."),
+
+        // client notifications
+        HintedIndexNotFound(
+                ClientNotification,
+                "The request (directly or indirectly) referred to an index that does not exist.",
+                SeverityLevel.WARNING,
+                NotificationCategory.HINT),
+        IndexOrConstraintAlreadyExists(
+                ClientNotification, "`%s` has no effect.", SeverityLevel.INFORMATION, NotificationCategory.SCHEMA),
+        IndexOrConstraintDoesNotExist(
+                ClientNotification, "`%s` has no effect.", SeverityLevel.INFORMATION, NotificationCategory.SCHEMA),
 
         // database errors
         ConstraintCreationFailed(DatabaseError, "Creating a requested constraint failed."),

@@ -152,6 +152,7 @@ org.neo4j.graphdb.NotificationCategory::DEPRECATION org.neo4j.graphdb.Notificati
 org.neo4j.graphdb.NotificationCategory::GENERIC org.neo4j.graphdb.NotificationCategory public static final
 org.neo4j.graphdb.NotificationCategory::HINT org.neo4j.graphdb.NotificationCategory public static final
 org.neo4j.graphdb.NotificationCategory::PERFORMANCE org.neo4j.graphdb.NotificationCategory public static final
+org.neo4j.graphdb.NotificationCategory::SCHEMA org.neo4j.graphdb.NotificationCategory public static final
 org.neo4j.graphdb.NotificationCategory::SECURITY org.neo4j.graphdb.NotificationCategory public static final
 org.neo4j.graphdb.NotificationCategory::TOPOLOGY org.neo4j.graphdb.NotificationCategory public static final
 org.neo4j.graphdb.NotificationCategory::UNKNOWN org.neo4j.graphdb.NotificationCategory public static final

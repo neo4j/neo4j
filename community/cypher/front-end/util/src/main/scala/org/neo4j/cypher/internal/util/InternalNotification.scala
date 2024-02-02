@@ -74,7 +74,9 @@ object InternalNotification {
     "DeprecatedFieldNotification",
     "MissingParametersNotification",
     "CodeGenerationFailedNotification",
-    "RequestedTopologyMatchedCurrentTopology"
+    "RequestedTopologyMatchedCurrentTopology",
+    "IndexOrConstraintAlreadyExistsNotification",
+    "IndexOrConstraintDoesNotExistNotification"
   )
 
   def allNotificationsAsJavaIterable(): lang.Iterable[String] = allNotifications.asJava
@@ -148,3 +150,7 @@ case class ServerAlreadyCordoned(server: String) extends InternalNotification
 case class NoDatabasesReallocated() extends InternalNotification
 case class CordonedServersExistedDuringAllocation(servers: String) extends InternalNotification
 case class RequestedTopologyMatchedCurrentTopology() extends InternalNotification
+
+case class IndexOrConstraintAlreadyExistsNotification(command: String, conflicting: String)
+    extends InternalNotification
+case class IndexOrConstraintDoesNotExistNotification(command: String, name: String) extends InternalNotification

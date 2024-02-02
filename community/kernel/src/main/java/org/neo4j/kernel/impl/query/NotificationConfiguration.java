@@ -49,7 +49,8 @@ public record NotificationConfiguration(Severity severityLevel, Set<Category> di
         DEPRECATION,
         GENERIC,
         SECURITY,
-        TOPOLOGY
+        TOPOLOGY,
+        SCHEMA
     }
 
     public static final NotificationConfiguration DEFAULT_FILTER = all();
@@ -79,6 +80,7 @@ public record NotificationConfiguration(Severity severityLevel, Set<Category> di
                     case UNSUPPORTED -> Category.UNSUPPORTED;
                     case SECURITY -> Category.SECURITY;
                     case TOPOLOGY -> Category.TOPOLOGY;
+                    case SCHEMA -> Category.SCHEMA;
                     case UNKNOWN -> null;
                 };
 

@@ -29,9 +29,11 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.runtime.ClosingLongIterator
 import org.neo4j.cypher.internal.runtime.ConstraintInfo
+import org.neo4j.cypher.internal.runtime.ConstraintInformation
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.EntityTransformer
 import org.neo4j.cypher.internal.runtime.IndexInfo
+import org.neo4j.cypher.internal.runtime.IndexInformation
 import org.neo4j.cypher.internal.runtime.NodeOperations
 import org.neo4j.cypher.internal.runtime.NodeReadOperations
 import org.neo4j.cypher.internal.runtime.QueryContext
@@ -265,6 +267,10 @@ object StaticEvaluation {
 
     override def getIndexUsageStatistics(index: IndexDescriptor): IndexUsageStats = notAvailable()
 
+    override def getIndexInformation(name: String): IndexInformation = notAvailable()
+
+    override def getIndexInformation(index: IndexDescriptor): IndexInformation = notAvailable()
+
     override def indexExists(name: String): Boolean = notAvailable()
 
     override def constraintExists(name: String): Boolean = notAvailable()
@@ -409,6 +415,14 @@ object StaticEvaluation {
     ): Unit = notAvailable()
 
     override def dropNamedConstraint(name: String): Unit = notAvailable()
+
+    override def getConstraintInformation(name: String): ConstraintInformation = notAvailable()
+
+    override def getConstraintInformation(
+      matchFn: ConstraintDescriptor => Boolean,
+      entityId: Int,
+      properties: Int*
+    ): ConstraintInformation = notAvailable()
 
     override def getAllConstraints(): Map[ConstraintDescriptor, ConstraintInfo] = notAvailable()
 

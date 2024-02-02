@@ -69,5 +69,10 @@ public enum NotificationCategory {
     /**
      * Topology notifications
      */
-    TOPOLOGY
+    TOPOLOGY,
+
+    /**
+     * Schema notifications
+     */
+    SCHEMA
 }

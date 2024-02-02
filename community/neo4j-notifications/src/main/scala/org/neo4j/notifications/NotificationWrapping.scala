@@ -40,6 +40,8 @@ import org.neo4j.cypher.internal.util.FixedLengthRelationshipInShortestPath
 import org.neo4j.cypher.internal.util.GrantRoleCommandHasNoEffectNotification
 import org.neo4j.cypher.internal.util.HomeDatabaseNotPresent
 import org.neo4j.cypher.internal.util.ImpossibleRevokeCommandWarning
+import org.neo4j.cypher.internal.util.IndexOrConstraintAlreadyExistsNotification
+import org.neo4j.cypher.internal.util.IndexOrConstraintDoesNotExistNotification
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.NoDatabasesReallocated
@@ -323,6 +325,20 @@ object NotificationWrapping {
       NotificationCodeWithDescription.commandHasNoEffectRevokeRole(
         graphdb.InputPosition.empty,
         command
+      )
+
+    case IndexOrConstraintAlreadyExistsNotification(command, conflicting) =>
+      NotificationCodeWithDescription.indexOrConstraintAlreadyExists(
+        graphdb.InputPosition.empty,
+        command,
+        conflicting
+      )
+
+    case IndexOrConstraintDoesNotExistNotification(command, name) =>
+      NotificationCodeWithDescription.indexOrConstraintDoesNotExist(
+        graphdb.InputPosition.empty,
+        command,
+        name
       )
 
     case ImpossibleRevokeCommandWarning(command, cause) =>

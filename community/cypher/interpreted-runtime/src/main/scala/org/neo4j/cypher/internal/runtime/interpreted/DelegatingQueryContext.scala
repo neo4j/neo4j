@@ -29,8 +29,10 @@ import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.ClosingLongIterator
 import org.neo4j.cypher.internal.runtime.ConstraintInfo
+import org.neo4j.cypher.internal.runtime.ConstraintInformation
 import org.neo4j.cypher.internal.runtime.EntityTransformer
 import org.neo4j.cypher.internal.runtime.IndexInfo
+import org.neo4j.cypher.internal.runtime.IndexInformation
 import org.neo4j.cypher.internal.runtime.NodeOperations
 import org.neo4j.cypher.internal.runtime.NodeReadOperations
 import org.neo4j.cypher.internal.runtime.Operations
@@ -285,6 +287,12 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   override def getIndexUsageStatistics(index: IndexDescriptor): IndexUsageStats =
     singleDbHit(inner.getIndexUsageStatistics(index))
 
+  override def getIndexInformation(name: String): IndexInformation =
+    singleDbHit(inner.getIndexInformation(name))
+
+  override def getIndexInformation(index: IndexDescriptor): IndexInformation =
+    singleDbHit(inner.getIndexInformation(index))
+
   override def indexExists(name: String): Boolean = singleDbHit(inner.indexExists(name))
 
   override def constraintExists(name: String): Boolean = singleDbHit(inner.constraintExists(name))
@@ -467,6 +475,16 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def dropNamedConstraint(name: String): Unit =
     singleDbHit(inner.dropNamedConstraint(name))
+
+  override def getConstraintInformation(name: String): ConstraintInformation =
+    singleDbHit(inner.getConstraintInformation(name))
+
+  override def getConstraintInformation(
+    matchFn: ConstraintDescriptor => Boolean,
+    entityId: Int,
+    properties: Int*
+  ): ConstraintInformation =
+    singleDbHit(inner.getConstraintInformation(matchFn, entityId, properties: _*))
 
   override def getAllConstraints(): Map[ConstraintDescriptor, ConstraintInfo] = singleDbHit(inner.getAllConstraints())
 

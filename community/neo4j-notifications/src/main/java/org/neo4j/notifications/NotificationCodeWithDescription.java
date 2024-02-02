@@ -277,7 +277,17 @@ public enum NotificationCodeWithDescription {
     REQUESTED_TOPOLOGY_MATCHED_CURRENT_TOPOLOGY(
             Status.Cluster.RequestedTopologyMatchedCurrentTopology,
             "The requested topology matched the current topology. No allocations were changed.",
-            "`ALTER DATABASE` has no effect. The requested topology matched the current topology. No allocations were changed.");
+            "`ALTER DATABASE` has no effect. The requested topology matched the current topology. No allocations were changed."),
+
+    INDEX_OR_CONSTRAINT_ALREADY_EXISTS(
+            Status.Schema.IndexOrConstraintAlreadyExists,
+            "`%s` already exists.",
+            "`%s` has no effect. `%s` already exists."),
+
+    INDEX_OR_CONSTRAINT_DOES_NOT_EXIST(
+            Status.Schema.IndexOrConstraintDoesNotExist,
+            "`%s` does not exist.",
+            "`%s` has no effect. `%s` does not exist.");
 
     private final Status status;
     private final String description;
@@ -559,6 +569,18 @@ public enum NotificationCodeWithDescription {
 
     public static NotificationImplementation requestedTopologyMatchedCurrentTopology(InputPosition position) {
         return REQUESTED_TOPOLOGY_MATCHED_CURRENT_TOPOLOGY.notification(position);
+    }
+
+    public static NotificationImplementation indexOrConstraintAlreadyExists(
+            InputPosition position, String titleParam, String descriptionParam) {
+        return INDEX_OR_CONSTRAINT_ALREADY_EXISTS.notificationWithTitleAndDescriptionDetails(
+                position, titleParam, new String[] {descriptionParam}, new String[] {titleParam, descriptionParam});
+    }
+
+    public static NotificationImplementation indexOrConstraintDoesNotExist(
+            InputPosition position, String titleParam, String descriptionParam) {
+        return INDEX_OR_CONSTRAINT_DOES_NOT_EXIST.notificationWithTitleAndDescriptionDetails(
+                position, titleParam, new String[] {descriptionParam}, new String[] {titleParam, descriptionParam});
     }
 
     private NotificationImplementation notification(InputPosition position) {

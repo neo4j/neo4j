@@ -253,15 +253,6 @@ case class ShowIndexesCommand(
 }
 
 object ShowIndexesCommand {
-  sealed trait Uniqueness
-
-  case object Unique extends Uniqueness {
-    final override val toString: String = "UNIQUE"
-  }
-
-  case object Nonunique extends Uniqueness {
-    final override val toString: String = "NONUNIQUE"
-  }
 
   private def createIndexStatement(
     name: String,

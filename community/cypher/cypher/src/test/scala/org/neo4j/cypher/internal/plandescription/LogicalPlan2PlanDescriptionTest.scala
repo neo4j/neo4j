@@ -2422,7 +2422,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           None,
           IndexType.RANGE,
           label("Label"),
-          List(key("prop")),
+          List(key("prop1"), key("prop2")),
           Some(Left("$indexName")),
           OptionsParam(parameter("options", CTMap))
         ),
@@ -2432,7 +2432,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         id,
         "CreateIndex",
         NoChildren,
-        Seq(details("RANGE INDEX `$indexName` FOR (:Label) ON (prop) OPTIONS $options")),
+        Seq(details("RANGE INDEX `$indexName` FOR (:Label) ON (prop1, prop2) OPTIONS $options")),
         Set.empty
       )
     )
@@ -2830,7 +2830,13 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(CreateIndex(None, IndexType.TEXT, relType("Label"), List(key("prop")), None, NoOptions), 63.2),
-      planDescription(id, "CreateIndex", NoChildren, Seq(details("TEXT INDEX FOR ()-[:Label]-() ON (prop)")), Set.empty)
+      planDescription(
+        id,
+        "CreateIndex",
+        NoChildren,
+        Seq(details("TEXT INDEX FOR ()-[:Label]-() ON (prop)")),
+        Set.empty
+      )
     )
 
     assertGood(
@@ -3518,8 +3524,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         CreateConstraint(
           None,
           RelationshipUniqueness,
-          relType("REL_TYPE"),
-          List(prop("x", "prop")),
+          relType("REL-TYPE"),
+          List(prop("x", "prop-prop")),
           Some(Right(parameter("constraintName", CTString))),
           OptionsMap(Map("indexProvider" -> stringLiteral("range-1.0")))
         ),
@@ -3530,7 +3536,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         "CreateConstraint",
         NoChildren,
         Seq(details(
-          """CONSTRAINT $constraintName FOR ()-[x:REL_TYPE]-() REQUIRE (x.prop) IS UNIQUE OPTIONS {indexProvider: "range-1.0"}"""
+          """CONSTRAINT $constraintName FOR ()-[x:`REL-TYPE`]-() REQUIRE (x.`prop-prop`) IS UNIQUE OPTIONS {indexProvider: "range-1.0"}"""
         )),
         Set.empty
       )
