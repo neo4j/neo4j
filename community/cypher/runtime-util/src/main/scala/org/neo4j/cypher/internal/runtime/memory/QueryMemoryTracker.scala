@@ -123,7 +123,13 @@ class TrackingQueryMemoryTracker extends QueryMemoryTracker {
     }
   }
 
-  override private[memory] def memoryTrackerForOperator(operatorId: Int): OperatorMemoryTracker = {
+  /**
+   * Get the memory tracker for the operator with the given id.
+   * This memory tracker is not bound to any transaction.
+   *
+   * @param operatorId the id of the operator
+   */
+  private[memory] def memoryTrackerForOperator(operatorId: Int): OperatorMemoryTracker = {
     memoryTrackerPerOperator.computeIfAbsent(operatorId, newTracker)
   }
 }
@@ -158,8 +164,6 @@ case object NoOpQueryMemoryTracker extends QueryMemoryTracker {
 
   override def heapHighWaterMarkOfOperator(operatorId: Int): Long = HeapHighWaterMarkTracker.ALLOCATIONS_NOT_TRACKED
 
-  override private[memory] def memoryTrackerForOperator(operatorId: Int): HeapMemoryTracker =
-    EmptyMemoryTracker.INSTANCE
 }
 
 /**
@@ -190,8 +194,6 @@ class ParallelTrackingQueryMemoryTracker extends QueryMemoryTracker {
 
   override def heapHighWaterMarkOfOperator(operatorId: Int): Long = HeapHighWaterMarkTracker.ALLOCATIONS_NOT_TRACKED
 
-  override private[memory] def memoryTrackerForOperator(operatorId: Int): HeapMemoryTracker = ???
-
   override def debugPrintSummary(): Unit = {
     if (DEBUG_MEMORY_TRACKING) {
       debugMemoryTracker.debugPrintSummary()
@@ -202,7 +204,7 @@ class ParallelTrackingQueryMemoryTracker extends QueryMemoryTracker {
 /**
  * A memory tracker and MemoryTrackerForOperatorProvider that delegates all calls to the
  * thread local execution context memory tracker if the current thread is a Cypher worker thread,
- * or otherwise to a dedicated execution context memory tracker used for query intialization.
+ * or otherwise to a dedicated execution context memory tracker used for query initialization.
  */
 class WorkerThreadDelegatingMemoryTracker extends MemoryTracker with MemoryTrackerForOperatorProvider {
 

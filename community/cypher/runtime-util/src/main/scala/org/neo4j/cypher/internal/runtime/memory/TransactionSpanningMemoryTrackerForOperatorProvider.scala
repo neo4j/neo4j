@@ -34,15 +34,4 @@ trait TransactionSpanningMemoryTrackerForOperatorProvider {
    */
   def heapHighWaterMarkOfOperator(operatorId: Int): Long
 
-  /**
-   * Get the memory tracker for the operator with the given id.
-   * This memory tracker is not bound to any transaction.
-   *
-   * The reason that this is package private is to prevent runtime to call this method.
-   * They should instead call [[MemoryTrackerForOperatorProvider.memoryTrackerForOperator()]],
-   * which returns a MemoryTracker that is also bound to the current transaction.
-   *
-   * @param operatorId the id of the operator
-   */
-  private[memory] def memoryTrackerForOperator(operatorId: Int): HeapMemoryTracker
 }
