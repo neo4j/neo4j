@@ -21,6 +21,9 @@ package org.neo4j.cypher.internal.runtime.spec
 
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.runtime.spec.GraphCreation.ComplexGraph
+import org.neo4j.cypher.internal.runtime.spec.graphtemplate.InstantiatedGraph
+import org.neo4j.cypher.internal.runtime.spec.graphtemplate.TransactionTemplateInstantiator
+import org.neo4j.cypher.internal.runtime.spec.graphtemplate.parsing.GraphTemplateParser
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.topDown
 import org.neo4j.graphdb.Label
@@ -117,6 +120,12 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
   }
 
   // GRAPHS
+
+  def fromTemplate(str: String, defaultRelType: String = "R"): InstantiatedGraph[Node, Relationship] = {
+    GraphTemplateParser
+      .parse(str)
+      .instantiate(new TransactionTemplateInstantiator(runtimeTestSupport.tx, defaultRelType))
+  }
 
   def bipartiteGraph(
     nNodes: Int,

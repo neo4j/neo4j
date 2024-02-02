@@ -2215,35 +2215,21 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
 
   test("expression variable for VariablePredicate on target node shouldn't interfere with successive operators") {
 
-    val (n0, n3, n5) = givenGraph {
+    val (n3, n5) = givenGraph {
       // We return a path to n3, then a path to n5, then to n3 again. This will cause a bug if
       // the expression variable for VariablePredicate on target node interferes with the projection.
-      //
-      // GRAPH:
-      //      .-----------------.
-      //     /                   v
-      // (n0:S)-->(n1)-->(n2)-->(n3:T)
-      //     \
-      //      '--->(n4)---(n5:T)
 
-      val Seq(n0, n1, n2, n3, n4, n5) = nodeGraph(6)
-      val S = Label.label("S")
-      val T = Label.label("T")
-      val R = RelationshipType.withName("R")
-      n0.addLabel(S)
-      n3.addLabel(T)
-      n5.addLabel(T)
+      val graph = fromTemplate(
+        """    .-----------------.
+          |    |                 v
+          |(n0:S)->(n1)->(n2)->(n3:T)
+          |    |
+          |    '-->(n4)-->(n5:T)
+          |
+          |""".stripMargin
+      )
 
-      n0.createRelationshipTo(n3, R)
-
-      n0.createRelationshipTo(n4, R)
-      n4.createRelationshipTo(n5, R)
-
-      n0.createRelationshipTo(n1, R)
-      n1.createRelationshipTo(n2, R)
-      n2.createRelationshipTo(n3, R)
-
-      (n0, n3, n5)
+      (graph node "n3", graph node "n5")
     }
 
     val nfa = new TestNFABuilder(0, "s")
@@ -3496,29 +3482,16 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
 
   test("propagation through purged and re-registered rev step") {
 
-    val ns = givenGraph {
+    val (n0, n3, n5) = givenGraph {
 
-      //      (n2)
-      //      /   \
-      // (n0: S)-->(n1)-->(n3: T)-->(n4)-->(n5: T)
+      val graph = fromTemplate(
+        """   .-->(n2)--.
+          |   |         v
+          | (n0:S)---->(n1)-->(n3:T)-->(n4)-->(n5:T)
+          |""".stripMargin
+      )
 
-      val ns = nodeGraph(6)
-
-      ns(0).addLabel(Label.label("S"))
-      ns(3).addLabel(Label.label("T"))
-      ns(5).addLabel(Label.label("T"))
-
-      val R = RelationshipType.withName("R")
-
-      ns(0).createRelationshipTo(ns(1), R)
-      ns(1).createRelationshipTo(ns(3), R)
-      ns(3).createRelationshipTo(ns(4), R)
-      ns(4).createRelationshipTo(ns(5), R)
-
-      ns(0).createRelationshipTo(ns(2), R)
-      ns(2).createRelationshipTo(ns(1), R)
-
-      ns
+      (graph node "n0", graph node "n3", graph node "n5")
     }
 
     // pattern:
@@ -3557,10 +3530,10 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val expected = Seq(
-      Array[Object](ns(0), ns(3)),
-      Array[Object](ns(0), ns(3)),
-      Array[Object](ns(0), ns(5)),
-      Array[Object](ns(0), ns(5))
+      Array[Object](n0, n3),
+      Array[Object](n0, n3),
+      Array[Object](n0, n5),
+      Array[Object](n0, n5)
     )
 
     runtimeResult should beColumns(retVars: _*).withRows(expected)
@@ -3839,54 +3812,23 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
   test("ruthless cobweb") {
     givenGraph {
 
-      //       (n1)--(n2)--(n3)
-      //      /                \
-      //     /     ,--[:R]--.  [:R]
-      //    /     /          \   \
-      //  (n0)--(n5)--(n6)--(n7)--(n8)--(t9)
-      //    \    |
-      //     \  [:R]
-      //      \  |
-      //      (t4)
-
-      val outRelType = org.neo4j.graphdb.RelationshipType.withName("NOT_R")
-      val randomRelType = org.neo4j.graphdb.RelationshipType.withName("R")
-
-      val sourceLabel = Label.label("S")
-      val targetLabel = Label.label("T")
-
-      val centerNode = tx.createNode(Label.label("0,0"))
-      centerNode.addLabel(sourceLabel)
-
-      val n1 = tx.createNode()
-      val n2 = tx.createNode()
-      val n3 = tx.createNode()
-
-      val n4 = tx.createNode()
-      n4.addLabel(targetLabel)
-
-      val n5 = tx.createNode()
-      val n6 = tx.createNode()
-      val n7 = tx.createNode()
-      val n8 = tx.createNode()
-      val n9 = tx.createNode()
-      n9.addLabel(targetLabel)
-
-      centerNode.createRelationshipTo(n1, outRelType)
-      centerNode.createRelationshipTo(n4, outRelType)
-      centerNode.createRelationshipTo(n5, outRelType)
-
-      n1.createRelationshipTo(n2, outRelType)
-      n2.createRelationshipTo(n3, outRelType)
-
-      n5.createRelationshipTo(n6, outRelType)
-      n6.createRelationshipTo(n7, outRelType)
-      n7.createRelationshipTo(n8, outRelType)
-      n8.createRelationshipTo(n9, outRelType)
-
-      n8.createRelationshipTo(n3, randomRelType)
-      n7.createRelationshipTo(n5, randomRelType)
-      n5.createRelationshipTo(n4, randomRelType)
+      fromTemplate(
+        """
+          |         .--->( )--->( )--->( )
+          |         |                   |
+          |         |                  [:R]
+          |         |    .---[:R]--.    |
+          |         |    |         v    v
+          |       (:S)->( )->( )->( )->( )->(:T)
+          |         |    ^
+          |         |    |
+          |         |   [:R]
+          |         |    |
+          |         '-->(:T)
+          |
+          |""".stripMargin,
+        defaultRelType = "NOT_R"
+      )
     }
 
     // pattern:
@@ -4269,55 +4211,26 @@ abstract class PGShortestPathTestBase[CONTEXT <: RuntimeContext](
 
     givenGraph {
 
-      //                            (n5)-->(n6)
-      //                               ^  /
-      //                                \V    / \
-      // (n0:S)-->(n1)-->(n2)-->(n3)-->(n4:T)´   |
-      //   |      ^       \                   \ /
-      //   V      |        \
-      //  (n10)  (n17)      `->(n7)-->(n8)-->(n18)-->(n9:T)
-      //   |      ^
-      //   V      |
-      //  (n11)  (n16)
-      //   |      ^
-      //   V      |
-      //  (n12)  (n15)
-      //   |      ^
-      //   V      |
-      //  (n13)-->(n14)
-
-      val R = RelationshipType.withName("R")
-
-      val Seq(n0, n1, n2, n3, n4, n5, n6, n7, n8, n9, n10, n11, n12, n13, n14, n15, n16, n17, n18) = nodeGraph(19)
-      n0.addLabel(Label.label("S"))
-      n4.addLabel(Label.label("T"))
-      n9.addLabel(Label.label("T"))
-
-      n0.createRelationshipTo(n1, R)
-      n1.createRelationshipTo(n2, R)
-      n2.createRelationshipTo(n3, R)
-      n3.createRelationshipTo(n4, R)
-
-      n2.createRelationshipTo(n7, R)
-      n7.createRelationshipTo(n8, R)
-      n8.createRelationshipTo(n18, R)
-      n18.createRelationshipTo(n9, R)
-
-      n4.createRelationshipTo(n5, R)
-      n5.createRelationshipTo(n6, R)
-      n6.createRelationshipTo(n4, R)
-
-      n4.createRelationshipTo(n4, R)
-
-      n0.createRelationshipTo(n10, R)
-      n10.createRelationshipTo(n11, R)
-      n11.createRelationshipTo(n12, R)
-      n12.createRelationshipTo(n13, R)
-      n13.createRelationshipTo(n14, R)
-      n14.createRelationshipTo(n15, R)
-      n15.createRelationshipTo(n16, R)
-      n16.createRelationshipTo(n17, R)
-      n17.createRelationshipTo(n1, R)
+      fromTemplate(
+        """
+          |                            ()->()
+          |                             ^  |
+          |                             |  v
+          |    (:S)-->( )-->( )-->( )-->(:T)<-.
+          |     |      ^     |             '--'
+          |     v      |     |
+          |    ( )    ( )    '->()-->()-->()-->(:T)
+          |     |      ^
+          |     v      |
+          |    ( )    ( )
+          |     |      ^
+          |     v      |
+          |    ( )    ( )
+          |     |      ^
+          |     v      |
+          |    ( )--->( )
+          |""".stripMargin
+      )
     }
 
     // pattern:
