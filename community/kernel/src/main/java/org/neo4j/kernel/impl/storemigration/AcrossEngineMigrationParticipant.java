@@ -44,6 +44,7 @@ import org.neo4j.internal.batchimport.input.Input;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.pagecache.ExternallyManagedPageCache;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -134,6 +135,11 @@ public class AcrossEngineMigrationParticipant extends AbstractStoreMigrationPart
                     @Override
                     public IndexConfig indexConfig() {
                         return IndexConfig.create().withLabelIndex().withRelationshipTypeIndex();
+                    }
+
+                    @Override
+                    public ExternallyManagedPageCache providedPageCache() {
+                        return new ExternallyManagedPageCache(pageCache);
                     }
                 },
                 logService,

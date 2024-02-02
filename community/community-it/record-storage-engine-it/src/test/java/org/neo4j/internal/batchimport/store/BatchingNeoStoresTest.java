@@ -66,6 +66,7 @@ import org.neo4j.internal.schema.IndexConfigCompleter;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
+import org.neo4j.io.pagecache.ExternallyManagedPageCache;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -521,6 +522,36 @@ class BatchingNeoStoresTest {
             assertThat(stores.getPageCache().maxCachedPages()
                             * stores.getPageCache().pageSize())
                     .isCloseTo(overridden, Percentage.withPercentage(1));
+        }
+    }
+
+    @Test
+    void shouldUseProvidedPageCache() throws IOException {
+        // GIVEN
+        var config = new Configuration.Overridden(Configuration.DEFAULT) {
+            @Override
+            public ExternallyManagedPageCache providedPageCache() {
+                return new ExternallyManagedPageCache(pageCache);
+            }
+        };
+
+        // WHEN
+        try (var stores = batchingNeoStores(
+                fileSystem,
+                databaseLayout,
+                config,
+                NullLogService.getInstance(),
+                EMPTY,
+                LogTailLogVersionsMetadata.EMPTY_LOG_TAIL,
+                Config.defaults(),
+                Mockito.mock(JobScheduler.class),
+                PageCacheTracer.NULL,
+                NULL_CONTEXT_FACTORY,
+                INSTANCE)) {
+            stores.createNew();
+
+            // THEN
+            assertThat(pageCache.listExistingMappings().size()).isGreaterThan(0);
         }
     }
 

@@ -25,6 +25,8 @@ import static org.neo4j.util.FeatureToggles.getInteger;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.ToolingMemoryCalculations;
+import org.neo4j.io.pagecache.ExternallyManagedPageCache;
+import org.neo4j.io.pagecache.PageCache;
 
 /**
  * Configuration for a an importer, mostly how and how much resources are used.
@@ -151,6 +153,13 @@ public interface Configuration {
         return true;
     }
 
+    /**
+     * @return a {@link PageCache} which, if non-null, should be used instead of creating a new one.
+     */
+    default ExternallyManagedPageCache providedPageCache() {
+        return null;
+    }
+
     Configuration DEFAULT = new Configuration() {};
 
     /**
@@ -230,6 +239,11 @@ public interface Configuration {
         @Override
         public boolean defragmentInternalStores() {
             return defaults.defragmentInternalStores();
+        }
+
+        @Override
+        public ExternallyManagedPageCache providedPageCache() {
+            return defaults.providedPageCache();
         }
     }
 

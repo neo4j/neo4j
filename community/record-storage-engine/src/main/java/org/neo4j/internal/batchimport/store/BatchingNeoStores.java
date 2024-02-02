@@ -67,6 +67,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.mem.MemoryAllocator;
 import org.neo4j.io.os.OsBeanUtil;
+import org.neo4j.io.pagecache.ExternallyManagedPageCache;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -331,7 +332,10 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
             CursorContextFactory contextFactory,
             MemoryTracker memoryTracker) {
         Config neo4jConfig = getNeo4jConfig(dbConfig);
-        PageCache pageCache = createPageCache(fileSystem, neo4jConfig, pageCacheTracer, jobScheduler, memoryTracker);
+        ExternallyManagedPageCache providedPageCache = config.providedPageCache();
+        PageCache pageCache = providedPageCache != null
+                ? providedPageCache
+                : createPageCache(fileSystem, neo4jConfig, pageCacheTracer, jobScheduler, memoryTracker);
 
         return new BatchingNeoStores(
                 fileSystem,
