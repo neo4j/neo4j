@@ -22,8 +22,6 @@ package org.neo4j.values.storable;
 import static java.lang.Integer.parseInt;
 import static java.time.ZoneOffset.UTC;
 import static java.util.Objects.requireNonNull;
-import static org.neo4j.exceptions.InvalidTemporalArgumentException.invalidOffset;
-import static org.neo4j.exceptions.InvalidTemporalArgumentException.namedTimeZoneWithoutDate;
 import static org.neo4j.memory.HeapEstimator.OFFSET_TIME_SIZE;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.values.storable.DateTimeValue.parseZoneName;
@@ -45,6 +43,7 @@ import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.neo4j.exceptions.InvalidArgumentException;
+import org.neo4j.exceptions.InvalidTemporalArgumentException;
 import org.neo4j.exceptions.UnsupportedTemporalUnitException;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.StructureBuilder;
@@ -347,7 +346,7 @@ public final class TimeValue extends TemporalValue<OffsetTime, TimeValue> {
         if (matcher.matches()) {
             return parseOffset(matcher);
         }
-        return invalidOffset(offset);
+        throw InvalidTemporalArgumentException.invalidOffset(offset);
     }
 
     static ZoneOffset parseOffset(Matcher matcher) {
@@ -367,7 +366,7 @@ public final class TimeValue extends TemporalValue<OffsetTime, TimeValue> {
     private static TimeValue parse(Matcher matcher, Supplier<ZoneId> defaultZone) {
         String zoneName = matcher.group("zoneName");
         if (null != zoneName) {
-            return namedTimeZoneWithoutDate();
+            throw InvalidTemporalArgumentException.namedTimeZoneWithoutDate();
         }
         return new TimeValue(OffsetTime.of(parseTime(matcher), parseOffset(matcher, defaultZone)));
     }

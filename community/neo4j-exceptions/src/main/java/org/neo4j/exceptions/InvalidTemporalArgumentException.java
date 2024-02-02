@@ -25,12 +25,12 @@ public class InvalidTemporalArgumentException extends InvalidArgumentException {
         super(message);
     }
 
-    public static <T> T namedTimeZoneWithoutDate() {
-        throw new InvalidTemporalArgumentException(
+    public static InvalidArgumentException namedTimeZoneWithoutDate() {
+        return new InvalidTemporalArgumentException(
                 "Using a named time zone e.g. [UTC] is not valid for a time without a date. Instead, use a specific time zone string e.g. +00:00.");
     }
 
-    public static <T> T invalidOffset(String offset) {
-        throw new InvalidArgumentException("Not a valid offset: " + offset);
+    public static InvalidArgumentException invalidOffset(String offset) {
+        return new InvalidArgumentException("Not a valid offset: " + offset);
     }
 }

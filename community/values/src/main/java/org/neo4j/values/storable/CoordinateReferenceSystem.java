@@ -19,10 +19,9 @@
  */
 package org.neo4j.values.storable;
 
-import static org.neo4j.exceptions.InvalidSpatialArgumentException.invalidCoordinateSystem;
-
 import java.util.Locale;
 import java.util.Objects;
+import org.neo4j.exceptions.InvalidSpatialArgumentException;
 import org.neo4j.graphdb.spatial.CRS;
 import org.neo4j.internal.helpers.collection.Iterables;
 
@@ -45,7 +44,7 @@ public enum CoordinateReferenceSystem implements CRS {
                 return crs;
             }
         }
-        return invalidCoordinateSystem(tableId + "-" + code);
+        throw InvalidSpatialArgumentException.invalidCoordinateSystem(tableId + "-" + code);
     }
 
     public static CoordinateReferenceSystem get(CRS crs) {
@@ -59,7 +58,7 @@ public enum CoordinateReferenceSystem implements CRS {
                 return crs;
             }
         }
-        return invalidCoordinateSystem(name);
+        throw InvalidSpatialArgumentException.invalidCoordinateSystem(name);
     }
 
     public static CoordinateReferenceSystem get(String href) {
@@ -68,7 +67,7 @@ public enum CoordinateReferenceSystem implements CRS {
                 return crs;
             }
         }
-        return invalidCoordinateSystem(href);
+        throw InvalidSpatialArgumentException.invalidCoordinateSystem(href);
     }
 
     public static CoordinateReferenceSystem get(int code) {
@@ -80,7 +79,7 @@ public enum CoordinateReferenceSystem implements CRS {
                 }
             }
         }
-        return invalidCoordinateSystem(code);
+        throw InvalidSpatialArgumentException.invalidCoordinateSystem(code);
     }
 
     private final String name;

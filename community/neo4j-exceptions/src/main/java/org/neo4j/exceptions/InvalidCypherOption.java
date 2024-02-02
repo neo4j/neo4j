@@ -27,34 +27,34 @@ public class InvalidCypherOption extends InvalidArgumentException {
         super(message);
     }
 
-    public static <T> T failWithInvalidCypherOptionCombination(
+    public static InvalidCypherOption invalidCombination(
             String optionName1, String option1, String optionName2, String option2) {
-        throw new InvalidCypherOption(
+        return new InvalidCypherOption(
                 format("Cannot combine %s '%s' with %s '%s'", optionName1, option1, optionName2, option2));
     }
 
-    public static <T> T parallelRuntimeIsDisabled() {
-        throw new InvalidCypherOption(
+    public static InvalidCypherOption parallelRuntimeIsDisabled() {
+        return new InvalidCypherOption(
                 "Parallel runtime has been disabled, please enable it or upgrade to a bigger Aura instance.");
     }
 
-    public static <T> T invalidOption(String input, String name, String... validOptions) {
-        throw new InvalidCypherOption(format(
+    public static InvalidCypherOption invalidOption(String input, String name, String... validOptions) {
+        return new InvalidCypherOption(format(
                 "%s is not a valid option for %s. Valid options are: %s",
                 input, name, String.join(", ", validOptions)));
     }
 
-    public static <T> T conflictingOptionForName(String name) {
-        throw new InvalidCypherOption("Can't specify multiple conflicting values for " + name);
+    public static InvalidCypherOption conflictingOptionForName(String name) {
+        return new InvalidCypherOption("Can't specify multiple conflicting values for " + name);
     }
 
-    public static <T> T unsupportedOptions(String... keys) {
-        throw new InvalidCypherOption(format("Unsupported options: %s", String.join(", ", keys)));
+    public static InvalidCypherOption unsupportedOptions(String... keys) {
+        return new InvalidCypherOption(format("Unsupported options: %s", String.join(", ", keys)));
     }
 
     // NOTE: this is an internal error and should probably not have any GQL code
-    public static <T> T sourceGenerationDisabled() {
-        throw new InvalidCypherOption("In order to use source generation you need to enable "
+    public static InvalidCypherOption sourceGenerationDisabled() {
+        return new InvalidCypherOption("In order to use source generation you need to enable "
                 + "`internal.cypher.pipelined.allow_source_generation`");
     }
 }

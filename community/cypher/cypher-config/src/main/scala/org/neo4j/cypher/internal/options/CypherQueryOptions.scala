@@ -26,10 +26,7 @@ import org.neo4j.cypher.internal.options.CypherQueryOptions.ILLEGAL_EXPRESSION_E
 import org.neo4j.cypher.internal.options.CypherQueryOptions.ILLEGAL_INTERPRETED_PIPES_FALLBACK_RUNTIME_COMBINATIONS
 import org.neo4j.cypher.internal.options.CypherQueryOptions.ILLEGAL_OPERATOR_ENGINE_RUNTIME_COMBINATIONS
 import org.neo4j.cypher.internal.options.CypherQueryOptions.ILLEGAL_PARALLEL_RUNTIME_COMBINATIONS
-import org.neo4j.exceptions.InvalidCypherOption.failWithInvalidCypherOptionCombination
-import org.neo4j.exceptions.InvalidCypherOption.parallelRuntimeIsDisabled
-import org.neo4j.exceptions.InvalidCypherOption.sourceGenerationDisabled
-import org.neo4j.exceptions.InvalidCypherOption.unsupportedOptions
+import org.neo4j.exceptions.InvalidCypherOption
 
 import java.util.Locale
 
@@ -54,13 +51,13 @@ case class CypherQueryOptions(
 ) {
 
   if (ILLEGAL_EXPRESSION_ENGINE_RUNTIME_COMBINATIONS((expressionEngine, runtime)))
-    failWithInvalidCypherOptionCombination("EXPRESSION ENGINE", expressionEngine.name, "RUNTIME", runtime.name)
+    throw InvalidCypherOption.invalidCombination("EXPRESSION ENGINE", expressionEngine.name, "RUNTIME", runtime.name)
 
   if (ILLEGAL_OPERATOR_ENGINE_RUNTIME_COMBINATIONS((operatorEngine, runtime)))
-    failWithInvalidCypherOptionCombination("OPERATOR ENGINE", operatorEngine.name, "RUNTIME", runtime.name)
+    throw InvalidCypherOption.invalidCombination("OPERATOR ENGINE", operatorEngine.name, "RUNTIME", runtime.name)
 
   if (ILLEGAL_INTERPRETED_PIPES_FALLBACK_RUNTIME_COMBINATIONS((interpretedPipesFallback, runtime)))
-    failWithInvalidCypherOptionCombination(
+    throw InvalidCypherOption.invalidCombination(
       "INTERPRETED PIPES FALLBACK",
       interpretedPipesFallback.name,
       "RUNTIME",
@@ -68,7 +65,7 @@ case class CypherQueryOptions(
     )
 
   if (ILLEGAL_PARALLEL_RUNTIME_COMBINATIONS((parallelRuntimeSupportOption, runtime))) {
-    parallelRuntimeIsDisabled()
+    throw InvalidCypherOption.parallelRuntimeIsDisabled()
   }
 
   def render: String = CypherQueryOptions.renderer.render(this)
@@ -89,10 +86,10 @@ object CypherQueryOptions {
     reader.read(OptionReader.Input(config, keyValues)) match {
 
       case OptionReader.Result(remainder, _) if remainder.keyValues.nonEmpty =>
-        unsupportedOptions(remainder.keyValues.map(_._1).toArray: _*)
+        throw InvalidCypherOption.unsupportedOptions(remainder.keyValues.map(_._1).toArray: _*)
       case OptionReader.Result(_, options) =>
         if (options.debugOptions.generateJavaSourceEnabled && !config.allowSourceGeneration) {
-          sourceGenerationDisabled()
+          throw InvalidCypherOption.sourceGenerationDisabled()
         }
         options
     }

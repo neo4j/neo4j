@@ -29,27 +29,27 @@ public class InvalidSpatialArgumentException extends InvalidArgumentException {
         super(message);
     }
 
-    public static <T> T invalidDimension(String crs, int dimension, double... coordinate) {
-        throw new IllegalArgumentException(format(
+    public static InvalidSpatialArgumentException invalidDimension(String crs, int dimension, double... coordinate) {
+        return new InvalidSpatialArgumentException(format(
                 "Cannot create point, CRS %s expects %d dimensions, but got coordinates %s",
                 crs, dimension, Arrays.toString(coordinate)));
     }
 
-    public static <T> T infiniteCoordinateValue(double... coordinate) {
-        throw new InvalidArgumentException(
+    public static InvalidSpatialArgumentException infiniteCoordinateValue(double... coordinate) {
+        return new InvalidSpatialArgumentException(
                 "Cannot create a point with non-finite coordinate values: " + Arrays.toString(coordinate));
     }
 
-    public static <T> T invalidGeographicCoordinates(double... coordinate) {
-        throw new InvalidArgumentException("Cannot create WGS84 point with invalid coordinate: "
+    public static InvalidSpatialArgumentException invalidGeographicCoordinates(double... coordinate) {
+        return new InvalidSpatialArgumentException("Cannot create WGS84 point with invalid coordinate: "
                 + Arrays.toString(coordinate) + ". Valid range for Y coordinate is [-90, 90].");
     }
 
-    public static <T> T invalidCoordinateSystem(int crs) {
+    public static InvalidSpatialArgumentException invalidCoordinateSystem(int crs) {
         return invalidCoordinateSystem("code=" + crs);
     }
 
-    public static <T> T invalidCoordinateSystem(String crs) {
-        throw new InvalidArgumentException("Unknown coordinate reference system: " + crs);
+    public static InvalidSpatialArgumentException invalidCoordinateSystem(String crs) {
+        return new InvalidSpatialArgumentException("Unknown coordinate reference system: " + crs);
     }
 }

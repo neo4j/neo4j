@@ -35,7 +35,7 @@ public class InvalidArgumentException extends Neo4jException {
         return Status.Statement.ArgumentError;
     }
 
-    public static <T> T unknownNormalForm() {
-        throw new InvalidArgumentException("Unknown normal form. Valid values are: NFC, NFD, NFKC, NFKD.");
+    public static InvalidArgumentException unknownNormalForm() {
+        return new InvalidArgumentException("Unknown normal form. Valid values are: NFC, NFD, NFKC, NFKD.");
     }
 }

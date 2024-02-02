@@ -23,7 +23,6 @@ import static java.lang.Double.parseDouble;
 import static java.lang.Long.parseLong;
 import static java.lang.String.format;
 import static org.neo4j.cypher.operations.CursorUtils.propertyKeys;
-import static org.neo4j.exceptions.InvalidArgumentException.unknownNormalForm;
 import static org.neo4j.internal.kernel.api.Read.NO_ID;
 import static org.neo4j.values.storable.Values.EMPTY_STRING;
 import static org.neo4j.values.storable.Values.FALSE;
@@ -755,7 +754,7 @@ public final class CypherFunctions {
         try {
             form = Normalizer.Form.valueOf(asTextValue(normalForm).stringValue());
         } catch (IllegalArgumentException e) {
-            return unknownNormalForm();
+            throw InvalidArgumentException.unknownNormalForm();
         }
 
         String normalized = Normalizer.normalize(asTextValue(input).stringValue(), form);
@@ -1642,7 +1641,7 @@ public final class CypherFunctions {
             try {
                 form = Normalizer.Form.valueOf(normalForm.description());
             } catch (IllegalArgumentException e) {
-                return unknownNormalForm();
+                throw InvalidArgumentException.unknownNormalForm();
             }
             boolean normalized = Normalizer.isNormalized(asText.stringValue(), form);
             return Values.booleanValue(normalized);

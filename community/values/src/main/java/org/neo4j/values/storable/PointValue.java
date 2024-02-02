@@ -21,9 +21,6 @@ package org.neo4j.values.storable;
 
 import static java.lang.String.format;
 import static java.util.Collections.singletonList;
-import static org.neo4j.exceptions.InvalidSpatialArgumentException.infiniteCoordinateValue;
-import static org.neo4j.exceptions.InvalidSpatialArgumentException.invalidDimension;
-import static org.neo4j.exceptions.InvalidSpatialArgumentException.invalidGeographicCoordinates;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.memory.HeapEstimator.sizeOf;
 import static org.neo4j.values.utils.ValueMath.HASH_CONSTANT;
@@ -36,6 +33,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.neo4j.exceptions.InvalidArgumentException;
+import org.neo4j.exceptions.InvalidSpatialArgumentException;
 import org.neo4j.graphdb.spatial.CRS;
 import org.neo4j.graphdb.spatial.Coordinate;
 import org.neo4j.graphdb.spatial.Point;
@@ -102,18 +100,18 @@ public class PointValue extends HashMemoizingScalarValue implements Point, Compa
         this.coordinate = coordinate;
         for (double c : coordinate) {
             if (!Double.isFinite(c)) {
-                infiniteCoordinateValue(coordinate);
+                throw InvalidSpatialArgumentException.infiniteCoordinateValue(coordinate);
             }
         }
         if (coordinate.length != crs.getDimension()) {
-            invalidDimension(crs.toString(), crs.getDimension(), coordinate);
+            throw InvalidSpatialArgumentException.invalidDimension(crs.toString(), crs.getDimension(), coordinate);
         }
         if (crs.isGeographic() && (coordinate.length == 2 || coordinate.length == 3)) {
             // anything with less or more coordinates gets a pass as it is and needs to be stopped from other places
             // like bolt does
             //   (@see org.neo4j.bolt.v2.messaging.Neo4jPackV2Test#shouldFailToPackPointWithIllegalDimensions )
             if (coordinate[1] > 90 || coordinate[1] < -90) {
-                invalidGeographicCoordinates(coordinate);
+                throw InvalidSpatialArgumentException.invalidGeographicCoordinates(coordinate);
             }
 
             double x = coordinate[0];
