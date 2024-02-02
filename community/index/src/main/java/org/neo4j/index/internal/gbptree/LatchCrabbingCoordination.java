@@ -88,21 +88,16 @@ import org.neo4j.io.pagecache.PageCursor;
  * </pre>
  */
 class LatchCrabbingCoordination implements TreeWriterCoordination {
-    static final int DEFAULT_RESET_FREQUENCY = 20;
-
     private final TreeNodeLatchService latchService;
     private final int leafUnderflowThreshold;
-    private final int resetFrequency;
     private DepthData[] dataByDepth = new DepthData[10];
     private int depth = -1;
     private boolean pessimistic;
-    private int operationCounter;
     private PageCursor cursor;
 
-    LatchCrabbingCoordination(TreeNodeLatchService latchService, int leafUnderflowThreshold, int resetFrequency) {
+    LatchCrabbingCoordination(TreeNodeLatchService latchService, int leafUnderflowThreshold) {
         this.latchService = latchService;
         this.leafUnderflowThreshold = leafUnderflowThreshold;
-        this.resetFrequency = resetFrequency;
     }
 
     @Override
@@ -112,18 +107,13 @@ class LatchCrabbingCoordination implements TreeWriterCoordination {
 
     @Override
     public boolean checkForceReset() {
-        var result = pessimistic || operationCounter >= resetFrequency;
-        if (result) {
-            operationCounter = 0;
-        }
-        return result;
+        return pessimistic || rootHasWriteLatchRequest();
     }
 
     @Override
     public void beginOperation() {
         inc(Stat.TOTAL_OPERATIONS);
         this.pessimistic = false;
-        this.operationCounter++;
     }
 
     @Override
@@ -279,6 +269,10 @@ class LatchCrabbingCoordination implements TreeWriterCoordination {
     public void close() {
         depth = -1;
         IOUtils.closeAllUnchecked(dataByDepth);
+    }
+
+    private boolean rootHasWriteLatchRequest() {
+        return depth > 0 && dataByDepth[0].latch.hasWrite();
     }
 
     /**

@@ -202,6 +202,8 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
                                         rootId,
                                         bind(support, PF_SHARED_WRITE_LOCK, cursorContext));
                         break;
+                    } else {
+                        rootMappingWriter.yield();
                     }
                 }
             }
