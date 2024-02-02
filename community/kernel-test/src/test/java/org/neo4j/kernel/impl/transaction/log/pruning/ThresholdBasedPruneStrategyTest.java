@@ -33,37 +33,42 @@ import static org.neo4j.io.IOUtils.uncheckedLongConsumer;
 import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT;
 
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import org.apache.commons.lang3.mutable.MutableBoolean;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFile;
+import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.LogAssertions;
 
 class ThresholdBasedPruneStrategyTest {
     private final FileSystemAbstraction fileSystem = mock(FileSystemAbstraction.class);
     private final LogFile logFile = mock(TransactionLogFile.class);
     private final Threshold threshold = mock(Threshold.class);
 
+    @BeforeEach
+    void setUp() {
+        when(logFile.getLogFileForVersion(anyLong())).thenAnswer(invocationOnMock -> {
+            long version = invocationOnMock.getArgument(0, Long.class);
+            return logFileForVersion(version);
+        });
+    }
+
     @Test
     void shouldNotDeleteAnythingIfThresholdDoesNotAllow() throws IOException {
         // Given
-        Path fileName0 = Path.of("logical.log.v0");
-        Path fileName1 = Path.of("logical.log.v1");
-        Path fileName2 = Path.of("logical.log.v2");
-        Path fileName3 = Path.of("logical.log.v3");
-        Path fileName4 = Path.of("logical.log.v4");
-        Path fileName5 = Path.of("logical.log.v5");
-        Path fileName6 = Path.of("logical.log.v6");
+        Path fileName0 = logFileForVersion(0);
+        Path fileName1 = logFileForVersion(1);
+        Path fileName2 = logFileForVersion(2);
+        Path fileName3 = logFileForVersion(3);
+        Path fileName4 = logFileForVersion(4);
+        Path fileName5 = logFileForVersion(5);
+        Path fileName6 = logFileForVersion(6);
 
-        when(logFile.getLogFileForVersion(6)).thenReturn(fileName6);
-        when(logFile.getLogFileForVersion(5)).thenReturn(fileName5);
-        when(logFile.getLogFileForVersion(4)).thenReturn(fileName4);
-        when(logFile.getLogFileForVersion(3)).thenReturn(fileName3);
-        when(logFile.getLogFileForVersion(2)).thenReturn(fileName2);
-        when(logFile.getLogFileForVersion(1)).thenReturn(fileName1);
-        when(logFile.getLogFileForVersion(0)).thenReturn(fileName0);
         when(logFile.getLowestLogVersion()).thenReturn(0L);
 
         when(fileSystem.fileExists(fileName6)).thenReturn(true);
@@ -98,19 +103,13 @@ class ThresholdBasedPruneStrategyTest {
         when(threshold.reached(any(), eq(4L), any())).thenReturn(false);
         when(threshold.reached(any(), eq(3L), any())).thenReturn(true);
 
-        Path fileName1 = Path.of("logical.log.v1");
-        Path fileName2 = Path.of("logical.log.v2");
-        Path fileName3 = Path.of("logical.log.v3");
-        Path fileName4 = Path.of("logical.log.v4");
-        Path fileName5 = Path.of("logical.log.v5");
-        Path fileName6 = Path.of("logical.log.v6");
+        Path fileName1 = logFileForVersion(1);
+        Path fileName2 = logFileForVersion(2);
+        Path fileName3 = logFileForVersion(3);
+        Path fileName4 = logFileForVersion(4);
+        Path fileName5 = logFileForVersion(5);
+        Path fileName6 = logFileForVersion(6);
 
-        when(logFile.getLogFileForVersion(6)).thenReturn(fileName6);
-        when(logFile.getLogFileForVersion(5)).thenReturn(fileName5);
-        when(logFile.getLogFileForVersion(4)).thenReturn(fileName4);
-        when(logFile.getLogFileForVersion(3)).thenReturn(fileName3);
-        when(logFile.getLogFileForVersion(2)).thenReturn(fileName2);
-        when(logFile.getLogFileForVersion(1)).thenReturn(fileName1);
         when(logFile.getLowestLogVersion()).thenReturn(1L);
 
         when(fileSystem.getFileSize(any(Path.class))).thenReturn(LATEST_LOG_FORMAT.getHeaderSize() + 1L);
@@ -176,5 +175,37 @@ class ThresholdBasedPruneStrategyTest {
         };
         ThresholdBasedPruneStrategy strategy = new ThresholdBasedPruneStrategy(logFile, threshold);
         assertEquals("Super-duper threshold", strategy.toString());
+    }
+
+    @Test
+    void shouldHandleSizeThresholdForMissingFile() throws IOException {
+        // given
+        when(logFile.getLowestLogVersion()).thenReturn(0L);
+        when(fileSystem.getFileSize(logFileForVersion(0)))
+                .thenThrow(new NoSuchFileException(logFileForVersion(0).toString()));
+        setUpFileSizeForLogVersion(1, 25);
+        setUpFileSizeForLogVersion(2, 10);
+        setUpFileSizeForLogVersion(3, 20);
+        try (var logProvider = new AssertableLogProvider()) {
+            var threshold = new FileSizeThreshold(fileSystem, 100, logProvider);
+            var strategy = new ThresholdBasedPruneStrategy(logFile, threshold);
+
+            // when
+            var versionRange = strategy.findLogVersionsToDelete(3);
+
+            // then it didn't reach the limit...
+            assertThat(versionRange.fromInclusive()).isEqualTo(-1);
+            assertThat(versionRange.toExclusive()).isEqualTo(-1);
+            // ... however it didn't fail when reaching v0, merely logged a warning
+            LogAssertions.assertThat(logProvider).containsMessages("Error on attempt to get file size");
+        }
+    }
+
+    private void setUpFileSizeForLogVersion(long version, long size) throws IOException {
+        when(fileSystem.getFileSize(logFileForVersion(version))).thenReturn(size);
+    }
+
+    private Path logFileForVersion(long version) {
+        return Path.of("logical-log.v" + version);
     }
 }

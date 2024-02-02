@@ -88,7 +88,7 @@ public class LogPruneStrategyFactory {
 
         return switch (configuredThreshold.type()) {
             case "files" -> new FileCountThreshold(thresholdValue);
-            case "size" -> new FileSizeThreshold(fileSystem, thresholdValue);
+            case "size" -> new FileSizeThreshold(fileSystem, thresholdValue, logProvider);
                 // txs and entries are synonyms
             case "txs", "entries" -> new EntryCountThreshold(logProvider, thresholdValue);
             case "hours" -> createTimeBasedThreshold(fileSystem, logProvider, clock, configuredThreshold, HOURS);
@@ -111,7 +111,7 @@ public class LogPruneStrategyFactory {
                     clock,
                     timeUnit,
                     configuredThreshold.value(),
-                    new FileSizeThreshold(fileSystem, configuredThreshold.additionalRestriction()));
+                    new FileSizeThreshold(fileSystem, configuredThreshold.additionalRestriction(), logProvider));
         }
         return new EntryTimespanThreshold(logProvider, clock, timeUnit, configuredThreshold.value());
     }

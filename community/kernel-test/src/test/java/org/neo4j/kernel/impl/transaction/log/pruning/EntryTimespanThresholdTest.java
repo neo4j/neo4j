@@ -89,8 +89,8 @@ class EntryTimespanThresholdTest {
 
     @Test
     void thresholdReachedWhenFileRestrictionIsReached() throws IOException {
-        final EntryTimespanThreshold threshold =
-                new EntryTimespanThreshold(logProvider, clock, MILLISECONDS, 200, new FileSizeThreshold(fs, 128));
+        final EntryTimespanThreshold threshold = new EntryTimespanThreshold(
+                logProvider, clock, MILLISECONDS, 200, new FileSizeThreshold(fs, 128, logProvider));
         when(source.getFirstStartRecordTimestamp(version + 1)).thenReturn(800L);
         when(fs.getFileSize(file)).thenReturn(129L);
 

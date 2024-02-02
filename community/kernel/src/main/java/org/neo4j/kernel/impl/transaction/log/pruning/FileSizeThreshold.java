@@ -20,20 +20,23 @@
 package org.neo4j.kernel.impl.transaction.log.pruning;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
+import org.neo4j.logging.InternalLog;
+import org.neo4j.logging.InternalLogProvider;
 
 public final class FileSizeThreshold implements Threshold {
     private final FileSystemAbstraction fileSystem;
     private final long maxSize;
+    private final InternalLog log;
 
     private long currentSize;
 
-    FileSizeThreshold(FileSystemAbstraction fileSystem, long maxSize) {
+    FileSizeThreshold(FileSystemAbstraction fileSystem, long maxSize, InternalLogProvider logProvider) {
         this.fileSystem = fileSystem;
         this.maxSize = maxSize;
+        this.log = logProvider.getLog(getClass());
     }
 
     @Override
@@ -46,7 +49,7 @@ public final class FileSizeThreshold implements Threshold {
         try {
             currentSize += fileSystem.getFileSize(file);
         } catch (IOException e) {
-            throw new UncheckedIOException(e);
+            log.warn("Error on attempt to get file size from transaction log files. Checked version: " + version, e);
         }
         return currentSize >= maxSize;
     }

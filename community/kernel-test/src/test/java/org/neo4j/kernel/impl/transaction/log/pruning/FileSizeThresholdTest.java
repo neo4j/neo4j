@@ -29,10 +29,11 @@ import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
+import org.neo4j.logging.InternalLogProvider;
 
 class FileSizeThresholdTest {
-
-    private FileSystemAbstraction fs = mock(FileSystemAbstraction.class);
+    private final FileSystemAbstraction fs = mock(FileSystemAbstraction.class);
+    private final InternalLogProvider logProvider = mock(InternalLogProvider.class);
     private final LogFileInformation source = mock(LogFileInformation.class);
     private final Path file = mock(Path.class);
     private final long version = 1;
@@ -41,7 +42,7 @@ class FileSizeThresholdTest {
     void shouldReturnFalseWhenFileSizeIsLowerThanMaxSize() throws IOException {
         // given
         final long maxSize = 10;
-        final FileSizeThreshold threshold = new FileSizeThreshold(fs, maxSize);
+        final FileSizeThreshold threshold = new FileSizeThreshold(fs, maxSize, logProvider);
 
         when(fs.getFileSize(file)).thenReturn(5L);
 
@@ -58,7 +59,7 @@ class FileSizeThresholdTest {
         // given
         long sixteenGigabytes = 16L * 1024 * 1024 * 1024;
 
-        final FileSizeThreshold threshold = new FileSizeThreshold(fs, sixteenGigabytes);
+        final FileSizeThreshold threshold = new FileSizeThreshold(fs, sixteenGigabytes, logProvider);
 
         when(fs.getFileSize(file)).thenReturn(sixteenGigabytes);
 
@@ -74,7 +75,7 @@ class FileSizeThresholdTest {
     void shouldSumSizeWhenCalledMultipleTimes() throws IOException {
         // given
         final long maxSize = 10;
-        final FileSizeThreshold threshold = new FileSizeThreshold(fs, maxSize);
+        final FileSizeThreshold threshold = new FileSizeThreshold(fs, maxSize, logProvider);
 
         when(fs.getFileSize(file)).thenReturn(5L);
 
@@ -91,7 +92,7 @@ class FileSizeThresholdTest {
     void shouldForgetPreviousValuesAfterAInitCall() throws IOException {
         // given
         final long maxSize = 10;
-        final FileSizeThreshold threshold = new FileSizeThreshold(fs, maxSize);
+        final FileSizeThreshold threshold = new FileSizeThreshold(fs, maxSize, logProvider);
 
         when(fs.getFileSize(file)).thenReturn(5L);
 
