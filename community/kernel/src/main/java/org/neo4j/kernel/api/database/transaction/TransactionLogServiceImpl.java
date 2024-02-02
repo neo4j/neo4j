@@ -20,12 +20,14 @@
 package org.neo4j.kernel.api.database.transaction;
 
 import static java.util.Objects.requireNonNull;
+import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TX_CHECKSUM;
 import static org.neo4j.util.Preconditions.checkState;
 import static org.neo4j.util.Preconditions.requirePositive;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.concurrent.locks.Lock;
 import org.eclipse.collections.impl.factory.primitive.LongObjectMaps;
@@ -43,6 +45,7 @@ import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.NoSuchLogEntryException;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
+import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -108,9 +111,15 @@ public class TransactionLogServiceImpl implements TransactionLogService {
     }
 
     @Override
-    public LogPosition append(ByteBuffer byteBuffer, OptionalLong appendIndex) throws IOException {
+    public LogPosition append(
+            ByteBuffer byteBuffer,
+            OptionalLong appendIndex,
+            Optional<Byte> kernelVersionByte,
+            int checksum,
+            long offset)
+            throws IOException {
         checkState(!availabilityGuard.isAvailable(), "Database should not be available.");
-        return logFile.append(byteBuffer, appendIndex);
+        return logFile.append(byteBuffer, appendIndex, kernelVersionByte, checksum, offset);
     }
 
     @Override
@@ -176,7 +185,13 @@ public class TransactionLogServiceImpl implements TransactionLogService {
             var lastAppendIndex =
                     version < highestLogVersion ? getHeaderLastAppendIndex(version + 1) : highestAppendIndex;
             channels.add(new LogChannel(
-                    startPositionAppendIndex, kernelVersion, readOnlyStoreChannel, endOffset, lastAppendIndex));
+                    startPositionAppendIndex,
+                    kernelVersion,
+                    readOnlyStoreChannel,
+                    readOnlyStoreChannel.position(),
+                    endOffset,
+                    lastAppendIndex,
+                    logFilePrevChecksum(startPositionAppendIndex, minimalVersion, version)));
         }
         logFile.registerExternalReaders(internalChannels);
         return channels;
@@ -184,6 +199,17 @@ public class TransactionLogServiceImpl implements TransactionLogService {
 
     private long logFileAppendIndex(long startingAppendIndex, long minimalVersion, long version) throws IOException {
         return version == minimalVersion ? startingAppendIndex : getHeaderLastAppendIndex(version) + 1;
+    }
+
+    // Get the prev checksum if it is easy. If we are in the middle of a file it is ignored for now
+    // because other side should not rotate on it anyway.
+    private int logFilePrevChecksum(long startingAppendIndex, long minimalVersion, long version) throws IOException {
+        LogHeader logHeader = logFile.extractHeader(version);
+        return version != minimalVersion
+                ? logHeader.getPreviousLogFileChecksum()
+                : (logHeader.getLastAppendIndex() + 1 != startingAppendIndex
+                        ? UNKNOWN_TX_CHECKSUM
+                        : logHeader.getPreviousLogFileChecksum());
     }
 
     private long getHeaderLastAppendIndex(long version) throws IOException {

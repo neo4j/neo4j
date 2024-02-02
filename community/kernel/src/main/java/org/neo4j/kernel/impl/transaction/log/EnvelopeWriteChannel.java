@@ -24,6 +24,7 @@ import static java.util.Objects.requireNonNull;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.IGNORE_KERNEL_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEnvelopeHeader.MAX_ZERO_PADDING_SIZE;
+import static org.neo4j.storageengine.api.LogVersionRepository.UNKNOWN_LOG_OFFSET;
 import static org.neo4j.util.Preconditions.checkArgument;
 import static org.neo4j.util.Preconditions.checkState;
 import static org.neo4j.util.Preconditions.requireMultipleOf;
@@ -310,6 +311,14 @@ public class EnvelopeWriteChannel implements PhysicalLogChannel {
         return this;
     }
 
+    /**
+     * Writes all remaining data in the {@link ByteBuffer} to this channel.
+     * The channel will handle chunking the data into envelopes if needed.
+     *
+     * @param src buffer with data to write to this channel.
+     * @return this channel, for fluent usage.
+     * @throws IOException if I/O error occurs.
+     */
     @Override
     public EnvelopeWriteChannel putAll(ByteBuffer src) throws IOException {
         int length = src.remaining();
@@ -327,6 +336,61 @@ public class EnvelopeWriteChannel implements PhysicalLogChannel {
             }
         }
         appendedBytes += length;
+        return this;
+    }
+
+    /**
+     * Writes all remaining data in the {@link ByteBuffer} to this channel overriding the channel's envelope chunking.
+     * The data in the buffer must be already finished envelopes from another source, and it must be put on the same
+     * offset within a segment for the envelope boundaries to become correct.
+     * The method takes care of inserting a start offset envelope if necessary.
+     *
+     * @param src buffer with data to write to this channel.
+     * @param offset offset of the data on the origin. Will be used to figure out the offset to start on within the
+     *               segment. -1 if the data should be put directly after previously written data.
+     * @return this channel, for fluent usage.
+     * @throws IOException if I/O error occurs.
+     */
+    @Override
+    public PhysicalLogChannel directPutAll(ByteBuffer src, long offset) throws IOException {
+        // Some magic to get around the buffer already being positioned one header after any previous envelope.
+        if (offset != UNKNOWN_LOG_OFFSET) {
+            int offsetIntoSegment =
+                    (int) (offset & (segmentBlockSize - 1)); // segmentBlockSize is guaranteed power of 2
+            // Should write a start offset envelope if there is not already data up to the offset
+            if (offsetIntoSegment != 0 && ((buffer.position() - HEADER_SIZE) % segmentBlockSize != offsetIntoSegment)) {
+                insertStartOffset(offsetIntoSegment);
+            }
+            buffer.position(nextSegmentOffset - segmentBlockSize + offsetIntoSegment);
+        } else {
+            // The position is always one header in, but direct writes should be directly after
+            // previous data if no offset specified.
+            buffer.position(buffer.position() - HEADER_SIZE);
+        }
+
+        int length = src.remaining();
+        int srcIndex = src.position();
+        int srcEnd = srcIndex + length;
+        while (srcIndex < srcEnd) {
+            int remainingPayloadSpace = nextSegmentOffset - buffer.position();
+            int payloadChunk = min(srcEnd - srcIndex, remainingPayloadSpace);
+            buffer.put(buffer.position(), src, srcIndex, payloadChunk);
+            buffer.position(buffer.position() + payloadChunk);
+            srcIndex += payloadChunk;
+
+            if (srcIndex != srcEnd) {
+                // Still have data left to put. Make sure we flush if buffer is full
+                padSegmentAndGoToNext();
+            }
+        }
+        appendedBytes += length;
+        // Update envelope start so that everything we have written will be flushed on next flush call
+        currentEnvelopeStart = buffer.position();
+        // TODO MERGELOG - preparing for a new envelope so getPosition will be happy in truncate in
+        // RemoteStore/TxLogCatchupSession.
+        // Some chance that it will push us to the next segment even though it shouldn't.
+        // Switch to something better here later
+        prepareNextEnvelope();
         return this;
     }
 

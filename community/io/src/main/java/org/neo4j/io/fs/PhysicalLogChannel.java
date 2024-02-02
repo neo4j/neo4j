@@ -37,4 +37,6 @@ public interface PhysicalLogChannel extends FlushableChannel {
 
     @Override
     PhysicalLogChannel putAll(ByteBuffer src) throws IOException;
+
+    PhysicalLogChannel directPutAll(ByteBuffer buffer, long offset) throws IOException;
 }

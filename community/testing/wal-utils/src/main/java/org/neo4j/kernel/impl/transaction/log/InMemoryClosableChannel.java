@@ -312,6 +312,12 @@ public class InMemoryClosableChannel
     }
 
     @Override
+    public int write(ByteBuffer buffer, long offset) throws IOException {
+        // This implementation doesn't have to care about offset, falling back to regular one.
+        return write(buffer);
+    }
+
+    @Override
     public int read(ByteBuffer dst) throws IOException {
         var readerRemaining = reader.buffer.remaining();
         if (readerRemaining == 0) {
@@ -624,6 +630,12 @@ public class InMemoryClosableChannel
             byteBuffer.reset();
             checksum.update(byteBuffer);
             return remaining;
+        }
+
+        @Override
+        public int write(ByteBuffer buffer, long offset) throws IOException {
+            // This implementation doesn't have to care about offset, falling back to regular one.
+            return write(buffer);
         }
 
         @Override

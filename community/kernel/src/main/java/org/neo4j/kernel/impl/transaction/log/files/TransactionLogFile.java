@@ -34,6 +34,7 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -314,20 +315,22 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
     }
 
     @Override
-    public synchronized LogPosition append(ByteBuffer byteBuffer, OptionalLong appendIndex) throws IOException {
+    public synchronized LogPosition append(
+            ByteBuffer byteBuffer,
+            OptionalLong appendIndex,
+            Optional<Byte> kernelVersionByte,
+            int checksum,
+            long offset)
+            throws IOException {
         checkArgument(byteBuffer.isDirect(), "It is required for byte buffer to be direct.");
         var transactionLogWriter = getTransactionLogWriter();
 
         try (var logAppendEvent =
                 context.getDatabaseTracers().getDatabaseTracer().logAppend()) {
-            if (appendIndex.isPresent()) {
-                logRotation.batchedRotateLogIfNeeded(logAppendEvent, appendIndex.getAsLong() - 1);
-            }
-
-            var logPositionBefore = transactionLogWriter.getCurrentPosition();
-            long totalAppended = transactionLogWriter.append(byteBuffer);
+            long totalAppended = transactionLogWriter.append(
+                    byteBuffer, logAppendEvent, appendIndex, kernelVersionByte, checksum, offset);
             logAppendEvent.appendedBytes(totalAppended);
-            return logPositionBefore;
+            return transactionLogWriter.beforeAppendPosition();
         }
     }
 

@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.database.transaction;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Optional;
 import java.util.OptionalLong;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.storageengine.api.TransactionId;
@@ -52,10 +53,19 @@ public interface TransactionLogService {
      *
      * @param byteBuffer buffer with transactional content
      * @param appendIndex optional known append index
+     * @param kernelVersionByte optional known kernel version
+     * @param checksum previous checksum if this marked the beginning of a new file on src
+     * @param offset the position of this buffer on src
      * @return log position before any buffer content updates happen
      * @throws IOException on failure performing underlying transaction logs operation
      */
-    LogPosition append(ByteBuffer byteBuffer, OptionalLong appendIndex) throws IOException;
+    LogPosition append(
+            ByteBuffer byteBuffer,
+            OptionalLong appendIndex,
+            Optional<Byte> kernelVersionByte,
+            int checksum,
+            long offset)
+            throws IOException;
 
     /**
      * Reset writer position after failed transactional log bulk update.

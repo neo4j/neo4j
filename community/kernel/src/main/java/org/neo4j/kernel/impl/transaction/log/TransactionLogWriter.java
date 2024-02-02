@@ -23,6 +23,8 @@ import static org.neo4j.kernel.impl.transaction.log.LogIndexEncoding.encodeLogIn
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Optional;
+import java.util.OptionalLong;
 import org.neo4j.kernel.BinarySupportedKernelVersions;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
@@ -156,8 +158,30 @@ public class TransactionLogWriter {
         return channel;
     }
 
-    public int append(ByteBuffer byteBuffer) throws IOException {
-        return channel.write(byteBuffer);
+    public int append(
+            ByteBuffer byteBuffer,
+            LogAppendEvent logAppendEvent,
+            OptionalLong appendIndex,
+            Optional<Byte> kernelVersionByte,
+            int checksum,
+            long offset)
+            throws IOException {
+        if (appendIndex.isPresent()) { // append index must be present on a kernel version change.
+            KernelVersion kernelVersion = kernelVersionByte
+                    .map(KernelVersion::getForVersion /* This one throws if non-recognized kernel version */)
+                    .orElse(previousKernelVersion);
+            // In append we know we are the only ones using the logfile, don't need to lock on rotation here
+            if (kernelVersion != previousKernelVersion) {
+                logRotation.locklessRotateLogFile(logAppendEvent, kernelVersion, appendIndex.getAsLong() - 1, checksum);
+                previousKernelVersion = kernelVersion;
+            } else {
+                logRotation.locklessBatchedRotateLogIfNeeded(
+                        logAppendEvent, appendIndex.getAsLong() - 1, kernelVersion, checksum);
+            }
+        }
+
+        channel.getCurrentLogPosition(logPositionMarker);
+        return channel.write(byteBuffer, offset);
     }
 
     @VisibleForTesting

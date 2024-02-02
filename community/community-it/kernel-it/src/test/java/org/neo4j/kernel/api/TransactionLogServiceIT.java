@@ -38,6 +38,8 @@ import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.AppendIndexProvider.UNKNOWN_APPEND_INDEX;
+import static org.neo4j.storageengine.api.LogVersionRepository.UNKNOWN_LOG_OFFSET;
+import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
 import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT;
 
@@ -47,6 +49,7 @@ import java.nio.ByteOrder;
 import java.nio.channels.ClosedChannelException;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
@@ -252,14 +255,26 @@ class TransactionLogServiceIT {
     void requireDirectByteBufferForLogFileAppending() {
         availabilityGuard.require(new DescriptiveAvailabilityRequirement("Database unavailable"));
 
-        assertThrows(IllegalArgumentException.class, () -> logService.append(ByteBuffer.allocate(5), empty()));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> logService.append(
+                        ByteBuffer.allocate(5),
+                        empty(),
+                        Optional.of(LATEST_KERNEL_VERSION.version()),
+                        BASE_TX_CHECKSUM,
+                        UNKNOWN_LOG_OFFSET));
     }
 
     @Test
     void failBulkAppendOnNonAvailableDatabase() {
         assertThrows(
                 IllegalStateException.class,
-                () -> logService.append(ByteBuffer.wrap(new byte[] {1, 2, 3, 4, 5}), empty()));
+                () -> logService.append(
+                        ByteBuffer.wrap(new byte[] {1, 2, 3, 4, 5}),
+                        empty(),
+                        Optional.of(LATEST_KERNEL_VERSION.version()),
+                        BASE_TX_CHECKSUM,
+                        UNKNOWN_LOG_OFFSET));
     }
 
     @Test
@@ -271,7 +286,12 @@ class TransactionLogServiceIT {
         try {
             for (int i = 0; i < 100; i++) {
                 buffer.rewind();
-                logService.append(buffer, empty());
+                logService.append(
+                        buffer,
+                        empty(),
+                        Optional.of(LATEST_KERNEL_VERSION.version()),
+                        BASE_TX_CHECKSUM,
+                        UNKNOWN_LOG_OFFSET);
             }
         } finally {
             ByteBuffers.releaseBuffer(buffer, INSTANCE);
@@ -291,7 +311,12 @@ class TransactionLogServiceIT {
         var appendData = createBuffer().put(randomAscii((int) (THRESHOLD + 1)).getBytes(UTF_8));
         try {
             for (int i = 0; i < appendIterations; i++) {
-                logService.append(appendData, OptionalLong.of(i + 7));
+                logService.append(
+                        appendData,
+                        OptionalLong.of(i + 7),
+                        Optional.of(LATEST_KERNEL_VERSION.version()),
+                        BASE_TX_CHECKSUM,
+                        UNKNOWN_LOG_OFFSET);
                 appendData.rewind();
             }
         } finally {
@@ -315,7 +340,12 @@ class TransactionLogServiceIT {
         var appendData = createBuffer().put(randomAscii((int) (THRESHOLD + 1)).getBytes(UTF_8));
         try {
             for (int i = 0; i < appendIterations; i++) {
-                logService.append(appendData, OptionalLong.of(i + 7));
+                logService.append(
+                        appendData,
+                        OptionalLong.of(i + 7),
+                        Optional.of(LATEST_KERNEL_VERSION.version()),
+                        BASE_TX_CHECKSUM,
+                        UNKNOWN_LOG_OFFSET);
                 appendData.rewind();
             }
         } finally {
@@ -339,7 +369,12 @@ class TransactionLogServiceIT {
         var appendData = createBuffer().put(randomAscii((int) (THRESHOLD + 1)).getBytes(UTF_8));
         try {
             for (int i = 0; i < appendIterations; i++) {
-                logService.append(appendData, OptionalLong.of(indexShift + i));
+                logService.append(
+                        appendData,
+                        OptionalLong.of(indexShift + i),
+                        Optional.of(LATEST_KERNEL_VERSION.version()),
+                        BASE_TX_CHECKSUM,
+                        UNKNOWN_LOG_OFFSET);
                 appendData.rewind();
             }
         } finally {
@@ -384,7 +419,12 @@ class TransactionLogServiceIT {
             positionBeforeRecovery = metadataProvider.getLastClosedTransaction().logPosition();
 
             for (int i = 0; i < 3; i++) {
-                logService.append(buffer, OptionalLong.of(lastTransactionBeforeBufferAppend + i + 1));
+                logService.append(
+                        buffer,
+                        OptionalLong.of(lastTransactionBeforeBufferAppend + i + 1),
+                        Optional.of(LATEST_KERNEL_VERSION.version()),
+                        BASE_TX_CHECKSUM,
+                        UNKNOWN_LOG_OFFSET);
                 buffer.rewind();
             }
         } finally {
@@ -415,7 +455,12 @@ class TransactionLogServiceIT {
         var appendData = createBuffer().put(randomAscii((int) (THRESHOLD + 1)).getBytes(UTF_8));
         try {
             for (int i = 0; i < appendIterations; i++) {
-                logService.append(appendData, OptionalLong.of(transactionalShift + i));
+                logService.append(
+                        appendData,
+                        OptionalLong.of(transactionalShift + i),
+                        Optional.of(LATEST_KERNEL_VERSION.version()),
+                        BASE_TX_CHECKSUM,
+                        UNKNOWN_LOG_OFFSET);
                 appendData.rewind();
             }
         } finally {
@@ -440,7 +485,12 @@ class TransactionLogServiceIT {
         var appendData = createBuffer().put(randomAscii((int) (THRESHOLD + 1)).getBytes(UTF_8));
         try {
             for (int i = 0; i < appendIterations; i++) {
-                logService.append(appendData, OptionalLong.of(transactionalShift + i));
+                logService.append(
+                        appendData,
+                        OptionalLong.of(transactionalShift + i),
+                        Optional.of(LATEST_KERNEL_VERSION.version()),
+                        BASE_TX_CHECKSUM,
+                        UNKNOWN_LOG_OFFSET);
                 appendData.rewind();
             }
         } finally {
@@ -462,7 +512,12 @@ class TransactionLogServiceIT {
         var appendData = createBuffer().put(randomAscii((int) (THRESHOLD + 1)).getBytes(UTF_8));
         try {
             for (int i = 0; i < appendIterations; i++) {
-                var position = logService.append(appendData, OptionalLong.empty());
+                var position = logService.append(
+                        appendData,
+                        OptionalLong.empty(),
+                        Optional.of(LATEST_KERNEL_VERSION.version()),
+                        BASE_TX_CHECKSUM,
+                        UNKNOWN_LOG_OFFSET);
                 if (previousPosition != null) {
                     assertEquals(previousPosition, position);
                 }
@@ -487,7 +542,12 @@ class TransactionLogServiceIT {
             int appendIterations = 100;
             LogPosition firstPosition = null;
             for (int i = 0; i < appendIterations; i++) {
-                var position = logService.append(appendData, OptionalLong.of(i + 5));
+                var position = logService.append(
+                        appendData,
+                        OptionalLong.of(i + 5),
+                        Optional.of(LATEST_KERNEL_VERSION.version()),
+                        BASE_TX_CHECKSUM,
+                        UNKNOWN_LOG_OFFSET);
                 if (firstPosition == null) {
                     firstPosition = position;
                 }
@@ -497,7 +557,14 @@ class TransactionLogServiceIT {
                     .isGreaterThanOrEqualTo(firstPosition.getLogVersion());
             logService.restore(firstPosition);
 
-            assertEquals(firstPosition, logService.append(appendData, OptionalLong.of(5)));
+            assertEquals(
+                    firstPosition,
+                    logService.append(
+                            appendData,
+                            OptionalLong.of(5),
+                            Optional.of(LATEST_KERNEL_VERSION.version()),
+                            BASE_TX_CHECKSUM,
+                            UNKNOWN_LOG_OFFSET));
             assertEquals(logVersionBefore, logFiles.getLogFile().getHighestLogVersion());
         } finally {
             ByteBuffers.releaseBuffer(appendData, INSTANCE);

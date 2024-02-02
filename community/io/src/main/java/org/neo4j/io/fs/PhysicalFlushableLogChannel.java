@@ -69,4 +69,10 @@ public class PhysicalFlushableLogChannel extends PhysicalFlushableChannel implem
         super.putAll(src);
         return this;
     }
+
+    @Override
+    public PhysicalLogChannel directPutAll(ByteBuffer src, long offset) throws IOException {
+        // This implementation doesn't have to care about offset, falling back to regular one.
+        return putAll(src);
+    }
 }

@@ -34,6 +34,7 @@ import static org.neo4j.test.LatestVersions.LATEST_LOG_FORMAT;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -1081,6 +1082,245 @@ class EnvelopeWriteChannelTest {
         }
     }
 
+    @Test
+    void directPutAllBeginningOfSegment() throws IOException {
+        int segmentSize = 128;
+        final var byteData = bytes(random, segmentSize / 8);
+        final var chunkSize = byteData.length + HEADER_SIZE;
+        final var checksums = new int[] {0x611ba9fe, 0xb51e872d};
+
+        // Create some real envelopes to write as a chunk to an EnvelopeWriteChannel
+        var fileChannel = storeChannel(0);
+        HeapScopedBuffer buffer1 = buffer(segmentSize);
+        ByteBuffer inData;
+        try (var channel = writeChannel(fileChannel, segmentSize, buffer1)) {
+            channel.putVersion(KERNEL_VERSION);
+            channel.put(byteData, byteData.length);
+            assertChecksum(channel.putChecksum(), checksums[0]);
+
+            channel.putVersion(KERNEL_VERSION);
+            channel.put(byteData, byteData.length);
+            assertChecksum(channel.putChecksum(), checksums[1]);
+            inData = slice(buffer1);
+            inData.limit(buffer1.getBuffer().position() - HEADER_SIZE);
+        }
+
+        fileChannel = storeChannel();
+        final var buffer = buffer(segmentSize);
+        try (var channel = writeChannel(fileChannel, segmentSize, buffer)) {
+            channel.putVersion(KERNEL_VERSION); // Version is for the channel, not for a specific envelope.
+            ByteBuffer realBuffer = buffer.getBuffer();
+            assertThat(realBuffer.position())
+                    .as("buffer is already positioned one header in")
+                    .isEqualTo(HEADER_SIZE);
+
+            // Asking for segment size offset - should be turned into offset into current envelope
+            channel.directPutAll(inData, segmentSize);
+
+            // Should have positioned one header in again
+            assertThat(realBuffer.position()).isEqualTo(chunkSize * 2 + HEADER_SIZE);
+            channel.prepareForFlush();
+
+            assertEnvelopeContents(
+                    channelData(fileChannel, segmentSize),
+                    envelope(EnvelopeType.FULL, START_INDEX, byteData, checksums[0]),
+                    envelope(EnvelopeType.FULL, START_INDEX + 1, byteData, checksums[1]));
+        }
+    }
+
+    @Test
+    void directPutAllOffsetIntoSegment() throws IOException {
+        int segmentSize = 128;
+        final var byteData = bytes(random, segmentSize / 8);
+        final var chunkSize = byteData.length + HEADER_SIZE;
+        final var checksums = new int[] {0x611ba9fe, 0xb51e872d};
+
+        // Create some real envelopes to write as a chunk to an EnvelopeWriteChannel
+        var fileChannel = storeChannel(0);
+        HeapScopedBuffer buffer1 = buffer(segmentSize);
+        ByteBuffer inData;
+        try (var channel = writeChannel(fileChannel, segmentSize, buffer1)) {
+            channel.putVersion(KERNEL_VERSION);
+            channel.put(byteData, byteData.length);
+            assertChecksum(channel.putChecksum(), checksums[0]);
+
+            channel.putVersion(KERNEL_VERSION);
+            channel.put(byteData, byteData.length);
+            assertChecksum(channel.putChecksum(), checksums[1]);
+            inData = slice(buffer1);
+            inData.limit(buffer1.getBuffer().position() - HEADER_SIZE);
+        }
+
+        fileChannel = storeChannel();
+        final var buffer = buffer(segmentSize);
+        try (var channel = writeChannel(fileChannel, segmentSize, buffer)) {
+            channel.putVersion(KERNEL_VERSION); // Version is for the channel, not for a specific envelope.
+            ByteBuffer realBuffer = buffer.getBuffer();
+            assertThat(realBuffer.position())
+                    .as("buffer is already positioned one header in")
+                    .isEqualTo(HEADER_SIZE);
+
+            // Asking a bit in and don't have data written up to that point
+            channel.directPutAll(inData, 24);
+
+            // Should have positioned one header in again
+            assertThat(realBuffer.position()).isEqualTo(24 + chunkSize * 2 + HEADER_SIZE);
+            channel.prepareForFlush();
+
+            assertEnvelopeContents(
+                    channelData(fileChannel, segmentSize),
+                    startOffset(24 - HEADER_SIZE),
+                    envelope(EnvelopeType.FULL, START_INDEX, byteData, checksums[0]),
+                    envelope(EnvelopeType.FULL, START_INDEX + 1, byteData, checksums[1]));
+        }
+    }
+
+    @Test
+    void directPutAllNoOffset() throws IOException {
+        int segmentSize = 128;
+        final var byteData = bytes(random, segmentSize / 8);
+        final var chunkSize = byteData.length + HEADER_SIZE;
+        final var checksums = new int[] {0x611ba9fe, 0xb51e872d};
+
+        // Create some real envelopes to write as a chunk to an EnvelopeWriteChannel
+        var fileChannel = storeChannel(0);
+        HeapScopedBuffer buffer1 = buffer(segmentSize);
+        ByteBuffer inData;
+        try (var channel = writeChannel(fileChannel, segmentSize, buffer1)) {
+            channel.putVersion(KERNEL_VERSION);
+            channel.put(byteData, byteData.length);
+            assertChecksum(channel.putChecksum(), checksums[0]);
+
+            channel.putVersion(KERNEL_VERSION);
+            channel.put(byteData, byteData.length);
+            assertChecksum(channel.putChecksum(), checksums[1]);
+            inData = slice(buffer1);
+            inData.limit(buffer1.getBuffer().position() - HEADER_SIZE);
+        }
+
+        fileChannel = storeChannel();
+        final var buffer = buffer(segmentSize);
+        try (var channel = writeChannel(fileChannel, segmentSize, buffer)) {
+            channel.putVersion(KERNEL_VERSION); // Version is for the channel, not for a specific envelope.
+            ByteBuffer realBuffer = buffer.getBuffer();
+            assertThat(realBuffer.position())
+                    .as("buffer is already positioned one header in")
+                    .isEqualTo(HEADER_SIZE);
+
+            // No offset on the second one, it should then put its data directly after previously written data.
+            channel.directPutAll(inData.limit(chunkSize), 0);
+            channel.directPutAll(inData.position(chunkSize).limit(chunkSize * 2), -1);
+
+            // Should have positioned one header in again
+            assertThat(realBuffer.position()).isEqualTo(chunkSize * 2 + HEADER_SIZE);
+            channel.prepareForFlush();
+
+            assertEnvelopeContents(
+                    channelData(fileChannel, segmentSize),
+                    envelope(EnvelopeType.FULL, START_INDEX, byteData, checksums[0]),
+                    envelope(EnvelopeType.FULL, START_INDEX + 1, byteData, checksums[1]));
+        }
+    }
+
+    @Test
+    void directPutAllOffsetIntoSegmentButDataUpToOffset() throws IOException {
+        int segmentSize = 128;
+        final var byteData = bytes(random, segmentSize / 8);
+        final var chunkSize = byteData.length + HEADER_SIZE;
+        final var checksums = new int[] {0x611ba9fe, 0xb51e872d};
+
+        // Create some real envelopes to write as a chunk to an EnvelopeWriteChannel
+        var fileChannel = storeChannel(0);
+        HeapScopedBuffer buffer1 = buffer(segmentSize);
+        ByteBuffer inData;
+        try (var channel = writeChannel(fileChannel, segmentSize, buffer1)) {
+            channel.putVersion(KERNEL_VERSION);
+            channel.put(byteData, byteData.length);
+            assertChecksum(channel.putChecksum(), checksums[0]);
+
+            channel.putVersion(KERNEL_VERSION);
+            channel.put(byteData, byteData.length);
+            assertChecksum(channel.putChecksum(), checksums[1]);
+            inData = slice(buffer1);
+            inData.limit(buffer1.getBuffer().position() - HEADER_SIZE);
+        }
+
+        fileChannel = storeChannel();
+        final var buffer = buffer(segmentSize);
+        try (var channel = writeChannel(fileChannel, segmentSize, buffer)) {
+            channel.putVersion(KERNEL_VERSION); // Version is for the channel, not for a specific envelope.
+            ByteBuffer realBuffer = buffer.getBuffer();
+            assertThat(realBuffer.position())
+                    .as("buffer is already positioned one header in")
+                    .isEqualTo(HEADER_SIZE);
+
+            // Offset on second write, but there is data before it, so it should not insert a startOffset envelope
+            channel.directPutAll(inData.limit(chunkSize), 0);
+            channel.directPutAll(inData.position(chunkSize).limit(chunkSize * 2), chunkSize);
+
+            // Should have positioned one header in again
+            assertThat(realBuffer.position()).isEqualTo(chunkSize * 2 + HEADER_SIZE);
+            channel.prepareForFlush();
+
+            assertEnvelopeContents(
+                    channelData(fileChannel, segmentSize),
+                    envelope(EnvelopeType.FULL, START_INDEX, byteData, checksums[0]),
+                    envelope(EnvelopeType.FULL, START_INDEX + 1, byteData, checksums[1]));
+        }
+    }
+
+    @Test
+    void directPutAllOverBufferSize() throws IOException {
+        int segmentSize = 64;
+        final var byteData = bytes(random, 15);
+        final var checksums = new int[] {0x774d0c7, 0x93b8b386, 0xf715c3c9};
+
+        // Create some real envelopes to write as a chunk to an EnvelopeWriteChannel - split over a segment boundary
+        var fileChannel = storeChannel(0);
+        HeapScopedBuffer buffer1 = buffer(192);
+        ByteBuffer inData;
+        try (var channel = writeChannel(fileChannel, segmentSize, buffer1)) {
+            channel.putVersion(KERNEL_VERSION);
+            channel.put(byteData, byteData.length);
+            assertChecksum(channel.putChecksum(), checksums[0]);
+
+            // This one will split on segment boundary
+            channel.putVersion(KERNEL_VERSION);
+            channel.put(byteData, byteData.length);
+            assertChecksum(channel.putChecksum(), checksums[2]);
+            inData = slice(buffer1).position(segmentSize);
+            inData.limit(buffer1.getBuffer().position() - HEADER_SIZE);
+        }
+
+        fileChannel = storeChannel();
+        // Buffer as small as the segment size to trigger flushing in directPutAll
+        final var buffer = buffer(segmentSize);
+        try (var channel = writeChannel(fileChannel, segmentSize, buffer)) {
+            channel.putVersion(KERNEL_VERSION); // Version is for the channel, not for a specific envelope.
+            ByteBuffer realBuffer = buffer.getBuffer();
+            assertThat(realBuffer.position())
+                    .as("buffer is already positioned one header in")
+                    .isEqualTo(HEADER_SIZE);
+
+            // Asking for segment size offset - should be turned into offset into current envelope
+            channel.directPutAll(inData, segmentSize);
+
+            // Should have positioned one header in again (header and data in end envelope plus another header)
+            assertThat(realBuffer.position()).isEqualTo(HEADER_SIZE + 10 + HEADER_SIZE);
+            channel.prepareForFlush();
+
+            assertEnvelopeContents(
+                    channelData(fileChannel, segmentSize),
+                    envelope(EnvelopeType.FULL, START_INDEX, byteData, checksums[0]),
+                    envelope(EnvelopeType.BEGIN, START_INDEX + 1, Arrays.copyOfRange(byteData, 0, 5), checksums[1]),
+                    envelope(
+                            EnvelopeType.END,
+                            START_INDEX + 1,
+                            Arrays.copyOfRange(byteData, 5, byteData.length),
+                            checksums[2]));
+        }
+    }
+
     private PhysicalLogVersionedStoreChannel storeChannel() throws IOException {
         return storeChannel(1L);
     }
@@ -1149,7 +1389,8 @@ class EnvelopeWriteChannelTest {
             }
 
             @Override
-            public boolean batchedRotateLogIfNeeded(LogRotateEvents logRotateEvents, long appendIndex) {
+            public boolean locklessBatchedRotateLogIfNeeded(
+                    LogRotateEvents logRotateEvents, long appendIndex, KernelVersion kernelVersion, int checksum) {
                 throw new UnsupportedOperationException();
             }
 

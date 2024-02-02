@@ -19,10 +19,14 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import org.neo4j.io.fs.FlushableChannel;
 
 public interface FlushableLogPositionAwareChannel extends FlushableChannel, LogPositionAwareChannel {
     void resetAppendedBytesCounter();
 
     long getAppendedBytes();
+
+    int write(ByteBuffer buffer, long offset) throws IOException;
 }

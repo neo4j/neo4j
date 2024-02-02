@@ -272,7 +272,8 @@ class EnvelopeFuzzerTest {
             }
 
             @Override
-            public boolean batchedRotateLogIfNeeded(LogRotateEvents logRotateEvents, long appendIndex) {
+            public boolean locklessBatchedRotateLogIfNeeded(
+                    LogRotateEvents logRotateEvents, long appendIndex, KernelVersion kernelVersion, int checksum) {
                 throw new UnsupportedOperationException();
             }
 

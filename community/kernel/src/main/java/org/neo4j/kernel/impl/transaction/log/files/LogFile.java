@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.log.files;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
+import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.function.LongSupplier;
 import org.eclipse.collections.api.map.primitive.LongObjectMap;
@@ -143,7 +144,13 @@ public interface LogFile extends RotatableFile {
 
     void truncate(LogPosition position) throws IOException;
 
-    LogPosition append(ByteBuffer byteBuffer, OptionalLong appendIndex) throws IOException;
+    LogPosition append(
+            ByteBuffer byteBuffer,
+            OptionalLong appendIndex,
+            Optional<Byte> kernelVersionByte,
+            int checksum,
+            long offset)
+            throws IOException;
 
     /**
      * Register map of externally exposed readers. Key is log version number. Value is log reader.

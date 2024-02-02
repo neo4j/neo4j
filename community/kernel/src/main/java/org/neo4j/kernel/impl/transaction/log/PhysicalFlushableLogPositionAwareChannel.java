@@ -175,6 +175,13 @@ public class PhysicalFlushableLogPositionAwareChannel implements FlushableLogPos
         return remaining;
     }
 
+    @Override
+    public int write(ByteBuffer buffer, long offset) throws IOException {
+        int remaining = buffer.remaining();
+        checksumChannel.directPutAll(buffer, offset);
+        return remaining;
+    }
+
     public void setChannel(LogVersionedStoreChannel logChannel, LogHeader logHeader) throws IOException {
         final var prevLogChannel = logVersionedStoreChannel;
         logVersionedStoreChannel = logChannel;
