@@ -16,7 +16,6 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
-import org.apache.commons.lang3.StringUtils
 import org.neo4j.cypher.internal.ast.factory.neo4j.LiteralsParserTest.escapeSequences
 import org.neo4j.cypher.internal.ast.factory.neo4j.LiteralsParserTest.genCodepoint
 import org.neo4j.cypher.internal.ast.factory.neo4j.LiteralsParserTest.genCypherUnicodeEscape
@@ -36,6 +35,7 @@ import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.SignedHexIntegerLiteral
 import org.neo4j.cypher.internal.expressions.SignedOctalIntegerLiteral
+import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.DummyPosition
 import org.neo4j.cypher.internal.util.InputPosition
@@ -156,7 +156,7 @@ class LiteralsParserTest extends AstParsingTestBase with LegacyAstParsingTestSup
     }
 
     // Non escape sequences, for example '\x', '\y' ...
-    forAll(genCodepoint().map(c => s"\\$c"), minSuccessful(20)) { backslashX =>
+    forAll(genCodepoint.map(c => s"\\$c"), minSuccessful(20)) { backslashX =>
       whenever(!escapeSequences.contains(backslashX)) {
         s"'$backslashX'" should parseTo[Literal](literalString(backslashX))
       }
@@ -171,19 +171,16 @@ class LiteralsParserTest extends AstParsingTestBase with LegacyAstParsingTestSup
     s"'${toCypherHex("꠲".codePointAt(0))}'" should parseTo[Literal](literalString("꠲"))
 
     // Arbitrary unicode escape codes
-    forAll(genCodepoint(includeSupplementary = false), minSuccessful(100)) { codepoint =>
+    forAll(genCodepoint, minSuccessful(100)) { codepoint =>
       whenever(codepoint != 0 && codepoint != '\'') {
         s"'${toCypherHex(codepoint)}'" should parseTo[Literal](literalString(Character.toString(codepoint)))
       }
     }
 
-    s"'${toCypherHex('\\')}'" should parseAs[Literal]
-      .parseIn(JavaCc)(_.withAnyFailure)
-      .parseIn(Antlr)(_.toAst(literalString("\\")))
-
+    s"'${toCypherHex('\\')}'" should notParse[Literal]
     s"'${toCypherHex('\'')}'" should parseAs[Literal]
       .parseIn(JavaCc)(_.withAnyFailure)
-      .parseIn(Antlr)(_.toAst(literalString("\'")))
+      .parseIn(Antlr)(_.toAst(literalString("")))
 
     "'\\U1'" should parseTo[Literal](literalString("\\U1"))
     "'\\U12'" should parseTo[Literal](literalString("\\U12"))
@@ -198,10 +195,11 @@ class LiteralsParserTest extends AstParsingTestBase with LegacyAstParsingTestSup
 
   test("arbitrary string literals") {
     "'\\f\\'6\\u0046\\u8da4\\''" should parseTo[Literal](literalString("\f\'6\u0046\u8da4\'"))
+    """'\\u\t\n'""" should parseTo[Literal](literalString("\\u\t\n"))
 
     forAll(
       Gen.listOf[(String, String)](Gen.oneOf(
-        genCodepoint().filter(c => c != '"' && c != '\\').map(c => Character.toString(c) -> Character.toString(c)),
+        genCodepoint.filter(c => c != '"' && c != '\\').map(c => Character.toString(c) -> Character.toString(c)),
         genCypherUnicodeEscape,
         Gen.oneOf(escapeSequences)
       )),
@@ -212,6 +210,15 @@ class LiteralsParserTest extends AstParsingTestBase with LegacyAstParsingTestSup
       val expected = expectedParts.mkString("")
       cypher should parseTo[Literal](literalString(expected))
     }
+  }
+
+  test("position with unicode") {
+    "\\u0009\\u2003'hello'" should parse[Literal].toAstPositioned(
+      StringLiteral("hello")(InputPosition(12, 1, 13), InputPosition(18, 1, 19))
+    )
+    "/* \uD80C\uDCDF */'hello'" should parse[Literal].toAstPositioned(
+      StringLiteral("hello")(InputPosition(8, 1, 9), InputPosition(18, 1, 19))
+    )
   }
 }
 
@@ -228,18 +235,22 @@ object LiteralsParserTest {
     """\\""" -> "\\"
   )
 
-  private def toCypherHex(codepoint: Int): String = "\\u" + StringUtils.leftPad(Integer.toHexString(codepoint), 4, '0')
+  private def toCypherHex(codepoint: Int): String = {
+    Character.toString(codepoint)
+      .map(c => "\\u" + ("0000" + Integer.toHexString(c)).takeRight(4))
+      .mkString("")
+  }
 
   // Weighted to include common codepoints more often
-  private def genCodepoint(includeSupplementary: Boolean = true): Gen[Int] = {
-    val max = if (includeSupplementary) Character.MAX_CODE_POINT else Character.MAX_VALUE
+  private val genCodepoint: Gen[Int] = {
     Gen.oneOf(
-      Gen.chooseNum(Character.MIN_VALUE.toInt + 1, max),
+      Gen.chooseNum(Character.MIN_CODE_POINT + 1, Character.MIN_SURROGATE - 1),
+      Gen.chooseNum(Character.MAX_SURROGATE + 1, Character.MAX_CODE_POINT),
       Gen.alphaNumChar.map(_.toInt) // Increase probability of alpha nums
     )
   }
 
   private val genCypherUnicodeEscape: Gen[(String, String)] = {
-    genCodepoint(includeSupplementary = false).map(codepoint => toCypherHex(codepoint) -> Character.toString(codepoint))
+    genCodepoint.map(codepoint => toCypherHex(codepoint) -> Character.toString(codepoint))
   }
 }

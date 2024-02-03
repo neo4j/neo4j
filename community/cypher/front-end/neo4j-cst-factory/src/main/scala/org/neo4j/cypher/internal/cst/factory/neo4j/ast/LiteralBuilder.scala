@@ -111,26 +111,26 @@ object LiteralBuilder {
       var start = 0
       val builder = new java.lang.StringBuilder(input.length)
       while (pos != -1) {
-        builder.append(input, start, pos)
-        input.charAt(pos + 1) match {
-          case 't'  => builder.append('\t')
-          case 'b'  => builder.append('\b')
-          case 'n'  => builder.append('\n')
-          case 'r'  => builder.append('\r')
-          case 'f'  => builder.append('\f')
-          case '\'' => builder.append('\'')
-          case '"'  => builder.append('"')
-          case '\\' => builder.append('\\')
-          case 'u' =>
-            builder.appendCodePoint(Integer.parseInt(input.substring(pos + 2, pos + 6), 16))
-            pos += 4
-          case other => builder.append('\\').append(other)
+        val replacement: Char = input.charAt(pos + 1) match {
+          case 't'  => '\t'
+          case 'b'  => '\b'
+          case 'n'  => '\n'
+          case 'r'  => '\r'
+          case 'f'  => '\f'
+          case '\'' => '\''
+          case '"'  => '"'
+          case '\\' => '\\'
+          case _    => Char.MinValue
         }
-        start = pos + 2
-        pos = input.indexOf('\\', start)
+        if (replacement != Char.MinValue) {
+          builder.append(input, start, pos).append(replacement)
+          start = pos + 2
+        }
+        pos = input.indexOf('\\', pos + 2)
       }
-      if (start < input.length) builder.append(input, start, input.length)
-      builder.toString
+      if (builder.isEmpty) input
+      else if (start < input.length) builder.append(input, start, input.length).toString
+      else builder.toString
     }
   }
 }

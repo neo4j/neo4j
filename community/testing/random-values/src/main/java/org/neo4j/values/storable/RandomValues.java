@@ -695,7 +695,7 @@ public class RandomValues {
      *
      * @return A pseudorandom valid code point
      */
-    private int nextValidCodePoint() {
+    public int nextValidCodePoint() {
         return nextValidCodePoint(configuration.maxCodePoint());
     }
 

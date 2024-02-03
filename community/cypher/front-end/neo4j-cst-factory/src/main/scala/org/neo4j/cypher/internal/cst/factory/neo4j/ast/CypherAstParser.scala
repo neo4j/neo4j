@@ -17,7 +17,6 @@
 package org.neo4j.cypher.internal.cst.factory.neo4j.ast
 
 import org.antlr.v4.runtime.BailErrorStrategy
-import org.antlr.v4.runtime.CharStreams
 import org.antlr.v4.runtime.CommonTokenStream
 import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.Token
@@ -25,9 +24,9 @@ import org.antlr.v4.runtime.TokenStream
 import org.antlr.v4.runtime.tree.ErrorNode
 import org.antlr.v4.runtime.tree.ParseTreeListener
 import org.antlr.v4.runtime.tree.TerminalNode
+import org.neo4j.cypher.internal.ast.factory.neo4j.ReplaceUnicodeEscapeSequences
 import org.neo4j.cypher.internal.cst.factory.neo4j.SyntaxChecker
 import org.neo4j.cypher.internal.cst.factory.neo4j.SyntaxErrorListener
-import org.neo4j.cypher.internal.parser.CypherLexer
 import org.neo4j.cypher.internal.parser.CypherParser
 
 /**
@@ -98,14 +97,13 @@ class CypherAstParser private (input: TokenStream, createAst: Boolean) extends C
 
 object CypherAstParser {
 
-  def apply(query: String): CypherAstParser = new CypherAstParser(toStream(query), true)
+  def apply(query: String): CypherAstParser = new CypherAstParser(preparsedTokens(query), true)
   def apply(input: TokenStream): CypherAstParser = new CypherAstParser(input, true)
 
   // Only needed during development
-  def withoutAst(query: String): CypherAstParser = new CypherAstParser(toStream(query), false)
+  def withoutAst(query: String): CypherAstParser = new CypherAstParser(preparsedTokens(query), false)
 
-  private def toStream(cypher: String) =
-    new CommonTokenStream(new CypherLexer(CharStreams.fromString(cypher)))
+  private def preparsedTokens(cypher: String) = new CommonTokenStream(ReplaceUnicodeEscapeSequences.fromString(cypher))
 }
 
 object NoOpParseTreeListener extends ParseTreeListener {

@@ -17,21 +17,33 @@
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
 import org.neo4j.cypher.internal.ast.Clause
+import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.Remove
 import org.neo4j.cypher.internal.ast.RemovePropertyItem
+import org.neo4j.cypher.internal.ast.Return
+import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.SetClause
 import org.neo4j.cypher.internal.ast.SetPropertyItem
+import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
+import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsing.JavaCc
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.AstParsingTestBase
 import org.neo4j.cypher.internal.ast.factory.neo4j.test.util.LegacyAstParsingTestSupport
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.ListLiteral
+import org.neo4j.cypher.internal.expressions.MatchMode.DifferentRelationships
 import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.PathPatternPart
+import org.neo4j.cypher.internal.expressions.Pattern.ForMatch
 import org.neo4j.cypher.internal.expressions.PatternComprehension
+import org.neo4j.cypher.internal.expressions.PatternPart.AllPaths
+import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
 import org.neo4j.cypher.internal.expressions.Range
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.StringLiteral
+import org.neo4j.cypher.internal.util.InputPosition
 
 class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport {
 
@@ -196,5 +208,37 @@ class MiscParserTest extends AstParsingTestBase with LegacyAstParsingTestSupport
       parsing[Clause](s"RETURN $normalForm") shouldGive
         return_(variableReturnItem(normalForm))
     }
+  }
+
+  // TODO Enable in ANTLR when possible
+  test("Unicode escape outside of string literals") {
+    // https://neo4j.com/docs/cypher-manual/current/syntax/parsing/#_using_unicodes_in_cypher
+    "M\\u0041TCH (m) RETURN m" should parseAs[Statement]
+      .parseIn(JavaCc)(_.toAstPositioned(
+        SingleQuery(Seq(
+          Match(
+            optional = false,
+            DifferentRelationships(implicitlyCreated = true)(InputPosition(0, 1, 1)),
+            ForMatch(List(PatternPartWithSelector(
+              AllPaths()(InputPosition(11, 1, 12)),
+              PathPatternPart(NodePattern(Some(varFor("m")), None, None, None)(InputPosition(11, 1, 12)))
+            )))(InputPosition(11, 1, 12)),
+            List(),
+            None
+          )(InputPosition(0, 1, 1)),
+          Return(
+            distinct = false,
+            ReturnItems(
+              includeExisting = false,
+              List(UnaliasedReturnItem(varFor("m"), "m")(InputPosition(22, 1, 23))),
+              None
+            )(InputPosition(22, 1, 23)),
+            None,
+            None,
+            None,
+            Set()
+          )(InputPosition(15, 1, 16))
+        ))(InputPosition(15, 1, 16))
+      ))
   }
 }
