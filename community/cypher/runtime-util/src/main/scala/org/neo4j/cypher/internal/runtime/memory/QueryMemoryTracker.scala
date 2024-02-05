@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.memory
 
 import org.eclipse.collections.impl.map.mutable.ConcurrentHashMap
+import org.neo4j.collection.trackable.HeapTrackingConcurrentLongObjectHashMap
 import org.neo4j.cypher.internal.config.CUSTOM_MEMORY_TRACKING
 import org.neo4j.cypher.internal.config.MEMORY_TRACKING
 import org.neo4j.cypher.internal.config.MemoryTracking
@@ -36,6 +37,7 @@ import org.neo4j.memory.ScopedMemoryTracker
 import org.neo4j.util.VisibleForTesting
 
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.LongAdder
 
 /**
@@ -193,6 +195,48 @@ class ParallelTrackingQueryMemoryTracker extends QueryMemoryTracker {
 }
 
 /**
+ * A memory tracker used when running with `PROFILE` in parallel runtime.
+ *
+ * Keeps track of per-operator heap-usage which adds a performance overhead so this class should only be used for PROFILE queries.
+ */
+class ProfilingParallelTrackingQueryMemoryTracker(memoryTracker: MemoryTracker) extends QueryMemoryTracker
+    with MemoryTrackerForOperatorProvider {
+
+  private val memoryPerOperator: HeapTrackingConcurrentLongObjectHashMap[MemoryTracker] =
+    HeapTrackingConcurrentLongObjectHashMap.newMap(memoryTracker)
+  private lazy val delegate = new WorkerThreadDelegatingMemoryTracker
+
+  override def newMemoryTrackerForOperatorProvider(transactionMemoryTracker: MemoryTracker)
+    : MemoryTrackerForOperatorProvider =
+    this
+
+  override def heapHighWaterMarkOfOperator(operatorId: Int): Long = {
+    if (memoryPerOperator.containsKey(operatorId)) {
+      memoryPerOperator.get(operatorId).heapHighWaterMark()
+    } else {
+      HeapHighWaterMarkTracker.ALLOCATIONS_NOT_TRACKED
+    }
+  }
+
+  override def heapHighWaterMark(): Long = {
+    var count = 0L
+    memoryPerOperator.forEachValue(v => {
+      count += v.heapHighWaterMark()
+    })
+    count
+  }
+
+  override def memoryTrackerForOperator(operatorId: Int): MemoryTracker = memoryPerOperator.computeIfAbsent(
+    operatorId,
+    i =>
+      new ProfilingParallelHighWaterMarkTrackingWorkerMemoryTracker(delegate, i)
+  )
+
+  override def setInitializationMemoryTracker(memoryTracker: MemoryTracker): Unit =
+    delegate.setInitializationMemoryTracker(memoryTracker)
+}
+
+/**
  * A memory tracker and MemoryTrackerForOperatorProvider that delegates all calls to the
  * thread local execution context memory tracker if the current thread is a Cypher worker thread,
  * or otherwise to a dedicated execution context memory tracker used for query initialization.
@@ -269,6 +313,58 @@ class WorkerThreadDelegatingMemoryTracker extends MemoryTracker with MemoryTrack
   def initializationMemoryTracker: MemoryTracker = {
     _initializationMemoryTracker
   }
+}
+
+private class ProfilingParallelHighWaterMarkTrackingWorkerMemoryTracker(
+  delegate: WorkerThreadDelegatingMemoryTracker,
+  val id: Long
+) extends MemoryTracker {
+
+  private val heapUsage = new LongAdder()
+  private val highWaterMark = new AtomicLong()
+
+  override def allocateHeap(bytes: Long): Unit = {
+    delegate.allocateHeap(bytes)
+    heapUsage.add(bytes)
+    computeNewHighWaterMark()
+  }
+
+  override def releaseHeap(bytes: Long): Unit = {
+    heapUsage.add(-bytes)
+    delegate.releaseHeap(bytes)
+  }
+
+  private def computeNewHighWaterMark(): Unit = {
+    var current = -1L
+    var newValue = -1L
+    do {
+      newValue = heapUsage.sum()
+      current = highWaterMark.get()
+      if (current >= newValue) {
+        return
+      }
+    } while (!highWaterMark.compareAndSet(current, newValue))
+  }
+
+  override def heapHighWaterMark(): Long = {
+    highWaterMark.get()
+  }
+
+  override def reset(): Unit = {
+    delegate.reset()
+    heapUsage.reset()
+  }
+
+  override def getScopedMemoryTracker: MemoryTracker = new ParallelScopedMemoryTracker(this)
+
+  override def usedNativeMemory(): Long = delegate.usedNativeMemory()
+
+  override def estimatedHeapMemory(): Long = delegate.estimatedHeapMemory()
+
+  override def allocateNative(bytes: Long): Unit = delegate.allocateNative(bytes)
+
+  override def releaseNative(bytes: Long): Unit = delegate.releaseNative(bytes)
+
 }
 
 class ParallelDebugMemoryTracker(delegate: MemoryTracker with MemoryTrackerForOperatorProvider) extends MemoryTracker
@@ -418,7 +514,7 @@ private class ParallelScopedMemoryTracker(delegate: MemoryTracker) extends Scope
   private def throwIfClosed(): Unit = {
     if (isClosed) throw new IllegalStateException("Should not use a closed ScopedMemoryTracker")
   }
-  override def heapHighWaterMark = throw new UnsupportedOperationException
+  override def heapHighWaterMark: Long = throw new UnsupportedOperationException
 
   override def reset(): Unit = {
     val nativeUsage = trackedNative.sumThenReset()
@@ -436,9 +532,9 @@ private class ParallelScopedMemoryTracker(delegate: MemoryTracker) extends Scope
   override def close(): Unit = {
     // On a parent ScopedMemoryTracker, only release memory if that parent was not already closed.
     if (
-      !delegate.isInstanceOf[ScopedMemoryTracker] || !(delegate.asInstanceOf[
+      !delegate.isInstanceOf[ScopedMemoryTracker] || !delegate.asInstanceOf[
         ScopedMemoryTracker
-      ]).isClosed
+      ].isClosed
     ) {
       reset()
     }

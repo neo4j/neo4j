@@ -58,6 +58,8 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should profile memory of partial sort") {
+    // partialSort not supported in parallel
+    assume(!isParallel)
     val input = for (i <- 0 to SIZE) yield Array[Any](1, i)
 
     // when
@@ -219,6 +221,8 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should profile memory of partial top n, where n < max array size") {
+    // partialTop not supported in parallel
+    assume(!isParallel)
     val input = for (i <- 0 to SIZE) yield Array[Any](1, i)
 
     // when
@@ -233,6 +237,8 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should profile memory of partial top n, where n > max array size") {
+    // partialTop not supported in parallel
+    assume(!isParallel)
     val input = for (i <- 0 to SIZE) yield Array[Any](1, i)
 
     // when
@@ -247,6 +253,8 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should profile memory of ordered distinct") {
+    // orderedDistinct not supported in parallel
+    assume(!isParallel)
     val input = for (i <- 0 to SIZE) yield Array[Any](1, i)
 
     // when
@@ -261,6 +269,8 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should profile memory of ordered aggregation") {
+    // orderedAggregation not supported in parallel
+    assume(!isParallel)
     val input = for (i <- 0 to SIZE) yield Array[Any](1, i)
 
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -313,7 +323,9 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](
 
   test("should profile memory of IN") {
     givenGraph {
-      nodeGraph(SIZE)
+      // we need a bigger value than SIZE here since each worker has a separate InCache
+      // and there is a delay before we start to cache things
+      nodeGraph(1000)
     }
 
     // when
