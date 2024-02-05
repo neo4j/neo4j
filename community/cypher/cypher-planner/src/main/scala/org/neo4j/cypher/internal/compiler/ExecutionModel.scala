@@ -29,9 +29,6 @@ import org.neo4j.cypher.internal.util.BatchedCartesianOrdering
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.CartesianOrdering
 import org.neo4j.cypher.internal.util.VolcanoCartesianOrdering
-import org.neo4j.exceptions.CantCompileQueryException
-
-import scala.annotation.tailrec
 
 /**
  * The execution model of how a runtime executes a query.
@@ -156,73 +153,11 @@ object ExecutionModel {
      */
     def selectBatchSize(
       logicalPlan: LogicalPlan,
-      cardinalities: EffectiveCardinalities,
-      explicitBatchSize: Option[Long]
+      cardinalities: EffectiveCardinalities
     ): Int = {
-      explicitBatchSize match {
-        case Some(explicitSize) =>
-          val fittedBatchSize = fitBatchSize(explicitSize)
-          fittedBatchSize.getOrElse(
-            throw new CantCompileQueryException(s"The periodic commit batch size $explicitSize is not supported")
-          )
-
-        case None =>
-          val maxCardinality = logicalPlan.flatten.map(plan => cardinalities.get(plan.id)).max
-          val selectedBatchSize = selectBatchSize(maxCardinality.amount)
-          selectedBatchSize
-      }
-    }
-
-    private def fitBatchSize(explicitSize: Long): Option[Int] = {
-      // We use bigBatchSize*2 as the upper limit of explicit batch sizes that we honor exactly so that we do not end up with unreasonably big morsels
-      // (Also set a minimum of 4 for very small values of bigBatchSize, since otherwise fitting will not work)
-      val batchSizeUpperLimit = Math.max(bigBatchSize * 2, 4)
-      val batchSizeLowerLimit = smallBatchSize
-
-      if (explicitSize > 0 && explicitSize <= batchSizeUpperLimit) {
-        // Use the exact value
-        Some(explicitSize.toInt)
-      } else if ((explicitSize / batchSizeUpperLimit) > 10000L) {
-        // Do not even try to fit the explicit size if it is big enough
-        // In this case the difference of one batch is unlikely to matter, and the fitting algorithm may not complete in a timely manner
-        Some(bigBatchSize)
-      } else {
-        // Try to find a suitable batch size that is a factor of the explicit batch size or a nearby number
-        def constraint1(n: Long): Boolean = {
-          n <= batchSizeUpperLimit && n >= batchSizeLowerLimit
-        }
-        def constraint2(n: Long): Boolean = {
-          n <= batchSizeUpperLimit
-        }
-        val constraints = Array[Long => Boolean](constraint1, constraint2)
-
-        var attempt = 0
-        while (attempt < constraints.length) {
-          var n = explicitSize
-          val lowerLimit = Math.max(1, explicitSize - 8)
-          while (n > lowerLimit) {
-            val fittedBatchSize = tryFitBachSize(constraints(attempt))(n)
-            if (fittedBatchSize.isDefined) {
-              return fittedBatchSize
-            }
-            n -= 1
-          }
-          attempt += 1
-        }
-        None
-      }
-    }
-
-    private def tryFitBachSize(p: Long => Boolean)(n: Long): Option[Int] = {
-      @tailrec
-      def fit(n: Long, fac: Long = 2): Option[Int] = {
-        fac + fac > n match {
-          case false if n % fac == 0 && p(n / fac) => Some((n / fac).toInt)
-          case false                               => fit(n, fac + 1)
-          case true                                => None
-        }
-      }
-      fit(n)
+      val maxCardinality = logicalPlan.flatten.map(plan => cardinalities.get(plan.id)).max
+      val selectedBatchSize = selectBatchSize(maxCardinality.amount)
+      selectedBatchSize
     }
 
     private def selectBatchSize(maxCardinality: Double): Int = {
@@ -258,7 +193,7 @@ object ExecutionModel {
     def numBatchesFor(cardinality: Cardinality): Cardinality = cardinality
   }
 
-  case class BatchedBatchSize(size: Cardinality) extends SelectedBatchSize {
+  private case class BatchedBatchSize(size: Cardinality) extends SelectedBatchSize {
     def numBatchesFor(cardinality: Cardinality): Cardinality = (cardinality * size.inverse).ceil
   }
 
