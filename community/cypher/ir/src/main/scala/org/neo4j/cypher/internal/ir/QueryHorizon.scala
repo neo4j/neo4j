@@ -34,7 +34,6 @@ import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.PredicateConver
 import org.neo4j.cypher.internal.util.Foldable
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.InputPosition
-import org.neo4j.exceptions.InternalException
 
 sealed trait QueryHorizon extends Foldable {
 
@@ -221,14 +220,6 @@ object QueryProjection {
     variables.toIndexedSeq.map(variable =>
       AliasedReturnItem(variable, variable)(InputPosition.NONE)
     )
-
-  def combine(lhs: QueryProjection, rhs: QueryProjection): QueryProjection = (lhs, rhs) match {
-    case (left: RegularQueryProjection, right: RegularQueryProjection) =>
-      left ++ right
-
-    case _ =>
-      throw new InternalException("Aggregations cannot be combined")
-  }
 }
 
 final case class RegularQueryProjection(
