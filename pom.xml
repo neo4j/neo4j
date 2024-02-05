@@ -178,7 +178,7 @@
     <jakarta.ws.rs-api.version>2.1.6</jakarta.ws.rs-api.version>
     <antlr.version>4.13.1</antlr.version>
     <error_prone_annotations.version>2.24.1</error_prone_annotations.version>
-    <teavm.version>0.9.1</teavm.version>
+    <teavm.version>0.9.2</teavm.version>
     <javapoet.version>1.13.0</javapoet.version>
   </properties>
 
@@ -323,7 +323,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>3.2.3</version>
+          <version>3.2.5</version>
           <configuration>
             <statelessTestsetReporter implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5Xml30StatelessReporter">
               <disable>false</disable>
@@ -355,7 +355,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-failsafe-plugin</artifactId>
-          <version>3.2.3</version>
+          <version>3.2.5</version>
           <configuration>
             <statelessTestsetReporter
                     implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5Xml30StatelessReporter">
@@ -799,7 +799,7 @@
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>exec-maven-plugin</artifactId>
-          <version>3.1.0</version>
+          <version>3.1.1</version>
         </plugin>
         <plugin>
           <groupId>org.owasp</groupId>
@@ -834,7 +834,7 @@
       <plugin>
         <groupId>com.diffplug.spotless</groupId>
         <artifactId>spotless-maven-plugin</artifactId>
-        <version>2.41.1</version>
+        <version>2.43.0</version>
         <executions>
           <execution>
             <goals>
@@ -848,7 +848,7 @@
           </upToDateChecking>
           <java>
             <palantirJavaFormat>
-              <version>2.39.0</version>
+              <version>2.40.0</version>
             </palantirJavaFormat>
           </java>
           <scala>
@@ -885,7 +885,7 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>properties-maven-plugin</artifactId>
-        <version>1.2.0</version>
+        <version>1.2.1</version>
         <executions>
           <execution>
             <goals>
