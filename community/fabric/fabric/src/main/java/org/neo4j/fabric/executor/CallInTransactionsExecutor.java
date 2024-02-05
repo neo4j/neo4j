@@ -29,8 +29,10 @@ import java.util.concurrent.Executor;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.cypher.internal.FullyParsedQuery;
 import org.neo4j.cypher.internal.ast.SubqueryCall;
+import org.neo4j.cypher.internal.expressions.ExplicitParameter;
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral;
 import org.neo4j.cypher.internal.logical.plans.TransactionForeach$;
+import org.neo4j.exceptions.ParameterNotFoundException;
 import org.neo4j.fabric.eval.Catalog;
 import org.neo4j.fabric.eval.UseEvaluation;
 import org.neo4j.fabric.planning.FabricPlan;
@@ -44,6 +46,7 @@ import org.neo4j.fabric.stream.summary.MergedQueryStatistics;
 import org.neo4j.fabric.transaction.FabricTransaction;
 import org.neo4j.fabric.transaction.TransactionMode;
 import org.neo4j.graphdb.Notification;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.query.QueryRoutingMonitor;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.BooleanValue;
@@ -148,9 +151,38 @@ class CallInTransactionsExecutor extends SingleQueryFragmentExecutor {
                         return literal.value().intValue();
                     }
 
+                    if (expression instanceof ExplicitParameter parameter) {
+                        return batchSizeFromParam(parameter);
+                    }
+
                     throw new IllegalArgumentException("Unexpected batch size expression: " + expression);
                 })
                 .getOrElse(() -> (int) TransactionForeach$.MODULE$.defaultBatchSize());
+    }
+
+    private int batchSizeFromParam(ExplicitParameter parameter) {
+        AnyValue paramValue = queryParams().get(parameter.name());
+        if (paramValue instanceof LongValue longValue) {
+            return (int) longValue.value();
+        }
+
+        if (paramValue instanceof IntegralValue integralValue) {
+            return integralValue.intValue();
+        }
+
+        if (paramValue instanceof NoValue) {
+            throw new ParameterNotFoundException("Expected parameter(s): " + parameter.name());
+        }
+
+        // Parameter types are checked by semantic analysis, so this is here
+        // only in case a wrong param can somehow sneak past the semantic analysis.
+        throw new FabricException(
+                // The semantic analysis check uses this status code,
+                // so let's do the same even thought SyntaxError is a bit weird
+                // for this case.
+                Status.Statement.SyntaxError,
+                "Type mismatch for parameter '%s': expected Integer but was %s"
+                        .formatted(parameter.name(), paramValue.getTypeName()));
     }
 
     private Flux<Record> processInputRecord(Record argument) {
