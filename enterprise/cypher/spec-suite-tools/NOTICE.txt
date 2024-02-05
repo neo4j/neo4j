@@ -4,7 +4,7 @@ Copyright © 2002-2018 Neo4j Sweden AB (referred to in this notice as "Neo4j")
 
 This product includes software ("Software") developed and owned by Neo4j.
 
-The Software is subject to the terms of the Neo4j Sweden Software License,
+The Software is subject to the terms of the Neo4j Sweden Software License
 included in the LICENSE.txt file.
 
 Neo4j Enterprise object code can be licensed independently from the source
