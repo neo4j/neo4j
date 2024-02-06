@@ -1427,6 +1427,11 @@ class IndexedIdGeneratorTest {
                 }
 
                 @Override
+                public void flush() {
+                    marker.flush();
+                }
+
+                @Override
                 public void close() {
                     try {
                         marker.close();

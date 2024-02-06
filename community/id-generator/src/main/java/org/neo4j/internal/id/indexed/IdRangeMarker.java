@@ -178,6 +178,12 @@ class IdRangeMarker implements IdGenerator.TransactionalMarker, IdGenerator.Cont
     }
 
     @Override
+    public void flush() {
+        flushRange();
+        writer.yield();
+    }
+
+    @Override
     public void markUsed(long id, int numberOfIds) {
         bridgeGapBetweenHighestWrittenIdAndThisId(id, numberOfIds, false);
         if (!hasReservedIdInRange(id, id + numberOfIds)) {

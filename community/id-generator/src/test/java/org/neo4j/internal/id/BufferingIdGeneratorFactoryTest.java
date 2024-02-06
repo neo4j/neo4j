@@ -378,6 +378,9 @@ class BufferingIdGeneratorFactoryTest {
         }
 
         @Override
+        public void flush() {}
+
+        @Override
         public void close() {
             closed = true;
         }
