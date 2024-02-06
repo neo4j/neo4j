@@ -29,7 +29,7 @@ import static org.neo4j.internal.id.indexed.IdRange.BITSET_REUSE;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import org.neo4j.index.internal.gbptree.GBPTree;
@@ -82,10 +82,10 @@ class IdRangeMarker implements IdGenerator.TransactionalMarker, IdGenerator.Cont
     private final boolean started;
 
     /**
-     * Set to true as soon as this marker marks any id as "free", so that the {@link FreeIdScanner} will go through the effort of even starting
+     * Incremented as soon as this marker marks any id as "free", so that the {@link FreeIdScanner} will go through the effort of even starting
      * a scan for free ids.
      */
-    private final AtomicBoolean freeIdsNotifier;
+    private final AtomicInteger freeIdsNotifier;
 
     /**
      * Generation that this marker was instantiated at. It cannot change as long as this marker is unclosed.
@@ -138,7 +138,7 @@ class IdRangeMarker implements IdGenerator.TransactionalMarker, IdGenerator.Cont
             Lock lock,
             ValueMerger<IdRangeKey, IdRange> merger,
             boolean started,
-            AtomicBoolean freeIdsNotifier,
+            AtomicInteger freeIdsNotifier,
             long generation,
             AtomicLong highestWrittenId,
             boolean bridgeIdGaps,
@@ -303,7 +303,7 @@ class IdRangeMarker implements IdGenerator.TransactionalMarker, IdGenerator.Cont
         } else if (type != TYPE_NONE) {
             writer.merge(key, value, merger);
             if (type == TYPE_FREE || type == TYPE_DELETED_AND_FREE || type == TYPE_UNALLOCATED) {
-                freeIdsNotifier.set(true);
+                freeIdsNotifier.incrementAndGet();
             }
         }
         type = TYPE_NONE;
