@@ -26,7 +26,7 @@ import static org.neo4j.internal.id.IdUtils.numberOfIdsFromCombinedId;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.eclipse.collections.api.factory.primitive.LongLists;
@@ -57,7 +57,8 @@ class FreeIdScanner {
     private final GBPTree<IdRangeKey, IdRange> tree;
     private final IdRangeLayout layout;
     private final IdCache cache;
-    private final AtomicBoolean atLeastOneIdOnFreelist;
+    private final AtomicInteger freeIdsNotifier;
+    private final AtomicInteger seenFreeIdsNotification = new AtomicInteger();
     private final MarkerProvider markerProvider;
     private final long generation;
     private final ScanLock lock;
@@ -94,7 +95,7 @@ class FreeIdScanner {
             GBPTree<IdRangeKey, IdRange> tree,
             IdRangeLayout layout,
             IdCache cache,
-            AtomicBoolean atLeastOneIdOnFreelist,
+            AtomicInteger freeIdsNotifier,
             MarkerProvider markerProvider,
             long generation,
             boolean strictlyPrioritizeFreelistOverHighId,
@@ -105,7 +106,7 @@ class FreeIdScanner {
         this.tree = tree;
         this.layout = layout;
         this.cache = cache;
-        this.atLeastOneIdOnFreelist = atLeastOneIdOnFreelist;
+        this.freeIdsNotifier = freeIdsNotifier;
         this.markerProvider = markerProvider;
         this.generation = generation;
         this.lock = strictlyPrioritizeFreelistOverHighId
@@ -206,7 +207,7 @@ class FreeIdScanner {
     }
 
     private boolean shouldFindFreeIdsByScan() {
-        return ongoingScanRangeIndex != null || atLeastOneIdOnFreelist.get();
+        return ongoingScanRangeIndex != null || seenFreeIdsNotification.get() != freeIdsNotifier.get();
     }
 
     private boolean scanLock(boolean blocking) {
@@ -230,7 +231,7 @@ class FreeIdScanner {
                     handleQueuedIds(marker);
                     cache.drain(marker::markUncached);
                 }
-                atLeastOneIdOnFreelist.set(true);
+                freeIdsNotifier.incrementAndGet();
             } else {
                 handleQueuedIds(IndexedIdGenerator.NOOP_MARKER);
                 cache.drain((id, size) -> {});
@@ -282,6 +283,7 @@ class FreeIdScanner {
         boolean startedNow = ongoingScanRangeIndex == null;
         IdRangeKey from = ongoingScanRangeIndex == null ? LOW_KEY : new IdRangeKey(ongoingScanRangeIndex);
         boolean seekerExhausted = false;
+        int freeIdsNotificationBeforeScan = freeIdsNotifier.get();
         IdRange.FreeIdVisitor visitor =
                 (id, numberOfIds) -> queueId(pendingIdQueue, availableSpaceById, id, numberOfIds);
 
@@ -305,7 +307,7 @@ class FreeIdScanner {
         if (seekerExhausted) {
             if (!somethingWasCached && startedNow) {
                 // chill a bit until at least one id gets freed
-                atLeastOneIdOnFreelist.set(false);
+                seenFreeIdsNotification.set(freeIdsNotificationBeforeScan);
             }
         }
         return somethingWasCached;
