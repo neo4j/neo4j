@@ -32,6 +32,7 @@ import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
+import org.junit.jupiter.api.extension.LifecycleMethodExecutionExceptionHandler;
 import org.junit.jupiter.api.extension.TestExecutionExceptionHandler;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.RandomSupport.Seed;
@@ -40,7 +41,11 @@ import org.opentest4j.AssertionFailedError;
 import org.opentest4j.TestAbortedException;
 
 public class RandomExtension extends StatefulFieldExtension<RandomSupport>
-        implements BeforeEachCallback, AfterEachCallback, BeforeAllCallback, TestExecutionExceptionHandler {
+        implements BeforeEachCallback,
+                AfterEachCallback,
+                BeforeAllCallback,
+                TestExecutionExceptionHandler,
+                LifecycleMethodExecutionExceptionHandler {
     public static final String RANDOM = "random";
     public static final Namespace RANDOM_NAMESPACE = Namespace.create(RANDOM);
 
@@ -97,6 +102,25 @@ public class RandomExtension extends StatefulFieldExtension<RandomSupport>
 
     @Override
     public void handleTestExecutionException(ExtensionContext context, Throwable t) {
+        handleException(context, t);
+    }
+
+    @Override
+    public void handleBeforeEachMethodExecutionException(ExtensionContext context, Throwable t) {
+        handleException(context, t);
+    }
+
+    @Override
+    public void handleAfterEachMethodExecutionException(ExtensionContext context, Throwable t) {
+        handleException(context, t);
+    }
+
+    @Override
+    public void handleAfterAllMethodExecutionException(ExtensionContext context, Throwable t) {
+        handleException(context, t);
+    }
+
+    private void handleException(ExtensionContext context, Throwable t) {
         if (t instanceof TestAbortedException) {
             return;
         }
