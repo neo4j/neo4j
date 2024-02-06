@@ -152,19 +152,19 @@
     <scala.plugin.recompileMode>all</scala.plugin.recompileMode>
     <scala.test.version>3.2.13</scala.test.version>
     <asm.version>9.6</asm.version>
-    <metrics.version>4.2.23</metrics.version>
+    <metrics.version>4.2.25</metrics.version>
     <scala.target.vm>17</scala.target.vm>
     <jersey.version>2.34</jersey.version>
-    <junit.version>5.10.1</junit.version>
-    <junit.platform.version>1.10.1</junit.platform.version>
-    <mockito.version>5.8.0</mockito.version>
+    <junit.version>5.10.2</junit.version>
+    <junit.platform.version>1.10.2</junit.platform.version>
+    <mockito.version>5.10.0</mockito.version>
     <opencypher.version>1.0.0-M23</opencypher.version>
     <caffeine.version>3.1.8</caffeine.version>
     <required.maven.version>3.8.2</required.maven.version>
     <jackson.version>2.16.1</jackson.version>
     <jackson-databind.version>2.16.1</jackson-databind.version>
     <amazon-sdk.version>1.12.580</amazon-sdk.version>
-    <awssdk.version>2.22.11</awssdk.version>
+    <awssdk.version>2.23.17</awssdk.version>
     <awssdk-crt.version>0.29.6</awssdk-crt.version>
     <s3mock.version>2.17.0</s3mock.version>
     <guava.version>33.0.0-jre</guava.version>
@@ -630,7 +630,7 @@
             <dependency>
               <groupId>de.skuzzle.enforcer</groupId>
               <artifactId>restrict-imports-enforcer-rule</artifactId>
-              <version>2.4.0</version>
+              <version>2.5.0</version>
             </dependency>
           </dependencies>
           <executions>
@@ -1207,7 +1207,7 @@
       <dependency>
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-bom</artifactId>
-        <version>2023.0.1</version>
+        <version>2023.0.2</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -1275,7 +1275,7 @@
       <dependency>
         <groupId>org.assertj</groupId>
         <artifactId>assertj-core</artifactId>
-        <version>3.25.1</version>
+        <version>3.25.3</version>
         <scope>test</scope>
         <exclusions>
           <exclusion>
@@ -1529,7 +1529,7 @@
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-bom</artifactId>
-        <version>4.1.105.Final</version>
+        <version>4.1.106.Final</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -1730,7 +1730,7 @@
       <dependency>
         <groupId>com.google.truth</groupId>
         <artifactId>truth</artifactId>
-        <version>1.2.0</version>
+        <version>1.4.0</version>
         <exclusions>
           <exclusion>
             <groupId>com.google.guava</groupId>
@@ -1774,7 +1774,7 @@
       <dependency>
         <groupId>com.google.protobuf</groupId>
         <artifactId>protobuf-java</artifactId>
-        <version>3.23.1</version>
+        <version>3.25.2</version>
       </dependency>
       <dependency>
         <groupId>com.google.errorprone</groupId>

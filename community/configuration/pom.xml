@@ -84,7 +84,7 @@
         <dependency>
             <groupId>com.github.seancfoley</groupId>
             <artifactId>ipaddress</artifactId>
-            <version>5.4.0</version>
+            <version>5.4.2</version>
         </dependency>
     </dependencies>
 </project>
