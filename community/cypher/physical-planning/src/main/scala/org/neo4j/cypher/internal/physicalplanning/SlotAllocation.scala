@@ -168,6 +168,7 @@ import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.VariableSlot
 import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration
 import org.neo4j.cypher.internal.runtime.expressionVariableAllocation.AvailableExpressionVariables
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.Foldable
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.attribution.Id
@@ -464,8 +465,10 @@ class SingleQuerySlotAllocator private[physicalplanning] (
     slots: SlotConfiguration,
     semanticTable: SemanticTable
   ): Unit = plan match {
-    case _: OptionalExpand | _: FindShortestPaths | _: StatefulShortestPath =>
-    case _ => allocateExpressionsOneChild(plan, nullable, slots, semanticTable)
+    case ssp: StatefulShortestPath =>
+      allocateExpressionsInternal(ssp.nfa, slots, semanticTable, plan.id)
+    case _: OptionalExpand | _: FindShortestPaths =>
+    case _                                        => allocateExpressionsOneChild(plan, nullable, slots, semanticTable)
   }
 
   private def allocateExpressionsOneChildOnOutput(
@@ -474,7 +477,9 @@ class SingleQuerySlotAllocator private[physicalplanning] (
     slots: SlotConfiguration,
     semanticTable: SemanticTable
   ): Unit = plan match {
-    case _: OptionalExpand | _: FindShortestPaths | _: StatefulShortestPath =>
+    case ssp: StatefulShortestPath =>
+      allocateExpressionsInternal(ssp.nonInlinedPreFilters, slots, semanticTable, plan.id)
+    case _: OptionalExpand | _: FindShortestPaths =>
       allocateExpressionsOneChild(plan, nullable, slots, semanticTable)
     case _ =>
   }
@@ -540,7 +545,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
   }
 
   private def allocateExpressionsInternal(
-    expression: Expression,
+    expression: Foldable,
     slots: SlotConfiguration,
     semanticTable: SemanticTable,
     planId: Id,
