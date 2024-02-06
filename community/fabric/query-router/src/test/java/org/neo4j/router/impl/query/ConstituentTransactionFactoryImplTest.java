@@ -19,6 +19,7 @@
  */
 package org.neo4j.router.impl.query;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -43,6 +44,8 @@ import org.neo4j.cypher.internal.util.ObfuscationMetadata;
 import org.neo4j.fabric.executor.Location;
 import org.neo4j.fabric.executor.QueryStatementLifecycles;
 import org.neo4j.kernel.database.DatabaseReference;
+import org.neo4j.kernel.database.DatabaseReferenceImpl;
+import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.kernel.impl.query.ConstituentTransactionFactory;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.QuerySubscriber;
@@ -57,6 +60,7 @@ import scala.collection.immutable.HashSet;
 
 class ConstituentTransactionFactoryImplTest {
     private final String NL = System.lineSeparator();
+    private final String validTargetDatabase = "target";
 
     @Test
     void testWithoutPreParserOptions() throws QueryExecutionKernelException {
@@ -64,7 +68,7 @@ class ConstituentTransactionFactoryImplTest {
         DatabaseTransaction innerTransaction = mock(DatabaseTransaction.class);
         var constituentTransactionFactory = getConstituentTransactionFactory(queryOptions, innerTransaction);
 
-        var transaction = constituentTransactionFactory.transactionFor(mock(DatabaseReference.class));
+        var transaction = constituentTransactionFactory.transactionFor(getTargetDatabase(validTargetDatabase));
         transaction.executeQuery("MATCH (n) RETURN n", MapValue.EMPTY, QuerySubscriber.DO_NOTHING_SUBSCRIBER);
 
         var query = Query.of("MATCH (n) RETURN n");
@@ -83,7 +87,7 @@ class ConstituentTransactionFactoryImplTest {
         DatabaseTransaction innerTransaction = mock(DatabaseTransaction.class);
         var constituentTransactionFactory = getConstituentTransactionFactory(queryOptions, innerTransaction);
 
-        var transaction = constituentTransactionFactory.transactionFor(mock(DatabaseReference.class));
+        var transaction = constituentTransactionFactory.transactionFor(getTargetDatabase(validTargetDatabase));
         transaction.executeQuery("MATCH (n) RETURN n", MapValue.EMPTY, QuerySubscriber.DO_NOTHING_SUBSCRIBER);
 
         var query = Query.of("CYPHER runtime=interpreted" + NL + "MATCH (n) RETURN n");
@@ -103,12 +107,32 @@ class ConstituentTransactionFactoryImplTest {
         DatabaseTransaction innerTransaction = mock(DatabaseTransaction.class);
         var constituentTransactionFactory = getConstituentTransactionFactory(queryOptions, innerTransaction);
 
-        var transaction = constituentTransactionFactory.transactionFor(mock(DatabaseReference.class));
+        var transaction = constituentTransactionFactory.transactionFor(getTargetDatabase(validTargetDatabase));
         transaction.executeQuery("MATCH (n) RETURN n", MapValue.EMPTY, QuerySubscriber.DO_NOTHING_SUBSCRIBER);
 
         var query =
                 Query.of("CYPHER planner=dp runtime=interpreted debug=ast debug=tostring" + NL + "MATCH (n) RETURN n");
         verify(innerTransaction, times(1)).executeQuery(eq(query), any(), any());
+    }
+
+    @Test
+    void testWhenTargetDatabaseIsNotAConstituentOfSessionDatabase() throws QueryExecutionKernelException {
+        CypherQueryOptions queryOptions = CypherQueryOptions.defaultOptions();
+        DatabaseTransaction innerTransaction = mock(DatabaseTransaction.class);
+        var constituentTransactionFactory = getConstituentTransactionFactory(queryOptions, innerTransaction);
+
+        assertThatThrownBy(() -> constituentTransactionFactory.transactionFor(getTargetDatabase("invalid")))
+                .hasMessage(
+                        "When connected to a composite database, access is allowed only to its constituents. Attempted to access 'invalid' while connected to 'composite'");
+    }
+
+    private DatabaseReference getTargetDatabase(String name) {
+        var targetDatabase = mock(DatabaseReference.class);
+        var targetDatabaseName = mock(NormalizedDatabaseName.class);
+        when(targetDatabaseName.name()).thenReturn(name);
+        when(targetDatabase.fullName()).thenReturn(targetDatabaseName);
+        when(targetDatabase.toPrettyString()).thenReturn(name);
+        return targetDatabase;
     }
 
     private ConstituentTransactionFactory getConstituentTransactionFactory(
@@ -128,6 +152,13 @@ class ConstituentTransactionFactoryImplTest {
         when(context.transactionInfo()).thenReturn(transactionInfo);
         when(context.locationService()).thenReturn(locationService);
         when(context.transactionFor(any(), any())).thenReturn(innerTransaction);
+
+        var sessionDatabase = mock(DatabaseReferenceImpl.Composite.class);
+        when(sessionDatabase.getConstituentByName(any())).thenReturn(Optional.empty());
+        when(sessionDatabase.getConstituentByName(validTargetDatabase))
+                .thenReturn(Optional.of(mock(DatabaseReference.class)));
+        when(sessionDatabase.toPrettyString()).thenReturn("composite");
+        when(context.sessionDatabaseReference()).thenReturn(sessionDatabase);
         QueryStatementLifecycles queryStatementLifecycles = mock(QueryStatementLifecycles.class);
         when(queryStatementLifecycles.create(any(), anyString(), any(), any()))
                 .thenReturn(mock(QueryStatementLifecycles.StatementLifecycle.class));

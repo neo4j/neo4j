@@ -35,7 +35,6 @@ import org.neo4j.fabric.executor.Location;
 import org.neo4j.fabric.executor.QueryStatementLifecycles;
 import org.neo4j.fabric.transaction.ErrorReporter;
 import org.neo4j.fabric.transaction.TransactionMode;
-import org.neo4j.fabric.util.Errors;
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -66,6 +65,7 @@ import org.neo4j.router.transaction.RouterTransaction;
 import org.neo4j.router.transaction.RouterTransactionContext;
 import org.neo4j.router.transaction.RoutingInfo;
 import org.neo4j.router.transaction.TransactionInfo;
+import org.neo4j.router.util.Errors;
 import org.neo4j.time.SystemNanoClock;
 
 public class QueryRouterImpl implements QueryRouter {

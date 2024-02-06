@@ -53,7 +53,7 @@ public final class GraphFunctions {
         if (graph.isPresent() && securityContext.databaseAccessMode().canAccessDatabase(graph.get())) {
             return graph.get();
         } else {
-            throw graphNotFound(databaseName);
+            throw graphNotFound(composite.fullName().name(), databaseName);
         }
     }
 
@@ -63,7 +63,7 @@ public final class GraphFunctions {
         if (graph.isPresent() && securityContext.databaseAccessMode().canAccessDatabase(graph.get())) {
             return graph.get();
         } else {
-            throw graphNotFound(databaseId.toString());
+            throw graphNotFound(composite.fullName().name(), databaseId.toString());
         }
     }
 
@@ -83,7 +83,9 @@ public final class GraphFunctions {
         return builder.build();
     }
 
-    private static EntityNotFoundException graphNotFound(String graph) {
-        return new EntityNotFoundException(String.format("Graph not found: %s", graph));
+    private static EntityNotFoundException graphNotFound(String compositeGraph, String graph) {
+        return new EntityNotFoundException(String.format(
+                "When connected to a composite database, access is allowed only to its constituents. Attempted to access '%s' while connected to '%s'",
+                graph, compositeGraph));
     }
 }

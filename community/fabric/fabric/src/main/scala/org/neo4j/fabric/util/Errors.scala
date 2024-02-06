@@ -51,12 +51,6 @@ object Errors {
     def update(upd: SemanticErrorDef => SemanticErrorDef): HasErrors
   }
 
-  private case class InvalidQueryException(errors: Seq[SemanticErrorDef]) extends RuntimeException(
-        s"Invalid query\n${errors.map(e => s"- ${e.msg} [at ${e.position}]").mkString("\n")}"
-      ) with HasErrors {
-    override def update(upd: SemanticErrorDef => SemanticErrorDef): InvalidQueryException = copy(errors.map(upd))
-  }
-
   case class EvaluationFailedException(errors: Seq[SemanticErrorDef]) extends RuntimeException(
         s"Evaluation failed\n${errors.map(e => s"- ${e.msg} [at ${e.position}]").mkString("\n")}"
       ) with HasErrors {
@@ -64,18 +58,9 @@ object Errors {
   }
   def openCypherSemantic(msg: String, node: ASTNode): SemanticError = SemanticError(msg, node.position)
 
-  private def openCypherInvalid(errors: Seq[SemanticErrorDef]): Nothing = throw InvalidQueryException(errors)
-
-  private def openCypherInvalid(error: SemanticErrorDef): Nothing = openCypherInvalid(Seq(error))
-
   def openCypherFailure(errors: Seq[SemanticErrorDef]): Nothing = throw EvaluationFailedException(errors)
 
   def openCypherFailure(error: SemanticErrorDef): Nothing = openCypherFailure(Seq(error))
-
-  def openCypherUnexpected(exp: String, pos: InputPosition): Nothing =
-    openCypherInvalid(SemanticError(s"Expected: $exp", pos))
-
-  def openCypherUnexpected(exp: String, got: ASTNode): Nothing = openCypherUnexpected(exp, got.position)
 
   def wrongType(exp: String, got: String): Nothing =
     throw new CypherTypeException(s"Wrong type. Expected $exp, got $got")
@@ -89,15 +74,6 @@ object Errors {
     throw new SyntaxException(msg, query, pos.offset)
 
   def semantic(message: String) = throw new InvalidSemanticsException(message)
-
-  private def dynamicGraphNotAllowedMessage(use: String) =
-    MessageUtilProvider.createDynamicGraphReferenceUnsupportedError(use).stripMargin
-
-  def dynamicGraphNotAllowed(use: Use, queryString: String): Nothing =
-    syntax(dynamicGraphNotAllowedMessage(Use.show(use)), queryString, use.position)
-
-  def dynamicGraphNotAllowed(use: GraphSelection): Nothing =
-    syntax(dynamicGraphNotAllowedMessage(Use.show(use)))
 
   def entityNotFound(kind: String, needle: String): Nothing =
     throw new EntityNotFoundException(s"$kind not found: $needle")

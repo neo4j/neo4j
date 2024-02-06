@@ -35,6 +35,7 @@ import org.neo4j.router.query.Query;
 import org.neo4j.router.query.QueryProcessor;
 import org.neo4j.router.query.TargetService;
 import org.neo4j.router.transaction.RouterTransactionContext;
+import org.neo4j.router.util.Errors;
 import org.neo4j.values.virtual.MapValue;
 
 public class ConstituentTransactionFactoryImpl implements ConstituentTransactionFactory {
@@ -75,6 +76,13 @@ public class ConstituentTransactionFactoryImpl implements ConstituentTransaction
         private final Location location;
 
         public ConstituentTransactionImpl(DatabaseReference targetReference) {
+            if (sessionDatabase()
+                    .getConstituentByName(targetReference.fullName().name())
+                    .isEmpty()) {
+                // We should not end up here. This should be taken care of by semantic analysis or dynamic graph
+                // functions.
+                Errors.cantAccessOutsideCompositeMessage(targetReference, sessionDatabase());
+            }
             this.targetReference = targetReference;
             this.targetService = new DirectTargetService(targetReference);
             this.location = context.locationService().locationOf(targetReference);

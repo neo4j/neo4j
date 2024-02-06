@@ -20,8 +20,7 @@
 package org.neo4j.router.impl.query
 
 import org.neo4j.cypher.internal.ast._
-import org.neo4j.cypher.internal.expressions.{Expression, Property, Variable}
-import org.neo4j.fabric.util.Errors
+import org.neo4j.router.util.Errors
 
 class StaticUseEvaluation {
 
@@ -62,18 +61,5 @@ class StaticUseEvaluation {
         case gs: GraphSelection => gs
       }
     })
-  }
-
-  private def nameFromVar(variable: Variable): CatalogName =
-    CatalogName(variable.name)
-
-  private def nameFromProp(property: Property): CatalogName = {
-    def parts(expr: Expression): List[String] = expr match {
-      case p: Property    => parts(p.map) :+ p.propertyKey.name
-      case Variable(name) => List(name)
-      case x              => Errors.openCypherUnexpected("Graph name segment", x)
-    }
-
-    CatalogName(parts(property))
   }
 }

@@ -105,7 +105,8 @@ case object VerifyGraphTarget extends VisitorPhase[PlannerContext, BaseState] wi
             throw new DatabaseNotFoundException(
               s"Database ${graphNameWithContext.graphName.qualifiedNameString} not found"
             )
-          case Some(databaseReference) if !databaseReference.databaseId().equals(databaseId) =>
+          case Some(databaseReference)
+            if !allowCompositeQueries && !databaseReference.databaseId().equals(databaseId) =>
             graphNameWithContext match {
               // If an explicit graph selection is combined with ambient one and both target different graphs,
               // it makes the query effectively a composite one.
